@@ -37,10 +37,11 @@ folder and index. Stories that are non-trivial have a `plan.md` and a
 ## CV9 — Mirror Mind 1.0
 
 In progress. Mirror Mind 1.0 focuses on refactoring, stabilization, release
-hardening, documentation polish, and public readiness. Documentation Polish
-(CV9.E4) and the first Distribution & Tooling story (CV9.E3.S1) are complete;
-Boundary Hardening and Stabilization remain planned before the full CV9 done
-condition is met.
+hardening, documentation polish, process/versioning alignment, and public
+readiness. Documentation Polish (CV9.E4) and the first Distribution & Tooling
+story (CV9.E3.S1) are complete; Process & Versioning Alignment (CV9.E5) is in
+planning; Boundary Hardening and Stabilization remain planned before the full
+CV9 done condition is met.
 
 ---
 

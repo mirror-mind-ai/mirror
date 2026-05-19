@@ -11,6 +11,32 @@ resolved.
 
 ## Completed Decisions
 
+### Development process and versioning are explicit and prospective from CV9.E5 onward
+
+**Date:** 2026-05-19
+**Reference:** [CV9.E5 Process & Versioning Alignment](roadmap/cv9-mirror-1-0/cv9-e5-process-versioning-alignment/index.md), [Development Guide](../process/development-guide.md), [Versioning](../process/versioning.md), [Release Notes](../process/release-notes.md)
+
+Mirror Mind adopts an explicit development process based on three dimensions
+(process, project, product), the expand/collapse operating rhythm, and a story
+lifecycle with mandatory checkpoints and a coherence check.
+
+The versioning model is prospective. Versions through `v0.7.0` remain valid
+historical project facts and are not semantically reinterpreted. From CV9.E5
+onward, future version bumps follow the rule documented in
+[Versioning](../process/versioning.md): MAJOR for completed Capability Values,
+MINOR for completed Epics, and PATCH for independently released Stories or
+maintenance fixes.
+
+Future releases should receive narrative release notes under `docs/releases/`,
+following [Release Notes](../process/release-notes.md). Retroactive release
+notes for historical tags are optional archival work, not a prerequisite for the
+new process.
+
+CV9 completion may become `v1.0.0` as the first prospective major boundary,
+because CV9 is the public-release readiness boundary for Mirror Mind 1.0. This
+is a forward-looking product boundary, not a rewrite of previous version
+history.
+
 ### Coherence is a Builder lifecycle capability, not a command-first flow
 
 **Date:** 2026-05-09
@@ -222,7 +248,7 @@ The three options were:
 
 ### English domain language is complete and tagged
 
-**Date:** 2026-04-17  
+**Date:** 2026-04-17
 **Commits:** `fb0bcf6` through `d425b52`
 
 All runtime paths — Python API, CLI, schema, config, seed, hooks, skills,
@@ -237,7 +263,7 @@ See also: [CV0 English Foundation](roadmap/cv0-english-foundation/index.md).
 
 ### Pi adoption ports interface ideas from `mirror-pi`, not the old `memoria` core
 
-**Date:** 2026-04-17  
+**Date:** 2026-04-17
 **Reference:** [CV1 Pi Runtime](roadmap/cv1-pi-runtime/index.md)
 
 The `~/dev/workspace/mirror-pi` spike (Henrique's project) is pre-English-migration
@@ -266,7 +292,7 @@ future track or a parallel project — not a CV1 concern.
 
 ### Skill logic extraction is a prerequisite for Pi
 
-**Date:** 2026-04-17  
+**Date:** 2026-04-17
 **Reference:** Briefing D8
 
 Pi skills cannot be thin wrappers until the shared `src/memory/skills/` modules
@@ -289,7 +315,7 @@ implementation is written.
 
 ### Skill layer principle: Python/CLI owns DB; Agent owns filesystem; no run.py
 
-**Date:** 2026-04-18  
+**Date:** 2026-04-18
 **Reference:** CV3.E4 Skill Architecture Cleanup
 
 Every skill in both runtimes (Claude Code and Pi) calls `python -m memory <command>` directly from SKILL.md. No `run.py` intermediary exists under `.claude/skills/` or `.pi/skills/`.
@@ -325,7 +351,7 @@ This decision resolves the previously open `MIRROR_USER_DIR` discussion in princ
 
 ### Migration rehearsal — long-term status
 
-**Status:** Open  
+**Status:** Open
 **Raised:** 2026-04-17
 
 `src/memory/cli/migration_rehearsal.py` and its tests exist to allow safe dry-run
@@ -409,7 +435,7 @@ under a clear contract:
 
 ### CLI parsing consistency and future `argparse` adoption
 
-**Status:** Open  
+**Status:** Open
 **Raised:** 2026-04-18
 
 Several commands already use `argparse`, while some older entry points still
