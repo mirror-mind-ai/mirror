@@ -12,7 +12,7 @@ How we are building it and why.
 - [Decisions](project/decisions.md) — incremental decisions and open discussions
 - [Roadmap](project/roadmap/index.md) — CV → Epic → Story hierarchy with status
 
-Current state: **CV0 English Foundation ✅ · CV1 Pi Runtime ✅ · CV2 Runtime Portability ✅ · CV3 Pi Skill Parity ✅ · CV4 Framework/User Separation ✅ · CV5 Multisession Safety ✅ · CV6 Runtime Maturity ✅ · CV7 Intelligence Depth ✅ · CV8 Runtime Expansion ✅ · CV14 Stateful Extensions 🟢 Phase 1**
+Current state: **CV0 English Foundation ✅ · CV1 Pi Runtime ✅ · CV2 Runtime Portability ✅ · CV3 Pi Skill Parity ✅ · CV4 Framework/User Separation ✅ · CV5 Multisession Safety ✅ · CV6 Runtime Maturity ✅ · CV7 Intelligence Depth ✅ · CV8 Runtime Expansion ✅ · CV9 Mirror Mind 1.0 🟢 In Progress · CV14 Stateful Extensions 🟢 E1–E2 Done**
 
 Runtime expansion result: **Gemini CLI first at L4 full parity; Codex second at L3 parity through the wrapper script, JSONL backfill, `AGENTS.md`, and `$mm-*` skill invocation.**
 
@@ -33,8 +33,12 @@ What Mirror Mind is and how it behaves.
 
 How we work.
 
-- [Development Guide](process/development-guide.md) — navigator/driver model, TDD, verification checklist
+- [Development Guide](process/development-guide.md) — operating lifecycle, checkpoints, coherence check, and Builder workflow
 - [Engineering Principles](process/engineering-principles.md) — code, testing, and process guidelines
+- [Process, Project, Product](process/triad.md) — the three dimensions where Mirror Mind work happens
+- [Expand and Collapse](process/expand-collapse.md) — the operating rhythm behind planning, delivery, and release
+- [Versioning](process/versioning.md) — prospective versioning rule from CV9.E5 onward
+- [Release Notes](process/release-notes.md) — narrative release-note format for future releases
 - [Worklog](process/worklog.md) — operational progress (what was done, what is next)
 - [Troubleshooting](process/troubleshooting.md) — known bugs in the wild, their root causes, and the fixes that addressed them
 
@@ -46,4 +50,5 @@ How we work.
 - [REFERENCE.md](../REFERENCE.md) — command reference and configuration
 - [Architecture](architecture.md) — system design, layers, schema, and runtime model
 - [Python API](api.md) — programmatic interface for developers
+- [Releases](releases/index.md) — narrative release notes from CV9.E5 onward
 - [CLAUDE.md](../CLAUDE.md) — routing, modes, and available skills

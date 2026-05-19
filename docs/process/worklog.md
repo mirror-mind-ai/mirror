@@ -9,6 +9,38 @@ Update when a meaningful milestone is reached.
 
 ## Done
 
+### 2026-05-19 — CV9.E5.S1 complete: Development process and prospective versioning
+
+Adopted the Mirror Mind development process and prospective versioning model.
+The process guide now uses Driver/Navigator as the structural collaboration
+model, explicitly connects it to XP pair programming, adds Engineering Lineage,
+WIP discipline, discovery/envisioning work, manual Navigator validation, push
+policy, and PR guidance.
+
+Created process docs for the process/project/product triad, expand/collapse,
+versioning, release notes, and prospective release documentation. Versioning is
+prospective from CV9.E5 onward: historical versions through `v0.7.0` remain
+historical and are not reinterpreted; CV9 completion may become the first
+prospective major boundary (`v1.0.0`).
+
+Navigator review through the Web Console surfaced a follow-up story,
+CV9.E5.S2 Documentation Information Architecture, for the docs home, folder
+cover pages, release location, worklog scaling, troubleshooting placement,
+architecture/API placement, and envisioning structure.
+
+Verification: 1058 tests passed; ruff check and format check passed; `git diff
+--check` passed. `mypy src/memory` currently fails on pre-existing typing debt
+in `src/`, not introduced by this documentation/process story.
+
+### 2026-05-19 — Roadmap and journey status reconciled
+
+Aligned the public docs and Builder context after CV9.E4 completion. CV9 now
+shows as in progress rather than planning, CV9.E4 is marked done, CV9.E3 is
+marked in progress with S1 done, CV14 status reflects E1–E2 done with E3–E4
+provisional, and the Builder context now reports version 0.7.0. The
+`mirror-mind` journey identity and journey path were updated to match the repo
+state.
+
 ### 2026-05-15 — CV9.E4 complete: Documentation Polish
 
 All 7 stories shipped. The documentation information architecture is redesigned

@@ -2,7 +2,7 @@
 
 # CV9 — Mirror Mind 1.0: Refactoring, Stabilization, and Release Preparation
 
-**Status:** Planning
+**Status:** 🟢 In Progress
 **Goal:** Prepare Mirror Mind for public release by hardening architectural boundaries, increasing test coverage, improving onboarding, and polishing documentation.
 
 ---
@@ -16,7 +16,7 @@ CV9 marks the transition from "internal research project" to "stable tool." The 
 The major themes are:
 1. **Architectural Purity** — Completing the storage refactor so the system is easy to maintain and test.
 2. **Operational Robustness** — Hardening the runtimes and handling failure modes gracefully.
-3. **Developer/User Experience** — Polishing onboarding, documentation, and distribution.
+3. **Developer/User Experience** — Polishing onboarding, documentation, distribution, and the development/release process.
 
 ---
 
@@ -26,8 +26,9 @@ The major themes are:
 |------|------|----------------------|--------|
 | CV9.E1 | Boundary Hardening | A clean, layered architecture with no direct SQL in CLI and clear transaction boundaries | 🟡 Planned |
 | [CV9.E2](cv9-e2-stabilization/index.md) | Stabilization & Robustness | Improved error handling and feature-flag safety across all runtimes | 🟡 Planned |
-| [CV9.E3](cv9-e3-distribution-tooling/index.md) | Distribution & Tooling | A simple, robust way to install and update Mirror Mind | 🟢 In Progress |
-| [CV9.E4](cv9-e4-documentation-polish/index.md) | Documentation & Polish | Comprehensive, accurate, and helpful documentation for the public | 🟡 Planning |
+| [CV9.E3](cv9-e3-distribution-tooling/index.md) | Distribution & Tooling | A simple, robust way to install and update Mirror Mind | 🟢 In Progress, S1 done |
+| [CV9.E4](cv9-e4-documentation-polish/index.md) | Documentation & Polish | Comprehensive, accurate, and helpful documentation for the public | ✅ Done |
+| [CV9.E5](cv9-e5-process-versioning-alignment/index.md) | Process & Versioning Alignment | An explicit development lifecycle and prospective versioning model for future work | 🟢 In Progress, S1 done |
 
 ---
 
@@ -40,6 +41,7 @@ CV9 is done:
 - External extensions have consistent first-class skill discovery across supported runtimes, including the shared Gemini CLI/Codex `.agents/skills/` surface.
 - A robust installation script or `uv`-based distribution path exists.
 - Documentation (README, Getting Started, REFERENCE) is audited and confirmed accurate for 1.0 release.
+- Process and versioning rules are explicit, prospective from CV9.E5 onward, and reflected in the development guide.
 - CI remains green with high coverage.
 
 ---
@@ -50,7 +52,8 @@ CV9 is done:
 E1 Boundary Hardening
   └── E2 Stabilization
         └── E3 Distribution
-              └── E4 Documentation & Polish
+              ├── E4 Documentation & Polish
+              └── E5 Process & Versioning Alignment
 ```
 
 ---
