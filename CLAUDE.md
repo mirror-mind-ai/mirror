@@ -132,11 +132,12 @@ Mirror Mind is a local-first memory and identity framework for agentic AI
 runtimes. One Python core (`src/memory/`), multiple runtime harnesses (Pi,
 Gemini CLI, Codex, Claude Code), SQLite database, Jungian identity architecture.
 
-**Current CV status:** CV0–CV9.E3 complete. CV9.E4 (Documentation Polish) in
-progress. CV9 overall: refactoring, stabilization, and public release
-preparation.
+**Current CV status:** CV0–CV8 complete. CV9 is in progress: CV9.E3.S1
+(Zero-Friction Identity Onboarding) and CV9.E4 (Documentation Polish) are
+complete; CV9.E1 Boundary Hardening and CV9.E2 Stabilization remain planned.
+CV14 Stateful Extensions has E1–E2 done, with E3–E4 provisional.
 
-**Version:** 0.6.1
+**Version:** 0.7.0
 
 **Key references:**
 - Architecture: [docs/architecture.md](docs/architecture.md)

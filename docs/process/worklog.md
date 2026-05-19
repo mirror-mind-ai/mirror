@@ -9,6 +9,15 @@ Update when a meaningful milestone is reached.
 
 ## Done
 
+### 2026-05-19 — Roadmap and journey status reconciled
+
+Aligned the public docs and Builder context after CV9.E4 completion. CV9 now
+shows as in progress rather than planning, CV9.E4 is marked done, CV9.E3 is
+marked in progress with S1 done, CV14 status reflects E1–E2 done with E3–E4
+provisional, and the Builder context now reports version 0.7.0. The
+`mirror-mind` journey identity and journey path were updated to match the repo
+state.
+
 ### 2026-05-15 — CV9.E4 complete: Documentation Polish
 
 All 7 stories shipped. The documentation information architecture is redesigned

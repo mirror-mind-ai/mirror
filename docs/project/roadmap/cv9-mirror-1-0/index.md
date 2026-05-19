@@ -2,7 +2,7 @@
 
 # CV9 — Mirror Mind 1.0: Refactoring, Stabilization, and Release Preparation
 
-**Status:** Planning
+**Status:** 🟢 In Progress
 **Goal:** Prepare Mirror Mind for public release by hardening architectural boundaries, increasing test coverage, improving onboarding, and polishing documentation.
 
 ---
@@ -26,8 +26,8 @@ The major themes are:
 |------|------|----------------------|--------|
 | CV9.E1 | Boundary Hardening | A clean, layered architecture with no direct SQL in CLI and clear transaction boundaries | 🟡 Planned |
 | [CV9.E2](cv9-e2-stabilization/index.md) | Stabilization & Robustness | Improved error handling and feature-flag safety across all runtimes | 🟡 Planned |
-| [CV9.E3](cv9-e3-distribution-tooling/index.md) | Distribution & Tooling | A simple, robust way to install and update Mirror Mind | 🟢 In Progress |
-| [CV9.E4](cv9-e4-documentation-polish/index.md) | Documentation & Polish | Comprehensive, accurate, and helpful documentation for the public | 🟡 Planning |
+| [CV9.E3](cv9-e3-distribution-tooling/index.md) | Distribution & Tooling | A simple, robust way to install and update Mirror Mind | 🟢 In Progress, S1 done |
+| [CV9.E4](cv9-e4-documentation-polish/index.md) | Documentation & Polish | Comprehensive, accurate, and helpful documentation for the public | ✅ Done |
 
 ---
 
