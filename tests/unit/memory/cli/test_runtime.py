@@ -951,6 +951,7 @@ def test_run_runtime_update_blocks_when_fetch_fails(monkeypatch):
 
 def test_run_runtime_update_runs_full_happy_path(monkeypatch, tmp_path):
     _ready_report(monkeypatch)
+    monkeypatch.setattr("memory.cli.runtime.resolve_mirror_home", lambda **kw: tmp_path)
     monkeypatch.setattr("memory.cli.runtime._git_fetch", lambda remote, branch, cwd: (True, ""))
     monkeypatch.setattr(
         "memory.cli.runtime.inspect_git_update_plan",
@@ -995,6 +996,7 @@ def test_run_runtime_update_runs_full_happy_path(monkeypatch, tmp_path):
 
 def test_run_runtime_update_migrations_failure_includes_recovery(monkeypatch, tmp_path):
     _ready_report(monkeypatch)
+    monkeypatch.setattr("memory.cli.runtime.resolve_mirror_home", lambda **kw: tmp_path)
     monkeypatch.setattr("memory.cli.runtime._git_fetch", lambda remote, branch, cwd: (True, ""))
     monkeypatch.setattr(
         "memory.cli.runtime.inspect_git_update_plan",
