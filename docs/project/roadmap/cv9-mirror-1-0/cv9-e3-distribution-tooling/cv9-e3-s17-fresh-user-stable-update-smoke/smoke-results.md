@@ -3,7 +3,7 @@
 # Smoke Results — Fresh User Stable Update Smoke
 
 **Date:** 2026-05-23  
-**Result:** Partial pass with release-state blocker  
+**Result:** Passed after v0.9.0 stable promotion
 **Smoke root:** `/tmp/mirror-stable-smoke2.MSjTO6`  
 **Temporary clone:** `/tmp/mirror-stable-smoke2.MSjTO6/mirror-clone`  
 **Temporary Mirror home:** `/tmp/mirror-stable-smoke2.MSjTO6/mirror-home`
@@ -175,12 +175,86 @@ Release: v0.8.0 — Stable Self-Update Foundation
 
 Exit code: `0`.
 
-## Conclusion
+## Post-Promotion Smoke
 
-The stable update mechanism works as a no-op for the currently published stable state. The full update-hop acceptance criterion is blocked until a newer stable release is prepared and promoted.
+After `v0.9.0` was promoted to `stable`, a new temporary clone validated the full update hop.
 
-Recommended next movement:
+Smoke root:
 
 ```text
-🟩[S17] Fresh User Stable Update Smoke  ──requires──>  Release publication for v0.9.0
+/tmp/mirror-stable-smoke3.5j6weE
+```
+
+Starting state:
+
+```text
+START=4bdff1b
+ORIGIN_STABLE=fac6da3
+Version before: 0.8.0
+```
+
+Update check:
+
+```text
+Current: 4bdff1b
+Upstream: origin/stable @ fac6da3
+Availability: update_available
+```
+
+Dry-run:
+
+```text
+Current status: ready
+Git relation: ahead 0, behind 8
+Update plan: pull 8 remote commit(s)
+Dry-run result: ready
+```
+
+Update execution:
+
+```text
+[✓] status gate
+[✓] fetch: origin stable
+[✓] plan: pull 8 remote commit(s)
+[✓] backup: /tmp/mirror-stable-smoke3.5j6weE/mirror-home/backups/memory_20260523_145719.zip
+[✓] verify backup
+[✓] fast-forward: 4bdff1b -> fac6da3
+[✓] migrations
+[✓] post-update status
+Update result: success
+```
+
+Post-update version:
+
+```text
+Version: 0.9.0
+Git commit: fac6da3
+Update channel: stable
+```
+
+Post-update status:
+
+```text
+Mirror home: /tmp/mirror-stable-smoke3.5j6weE/mirror-home
+Database exists: yes
+Core migrations: current (10/10)
+Clone role: production
+Update channel: stable
+Status: ready
+```
+
+Release notes:
+
+```text
+Release: v0.9.0 — Self-Update Done
+```
+
+## Conclusion
+
+The fresh-user stable update smoke passed. A temporary clone moved from `v0.8.0` to `v0.9.0` through `runtime update` without manual git intervention, using an isolated Mirror home and the stable channel.
+
+Completed movement:
+
+```text
+🟩[S17] Fresh User Stable Update Smoke  ──validates──>  v0.9.0 Self-Update Done
 ```

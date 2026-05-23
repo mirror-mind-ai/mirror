@@ -40,7 +40,7 @@ Moving next
 
 ```text
 🟪[CV9]  Mirror Mind 1.0
-  🟦[E3]   Distribution & Tooling  Stories: 16/17  ███████░ 94%
+  🟦[E3]   Distribution & Tooling  Stories: 17/17  ████████ 100%
     🟩[S17]  Fresh User Stable Update Smoke
 ```
 
@@ -50,15 +50,15 @@ Moving next
 Release Intent
 [known] v0.9.0 — Self-Update Done
 Scope: 🟩[S13] + 🟩[S14] + 🟩[S15] + 🟩[S16] + 🟩[S17]
-State: release candidate prepared
+State: published to stable
 ```
 
 ## Ariad Stage Ribbon
 
 ```text
-Ariad: ✓ Plan | ✓ Implement | ◉ Validate | ○ Review | ○ Coherence | ○ Commit
-Flow:   Backlog | Ready | Doing | ◉ Validate | Done
-Progress: ██████░░ 76%
+Ariad: ✓ Plan | ✓ Implement | ✓ Validate | ✓ Review | ✓ Coherence | ◉ Commit
+Flow:   Backlog | Ready | Doing | Validate | ◉ Done
+Progress: ███████░ 88%
 ```
 
 ## Horizontal Flow Board
@@ -86,15 +86,16 @@ Progress: ██████░░ 76%
 Current stable: v0.8.0 @ 4bdff1b
 Smoke clone:    /tmp/mirror-stable-smoke2.MSjTO6/mirror-clone
 Smoke home:     /tmp/mirror-stable-smoke2.MSjTO6/mirror-home
-Result:         partial pass with release-state blocker
+Result:         passed after v0.9.0 stable promotion
 
-✓ runtime version: 0.8.0 stable
-✓ update --check: up_to_date
-✓ update --dry-run: ready, no-op
-✓ update: success, no-op
+✓ start: v0.8.0 @ 4bdff1b
+✓ origin/stable: v0.9.0 @ fac6da3
+✓ update --check: update_available
+✓ update --dry-run: ready, pull 8 commits
+✓ update: success, fast-forward 4bdff1b -> fac6da3
+✓ backup and verification passed
 ✓ runtime status: ready against smoke home
-✓ release notes: v0.8.0 rendered
-✕ full update hop: blocked until v0.9.0 stable release is promoted
+✓ release notes: v0.9.0 rendered
 ```
 
 ## Release Candidate Snapshot
@@ -106,8 +107,8 @@ v0.9.0 — Self-Update Done
 ✓ release index updated
 ✓ release notes latest renders v0.9.0
 ✓ targeted runtime validation passed
-◉ release candidate commit pending
-○ release doctor after commit
-○ release-promote local/push
-○ fresh-user v0.8.0 -> v0.9.0 smoke
+✓ release candidate committed: fac6da3
+✓ release doctor passed with expected warnings
+✓ release-promote local and push succeeded
+✓ fresh-user v0.8.0 -> v0.9.0 smoke passed
 ```

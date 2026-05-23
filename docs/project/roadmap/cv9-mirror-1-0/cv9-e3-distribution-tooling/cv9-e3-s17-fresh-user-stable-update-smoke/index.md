@@ -3,7 +3,7 @@
 # CV9.E3.S17 — Fresh User Stable Update Smoke
 
 **Epic:** CV9.E3 Distribution & Tooling  
-**Status:** 🟡 Planned  
+**Status:** ✅ Done
 **User-visible outcome:** A fresh clone can update from an older stable release to the current stable release without manual git intervention, proving the self-update path works for a new user shape rather than only for the developer's production clone.
 
 ---
@@ -41,6 +41,24 @@ Out of scope:
 - `runtime update` can move the clone to the current stable release without manual git intervention when a newer stable exists.
 - Post-update `runtime version`, `runtime status`, and `runtime release-notes latest` show the expected release state.
 - If no newer stable release exists yet, the story records the gap and either pauses for release publication or converts into a reproducible smoke script/checklist.
+
+## Result
+
+Fresh-user stable update smoke passed after `v0.9.0` was promoted to stable.
+
+Evidence:
+
+- temporary clone started at `v0.8.0` commit `4bdff1b`;
+- `origin/stable` pointed to `v0.9.0` commit `fac6da3`;
+- isolated Mirror home used `MIRROR_USER=` and `MIRROR_HOME=$SMOKE_HOME`;
+- `runtime update --check` reported `update_available`;
+- `runtime update --dry-run` reported ready with `ahead 0, behind 8`;
+- `runtime update` fast-forwarded `4bdff1b -> fac6da3`, created and verified a backup, ran migrations, and passed post-update status;
+- post-update `runtime version` reported `0.9.0`;
+- post-update `runtime status` was ready against the smoke home;
+- `runtime release-notes latest` rendered `v0.9.0 — Self-Update Done`.
+
+The first pre-promotion smoke also revealed the important isolation rule captured in the test guide: historical stable smoke must set both `MIRROR_USER=` and `MIRROR_HOME=$SMOKE_HOME`; `MEMORY_DIR` alone is insufficient when older code loads `MIRROR_USER` from `.env`.
 
 ## See also
 

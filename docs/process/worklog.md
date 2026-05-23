@@ -12,6 +12,14 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-23 — v0.9.0 stable release published and fresh-user update smoke passed
+
+Published `v0.9.0 — Self-Update Done` to the stable channel. `runtime release-promote --target v0.9.0 --push` pushed both `refs/tags/v0.9.0` and `refs/heads/stable` to commit `fac6da3`.
+
+Ran a fresh-user stable update smoke from a temporary clone pinned at `v0.8.0` with an isolated Mirror home. The clone detected `origin/stable @ fac6da3`, dry-run planned a pull of 8 commits, and `runtime update` fast-forwarded from `4bdff1b` to `fac6da3` with backup, verification, migrations, and post-update status all passing. Post-update `runtime version` reported `0.9.0`, `runtime status` was ready, and `runtime release-notes latest` rendered `v0.9.0 — Self-Update Done`.
+
+This closes CV9.E3's Self-Update Done track. The stable update path has now been validated from one published stable release to the next without manual git intervention in the smoke clone.
+
 ### 2026-05-23 — v0.9.0 release candidate prepared
 
 Prepared `v0.9.0 — Self-Update Done` as the release candidate for the CV9.E3 S13–S17 arc. Bumped package version to `0.9.0`, added `docs/releases/v0.9.0.md`, and listed the release in `docs/releases/index.md`.
