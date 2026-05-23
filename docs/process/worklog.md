@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-22 — Self-Update Done track opened
+
+Reframed CV9.E3 Distribution & Tooling around the Self-Update Done track. Completed self-update mechanism work now leads into the remaining release-management stories: first stable release publication, release-aware update notices, release-note skill parity, promotion preflight/doctor, stable promotion execution path, and fresh-user stable update smoke.
+
+Opened CV9.E3.S12 First Stable Release Publication with plan and test guide. Proposed release: `v0.8.0 — Stable Self-Update Foundation`.
+
 ### 2026-05-22 — Stable channel operations documented
 
 Created `origin/stable` at the validated `6c58e9c` baseline and switched the production clone's update channel to `stable`. `runtime update --check` now reports `origin/stable @ 6c58e9c` and `Availability: up_to_date` in production.

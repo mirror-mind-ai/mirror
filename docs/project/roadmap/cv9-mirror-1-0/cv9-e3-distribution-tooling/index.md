@@ -3,7 +3,7 @@
 # CV9.E3 — Distribution & Tooling
 
 **Epic:** Make Mirror Mind simple to install, configure, and grow into  
-**Status:** ✅ Done
+**Status:** 🟢 In Progress — Self-Update Done track
 
 ---
 
@@ -34,12 +34,18 @@ over time.
 | [CV9.E3.S9](cv9-e3-s9-updater-self-recovery/index.md) | Updater Self-Recovery | ✅ Done |
 | [CV9.E3.S10](cv9-e3-s10-stable-release-channel-management/index.md) | Stable Release Channel Management | ✅ Done |
 | [CV9.E3.S11](cv9-e3-s11-release-channel-operations-docs/index.md) | Release Channel Operations Docs | ✅ Done |
+| [CV9.E3.S12](cv9-e3-s12-first-stable-release-publication/index.md) | First Stable Release Publication | 🟢 In Progress |
+| CV9.E3.S13 | Release-Aware Update Notices | 🟡 Planned |
+| CV9.E3.S14 | Release Notes Skill Parity | 🟡 Planned |
+| CV9.E3.S15 | Release Promotion Checklist / Doctor | 🟡 Planned |
+| CV9.E3.S16 | Stable Promotion Execution Path | 🟡 Planned |
+| CV9.E3.S17 | Fresh User Stable Update Smoke | 🟡 Planned |
 
 ---
 
 ## Done Condition
 
-CV9.E3 is done:
+CV9.E3 is done when the Self-Update Done condition is met:
 
 - A new user can run `memory init <name>` followed by `memory seed` and have a
   working, personalized mirror without manual YAML editing before first use.
@@ -60,6 +66,15 @@ CV9.E3 is done:
   Mirror skill.
 - Channel switching, branch/channel differences, stable bootstrap, and common
   channel troubleshooting are documented.
+- A first formal stable release is published with a version bump, narrative
+  release note, tag, and stable branch promotion.
+- Stable update notices and post-install output speak in release terms, while
+  main/dogfooding updates can fall back to commit summaries.
+- Release notes are accessible through natural-language runtime surfaces across
+  supported runtimes.
+- Stable promotion has a repeatable preflight/checklist or doctor.
+- A fresh clone can update from an older stable release to a newer stable release
+  without manual git intervention.
 - `README`, `REFERENCE.md`, process docs, decisions, and roadmap entries reflect
   the onboarding and self-update flow accurately.
 
