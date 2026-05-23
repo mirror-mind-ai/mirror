@@ -138,7 +138,7 @@ Gemini CLI, Codex, Claude Code), SQLite database, Jungian identity architecture.
 complete; CV9.E1 Boundary Hardening and CV9.E2 Stabilization remain planned.
 CV14 Stateful Extensions has E1–E2 done, with E3–E4 provisional.
 
-**Version:** 0.9.0
+**Version:** 0.9.1
 
 **Key references:**
 - Architecture: [docs/architecture.md](docs/architecture.md)

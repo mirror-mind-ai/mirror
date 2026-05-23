@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-23 — v0.9.1 release candidate prepared
+
+Prepared `v0.9.1 — Welcome Release Awareness` as a patch release candidate for S18. Bumped package version to `0.9.1`, added `docs/releases/v0.9.1.md`, and listed it in the releases index.
+
+Release-note smoke renders `v0.9.1` as latest. `runtime release-doctor --target v0.9.1` passes version, release note, heading, and release index checks, while correctly failing on the dirty tree until the release candidate commit is made. Validation: 121 targeted welcome/runtime tests passed; ruff, format check, story-scoped mypy, and `git diff --check` passed.
+
 ### 2026-05-23 — Welcome and status release awareness added
 
 Completed CV9.E3.S18. Welcome now has network-tolerant release awareness: it reads and writes `<mirror-home>/runtime/update-check.json`, may refresh stale or missing cache with a lightweight `git ls-remote` check, never fetches or mutates refs, and fails softly when the remote is unavailable. Remote welcome checks can be disabled with `MIRROR_WELCOME_REMOTE_UPDATE_CHECK=off`.
