@@ -131,6 +131,9 @@ function renderCard(card) {
   const variants = (card.metadata?.variants || [])
     .map((variant) => `<span>${escapeHtml(variant.label || variant.key)}</span>`)
     .join('');
+  const chips = (card.metadata?.chips || [])
+    .map((chip) => `<span>${escapeHtml(chip)}</span>`)
+    .join('');
   return `
     <article class="surface-card">
       <div class="card-head">
@@ -142,6 +145,7 @@ function renderCard(card) {
       </div>
       <p>${escapeHtml(card.description || '')}</p>
       ${variants ? `<div class="variant-list" aria-label="Available layers">${variants}</div>` : ''}
+      ${chips ? `<div class="variant-list" aria-label="Concepts">${chips}</div>` : ''}
     </article>
   `;
 }

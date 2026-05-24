@@ -41,12 +41,12 @@ class AtlasSurface:
         )
 
     def _identity_region(self) -> AtlasRegion:
-        rows = [row for row in self.identity.store.get_all_identity() if _is_self_identity(row)]
+        rows = self.identity.store.get_identity_by_layer("self")
         cards = tuple(_identity_card(row) for row in rows)
         return AtlasRegion(
             id="identity",
-            title="Self / Identity",
-            description="Structural layers that shape how the Mirror responds.",
+            title="Self",
+            description="Who you really are.",
             cards=cards,
             empty_state=None if cards else "No identity layers are available yet.",
             metadata=_region_metadata("self", cards),
@@ -170,14 +170,6 @@ class AtlasSurface:
         )
 
 
-def _is_self_identity(row: Identity) -> bool:
-    if row.layer in {"persona", "ego", "journey", "journey_path"}:
-        return False
-    if row.key in {"journey_path"}:
-        return False
-    return True
-
-
 def _identity_card(row: Identity) -> SurfaceCard:
     object_id = identity_object_id(row.layer, row.key)
     title = _title_for_identity(row)
@@ -194,6 +186,7 @@ def _identity_card(row: Identity) -> SurfaceCard:
             "icon": _icon_for_identity(row),
             "icon_kind": "glyph",
             "display_label": _display_label_for_identity(row, title),
+            "chips": _chips_for_identity(row),
         },
     )
 
@@ -265,13 +258,21 @@ def _title_for_identity(row: Identity) -> str:
     return f"{row.layer}/{row.key}"
 
 
+def _chips_for_identity(row: Identity) -> tuple[str, ...]:
+    if row.layer == "self":
+        return ("Purpose", "Principles", "Values")
+    return ()
+
+
 def _display_label_for_identity(row: Identity, title: str) -> str:
-    if row.layer in {"shadow", "self"}:
+    if row.layer == "shadow":
         return ""
     return title
 
 
 def _identity_description(row: Identity) -> str:
+    if row.layer == "self":
+        return "Who you really are."
     if row.layer == "shadow":
         return "A structural shadow observation: tension, avoidance, contradiction, or integration material."
     if row.layer == "journey":
@@ -280,6 +281,8 @@ def _identity_description(row: Identity) -> str:
 
 
 def _icon_for_identity(row: Identity) -> str:
+    if row.layer == "self":
+        return "♛"
     if row.layer == "shadow":
         return "◐"
     if row.layer == "journey":

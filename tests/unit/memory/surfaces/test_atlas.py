@@ -8,6 +8,7 @@ def test_atlas_home_surfaces_real_identity_and_personas(
     conversation_service,
     task_service,
 ) -> None:
+    identity_service.set_identity("self", "soul", "# Alma\nPurpose and values")
     identity_service.set_identity("ego", "identity", "# Ego\nOperational voice")
     identity_service.set_identity("identity", "journey_path", "# Ariad Path\nPath snapshot")
     identity_service.set_identity("journey_path", "ariad", "# Ariad Path\nPath snapshot")
@@ -29,6 +30,12 @@ def test_atlas_home_surfaces_real_identity_and_personas(
     memories_region = next(region for region in home.regions if region.id == "memories")
     personas_region = next(region for region in home.regions if region.id == "personas")
 
+    assert identity_region.title == "Self"
+    assert identity_region.description == "Who you really are."
+    assert identity_region.cards[0].title == "Alma"
+    assert identity_region.cards[0].description == "Who you really are."
+    assert identity_region.cards[0].metadata["icon"] == "♛"
+    assert identity_region.cards[0].metadata["chips"] == ("Purpose", "Principles", "Values")
     assert all(card.kind != "journey" for card in identity_region.cards)
     assert all(card.metadata["key"] != "journey_path" for card in identity_region.cards)
     assert all(card.metadata["layer"] != "journey_path" for card in identity_region.cards)
