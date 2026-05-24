@@ -56,8 +56,8 @@ CV9.E6 delivers a read-only web visibility path for Mirror 1.0:
 | Code | Story | User-visible outcome | Status |
 |------|-------|----------------------|--------|
 | [CV9.E6.S1](cv9-e6-s1-web-surface-foundation/index.md) | Web Surface Foundation | The core exposes typed read models for Atlas, Workspace, object detail, evidence, and search without web routes querying internal data directly | ✅ Done |
-| [CV9.E6.S2](cv9-e6-s2-perspective-shell/index.md) | Perspective Shell and Preference | The local web app lets the user choose Atlas or Workspace, stores the default in the user home, and keeps a stable shell across perspectives | ⏭️ Next |
-| [CV9.E6.S3](cv9-e6-s3-atlas-identity-persona-map/index.md) | Atlas Identity and Persona Map | Atlas opens as an editorial psyche map with real identity and persona regions | 🟡 Planned |
+| [CV9.E6.S2](cv9-e6-s2-perspective-shell/index.md) | Perspective Shell and Preference | The local web app lets the user choose Atlas or Workspace, stores the default in the user home, and keeps a stable shell across perspectives | ✅ Done |
+| [CV9.E6.S3](cv9-e6-s3-atlas-identity-persona-map/index.md) | Atlas Identity and Persona Map | Atlas opens as an editorial psyche map with real identity and persona regions | ⏭️ Next |
 | [CV9.E6.S4](cv9-e6-s4-object-detail-evidence/index.md) | Object Detail and Evidence Affordance | Supported objects open into a common detail view with relationships and honest evidence/provenance states | 🟡 Planned |
 | [CV9.E6.S5](cv9-e6-s5-workspace-dashboard/index.md) | Workspace Dashboard Slice | Workspace shows an analytical dashboard for active journeys, recent conversations, and available operational context | 🟡 Planned |
 | [CV9.E6.S6](cv9-e6-s6-personal-mirror-validation/index.md) | Personal Mirror Validation | The 1.0 web visibility surface is validated against the real personal Mirror and documented with evidence and follow-up | 🟡 Planned |

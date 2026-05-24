@@ -12,6 +12,14 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-24 — Web perspective shell added
+
+Completed CV9.E6.S2 for the local web visibility track. The web app now has a shared shell for Atlas, Workspace, and Docs; a discreet perspective switcher; user-home default perspective persistence in `web/preferences.json`; and shell/surface APIs for Atlas and Workspace. Atlas and Workspace render initial read-only content from `MemoryClient.surfaces`, while Docs remains available as a dedicated mode with the documentation sidebar.
+
+Navigator browser review corrected the shell boundary: the large first-run chooser was removed from the main experience, perspective tabs were made compact, Atlas/Workspace use full viewport width, and the docs sidebar appears only in Docs mode. Deeper Atlas home design is deferred to S3; Workspace dashboard design is deferred to S5.
+
+Validation: `uv run pytest tests/unit/memory/web tests/unit/memory/surfaces tests/unit/memory/test_public_api.py` passed with 35 tests; Ruff lint and format checks passed for web code.
+
 ### 2026-05-24 — Web Surface Foundation implemented
 
 Completed CV9.E6.S1 for the local web visibility track. Added `src/memory/surfaces/` as the read-model boundary between web routes and Mirror Core services, with typed DTOs for Atlas, Workspace, object detail, evidence, and search. `MemoryClient` now exposes `mem.surfaces` so future web routes can consume UI-shaped read models without querying SQLite directly or composing domain meaning inline.

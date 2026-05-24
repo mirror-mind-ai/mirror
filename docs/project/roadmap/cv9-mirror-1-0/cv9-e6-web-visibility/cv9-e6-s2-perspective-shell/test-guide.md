@@ -44,11 +44,10 @@ http://127.0.0.1:8765
 First-run validation when no default exists:
 
 - remove or move `<mirror-home>/web/preferences.json` before starting;
-- page shows a perspective choice instead of silently defaulting only in browser
-  state;
-- choose Atlas;
+- page opens Atlas without showing a large first-run chooser;
+- switch to Workspace from the shell;
 - refresh page;
-- Atlas remains the default because the user-home preference was written.
+- Workspace remains the default because the user-home preference was written.
 
 Switcher validation:
 
@@ -79,6 +78,20 @@ Fallback validation:
 - reload the page;
 - the server returns a warning state instead of crashing;
 - the UI lets the user choose a perspective again.
+
+## Validation record
+
+Validated on 2026-05-24:
+
+```bash
+uv run pytest tests/unit/memory/web tests/unit/memory/surfaces tests/unit/memory/test_public_api.py
+uv run --extra dev ruff check src/memory/web tests/unit/memory/web
+uv run --extra dev ruff format --check src/memory/web tests/unit/memory/web
+```
+
+Result: 35 tests passed; Ruff lint and format checks passed. Navigator browser
+review accepted the shell as sufficient for S2 after layout refinements. Deeper
+home design was intentionally deferred to S3/S5.
 
 ## Known exclusions
 
