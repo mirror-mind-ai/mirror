@@ -48,6 +48,7 @@ async function showView(view, { updateHash = true } = {}) {
   activeView = view;
   const docsActive = view === 'docs';
   docsPanel.hidden = !docsActive;
+  currentPath.hidden = !docsActive;
   contentGrid.classList.toggle('docs-active', docsActive);
   tabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.view === view));
   activePerspective.textContent = view === 'docs' ? 'Docs' : `Perspective · ${perspectiveLabel(view)}`;
@@ -271,6 +272,7 @@ async function loadDoc(path, { replace = false } = {}) {
   }
 
   currentDocPath = doc.path;
+  currentPath.hidden = false;
   currentPath.textContent = doc.path;
   content.innerHTML = doc.html;
   window.scrollTo({ top: 0 });
