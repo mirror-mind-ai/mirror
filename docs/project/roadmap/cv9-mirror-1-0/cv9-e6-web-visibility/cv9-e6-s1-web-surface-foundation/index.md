@@ -2,7 +2,8 @@
 
 # CV9.E6.S1 — Web Surface Foundation
 
-**Status:** 🟡 Planned  
+**Status:** 🟢 Planned — Plan checkpoint ready
+
 **User-visible outcome:** The web app is backed by a sustainable Core Surface layer instead of ad hoc route-level data access.
 
 ## Scope
@@ -20,6 +21,11 @@ vertical slice and later Workspace work without committing to all final UI data.
 - Surface DTOs are explicit and tested.
 - Empty and partial data states are represented intentionally.
 - Unit tests cover surface composition independently from HTTP transport.
+
+## Plan and Validation
+
+- [Plan](plan.md)
+- [Test Guide](test-guide.md)
 
 ## Notes
 
