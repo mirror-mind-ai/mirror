@@ -2,7 +2,7 @@
 
 # CV9.E6.S1 — Web Surface Foundation
 
-**Status:** 🟢 Planned — Plan checkpoint ready
+**Status:** ✅ Done
 
 **User-visible outcome:** The web app is backed by a sustainable Core Surface layer instead of ad hoc route-level data access.
 
@@ -27,7 +27,18 @@ vertical slice and later Workspace work without committing to all final UI data.
 - [Plan](plan.md)
 - [Test Guide](test-guide.md)
 
+## Implementation Summary
+
+S1 added the `memory.surfaces` package with explicit DTOs and read-model
+composition for Atlas home, Workspace home, identity/persona object detail,
+evidence bundles, and a stable skeletal search contract. `MemoryClient` now
+exposes `mem.surfaces` so future web routes can consume surface read models
+instead of reaching through to storage or composing domain meaning inline.
+
+Validation passed with focused surface/web/public API tests and Ruff checks.
+Manual contract review accepted the boundary for the next story.
+
 ## Notes
 
-This story is architectural foundation. It should stay narrow and avoid building
+This story is architectural foundation. It stayed narrow and avoided building
 full UI behavior before the surface boundary exists.

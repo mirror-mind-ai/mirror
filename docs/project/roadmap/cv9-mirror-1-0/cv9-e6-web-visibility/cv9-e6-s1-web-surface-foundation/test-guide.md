@@ -62,6 +62,19 @@ Expected observations:
 - No web route queries SQLite directly.
 - No surface calls an LLM during composition.
 
+## Validation record
+
+Validated on 2026-05-24:
+
+```bash
+uv run pytest tests/unit/memory/surfaces tests/unit/memory/web tests/unit/memory/test_public_api.py
+uv run --extra dev ruff check src/memory/surfaces tests/unit/memory/surfaces src/memory/client.py
+uv run --extra dev ruff format --check src/memory/surfaces tests/unit/memory/surfaces src/memory/client.py
+```
+
+Result: 27 tests passed; Ruff lint and format checks passed. Navigator manual
+contract review accepted the surface boundary.
+
 ## Known exclusions
 
 - Full Atlas UI.

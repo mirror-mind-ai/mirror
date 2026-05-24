@@ -12,6 +12,14 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-24 — Web Surface Foundation implemented
+
+Completed CV9.E6.S1 for the local web visibility track. Added `src/memory/surfaces/` as the read-model boundary between web routes and Mirror Core services, with typed DTOs for Atlas, Workspace, object detail, evidence, and search. `MemoryClient` now exposes `mem.surfaces` so future web routes can consume UI-shaped read models without querying SQLite directly or composing domain meaning inline.
+
+The first slice intentionally stays architectural: Atlas and Workspace surfaces return deterministic read models with honest empty states, identity/persona object details are supported, evidence exposes an explicit no-provenance state, and search has a stable skeletal contract. Full UI routing, perspective persistence, and richer evidence remain in later CV9.E6 stories.
+
+Validation: `uv run pytest tests/unit/memory/surfaces tests/unit/memory/web tests/unit/memory/test_public_api.py` passed with 27 tests; Ruff lint and format checks passed for the surface layer and client integration; Navigator manual contract review accepted the boundary.
+
 ### 2026-05-23 — v0.9.1 release candidate prepared
 
 Prepared `v0.9.1 — Welcome Release Awareness` as a patch release candidate for S18. Bumped package version to `0.9.1`, added `docs/releases/v0.9.1.md`, and listed it in the releases index.
