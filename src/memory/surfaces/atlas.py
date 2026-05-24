@@ -30,6 +30,7 @@ class AtlasSurface:
     def home(self) -> AtlasHome:
         regions = (
             self._identity_region(),
+            self._ego_region(),
             self._personas_region(),
             self._shadow_region(),
             self._memories_region(),
@@ -42,7 +43,11 @@ class AtlasSurface:
         )
 
     def _identity_region(self) -> AtlasRegion:
-        rows = [row for row in self.identity.store.get_all_identity() if row.layer != "persona"]
+        rows = [
+            row
+            for row in self.identity.store.get_all_identity()
+            if row.layer not in {"persona", "ego"}
+        ]
         cards = tuple(_identity_card(row) for row in rows)
         return AtlasRegion(
             id="identity",
@@ -51,6 +56,18 @@ class AtlasSurface:
             cards=cards,
             empty_state=None if cards else "No identity layers are available yet.",
             metadata=_region_metadata("north", cards),
+        )
+
+    def _ego_region(self) -> AtlasRegion:
+        rows = self.identity.store.get_identity_by_layer("ego")
+        cards = (_ego_card(rows),) if rows else ()
+        return AtlasRegion(
+            id="ego",
+            title="Ego / Voice",
+            description="The active operational voice through which the Mirror speaks.",
+            cards=cards,
+            empty_state=None if cards else "No ego layers are available yet.",
+            metadata=_region_metadata("center", cards),
         )
 
     def _personas_region(self) -> AtlasRegion:
@@ -151,10 +168,27 @@ def _identity_card(row: Identity) -> SurfaceCard:
         id=object_id,
         kind="identity",
         title=_title_for_identity(row),
-        description=_preview(row.content),
+        description=_identity_description(row),
         href=f"/objects/identity/{object_id}",
         status=row.layer,
-        metadata={"layer": row.layer, "key": row.key},
+        metadata={"layer": row.layer, "key": row.key, "icon": _icon_for_identity(row)},
+    )
+
+
+def _ego_card(rows: list[Identity]) -> SurfaceCard:
+    variants = tuple(
+        {"key": row.key, "label": row.key.replace("-", " ").replace("_", " ").title()}
+        for row in rows
+    )
+    primary = next((row for row in rows if row.key == "identity"), rows[0])
+    return SurfaceCard(
+        id="ego",
+        kind="identity",
+        title="Ego",
+        description="The Mirror's speaking voice, behavioral stance, and operating constraints.",
+        href=f"/objects/identity/{identity_object_id(primary.layer, primary.key)}",
+        status="ego",
+        metadata={"layer": "ego", "icon": "E", "variants": variants},
     )
 
 
@@ -163,10 +197,10 @@ def _persona_card(row: Identity) -> SurfaceCard:
         id=row.key,
         kind="persona",
         title=_title_for_identity(row),
-        description=_preview(row.content),
+        description="A specialized lens the Mirror can activate when this context is present.",
         href=f"/objects/persona/{row.key}",
         status="persona",
-        metadata={"layer": row.layer, "key": row.key},
+        metadata={"layer": row.layer, "key": row.key, "icon": _initials(_title_for_identity(row))},
     )
 
 
@@ -194,6 +228,31 @@ def _title_for_identity(row: Identity) -> str:
     if row.layer == "persona":
         return row.key.replace("-", " ").replace("_", " ").title()
     return f"{row.layer}/{row.key}"
+
+
+def _identity_description(row: Identity) -> str:
+    if row.layer == "shadow":
+        return "A structural shadow observation: tension, avoidance, contradiction, or integration material."
+    if row.layer == "journey":
+        return "A remembered field of becoming or work that shapes Mirror context."
+    return "A structural identity layer that shapes how the Mirror understands and responds."
+
+
+def _icon_for_identity(row: Identity) -> str:
+    if row.layer == "shadow":
+        return "S"
+    if row.layer == "journey":
+        return "J"
+    return _initials(_title_for_identity(row))
+
+
+def _initials(value: str) -> str:
+    words = [word for word in value.replace("/", " ").replace("-", " ").split() if word]
+    if not words:
+        return "?"
+    if len(words) == 1:
+        return words[0][:2].upper()
+    return "".join(word[0] for word in words[:2]).upper()
 
 
 def _preview(content: str, *, limit: int = 140) -> str:

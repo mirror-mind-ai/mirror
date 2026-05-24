@@ -251,7 +251,7 @@ input {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   grid-template-areas:
     ". north ."
-    "west north east"
+    "west center east"
     "south-west south south-east";
   align-items: stretch;
 }
@@ -284,9 +284,13 @@ input {
 
 .atlas-north {
   grid-area: north;
-  min-height: 280px;
+}
+
+.atlas-center {
+  grid-area: center;
+  min-height: 300px;
   background:
-    radial-gradient(circle at 50% 15%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 46%),
+    radial-gradient(circle at 50% 15%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 48%),
     var(--panel);
 }
 
@@ -371,6 +375,43 @@ input {
 
 .surface-card h4 {
   margin-bottom: 8px;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.card-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--accent) 50%, var(--border));
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.variant-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.variant-list span {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 8px;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .empty-state {
@@ -480,6 +521,7 @@ summary:hover {
     grid-template-columns: 1fr;
     grid-template-areas:
       "north"
+      "center"
       "west"
       "east"
       "south-west"

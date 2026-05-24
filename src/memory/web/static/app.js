@@ -125,11 +125,21 @@ function renderWorkspaceSection(section) {
 }
 
 function renderCard(card) {
+  const icon = card.metadata?.icon || card.title?.slice(0, 1) || '?';
+  const variants = (card.metadata?.variants || [])
+    .map((variant) => `<span>${escapeHtml(variant.label || variant.key)}</span>`)
+    .join('');
   return `
     <article class="surface-card">
-      <div class="card-meta">${escapeHtml(card.kind)}${card.status ? ` · ${escapeHtml(card.status)}` : ''}</div>
-      <h4>${escapeHtml(card.title)}</h4>
+      <div class="card-head">
+        <div class="card-icon" aria-hidden="true">${escapeHtml(icon)}</div>
+        <div>
+          <div class="card-meta">${escapeHtml(card.kind)}${card.status ? ` · ${escapeHtml(card.status)}` : ''}</div>
+          <h4>${escapeHtml(card.title)}</h4>
+        </div>
+      </div>
       <p>${escapeHtml(card.description || '')}</p>
+      ${variants ? `<div class="variant-list" aria-label="Available layers">${variants}</div>` : ''}
     </article>
   `;
 }

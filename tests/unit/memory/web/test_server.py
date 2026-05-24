@@ -120,6 +120,6 @@ def test_surface_apis_serialize_core_surface_read_models(tmp_path: Path) -> None
 
     assert atlas_status == 200
     assert workspace_status == 200
-    assert atlas["regions"][0]["id"] == "identity"
-    assert atlas["regions"][0]["cards"][0]["id"] == "ego:identity"
+    ego_region = next(region for region in atlas["regions"] if region["id"] == "ego")
+    assert ego_region["cards"][0]["id"] == "ego"
     assert "sections" in workspace

@@ -21,14 +21,18 @@ def test_atlas_home_surfaces_real_identity_and_personas(
 
     home = surfaces.atlas_home()
 
-    identity_region = next(region for region in home.regions if region.id == "identity")
+    ego_region = next(region for region in home.regions if region.id == "ego")
     personas_region = next(region for region in home.regions if region.id == "personas")
 
-    assert identity_region.empty_state is None
-    assert identity_region.cards[0].id == "ego:identity"
-    assert identity_region.cards[0].kind == "identity"
-    assert identity_region.cards[0].title == "Ego"
-    assert identity_region.metadata == {"atlas_role": "north", "data_readiness": "real"}
+    assert ego_region.empty_state is None
+    assert ego_region.cards[0].id == "ego"
+    assert ego_region.cards[0].kind == "identity"
+    assert ego_region.cards[0].title == "Ego"
+    assert ego_region.cards[0].description == (
+        "The Mirror's speaking voice, behavioral stance, and operating constraints."
+    )
+    assert ego_region.cards[0].metadata["variants"] == ({"key": "identity", "label": "Identity"},)
+    assert ego_region.metadata == {"atlas_role": "center", "data_readiness": "real"}
     assert personas_region.empty_state is None
     assert personas_region.cards[0].id == "engineer"
     assert personas_region.cards[0].kind == "persona"
@@ -55,6 +59,7 @@ def test_atlas_home_represents_empty_regions(
 
     assert {region.id for region in home.regions} == {
         "identity",
+        "ego",
         "personas",
         "shadow",
         "memories",
