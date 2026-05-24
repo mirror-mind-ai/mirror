@@ -36,7 +36,7 @@ class AtlasSurface:
             self._memories_region(),
         )
         return AtlasHome(
-            synthesis="An editorial map of the identity, lenses, memories, and trails inside this Mirror.",
+            synthesis="A reflective map of what shapes you, speaks through you, and asks to be integrated.",
             regions=regions,
         )
 
