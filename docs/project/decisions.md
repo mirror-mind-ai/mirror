@@ -18,14 +18,16 @@ resolved.
 
 The Mirror Mind 1.0 web visibility surface will be explored through
 perspectives rather than fixed user types. A perspective is a viewing mode over
-the same Mirror data, not a permanent classification of the user.
+the same Mirror data, not a permanent classification of the user. The two
+initial perspectives share Mirror Core but intentionally differ in information
+architecture and design rhythm.
 
 The first two perspectives are:
 
 - **Atlas:** identity-first view for exploring identity, personas, memories,
-  patterns, journeys, and conversations as a map of meaning.
+  patterns, journeys, and conversations through an editorial psyche map.
 - **Workspace:** work-first view for following journeys, decisions, tasks,
-  conversations, and relevant context as a surface for action.
+  conversations, and relevant context through an analytical dashboard.
 
 If no default perspective is configured, the web app should ask how the user
 wants to look at their Mirror. The selected default can be saved, but the active
@@ -35,9 +37,11 @@ Consequences:
 
 - The web app should not become a database admin surface.
 - Atlas and Workspace should reuse the same underlying data while changing
-  labels, ordering, and interpretive emphasis.
+  layout, density, rhythm, labels, ordering, and interpretive emphasis.
 - Identity remains foundational, but it is not forced as the only front door for
   operational users.
+- The shared shell, object model, detail grammar, design tokens, and evidence
+  pattern create unity across otherwise different perspectives.
 - Evidence and provenance should be available as a shared detail pattern before
   becoming a full perspective or graph interface.
 - Roadmap work should be derived after iterating the documented metaphor,

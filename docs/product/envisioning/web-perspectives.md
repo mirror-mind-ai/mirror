@@ -13,7 +13,9 @@ stand in front of their Mirror with a chosen way of looking.
 
 The current product direction is to model the web experience through
 **perspectives**. A perspective is not a permanent user type. It is a viewing
-mode over the same underlying Mirror data.
+mode over the same underlying Mirror data. Atlas and Workspace share Mirror
+Core, but they do not need to share the same information architecture or visual
+rhythm.
 
 ```text
 same Mirror data
@@ -89,19 +91,22 @@ Choose how you want to look today.
 ```
 
 Once inside the app, the active perspective remains visible and switchable.
+The shell stays stable while the inner surface changes.
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
-│ Mirror Mind                         Perspective: Atlas ▾     │
-├───────────────┬──────────────────────────────────────────────┤
-│ Home          │                                              │
-│ Identity      │                                              │
-│ Personas      │              perspective content             │
-│ Memories      │                                              │
-│ Conversations │                                              │
-│ Journeys      │                                              │
-└───────────────┴──────────────────────────────────────────────┘
+│ Mirror Mind        Perspective: Atlas ▾       Search Mirror  │
+└──────────────────────────────────────────────────────────────┘
+
+Atlas content
+  editorial psyche map
+
+Workspace content
+  analytical work dashboard
 ```
+
+The common shell prevents the product from feeling like two unrelated apps. The
+perspective controls the rhythm of the surface, not the existence of the Mirror.
 
 ## Atlas perspective
 
@@ -109,22 +114,39 @@ Atlas treats Mirror as a map of meaning. It is for understanding what the Mirror
 knows, how identity is structured, which personas are active, which memories
 matter, and which patterns keep returning.
 
+Atlas should feel editorial, spatial, and contemplative. Its primary
+information architecture is a psyche map, not a sidebar. The user enters through
+regions of meaning rather than through a list of administrative sections.
+
 Primary question:
 
 ```text
 What does my Mirror know about me, and where did that understanding come from?
 ```
 
-Initial navigation:
+Atlas map regions:
 
 ```text
-Home
-Identity
+Self / Identity
+  structural layers that shape how the Mirror responds
+
+Ego
+  the active operational voice
+
 Personas
+  specialized lenses that activate by context
+
 Memories
-Patterns
-Conversations
+  retained meaning, facts, patterns, and evidence
+
+Shadow
+  tensions, avoidances, contradictions, and integration candidates
+
 Journeys
+  fields of becoming and work
+
+Conversations
+  raw trail from which memory, decisions, and patterns emerge
 ```
 
 Atlas home wireframe:
@@ -133,22 +155,24 @@ Atlas home wireframe:
 ┌──────────────────────────────────────────────────────────────┐
 │ Atlas                                      Search your Mirror │
 ├──────────────────────────────────────────────────────────────┤
-│ How your Mirror sees you today                               │
-│ ┌──────────────────────────────────────────────────────────┐ │
-│ │ Identity summary                                         │ │
-│ │ Key layers, active voice, important context              │ │
-│ └──────────────────────────────────────────────────────────┘ │
 │                                                              │
-│ ┌──────────────────────┐ ┌──────────────────────┐           │
-│ │ Active personas      │ │ Recent memories      │           │
-│ │ product-designer     │ │ 5 added this week    │           │
-│ │ engineer             │ │ 2 shadow candidates  │           │
-│ └──────────────────────┘ └──────────────────────┘           │
+│                         ┌────────────┐                       │
+│                         │   Self     │                       │
+│                         │ principles │                       │
+│                         └─────┬──────┘                       │
+│                               │                              │
+│        ┌────────────┐   ┌─────▼──────┐   ┌────────────┐      │
+│        │ Personas   │◄──┤    Ego     ├──►│  Journeys  │      │
+│        │ lenses     │   │ voice      │   │ fields     │      │
+│        └────────────┘   └─────┬──────┘   └────────────┘      │
+│                               │                              │
+│        ┌────────────┐   ┌─────▼──────┐   ┌────────────┐      │
+│        │ Shadow     │◄──┤ Memories   ├──►│Conversations│     │
+│        │ tensions   │   │ meaning    │   │ raw trail  │      │
+│        └────────────┘   └────────────┘   └────────────┘      │
 │                                                              │
-│ ┌──────────────────────────────────────────────────────────┐ │
-│ │ Patterns and evidence                                   │ │
-│ │ Recurring themes with links to memories and conversations│ │
-│ └──────────────────────────────────────────────────────────┘ │
+│  How your Mirror sees you today                              │
+│  Short editorial synthesis with links to evidence.           │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -169,22 +193,37 @@ Workspace treats Mirror as a surface for action. It is for understanding current
 journeys, decisions, tasks, project context, and the conversation trail that led
 to the current state.
 
+Workspace should feel analytical, operational, and state-oriented. Its primary
+information architecture is a dashboard. It should expose movement, blockers,
+recent decisions, active work, and relevant context without becoming a generic
+project-management clone.
+
 Primary question:
 
 ```text
 Where are we, what has been decided, and what should move next?
 ```
 
-Initial navigation:
+Workspace dashboard areas:
 
 ```text
-Home
-Journeys
-Tasks
+Active journeys
+  what is currently moving
+
 Decisions
-Conversations
-Memories
+  what has been decided and why
+
+Tasks
+  concrete open work when tasks exist
+
+Recent conversations
+  operational trail that shaped the current state
+
+Relevant memories
+  reusable context for the active work
+
 Context
+  identity and persona material that affects how work should be interpreted
 ```
 
 Workspace home wireframe:
@@ -226,7 +265,8 @@ Memory in Workspace
 ## Shared object model
 
 Perspectives should not duplicate data. They should change the presentation and
-priority of the same objects.
+priority of the same objects. The product has one Mirror Core and two rhythms:
+Atlas reveals meaning; Workspace coordinates movement.
 
 ```text
 Persona
@@ -248,6 +288,64 @@ Journey
 
 This keeps the product coherent: identity remains the foundation, but identity
 is not forced as the only front door.
+
+## Unity of experience
+
+Atlas and Workspace should be fundamentally different in information
+architecture and surface rhythm, but they should not feel like separate
+products. Unity comes from shared structure beneath the visible differences.
+
+Shared elements:
+
+```text
+Shell
+  Mirror identity, perspective switcher, global search, local-first status,
+  settings, and account/runtime affordances remain stable.
+
+Object model
+  Identity, personas, memories, journeys, conversations, tasks, and decisions
+  are the same entities in both perspectives.
+
+Detail grammar
+  Clicking any object opens a familiar detail structure: title, description,
+  relationships, evidence, and available actions.
+
+Evidence pattern
+  Interpretive claims remain traceable through the same "View evidence"
+  affordance.
+
+Design system
+  Typography, spacing scale, card anatomy, radius, focus states, badges, and
+  icons remain shared.
+```
+
+Perspective-specific variation:
+
+```text
+Atlas
+  more spacious
+  more editorial
+  map-based IA
+  larger regions
+  fewer numbers
+  deeper colors and symbolic accents
+
+Workspace
+  denser
+  more analytical
+  dashboard-based IA
+  lists, tables, filters, and status cards
+  more counts and operational state
+  clearer neutral surfaces with pragmatic accents
+```
+
+The design principle is:
+
+```text
+One Mirror, two rhythms.
+Atlas reveals meaning.
+Workspace coordinates movement.
+```
 
 ## Evidence principle
 
@@ -279,17 +377,17 @@ Possible 1.0 scope:
 - First-run perspective choice when no default exists.
 - Persistent default perspective setting.
 - Perspective switcher in the web shell.
-- Atlas home with identity, personas, memories, conversations, and journeys in
-  read-only form.
-- Workspace home with journeys, conversations, decisions or tasks when present,
-  and relevant memories in read-only form.
+- Atlas home as an editorial psyche map with identity, personas, shadow,
+  memories, conversations, and journeys in read-only form.
+- Workspace home as an analytical dashboard with journeys, conversations,
+  decisions or tasks when present, and relevant memories in read-only form.
 - Object detail pages reuse existing data services where possible.
 - Evidence links appear where source data is available, without requiring a full
   graph interface.
 
 Out of scope for the first slice:
 
-- Visual graph navigation.
+- Force-directed or fully interactive graph navigation.
 - Editing identity or memory content.
 - Automated perspective inference.
 - Full evidence graph.
@@ -306,7 +404,9 @@ Out of scope for the first slice:
   in 1.0?
 - Are decisions first-class data today, or should Workspace derive decisions
   from journey docs and conversation metadata until a stronger model exists?
-- Should Atlas and Workspace have different sidebars, or one shared sidebar with
-  perspective-specific ordering and labels?
+- Should Atlas have any persistent secondary navigation, or should navigation
+  happen primarily through the psyche map plus search?
+- Which Workspace dashboard areas are supported by current data strongly enough
+  to ship in 1.0?
 - What is the smallest manual validation scenario that proves users understand
   what is inside their Mirror?
