@@ -12,6 +12,7 @@ Future release notes should use the structure defined in [Release Notes](../proc
 
 ## Releases
 
+- [v0.10.1 — Welcome Startup Clarity](v0.10.1.md) — patch release that clarifies Pi startup status and gives new-version availability stronger welcome emphasis.
 - [v0.10.0 — Web Visibility](v0.10.0.md) — closes CV9.E6 with read-only Identity and Workspace perspectives, object detail with Source Context, and a Pi Builder journey-association repair path.
 - [v0.9.1 — Welcome Release Awareness](v0.9.1.md) — patch release that makes stable release availability visible in the welcome and Pi status bar through network-tolerant update awareness.
 - [v0.9.0 — Self-Update Done](v0.9.0.md) — closes the release-aware self-update arc with stable update notices, release-note skill parity, release promotion doctor, controlled promotion, and fresh-user stable smoke evidence.

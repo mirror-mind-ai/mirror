@@ -41,7 +41,7 @@ a closing invitation:
 ◇ Mirror · <user>
 Version <version> · channel <stable|main>
 <N> journeys · <N> personas · <N> memories · <N> conversations · since <Month YYYY>
-[Update available: vX.Y.Z — <release title>]
+[New Version Available: vX.Y.Z — <release title>]
 [Ask: "what changed?" or "update my Mirror"]
 
 → Where shall we begin?
@@ -81,8 +81,10 @@ Users can disable remote welcome checks with:
 MIRROR_WELCOME_REMOTE_UPDATE_CHECK=off
 ```
 
-When an update is visible, the welcome invites the user to ask Mirror in natural
-language: `what changed?` or `update my Mirror`.
+When a new version is visible, the welcome labels it as `New Version Available`
+and invites the user to ask Mirror in natural language: `what changed?` or
+`update my Mirror`. Runtimes that support notification levels should render this
+welcome with stronger emphasis than the normal startup notice.
 
 ### Why stats and not narrative
 

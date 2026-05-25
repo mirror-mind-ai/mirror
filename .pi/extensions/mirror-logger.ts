@@ -190,7 +190,13 @@ export default function (pi: ExtensionAPI) {
 
 	pi.on("session_start", async (_event, ctx) => {
 		log("INFO", "session_start fired");
+		if (ctx.hasUI) {
+			ctx.ui.setStatus("mirror", "◇ Mirror · starting: checking sessions and memories…");
+		}
 		const summary = await runPy(["-m", "memory", "conversation-logger", "session-start"]);
+		if (ctx.hasUI) {
+			ctx.ui.setStatus("mirror", "◇ Mirror · checking release status…");
+		}
 		const externalCatalog = loadInstalledPiExternalSkills();
 		const externalSkills = externalCatalog?.extensions ?? [];
 		const externalSkillSummary = externalSkills.length
@@ -206,7 +212,7 @@ export default function (pi: ExtensionAPI) {
 
 		if (ctx.hasUI) {
 			if (welcome) {
-				ctx.ui.notify(welcome, "info");
+				ctx.ui.notify(welcome, welcome.includes("New Version Available") ? "warning" : "info");
 			}
 			const compactStatus = (await runPy(["-m", "memory", "welcome", "--status-line"])).trim();
 			const status = compactStatus || summary || "◇ Mirror · ?";

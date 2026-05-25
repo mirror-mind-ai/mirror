@@ -308,7 +308,7 @@ def test_welcome_renders_update_available_from_local_refs(monkeypatch, tmp_path,
 
     out = capsys.readouterr().out
     assert "Version 0.7.0 · channel stable" in out
-    assert "Update available: 2 commits behind origin/main · run runtime update" in out
+    assert "New Version Available: 2 commits behind origin/main · run runtime update" in out
     assert 'Ask Mirror: "What\'s new in the latest Mirror Mind release?"' in out
 
 
@@ -334,7 +334,7 @@ def test_welcome_does_not_render_update_line_when_refs_are_current(monkeypatch, 
 
     out = capsys.readouterr().out
     assert "Version 0.7.0 · channel stable" in out
-    assert "Update available" not in out
+    assert "New Version Available" not in out
 
 
 def test_welcome_refreshes_remote_update_cache_and_renders_version(monkeypatch, tmp_path, capsys):
@@ -373,7 +373,7 @@ def test_welcome_refreshes_remote_update_cache_and_renders_version(monkeypatch, 
     main(["--mirror-home", str(home)])
 
     out = capsys.readouterr().out
-    assert "Update available: v0.9.0" in out
+    assert "New Version Available: v0.9.0" in out
     assert 'Ask: "what changed?" or "update my Mirror"' in out
     cache = json.loads((home / "runtime" / "update-check.json").read_text(encoding="utf-8"))
     assert cache["availability"] == "update_available"
@@ -414,7 +414,7 @@ def test_welcome_uses_fresh_cache_without_remote_check(monkeypatch, tmp_path, ca
     main(["--mirror-home", str(home)])
 
     assert called == []
-    assert "Update available: v0.9.0 — Self-Update Done" in capsys.readouterr().out
+    assert "New Version Available: v0.9.0 — Self-Update Done" in capsys.readouterr().out
 
 
 def test_welcome_remote_check_can_be_disabled(monkeypatch, tmp_path, capsys):
@@ -439,7 +439,7 @@ def test_welcome_remote_check_can_be_disabled(monkeypatch, tmp_path, capsys):
     main(["--mirror-home", str(tmp_path / ".mirror" / "alisson-vale")])
 
     assert called == []
-    assert "Update available" not in capsys.readouterr().out
+    assert "New Version Available" not in capsys.readouterr().out
 
 
 def test_welcome_remote_check_fails_softly(monkeypatch, tmp_path, capsys):

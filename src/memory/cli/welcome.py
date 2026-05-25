@@ -186,7 +186,7 @@ def _version_line(channel: str) -> str:
 
 def _update_line(channel: UpdateChannel, awareness: UpdateAwareness | None = None) -> str | None:
     if awareness and awareness.availability == "update_available":
-        label = "Update available"
+        label = "New Version Available"
         if awareness.version and awareness.title:
             label = f"{label}: {awareness.version} — {awareness.title}"
         elif awareness.version:
@@ -206,7 +206,7 @@ def _update_line(channel: UpdateChannel, awareness: UpdateAwareness | None = Non
         plural = "s" if plan.behind != 1 else ""
         upstream = plan.upstream or "upstream"
         return (
-            f"Update available: {plan.behind} commit{plural} behind {upstream} · "
+            f"New Version Available: {plan.behind} commit{plural} behind {upstream} · "
             "run runtime update\n"
             'Ask Mirror: "What\'s new in the latest Mirror Mind release?"'
         )

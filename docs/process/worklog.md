@@ -12,6 +12,29 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-25 — v0.10.1 release candidate prepared
+
+Prepared `v0.10.1 — Welcome Startup Clarity` as a patch release candidate after
+production validation of v0.10.0. Bumped package version to `0.10.1`, added
+`docs/releases/v0.10.1.md`, and listed it in the release index.
+
+Release-note smoke renders `v0.10.1` correctly. Validation: targeted welcome
+checks passed; ruff lint and format checks passed; `node --check
+.pi/extensions/mirror-logger.ts` passed; `git diff --check` passed.
+
+### 2026-05-25 — Welcome update notice wording and startup status improved
+
+Production validation after publishing v0.10.0 showed two welcome UX frictions:
+Pi could spend noticeable time in startup work without saying what it was doing,
+and the update notice wording was too operational. Pi now sets an immediate
+status message while checking sessions/memories and another while checking
+release status. The welcome now says `New Version Available` instead of `Update
+available`, and Pi renders that welcome as a warning-level notice for stronger
+visual emphasis.
+
+Validation: targeted welcome tests passed; ruff lint and format checks passed;
+`git diff --check` passed.
+
 ### 2026-05-25 — v0.10.0 release candidate prepared
 
 Prepared `v0.10.0 — Web Visibility` as the minor release candidate for the
