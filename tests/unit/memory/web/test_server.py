@@ -48,10 +48,14 @@ class WebTestServer:
 
 
 def test_shell_api_reports_workspace_default_and_mirror_name(tmp_path: Path) -> None:
+    mirror_home = tmp_path / ".mirror-minds" / "mirror-home"
+    sandbox_home = tmp_path / ".mirror-minds" / "sandbox"
+    sandbox_home.mkdir(parents=True)
+    (sandbox_home / "memory.db").write_text("", encoding="utf-8")
     server = WebTestServer(
         root=make_docs_root(tmp_path),
-        mirror_home=tmp_path / "mirror-home",
-        db_path=tmp_path / "mirror-home" / "memory.db",
+        mirror_home=mirror_home,
+        db_path=mirror_home / "memory.db",
     )
     try:
         status, payload = server.request("GET", "/api/shell")
@@ -59,10 +63,37 @@ def test_shell_api_reports_workspace_default_and_mirror_name(tmp_path: Path) -> 
         server.close()
 
     assert status == 200
-    assert payload["mirror"] == {"name": "mirror-home"}
+    assert payload["mirror"]["name"] == "mirror-home"
+    assert payload["mirror"]["path"].endswith("/.mirror-minds/mirror-home")
+    assert payload["mirrors"][0]["name"] == "mirror-home"
+    assert payload["mirrors"][0]["isCurrent"] is True
+    assert payload["mirrors"][1]["name"] == "sandbox"
     assert payload["defaultPerspective"] == "workspace"
     assert payload["validPerspectives"] == ["atlas", "workspace"]
     assert payload["docsAvailable"] is True
+
+
+def test_mirrors_api_lists_local_mirrors_read_only(tmp_path: Path) -> None:
+    root = tmp_path / ".mirror-minds"
+    mirror_home = root / "mirror-home"
+    other_home = root / "other"
+    mirror_home.mkdir(parents=True)
+    other_home.mkdir()
+    (other_home / "memory.db").write_text("", encoding="utf-8")
+    server = WebTestServer(
+        root=make_docs_root(tmp_path),
+        mirror_home=mirror_home,
+        db_path=mirror_home / "memory.db",
+    )
+    try:
+        status, payload = server.request("GET", "/api/mirrors")
+    finally:
+        server.close()
+
+    assert status == 200
+    assert [mirror["name"] for mirror in payload] == ["mirror-home", "other"]
+    assert payload[0]["isCurrent"] is True
+    assert payload[1]["databaseExists"] is True
 
 
 def test_default_perspective_api_persists_to_user_home(tmp_path: Path) -> None:

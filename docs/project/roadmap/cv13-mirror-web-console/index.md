@@ -60,7 +60,7 @@ This policy depends on small stories, explicit validation evidence, and coherent
 | Code | Epic | User-visible outcome | Status |
 |------|------|----------------------|--------|
 | [CV13.E1](cv13-e1-read-only-web-refinement/index.md) | Read-only Web Refinement | Workspace opens first, the shell is calmer, Identity and journey views expose better chips, totals, memory/search pages, and conversation cards without task noise | ✅ Done — release candidate v0.11.0 |
-| CV13.E2 | Multi-Mirror and Preferences | The user can choose another local Mirror database and manage profile preferences such as avatar and dark/light/automatic mode | 🟡 Planned |
+| [CV13.E2](cv13-e2-multi-mirror-and-preferences/index.md) | Multi-Mirror and Preferences | The user can choose another local Mirror database and manage profile preferences such as avatar and dark/light/automatic mode | 🟢 In Progress |
 | CV13.E3 | Configuration Console | The web app can inspect Mirror configuration currently held in environment variables and manage journey metadata through safe service boundaries | 🟡 Planned |
 | CV13.E4 | Conversation Intelligence | The user can read stored message exchanges and generate useful conversation titles individually or in batch for legacy data | 🟡 Planned |
 | CV13.E5 | Web Operations Runner | The user can execute allowlisted maintenance operations from the web app and receive streamed progress and results | 🟡 Planned |

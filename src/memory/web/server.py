@@ -13,6 +13,7 @@ from memory import MemoryClient
 from memory.cli.common import db_path_from_mirror_home
 from memory.config import resolve_mirror_home
 from memory.web.docs import DocsBrowser
+from memory.web.mirrors import MirrorRegistry
 from memory.web.preferences import VALID_PERSPECTIVES, WebPreferenceStore
 
 STATIC_DIR = Path(__file__).parent / "static"
@@ -21,6 +22,7 @@ STATIC_DIR = Path(__file__).parent / "static"
 class MirrorWebHandler(BaseHTTPRequestHandler):
     browser: DocsBrowser
     preferences: WebPreferenceStore
+    mirrors: MirrorRegistry
     db_path: Path | None
 
     def do_GET(self) -> None:
@@ -28,18 +30,23 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
 
         if parsed.path == "/api/shell":
             preference = self.preferences.read()
+            mirrors = self.mirrors.list_mirrors()
             payload = {
                 "mirror": {
-                    "name": self.preferences.mirror_home.name
-                    if self.preferences.mirror_home
-                    else "Mirror"
+                    "name": self.mirrors.current_name(),
+                    "path": str(self.mirrors.mirror_home) if self.mirrors.mirror_home else None,
                 },
+                "mirrors": [mirror.to_dict() for mirror in mirrors],
                 "defaultPerspective": preference.default_perspective,
                 "validPerspectives": list(VALID_PERSPECTIVES),
                 "docsAvailable": True,
                 "warning": preference.warning,
             }
             self._send_json(payload)
+            return
+
+        if parsed.path == "/api/mirrors":
+            self._send_json([mirror.to_dict() for mirror in self.mirrors.list_mirrors()])
             return
 
         if parsed.path == "/api/surface/atlas":
@@ -171,12 +178,14 @@ def create_handler(
 ) -> type[MirrorWebHandler]:
     browser = DocsBrowser(root=root)
     preferences = WebPreferenceStore(mirror_home)
+    mirrors = MirrorRegistry(mirror_home)
 
     class Handler(MirrorWebHandler):
         pass
 
     Handler.browser = browser
     Handler.preferences = preferences
+    Handler.mirrors = mirrors
     Handler.db_path = db_path
     return Handler
 

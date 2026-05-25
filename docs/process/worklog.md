@@ -12,6 +12,18 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-25 — CV13.E2.S1 mirror selector foundation validated
+
+Started the `v0.12.0 — Multi-Mirror and Preferences` branch with a read-only
+Mirror selector foundation. The web shell now discovers local Mirror homes near
+the current Mirror boundary, shows the active Mirror as `◇ name (N)`, filters out
+non-Mirror directories such as backups, and exposes discovery through `/api/shell`
+and `/api/mirrors` without switching databases yet.
+
+Validation: focused web tests passed, ruff checks passed, `node --check` passed,
+`git diff --check` passed, and Navigator browser validation accepted the selector
+copy, overlay behavior, outside-click close, lowercase label, and filtering.
+
 ### 2026-05-25 — v0.11.0 release candidate prepared
 
 Prepared `v0.11.0 — Read-only Web Refinement` as the minor release candidate for

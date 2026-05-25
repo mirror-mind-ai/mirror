@@ -2,6 +2,7 @@ let tree = document.querySelector('#docs-tree');
 const content = document.querySelector('#content');
 const currentPath = document.querySelector('#current-path');
 const mirrorName = document.querySelector('#mirror-name');
+const mirrorSelector = document.querySelector('#mirror-selector');
 const chooser = document.querySelector('#chooser');
 const warning = document.querySelector('#warning');
 const docsPanel = document.querySelector('#docs-panel');
@@ -12,9 +13,17 @@ let docsLoaded = false;
 let activeView = 'workspace';
 let selectedWorkspaceJourney = null;
 
+function closeMirrorSelectorOnOutsideClick(event) {
+  if (!mirrorSelector || mirrorSelector.hidden || mirrorSelector.contains(event.target)) return;
+  const details = mirrorSelector.querySelector('details');
+  if (details) details.open = false;
+}
+
 async function boot() {
   const shell = await fetchJson('/api/shell');
-  mirrorName.textContent = shell.mirror?.name || 'Local Mirror';
+  if (mirrorName) mirrorName.textContent = shell.mirror?.name || 'Local Mirror';
+  renderMirrorSelector(shell.mirrors || []);
+  document.addEventListener('click', closeMirrorSelectorOnOutsideClick);
   showWarning(shell.warning);
 
   if (!shell.defaultPerspective) {
@@ -31,6 +40,34 @@ async function boot() {
 function showWarning(message) {
   warning.hidden = !message;
   warning.textContent = message || '';
+}
+
+function renderMirrorSelector(mirrors) {
+  if (!mirrorSelector || !mirrors.length) return;
+  const current = mirrors.find((mirror) => mirror.isCurrent) || mirrors[0];
+  const options = mirrors.map((mirror) => `
+    <li class="mirror-option ${mirror.isCurrent ? 'active' : ''}">
+      <span class="mirror-option-mark" aria-hidden="true">${mirror.isCurrent ? '◆' : '◇'}</span>
+      <span>
+        <span class="mirror-option-name">${escapeHtml(mirror.name)}</span>
+        <small>${mirror.databaseExists ? 'memory.db available' : 'no memory.db yet'}</small>
+      </span>
+    </li>
+  `).join('');
+  mirrorSelector.hidden = false;
+  mirrorSelector.innerHTML = `
+    <details>
+      <summary>
+        <span class="user-avatar" aria-hidden="true">◇</span>
+        <span class="mirror-selector-name">${escapeHtml(current.name || 'Local Mirror')}</span>
+        <span class="mirror-selector-count">(${escapeHtml(mirrors.length)})</span>
+      </summary>
+      <div class="mirror-menu">
+        <p class="mirror-menu-note">Local Mirrors found near the current home. Switching arrives in the next story.</p>
+        <ul>${options}</ul>
+      </div>
+    </details>
+  `;
 }
 
 async function chooseDefault(perspective) {

@@ -48,6 +48,8 @@ input {
 }
 
 .topbar {
+  position: relative;
+  z-index: 50;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -99,6 +101,106 @@ input {
   color: var(--accent);
   font-size: 13px;
   font-weight: 850;
+}
+
+.mirror-selector {
+  position: relative;
+  width: max-content;
+}
+
+.mirror-selector details {
+  position: relative;
+}
+
+.mirror-selector summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: max-content;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: color-mix(in srgb, var(--panel) 82%, transparent);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  list-style: none;
+  text-transform: none;
+}
+
+.mirror-selector summary::-webkit-details-marker {
+  display: none;
+}
+
+.mirror-selector-name {
+  color: var(--text);
+  font-weight: 500;
+  text-transform: none;
+}
+
+.mirror-option-name {
+  color: var(--text);
+  font-weight: 650;
+}
+
+.mirror-selector-count {
+  color: var(--muted);
+  font-weight: 750;
+}
+
+.mirror-menu {
+  position: absolute;
+  z-index: 1000;
+  top: calc(100% + 8px);
+  left: 0;
+  width: min(320px, calc(100vw - 48px));
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 12px;
+  background: var(--panel);
+  box-shadow: 0 18px 48px color-mix(in srgb, var(--text) 16%, transparent);
+}
+
+.mirror-menu-note {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.mirror-menu ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mirror-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+  border-radius: 12px;
+  padding: 9px;
+}
+
+.mirror-option.active {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+  background: var(--accent-soft);
+}
+
+.mirror-option span:last-child {
+  display: grid;
+  gap: 2px;
+}
+
+.mirror-option small {
+  color: var(--muted);
+}
+
+.mirror-option-mark {
+  color: var(--accent);
+  font-size: 12px;
 }
 
 .topbar-actions {
