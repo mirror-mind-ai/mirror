@@ -127,6 +127,7 @@ class RuntimeUpdateAvailability:
     update_channel: UpdateChannel = field(
         default_factory=lambda: UpdateChannel(_DEFAULT_UPDATE_CHANNEL, None)
     )
+    target_release: RuntimeReleaseNote | None = None
 
 
 @dataclass(frozen=True)
@@ -149,9 +150,28 @@ class RuntimeReleaseNote:
 
 
 @dataclass(frozen=True)
+class ReleaseDoctorCheck:
+    name: str
+    state: str
+    detail: str | None = None
+
+
+@dataclass(frozen=True)
+class ReleaseDoctorReport:
+    target: str
+    repository: Path | None
+    checks: tuple[ReleaseDoctorCheck, ...]
+
+    @property
+    def has_failures(self) -> bool:
+        return any(check.state == "fail" for check in self.checks)
+
+
+@dataclass(frozen=True)
 class RuntimeUpdateDryRun:
     status_report: RuntimeStatusReport
     git_plan: GitUpdatePlan | None
+    target_release: RuntimeReleaseNote | None = None
 
     @property
     def ready(self) -> bool:
@@ -174,7 +194,17 @@ class RuntimeUpdateResult:
     success: bool
     recovery: tuple[str, ...] = ()
     installed_changes: tuple[str, ...] = ()
+    installed_release: RuntimeReleaseNote | None = None
     next_steps: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class ReleasePromotionResult:
+    target: str
+    stages: tuple[RuntimeUpdateStage, ...]
+    success: bool
+    dry_run: bool = False
+    recovery: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -335,6 +365,19 @@ def _extract_highlights(text: str) -> tuple[str, ...]:
     return tuple(highlights)
 
 
+def _release_note_from_text(path: Path, text: str) -> RuntimeReleaseNote:
+    title_match = re.search(r"^#\s+(v\d+\.\d+\.\d+)\s+—\s+(.+)$", text, re.MULTILINE)
+    note_version = title_match.group(1) if title_match else path.stem
+    title = title_match.group(2).strip() if title_match else path.stem
+    return RuntimeReleaseNote(
+        version=note_version,
+        title=title,
+        path=path,
+        digest=_extract_frontmatter_digest(text),
+        highlights=_extract_highlights(text),
+    )
+
+
 def read_release_note(
     version: str = "latest", start: Path | None = None
 ) -> RuntimeReleaseNote | None:
@@ -353,17 +396,47 @@ def read_release_note(
         if not path.exists() or not path.is_file():
             continue
         text = path.read_text(encoding="utf-8")
-        title_match = re.search(r"^#\s+(v\d+\.\d+\.\d+)\s+—\s+(.+)$", text, re.MULTILINE)
-        note_version = title_match.group(1) if title_match else path.stem
-        title = title_match.group(2).strip() if title_match else path.stem
-        return RuntimeReleaseNote(
-            version=note_version,
-            title=title,
-            path=path,
-            digest=_extract_frontmatter_digest(text),
-            highlights=_extract_highlights(text),
-        )
+        return _release_note_from_text(path, text)
     return None
+
+
+def read_release_note_from_ref(
+    ref: str, version: str = "latest", start: Path | None = None
+) -> RuntimeReleaseNote | None:
+    start_path = (start or Path.cwd()).resolve()
+    repository = _resolve_repo_root(start_path) or start_path
+    if version == "latest":
+        code, stdout, _stderr = _run_git(
+            ["ls-tree", "-r", "--name-only", ref, "docs/releases"], cwd=repository
+        )
+        if code != 0 or not stdout:
+            return None
+        names = [
+            line.strip()
+            for line in stdout.splitlines()
+            if re.search(r"docs/releases/v\d+\.\d+\.\d+\.md$", line.strip())
+        ]
+        if not names:
+            return None
+        selected = sorted(names, key=lambda name: _parse_semver(Path(name).stem), reverse=True)[0]
+    else:
+        wanted = version if version.startswith("v") else f"v{version}"
+        selected = f"docs/releases/{wanted}.md"
+
+    code, text, _stderr = _run_git(["show", f"{ref}:{selected}"], cwd=repository)
+    if code != 0 or not text:
+        return None
+    return _release_note_from_text(Path(selected), text)
+
+
+def _newer_release_note(
+    note: RuntimeReleaseNote | None, current_version: str
+) -> RuntimeReleaseNote | None:
+    if note is None:
+        return None
+    if _parse_semver(note.version) <= _parse_semver(current_version):
+        return None
+    return note
 
 
 def render_release_note(note: RuntimeReleaseNote | None) -> str:
@@ -381,6 +454,167 @@ def render_release_note(note: RuntimeReleaseNote | None) -> str:
         lines.append("Highlights:")
         for highlight in note.highlights:
             lines.append(f"- {highlight}")
+    return "\n".join(lines) + "\n"
+
+
+def _normalize_version(version: str) -> str:
+    return version.strip()[1:] if version.strip().startswith("v") else version.strip()
+
+
+def _target_release_path(repository: Path, target: str) -> Path:
+    version = target if target.startswith("v") else f"v{target}"
+    return repository / "docs" / "releases" / f"{version}.md"
+
+
+def _git_ref_full_commit(repository: Path, ref: str) -> str | None:
+    code, stdout, _stderr = _run_git(["rev-parse", ref], cwd=repository)
+    if code != 0 or not stdout:
+        return None
+    return stdout.strip()
+
+
+def _git_ref_contains(repository: Path, ancestor: str, descendant: str) -> bool | None:
+    code, _stdout, _stderr = _run_git(
+        ["merge-base", "--is-ancestor", ancestor, descendant], cwd=repository
+    )
+    if code == 0:
+        return True
+    if code == 1:
+        return False
+    return None
+
+
+def _release_note_heading_matches(path: Path, target: str) -> bool:
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    wanted = target if target.startswith("v") else f"v{target}"
+    return bool(re.search(rf"^#\s+{re.escape(wanted)}\s+—\s+.+$", text, re.MULTILINE))
+
+
+def _release_index_links_target(repository: Path, target: str) -> bool:
+    wanted = target if target.startswith("v") else f"v{target}"
+    index_path = repository / "docs" / "releases" / "index.md"
+    try:
+        text = index_path.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    return f"{wanted}.md" in text
+
+
+def build_release_doctor_report(
+    *, target: str, start: Path | None = None, stable_ref: str = "origin/stable"
+) -> ReleaseDoctorReport:
+    start_path = (start or Path.cwd()).resolve()
+    repository = _resolve_repo_root(start_path)
+    checks: list[ReleaseDoctorCheck] = []
+    normalized_target = _normalize_version(target)
+    display_target = f"v{normalized_target}"
+
+    if repository is None:
+        return ReleaseDoctorReport(
+            display_target,
+            None,
+            (ReleaseDoctorCheck("repository", "fail", "not a git repository"),),
+        )
+
+    checks.append(ReleaseDoctorCheck("repository", "pass", str(repository)))
+    git = inspect_git(repository)
+    if git.error:
+        checks.append(ReleaseDoctorCheck("git status", "fail", git.error))
+    elif git.dirty:
+        checks.append(ReleaseDoctorCheck("git tree clean", "fail", "working tree is dirty"))
+    else:
+        checks.append(ReleaseDoctorCheck("git tree clean", "pass"))
+
+    package = _version_from_pyproject(repository)
+    if package == normalized_target:
+        checks.append(ReleaseDoctorCheck("package version", "pass", package))
+    else:
+        detail = f"expected {normalized_target}, found {package or 'unknown'}"
+        checks.append(ReleaseDoctorCheck("package version", "fail", detail))
+
+    release_path = _target_release_path(repository, display_target)
+    if release_path.exists():
+        checks.append(ReleaseDoctorCheck("release note exists", "pass", str(release_path)))
+        if _release_note_heading_matches(release_path, display_target):
+            checks.append(ReleaseDoctorCheck("release note heading", "pass", display_target))
+        else:
+            checks.append(
+                ReleaseDoctorCheck(
+                    "release note heading", "fail", f"missing heading for {display_target}"
+                )
+            )
+    else:
+        checks.append(ReleaseDoctorCheck("release note exists", "fail", str(release_path)))
+        checks.append(ReleaseDoctorCheck("release note heading", "fail", "release note missing"))
+
+    if _release_index_links_target(repository, display_target):
+        checks.append(ReleaseDoctorCheck("release index", "pass", f"links {display_target}"))
+    else:
+        checks.append(ReleaseDoctorCheck("release index", "fail", f"missing {display_target}.md"))
+
+    head = _git_ref_full_commit(repository, "HEAD")
+    tag_commit = _git_ref_full_commit(repository, display_target)
+    if tag_commit is None:
+        checks.append(
+            ReleaseDoctorCheck("release tag", "warn", f"{display_target} not created yet")
+        )
+    elif head and tag_commit == head:
+        checks.append(ReleaseDoctorCheck("release tag", "pass", f"{display_target} points to HEAD"))
+    else:
+        checks.append(
+            ReleaseDoctorCheck(
+                "release tag", "fail", f"{display_target} points to {tag_commit[:7]}"
+            )
+        )
+
+    stable_commit = _git_ref_full_commit(repository, stable_ref)
+    if stable_commit is None:
+        checks.append(
+            ReleaseDoctorCheck("stable ref", "warn", f"{stable_ref} not available locally")
+        )
+    elif head is None:
+        checks.append(ReleaseDoctorCheck("stable ref", "fail", "HEAD unavailable"))
+    elif stable_commit == head:
+        checks.append(ReleaseDoctorCheck("stable ref", "pass", f"{stable_ref} is at HEAD"))
+    else:
+        stable_contains_head = _git_ref_contains(repository, head, stable_ref)
+        head_contains_stable = _git_ref_contains(repository, stable_ref, "HEAD")
+        if stable_contains_head is True:
+            checks.append(ReleaseDoctorCheck("stable ref", "pass", f"{stable_ref} contains HEAD"))
+        elif head_contains_stable is True:
+            checks.append(ReleaseDoctorCheck("stable ref", "warn", f"{stable_ref} is behind HEAD"))
+        elif stable_contains_head is False and head_contains_stable is False:
+            checks.append(
+                ReleaseDoctorCheck("stable ref", "fail", f"{stable_ref} diverged from HEAD")
+            )
+        else:
+            checks.append(ReleaseDoctorCheck("stable ref", "fail", f"cannot compare {stable_ref}"))
+
+    return ReleaseDoctorReport(display_target, repository, tuple(checks))
+
+
+def render_release_doctor(report: ReleaseDoctorReport) -> str:
+    lines = ["Mirror runtime release doctor", ""]
+    lines.append(f"Target: {report.target}")
+    lines.append(f"Repository: {report.repository if report.repository else 'unknown'}")
+    lines.append("")
+    marks = {"pass": "✓", "warn": "!", "fail": "✗"}
+    for check in report.checks:
+        mark = marks.get(check.state, "?")
+        line = f"[{mark}] {check.name}"
+        if check.detail:
+            line = f"{line}: {check.detail}"
+        lines.append(line)
+    lines.append("")
+    lines.append(
+        f"Release doctor result: {'failed' if report.has_failures else 'ready with warnings' if any(check.state == 'warn' for check in report.checks) else 'ready'}"
+    )
+    lines.append(
+        "Note: release doctor is read-only; it does not tag, merge, push, fetch, or edit files."
+    )
     return "\n".join(lines) + "\n"
 
 
@@ -874,8 +1108,21 @@ def render_runtime_update_availability(report: RuntimeUpdateAvailability) -> str
         lines.append(f"Reason: {report.note}")
     if report.status == "update_available":
         lines.append("")
+        if report.target_release:
+            lines.append(
+                f"Release available: {report.target_release.version} — {report.target_release.title}"
+            )
+            if report.target_release.digest:
+                lines.append(f"Summary: {report.target_release.digest}")
+        elif report.update_channel.value == "stable":
+            lines.append(
+                "Release details: not fetched by this check; dry-run can show them when local refs contain release notes."
+            )
         lines.append("Preview:")
         lines.append("uv run python -m memory runtime update --dry-run")
+        lines.append("")
+        lines.append("Update:")
+        lines.append("uv run python -m memory runtime update")
     elif report.status == "up_to_date":
         lines.append("")
         lines.append("Next: no update needed")
@@ -971,7 +1218,21 @@ def build_runtime_update_dry_run(
         if status_report.status == "ready"
         else None
     )
-    return RuntimeUpdateDryRun(status_report=status_report, git_plan=git_plan)
+    target_release = None
+    if (
+        git_plan is not None
+        and git_plan.action == "pull"
+        and git_plan.upstream
+        and status_report.git.repository
+        and status_report.update_channel.value == "stable"
+    ):
+        target_release = _newer_release_note(
+            read_release_note_from_ref(git_plan.upstream, start=status_report.git.repository),
+            status_report.version,
+        )
+    return RuntimeUpdateDryRun(
+        status_report=status_report, git_plan=git_plan, target_release=target_release
+    )
 
 
 def _yes_no(value: bool | None) -> str:
@@ -1229,6 +1490,22 @@ def render_runtime_update_dry_run(dry_run: RuntimeUpdateDryRun) -> str:
         return "\n".join(lines) + "\n"
 
     lines.append(f"Update plan: {git_plan.note or git_plan.action}")
+    if dry_run.target_release:
+        lines.append("")
+        lines.append(
+            f"Release available: {dry_run.target_release.version} — {dry_run.target_release.title}"
+        )
+        if dry_run.target_release.digest:
+            lines.append(f"Summary: {dry_run.target_release.digest}")
+        lines.append("")
+        lines.append("Preview:")
+        lines.append("uv run python -m memory runtime update --dry-run")
+        lines.append("")
+        lines.append("Update:")
+        lines.append("uv run python -m memory runtime update")
+    elif report.update_channel.value == "stable" and git_plan.action == "pull":
+        lines.append("")
+        lines.append("Release details: unavailable in local refs; commit summary will be used.")
     if report.mirror_home:
         lines.append(f"Backup: required before real update ({report.mirror_home / 'backups'})")
     else:
@@ -1291,6 +1568,27 @@ def _git_fast_forward(upstream: str, cwd: Path) -> tuple[bool, str]:
     code, _stdout, stderr = _run_git(["merge", "--ff-only", upstream], cwd=cwd)
     if code != 0:
         return False, stderr or "git merge --ff-only refused"
+    return True, ""
+
+
+def _git_create_tag(tag: str, cwd: Path) -> tuple[bool, str]:
+    code, _stdout, stderr = _run_git(["tag", tag, "HEAD"], cwd=cwd)
+    if code != 0:
+        return False, stderr or f"git tag {tag} HEAD failed"
+    return True, ""
+
+
+def _git_move_branch(branch: str, cwd: Path) -> tuple[bool, str]:
+    code, _stdout, stderr = _run_git(["branch", "--force", branch, "HEAD"], cwd=cwd)
+    if code != 0:
+        return False, stderr or f"git branch --force {branch} HEAD failed"
+    return True, ""
+
+
+def _git_push_ref(remote: str, ref: str, cwd: Path) -> tuple[bool, str]:
+    code, _stdout, stderr = _run_git(["push", remote, ref], cwd=cwd)
+    if code != 0:
+        return False, stderr or f"git push {remote} {ref} failed"
     return True, ""
 
 
@@ -1533,6 +1831,7 @@ def run_runtime_update(
     previous_commit: str | None = None
     new_commit: str | None = None
     installed_changes: tuple[str, ...] = ()
+    installed_release: RuntimeReleaseNote | None = None
 
     try:
         report = _build_status_for_channel(mirror_home_arg=mirror_home_arg, channel=channel)
@@ -1738,6 +2037,8 @@ def run_runtime_update(
         )
     )
     installed_changes = _git_installed_changes(report.git.repository, previous_commit, new_commit)
+    if report.update_channel.value == "stable" and previous_commit != new_commit:
+        installed_release = read_release_note("latest", start=report.git.repository)
 
     if migrate:
         ok, err = _apply_migrations(mirror_home_arg)
@@ -1756,6 +2057,7 @@ def run_runtime_update(
                 success=False,
                 recovery=tuple(recovery),
                 installed_changes=installed_changes,
+                installed_release=installed_release,
             )
         stages.append(RuntimeUpdateStage("migrations", "pass"))
     else:
@@ -1777,6 +2079,7 @@ def run_runtime_update(
             success=False,
             recovery=tuple(recovery),
             installed_changes=installed_changes,
+            installed_release=installed_release,
         )
     stages.append(RuntimeUpdateStage("post-update status", "pass"))
 
@@ -1787,7 +2090,158 @@ def run_runtime_update(
         backup_path,
         success=True,
         installed_changes=installed_changes,
+        installed_release=installed_release,
     )
+
+
+def run_release_promotion(
+    *,
+    target: str,
+    dry_run: bool = False,
+    push: bool = False,
+    stable_branch: str = "stable",
+    remote: str = "origin",
+) -> ReleasePromotionResult:
+    display_target = target if target.startswith("v") else f"v{target}"
+    stages: list[RuntimeUpdateStage] = []
+    recovery: list[str] = []
+    doctor = build_release_doctor_report(
+        target=display_target, stable_ref=f"{remote}/{stable_branch}"
+    )
+    if doctor.has_failures:
+        failures = sum(1 for check in doctor.checks if check.state == "fail")
+        stages.append(RuntimeUpdateStage("release doctor", "fail", f"{failures} failure(s)"))
+        recovery.append("Run: python -m memory runtime release-doctor --target " + display_target)
+        recovery.append("Resolve failed checks before release promotion.")
+        return ReleasePromotionResult(
+            display_target, tuple(stages), False, dry_run, tuple(recovery)
+        )
+    warning_count = sum(1 for check in doctor.checks if check.state == "warn")
+    detail = f"{warning_count} warning(s)" if warning_count else "ready"
+    stages.append(RuntimeUpdateStage("release doctor", "pass", detail))
+
+    repository = doctor.repository
+    if repository is None:
+        stages.append(RuntimeUpdateStage("repository", "fail", "repository unavailable"))
+        return ReleasePromotionResult(display_target, tuple(stages), False, dry_run)
+
+    head = _git_ref_full_commit(repository, "HEAD")
+    if head is None:
+        stages.append(RuntimeUpdateStage("HEAD", "fail", "HEAD unavailable"))
+        return ReleasePromotionResult(display_target, tuple(stages), False, dry_run)
+
+    tag_commit = _git_ref_full_commit(repository, display_target)
+    if tag_commit is None:
+        if dry_run:
+            stages.append(
+                RuntimeUpdateStage("tag", "skip", f"would create {display_target} at HEAD")
+            )
+        else:
+            ok, err = _git_create_tag(display_target, repository)
+            if not ok:
+                stages.append(RuntimeUpdateStage("tag", "fail", err))
+                return ReleasePromotionResult(display_target, tuple(stages), False, dry_run)
+            stages.append(RuntimeUpdateStage("tag", "pass", f"created {display_target} at HEAD"))
+    elif tag_commit == head:
+        stages.append(RuntimeUpdateStage("tag", "pass", f"{display_target} already at HEAD"))
+    else:
+        stages.append(
+            RuntimeUpdateStage("tag", "fail", f"{display_target} points to {tag_commit[:7]}")
+        )
+        recovery.append("Do not move release tags automatically; inspect tag history manually.")
+        return ReleasePromotionResult(
+            display_target, tuple(stages), False, dry_run, tuple(recovery)
+        )
+
+    stable_commit = _git_ref_full_commit(repository, stable_branch)
+    if stable_commit is None:
+        if dry_run:
+            stages.append(
+                RuntimeUpdateStage("stable branch", "skip", f"would create {stable_branch} at HEAD")
+            )
+        else:
+            ok, err = _git_move_branch(stable_branch, repository)
+            if not ok:
+                stages.append(RuntimeUpdateStage("stable branch", "fail", err))
+                return ReleasePromotionResult(display_target, tuple(stages), False, dry_run)
+            stages.append(
+                RuntimeUpdateStage("stable branch", "pass", f"created {stable_branch} at HEAD")
+            )
+    elif stable_commit == head:
+        stages.append(
+            RuntimeUpdateStage("stable branch", "pass", f"{stable_branch} already at HEAD")
+        )
+    else:
+        stable_is_ancestor = _git_ref_contains(repository, stable_branch, "HEAD")
+        if stable_is_ancestor is True:
+            if dry_run:
+                stages.append(
+                    RuntimeUpdateStage(
+                        "stable branch", "skip", f"would fast-forward {stable_branch} to HEAD"
+                    )
+                )
+            else:
+                ok, err = _git_move_branch(stable_branch, repository)
+                if not ok:
+                    stages.append(RuntimeUpdateStage("stable branch", "fail", err))
+                    return ReleasePromotionResult(display_target, tuple(stages), False, dry_run)
+                stages.append(
+                    RuntimeUpdateStage(
+                        "stable branch", "pass", f"fast-forwarded {stable_branch} to HEAD"
+                    )
+                )
+        else:
+            stages.append(
+                RuntimeUpdateStage(
+                    "stable branch", "fail", f"{stable_branch} is not an ancestor of HEAD"
+                )
+            )
+            recovery.append("Reconcile stable branch history manually before promotion.")
+            return ReleasePromotionResult(
+                display_target, tuple(stages), False, dry_run, tuple(recovery)
+            )
+
+    if push:
+        if dry_run:
+            stages.append(RuntimeUpdateStage("push tag", "skip", f"would push {display_target}"))
+            stages.append(RuntimeUpdateStage("push stable", "skip", f"would push {stable_branch}"))
+        else:
+            ok, err = _git_push_ref(remote, display_target, repository)
+            if not ok:
+                stages.append(RuntimeUpdateStage("push tag", "fail", err))
+                return ReleasePromotionResult(display_target, tuple(stages), False, dry_run)
+            stages.append(RuntimeUpdateStage("push tag", "pass", display_target))
+            ok, err = _git_push_ref(remote, stable_branch, repository)
+            if not ok:
+                stages.append(RuntimeUpdateStage("push stable", "fail", err))
+                return ReleasePromotionResult(display_target, tuple(stages), False, dry_run)
+            stages.append(RuntimeUpdateStage("push stable", "pass", stable_branch))
+    else:
+        stages.append(RuntimeUpdateStage("push", "skip", "use --push to publish tag and stable"))
+
+    return ReleasePromotionResult(display_target, tuple(stages), True, dry_run)
+
+
+def render_release_promotion_result(result: ReleasePromotionResult) -> str:
+    lines = ["Mirror runtime release promotion", ""]
+    lines.append(f"Target: {result.target}")
+    lines.append(f"Mode: {'dry-run' if result.dry_run else 'execute'}")
+    lines.append("")
+    marks = {"pass": "✓", "warn": "!", "fail": "✗", "skip": "-"}
+    for stage in result.stages:
+        mark = marks.get(stage.state, "?")
+        line = f"[{mark}] {stage.name}"
+        if stage.detail:
+            line = f"{line}: {stage.detail}"
+        lines.append(line)
+    lines.append("")
+    lines.append(f"Release promotion result: {'success' if result.success else 'failed'}")
+    if result.recovery:
+        lines.append("")
+        lines.append("Recovery:")
+        for entry in result.recovery:
+            lines.append(f"- {entry}")
+    return "\n".join(lines) + "\n"
 
 
 def render_runtime_update_result(result: RuntimeUpdateResult) -> str:
@@ -1805,6 +2259,13 @@ def render_runtime_update_result(result: RuntimeUpdateResult) -> str:
         lines.append(f"New commit: {result.new_commit}")
     if result.backup_path:
         lines.append(f"Backup: {result.backup_path}")
+    if result.installed_release:
+        lines.append("")
+        lines.append(
+            f"Installed release: {result.installed_release.version} — {result.installed_release.title}"
+        )
+        if result.installed_release.digest:
+            lines.append(f"Summary: {result.installed_release.digest}")
     if result.installed_changes:
         lines.append("")
         lines.append("Installed changes:")
@@ -1851,6 +2312,19 @@ def cmd_runtime(argv: list[str]) -> int:
         "release-notes", help="Show Mirror runtime release notes"
     )
     release_notes_parser.add_argument("version", nargs="?", default="latest")
+    release_doctor_parser = subparsers.add_parser(
+        "release-doctor", help="Inspect release promotion readiness"
+    )
+    release_doctor_parser.add_argument("--target", required=True)
+    release_doctor_parser.add_argument("--stable", default="origin/stable")
+    release_promote_parser = subparsers.add_parser(
+        "release-promote", help="Promote a release to the stable channel"
+    )
+    release_promote_parser.add_argument("--target", required=True)
+    release_promote_parser.add_argument("--stable", default="stable")
+    release_promote_parser.add_argument("--remote", default="origin")
+    release_promote_parser.add_argument("--dry-run", action="store_true")
+    release_promote_parser.add_argument("--push", action="store_true")
     backup_parser = subparsers.add_parser("backup", help="Create or verify a runtime backup")
     backup_parser.add_argument("--mirror-home", dest="mirror_home")
     backup_parser.add_argument("--verify", dest="verify")
@@ -1927,6 +2401,22 @@ def cmd_runtime(argv: list[str]) -> int:
     if args.command == "release-notes":
         sys.stdout.write(render_release_note(read_release_note(args.version)))
         return 0
+
+    if args.command == "release-doctor":
+        release_report = build_release_doctor_report(target=args.target, stable_ref=args.stable)
+        sys.stdout.write(render_release_doctor(release_report))
+        return 1 if release_report.has_failures else 0
+
+    if args.command == "release-promote":
+        promotion = run_release_promotion(
+            target=args.target,
+            dry_run=args.dry_run,
+            push=args.push,
+            stable_branch=args.stable,
+            remote=args.remote,
+        )
+        sys.stdout.write(render_release_promotion_result(promotion))
+        return 0 if promotion.success else 1
 
     if args.command == "backup":
         if args.verify:

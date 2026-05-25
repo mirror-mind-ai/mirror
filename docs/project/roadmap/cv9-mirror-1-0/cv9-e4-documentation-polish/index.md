@@ -12,11 +12,11 @@
 - Every document has a single stated audience and a single stated responsibility.
 - Onboarding content lives in one place (`docs/getting-started.md`); `README.md` is reduced to a public hook.
 - The skills/commands table exists in one place (`REFERENCE.md`) and is pointed to from everywhere else.
-- `REFERENCE.md` is split by audience/purpose: command reference and configuration live in `REFERENCE.md`; system architecture lives in `docs/architecture.md`; Python API lives in `docs/api.md`.
+- `REFERENCE.md` is split by audience/purpose: command reference and configuration live in `REFERENCE.md`; system architecture lives in `docs/product/architecture.md`; Python API lives in `docs/product/api.md`.
 - `docs/product/principles.md` contains product behavior principles only; engineering and process principles live in `docs/process/engineering-principles.md`.
 - `CLAUDE.md` / `AGENTS.md` is a minimal structured context file: operating modes, persona routing, hard constraints, and pointers — no duplicate content.
-- `docs/architecture.md` exists as the single source of truth for system architecture: layers, components, data flow, import direction, and identity model.
-- `docs/api.md` exists as the Python API reference for developers integrating with the core.
+- `docs/product/architecture.md` exists as the single source of truth for system architecture: layers, components, data flow, import direction, and identity model.
+- `docs/product/api.md` exists as the Python API reference for developers integrating with the core.
 - `docs/product/envisioning/index.md` is explicitly labeled as exploratory/synthesis, separate from stable specs.
 - All cross-references and breadcrumbs are accurate and consistent.
 - CI remains green.
@@ -74,7 +74,7 @@ The system architecture is scattered: repo structure in `README.md`, foundationa
 decisions in `briefing.md`, database schema in `REFERENCE.md`, import direction
 rules in `principles.md`, runtime contract in `docs/product/specs/`. A
 contributor wanting to understand the system has to triangulate across five
-documents. No `docs/architecture.md` exists.
+documents. No `docs/product/architecture.md` exists.
 
 ---
 
@@ -106,8 +106,8 @@ The redesign is organized around two axes: **audience** and **responsibility**.
 | `README.md` | Stranger on GitHub | The hook — what problem, why different, install pointer |
 | `docs/getting-started.md` | New user | Linear onboarding: install → init → seed → first session → verify |
 | `REFERENCE.md` | Existing user (lookup) | Command reference: CLI commands, arguments, flags, configuration |
-| `docs/architecture.md` | Developer / contributor | System architecture: layers, components, data flow, schema |
-| `docs/api.md` | Developer integrating with the core | Python API reference |
+| `docs/product/architecture.md` | Developer / contributor | System architecture: layers, components, data flow, schema |
+| `docs/product/api.md` | Developer integrating with the core | Python API reference |
 | `CLAUDE.md` / `AGENTS.md` | The AI | Minimal structured context: operating modes, persona routing, hard constraints, skill pointers |
 | `docs/project/briefing.md` | Builder | Foundational decisions — stable, not re-litigated |
 | `docs/project/decisions.md` | Builder | Incremental decision log |
@@ -127,11 +127,11 @@ The redesign is organized around two axes: **audience** and **responsibility**.
 |------|-------|--------|
 | [S1](cv9-e4-s1-readme-reduction/index.md) | README reduction — pare down to a public hook | ✅ |
 | [S2](cv9-e4-s2-getting-started-consolidation/index.md) | Getting Started consolidation — single authoritative onboarding document | ✅ |
-| [S3](cv9-e4-s3-reference-split/index.md) | REFERENCE split — command reference stays; architecture moves to `docs/architecture.md` | ✅ |
+| [S3](cv9-e4-s3-reference-split/index.md) | REFERENCE split — command reference stays; architecture moves to `docs/product/architecture.md` | ✅ |
 | [S4](cv9-e4-s4-principles-reorganization/index.md) | Principles reorganization — product principles vs engineering/process principles | ✅ |
 | [S5](cv9-e4-s5-claude-md-reduction/index.md) | CLAUDE.md / AGENTS.md reduction — minimal structured context with pointers | ✅ |
 | [S6](cv9-e4-s6-cross-reference-audit/index.md) | Cross-reference audit — all breadcrumbs and links accurate and consistent | ✅ |
-| [S7](cv9-e4-s7-api-doc/index.md) | Python API doc — `docs/api.md` as dedicated reference for developers | ✅ |
+| [S7](cv9-e4-s7-api-doc/index.md) | Python API doc — `docs/product/api.md` as dedicated reference for developers | ✅ |
 
 ---
 
@@ -143,7 +143,7 @@ S1 README reduction
         └── S3 REFERENCE split (→ REFERENCE + architecture.md)
               ├── S4 Principles reorganization
               ├── S5 CLAUDE.md reduction
-              └── S7 Python API doc (→ docs/api.md)
+              └── S7 Python API doc (→ docs/product/api.md)
                     └── S6 Cross-reference audit (runs last, over everything)
 ```
 

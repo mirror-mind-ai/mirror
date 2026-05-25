@@ -1,11 +1,11 @@
-[< Docs](index.md)
+[< Product](index.md)
 
 # Architecture
 
 System architecture for Mirror Mind. Written for contributors who want to add
 a feature or fix a bug and need to understand how the system is organized
 before touching code. If you want to integrate programmatically, see
-[docs/api.md](api.md).
+[docs/product/api.md](api.md).
 
 ---
 
@@ -29,6 +29,7 @@ src/memory/                  — Python package: all business logic
   intelligence/              — LLM-powered extraction, search, routing
   services/                  — Domain services (the implementation layer)
   storage/                   — Persistence components (raw SQL lives here)
+  surfaces/                  — Web read-model composition for Atlas, Workspace, detail, evidence, and search
   skills/                    — Shared skill logic callable by any harness
 templates/identity/          — Generic bootstrap templates shipped in the repo
 examples/extensions/         — Reference extensions (e.g. review-copy)
@@ -74,6 +75,16 @@ db (SQLite)
 
 Reversing this direction — e.g. a service importing from CLI, or storage
 importing from services — is a design violation. When in doubt, push logic down.
+
+The web visibility surface adds a read-model layer above services:
+
+```text
+web -> surfaces -> services -> storage -> db
+```
+
+`web` routes must not execute SQL or compose domain meaning. They consume typed
+surface DTOs produced by `src/memory/surfaces/`. See the [Web Surface
+Specification](specs/web-surface/index.md).
 
 The single documented exception: `RuntimeSessionService` still owns some
 transaction-boundary SQL pending a separate architecture decision.
@@ -178,7 +189,7 @@ capabilities. Pi and Gemini CLI/Codex share the same skill files via symlinks:
 
 For the full runtime lifecycle contract, including hook payload shapes and
 injection models, see:
-[docs/product/specs/runtime-interface/index.md](product/specs/runtime-interface/index.md)
+[docs/product/specs/runtime-interface/index.md](specs/runtime-interface/index.md)
 
 ---
 
@@ -194,7 +205,7 @@ Set via `MIRROR_USER=<user>` (resolves to `~/.mirror-minds/<user>`) or
 at `~/.mirror/<user>` are resolved automatically when `MIRROR_USER` is used
 and the new path does not exist; a one-time warning is emitted per process.
 This is permanent supported behavior. See
-[Decisions — Default mirror home directory renamed](project/decisions.md).
+[Decisions — Default mirror home directory renamed](../project/decisions.md).
 
 ### Main Tables
 
@@ -238,6 +249,6 @@ independent state.
 
 ---
 
-**See also:** [Briefing](project/briefing.md) · [Python API](api.md) ·
-[Runtime Interface Spec](product/specs/runtime-interface/index.md) ·
-[Engineering Principles](process/engineering-principles.md)
+**See also:** [Briefing](../project/briefing.md) · [Python API](api.md) ·
+[Runtime Interface Spec](specs/runtime-interface/index.md) ·
+[Engineering Principles](../process/engineering-principles.md)

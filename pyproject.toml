@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mirror"
-version = "0.8.0"
+version = "0.9.1"
 description = "Memory and identity system for Mirror Mind"
 requires-python = ">=3.10"
 dependencies = [

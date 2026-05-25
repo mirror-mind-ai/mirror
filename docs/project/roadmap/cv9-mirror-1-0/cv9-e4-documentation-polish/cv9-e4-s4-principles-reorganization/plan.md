@@ -37,7 +37,7 @@ One adjustment to the Code section (see below). Everything else moves verbatim.
 ## Sequencing Dependency
 
 S3 must run before S4. S3 moves the import direction substance out of the
-"Service layer is the architecture" principle and into `docs/architecture.md`.
+"Service layer is the architecture" principle and into `docs/product/architecture.md`.
 S4 must not re-document that content — it inherits the already-moved state.
 
 ---
@@ -45,7 +45,7 @@ S4 must not re-document that content — it inherits the already-moved state.
 ## Code Section — "Service layer is the architecture"
 
 After S3, the four-layer rule, import direction constraint, and `MemoryClient`
-façade model live in `docs/architecture.md`. The principle itself is worth
+façade model live in `docs/product/architecture.md`. The principle itself is worth
 keeping — it is a design philosophy, not just an implementation detail.
 
 In `engineering-principles.md`, this principle becomes a one-liner with a
@@ -54,7 +54,7 @@ pointer:
 > **Service layer is the architecture.**  
 > `MemoryClient` is a façade. Services are the implementation. Storage handles
 > persistence. The import direction rule and full layer model are in
-> [docs/architecture.md](../../architecture.md).
+> [docs/product/architecture.md](../../architecture.md).
 
 Do not reproduce the layer detail here. The pointer is sufficient.
 
@@ -124,7 +124,7 @@ pointer to `engineering-principles.md`:
 - `docs/product/principles.md` contains only the six product principles.
 - `docs/process/engineering-principles.md` exists with Code, Testing, and
   Process sections. "Service layer is the architecture" is a one-liner with a
-  pointer to `docs/architecture.md`.
+  pointer to `docs/product/architecture.md`.
 - "Push only when asked" is removed from `development-guide.md`.
 - No other content is removed from `development-guide.md`.
 - `docs/index.md` Process section includes `engineering-principles.md`.

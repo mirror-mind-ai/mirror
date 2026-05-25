@@ -55,9 +55,9 @@ steps — those live in each SKILL.md. Just enough to discover and activate.
 
 | Current content | Pointer destination |
 |---|---|
-| Repository structure | `docs/architecture.md` |
-| Memory system description | `docs/architecture.md` |
-| Psychic architecture detail | `docs/architecture.md` (identity model section) |
+| Repository structure | `docs/product/architecture.md` |
+| Memory system description | `docs/product/architecture.md` |
+| Psychic architecture detail | `docs/product/architecture.md` (identity model section) |
 | Extensions detail | `docs/product/extensions/` |
 | Full commands table | `REFERENCE.md` |
 | Development conventions | `docs/process/development-guide.md` |

@@ -103,8 +103,8 @@ Suggested shape:
   - Problem: the current "About these Docs" page behaves more like a documentation map than a welcoming home. The Web Console needs a clear first page that describes Mirror Mind at a high level and routes readers by interest.
   - Direction: redesign `docs/index.md` as a home page: what Mirror Mind is, what problem it solves, and entry points for users, contributors, product/design readers, process, roadmap, and reference.
 
-- [ ] Reconsider whether `docs/architecture.md` and `docs/api.md` belong at the docs root.
-  - Source: `docs/architecture.md`, `docs/api.md`, `docs/index.md`
+- [ ] Reconsider whether `docs/product/architecture.md` and `docs/product/api.md` belong at the docs root.
+  - Source: `docs/product/architecture.md`, `docs/product/api.md`, `docs/index.md`
   - Problem: Architecture and Python API are developer/contributor references, but currently sit at the root beside Getting Started and the docs index. This may flatten the information architecture too much.
   - Direction: evaluate moving them under a more explicit developer/reference area, for example `docs/project/architecture.md`, `docs/reference/api.md`, or `docs/developers/`. Decide based on audience and existing doc taxonomy before moving.
 
@@ -171,7 +171,7 @@ These findings are about the docs tree and Web Console reading experience. They 
 - Separate documentation home content from documentation map content.
 - Add folder cover pages for major documentation sections.
 - Move releases under the Project dimension.
-- Reconsider whether `docs/architecture.md` and `docs/api.md` belong at the docs root.
+- Reconsider whether `docs/product/architecture.md` and `docs/product/api.md` belong at the docs root.
 - Reconsider whether Troubleshooting belongs under Product instead of Process.
 - Design a scaling strategy for the worklog.
 - Reclassify or contextualize "Coherence as Product Architecture".

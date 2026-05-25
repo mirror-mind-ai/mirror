@@ -12,6 +12,161 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-25 — CV9.E6 Web Visibility validated and closed
+
+Completed CV9.E6.S6 and closed the Web Visibility epic. The read-only web
+surface now has a validated Identity perspective, shared object detail and
+Source Context, and a journey-centric Workspace perspective.
+
+Personal Mirror validation first exposed a release-blocking data-truth issue:
+Workspace was rendering the database correctly, but recent Pi Builder
+conversations were missing journey associations. After the core fix and
+backup-gated historical repair, Navigator visual validation confirmed that
+Workspace now reflects Mirror Mind, Maestro, and other journeys correctly.
+
+Validation: 62 focused tests passed; ruff lint and format checks passed;
+`node --check src/memory/web/static/app.js` passed; `git diff --check` passed;
+Navigator browser validation accepted the repaired Workspace state.
+
+### 2026-05-25 — Pi Builder journey association repaired
+
+During CV9.E6.S6 personal Mirror validation, Workspace revealed a data-truth
+bug: recent Pi Builder sessions were logged with messages but without journey
+association, so active journeys such as Mirror Mind and Maestro appeared stale
+or empty.
+
+Fixed the core conversation logger so SKILL.md commands without an explicit
+session id fall back to the latest active runtime session, and Pi user-message
+logging refreshes runtime session activity. Added an explicit repair command,
+`conversation-logger repair-journeys [--limit N] [--apply]`, with dry-run
+review and backup-gated apply for historical conversations.
+
+Applied the repair to the personal Mirror after backup
+`memory_20260525_083122.zip`: 45 high-confidence conversations were associated
+with journeys, the active validation conversation was attached to `mirror-mind`,
+and the `mirror-mind` journey identity was restored to active so Workspace can
+list it. Post-repair Workspace selects Mirror Mind and shows recent
+conversation cards; Maestro now shows its recent conversations.
+
+Validation: 62 focused tests passed; ruff lint and format checks passed;
+`node --check src/memory/web/static/app.js` passed; `git diff --check` passed.
+
+### 2026-05-24 — Journey-centric Workspace dashboard added
+
+Completed CV9.E6.S5. Workspace now opens as a journey-centric operational surface rather than a generic stacked dashboard. The left side shows active journeys ordered by most recent activity; the central area shows the selected journey as a profile-style workspace with Briefing, Conversations, Tasks, Memories, and Decisions tabs.
+
+The selected journey defaults to the most recently worked active journey based on recent conversations, memories, and tasks, and can be changed through the journey sidebar. The Briefing tab renders the real journey identity content as formatted Markdown-like text. Decisions are shown as journey-filtered decision memories when available, with honest empty states otherwise.
+
+Validation: `uv run pytest tests/unit/memory/surfaces tests/unit/memory/web tests/unit/memory/test_public_api.py` passed with 40 tests; Ruff lint and format checks passed; `node --check src/memory/web/static/app.js` passed; manual browser review accepted the Workspace direction.
+
+### 2026-05-24 — Object detail and source context added
+
+Completed CV9.E6.S4. The Identity Map now drills into supported objects through a shared read-only detail view. Self, Ego, Shadow, and personas open into a common page with summary, rendered Markdown-like content, Source context, Related links, and metadata.
+
+The public language moved from technical evidence/provenance affordance to **Source Context**. Identity and persona details show explicit source paths such as `identity/self/soul` or `persona/engineer` and state when content is not inferred from memories. Shadow can open as an honest placeholder when no explicit shadow entry exists. Persona detail titles and icons now use product labels rather than legacy headings inside persona content.
+
+Validation: `uv run pytest tests/unit/memory/surfaces tests/unit/memory/web tests/unit/memory/test_public_api.py` passed with 37 tests; Ruff lint and format checks passed; `node --check src/memory/web/static/app.js` passed; manual browser review accepted the detail experience.
+
+### 2026-05-24 — Agentic web console idea captured
+
+During CV9.E6 web visibility work, captured a future product direction: a browser-based agentic console where users express Mirror update intent in natural language, a headless agent proposes or performs controlled operations, and the browser shows the run timeline, approvals, and evidence.
+
+Created `docs/product/envisioning/agentic-web-console.md` and added the idea to the roadmap radar. This is explicitly outside the current read-only web visibility scope. It should graduate only after the basic visibility foundation is useful and stable.
+
+No runtime behavior changed.
+
+### 2026-05-24 — Identity Map page validated
+
+Completed CV9.E6.S3, renamed from Atlas Identity and Persona Map to **Identity Map Page** after product review clarified that the whole map is an identity surface. The public UI now labels the perspective as Identity while the internal `atlas` route remains stable.
+
+The page renders a reflective map of Self, Ego, Shadow, Personas, and Memories. Self is scoped to `self/soul` and shown as Alma with Purpose/Principles/Values. Ego is Expression with Self-image/Behavior/Constraints. Shadow is Tension with integration-oriented chips. Personas are presented as a social/action team of persona initials and names. Memories are presented as category counts with proportional bars rather than individual memory records.
+
+This matters because the web surface moved from a database-shaped card grid toward a product-shaped identity map. The story also clarified an important taxonomy boundary: the identity table is a broad context registry, not the same thing as Self.
+
+Validation: `uv run pytest tests/unit/memory/surfaces tests/unit/memory/web tests/unit/memory/test_public_api.py` passed with 35 tests; Ruff lint and format checks passed; Navigator browser review accepted the Identity Map page direction.
+
+### 2026-05-24 — Web perspective shell added
+
+Completed CV9.E6.S2 for the local web visibility track. The web app now has a shared shell for Atlas, Workspace, and Docs; a discreet perspective switcher; user-home default perspective persistence in `web/preferences.json`; and shell/surface APIs for Atlas and Workspace. Atlas and Workspace render initial read-only content from `MemoryClient.surfaces`, while Docs remains available as a dedicated mode with the documentation sidebar.
+
+Navigator browser review corrected the shell boundary: the large first-run chooser was removed from the main experience, perspective tabs were made compact, Atlas/Workspace use full viewport width, and the docs sidebar appears only in Docs mode. Deeper Atlas home design is deferred to S3; Workspace dashboard design is deferred to S5.
+
+Validation: `uv run pytest tests/unit/memory/web tests/unit/memory/surfaces tests/unit/memory/test_public_api.py` passed with 35 tests; Ruff lint and format checks passed for web code.
+
+### 2026-05-24 — Web Surface Foundation implemented
+
+Completed CV9.E6.S1 for the local web visibility track. Added `src/memory/surfaces/` as the read-model boundary between web routes and Mirror Core services, with typed DTOs for Atlas, Workspace, object detail, evidence, and search. `MemoryClient` now exposes `mem.surfaces` so future web routes can consume UI-shaped read models without querying SQLite directly or composing domain meaning inline.
+
+The first slice intentionally stays architectural: Atlas and Workspace surfaces return deterministic read models with honest empty states, identity/persona object details are supported, evidence exposes an explicit no-provenance state, and search has a stable skeletal contract. Full UI routing, perspective persistence, and richer evidence remain in later CV9.E6 stories.
+
+Validation: `uv run pytest tests/unit/memory/surfaces tests/unit/memory/web tests/unit/memory/test_public_api.py` passed with 27 tests; Ruff lint and format checks passed for the surface layer and client integration; Navigator manual contract review accepted the boundary.
+
+### 2026-05-23 — v0.9.1 release candidate prepared
+
+Prepared `v0.9.1 — Welcome Release Awareness` as a patch release candidate for S18. Bumped package version to `0.9.1`, added `docs/releases/v0.9.1.md`, and listed it in the releases index.
+
+Release-note smoke renders `v0.9.1` as latest. `runtime release-doctor --target v0.9.1` passes version, release note, heading, and release index checks, while correctly failing on the dirty tree until the release candidate commit is made. Validation: 121 targeted welcome/runtime tests passed; ruff, format check, story-scoped mypy, and `git diff --check` passed.
+
+### 2026-05-23 — Welcome and status release awareness added
+
+Completed CV9.E3.S18. Welcome now has network-tolerant release awareness: it reads and writes `<mirror-home>/runtime/update-check.json`, may refresh stale or missing cache with a lightweight `git ls-remote` check, never fetches or mutates refs, and fails softly when the remote is unavailable. Remote welcome checks can be disabled with `MIRROR_WELCOME_REMOTE_UPDATE_CHECK=off`.
+
+Added `python -m memory welcome --status-line` for compact cache-only runtime status. Pi's `mirror-logger` status bar now uses this command, producing signals such as `◇ alisson-vale · ✓` or `◇ alisson-vale · ⬆ v0.9.0` while keeping detailed explanation in the welcome card.
+
+Validation: 121 targeted welcome/runtime tests passed; ruff, format check, story-scoped mypy, and `git diff --check` passed.
+
+### 2026-05-23 — v0.9.0 stable release published and fresh-user update smoke passed
+
+Published `v0.9.0 — Self-Update Done` to the stable channel. `runtime release-promote --target v0.9.0 --push` pushed both `refs/tags/v0.9.0` and `refs/heads/stable` to commit `fac6da3`.
+
+Ran a fresh-user stable update smoke from a temporary clone pinned at `v0.8.0` with an isolated Mirror home. The clone detected `origin/stable @ fac6da3`, dry-run planned a pull of 8 commits, and `runtime update` fast-forwarded from `4bdff1b` to `fac6da3` with backup, verification, migrations, and post-update status all passing. Post-update `runtime version` reported `0.9.0`, `runtime status` was ready, and `runtime release-notes latest` rendered `v0.9.0 — Self-Update Done`.
+
+This closes CV9.E3's Self-Update Done track. The stable update path has now been validated from one published stable release to the next without manual git intervention in the smoke clone.
+
+### 2026-05-23 — v0.9.0 release candidate prepared
+
+Prepared `v0.9.0 — Self-Update Done` as the release candidate for the CV9.E3 S13–S17 arc. Bumped package version to `0.9.0`, added `docs/releases/v0.9.0.md`, and listed the release in `docs/releases/index.md`.
+
+Release-note smoke renders `v0.9.0` as latest. `runtime release-doctor --target v0.9.0` now passes version, release note, heading, and release index checks, while correctly failing on the dirty tree until the release candidate commit is made. Tag creation and stable promotion remain next steps after commit and final validation.
+
+Validation: 98 targeted runtime tests passed; ruff, format check, story-scoped mypy, and `git diff --check` passed.
+
+### 2026-05-23 — Stable promotion execution path added
+
+Completed CV9.E3.S16. Added `python -m memory runtime release-promote --target vX.Y.Z [--dry-run] [--push]` as the controlled stable promotion path. Promotion runs the release doctor first and blocks on failures, creates a missing release tag at `HEAD`, reuses tags already at `HEAD`, refuses mismatched tags, creates or fast-forwards local `stable` only when safe, and publishes only when `--push` is explicit.
+
+Dry-run does not mutate tags, branches, refs, or files. The command does not fetch, force-push, rewrite tags, bump versions, write release notes, back up, migrate, or update production clones.
+
+Validation: 98 targeted runtime tests passed; ruff, format check, story-scoped mypy, and `git diff --check` passed. Manual dry-run in the dirty dev clone failed safely because `v0.9.0` is not prepared; no tags or branches were created.
+
+### 2026-05-23 — Release promotion doctor added
+
+Completed CV9.E3.S15. Added `python -m memory runtime release-doctor --target vX.Y.Z` as a read-only release promotion preflight. The doctor checks repository availability, clean git state, package version, release-note file, release-note heading, release index link, tag state, and stable ref relationship, then renders a pass/warn/fail checklist.
+
+The command does not fetch, tag, merge, push, edit files, back up, migrate, or modify refs. Warnings return zero because a pre-promotion candidate may legitimately lack a tag or stable advancement; failures return non-zero for incoherent or unsafe states.
+
+Validation: 90 targeted runtime tests passed; ruff, format check, story-scoped mypy, and `git diff --check` passed. Manual smoke in the dirty dev clone showed expected read-only failures for unprepared `v0.9.0` and historical `v0.8.0` tag mismatch against current `HEAD`.
+
+### 2026-05-23 — Release-note skill parity completed
+
+Completed CV9.E3.S14. Release notes are now discoverable across supported runtime skill surfaces: Pi keeps `/mm-release-notes`, Gemini/Codex shared skills expose `mm-release-notes` through `.agents/skills`, and Claude Code has `/mm:release-notes`. Help surfaces, `AGENTS.md`, and `REFERENCE.md` now list the command.
+
+No runtime core behavior changed. The skills remain thin wrappers around `uv run python -m memory runtime release-notes [latest|vX.Y.Z]` and preserve the rule to show output verbatim unless the user asks for a summary.
+
+Validation: structural skill checks passed; `runtime release-notes latest` and `runtime release-notes v0.8.0` both rendered `v0.8.0 — Stable Self-Update Foundation`; 82 targeted runtime tests passed; ruff, format check, and `git diff --check` passed.
+
+The Ariad visualization experiment adopted the inline taxonomy-card grammar: `🟪[CV9]`, `🟦[E3]`, `🟩[S14]`, with method state shown separately through `✓`, `◉`, `○`, and `✕`.
+
+### 2026-05-23 — Release-aware stable update notices added
+
+Completed CV9.E3.S13. Stable-channel update surfaces now prefer release language when local refs contain newer release notes: dry-run can show the target release version, title, digest, and preview/update commands, while successful stable updates include an `Installed release` block after fast-forward. `runtime update --check` remains conservative and non-mutating: it can report an available remote commit through `git ls-remote`, but it does not fetch release-note files and says so when details are unavailable.
+
+Commit-oriented summaries remain as fallback, especially for `main` dogfooding. The updater safety pipeline is unchanged: status gate, backup, verification, fast-forward-only update, migrations, and post-update status still govern mutation.
+
+Validation: 99 targeted runtime and welcome tests passed; ruff, format check, story-scoped mypy, and `git diff --check` passed. Manual smoke in the dev clone confirmed the expected safety boundary (`stable` is `local_ahead`; dry-run is blocked by the dirty dev tree), so end-to-end stable update validation remains for CV9.E3.S17.
+
+Also recorded an Ariad/Maestro visualization experiment for the story. The next visualization cycle should add a bird's-eye `CV → Epic → Story` map and a horizontal board to show cards moving through flow lanes.
+
 ### 2026-05-22 — Next release target defined: v0.9.0 Self-Update Done
 
 After publishing `v0.8.0 — Stable Self-Update Foundation`, defined the next release target as `v0.9.0 — Self-Update Done`. The intended scope is CV9.E3.S13–S17: release-aware update notices, release-note skill parity, release promotion preflight/doctor, controlled stable promotion path, and fresh-user stable update smoke.
@@ -82,11 +237,19 @@ uv run --extra dev ruff format --check src/ tests/
 uv run python -m memory welcome --mirror-home /Users/alissonvale/.mirror-minds/alisson-vale
 ```
 
+### 2026-05-24 — CV9.E6 Web Visibility roadmap created
+
+Added CV9.E6 as the roadmap epic for the Mirror Mind 1.0 web visibility surface. The epic is Ariad-compatible, with six planned stories covering the Web Surface foundation, perspective shell, Atlas identity/persona map, object detail and evidence, Workspace dashboard, and personal Mirror validation. Updated the CV9 and roadmap indexes so the new work is integrated with the existing 1.0 plan.
+
+### 2026-05-24 — Web docs browser opens on docs home
+
+Adjusted the local web docs browser so a session without an explicit `?path=` opens on `docs/index.md` instead of the first alphabetic document. Moved the Python API reference to `docs/product/api.md` and the architecture reference to `docs/product/architecture.md`, then linked both from Product so the web navigation groups Mirror Core product surfaces together. Verified with `uv run pytest tests/unit/memory/web`.
+
 ### 2026-05-22 — Documentation information architecture updated
 
 Completed CV9.E5.S2 using Ariad's documentation pattern as the reference: short narrative home, explicit Start Here paths, and the Process / Project / Product triad with a practical Reference layer. `docs/index.md` now routes new users, operators, contributors, and developers to the right surfaces.
 
-Made a conservative pre-1.0 decision not to move files only for symmetry. `docs/releases/`, root-level `docs/architecture.md` and `docs/api.md`, and operations docs under `docs/process/` remain in place. Added a worklog scaling rule: keep a single file through 1.0, then archive by release or year if needed.
+Made a conservative pre-1.0 decision not to move files only for symmetry. `docs/releases/`, architecture and Python API references, and operations docs under `docs/process/` remain in explicit reader paths. Added a worklog scaling rule: keep a single file through 1.0, then archive by release or year if needed.
 
 ### 2026-05-22 — CV9.E3 closed and CV9.E5.S2 opened
 
@@ -237,7 +400,7 @@ Claude Code Pro / Gemini AI Pro). Removed legacy migration workflow (REFERENCE
 only). Reduced extension content to one paragraph with a pointer. Kept
 12-persona table and verification checklist.
 
-**S3 — REFERENCE split.** Created `docs/architecture.md` — 8 sections covering
+**S3 — REFERENCE split.** Created `docs/product/architecture.md` — 8 sections covering
 system overview, repo structure, layer model, identity model, memory model,
 runtime model, database schema, and runtime session model. REFERENCE.md trimmed
 to three sections: commands table, configuration, and legacy migration workflow
@@ -259,7 +422,7 @@ table, memory system detail, and extension detail with pointers.
 `docs/product/envisioning/index.md`. Verified all pointers introduced in S1–S5
 resolve correctly.
 
-**S7 — Python API doc.** Created `docs/api.md` covering all public
+**S7 — Python API doc.** Created `docs/product/api.md` covering all public
 `MemoryClient` methods: lifecycle, conversations, memories, identity/journeys,
 tasks, and attachments.
 

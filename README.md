@@ -88,8 +88,8 @@ identity lives in your machine, not a server.
 
 - [Getting Started](docs/getting-started.md) — step-by-step onboarding for new users
 - [REFERENCE.md](REFERENCE.md) — command reference and configuration
-- [Architecture](docs/architecture.md) — system design, layers, and data model
-- [Python API](docs/api.md) — programmatic interface for developers
+- [Architecture](docs/product/architecture.md) — system design, layers, and data model
+- [Python API](docs/product/api.md) — programmatic interface for developers
 - [Project Briefing](docs/project/briefing.md) — foundational architectural decisions
 - [Decisions](docs/project/decisions.md) — incremental decision log
 - [Roadmap](docs/project/roadmap/index.md) — current and planned capability values

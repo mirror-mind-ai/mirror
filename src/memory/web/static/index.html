@@ -3,22 +3,62 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Mirror Web Console</title>
+    <title>Mirror Web</title>
     <link rel="stylesheet" href="/style.css" />
   </head>
   <body>
-    <aside>
-      <h1>Mirror Docs</h1>
-      <nav id="docs-tree" aria-label="Documentation files"></nav>
-    </aside>
-    <main>
-      <header>
-        <div id="current-path">Select a document</div>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <div class="eyebrow">Mirror</div>
+          <h1 id="mirror-name">Local Mirror</h1>
+        </div>
+        <div class="topbar-actions">
+          <label class="search-placeholder">
+            <span>Search</span>
+            <input type="search" placeholder="Search is coming soon" disabled />
+          </label>
+          <div id="active-perspective" class="active-pill">Choose perspective</div>
+        </div>
       </header>
-      <article id="content" class="doc-content">
-        <p>Choose a document from the sidebar.</p>
-      </article>
-    </main>
+
+      <nav class="perspective-tabs" aria-label="Mirror perspectives">
+        <button type="button" data-view="atlas">Identity</button>
+        <button type="button" data-view="workspace">Workspace</button>
+        <button type="button" data-view="docs">Docs</button>
+      </nav>
+
+      <div id="warning" class="warning" hidden></div>
+
+      <section id="chooser" class="chooser" hidden>
+        <p class="eyebrow">First run</p>
+        <h2>Choose your default perspective</h2>
+        <p>Identity is reflective and psyche-map oriented. Workspace is analytical and operational.</p>
+        <div class="choice-grid">
+          <button type="button" data-choose="atlas">
+            <strong>Identity</strong>
+            <span>Explore identity, personas, memories, and meaning.</span>
+          </button>
+          <button type="button" data-choose="workspace">
+            <strong>Workspace</strong>
+            <span>Coordinate journeys, conversations, tasks, and state.</span>
+          </button>
+        </div>
+      </section>
+
+      <main class="content-grid">
+        <aside id="docs-panel" class="docs-panel" hidden>
+          <h2>Docs</h2>
+          <nav id="docs-tree" aria-label="Documentation files"></nav>
+        </aside>
+        <section class="surface-panel">
+          <div id="current-path" class="current-path">Loading Mirror…</div>
+          <article id="content" class="surface-content">
+            <p>Loading…</p>
+          </article>
+        </section>
+      </main>
+    </div>
     <script src="/app.js"></script>
   </body>
 </html>

@@ -24,7 +24,7 @@ and the legacy migration workflow. It serves a different audience (developers
 integrating with the core) and has no dedicated home.
 
 After S3 reduces `REFERENCE.md` to a pure command reference, the Python API
-must go somewhere. That somewhere is `docs/api.md` — a focused document for
+must go somewhere. That somewhere is `docs/product/api.md` — a focused document for
 developers who need to understand the programmatic interface.
 
 The Python API is the primary integration surface for:
@@ -41,7 +41,7 @@ an operational doc.
 
 **In scope:**
 
-- Create `docs/api.md` as the dedicated Python API reference.
+- Create `docs/product/api.md` as the dedicated Python API reference.
 - Content: `MemoryClient` instantiation, and all public methods organized by
   domain — conversations, memories, identity and journeys, tasks, attachments,
   and search.
@@ -67,12 +67,12 @@ an operational doc.
 
 ## Done Condition
 
-- `docs/api.md` exists with complete coverage of all public `MemoryClient`
+- `docs/product/api.md` exists with complete coverage of all public `MemoryClient`
   methods, organized by domain.
 - The Python API section is removed from `REFERENCE.md`; a pointer to
-  `docs/api.md` replaces it.
-- `docs/index.md` links to `docs/api.md`.
-- `docs/product/extensions/` references `docs/api.md` where relevant.
+  `docs/product/api.md` replaces it.
+- `docs/index.md` links to `docs/product/api.md`.
+- `docs/product/extensions/` references `docs/product/api.md` where relevant.
 - CI remains green.
 
 ---

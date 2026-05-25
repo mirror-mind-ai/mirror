@@ -12,7 +12,7 @@ to all work on this codebase.
 **Service layer is the architecture.**
 `MemoryClient` is a façade. Services are the implementation. Storage handles
 persistence. The import direction rule and full layer model are in
-[docs/architecture.md](../architecture.md).
+[docs/product/architecture.md](../product/architecture.md).
 
 **English everywhere.**
 Variable names, function names, CLI commands, schema columns, identity layer
@@ -105,4 +105,4 @@ as defined in [Release Notes](release-notes.md).
 ---
 
 **See also:** [Product Principles](../product/principles.md) ·
-[Development Guide](development-guide.md) · [Architecture](../architecture.md)
+[Development Guide](development-guide.md) · [Architecture](../product/architecture.md)

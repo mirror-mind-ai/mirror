@@ -2,10 +2,10 @@
 
 # CV13 — Mirror Web Console
 
-**Status:** Planned
-**Goal:** Provide a local web interface for inspecting and eventually editing
-Mirror context: docs, configuration, personas, identity, journeys, and related
-runtime state.
+**Status:** Planned/deferred
+**Goal:** Provide a broader local web interface for inspecting and eventually
+editing Mirror context: docs, configuration, personas, identity, journeys, and
+related runtime state.
 
 ---
 
@@ -15,8 +15,11 @@ The Mirror Web Console is a local-first tool for navigating Mirror from outside
 the terminal conversation. It should make the system inspectable without
 replacing the agentic workflow.
 
-The first slice is intentionally read-only: browse documentation with rendered
-Markdown.
+This CV is currently deferred while the 1.0 web work advances inside
+[CV9.E6 Web Visibility](../cv9-mirror-1-0/cv9-e6-web-visibility/index.md).
+CV9.E6 has already established the read-only shell and Identity perspective on
+the release branch, so CV13 should be revisited after CV9.E6 closes and should
+avoid duplicating the shipped 1.0 surface.
 
 ---
 

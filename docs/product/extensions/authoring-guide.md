@@ -65,7 +65,7 @@ The mirror suggests this template. Each document has a focused purpose:
 
 - **`README.md`** — what the extension does, why, how to install, and the
   top 3–5 commands. Two minutes of reading. Links to everything else.
-- **`docs/architecture.md`** — internal design, data flow, decisions.
+- **`docs/product/architecture.md`** — internal design, data flow, decisions.
   Why this schema, why this parser registry, why this LLM prompt shape.
 - **`docs/commands.md`** — exhaustive CLI reference. Every subcommand, every
   flag, every example. Generated or hand-written, but complete.

@@ -19,7 +19,94 @@ but no fix yet are also welcome (mark them `Status: mitigated`).
 - [Changing `.mirror-update-channel` makes the git tree dirty](#changing-mirror-update-channel-makes-the-git-tree-dirty)
 - [Welcome shows channel `main` when you expected `stable`](#welcome-shows-channel-main-when-you-expected-stable)
 - [`runtime release-notes latest` says release notes were not found](#runtime-release-notes-latest-says-release-notes-were-not-found)
+- [Pi Builder conversations appear without journeys](#pi-builder-conversations-appear-without-journeys)
 - [Pi logger fails silently when `python3` resolves outside the project venv](#pi-logger-fails-silently-when-python3-resolves-outside-the-project-venv)
+
+---
+
+## Pi Builder conversations appear without journeys
+
+**Date:** 2026-05-25
+**Status:** fixed for future sessions; historical data may need explicit repair
+**Affected component:** Pi `/mm-build`, conversation logging, Workspace web surface
+**Severity:** Workspace and journey history can look stale or incomplete
+
+### Symptom
+
+Workspace shows few or no conversations for recently active journeys. The
+conversation rows exist and contain messages, but `conversations.journey` is
+`NULL`.
+
+Common examples:
+
+```text
+/mm-build mirror-mind
+/mm-build maestro
+/mm-build sandbox-pet-store
+```
+
+The session is logged, but the journey-specific Workspace tab does not show the
+conversation because it filters by the `journey` column.
+
+### Root cause
+
+Pi invokes SKILL.md commands as separate Python processes. `/mm-build` calls:
+
+```bash
+uv run python -m memory build load <slug>
+```
+
+That process does not always receive `MIRROR_SESSION_ID`. Before the fix,
+`switch_conversation()` returned without changing the active runtime session
+when no explicit session id was available. The Pi extension still logged user
+and assistant messages, but they remained attached to a conversation with
+`journey = NULL`.
+
+### Fix
+
+The core conversation logger now falls back to the most recently updated active
+runtime session when no explicit session id is available. Pi user-message
+logging also refreshes the runtime session's `updated_at`, so the fallback
+selects the active session more reliably.
+
+This fixes future Pi Builder activations. It does not silently rewrite
+historical conversations.
+
+### Diagnosis
+
+Run a dry-run repair scan:
+
+```bash
+uv run python -m memory conversation-logger repair-journeys
+```
+
+This prints high-confidence journeyless conversations whose title or first user
+message clearly activates a known journey.
+
+Limit the scan while reviewing:
+
+```bash
+uv run python -m memory conversation-logger repair-journeys --limit 250
+```
+
+### Repair
+
+Apply only after reviewing the dry-run output:
+
+```bash
+uv run python -m memory conversation-logger repair-journeys --apply
+```
+
+The apply path creates a database backup first and refuses to continue if backup
+fails. The repair is conservative: it only updates `conversations.journey` for
+high-confidence matches. Ambiguous rows remain unchanged and should be reviewed
+manually.
+
+### Prevention
+
+Use a version containing the core fix before relying on Workspace as the source
+of truth for recent Pi Builder activity. If Workspace still looks stale after
+updating, run the dry-run repair command and inspect the candidates.
 
 ---
 

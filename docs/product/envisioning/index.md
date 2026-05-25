@@ -5,7 +5,20 @@
 > open design questions and is not a stable spec. Design questions graduate
 > to specs when their CV begins planning.
 
-# Coherence as Product Architecture
+# Product Envisioning
+
+This area captures exploratory product architecture before it becomes stable
+specification or roadmap work.
+
+Current explorations:
+
+- [Mirror Web Perspectives](web-perspectives.md) captures the Atlas and
+  Workspace perspective model for the Mirror Mind 1.0 web visibility surface.
+- [Agentic Web Console](agentic-web-console.md) explores a future browser-based
+  operations surface where a headless agent proposes or performs controlled
+  Mirror updates with approval and auditability.
+
+## Coherence as Product Architecture
 
 This document captures the current product architecture synthesis for the
 coherence capability that emerged from the Maestro journey.

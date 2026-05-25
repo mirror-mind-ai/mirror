@@ -95,7 +95,7 @@ looks like.
 ## Dependencies
 
 - S3 must be complete. S3 moves import direction out of `principles.md` into
-  `docs/architecture.md`. S4 must run after that move to avoid reorganizing
+  `docs/product/architecture.md`. S4 must run after that move to avoid reorganizing
   content that S3 has already relocated.
 
 ---

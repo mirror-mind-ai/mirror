@@ -59,8 +59,8 @@ Start here if you are working on Mirror Mind itself.
 Start here if you need to understand the internals or integrate with Mirror
 Mind programmatically.
 
-- [Architecture](architecture.md) — system design, layers, schema, and runtime model
-- [Python API](api.md) — programmatic interface for developers
+- [Architecture](product/architecture.md) — system design, layers, schema, and runtime model
+- [Python API](product/api.md) — programmatic interface for developers
 - [Runtime Interface Spec](product/specs/runtime-interface/index.md) — lifecycle and runtime contract
 - [Extension Product Docs](product/extensions/index.md) — stateful extension model
 
@@ -72,8 +72,9 @@ Product docs explain what Mirror Mind is and how it should behave.
 
 - [Product index](product/index.md) — map of product documentation
 - [Principles](product/principles.md) — product behavior principles
-- [Envisioning](product/envisioning/index.md) — UoC model, lenses, Maestro framing, and coherence as product architecture
-- [Specs](product/specs/index.md) — concrete product and runtime behavior specifications
+- [Python API](product/api.md) — programmatic interface for developers integrating with Mirror Core
+- [Envisioning](product/envisioning/index.md) — UoC model, lenses, Maestro framing, web perspectives, and coherence as product architecture
+- [Specs](product/specs/index.md) — concrete product, web surface, and runtime behavior specifications
 - [Extensions](product/extensions/index.md) — user-owned, stateful extensions outside the core
 
 ---
@@ -87,7 +88,7 @@ decided.
 - [Decisions](project/decisions.md) — incremental decisions and open discussions
 - [Roadmap](project/roadmap/index.md) — CV → Epic → Story hierarchy with status
 
-Current state: **CV0 English Foundation ✅ · CV1 Pi Runtime ✅ · CV2 Runtime Portability ✅ · CV3 Pi Skill Parity ✅ · CV4 Framework/User Separation ✅ · CV5 Multisession Safety ✅ · CV6 Runtime Maturity ✅ · CV7 Intelligence Depth ✅ · CV8 Runtime Expansion ✅ · CV9 Mirror Mind 1.0 🟢 In Progress · CV14 Stateful Extensions 🟢 E1–E2 Done**
+Current state: **CV0 English Foundation ✅ · CV1 Pi Runtime ✅ · CV2 Runtime Portability ✅ · CV3 Pi Skill Parity ✅ · CV4 Framework/User Separation ✅ · CV5 Multisession Safety ✅ · CV6 Runtime Maturity ✅ · CV7 Intelligence Depth ✅ · CV8 Runtime Expansion ✅ · CV9 Mirror Mind 1.0 🟢 In Progress, with Web Visibility done · CV14 Stateful Extensions 🟢 E1–E2 Done**
 
 Runtime expansion result: **Gemini CLI first at L4 full parity; Codex second at
 L3 parity through the wrapper script, JSONL backfill, `AGENTS.md`, and `$mm-*`
@@ -118,13 +119,13 @@ working policy for local runtime changes:
 
 ## Reference
 
-Reference docs answer concrete lookup questions. They intentionally remain close
-to the docs root for discoverability before 1.0.
+Reference docs answer concrete lookup questions. Some reference surfaces live
+under Product when they describe product-owned Mirror Core interfaces.
 
 - [Command Reference](../REFERENCE.md) — CLI behavior, configuration, runtime self-update, and operational details
 - [Getting Started](getting-started.md) — prerequisites, installation, first session
-- [Architecture](architecture.md) — system design, layers, schema, and runtime model
-- [Python API](api.md) — programmatic interface for developers
+- [Architecture](product/architecture.md) — system design, layers, schema, and runtime model
+- [Python API](product/api.md) — programmatic interface for developers
 - [Releases](releases/index.md) — narrative release notes from CV9.E5 onward
 - [CLAUDE.md](../CLAUDE.md) — routing, modes, and available skills
 
@@ -133,8 +134,9 @@ to the docs root for discoverability before 1.0.
 ## Information architecture note
 
 Before 1.0, Mirror Mind keeps the documentation tree conservative: no broad file
-moves just to satisfy symmetry. `docs/releases/`, root-level `architecture.md`,
-root-level `api.md`, and operations docs under `docs/process/` stay where they
-are until the project has enough pressure to justify a dedicated reference or
-operations subtree. This preserves stable links while making the reader paths
-explicit.
+moves just to satisfy symmetry. `docs/releases/` and operations docs under
+`docs/process/` stay where they are until the project has enough pressure to
+justify a dedicated reference or operations subtree. `docs/product/architecture.md`
+and `docs/product/api.md` live under Product because architecture and the Python
+API are part of the Mirror Core product surface. This preserves stable reader
+paths while keeping product-owned surfaces together.

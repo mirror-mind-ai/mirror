@@ -13,6 +13,7 @@ from memory.services.memory import MemoryService
 from memory.services.runtime_session import RuntimeSessionService
 from memory.services.tasks import TaskService
 from memory.storage.store import Store
+from memory.surfaces import SurfaceService
 
 
 def _require_journey(value: str | None, *, argument: str = "journey") -> str:
@@ -47,6 +48,13 @@ class MemoryClient:
         self.tasks = TaskService(self.store, self.journeys)
         self.memories = MemoryService(self.store, self.search_engine)
         self.conversations = ConversationService(self.store, self.memories, self.tasks)
+        self.surfaces = SurfaceService(
+            identity=self.identity,
+            journeys=self.journeys,
+            memories=self.memories,
+            conversations=self.conversations,
+            tasks=self.tasks,
+        )
 
     @property
     def is_production(self) -> bool:

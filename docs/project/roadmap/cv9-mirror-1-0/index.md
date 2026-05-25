@@ -26,9 +26,10 @@ The major themes are:
 |------|------|----------------------|--------|
 | CV9.E1 | Boundary Hardening | A clean, layered architecture with no direct SQL in CLI and clear transaction boundaries | 🟡 Planned |
 | [CV9.E2](cv9-e2-stabilization/index.md) | Stabilization & Robustness | Improved error handling and feature-flag safety across all runtimes | 🟡 Planned |
-| [CV9.E3](cv9-e3-distribution-tooling/index.md) | Distribution & Tooling | A simple, robust way to install and update Mirror Mind | 🟢 In Progress — Self-Update Done track |
+| [CV9.E3](cv9-e3-distribution-tooling/index.md) | Distribution & Tooling | A simple, robust way to install and update Mirror Mind | ✅ Done — Self-Update Done track complete |
 | [CV9.E4](cv9-e4-documentation-polish/index.md) | Documentation & Polish | Comprehensive, accurate, and helpful documentation for the public | ✅ Done |
 | [CV9.E5](cv9-e5-process-versioning-alignment/index.md) | Process & Versioning Alignment | An explicit development lifecycle and prospective versioning model for future work | ✅ Done |
+| [CV9.E6](cv9-e6-web-visibility/index.md) | Web Visibility | A local read-only web surface reveals Mirror data through Identity and Workspace perspectives | ✅ Done |
 
 ---
 
@@ -41,6 +42,7 @@ CV9 is done:
 - External extensions have consistent first-class skill discovery across supported runtimes, including the shared Gemini CLI/Codex `.agents/skills/` surface.
 - A robust installation script or `uv`-based distribution path exists.
 - Documentation (README, Getting Started, REFERENCE) is audited and confirmed accurate for 1.0 release.
+- A local read-only web visibility surface lets users inspect core Mirror data through Identity and Workspace perspectives without reading the database or using CLI commands.
 - Process and versioning rules are explicit, prospective from CV9.E5 onward, and reflected in the development guide.
 - CI remains green with high coverage.
 
@@ -53,7 +55,8 @@ E1 Boundary Hardening
   └── E2 Stabilization
         └── E3 Distribution
               ├── E4 Documentation & Polish
-              └── E5 Process & Versioning Alignment
+              ├── E5 Process & Versioning Alignment
+              └── E6 Web Visibility
 ```
 
 ---

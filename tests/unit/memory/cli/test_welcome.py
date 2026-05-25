@@ -1,12 +1,13 @@
 """Tests for the `python -m memory welcome` command."""
 
+import json
 from datetime import datetime, timedelta, timezone
 
 import numpy as np
 import pytest
 
 from memory import MemoryClient
-from memory.cli.runtime import GitStatus, GitUpdatePlan, UpdateChannel
+from memory.cli.runtime import GitStatus, GitUpdatePlan, RuntimeUpdateAvailability, UpdateChannel
 from memory.config import default_db_path_for_home
 
 JOURNEY_ACTIVE = """# Sample journey
@@ -71,6 +72,7 @@ def test_welcome_empty_when_mirror_welcome_off(monkeypatch, tmp_path, capsys):
 
 def test_welcome_has_version_stats_and_blank_before_invitation(monkeypatch, tmp_path, capsys):
     _mem(tmp_path, user="alisson-vale")
+    monkeypatch.setenv("MIRROR_WELCOME_REMOTE_UPDATE_CHECK", "off")
     monkeypatch.setattr("memory.cli.welcome.package_version", lambda: "0.7.0")
     monkeypatch.setattr(
         "memory.cli.welcome.inspect_update_channel", lambda start: UpdateChannel("stable", None)
@@ -286,6 +288,7 @@ def test_welcome_since_label_formats_month_year(tmp_path, capsys, month_iso, exp
 
 def test_welcome_renders_update_available_from_local_refs(monkeypatch, tmp_path, capsys):
     _mem(tmp_path, user="alisson-vale")
+    monkeypatch.setenv("MIRROR_WELCOME_REMOTE_UPDATE_CHECK", "off")
     monkeypatch.setattr("memory.cli.welcome.package_version", lambda: "0.7.0")
     monkeypatch.setattr(
         "memory.cli.welcome.inspect_update_channel", lambda start: UpdateChannel("stable", None)
@@ -311,6 +314,7 @@ def test_welcome_renders_update_available_from_local_refs(monkeypatch, tmp_path,
 
 def test_welcome_does_not_render_update_line_when_refs_are_current(monkeypatch, tmp_path, capsys):
     _mem(tmp_path, user="alisson-vale")
+    monkeypatch.setenv("MIRROR_WELCOME_REMOTE_UPDATE_CHECK", "off")
     monkeypatch.setattr("memory.cli.welcome.package_version", lambda: "0.7.0")
     monkeypatch.setattr(
         "memory.cli.welcome.inspect_update_channel", lambda start: UpdateChannel("stable", None)
@@ -331,3 +335,174 @@ def test_welcome_does_not_render_update_line_when_refs_are_current(monkeypatch, 
     out = capsys.readouterr().out
     assert "Version 0.7.0 · channel stable" in out
     assert "Update available" not in out
+
+
+def test_welcome_refreshes_remote_update_cache_and_renders_version(monkeypatch, tmp_path, capsys):
+    _mem(tmp_path, user="alisson-vale")
+    home = tmp_path / ".mirror" / "alisson-vale"
+    monkeypatch.setattr("memory.cli.welcome.package_version", lambda: "0.8.0")
+    monkeypatch.setattr(
+        "memory.cli.welcome.inspect_update_channel", lambda start: UpdateChannel("stable", None)
+    )
+    monkeypatch.setattr(
+        "memory.cli.welcome.check_runtime_update_availability",
+        lambda channel=None: RuntimeUpdateAvailability(
+            "0.8.0",
+            "origin/stable",
+            "4bdff1b",
+            "fac6da3f41d6d63b173ec84b84008b425a848467",
+            "update_available",
+            update_channel=UpdateChannel("stable", None),
+        ),
+    )
+    monkeypatch.setattr(
+        "memory.cli.welcome.inspect_git",
+        lambda start: GitStatus(tmp_path, "main", "4bdff1b", False),
+    )
+    monkeypatch.setattr(
+        "memory.cli.welcome._run_git",
+        lambda args, *, cwd: (
+            0,
+            "fac6da3f41d6d63b173ec84b84008b425a848467\trefs/tags/v0.9.0",
+            "",
+        ),
+    )
+
+    from memory.cli.welcome import main
+
+    main(["--mirror-home", str(home)])
+
+    out = capsys.readouterr().out
+    assert "Update available: v0.9.0" in out
+    assert 'Ask: "what changed?" or "update my Mirror"' in out
+    cache = json.loads((home / "runtime" / "update-check.json").read_text(encoding="utf-8"))
+    assert cache["availability"] == "update_available"
+    assert cache["version"] == "v0.9.0"
+
+
+def test_welcome_uses_fresh_cache_without_remote_check(monkeypatch, tmp_path, capsys):
+    _mem(tmp_path, user="alisson-vale")
+    home = tmp_path / ".mirror" / "alisson-vale"
+    cache_path = home / "runtime" / "update-check.json"
+    cache_path.parent.mkdir(parents=True)
+    cache_path.write_text(
+        json.dumps(
+            {
+                "checked_at": datetime.now(timezone.utc).isoformat(),
+                "channel": "stable",
+                "availability": "update_available",
+                "current_commit": "abc",
+                "remote_commit": "def",
+                "version": "v0.9.0",
+                "title": "Self-Update Done",
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr("memory.cli.welcome.package_version", lambda: "0.8.0")
+    monkeypatch.setattr(
+        "memory.cli.welcome.inspect_update_channel", lambda start: UpdateChannel("stable", None)
+    )
+    called: list[bool] = []
+    monkeypatch.setattr(
+        "memory.cli.welcome.check_runtime_update_availability",
+        lambda channel=None: called.append(True),
+    )
+
+    from memory.cli.welcome import main
+
+    main(["--mirror-home", str(home)])
+
+    assert called == []
+    assert "Update available: v0.9.0 — Self-Update Done" in capsys.readouterr().out
+
+
+def test_welcome_remote_check_can_be_disabled(monkeypatch, tmp_path, capsys):
+    _mem(tmp_path, user="alisson-vale")
+    monkeypatch.setenv("MIRROR_WELCOME_REMOTE_UPDATE_CHECK", "off")
+    monkeypatch.setattr("memory.cli.welcome.package_version", lambda: "0.8.0")
+    monkeypatch.setattr(
+        "memory.cli.welcome.inspect_update_channel", lambda start: UpdateChannel("stable", None)
+    )
+    monkeypatch.setattr(
+        "memory.cli.welcome.inspect_git",
+        lambda start: GitStatus(None, None, None, None, "not a git repository"),
+    )
+    called: list[bool] = []
+    monkeypatch.setattr(
+        "memory.cli.welcome.check_runtime_update_availability",
+        lambda channel=None: called.append(True),
+    )
+
+    from memory.cli.welcome import main
+
+    main(["--mirror-home", str(tmp_path / ".mirror" / "alisson-vale")])
+
+    assert called == []
+    assert "Update available" not in capsys.readouterr().out
+
+
+def test_welcome_remote_check_fails_softly(monkeypatch, tmp_path, capsys):
+    _mem(tmp_path, user="alisson-vale")
+    monkeypatch.setattr("memory.cli.welcome.package_version", lambda: "0.8.0")
+    monkeypatch.setattr(
+        "memory.cli.welcome.inspect_update_channel", lambda start: UpdateChannel("stable", None)
+    )
+    monkeypatch.setattr(
+        "memory.cli.welcome.check_runtime_update_availability",
+        lambda channel=None: (_ for _ in ()).throw(RuntimeError("network down")),
+    )
+    monkeypatch.setattr(
+        "memory.cli.welcome.inspect_git",
+        lambda start: GitStatus(None, None, None, None, "not a git repository"),
+    )
+
+    from memory.cli.welcome import main
+
+    main(["--mirror-home", str(tmp_path / ".mirror" / "alisson-vale")])
+
+    out = capsys.readouterr().out
+    assert "◇ Mirror · alisson-vale" in out
+    assert "Update check" not in out
+
+
+def test_welcome_status_line_reads_cache_only(monkeypatch, tmp_path, capsys):
+    _mem(tmp_path, user="alisson-vale")
+    home = tmp_path / ".mirror" / "alisson-vale"
+    cache_path = home / "runtime" / "update-check.json"
+    cache_path.parent.mkdir(parents=True)
+    cache_path.write_text(
+        json.dumps(
+            {
+                "checked_at": datetime.now(timezone.utc).isoformat(),
+                "channel": "stable",
+                "availability": "update_available",
+                "current_commit": "abc",
+                "remote_commit": "def",
+                "version": "v0.9.0",
+            }
+        ),
+        encoding="utf-8",
+    )
+    called: list[bool] = []
+    monkeypatch.setattr(
+        "memory.cli.welcome.check_runtime_update_availability",
+        lambda channel=None: called.append(True),
+    )
+
+    from memory.cli.welcome import main
+
+    main(["--mirror-home", str(home), "--status-line"])
+
+    assert called == []
+    assert capsys.readouterr().out.strip() == "◇ alisson-vale · ⬆ v0.9.0"
+
+
+def test_welcome_status_line_healthy_without_cache(tmp_path, capsys):
+    _mem(tmp_path, user="alisson-vale")
+
+    from memory.cli.welcome import main
+
+    main(["--mirror-home", str(tmp_path / ".mirror" / "alisson-vale"), "--status-line"])
+
+    assert capsys.readouterr().out.strip() == "◇ alisson-vale · ✓"

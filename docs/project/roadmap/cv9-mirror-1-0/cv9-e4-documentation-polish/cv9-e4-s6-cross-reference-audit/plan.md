@@ -25,8 +25,8 @@ it done.
 The docs index is the navigation hub. After S1–S5 and S7 it must reflect the
 new structure exactly.
 
-- [ ] Reference section includes `docs/architecture.md` (created in S3)
-- [ ] Reference section includes `docs/api.md` (created in S7)
+- [ ] Reference section includes `docs/product/architecture.md` (created in S3)
+- [ ] Reference section includes `docs/product/api.md` (created in S7)
 - [ ] Process section includes `docs/process/engineering-principles.md` (created in S4)
 - [ ] `docs/product/principles.md` is described as product behavior principles only (no Code/Testing/Process)
 - [ ] No reference to content that has moved (personas table, Mirror Mode procedure, etc.)
@@ -35,7 +35,7 @@ new structure exactly.
 
 - [ ] "Documentation" section links accurately to the current doc layout
 - [ ] No inline commands table — pointer to `REFERENCE.md` only
-- [ ] No directory tree — pointer to `docs/architecture.md` (repo structure section)
+- [ ] No directory tree — pointer to `docs/product/architecture.md` (repo structure section)
 - [ ] Pointers to Getting Started, Briefing, Decisions, Roadmap, Development Guide, REFERENCE all resolve
 
 ### REFERENCE.md — three sections only
@@ -48,26 +48,26 @@ new structure exactly.
 - [ ] No personas table
 - [ ] No Mirror Mode procedure
 - [ ] No extensions operational guide — pointer to `docs/product/extensions/` only
-- [ ] No Python API — pointer to `docs/api.md` only
-- [ ] No database schema — pointer to `docs/architecture.md` only
+- [ ] No Python API — pointer to `docs/product/api.md` only
+- [ ] No database schema — pointer to `docs/product/architecture.md` only
 
 ### docs/getting-started.md — onboarding only
 
 - [ ] No legacy migration workflow
 - [ ] No extension install/expose/clean cycle — one paragraph + pointer only
 - [ ] "What's next" section present with pointers to REFERENCE, architecture.md, extensions docs
-- [ ] Pointers to `docs/architecture.md` resolve (file exists after S3)
-- [ ] Pointers to `docs/api.md` resolve (file exists after S7)
+- [ ] Pointers to `docs/product/architecture.md` resolve (file exists after S3)
+- [ ] Pointers to `docs/product/api.md` resolve (file exists after S7)
 
 ### CLAUDE.md / AGENTS.md — minimal context
 
 - [ ] No full commands table — pointer to `REFERENCE.md`
-- [ ] No architecture description — pointer to `docs/architecture.md`
+- [ ] No architecture description — pointer to `docs/product/architecture.md`
 - [ ] No detailed skill procedure steps — each SKILL.md path listed only
 - [ ] Mirror Operating Instructions and Project Context sections clearly labelled
 - [ ] Skills list is complete (all skills present with correct SKILL.md paths)
 
-### docs/architecture.md — new file (S3)
+### docs/product/architecture.md — new file (S3)
 
 - [ ] File exists
 - [ ] Breadcrumb (`[< Docs]`) points to `docs/index.md`
@@ -75,7 +75,7 @@ new structure exactly.
   identity model, memory model, runtime model, database schema, runtime session model
 - [ ] "See also" links resolve
 
-### docs/api.md — new file (S7)
+### docs/product/api.md — new file (S7)
 
 - [ ] File exists
 - [ ] Breadcrumb points to `docs/index.md`
@@ -87,7 +87,7 @@ new structure exactly.
 - [ ] File exists
 - [ ] Breadcrumb points to `docs/process/` or `docs/index.md`
 - [ ] Code, Testing, and Process sections present (moved from principles.md)
-- [ ] "Service layer is the architecture" points to `docs/architecture.md` for
+- [ ] "Service layer is the architecture" points to `docs/product/architecture.md` for
   import direction detail (not duplicating content moved in S3)
 
 ### docs/product/principles.md — product only
@@ -114,8 +114,8 @@ Walk the directory tree. For every `.md` file under `docs/`:
 Files most likely to have stale breadcrumbs after E4:
 - `docs/product/principles.md` (content moved; parent unchanged but description changed)
 - `docs/process/engineering-principles.md` (new file; breadcrumb must be set)
-- `docs/architecture.md` (new file; breadcrumb must be set)
-- `docs/api.md` (new file; breadcrumb must be set)
+- `docs/product/architecture.md` (new file; breadcrumb must be set)
+- `docs/product/api.md` (new file; breadcrumb must be set)
 
 ### "See also" sections across all docs/
 
@@ -131,16 +131,16 @@ Each story introduced new pointers replacing removed content. Verify each:
 - [ ] README → Getting Started (S1)
 - [ ] README → REFERENCE for commands (S1)
 - [ ] Getting Started → REFERENCE for commands (S2)
-- [ ] Getting Started → `docs/architecture.md` (S2, S3)
+- [ ] Getting Started → `docs/product/architecture.md` (S2, S3)
 - [ ] Getting Started → `docs/product/extensions/` (S2)
-- [ ] REFERENCE → `docs/architecture.md` for schema and session model (S3)
+- [ ] REFERENCE → `docs/product/architecture.md` for schema and session model (S3)
 - [ ] REFERENCE → `docs/product/extensions/` replacing extensions guide (S3)
-- [ ] REFERENCE → `docs/api.md` replacing Python API (S3)
+- [ ] REFERENCE → `docs/product/api.md` replacing Python API (S3)
 - [ ] REFERENCE → `uv run python -m memory list personas --verbose` replacing personas table (S3)
 - [ ] `docs/product/principles.md` → `docs/process/engineering-principles.md` (S4)
-- [ ] `docs/process/engineering-principles.md` → `docs/architecture.md` for import direction (S4)
+- [ ] `docs/process/engineering-principles.md` → `docs/product/architecture.md` for import direction (S4)
 - [ ] CLAUDE.md → REFERENCE for commands (S5)
-- [ ] CLAUDE.md → `docs/architecture.md` for architecture (S5)
+- [ ] CLAUDE.md → `docs/product/architecture.md` for architecture (S5)
 
 ---
 

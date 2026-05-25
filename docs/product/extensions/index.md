@@ -87,7 +87,7 @@ imports `extension.py`, and calls its `register(api)` entrypoint.
 
 ## Reading order
 
-1. [Architecture](architecture.md) — how the pieces fit together.
+1. [Architecture](../architecture.md) — how the pieces fit together.
 2. [Binding Model](binding-model.md) — how extensions connect to personas
    and journeys (this is the conceptually trickiest part).
 3. [Journey-Bound Context](journey-bound-context.md) — how `journey -> project_path`

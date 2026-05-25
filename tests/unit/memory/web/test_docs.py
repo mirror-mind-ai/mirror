@@ -71,6 +71,17 @@ def test_tree_lists_docs_and_root_docs(tmp_path: Path) -> None:
     assert "README.md" not in paths
 
 
+def test_tree_puts_docs_home_first(tmp_path: Path) -> None:
+    root = make_repo(tmp_path)
+    (root / "docs" / "api.md").write_text("# Python API\n", encoding="utf-8")
+    browser = DocsBrowser(root)
+
+    nodes = browser.tree()
+
+    assert nodes[0].title == "Home"
+    assert nodes[0].path == "docs/index.md"
+
+
 def test_tree_preserves_docs_folder_hierarchy(tmp_path: Path) -> None:
     root = make_repo(tmp_path)
     browser = DocsBrowser(root)

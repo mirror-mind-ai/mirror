@@ -3,7 +3,7 @@
 # CV9.E3 — Distribution & Tooling
 
 **Epic:** Make Mirror Mind simple to install, configure, and grow into  
-**Status:** 🟢 In Progress — Self-Update Done track
+**Status:** ✅ Done — Self-Update Done track complete
 
 ---
 
@@ -35,11 +35,12 @@ over time.
 | [CV9.E3.S10](cv9-e3-s10-stable-release-channel-management/index.md) | Stable Release Channel Management | ✅ Done |
 | [CV9.E3.S11](cv9-e3-s11-release-channel-operations-docs/index.md) | Release Channel Operations Docs | ✅ Done |
 | [CV9.E3.S12](cv9-e3-s12-first-stable-release-publication/index.md) | First Stable Release Publication | ✅ Done |
-| CV9.E3.S13 | Release-Aware Update Notices | 🟡 Planned |
-| CV9.E3.S14 | Release Notes Skill Parity | 🟡 Planned |
-| CV9.E3.S15 | Release Promotion Checklist / Doctor | 🟡 Planned |
-| CV9.E3.S16 | Stable Promotion Execution Path | 🟡 Planned |
-| CV9.E3.S17 | Fresh User Stable Update Smoke | 🟡 Planned |
+| [CV9.E3.S13](cv9-e3-s13-release-aware-update-notices/index.md) | Release-Aware Update Notices | ✅ Done |
+| [CV9.E3.S14](cv9-e3-s14-release-notes-skill-parity/index.md) | Release Notes Skill Parity | ✅ Done |
+| [CV9.E3.S15](cv9-e3-s15-release-promotion-doctor/index.md) | Release Promotion Checklist / Doctor | ✅ Done |
+| [CV9.E3.S16](cv9-e3-s16-stable-promotion-execution/index.md) | Stable Promotion Execution Path | ✅ Done |
+| [CV9.E3.S17](cv9-e3-s17-fresh-user-stable-update-smoke/index.md) | Fresh User Stable Update Smoke | ✅ Done |
+| [CV9.E3.S18](cv9-e3-s18-welcome-status-release-awareness/index.md) | Welcome and Status Bar Release Awareness | ✅ Done |
 
 ---
 

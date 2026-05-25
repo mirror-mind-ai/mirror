@@ -3,8 +3,8 @@
 Command reference, configuration, and legacy migration workflow.
 
 - **Commands:** this document
-- **System architecture, schema, and runtime model:** [docs/architecture.md](docs/architecture.md)
-- **Python API:** [docs/api.md](docs/api.md)
+- **System architecture, schema, and runtime model:** [docs/product/architecture.md](docs/product/architecture.md)
+- **Python API:** [docs/product/api.md](docs/product/api.md)
 - **Extensions:** [docs/product/extensions/](docs/product/extensions/index.md)
 
 ---
@@ -35,8 +35,10 @@ Codex uses the `$mm-` prefix. All runtimes call the same Python core.
 | `/mm-consolidate` | `$mm-consolidate` | `/mm:consolidate` | Scan memories for patterns and propose consolidation | `scan`, `apply <id>`, `reject <id>`, `list` |
 | `/mm-shadow` | `$mm-shadow` | `/mm:shadow` | Surface and promote shadow-layer observations | `scan`, `apply`, `reject`, `list`, `show` |
 | `/mm-welcome` | `$mm-welcome` | `/mm:welcome` | Renders the state-aware welcome card on demand | no arguments |
+| `/mm-release-notes` | `$mm-release-notes` | `/mm:release-notes` | Shows Mirror Mind release notes | `[latest|vX.Y.Z]` |
 | `/mm-help` | `$mm-help` | `/mm:help` | Lists available commands | no arguments |
-| `python -m memory runtime` | — | — | Inspects Mirror runtime status, version, drift, backups, release notes, plans updates, and executes safe updates | `status [--mirror-home PATH] [--channel stable|main]`, `version [--channel stable|main]`, `diagnose [--mirror-home PATH]`, `backup [--mirror-home PATH]`, `backup --verify PATH`, `release-notes [latest|vX.Y.Z]`, `update --dry-run [--mirror-home PATH] [--channel stable|main]`, `update --check [--channel stable|main]`, `update [--no-fetch] [--skip-migrations] [--mirror-home PATH] [--channel stable|main]`, `update --repair-updater [--no-fetch] [--mirror-home PATH] [--channel stable|main]` |
+| `python -m memory runtime` | — | — | Inspects Mirror runtime status, version, drift, backups, release notes, release promotion readiness, plans updates, and executes safe updates | `status [--mirror-home PATH] [--channel stable|main]`, `version [--channel stable|main]`, `diagnose [--mirror-home PATH]`, `backup [--mirror-home PATH]`, `backup --verify PATH`, `release-notes [latest|vX.Y.Z]`, `release-doctor --target vX.Y.Z`, `release-promote --target vX.Y.Z [--dry-run] [--push]`, `update --dry-run [--mirror-home PATH] [--channel stable|main]`, `update --check [--channel stable|main]`, `update [--no-fetch] [--skip-migrations] [--mirror-home PATH] [--channel stable|main]`, `update --repair-updater [--no-fetch] [--mirror-home PATH] [--channel stable|main]` |
+| `python -m memory conversation-logger` | — | — | Runtime conversation logging and repair utilities | `repair-journeys [--limit N] [--apply]` |
 | `ext-review-copy` | — | `ext:review-copy` | External multi-LLM copy review skill; install and expose it before use | skill-driven workflow |
 
 ## Runtime Self-Update
@@ -109,6 +111,8 @@ uv run python -m memory runtime update --check [--channel stable|main]
 
 Queries the configured upstream branch through `git ls-remote`. May contact the network, but does not fetch, pull, change refs, back up, migrate, or modify files. Reports `up_to_date`, `update_available`, `local_ahead`, `diverged`, `no_upstream`, or `unknown`.
 
+On the `stable` channel, this check remains intentionally conservative: it can know a remote commit is available, but it does not fetch release-note files. When release details are not already available from local refs, the output says so and points to the preview and update commands.
+
 #### `runtime update --dry-run`
 
 ```bash
@@ -117,6 +121,8 @@ uv run python -m memory runtime update --dry-run [--channel stable|main]
 
 Plans an update from local refs only. Reuses `runtime status` as the safety gate. Reports whether a real update would be a no-op, pull known remote commits, or require manual reconciliation because the branch is ahead, diverged, dirty, or missing an upstream. Does not contact the network.
 
+When the channel is `stable` and the local upstream ref contains release notes newer than the installed version, the dry-run shows a release-aware notice with version, title, digest, and the concrete preview/update commands. If release notes are unavailable locally, the dry-run falls back to commit-oriented wording.
+
 ### Release notes
 
 ```bash
@@ -124,6 +130,24 @@ uv run python -m memory runtime release-notes [latest|vX.Y.Z]
 ```
 
 Reads narrative release notes from `docs/releases/`. This command exists so runtime skills can answer natural-language requests such as "What's new in the latest Mirror Mind release?" Users do not need to run it directly.
+
+### Release promotion doctor
+
+```bash
+uv run python -m memory runtime release-doctor --target vX.Y.Z [--stable origin/stable]
+```
+
+Runs a read-only preflight before stable promotion. The doctor checks repository availability, clean git state, package version, release-note file and heading, release index link, release tag state, and stable ref relationship. It prints `pass`, `warn`, and `fail` checks. Warnings keep the command exit code at zero because a pre-promotion state may legitimately lack a tag or stable fast-forward; failures exit non-zero. The command does not fetch, tag, merge, push, edit files, back up, migrate, or modify refs.
+
+### Stable release promotion
+
+```bash
+uv run python -m memory runtime release-promote --target vX.Y.Z --dry-run
+uv run python -m memory runtime release-promote --target vX.Y.Z
+uv run python -m memory runtime release-promote --target vX.Y.Z --push
+```
+
+Promotes a release to the stable channel through a controlled path. The command runs the release doctor first and blocks on failures. Dry-run prints planned stages without creating tags, moving branches, or pushing. Local promotion creates the missing target tag at `HEAD` or reuses an existing tag already at `HEAD`, then creates or fast-forwards the local `stable` branch to `HEAD`. Remote publication happens only with `--push`, which pushes the tag and stable branch to `origin`. The command does not fetch, force-push, rewrite existing tags, bump versions, write release notes, back up, migrate, or update production clones.
 
 ### Update execution
 
@@ -143,7 +167,7 @@ Executes the safe update pipeline. Stages run in order and the first failure sto
 7. **migrations** — opens `MemoryClient` once to trigger migration application. Skipped with `--skip-migrations`.
 8. **post-update status** — reruns `runtime status` and expects `ready`.
 
-Failures print a recovery block with the backup path and previous commit when relevant. Successful installs that move to a new commit include an `Installed changes` summary generated from `git log <previous>..<new>`. The pipeline does not roll back automatically: recovery is documented manual work.
+Failures print a recovery block with the backup path and previous commit when relevant. Successful installs that move to a new commit include an `Installed changes` summary generated from `git log <previous>..<new>`. On the `stable` channel, successful installs also include an `Installed release` block when the new checkout contains narrative release notes. The pipeline does not roll back automatically: recovery is documented manual work.
 
 If the full status gate crashes before update planning, `runtime update` automatically falls back to updater self-repair. The repair lane uses a minimal safety gate: clean git tree, configured upstream, optional fetch, optional database backup when the Mirror home and database are available, fast-forward only code update, and migrations skipped. It then asks the user to rerun `runtime update` with the repaired updater. The same lane can be invoked explicitly with `runtime update --repair-updater`.
 
@@ -324,4 +348,4 @@ layers, planned translations, and post-migration verification details.
 ---
 
 **See also:** [Getting Started](docs/getting-started.md) ·
-[Architecture](docs/architecture.md) · [Python API](docs/api.md)
+[Architecture](docs/product/architecture.md) · [Python API](docs/product/api.md)

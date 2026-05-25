@@ -7,13 +7,13 @@
 ## Two Parallel Tasks
 
 S3 does two things at once: it cuts `REFERENCE.md` down to a pure command
-reference, and it builds `docs/architecture.md` from scratch. The cutting is
+reference, and it builds `docs/product/architecture.md` from scratch. The cutting is
 mechanical — we know what leaves and where it goes. The building is the
 consequential design work.
 
 ---
 
-## docs/architecture.md — Design
+## docs/product/architecture.md — Design
 
 ### Primary reader: the contributor
 
@@ -142,7 +142,7 @@ to that section.
 ## Sequencing Note for S4
 
 S3 moves the import direction rule out of `docs/product/principles.md` into
-`docs/architecture.md`. S4 (Principles Reorganization) then splits what
+`docs/product/architecture.md`. S4 (Principles Reorganization) then splits what
 remains in `principles.md`. S4 must run after S3 to avoid reorganizing content
 that S3 has already relocated. The sequencing in the E4 index reflects this.
 

@@ -118,6 +118,7 @@ Rules: `◇` plus persona name on its own line; voice stays first person and uni
 - `mm-consult` — ask other LLMs through OpenRouter — `.pi/skills/mm-consult/SKILL.md`
 - `mm-backup` — memory database backup — `.pi/skills/mm-backup/SKILL.md`
 - `mm-welcome` — render the state-aware welcome card on demand — `.pi/skills/mm-welcome/SKILL.md`
+- `mm-release-notes` — show Mirror Mind release notes — `.pi/skills/mm-release-notes/SKILL.md`
 - `mm-help` — list available commands — `.pi/skills/mm-help/SKILL.md`
 
 Full command reference: [REFERENCE.md](REFERENCE.md)
@@ -137,7 +138,7 @@ Gemini CLI, Codex, Claude Code), SQLite database, Jungian identity architecture.
 complete; CV9.E1 Boundary Hardening and CV9.E2 Stabilization remain planned.
 CV14 Stateful Extensions has E1–E2 done, with E3–E4 provisional.
 
-**Version:** 0.7.0
+**Version:** 0.9.1
 
 **Key references:**
 - Architecture: [docs/architecture.md](docs/architecture.md)

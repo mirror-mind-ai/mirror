@@ -42,7 +42,7 @@ Canonical product surfaces:
 - `tests/` and `evals/`
 - Runtime surfaces: `.pi/`, `.agents/`, `.claude/`, `.gemini/`
 - [Product docs](../product/index.md)
-- [Architecture](../architecture.md)
+- [Architecture](../product/architecture.md)
 - [Reference](../../REFERENCE.md)
 
 ---

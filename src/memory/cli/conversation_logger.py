@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -43,11 +44,43 @@ def _memory_client(mirror_home: str | Path | None = None) -> MemoryClient:
     return MemoryClient(db_path=db_path_from_mirror_home(mirror_home))
 
 
-def _resolve_session_id(session_id: str | None = None) -> str | None:
+def _resolve_active_session_id(mirror_home: str | Path | None = None) -> str | None:
+    """Return the most recently updated active runtime session, when available.
+
+    Some SKILL.md-native runtimes invoke skill commands from the agent shell
+    without exporting a session id. Pi still records the active session in the
+    runtime session table through its extension. In that case, use the latest
+    active runtime session as a best-effort bridge so Builder/Mirror skills can
+    attach the current conversation to the selected journey.
+    """
+    try:
+        mem = _memory_client(mirror_home)
+        row = mem.store.conn.execute(
+            """SELECT session_id FROM runtime_sessions
+               WHERE active = 1
+                 AND session_id != '__global_sticky_defaults__'
+                 AND interface IS NOT NULL
+                 AND interface != 'global_defaults'
+               ORDER BY updated_at DESC
+               LIMIT 1"""
+        ).fetchone()
+    except Exception:
+        return None
+    if not row:
+        return None
+    return row["session_id"]
+
+
+def _resolve_session_id(
+    session_id: str | None = None,
+    mirror_home: str | Path | None = None,
+) -> str | None:
     if session_id:
         return session_id
     env_session = os.environ.get("MIRROR_SESSION_ID", "").strip()
-    return env_session or None
+    if env_session:
+        return env_session
+    return _resolve_active_session_id(mirror_home)
 
 
 def is_muted(mirror_home: str | Path | None = None) -> bool:
@@ -106,6 +139,12 @@ def log_user_message(
         interface=interface,
         mirror_home=mirror_home,
     )
+    mem.store.upsert_runtime_session(
+        session_id,
+        interface=interface,
+        active=True,
+        closed_at=None,
+    )
     if is_new:
         title = _generate_title(content)
         mem.store.update_conversation(conv_id, title=title)
@@ -132,7 +171,7 @@ def switch_conversation(
     **kwargs,
 ) -> str | None:
     """Create a new conversation for a specific session."""
-    resolved_session_id = _resolve_session_id(session_id)
+    resolved_session_id = _resolve_session_id(session_id, mirror_home)
     if not resolved_session_id:
         return None
 
@@ -174,7 +213,7 @@ def update_current_conversation(
     **kwargs,
 ) -> None:
     """Update fields on the current conversation for a specific session."""
-    resolved_session_id = _resolve_session_id(session_id)
+    resolved_session_id = _resolve_session_id(session_id, mirror_home)
     if not resolved_session_id:
         return
     mem = _memory_client(mirror_home)
@@ -191,7 +230,7 @@ def log_assistant_to_session(
     mirror_home: str | Path | None = None,
 ) -> None:
     """Record an assistant message for a specific session."""
-    resolved_session_id = _resolve_session_id(session_id)
+    resolved_session_id = _resolve_session_id(session_id, mirror_home)
     if not resolved_session_id:
         return
     log_assistant_message(resolved_session_id, content, mirror_home=mirror_home)
@@ -499,6 +538,156 @@ def backfill_assistant_messages(transcript_path: str) -> None:
                 mem.add_message(conv.id, role="assistant", content=text)
 
 
+def _journey_aliases(mem: MemoryClient) -> dict[str, list[str]]:
+    rows = mem.store.conn.execute(
+        "SELECT key, content FROM identity WHERE layer = 'journey' ORDER BY key"
+    ).fetchall()
+    aliases: dict[str, list[str]] = {}
+    for row in rows:
+        slug = row["key"]
+        content = row["content"] or ""
+        values = {slug.lower(), slug.replace("-", " ").lower()}
+        for line in content.splitlines():
+            heading = line.strip()
+            if heading.startswith("#"):
+                title = heading.lstrip("#").strip()
+                if title:
+                    values.add(title.lower())
+                break
+        aliases[slug] = sorted(values, key=len, reverse=True)
+    return aliases
+
+
+def _first_user_message(mem: MemoryClient, conversation_id: str) -> str:
+    row = mem.store.conn.execute(
+        """SELECT content FROM messages
+           WHERE conversation_id = ? AND role = 'user'
+           ORDER BY created_at ASC LIMIT 1""",
+        (conversation_id,),
+    ).fetchone()
+    return row["content"] if row else ""
+
+
+def _activation_text(title: str | None, first_user: str) -> str:
+    parts = [title or ""]
+    stripped = first_user.strip()
+    if "</skill>" in stripped:
+        parts.append(stripped.rsplit("</skill>", 1)[-1])
+    first_line = stripped.splitlines()[0] if stripped else ""
+    parts.append(first_line)
+    return "\n".join(parts).lower()
+
+
+def _infer_journey_for_conversation(
+    title: str | None,
+    first_user: str,
+    aliases: dict[str, list[str]],
+) -> tuple[str | None, str | None]:
+    text = _activation_text(title, first_user)
+    if not text.strip():
+        return None, None
+
+    build_match = re.search(r"(?:/mm-build|\$mm-build|/mm:build)\s+([a-z0-9][a-z0-9_-]*)", text)
+    if build_match:
+        slug = build_match.group(1)
+        if slug in aliases:
+            return slug, "explicit build command"
+
+    candidates: list[tuple[str, str, str]] = []
+    for slug, values in aliases.items():
+        for alias in values:
+            escaped = re.escape(alias)
+            if re.search(rf"(?:^|\n)\s*{escaped}\s*$", text):
+                candidates.append((slug, alias, "standalone journey slug/name"))
+                break
+            activation = (
+                rf"(?:vamos|quero|preciso|let'?s)\s+"
+                rf"(?:retomar\s+)?(?:trabalhar|ativar|continuar|retomar|work)"
+                rf"(?:\s+\w+){{0,5}}\s+(?:journey|jornada|travessia|projeto|project)?\s*"
+                rf"(?:no|na|em|on|with)?\s*{escaped}\b"
+                rf"(?=$|\s*[.,;:!?)]|\s+(?:em|in|journey|jornada|travessia|modo)\b)"
+            )
+            if re.search(activation, text):
+                candidates.append((slug, alias, "activation phrase"))
+                break
+
+    if not candidates:
+        return None, None
+    candidates.sort(key=lambda item: len(item[1]), reverse=True)
+    best = candidates[0]
+    if len(candidates) > 1 and len(candidates[0][1]) == len(candidates[1][1]):
+        return None, None
+    return best[0], best[2]
+
+
+def diagnose_journey_associations(
+    *,
+    mirror_home: str | Path | None = None,
+    apply: bool = False,
+    limit: int | None = None,
+) -> list[dict[str, str | int]]:
+    """Find and optionally repair journeyless conversations with high-confidence matches."""
+    mem = _memory_client(mirror_home)
+    aliases = _journey_aliases(mem)
+    sql = """SELECT id, title, started_at FROM conversations
+             WHERE journey IS NULL
+             ORDER BY started_at DESC"""
+    if limit is not None:
+        sql += " LIMIT ?"
+        rows = mem.store.conn.execute(sql, (limit,)).fetchall()
+    else:
+        rows = mem.store.conn.execute(sql).fetchall()
+
+    findings: list[dict[str, str | int]] = []
+    for row in rows:
+        first_user = _first_user_message(mem, row["id"])
+        journey, reason = _infer_journey_for_conversation(row["title"], first_user, aliases)
+        if not journey:
+            continue
+        msg_count = mem.store.conn.execute(
+            "SELECT COUNT(*) AS count FROM messages WHERE conversation_id = ?",
+            (row["id"],),
+        ).fetchone()["count"]
+        findings.append(
+            {
+                "conversation_id": row["id"],
+                "journey": journey,
+                "reason": reason or "high-confidence match",
+                "title": row["title"] or "",
+                "started_at": row["started_at"],
+                "message_count": msg_count,
+            }
+        )
+
+    if apply and findings:
+        from memory.cli.backup import backup
+        from memory.config import _RESOLVED_MIRROR_HOME
+
+        backup_home = Path(mirror_home).expanduser() if mirror_home else _RESOLVED_MIRROR_HOME
+        backup_path = backup(silent=False, mirror_home=backup_home)
+        if backup_path is None:
+            raise RuntimeError("Database backup failed; refusing to repair conversations.")
+        for finding in findings:
+            mem.store.update_conversation(
+                str(finding["conversation_id"]), journey=str(finding["journey"])
+            )
+
+    return findings
+
+
+def _print_journey_association_findings(
+    findings: list[dict[str, str | int]], *, applied: bool
+) -> None:
+    label = "Repaired" if applied else "Repair candidates"
+    print(f"{label}: {len(findings)}")
+    for finding in findings:
+        print(
+            f"- {finding['conversation_id']} -> {finding['journey']} "
+            f"({finding['reason']}; {finding['message_count']} messages; "
+            f"{finding['started_at']}; {finding['title']})"
+        )
+
+
 def hook_session_end():
     """Entry point for the SessionEnd hook. Reads JSON from stdin."""
     try:
@@ -578,6 +767,23 @@ def main(argv: list[str] | None = None) -> None:
     elif cmd == "session-end-pi":
         if len(args) >= 2:
             end_session(args[1], extract=False, mirror_home=mirror_home)
+    elif cmd in ("diagnose-journeys", "repair-journeys"):
+        apply = cmd == "repair-journeys" and "--apply" in args
+        limit = None
+        if "--limit" in args:
+            idx = args.index("--limit")
+            if idx + 1 >= len(args):
+                print("Error: --limit requires a number", file=sys.stderr)
+                sys.exit(1)
+            limit = int(args[idx + 1])
+        findings = diagnose_journey_associations(
+            mirror_home=mirror_home,
+            apply=apply,
+            limit=limit,
+        )
+        _print_journey_association_findings(findings, applied=apply)
+        if cmd == "repair-journeys" and not apply:
+            print("Dry run only. Re-run with --apply to repair after reviewing candidates.")
     elif cmd == "backfill-codex-session":
         if len(args) >= 2:
             path = args[1]

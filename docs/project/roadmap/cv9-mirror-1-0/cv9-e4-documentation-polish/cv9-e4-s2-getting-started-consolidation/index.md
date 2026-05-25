@@ -52,7 +52,7 @@ But Getting Started also has its own structural problems:
   steps, no smoke test.
 - Add a "What's next" section at the end that points to:
   - `REFERENCE.md` for the full command reference
-  - `docs/architecture.md` for the system architecture (created in S3)
+  - `docs/product/architecture.md` for the system architecture (created in S3)
   - `docs/product/extensions/` for extending the mirror
 - Ensure the document reads as a clean linear flow: prerequisites → install →
   configure → init → seed → start → verify → what's next.
@@ -74,8 +74,8 @@ But Getting Started also has its own structural problems:
 - Full commands table (pointer to REFERENCE)
 - Legacy migration workflow (moved to REFERENCE)
 - Extension install/expose/clean cycle (pointer to extension docs)
-- Python API (pointer to `docs/api.md`, created in S7)
-- Architecture detail (pointer to `docs/architecture.md`, created in S3)
+- Python API (pointer to `docs/product/api.md`, created in S7)
+- Architecture detail (pointer to `docs/product/architecture.md`, created in S3)
 
 **Out of scope:**
 

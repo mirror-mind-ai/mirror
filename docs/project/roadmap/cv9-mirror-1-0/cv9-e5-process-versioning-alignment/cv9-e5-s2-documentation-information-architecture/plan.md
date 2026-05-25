@@ -24,7 +24,7 @@ move clearly pays for itself.
   but the boundary should be named.
 - `docs/releases/` exists as a top-level area even though the process model is
   organized around Process, Project, and Product.
-- Root-level `docs/architecture.md` and `docs/api.md` are reference/developer
+- Root-level `docs/product/architecture.md` and `docs/product/api.md` are reference/developer
   material, but the docs home does not clearly explain that layer.
 - Major folders need landing pages or explicit map entries that explain their
   purpose.

@@ -19,7 +19,7 @@ cross-reference lands in the right place.
 ## Problem
 
 S1 through S5 and S7 move content across documents, create new files
-(`docs/architecture.md`, `docs/api.md`, `docs/process/engineering-principles.md`),
+(`docs/product/architecture.md`, `docs/product/api.md`, `docs/process/engineering-principles.md`),
 remove content from existing files, and add pointers throughout the doc set.
 Each of those structural moves leaves a trail of breadcrumbs, "See also" links,
 and inline references that pointed to the old structure.

@@ -155,8 +155,8 @@ Common docs to check:
 - `README.md`
 - `REFERENCE.md`
 - `docs/index.md`
-- `docs/architecture.md`
-- `docs/api.md`
+- `docs/product/architecture.md`
+- `docs/product/api.md`
 - `docs/project/briefing.md`
 - `docs/project/decisions.md`
 - `docs/project/roadmap/`
@@ -294,8 +294,8 @@ When behavior changes:
 
 - `README.md`: public positioning, setup, stack, or usage changes.
 - `REFERENCE.md`: command behavior, configuration, runtime contracts, or operational reference.
-- `docs/architecture.md`: system structure, data flow, import direction, schema, runtime model.
-- `docs/api.md`: public `MemoryClient` API.
+- `docs/product/architecture.md`: system structure, data flow, import direction, schema, runtime model.
+- `docs/product/api.md`: public `MemoryClient` API.
 - `docs/project/briefing.md`: stable architectural premises.
 - `docs/project/decisions.md`: incremental decisions.
 - `docs/project/roadmap/`: CV/Epic/Story status and plans.

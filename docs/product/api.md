@@ -1,4 +1,4 @@
-[< Docs](index.md)
+[< Product](index.md)
 
 # Python API
 
@@ -14,7 +14,7 @@ Reference for developers integrating programmatically with Mirror Core.
 
 The two serve different purposes. Most users never need the Python API directly.
 For extension authoring patterns and integration examples, see
-[docs/product/extensions/authoring-guide.md](product/extensions/authoring-guide.md).
+[docs/product/extensions/authoring-guide.md](extensions/authoring-guide.md).
 
 ---
 
@@ -257,5 +257,5 @@ Delete an attachment. Returns `True` if the attachment existed and was removed.
 ---
 
 **See also:** [Architecture](architecture.md) ·
-[Extension Authoring Guide](product/extensions/authoring-guide.md) ·
-[REFERENCE.md](../REFERENCE.md)
+[Extension Authoring Guide](extensions/authoring-guide.md) ·
+[REFERENCE.md](../../REFERENCE.md)

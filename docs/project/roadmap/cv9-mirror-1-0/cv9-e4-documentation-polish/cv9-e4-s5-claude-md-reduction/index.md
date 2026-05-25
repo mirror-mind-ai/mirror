@@ -31,7 +31,7 @@ functions:
    detail.
 
 The second function is what creates the problem. By the time S3 creates
-`docs/architecture.md` and S3 makes `REFERENCE.md` the single authoritative
+`docs/product/architecture.md` and S3 makes `REFERENCE.md` the single authoritative
 commands table, `CLAUDE.md` contains significant content that is now duplicated
 across the doc set — and that will drift from those docs over time.
 
@@ -61,7 +61,7 @@ two concerns should be clearly delineated, not interwoven.
 
 **What is removed from `CLAUDE.md`:**
 - Full commands table with arguments — pointer to `REFERENCE.md` instead
-- Architecture description — pointer to `docs/architecture.md` instead
+- Architecture description — pointer to `docs/product/architecture.md` instead
 - Detailed skill procedure steps — those live in each SKILL.md, loaded
   on demand
 - Any content that duplicates the project briefing or decisions docs
@@ -98,7 +98,7 @@ anything else. Before marking this story done, verify in a real session that:
 
 - `CLAUDE.md` / `AGENTS.md` is materially shorter than before this story.
 - The full commands table is removed; a pointer to `REFERENCE.md` replaces it.
-- Architecture description is removed; a pointer to `docs/architecture.md`
+- Architecture description is removed; a pointer to `docs/product/architecture.md`
   replaces it.
 - Detailed skill procedure steps are removed; skill locations are listed with
   one-line descriptions only.
@@ -112,7 +112,7 @@ anything else. Before marking this story done, verify in a real session that:
 
 ## Dependencies
 
-- S3 must be complete. `docs/architecture.md` must exist before `CLAUDE.md`
+- S3 must be complete. `docs/product/architecture.md` must exist before `CLAUDE.md`
   can point to it.
 - S3 must be complete. `REFERENCE.md` must be the authoritative commands table
   before `CLAUDE.md` can point to it.

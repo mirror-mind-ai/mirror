@@ -11,6 +11,150 @@ resolved.
 
 ## Completed Decisions
 
+### Historical conversation journey repair is explicit and backup-gated
+
+**Date:** 2026-05-25
+**Reference:** [CV9.E6.S6 Personal Mirror Validation](roadmap/cv9-mirror-1-0/cv9-e6-web-visibility/cv9-e6-s6-personal-mirror-validation/index.md), [Troubleshooting](../process/troubleshooting.md#pi-builder-conversations-appear-without-journeys)
+
+Mirror Mind must not silently rewrite historical conversation journey
+associations. When a runtime bug leaves conversations with `journey = NULL`, the
+fix for future sessions belongs in core runtime logging, but historical repair
+must be explicit, reviewable, and backup-gated.
+
+The repair path is therefore:
+
+```bash
+uv run python -m memory conversation-logger repair-journeys
+uv run python -m memory conversation-logger repair-journeys --apply
+```
+
+The dry-run lists high-confidence candidates. The apply path creates a database
+backup before mutation and only updates `conversations.journey` for rows matched
+conservatively from activation language or explicit build commands. Ambiguous
+rows remain unchanged.
+
+Consequences:
+
+- The database remains personal memory, not a surface the framework rewrites
+  silently.
+- User trust is preserved through visible candidates and pre-repair backup.
+- Workspace can become truthful again after repair without pretending inference
+  is perfect.
+- Future repair tools should follow the same policy: diagnose first, backup
+  before mutation, apply only reviewed or high-confidence changes.
+
+### Mirror web visibility uses perspectives, starting with Atlas and Workspace
+
+**Date:** 2026-05-24
+**Reference:** [Mirror Web Perspectives](../product/envisioning/web-perspectives.md), `mirror-1-0-market-entry` journey
+
+The Mirror Mind 1.0 web visibility surface will be explored through
+perspectives rather than fixed user types. A perspective is a viewing mode over
+the same Mirror data, not a permanent classification of the user. The two
+initial perspectives share Mirror Core but intentionally differ in information
+architecture and design rhythm.
+
+The first two perspectives are:
+
+- **Atlas:** identity-first view for exploring identity, personas, memories,
+  patterns, journeys, and conversations through an editorial psyche map.
+- **Workspace:** work-first view for following journeys, decisions, tasks,
+  conversations, and relevant context through an analytical dashboard.
+
+If no default perspective is configured, the web app should ask how the user
+wants to look at their Mirror. The selected default can be saved, but the active
+perspective must remain visible and switchable.
+
+Consequences:
+
+- The web app should not become a database admin surface.
+- Atlas and Workspace should reuse the same underlying data while changing
+  layout, density, rhythm, labels, ordering, and interpretive emphasis.
+- Identity remains foundational, but it is not forced as the only front door for
+  operational users.
+- The shared shell, object model, detail grammar, design tokens, and evidence
+  pattern create unity across otherwise different perspectives.
+- Evidence and provenance should be available as a shared detail pattern before
+  becoming a full perspective or graph interface.
+- Roadmap work should be derived after iterating the documented metaphor,
+  decisions, and wireframes.
+
+### Web visibility uses a Core Surface API, not direct web data access
+
+**Date:** 2026-05-24
+**Reference:** [Web Surface Specification](../product/specs/web-surface/index.md), [Mirror Web Perspectives](../product/envisioning/web-perspectives.md)
+
+The Mirror Mind web app should be a thin local interface over Mirror Core. Web
+routes must not execute SQL, inspect raw schema details, or compose identity,
+memory, journey, conversation, Atlas, or Workspace meaning inline.
+
+Mirror Core will expose a surface composition layer for web read models:
+
+```text
+web -> surfaces -> services -> storage -> db
+```
+
+Initial surfaces include Atlas home, Workspace home, object detail, evidence,
+and search. These surfaces return explicit typed DTOs shaped for the UI. Atlas
+and Workspace may have different information architecture and design rhythm, but
+they remain read models over the same domain objects.
+
+Consequences:
+
+- Web handlers stay small and transport-focused.
+- Domain retrieval remains in services and storage.
+- Surface composition owns UI-shaped read models and empty states.
+- Atlas and Workspace avoid duplicating data access logic.
+- Live LLM calls should not happen during page rendering; synthesis should come
+  from persisted data or be absent.
+- Tests should cover surface composition independently from the HTTP server.
+
+### Mirror 1.0 web visibility starts with a read-only Atlas vertical slice
+
+**Date:** 2026-05-24
+**Reference:** [Mirror Web Perspectives](../product/envisioning/web-perspectives.md), [Web Surface Specification](../product/specs/web-surface/index.md)
+
+The first 1.0 web visibility roadmap should start with a narrow vertical slice,
+not a broad inventory of every Mirror object. The slice should prove the full
+path from shell to surface composition to services to rendered detail.
+
+Initial slice:
+
+```text
+perspective shell
+first-run perspective choice
+user-home default perspective setting
+Atlas psyche map
+Identity region with real data
+Personas region with real data
+supported object detail
+evidence placeholder or real provenance where available
+```
+
+The web visibility surface remains read-only in 1.0. Editing identity, memories,
+conversations, or other runtime state is explicitly out of scope for the first
+release.
+
+Data coverage for 1.0 is intentionally uneven and should be represented
+honestly:
+
+- Identity and personas are real.
+- Memories, journeys, conversations, tasks, and evidence may be partial.
+- Decisions may be derived or placeholder until a stronger model exists.
+- Search is outside the first vertical slice unless existing retrieval services
+  make it cheap.
+
+Success criterion: a user can open the local web app and understand what exists
+inside their Mirror without reading the database or using CLI commands.
+
+Consequences:
+
+- Roadmap stories should start with shell, user-home preference, Atlas surface
+  DTOs, identity/persona data, detail view, and evidence affordance.
+- Workspace should follow after the surface pattern is proven.
+- Empty states are part of the product, not a failure.
+- The release should be validated manually against the user's real Mirror.
+
 ### Release updates use stable/main channels
 
 **Date:** 2026-05-22
@@ -28,24 +172,28 @@ Consequences:
 - Release notes are exposed through `runtime release-notes` and the `mm-release-notes` skill, but the user-facing prompt is natural language: "What's new in the latest Mirror Mind release?"
 - A future Maestro release doctor can automate promotion checks.
 
-### Documentation IA stays conservative before 1.0
+### Documentation IA keeps the docs home first and product surfaces together
 
 **Date:** 2026-05-22
+**Updated:** 2026-05-24
 **Reference:** [CV9.E5.S2 Documentation Information Architecture](roadmap/cv9-mirror-1-0/cv9-e5-process-versioning-alignment/cv9-e5-s2-documentation-information-architecture/index.md), [Ariad documentation home](https://github.com/mirror-mind-ai/ariad/blob/main/docs/index.md)
 
 Mirror Mind adopts Ariad's documentation pattern for the 1.0 docs home: a short narrative opening, explicit "start here" paths, and the Process / Project / Product triad as the organizing spine. A practical Reference layer is allowed for command, operations, and developer lookup material.
 
-The project will not move files before 1.0 solely for symmetry. The following locations remain stable for now:
+The web docs browser should open on `docs/index.md`, titled "Mirror Mind Documentation", rather than the first alphabetic document. The docs home is the front door and appears as "Home" in the navigation menu.
+
+The project will not move files before 1.0 solely for symmetry, but product-owned surfaces may move when navigation pressure makes the current location confusing. The following locations remain stable for now:
 
 - `docs/releases/` stays top-level as the prospective release-note home.
-- `docs/architecture.md` and `docs/api.md` stay at the docs root as developer reference surfaces.
+- `docs/product/architecture.md` lives under Product because architecture is part of the Mirror Core product surface.
+- `docs/product/api.md` lives under Product because the Python API is part of the Mirror Core product surface.
 - `docs/process/runtime-repair-policy.md` and `docs/process/troubleshooting.md` stay under Process because they describe safe operating policy and repair practice.
 - `docs/process/worklog.md` stays single-file through 1.0, with post-1.0 archive-by-release or archive-by-year as the scaling rule if it becomes hard to scan.
 
 Consequences:
 
 - The docs home should make reader paths explicit instead of acting only as an inventory.
-- Stable links are preferred over large moves during the 1.0 readiness cycle.
+- Stable reader paths are preferred over large moves during the 1.0 readiness cycle, but the web navigation experience can justify small IA corrections.
 - A future `docs/reference/` or `docs/operations/` subtree remains possible, but it should be justified by accumulated navigation pressure rather than introduced preemptively.
 
 ### Mirror Mind clones declare a role

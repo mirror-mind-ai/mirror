@@ -52,7 +52,7 @@ There is also content in REFERENCE that is redundant or misplaced:
 - Legacy migration workflow (arriving from S2, flagged as a removal candidate
   for a future CV)
 
-**What moves to `docs/architecture.md`** (new file):
+**What moves to `docs/product/architecture.md`** (new file):
 - Database schema and main tables
 - Runtime session model (CV5)
 - Identity layers (Jungian model — self, ego, persona, shadow, journey,
@@ -81,7 +81,7 @@ There is also content in REFERENCE that is redundant or misplaced:
 
 - `REFERENCE.md` contains only: commands table, configuration variables, and
   legacy migration workflow. Nothing else.
-- `docs/architecture.md` exists and contains: database schema, runtime session
+- `docs/product/architecture.md` exists and contains: database schema, runtime session
   model, identity layers, repo structure, and import direction. It is the single
   source of truth for system architecture.
 - The commands table in `REFERENCE.md` is the only copy across the entire doc

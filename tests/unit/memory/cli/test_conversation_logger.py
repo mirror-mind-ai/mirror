@@ -123,6 +123,111 @@ def test_status_reads_mute_flag_from_mirror_home(tmp_path, capsys):
     assert captured.out.strip() == "MUTED"
 
 
+class TestSwitchConversation:
+    def test_uses_latest_active_runtime_session_when_no_session_id_is_available(self, mocker):
+        class Row(dict):
+            def __getitem__(self, key):
+                return super().__getitem__(key)
+
+        mock_mem = MagicMock()
+        mock_mem.store.conn.execute.return_value.fetchone.return_value = Row(
+            session_id="pi-session-from-db"
+        )
+        runtime_session = MagicMock(
+            conversation_id="old-conv", interface="pi", persona=None, journey=None
+        )
+        mock_mem.store.get_runtime_session.return_value = runtime_session
+        mock_mem.start_conversation.return_value = MagicMock(id="new-conv")
+        mocker.patch("memory.cli.conversation_logger._memory_client", return_value=mock_mem)
+        mocker.patch.dict("os.environ", {"MIRROR_SESSION_ID": ""}, clear=False)
+
+        from memory.cli.conversation_logger import switch_conversation
+
+        conv_id = switch_conversation(persona="engineer", journey="mirror-mind")
+
+        assert conv_id == "new-conv"
+        mock_mem.end_conversation.assert_called_once_with("old-conv", extract=True)
+        mock_mem.start_conversation.assert_called_once_with(
+            interface="pi", persona="engineer", journey="mirror-mind"
+        )
+        mock_mem.store.upsert_runtime_session.assert_called_once_with(
+            "pi-session-from-db",
+            conversation_id="new-conv",
+            interface="pi",
+            persona="engineer",
+            journey="mirror-mind",
+            active=True,
+            closed_at=None,
+        )
+
+    def test_explicit_session_id_still_takes_precedence(self, mocker):
+        mock_mem = MagicMock()
+        runtime_session = MagicMock(conversation_id=None, interface="pi")
+        mock_mem.store.get_runtime_session.return_value = runtime_session
+        mock_mem.start_conversation.return_value = MagicMock(id="new-conv")
+        mocker.patch("memory.cli.conversation_logger._memory_client", return_value=mock_mem)
+        mocker.patch.dict("os.environ", {"MIRROR_SESSION_ID": "env-session"}, clear=False)
+
+        from memory.cli.conversation_logger import switch_conversation
+
+        switch_conversation(session_id="explicit-session", journey="mirror-mind")
+
+        mock_mem.store.get_runtime_session.assert_called_once_with("explicit-session")
+        mock_mem.store.conn.execute.assert_not_called()
+
+
+class TestJourneyAssociationRepair:
+    def test_infers_explicit_build_command_after_skill_payload(self):
+        from memory.cli.conversation_logger import _infer_journey_for_conversation
+
+        journey, reason = _infer_journey_for_conversation(
+            '<skill name="mm-build">...',
+            "<skill>instructions</skill>\n\n/mm-build mirror-mind",
+            {"mirror-mind": ["mirror mind", "mirror-mind"]},
+        )
+
+        assert journey == "mirror-mind"
+        assert reason == "explicit build command"
+
+    def test_infers_activation_phrase(self):
+        from memory.cli.conversation_logger import _infer_journey_for_conversation
+
+        journey, reason = _infer_journey_for_conversation(
+            "vamos trabalhar no maestro",
+            "vamos trabalhar no maestro",
+            {"maestro": ["maestro"]},
+        )
+
+        assert journey == "maestro"
+        assert reason == "activation phrase"
+
+    def test_prefers_longer_alias(self):
+        from memory.cli.conversation_logger import _infer_journey_for_conversation
+
+        journey, _ = _infer_journey_for_conversation(
+            "vamos retomar a journey mirror self update",
+            "vamos retomar a journey mirror self update",
+            {
+                "mirror-mind": ["mirror mind", "mirror-mind"],
+                "mirror-self-update": ["mirror self update", "mirror-self-update"],
+            },
+        )
+
+        assert journey == "mirror-self-update"
+
+    def test_does_not_match_short_alias_inside_longer_unknown_name(self):
+        from memory.cli.conversation_logger import _infer_journey_for_conversation
+
+        journey, reason = _infer_journey_for_conversation(
+            "vamos retomar o trabalho no projeto mirror mind self update",
+            "vamos retomar o trabalho no projeto mirror mind self update",
+            {"mirror-mind": ["mirror mind", "mirror-mind"]},
+        )
+
+        assert journey is None
+        assert reason is None
+
+
 class TestSessionStart:
     def test_unmutes_and_returns_active(self, mocker, tmp_path):
         mocker.patch("memory.cli.conversation_logger._MUTE_FLAG_PATH", tmp_path / "mute")

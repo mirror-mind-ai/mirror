@@ -148,8 +148,9 @@ class DocsBrowser:
         return nodes
 
     def _file_node(self, entry: DocEntry, name: str | None = None) -> DocNode:
+        title = "Home" if entry.path == "docs/index.md" else entry.title
         return DocNode(
-            name=name or Path(entry.path).name, title=entry.title, type="file", path=entry.path
+            name=name or Path(entry.path).name, title=title, type="file", path=entry.path
         )
 
     def _directory_title(self, name: str) -> str:
@@ -158,6 +159,8 @@ class DocsBrowser:
     def _tree_sort_key(
         self, prefix: str, name: str, value: object
     ) -> tuple[int, int, list[int | str]]:
+        if prefix == "docs" and name == "index.md":
+            return (0, 0, self._natural_sort_key(name))
         if prefix == "docs/product" and name == "principles.md":
             return (0, 0, self._natural_sort_key(name))
         return (1, 0 if isinstance(value, dict) else 1, self._natural_sort_key(name))

@@ -23,9 +23,10 @@ single block. One source, four interfaces, one voice.
 3. **Silence when there is no signal.** If the mirror has nothing meaningful
    to say, the welcome is empty and nothing renders. The command must be safe
    to call in any state.
-4. **Local and cheap.** Welcome composition uses SQLite reads and lightweight
-   local git inspection. No LLM, no network, no embeddings. Must run quickly on
-   a warm database.
+4. **Local-first and network-tolerant.** Welcome composition uses SQLite reads,
+   lightweight git inspection, and an optional remote release check. It does not
+   depend on the network: remote failures are silent and never block startup.
+   No LLM, no embeddings. Must run quickly on a warm database.
 5. **First person.** The mirror speaks as the user. The closing invitation is
    not "How can I help you?" — it is `Where shall we begin?`.
 
@@ -33,15 +34,15 @@ single block. One source, four interfaces, one voice.
 
 ## Anatomy
 
-The welcome is **three stable lines** plus an optional update notice and a
-closing invitation:
+The welcome is **three stable lines** plus an optional release/update notice and
+a closing invitation:
 
 ```
 ◇ Mirror · <user>
 Version <version> · channel <stable|main>
 <N> journeys · <N> personas · <N> memories · <N> conversations · since <Month YYYY>
-[Update available: <N> commits behind <upstream> · run runtime update]
-[Ask Mirror: "What's new in the latest Mirror Mind release?"]
+[Update available: vX.Y.Z — <release title>]
+[Ask: "what changed?" or "update my Mirror"]
 
 → Where shall we begin?
 ```
@@ -51,7 +52,7 @@ Version <version> · channel <stable|main>
 | Header (`◇ Mirror · <user>`) | Always, if a Mirror home is resolvable | `resolve_mirror_home().name` |
 | Version (`Version <version> · channel <channel>`) | Always, when header renders | installed package / `pyproject.toml` fallback plus local update channel |
 | Stats | Always, when header renders | counts from the database |
-| Update notice | Only when local git refs show the checkout is behind upstream | local `git rev-list`, no network |
+| Update notice | Only when local refs or lightweight remote check show a stable update | update-awareness cache, `git ls-remote`, local release notes when available |
 | Invitation (`→ Where shall we begin?`) | Always, when header renders | constant |
 
 If the header cannot be resolved (no `MIRROR_HOME`, no `MIRROR_USER`), the
@@ -62,22 +63,26 @@ still shows the welcome, even when every counter is zero.
 
 The welcome shows the installed Mirror Mind version and update channel so the user can immediately see which runtime they are using and whether it follows the stable release channel or the main dogfooding channel.
 
-The update notice is deliberately local. It does **not** call `git ls-remote`,
-fetch, or contact the network during startup. It appears only when the local
-branch is already known to be behind the configured update channel, usually
-because a previous `runtime update --check`, `runtime update`, or manual fetch
-refreshed refs. When an update is visible, the welcome invites the user to ask
-Mirror in natural language: `What's new in the latest Mirror Mind release?` Fresh remote discovery remains the job of:
+The update notice is network-tolerant. The welcome can use a cached update
+check or attempt a lightweight remote check with `git ls-remote` when the cache
+is missing or older than 6 hours. It does not fetch, mutate refs, back up, run
+migrations, or update files. If the remote check fails, the welcome still opens
+normally.
 
-```bash
-uv run python -m memory runtime update --check
+Update-awareness cache lives under:
+
+```text
+<mirror-home>/runtime/update-check.json
 ```
 
-or the full update pipeline:
+Users can disable remote welcome checks with:
 
 ```bash
-uv run python -m memory runtime update
+MIRROR_WELCOME_REMOTE_UPDATE_CHECK=off
 ```
+
+When an update is visible, the welcome invites the user to ask Mirror in natural
+language: `what changed?` or `update my Mirror`.
 
 ### Why stats and not narrative
 
@@ -119,7 +124,7 @@ Prints the composed welcome to stdout and exits 0. Always exits 0 even when
 no welcome is produced (empty output).
 
 ```
-Usage: python -m memory welcome [--mirror-home PATH]
+Usage: python -m memory welcome [--mirror-home PATH] [--status-line]
 ```
 
 Behaviour:
@@ -129,7 +134,9 @@ Behaviour:
 - Emits an empty string if `MIRROR_WELCOME=off` is set.
 - Emits an empty string if the Mirror home cannot be resolved.
 - Otherwise composes the welcome per the rules above.
-- Does not contact the network while checking version or update availability.
+- May perform a lightweight remote release check unless disabled with `MIRROR_WELCOME_REMOTE_UPDATE_CHECK=off`.
+- Does not fetch, mutate refs, back up, migrate, or update files.
+- `--status-line` renders a compact runtime status signal from cached state only.
 
 Stdout is the rendering. There is no JSON variant. Runtimes must not parse —
 they just display the string verbatim.
@@ -143,7 +150,7 @@ display rules are:
 
 | Runtime | Render | Notes |
 |---------|--------|-------|
-| Pi | `ctx.ui.notify(welcome, "info")` once if non-empty | Status bar shows `<user> · <Nj>` separately |
+| Pi | `ctx.ui.notify(welcome, "info")` once if non-empty | Status bar calls `python -m memory welcome --status-line` and shows `◇ <user> · <indicator>` |
 | Codex | `printf` to terminal once if non-empty | Same string |
 | Gemini CLI | `printf` to terminal once if non-empty | Same string |
 | Claude Code | `/mm:welcome` skill prints it on demand | No automatic injection |

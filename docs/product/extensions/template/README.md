@@ -34,7 +34,7 @@ matches the folder name and `skill.yaml:id`).
 | `extension.py` | Entrypoint with `register(api)`. |
 | `migrations/001_init.sql` | Initial schema. |
 | `README.md` | Top-level entry point. What does this extension do? Top commands. |
-| `docs/architecture.md` | Internal design and decisions. |
+| `docs/product/architecture.md` | Internal design and decisions. |
 | `docs/commands.md` | Full CLI reference. |
 | `docs/data-model.md` | Tables, columns, indices, FKs. |
 | `docs/bindings.md` | Capabilities and binding instructions. |

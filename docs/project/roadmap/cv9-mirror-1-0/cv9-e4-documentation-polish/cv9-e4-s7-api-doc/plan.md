@@ -6,7 +6,7 @@
 
 ## Purpose and Audience
 
-`docs/api.md` is written for **developers who need to interact with Mirror Core
+`docs/product/api.md` is written for **developers who need to interact with Mirror Core
 programmatically** — extension authors building `command-skill` extensions,
 contributors adding new capabilities to Mirror Core, and anyone scripting
 against the memory system outside of the CLI.

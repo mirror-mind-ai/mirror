@@ -267,7 +267,7 @@ What to check:
 > correct. The mirror sharpens through use.
 
 - **Commands:** [REFERENCE.md](../REFERENCE.md) — full command reference with arguments and flags
-- **Architecture:** [docs/architecture.md](architecture.md) — how the system works internally
+- **Architecture:** [docs/product/architecture.md](product/architecture.md) — how the system works internally
 - **Extensions:** [docs/product/extensions/](product/extensions/index.md) — Mirror Mind can be
   extended with user-specific capabilities
 

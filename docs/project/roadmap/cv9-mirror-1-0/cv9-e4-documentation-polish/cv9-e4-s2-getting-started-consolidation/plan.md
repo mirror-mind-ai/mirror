@@ -189,7 +189,7 @@ the verification checklist is already well-designed. Confirm it covers:
 Three pointers, nothing more:
 
 - **Commands:** `REFERENCE.md` — full command reference with arguments
-- **Architecture:** `docs/architecture.md` — how the system works (note: this
+- **Architecture:** `docs/product/architecture.md` — how the system works (note: this
   file is created in S3; update the pointer when S3 runs)
 - **Extensions:** `docs/product/extensions/` — Mirror Mind can be extended
   with user-specific capabilities. See the extension docs to learn more.
@@ -207,7 +207,7 @@ One sentence of framing before the pointers:
 - Extension install/expose/clean cycle → `docs/product/extensions/`
 - Full commands table → `REFERENCE.md`
 - Python 3.10+ as a standalone prerequisite → dropped (uv handles it)
-- Architecture explanation → `docs/architecture.md`
+- Architecture explanation → `docs/product/architecture.md`
 
 ---
 

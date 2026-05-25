@@ -208,7 +208,8 @@ export default function (pi: ExtensionAPI) {
 			if (welcome) {
 				ctx.ui.notify(welcome, "info");
 			}
-			const status = summary || "Memory ready";
+			const compactStatus = (await runPy(["-m", "memory", "welcome", "--status-line"])).trim();
+			const status = compactStatus || summary || "◇ Mirror · ?";
 			ctx.ui.setStatus(
 				"mirror",
 				externalSkills.length > 0 ? `${status} · ext ${externalSkills.length}` : status,
