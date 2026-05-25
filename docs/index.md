@@ -29,7 +29,7 @@ Start here if you want to install Mirror Mind and run your first mirror session.
 Start here if you already have a local Mirror Mind runtime and need to inspect,
 backup, repair, or update it.
 
-- [Command Reference](../REFERENCE.md#runtime-self-update) — `runtime status`, `diagnose`, `backup`, `version`, and `update`
+- [Command Reference](../REFERENCE.md#runtime-self-update) — `runtime status`, `diagnose`, `backup`, `version`, `release-notes pending`, release promotion, and `update`
 - [Runtime Repair Policy](process/runtime-repair-policy.md) — safe repair boundaries and recovery routes
 - [Troubleshooting](process/troubleshooting.md) — known bugs and operational fixes
 - [Releases](releases/index.md) — prospective narrative release notes

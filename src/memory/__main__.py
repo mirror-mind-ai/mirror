@@ -65,16 +65,19 @@ Commands:
   web                  Run the local Mirror Web Console
                        Usage: python -m memory web [--host 127.0.0.1] [--port 8765]
   runtime              Inspect Mirror runtime status, drift, backups, version, plan and execute updates
-                       Usage: python -m memory runtime status [--mirror-home PATH]
-                              python -m memory runtime version
+                       Usage: python -m memory runtime status [--mirror-home PATH] [--channel stable|main]
+                              python -m memory runtime version [--start PATH] [--channel stable|main]
                               python -m memory runtime diagnose [--mirror-home PATH]
                               python -m memory runtime backup [--mirror-home PATH]
                               python -m memory runtime backup --verify PATH
-                              python -m memory runtime update --dry-run [--mirror-home PATH]
+                              python -m memory runtime update --dry-run [--mirror-home PATH] [--channel stable|main]
                               python -m memory runtime update --check [--channel stable|main]
                               python -m memory runtime update [--no-fetch] [--skip-migrations] [--mirror-home PATH] [--channel stable|main]
                               python -m memory runtime update --repair-updater [--no-fetch] [--mirror-home PATH] [--channel stable|main]
                               python -m memory runtime release-notes [latest|vX.Y.Z]
+                              python -m memory runtime release-notes pending [--from vX.Y.Z] [--ref REF]
+                              python -m memory runtime release-doctor --target vX.Y.Z [--stable REF]
+                              python -m memory runtime release-promote --target vX.Y.Z [--stable BRANCH] [--remote REMOTE] [--dry-run] [--push]
   welcome              Render the state-aware welcome card for the current Mirror home
                        Usage: python -m memory welcome [--mirror-home PATH]
 """

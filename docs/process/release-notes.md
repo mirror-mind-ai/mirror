@@ -21,9 +21,23 @@ O que mudou na versão mais recente do Mirror Mind?
 Under the hood, the runtime reads release notes with:
 
 ```bash
-python -m memory runtime release-notes latest
-python -m memory runtime release-notes vX.Y.Z
+uv run python -m memory runtime release-notes latest
+uv run python -m memory runtime release-notes vX.Y.Z
 ```
+
+For users who are more than one release behind, use the cumulative pending view:
+
+```bash
+uv run python -m memory runtime release-notes pending
+uv run python -m memory runtime release-notes pending --from 0.9.0 --ref origin/stable
+```
+
+`pending` compares the installed runtime version to a git ref, defaulting to
+`origin/stable`, and renders every newer release note in order. `--from` is the
+safe way to simulate an older installed version during support or smoke tests;
+do not edit package metadata or downgrade a production checkout just to test
+release-note output. `--ref HEAD` is useful before publishing; `--ref
+origin/stable` is the user-facing stable channel after the ref has been fetched.
 
 ## Location
 

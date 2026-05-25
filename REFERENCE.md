@@ -37,7 +37,7 @@ Codex uses the `$mm-` prefix. All runtimes call the same Python core.
 | `/mm-welcome` | `$mm-welcome` | `/mm:welcome` | Renders the state-aware welcome card on demand | no arguments |
 | `/mm-release-notes` | `$mm-release-notes` | `/mm:release-notes` | Shows Mirror Mind release notes | `[latest|vX.Y.Z]` |
 | `/mm-help` | `$mm-help` | `/mm:help` | Lists available commands | no arguments |
-| `python -m memory runtime` | — | — | Inspects Mirror runtime status, version, drift, backups, release notes, release promotion readiness, plans updates, and executes safe updates | `status [--mirror-home PATH] [--channel stable|main]`, `version [--channel stable|main]`, `diagnose [--mirror-home PATH]`, `backup [--mirror-home PATH]`, `backup --verify PATH`, `release-notes [latest|vX.Y.Z]`, `release-doctor --target vX.Y.Z`, `release-promote --target vX.Y.Z [--dry-run] [--push]`, `update --dry-run [--mirror-home PATH] [--channel stable|main]`, `update --check [--channel stable|main]`, `update [--no-fetch] [--skip-migrations] [--mirror-home PATH] [--channel stable|main]`, `update --repair-updater [--no-fetch] [--mirror-home PATH] [--channel stable|main]` |
+| `python -m memory runtime` | — | — | Inspects Mirror runtime status, version, drift, backups, release notes, release promotion readiness, plans updates, and executes safe updates | `status [--mirror-home PATH] [--channel stable|main]`, `version [--start PATH] [--channel stable|main]`, `diagnose [--mirror-home PATH]`, `backup [--mirror-home PATH]`, `backup --verify PATH`, `release-notes [latest|vX.Y.Z]`, `release-notes pending [--from vX.Y.Z] [--ref REF]`, `release-doctor --target vX.Y.Z [--stable REF]`, `release-promote --target vX.Y.Z [--stable BRANCH] [--remote REMOTE] [--dry-run] [--push]`, `update --dry-run [--mirror-home PATH] [--channel stable|main]`, `update --check [--channel stable|main]`, `update [--no-fetch] [--skip-migrations] [--mirror-home PATH] [--channel stable|main]`, `update --repair-updater [--no-fetch] [--mirror-home PATH] [--channel stable|main]` |
 | `python -m memory conversation-logger` | — | — | Runtime conversation logging and repair utilities | `repair-journeys [--limit N] [--apply]` |
 | `ext-review-copy` | — | `ext:review-copy` | External multi-LLM copy review skill; install and expose it before use | skill-driven workflow |
 
@@ -71,7 +71,7 @@ Each command exits non-zero when state is not safe enough for the next step.
 #### `runtime status`
 
 ```bash
-uv run python -m memory runtime status [--mirror-home PATH]
+uv run python -m memory runtime status [--mirror-home PATH] [--channel stable|main]
 ```
 
 Reports version, repository, git state, mirror home, database, core migration health, installed extensions, extension health, clone role, Python version, and environment. Exits `attention needed` when the git tree is dirty, the mirror home is not configured, core migrations are missing or unknown, or installed extension migrations are pending, drifted, or unknown.
@@ -79,10 +79,10 @@ Reports version, repository, git state, mirror home, database, core migration he
 #### `runtime version`
 
 ```bash
-uv run python -m memory runtime version
+uv run python -m memory runtime version [--start PATH] [--channel stable|main]
 ```
 
-Reports the installed version, repository, branch, commit, and clone role. Local and offline.
+Reports the installed version, repository, branch, commit, clone role, and update channel. Local and offline. `--start` inspects a repository from a chosen path instead of the current working directory.
 
 #### `runtime diagnose`
 
@@ -127,9 +127,19 @@ When the channel is `stable` and the local upstream ref contains release notes n
 
 ```bash
 uv run python -m memory runtime release-notes [latest|vX.Y.Z]
+uv run python -m memory runtime release-notes pending [--from vX.Y.Z] [--ref origin/stable]
 ```
 
-Reads narrative release notes from `docs/releases/`. This command exists so runtime skills can answer natural-language requests such as "What's new in the latest Mirror Mind release?" Users do not need to run it directly.
+Reads narrative release notes from `docs/releases/`. `latest` and explicit versions read the checked-out files. `pending` reads release notes from a git ref, defaults to `origin/stable`, and lists every release newer than the installed runtime version. Use `--from` to simulate an older installed version or support a user report without mutating package metadata. Use `--ref HEAD` for local smoke tests before a release is published, or `--ref origin/stable` for the user-facing stable channel after fetching/updating refs.
+
+Examples:
+
+```bash
+uv run python -m memory runtime release-notes latest
+uv run python -m memory runtime release-notes v0.10.5
+uv run python -m memory runtime release-notes pending
+uv run python -m memory runtime release-notes pending --from 0.9.0 --ref origin/stable
+```
 
 ### Release promotion doctor
 
@@ -158,18 +168,18 @@ uv run python -m memory runtime update --repair-updater [--no-fetch] [--mirror-h
 
 Executes the safe update pipeline. Stages run in order and the first failure stops execution:
 
-1. **status gate** — must be ready.
+1. **status gate** — must be ready. If status reports the database as unavailable, the updater first attempts a safe `MemoryClient` bootstrap, rebuilds status, and continues if the runtime becomes ready.
 2. **fetch upstream** — mutates only remote-tracking refs. Skipped with `--no-fetch`.
 3. **plan** — accepts `none` (already up to date) and `pull`. Blocks `ahead`, `diverged`, and other unsafe states.
 4. **backup database** — reuses the runtime backup pipeline.
 5. **verify backup** — structural verification of the archive.
 6. **fast-forward** — `git merge --ff-only` against the upstream. Refuses merges and rebases.
 7. **migrations** — opens `MemoryClient` once to trigger migration application. Skipped with `--skip-migrations`.
-8. **post-update status** — reruns `runtime status` and expects `ready`.
+8. **post-update status** — reruns `runtime status` and expects `ready`. If the database is temporarily unavailable, the same safe bootstrap/retry path runs before reporting failure.
 
 Failures print a recovery block with the backup path and previous commit when relevant. Successful installs that move to a new commit include an `Installed changes` summary generated from `git log <previous>..<new>`. On the `stable` channel, successful installs also include an `Installed release` block when the new checkout contains narrative release notes. The pipeline does not roll back automatically: recovery is documented manual work.
 
-If the full status gate crashes before update planning, `runtime update` automatically falls back to updater self-repair. The repair lane uses a minimal safety gate: clean git tree, configured upstream, optional fetch, optional database backup when the Mirror home and database are available, fast-forward only code update, and migrations skipped. It then asks the user to rerun `runtime update` with the repaired updater. The same lane can be invoked explicitly with `runtime update --repair-updater`.
+If the full status gate crashes before update planning, `runtime update` automatically falls back to updater self-repair. The repair lane uses a minimal safety gate: clean git tree, configured upstream, optional fetch, optional database backup when the Mirror home and database are available, fast-forward only code update, and migrations skipped. It then asks the user to rerun `runtime update` with the repaired updater. The same lane can be invoked explicitly with `runtime update --repair-updater`. Older production clones whose updater is blocked before they receive the latest recovery behavior may need this explicit repair lane once.
 
 ### Clone role
 

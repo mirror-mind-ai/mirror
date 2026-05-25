@@ -12,6 +12,24 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-25 — v0.10.7 release candidate prepared
+
+Prepared `v0.10.7 — Runtime Operations Documentation` to publish the updater and
+release-management documentation coherence work. Bumped package version to
+`0.10.7`, added `docs/releases/v0.10.7.md`, and linked it from the release
+index.
+
+### 2026-05-25 — Runtime update and release-management docs reconciled
+
+Audited the command reference, release-notes process doc, troubleshooting guide,
+runtime repair policy, docs index, and top-level runtime help against the current
+updater/release-management command surface. Documented `release-notes pending
+[--from] [--ref]`, `release-doctor --stable`, `release-promote --stable --remote
+--dry-run --push`, `runtime version --start --channel`, updater repair, and the
+v0.10.6 database-unavailable status recovery behavior. Troubleshooting now treats
+`unable to open database file` during update as a product resilience path rather
+than normal user manual repair.
+
 ### 2026-05-25 — v0.10.6 release candidate prepared
 
 Production update to `v0.10.5` exposed a final-user resilience issue: when

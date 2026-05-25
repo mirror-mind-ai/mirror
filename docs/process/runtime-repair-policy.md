@@ -72,6 +72,34 @@ Current local finding:
 
 Likely interpretation: Maestro was installed with a migration file at some point, but the current installed package no longer includes it. Inspect the canonical Maestro source before touching the database.
 
+### Temporarily unavailable production database
+
+A production database can appear unavailable during `runtime status` when a local
+runtime surface has recently opened it. This should not require final users to
+kill processes or run ad hoc Python snippets.
+
+Policy:
+
+- Treat database-unavailable status as a recoverable update gate when the rest of
+  the repository state is safe.
+- Prefer a bounded, safe bootstrap through `MemoryClient` and a fresh status
+  check before failing.
+- Do not delete SQLite sidecars, kill arbitrary processes, or mutate migration
+  ledgers as part of this recovery.
+- If an older updater is itself blocked, use the explicit updater repair lane
+  once, then rerun the normal update.
+
+Current repair route:
+
+```bash
+uv run python -m memory runtime update --repair-updater
+uv run python -m memory runtime update
+```
+
+Current versions run the database bootstrap automatically inside `runtime
+update` when the status gate or post-update status reports database
+unavailability.
+
 ### Pending migrations
 
 Pending migrations are blockers for update planning. The installed code declares schema work that the database has not recorded.

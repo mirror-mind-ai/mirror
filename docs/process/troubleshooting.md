@@ -15,12 +15,74 @@ but no fix yet are also welcome (mark them `Status: mitigated`).
 
 ## Contents
 
+- [`runtime update` blocks with `unable to open database file`](#runtime-update-blocks-with-unable-to-open-database-file)
 - [Runtime update channel `stable` is not fetched or unavailable](#runtime-update-channel-stable-is-not-fetched-or-unavailable)
 - [Changing `.mirror-update-channel` makes the git tree dirty](#changing-mirror-update-channel-makes-the-git-tree-dirty)
 - [Welcome shows channel `main` when you expected `stable`](#welcome-shows-channel-main-when-you-expected-stable)
 - [`runtime release-notes latest` says release notes were not found](#runtime-release-notes-latest-says-release-notes-were-not-found)
 - [Pi Builder conversations appear without journeys](#pi-builder-conversations-appear-without-journeys)
 - [Pi logger fails silently when `python3` resolves outside the project venv](#pi-logger-fails-silently-when-python3-resolves-outside-the-project-venv)
+
+---
+
+## `runtime update` blocks with `unable to open database file`
+
+**Date:** 2026-05-25
+**Status:** fixed in `v0.10.6`; older updaters may need one repair update
+**Affected component:** `runtime status`, `runtime update`, local web/runtime surfaces
+**Severity:** update blocked, no data mutation
+
+### Symptom
+
+`runtime update` refuses to continue because status is not ready, and status
+shows the production database as unavailable:
+
+```text
+[✗] status gate: runtime status is not ready
+Core migrations: attention needed (... unable to open database file)
+Extension health: attention needed (... database unavailable)
+```
+
+A common trigger is a local Mirror surface, such as the web console, that has
+recently opened the production database.
+
+### Current behavior
+
+From `v0.10.6` onward, `runtime update` detects this class of status-gate
+failure, attempts a safe `MemoryClient` bootstrap, rebuilds status, and continues
+if the runtime becomes ready. The same recovery runs during post-update status.
+Final users should not need to kill processes or run a one-off Python snippet for
+this common case.
+
+### Older updater recovery
+
+If the production clone is still on an older updater and cannot reach `v0.10.6`
+through the normal path, run the updater repair lane once:
+
+```bash
+uv run python -m memory runtime update --repair-updater
+uv run python -m memory runtime update
+```
+
+If repair is unavailable or still blocked, inspect status and diagnosis with the
+project environment, not bare `python`:
+
+```bash
+uv run python -m memory runtime status
+uv run python -m memory runtime diagnose
+```
+
+### Manual fallback
+
+Manual process inspection should be a last resort, mostly for developers:
+
+```bash
+lsof /path/to/memory.db
+lsof -i :8765
+```
+
+Do not ask final users to do this as the normal update path. If this remains
+necessary after `v0.10.6`, treat it as a runtime lifecycle bug.
 
 ---
 
@@ -177,7 +239,7 @@ After writing `.mirror-update-channel`, runtime update refuses to proceed:
 ```text
 [✗] status gate: runtime status is not ready
 Recovery:
-- Run: python -m memory runtime diagnose
+- Run: uv run python -m memory runtime diagnose
 ```
 
 Diagnosis reports a dirty git tree containing `.mirror-update-channel`.

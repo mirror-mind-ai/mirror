@@ -12,6 +12,7 @@ Future release notes should use the structure defined in [Release Notes](../proc
 
 ## Releases
 
+- [v0.10.7 — Runtime Operations Documentation](v0.10.7.md) — patch release that reconciles updater and release-management docs/help with the current command surface.
 - [v0.10.6 — Update Status Recovery](v0.10.6.md) — patch release that retries update status after safely bootstrapping an unavailable production database.
 - [v0.10.5 — Cumulative Release Notes](v0.10.5.md) — patch release that lists every pending release note for users more than one version behind.
 - [v0.10.4 — Pi Startup Lifecycle](v0.10.4.md) — patch release that fully detaches Pi startup maintenance so the startup counter can complete.
