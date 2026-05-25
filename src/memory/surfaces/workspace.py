@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 from memory.models import ConversationSummary, MemorySummary, Task
 from memory.services.conversation import ConversationService
 from memory.services.journey import JourneyService
@@ -61,6 +63,7 @@ class WorkspaceSurface:
             self._recent_conversations_section(journey_conversations),
             self._relevant_memories_section(journey_memories),
             self._decisions_section(journey_decisions),
+            self._settings_section(selected_journey),
         )
         selected_card = _journey_card(selected_journey) if selected_journey else None
         return WorkspaceHome(
@@ -120,6 +123,47 @@ class WorkspaceSurface:
             description="Current briefing for the selected journey.",
             empty_state=None if content else "No journey briefing is available yet.",
             metadata={"content": content} if content else None,
+        )
+
+    def _settings_section(self, journey: dict | None) -> WorkspaceSection:
+        if journey is None:
+            return WorkspaceSection(
+                id="settings",
+                title="Settings",
+                description="Selected journey configuration.",
+                empty_state="No active journey is selected.",
+            )
+        row = self.journeys.store.get_identity("journey", journey["id"])
+        metadata = _metadata_dict(row.metadata if row else None)
+        settings = [
+            {"label": "Journey ID", "value": journey["id"], "description": "Stable routing key."},
+            {"label": "Status", "value": "active", "description": "Current journey status."},
+            {
+                "label": "Project path",
+                "value": metadata.get("project_path") or "Not configured",
+                "description": "Local project directory associated with this journey.",
+            },
+            {
+                "label": "Sync file",
+                "value": metadata.get("sync_file") or "Not configured",
+                "description": "External journey path file, when configured.",
+            },
+            {
+                "label": "Icon",
+                "value": metadata.get("icon") or journey.get("metadata", {}).get("icon") or "⌁",
+                "description": "Visual marker used for this journey.",
+            },
+            {
+                "label": "Color",
+                "value": metadata.get("color") or "Not configured",
+                "description": "Optional visual color metadata.",
+            },
+        ]
+        return WorkspaceSection(
+            id="settings",
+            title="Settings",
+            description="Configuration bindings for the selected journey. Read-only for now.",
+            metadata={"settings": settings},
         )
 
     def _recent_conversations_section(
@@ -269,6 +313,16 @@ def _journey_briefing_content(journeys: JourneyService, journey_id: str) -> str:
     if row is None:
         return ""
     return row.content or ""
+
+
+def _metadata_dict(raw: str | None) -> dict:
+    if not raw:
+        return {}
+    try:
+        payload = json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
 
 
 def _journey_card(journey: dict) -> SurfaceCard:

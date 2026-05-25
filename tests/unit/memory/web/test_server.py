@@ -355,6 +355,12 @@ def test_configuration_overview_api_serializes_active_mirror_context(tmp_path: P
     db_path = mirror_home / "memory.db"
     with MemoryClient(db_path=db_path) as mem:
         mem.identity.set_identity("ego", "identity", "# Ego\nOperational voice")
+        mem.identity.set_identity(
+            "journey",
+            "mirror-mind",
+            "# Mirror Mind\n**Status:** active\n\n## Description\nBuild the mirror.",
+            metadata='{"project_path": "/code/mirror", "icon": "◇"}',
+        )
 
     server = WebTestServer(root=make_docs_root(tmp_path), mirror_home=mirror_home, db_path=db_path)
     try:
@@ -367,6 +373,8 @@ def test_configuration_overview_api_serializes_active_mirror_context(tmp_path: P
     mirror_items = {item["label"]: item for item in sections["mirror-home"]["items"]}
     assert mirror_items["Mirror home"]["value"] == str(mirror_home.resolve())
     assert mirror_items["Database"]["value"] == str(db_path.resolve())
+    assert "journeys" not in sections
+    assert "project_path: /code/mirror" not in str(payload)
     assert "OPENROUTER_API_KEY" in str(payload)
     assert "sk-test" not in str(payload)
 

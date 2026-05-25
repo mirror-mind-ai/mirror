@@ -12,6 +12,18 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-25 — CV13.E3.S3 journey settings placement validated
+
+Reworked the journey-configuration story to avoid duplicating journeys in the
+global Configuration page. Configuration now remains scoped to Mirror/runtime
+settings, while selected journey settings live in Workspace under a read-only
+Settings tab with journey id, status, project path, sync file, icon, and color.
+
+Validation: focused Workspace/configuration/web tests passed, ruff checks passed,
+`node --check` passed, `git diff --check` passed, and Navigator browser
+validation accepted the corrected information architecture and read-only journey
+settings placement.
+
 ### 2026-05-25 — CV13.E3.S2 environment boundary validated
 
 Added a guarded Environment boundary section to the Configuration page. The web

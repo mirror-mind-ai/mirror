@@ -406,21 +406,43 @@ input {
   overflow-wrap: anywhere;
 }
 
-.configuration-item {
+.configuration-item,
+.journey-setting-item {
   border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
   border-radius: 14px;
   padding: 10px;
 }
 
-.configuration-item code {
+.configuration-item code,
+.journey-setting-item code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12px;
 }
 
-.configuration-item small {
+.configuration-item small,
+.journey-setting-item small {
   display: block;
   margin-top: 3px;
   color: var(--muted);
+}
+
+.journey-settings-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.journey-setting-item dt {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.journey-setting-item dd {
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .configuration-item > span {

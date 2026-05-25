@@ -13,6 +13,7 @@ def test_workspace_home_surfaces_operational_sections(
         "journey",
         "mirror-mind",
         "# Mirror Mind\n**Status:** active\n\n## Description\nBuild the mirror.",
+        metadata='{"project_path": "/code/mirror", "sync_file": "/code/path.md", "icon": "◇", "color": "amber"}',
     )
     task_service.add_task(title="Plan web surface", journey="mirror-mind")
     memory_service.add_memory(
@@ -53,6 +54,11 @@ def test_workspace_home_surfaces_operational_sections(
     assert sections["briefing"].cards == ()
     assert sections["briefing"].metadata["content"].startswith("# Mirror Mind")
     assert "tasks" not in sections
+    assert sections["settings"].metadata["settings"][0]["value"] == "mirror-mind"
+    assert sections["settings"].metadata["settings"][2]["value"] == "/code/mirror"
+    assert sections["settings"].metadata["settings"][3]["value"] == "/code/path.md"
+    assert sections["settings"].metadata["settings"][4]["value"] == "◇"
+    assert sections["settings"].metadata["settings"][5]["value"] == "amber"
     assert sections["memories"].cards[0].title == "Surface boundary"
     assert sections["conversations"].cards[0].title == "Web planning"
     assert sections["conversations"].cards[0].metadata["message_count"] == 1

@@ -338,7 +338,8 @@ function renderWorkspaceTab(section, index) {
 function renderWorkspaceTabPanel(section, index) {
   const cards = (section.cards || []).map(renderWorkspaceCard).join('');
   const content = section.metadata?.content ? renderDetailContent(section.metadata.content) : '';
-  const itemCount = content ? '' : `<span class="readiness-badge">${escapeHtml((section.cards || []).length)} items</span>`;
+  const settings = section.metadata?.settings ? renderJourneySettings(section.metadata.settings) : '';
+  const itemCount = content || settings ? '' : `<span class="readiness-badge">${escapeHtml((section.cards || []).length)} items</span>`;
   return `
     <section class="workspace-tab-panel ${index === 0 ? 'active' : ''}" data-workspace-panel="${escapeHtml(section.id)}">
       <div class="workspace-section-head">
@@ -349,9 +350,19 @@ function renderWorkspaceTabPanel(section, index) {
         </div>
         ${itemCount}
       </div>
-      ${content ? `<div class="rendered-content workspace-briefing">${content}</div>` : cards ? `<div class="workspace-list">${cards}</div>` : `<p class="empty-state">${escapeHtml(section.empty_state || 'Nothing to show yet.')}</p>`}
+      ${content ? `<div class="rendered-content workspace-briefing">${content}</div>` : settings || (cards ? `<div class="workspace-list">${cards}</div>` : `<p class="empty-state">${escapeHtml(section.empty_state || 'Nothing to show yet.')}</p>`)}
     </section>
   `;
+}
+
+function renderJourneySettings(settings) {
+  const items = (settings || []).map((item) => `
+    <div class="journey-setting-item">
+      <dt>${escapeHtml(item.label)}</dt>
+      <dd><code>${escapeHtml(item.value)}</code><small>${escapeHtml(item.description || '')}</small></dd>
+    </div>
+  `).join('');
+  return `<dl class="journey-settings-list">${items}</dl>`;
 }
 
 function renderWorkspaceMetric(metric) {
