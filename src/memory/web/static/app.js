@@ -11,6 +11,7 @@ const tabs = [...document.querySelectorAll('[data-view]')];
 let currentDocPath = null;
 let docsLoaded = false;
 let activeView = 'atlas';
+let selectedWorkspaceJourney = null;
 
 async function boot() {
   const shell = await fetchJson('/api/shell');
@@ -62,7 +63,11 @@ async function showView(view, { updateHash = true } = {}) {
     return;
   }
 
-  const surface = await fetchJson(`/api/surface/${view}`);
+  const url = view === 'workspace' && selectedWorkspaceJourney
+    ? `/api/surface/workspace?journey=${encodeURIComponent(selectedWorkspaceJourney)}`
+    : `/api/surface/${view}`;
+  const surface = await fetchJson(url);
+  if (view === 'workspace') selectedWorkspaceJourney = surface.selected_journey_id || null;
   currentPath.textContent = view === 'atlas' ? 'Identity' : 'Workspace';
   content.innerHTML = view === 'atlas' ? renderAtlas(surface) : renderWorkspace(surface);
   window.scrollTo({ top: 0 });
@@ -71,24 +76,109 @@ async function showView(view, { updateHash = true } = {}) {
 function renderAtlas(surface) {
   const regions = (surface.regions || []).map(renderAtlasRegion).join('');
   return `
-    <section class="surface-intro atlas-hero">
-      <p class="eyebrow">Identity Map</p>
-      <h2>How your Mirror reflects you today</h2>
-      <p>${escapeHtml(surface.synthesis || 'Identity map is ready for Mirror visibility.')}</p>
+    <section class="surface-intro surface-line atlas-hero">
+      <p><strong>How your Mirror reflects you today:</strong> ${escapeHtml(surface.synthesis || 'Identity map is ready for Mirror visibility.')}</p>
     </section>
     <div class="atlas-map" aria-label="Identity map">${regions}</div>
   `;
 }
 
 function renderWorkspace(surface) {
-  const sections = (surface.sections || []).map(renderWorkspaceSection).join('');
+  const metrics = (surface.metrics || [])
+    .filter((metric) => metric.id !== 'active-journeys')
+    .map(renderWorkspaceMetric)
+    .join('');
+  const sections = (surface.sections || []).map(renderWorkspaceTabPanel).join('');
+  const tabs = (surface.sections || []).map(renderWorkspaceTab).join('');
+  const selected = surface.selected_journey;
   return `
-    <section class="surface-intro">
-      <p class="eyebrow">Workspace</p>
-      <h2>Operational dashboard</h2>
-      <p>${escapeHtml(surface.status || 'Read-only operational overview')}</p>
+    <section class="surface-intro surface-line workspace-hero">
+      <p><strong>How Mirror can help you today:</strong> ${escapeHtml(surface.status || 'Where you find your work, projects, decisions and daily tasks.')}</p>
     </section>
-    <div class="section-stack">${sections}</div>
+    <div class="workspace-shell">
+      <aside class="journey-sidebar">
+        <p class="eyebrow">Journeys (${escapeHtml((surface.journeys || []).length)})</p>
+        ${renderJourneyMenu(surface.journeys || [], surface.selected_journey_id)}
+      </aside>
+      <section class="journey-workspace">
+        ${renderJourneyProfile(selected, metrics)}
+        <div class="workspace-tabs" role="tablist" aria-label="Journey workspace tabs">${tabs}</div>
+        <div class="workspace-tab-panels">${sections}</div>
+      </section>
+    </div>
+  `;
+}
+
+function renderJourneyMenu(journeys, selectedId) {
+  if (!journeys.length) return `<p class="empty-state">No active journeys are available yet.</p>`;
+  return `
+    <div class="journey-menu">
+      ${journeys.map((journey) => `
+        <button type="button" class="journey-menu-item ${journey.id === selectedId ? 'active' : ''}" title="${escapeHtml(journey.title)}" data-workspace-journey="${escapeHtml(journey.id)}">
+          <span>${escapeHtml(journey.metadata?.icon || '⌁')}</span>
+          <strong>${escapeHtml(journey.title)}</strong>
+          ${journey.status ? `<small>${escapeHtml(journey.status)}</small>` : ''}
+        </button>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderJourneyProfile(journey, metrics) {
+  if (!journey) {
+    return `<section class="journey-profile empty-state">No active journey is selected.</section>`;
+  }
+  return `
+    <section class="journey-profile">
+      <div class="journey-profile-banner" aria-hidden="true"></div>
+      <div class="journey-profile-body">
+        <div class="journey-profile-icon">${escapeHtml(journey.metadata?.icon || '⌁')}</div>
+        <div>
+          <p class="concept-kicker">Journey</p>
+          <h3>${escapeHtml(journey.title)}</h3>
+          <p>${escapeHtml(journey.description || 'No journey briefing is available yet.')}</p>
+        </div>
+        ${journey.status ? `<span class="readiness-badge">${escapeHtml(journey.status)}</span>` : ''}
+      </div>
+      ${metrics ? `<div class="workspace-metrics compact" aria-label="Selected journey metrics">${metrics}</div>` : ''}
+    </section>
+  `;
+}
+
+function renderWorkspaceTab(section, index) {
+  return `
+    <button type="button" class="workspace-tab ${index === 0 ? 'active' : ''}" data-workspace-tab="${escapeHtml(section.id)}">
+      ${escapeHtml(section.title)}
+    </button>
+  `;
+}
+
+function renderWorkspaceTabPanel(section, index) {
+  const cards = (section.cards || []).map(renderWorkspaceCard).join('');
+  const content = section.metadata?.content ? renderDetailContent(section.metadata.content) : '';
+  const itemCount = content ? '' : `<span class="readiness-badge">${escapeHtml((section.cards || []).length)} items</span>`;
+  return `
+    <section class="workspace-tab-panel ${index === 0 ? 'active' : ''}" data-workspace-panel="${escapeHtml(section.id)}">
+      <div class="workspace-section-head">
+        <div>
+          <p class="eyebrow">${escapeHtml(section.id)}</p>
+          <h3>${escapeHtml(section.title)}</h3>
+          ${section.description ? `<p>${escapeHtml(section.description)}</p>` : ''}
+        </div>
+        ${itemCount}
+      </div>
+      ${content ? `<div class="rendered-content workspace-briefing">${content}</div>` : cards ? `<div class="workspace-list">${cards}</div>` : `<p class="empty-state">${escapeHtml(section.empty_state || 'Nothing to show yet.')}</p>`}
+    </section>
+  `;
+}
+
+function renderWorkspaceMetric(metric) {
+  return `
+    <article class="workspace-metric ${metric.status ? `metric-${escapeHtml(metric.status)}` : ''}">
+      <strong>${escapeHtml(metric.value ?? 0)}</strong>
+      <span>${escapeHtml(metric.label)}</span>
+      ${metric.description ? `<small>${escapeHtml(metric.description)}</small>` : ''}
+    </article>
   `;
 }
 
@@ -180,18 +270,34 @@ function conceptFallbackIcon(role) {
   return '◇';
 }
 
-function renderWorkspaceSection(section) {
-  const cards = (section.cards || []).map(renderCard).join('');
+function renderWorkspaceCard(card) {
+  const icon = card.metadata?.icon || '◇';
+  const metaParts = [card.kind, card.status, card.accent].filter(Boolean);
+  const detail = workspaceCardDetail(card);
   return `
-    <section class="surface-group wide">
+    <article class="workspace-card">
+      <div class="workspace-card-icon" aria-hidden="true">${escapeHtml(icon)}</div>
       <div>
-        <p class="eyebrow">${escapeHtml(section.id)}</p>
-        <h3>${escapeHtml(section.title)}</h3>
-        ${section.description ? `<p>${escapeHtml(section.description)}</p>` : ''}
+        <div class="card-meta">${escapeHtml(metaParts.join(' · '))}</div>
+        <h4>${escapeHtml(card.title)}</h4>
+        <p>${escapeHtml(card.description || '')}</p>
+        ${detail ? `<div class="workspace-card-detail">${detail}</div>` : ''}
       </div>
-      ${cards ? `<div class="card-grid compact">${cards}</div>` : `<p class="empty-state">${escapeHtml(section.empty_state || 'Nothing to show yet.')}</p>`}
-    </section>
+    </article>
   `;
+}
+
+function workspaceCardDetail(card) {
+  const metadata = card.metadata || {};
+  const values = [];
+  if (metadata.journey) values.push(`Journey: ${metadata.journey}`);
+  if (metadata.persona) values.push(`Persona: ${metadata.persona}`);
+  if (metadata.message_count !== undefined) values.push(`${metadata.message_count} messages`);
+  if (metadata.memory_type) values.push(`Type: ${metadata.memory_type}`);
+  if (metadata.stage) values.push(`Stage: ${metadata.stage}`);
+  if (metadata.due_date) values.push(`Due: ${metadata.due_date}`);
+  if (metadata.data_readiness) values.push(`Readiness: ${metadata.data_readiness}`);
+  return values.map((value) => `<span>${escapeHtml(value)}</span>`).join('');
 }
 
 async function loadObject(kind, id) {
@@ -511,6 +617,21 @@ content.addEventListener('click', async (event) => {
     return;
   }
 
+  const journeyTarget = event.target.closest('[data-workspace-journey]');
+  if (journeyTarget) {
+    event.preventDefault();
+    selectedWorkspaceJourney = journeyTarget.dataset.workspaceJourney;
+    await showView('workspace', { updateHash: false });
+    return;
+  }
+
+  const tabTarget = event.target.closest('[data-workspace-tab]');
+  if (tabTarget) {
+    event.preventDefault();
+    showWorkspaceTab(tabTarget.dataset.workspaceTab);
+    return;
+  }
+
   const backTarget = event.target.closest('[data-back-view]');
   if (backTarget) {
     event.preventDefault();
@@ -554,6 +675,15 @@ tabs.forEach((tab) => {
     chooseDefault(tab.dataset.view);
   });
 });
+
+function showWorkspaceTab(tabId) {
+  document.querySelectorAll('[data-workspace-tab]').forEach((tab) => {
+    tab.classList.toggle('active', tab.dataset.workspaceTab === tabId);
+  });
+  document.querySelectorAll('[data-workspace-panel]').forEach((panel) => {
+    panel.classList.toggle('active', panel.dataset.workspacePanel === tabId);
+  });
+}
 
 function isExternalLink(href) {
   return /^(https?:|mailto:|tel:)/.test(href);

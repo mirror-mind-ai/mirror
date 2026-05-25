@@ -224,7 +224,7 @@ def _memory_category_icon(label: str) -> str:
         "Patterns": "⌘",
         "Tensions": "◐",
         "Commitments": "●",
-        "Journeys": "✦",
+        "Journeys": "⌁",
         "Info": "◫",
         "Other": "⋯",
     }.get(label, "◫")
@@ -377,7 +377,7 @@ def _icon_for_identity(row: Identity) -> str:
     if row.layer == "shadow":
         return "◐"
     if row.layer == "journey":
-        return "✦"
+        return "⌁"
     return "◇"
 
 

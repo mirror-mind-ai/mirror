@@ -240,8 +240,23 @@ input {
   padding: 24px;
 }
 
+.surface-line {
+  padding: 14px 18px;
+}
+
+.surface-line p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.surface-line strong {
+  color: var(--text);
+  font-weight: 850;
+}
+
 .atlas-map,
-.section-stack {
+.section-stack,
+.workspace-dashboard {
   display: grid;
   gap: 18px;
   margin-top: 18px;
@@ -495,8 +510,245 @@ input {
     var(--panel);
 }
 
-.section-stack {
+.section-stack,
+.workspace-dashboard {
   grid-template-columns: 1fr;
+}
+
+.workspace-shell {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) 1fr;
+  gap: 18px;
+  margin-top: 18px;
+  align-items: start;
+}
+
+.journey-sidebar,
+.journey-profile,
+.workspace-tab-panel {
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: var(--panel);
+}
+
+.journey-sidebar {
+  position: sticky;
+  top: 18px;
+  max-height: calc(100vh - 160px);
+  overflow: auto;
+  padding: 18px;
+}
+
+.journey-menu {
+  display: grid;
+  gap: 8px;
+}
+
+.journey-menu-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  padding: 10px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.journey-menu-item:hover,
+.journey-menu-item.active {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  background: var(--accent-soft);
+}
+
+.journey-menu-item span {
+  color: var(--accent);
+}
+
+.journey-menu-item small {
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.journey-workspace {
+  min-width: 0;
+}
+
+.journey-profile {
+  overflow: hidden;
+}
+
+.journey-profile-banner {
+  min-height: 120px;
+  background:
+    radial-gradient(circle at 20% 10%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 38%),
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 45%, var(--panel)), color-mix(in srgb, var(--accent) 20%, var(--panel)));
+}
+
+.journey-profile-body {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 16px;
+  align-items: center;
+  padding: 0 22px 18px;
+  margin-top: -34px;
+}
+
+.journey-profile-icon {
+  display: grid;
+  width: 74px;
+  height: 74px;
+  place-items: center;
+  border: 5px solid var(--panel);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 45%, var(--panel));
+  color: var(--text);
+  font-size: 30px;
+  line-height: 1;
+}
+
+.journey-profile-body h3,
+.journey-profile-body p {
+  margin: 0;
+}
+
+.journey-profile-body p {
+  color: var(--muted);
+}
+
+.workspace-tabs {
+  display: flex;
+  gap: 20px;
+  margin: 22px 4px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.workspace-tab {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 0 0 10px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-weight: 750;
+}
+
+.workspace-tab:hover,
+.workspace-tab.active {
+  border-color: var(--text);
+  color: var(--text);
+}
+
+.workspace-tab-panel {
+  display: none;
+  padding: 22px;
+}
+
+.workspace-tab-panel.active {
+  display: block;
+}
+
+.workspace-hero {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 9%, transparent), transparent 55%),
+    var(--panel);
+}
+
+.workspace-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.workspace-metric {
+  display: grid;
+  gap: 2px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  background: color-mix(in srgb, var(--panel) 78%, transparent);
+}
+
+.workspace-metric strong {
+  color: var(--accent);
+  font-size: 28px;
+  line-height: 1;
+}
+
+.workspace-metric span {
+  font-weight: 750;
+}
+
+.workspace-metric small,
+.workspace-card-detail,
+.workspace-section-head p {
+  color: var(--muted);
+}
+
+.workspace-section {
+  width: 100%;
+}
+
+.workspace-section-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: start;
+}
+
+.workspace-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.workspace-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  background: color-mix(in srgb, var(--panel) 82%, transparent);
+}
+
+.workspace-card h4,
+.workspace-card p {
+  margin: 0;
+}
+
+.workspace-card p {
+  color: var(--muted);
+}
+
+.workspace-card-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  color: var(--accent);
+  font-size: 22px;
+  line-height: 1;
+}
+
+.workspace-card-detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 12px;
+}
+
+.workspace-card-detail span {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 8px;
 }
 
 .surface-group.wide {
@@ -825,8 +1077,20 @@ summary:hover {
   }
 
   .persona-team,
-  .object-detail {
+  .object-detail,
+  .workspace-metrics,
+  .workspace-shell,
+  .journey-profile-body {
     grid-template-columns: 1fr;
+  }
+
+  .journey-sidebar {
+    position: static;
+    max-height: none;
+  }
+
+  .workspace-tabs {
+    overflow-x: auto;
   }
 
   .docs-panel {

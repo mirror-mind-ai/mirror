@@ -21,6 +21,7 @@ from memory.surfaces.models import (
     SurfaceCard,
     SurfaceLink,
     WorkspaceHome,
+    WorkspaceMetric,
     WorkspaceSection,
 )
 from memory.surfaces.objects import ObjectDetailSurface
@@ -59,8 +60,8 @@ class SurfaceService:
     def atlas_home(self) -> AtlasHome:
         return self.atlas.home()
 
-    def workspace_home(self) -> WorkspaceHome:
-        return self.workspace.home()
+    def workspace_home(self, journey_id: str | None = None) -> WorkspaceHome:
+        return self.workspace.home(journey_id=journey_id)
 
     def object_detail(self, kind: str, object_id: str) -> ObjectDetail | None:
         return self.objects.detail(kind, object_id)
@@ -85,5 +86,6 @@ __all__ = [
     "SurfaceLink",
     "SurfaceService",
     "WorkspaceHome",
+    "WorkspaceMetric",
     "WorkspaceSection",
 ]

@@ -29,7 +29,7 @@ The major themes are:
 | [CV9.E3](cv9-e3-distribution-tooling/index.md) | Distribution & Tooling | A simple, robust way to install and update Mirror Mind | ✅ Done — Self-Update Done track complete |
 | [CV9.E4](cv9-e4-documentation-polish/index.md) | Documentation & Polish | Comprehensive, accurate, and helpful documentation for the public | ✅ Done |
 | [CV9.E5](cv9-e5-process-versioning-alignment/index.md) | Process & Versioning Alignment | An explicit development lifecycle and prospective versioning model for future work | ✅ Done |
-| [CV9.E6](cv9-e6-web-visibility/index.md) | Web Visibility | A local read-only web surface reveals Mirror data through Identity and Workspace perspectives | 🟢 Active — S1–S4 Done, S5 Next |
+| [CV9.E6](cv9-e6-web-visibility/index.md) | Web Visibility | A local read-only web surface reveals Mirror data through Identity and Workspace perspectives | 🟢 Active — S1–S5 Done, S6 Next |
 
 ---
 

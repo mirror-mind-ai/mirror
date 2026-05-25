@@ -12,6 +12,14 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-24 — Journey-centric Workspace dashboard added
+
+Completed CV9.E6.S5. Workspace now opens as a journey-centric operational surface rather than a generic stacked dashboard. The left side shows active journeys ordered by most recent activity; the central area shows the selected journey as a profile-style workspace with Briefing, Conversations, Tasks, Memories, and Decisions tabs.
+
+The selected journey defaults to the most recently worked active journey based on recent conversations, memories, and tasks, and can be changed through the journey sidebar. The Briefing tab renders the real journey identity content as formatted Markdown-like text. Decisions are shown as journey-filtered decision memories when available, with honest empty states otherwise.
+
+Validation: `uv run pytest tests/unit/memory/surfaces tests/unit/memory/web tests/unit/memory/test_public_api.py` passed with 40 tests; Ruff lint and format checks passed; `node --check src/memory/web/static/app.js` passed; manual browser review accepted the Workspace direction.
+
 ### 2026-05-24 — Object detail and source context added
 
 Completed CV9.E6.S4. The Identity Map now drills into supported objects through a shared read-only detail view. Self, Ego, Shadow, and personas open into a common page with summary, rendered Markdown-like content, Source context, Related links, and metadata.

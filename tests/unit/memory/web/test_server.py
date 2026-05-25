@@ -131,6 +131,28 @@ def test_surface_apis_serialize_core_surface_read_models(tmp_path: Path) -> None
     assert detail["source"]["path"] == "identity/ego/identity"
 
 
+def test_workspace_api_accepts_selected_journey_query(tmp_path: Path) -> None:
+    mirror_home = tmp_path / "mirror-home"
+    db_path = mirror_home / "memory.db"
+    with MemoryClient(db_path=db_path) as mem:
+        mem.identity.set_identity(
+            "journey", "alpha", "# Alpha\n**Status:** active\n\n## Description\nFirst."
+        )
+        mem.identity.set_identity(
+            "journey", "beta", "# Beta\n**Status:** active\n\n## Description\nSecond."
+        )
+
+    server = WebTestServer(root=make_docs_root(tmp_path), mirror_home=mirror_home, db_path=db_path)
+    try:
+        status, payload = server.request("GET", "/api/surface/workspace?journey=beta")
+    finally:
+        server.close()
+
+    assert status == 200
+    assert payload["selected_journey_id"] == "beta"
+    assert payload["selected_journey"]["title"] == "Beta"
+
+
 def test_object_detail_api_returns_404_for_missing_object(tmp_path: Path) -> None:
     mirror_home = tmp_path / "mirror-home"
     db_path = mirror_home / "memory.db"

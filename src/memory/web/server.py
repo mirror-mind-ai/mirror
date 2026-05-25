@@ -48,8 +48,10 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
             return
 
         if parsed.path == "/api/surface/workspace":
+            query = parse_qs(parsed.query)
+            journey_id = query.get("journey", [None])[0]
             with MemoryClient(db_path=self.db_path) as mem:
-                self._send_json(mem.surfaces.workspace_home().to_dict())
+                self._send_json(mem.surfaces.workspace_home(journey_id=journey_id).to_dict())
             return
 
         if parsed.path == "/api/surface/object":

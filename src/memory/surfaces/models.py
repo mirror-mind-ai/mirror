@@ -73,6 +73,19 @@ class WorkspaceSection:
     description: str | None
     cards: tuple[SurfaceCard, ...] = ()
     empty_state: str | None = None
+    metadata: dict[str, Any] | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return to_surface_dict(self)
+
+
+@dataclass(frozen=True)
+class WorkspaceMetric:
+    id: str
+    label: str
+    value: int
+    description: str | None = None
+    status: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return to_surface_dict(self)
@@ -82,6 +95,10 @@ class WorkspaceSection:
 class WorkspaceHome:
     status: str | None
     sections: tuple[WorkspaceSection, ...]
+    metrics: tuple[WorkspaceMetric, ...] = ()
+    journeys: tuple[SurfaceCard, ...] = ()
+    selected_journey_id: str | None = None
+    selected_journey: SurfaceCard | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return to_surface_dict(self)
