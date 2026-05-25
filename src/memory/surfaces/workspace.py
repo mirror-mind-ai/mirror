@@ -40,7 +40,6 @@ class WorkspaceSurface:
         selected_journey_id = _select_journey_id(active_journeys, recent_conversations, journey_id)
         selected_journey = _find_journey(active_journeys, selected_journey_id)
 
-        open_tasks = self.tasks.list_tasks(journey=selected_journey_id, open_only=True)[:10]
         journey_conversations = (
             self.conversations.list_recent(limit=8, journey=selected_journey_id)
             if selected_journey_id
@@ -60,13 +59,12 @@ class WorkspaceSurface:
         sections = (
             self._briefing_section(selected_journey),
             self._recent_conversations_section(journey_conversations),
-            self._tasks_section(open_tasks),
             self._relevant_memories_section(journey_memories),
             self._decisions_section(journey_decisions),
         )
         selected_card = _journey_card(selected_journey) if selected_journey else None
         return WorkspaceHome(
-            status="Where you find your work, projects, decisions and daily tasks.",
+            status="Where you find your journeys, conversations, memories and decisions.",
             metrics=(
                 WorkspaceMetric(
                     id="active-journeys",
@@ -75,16 +73,16 @@ class WorkspaceSurface:
                     description="Known work fields",
                 ),
                 WorkspaceMetric(
-                    id="open-tasks",
-                    label="Open tasks",
-                    value=len(open_tasks),
-                    description="For selected journey",
-                ),
-                WorkspaceMetric(
                     id="recent-conversations",
                     label="Conversations",
                     value=len(journey_conversations),
                     description="For selected journey",
+                ),
+                WorkspaceMetric(
+                    id="conversation-messages",
+                    label="Messages",
+                    value=sum(conversation.message_count for conversation in journey_conversations),
+                    description="Across shown conversations",
                 ),
                 WorkspaceMetric(
                     id="recent-memories",
@@ -92,6 +90,13 @@ class WorkspaceSurface:
                     value=len(journey_memories),
                     description="For selected journey",
                     status="partial",
+                ),
+                WorkspaceMetric(
+                    id="recent-decisions",
+                    label="Decisions",
+                    value=len(journey_decisions),
+                    description="For selected journey",
+                    status="derived",
                 ),
             ),
             journeys=tuple(_journey_card(journey) for journey in active_journeys),
@@ -115,34 +120,6 @@ class WorkspaceSurface:
             description="Current briefing for the selected journey.",
             empty_state=None if content else "No journey briefing is available yet.",
             metadata={"content": content} if content else None,
-        )
-
-    def _tasks_section(self, tasks: list[Task]) -> WorkspaceSection:
-        cards = tuple(
-            SurfaceCard(
-                id=task.id,
-                kind="task",
-                title=task.title,
-                description=task.context or task.stage or "Open task",
-                href=f"/objects/task/{task.id}",
-                status=task.status,
-                metadata={
-                    "icon": "●",
-                    "journey": task.journey,
-                    "stage": task.stage,
-                    "due_date": task.due_date,
-                    "scheduled_at": task.scheduled_at,
-                    "data_readiness": "real",
-                },
-            )
-            for task in tasks
-        )
-        return WorkspaceSection(
-            id="tasks",
-            title="Tasks",
-            description="Concrete open work for the selected journey.",
-            cards=cards,
-            empty_state=None if cards else "No open tasks are available for this journey yet.",
         )
 
     def _recent_conversations_section(

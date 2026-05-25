@@ -12,6 +12,18 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-25 — CV13.E1.S1 Workspace-first shell cleanup validated
+
+Completed the first CV13 Mirror Web Experience story on the
+`cv13/v1.1-read-only-web-refinement` branch. The web app now opens Workspace by
+default, orders perspectives as Workspace, Identity, Docs, removes the redundant
+perspective badge, removes task noise from Workspace, and gives Docs the same
+contextual-bar rhythm as the other perspectives with its navigation inside the
+main content frame.
+
+Validation: focused web/surface tests passed, `node --check` passed, `git diff
+--check` passed, and Navigator browser validation accepted the result.
+
 ### 2026-05-25 — CV13 Mirror Web Experience roadmap framed
 
 Reframed CV13 from the older Mirror Web Console placeholder into **Mirror Web

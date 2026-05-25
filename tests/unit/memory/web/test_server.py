@@ -47,7 +47,7 @@ class WebTestServer:
         self.thread.join(timeout=5)
 
 
-def test_shell_api_reports_missing_default_and_mirror_name(tmp_path: Path) -> None:
+def test_shell_api_reports_workspace_default_and_mirror_name(tmp_path: Path) -> None:
     server = WebTestServer(
         root=make_docs_root(tmp_path),
         mirror_home=tmp_path / "mirror-home",
@@ -60,7 +60,7 @@ def test_shell_api_reports_missing_default_and_mirror_name(tmp_path: Path) -> No
 
     assert status == 200
     assert payload["mirror"] == {"name": "mirror-home"}
-    assert payload["defaultPerspective"] is None
+    assert payload["defaultPerspective"] == "workspace"
     assert payload["validPerspectives"] == ["atlas", "workspace"]
     assert payload["docsAvailable"] is True
 

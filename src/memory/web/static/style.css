@@ -52,16 +52,53 @@ input {
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
   background: color-mix(in srgb, var(--bg) 88%, transparent);
   backdrop-filter: blur(12px);
-  padding: 20px 32px;
+  padding: 18px 32px;
 }
 
-.topbar h1 {
-  margin: 0;
+.brand-block {
+  display: grid;
+  gap: 8px;
+}
+
+.app-logo {
+  width: max-content;
+  color: var(--text);
   font-size: 24px;
-  line-height: 1.15;
+  font-weight: 850;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.app-logo:hover,
+.app-logo:focus-visible {
+  color: var(--accent);
+  outline: none;
+}
+
+.user-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: max-content;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.user-avatar {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 850;
 }
 
 .topbar-actions {
@@ -96,21 +133,16 @@ input {
   color: var(--muted);
 }
 
-.active-pill {
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 8px 12px;
-  background: var(--panel);
-  color: var(--muted);
-  font-size: 13px;
-}
-
 .perspective-tabs {
-  display: flex;
-  gap: 8px;
-  border-bottom: 1px solid var(--border);
-  padding: 10px 32px;
-  background: var(--panel);
+  display: inline-flex;
+  gap: 3px;
+  width: max-content;
+  margin: 14px 32px 0;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 999px;
+  padding: 4px;
+  background: color-mix(in srgb, var(--panel) 86%, transparent);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--text) 5%, transparent);
 }
 
 .perspective-tabs button,
@@ -124,12 +156,27 @@ input {
 
 .perspective-tabs button {
   width: auto;
-  min-width: 108px;
-  padding: 8px 14px;
+  min-width: 96px;
+  border-color: transparent;
+  border-radius: 999px;
+  padding: 7px 14px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 750;
 }
 
 .perspective-tabs button:hover,
-.perspective-tabs button.active,
+.perspective-tabs button.active {
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.perspective-tabs button.active {
+  background: var(--panel);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--text) 6%, transparent), 0 7px 18px color-mix(in srgb, var(--text) 6%, transparent);
+}
+
 .choice-grid button:hover {
   border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
   background: var(--accent-soft);
@@ -187,17 +234,30 @@ input {
   min-width: 0;
   display: grid;
   grid-template-columns: 1fr;
+  margin-top: 10px;
 }
 
 .content-grid.docs-active {
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 1fr;
+}
+
+.docs-frame {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) 1fr;
+  gap: 18px;
+  margin-top: 18px;
+  align-items: start;
 }
 
 .docs-panel {
-  border-right: 1px solid var(--border);
-  background: var(--panel);
-  padding: 24px 16px;
+  position: sticky;
+  top: 18px;
+  max-height: calc(100vh - 180px);
   overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: var(--panel);
+  padding: 20px 16px;
 }
 
 .surface-panel {
@@ -220,11 +280,11 @@ input {
 .surface-content {
   width: 100%;
   max-width: none;
-  padding: 32px;
+  padding: 20px 32px 32px;
 }
 
 .content-grid.docs-active .surface-content {
-  max-width: 1100px;
+  max-width: none;
 }
 
 .surface-intro,
@@ -241,7 +301,7 @@ input {
 }
 
 .surface-line {
-  padding: 14px 18px;
+  padding: 11px 18px;
 }
 
 .surface-line p {
@@ -517,7 +577,7 @@ input {
 
 .workspace-shell {
   display: grid;
-  grid-template-columns: minmax(220px, 280px) 1fr;
+  grid-template-columns: minmax(190px, 250px) 1fr;
   gap: 18px;
   margin-top: 18px;
   align-items: start;
@@ -536,7 +596,7 @@ input {
   top: 18px;
   max-height: calc(100vh - 160px);
   overflow: auto;
-  padding: 18px;
+  padding: 14px;
 }
 
 .journey-menu {
@@ -546,16 +606,18 @@ input {
 
 .journey-menu-item {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
   border: 1px solid transparent;
-  border-radius: 14px;
-  padding: 10px;
+  border-radius: 12px;
+  padding: 8px;
   background: transparent;
   color: var(--text);
   cursor: pointer;
+  font-size: 13px;
+  line-height: 1.25;
   text-align: left;
 }
 
@@ -567,11 +629,21 @@ input {
 
 .journey-menu-item span {
   color: var(--accent);
+  font-size: 14px;
+}
+
+.journey-menu-item strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .journey-menu-item small {
+  grid-column: 2;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -594,9 +666,8 @@ input {
   display: grid;
   grid-template-columns: auto 1fr auto;
   gap: 16px;
-  align-items: center;
+  align-items: start;
   padding: 0 22px 18px;
-  margin-top: -34px;
 }
 
 .journey-profile-icon {
@@ -604,12 +675,21 @@ input {
   width: 74px;
   height: 74px;
   place-items: center;
+  margin-top: -37px;
   border: 5px solid var(--panel);
   border-radius: 999px;
   background: color-mix(in srgb, var(--accent) 45%, var(--panel));
   color: var(--text);
   font-size: 30px;
   line-height: 1;
+}
+
+.journey-profile-body > div:not(.journey-profile-icon) {
+  padding-top: 18px;
+}
+
+.journey-profile-body .readiness-badge {
+  margin-top: 18px;
 }
 
 .journey-profile-body h3,
@@ -653,10 +733,15 @@ input {
   display: block;
 }
 
-.workspace-hero {
+.workspace-hero,
+.docs-hero {
   background:
     linear-gradient(135deg, color-mix(in srgb, var(--accent) 9%, transparent), transparent 55%),
     var(--panel);
+}
+
+.docs-content-frame {
+  min-width: 0;
 }
 
 .workspace-metrics {
@@ -664,6 +749,11 @@ input {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin-top: 18px;
+}
+
+.workspace-metrics.compact {
+  margin-top: 0;
+  padding: 0 22px 22px;
 }
 
 .workspace-metric {
@@ -1093,9 +1183,12 @@ summary:hover {
     overflow-x: auto;
   }
 
+  .docs-frame {
+    grid-template-columns: 1fr;
+  }
+
   .docs-panel {
+    position: static;
     max-height: 280px;
-    border-right: 0;
-    border-bottom: 1px solid var(--border);
   }
 }

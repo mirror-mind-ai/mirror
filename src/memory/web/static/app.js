@@ -1,8 +1,7 @@
-const tree = document.querySelector('#docs-tree');
+let tree = document.querySelector('#docs-tree');
 const content = document.querySelector('#content');
 const currentPath = document.querySelector('#current-path');
 const mirrorName = document.querySelector('#mirror-name');
-const activePerspective = document.querySelector('#active-perspective');
 const chooser = document.querySelector('#chooser');
 const warning = document.querySelector('#warning');
 const docsPanel = document.querySelector('#docs-panel');
@@ -10,7 +9,7 @@ const contentGrid = document.querySelector('.content-grid');
 const tabs = [...document.querySelectorAll('[data-view]')];
 let currentDocPath = null;
 let docsLoaded = false;
-let activeView = 'atlas';
+let activeView = 'workspace';
 let selectedWorkspaceJourney = null;
 
 async function boot() {
@@ -20,8 +19,8 @@ async function boot() {
 
   if (!shell.defaultPerspective) {
     chooser.hidden = true;
-    activeView = 'atlas';
-    await showView('atlas', { updateHash: false });
+    activeView = 'workspace';
+    await showView('workspace', { updateHash: false });
   } else {
     chooser.hidden = true;
     activeView = shell.defaultPerspective;
@@ -48,18 +47,16 @@ async function chooseDefault(perspective) {
 async function showView(view, { updateHash = true } = {}) {
   activeView = view;
   const docsActive = view === 'docs';
-  docsPanel.hidden = !docsActive;
-  currentPath.hidden = !docsActive;
+  if (docsPanel) docsPanel.hidden = !docsActive;
+  currentPath.hidden = true;
   contentGrid.classList.toggle('docs-active', docsActive);
   tabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.view === view));
-  activePerspective.textContent = view === 'docs' ? 'Docs' : `Perspective · ${perspectiveLabel(view)}`;
-
   if (updateHash) {
     window.history.replaceState({ view }, '', `#${view}`);
   }
 
   if (view === 'docs') {
-    await loadTree();
+    await renderDocsFrame();
     return;
   }
 
@@ -93,7 +90,7 @@ function renderWorkspace(surface) {
   const selected = surface.selected_journey;
   return `
     <section class="surface-intro surface-line workspace-hero">
-      <p><strong>How Mirror can help you today:</strong> ${escapeHtml(surface.status || 'Where you find your work, projects, decisions and daily tasks.')}</p>
+      <p><strong>How Mirror can help you today:</strong> ${escapeHtml(surface.status || 'Where you find your journeys, conversations, memories and decisions.')}</p>
     </section>
     <div class="workspace-shell">
       <aside class="journey-sidebar">
@@ -302,12 +299,10 @@ function workspaceCardDetail(card) {
 
 async function loadObject(kind, id) {
   activeView = 'object';
-  docsPanel.hidden = true;
+  if (docsPanel) docsPanel.hidden = true;
   currentPath.hidden = true;
   contentGrid.classList.remove('docs-active');
   tabs.forEach((tab) => tab.classList.remove('active'));
-  activePerspective.textContent = 'Perspective · Identity';
-
   const encodedKind = encodeURIComponent(kind);
   const encodedId = encodeURIComponent(id);
   const response = await fetch(`/api/surface/object?kind=${encodedKind}&id=${encodedId}`);
@@ -515,11 +510,11 @@ function renderCard(card) {
 
 async function loadTree() {
   if (docsLoaded) {
-    if (!currentDocPath) await loadInitialDoc();
     return;
   }
 
   const nodes = await fetchJson('/api/docs/tree');
+  if (!tree) return;
   tree.innerHTML = '';
   const list = document.createElement('ul');
   list.className = 'doc-tree';
@@ -528,7 +523,31 @@ async function loadTree() {
   }
   tree.appendChild(list);
   docsLoaded = true;
-  await loadInitialDoc(nodes);
+}
+
+async function renderDocsFrame() {
+  currentPath.textContent = 'Docs';
+  content.innerHTML = `
+    <section class="surface-intro surface-line docs-hero">
+      <p><strong>How to orient yourself while using Mirror:</strong> Browse the living documentation that keeps the product, project, and process coherent.</p>
+    </section>
+    <div class="docs-frame">
+      <aside class="docs-panel">
+        <h2>Docs</h2>
+        <nav id="docs-tree" aria-label="Documentation files"></nav>
+      </aside>
+      <article id="docs-content" class="docs-content-frame">
+        <p class="empty-state">Loading documentation…</p>
+      </article>
+    </div>
+  `;
+  tree = document.querySelector('#docs-tree');
+  await loadTree();
+  if (!currentDocPath) {
+    await loadInitialDoc();
+    return;
+  }
+  await loadDoc(currentDocPath, { replace: true });
 }
 
 async function loadInitialDoc(nodes = null) {
@@ -595,17 +614,28 @@ async function loadDoc(path, { replace = false } = {}) {
 
   const response = await fetch(`/api/docs/file?path=${encodeURIComponent(path)}`);
   const doc = await response.json();
+  const docsContent = document.querySelector('#docs-content');
 
   if (!response.ok) {
     currentPath.textContent = path;
-    content.innerHTML = `<pre>${escapeHtml(doc.error || 'Could not load document')}</pre>`;
+    const errorHtml = `<pre>${escapeHtml(doc.error || 'Could not load document')}</pre>`;
+    if (docsContent) {
+      docsContent.innerHTML = errorHtml;
+    } else {
+      content.innerHTML = errorHtml;
+    }
     return;
   }
 
   currentDocPath = doc.path;
-  currentPath.hidden = false;
   currentPath.textContent = doc.path;
-  content.innerHTML = doc.html;
+  if (docsContent) {
+    currentPath.hidden = true;
+    docsContent.innerHTML = doc.html;
+  } else {
+    currentPath.hidden = false;
+    content.innerHTML = doc.html;
+  }
   window.scrollTo({ top: 0 });
 }
 
@@ -676,6 +706,13 @@ tabs.forEach((tab) => {
   });
 });
 
+document.querySelectorAll('[data-home]').forEach((homeLink) => {
+  homeLink.addEventListener('click', async (event) => {
+    event.preventDefault();
+    await showView('workspace');
+  });
+});
+
 function showWorkspaceTab(tabId) {
   document.querySelectorAll('[data-workspace-tab]').forEach((tab) => {
     tab.classList.toggle('active', tab.dataset.workspaceTab === tabId);
@@ -719,10 +756,6 @@ async function fetchJson(url, options = {}) {
   return payload;
 }
 
-function perspectiveLabel(value) {
-  if (value === 'atlas') return 'Identity';
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
 
 function escapeHtml(value) {
   return String(value)

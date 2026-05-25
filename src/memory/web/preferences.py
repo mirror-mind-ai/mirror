@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 Perspective = Literal["atlas", "workspace"]
+DEFAULT_PERSPECTIVE: Perspective = "workspace"
 VALID_PERSPECTIVES: tuple[Perspective, ...] = ("atlas", "workspace")
 
 
@@ -33,17 +34,17 @@ class WebPreferenceStore:
         path = self.path
         if path is None:
             return PreferenceRead(
-                default_perspective=None,
+                default_perspective=DEFAULT_PERSPECTIVE,
                 warning="Mirror home is not configured; default perspective cannot be persisted.",
             )
         if not path.exists():
-            return PreferenceRead(default_perspective=None)
+            return PreferenceRead(default_perspective=DEFAULT_PERSPECTIVE)
 
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
             return PreferenceRead(
-                default_perspective=None,
+                default_perspective=DEFAULT_PERSPECTIVE,
                 warning=f"Default perspective preference could not be read: {exc}",
             )
 
@@ -51,8 +52,8 @@ class WebPreferenceStore:
         if value in VALID_PERSPECTIVES:
             return PreferenceRead(default_perspective=value)
         return PreferenceRead(
-            default_perspective=None,
-            warning="Default perspective preference is invalid; choose Atlas or Workspace again.",
+            default_perspective=DEFAULT_PERSPECTIVE,
+            warning="Default perspective preference is invalid; falling back to Workspace.",
         )
 
     def write_default_perspective(self, perspective: str) -> PreferenceRead:

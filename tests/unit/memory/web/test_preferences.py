@@ -3,12 +3,12 @@ from pathlib import Path
 from memory.web.preferences import WebPreferenceStore
 
 
-def test_preference_store_reads_missing_default(tmp_path: Path) -> None:
+def test_preference_store_reads_missing_default_as_workspace(tmp_path: Path) -> None:
     store = WebPreferenceStore(tmp_path)
 
     preference = store.read()
 
-    assert preference.default_perspective is None
+    assert preference.default_perspective == "workspace"
     assert preference.warning is None
 
 
@@ -31,7 +31,7 @@ def test_preference_store_reports_corrupt_file_without_crashing(tmp_path: Path) 
 
     preference = WebPreferenceStore(tmp_path).read()
 
-    assert preference.default_perspective is None
+    assert preference.default_perspective == "workspace"
     assert preference.warning is not None
 
 

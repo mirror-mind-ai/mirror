@@ -9,22 +9,24 @@
   <body>
     <div class="app-shell">
       <header class="topbar">
-        <div>
-          <div class="eyebrow">Mirror</div>
-          <h1 id="mirror-name">Local Mirror</h1>
+        <div class="brand-block">
+          <a href="#workspace" class="app-logo" data-home>Mirror Mind</a>
+          <div class="user-lockup" aria-label="Current Mirror user">
+            <span class="user-avatar" aria-hidden="true">◇</span>
+            <span id="mirror-name">Local Mirror</span>
+          </div>
         </div>
         <div class="topbar-actions">
           <label class="search-placeholder">
             <span>Search</span>
             <input type="search" placeholder="Search is coming soon" disabled />
           </label>
-          <div id="active-perspective" class="active-pill">Choose perspective</div>
         </div>
       </header>
 
       <nav class="perspective-tabs" aria-label="Mirror perspectives">
-        <button type="button" data-view="atlas">Identity</button>
         <button type="button" data-view="workspace">Workspace</button>
+        <button type="button" data-view="atlas">Identity</button>
         <button type="button" data-view="docs">Docs</button>
       </nav>
 
@@ -41,16 +43,12 @@
           </button>
           <button type="button" data-choose="workspace">
             <strong>Workspace</strong>
-            <span>Coordinate journeys, conversations, tasks, and state.</span>
+            <span>Coordinate journeys, conversations, memories, and decisions.</span>
           </button>
         </div>
       </section>
 
       <main class="content-grid">
-        <aside id="docs-panel" class="docs-panel" hidden>
-          <h2>Docs</h2>
-          <nav id="docs-tree" aria-label="Documentation files"></nav>
-        </aside>
         <section class="surface-panel">
           <div id="current-path" class="current-path">Loading Mirror…</div>
           <article id="content" class="surface-content">
