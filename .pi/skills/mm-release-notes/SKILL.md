@@ -11,6 +11,8 @@ Use when the user asks any natural-language variant of:
 - "What's new in the latest Mirror Mind release?"
 - "What's new in Mirror Mind v0.8.0?"
 - "Show me the latest release notes."
+- "What’s new in this update?"
+- "What's new in this update?"
 - "What changed in the new Mirror version?"
 - "What changed in v0.10.9?"
 - "Show pending release notes."

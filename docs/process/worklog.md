@@ -12,6 +12,14 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-25 — v0.10.14 release candidate prepared
+
+Production validated the full release-awareness cycle: welcome detected a new
+stable version, `show pending release notes` rendered cumulative pending notes,
+and `update my Mirror` updated the runtime. Prepared `v0.10.14 — Update Prompt
+Wording` to replace the technical prompt with `what's new in this update?` while
+keeping the same pending release-notes routing.
+
 ### 2026-05-25 — v0.10.13 pending-notes ref refresh validation stub prepared
 
 Prepared `v0.10.13 — Pending Notes Ref Refresh Validation Stub` after production

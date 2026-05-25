@@ -374,7 +374,7 @@ def test_welcome_refreshes_remote_update_cache_and_renders_version(monkeypatch, 
 
     out = capsys.readouterr().out
     assert "New Version Available: v0.9.0" in out
-    assert 'Ask: "show pending release notes" or "update my Mirror"' in out
+    assert 'Ask: "what\'s new in this update?" or "update my Mirror"' in out
     cache = json.loads((home / "runtime" / "update-check.json").read_text(encoding="utf-8"))
     assert cache["availability"] == "update_available"
     assert cache["version"] == "v0.9.0"

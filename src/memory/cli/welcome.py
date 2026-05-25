@@ -194,7 +194,7 @@ def _update_line(channel: UpdateChannel, awareness: UpdateAwareness | None = Non
             label = f"{label}: {awareness.version}"
         else:
             label = f"{label} on {awareness.channel}"
-        return f'{label}\nAsk: "show pending release notes" or "update my Mirror"'
+        return f'{label}\nAsk: "what\'s new in this update?" or "update my Mirror"'
 
     git = inspect_git(Path.cwd())
     if git.repository is None:
