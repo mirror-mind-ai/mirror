@@ -12,6 +12,17 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-25 — CV13.E3.S2 environment boundary validated
+
+Added a guarded Environment boundary section to the Configuration page. The web
+surface now shows a small allowlist of environment-derived runtime settings,
+keeps the configuration page read-only, masks sensitive key/token/secret values,
+and uses internal tabs to reduce visual clutter across configuration sections.
+
+Validation: focused configuration/web tests passed, ruff checks passed,
+`node --check` passed, `git diff --check` passed, and Navigator browser
+validation accepted the tabbed layout, environment section, and secret masking.
+
 ### 2026-05-25 — CV13.E3.S1 configuration overview validated
 
 Started the `v0.13.0 — Configuration Console` branch with a read-only,

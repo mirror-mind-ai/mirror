@@ -203,19 +203,32 @@ function renderPreferences() {
 async function renderConfiguration() {
   const overview = await fetchJson('/api/configuration/overview');
   currentPath.textContent = 'Configuration';
-  const sections = (overview.sections || []).map(renderConfigurationSection).join('');
+  const sections = overview.sections || [];
+  const tabs = sections.map((section, index) => renderConfigurationTab(section, index)).join('');
+  const panels = sections.map((section, index) => renderConfigurationSection(section, index)).join('');
   content.innerHTML = `
     <section class="surface-intro surface-line configuration-hero">
       <p><strong>${escapeHtml(overview.title || 'Configuration overview')}:</strong> ${escapeHtml(overview.description || 'Read-only local Mirror configuration.')}</p>
     </section>
-    <section class="configuration-shell">${sections}</section>
+    <section class="configuration-console">
+      <div class="configuration-tabs" role="tablist" aria-label="Configuration sections">${tabs}</div>
+      <div class="configuration-panels">${panels}</div>
+    </section>
   `;
 }
 
-function renderConfigurationSection(section) {
+function renderConfigurationTab(section, index) {
+  return `
+    <button type="button" class="configuration-tab ${index === 0 ? 'active' : ''}" data-configuration-tab="${escapeHtml(section.id)}" role="tab" aria-selected="${index === 0 ? 'true' : 'false'}">
+      ${escapeHtml(section.title)}
+    </button>
+  `;
+}
+
+function renderConfigurationSection(section, index) {
   const items = (section.items || []).map(renderConfigurationItem).join('');
   return `
-    <article class="configuration-card">
+    <article class="configuration-card ${index === 0 ? 'active' : ''}" data-configuration-panel="${escapeHtml(section.id)}" role="tabpanel">
       <p class="eyebrow">${escapeHtml(section.id)}</p>
       <h3>${escapeHtml(section.title)}</h3>
       <p>${escapeHtml(section.description || '')}</p>
@@ -932,6 +945,13 @@ content.addEventListener('click', async (event) => {
     return;
   }
 
+  const configurationTab = event.target.closest('[data-configuration-tab]');
+  if (configurationTab) {
+    event.preventDefault();
+    showConfigurationTab(configurationTab.dataset.configurationTab);
+    return;
+  }
+
   const memoryCategoryTarget = event.target.closest('[data-memory-category]');
   if (memoryCategoryTarget) {
     event.preventDefault();
@@ -1062,6 +1082,17 @@ function showWorkspaceTab(tabId) {
   });
   document.querySelectorAll('[data-workspace-panel]').forEach((panel) => {
     panel.classList.toggle('active', panel.dataset.workspacePanel === tabId);
+  });
+}
+
+function showConfigurationTab(tabId) {
+  document.querySelectorAll('[data-configuration-tab]').forEach((tab) => {
+    const active = tab.dataset.configurationTab === tabId;
+    tab.classList.toggle('active', active);
+    tab.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+  document.querySelectorAll('[data-configuration-panel]').forEach((panel) => {
+    panel.classList.toggle('active', panel.dataset.configurationPanel === tabId);
   });
 }
 

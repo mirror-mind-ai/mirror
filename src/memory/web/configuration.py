@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -104,6 +105,12 @@ def build_configuration_overview(mirror_home: str | Path | None) -> Configuratio
             ],
         ),
         ConfigurationSection(
+            id="environment",
+            title="Environment boundary",
+            description="Selected runtime environment settings. Sensitive values are masked and this page is read-only.",
+            items=_environment_items(),
+        ),
+        ConfigurationSection(
             id="runtime",
             title="Runtime defaults",
             description="Non-sensitive runtime defaults visible to the local web app.",
@@ -139,6 +146,45 @@ def build_configuration_overview(mirror_home: str | Path | None) -> Configuratio
         description="Read-only, non-sensitive configuration for the active local Mirror.",
         sections=sections,
     )
+
+
+def _environment_items() -> list[ConfigurationItem]:
+    entries = [
+        ("MIRROR_HOME", "Explicit Mirror home override."),
+        ("MIRROR_USER", "Mirror user used to derive the default Mirror home."),
+        ("MEMORY_ENV", "Selected runtime environment."),
+        ("MEMORY_DIR", "Optional memory runtime directory override."),
+        ("DB_PATH", "Optional database path override."),
+        ("OPENROUTER_API_KEY", "OpenRouter API key used for model calls."),
+        ("MEMORY_LOG_LLM_CALLS", "Enables local LLM audit logging when set to 1."),
+        ("MEMORY_RECEPTION", "Controls LLM-assisted conversation routing."),
+    ]
+    return [_environment_item(name, description) for name, description in entries]
+
+
+def _environment_item(name: str, description: str) -> ConfigurationItem:
+    raw = os.environ.get(name)
+    configured = raw not in {None, ""}
+    if not configured:
+        value = "Not configured"
+    elif _is_sensitive_name(name):
+        value = _mask_secret(raw or "")
+    else:
+        value = raw or "Not configured"
+    return ConfigurationItem(label=name, value=value, description=description, exists=configured)
+
+
+def _is_sensitive_name(name: str) -> bool:
+    lowered = name.lower()
+    return any(part in lowered for part in ("key", "token", "secret", "password"))
+
+
+def _mask_secret(value: str) -> str:
+    if not value:
+        return "Configured (masked)"
+    if len(value) <= 8:
+        return "••••"
+    return f"{value[:3]}…{value[-3:]} (masked)"
 
 
 def _path_item(label: str, path: Path | None, description: str) -> ConfigurationItem:

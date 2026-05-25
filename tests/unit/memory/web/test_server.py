@@ -367,7 +367,8 @@ def test_configuration_overview_api_serializes_active_mirror_context(tmp_path: P
     mirror_items = {item["label"]: item for item in sections["mirror-home"]["items"]}
     assert mirror_items["Mirror home"]["value"] == str(mirror_home.resolve())
     assert mirror_items["Database"]["value"] == str(db_path.resolve())
-    assert "OPENROUTER" not in str(payload)
+    assert "OPENROUTER_API_KEY" in str(payload)
+    assert "sk-test" not in str(payload)
 
 
 def test_surface_apis_serialize_core_surface_read_models(tmp_path: Path) -> None:

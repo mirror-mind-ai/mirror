@@ -310,12 +310,45 @@ input {
   background: var(--accent-soft);
 }
 
-.preferences-shell,
-.configuration-shell {
+.preferences-shell {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   margin-top: 18px;
+}
+
+.configuration-console {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.configuration-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 18px;
+  padding: 8px;
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
+}
+
+.configuration-tab {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 8px 13px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.configuration-tab:hover,
+.configuration-tab.active {
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  background: var(--accent-soft);
+  color: var(--text);
 }
 
 .preferences-card,
@@ -324,6 +357,14 @@ input {
   border-radius: 22px;
   padding: 20px;
   background: var(--panel);
+}
+
+.configuration-card {
+  display: none;
+}
+
+.configuration-card.active {
+  display: block;
 }
 
 .preferences-card h3,
