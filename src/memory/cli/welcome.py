@@ -1,8 +1,9 @@
 """CLI: render the state-aware welcome card.
 
 See docs/product/specs/welcome/index.md for the contract. The welcome is
-designed to be cheap (SQLite reads only, no network) so a runtime can call
-it at every session_start without latency cost.
+designed to be lightweight at startup. On the stable channel it may perform a
+bounded remote update check so users can see newly published releases without
+manual cache repair.
 """
 
 from __future__ import annotations
@@ -282,13 +283,16 @@ def _write_update_cache(home_path: Path, awareness: UpdateAwareness) -> None:
 
 
 def _cache_should_refresh(awareness: UpdateAwareness, channel: UpdateChannel) -> bool:
-    """Refresh visible update notices even inside the TTL.
+    """Refresh stable-channel update awareness even inside the TTL.
 
-    A cached update notice may point to an intermediate stable release. When the
-    remote stable branch advances again inside the 6-hour TTL, users should see
-    the newest version without manually deleting the cache.
+    A cached update notice may point to an intermediate stable release, and a
+    cached up-to-date result can become stale immediately after stable advances.
+    Users opening Mirror should see the newly published version without manually
+    fetching refs or deleting the cache.
     """
-    return awareness.availability == "update_available" and channel.value == "stable"
+    return (
+        awareness.availability in {"up_to_date", "update_available"} and channel.value == "stable"
+    )
 
 
 def _cache_is_stale(awareness: UpdateAwareness) -> bool:

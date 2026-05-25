@@ -12,6 +12,7 @@ Future release notes should use the structure defined in [Release Notes](../proc
 
 ## Releases
 
+- [v0.10.8 — Welcome Release Awareness](v0.10.8.md) — patch release that refreshes stable-channel welcome awareness after cached up-to-date checks.
 - [v0.10.7 — Runtime Operations Documentation](v0.10.7.md) — patch release that reconciles updater and release-management docs/help with the current command surface.
 - [v0.10.6 — Update Status Recovery](v0.10.6.md) — patch release that retries update status after safely bootstrapping an unavailable production database.
 - [v0.10.5 — Cumulative Release Notes](v0.10.5.md) — patch release that lists every pending release note for users more than one version behind.

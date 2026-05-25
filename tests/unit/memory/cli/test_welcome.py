@@ -380,7 +380,9 @@ def test_welcome_refreshes_remote_update_cache_and_renders_version(monkeypatch, 
     assert cache["version"] == "v0.9.0"
 
 
-def test_welcome_uses_fresh_non_update_cache_without_remote_check(monkeypatch, tmp_path, capsys):
+def test_welcome_refreshes_fresh_up_to_date_cache_when_stable_may_have_advanced(
+    monkeypatch, tmp_path, capsys
+):
     _mem(tmp_path, user="alisson-vale")
     home = tmp_path / ".mirror" / "alisson-vale"
     cache_path = home / "runtime" / "update-check.json"
@@ -403,18 +405,31 @@ def test_welcome_uses_fresh_non_update_cache_without_remote_check(monkeypatch, t
     monkeypatch.setattr(
         "memory.cli.welcome.inspect_update_channel", lambda start: UpdateChannel("stable", None)
     )
-    called: list[bool] = []
     monkeypatch.setattr(
         "memory.cli.welcome.check_runtime_update_availability",
-        lambda channel=None: called.append(True),
+        lambda channel=None: RuntimeUpdateAvailability(
+            "0.8.0",
+            "origin/stable",
+            "abc",
+            "def",
+            "update_available",
+            update_channel=UpdateChannel("stable", None),
+        ),
     )
+    monkeypatch.setattr(
+        "memory.cli.welcome._remote_tag_for_commit", lambda upstream, remote_commit: "v0.8.1"
+    )
+    monkeypatch.setattr("memory.cli.welcome._local_release_title", lambda version: None)
 
     from memory.cli.welcome import main
 
     main(["--mirror-home", str(home)])
 
-    assert called == []
-    assert "New Version Available" not in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "New Version Available: v0.8.1" in out
+    cache = json.loads(cache_path.read_text(encoding="utf-8"))
+    assert cache["availability"] == "update_available"
+    assert cache["remote_commit"] == "def"
 
 
 def test_welcome_refreshes_fresh_update_cache_when_stable_advances(monkeypatch, tmp_path, capsys):

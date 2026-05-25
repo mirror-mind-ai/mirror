@@ -12,6 +12,18 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-25 — v0.10.8 release candidate prepared
+
+Prepared `v0.10.8 — Welcome Release Awareness` after production validation
+showed `runtime update --check` could detect a new stable release while opening
+Mirror did not show it. Root cause: a fresh cached `up_to_date` welcome awareness
+entry was trusted for the TTL. Stable-channel welcome now refreshes both
+`up_to_date` and `update_available` cache entries so newly published stable
+releases can appear on open without manual cache or git commands.
+
+Validation: focused welcome tests passed; ruff lint and format checks passed;
+`git diff --check` passed.
+
 ### 2026-05-25 — v0.10.7 release candidate prepared
 
 Prepared `v0.10.7 — Runtime Operations Documentation` to publish the updater and
