@@ -2,14 +2,14 @@
 
 # CV13.E5 — Web Operations Runner
 
-**Status:** 🟢 In Progress
+**Status:** ✅ Done
 **Release target:** v0.15.0
 
 ---
 
 ## User-visible outcome
 
-The web app can run a small allowlisted set of Mirror maintenance operations with clear descriptions, explicit parameters, dry-run where applicable, streamed progress when execution becomes asynchronous, and durable evidence of what happened.
+The web app can run a small allowlisted set of Mirror maintenance operations with clear descriptions, explicit parameters, dry-run where applicable, synchronous-first execution, and durable evidence of what happened. Job-based execution, streamed progress, cancellation, and long-running safeguards remain explicit follow-up work.
 
 ---
 
@@ -31,6 +31,7 @@ This epic introduces a guarded operations layer: operations are named, allowlist
 | [CV13.E5.S4](cv13-e5-s4-conversation-repair-dry-run-and-apply/index.md) | Conversation repair dry-run and apply | The user can preview and approve a bounded repair for conversations missing journey association | ✅ Done |
 | [CV13.E5.S5](cv13-e5-s5-operation-job-history-and-audit-evidence/index.md) | Operation job history and audit evidence | Operation runs are recorded with status, parameters, timestamps, output summary, and errors | ✅ Done |
 | [CV13.E5.S6](cv13-e5-s6-operations-runner-surface/index.md) | Operations Runner surface | The web app exposes runnable maintenance operations and recent audit history with explicit results | ✅ Done |
+| [CV13.E5.S7](cv13-e5-s7-operations-surface-polish-and-release-coherence/index.md) | Operations surface polish and release coherence | Operation results, history, and safety boundaries are readable enough for the v0.15 release candidate | ✅ Done |
 
 ---
 

@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-26 — CV13.E5.S7 Operations surface polish and release coherence validated
+
+Closed the Web Operations Runner release arc with a more coherent Operations surface. Operation rows now use a compact grid with icon actions, future operations are disabled in place rather than breaking layout, operation configuration lives in a detail panel, results render as readable operation-specific cards with raw JSON collapsed as evidence, runtime health now explains attention-needed causes, and recent audit evidence is a simple low-noise list with status color dots. The release wording was reconciled around a synchronous-first v0.15 scope, leaving job model, streaming, cancellation, and long-running safeguards as explicit future work.
+
+Validation: focused web, service, and migration tests passed, ruff checks passed, `node --check` passed, and `git diff --check` passed. Navigator manually validated the refined Operations grid, recent runs list, runtime health attention details, and final responsive/layout adjustments.
+
 ### 2026-05-26 — CV13.E5.S6 Operations Runner surface validated
 
 Added the first visible Operations Runner surface. The web app now has an Operations tab that renders the server-owned operation catalog, exposes runnable controls for runtime health, database backup, and conversation journey repair, keeps dry-run enabled by default for repair, displays inline operation results, and lists recent audit history. Future operations are visible without run controls. Result evidence is intentionally shown as structured raw JSON for this first validation slice; product polish can later render operation-specific result cards.

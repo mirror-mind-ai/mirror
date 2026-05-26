@@ -12,6 +12,7 @@ Future release notes should use the structure defined in [Release Notes](../proc
 
 ## Releases
 
+- [v0.15.0 — Web Operations Runner](v0.15.0.md) — minor release that closes CV13.E5 with allowlisted synchronous web operations, runtime health, database backup, conversation repair, local audit evidence, and the first visible Operations surface.
 - [v0.14.0 — Conversation Intelligence](v0.14.0.md) — minor release that closes CV13.E4 with readable transcripts, explicit title improvement, configuration references, and read-only journey attachments.
 - [v0.13.0 — Configuration Console](v0.13.0.md) — minor release that closes CV13.E3 with read-only Mirror/runtime configuration, masked environment boundaries, and safe journey metadata editing from Workspace.
 - [v0.12.0 — Multi-Mirror and Preferences](v0.12.0.md) — minor release that closes CV13.E2 with safe local Mirror switching and per-Mirror profile/theme preferences.

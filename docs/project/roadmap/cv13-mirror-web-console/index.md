@@ -63,7 +63,7 @@ This policy depends on small stories, explicit validation evidence, and coherent
 | [CV13.E2](cv13-e2-multi-mirror-and-preferences/index.md) | Multi-Mirror and Preferences | The user can choose another local Mirror database and manage profile preferences such as avatar and dark/light/automatic mode | ✅ Done — release candidate v0.12.0 |
 | [CV13.E3](cv13-e3-configuration-console/index.md) | Configuration Console | The web app can inspect Mirror configuration currently held in environment variables and manage journey metadata through safe service boundaries | ✅ Done — release candidate v0.13.0 |
 | [CV13.E4](cv13-e4-conversation-intelligence/index.md) | Conversation Intelligence | The user can read stored message exchanges, improve conversation titles with explicit approval, and inspect journey attachments | ✅ Done — release candidate v0.14.0 |
-| [CV13.E5](cv13-e5-web-operations-runner/index.md) | Web Operations Runner | The user can execute allowlisted maintenance operations from the web app and receive streamed progress and results | 🟡 Planned |
+| [CV13.E5](cv13-e5-web-operations-runner/index.md) | Web Operations Runner | The user can execute allowlisted maintenance operations from the web app with synchronous-first execution, audit evidence, backup, repair dry-run/apply, and a visible Operations surface | ✅ Done — release candidate v0.15.0 |
 | CV13.E6 | Agentic Web Console | The web app is ready to launch controlled Pi or agent-background work with event streaming, approval, history, and evidence | ⚪ Future |
 
 ---

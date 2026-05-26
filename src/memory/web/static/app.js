@@ -205,21 +205,32 @@ function renderPreferences() {
   `;
 }
 
-async function renderOperations(lastResult = null) {
+async function renderOperations(lastResult = null, selectedOperationId = null) {
   const [catalog, runs] = await Promise.all([
     fetchJson('/api/operations/catalog'),
     fetchJson('/api/operations/runs'),
   ]);
   currentPath.textContent = 'Operations';
+  const selectedOperation = catalog.find((operation) => operation.id === selectedOperationId);
   const cards = catalog.map(renderOperationCard).join('');
   const history = runs.length ? runs.map(renderOperationRun).join('') : '<p class="empty-state">No operation runs recorded yet.</p>';
   content.innerHTML = `
     <section class="surface-intro surface-line operations-hero">
-      <p><strong>How your Mirror cares for itself:</strong> run bounded maintenance operations with explicit parameters, local audit evidence, and no arbitrary command access.</p>
+      <p><strong>How your Mirror cares for itself:</strong> run bounded maintenance operations with explicit parameters and local audit evidence.</p>
+      <p class="surface-note">This is a synchronous-first runner. Operations run now, return here, and leave an audit record. There is no arbitrary command, path, SQL, restore, delete, update, streaming, or background job surface in this release.</p>
     </section>
-    ${lastResult ? renderOperationResult(lastResult) : ''}
+    ${selectedOperation ? renderOperationDetail(selectedOperation, runs, lastResult) : ''}
     <section class="operations-console">
-      <div class="operations-grid">${cards}</div>
+      <div class="operations-table">
+        <div class="operations-table-head" aria-hidden="true">
+          <span>Operation</span>
+          <span>Risk</span>
+          <span>Dry-run</span>
+          <span>Status</span>
+          <span></span>
+        </div>
+        ${cards}
+      </div>
       <aside class="operations-history">
         <p class="eyebrow">Recent runs</p>
         <h3>Audit evidence</h3>
@@ -231,29 +242,67 @@ async function renderOperations(lastResult = null) {
 
 function renderOperationCard(operation) {
   const runnable = operation.execution === 'runnable';
-  const parameters = (operation.parameters || []).map(renderOperationParameter).join('');
   return `
-    <article class="operation-card risk-${escapeHtml(operation.riskLevel || 'unknown')}">
-      <div class="operation-card-head">
+    <article class="operation-row risk-${escapeHtml(operation.riskLevel || 'unknown')}">
+      <div class="operation-main">
+        <span class="operation-icon" aria-hidden="true">${operationIcon(operation.id)}</span>
+        <div>
+          <h3>${escapeHtml(operation.title)}</h3>
+          <p title="${escapeHtml(operation.description || '')}">${escapeHtml(operation.description || '')}</p>
+          <small>${escapeHtml(operation.category || 'operation')}</small>
+        </div>
+      </div>
+      <span class="operation-pill">${escapeHtml(operation.riskLevel || 'unknown')}</span>
+      <span class="operation-pill">${escapeHtml(operation.dryRun || 'unknown')}</span>
+      <span class="readiness-badge">${escapeHtml(operation.execution)}</span>
+      <button type="button" class="operation-icon-action ${runnable ? '' : 'disabled'}" ${runnable ? `data-operation-open="${escapeHtml(operation.id)}"` : 'disabled'} aria-label="${runnable ? `Open ${escapeHtml(operation.title)}` : `${escapeHtml(operation.title)} is future work`}">${runnable ? '▶' : '○'}</button>
+    </article>
+  `;
+}
+
+function renderOperationDetail(operation, runs, lastResult = null) {
+  const parameters = (operation.parameters || []).map(renderOperationParameter).join('');
+  const operationRuns = runs.filter((run) => run.operationId === operation.id).slice(0, 6);
+  const history = operationRuns.length ? operationRuns.map(renderOperationRun).join('') : '<p class="empty-state">No runs for this operation yet.</p>';
+  return `
+    <section class="operation-detail">
+      <div class="operation-detail-head">
+        <button type="button" class="secondary-action" data-operation-open="">Back to all operations</button>
+        <span class="operation-pill">${escapeHtml(operation.execution)}</span>
+      </div>
+      <div class="operation-main detail">
+        <span class="operation-icon" aria-hidden="true">${operationIcon(operation.id)}</span>
         <div>
           <p class="eyebrow">${escapeHtml(operation.category || 'operation')}</p>
           <h3>${escapeHtml(operation.title)}</h3>
+          <p>${escapeHtml(operation.description || '')}</p>
         </div>
-        <span class="readiness-badge">${escapeHtml(operation.execution)}</span>
       </div>
-      <p>${escapeHtml(operation.description || '')}</p>
-      <div class="operation-meta">
-        <span>Risk: ${escapeHtml(operation.riskLevel || 'unknown')}</span>
-        <span>Dry-run: ${escapeHtml(operation.dryRun || 'unknown')}</span>
+      <div class="operation-detail-grid">
+        <div>
+          <h4>Run configuration</h4>
+          <p class="surface-note">Review the parameters before running. Mutating operations stay bounded by the server-side allowlist.</p>
+          <form class="operation-form" data-operation-form data-operation-id="${escapeHtml(operation.id)}">
+            ${parameters || '<p class="empty-state">No parameters required.</p>'}
+            <button type="submit">Run now</button>
+          </form>
+        </div>
+        <div>
+          <h4>Operation history</h4>
+          <div class="operation-run-list compact">${history}</div>
+        </div>
       </div>
-      ${runnable ? `
-        <form class="operation-form" data-operation-form data-operation-id="${escapeHtml(operation.id)}">
-          ${parameters}
-          <button type="submit">Run operation</button>
-        </form>
-      ` : '<p class="empty-state">Not runnable yet.</p>'}
-    </article>
+      ${lastResult && lastResult.operationId === operation.id ? renderOperationResult(lastResult) : ''}
+    </section>
   `;
+}
+
+function operationIcon(id) {
+  if (id === 'runtime-health') return '⌁';
+  if (id === 'database-backup') return '◫';
+  if (id === 'conversation-journey-repair') return '↔';
+  if (id === 'conversation-logger-health') return '◌';
+  return '◇';
 }
 
 function renderOperationParameter(parameter) {
@@ -294,7 +343,6 @@ function renderOperationParameter(parameter) {
 function renderOperationResult(result) {
   const ok = !result.error;
   const summary = (result.summary || []).map((line) => `<li>${escapeHtml(line)}</li>`).join('');
-  const details = result.result ? `<pre>${escapeHtml(JSON.stringify(result.result, null, 2))}</pre>` : '';
   return `
     <section class="operation-result ${ok ? 'success' : 'failure'}">
       <p class="eyebrow">Last operation</p>
@@ -302,25 +350,124 @@ function renderOperationResult(result) {
       ${result.runId ? `<p>Run id: <code>${escapeHtml(result.runId)}</code></p>` : ''}
       ${result.error ? `<p>${escapeHtml(result.error)}</p>` : ''}
       ${summary ? `<ul>${summary}</ul>` : ''}
-      ${details}
+      ${renderOperationResultCards(result)}
+      ${renderRawEvidence(result.result)}
     </section>
   `;
 }
 
-function renderOperationRun(run) {
-  const summary = (run.summary || []).slice(0, 2).map((line) => `<li>${escapeHtml(line)}</li>`).join('');
+function renderOperationResultCards(result) {
+  const data = result.result || {};
+  if (result.operationId === 'runtime-health') return renderRuntimeHealthResult(data);
+  if (result.operationId === 'database-backup') return renderBackupResult(data);
+  if (result.operationId === 'conversation-journey-repair') return renderRepairResult(data);
+  return '';
+}
+
+function renderRuntimeHealthResult(data) {
+  const issues = runtimeHealthIssues(data);
+  const issueList = issues.map((issue) => `<li>${escapeHtml(issue)}</li>`).join('');
   return `
-    <article class="operation-run status-${escapeHtml(run.status)}">
-      <div>
-        <strong>${escapeHtml(run.operationId)}</strong>
-        <span>${escapeHtml(run.status)}${run.outcome ? ` · ${escapeHtml(run.outcome)}` : ''}</span>
+    <div class="operation-result-grid">
+      ${renderResultFact('Status', data.status || 'unknown')}
+      ${renderResultFact('Version', data.version || 'unknown')}
+      ${renderResultFact('Database', data.database?.exists ? 'present' : 'missing')}
+      ${renderResultFact('Git', data.git?.branch ? `${data.git.branch}${data.git.dirty ? ' · dirty' : ''}` : 'unknown')}
+      ${renderResultFact('Core migrations', data.coreMigrations?.ready ? 'ready' : 'attention')}
+      ${renderResultFact('Extensions', `${(data.extensions || []).length} installed`)}
+    </div>
+    <div class="operation-evidence-list ${issues.length ? 'attention' : 'success'}">
+      <strong>${issues.length ? 'Needs attention' : 'No blocking issues detected'}</strong>
+      ${issues.length ? `<ul>${issueList}</ul>` : '<p>Runtime status did not report dirty git state, missing database, migration drift, or extension health blockers.</p>'}
+    </div>
+  `;
+}
+
+function runtimeHealthIssues(data) {
+  const issues = [];
+  if (data.mirrorHomeError) issues.push(`Mirror home: ${data.mirrorHomeError}`);
+  if (data.git?.error) issues.push(`Git: ${data.git.error}`);
+  if (data.git?.dirty) issues.push('Git working tree has uncommitted changes.');
+  if (data.database?.exists === false) issues.push(`Database is missing at ${data.database?.path || 'configured path'}.`);
+  if (data.coreMigrations && !data.coreMigrations.ready) {
+    const note = data.coreMigrations.note ? ` (${data.coreMigrations.note})` : '';
+    issues.push(`Core migrations need attention${note}.`);
+  }
+  for (const health of data.extensionHealth || []) {
+    if (!health.ready) issues.push(`Extension ${health.extensionId} needs attention${health.note ? `: ${health.note}` : ''}.`);
+  }
+  return issues;
+}
+
+function renderBackupResult(data) {
+  const entries = (data.verification?.entries || []).map((entry) => `<li>${escapeHtml(entry)}</li>`).join('');
+  const route = (data.recoveryRoute || []).map((step) => `<li>${escapeHtml(step)}</li>`).join('');
+  return `
+    <div class="operation-result-grid">
+      ${renderResultFact('Backup path', data.backupPath || 'not created')}
+      ${renderResultFact('Verification', data.verification?.valid ? 'valid' : (data.verification ? 'invalid' : 'skipped'))}
+    </div>
+    ${entries ? `<div class="operation-evidence-list"><strong>Archive entries</strong><ul>${entries}</ul></div>` : ''}
+    ${route ? `<div class="operation-evidence-list"><strong>Manual recovery route</strong><ol>${route}</ol></div>` : ''}
+  `;
+}
+
+function renderRepairResult(data) {
+  const candidates = (data.candidates || []).map((candidate) => `
+    <li>
+      <strong>${escapeHtml(candidate.journey)}</strong>
+      <span>${escapeHtml(candidate.title || candidate.conversationId)}</span>
+      <small>${escapeHtml(candidate.reason || '')}</small>
+    </li>
+  `).join('');
+  return `
+    <div class="operation-result-grid">
+      ${renderResultFact('Candidates', data.candidateCount ?? 0)}
+      ${renderResultFact('Applied', data.appliedCount ?? 0)}
+      ${renderResultFact('Backup', data.backupPath || 'not created')}
+    </div>
+    ${candidates ? `<div class="operation-evidence-list"><strong>Repair candidates</strong><ul>${candidates}</ul></div>` : ''}
+  `;
+}
+
+function renderResultFact(label, value) {
+  return `
+    <div class="operation-result-fact">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(value)}</strong>
+    </div>
+  `;
+}
+
+function renderRawEvidence(result) {
+  if (!result) return '';
+  return `
+    <details class="raw-evidence">
+      <summary>Raw evidence</summary>
+      <pre>${escapeHtml(JSON.stringify(result, null, 2))}</pre>
+    </details>
+  `;
+}
+
+function renderOperationRun(run) {
+  return `
+    <article class="operation-run status-${escapeHtml(runStatusTone(run))}">
+      <span class="operation-run-dot" aria-hidden="true"></span>
+      <div class="operation-run-body">
+        <div>
+          <strong>${escapeHtml(run.operationId)}</strong>
+          <em>${escapeHtml(run.outcome || run.status)}</em>
+        </div>
+        <small>${escapeHtml(formatDateTime(run.startedAt))}</small>
       </div>
-      <small>${escapeHtml(formatDateTime(run.startedAt))}</small>
-      ${Object.keys(run.parameters || {}).length ? `<code>${escapeHtml(JSON.stringify(run.parameters))}</code>` : ''}
-      ${run.error ? `<p>${escapeHtml(run.error)}</p>` : ''}
-      ${summary ? `<ul>${summary}</ul>` : ''}
     </article>
   `;
+}
+
+function runStatusTone(run) {
+  if (run.status === 'failed') return 'failed';
+  if (String(run.outcome || '').includes('attention') || String(run.outcome || '').includes('dry_run')) return 'attention';
+  return 'completed';
 }
 
 function operationPayloadFromForm(form) {
@@ -1292,6 +1439,13 @@ content.addEventListener('click', async (event) => {
     return;
   }
 
+  const operationOpenTarget = event.target.closest('[data-operation-open]');
+  if (operationOpenTarget) {
+    event.preventDefault();
+    await renderOperations(null, operationOpenTarget.dataset.operationOpen || null);
+    return;
+  }
+
   const backTarget = event.target.closest('[data-back-view]');
   if (backTarget) {
     event.preventDefault();
@@ -1430,14 +1584,14 @@ content.addEventListener('submit', async (event) => {
         body: JSON.stringify(operationPayloadFromForm(operationForm)),
       });
       showWarning('Operation completed.');
-      await renderOperations(result);
+      await renderOperations(result, operationForm.dataset.operationId);
     } catch (error) {
       showWarning(String(error.message || error));
       await renderOperations({
         operationId: operationForm.dataset.operationId,
         status: 'failed',
         error: String(error.message || error),
-      });
+      }, operationForm.dataset.operationId);
     }
     return;
   }
