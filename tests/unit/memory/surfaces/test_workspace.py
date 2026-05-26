@@ -7,7 +7,9 @@ def test_workspace_home_surfaces_operational_sections(
     memory_service,
     conversation_service,
     task_service,
+    attachment_service,
     mock_memory_embedding,
+    mocker,
 ) -> None:
     identity_service.set_identity(
         "journey",
@@ -26,6 +28,17 @@ def test_workspace_home_surfaces_operational_sections(
         interface="pi", journey="mirror-mind", title="Web planning"
     )
     conversation_service.add_message(conversation.id, "user", "Plan the web surface")
+    mocker.patch(
+        "memory.services.attachment.generate_embedding", return_value=mock_memory_embedding
+    )
+    attachment_service.add_attachment(
+        journey_id="mirror-mind",
+        name="Launch brief",
+        description="Reference brief for launch work.",
+        content="# Launch\nDetailed launch notes.",
+        content_type="markdown",
+        tags=["launch", "reference"],
+    )
 
     surfaces = SurfaceService(
         identity=identity_service,
@@ -33,6 +46,7 @@ def test_workspace_home_surfaces_operational_sections(
         memories=memory_service,
         conversations=conversation_service,
         tasks=task_service,
+        attachments=attachment_service,
     )
 
     home = surfaces.workspace_home()
@@ -44,11 +58,12 @@ def test_workspace_home_surfaces_operational_sections(
     assert home.selected_journey is not None
     assert home.selected_journey.title == "Mirror Mind"
     assert home.journeys[0].id == "mirror-mind"
-    assert home.journeys[0].metadata["icon"] == "⌁"
+    assert home.journeys[0].metadata["icon"] == "◇"
     assert metrics["active-journeys"].value == 1
     assert "open-tasks" not in metrics
     assert metrics["recent-conversations"].value == 1
     assert metrics["conversation-messages"].value == 1
+    assert metrics["journey-attachments"].value == 1
     assert metrics["recent-memories"].value == 1
     assert metrics["recent-decisions"].value == 1
     assert sections["briefing"].cards == ()
@@ -59,6 +74,10 @@ def test_workspace_home_surfaces_operational_sections(
     assert sections["settings"].metadata["settings"][3]["value"] == "/code/path.md"
     assert sections["settings"].metadata["settings"][4]["value"] == "◇"
     assert sections["settings"].metadata["settings"][5]["value"] == "amber"
+    assert sections["attachments"].cards[0].title == "Launch brief"
+    assert sections["attachments"].cards[0].description == "Reference brief for launch work."
+    assert sections["attachments"].cards[0].metadata["content_type"] == "markdown"
+    assert sections["attachments"].cards[0].metadata["tags"] == '["launch", "reference"]'
     assert sections["memories"].cards[0].title == "Surface boundary"
     assert sections["conversations"].cards[0].title == "Web planning"
     assert sections["conversations"].cards[0].href == f"/objects/conversation/{conversation.id}"

@@ -445,7 +445,14 @@ input {
   overflow-wrap: anywhere;
 }
 
-.configuration-item > span {
+.configuration-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.configuration-status {
   width: max-content;
   border-radius: 999px;
   padding: 2px 8px;
@@ -455,7 +462,42 @@ input {
   font-weight: 750;
 }
 
-.configuration-missing > span {
+.configuration-icon {
+  display: inline-grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.configuration-requirement.required {
+  border-color: color-mix(in srgb, var(--warning) 45%, var(--border));
+  color: var(--warning);
+}
+
+.configuration-requirement.optional {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  color: var(--accent);
+}
+
+.configuration-doc-link {
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.configuration-doc-link:hover,
+.configuration-doc-link:focus-visible {
+  background: var(--accent-soft);
+  outline: none;
+}
+
+.configuration-missing .configuration-status {
   background: color-mix(in srgb, var(--warning) 12%, transparent);
   color: var(--warning);
 }
@@ -1014,18 +1056,18 @@ input {
 
 .journey-menu {
   display: grid;
-  gap: 8px;
+  gap: 4px;
 }
 
 .journey-menu-item {
   display: grid;
   grid-template-columns: auto 1fr;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
   border: 1px solid transparent;
-  border-radius: 12px;
-  padding: 8px;
+  border-radius: 10px;
+  padding: 6px 8px;
   background: transparent;
   color: var(--text);
   cursor: pointer;
@@ -1045,19 +1087,13 @@ input {
   font-size: 14px;
 }
 
-.journey-menu-item strong {
+.journey-menu-title {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.journey-menu-item small {
-  grid-column: 2;
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .journey-workspace {
@@ -1161,33 +1197,34 @@ input {
 
 .workspace-metrics {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 18px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .workspace-metrics.compact {
   margin-top: 0;
-  padding: 0 22px 22px;
+  padding: 0 18px 16px;
 }
 
 .workspace-metric {
   display: grid;
-  gap: 2px;
+  gap: 1px;
   border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 14px;
+  border-radius: 12px;
+  padding: 8px 10px;
   background: color-mix(in srgb, var(--panel) 78%, transparent);
 }
 
 .workspace-metric strong {
   color: var(--accent);
-  font-size: 28px;
+  font-size: 18px;
   line-height: 1;
 }
 
 .workspace-metric span {
-  font-weight: 750;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .workspace-metric small,

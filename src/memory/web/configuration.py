@@ -12,7 +12,6 @@ from memory.config import (
     default_backup_dir_for_home,
     default_export_dir_for_home,
     default_extensions_dir_for_home,
-    default_transcript_export_dir_for_home,
 )
 
 
@@ -22,6 +21,8 @@ class ConfigurationItem:
     value: str
     description: str
     exists: bool | None = None
+    doc_href: str | None = None
+    required: bool = False
 
     def to_dict(self) -> dict[str, object]:
         payload: dict[str, object] = {
@@ -31,6 +32,9 @@ class ConfigurationItem:
         }
         if self.exists is not None:
             payload["exists"] = self.exists
+        if self.doc_href:
+            payload["docHref"] = self.doc_href
+        payload["required"] = self.required
         return payload
 
 
@@ -71,7 +75,6 @@ def build_configuration_overview(mirror_home: str | Path | None) -> Configuratio
     db_path = db_path_from_mirror_home(home) if home else None
     backup_dir = default_backup_dir_for_home(home) if home else None
     export_dir = default_export_dir_for_home(home) if home else None
-    transcript_dir = default_transcript_export_dir_for_home(home) if home else None
     extensions_dir = default_extensions_dir_for_home(home) if home else None
 
     sections = [
@@ -80,12 +83,25 @@ def build_configuration_overview(mirror_home: str | Path | None) -> Configuratio
             title="Mirror home",
             description="Local filesystem boundary for the active Mirror.",
             items=[
-                _path_item("Mirror home", home, "Directory that owns this Mirror's local state."),
-                _path_item("Database", db_path, "SQLite database used by the active web session."),
+                _path_item(
+                    "Mirror home",
+                    home,
+                    "Directory that owns this Mirror's local state.",
+                    "mirror-home",
+                    required=True,
+                ),
+                _path_item(
+                    "Database",
+                    db_path,
+                    "SQLite database used by the active web session.",
+                    "database",
+                    required=True,
+                ),
                 _path_item(
                     "Preferences",
                     home / "web" / "preferences.json" if home else None,
                     "Web preferences scoped to this Mirror.",
+                    "preferences",
                 ),
             ],
         ),
@@ -94,13 +110,15 @@ def build_configuration_overview(mirror_home: str | Path | None) -> Configuratio
             title="Local directories",
             description="Default local directories derived from the active Mirror home.",
             items=[
-                _path_item("Backups", backup_dir, "Default location for Mirror backups."),
-                _path_item("Exports", export_dir, "Default location for user exports."),
                 _path_item(
-                    "Transcripts", transcript_dir, "Default location for transcript exports."
+                    "Backups", backup_dir, "Default location for Mirror backups.", "backups"
                 ),
+                _path_item("Exports", export_dir, "Default location for user exports.", "exports"),
                 _path_item(
-                    "Extensions", extensions_dir, "Local extension directory for this Mirror."
+                    "Extensions",
+                    extensions_dir,
+                    "Local extension directory for this Mirror.",
+                    "extensions",
                 ),
             ],
         ),
@@ -116,27 +134,35 @@ def build_configuration_overview(mirror_home: str | Path | None) -> Configuratio
             description="Non-sensitive runtime defaults visible to the local web app.",
             items=[
                 ConfigurationItem(
-                    "Environment", config.MEMORY_ENV, "Selected Mirror runtime environment."
+                    "Environment",
+                    config.MEMORY_ENV,
+                    "Selected Mirror runtime environment.",
+                    doc_href=_doc_href("environment"),
+                    required=True,
                 ),
                 ConfigurationItem(
                     "Memory search model",
                     config.EMBEDDING_MODEL,
                     "Model used to turn memories into vectors for semantic search and retrieval.",
+                    doc_href=_doc_href("memory-search-model"),
                 ),
                 ConfigurationItem(
                     "Memory extraction model",
                     config.EXTRACTION_MODEL,
                     "Default model used when Mirror extracts structured memories from text.",
+                    doc_href=_doc_href("memory-extraction-model"),
                 ),
                 ConfigurationItem(
                     "LLM audit logging",
                     "enabled" if config.LOG_LLM_CALLS else "disabled",
                     "When enabled, Mirror records LLM calls for local audit/debugging evidence.",
+                    doc_href=_doc_href("llm-audit-logging"),
                 ),
                 ConfigurationItem(
                     "Conversation routing",
                     "enabled" if config.RECEPTION_ENABLED else "disabled",
                     "When enabled, Mirror can classify incoming turns for persona/journey routing instead of relying only on simple keyword heuristics.",
+                    doc_href=_doc_href("conversation-routing"),
                 ),
             ],
         ),
@@ -171,7 +197,14 @@ def _environment_item(name: str, description: str) -> ConfigurationItem:
         value = _mask_secret(raw or "")
     else:
         value = raw or "Not configured"
-    return ConfigurationItem(label=name, value=value, description=description, exists=configured)
+    return ConfigurationItem(
+        label=name,
+        value=value,
+        description=description,
+        exists=configured,
+        doc_href=_doc_href(name.lower().replace("_", "-")),
+        required=name in {"MIRROR_HOME", "MIRROR_USER", "MEMORY_ENV"},
+    )
 
 
 def _is_sensitive_name(name: str) -> bool:
@@ -187,14 +220,32 @@ def _mask_secret(value: str) -> str:
     return f"{value[:3]}…{value[-3:]} (masked)"
 
 
-def _path_item(label: str, path: Path | None, description: str) -> ConfigurationItem:
+def _path_item(
+    label: str,
+    path: Path | None,
+    description: str,
+    doc_anchor: str,
+    *,
+    required: bool = False,
+) -> ConfigurationItem:
     if path is None:
         return ConfigurationItem(
-            label=label, value="Not configured", description=description, exists=None
+            label=label,
+            value="Not configured",
+            description=description,
+            exists=None,
+            doc_href=_doc_href(doc_anchor),
+            required=required,
         )
     return ConfigurationItem(
         label=label,
         value=str(path),
         description=description,
         exists=path.exists(),
+        doc_href=_doc_href(doc_anchor),
+        required=required,
     )
+
+
+def _doc_href(anchor: str) -> str:
+    return f"docs/reference/configuration.md#{anchor}"

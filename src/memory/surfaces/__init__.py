@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from memory.services.attachment import AttachmentService
 from memory.services.conversation import ConversationService
 from memory.services.identity import IdentityService
 from memory.services.journey import JourneyService
@@ -40,6 +41,7 @@ class SurfaceService:
         memories: MemoryService,
         conversations: ConversationService,
         tasks: TaskService,
+        attachments: AttachmentService | None = None,
     ) -> None:
         self.evidence = EvidenceSurface()
         self.atlas = AtlasSurface(
@@ -53,6 +55,7 @@ class SurfaceService:
             conversations=conversations,
             memories=memories,
             tasks=tasks,
+            attachments=attachments,
         )
         self.objects = ObjectDetailSurface(identity=identity, evidence=self.evidence)
         self.search_surface = SearchSurface(memories=memories)

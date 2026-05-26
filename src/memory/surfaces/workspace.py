@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import json
 
-from memory.models import ConversationSummary, MemorySummary, Task
+from memory.models import Attachment, ConversationSummary, MemorySummary, Task
+from memory.services.attachment import AttachmentService
 from memory.services.conversation import ConversationService
 from memory.services.journey import JourneyService
 from memory.services.memory import MemoryService
@@ -22,11 +23,13 @@ class WorkspaceSurface:
         conversations: ConversationService,
         memories: MemoryService,
         tasks: TaskService,
+        attachments: AttachmentService | None = None,
     ) -> None:
         self.journeys = journeys
         self.conversations = conversations
         self.memories = memories
         self.tasks = tasks
+        self.attachments = attachments
 
     def home(self, journey_id: str | None = None) -> WorkspaceHome:
         active_journeys = self.journeys.list_active_journeys()
@@ -57,9 +60,15 @@ class WorkspaceSurface:
             if selected_journey_id
             else []
         )
+        journey_attachments = (
+            self.attachments.get_attachments(selected_journey_id)
+            if selected_journey_id and self.attachments
+            else []
+        )
 
         sections = (
             self._briefing_section(selected_journey),
+            self._attachments_section(journey_attachments),
             self._recent_conversations_section(journey_conversations),
             self._relevant_memories_section(journey_memories),
             self._decisions_section(journey_decisions),
@@ -86,6 +95,13 @@ class WorkspaceSurface:
                     label="Messages",
                     value=sum(conversation.message_count for conversation in journey_conversations),
                     description="Across shown conversations",
+                ),
+                WorkspaceMetric(
+                    id="journey-attachments",
+                    label="Attachments",
+                    value=len(journey_attachments),
+                    description="For selected journey",
+                    status="partial",
                 ),
                 WorkspaceMetric(
                     id="recent-memories",
@@ -123,6 +139,34 @@ class WorkspaceSurface:
             description="Current briefing for the selected journey.",
             empty_state=None if content else "No journey briefing is available yet.",
             metadata={"content": content} if content else None,
+        )
+
+    def _attachments_section(self, attachments: list[Attachment]) -> WorkspaceSection:
+        cards = tuple(
+            SurfaceCard(
+                id=attachment.id,
+                kind="attachment",
+                title=attachment.name,
+                description=attachment.description or _content_preview(attachment.content),
+                href=f"/objects/attachment/{attachment.id}",
+                status=attachment.content_type,
+                metadata={
+                    "icon": _attachment_icon(attachment.content_type),
+                    "journey": attachment.journey_id,
+                    "content_type": attachment.content_type,
+                    "tags": attachment.tags,
+                    "created_at": attachment.created_at,
+                    "data_readiness": "real",
+                },
+            )
+            for attachment in attachments
+        )
+        return WorkspaceSection(
+            id="attachments",
+            title="Attachments",
+            description="Reference material attached to the selected journey.",
+            cards=cards,
+            empty_state=None if cards else "No attachments are available for this journey yet.",
         )
 
     def _settings_section(self, journey: dict | None) -> WorkspaceSection:
@@ -340,6 +384,7 @@ def _metadata_dict(raw: str | None) -> dict:
 
 
 def _journey_card(journey: dict) -> SurfaceCard:
+    metadata = journey.get("metadata", {}) if isinstance(journey.get("metadata"), dict) else {}
     return SurfaceCard(
         id=journey["id"],
         kind="journey",
@@ -347,8 +392,23 @@ def _journey_card(journey: dict) -> SurfaceCard:
         description=journey["description"],
         href=f"/objects/journey/{journey['id']}",
         status="active",
-        metadata={"icon": "⌁", "data_readiness": "real"},
+        metadata={"icon": metadata.get("icon") or "⌁", "data_readiness": "real"},
     )
+
+
+def _content_preview(content: str, limit: int = 180) -> str:
+    compact = " ".join(content.strip().split())
+    if len(compact) <= limit:
+        return compact
+    return f"{compact[:limit].rstrip()}…"
+
+
+def _attachment_icon(content_type: str) -> str:
+    return {
+        "markdown": "◨",
+        "text": "▤",
+        "yaml": "▧",
+    }.get(content_type, "◨")
 
 
 def _memory_icon(memory_type: str) -> str:

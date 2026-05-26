@@ -18,6 +18,16 @@ JOURNEY_LAYER = "journey"
 JOURNEY_PATH_LAYER = "journey_path"
 
 
+def _metadata_dict(raw: str | None) -> dict:
+    if not raw:
+        return {}
+    try:
+        payload = json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
 class JourneyService:
     def __init__(
         self,
@@ -99,6 +109,7 @@ class JourneyService:
                     "id": journey.key,
                     "name": first_line,
                     "description": description,
+                    "metadata": _metadata_dict(journey.metadata),
                 }
             )
         return result

@@ -54,6 +54,7 @@ class MemoryClient:
             memories=self.memories,
             conversations=self.conversations,
             tasks=self.tasks,
+            attachments=self.attachments,
         )
 
     @property

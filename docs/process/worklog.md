@@ -12,6 +12,31 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-25 — CV13.E4.S6 journey attachments visibility validated
+
+Added read-only journey attachment visibility to Workspace. The selected journey
+now exposes an Attachments tab and attachment metric, backed by `AttachmentService`,
+showing attachment name, description/content preview, type, journey, tags, and
+created metadata. The story intentionally excludes upload, edit, delete, and LLM
+actions. Final Workspace visual tuning also reduced journey metric card size and
+used configured journey icons in the sidebar.
+
+Validation: focused Workspace/web tests passed, ruff checks passed,
+`node --check` passed, `git diff --check` passed, the web server was restarted,
+and Navigator accepted the final Workspace behavior.
+
+### 2026-05-25 — CV13.E4.S5 configuration reference links validated
+
+Closed E4 coherence by adding detailed configuration reference documentation and
+linking surfaced Configuration items to the relevant reference sections. The UI
+now uses compact required/optional and info-reference icons instead of a large
+Reference button. Transcript export directory visibility was removed because it
+is not currently a clear product-facing operation.
+
+Validation: focused configuration/web tests passed, ruff checks passed,
+`node --check` passed, `git diff --check` passed, the web server was restarted,
+and Navigator accepted the configuration reference behavior.
+
 ### 2026-05-25 — CV13.E4.S4 single conversation retitle validated
 
 Added an explicit single-conversation title suggestion flow. Transcript pages can

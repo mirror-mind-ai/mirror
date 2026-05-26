@@ -240,6 +240,11 @@ function renderConfigurationSection(section, index) {
 function renderConfigurationItem(item) {
   const exists = item.exists === true ? 'exists' : item.exists === false ? 'missing' : 'neutral';
   const status = item.exists === true ? 'Found' : item.exists === false ? 'Missing' : 'Info';
+  const requirementLabel = item.required ? 'Required' : 'Optional';
+  const requirementIcon = item.required ? '●' : '○';
+  const reference = item.docHref
+    ? `<button type="button" class="configuration-icon configuration-doc-link" data-doc-reference="${escapeHtml(item.docHref)}" aria-label="Open ${escapeHtml(item.label)} reference" title="Open reference">i</button>`
+    : '';
   return `
     <div class="configuration-item configuration-${exists}">
       <dt>${escapeHtml(item.label)}</dt>
@@ -247,7 +252,11 @@ function renderConfigurationItem(item) {
         <code>${escapeHtml(item.value)}</code>
         <small>${escapeHtml(item.description || '')}</small>
       </dd>
-      <span>${status}</span>
+      <div class="configuration-item-actions" aria-label="Configuration item metadata">
+        <span class="configuration-status">${status}</span>
+        <span class="configuration-icon configuration-requirement ${item.required ? 'required' : 'optional'}" aria-label="${escapeHtml(requirementLabel)}" title="${escapeHtml(requirementLabel)}">${requirementIcon}</span>
+        ${reference}
+      </div>
     </div>
   `;
 }
@@ -298,8 +307,7 @@ function renderJourneyMenu(journeys, selectedId) {
       ${journeys.map((journey) => `
         <button type="button" class="journey-menu-item ${journey.id === selectedId ? 'active' : ''}" title="${escapeHtml(journey.title)}" data-workspace-journey="${escapeHtml(journey.id)}">
           <span>${escapeHtml(journey.metadata?.icon || '⌁')}</span>
-          <strong>${escapeHtml(journey.title)}</strong>
-          ${journey.status ? `<small>${escapeHtml(journey.status)}</small>` : ''}
+          <span class="journey-menu-title">${escapeHtml(journey.title)}</span>
         </button>
       `).join('')}
     </div>
@@ -540,6 +548,8 @@ function workspaceCardDetail(card) {
   if (metadata.persona) values.push(`✣ ${metadata.persona}`);
   if (metadata.message_count !== undefined) values.push(`☷ ${metadata.message_count} messages`);
   if (metadata.memory_type) values.push(`Type: ${metadata.memory_type}`);
+  if (metadata.content_type) values.push(`Type: ${metadata.content_type}`);
+  if (metadata.tags) values.push(`Tags: ${metadata.tags}`);
   if (metadata.stage) values.push(`Stage: ${metadata.stage}`);
   if (metadata.due_date) values.push(`Due: ${metadata.due_date}`);
   return values.map((value) => `<span>${escapeHtml(value)}</span>`).join('');
@@ -945,6 +955,22 @@ async function loadTree() {
   docsLoaded = true;
 }
 
+async function openDocReference(reference) {
+  const [path, rawHash] = String(reference || '').split('#');
+  if (!path) return;
+  activeView = 'docs';
+  if (docsPanel) docsPanel.hidden = false;
+  currentPath.hidden = true;
+  contentGrid.classList.add('docs-active');
+  tabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.view === 'docs'));
+  window.history.pushState({ view: 'docs', path, hash: rawHash || null }, '', '#docs');
+  await renderDocsFrame();
+  await loadDoc(path, { replace: true });
+  if (rawHash) {
+    document.querySelector(`#${CSS.escape(rawHash)}`)?.scrollIntoView();
+  }
+}
+
 async function renderDocsFrame() {
   currentPath.textContent = 'Docs';
   content.innerHTML = `
@@ -1093,6 +1119,13 @@ content.addEventListener('click', async (event) => {
   if (configurationTab) {
     event.preventDefault();
     showConfigurationTab(configurationTab.dataset.configurationTab);
+    return;
+  }
+
+  const docReferenceTarget = event.target.closest('[data-doc-reference]');
+  if (docReferenceTarget) {
+    event.preventDefault();
+    await openDocReference(docReferenceTarget.dataset.docReference);
     return;
   }
 
