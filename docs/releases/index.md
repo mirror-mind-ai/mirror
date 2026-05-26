@@ -12,6 +12,7 @@ Future release notes should use the structure defined in [Release Notes](../proc
 
 ## Releases
 
+- [v0.13.0 — Configuration Console](v0.13.0.md) — minor release that closes CV13.E3 with read-only Mirror/runtime configuration, masked environment boundaries, and safe journey metadata editing from Workspace.
 - [v0.12.0 — Multi-Mirror and Preferences](v0.12.0.md) — minor release that closes CV13.E2 with safe local Mirror switching and per-Mirror profile/theme preferences.
 - [v0.11.0 — Read-only Web Refinement](v0.11.0.md) — minor release that closes CV13.E1 with Workspace-first navigation, Identity memory drilldowns, read-only search, and refined conversation cards.
 - [v0.10.17 — Update Notice Tone](v0.10.17.md) — patch release that makes update notices informational and prefixes them with ✨.

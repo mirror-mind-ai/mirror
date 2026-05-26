@@ -12,6 +12,13 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-25 — v0.13.0 release candidate prepared
+
+Prepared `v0.13.0 — Configuration Console` as the minor release candidate for
+CV13.E3. The release packages the completed S1–S5 arc: read-only configuration
+overview, masked environment boundary, Workspace-based journey settings,
+safe journey metadata editing, and final configuration coherence validation.
+
 ### 2026-05-25 — CV13.E3.S5 configuration coherence validated
 
 Closed the CV13.E3 Configuration Console story arc with final coherence coverage
