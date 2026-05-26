@@ -114,6 +114,9 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
         if parsed.path == "/api/preferences/theme":
             self._write_theme()
             return
+        if parsed.path == "/api/journeys/metadata":
+            self._write_journey_metadata()
+            return
         self._send_json({"error": "Not found"}, status=404)
 
     def log_message(self, format: str, *args: object) -> None:
@@ -186,6 +189,28 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
                 "warning": preference.warning,
             }
         )
+
+    def _write_journey_metadata(self) -> None:
+        try:
+            payload = self._read_json_body()
+            journey_id = payload.get("journeyId")
+            if not isinstance(journey_id, str) or not journey_id:
+                raise ValueError("journeyId is required")
+            fields = {
+                "project_path": payload.get("projectPath", ""),
+                "sync_file": payload.get("syncFile", ""),
+                "icon": payload.get("icon", ""),
+                "color": payload.get("color", ""),
+            }
+            if not all(isinstance(value, str) for value in fields.values()):
+                raise ValueError("Journey metadata fields must be strings")
+            with MemoryClient(db_path=self._db_path()) as mem:
+                metadata = mem.journeys.update_metadata_fields(journey_id, fields)
+        except (json.JSONDecodeError, ValueError, TypeError) as exc:
+            self._send_json({"error": str(exc)}, status=400)
+            return
+
+        self._send_json({"journeyId": journey_id, "metadata": metadata})
 
     def _write_theme(self) -> None:
         try:

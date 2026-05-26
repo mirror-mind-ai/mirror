@@ -236,6 +236,32 @@ class JourneyService:
         meta["sync_file"] = file_path
         self.store.update_identity_metadata(ident.layer, journey, json.dumps(meta))
 
+    def update_metadata_fields(self, journey: str, fields: dict[str, str]) -> dict:
+        """Update selected safe metadata fields for a journey."""
+        ident = self._get_journey_identity(journey)
+        if not ident:
+            raise ValueError(f"Journey '{journey}' not found.")
+        allowed = {"project_path", "sync_file", "icon", "color"}
+        unknown = set(fields) - allowed
+        if unknown:
+            raise ValueError(f"Unsupported journey metadata field: {sorted(unknown)[0]}")
+        try:
+            meta = json.loads(ident.metadata) if ident.metadata else {}
+        except (json.JSONDecodeError, TypeError):
+            meta = {}
+        for key, value in fields.items():
+            if not isinstance(value, str):
+                raise ValueError(f"{key} must be a string")
+            value = value.strip()
+            if len(value) > 500:
+                raise ValueError(f"{key} must be at most 500 characters")
+            if value:
+                meta[key] = value
+            else:
+                meta.pop(key, None)
+        self.store.update_identity_metadata(ident.layer, journey, json.dumps(meta, sort_keys=True))
+        return meta
+
     def _get_journey_identities(self) -> list[Identity]:
         return self.store.get_identity_by_layer(JOURNEY_LAYER)
 

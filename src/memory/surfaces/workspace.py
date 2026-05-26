@@ -136,24 +136,38 @@ class WorkspaceSurface:
         row = self.journeys.store.get_identity("journey", journey["id"])
         metadata = _metadata_dict(row.metadata if row else None)
         settings = [
-            {"label": "Journey ID", "value": journey["id"], "description": "Stable routing key."},
-            {"label": "Status", "value": "active", "description": "Current journey status."},
             {
+                "key": "journeyId",
+                "label": "Journey ID",
+                "value": journey["id"],
+                "description": "Stable routing key.",
+            },
+            {
+                "key": "status",
+                "label": "Status",
+                "value": "active",
+                "description": "Current journey status.",
+            },
+            {
+                "key": "projectPath",
                 "label": "Project path",
                 "value": metadata.get("project_path") or "Not configured",
                 "description": "Local project directory associated with this journey.",
             },
             {
+                "key": "syncFile",
                 "label": "Sync file",
                 "value": metadata.get("sync_file") or "Not configured",
                 "description": "External journey path file, when configured.",
             },
             {
+                "key": "icon",
                 "label": "Icon",
                 "value": metadata.get("icon") or journey.get("metadata", {}).get("icon") or "⌁",
                 "description": "Visual marker used for this journey.",
             },
             {
+                "key": "color",
                 "label": "Color",
                 "value": metadata.get("color") or "Not configured",
                 "description": "Optional visual color metadata.",

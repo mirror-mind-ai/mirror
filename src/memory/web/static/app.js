@@ -356,13 +356,34 @@ function renderWorkspaceTabPanel(section, index) {
 }
 
 function renderJourneySettings(settings) {
-  const items = (settings || []).map((item) => `
+  const readonly = (settings || []).map((item) => `
     <div class="journey-setting-item">
       <dt>${escapeHtml(item.label)}</dt>
       <dd><code>${escapeHtml(item.value)}</code><small>${escapeHtml(item.description || '')}</small></dd>
     </div>
   `).join('');
-  return `<dl class="journey-settings-list">${items}</dl>`;
+  const values = Object.fromEntries((settings || []).map((item) => [item.key, item.value]));
+  return `
+    <dl class="journey-settings-list">${readonly}</dl>
+    <form class="journey-settings-form" data-journey-settings-form data-journey-id="${escapeHtml(values.journeyId || '')}">
+      <p class="eyebrow">Edit metadata</p>
+      ${renderJourneySettingInput('projectPath', 'Project path', values.projectPath)}
+      ${renderJourneySettingInput('syncFile', 'Sync file', values.syncFile)}
+      ${renderJourneySettingInput('icon', 'Icon', values.icon)}
+      ${renderJourneySettingInput('color', 'Color', values.color)}
+      <button type="submit">Save journey settings</button>
+    </form>
+  `;
+}
+
+function renderJourneySettingInput(name, label, value) {
+  const safeValue = value === 'Not configured' ? '' : value || '';
+  return `
+    <label>
+      <span>${escapeHtml(label)}</span>
+      <input name="${escapeHtml(name)}" value="${escapeHtml(safeValue)}" maxlength="500" />
+    </label>
+  `;
 }
 
 function renderWorkspaceMetric(metric) {
@@ -1022,6 +1043,27 @@ mirrorSelector?.addEventListener('click', async (event) => {
 });
 
 content.addEventListener('submit', async (event) => {
+  const settingsForm = event.target.closest('[data-journey-settings-form]');
+  if (settingsForm) {
+    event.preventDefault();
+    const data = new FormData(settingsForm);
+    await fetchJson('/api/journeys/metadata', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        journeyId: settingsForm.dataset.journeyId,
+        projectPath: String(data.get('projectPath') || ''),
+        syncFile: String(data.get('syncFile') || ''),
+        icon: String(data.get('icon') || ''),
+        color: String(data.get('color') || ''),
+      }),
+    });
+    showWarning('Journey settings saved.');
+    await showView('workspace', { updateHash: false });
+    showWorkspaceTab('settings');
+    return;
+  }
+
   const form = event.target.closest('[data-profile-form]');
   if (!form) return;
   event.preventDefault();

@@ -12,6 +12,19 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-25 — CV13.E3.S4 safe journey metadata edit validated
+
+Added a safe edit path for selected journey metadata from Workspace Settings.
+The web app can update project path, sync file, icon, and color through a guarded
+`/api/journeys/metadata` endpoint backed by `JourneyService.update_metadata_fields`.
+The flow avoids raw JSON/content editors, validates fields server-side, refreshes
+the selected journey settings after save, and persists through reload.
+
+Validation: focused Workspace/web tests passed, ruff checks passed,
+`node --check` passed, `git diff --check` passed, and Navigator browser
+validation accepted edit, save, refresh, reload persistence, and absence of raw
+editors.
+
 ### 2026-05-25 — CV13.E3.S3 journey settings placement validated
 
 Reworked the journey-configuration story to avoid duplicating journeys in the

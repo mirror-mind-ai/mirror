@@ -310,6 +310,67 @@ def test_profile_preferences_api_rejects_invalid_payload(tmp_path: Path) -> None
     assert "displayName" in payload["error"]
 
 
+def test_journey_metadata_api_updates_selected_safe_fields(tmp_path: Path) -> None:
+    mirror_home = tmp_path / "mirror-home"
+    db_path = mirror_home / "memory.db"
+    with MemoryClient(db_path=db_path) as mem:
+        mem.identity.set_identity(
+            "journey",
+            "mirror-mind",
+            "# Mirror Mind\n**Status:** active\n\n## Description\nBuild the mirror.",
+        )
+
+    server = WebTestServer(root=make_docs_root(tmp_path), mirror_home=mirror_home, db_path=db_path)
+    try:
+        status, payload = server.request(
+            "POST",
+            "/api/journeys/metadata",
+            {
+                "journeyId": "mirror-mind",
+                "projectPath": "/code/mirror",
+                "syncFile": "/code/mirror/path.md",
+                "icon": "◇",
+                "color": "amber",
+            },
+        )
+        workspace_status, workspace = server.request("GET", "/api/surface/workspace")
+    finally:
+        server.close()
+
+    assert status == 200
+    assert payload["metadata"] == {
+        "color": "amber",
+        "icon": "◇",
+        "project_path": "/code/mirror",
+        "sync_file": "/code/mirror/path.md",
+    }
+    assert workspace_status == 200
+    settings = next(section for section in workspace["sections"] if section["id"] == "settings")
+    values = {item["key"]: item["value"] for item in settings["metadata"]["settings"]}
+    assert values["projectPath"] == "/code/mirror"
+    assert values["syncFile"] == "/code/mirror/path.md"
+    assert values["icon"] == "◇"
+    assert values["color"] == "amber"
+
+
+def test_journey_metadata_api_rejects_missing_journey(tmp_path: Path) -> None:
+    mirror_home = tmp_path / "mirror-home"
+    server = WebTestServer(
+        root=make_docs_root(tmp_path),
+        mirror_home=mirror_home,
+        db_path=mirror_home / "memory.db",
+    )
+    try:
+        status, payload = server.request(
+            "POST", "/api/journeys/metadata", {"journeyId": "missing", "projectPath": "/x"}
+        )
+    finally:
+        server.close()
+
+    assert status == 400
+    assert "not found" in payload["error"]
+
+
 def test_default_perspective_api_persists_to_user_home(tmp_path: Path) -> None:
     mirror_home = tmp_path / "mirror-home"
     server = WebTestServer(

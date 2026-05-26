@@ -21,8 +21,8 @@ This epic turns configuration from hidden local files/environment into guarded l
 | [CV13.E3.S1](cv13-e3-s1-configuration-overview/index.md) | Configuration overview | The web app shows a read-only overview of non-sensitive local Mirror configuration | ✅ Done |
 | [CV13.E3.S2](cv13-e3-s2-environment-boundary-and-secrets-masking/index.md) | Environment boundary and secrets masking | Environment-derived configuration is inspectable with sensitive values masked or omitted | ✅ Done |
 | [CV13.E3.S3](cv13-e3-s3-journey-settings-placement/index.md) | Journey settings placement | Journey settings are inspectable from the selected Workspace journey instead of duplicated in global Configuration | ✅ Done |
-| CV13.E3.S4 | Safe journey metadata edit | Selected journey metadata can be edited through safe service boundaries | 🟢 In Progress |
-| CV13.E3.S5 | Configuration coherence and validation | The configuration console is validated and prepared as v0.13.0 | 🟡 Planned |
+| [CV13.E3.S4](cv13-e3-s4-safe-journey-metadata-edit/index.md) | Safe journey metadata edit | Selected journey metadata can be edited through safe service boundaries | ✅ Done |
+| CV13.E3.S5 | Configuration coherence and validation | The configuration console is validated and prepared as v0.13.0 | 🟢 In Progress |
 
 ---
 

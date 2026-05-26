@@ -461,12 +461,35 @@ input {
 }
 
 .preferences-form,
-.theme-options {
+.theme-options,
+.journey-settings-form {
   display: grid;
   gap: 14px;
 }
 
-.preferences-form input {
+.journey-settings-form {
+  margin-top: 18px;
+  border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+  border-radius: 18px;
+  padding: 14px;
+  background: color-mix(in srgb, var(--panel-strong) 36%, transparent);
+}
+
+.journey-settings-form label {
+  display: grid;
+  gap: 4px;
+}
+
+.journey-settings-form span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.preferences-form input,
+.journey-settings-form input {
   width: 100%;
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -475,7 +498,8 @@ input {
   color: var(--text);
 }
 
-.preferences-form button {
+.preferences-form button,
+.journey-settings-form button {
   width: max-content;
   border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
   border-radius: 999px;
