@@ -666,7 +666,11 @@ function renderConversationDetail(detail) {
             <span>Conversation title</span>
             <input name="title" value="${escapeHtml(detail.title || '')}" maxlength="160" required />
           </label>
-          <button type="submit">Save title</button>
+          <div class="conversation-title-actions">
+            <button type="submit">Save title</button>
+            <button type="button" class="secondary-action" data-suggest-title>Suggest title</button>
+          </div>
+          <div class="title-suggestion" data-title-suggestion hidden></div>
         </form>
       </header>
       ${detail.summary ? `
@@ -1099,6 +1103,22 @@ content.addEventListener('click', async (event) => {
     return;
   }
 
+  const suggestTitleTarget = event.target.closest('[data-suggest-title]');
+  if (suggestTitleTarget) {
+    event.preventDefault();
+    await suggestConversationTitle(suggestTitleTarget.closest('[data-conversation-title-form]'));
+    return;
+  }
+
+  const useTitleSuggestionTarget = event.target.closest('[data-use-title-suggestion]');
+  if (useTitleSuggestionTarget) {
+    event.preventDefault();
+    const form = useTitleSuggestionTarget.closest('[data-conversation-title-form]');
+    const input = form?.querySelector('input[name="title"]');
+    if (input) input.value = useTitleSuggestionTarget.dataset.useTitleSuggestion || '';
+    return;
+  }
+
   const backTarget = event.target.closest('[data-back-view]');
   if (backTarget) {
     event.preventDefault();
@@ -1159,6 +1179,32 @@ mirrorSelector?.addEventListener('click', async (event) => {
   event.preventDefault();
   await selectMirror(option.dataset.mirrorName);
 });
+
+async function suggestConversationTitle(form) {
+  if (!form) return;
+  const suggestionBox = form.querySelector('[data-title-suggestion]');
+  if (suggestionBox) {
+    suggestionBox.hidden = false;
+    suggestionBox.innerHTML = '<p>Generating a title suggestion…</p>';
+  }
+  try {
+    const result = await fetchJson('/api/conversations/title-suggestion', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ conversationId: form.dataset.conversationId }),
+    });
+    const suggestion = result.suggestedTitle || '';
+    if (suggestionBox) {
+      suggestionBox.innerHTML = `
+        <p><strong>${escapeHtml(suggestion)}</strong></p>
+        <button type="button" class="secondary-action" data-use-title-suggestion="${escapeHtml(suggestion)}">Use suggestion</button>
+        <small>Suggestion only. It is not saved until you click Save title.</small>
+      `;
+    }
+  } catch (error) {
+    if (suggestionBox) suggestionBox.innerHTML = `<p>${escapeHtml(String(error.message || error))}</p>`;
+  }
+}
 
 content.addEventListener('submit', async (event) => {
   const titleForm = event.target.closest('[data-conversation-title-form]');

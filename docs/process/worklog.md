@@ -12,6 +12,20 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-25 — CV13.E4.S4 single conversation retitle validated
+
+Added an explicit single-conversation title suggestion flow. Transcript pages can
+request a title suggestion through `/api/conversations/title-suggestion`, backed
+by `ConversationService.suggest_title()` and the existing OpenRouter LLM router
+using `EXTRACTION_MODEL`. Suggestions are preview-only: they do not save on page
+load or after generation, and persistence still requires the manual `Save title`
+action from S3.
+
+Validation: focused Workspace/web tests passed, ruff checks passed,
+`node --check` passed, `git diff --check` passed, the web server was restarted,
+and Navigator browser validation accepted explicit generation, preview-only
+behavior, use-suggestion fill, and manual save persistence.
+
 ### 2026-05-25 — CV13.E4.S3 manual conversation title edit validated
 
 Added a bounded manual title edit path for individual conversations. The

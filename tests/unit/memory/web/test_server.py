@@ -397,6 +397,59 @@ def test_conversation_title_api_updates_one_title(tmp_path: Path) -> None:
     assert conversations["cards"][0]["title"] == "Better transcript title"
 
 
+def test_conversation_title_suggestion_api_returns_suggestion_without_saving(
+    tmp_path: Path, monkeypatch
+) -> None:
+    mirror_home = tmp_path / "mirror-home"
+    db_path = mirror_home / "memory.db"
+    with MemoryClient(db_path=db_path) as mem:
+        conversation = mem.conversations.start_conversation(interface="pi", title="Old title")
+        mem.conversations.add_message(conversation.id, "user", "Plan transcript naming")
+        mem.conversations.add_message(conversation.id, "assistant", "Use explicit approval")
+
+    monkeypatch.setattr(
+        "memory.services.conversation.generate_conversation_title",
+        lambda messages, on_llm_call=None: "Explicit Transcript Naming",
+    )
+
+    server = WebTestServer(root=make_docs_root(tmp_path), mirror_home=mirror_home, db_path=db_path)
+    try:
+        status, payload = server.request(
+            "POST", "/api/conversations/title-suggestion", {"conversationId": conversation.id}
+        )
+        detail_status, detail = server.request(
+            "GET", f"/api/conversations/detail?id={conversation.id}"
+        )
+    finally:
+        server.close()
+
+    assert status == 200
+    assert payload == {
+        "conversationId": conversation.id,
+        "suggestedTitle": "Explicit Transcript Naming",
+    }
+    assert detail_status == 200
+    assert detail["title"] == "Old title"
+
+
+def test_conversation_title_suggestion_api_rejects_empty_conversations(tmp_path: Path) -> None:
+    mirror_home = tmp_path / "mirror-home"
+    db_path = mirror_home / "memory.db"
+    with MemoryClient(db_path=db_path) as mem:
+        conversation = mem.conversations.start_conversation(interface="pi", title="Old title")
+
+    server = WebTestServer(root=make_docs_root(tmp_path), mirror_home=mirror_home, db_path=db_path)
+    try:
+        status, payload = server.request(
+            "POST", "/api/conversations/title-suggestion", {"conversationId": conversation.id}
+        )
+    finally:
+        server.close()
+
+    assert status == 400
+    assert payload["error"] == "Conversation has no messages to title"
+
+
 def test_conversation_title_api_rejects_blank_title(tmp_path: Path) -> None:
     mirror_home = tmp_path / "mirror-home"
     db_path = mirror_home / "memory.db"

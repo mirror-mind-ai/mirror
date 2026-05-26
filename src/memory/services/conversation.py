@@ -11,6 +11,7 @@ from memory.intelligence.extraction import (
     extract_memories,
     extract_tasks,
     generate_conversation_summary,
+    generate_conversation_title,
 )
 from memory.intelligence.llm_router import LLMResponse
 from memory.models import Conversation, ConversationSummary, Memory, Message
@@ -76,27 +77,50 @@ class ConversationService:
         """Return the latest conversation whose id starts with prefix."""
         return self.store.find_conversation_by_id_prefix(prefix)
 
+    def suggest_title(self, conversation_id: str) -> str:
+        """Suggest a title for one conversation without saving it."""
+        conversation = self._get_conversation_for_title_operation(conversation_id)
+        messages = self.store.get_messages(conversation.id)
+        if not messages:
+            raise ValueError("Conversation has no messages to title")
+
+        suggestion = generate_conversation_title(
+            messages,
+            on_llm_call=self._make_logger("conversation_title", conversation.id),
+        )
+        if not suggestion:
+            raise ValueError("No title suggestion was generated")
+        return self._clean_title(suggestion)
+
     def update_title(self, conversation_id: str, title: str) -> Conversation:
         """Update a conversation title through a bounded manual-edit path."""
-        if not isinstance(conversation_id, str) or not conversation_id.strip():
-            raise ValueError("conversationId is required")
         if not isinstance(title, str):
             raise ValueError("title must be a string")
-        clean_title = " ".join(title.strip().split())
-        if not clean_title:
-            raise ValueError("title is required")
-        if len(clean_title) > 160:
-            raise ValueError("title must be at most 160 characters")
-        conversation = self.store.get_conversation(conversation_id)
-        if conversation is None:
-            conversation = self.store.find_conversation_by_id_prefix(conversation_id)
-        if conversation is None:
-            raise ValueError(f"Conversation '{conversation_id}' not found")
+        clean_title = self._clean_title(title)
+        conversation = self._get_conversation_for_title_operation(conversation_id)
         self.store.update_conversation(conversation.id, title=clean_title)
         updated = self.store.get_conversation(conversation.id)
         if updated is None:
             raise ValueError(f"Conversation '{conversation_id}' not found")
         return updated
+
+    def _get_conversation_for_title_operation(self, conversation_id: str) -> Conversation:
+        if not isinstance(conversation_id, str) or not conversation_id.strip():
+            raise ValueError("conversationId is required")
+        conversation = self.store.get_conversation(conversation_id)
+        if conversation is None:
+            conversation = self.store.find_conversation_by_id_prefix(conversation_id)
+        if conversation is None:
+            raise ValueError(f"Conversation '{conversation_id}' not found")
+        return conversation
+
+    def _clean_title(self, title: str) -> str:
+        clean_title = " ".join(title.strip().split())
+        if not clean_title:
+            raise ValueError("title is required")
+        if len(clean_title) > 160:
+            raise ValueError("title must be at most 160 characters")
+        return clean_title
 
     def list_recent(
         self,
@@ -131,6 +155,24 @@ class ConversationService:
         """Extract memories from an already-ended conversation."""
         return self._run_extraction(conversation_id)
 
+    def _make_logger(self, role: str, conversation_id: str):
+        if not LOG_LLM_CALLS:
+            return None
+
+        def _log(response: LLMResponse) -> None:
+            self.store.log_llm_call(
+                role=role,
+                model=response.model,
+                prompt=response.prompt or "",
+                response_text=response.content,
+                prompt_tokens=response.prompt_tokens,
+                completion_tokens=response.completion_tokens,
+                latency_ms=response.latency_ms,
+                conversation_id=conversation_id,
+            )
+
+        return _log
+
     def _run_extraction(self, conversation_id: str) -> list[Memory]:
         """Run memory/task extraction. Marks metadata.extracted=True on success."""
         import json
@@ -158,32 +200,13 @@ class ConversationService:
         except Exception:
             pass
 
-        # Build LLM logger closure when observability is enabled.
-        def _make_logger(role: str):
-            if not LOG_LLM_CALLS:
-                return None
-
-            def _log(response: LLMResponse) -> None:
-                self.store.log_llm_call(
-                    role=role,
-                    model=response.model,
-                    prompt=response.prompt or "",
-                    response_text=response.content,
-                    prompt_tokens=response.prompt_tokens,
-                    completion_tokens=response.completion_tokens,
-                    latency_ms=response.latency_ms,
-                    conversation_id=conversation_id,
-                )
-
-            return _log
-
         # Extract memories through the LLM (candidate pass).
         extracted = extract_memories(
             messages,
             persona=conv.persona if conv else None,
             journey=conv.journey if conv else None,
             user_name=user_name,
-            on_llm_call=_make_logger("extraction"),
+            on_llm_call=self._make_logger("extraction", conversation_id),
         )
 
         # Curation pass: deduplicate candidates against existing memories.
@@ -201,7 +224,7 @@ class ConversationService:
             extracted = curate_against_existing(
                 extracted,
                 similar,
-                on_llm_call=_make_logger("curation"),
+                on_llm_call=self._make_logger("curation", conversation_id),
             )
 
         # Extract tasks through the LLM.
@@ -210,7 +233,7 @@ class ConversationService:
                 messages,
                 journey=conv.journey if conv else None,
                 user_name=user_name,
-                on_llm_call=_make_logger("task_extraction"),
+                on_llm_call=self._make_logger("task_extraction", conversation_id),
             )
             for et in extracted_tasks:
                 existing = self.tasks.find_tasks(et.title, et.journey)
@@ -231,7 +254,7 @@ class ConversationService:
             summary_text = generate_conversation_summary(
                 messages,
                 user_name=user_name,
-                on_llm_call=_make_logger("summary"),
+                on_llm_call=self._make_logger("summary", conversation_id),
             )
             if not summary_text:
                 summary_text = _naive_summary(messages)

@@ -9,6 +9,7 @@ from memory.config import EXTRACTION_MODEL
 from memory.intelligence.llm_router import LLMResponse, send_to_model
 from memory.intelligence.prompts import (
     CONVERSATION_SUMMARY_PROMPT,
+    CONVERSATION_TITLE_PROMPT,
     CURATION_PROMPT,
     DESCRIPTOR_PROMPT,
     EXTRACTION_PROMPT,
@@ -115,6 +116,42 @@ def generate_descriptor(
         on_llm_call(response)
 
     return response.content.strip()
+
+
+def generate_conversation_title(
+    messages: list[Message],
+    user_name: str = "User",
+    on_llm_call: Callable[[LLMResponse], None] | None = None,
+) -> str:
+    """Generate a concise title suggestion for a conversation.
+
+    Returns an empty string on empty messages, LLM failure, or trivial conversation.
+    Plain text output — not JSON.
+    """
+    if not messages:
+        return ""
+
+    prompt = CONVERSATION_TITLE_PROMPT + format_transcript(messages, user_name=user_name)
+
+    try:
+        response = send_to_model(
+            EXTRACTION_MODEL,
+            [{"role": "user", "content": prompt}],
+            temperature=0.2,
+            max_tokens=40,
+        )
+    except Exception:
+        return ""
+
+    if on_llm_call:
+        on_llm_call(response)
+
+    return _clean_title_suggestion(response.content)
+
+
+def _clean_title_suggestion(value: str) -> str:
+    title = " ".join(value.strip().strip('"“”').split())
+    return title[:160]
 
 
 def generate_conversation_summary(

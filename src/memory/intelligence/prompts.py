@@ -207,6 +207,21 @@ Key: {key}
 
 """
 
+CONVERSATION_TITLE_PROMPT = """You are the memory system for Mirror Mind, a Jungian mirror AI.
+
+Write one concise, useful title for the conversation below.
+
+## Rules
+
+- Return only the title, no quotes, no markdown, no explanation.
+- Maximum 8 words.
+- Prefer concrete subject and outcome over generic labels.
+- Do not include speaker names.
+- If the conversation is trivial, return an empty string.
+
+## Conversation
+"""
+
 CONVERSATION_SUMMARY_PROMPT = """You are the memory system for Mirror Mind, a Jungian mirror AI.
 
 Write a 3-4 sentence summary of the conversation below. Use flowing prose, not a list.

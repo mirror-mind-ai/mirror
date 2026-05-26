@@ -503,6 +503,12 @@ input {
   color: var(--text);
 }
 
+.conversation-title-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .preferences-form button,
 .conversation-title-form button,
 .journey-settings-form button {
@@ -514,6 +520,29 @@ input {
   color: var(--text);
   cursor: pointer;
   font-weight: 750;
+}
+
+.conversation-title-form button.secondary-action {
+  border-color: var(--border);
+  background: transparent;
+  color: var(--muted);
+}
+
+.title-suggestion {
+  display: grid;
+  gap: 8px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 40%, var(--border));
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.title-suggestion p,
+.title-suggestion small {
+  margin: 0;
+}
+
+.title-suggestion small {
+  color: var(--muted);
 }
 
 .theme-option {

@@ -20,8 +20,8 @@ Stored conversations become readable and navigable in the web app, then gain saf
 | [CV13.E4.S1](cv13-e4-s1-conversation-detail-page/index.md) | Conversation detail page | A stored conversation can be opened as a read-only transcript page | ✅ Done |
 | [CV13.E4.S2](cv13-e4-s2-conversation-card-linking-and-navigation/index.md) | Conversation card linking and navigation | Workspace conversation cards link to their detail pages with clear back navigation | ✅ Done |
 | [CV13.E4.S3](cv13-e4-s3-manual-conversation-title-edit/index.md) | Manual conversation title edit | A selected conversation title can be safely edited without LLM calls | ✅ Done |
-| CV13.E4.S4 | Single conversation retitle | A selected conversation can request an LLM title suggestion and save it only after approval | 🟢 In Progress |
-| CV13.E4.S5 | Legacy retitle planning / dry-run | Legacy conversation retitle can be previewed safely before any batch execution | 🟡 Planned |
+| [CV13.E4.S4](cv13-e4-s4-single-conversation-retitle/index.md) | Single conversation retitle | A selected conversation can request an LLM title suggestion and save it only after approval | ✅ Done |
+| CV13.E4.S5 | Legacy retitle planning / dry-run | Legacy conversation retitle can be previewed safely before any batch execution | 🟢 In Progress |
 
 ---
 

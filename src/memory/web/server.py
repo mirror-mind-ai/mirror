@@ -131,6 +131,9 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
         if parsed.path == "/api/conversations/title":
             self._write_conversation_title()
             return
+        if parsed.path == "/api/conversations/title-suggestion":
+            self._suggest_conversation_title()
+            return
         self._send_json({"error": "Not found"}, status=404)
 
     def log_message(self, format: str, *args: object) -> None:
@@ -225,6 +228,20 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
             return
 
         self._send_json({"journeyId": journey_id, "metadata": metadata})
+
+    def _suggest_conversation_title(self) -> None:
+        try:
+            payload = self._read_json_body()
+            conversation_id = payload.get("conversationId")
+            if not isinstance(conversation_id, str):
+                raise ValueError("conversationId is required")
+            with MemoryClient(db_path=self._db_path()) as mem:
+                suggestion = mem.conversations.suggest_title(conversation_id)
+        except (json.JSONDecodeError, ValueError, TypeError) as exc:
+            self._send_json({"error": str(exc)}, status=400)
+            return
+
+        self._send_json({"conversationId": conversation_id, "suggestedTitle": suggestion})
 
     def _write_conversation_title(self) -> None:
         try:
