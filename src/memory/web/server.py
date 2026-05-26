@@ -15,6 +15,7 @@ from memory.config import resolve_mirror_home
 from memory.web.configuration import build_configuration_overview
 from memory.web.docs import DocsBrowser
 from memory.web.mirrors import MirrorRegistry
+from memory.web.operations import operation_catalog
 from memory.web.preferences import DEFAULT_AVATAR_SYMBOL, VALID_PERSPECTIVES, WebPreferenceStore
 
 STATIC_DIR = Path(__file__).parent / "static"
@@ -38,6 +39,10 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
 
         if parsed.path == "/api/configuration/overview":
             self._send_json(build_configuration_overview(self.__class__.mirror_home).to_dict())
+            return
+
+        if parsed.path == "/api/operations/catalog":
+            self._send_json(operation_catalog())
             return
 
         if parsed.path == "/api/conversations/detail":

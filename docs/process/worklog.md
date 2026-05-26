@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-26 — CV13.E5.S1 operation registry and dry-run contract validated
+
+Started the `v0.15.0 — Web Operations Runner` slice with a server-owned, read-only operation catalog. The web API now exposes `GET /api/operations/catalog` with allowlisted maintenance operation metadata, risk level, dry-run behavior, execution availability, and declarative parameters. No operation execution endpoint, subprocess hook, shell command, raw SQL, git mutation, runtime update, or `.env` mutation was added.
+
+Validation: focused web tests passed, ruff checks passed, `node --check` passed, and `git diff --check` passed. Navigator accepted moving to the next story.
+
 ### 2026-05-25 — v0.14.0 release candidate prepared
 
 Prepared `v0.14.0 — Conversation Intelligence` as the minor release candidate for

@@ -78,6 +78,51 @@ def test_shell_api_reports_workspace_default_and_mirror_name(tmp_path: Path) -> 
     assert payload["docsAvailable"] is True
 
 
+def test_operations_catalog_api_exposes_read_only_allowlist(tmp_path: Path) -> None:
+    mirror_home = tmp_path / "mirror-home"
+    server = WebTestServer(
+        root=make_docs_root(tmp_path),
+        mirror_home=mirror_home,
+        db_path=mirror_home / "memory.db",
+    )
+    try:
+        status, payload = server.request("GET", "/api/operations/catalog")
+    finally:
+        server.close()
+
+    assert status == 200
+    assert [operation["id"] for operation in payload] == [
+        "runtime-health",
+        "database-backup",
+        "conversation-journey-repair",
+        "conversation-logger-health",
+        "batch-conversation-retitle",
+    ]
+    assert all(operation["execution"] == "future" for operation in payload)
+    assert payload[2]["dryRun"] == "required"
+    assert payload[2]["parameters"][0]["name"] == "limit"
+
+
+def test_operations_execute_api_does_not_exist(tmp_path: Path) -> None:
+    mirror_home = tmp_path / "mirror-home"
+    server = WebTestServer(
+        root=make_docs_root(tmp_path),
+        mirror_home=mirror_home,
+        db_path=mirror_home / "memory.db",
+    )
+    try:
+        status, payload = server.request(
+            "POST",
+            "/api/operations/execute",
+            {"operationId": "runtime-health", "command": "echo unsafe"},
+        )
+    finally:
+        server.close()
+
+    assert status == 404
+    assert payload == {"error": "Not found"}
+
+
 def test_mirrors_api_lists_local_mirrors_read_only(tmp_path: Path) -> None:
     root = tmp_path / ".mirror-minds"
     mirror_home = root / "mirror-home"
