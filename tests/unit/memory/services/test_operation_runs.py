@@ -31,3 +31,13 @@ def test_operation_run_service_records_failed_runs(tmp_path):
     assert failed.error == "Database not found"
     assert failed.parameters == {"verify": True}
     assert failed.completed_at is not None
+
+
+def test_operation_run_service_records_queued_and_running_states(tmp_path):
+    with MemoryClient(db_path=tmp_path / "memory.db") as mem:
+        queued = mem.operation_runs.queue("runtime-health", {})
+        running = mem.operation_runs.mark_running(queued.id)
+
+    assert queued.status == "queued"
+    assert running.status == "running"
+    assert running.id == queued.id

@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-26 — CV13.E6.S1 async operation run model validated
+
+Started the Agentic Web Console arc by moving web operation execution out of the original request path. `POST /api/operations/run` now validates allowlisted operation input, creates a queued durable run, returns a run id immediately, and executes the existing operation implementation in a local background worker. Operation runs now support queued and running states, one-run inspection is available at `/api/operations/runs/<id>`, invalid parameters are rejected before run creation, and the Operations UI polls active runs before showing final evidence. No arbitrary shell command, user-supplied command string, Pi/headless agent integration, approval checkpoint, or runtime mutation path was introduced.
+
+Validation: focused web/service/migration tests passed, ruff checks passed, `node --check` passed for the web app, and `git diff --check` passed.
+
 ### 2026-05-26 — CV13.E5.S7 Operations surface polish and release coherence validated
 
 Closed the Web Operations Runner release arc with a more coherent Operations surface. Operation rows now use a compact grid with icon actions, future operations are disabled in place rather than breaking layout, operation configuration lives in a detail panel, results render as readable operation-specific cards with raw JSON collapsed as evidence, runtime health now explains attention-needed causes, and recent audit evidence is a simple low-noise list with status color dots. The release wording was reconciled around a synchronous-first v0.15 scope, leaving job model, streaming, cancellation, and long-running safeguards as explicit future work.

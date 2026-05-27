@@ -177,6 +177,19 @@ def operation_catalog() -> list[dict[str, object]]:
     return [operation.to_dict() for operation in OPERATION_CATALOG]
 
 
+def validate_operation_request(
+    operation_id: str, parameters: dict[str, object] | None = None
+) -> dict[str, object]:
+    """Validate one operation request and return parsed parameters."""
+
+    operation = _operation_by_id(operation_id)
+    if operation is None:
+        raise ValueError(f"Unknown operation: {operation_id}")
+    if operation.execution != "runnable":
+        raise ValueError(f"Operation is not runnable yet: {operation_id}")
+    return _validate_parameters(operation, parameters or {})
+
+
 def run_operation(
     operation_id: str,
     *,
@@ -186,13 +199,10 @@ def run_operation(
 ) -> dict[str, object]:
     """Run one implemented allowlisted operation and return web-safe results."""
 
+    parsed_parameters = validate_operation_request(operation_id, parameters)
     operation = _operation_by_id(operation_id)
     if operation is None:
         raise ValueError(f"Unknown operation: {operation_id}")
-    if operation.execution != "runnable":
-        raise ValueError(f"Operation is not runnable yet: {operation_id}")
-
-    parsed_parameters = _validate_parameters(operation, parameters or {})
     if operation.id == "runtime-health":
         return _run_runtime_health(mirror_home=mirror_home, start=start)
     if operation.id == "database-backup":

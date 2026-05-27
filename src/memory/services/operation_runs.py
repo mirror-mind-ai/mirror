@@ -45,7 +45,9 @@ class OperationRunService:
     def __init__(self, store: Store) -> None:
         self.store = store
 
-    def start(self, operation_id: str, parameters: dict[str, Any]) -> OperationRun:
+    def start(
+        self, operation_id: str, parameters: dict[str, Any], *, status: str = "running"
+    ) -> OperationRun:
         timestamp = _now()
         run_id = str(uuid4())
         self.store.conn.execute(
@@ -54,7 +56,23 @@ class OperationRunService:
                 id, operation_id, status, parameters_json, started_at, created_at
             ) VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (run_id, operation_id, "running", _json(parameters), timestamp, timestamp),
+            (run_id, operation_id, status, _json(parameters), timestamp, timestamp),
+        )
+        self.store.conn.commit()
+        return self.get(run_id)
+
+    def queue(self, operation_id: str, parameters: dict[str, Any]) -> OperationRun:
+        return self.start(operation_id, parameters, status="queued")
+
+    def mark_running(self, run_id: str) -> OperationRun:
+        timestamp = _now()
+        self.store.conn.execute(
+            """
+            UPDATE operation_runs
+               SET status = ?, started_at = ?
+             WHERE id = ?
+            """,
+            ("running", timestamp, run_id),
         )
         self.store.conn.commit()
         return self.get(run_id)

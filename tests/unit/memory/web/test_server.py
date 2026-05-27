@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import threading
+import time
 from http.client import HTTPConnection
 from http.server import ThreadingHTTPServer
 from pathlib import Path
@@ -45,6 +46,17 @@ class WebTestServer:
         self.server.shutdown()
         self.server.server_close()
         self.thread.join(timeout=5)
+
+
+def wait_for_run(server: WebTestServer, run_id: str) -> dict[str, Any]:
+    run: dict[str, Any] = {}
+    for _ in range(40):
+        status, run = server.request("GET", f"/api/operations/runs/{run_id}")
+        assert status == 200
+        if run["status"] not in {"queued", "running"}:
+            return run
+        time.sleep(0.05)
+    raise AssertionError(f"Operation run did not finish: {run}")
 
 
 def test_shell_api_reports_workspace_default_and_mirror_name(tmp_path: Path) -> None:
@@ -120,17 +132,20 @@ def test_operations_run_api_executes_runtime_health_only(tmp_path: Path) -> None
             "/api/operations/run",
             {"operationId": "runtime-health"},
         )
+        completed = wait_for_run(server, payload["runId"])
         runs_status, runs = server.request("GET", "/api/operations/runs")
     finally:
         server.close()
 
-    assert status == 200
+    assert status == 202
     assert payload["operationId"] == "runtime-health"
-    assert payload["status"] == "completed"
-    assert payload["outcome"] == "attention needed"
-    assert payload["result"]["mirrorHome"] == str(mirror_home.resolve())
-    assert payload["result"]["database"]["exists"] is True
+    assert payload["status"] == "queued"
     assert payload["runId"]
+    assert completed["operationId"] == "runtime-health"
+    assert completed["status"] == "completed"
+    assert completed["outcome"] == "attention needed"
+    assert completed["result"]["mirrorHome"] == str(mirror_home.resolve())
+    assert completed["result"]["database"]["exists"] is True
 
     assert runs_status == 200
     assert runs[0]["id"] == payload["runId"]
@@ -173,17 +188,18 @@ def test_operations_run_api_executes_database_backup(tmp_path: Path) -> None:
             "/api/operations/run",
             {"operationId": "database-backup", "parameters": {"verify": True}},
         )
+        completed = wait_for_run(server, payload["runId"])
     finally:
         server.close()
 
-    backup_path = Path(payload["result"]["backupPath"])
-    assert status == 200
+    backup_path = Path(completed["result"]["backupPath"])
+    assert status == 202
     assert payload["operationId"] == "database-backup"
-    assert payload["outcome"] == "backup_created"
+    assert completed["outcome"] == "backup_created"
     assert backup_path.exists()
     assert backup_path.parent == mirror_home.resolve() / "backups"
-    assert payload["result"]["verification"]["valid"] is True
-    assert "memory.db" in payload["result"]["verification"]["entries"]
+    assert completed["result"]["verification"]["valid"] is True
+    assert "memory.db" in completed["result"]["verification"]["entries"]
 
 
 def test_operations_run_api_records_known_operation_failures(tmp_path: Path) -> None:
@@ -206,13 +222,9 @@ def test_operations_run_api_records_known_operation_failures(tmp_path: Path) -> 
         server.close()
 
     assert status == 400
-    assert payload["runId"]
     assert "must be a boolean" in payload["error"]
     assert runs_status == 200
-    assert runs[0]["id"] == payload["runId"]
-    assert runs[0]["status"] == "failed"
-    assert runs[0]["parameters"] == {"verify": "yes"}
-    assert "must be a boolean" in runs[0]["error"]
+    assert runs == []
 
 
 def test_operations_run_api_rejects_unsupported_backup_parameters(tmp_path: Path) -> None:
@@ -257,14 +269,15 @@ def test_operations_run_api_dry_runs_conversation_journey_repair(tmp_path: Path)
                 "parameters": {"dryRun": True, "limit": 10},
             },
         )
+        completed = wait_for_run(server, payload["runId"])
     finally:
         server.close()
 
-    assert status == 200
-    assert payload["outcome"] == "dry_run"
-    assert payload["result"]["candidateCount"] == 1
-    assert payload["result"]["appliedCount"] == 0
-    assert payload["result"]["candidates"][0]["journey"] == "mirror-mind"
+    assert status == 202
+    assert completed["outcome"] == "dry_run"
+    assert completed["result"]["candidateCount"] == 1
+    assert completed["result"]["appliedCount"] == 0
+    assert completed["result"]["candidates"][0]["journey"] == "mirror-mind"
     with MemoryClient(db_path=mirror_home / "memory.db") as mem:
         assert mem.store.get_conversation(conversation.id).journey is None
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import mimetypes
+import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -15,7 +16,7 @@ from memory.config import resolve_mirror_home
 from memory.web.configuration import build_configuration_overview
 from memory.web.docs import DocsBrowser
 from memory.web.mirrors import MirrorRegistry
-from memory.web.operations import operation_catalog, run_operation
+from memory.web.operations import operation_catalog, run_operation, validate_operation_request
 from memory.web.preferences import DEFAULT_AVATAR_SYMBOL, VALID_PERSPECTIVES, WebPreferenceStore
 
 STATIC_DIR = Path(__file__).parent / "static"
@@ -55,6 +56,18 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
                 return
             with MemoryClient(db_path=self._db_path()) as mem:
                 self._send_json([run.to_dict() for run in mem.operation_runs.recent(limit)])
+            return
+
+        if parsed.path.startswith("/api/operations/runs/"):
+            run_id = parsed.path.removeprefix("/api/operations/runs/")
+            if not run_id:
+                self._send_json({"error": "Operation run id is required"}, status=400)
+                return
+            try:
+                with MemoryClient(db_path=self._db_path()) as mem:
+                    self._send_json(mem.operation_runs.get(run_id).to_dict())
+            except ValueError as exc:
+                self._send_json({"error": str(exc)}, status=404)
             return
 
         if parsed.path == "/api/conversations/detail":
@@ -177,45 +190,45 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
             parameters = payload.get("parameters", {})
             if not isinstance(parameters, dict):
                 raise ValueError("parameters must be an object")
-            catalog_entry = next(
-                (operation for operation in operation_catalog() if operation["id"] == operation_id),
-                None,
-            )
-            if catalog_entry is None:
-                raise ValueError(f"Unknown operation: {operation_id}")
-            allowed_parameters = {
-                parameter["name"] for parameter in catalog_entry.get("parameters", [])
-            }
-            extra_parameters = set(parameters) - allowed_parameters
-            if extra_parameters:
-                raise ValueError(
-                    f"Unsupported parameters for {operation_id}: {', '.join(sorted(extra_parameters))}"
-                )
+            parsed_parameters = validate_operation_request(operation_id, parameters)
             with MemoryClient(db_path=self._db_path()) as mem:
-                run = mem.operation_runs.start(operation_id, parameters)
-                try:
-                    result = run_operation(
-                        operation_id,
-                        mirror_home=self.__class__.mirror_home,
-                        start=self.browser.root,
-                        parameters=parameters,
-                    )
-                except (ValueError, TypeError) as exc:
-                    failed = mem.operation_runs.fail(run.id, error=str(exc))
-                    self._send_json({"runId": failed.id, "error": str(exc)}, status=400)
-                    return
-                completed = mem.operation_runs.complete(
-                    run.id,
-                    outcome=str(result.get("outcome", "completed")),
-                    summary=list(result.get("summary", [])),
-                    result=dict(result.get("result", {})),
-                )
-                result["runId"] = completed.id
+                run = mem.operation_runs.queue(operation_id, parsed_parameters)
+            self._start_operation_worker(run.id, operation_id, parsed_parameters)
         except (json.JSONDecodeError, ValueError, TypeError) as exc:
             self._send_json({"error": str(exc)}, status=400)
             return
 
-        self._send_json(result)
+        self._send_json(
+            {
+                "runId": run.id,
+                "operationId": operation_id,
+                "status": run.status,
+                "outcome": run.outcome,
+                "summary": ["Operation queued for asynchronous execution."],
+                "result": None,
+            },
+            status=202,
+        )
+
+    def _start_operation_worker(
+        self, run_id: str, operation_id: str, parameters: dict[str, object]
+    ) -> None:
+        db_path = self._db_path()
+        mirror_home = self.__class__.mirror_home
+        root = self.browser.root
+        thread = threading.Thread(
+            target=_execute_operation_run,
+            kwargs={
+                "run_id": run_id,
+                "operation_id": operation_id,
+                "parameters": parameters,
+                "db_path": db_path,
+                "mirror_home": mirror_home,
+                "root": root,
+            },
+            daemon=True,
+        )
+        thread.start()
 
     def _preferences(self) -> WebPreferenceStore:
         return WebPreferenceStore(self.__class__.mirror_home)
@@ -446,6 +459,38 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+
+
+def _execute_operation_run(
+    *,
+    run_id: str,
+    operation_id: str,
+    parameters: dict[str, object],
+    db_path: Path | None,
+    mirror_home: Path | None,
+    root: Path,
+) -> None:
+    with MemoryClient(db_path=db_path) as mem:
+        mem.operation_runs.mark_running(run_id)
+    try:
+        result = run_operation(
+            operation_id,
+            mirror_home=mirror_home,
+            start=root,
+            parameters=parameters,
+        )
+    except (ValueError, TypeError, OSError) as exc:
+        with MemoryClient(db_path=db_path) as mem:
+            mem.operation_runs.fail(run_id, error=str(exc))
+        return
+
+    with MemoryClient(db_path=db_path) as mem:
+        mem.operation_runs.complete(
+            run_id,
+            outcome=str(result.get("outcome", "completed")),
+            summary=list(result.get("summary", [])),
+            result=dict(result.get("result", {})),
+        )
 
 
 def create_handler(

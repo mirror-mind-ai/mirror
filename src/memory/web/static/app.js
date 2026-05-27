@@ -217,7 +217,7 @@ async function renderOperations(lastResult = null, selectedOperationId = null) {
   content.innerHTML = `
     <section class="surface-intro surface-line operations-hero">
       <p><strong>How your Mirror cares for itself:</strong> run bounded maintenance operations with explicit parameters and local audit evidence.</p>
-      <p class="surface-note">This is a synchronous-first runner. Operations run now, return here, and leave an audit record. There is no arbitrary command, path, SQL, restore, delete, update, streaming, or background job surface in this release.</p>
+      <p class="surface-note">Operations now start as local asynchronous runs. The browser receives a run id, watches status through the audit surface, and preserves evidence without exposing arbitrary command, path, SQL, restore, delete, update, or shell access.</p>
     </section>
     ${selectedOperation ? renderOperationDetail(selectedOperation, runs, lastResult) : ''}
     <section class="operations-console">
@@ -466,8 +466,19 @@ function renderOperationRun(run) {
 
 function runStatusTone(run) {
   if (run.status === 'failed') return 'failed';
+  if (run.status === 'queued' || run.status === 'running') return 'attention';
   if (String(run.outcome || '').includes('attention') || String(run.outcome || '').includes('dry_run')) return 'attention';
   return 'completed';
+}
+
+async function waitForOperationRun(runId, attempts = 20) {
+  let run = null;
+  for (let index = 0; index < attempts; index += 1) {
+    run = await fetchJson(`/api/operations/runs/${encodeURIComponent(runId)}`);
+    if (run.status !== 'queued' && run.status !== 'running') return run;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  return run;
 }
 
 function operationPayloadFromForm(form) {
@@ -1578,12 +1589,23 @@ content.addEventListener('submit', async (event) => {
     const submit = operationForm.querySelector('button[type="submit"]');
     if (submit) submit.disabled = true;
     try {
-      const result = await fetchJson('/api/operations/run', {
+      const started = await fetchJson('/api/operations/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(operationPayloadFromForm(operationForm)),
       });
-      showWarning('Operation completed.');
+      showWarning('Operation queued.');
+      const completed = started.runId ? await waitForOperationRun(started.runId) : started;
+      const result = completed ? {
+        runId: completed.id || started.runId,
+        operationId: completed.operationId || started.operationId,
+        status: completed.status || started.status,
+        outcome: completed.outcome || started.outcome,
+        summary: completed.summary || started.summary,
+        result: completed.result || started.result,
+        error: completed.error || started.error,
+      } : started;
+      showWarning(result.status === 'completed' ? 'Operation completed.' : 'Operation still running.');
       await renderOperations(result, operationForm.dataset.operationId);
     } catch (error) {
       showWarning(String(error.message || error));

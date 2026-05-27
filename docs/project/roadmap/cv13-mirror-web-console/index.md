@@ -2,7 +2,7 @@
 
 # CV13 — Mirror Web Experience
 
-**Status:** 🟡 Planned
+**Status:** 🟢 In Progress
 **Goal:** Evolve Mirror's local web surface from 1.0 read-only visibility into a coherent local experience for inspecting Mirrors, refining workspace/identity views, managing preferences and configuration, improving conversation data, and preparing safe streamed operations.
 
 ---
@@ -28,7 +28,7 @@ The next major web release should be reached through minor releases that each st
 | v1.3 | Configuration Console | Mirror and journey configuration become inspectable and, where safe services exist, editable through guarded web flows. |
 | v1.4 | Conversation Intelligence | Conversation transcripts are readable, titles become meaningful, and retitle operations exist for individual and legacy conversations. |
 | v1.5 | Web Operations Runner | The web app can run an allowlisted set of maintenance operations with parameters, dry-run where applicable, streaming output, and audit evidence. |
-| v2.0 | Agentic Web Console | The web app can prepare and launch controlled background agent runs with streamed events, approvals, cancellation, history, and evidence. |
+| v2.0 | Async Operations and Agentic Web Console | The web app evolves request-bound operations into asynchronous observable runs, then uses that substrate to prepare and launch controlled background agent work with streamed events, approvals, cancellation, history, and evidence. |
 
 Version numbers are planning labels, not release commitments. They express the intended order and risk gradient.
 
@@ -64,7 +64,7 @@ This policy depends on small stories, explicit validation evidence, and coherent
 | [CV13.E3](cv13-e3-configuration-console/index.md) | Configuration Console | The web app can inspect Mirror configuration currently held in environment variables and manage journey metadata through safe service boundaries | ✅ Done — release candidate v0.13.0 |
 | [CV13.E4](cv13-e4-conversation-intelligence/index.md) | Conversation Intelligence | The user can read stored message exchanges, improve conversation titles with explicit approval, and inspect journey attachments | ✅ Done — release candidate v0.14.0 |
 | [CV13.E5](cv13-e5-web-operations-runner/index.md) | Web Operations Runner | The user can execute allowlisted maintenance operations from the web app with synchronous-first execution, audit evidence, backup, repair dry-run/apply, and a visible Operations surface | ✅ Done — release candidate v0.15.0 |
-| CV13.E6 | Agentic Web Console | The web app is ready to launch controlled Pi or agent-background work with event streaming, approval, history, and evidence | ⚪ Future |
+| [CV13.E6](cv13-e6-agentic-web-console/index.md) | Async Operations and Agentic Web Console | The user can start allowlisted work as asynchronous observable runs, then launch bounded agent work on the same run, event, approval, and evidence model | 🟢 In Progress |
 
 ---
 
@@ -106,7 +106,8 @@ This policy depends on small stories, explicit validation evidence, and coherent
 ### Web operations
 
 - Allow selected maintenance operations, such as null-journey repair or conversation retitle, to run from the web app.
-- Stream operation output to the browser.
+- Move operations out of the synchronous `POST` response path into durable asynchronous runs.
+- Stream or poll operation output and evidence in the browser.
 - Prepare the UI and job model for future Pi background agent runs.
 
 ---
