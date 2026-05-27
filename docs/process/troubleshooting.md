@@ -15,6 +15,7 @@ but no fix yet are also welcome (mark them `Status: mitigated`).
 
 ## Contents
 
+- [`runtime update` blocks on a migration from a newer version](#runtime-update-blocks-on-a-migration-from-a-newer-version)
 - [`runtime update` blocks with `unable to open database file`](#runtime-update-blocks-with-unable-to-open-database-file)
 - [Runtime update channel `stable` is not fetched or unavailable](#runtime-update-channel-stable-is-not-fetched-or-unavailable)
 - [Changing `.mirror-update-channel` makes the git tree dirty](#changing-mirror-update-channel-makes-the-git-tree-dirty)
@@ -22,6 +23,54 @@ but no fix yet are also welcome (mark them `Status: mitigated`).
 - [`runtime release-notes latest` says release notes were not found](#runtime-release-notes-latest-says-release-notes-were-not-found)
 - [Pi Builder conversations appear without journeys](#pi-builder-conversations-appear-without-journeys)
 - [Pi logger fails silently when `python3` resolves outside the project venv](#pi-logger-fails-silently-when-python3-resolves-outside-the-project-venv)
+
+---
+
+## `runtime update` blocks on a migration from a newer version
+
+**Date:** 2026-05-27
+**Status:** fixed after CV9.E2.S3
+**Affected component:** `runtime update`, `runtime status`, core migrations
+**Severity:** update blocked, no data mutation
+
+### Symptom
+
+A production clone detects a newer stable release, but `runtime update` refuses
+before fetching or fast-forwarding:
+
+```text
+[✗] status gate: runtime status is not ready
+Core migrations: attention needed (... unknown 012_create_operation_run_events)
+```
+
+This can happen when the user's database has already been opened by a newer
+runtime, such as a development or web surface, while the production clone still
+runs older code.
+
+### Root cause
+
+The updater used the current checkout's full `runtime status` as a hard
+pre-update gate. Old code cannot recognize migrations introduced by newer code,
+so it blocked the update that would have restored coherence.
+
+### Fix
+
+`runtime status` remains strict, but `runtime update` now has a narrow
+update-safe preflight lane. It may proceed past the initial status gate when the
+only blocker is core migration drift and the surrounding safety boundaries are
+clean: mirror home resolved, git clean, database exists, and extension health is
+ready.
+
+The normal update path still creates and verifies a backup before migrations,
+fast-forwards only, applies migrations through `MemoryClient`, and requires
+post-update status to be ready.
+
+### Validation evidence
+
+The personal production Mirror moved from `0.15.0` to `0.16.0` through the
+corrected updater path with backup
+`memory_20260527_183259.zip`, fast-forward `976b421 -> 5e805ae`, migrations
+applied, and post-update status ready.
 
 ---
 

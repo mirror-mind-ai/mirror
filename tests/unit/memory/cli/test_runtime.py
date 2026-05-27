@@ -22,6 +22,7 @@ from memory.cli.runtime import (
     RuntimeUpdateResult,
     RuntimeUpdateStage,
     RuntimeVersionReport,
+    _connect_read_only,
     build_release_doctor_report,
     build_runtime_update_dry_run,
     check_runtime_update_availability,
@@ -338,6 +339,25 @@ def test_inspect_extension_health_reports_unknown_migration(tmp_path):
 
     assert health[0].ready is False
     assert health[0].unknown_migrations == ("001_legacy.sql",)
+
+
+def test_connect_read_only_recovers_wal_database_without_sidecars(tmp_path):
+    db_path = tmp_path / "memory.db"
+    conn = sqlite3.connect(db_path)
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("CREATE TABLE _migrations (id TEXT PRIMARY KEY)")
+    conn.execute("INSERT INTO _migrations (id) VALUES (?)", (MIGRATIONS[0][0],))
+    conn.commit()
+    conn.close()
+    for suffix in ("-wal", "-shm"):
+        sidecar = tmp_path / f"memory.db{suffix}"
+        if sidecar.exists():
+            sidecar.unlink()
+
+    with _connect_read_only(db_path) as recovered:
+        rows = recovered.execute("SELECT id FROM _migrations").fetchall()
+
+    assert rows == [(MIGRATIONS[0][0],)]
 
 
 def test_inspect_extension_health_reports_database_table_error(monkeypatch, tmp_path):
@@ -1051,6 +1071,93 @@ def test_run_runtime_update_recovers_database_unavailable_status(monkeypatch):
         ("status recovery", "pass"),
         ("status gate", "pass"),
     ]
+
+
+def test_run_runtime_update_allows_update_safe_core_migration_drift(monkeypatch, tmp_path):
+    reports = [
+        _report(
+            core_migrations=CoreMigrationHealth(
+                False,
+                len(MIGRATIONS),
+                len(MIGRATIONS),
+                (),
+                unknown=("012_create_operation_run_events",),
+            )
+        ),
+        _report(),
+    ]
+    monkeypatch.setattr(
+        "memory.cli.runtime.build_runtime_status", lambda mirror_home_arg=None: reports.pop(0)
+    )
+    monkeypatch.setattr("memory.cli.runtime.resolve_mirror_home", lambda **kw: tmp_path)
+    monkeypatch.setattr("memory.cli.runtime._git_fetch", lambda remote, branch, cwd: (True, ""))
+    monkeypatch.setattr(
+        "memory.cli.runtime.inspect_git_update_plan",
+        lambda git: GitUpdatePlan("origin/main", 0, 1, True, "pull", "pull 1 commit"),
+    )
+    backup_path = tmp_path / "memory.zip"
+    monkeypatch.setattr(
+        "memory.cli.runtime.create_backup",
+        lambda silent, mirror_home: backup_path,
+    )
+    monkeypatch.setattr(
+        "memory.cli.runtime.verify_backup_archive",
+        lambda path: BackupVerification(path, True, ("memory.db",)),
+    )
+    monkeypatch.setattr("memory.cli.runtime._git_fast_forward", lambda upstream, cwd: (True, ""))
+    monkeypatch.setattr("memory.cli.runtime._apply_migrations", lambda mirror_home_arg: (True, ""))
+    monkeypatch.setattr(
+        "memory.cli.runtime._run_git",
+        lambda args, *, cwd: (
+            (0, "def5678", "") if args == ["rev-parse", "--short", "HEAD"] else (0, "", "")
+        ),
+    )
+
+    result = run_runtime_update()
+
+    assert result.success is True
+    status_stage = result.stages[0]
+    assert status_stage.name == "status gate"
+    assert status_stage.state == "pass"
+    assert "unknown core migrations: 012_create_operation_run_events" in status_stage.detail
+    assert [stage.name for stage in result.stages] == [
+        "status gate",
+        "fetch",
+        "plan",
+        "backup",
+        "verify backup",
+        "fast-forward",
+        "migrations",
+        "post-update status",
+    ]
+
+
+def test_run_runtime_update_fails_if_preflight_drift_has_no_code_update(monkeypatch):
+    monkeypatch.setattr(
+        "memory.cli.runtime.build_runtime_status",
+        lambda mirror_home_arg=None: _report(
+            core_migrations=CoreMigrationHealth(
+                False,
+                len(MIGRATIONS),
+                len(MIGRATIONS),
+                (),
+                unknown=("012_create_operation_run_events",),
+            )
+        ),
+    )
+    monkeypatch.setattr("memory.cli.runtime._git_fetch", lambda remote, branch, cwd: (True, ""))
+    monkeypatch.setattr(
+        "memory.cli.runtime.inspect_git_update_plan",
+        lambda git: GitUpdatePlan("origin/main", 0, 0, True, "none", "already up to date"),
+    )
+
+    result = run_runtime_update()
+
+    assert result.success is False
+    plan_stage = next(stage for stage in result.stages if stage.name == "plan")
+    assert plan_stage.state == "fail"
+    assert plan_stage.detail == "no code update available"
+    assert any("preflight migration drift" in entry for entry in result.recovery)
 
 
 def test_run_runtime_update_exits_clean_when_already_up_to_date(monkeypatch):

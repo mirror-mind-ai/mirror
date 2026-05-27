@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-27 — Runtime update preflight resilience validated in production
+
+Fixed a structural updater fragility where an older production checkout could not update because its strict pre-update status gate rejected a core migration row introduced by the target version. The updater now distinguishes full runtime readiness from a narrow update-safe preflight state: core migration drift may proceed only when git, mirror home, database existence, and extension health are otherwise safe, with backup, migrations, and post-update status still enforced. Runtime status SQLite inspection also recovers WAL sidecar absence by reopening the existing database in bounded read-write mode when strict read-only inspection reports `unable to open database file`.
+
+Validation: runtime CLI tests passed, ruff checks passed, `git diff --check` passed, and the personal production Mirror updated successfully from `0.15.0` to `0.16.0` with backup `memory_20260527_183259.zip`, fast-forward `976b421 -> 5e805ae`, migrations applied, and post-update status ready.
+
 ### 2026-05-26 — CV13 final roadmap coherence pass completed
 
 Reconciled CV13 status after the completed E1–E6 web arc. The roadmap root and CV13 index now mark Mirror Web Experience done, with CV13 described as the staged progression from read-only visibility through preferences, configuration, conversation intelligence, operations, asynchronous runs, controlled command execution, cancellation, approvals, and the bounded agent-run prototype. Release readiness remains a separate next step: package version and release notes are not yet prepared for the next published version.

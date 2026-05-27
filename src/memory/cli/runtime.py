@@ -808,7 +808,19 @@ def list_installed_extensions(mirror_home: Path | None) -> tuple[str, ...]:
 
 def _connect_read_only(db_path: Path) -> sqlite3.Connection:
     uri = f"{db_path.resolve().as_uri()}?mode=ro"
-    return sqlite3.connect(uri, uri=True)
+    try:
+        return sqlite3.connect(uri, uri=True)
+    except sqlite3.OperationalError as exc:
+        if "unable to open database file" not in str(exc):
+            raise
+        # SQLite databases in WAL mode can be readable only after SQLite has
+        # created or refreshed the sidecar files. A strict read-only URI can
+        # fail before that happens, which made runtime status report false
+        # migration drift and block updates. Open the existing database in
+        # read-write mode as a bounded recovery so SQLite can create sidecars;
+        # this must not create a missing database file.
+        rw_uri = f"{db_path.resolve().as_uri()}?mode=rw"
+        return sqlite3.connect(rw_uri, uri=True)
 
 
 def _table_exists(conn: sqlite3.Connection, table: str) -> bool:
@@ -1716,6 +1728,42 @@ def _status_database_unavailable(report: RuntimeStatusReport) -> bool:
     )
 
 
+def _status_allows_update_preflight(report: RuntimeStatusReport) -> tuple[bool, str]:
+    """Return whether an update may proceed despite non-ready status.
+
+    The updater must not let old code block the very update that would teach it
+    about a newer migration. This relaxed lane is intentionally narrow: git,
+    mirror-home, database existence, and extension health must be safe. Only
+    core migration ledger drift is allowed to pass the pre-update gate, because
+    the normal update path still creates a backup before applying migrations and
+    still requires post-update status to be ready.
+    """
+
+    if report.mirror_home_error:
+        return False, report.mirror_home_error
+    if report.git.error:
+        return False, report.git.error
+    if report.git.dirty:
+        return False, "git tree is dirty"
+    if report.db_exists is not True:
+        return False, "database missing"
+    if any(not health.ready for health in report.extension_health):
+        return False, "extension health is not ready"
+    core = report.core_migrations
+    if core.ready:
+        return True, "runtime status is ready"
+    if core.note:
+        return False, core.note
+    if core.missing or core.unknown:
+        parts: list[str] = []
+        if core.missing:
+            parts.append(f"pending core migrations: {', '.join(core.missing)}")
+        if core.unknown:
+            parts.append(f"unknown core migrations: {', '.join(core.unknown)}")
+        return True, "; ".join(parts)
+    return False, "core migration status is not ready"
+
+
 def _attempt_database_bootstrap(mirror_home_arg: str | Path | None) -> tuple[bool, str]:
     try:
         from memory.client import MemoryClient
@@ -1940,6 +1988,7 @@ def run_runtime_update(
     new_commit: str | None = None
     installed_changes: tuple[str, ...] = ()
     installed_release: RuntimeReleaseNote | None = None
+    preflight_drift_allowed = False
 
     try:
         report = _build_status_for_channel(mirror_home_arg=mirror_home_arg, channel=channel)
@@ -1956,13 +2005,24 @@ def run_runtime_update(
         if ok:
             report = _build_status_for_channel(mirror_home_arg=mirror_home_arg, channel=channel)
     if report.status != "ready":
-        stages.append(RuntimeUpdateStage("status gate", "fail", "runtime status is not ready"))
-        recovery.append("Run: uv run python -m memory runtime diagnose")
-        recovery.append("Resolve the reported drift, then retry runtime update.")
-        return RuntimeUpdateResult(
-            tuple(stages), None, None, None, success=False, recovery=tuple(recovery)
+        update_safe, update_safe_detail = _status_allows_update_preflight(report)
+        if not update_safe:
+            stages.append(RuntimeUpdateStage("status gate", "fail", "runtime status is not ready"))
+            recovery.append("Run: uv run python -m memory runtime diagnose")
+            recovery.append("Resolve the reported drift, then retry runtime update.")
+            return RuntimeUpdateResult(
+                tuple(stages), None, None, None, success=False, recovery=tuple(recovery)
+            )
+        preflight_drift_allowed = True
+        stages.append(
+            RuntimeUpdateStage(
+                "status gate",
+                "pass",
+                f"update-safe preflight drift ({update_safe_detail})",
+            )
         )
-    stages.append(RuntimeUpdateStage("status gate", "pass"))
+    else:
+        stages.append(RuntimeUpdateStage("status gate", "pass"))
     previous_commit = report.git.commit
 
     upstream_full: str | None = None
@@ -2041,6 +2101,18 @@ def run_runtime_update(
     upstream_full = upstream_full or plan.upstream
 
     if plan.action == "none":
+        if preflight_drift_allowed:
+            stages.append(RuntimeUpdateStage("plan", "fail", "no code update available"))
+            recovery.append("Runtime status still has preflight migration drift.")
+            recovery.append("Run: uv run python -m memory runtime diagnose")
+            return RuntimeUpdateResult(
+                tuple(stages),
+                previous_commit,
+                previous_commit,
+                None,
+                success=False,
+                recovery=tuple(recovery),
+            )
         stages.append(RuntimeUpdateStage("plan", "pass", "already up to date"))
         return RuntimeUpdateResult(
             tuple(stages),

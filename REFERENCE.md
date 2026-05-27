@@ -170,7 +170,7 @@ uv run python -m memory runtime update --repair-updater [--no-fetch] [--mirror-h
 
 Executes the safe update pipeline. Stages run in order and the first failure stops execution:
 
-1. **status gate** — must be ready. If status reports the database as unavailable, the updater first attempts a safe `MemoryClient` bootstrap, rebuilds status, and continues if the runtime becomes ready.
+1. **status gate** — normally requires `runtime status` to be ready. If status reports the database as unavailable, the updater first attempts a safe `MemoryClient` bootstrap, rebuilds status, and continues if the runtime becomes ready. If the only remaining blocker is core migration drift that may be resolved by the target version, such as pending or unknown core migration ids, the updater may proceed through the backup-gated update path and still requires post-update status to be ready.
 2. **fetch upstream** — mutates only remote-tracking refs. Skipped with `--no-fetch`.
 3. **plan** — accepts `none` (already up to date) and `pull`. Blocks `ahead`, `diverged`, and other unsafe states.
 4. **backup database** — reuses the runtime backup pipeline.

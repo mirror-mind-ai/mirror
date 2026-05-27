@@ -100,9 +100,30 @@ Current versions run the database bootstrap automatically inside `runtime
 update` when the status gate or post-update status reports database
 unavailability.
 
+### Core migration drift during runtime update
+
+Core migration drift remains an attention-needed status. However, it is not
+always a safe reason to block code update planning. If an older production clone
+sees a migration row introduced by a newer release, the target code may be the
+only thing capable of recognizing that row.
+
+Policy:
+
+- Keep `runtime status` strict: pending or unknown core migrations report
+  attention needed.
+- Let `runtime update` proceed through a narrow preflight lane only when the
+  surrounding boundaries are safe: mirror home resolved, git clean, database
+  exists, extension health ready, and the core migration ledger is readable.
+- Require backup before migrations.
+- Require post-update status to be ready.
+- Never repair by inserting or deleting migration tracking rows manually.
+
 ### Pending migrations
 
-Pending migrations are blockers for update planning. The installed code declares schema work that the database has not recorded.
+Pending migrations are blockers for normal runtime readiness. During
+`runtime update`, pending core migrations may pass the initial preflight only
+through the backup-gated update path described above. Pending extension
+migrations remain blockers until the extension repair path is explicit.
 
 Policy:
 
