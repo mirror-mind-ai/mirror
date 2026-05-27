@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-27 — v0.16.2 updater validation stub prepared
+
+Prepared `v0.16.2 — Runtime Update Validation Stub` as a minimal stable release after v0.16.1. The release intentionally contains no functional runtime change; it exists to validate the corrected updater installed in production by v0.16.1 executing a normal update to a newer stable release.
+
+Validation: pending release-note smoke, release doctor, promotion, and production update validation.
+
 ### 2026-05-27 — v0.16.1 release candidate prepared
 
 Prepared `v0.16.1 — Runtime Update Preflight Resilience` to publish the CV9.E2.S3 updater hardening fix. The release note explains the production failure mode, the narrow update-safe preflight lane for core migration drift, SQLite WAL sidecar status recovery, and the preserved safety gates.

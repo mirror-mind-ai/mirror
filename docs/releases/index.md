@@ -12,6 +12,7 @@ Future release notes should use the structure defined in [Release Notes](../proc
 
 ## Releases
 
+- [v0.16.2 — Runtime Update Validation Stub](v0.16.2.md) — minimal stable release used to validate the corrected v0.16.1 updater executing a normal production update.
 - [v0.16.1 — Runtime Update Preflight Resilience](v0.16.1.md) — patch release that publishes the updater hardening fix for core migration drift and SQLite WAL sidecar status recovery.
 - [v0.16.0 — Async Operations and Agentic Web Console](v0.16.0.md) — minor release that closes CV13 with asynchronous operation runs, durable event timelines, controlled command execution, cancellation, approval checkpoints, and a bounded agent-run prototype with a polished run console.
 - [v0.15.0 — Web Operations Runner](v0.15.0.md) — minor release that closes CV13.E5 with allowlisted synchronous web operations, runtime health, database backup, conversation repair, local audit evidence, and the first visible Operations surface.
