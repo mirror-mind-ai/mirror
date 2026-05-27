@@ -167,6 +167,10 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
         if parsed.path == "/api/operations/run":
             self._run_operation()
             return
+        if parsed.path.startswith("/api/operations/runs/") and parsed.path.endswith("/cancel"):
+            run_id = parsed.path.removeprefix("/api/operations/runs/").removesuffix("/cancel")
+            self._cancel_operation_run(run_id)
+            return
         self._send_json({"error": "Not found"}, status=404)
 
     def log_message(self, format: str, *args: object) -> None:
@@ -209,6 +213,17 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
             },
             status=202,
         )
+
+    def _cancel_operation_run(self, run_id: str) -> None:
+        try:
+            if not run_id:
+                raise ValueError("Operation run id is required")
+            with MemoryClient(db_path=self._db_path()) as mem:
+                run = mem.operation_runs.request_cancel(run_id)
+        except ValueError as exc:
+            self._send_json({"error": str(exc)}, status=400)
+            return
+        self._send_json(run.to_dict())
 
     def _start_operation_worker(
         self, run_id: str, operation_id: str, parameters: dict[str, object]
@@ -471,6 +486,10 @@ def _execute_operation_run(
     root: Path,
 ) -> None:
     with MemoryClient(db_path=db_path) as mem:
+        current = mem.operation_runs.get(run_id)
+        if current.status == "cancellation_requested":
+            mem.operation_runs.cancel(run_id, reason="Operation cancelled before execution.")
+            return
         mem.operation_runs.mark_running(run_id)
     try:
         result = run_operation(
@@ -485,6 +504,10 @@ def _execute_operation_run(
         return
 
     with MemoryClient(db_path=db_path) as mem:
+        current = mem.operation_runs.get(run_id)
+        if current.status == "cancellation_requested":
+            mem.operation_runs.cancel(run_id, reason="Operation cancelled after execution completed.")
+            return
         mem.operation_runs.complete(
             run_id,
             outcome=str(result.get("outcome", "completed")),

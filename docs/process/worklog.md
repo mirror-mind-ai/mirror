@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-26 — CV13.E6.S4 cancellation and failure semantics validated
+
+Added cooperative cancellation semantics to asynchronous web operation runs. Runs can now move through `cancellation_requested` and `cancelled` states, cancellation requests are recorded as durable timeline events, terminal runs reject cancellation, and the Operations UI exposes a request-cancel action for active runs. S4 intentionally does not forcibly kill running Python work; it preserves explicit state and evidence so later long-running command and agent operations can cooperate with cancellation safely.
+
+Validation: focused web/service/migration tests passed, ruff checks passed, `node --check` passed for the web app, and `git diff --check` passed.
+
 ### 2026-05-26 — CV13.E6.S3 controlled command executor validated
 
 Added a controlled command execution boundary for asynchronous web operations without exposing a browser shell. Server-owned `ControlledCommand` definitions now run with fixed argv, `shell=False`, explicit cwd, sanitized environment, timeout, and bounded stdout/stderr capture. A read-only `runtime-diagnose` operation proves the boundary by running `python -m memory runtime diagnose` for the selected Mirror home and returning command evidence through the existing async run, event timeline, and result surfaces. No user-supplied command string, arbitrary cwd/env, runtime update, git mutation, extension install, migration execution, cancellation, approval checkpoint, or Pi/headless agent integration was introduced.

@@ -154,6 +154,36 @@ class OperationRunService:
         self.store.conn.commit()
         return self.get(run_id)
 
+    def request_cancel(self, run_id: str) -> OperationRun:
+        run = self.get(run_id)
+        if run.status in {"completed", "failed", "cancelled"}:
+            raise ValueError(f"Operation run is already terminal: {run.status}")
+        self.store.conn.execute(
+            "UPDATE operation_runs SET status = ? WHERE id = ?",
+            ("cancellation_requested", run_id),
+        )
+        self._record_event(
+            run_id,
+            kind="cancellation_requested",
+            message="Cancellation requested.",
+        )
+        self.store.conn.commit()
+        return self.get(run_id)
+
+    def cancel(self, run_id: str, *, reason: str = "Operation cancelled.") -> OperationRun:
+        timestamp = _now()
+        self.store.conn.execute(
+            """
+            UPDATE operation_runs
+               SET status = ?, outcome = ?, completed_at = ?
+             WHERE id = ?
+            """,
+            ("cancelled", "cancelled", timestamp, run_id),
+        )
+        self._record_event(run_id, kind="cancelled", message=reason)
+        self.store.conn.commit()
+        return self.get(run_id)
+
     def get(self, run_id: str) -> OperationRun:
         row = self.store.conn.execute(
             "SELECT * FROM operation_runs WHERE id = ?", (run_id,)

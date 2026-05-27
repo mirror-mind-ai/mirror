@@ -192,6 +192,33 @@ def test_operations_run_api_executes_runtime_diagnose_through_controlled_command
     assert completed["events"][-1]["kind"] == "completed"
 
 
+def test_operations_run_cancel_api_rejects_terminal_runs(tmp_path: Path) -> None:
+    mirror_home = tmp_path / "mirror-home"
+    mirror_home.mkdir()
+    server = WebTestServer(
+        root=make_docs_root(tmp_path),
+        mirror_home=mirror_home,
+        db_path=mirror_home / "memory.db",
+    )
+    try:
+        status, payload = server.request(
+            "POST",
+            "/api/operations/run",
+            {"operationId": "runtime-health"},
+        )
+        completed = wait_for_run(server, payload["runId"])
+        cancel_status, cancel_payload = server.request(
+            "POST", f"/api/operations/runs/{completed['id']}/cancel"
+        )
+    finally:
+        server.close()
+
+    assert status == 202
+    assert completed["status"] == "completed"
+    assert cancel_status == 400
+    assert "already terminal" in cancel_payload["error"]
+
+
 def test_operations_run_api_rejects_unknown_and_command_like_requests(tmp_path: Path) -> None:
     mirror_home = tmp_path / "mirror-home"
     server = WebTestServer(

@@ -47,3 +47,19 @@ def test_operation_run_service_records_queued_and_running_states(tmp_path):
     assert running.status == "running"
     assert running.id == queued.id
     assert [event.kind for event in running.events] == ["queued", "running"]
+
+
+def test_operation_run_service_records_cancellation_request_and_cancelled(tmp_path):
+    with MemoryClient(db_path=tmp_path / "memory.db") as mem:
+        queued = mem.operation_runs.queue("runtime-health", {})
+        requested = mem.operation_runs.request_cancel(queued.id)
+        cancelled = mem.operation_runs.cancel(queued.id)
+
+    assert requested.status == "cancellation_requested"
+    assert cancelled.status == "cancelled"
+    assert cancelled.outcome == "cancelled"
+    assert [event.kind for event in cancelled.events] == [
+        "queued",
+        "cancellation_requested",
+        "cancelled",
+    ]

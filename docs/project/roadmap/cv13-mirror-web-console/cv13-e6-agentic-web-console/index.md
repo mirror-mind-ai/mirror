@@ -30,7 +30,7 @@ This epic therefore evolves operations from request-bound execution into a local
 | [CV13.E6.S1](cv13-e6-s1-async-operation-run-model/index.md) | Async operation run model | Starting an operation creates a durable run and returns immediately while execution proceeds outside the request cycle | ✅ Done |
 | [CV13.E6.S2](cv13-e6-s2-operation-event-log-and-timeline/index.md) | Operation event log and timeline | The user can inspect incremental run events and evidence in a browser timeline, initially through polling if streaming is not yet necessary | ✅ Done |
 | [CV13.E6.S3](cv13-e6-s3-controlled-command-executor/index.md) | Controlled command executor | Allowlisted operations can execute through a command-like runner with fixed commands, validated parameters, timeout, cwd, sanitized environment, and captured output | ✅ Done |
-| CV13.E6.S4 | Cancellation and failure semantics | Long-running operations expose cancellation where supported and preserve partial evidence for cancelled, failed, and timed-out runs | ⚪ Future |
+| [CV13.E6.S4](cv13-e6-s4-cancellation-and-failure-semantics/index.md) | Cancellation and failure semantics | Long-running operations expose cancellation where supported and preserve partial evidence for cancelled, failed, and timed-out runs | ✅ Done |
 | CV13.E6.S5 | Approval checkpoint model | Sensitive runs can pause before persistent writes, present a proposal or evidence, and continue only after explicit approval | ⚪ Future |
 | CV13.E6.S6 | Agent run prototype | The web app can launch a bounded local agent run as an allowlisted operation using the same run, event, approval, and evidence model | ⚪ Future |
 
