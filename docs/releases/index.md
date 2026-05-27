@@ -12,6 +12,7 @@ Future release notes should use the structure defined in [Release Notes](../proc
 
 ## Releases
 
+- [v0.16.0 — Async Operations and Agentic Web Console](v0.16.0.md) — minor release that closes CV13 with asynchronous operation runs, durable event timelines, controlled command execution, cancellation, approval checkpoints, and a bounded agent-run prototype with a polished run console.
 - [v0.15.0 — Web Operations Runner](v0.15.0.md) — minor release that closes CV13.E5 with allowlisted synchronous web operations, runtime health, database backup, conversation repair, local audit evidence, and the first visible Operations surface.
 - [v0.14.0 — Conversation Intelligence](v0.14.0.md) — minor release that closes CV13.E4 with readable transcripts, explicit title improvement, configuration references, and read-only journey attachments.
 - [v0.13.0 — Configuration Console](v0.13.0.md) — minor release that closes CV13.E3 with read-only Mirror/runtime configuration, masked environment boundaries, and safe journey metadata editing from Workspace.
