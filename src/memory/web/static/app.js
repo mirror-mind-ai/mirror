@@ -302,6 +302,7 @@ function operationIcon(id) {
   if (id === 'runtime-diagnose') return '⌕';
   if (id === 'database-backup') return '◫';
   if (id === 'conversation-journey-repair') return '↔';
+  if (id === 'agent-run-prototype') return '✦';
   if (id === 'conversation-logger-health') return '◌';
   return '◇';
 }
@@ -381,6 +382,7 @@ function renderOperationResultCards(result) {
   if (result.operationId === 'runtime-diagnose') return renderCommandResult(data.command || {});
   if (result.operationId === 'database-backup') return renderBackupResult(data);
   if (result.operationId === 'conversation-journey-repair') return renderRepairResult(data);
+  if (result.operationId === 'agent-run-prototype') return renderAgentPrototypeResult(data.agent || {});
   return '';
 }
 
@@ -459,6 +461,20 @@ function renderRepairResult(data) {
       ${renderResultFact('Backup', data.backupPath || 'not created')}
     </div>
     ${candidates ? `<div class="operation-evidence-list"><strong>Repair candidates</strong><ul>${candidates}</ul></div>` : ''}
+  `;
+}
+
+function renderAgentPrototypeResult(agent) {
+  const proposal = (agent.proposal || []).map((item) => `<li>${escapeHtml(item)}</li>`).join('');
+  const boundaries = (agent.boundaries || []).map((item) => `<li>${escapeHtml(item)}</li>`).join('');
+  return `
+    <div class="operation-result-grid">
+      ${renderResultFact('Intent', agent.intent || 'not provided')}
+      ${renderResultFact('Mirror', agent.mirrorHome || 'unknown')}
+    </div>
+    ${proposal ? `<div class="operation-evidence-list"><strong>Prototype proposal</strong><ol>${proposal}</ol></div>` : ''}
+    ${boundaries ? `<div class="operation-evidence-list attention"><strong>Boundaries</strong><ul>${boundaries}</ul></div>` : ''}
+    ${agent.nextStep ? `<p>${escapeHtml(agent.nextStep)}</p>` : ''}
   `;
 }
 

@@ -109,6 +109,7 @@ def test_operations_catalog_api_exposes_read_only_allowlist(tmp_path: Path) -> N
         "runtime-diagnose",
         "database-backup",
         "conversation-journey-repair",
+        "agent-run-prototype",
         "conversation-logger-health",
         "batch-conversation-retitle",
     ]
@@ -116,7 +117,8 @@ def test_operations_catalog_api_exposes_read_only_allowlist(tmp_path: Path) -> N
     assert payload[1]["execution"] == "runnable"
     assert payload[2]["execution"] == "runnable"
     assert payload[3]["execution"] == "runnable"
-    assert all(operation["execution"] == "future" for operation in payload[4:])
+    assert payload[4]["execution"] == "runnable"
+    assert all(operation["execution"] == "future" for operation in payload[5:])
     assert payload[3]["dryRun"] == "required"
     assert payload[3]["parameters"][0]["name"] == "dryRun"
 
@@ -189,6 +191,36 @@ def test_operations_run_api_executes_runtime_diagnose_through_controlled_command
     assert command["argv"][:4] == [sys.executable, "-m", "memory", "runtime"]
     assert "diagnose" in command["argv"]
     assert command["cwd"].endswith("/repo")
+    assert completed["events"][-1]["kind"] == "completed"
+
+
+def test_operations_run_api_executes_agent_run_prototype(tmp_path: Path) -> None:
+    mirror_home = tmp_path / "mirror-home"
+    mirror_home.mkdir()
+    server = WebTestServer(
+        root=make_docs_root(tmp_path),
+        mirror_home=mirror_home,
+        db_path=mirror_home / "memory.db",
+    )
+    try:
+        status, payload = server.request(
+            "POST",
+            "/api/operations/run",
+            {
+                "operationId": "agent-run-prototype",
+                "parameters": {"intent": "Inspect my current Mirror state"},
+            },
+        )
+        completed = wait_for_run(server, payload["runId"])
+    finally:
+        server.close()
+
+    assert status == 202
+    assert completed["operationId"] == "agent-run-prototype"
+    assert completed["outcome"] == "proposal_ready"
+    agent = completed["result"]["agent"]
+    assert agent["intent"] == "Inspect my current Mirror state"
+    assert "No autonomous writes." in agent["boundaries"]
     assert completed["events"][-1]["kind"] == "completed"
 
 

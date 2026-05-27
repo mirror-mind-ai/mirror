@@ -16,6 +16,7 @@ def test_operation_catalog_exposes_stable_allowlisted_operations() -> None:
         "runtime-diagnose",
         "database-backup",
         "conversation-journey-repair",
+        "agent-run-prototype",
         "conversation-logger-health",
         "batch-conversation-retitle",
     ]
@@ -24,6 +25,7 @@ def test_operation_catalog_exposes_stable_allowlisted_operations() -> None:
     assert operations["runtime-diagnose"]["execution"] == "runnable"
     assert operations["database-backup"]["execution"] == "runnable"
     assert operations["conversation-journey-repair"]["execution"] == "runnable"
+    assert operations["agent-run-prototype"]["execution"] == "runnable"
     assert all(
         operation["execution"] == "future"
         for operation in payload
@@ -33,6 +35,7 @@ def test_operation_catalog_exposes_stable_allowlisted_operations() -> None:
             "runtime-diagnose",
             "database-backup",
             "conversation-journey-repair",
+            "agent-run-prototype",
         }
     )
 

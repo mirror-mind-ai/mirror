@@ -64,7 +64,7 @@ This policy depends on small stories, explicit validation evidence, and coherent
 | [CV13.E3](cv13-e3-configuration-console/index.md) | Configuration Console | The web app can inspect Mirror configuration currently held in environment variables and manage journey metadata through safe service boundaries | ✅ Done — release candidate v0.13.0 |
 | [CV13.E4](cv13-e4-conversation-intelligence/index.md) | Conversation Intelligence | The user can read stored message exchanges, improve conversation titles with explicit approval, and inspect journey attachments | ✅ Done — release candidate v0.14.0 |
 | [CV13.E5](cv13-e5-web-operations-runner/index.md) | Web Operations Runner | The user can execute allowlisted maintenance operations from the web app with synchronous-first execution, audit evidence, backup, repair dry-run/apply, and a visible Operations surface | ✅ Done — release candidate v0.15.0 |
-| [CV13.E6](cv13-e6-agentic-web-console/index.md) | Async Operations and Agentic Web Console | The user can start allowlisted work as asynchronous observable runs, then launch bounded agent work on the same run, event, approval, and evidence model | 🟢 In Progress |
+| [CV13.E6](cv13-e6-agentic-web-console/index.md) | Async Operations and Agentic Web Console | The user can start allowlisted work as asynchronous observable runs, then launch bounded agent work on the same run, event, approval, and evidence model | ✅ Done |
 
 ---
 

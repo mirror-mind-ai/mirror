@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-05-26 — CV13.E6.S6 agent run prototype validated
+
+Closed the CV13.E6 Async Operations and Agentic Web Console arc with a bounded read-only agent-run prototype. The new `agent-run-prototype` operation accepts a natural-language intent, runs through the same asynchronous operation run lifecycle, records timeline evidence, and returns a proposal with explicit safety boundaries. The prototype proves the agent-shaped product path without autonomous writes, unrestricted Pi/headless runtime embedding, arbitrary shell, SQL, git, update, migration, or file mutation. CV13.E6 is now complete as the first agentic substrate: async runs, event timelines, controlled commands, cooperative cancellation, approval checkpoints, and bounded agent prototype.
+
+Validation: focused web/service/migration tests passed, ruff checks passed, `node --check` passed for the web app, and `git diff --check` passed.
+
 ### 2026-05-26 — CV13.E6.S5 approval checkpoint model validated
 
 Added the first approval checkpoint model for asynchronous web operations. Runs can now enter `approval_required`, record approval-required and approved timeline events, and continue only through a guarded approve endpoint. Conversation journey repair apply requests (`dryRun: false`) now pause before persistent database writes and execute only after explicit approval. The Operations UI renders approve actions for approval-required runs while preserving cancellation. No broad mutation approval surface, raw SQL, shell, git, update, migration, or agent execution path was introduced.

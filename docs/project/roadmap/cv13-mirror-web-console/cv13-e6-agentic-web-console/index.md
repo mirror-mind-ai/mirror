@@ -2,7 +2,7 @@
 
 # CV13.E6 — Async Operations and Agentic Web Console
 
-**Status:** 🟢 In Progress
+**Status:** ✅ Done
 **Release target:** v2.0
 
 ---
@@ -32,7 +32,7 @@ This epic therefore evolves operations from request-bound execution into a local
 | [CV13.E6.S3](cv13-e6-s3-controlled-command-executor/index.md) | Controlled command executor | Allowlisted operations can execute through a command-like runner with fixed commands, validated parameters, timeout, cwd, sanitized environment, and captured output | ✅ Done |
 | [CV13.E6.S4](cv13-e6-s4-cancellation-and-failure-semantics/index.md) | Cancellation and failure semantics | Long-running operations expose cancellation where supported and preserve partial evidence for cancelled, failed, and timed-out runs | ✅ Done |
 | [CV13.E6.S5](cv13-e6-s5-approval-checkpoint-model/index.md) | Approval checkpoint model | Sensitive runs can pause before persistent writes, present a proposal or evidence, and continue only after explicit approval | ✅ Done |
-| CV13.E6.S6 | Agent run prototype | The web app can launch a bounded local agent run as an allowlisted operation using the same run, event, approval, and evidence model | ⚪ Future |
+| [CV13.E6.S6](cv13-e6-s6-agent-run-prototype/index.md) | Agent run prototype | The web app can launch a bounded local agent run as an allowlisted operation using the same run, event, approval, and evidence model | ✅ Done |
 
 ---
 

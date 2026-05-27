@@ -12,6 +12,7 @@ from memory.cli.common import db_path_from_mirror_home
 from memory.cli.conversation_logger import diagnose_journey_associations
 from memory.cli.runtime import RuntimeStatusReport, build_runtime_status, verify_backup_archive
 from memory.client import MemoryClient
+from memory.web.agent_prototype import run_agent_prototype
 from memory.web.command_executor import ControlledCommand, run_controlled_command
 
 ParameterType = Literal["string", "integer", "boolean", "choice"]
@@ -144,6 +145,24 @@ OPERATION_CATALOG: tuple[WebOperation, ...] = (
         ),
     ),
     WebOperation(
+        id="agent-run-prototype",
+        title="Agent run prototype",
+        description="Launch a bounded read-only agent-shaped run from an intent and return a proposal through the async evidence model.",
+        category="agent",
+        risk_level="read_only",
+        dry_run="unsupported",
+        execution="runnable",
+        parameters=(
+            OperationParameter(
+                name="intent",
+                label="Intent",
+                kind="string",
+                description="Natural-language intent for the bounded read-only prototype.",
+                required=True,
+            ),
+        ),
+    ),
+    WebOperation(
         id="conversation-logger-health",
         title="Conversation logger health",
         description="Check recent logger warnings and errors so silent persistence failures become visible without blocking runtime sessions.",
@@ -224,6 +243,8 @@ def run_operation(
         return _run_conversation_journey_repair(
             mirror_home=mirror_home, parameters=parsed_parameters
         )
+    if operation.id == "agent-run-prototype":
+        return _run_agent_run_prototype(mirror_home=mirror_home, parameters=parsed_parameters)
     raise ValueError(f"Operation is not implemented yet: {operation_id}")
 
 
@@ -400,6 +421,24 @@ def _run_conversation_journey_repair(
             f"Backup created: {backup_path}",
         ],
         "result": result,
+    }
+
+
+def _run_agent_run_prototype(
+    *, mirror_home: Path | None, parameters: dict[str, object]
+) -> dict[str, object]:
+    result = run_agent_prototype(
+        intent=str(parameters.get("intent", "")), mirror_home=mirror_home
+    )
+    return {
+        "operationId": "agent-run-prototype",
+        "status": "completed",
+        "outcome": "proposal_ready",
+        "summary": [
+            "Agent prototype completed without writes.",
+            "Proposal evidence is ready for review.",
+        ],
+        "result": {"agent": result.to_dict()},
     }
 
 
