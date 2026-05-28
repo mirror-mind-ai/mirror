@@ -43,8 +43,10 @@ Alignment (CV9.E5), and Distribution & Tooling (CV9.E3) are complete. Web
 Visibility (CV9.E6) is complete: the read-only Identity and Workspace
 perspectives were validated against the personal Mirror, including a repaired Pi
 Builder journey-association bug that had made Workspace conversation data look
-stale. Boundary Hardening and Stabilization remain planned before the full CV9
-done condition is met.
+stale. Stabilization now includes production updater resilience and conversation
+title hardening, released in v0.16.1 and v0.17.0 respectively. Boundary
+Hardening and the remaining stabilization stories are still open before the full
+CV9 done condition is met.
 
 ---
 
