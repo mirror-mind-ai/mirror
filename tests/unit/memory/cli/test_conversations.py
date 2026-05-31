@@ -73,3 +73,111 @@ def test_conversations_metadata_lifecycle_dry_run_reports_without_mutation(tmp_p
     assert report["fields"]["title"]["decision"] == "repair"
     assert after.title == before.title
     assert after.metadata == before.metadata
+
+
+def test_conversations_metadata_lifecycle_apply_reports_changes(tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    conv = mem.start_conversation("cli")
+    mem.conversations.set_provisional_title(conv.id, "vamos trabalhar no maestro")
+    mem.add_message(conv.id, "user", "Vamos validar checkpoint visibility")
+    mem.add_message(conv.id, "assistant", "Vamos revisar o handoff")
+
+    from memory.cli.conversations import main
+
+    main([
+        "--mirror-home",
+        str(mirror_home),
+        "--metadata-lifecycle-apply",
+        conv.id,
+        "--title",
+        "Maestro checkpoint visibility validation",
+        "--tag",
+        "maestro",
+        "--tag",
+        "metadata",
+    ])
+
+    captured = capsys.readouterr()
+    report = json.loads(captured.out)
+    stored = mem.store.get_conversation(conv.id)
+    assert report["mode"] == "apply"
+    assert report["mutated"] is True
+    assert report["changed"]["title"] == "Maestro checkpoint visibility validation"
+    assert report["skipped"]["summary"] == "no_value_provided"
+    assert stored.title == "Maestro checkpoint visibility validation"
+
+
+def test_conversations_metadata_lifecycle_apply_preserves_manual_lock(tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    conv = mem.start_conversation("cli", title="Initial title")
+    mem.add_message(conv.id, "user", "Quero corrigir títulos")
+    mem.add_message(conv.id, "assistant", "Vamos desenhar a correção")
+    mem.conversations.update_title(conv.id, "Manual conversation title")
+
+    from memory.cli.conversations import main
+
+    main([
+        "--mirror-home",
+        str(mirror_home),
+        "--metadata-lifecycle-apply",
+        conv.id,
+        "--title",
+        "Generated replacement title",
+    ])
+
+    captured = capsys.readouterr()
+    report = json.loads(captured.out)
+    stored = mem.store.get_conversation(conv.id)
+    assert report["mode"] == "apply"
+    assert report["mutated"] is False
+    assert report["skipped"]["title"] == "manual_lock_preserved"
+    assert stored.title == "Manual conversation title"
+
+
+def test_conversations_metadata_lifecycle_demo_reports_pass_without_production_data(capsys):
+    from memory.cli.conversations import main
+
+    main(["--metadata-lifecycle-demo"])
+
+    captured = capsys.readouterr()
+    report = json.loads(captured.out)
+    assert report["mode"] == "metadata_lifecycle_demo"
+    assert report["uses_production_data"] is False
+    assert report["passed"] is True
+    assert report["checks"]["preview_non_mutating"] is True
+    assert report["checks"]["apply_changed_title"] is True
+    assert report["checks"]["manual_lock_preserved"] is True
+    assert report["checks"]["refine_candidate_skipped"] is True
+
+
+def test_conversations_metadata_lifecycle_preview_at_message_reports_boundary(
+    tmp_path, capsys
+):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    conv = mem.start_conversation("cli", title="Metadata lifecycle")
+    first = mem.add_message(conv.id, "user", "Vamos tratar o título")
+    mem.add_message(conv.id, "assistant", "Podemos criar uma política")
+
+    from memory.cli.conversations import main
+
+    main([
+        "--mirror-home",
+        str(mirror_home),
+        "--metadata-lifecycle-preview-at-message",
+        first.id,
+    ])
+
+    captured = capsys.readouterr()
+    report = json.loads(captured.out)
+    assert report["mode"] == "debug_preview_at_message"
+    assert report["mutated"] is False
+    assert report["conversation_id"] == conv.id
+    assert report["message_id"] == first.id
+    assert report["included_message_count"] == 1
+    assert report["excluded_message_count"] == 1

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import TYPE_CHECKING
 
 from memory.config import LOG_LLM_CALLS, SUMMARIZE_ENABLED, TWO_PASS_ENABLED
@@ -12,6 +13,7 @@ from memory.intelligence.extraction import (
     extract_memories,
     extract_tasks,
     generate_conversation_summary,
+    generate_conversation_tags,
     generate_conversation_title,
 )
 from memory.intelligence.llm_router import LLMResponse
@@ -97,6 +99,21 @@ class ConversationService:
             raise ValueError("No title suggestion was generated")
         return self._clean_title(suggestion)
 
+    def suggest_summary(self, conversation_id: str) -> str:
+        """Suggest a conversation summary without saving it."""
+        conversation = self._get_conversation_for_title_operation(conversation_id)
+        messages = self.store.get_messages(conversation.id)
+        if not messages:
+            raise ValueError("Conversation has no messages to summarize")
+        suggestion = generate_conversation_summary(
+            messages,
+            on_llm_call=self._make_logger("conversation_summary", conversation.id),
+        )
+        clean_summary = self._clean_summary(suggestion)
+        if not clean_summary:
+            raise ValueError("No summary suggestion was generated")
+        return clean_summary
+
     def dry_run_metadata_lifecycle(self, conversation_id: str) -> dict:
         """Report conversation metadata lifecycle decisions without saving changes."""
         conversation = self._get_conversation_for_title_operation(conversation_id)
@@ -107,6 +124,88 @@ class ConversationService:
             messages,
             metadata,
             title_needs_improvement=self.title_needs_improvement,
+        )
+
+    def dry_run_metadata_lifecycle_at_message(self, message_id: str) -> dict:
+        """Debug-preview lifecycle decisions using transcript messages up to one message."""
+        if not isinstance(message_id, str) or not message_id.strip():
+            raise ValueError("messageId is required")
+        row = self.store.conn.execute(
+            "SELECT * FROM messages WHERE id = ? OR id LIKE ? ORDER BY created_at DESC LIMIT 1",
+            (message_id, f"{message_id}%"),
+        ).fetchone()
+        if row is None:
+            raise ValueError(f"Message '{message_id}' not found")
+        boundary_message = Message(**dict(row))
+        conversation = self._get_conversation_for_title_operation(boundary_message.conversation_id)
+        all_messages = self.store.get_messages(conversation.id)
+        selected_messages: list[Message] = []
+        found_boundary = False
+        for message in all_messages:
+            selected_messages.append(message)
+            if message.id == boundary_message.id:
+                found_boundary = True
+                break
+        if not found_boundary:
+            raise ValueError(f"Message '{message_id}' not found in conversation")
+        metadata = self._metadata_dict(conversation)
+        dry_run = dry_run_metadata_lifecycle_policy(
+            conversation,
+            selected_messages,
+            metadata,
+            title_needs_improvement=self.title_needs_improvement,
+        )
+        return {
+            "conversation_id": conversation.id,
+            "message_id": boundary_message.id,
+            "mode": "debug_preview_at_message",
+            "mutated": False,
+            "included_message_count": len(selected_messages),
+            "excluded_message_count": max(0, len(all_messages) - len(selected_messages)),
+            "dry_run": dry_run,
+        }
+
+    def apply_generated_metadata_lifecycle(
+        self,
+        conversation_id: str,
+        *,
+        source: str = "metadata_lifecycle_apply",
+    ) -> dict:
+        """Generate and apply the safe updates currently exposed by the lifecycle report."""
+        conversation = self._get_conversation_for_title_operation(conversation_id)
+        dry_run = self.dry_run_metadata_lifecycle(conversation.id)
+        fields = dry_run["fields"]
+        generated_title: str | None = None
+        generated_summary: str | None = None
+        generated_tags: list[str] | None = None
+
+        if fields["title"]["decision"] in {"create", "repair"}:
+            try:
+                generated_title = self.suggest_title(conversation.id)
+            except ValueError:
+                generated_title = None
+
+        if fields["summary"]["decision"] == "create":
+            try:
+                generated_summary = self.suggest_summary(conversation.id)
+            except ValueError:
+                generated_summary = None
+
+        if fields["tags"]["decision"] == "create":
+            tag_source_summary = generated_summary
+            if tag_source_summary is None and fields["summary"]["decision"] == "refine_candidate":
+                try:
+                    tag_source_summary = self.suggest_summary(conversation.id)
+                except ValueError:
+                    tag_source_summary = None
+            generated_tags = self._suggest_tags(conversation.id, tag_source_summary)
+
+        return self.apply_metadata_lifecycle(
+            conversation.id,
+            title=generated_title,
+            summary=generated_summary,
+            tags=generated_tags or None,
+            source=source,
         )
 
     def apply_metadata_lifecycle(
@@ -209,6 +308,52 @@ class ConversationService:
             raise ValueError(f"Conversation '{conversation_id}' not found")
         return updated
 
+    def update_tags(self, conversation_id: str, tags: list[str] | str) -> Conversation:
+        """Update conversation tags through an explicit manual-edit path."""
+        if isinstance(tags, str):
+            parsed_tags = [tag.strip() for tag in tags.split(",") if tag.strip()]
+        elif isinstance(tags, list):
+            parsed_tags = [str(tag).strip() for tag in tags if str(tag).strip()]
+        else:
+            raise ValueError("tags must be a list or comma-separated string")
+        parsed_tags = parsed_tags[:12]
+        conversation = self._get_conversation_for_title_operation(conversation_id)
+        metadata = self._metadata_dict(conversation)
+        metadata["tags_status"] = "manual" if parsed_tags else "cleared"
+        metadata["tags_source"] = "manual"
+        metadata["metadata_lifecycle_version"] = 1
+        self.store.update_conversation(
+            conversation.id,
+            tags=json.dumps(parsed_tags, ensure_ascii=False) if parsed_tags else None,
+            metadata=json.dumps(metadata, ensure_ascii=False),
+        )
+        updated = self.store.get_conversation(conversation.id)
+        if updated is None:
+            raise ValueError(f"Conversation '{conversation_id}' not found")
+        return updated
+
+    def update_summary(self, conversation_id: str, summary: str) -> Conversation:
+        """Update a conversation summary through an explicit manual-edit path."""
+        if not isinstance(summary, str):
+            raise ValueError("summary must be a string")
+        clean_summary = self._clean_summary(summary)
+        if not clean_summary:
+            raise ValueError("summary is required")
+        conversation = self._get_conversation_for_title_operation(conversation_id)
+        metadata = self._metadata_dict(conversation)
+        metadata["summary_status"] = "manual"
+        metadata["summary_source"] = "manual"
+        metadata["metadata_lifecycle_version"] = 1
+        self.store.update_conversation(
+            conversation.id,
+            summary=clean_summary,
+            metadata=json.dumps(metadata, ensure_ascii=False),
+        )
+        updated = self.store.get_conversation(conversation.id)
+        if updated is None:
+            raise ValueError(f"Conversation '{conversation_id}' not found")
+        return updated
+
     def set_provisional_title(self, conversation_id: str, title: str) -> Conversation:
         """Set a first-message title that may later be improved automatically."""
         clean_title = self._clean_title(title)
@@ -246,6 +391,31 @@ class ConversationService:
         if len(clean_title) > 160:
             raise ValueError("title must be at most 160 characters")
         return clean_title
+
+    def _clean_summary(self, summary: str) -> str:
+        clean_summary = "\n\n".join(
+            " ".join(part.split()) for part in summary.strip().split("\n\n") if part.strip()
+        )
+        if len(clean_summary) > 1000:
+            clean_summary = clean_summary[:1000].rstrip()
+        return clean_summary
+
+    def _suggest_tags(self, conversation_id: str, generated_summary: str | None = None) -> list[str]:
+        conversation = self._get_conversation_for_title_operation(conversation_id)
+        messages = self.store.get_messages(conversation.id)
+        tags = generate_conversation_tags(
+            messages,
+            on_llm_call=self._make_logger("conversation_tags", conversation.id),
+        )
+        return [tag for tag in tags if not self._looks_like_artifact(tag)]
+
+    def _looks_like_artifact(self, term: str) -> bool:
+        return bool(
+            term.isdigit()
+            or re.fullmatch(r"[0-9a-f]{7,}", term)
+            or re.fullmatch(r"\d+px", term)
+            or re.search(r"\d", term)
+        )
 
     def list_recent(
         self,

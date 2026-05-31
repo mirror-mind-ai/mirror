@@ -3,7 +3,7 @@
 # CV9.DS7.US3 — Metadata Lifecycle Operation Report
 
 **Type:** User Story  
-**Status:** Planned  
+**Status:** Done  
 **Parent:** [CV9.DS7 Conversation Metadata Lifecycle](../index.md)
 
 ---
@@ -47,4 +47,9 @@ bounded; no background/autonomous mutation is in scope.
 
 ## Pull State
 
-Not pulled yet. This User Story should be planned before US2 can close.
+Pulled after TS3 provided the internal bounded apply service. US3 exposes that capability through a Navigator-facing operation report, allowing US2 to close as observable behavior. US3 is done.
+
+## Plan and Validation
+
+- [Plan](plan.md)
+- [Test Guide](test-guide.md)

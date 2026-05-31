@@ -752,6 +752,8 @@ def test_conversation_detail_api_returns_read_only_transcript(tmp_path: Path) ->
     assert payload["persona"] == "architect"
     assert payload["journey"] == "mirror-mind"
     assert payload["summary"] == "Transcript detail planning"
+    assert payload["rawTitle"] == "Plan conversation intelligence"
+    assert payload["tags"] == []
     assert payload["messageCount"] == 2
     assert payload["messages"] == [
         {
@@ -847,6 +849,104 @@ def test_conversation_title_suggestion_api_returns_suggestion_without_saving(
     assert detail["title"] == "Old title"
 
 
+def test_conversation_summary_suggestion_api_returns_suggestion_without_saving(
+    tmp_path: Path, monkeypatch
+) -> None:
+    mirror_home = tmp_path / "mirror-home"
+    db_path = mirror_home / "memory.db"
+    with MemoryClient(db_path=db_path) as mem:
+        conversation = mem.conversations.start_conversation(interface="pi", title="Old title")
+        mem.conversations.add_message(conversation.id, "user", "Plan transcript metadata")
+        mem.conversations.add_message(conversation.id, "assistant", "Use explicit approval")
+        mem.store.update_conversation(conversation.id, summary="Old raw summary")
+
+    monkeypatch.setattr(
+        "memory.services.conversation.generate_conversation_summary",
+        lambda messages, user_name="User", on_llm_call=None: "Clean summary paragraph.",
+    )
+
+    server = WebTestServer(root=make_docs_root(tmp_path), mirror_home=mirror_home, db_path=db_path)
+    try:
+        status, payload = server.request(
+            "POST", "/api/conversations/summary-suggestion", {"conversationId": conversation.id}
+        )
+        detail_status, detail = server.request(
+            "GET", f"/api/conversations/detail?id={conversation.id}"
+        )
+    finally:
+        server.close()
+
+    assert status == 200
+    assert payload == {
+        "conversationId": conversation.id,
+        "suggestedSummary": "Clean summary paragraph.",
+    }
+    assert detail_status == 200
+    assert detail["summary"] == "Old raw summary"
+
+
+def test_conversation_summary_api_updates_one_summary(tmp_path: Path) -> None:
+    mirror_home = tmp_path / "mirror-home"
+    db_path = mirror_home / "memory.db"
+    with MemoryClient(db_path=db_path) as mem:
+        conversation = mem.conversations.start_conversation(interface="pi", title="Old title")
+        mem.conversations.add_message(conversation.id, "user", "Plan transcript metadata")
+
+    server = WebTestServer(root=make_docs_root(tmp_path), mirror_home=mirror_home, db_path=db_path)
+    try:
+        status, payload = server.request(
+            "POST",
+            "/api/conversations/summary",
+            {"conversationId": conversation.id, "summary": "  Clean summary paragraph.  "},
+        )
+    finally:
+        server.close()
+
+    assert status == 200
+    assert payload["summary"] == "Clean summary paragraph."
+
+
+def test_conversation_tags_api_updates_tags(tmp_path: Path) -> None:
+    mirror_home = tmp_path / "mirror-home"
+    db_path = mirror_home / "memory.db"
+    with MemoryClient(db_path=db_path) as mem:
+        conversation = mem.conversations.start_conversation(interface="pi", title="Old title")
+
+    server = WebTestServer(root=make_docs_root(tmp_path), mirror_home=mirror_home, db_path=db_path)
+    try:
+        status, payload = server.request(
+            "POST",
+            "/api/conversations/tags",
+            {"conversationId": conversation.id, "tags": "metadata, conversation"},
+        )
+    finally:
+        server.close()
+
+    assert status == 200
+    assert payload["tags"] == ["metadata", "conversation"]
+
+
+def test_conversation_tags_api_clears_blank_tags(tmp_path: Path) -> None:
+    mirror_home = tmp_path / "mirror-home"
+    db_path = mirror_home / "memory.db"
+    with MemoryClient(db_path=db_path) as mem:
+        conversation = mem.conversations.start_conversation(interface="pi", title="Old title")
+        mem.conversations.update_tags(conversation.id, "metadata, conversation")
+
+    server = WebTestServer(root=make_docs_root(tmp_path), mirror_home=mirror_home, db_path=db_path)
+    try:
+        status, payload = server.request(
+            "POST",
+            "/api/conversations/tags",
+            {"conversationId": conversation.id, "tags": ""},
+        )
+    finally:
+        server.close()
+
+    assert status == 200
+    assert payload["tags"] == []
+
+
 def test_conversation_title_suggestion_api_rejects_empty_conversations(tmp_path: Path) -> None:
     mirror_home = tmp_path / "mirror-home"
     db_path = mirror_home / "memory.db"
@@ -881,6 +981,71 @@ def test_conversation_title_api_rejects_blank_title(tmp_path: Path) -> None:
 
     assert status == 400
     assert payload["error"] == "title is required"
+
+
+def test_conversation_metadata_lifecycle_preview_api_reports_without_mutation(
+    tmp_path: Path,
+) -> None:
+    mirror_home = tmp_path / "mirror-home"
+    db_path = mirror_home / "memory.db"
+    with MemoryClient(db_path=db_path) as mem:
+        conversation = mem.conversations.start_conversation(interface="pi")
+        mem.conversations.set_provisional_title(conversation.id, "vamos trabalhar no maestro")
+        mem.conversations.add_message(conversation.id, "user", "Vamos validar checkpoint visibility")
+        mem.conversations.add_message(conversation.id, "assistant", "Vamos revisar o handoff")
+        before = mem.store.get_conversation(conversation.id)
+
+    server = WebTestServer(root=make_docs_root(tmp_path), mirror_home=mirror_home, db_path=db_path)
+    try:
+        status, payload = server.request(
+            "POST",
+            "/api/conversations/metadata-lifecycle-preview",
+            {"conversationId": conversation.id},
+        )
+    finally:
+        server.close()
+
+    with MemoryClient(db_path=db_path) as mem:
+        after = mem.store.get_conversation(conversation.id)
+    assert status == 200
+    assert payload["mode"] == "dry_run"
+    assert payload["mutated"] is False
+    assert payload["fields"]["title"]["decision"] == "repair"
+    assert after.title == before.title
+    assert after.metadata == before.metadata
+
+
+def test_conversation_metadata_lifecycle_apply_api_generates_ready_updates(
+    tmp_path: Path, monkeypatch
+) -> None:
+    mirror_home = tmp_path / "mirror-home"
+    db_path = mirror_home / "memory.db"
+    with MemoryClient(db_path=db_path) as mem:
+        conversation = mem.conversations.start_conversation(interface="pi")
+        mem.conversations.set_provisional_title(conversation.id, "vamos trabalhar no maestro")
+        mem.conversations.add_message(conversation.id, "user", "Vamos validar checkpoint visibility")
+        mem.conversations.add_message(conversation.id, "assistant", "Vamos revisar o handoff")
+
+    monkeypatch.setattr(
+        "memory.services.conversation.generate_conversation_title",
+        lambda messages, on_llm_call=None: "Maestro checkpoint visibility validation",
+    )
+
+    server = WebTestServer(root=make_docs_root(tmp_path), mirror_home=mirror_home, db_path=db_path)
+    try:
+        status, payload = server.request(
+            "POST",
+            "/api/conversations/metadata-lifecycle-apply",
+            {"conversationId": conversation.id},
+        )
+    finally:
+        server.close()
+
+    assert status == 200
+    assert payload["report"]["mode"] == "apply"
+    assert payload["report"]["mutated"] is True
+    assert payload["report"]["changed"]["title"] == "Maestro checkpoint visibility validation"
+    assert payload["conversation"]["title"] == "Maestro checkpoint visibility validation"
 
 
 def test_conversation_detail_api_returns_404_for_missing_conversation(tmp_path: Path) -> None:

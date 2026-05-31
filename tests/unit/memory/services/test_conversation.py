@@ -408,6 +408,62 @@ class TestExtractionTracking:
         assert conv_done.id not in ids
 
 
+class TestConversationServiceSummaryOperations:
+    def test_suggest_summary_returns_clean_suggestion_without_saving(
+        self, conversation_service, store, mocker
+    ):
+        mocker.patch(
+            "memory.services.conversation.generate_conversation_summary",
+            return_value="Clean summary paragraph.",
+        )
+        conv = conversation_service.start_conversation(interface="cli", title="Metadata")
+        conversation_service.add_message(conv.id, "user", "Vamos tratar metadados")
+        conversation_service.add_message(conv.id, "assistant", "Com aprovação explícita")
+        store.update_conversation(conv.id, summary="Old raw summary")
+
+        suggestion = conversation_service.suggest_summary(conv.id)
+
+        stored = store.get_conversation(conv.id)
+        assert suggestion == "Clean summary paragraph."
+        assert stored.summary == "Old raw summary"
+
+    def test_update_summary_saves_manual_summary_metadata(self, conversation_service, store):
+        import json
+
+        conv = conversation_service.start_conversation(interface="cli", title="Metadata")
+
+        updated = conversation_service.update_summary(conv.id, "  Clean summary paragraph.  ")
+
+        metadata = json.loads(updated.metadata)
+        assert updated.summary == "Clean summary paragraph."
+        assert metadata["summary_status"] == "manual"
+        assert metadata["summary_source"] == "manual"
+
+    def test_update_tags_saves_manual_tags_metadata(self, conversation_service, store):
+        import json
+
+        conv = conversation_service.start_conversation(interface="cli", title="Metadata")
+
+        updated = conversation_service.update_tags(conv.id, "metadata, conversation")
+
+        metadata = json.loads(updated.metadata)
+        assert json.loads(updated.tags) == ["metadata", "conversation"]
+        assert metadata["tags_status"] == "manual"
+        assert metadata["tags_source"] == "manual"
+
+    def test_update_tags_blank_clears_stored_tags(self, conversation_service, store):
+        import json
+
+        conv = conversation_service.start_conversation(interface="cli", title="Metadata")
+        conversation_service.update_tags(conv.id, "metadata, conversation")
+
+        updated = conversation_service.update_tags(conv.id, "  ")
+
+        metadata = json.loads(updated.metadata)
+        assert updated.tags is None
+        assert metadata["tags_status"] == "cleared"
+
+
 class TestConversationServiceMetadataLifecycleDryRun:
     def test_reports_repair_for_provisional_generic_title_without_mutation(
         self, conversation_service, store
@@ -511,7 +567,32 @@ class TestConversationServiceMetadataLifecycleDryRun:
         assert after.title == before.title
         assert after.metadata == before.metadata
 
-    def test_reports_summary_ready_and_tags_deferred_until_summary_exists(
+    def test_reports_existing_raw_summary_as_refine_candidate(
+        self, conversation_service, store
+    ):
+        conv = conversation_service.start_conversation(interface="cli", title="Antes de mim")
+        conversation_service.add_message(conv.id, "user", "Vamos trabalhar no projeto")
+        conversation_service.add_message(conv.id, "assistant", "Contexto carregado")
+        store.update_conversation(
+            conv.id,
+            summary=(
+                "vamos trabalhar no projeto antes de mim Builder Mode ativo. "
+                "Contexto carregado: editor do livro. 1. Revisar amostras. "
+                "2. Validar `texto-raw/`. Path: /Users/alissonvale/projeto/livro"
+            ),
+        )
+
+        report = conversation_service.dry_run_metadata_lifecycle(conv.id)
+
+        summary = report["fields"]["summary"]
+        assert summary["decision"] == "refine_candidate"
+        assert summary["reason"] == "stored summary needs editorial refinement"
+        assert report["fields"]["tags"]["decision"] == "create"
+        assert report["fields"]["tags"]["reason"] == "conversation has enough substance for tags"
+        assert "contains_markdown" in summary["evidence"]["quality_issues"]
+        assert "contains_paths" in summary["evidence"]["quality_issues"]
+
+    def test_reports_summary_and_tags_ready_from_conversation_substance(
         self, conversation_service
     ):
         conv = conversation_service.start_conversation(interface="cli", title="Metadata lifecycle")
@@ -524,8 +605,32 @@ class TestConversationServiceMetadataLifecycleDryRun:
 
         assert report["fields"]["summary"]["decision"] == "create"
         assert report["fields"]["summary"]["readiness"] == "ready"
-        assert report["fields"]["tags"]["decision"] == "defer"
-        assert report["fields"]["tags"]["readiness"] == "not_ready"
+        assert report["fields"]["tags"]["decision"] == "create"
+        assert report["fields"]["tags"]["reason"] == "conversation has enough substance for tags"
+        assert report["fields"]["tags"]["readiness"] == "ready"
+
+    def test_debug_preview_at_message_uses_transcript_boundary_without_mutation(
+        self, conversation_service, store
+    ):
+        conv = conversation_service.start_conversation(interface="cli", title="Metadata lifecycle")
+        first = conversation_service.add_message(conv.id, "user", "Vamos tratar o título")
+        conversation_service.add_message(conv.id, "assistant", "Podemos criar uma política")
+        conversation_service.add_message(conv.id, "user", "Também resumo e tags")
+        conversation_service.add_message(conv.id, "assistant", "Então precisamos de readiness por campo")
+        before = store.get_conversation(conv.id)
+
+        report = conversation_service.dry_run_metadata_lifecycle_at_message(first.id)
+
+        after = store.get_conversation(conv.id)
+        assert report["mode"] == "debug_preview_at_message"
+        assert report["mutated"] is False
+        assert report["conversation_id"] == conv.id
+        assert report["message_id"] == first.id
+        assert report["included_message_count"] == 1
+        assert report["excluded_message_count"] == 3
+        assert report["dry_run"]["fields"]["summary"]["decision"] == "defer"
+        assert after.title == before.title
+        assert after.metadata == before.metadata
 
 
 class TestConversationServiceMetadataLifecycleApply:
@@ -602,6 +707,75 @@ class TestConversationServiceMetadataLifecycleApply:
         assert report["skipped"]["title"] == "candidate_decision_requires_explicit_review"
         assert after.title == before.title
         assert after.metadata == before.metadata
+
+    def test_generated_apply_creates_tags_from_clean_temporary_summary_when_stored_summary_is_raw(
+        self, conversation_service, store, mocker
+    ):
+        import json
+
+        mocker.patch(
+            "memory.services.conversation.generate_conversation_summary",
+            return_value="Metadata lifecycle maintenance for conversation titles summaries and tags.",
+        )
+        mocker.patch(
+            "memory.services.conversation.generate_conversation_tags",
+            return_value=["metadata lifecycle", "conversation maintenance", "ariad"],
+        )
+        conv = conversation_service.start_conversation(interface="cli", title="Metadata")
+        conversation_service.add_message(conv.id, "user", "Vamos tratar metadados")
+        conversation_service.add_message(conv.id, "assistant", "Podemos usar manutenção contextual")
+        conversation_service.add_message(conv.id, "user", "Também revisar tags")
+        conversation_service.add_message(conv.id, "assistant", "Gerar tags sem ruído técnico")
+        store.update_conversation(
+            conv.id,
+            summary="Raw summary with `code`, /Users/alissonvale/path, 10px, 1b63c00",
+        )
+
+        report = conversation_service.apply_generated_metadata_lifecycle(conv.id)
+
+        stored = store.get_conversation(conv.id)
+        tags = json.loads(stored.tags)
+        assert report["dry_run"]["fields"]["summary"]["decision"] == "refine_candidate"
+        assert report["changed"]["tags"] == tags
+        assert "1b63c00" not in tags
+        assert "10px" not in tags
+        assert "metadata lifecycle" in tags
+
+    def test_generated_apply_creates_ready_metadata_from_report(
+        self, conversation_service, store, mocker
+    ):
+        import json
+
+        mocker.patch(
+            "memory.services.conversation.generate_conversation_title",
+            return_value="Metadata Lifecycle Planning",
+        )
+        mocker.patch(
+            "memory.services.conversation.generate_conversation_summary",
+            return_value="Clean metadata lifecycle planning summary.",
+        )
+        mocker.patch(
+            "memory.services.conversation.generate_conversation_tags",
+            return_value=["metadata lifecycle", "conversation maintenance"],
+        )
+        conv = conversation_service.start_conversation(interface="cli")
+        conversation_service.add_message(conv.id, "user", "Vamos tratar o título")
+        conversation_service.add_message(conv.id, "assistant", "Podemos criar uma política")
+        conversation_service.add_message(conv.id, "user", "Também resumo e tags")
+        conversation_service.add_message(conv.id, "assistant", "Então precisamos de readiness por campo")
+
+        report = conversation_service.apply_generated_metadata_lifecycle(conv.id)
+
+        stored = store.get_conversation(conv.id)
+        metadata = json.loads(stored.metadata)
+        assert report["mutated"] is True
+        assert report["changed"]["title"] == "Metadata Lifecycle Planning"
+        assert report["changed"]["summary"] == "Clean metadata lifecycle planning summary."
+        assert "tags" in report["changed"]
+        assert stored.title == "Metadata Lifecycle Planning"
+        assert stored.summary == "Clean metadata lifecycle planning summary."
+        assert json.loads(stored.tags)
+        assert metadata["last_metadata_update_source"] == "metadata_lifecycle_apply"
 
     def test_applies_summary_and_tags_when_ready(self, conversation_service, store):
         import json

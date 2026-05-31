@@ -31,7 +31,7 @@ def dry_run_metadata_lifecycle(
         title_needs_improvement=title_needs_improvement,
     )
     summary_report = dry_run_summary_lifecycle(conversation, messages)
-    tags_report = dry_run_tags_lifecycle(conversation)
+    tags_report = dry_run_tags_lifecycle(conversation, messages, summary_report)
     return {
         "conversation_id": conversation.id,
         "mode": "dry_run",
@@ -116,7 +116,18 @@ def dry_run_title_lifecycle(
 
 def dry_run_summary_lifecycle(conversation: Conversation, messages: list[Message]) -> dict:
     """Return summary lifecycle decision for a conversation."""
-    if (conversation.summary or "").strip():
+    summary = (conversation.summary or "").strip()
+    if summary:
+        quality_issues = summary_quality_issues(summary)
+        if quality_issues:
+            return {
+                "decision": "refine_candidate",
+                "reason": "stored summary needs editorial refinement",
+                "current_value": conversation.summary,
+                "readiness": "ready",
+                "provenance": "stored",
+                "evidence": {"quality_issues": quality_issues},
+            }
         return {
             "decision": "keep",
             "reason": "summary already exists",
@@ -144,10 +155,28 @@ def dry_run_summary_lifecycle(conversation: Conversation, messages: list[Message
     }
 
 
-def dry_run_tags_lifecycle(conversation: Conversation) -> dict:
+def summary_quality_issues(summary: str) -> list[str]:
+    """Return user-facing quality issues for stored conversation summaries."""
+    issues: list[str] = []
+    if len(summary) > 900:
+        issues.append("too_long")
+    if re.search(r"(^|\n)\s*(?:[-*]|\d+[.)])\s+", summary):
+        issues.append("contains_bullets")
+    if re.search(r"\*\*|__|`", summary):
+        issues.append("contains_markdown")
+    if re.search(r"(?:/Users/|~/|[A-Za-z]:\\|/[\w .~:-]+/[\w .~:-]+)", summary):
+        issues.append("contains_paths")
+    if re.search(r"\b(user|assistant|mirror|você|eu):", summary, flags=re.IGNORECASE):
+        issues.append("looks_like_transcript")
+    return issues
+
+
+def dry_run_tags_lifecycle(
+    conversation: Conversation, messages: list[Message], summary_report: dict
+) -> dict:
     """Return tags lifecycle decision for a conversation."""
     current_tags = conversation.tags
-    if current_tags:
+    if current_tags and current_tags.strip() not in {"[]", "null"}:
         return {
             "decision": "keep",
             "reason": "tags already exist",
@@ -155,17 +184,20 @@ def dry_run_tags_lifecycle(conversation: Conversation) -> dict:
             "readiness": "ready",
             "provenance": "stored",
         }
-    if (conversation.summary or "").strip():
+    substantive_messages = [
+        msg for msg in messages if msg.role in ("user", "assistant") and msg.content.strip()
+    ]
+    if len(substantive_messages) >= 4 or (conversation.summary or "").strip():
         return {
             "decision": "create",
-            "reason": "summary-level substance is available for tags",
+            "reason": "conversation has enough substance for tags",
             "current_value": None,
             "readiness": "ready",
             "provenance": None,
         }
     return {
         "decision": "defer",
-        "reason": "tags depend on summary-level substance",
+        "reason": "tags need more conversation substance",
         "current_value": None,
         "readiness": "not_ready",
         "provenance": None,

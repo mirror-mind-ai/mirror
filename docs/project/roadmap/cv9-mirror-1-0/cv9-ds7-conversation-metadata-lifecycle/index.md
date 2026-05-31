@@ -40,8 +40,13 @@ The Delivery Story expansion has been accepted. No implementation plan has been 
 | [CV9.DS7.US1](cv9-ds7-us1-dry-run-metadata-lifecycle-decision-path/index.md) | User Story | Dry-run Metadata Lifecycle Decision Path | Done |
 | [CV9.DS7.TS2](cv9-ds7-ts2-extract-metadata-lifecycle-policy-boundary/index.md) | Technical Story | Extract Metadata Lifecycle Policy Boundary | Validated |
 | [CV9.DS7.TS3](cv9-ds7-ts3-bounded-metadata-lifecycle-apply-service/index.md) | Technical Story | Bounded Metadata Lifecycle Apply Service | Validated |
-| [CV9.DS7.US2](cv9-ds7-us2-apply-metadata-lifecycle-decisions/index.md) | User Story | Apply Metadata Lifecycle Decisions Safely | Active; blocked by operation surface |
-| [CV9.DS7.US3](cv9-ds7-us3-metadata-lifecycle-operation-report/index.md) | User Story | Metadata Lifecycle Operation Report | Planned |
+| [CV9.DS7.US2](cv9-ds7-us2-apply-metadata-lifecycle-decisions/index.md) | User Story | Apply Metadata Lifecycle Decisions Safely | Done |
+| [CV9.DS7.US3](cv9-ds7-us3-metadata-lifecycle-operation-report/index.md) | User Story | Metadata Lifecycle Operation Report | Done |
+| [CV9.DS7.US4](cv9-ds7-us4-contextual-conversation-metadata-maintenance/index.md) | User Story | Contextual Conversation Metadata Maintenance | Active |
+| [CV9.DS7.TS4](cv9-ds7-ts4-metadata-update-execution-profiles/index.md) | Technical Story | Metadata Update Execution Profiles | Planned |
+| [CV9.DS7.US8](cv9-ds7-us8-historical-metadata-backfill-preview/index.md) | User Story | Historical Metadata Backfill Preview | Planned |
+| [CV9.DS7.US9](cv9-ds7-us9-historical-metadata-backfill-apply/index.md) | User Story | Historical Metadata Backfill Apply | Planned |
+| [CV9.DS7.US5](cv9-ds7-us5-close-time-metadata-update/index.md) | User Story | Close-time Metadata Update | Planned |
 
 ---
 
@@ -66,8 +71,31 @@ In scope for this Delivery Story:
 Out of scope for this Delivery Story unless explicitly expanded later:
 
 - journey inference after conversation start;
-- broad autonomous per-turn metadata intelligence;
-- mutation/apply behavior before the dry-run decision path is understood.
+- broad autonomous per-turn metadata intelligence before close-time and backfill profiles are proven.
+
+---
+
+## Execution Tracks
+
+### Runtime Metadata Lifecycle
+
+Goal: Mirror updates metadata intelligently as new conversations unfold.
+
+Sequence:
+
+1. [CV9.DS7.TS4](cv9-ds7-ts4-metadata-update-execution-profiles/index.md) — make execution profiles explicit.
+2. [CV9.DS7.US5](cv9-ds7-us5-close-time-metadata-update/index.md) — finalize metadata at conversation close.
+3. Later: first-exchange initialization and active refresh cadence.
+
+### Historical Metadata Backfill
+
+Goal: existing conversations become useful in the web surface.
+
+Sequence:
+
+1. [CV9.DS7.TS4](cv9-ds7-ts4-metadata-update-execution-profiles/index.md) — define safe/force semantics.
+2. [CV9.DS7.US8](cv9-ds7-us8-historical-metadata-backfill-preview/index.md) — preview old conversations.
+3. [CV9.DS7.US9](cv9-ds7-us9-historical-metadata-backfill-apply/index.md) — apply reviewed backfill with safe/force modes.
 
 ---
 

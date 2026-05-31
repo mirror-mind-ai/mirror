@@ -164,6 +164,21 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
         if parsed.path == "/api/conversations/title-suggestion":
             self._suggest_conversation_title()
             return
+        if parsed.path == "/api/conversations/summary":
+            self._write_conversation_summary()
+            return
+        if parsed.path == "/api/conversations/tags":
+            self._write_conversation_tags()
+            return
+        if parsed.path == "/api/conversations/summary-suggestion":
+            self._suggest_conversation_summary()
+            return
+        if parsed.path == "/api/conversations/metadata-lifecycle-preview":
+            self._preview_conversation_metadata_lifecycle()
+            return
+        if parsed.path == "/api/conversations/metadata-lifecycle-apply":
+            self._apply_conversation_metadata_lifecycle()
+            return
         if parsed.path == "/api/operations/run":
             self._run_operation()
             return
@@ -386,6 +401,88 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
 
         self._send_json(detail)
 
+    def _suggest_conversation_summary(self) -> None:
+        try:
+            payload = self._read_json_body()
+            conversation_id = payload.get("conversationId")
+            if not isinstance(conversation_id, str):
+                raise ValueError("conversationId is required")
+            with MemoryClient(db_path=self._db_path()) as mem:
+                suggestion = mem.conversations.suggest_summary(conversation_id)
+        except (json.JSONDecodeError, ValueError, TypeError) as exc:
+            self._send_json({"error": str(exc)}, status=400)
+            return
+
+        self._send_json({"conversationId": conversation_id, "suggestedSummary": suggestion})
+
+    def _write_conversation_summary(self) -> None:
+        try:
+            payload = self._read_json_body()
+            conversation_id = payload.get("conversationId")
+            summary = payload.get("summary")
+            if not isinstance(conversation_id, str):
+                raise ValueError("conversationId is required")
+            if not isinstance(summary, str):
+                raise ValueError("summary must be a string")
+            with MemoryClient(db_path=self._db_path()) as mem:
+                conversation = mem.conversations.update_summary(conversation_id, summary)
+                detail = self._conversation_detail_payload(mem, conversation.id)
+        except (json.JSONDecodeError, ValueError, TypeError) as exc:
+            self._send_json({"error": str(exc)}, status=400)
+            return
+
+        self._send_json(detail)
+
+    def _write_conversation_tags(self) -> None:
+        try:
+            payload = self._read_json_body()
+            conversation_id = payload.get("conversationId")
+            tags = payload.get("tags")
+            if not isinstance(conversation_id, str):
+                raise ValueError("conversationId is required")
+            if not isinstance(tags, str):
+                raise ValueError("tags must be a string")
+            with MemoryClient(db_path=self._db_path()) as mem:
+                conversation = mem.conversations.update_tags(conversation_id, tags)
+                detail = self._conversation_detail_payload(mem, conversation.id)
+        except (json.JSONDecodeError, ValueError, TypeError) as exc:
+            self._send_json({"error": str(exc)}, status=400)
+            return
+
+        self._send_json(detail)
+
+    def _preview_conversation_metadata_lifecycle(self) -> None:
+        try:
+            payload = self._read_json_body()
+            conversation_id = payload.get("conversationId")
+            if not isinstance(conversation_id, str):
+                raise ValueError("conversationId is required")
+            with MemoryClient(db_path=self._db_path()) as mem:
+                report = mem.conversations.dry_run_metadata_lifecycle(conversation_id)
+        except (json.JSONDecodeError, ValueError, TypeError) as exc:
+            self._send_json({"error": str(exc)}, status=400)
+            return
+
+        self._send_json(report)
+
+    def _apply_conversation_metadata_lifecycle(self) -> None:
+        try:
+            payload = self._read_json_body()
+            conversation_id = payload.get("conversationId")
+            if not isinstance(conversation_id, str):
+                raise ValueError("conversationId is required")
+            with MemoryClient(db_path=self._db_path()) as mem:
+                report = mem.conversations.apply_generated_metadata_lifecycle(
+                    conversation_id,
+                    source="web_metadata_maintenance",
+                )
+                detail = self._conversation_detail_payload(mem, report["conversation_id"])
+        except (json.JSONDecodeError, ValueError, TypeError) as exc:
+            self._send_json({"error": str(exc)}, status=400)
+            return
+
+        self._send_json({"report": report, "conversation": detail})
+
     def _conversation_detail_payload(
         self, mem: MemoryClient, conversation_id: str
     ) -> dict[str, object] | None:
@@ -400,6 +497,7 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
         return {
             "id": conversation.id,
             "title": conversation.title or conversation.id[:8],
+            "rawTitle": conversation.title,
             "description": conversation.summary or f"{len(messages)} stored messages",
             "startedAt": conversation.started_at,
             "endedAt": conversation.ended_at,
@@ -408,6 +506,7 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
             "persona": conversation.persona,
             "journey": conversation.journey,
             "summary": conversation.summary,
+            "tags": _conversation_tags(conversation.tags),
             "messageCount": len(messages),
             "messages": [
                 {
@@ -496,6 +595,18 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+
+
+def _conversation_tags(raw_tags: str | None) -> list[str]:
+    if not raw_tags:
+        return []
+    try:
+        payload = json.loads(raw_tags)
+    except (json.JSONDecodeError, TypeError):
+        return [tag.strip() for tag in raw_tags.split(",") if tag.strip()]
+    if isinstance(payload, list):
+        return [str(tag) for tag in payload if str(tag).strip()]
+    return []
 
 
 def _operation_requires_approval(operation_id: str, parameters: dict[str, object]) -> bool:

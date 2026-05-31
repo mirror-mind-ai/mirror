@@ -1,3 +1,7 @@
+[hidden] {
+  display: none !important;
+}
+
 :root {
   color-scheme: light dark;
   --bg: #f7f4ef;
@@ -8,6 +12,8 @@
   --border: #ded4c5;
   --accent: #6d4c2f;
   --accent-soft: color-mix(in srgb, var(--accent) 12%, transparent);
+  --success: #2f7d4f;
+  --danger: #a44a43;
   --warning: #8a5a00;
 }
 
@@ -20,6 +26,8 @@
     --muted: #b9aa96;
     --border: #3a3329;
     --accent: #d4a76a;
+    --success: #75c994;
+    --danger: #e0837b;
     --warning: #f0bd62;
   }
 }
@@ -33,6 +41,8 @@
   --muted: #b9aa96;
   --border: #3a3329;
   --accent: #d4a76a;
+  --success: #75c994;
+  --danger: #e0837b;
   --warning: #f0bd62;
 }
 
@@ -998,12 +1008,16 @@ input {
 }
 
 .conversation-title-form label,
+.conversation-summary-form label,
+.conversation-tags-form label,
 .journey-settings-form label {
   display: grid;
   gap: 4px;
 }
 
 .conversation-title-form span,
+.conversation-summary-form span,
+.conversation-tags-form span,
 .journey-settings-form span {
   color: var(--muted);
   font-size: 12px;
@@ -1014,6 +1028,8 @@ input {
 
 .preferences-form input,
 .conversation-title-form input,
+.conversation-tags-form input,
+.conversation-summary-form textarea,
 .journey-settings-form input {
   width: 100%;
   border: 1px solid var(--border);
@@ -1023,14 +1039,24 @@ input {
   color: var(--text);
 }
 
+.conversation-summary-form textarea {
+  resize: vertical;
+}
+
 .conversation-title-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
 }
 
+.conversation-summary-form .conversation-title-actions {
+  padding-top: 10px;
+}
+
 .preferences-form button,
 .conversation-title-form button,
+.conversation-summary-form button,
+.conversation-tags-form button,
 .journey-settings-form button {
   width: max-content;
   border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
@@ -1042,13 +1068,16 @@ input {
   font-weight: 750;
 }
 
-.conversation-title-form button.secondary-action {
+.conversation-title-form button.secondary-action,
+.conversation-summary-form button.secondary-action,
+.conversation-tags-form button.secondary-action {
   border-color: var(--border);
   background: transparent;
   color: var(--muted);
 }
 
-.title-suggestion {
+.title-suggestion,
+.summary-suggestion {
   display: grid;
   gap: 8px;
   border: 1px dashed color-mix(in srgb, var(--accent) 40%, var(--border));
@@ -1056,13 +1085,107 @@ input {
   padding: 12px;
 }
 
+.summary-suggestion {
+  margin-top: 12px;
+}
+
 .title-suggestion p,
-.title-suggestion small {
+.title-suggestion small,
+.summary-suggestion p,
+.summary-suggestion small {
   margin: 0;
 }
 
-.title-suggestion small {
+.title-suggestion small,
+.summary-suggestion small {
   color: var(--muted);
+}
+
+.conversation-maintenance {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.conversation-maintenance p {
+  margin: 0;
+}
+
+.metadata-maintenance-report {
+  padding-top: 10px;
+}
+
+.metadata-maintenance-report li {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.metadata-maintenance-report li:last-child {
+  margin-bottom: 0;
+}
+
+.metadata-field {
+  border-left: 4px solid var(--border);
+  padding-left: 12px;
+}
+
+.metadata-field-will-update {
+  border-left-color: var(--success);
+}
+
+.metadata-field-review,
+.metadata-field-defer {
+  border-left-color: var(--danger);
+}
+
+.metadata-field-unchanged {
+  border-left-color: var(--border);
+}
+
+.metadata-field-head {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.metadata-status-badge {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  text-transform: uppercase;
+}
+
+.metadata-field-will-update .metadata-status-badge {
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+  border-color: color-mix(in srgb, var(--success) 55%, var(--border));
+  color: var(--success);
+}
+
+.metadata-field-review .metadata-status-badge,
+.metadata-field-defer .metadata-status-badge {
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
+  color: var(--danger);
+}
+
+.metadata-loading {
+  color: var(--muted);
+  margin: 0;
+}
+
+.metadata-maintenance-report small {
+  color: var(--muted);
+  display: block;
+  font-size: 1rem;
+  line-height: 1.45;
 }
 
 .theme-option {
@@ -1805,7 +1928,9 @@ input {
 }
 
 .conversation-detail-head,
+.conversation-title-section,
 .conversation-summary,
+.conversation-tags-section,
 .conversation-transcript {
   border: 1px solid var(--border);
   border-radius: 24px;

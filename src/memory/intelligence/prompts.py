@@ -222,6 +222,27 @@ Write one concise, useful title for the conversation below.
 ## Conversation
 """
 
+CONVERSATION_TAGS_PROMPT = """You create durable search tags for a Mirror Mind conversation.
+
+Return ONLY a JSON array of 3 to 6 strings. No markdown.
+
+Tag rules:
+- Use durable topics, project names, methods, product areas, or domains.
+- Prefer nouns and named concepts over verbs or generic adjectives.
+- Do not include numbers, IDs, hashes, CSS sizes, file paths, dates, or code fragments.
+- Do not include generic action words like adjust, discuss, create, central, field, canonical.
+- Tags should help find the conversation months later.
+- Use lowercase unless the tag is a proper project/method name.
+
+Good examples:
+["ariad", "metadata lifecycle", "web console", "conversation maintenance"]
+
+Bad examples:
+["adjust", "central", "10px", "1b63c00", "fields", "discussed"]
+
+## Conversation
+"""
+
 CONVERSATION_SUMMARY_PROMPT = """You are the memory system for Mirror Mind, a Jungian mirror AI.
 
 Write a 3-4 sentence summary of the conversation below. Use flowing prose, not a list.
