@@ -154,6 +154,38 @@ def test_conversations_metadata_lifecycle_demo_reports_pass_without_production_d
     assert report["checks"]["refine_candidate_skipped"] is True
 
 
+def test_conversations_metadata_backfill_apply_reports_results(tmp_path, capsys, monkeypatch):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    conv = mem.start_conversation("cli")
+    mem.conversations.set_provisional_title(conv.id, "vamos trabalhar no maestro")
+    mem.add_message(conv.id, "user", "Vamos validar checkpoint visibility")
+    mem.add_message(conv.id, "assistant", "Vamos revisar o handoff")
+    monkeypatch.setattr(
+        "memory.services.conversation.generate_conversation_title",
+        lambda messages, on_llm_call=None: "Maestro checkpoint validation",
+    )
+
+    from memory.cli.conversations import main
+
+    main([
+        "--mirror-home",
+        str(mirror_home),
+        "--metadata-backfill-apply",
+        "--metadata-backfill-mode",
+        "safe",
+        "--limit",
+        "5",
+    ])
+
+    captured = capsys.readouterr()
+    report = json.loads(captured.out)
+    assert report["mode"] == "metadata_backfill_apply"
+    assert report["mutated"] is True
+    assert report["results"][0]["changed"]["title"] == "Maestro checkpoint validation"
+
+
 def test_conversations_metadata_backfill_preview_reports_candidates(tmp_path, capsys):
     mirror_home = tmp_path / ".mirror" / "pati"
     db_path = default_db_path_for_home(mirror_home)

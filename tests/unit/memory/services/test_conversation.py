@@ -669,6 +669,65 @@ class TestConversationServiceMetadataBackfillPreview:
         assert candidate["actions"]["title"] == "regenerate"
 
 
+class TestConversationServiceMetadataBackfillApply:
+    def test_applies_safe_backfill_to_bounded_candidates(
+        self, conversation_service, store, mocker
+    ):
+        import json
+
+        mocker.patch(
+            "memory.services.conversation.generate_conversation_title",
+            return_value="Maestro checkpoint validation",
+        )
+        conv = conversation_service.start_conversation(interface="cli")
+        conversation_service.set_provisional_title(conv.id, "vamos trabalhar no maestro")
+        conversation_service.add_message(conv.id, "user", "Vamos validar checkpoint visibility")
+        conversation_service.add_message(conv.id, "assistant", "Vamos revisar o handoff")
+
+        report = conversation_service.apply_metadata_backfill(mode="safe", limit=5)
+
+        stored = store.get_conversation(conv.id)
+        metadata = json.loads(stored.metadata)
+        assert report["mode"] == "metadata_backfill_apply"
+        assert report["mutated"] is True
+        assert report["changed_count"] == 1
+        assert stored.title == "Maestro checkpoint validation"
+        assert metadata["last_metadata_update_source"] == "metadata_backfill_apply"
+
+    def test_force_backfill_regenerates_existing_metadata(
+        self, conversation_service, store, mocker
+    ):
+        import json
+
+        mocker.patch(
+            "memory.services.conversation.generate_conversation_title",
+            return_value="Regenerated metadata title",
+        )
+        mocker.patch(
+            "memory.services.conversation.generate_conversation_summary",
+            return_value="Regenerated summary paragraph.",
+        )
+        mocker.patch(
+            "memory.services.conversation.generate_conversation_tags",
+            return_value=["metadata backfill", "conversation maintenance"],
+        )
+        conv = conversation_service.start_conversation(
+            interface="cli",
+            title="Old generated title",
+        )
+        conversation_service.add_message(conv.id, "user", "Vamos validar metadata")
+        conversation_service.add_message(conv.id, "assistant", "Podemos regenerar tudo")
+        store.update_conversation(conv.id, summary="Old summary", tags=json.dumps(["old"]))
+
+        report = conversation_service.apply_metadata_backfill(mode="force", limit=5)
+
+        stored = store.get_conversation(conv.id)
+        assert report["profile"] == "backfill_force"
+        assert stored.title == "Regenerated metadata title"
+        assert stored.summary == "Regenerated summary paragraph."
+        assert json.loads(stored.tags) == ["metadata backfill", "conversation maintenance"]
+
+
 class TestConversationServiceMetadataLifecycleApply:
     def test_applies_safe_repair_title_and_records_metadata(self, conversation_service, store):
         import json

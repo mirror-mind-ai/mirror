@@ -53,6 +53,11 @@ def main(argv: list[str] | None = None) -> None:
         help="Preview historical conversation metadata backfill without mutation",
     )
     parser.add_argument(
+        "--metadata-backfill-apply",
+        action="store_true",
+        help="Apply historical conversation metadata backfill to a bounded candidate set",
+    )
+    parser.add_argument(
         "--metadata-backfill-mode",
         choices=("safe", "force"),
         default="safe",
@@ -85,6 +90,15 @@ def main(argv: list[str] | None = None) -> None:
 
     if args.metadata_backfill_preview:
         report = mem.conversations.preview_metadata_backfill(
+            mode=args.metadata_backfill_mode,
+            limit=args.limit,
+            journey=args.journey,
+        )
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        return
+
+    if args.metadata_backfill_apply:
+        report = mem.conversations.apply_metadata_backfill(
             mode=args.metadata_backfill_mode,
             limit=args.limit,
             journey=args.journey,

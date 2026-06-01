@@ -167,6 +167,36 @@ class ConversationService:
             "dry_run": dry_run,
         }
 
+    def apply_metadata_backfill(
+        self,
+        *,
+        mode: str = "safe",
+        limit: int = 20,
+        journey: str | None = None,
+    ) -> dict:
+        """Apply historical metadata backfill to a bounded candidate set."""
+        preview = self.preview_metadata_backfill(mode=mode, limit=limit, journey=journey)
+        profile_name = preview["profile"]
+        results: list[dict] = []
+        for candidate in preview["candidates"]:
+            result = self.apply_generated_metadata_lifecycle(
+                candidate["conversation_id"],
+                source="metadata_backfill_apply",
+                profile_name=profile_name,
+            )
+            results.append(result)
+        return {
+            "mode": "metadata_backfill_apply",
+            "backfill_mode": mode,
+            "profile": profile_name,
+            "mutated": any(result["mutated"] for result in results),
+            "limit": limit,
+            "journey": journey,
+            "candidate_count": preview["candidate_count"],
+            "changed_count": sum(1 for result in results if result["mutated"]),
+            "results": results,
+        }
+
     def preview_metadata_backfill(
         self,
         *,
@@ -247,6 +277,20 @@ class ConversationService:
                     tag_source_summary = None
             generated_tags = self._suggest_tags(conversation.id, tag_source_summary)
 
+        if profile.force_regenerate:
+            report = self._apply_force_generated_metadata_lifecycle(
+                conversation,
+                dry_run=dry_run,
+                actions=actions,
+                title=generated_title,
+                summary=generated_summary,
+                tags=generated_tags,
+                source=source,
+            )
+            report["profile"] = profile.name
+            report["actions"] = actions
+            return report
+
         report = self.apply_metadata_lifecycle(
             conversation.id,
             title=generated_title,
@@ -257,6 +301,77 @@ class ConversationService:
         report["profile"] = profile.name
         report["actions"] = actions
         return report
+
+    def _apply_force_generated_metadata_lifecycle(
+        self,
+        conversation: Conversation,
+        *,
+        dry_run: dict,
+        actions: dict[str, str],
+        title: str | None,
+        summary: str | None,
+        tags: list[str] | None,
+        source: str,
+    ) -> dict:
+        """Apply generated values for a force profile while preserving manual locks."""
+        metadata = self._metadata_dict(conversation)
+        updates: dict[str, object] = {}
+        changed: dict[str, object] = {}
+        skipped: dict[str, str] = {}
+
+        if actions["title"] == "preserve_manual":
+            skipped["title"] = "manual_lock_preserved"
+        elif actions["title"] == "regenerate" and title:
+            clean_title = self._clean_title(title)
+            updates["title"] = clean_title
+            metadata = self._title_metadata(
+                conversation,
+                source=source,
+                status="generated",
+                previous_title=conversation.title,
+            )
+            changed["title"] = clean_title
+        elif actions["title"] == "regenerate":
+            skipped["title"] = "generation_failed"
+        else:
+            skipped["title"] = actions["title"]
+
+        if actions["summary"] == "regenerate" and summary:
+            clean_summary = self._clean_summary(summary)
+            if clean_summary:
+                updates["summary"] = clean_summary
+                metadata["summary_status"] = "generated"
+                changed["summary"] = clean_summary
+            else:
+                skipped["summary"] = "blank_value"
+        elif actions["summary"] == "regenerate":
+            skipped["summary"] = "generation_failed"
+        else:
+            skipped["summary"] = actions["summary"]
+
+        if actions["tags"] == "regenerate" and tags:
+            updates["tags"] = json.dumps(tags, ensure_ascii=False)
+            metadata["tags_status"] = "generated"
+            changed["tags"] = tags
+        elif actions["tags"] == "regenerate":
+            skipped["tags"] = "generation_failed"
+        else:
+            skipped["tags"] = actions["tags"]
+
+        if changed:
+            metadata["metadata_lifecycle_version"] = 1
+            metadata["last_metadata_update_source"] = source
+            updates["metadata"] = json.dumps(metadata, ensure_ascii=False)
+            self.store.update_conversation(conversation.id, **updates)
+
+        return {
+            "conversation_id": conversation.id,
+            "mode": "apply",
+            "mutated": bool(changed),
+            "changed": changed,
+            "skipped": skipped,
+            "dry_run": dry_run,
+        }
 
     def apply_metadata_lifecycle(
         self,
