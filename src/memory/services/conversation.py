@@ -336,11 +336,14 @@ class ConversationService:
         else:
             skipped["title"] = actions["title"]
 
-        if actions["summary"] == "regenerate" and summary:
+        if actions["summary"] == "regenerate" and metadata.get("summary_source") == "manual":
+            skipped["summary"] = "manual_summary_preserved"
+        elif actions["summary"] == "regenerate" and summary:
             clean_summary = self._clean_summary(summary)
             if clean_summary:
                 updates["summary"] = clean_summary
                 metadata["summary_status"] = "generated"
+                metadata["summary_source"] = source
                 changed["summary"] = clean_summary
             else:
                 skipped["summary"] = "blank_value"
@@ -349,9 +352,12 @@ class ConversationService:
         else:
             skipped["summary"] = actions["summary"]
 
-        if actions["tags"] == "regenerate" and tags:
+        if actions["tags"] == "regenerate" and metadata.get("tags_source") == "manual":
+            skipped["tags"] = "manual_tags_preserved"
+        elif actions["tags"] == "regenerate" and tags:
             updates["tags"] = json.dumps(tags, ensure_ascii=False)
             metadata["tags_status"] = "generated"
+            metadata["tags_source"] = source
             changed["tags"] = tags
         elif actions["tags"] == "regenerate":
             skipped["tags"] = "generation_failed"
@@ -605,12 +611,19 @@ class ConversationService:
         from memory.models import _now
 
         self.store.update_conversation(conversation_id, ended_at=_now())
-        self.maybe_generate_title(conversation_id)
+        memories: list[Memory] = []
+        if extract:
+            memories = self._run_extraction(conversation_id)
+        self.finalize_metadata_on_close(conversation_id)
+        return memories
 
-        if not extract:
-            return []
-
-        return self._run_extraction(conversation_id)
+    def finalize_metadata_on_close(self, conversation_id: str) -> dict:
+        """Finalize non-manual metadata from the full conversation at close time."""
+        return self.apply_generated_metadata_lifecycle(
+            conversation_id,
+            source="close_time_metadata_finalization",
+            profile_name="close_time",
+        )
 
     def maybe_generate_title(
         self, conversation_id: str, *, source: str = "llm_auto"

@@ -46,7 +46,7 @@ The Delivery Story expansion has been accepted. No implementation plan has been 
 | [CV9.DS7.TS4](cv9-ds7-ts4-metadata-update-execution-profiles/index.md) | Technical Story | Metadata Update Execution Profiles | Done |
 | [CV9.DS7.US8](cv9-ds7-us8-historical-metadata-backfill-preview/index.md) | User Story | Historical Metadata Backfill Preview | Done |
 | [CV9.DS7.US9](cv9-ds7-us9-historical-metadata-backfill-apply/index.md) | User Story | Historical Metadata Backfill Apply | Done |
-| [CV9.DS7.US5](cv9-ds7-us5-close-time-metadata-update/index.md) | User Story | Close-time Metadata Update | Planned |
+| [CV9.DS7.US5](cv9-ds7-us5-close-time-metadata-update/index.md) | User Story | Close-time Metadata Update | Done |
 
 ---
 
@@ -84,7 +84,7 @@ Goal: Mirror updates metadata intelligently as new conversations unfold.
 Sequence:
 
 1. [CV9.DS7.TS4](cv9-ds7-ts4-metadata-update-execution-profiles/index.md) — make execution profiles explicit.
-2. [CV9.DS7.US5](cv9-ds7-us5-close-time-metadata-update/index.md) — finalize metadata at conversation close.
+2. [CV9.DS7.US5](cv9-ds7-us5-close-time-metadata-update/index.md) — finalize non-manual metadata at conversation close.
 3. Later: first-exchange initialization and active refresh cadence.
 
 ### Historical Metadata Backfill

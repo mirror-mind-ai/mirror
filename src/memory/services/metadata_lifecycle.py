@@ -51,9 +51,10 @@ METADATA_EXECUTION_PROFILES: dict[str, MetadataExecutionProfile] = {
     ),
     "close_time": MetadataExecutionProfile(
         name="close_time",
-        title_apply_decisions=frozenset({"create", "repair"}),
-        summary_apply_decisions=frozenset({"create"}),
-        tags_apply_decisions=frozenset({"create"}),
+        title_apply_decisions=frozenset({"create", "repair", "keep", "refine_candidate"}),
+        summary_apply_decisions=frozenset({"create", "keep", "refine_candidate"}),
+        tags_apply_decisions=frozenset({"create", "keep"}),
+        force_regenerate=True,
     ),
     "active_runtime": MetadataExecutionProfile(
         name="active_runtime",
