@@ -12,6 +12,7 @@ Future release notes should use the structure defined in [Release Notes](../proc
 
 ## Releases
 
+- [v0.19.1 — Web Console Maintenance CI Formatting](v0.19.1.md) — validation patch that preserves v0.19.0 behavior and restores green CI formatting.
 - [v0.19.0 — Web Console Conversation and Journey Maintenance](v0.19.0.md) — minor release that adds web journey creation, explicit conversation deletion, bulk selected deletion, and broader selected-journey conversation visibility.
 - [v0.18.2 — Conversation Journey Assignment](v0.18.2.md) — patch release that adds unassigned conversation visibility, manual/bulk journey assignment, and conservative journey backfill.
 - [v0.18.1 — Empty Conversation Cleanup](v0.18.1.md) — patch release that expands cleanup to empty conversation records while preserving dry-run, approval, and backup boundaries.

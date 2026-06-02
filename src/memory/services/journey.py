@@ -38,7 +38,9 @@ def _slugify(value: str) -> str:
 def _validate_slug(slug: str) -> str:
     clean = slug.strip().lower()
     if not re.fullmatch(r"[a-z0-9][a-z0-9-]{1,78}[a-z0-9]", clean):
-        raise ValueError("slug must be kebab-case, 3-80 chars, using lowercase letters, numbers, and hyphens")
+        raise ValueError(
+            "slug must be kebab-case, 3-80 chars, using lowercase letters, numbers, and hyphens"
+        )
     return clean
 
 
@@ -368,7 +370,9 @@ class JourneyService:
 
     def _infer_name(self, description: str) -> str:
         first_line = description.strip().splitlines()[0].strip()
-        first_line = re.sub(r"^(jornada|journey|projeto|project)\s*[:\-]\s*", "", first_line, flags=re.I)
+        first_line = re.sub(
+            r"^(jornada|journey|projeto|project)\s*[:\-]\s*", "", first_line, flags=re.I
+        )
         words = first_line.split()
         return " ".join(words[:8]).strip(" .,:;!?()[]{}") or "New Journey"
 

@@ -1054,7 +1054,9 @@ def test_conversation_journey_bulk_api_accepts_completed_journey(tmp_path: Path)
         assert mem.store.get_conversation(conversation.id).journey == "completed"
 
 
-def test_conversation_delete_api_deletes_selected_conversations_and_dependents(tmp_path: Path) -> None:
+def test_conversation_delete_api_deletes_selected_conversations_and_dependents(
+    tmp_path: Path,
+) -> None:
     mirror_home = tmp_path / "mirror-home"
     with MemoryClient(db_path=mirror_home / "memory.db") as mem:
         first = mem.conversations.start_conversation(interface="pi", title="First")
@@ -1099,14 +1101,20 @@ def test_conversation_delete_api_deletes_selected_conversations_and_dependents(t
         assert mem.store.get_conversation(second.id) is None
         assert mem.store.get_conversation(kept.id) is not None
         assert mem.store.get_messages(first.id) == []
-        assert mem.store.conn.execute(
-            "SELECT COUNT(*) AS count FROM conversation_embeddings WHERE conversation_id = ?",
-            (first.id,),
-        ).fetchone()["count"] == 0
+        assert (
+            mem.store.conn.execute(
+                "SELECT COUNT(*) AS count FROM conversation_embeddings WHERE conversation_id = ?",
+                (first.id,),
+            ).fetchone()["count"]
+            == 0
+        )
         assert mem.store.get_runtime_session("session-1").conversation_id is None
-        assert mem.store.conn.execute(
-            "SELECT conversation_id FROM memories WHERE id = ?", (memory.id,)
-        ).fetchone()["conversation_id"] is None
+        assert (
+            mem.store.conn.execute(
+                "SELECT conversation_id FROM memories WHERE id = ?", (memory.id,)
+            ).fetchone()["conversation_id"]
+            is None
+        )
 
 
 def test_conversation_delete_api_rejects_empty_selection(tmp_path: Path) -> None:

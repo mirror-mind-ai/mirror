@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-02 — v0.19.1 CI formatting patch prepared
+
+Prepared `v0.19.1 — Web Console Maintenance CI Formatting` after the v0.19.0 main push failed GitHub Actions at the repository-wide `ruff format --check src/ tests/` gate. The patch preserves the v0.19.0 web-console behavior and applies formatting to the touched Python files so the release line can return to green CI.
+
+Validation: full pytest passed, ruff lint passed, ruff format check passed, web app syntax check passed, release notes rendered, and release doctor passed with only expected pre-tag/pre-stable warnings before promotion.
+
 ### 2026-06-02 — Web console journey creation first slice added
 
 Added the first web-console path for creating journeys without reducing journey identity to a brittle CRUD form. Workspace now has a New journey action that collects natural-language description, generates a reviewable markdown draft, lets the user edit slug, metadata, and identity content, then persists a new active journey. The server exposes bounded draft and create endpoints with slug, duplicate, minimum-content, status, and description-section validation.

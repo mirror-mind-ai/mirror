@@ -480,7 +480,9 @@ class ConversationService:
                 resolved_ids.append(conversation.id)
 
         for conversation_id in resolved_ids:
-            self.store.conn.execute("DELETE FROM messages WHERE conversation_id = ?", (conversation_id,))
+            self.store.conn.execute(
+                "DELETE FROM messages WHERE conversation_id = ?", (conversation_id,)
+            )
             self.store.conn.execute(
                 "DELETE FROM conversation_embeddings WHERE conversation_id = ?", (conversation_id,)
             )
