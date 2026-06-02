@@ -19,7 +19,7 @@ without using the CLI.
 - Require approval before mutating apply.
 - Create a backup before apply.
 - Return changed/skipped/no-change evidence per conversation.
-- Expose approval-gated orphan conversation cleanup for short no-change orphan records discovered during production backfill.
+- Expose approval-gated cleanup for short no-change orphan records and empty conversation shells discovered during production backfill.
 
 ## Acceptance Behavior
 
@@ -38,9 +38,9 @@ Given a long backfill has already run
 When I choose the not-backfilled or no-change latest-run scope
 Then Mirror limits the batch to the selected recovery/review set
 
-Given orphan no-change conversations are visible
-When I run orphan cleanup as dry-run
-Then Mirror previews deletion candidates without mutation
+Given orphan or empty no-change conversations are visible
+When I run cleanup as dry-run
+Then Mirror previews deletion candidates with cleanup reasons and without mutation
 And when I approve apply
 Then Mirror creates a backup and deletes only the selected orphan candidates
 ```

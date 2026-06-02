@@ -616,7 +616,7 @@ function renderMetadataBackfillResult(data) {
 function renderOrphanCleanupResult(data) {
   const candidates = data.candidates || [];
   const candidateList = candidates.slice(0, 50).map((item) => `
-    <li><code>${escapeHtml(item.conversationId || '')}</code> · ${escapeHtml(item.title || 'Untitled')} · ${escapeHtml(String(item.messageCount ?? 0))} msg</li>
+    <li><code>${escapeHtml(item.conversationId || '')}</code> · ${escapeHtml(item.title || 'Untitled')} · ${escapeHtml(String(item.messageCount ?? 0))} msg · ${escapeHtml(item.cleanupReason || 'candidate')} · ${escapeHtml(item.journey || 'no journey')}</li>
   `).join('');
   return `
     <section class="operation-result-card">

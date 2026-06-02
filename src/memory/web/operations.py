@@ -246,7 +246,7 @@ OPERATION_CATALOG: tuple[WebOperation, ...] = (
     WebOperation(
         id="orphan-conversation-cleanup",
         title="Orphan conversation cleanup",
-        description="Preview or delete conversations with no journey, optionally limited to no-change items from the latest metadata backfill run.",
+        description="Preview or delete low-substance conversations: orphan records, empty records, or no-change items from the latest metadata backfill run.",
         category="conversations",
         risk_level="writes_database",
         dry_run="required",
@@ -256,29 +256,29 @@ OPERATION_CATALOG: tuple[WebOperation, ...] = (
                 name="dryRun",
                 label="Dry run",
                 kind="boolean",
-                description="Preview orphan conversations without deleting anything.",
+                description="Preview cleanup candidates without deleting anything.",
                 default=True,
             ),
             OperationParameter(
                 name="source",
                 label="Cleanup source",
                 kind="choice",
-                description="Limit cleanup to latest backfill no-change orphan conversations or all orphan conversations.",
+                description="Limit cleanup to latest backfill no-change orphan/empty conversations, all orphan conversations, or all empty conversations.",
                 default="no_change_latest_backfill",
-                choices=("no_change_latest_backfill", "all_orphans"),
+                choices=("no_change_latest_backfill", "all_orphans", "empty_conversations"),
             ),
             OperationParameter(
                 name="allConversations",
                 label="All conversations",
                 kind="boolean",
-                description="Ignore the limit and include all matching orphan conversations.",
+                description="Ignore the limit and include all matching cleanup candidates.",
                 default=False,
             ),
             OperationParameter(
                 name="limit",
                 label="Maximum conversations",
                 kind="integer",
-                description="Maximum orphan conversations to preview or delete when All conversations is off.",
+                description="Maximum cleanup candidates to preview or delete when All conversations is off.",
                 default=50,
                 minimum=1,
                 maximum=1000,
@@ -287,7 +287,7 @@ OPERATION_CATALOG: tuple[WebOperation, ...] = (
                 name="maximumMessages",
                 label="Maximum messages",
                 kind="integer",
-                description="Only include orphan conversations with this many messages or fewer.",
+                description="Only include cleanup candidates with this many messages or fewer. Empty conversation cleanup always requires zero messages.",
                 default=3,
                 minimum=0,
                 maximum=20,
@@ -857,8 +857,22 @@ def _orphan_cleanup_candidates(
     allowed_ids = (
         _latest_backfill_no_change_ids(mem) if source == "no_change_latest_backfill" else None
     )
+    if source == "empty_conversations":
+        having = "message_count = 0"
+    elif source == "no_change_latest_backfill":
+        having = (
+            "message_count <= ? AND ((c.journey IS NULL OR c.journey = '') OR message_count = 0)"
+        )
+    else:
+        having = "message_count <= ? AND (c.journey IS NULL OR c.journey = '')"
+
+    params: list[object] = [] if source == "empty_conversations" else [maximum_messages]
+    # For latest-run review, apply the UI limit after filtering by latest no-change
+    # ids so old no-change candidates are not accidentally hidden by SQL ordering.
+    query_limit = 100000 if allowed_ids is not None else limit
+    params.append(query_limit)
     rows = mem.store.conn.execute(
-        """
+        f"""
         SELECT c.id, c.title, c.started_at, c.interface, c.persona, c.journey,
                COUNT(m.id) AS message_count,
                (SELECT COUNT(*) FROM memories WHERE conversation_id = c.id) AS memory_count,
@@ -866,18 +880,20 @@ def _orphan_cleanup_candidates(
                (SELECT COUNT(*) FROM runtime_sessions WHERE conversation_id = c.id) AS runtime_session_count
           FROM conversations c
           LEFT JOIN messages m ON m.conversation_id = c.id
-         WHERE (c.journey IS NULL OR c.journey = '')
          GROUP BY c.id
-        HAVING message_count <= ?
+        HAVING {having}
          ORDER BY c.started_at DESC
          LIMIT ?
         """,
-        (maximum_messages, limit),
+        params,
     ).fetchall()
     candidates = []
     for row in rows:
         if allowed_ids is not None and row["id"] not in allowed_ids:
             continue
+        is_orphan = row["journey"] in {None, ""}
+        is_empty = row["message_count"] == 0
+        reason = "orphan_and_empty" if is_orphan and is_empty else "empty" if is_empty else "orphan"
         candidates.append(
             {
                 "conversationId": row["id"],
@@ -885,13 +901,15 @@ def _orphan_cleanup_candidates(
                 "startedAt": row["started_at"],
                 "interface": row["interface"],
                 "persona": row["persona"],
+                "journey": row["journey"],
                 "messageCount": row["message_count"],
                 "memoryCount": row["memory_count"],
                 "llmCallCount": row["llm_call_count"],
                 "runtimeSessionCount": row["runtime_session_count"],
+                "cleanupReason": reason,
             }
         )
-    return candidates
+    return candidates[:limit]
 
 
 def _run_batch_conversation_retitle(

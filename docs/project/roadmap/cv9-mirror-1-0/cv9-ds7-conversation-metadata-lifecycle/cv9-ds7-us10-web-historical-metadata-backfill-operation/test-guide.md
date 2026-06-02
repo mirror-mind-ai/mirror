@@ -19,6 +19,6 @@ uv run pytest tests -q
 8. Confirm backup path, changed/skipped/no-change evidence, and improved metadata.
 9. Run an all-conversation force apply only after reviewing cost/risk.
 10. Confirm long-run progress updates per conversation and final result details.
-11. If no-change orphan conversations remain, run Orphan conversation cleanup as dry-run.
-12. Confirm candidate list and approve apply only after backup/approval boundaries are visible.
+11. If no-change orphan or empty conversations remain, run Orphan conversation cleanup as dry-run.
+12. Confirm candidate list, cleanup reasons, and approve apply only after backup/approval boundaries are visible.
 13. Confirm deletion progress and final deleted count.

@@ -340,6 +340,74 @@ def test_run_operation_previews_orphan_conversation_cleanup(tmp_path: Path) -> N
     assert result["result"]["candidates"][0]["conversationId"] == orphan.id
 
 
+def test_run_operation_previews_empty_conversation_cleanup(tmp_path: Path) -> None:
+    mirror_home = tmp_path / "mirror-home"
+    with MemoryClient(db_path=mirror_home / "memory.db") as mem:
+        empty = mem.conversations.start_conversation(
+            interface="pi", journey="mirror-mind", title=None
+        )
+        non_empty = mem.conversations.start_conversation(
+            interface="pi", journey="mirror-mind", title="non-empty"
+        )
+        mem.conversations.add_message(non_empty.id, "user", "keep me")
+
+    result = run_operation(
+        "orphan-conversation-cleanup",
+        mirror_home=mirror_home,
+        parameters={
+            "dryRun": True,
+            "source": "empty_conversations",
+            "allConversations": True,
+            "maximumMessages": 3,
+        },
+    )
+
+    assert result["outcome"] == "dry_run"
+    assert result["result"]["candidateCount"] == 1
+    candidate = result["result"]["candidates"][0]
+    assert candidate["conversationId"] == empty.id
+    assert candidate["journey"] == "mirror-mind"
+    assert candidate["cleanupReason"] == "empty"
+
+
+def test_run_operation_no_change_cleanup_includes_empty_journey_conversations(
+    tmp_path: Path,
+) -> None:
+    mirror_home = tmp_path / "mirror-home"
+    with MemoryClient(db_path=mirror_home / "memory.db") as mem:
+        empty = mem.conversations.start_conversation(
+            interface="pi", journey="mirror-mind", title=None
+        )
+        run = mem.operation_runs.start(
+            "historical-metadata-backfill", {"dryRun": False}, status="running"
+        )
+        mem.operation_runs.complete(
+            run.id,
+            outcome="applied",
+            summary=[],
+            result={
+                "apply": {
+                    "results": [{"conversation_id": empty.id, "mutated": False, "changed": {}}]
+                }
+            },
+        )
+
+    result = run_operation(
+        "orphan-conversation-cleanup",
+        mirror_home=mirror_home,
+        parameters={
+            "dryRun": True,
+            "source": "no_change_latest_backfill",
+            "allConversations": True,
+            "maximumMessages": 3,
+        },
+    )
+
+    assert result["outcome"] == "dry_run"
+    assert result["result"]["candidateCount"] == 1
+    assert result["result"]["candidates"][0]["conversationId"] == empty.id
+
+
 def test_run_operation_deletes_orphan_conversations_with_backup(tmp_path: Path) -> None:
     mirror_home = tmp_path / "mirror-home"
     with MemoryClient(db_path=mirror_home / "memory.db") as mem:

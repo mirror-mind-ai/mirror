@@ -12,6 +12,7 @@ Future release notes should use the structure defined in [Release Notes](../proc
 
 ## Releases
 
+- [v0.18.1 — Empty Conversation Cleanup](v0.18.1.md) — patch release that expands cleanup to empty conversation records while preserving dry-run, approval, and backup boundaries.
 - [v0.18.0 — Conversation Metadata Lifecycle](v0.18.0.md) — minor release that finalizes conversation metadata at close time and adds web metadata maintenance, historical backfill, resume scopes, and orphan cleanup.
 - [v0.17.3 — Builder Guard Non-Mirror Projects](v0.17.3.md) — patch release that restricts the Builder production-clone guard to Mirror Mind checkouts so ordinary journey projects load normally.
 - [v0.17.2 — Builder Guard CI Formatting](v0.17.2.md) — validation patch that keeps the Builder project-path guard behavior and restores green CI formatting.
