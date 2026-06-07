@@ -70,7 +70,7 @@ possible. It does not silently convert exploration into delivery.
 | [CV16.DS5](cv16-ds5-story-thickening-surfaces/index.md) | Story thickening surfaces | Mirror renders Exploratory Story Opened, Story Thickened, and Narrative Field Snapshot at the right moments | ✅ Done |
 | [CV16.DS6](cv16-ds6-experiment-proposals-and-attractors/index.md) | Experiment proposals and attractors | A thickened exploration can name attractors and propose concrete experiments without pretending to be Builder delivery | ✅ Done |
 | [CV16.DS7](cv16-ds7-promotion-handoff-to-builder/index.md) | Promotion handoff to Builder | A confirmed experiment or exploration can produce a minimal Builder handoff without pretending to be a complete delivery plan | ✅ Done |
-| CV16.DS8 | Persistence and visibility | Exploratory state survives beyond one fragile session and becomes visible in appropriate Mirror surfaces after the conversational behavior is proven | 🟡 Planned |
+| [CV16.DS8](cv16-ds8-persistence-and-visibility/index.md) | Persistence and visibility | Exploratory state survives beyond one fragile session and handoff evidence is reviewed, obfuscated, and visible before release | 🟡 Planned |
 | [CV16.DS9](cv16-ds9-required-surface-rendering-contract/index.md) | Required surface rendering contract | Explorer surfaces are marked and enforced as user-facing output so Story Thickened and handoff cards cannot disappear into assistant interpretation | 🟡 Planned |
 | CV16.DS10 | Release packaging and feedback runway | Package the first Explorer Mode release after DS7, DS8, and surface-rendering hardening, then leave multiple stories and advanced Explorer capabilities for feedback-driven future work | 🟡 Planned |
 
