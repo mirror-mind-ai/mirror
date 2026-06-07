@@ -53,12 +53,21 @@ The command:
 - loads Mirror identity and journey context;
 - prints Explorer Mode guidance, including the experimental availability note.
 
-## 1.1 Transition Surface
+## 1.1 Required Surface Rendering
 
 The `explore load` output includes the conversational transition surface. Render
 that surface visibly to the user before continuing with exploratory work. Do not
 recreate it from scratch unless the command failed to render it; copy the
 rendered surface from the command output.
+
+After any `uv run python -m memory explore story ...` command that returns a
+Mirror surface, paste the returned surface verbatim as the first visible block in
+the response. Do not summarize, interpret, or paraphrase before rendering it.
+
+For `story open`, `story thicken`, `story snapshot`, `story attractors`, `story
+experiment`, and `story handoff`, the returned `△ ...` surface is the primary
+response. Render it before commentary. Commentary may follow only after the
+surface is visible.
 
 ## 2. Work In Explorer Mode
 

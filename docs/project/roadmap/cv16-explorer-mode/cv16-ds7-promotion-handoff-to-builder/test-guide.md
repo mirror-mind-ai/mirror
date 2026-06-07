@@ -71,7 +71,7 @@ isso já está pronto para virar Builder?
 
 Expected:
 
-- assistant renders `△ BUILDER HANDOFF PROPOSED`;
+- assistant renders `△ BUILDER HANDOFF PROPOSED` as the first visible block before interpretation;
 - handoff includes story, attractor, and experiment proposal when available;
 - assistant asks for explicit confirmation;
 - footer/status remains on `△ Explorer Mode`.

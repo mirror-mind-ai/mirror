@@ -11,6 +11,19 @@ resolved.
 
 ## Completed Decisions
 
+### Explorer surfaces must render before interpretation
+
+**Date:** 2026-06-06
+**Reference:** [CV16 Explorer Mode](roadmap/cv16-explorer-mode/index.md)
+
+Explorer Mode surfaces are user-facing product output, not internal command evidence. When a contained Explorer command returns a `△ ...` surface such as `STORY THICKENED`, the assistant must render that surface visibly before commentary or synthesis.
+
+Consequences:
+
+- The Pi skill now makes verbatim first-block rendering mandatory for Explorer story surfaces.
+- A future CV16 hardening story will mark required surfaces in CLI output and, if possible, make runtimes preserve or enforce them.
+- External validation should check not only that state changes, but that the visible surface appears before assistant interpretation.
+
 ### Explorer handoff produces transfer documents for Builder
 
 **Date:** 2026-06-06
