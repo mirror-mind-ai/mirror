@@ -131,6 +131,8 @@ def render_active_rite(
     defaults = ACTIVE_RITE_DEFAULTS[voice]
     if question and not utterance:
         utterance = question
+    if voice == "wisdom" and not utterance:
+        raise ValueError("Wisdom Voice requires a situated --says response")
     voice_says = (utterance or defaults["utterance"]).strip()
     focus = (listening_for or defaults["listening_for"]).strip()
     if not voice_says:

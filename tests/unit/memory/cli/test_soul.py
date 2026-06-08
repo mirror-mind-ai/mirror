@@ -133,13 +133,33 @@ def test_soul_rite_renders_shadow_voice(capsys):
 
 
 def test_soul_rite_renders_wisdom_voice_without_listening_for(capsys):
-    soul.cmd_rite("wisdom")
+    soul.cmd_rite(
+        "wisdom",
+        utterance=(
+            "Listen.\n\n"
+            "The mountain does not descend to bargain with the valley.\n\n"
+            "What is rooted does not ask the wind for permission."
+        ),
+        listening_for="the lesson already present",
+    )
 
     out = capsys.readouterr().out
     assert "♢  WISDOM VOICE LISTENING" in out
-    assert "this already knows the difference" in out
+    assert "The mountain does not descend" in out
+    assert "What is rooted does not ask" in out
     assert "listening for" not in out
     assert "the lesson already present" not in out
+
+
+def test_soul_rite_rejects_wisdom_without_utterance(capsys):
+    try:
+        soul.cmd_rite("wisdom")
+    except SystemExit as exc:
+        assert exc.code == 1
+    else:  # pragma: no cover
+        raise AssertionError("expected SystemExit")
+
+    assert "Wisdom Voice requires" in capsys.readouterr().err
 
 
 def test_soul_rite_renders_beauty_voice(capsys):

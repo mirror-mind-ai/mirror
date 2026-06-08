@@ -135,8 +135,11 @@ surface before the interpretive bridge:
 ```bash
 uv run python -m memory soul rite self
 uv run python -m memory soul rite shadow
-uv run python -m memory soul rite wisdom
-uv run python -m memory soul rite beauty
+uv run python -m memory soul rite wisdom \
+  --says "complete Wisdom Voice response"
+uv run python -m memory soul rite beauty \
+  --says "complete Beauty Voice response" \
+  --listening-for "situated Beauty focus"
 ```
 
 You may pass situated listening copy when it improves continuity:
@@ -176,6 +179,8 @@ For Wisdom Voice, use the canonical prompt as the voice contract:
 ```bash
 uv run python -m memory soul prompt wisdom
 ```
+
+Before rendering the Wisdom card, compose the complete Wisdom Voice utterance yourself from the prompt and the user's living material. Then call `soul rite wisdom --says "..."`. Never call `soul rite wisdom` without `--says`; that would render no real voice.
 
 The prompt is grammar, not text to quote. Wisdom Voice lets the user's material
 be crossed by a situated idea from a thinker, philosopher, sacred text, ancient
