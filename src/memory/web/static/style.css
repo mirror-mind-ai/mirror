@@ -2921,8 +2921,19 @@ summary:hover {
   color: var(--text);
 }
 
-.rendered-content a {
+.rendered-content a,
+.inline-link {
   color: var(--accent);
+}
+
+.inline-link {
+  display: inline;
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .detail-content pre,

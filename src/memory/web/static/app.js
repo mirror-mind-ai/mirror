@@ -2105,7 +2105,11 @@ function looksLikeMarkdown(content) {
 function renderInlineMarkdown(text) {
   return escapeHtml(text).replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, label, href) => {
     const safeHref = String(href || '');
-    const allowed = safeHref.startsWith('mirror://') || safeHref.startsWith('#') || safeHref.startsWith('/');
+    const conversationMatch = safeHref.match(/^mirror:\/\/conversation\/([^/]+)$/);
+    if (conversationMatch) {
+      return `<button type="button" class="inline-link" data-conversation-link-id="${escapeHtml(conversationMatch[1])}">${label}</button>`;
+    }
+    const allowed = safeHref.startsWith('#') || safeHref.startsWith('/');
     if (!allowed) return label;
     return `<a href="${escapeHtml(safeHref)}">${label}</a>`;
   });
