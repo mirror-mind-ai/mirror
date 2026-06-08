@@ -34,6 +34,7 @@ folder and index. Stories that are non-trivial have a `plan.md` and a
 | [CV15](cv15-cognitive-location/index.md) | Cognitive Location | ✅ Done |
 | [CV16](cv16-explorer-mode/index.md) | Explorer Mode | ✅ Done |
 | [CV17](cv17-soul-mode/index.md) | Soul Mode | ✅ First Ritual Done |
+| [CV18](cv18-soul-mode-more-voices/index.md) | Soul Mode More Voices | 🟡 Planned |
 
 ---
 
@@ -76,6 +77,10 @@ requests. See the [CV16 index](cv16-explorer-mode/index.md).
 ## CV17 — Soul Mode
 
 First ritual done. CV17 turns the Soul Mode exploration into the first usable ritual mode for inner life. The first release includes explicit Soul Mode entry, free listening to the living field, situated Possible Listenings, minimal Self Voice and Shadow Voice listening lenses, Fruit In Maturation, Harvested Fruit, and optional single-entry journal persistence. Future work remains for Wisdom Voice, Beauty Voice, Passagem, Return To Center, and psyche-layer enrichment. See the [CV17 index](cv17-soul-mode/index.md).
+
+## CV18 — Soul Mode More Voices
+
+Planned. CV18 expands Soul Mode from the first ritual into a fuller listening constellation by making Wisdom Voice and Beauty Voice hearable inside the ritual flow, followed by pre-release refinements and packaging for `v0.25.0 — Soul Mode More Voices`. See the [CV18 index](cv18-soul-mode-more-voices/index.md).
 
 ## CV11 — Localization
 

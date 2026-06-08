@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-08 — CV18 Soul Mode More Voices planned
+
+Opened CV18 as the next Soul Mode release: `v0.25.0 — Soul Mode More Voices`. The planned delivery arc contains Wisdom Voice, Beauty Voice, pre-release refinements, and release packaging. The roadmap preserves the delivery-story principle: prompts, surfaces, and routing are part of the user-visible voice stories rather than standalone internal deliverables.
+
+Validation: documentation-only roadmap change; `git diff --check` pending.
+
 ### 2026-06-08 — v0.24.0 Soul Mode First Ritual prepared
 
 Completed CV17 Soul Mode first ritual and prepared `v0.24.0`. The release adds explicit Soul Mode activation, living-field Possible Listenings, Self and Shadow listening lenses, Fruit In Maturation, Harvested Fruit with confirmation-only journal save, dynamic Self Voice prompt composition from `self/soul`, Soul-to-Builder operational boundary, and pre-release web refinements for Journal memories, formatted journal detail, conversation turn deletion, and top-level Conversations/Journeys navigation. Marked CV17.DS6 done and added release notes.
