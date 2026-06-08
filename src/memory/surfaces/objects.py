@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from memory.models import Identity
+from memory.models import Identity, Memory
 from memory.services.identity import IdentityService
+from memory.services.memory import MemoryService
 from memory.surfaces.evidence import EvidenceSurface
 from memory.surfaces.models import ObjectDetail, SourceContext, SurfaceLink
 
@@ -11,15 +12,23 @@ from memory.surfaces.models import ObjectDetail, SourceContext, SurfaceLink
 class ObjectDetailSurface:
     """Compose shared object detail read models."""
 
-    def __init__(self, identity: IdentityService, evidence: EvidenceSurface) -> None:
+    def __init__(
+        self,
+        identity: IdentityService,
+        evidence: EvidenceSurface,
+        memories: MemoryService | None = None,
+    ) -> None:
         self.identity = identity
         self.evidence = evidence
+        self.memories = memories
 
     def detail(self, kind: str, object_id: str) -> ObjectDetail | None:
         if kind == "identity":
             return self._identity_detail(object_id)
         if kind == "persona":
             return self._persona_detail(object_id)
+        if kind == "memory":
+            return self._memory_detail(object_id)
         return None
 
     def _identity_detail(self, object_id: str) -> ObjectDetail | None:
@@ -39,6 +48,14 @@ class ObjectDetailSurface:
         if row is None:
             return None
         return self._detail_from_identity(row, kind="persona", object_id=object_id)
+
+    def _memory_detail(self, object_id: str) -> ObjectDetail | None:
+        if self.memories is None:
+            return None
+        row = self.memories.store.get_memory(object_id)
+        if row is None:
+            return None
+        return _detail_from_memory(row)
 
     def _detail_from_identity(self, row: Identity, *, kind: str, object_id: str) -> ObjectDetail:
         title = _title_for_identity(row)
@@ -66,6 +83,56 @@ class ObjectDetailSurface:
 
 def identity_object_id(layer: str, key: str) -> str:
     return f"{layer}:{key}"
+
+
+def _detail_from_memory(row: Memory) -> ObjectDetail:
+    return ObjectDetail(
+        id=row.id,
+        kind="memory",
+        title=row.title,
+        description=_preview(row.content),
+        content=row.content,
+        relationships=_relationships_for_memory(row),
+        source=SourceContext(
+            label="Source",
+            path=f"memory/{row.id}",
+            description="This comes from a retained Mirror memory.",
+            provenance_state="Stored in the memory database.",
+        ),
+        evidence=EvidenceSurface().for_object("memory", row.id),
+        metadata={
+            "public_kind": "Journal" if row.memory_type == "journal" else "Memory",
+            "icon": "📓" if row.memory_type == "journal" else "◫",
+            "memory_type": row.memory_type,
+            "layer": row.layer,
+            "journey": row.journey,
+            "persona": row.persona,
+            "created_at": row.created_at,
+        },
+    )
+
+
+def _relationships_for_memory(row: Memory) -> tuple[SurfaceLink, ...]:
+    links: list[SurfaceLink] = []
+    if row.conversation_id:
+        links.append(
+            SurfaceLink(
+                label="Origin conversation",
+                href=f"/#conversation/{row.conversation_id}",
+                kind="conversation",
+                id=row.conversation_id,
+            )
+        )
+    if row.journey:
+        links.append(
+            SurfaceLink(
+                label=f"Journey: {row.journey}",
+                href=f"/#workspace/{row.journey}",
+                kind="journey",
+                id=row.journey,
+            )
+        )
+    return tuple(links)
 
 
 def _shadow_placeholder_detail() -> ObjectDetail:

@@ -2488,7 +2488,8 @@ input {
     color-mix(in srgb, var(--panel) 86%, transparent);
 }
 
-.conversation-card-link {
+.conversation-card-link,
+.memory-result-card {
   cursor: pointer;
   transition:
     border-color 150ms ease,
@@ -2497,14 +2498,17 @@ input {
 }
 
 .conversation-card-link:hover,
-.conversation-card-link:focus-visible {
+.conversation-card-link:focus-visible,
+.memory-result-card:hover,
+.memory-result-card:focus-visible {
   border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
   box-shadow: 0 18px 42px color-mix(in srgb, var(--accent) 15%, transparent);
   transform: translateY(-1px);
   outline: none;
 }
 
-.conversation-card-link:focus-visible {
+.conversation-card-link:focus-visible,
+.memory-result-card:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--accent) 28%, transparent);
   outline-offset: 3px;
 }
@@ -2886,6 +2890,19 @@ summary:hover {
 .rendered-content ul {
   margin: 0 0 12px;
   padding-left: 22px;
+}
+
+.rendered-content blockquote {
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.rendered-content a {
+  color: var(--accent);
 }
 
 .detail-content pre,

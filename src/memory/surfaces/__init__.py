@@ -57,7 +57,11 @@ class SurfaceService:
             tasks=tasks,
             attachments=attachments,
         )
-        self.objects = ObjectDetailSurface(identity=identity, evidence=self.evidence)
+        self.objects = ObjectDetailSurface(
+            identity=identity,
+            evidence=self.evidence,
+            memories=memories,
+        )
         self.search_surface = SearchSurface(memories=memories)
 
     def atlas_home(self) -> AtlasHome:

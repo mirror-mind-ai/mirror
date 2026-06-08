@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-08 — Journal memories open as formatted web detail
+
+Updated the web memory surface so Journal appears as its own pinned memory category, journal memory cards open object detail pages, and Markdown journal content renders with headings, blockquotes, lists, code blocks, and safe internal links instead of plain escaped text. This makes Soul Mode harvested-fruit journal records readable in the web app.
+
+Validation: `uv run pytest tests/unit/memory/surfaces/test_objects.py tests/unit/memory/surfaces/test_search.py tests/unit/memory/surfaces/test_atlas.py tests/unit/memory/web/test_server.py -q` passed.
+
 ### 2026-06-07 — Pi status line journey label simplified
 
 Updated the compact Pi status line to show the journey display name directly instead of the `Active Journey <slug>` prefix. The status now reads like `◇ alisson-vale · Explorer Mode on ■ Builder Mode · ✓`, using the journey title from identity when available and falling back to the slug when not. Updated focused welcome tests and runtime status-line documentation.

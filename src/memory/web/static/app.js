@@ -1725,7 +1725,7 @@ function renderSearchResultCard(result) {
   const metadata = result.metadata || {};
   const detail = [metadata.memory_type, metadata.layer, metadata.journey, metadata.persona].filter(Boolean);
   return `
-    <article class="workspace-card">
+    <article class="workspace-card memory-result-card" role="button" tabindex="0" data-object-kind="${escapeHtml(result.kind)}" data-object-id="${escapeHtml(result.id)}">
       <div class="workspace-card-icon" aria-hidden="true">${escapeHtml(metadata.icon || '◫')}</div>
       <div>
         <div class="card-meta">${escapeHtml(detail.join(' · ') || result.kind)}</div>
@@ -1998,6 +1998,12 @@ function renderRelationship(link) {
   if (link.kind === 'identity' && link.id) {
     return `<button type="button" class="relationship-pill" data-object-kind="identity" data-object-id="${escapeHtml(link.id)}">${escapeHtml(link.label)}</button>`;
   }
+  if (link.kind === 'conversation' && link.id) {
+    return `<button type="button" class="relationship-pill" data-conversation-link-id="${escapeHtml(link.id)}">${escapeHtml(link.label)}</button>`;
+  }
+  if (link.kind === 'journey' && link.id) {
+    return `<button type="button" class="relationship-pill" data-workspace-journey="${escapeHtml(link.id)}">${escapeHtml(link.label)}</button>`;
+  }
   return `<span class="relationship-pill muted">${escapeHtml(link.label)}</span>`;
 }
 
@@ -2015,12 +2021,12 @@ function renderDetailContent(content) {
 
   const flushParagraph = () => {
     if (!paragraph.length) return;
-    blocks.push(`<p>${escapeHtml(paragraph.join(' '))}</p>`);
+    blocks.push(`<p>${renderInlineMarkdown(paragraph.join(' '))}</p>`);
     paragraph = [];
   };
   const flushList = () => {
     if (!list.length) return;
-    blocks.push(`<ul>${list.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`);
+    blocks.push(`<ul>${list.map((item) => `<li>${renderInlineMarkdown(item)}</li>`).join('')}</ul>`);
     list = [];
   };
   const flushCode = () => {
@@ -2061,6 +2067,14 @@ function renderDetailContent(content) {
       continue;
     }
 
+    const quote = line.match(/^>\s?(.*)$/);
+    if (quote) {
+      flushParagraph();
+      flushList();
+      blocks.push(`<blockquote>${renderInlineMarkdown(quote[1])}</blockquote>`);
+      continue;
+    }
+
     if (!line.trim()) {
       flushParagraph();
       flushList();
@@ -2080,7 +2094,17 @@ function renderDetailContent(content) {
 function looksLikeMarkdown(content) {
   return /(^|\n)#{1,6}\s+\S/.test(content)
     || /(^|\n)\s*[-*]\s+\S/.test(content)
+    || /(^|\n)>\s?\S/.test(content)
     || /(^|\n)```/.test(content);
+}
+
+function renderInlineMarkdown(text) {
+  return escapeHtml(text).replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, label, href) => {
+    const safeHref = String(href || '');
+    const allowed = safeHref.startsWith('mirror://') || safeHref.startsWith('#') || safeHref.startsWith('/');
+    if (!allowed) return label;
+    return `<a href="${escapeHtml(safeHref)}">${label}</a>`;
+  });
 }
 
 function objectTargetFromHref(href) {
@@ -2283,6 +2307,13 @@ content.addEventListener('click', async (event) => {
   if (objectTarget) {
     event.preventDefault();
     await loadObject(objectTarget.dataset.objectKind, objectTarget.dataset.objectId);
+    return;
+  }
+
+  const conversationLinkTarget = event.target.closest('[data-conversation-link-id]');
+  if (conversationLinkTarget) {
+    event.preventDefault();
+    await loadConversation(conversationLinkTarget.dataset.conversationLinkId);
     return;
   }
 

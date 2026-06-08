@@ -94,6 +94,45 @@ def test_object_detail_supports_shadow_placeholder_when_no_shadow_entry_exists(
     assert detail.metadata["data_readiness"] == "partial"
 
 
+def test_object_detail_supports_journal_memory_objects(
+    identity_service,
+    journey_service,
+    memory_service,
+    conversation_service,
+    task_service,
+    mock_memory_embedding,
+) -> None:
+    journal = memory_service.add_memory(
+        title="Soul Mode Harvest",
+        content="# Soul Mode Harvest\n\n## Fruto\n\n> Usefulness can remain a gift.\n",
+        memory_type="journal",
+        layer="self",
+        journey="soul-mode",
+    )
+    surfaces = SurfaceService(
+        identity=identity_service,
+        journeys=journey_service,
+        memories=memory_service,
+        conversations=conversation_service,
+        tasks=task_service,
+    )
+
+    detail = surfaces.object_detail("memory", journal.id)
+
+    assert detail is not None
+    assert detail.id == journal.id
+    assert detail.kind == "memory"
+    assert detail.title == "Soul Mode Harvest"
+    assert detail.content == journal.content
+    assert detail.source is not None
+    assert detail.source.path == f"memory/{journal.id}"
+    assert detail.metadata["public_kind"] == "Journal"
+    assert detail.metadata["icon"] == "📓"
+    assert detail.metadata["memory_type"] == "journal"
+    assert detail.metadata["layer"] == "self"
+    assert detail.metadata["journey"] == "soul-mode"
+
+
 def test_object_detail_returns_none_for_unsupported_or_missing_objects(
     identity_service,
     journey_service,
