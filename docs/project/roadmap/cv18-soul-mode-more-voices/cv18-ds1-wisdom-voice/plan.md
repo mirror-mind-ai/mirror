@@ -26,7 +26,7 @@ Soul Mode
 
 Possible Listenings should present Wisdom Voice as a situated option, not as a generic menu item. Its description should point to what the experience already knows or what discernment is trying to emerge.
 
-The voice prompt should forbid solutionism. Wisdom may name a truth, a pattern, a teaching, or a simplification, but it should not tell the user what to do.
+The voice prompt should forbid solutionism while recovering the original Wisdom Voice concept: the user's material should be crossed by a situated source of wisdom. Wisdom may use a thinker, philosopher, sacred text, ancient tradition, proverb, contemplative teaching, or other relevant text. It should cite author/tradition/work when reliable, avoid fabricated precision, and deepen the user's material beyond a one-line aphorism.
 
 ## Implementation Notes
 
@@ -47,9 +47,9 @@ The exact shape should follow the existing Self/Shadow implementation instead of
 
 The prompt and tests should keep the voice reflective. It can name what is already known; it should not prescribe action.
 
-### Wisdom becomes abstract
+### Wisdom becomes abstract or source-less
 
-The response should stay grounded in the user's current material and not drift into aphorisms.
+The response should stay grounded in the user's current material and not drift into source-less aphorisms. When a source is used, it must be cited honestly; when the exact citation is uncertain, the voice should name the reliable source level rather than inventing book, chapter, verse, page, or exact wording.
 
 ### Menu inflation
 
@@ -82,5 +82,5 @@ Expected:
 
 - Possible Listenings includes Wisdom Voice.
 - Wisdom Voice renders with a ritual card.
-- The voice names discernment without giving a task list.
+- The voice cites a relevant source when reliable and deepens the user's material without giving a task list.
 - No journal or identity mutation occurs.

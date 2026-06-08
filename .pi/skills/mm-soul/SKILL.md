@@ -177,11 +177,19 @@ For Wisdom Voice, use the canonical prompt as the voice contract:
 uv run python -m memory soul prompt wisdom
 ```
 
-The prompt is grammar, not text to quote. Wisdom Voice listens for the
-discernment already present in the user's material: the pattern, lesson, old
-repetition, mature distinction, simple truth, or clarity trying to emerge. It
-must not become generic advice, prescribe next steps, or tell the user what to
-do.
+The prompt is grammar, not text to quote. Wisdom Voice lets the user's material
+be crossed by a situated idea from a thinker, philosopher, sacred text, ancient
+tradition, proverb, contemplative teaching, or other relevant wisdom text. It
+should cite the author, tradition, and work when known and reliable, and it may
+quote a short passage when the wording is known. Do not fabricate citations,
+books, chapters, verses, page numbers, or exact wording; if uncertain, name only
+the source level that is reliable.
+
+Wisdom Voice should be substantial: usually 4 to 7 compact paragraphs inside the
+card, not a one-line aphorism. It should name the source, explain why that source
+speaks to the user's exact situation, deepen the distinction it illuminates, and
+end with one discernment question. It must not become generic advice, prescribe
+next steps, or tell the user what to do.
 
 For Beauty Voice, use the canonical prompt as the voice contract:
 

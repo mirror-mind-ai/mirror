@@ -14,7 +14,7 @@
 
 The first Soul Mode release names a larger constellation than it can yet render. Wisdom is one of the voices the user can intuitively expect to hear, but it is not yet active.
 
-Wisdom Voice is not a generic advisor. It listens for the discernment already present in the experience: the pattern, the lesson, the old repetition, the simple truth, or the maturity trying to emerge.
+Wisdom Voice is not a generic advisor. It lets the user's material be crossed by a situated idea from a thinker, philosopher, sacred text, ancient tradition, proverb, contemplative teaching, or other relevant wisdom text. It should cite the author, tradition, and work when reliable, and it should deepen the user's situation rather than return a short aphorism.
 
 ---
 
@@ -24,6 +24,7 @@ Wisdom Voice is not a generic advisor. It listens for the discernment already pr
 - Include Wisdom Voice in Possible Listenings when living matter is sufficient.
 - Render Wisdom Voice with the same ritual grammar as Self and Shadow.
 - Add the prompt and command/service behavior needed for the user to hear the voice.
+- Guide Wisdom Voice to cite a source when reliable and to avoid fabricated bibliographic precision.
 - Preserve the rule that voice content appears inside the card under `the voice says`.
 - Keep Mirror's bridge outside the voice card.
 - Ensure Wisdom Voice does not mutate identity, journal, journey state, or project files.
@@ -48,7 +49,7 @@ Given Soul Mode has enough living matter, Possible Listenings includes Wisdom Vo
 
 Given the user asks to hear Wisdom Voice, Mirror renders a Wisdom Voice listening card with what the voice says and what it is listening for.
 
-Given Wisdom Voice responds, it reveals discernment, pattern, lesson, maturity, or simple truth already present in the material rather than prescribing next steps.
+Given Wisdom Voice responds, it names a relevant thinker, text, tradition, proverb, or teaching when reliable, explains why it crosses the user's material, and deepens discernment rather than prescribing next steps.
 
 Given Wisdom Voice runs, no journal entry, identity entry, or project-state mutation is created automatically.
 

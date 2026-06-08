@@ -16,7 +16,7 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 Implemented CV18.DS1 and CV18.DS2 for `v0.25.0 — Soul Mode More Voices`. Soul Mode now supports Wisdom Voice and Beauty Voice as active listening lenses, with ritual cards, canonical voice prompts, CLI prompt rendering, and Pi skill guidance. Possible Listenings retains the expanded voice constellation and the new voices remain non-mutating listening lenses rather than agents or advice engines.
 
-Validation: `uv run pytest tests/unit/memory/cli/test_soul.py tests/unit/memory/services/test_soul_prompt.py tests/unit/memory/surfaces/test_soul.py -q`, `uv run ruff check src tests`, `uv run ruff format --check src tests`, and `git diff --check` passed. Awaiting external Pi validation in natural conversation.
+Validation: `uv run pytest tests/unit/memory/cli/test_soul.py tests/unit/memory/services/test_soul_prompt.py tests/unit/memory/surfaces/test_soul.py -q`, `uv run ruff check src tests`, `uv run ruff format --check src tests`, and `git diff --check` passed. Awaiting external Pi validation in natural conversation. First Pi validation showed Wisdom Voice was too short and source-less, so the Wisdom contract was tightened to require a situated wisdom source, honest citation when reliable, and a deeper 4–7 paragraph response.
 
 ### 2026-06-08 — CV18 Soul Mode More Voices planned
 

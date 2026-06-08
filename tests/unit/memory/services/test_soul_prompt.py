@@ -43,8 +43,10 @@ def test_wisdom_voice_prompt_is_canonical():
     prompt = compose_soul_wisdom_voice_prompt()
 
     assert "# Soul Mode — Wisdom Voice Prompt" in prompt
-    assert "discernment already present" in prompt
-    assert "must not" in prompt
+    assert "thinker, philosopher, sacred text" in prompt
+    assert "cite the author, tradition, and work" in prompt
+    assert "4 to 7 compact paragraphs" in prompt
+    assert "fabricate authors, books, citations" in prompt
     assert "recommend a next step" in prompt
 
 
