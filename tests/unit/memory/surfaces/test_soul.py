@@ -272,8 +272,8 @@ def test_integration_review_renders_all_sections():
         leave_open="How to sustain measure under uncertain gaze.",
     )
 
-    assert "☾  INTEGRATION REVIEW" in rendered
-    assert "journal" in rendered
+    assert "☾  INTEGRATION PROPOSAL" in rendered
+    assert "origin" in rendered
     assert "The fruit was saved as journal." in rendered
     assert "self" in rendered
     assert "Commitment may belong to truth" in rendered
@@ -285,18 +285,18 @@ def test_integration_review_renders_all_sections():
     assert "committed professional persona" in rendered
     assert "leave open" in rendered
     assert "How to sustain measure" in rendered
-    assert "review only — no identity changed" in rendered
+    assert "proposal only — nothing changed" in rendered
 
 
 def test_integration_review_omits_empty_sections():
     rendered = render_integration_review(self_material="A possible Self principle.", shadow=" ")
 
-    assert "☾  INTEGRATION REVIEW" in rendered
+    assert "☾  INTEGRATION PROPOSAL" in rendered
     assert "self" in rendered
     assert "A possible Self principle." in rendered
     assert "shadow" not in rendered
-    assert "journal" not in rendered
-    assert "review only — no identity changed" in rendered
+    assert "origin" not in rendered
+    assert "proposal only — nothing changed" in rendered
 
 
 def test_integration_review_requires_at_least_one_section():

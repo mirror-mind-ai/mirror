@@ -305,7 +305,7 @@ After the Closing Rite, ask exactly:
 Há material vivo que pode querer permanecer. Quer olhar comigo antes de encerrarmos?
 ```
 
-If the user says yes, render Integration Review. If the user declines and inclines
+If the user says yes, render Integration Proposal. If the user declines and inclines
 toward ending for today, exit Soul Mode by deactivating the active operating mode:
 
 ```bash
@@ -319,41 +319,47 @@ Closing is not integration. It must not save a journal entry by itself, propose
 an identity diff, mutate Self/Shadow/Ego/persona/journey identity, or change
 project state.
 
-## 7. Integration Review
+## 7. Integration Proposal
 
 When the user accepts the post-closing invitation, or asks what may want to
-remain, render Integration Review:
+remain, render Integration Proposal. This card is the proposed integration text
+itself, not a preliminary map:
 
 ```bash
 uv run python -m memory soul review \
-  --journal "material that belongs only as record" \
-  --self "possible principle, value, or inner law" \
-  --shadow "possible rejected protection or hidden contract" \
-  --ego "possible behavior pattern" \
-  --persona "possible public role or presentation pattern" \
+  --origin "where this material came from" \
+  --self "first-person principle/practice" \
+  --shadow "protective part to recognize" \
+  --ego "operational behavior pattern" \
+  --persona "public presentation pattern" \
   --open "question or material to leave open"
 ```
 
 Only include sections with real material. At least one section is required.
-Paste the Integration Review surface visibly before commentary.
+Paste the Integration Proposal surface visibly before commentary.
 
-Integration Review is review only. It must not save a journal entry, propose an
-identity diff, mutate Self/Shadow/Ego/persona identity, or change project state.
-It must not include journey identity or journey pattern; that category is not
-mature enough for this release.
+The `origin` and `leave open` sections are context only. Registrable identity
+sections are Self, Shadow, Ego, and Persona. The card must not include journey
+identity or journey pattern; that category is not mature enough for this release.
 
-After Integration Review, offer clear paths without pushing mutation:
+After Integration Proposal, ask exactly:
 
 ```text
-Podemos deixar assim, ou posso transformar um desses pontos em uma proposta concreta — por exemplo Self, Shadow, Ego ou Persona.
+Quer registrar assim na sua identidade? Ou, se quiser, também podemos ajustar o que quiser.
 ```
 
-If the user asks to see how something could be integrated, render a Psyche
-Enrichment Proposal. Do not mutate identity from the review surface itself.
+If the user asks to adjust, render an updated Integration Proposal before any
+apply. If the user confirms registration, apply only the registrable identity
+sections present in the card, using their exact text. Do not mutate from `origin`
+or `leave open`.
 
-## 8. Psyche Enrichment Proposal
+## 8. Focused Psyche Enrichment Proposal
 
-When the user asks how review material could remain in Self, Shadow, Ego, or a
+The multi-layer Integration Proposal is the normal proposal surface. Use the
+focused `soul propose` surface only when the user asks to isolate or rewrite one
+specific layer before applying.
+
+When the user asks how one specific point could remain in Self, Shadow, Ego, or a
 persona, first load the current target identity when possible:
 
 ```bash

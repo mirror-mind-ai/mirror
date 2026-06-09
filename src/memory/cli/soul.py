@@ -374,8 +374,11 @@ def main(argv: list[str] | None = None) -> None:
         help="What may want integration later",
     )
 
-    p_review = sub.add_parser("review", help="Render a Soul Mode Integration Review")
-    p_review.add_argument("--journal", default=None, help="Journal-only material")
+    p_review = sub.add_parser("review", help="Render a Soul Mode Integration Proposal")
+    p_review.add_argument("--origin", dest="journal", default=None, help="Origin material")
+    p_review.add_argument(
+        "--journal", dest="journal", default=None, help="Legacy alias for --origin"
+    )
     p_review.add_argument("--self", dest="self_material", default=None)
     p_review.add_argument("--shadow", default=None)
     p_review.add_argument("--ego", default=None, help="Ego behavior material")

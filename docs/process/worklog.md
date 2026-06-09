@@ -14,13 +14,13 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ### 2026-06-08 — CV19.DS3 and DS4 psyche proposal/apply implemented
 
-Implemented Soul Mode psyche enrichment proposal and safe confirmed identity mutation. `memory soul propose self|shadow|ego|persona` renders proposal-only cards with target, origin, current material, proposed content, rationale, and `proposal only — no identity changed`. `memory soul apply self|shadow|ego|persona` writes identity only with `--confirm APPLY`, uses conservative default keys (`self/soul`, `shadow/profile`, `ego/behavior`), requires explicit persona keys, and renders a visible identity-updated card. Journey identity remains excluded. The Pi contract now asks the assistant to load current identity when possible, confirm exact target/content before apply, avoid overwriting longer identity documents with fragments, and use layer-specific language for Self, Shadow, Ego, and Persona proposals.
+Implemented Soul Mode psyche enrichment proposal and safe confirmed identity mutation. The former Integration Review was simplified into a multi-layer `☾ INTEGRATION PROPOSAL`: it now uses `origin` instead of `journal`, renders `proposal only — nothing changed`, and asks directly `Quer registrar assim na sua identidade? Ou, se quiser, também podemos ajustar o que quiser.` `memory soul propose self|shadow|ego|persona` remains available as a focused single-layer proposal/refinement surface. `memory soul apply self|shadow|ego|persona` writes identity only with `--confirm APPLY`, uses conservative default keys (`self/soul`, `shadow/profile`, `ego/behavior`), requires explicit persona keys, and renders a visible identity-updated card. Journey identity remains excluded. The Pi contract now asks the assistant to load current identity when possible, confirm exact target/content before apply, avoid overwriting longer identity documents with fragments, and use layer-specific language for Self, Shadow, Ego, and Persona proposals.
 
 Validation: `uv run pytest tests/unit/memory/cli/test_soul.py tests/unit/memory/surfaces/test_soul.py -q`, focused `uv run ruff check` / `ruff format --check` on touched files, and targeted `git diff --check` passed. Full-repo validation remains deferred because unrelated parallel Builder files are present in the working tree.
 
-### 2026-06-08 — CV19.DS2 Integration Review implemented
+### 2026-06-08 — CV19.DS2 Integration Proposal implemented
 
-Implemented the Soul Mode Integration Review. `memory soul review` now renders a `☾ INTEGRATION REVIEW` card with optional review-only sections for journal, self, shadow, ego behavior, persona, and leave open. The renderer rejects empty reviews, omits empty categories, preserves the `review only — no identity changed` footer, and intentionally excludes journey identity because that category is not mature enough for this release. The Pi Soul Mode skill now uses the post-closing invitation `Há material vivo que pode querer permanecer. Quer olhar comigo antes de encerrarmos?` and routes affirmative responses to the review surface without proposing diffs or mutating identity.
+Implemented the Soul Mode Integration Proposal. `memory soul review` now renders a `☾ INTEGRATION PROPOSAL` card with optional proposal-only sections for journal, self, shadow, ego behavior, persona, and leave open. The renderer rejects empty reviews, omits empty categories, preserves the `proposal only — nothing changed` footer, and intentionally excludes journey identity because that category is not mature enough for this release. The Pi Soul Mode skill now uses the post-closing invitation `Há material vivo que pode querer permanecer. Quer olhar comigo antes de encerrarmos?` and routes affirmative responses to the review surface without proposing diffs or mutating identity.
 
 Validation: `uv run pytest tests/unit/memory/cli/test_soul.py tests/unit/memory/surfaces/test_soul.py -q`, focused `uv run ruff check` / `ruff format --check` on touched Soul files, targeted `git diff --check`, and CLI smoke for `memory soul review` passed. External Pi validation passed before DS3/DS4 implementation. Full-repo ruff was not used because unrelated untracked Builder files are present in the working tree.
 
@@ -356,13 +356,13 @@ and Navigator accepted the configuration reference behavior.
 Added an explicit single-conversation title suggestion flow. Transcript pages can
 request a title suggestion through `/api/conversations/title-suggestion`, backed
 by `ConversationService.suggest_title()` and the existing OpenRouter LLM router
-using `EXTRACTION_MODEL`. Suggestions are preview-only: they do not save on page
+using `EXTRACTION_MODEL`. Suggestions are pproposal-only: they do not save on page
 load or after generation, and persistence still requires the manual `Save title`
 action from S3.
 
 Validation: focused Workspace/web tests passed, ruff checks passed,
 `node --check` passed, `git diff --check` passed, the web server was restarted,
-and Navigator browser validation accepted explicit generation, preview-only
+and Navigator browser validation accepted explicit generation, pproposal-only
 behavior, use-suggestion fill, and manual save persistence.
 
 ### 2026-05-25 — CV13.E4.S3 manual conversation title edit validated

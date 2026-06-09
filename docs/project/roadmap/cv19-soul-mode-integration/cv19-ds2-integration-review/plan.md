@@ -1,10 +1,10 @@
 [< Story](index.md)
 
-# Plan — CV19.DS2 Integration Review
+# Plan — CV19.DS2 Integration Proposal
 
 ## Boundary
 
-This story adds a review-only surface. It can classify material as possible journal, Self, Shadow, Ego behavior, persona, or leave-open material. It must not propose a final identity diff or mutate identity.
+This story adds a proposal-only surface. It turns closing material into proposed integration text for origin, Self, Shadow, Ego behavior, persona, and leave-open sections. It must not mutate identity.
 
 ## Design
 
@@ -13,9 +13,9 @@ Add a textual Soul Mode surface:
 ```text
 Soul Mode
 ╭────────────────────────────────────────╮
-│   ☾  INTEGRATION REVIEW                │
+│   ☾  INTEGRATION PROPOSAL              │
 │                                        │
-│   journal                              │
+│   origin                               │
 │   [...]                                │
 │                                        │
 │   self                                 │
@@ -33,7 +33,7 @@ Soul Mode
 │   leave open                           │
 │   [...]                                │
 │                                        │
-│   review only — no identity changed    │
+│   proposal only — nothing changed      │
 ╰────────────────────────────────────────╯
 ```
 
@@ -41,7 +41,7 @@ Add CLI support:
 
 ```bash
 uv run python -m memory soul review \
-  --journal "..." \
+  --origin "..." \
   --self "..." \
   --shadow "..." \
   --ego "..." \
@@ -59,16 +59,16 @@ After Closing Rite, Mirror should ask:
 Há material vivo que pode querer permanecer. Quer olhar comigo antes de encerrarmos?
 ```
 
-If the user says yes, Mirror renders Integration Review. If the user declines, Mirror may ask whether there is another theme from the day or whether to end.
+If the user says yes, Mirror renders Integration Proposal. After rendering, Mirror asks: `Quer registrar assim na sua identidade? Ou, se quiser, também podemos ajustar o que quiser.` If the user declines the post-closing invitation, Mirror may ask whether there is another theme from the day or whether to end.
 
 ## Category Rules
 
-- `journal`: material that belongs as record of the session.
-- `self`: principle, value, inner law, or constitution.
-- `shadow`: rejected protection, fear, hidden contract, or defensive need.
+- `origin`: where this material came from; context only, not applied to identity.
+- `self`: first-person principle/practice.
+- `shadow`: protective part recognized without shame.
 - `ego behavior`: operational pattern or repeated reaction.
 - `persona`: public role, mask, presentation style, or social identity pattern.
-- `leave open`: questions or material not ready for integration.
+- `leave open`: questions or material not applied to identity.
 
 Journey identity is intentionally excluded.
 
@@ -99,7 +99,7 @@ sim, quero olhar o que pode permanecer
 
 Expected:
 
-- Integration Review renders visibly.
+- Integration Proposal renders visibly.
 - Empty categories are omitted.
-- The card says `review only — no identity changed`.
-- No journal or identity mutation occurs.
+- The card says `proposal only — nothing changed`.
+- No identity mutation occurs until the user confirms registration.

@@ -163,9 +163,9 @@ def render_integration_review(
 ) -> str:
     """Render a review-only Soul Mode integration surface."""
     return _render_section_card(
-        title="☾  INTEGRATION REVIEW",
+        title="☾  INTEGRATION PROPOSAL",
         sections=[
-            ("journal", journal),
+            ("origin", journal),
             ("self", self_material),
             ("shadow", shadow),
             ("ego behavior", ego),
@@ -173,7 +173,7 @@ def render_integration_review(
             ("leave open", leave_open),
         ],
         empty_error="at least one integration review section is required",
-        footer="review only — no identity changed",
+        footer="proposal only — nothing changed",
     )
 
 

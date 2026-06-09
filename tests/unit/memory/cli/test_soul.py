@@ -233,7 +233,7 @@ def test_soul_close_rejects_empty_closing_rite(capsys):
     assert "at least one closing section" in capsys.readouterr().err
 
 
-def test_soul_review_renders_integration_review(capsys):
+def test_soul_review_renders_integration_proposal(capsys):
     soul.cmd_review(
         journal="The fruit was saved as journal.",
         self_material="Commitment may belong to truth rather than image management.",
@@ -244,8 +244,8 @@ def test_soul_review_renders_integration_review(capsys):
     )
 
     out = capsys.readouterr().out
-    assert "☾  INTEGRATION REVIEW" in out
-    assert "journal" in out
+    assert "☾  INTEGRATION PROPOSAL" in out
+    assert "origin" in out
     assert "The fruit was saved as journal." in out
     assert "self" in out
     assert "Commitment may belong to truth" in out
@@ -257,7 +257,7 @@ def test_soul_review_renders_integration_review(capsys):
     assert "committed professional persona" in out
     assert "leave open" in out
     assert "How to sustain measure" in out
-    assert "review only — no identity changed" in out
+    assert "proposal only — nothing changed" in out
     assert "journey" not in out.lower()
 
 
