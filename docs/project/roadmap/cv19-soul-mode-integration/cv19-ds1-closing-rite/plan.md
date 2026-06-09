@@ -46,7 +46,7 @@ The Pi skill should call this renderer when the user asks to close the Soul Mode
 After rendering the card, Mirror asks:
 
 ```text
-Há material vivo que pode querer permanecer. Quer olhar comigo antes de encerrarmos?
+Há material vivo que pode querer permanecer como parte da sua identidade no Mirror. Quer integrar isso agora?
 ```
 
 If the user accepts, Mirror proceeds to Integration Review. If the user chooses to end, Mirror deactivates the active mode and returns to Mirror Mode with a short farewell. If the user brings another theme, Mirror stays in Soul Mode and treats it as a new living-field opening.

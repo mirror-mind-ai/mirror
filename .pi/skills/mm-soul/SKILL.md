@@ -323,7 +323,7 @@ Paste the Closing Rite surface visibly before commentary.
 After the Closing Rite, ask exactly:
 
 ```text
-Há material vivo que pode querer permanecer. Quer olhar comigo antes de encerrarmos?
+Há material vivo que pode querer permanecer como parte da sua identidade no Mirror. Quer integrar isso agora?
 ```
 
 If the user says yes, render Integration Proposal. If the user declines and inclines

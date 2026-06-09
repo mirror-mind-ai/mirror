@@ -58,7 +58,7 @@ Expected:
 - Mirror renders the Closing Rite surface.
 - The card gathers the material already present in the conversation.
 - If the fruit matured across turns, the harvested fruit preserves the lineage of previous fruits rather than only the last-turn insight.
-- Mirror asks exactly: `Há material vivo que pode querer permanecer. Quer olhar comigo antes de encerrarmos?`
+- Mirror asks exactly: `Há material vivo que pode querer permanecer como parte da sua identidade no Mirror. Quer integrar isso agora?`
 - Mirror does not apply integration.
 - Mirror can say that integration review is the next step/story if the user asks what should remain.
 

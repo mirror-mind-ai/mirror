@@ -55,7 +55,7 @@ Given the Closing Rite renders, it includes what was harvested when available an
 
 Given the Closing Rite renders, no identity entry, journal entry, journey state, or project file is mutated automatically.
 
-Given a journal harvest is saved, Mirror immediately renders Closing Rite and asks: `Há material vivo que pode querer permanecer. Quer olhar comigo antes de encerrarmos?`
+Given a journal harvest is saved, Mirror immediately renders Closing Rite and asks: `Há material vivo que pode querer permanecer como parte da sua identidade no Mirror. Quer integrar isso agora?`
 
 Given the user indicates they are done after closing, Mirror exits Soul Mode and returns to Mirror Mode with a short farewell.
 

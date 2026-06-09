@@ -56,7 +56,7 @@ Sections are optional, but at least one section is required. Empty sections do n
 After Closing Rite, Mirror should ask:
 
 ```text
-Há material vivo que pode querer permanecer. Quer olhar comigo antes de encerrarmos?
+Há material vivo que pode querer permanecer como parte da sua identidade no Mirror. Quer integrar isso agora?
 ```
 
 If the user says yes, Mirror renders Integration Proposal. After rendering, Mirror asks: `Quer registrar assim na sua identidade? Ou também podemos ajustar o que quiser.` If the user declines the post-closing invitation, Mirror may ask whether there is another theme from the day or whether to end.
