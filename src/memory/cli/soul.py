@@ -8,6 +8,7 @@ import sys
 from memory.client import MemoryClient
 from memory.services.operating_mode import activate_mode, resolve_operating_session_id
 from memory.services.soul import (
+    apply_identity_integration,
     clear_fruit_in_maturation,
     clear_harvested_fruit,
     get_fruit_in_maturation,
@@ -175,6 +176,9 @@ def cmd_apply(
     key: str | None = None,
     proposed: str | None = None,
     confirm: str | None = None,
+    origin: str | None = None,
+    conversation_id: str | None = None,
+    journal_id: str | None = None,
 ) -> None:
     mem = MemoryClient()
     try:
@@ -184,7 +188,15 @@ def cmd_apply(
         content = (proposed or "").strip()
         if not content:
             raise ValueError("identity content must not be empty")
-        mem.set_identity(layer, resolved_key, content)
+        apply_identity_integration(
+            mem.store,
+            layer=layer,
+            key=resolved_key,
+            content=content,
+            origin=origin,
+            conversation_id=conversation_id,
+            journal_id=journal_id,
+        )
         print(render_identity_change_applied(layer, key=resolved_key, content=content))
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
@@ -401,8 +413,11 @@ def main(argv: list[str] | None = None) -> None:
     p_apply = sub.add_parser("apply", help="Apply a confirmed psyche enrichment proposal")
     p_apply.add_argument("layer", choices=["self", "shadow", "ego", "persona"])
     p_apply.add_argument("--key", default=None, help="Identity key; required for persona")
-    p_apply.add_argument("--proposed", default=None, help="Exact content to write")
+    p_apply.add_argument("--proposed", default=None, help="Exact content to integrate")
     p_apply.add_argument("--confirm", default=None, help="Must be APPLY")
+    p_apply.add_argument("--origin", default=None, help="Human-readable source material")
+    p_apply.add_argument("--conversation-id", default=None)
+    p_apply.add_argument("--journal-id", default=None)
 
     p_fruit = sub.add_parser("fruit", help="Manage provisional Soul Mode fruit")
     fruit_sub = p_fruit.add_subparsers(dest="fruit_action", required=True)
@@ -482,6 +497,9 @@ def main(argv: list[str] | None = None) -> None:
             key=args.key,
             proposed=args.proposed,
             confirm=args.confirm,
+            origin=args.origin,
+            conversation_id=args.conversation_id,
+            journal_id=args.journal_id,
         )
     elif args.command == "fruit":
         cmd_fruit(

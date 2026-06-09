@@ -12,7 +12,8 @@ Command:
 
 ```bash
 uv run python -m memory soul apply self \
-  --proposed "exact content to write" \
+  --proposed "exact integration text" \
+  --origin "Soul Mode harvest / integration proposal context" \
   --confirm APPLY
 ```
 
@@ -23,11 +24,22 @@ Defaults:
 - `ego` → `behavior`
 - `persona` → requires `--key`
 
-The command uses `MemoryClient.set_identity()` and renders an identity-updated surface. Because this writes the exact target content, the assistant must confirm that the proposed text is the intended full target content or explicit additive section before applying. Do not overwrite a longer identity document with a short fragment unless that is explicitly the approved replacement.
+The command creates an `identity_integrations` record, preserves the existing identity document, appends the exact confirmed text under the target layer's integration section, and renders an identity-updated surface.
+
+Layer sections:
+
+- `self` → `## Novos Princípios Incorporados`
+- `shadow` → `## Novas Necessidades Ocultas Reconhecidas`
+- `ego` → `## Novos Padrões Operacionais Identificados`
+- `persona` → `## Novos Padrões de Participação Revelados`
+
+The prompt-facing `identity.content` remains a synthesized/current document, while `identity_integrations` preserves each atomic confirmed integration for provenance, future web display, and possible re-synthesis. Do not overwrite a longer identity document with a short fragment by default.
 
 ## Validation
 
 - Missing `--confirm APPLY` exits without mutation.
-- Confirmed apply writes identity.
+- Confirmed apply creates an individual integration record.
+- Confirmed apply preserves previous identity content.
+- Confirmed apply appends under the correct layer-specific section.
 - Apply uses the exact approved content, not a paraphrase.
 - Unsupported/missing keys fail safely.

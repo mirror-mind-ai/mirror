@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-08 — Soul identity integrations made additive and atomic
+
+Reworked confirmed Soul identity apply so integration no longer overwrites prompt-facing identity content. Added `identity_integrations` as an atomic record table, with each confirmed Soul integration preserving layer/key/content/origin/provenance metadata. `memory soul apply` now records the individual integration and appends the exact confirmed text under layer-specific sections: Self `Novos Princípios Incorporados`, Shadow `Novas Necessidades Ocultas Reconhecidas`, Ego `Novos Padrões Operacionais Identificados`, and Persona `Novos Padrões de Participação Revelados`. Existing identity content is preserved by default.
+
+Validation: `uv run pytest tests/unit/memory/cli/test_soul.py tests/unit/memory/services/test_soul.py -q`, focused `uv run ruff check`, focused `uv run ruff format --check`, and targeted `git diff --check` passed.
+
 ### 2026-06-08 — Soul Self integration language made affirmative
 
 Tightened Soul integration proposal guidance for Self material. Self proposals must be affirmative first-person principles adopted as practice, not possibility language. The contract now explicitly avoids `posso`, `pode`, `talvez`, or `precisa` as the center of the Self statement, preferring language such as `Cuido de vínculos sem transformar disponibilidade imediata em prova moral de amor; minha medida interna também pertence ao cuidado.`

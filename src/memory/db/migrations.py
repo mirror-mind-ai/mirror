@@ -395,6 +395,33 @@ def _migrate_create_exploratory_stories(conn: sqlite3.Connection) -> None:
     )
 
 
+def _migrate_create_identity_integrations(conn: sqlite3.Connection) -> None:
+    """Create atomic records for confirmed identity integrations."""
+    if _table_exists(conn, "identity_integrations"):
+        return
+    conn.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS identity_integrations (
+            id TEXT PRIMARY KEY,
+            layer TEXT NOT NULL,
+            key TEXT NOT NULL,
+            content TEXT NOT NULL,
+            source TEXT NOT NULL DEFAULT 'soul_mode',
+            origin TEXT,
+            conversation_id TEXT REFERENCES conversations(id),
+            journal_id TEXT REFERENCES memories(id),
+            created_at TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'active',
+            metadata TEXT NOT NULL DEFAULT '{}'
+        );
+        CREATE INDEX IF NOT EXISTS idx_identity_integrations_target
+            ON identity_integrations(layer, key, created_at);
+        CREATE INDEX IF NOT EXISTS idx_identity_integrations_status
+            ON identity_integrations(status);
+        """
+    )
+
+
 MigrationApply = Callable[[sqlite3.Connection], None]
 
 
@@ -412,6 +439,7 @@ MIGRATIONS: list[tuple[str, MigrationApply]] = [
     ("011_create_operation_runs", _migrate_create_operation_runs),
     ("012_create_operation_run_events", _migrate_create_operation_run_events),
     ("013_create_exploratory_stories", _migrate_create_exploratory_stories),
+    ("014_create_identity_integrations", _migrate_create_identity_integrations),
 ]
 
 

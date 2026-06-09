@@ -410,10 +410,11 @@ Targets:
 The proposal must include `proposal only — no identity changed`. Do not apply it
 until the user explicitly confirms the exact proposed content.
 
-The `--proposed` text must be the exact target content to write, not an informal
-summary. If the target identity is a longer existing document, compose a complete
-replacement or an explicit additive section inside the proposed content; do not
-apply a short fragment that would accidentally overwrite the whole identity.
+The `--proposed` text must be the exact integration sentence/paragraph to add,
+not an informal summary and not the full replacement document. `soul apply`
+records the individual integration and appends it to the target identity under
+the layer-specific integration section; it must not overwrite the existing
+identity content by default.
 
 Use layer-appropriate language:
 
@@ -438,16 +439,22 @@ If the user explicitly confirms applying a proposal, call:
 
 ```bash
 uv run python -m memory soul apply self \
-  --proposed "exact proposed identity content" \
+  --proposed "exact proposed integration text" \
+  --origin "Soul Mode harvest / integration proposal context" \
   --confirm APPLY
 ```
 
 Use the same target layer/key as the proposal. For persona, include `--key`.
 Never call `soul apply` without explicit user confirmation. Never apply a
 paraphrase that differs from the proposed content unless the user first approves
-the revised proposal. Never apply a fragment over a longer identity document
-unless the proposed content intentionally contains the full resulting document or
-an explicit additive section.
+the revised proposal. `soul apply` is additive by default: it preserves existing
+identity content, creates an individual integration record, and appends the
+confirmed text under the target layer's integration section:
+
+- Self: `## Novos Princípios Incorporados`
+- Shadow: `## Novas Necessidades Ocultas Reconhecidas`
+- Ego: `## Novos Padrões Operacionais Identificados`
+- Persona: `## Novos Padrões de Participação Revelados`
 
 After applying, ask:
 

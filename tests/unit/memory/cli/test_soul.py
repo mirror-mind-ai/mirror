@@ -322,18 +322,33 @@ def test_soul_apply_requires_confirmation(mocker, tmp_path, capsys):
     assert mem.get_identity("self", "soul") is None
 
 
-def test_soul_apply_writes_identity_after_confirmation(mocker, tmp_path, capsys):
+def test_soul_apply_appends_identity_integration_after_confirmation(mocker, tmp_path, capsys):
     mirror_home = tmp_path / ".mirror" / "alisson-vale"
     mem = MemoryClient(db_path=default_db_path_for_home(mirror_home))
+    mem.set_identity("self", "soul", "Existing Self material.")
     mocker.patch("memory.cli.soul.MemoryClient", return_value=mem)
 
-    soul.cmd_apply("self", proposed="New Self content.", confirm="APPLY")
+    soul.cmd_apply(
+        "self",
+        proposed="Cuido de vínculos sem transformar disponibilidade imediata em prova moral de amor.",
+        confirm="APPLY",
+        origin="Soul Mode harvest",
+    )
 
     out = capsys.readouterr().out
     assert "✦  SELF IDENTITY UPDATED" in out
     assert "self/soul" in out
-    assert "New Self content." in out
-    assert mem.get_identity("self", "soul") == "New Self content."
+    assert "Cuido de vínculos" in out
+    content = mem.get_identity("self", "soul")
+    assert content is not None
+    assert content.startswith("Existing Self material.")
+    assert "## Novos Princípios Incorporados" in content
+    assert "- [" in content
+    assert "Cuido de vínculos" in content
+    integrations = mem.store.list_identity_integrations(layer="self", key="soul")
+    assert len(integrations) == 1
+    assert integrations[0].content.startswith("Cuido de vínculos")
+    assert integrations[0].origin == "Soul Mode harvest"
 
 
 def test_soul_fruit_set_stores_and_renders_fruit(mocker, tmp_path, capsys):

@@ -7,7 +7,7 @@
 Without confirmation:
 
 ```bash
-uv run python -m memory soul apply self --proposed "New Self content."
+uv run python -m memory soul apply self --proposed "Cuido de vínculos sem transformar disponibilidade imediata em prova moral de amor."
 ```
 
 Expected: error, no mutation.
@@ -16,11 +16,12 @@ With confirmation:
 
 ```bash
 uv run python -m memory soul apply self \
-  --proposed "New Self content." \
+  --proposed "Cuido de vínculos sem transformar disponibilidade imediata em prova moral de amor." \
+  --origin "Soul Mode harvest" \
   --confirm APPLY
 ```
 
-Expected: identity update surface renders and `self/soul` contains the exact content.
+Expected: identity update surface renders, an `identity_integrations` record is created, and `self/soul` preserves prior content while appending the exact content under `## Novos Princípios Incorporados`.
 
 ## Pi Validation
 
@@ -28,3 +29,5 @@ After a proposal, ask to apply it. Expected:
 
 - Mirror asks for explicit confirmation before applying.
 - Only after confirmation does it call `soul apply ... --confirm APPLY`.
+- Existing identity content remains present after apply.
+- The confirmed text appears under the correct layer section.
