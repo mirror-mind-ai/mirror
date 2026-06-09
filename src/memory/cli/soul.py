@@ -28,8 +28,10 @@ from memory.surfaces.soul import (
     SoulListeningOption,
     render_active_rite,
     render_closing_rite,
+    render_enrichment_proposal,
     render_fruit_in_maturation,
     render_harvested_fruit,
+    render_identity_change_applied,
     render_integration_review,
     render_possible_listenings,
 )
@@ -141,6 +143,54 @@ def cmd_review(
         sys.exit(1)
 
 
+def cmd_propose(
+    layer: str,
+    *,
+    key: str | None = None,
+    origin: str | None = None,
+    current: str | None = None,
+    proposed: str | None = None,
+    why: str | None = None,
+) -> None:
+    try:
+        resolved_key = _resolve_identity_key(layer, key)
+        print(
+            render_enrichment_proposal(
+                layer,
+                key=resolved_key,
+                origin=origin or "",
+                current=current,
+                proposed=proposed or "",
+                why=why or "",
+            )
+        )
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+
+def cmd_apply(
+    layer: str,
+    *,
+    key: str | None = None,
+    proposed: str | None = None,
+    confirm: str | None = None,
+) -> None:
+    mem = MemoryClient()
+    try:
+        resolved_key = _resolve_identity_key(layer, key)
+        if confirm != "APPLY":
+            raise ValueError("identity update requires --confirm APPLY")
+        content = (proposed or "").strip()
+        if not content:
+            raise ValueError("identity content must not be empty")
+        mem.set_identity(layer, resolved_key, content)
+        print(render_identity_change_applied(layer, key=resolved_key, content=content))
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+
 def cmd_fruit(
     action: str,
     fruit: str | None = None,
@@ -246,6 +296,20 @@ def _conversation_id_for_session(mem: MemoryClient, session_id: str) -> str | No
     return session.conversation_id if session else None
 
 
+def _resolve_identity_key(layer: str, key: str | None) -> str:
+    if layer == "self":
+        return key or "soul"
+    if layer == "shadow":
+        return key or "profile"
+    if layer == "ego":
+        return key or "behavior"
+    if layer == "persona":
+        if not key:
+            raise ValueError("persona proposals require --key")
+        return key
+    raise ValueError(f"unsupported psyche layer: {layer}")
+
+
 def _listening_options(
     *,
     self_description: str | None,
@@ -323,6 +387,20 @@ def main(argv: list[str] | None = None) -> None:
         help="Material to leave open",
     )
 
+    p_propose = sub.add_parser("propose", help="Render a psyche enrichment proposal")
+    p_propose.add_argument("layer", choices=["self", "shadow", "ego", "persona"])
+    p_propose.add_argument("--key", default=None, help="Identity key; required for persona")
+    p_propose.add_argument("--origin", default=None)
+    p_propose.add_argument("--current", default=None)
+    p_propose.add_argument("--proposed", default=None)
+    p_propose.add_argument("--why", default=None)
+
+    p_apply = sub.add_parser("apply", help="Apply a confirmed psyche enrichment proposal")
+    p_apply.add_argument("layer", choices=["self", "shadow", "ego", "persona"])
+    p_apply.add_argument("--key", default=None, help="Identity key; required for persona")
+    p_apply.add_argument("--proposed", default=None, help="Exact content to write")
+    p_apply.add_argument("--confirm", default=None, help="Must be APPLY")
+
     p_fruit = sub.add_parser("fruit", help="Manage provisional Soul Mode fruit")
     fruit_sub = p_fruit.add_subparsers(dest="fruit_action", required=True)
     p_fruit_set = fruit_sub.add_parser("set", help="Set and render fruit in maturation")
@@ -385,6 +463,22 @@ def main(argv: list[str] | None = None) -> None:
             ego=args.ego,
             persona=args.persona,
             leave_open=args.leave_open,
+        )
+    elif args.command == "propose":
+        cmd_propose(
+            args.layer,
+            key=args.key,
+            origin=args.origin,
+            current=args.current,
+            proposed=args.proposed,
+            why=args.why,
+        )
+    elif args.command == "apply":
+        cmd_apply(
+            args.layer,
+            key=args.key,
+            proposed=args.proposed,
+            confirm=args.confirm,
         )
     elif args.command == "fruit":
         cmd_fruit(

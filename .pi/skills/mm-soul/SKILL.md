@@ -342,11 +342,49 @@ identity diff, mutate Self/Shadow/Ego/persona identity, or change project state.
 It must not include journey identity or journey pattern; that category is not
 mature enough for this release.
 
-After Integration Review, if the user asks to apply something, name that this
-belongs to a later Psyche Enrichment Proposal step. Do not mutate identity in
-DS2.
+After Integration Review, if the user asks to see how something could be
+integrated, render a Psyche Enrichment Proposal. Do not mutate identity from the
+review surface itself.
 
-## 8. Harvested Fruit And Journal Confirmation
+## 8. Psyche Enrichment Proposal
+
+When the user asks how review material could remain in Self, Shadow, Ego, or a
+persona, render a proposal-only surface:
+
+```bash
+uv run python -m memory soul propose self \
+  --origin "Soul Mode harvest / review context" \
+  --current "current self/soul material or none loaded" \
+  --proposed "proposed identity content" \
+  --why "why this may belong"
+```
+
+Targets:
+
+- `self` defaults to key `soul`.
+- `shadow` defaults to key `profile`.
+- `ego` defaults to key `behavior`.
+- `persona` requires `--key <persona-id>`.
+
+The proposal must include `proposal only — no identity changed`. Do not apply it
+until the user explicitly confirms the exact proposed content.
+
+## 9. Confirmation And Safe Identity Mutation
+
+If the user explicitly confirms applying a proposal, call:
+
+```bash
+uv run python -m memory soul apply self \
+  --proposed "exact proposed identity content" \
+  --confirm APPLY
+```
+
+Use the same target layer/key as the proposal. For persona, include `--key`.
+Never call `soul apply` without explicit user confirmation. Never apply a
+paraphrase that differs from the proposed content unless the user first approves
+the revised proposal.
+
+## 10. Harvested Fruit And Journal Confirmation
 
 When the user says they wish to harvest, close the current fruit into a Harvested
 Fruit surface:

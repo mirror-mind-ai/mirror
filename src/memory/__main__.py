@@ -42,10 +42,14 @@ Commands:
   soul                 Soul Mode context loader and surface renderer
                        Usage: python -m memory soul load [slug]
                               python -m memory soul listen [--self TEXT] [--shadow TEXT] [--wisdom TEXT] [--beauty TEXT]
-                              python -m memory soul rite self|shadow [--says TEXT] [--listening-for TEXT]
+                              python -m memory soul rite self|shadow|wisdom|beauty [--says TEXT]
+                              python -m memory soul close [--harvested TEXT] [--echoes TEXT] [--open TEXT] [--integration TEXT]
+                              python -m memory soul review [--journal TEXT] [--self TEXT] [--shadow TEXT] [--ego TEXT] [--persona TEXT] [--open TEXT]
+                              python -m memory soul propose self|shadow|ego|persona --proposed TEXT --why TEXT
+                              python -m memory soul apply self|shadow|ego|persona --proposed TEXT --confirm APPLY
                               python -m memory soul fruit set|show|clear
                               python -m memory soul harvest set|show|save|decline
-                              python -m memory soul prompt self
+                              python -m memory soul prompt self|wisdom|beauty
   memories             List memories with filters
                        Usage: python -m memory memories [--type T] [--layer L] [--journey J] [--search Q] [--mirror-home PATH]
   conversations        List recent conversations

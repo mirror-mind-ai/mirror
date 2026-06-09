@@ -272,6 +272,70 @@ def test_soul_review_rejects_empty_review(capsys):
     assert "at least one integration review section" in capsys.readouterr().err
 
 
+def test_soul_propose_renders_enrichment_proposal(capsys):
+    soul.cmd_propose(
+        "self",
+        origin="Soul Mode harvest 88ae2650",
+        current="Existing Self material.",
+        proposed="Commitment belongs to truth, not image management.",
+        why="This names a principle that may deserve to remain.",
+    )
+
+    out = capsys.readouterr().out
+    assert "✦  SELF ENRICHMENT PROPOSAL" in out
+    assert "self/soul" in out
+    assert "Soul Mode harvest" in out
+    assert "Existing Self material." in out
+    assert "Commitment belongs to truth" in out
+    assert "proposal only — no identity changed" in out
+
+
+def test_soul_propose_requires_persona_key(capsys):
+    try:
+        soul.cmd_propose(
+            "persona",
+            origin="Soul Mode harvest",
+            proposed="A professional persona pattern.",
+            why="It belongs to presentation style.",
+        )
+    except SystemExit as exc:
+        assert exc.code == 1
+    else:  # pragma: no cover
+        raise AssertionError("expected SystemExit")
+
+    assert "persona proposals require --key" in capsys.readouterr().err
+
+
+def test_soul_apply_requires_confirmation(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "alisson-vale"
+    mem = MemoryClient(db_path=default_db_path_for_home(mirror_home))
+    mocker.patch("memory.cli.soul.MemoryClient", return_value=mem)
+
+    try:
+        soul.cmd_apply("self", proposed="New Self content.")
+    except SystemExit as exc:
+        assert exc.code == 1
+    else:  # pragma: no cover
+        raise AssertionError("expected SystemExit")
+
+    assert "requires --confirm APPLY" in capsys.readouterr().err
+    assert mem.get_identity("self", "soul") is None
+
+
+def test_soul_apply_writes_identity_after_confirmation(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "alisson-vale"
+    mem = MemoryClient(db_path=default_db_path_for_home(mirror_home))
+    mocker.patch("memory.cli.soul.MemoryClient", return_value=mem)
+
+    soul.cmd_apply("self", proposed="New Self content.", confirm="APPLY")
+
+    out = capsys.readouterr().out
+    assert "✦  SELF IDENTITY UPDATED" in out
+    assert "self/soul" in out
+    assert "New Self content." in out
+    assert mem.get_identity("self", "soul") == "New Self content."
+
+
 def test_soul_fruit_set_stores_and_renders_fruit(mocker, tmp_path, capsys):
     mirror_home = tmp_path / ".mirror" / "alisson-vale"
     mem = MemoryClient(db_path=default_db_path_for_home(mirror_home))

@@ -6,8 +6,10 @@ from memory.surfaces.soul import (
     SoulListeningOption,
     render_active_rite,
     render_closing_rite,
+    render_enrichment_proposal,
     render_fruit_in_maturation,
     render_harvested_fruit,
+    render_identity_change_applied,
     render_integration_review,
     render_possible_listenings,
 )
@@ -300,3 +302,66 @@ def test_integration_review_omits_empty_sections():
 def test_integration_review_requires_at_least_one_section():
     with pytest.raises(ValueError, match="at least one integration review section"):
         render_integration_review()
+
+
+def test_enrichment_proposal_renders_self_proposal():
+    rendered = render_enrichment_proposal(
+        "self",
+        key="soul",
+        origin="Soul Mode harvest 88ae2650",
+        current="Existing Self material.",
+        proposed="Commitment belongs to truth, not image management.",
+        why="This names a principle that may deserve to remain.",
+    )
+
+    assert "✦  SELF ENRICHMENT PROPOSAL" in rendered
+    assert "target" in rendered
+    assert "self/soul" in rendered
+    assert "origin" in rendered
+    assert "Soul Mode harvest" in rendered
+    assert "current" in rendered
+    assert "Existing Self material." in rendered
+    assert "proposed" in rendered
+    assert "Commitment belongs to truth" in rendered
+    assert "why this may belong" in rendered
+    assert "This names a principle that may" in rendered
+    assert "deserve to remain." in rendered
+    assert "proposal only — no identity changed" in rendered
+
+
+def test_enrichment_proposal_renders_supported_layer_icons():
+    assert "◐  SHADOW ENRICHMENT PROPOSAL" in render_enrichment_proposal(
+        "shadow", key="profile", origin="O", current=None, proposed="P", why="W"
+    )
+    assert "◇  EGO ENRICHMENT PROPOSAL" in render_enrichment_proposal(
+        "ego", key="behavior", origin="O", current=None, proposed="P", why="W"
+    )
+    assert "◈  PERSONA ENRICHMENT PROPOSAL" in render_enrichment_proposal(
+        "persona", key="professional", origin="O", current=None, proposed="P", why="W"
+    )
+
+
+def test_enrichment_proposal_rejects_missing_content():
+    with pytest.raises(ValueError, match="proposal content must not be empty"):
+        render_enrichment_proposal(
+            "self",
+            key="soul",
+            origin="Soul Mode harvest",
+            current=None,
+            proposed=" ",
+            why="Because.",
+        )
+
+
+def test_identity_change_applied_renders_confirmed_update():
+    rendered = render_identity_change_applied(
+        "self",
+        key="soul",
+        content="Commitment belongs to truth, not image management.",
+    )
+
+    assert "✦  SELF IDENTITY UPDATED" in rendered
+    assert "target" in rendered
+    assert "self/soul" in rendered
+    assert "applied" in rendered
+    assert "Commitment belongs to truth" in rendered

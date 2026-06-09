@@ -2,7 +2,7 @@
 
 # CV19.DS2 — Integration Review
 
-**Status:** 🟢 Implemented · awaiting Pi validation
+**Status:** ✅ Done
 
 **Placement:** Second story in `v0.26.0 — Soul Mode Integration`
 

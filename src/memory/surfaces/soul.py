@@ -20,6 +20,20 @@ VOICE_LABELS = {
     "beauty": "Beauty Voice",
 }
 
+PSYCHE_LAYER_ICONS = {
+    "self": "✦",
+    "shadow": "◐",
+    "ego": "◇",
+    "persona": "◈",
+}
+
+PSYCHE_LAYER_LABELS = {
+    "self": "SELF",
+    "shadow": "SHADOW",
+    "ego": "EGO",
+    "persona": "PERSONA",
+}
+
 ACTIVE_RITE_DEFAULTS = {
     "self": {
         "title": "SELF VOICE LISTENING",
@@ -160,6 +174,67 @@ def render_integration_review(
         ],
         empty_error="at least one integration review section is required",
         footer="review only — no identity changed",
+    )
+
+
+def render_enrichment_proposal(
+    layer: str,
+    *,
+    key: str,
+    origin: str,
+    current: str | None,
+    proposed: str,
+    why: str,
+) -> str:
+    """Render a proposal-only psyche enrichment surface."""
+    if layer not in PSYCHE_LAYER_ICONS:
+        raise ValueError(f"unsupported psyche layer: {layer}")
+    if not key.strip():
+        raise ValueError("proposal key must not be empty")
+    if not origin.strip():
+        raise ValueError("proposal origin must not be empty")
+    if not proposed.strip():
+        raise ValueError("proposal content must not be empty")
+    if not why.strip():
+        raise ValueError("proposal rationale must not be empty")
+
+    icon = PSYCHE_LAYER_ICONS[layer]
+    label = PSYCHE_LAYER_LABELS[layer]
+    current_text = (
+        current.strip() if isinstance(current, str) and current.strip() else "none loaded"
+    )
+    return _render_section_card(
+        title=f"{icon}  {label} ENRICHMENT PROPOSAL",
+        sections=[
+            ("target", f"{layer}/{key.strip()}"),
+            ("origin", origin),
+            ("current", current_text),
+            ("proposed", proposed),
+            ("why this may belong", why),
+        ],
+        empty_error="enrichment proposal requires content",
+        footer="proposal only — no identity changed",
+    )
+
+
+def render_identity_change_applied(layer: str, *, key: str, content: str) -> str:
+    """Render a confirmed identity mutation surface."""
+    if layer not in PSYCHE_LAYER_ICONS:
+        raise ValueError(f"unsupported psyche layer: {layer}")
+    if not key.strip():
+        raise ValueError("identity key must not be empty")
+    if not content.strip():
+        raise ValueError("identity content must not be empty")
+
+    icon = PSYCHE_LAYER_ICONS[layer]
+    label = PSYCHE_LAYER_LABELS[layer]
+    return _render_section_card(
+        title=f"{icon}  {label} IDENTITY UPDATED",
+        sections=[
+            ("target", f"{layer}/{key.strip()}"),
+            ("applied", content),
+        ],
+        empty_error="identity update requires content",
     )
 
 

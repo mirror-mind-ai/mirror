@@ -12,11 +12,17 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-08 — CV19.DS3 and DS4 psyche proposal/apply implemented
+
+Implemented Soul Mode psyche enrichment proposal and safe confirmed identity mutation. `memory soul propose self|shadow|ego|persona` renders proposal-only cards with target, origin, current material, proposed content, rationale, and `proposal only — no identity changed`. `memory soul apply self|shadow|ego|persona` writes identity only with `--confirm APPLY`, uses conservative default keys (`self/soul`, `shadow/profile`, `ego/behavior`), requires explicit persona keys, and renders a visible identity-updated card. Journey identity remains excluded.
+
+Validation: `uv run pytest tests/unit/memory/cli/test_soul.py tests/unit/memory/surfaces/test_soul.py -q`, focused `uv run ruff check` / `ruff format --check` on touched files, and targeted `git diff --check` passed. Full-repo validation remains deferred because unrelated parallel Builder files are present in the working tree.
+
 ### 2026-06-08 — CV19.DS2 Integration Review implemented
 
 Implemented the Soul Mode Integration Review. `memory soul review` now renders a `☾ INTEGRATION REVIEW` card with optional review-only sections for journal, self, shadow, ego behavior, persona, and leave open. The renderer rejects empty reviews, omits empty categories, preserves the `review only — no identity changed` footer, and intentionally excludes journey identity because that category is not mature enough for this release. The Pi Soul Mode skill now uses the post-closing invitation `Há material vivo que pode querer permanecer. Quer olhar comigo antes de encerrarmos?` and routes affirmative responses to the review surface without proposing diffs or mutating identity.
 
-Validation: `uv run pytest tests/unit/memory/cli/test_soul.py tests/unit/memory/surfaces/test_soul.py -q`, focused `uv run ruff check` / `ruff format --check` on touched Soul files, targeted `git diff --check`, and CLI smoke for `memory soul review` passed. Full-repo ruff was not used because unrelated untracked Builder files are present in the working tree.
+Validation: `uv run pytest tests/unit/memory/cli/test_soul.py tests/unit/memory/surfaces/test_soul.py -q`, focused `uv run ruff check` / `ruff format --check` on touched Soul files, targeted `git diff --check`, and CLI smoke for `memory soul review` passed. External Pi validation passed before DS3/DS4 implementation. Full-repo ruff was not used because unrelated untracked Builder files are present in the working tree.
 
 ### 2026-06-08 — CV19.DS1 Closing Rite implemented
 
