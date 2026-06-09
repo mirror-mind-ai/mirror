@@ -48,7 +48,7 @@ jobs:
         run: uv sync
 
       - name: "Test: memory module imports"
-        run: uv run python -c "import memory; print(f'OK: {memory.__file__}')"
+        run: uv run python -c "import memory; print('OK:', memory.__file__)"
 
       - name: "Test: memory CLI responds"
         run: uv run python -m memory --help
