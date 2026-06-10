@@ -167,7 +167,7 @@ def test_build_inspect_method_reports_journey_without_adopted_method(mocker, tmp
     assert "adopted method\nnone" in out
     assert "available methods\nariad" in out
     assert "has not adopted a Builder method yet" in out
-    assert "build adopt builder-mode-evolution --method ariad" in out
+    assert "build adopt --journey builder-mode-evolution --method ariad" in out
 
 
 def test_build_inspect_method_rejects_unknown_method(capsys):
@@ -192,6 +192,109 @@ def test_build_inspect_method_rejects_unknown_journey(mocker, tmp_path, capsys):
     assert exc.value.code == 1
     err = capsys.readouterr().err
     assert "journey 'missing' not found" in err
+
+
+def test_build_adopt_method_records_ariad_for_explicit_journey(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "builder-mode-evolution", JOURNEY_CONTENT)
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_adopt_method("ariad", journey="builder-mode-evolution")
+
+    out = capsys.readouterr().out
+    assert "Builder Method Adopted" in out
+    assert "journey\nbuilder-mode-evolution" in out
+    assert "adopted method\nariad" in out
+    assert "Ariad is now adopted for this journey" in out
+    assert "story lifecycle execution" in out
+
+    build.cmd_inspect_method(None, journey="builder-mode-evolution")
+    inspected = capsys.readouterr().out
+    assert "adopted method\nariad" in inspected
+    assert "Ariad is adopted for this journey" in inspected
+
+
+def test_build_adopt_method_uses_active_builder_journey(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "builder-mode-evolution", JOURNEY_CONTENT)
+    mem.store.upsert_runtime_session(
+        "session-1",
+        interface="pi",
+        active=True,
+        metadata=(
+            '{"operating_mode": {'
+            '"active_mode": "Builder Mode", '
+            '"active_journey": "builder-mode-evolution"}}'
+        ),
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_adopt_method("ariad", session_id="session-1")
+
+    out = capsys.readouterr().out
+    assert "journey\nbuilder-mode-evolution" in out
+    assert "adopted method\nariad" in out
+
+
+def test_build_adopt_method_is_idempotent(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "builder-mode-evolution", JOURNEY_CONTENT)
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_adopt_method("ariad", journey="builder-mode-evolution")
+    build.cmd_adopt_method("ariad", journey="builder-mode-evolution")
+
+    out = capsys.readouterr().out
+    assert "Ariad was already adopted for this journey" in out
+
+
+def test_build_adopt_method_rejects_unknown_method(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "builder-mode-evolution", JOURNEY_CONTENT)
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    with pytest.raises(SystemExit) as exc:
+        build.cmd_adopt_method("unknown", journey="builder-mode-evolution")
+
+    assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert "Builder method 'unknown' not found" in err
+
+
+def test_build_adopt_method_rejects_unknown_journey(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    with pytest.raises(SystemExit) as exc:
+        build.cmd_adopt_method("ariad", journey="missing")
+
+    assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert "journey 'missing' not found" in err
+
+
+def test_build_adopt_method_requires_journey_context(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    with pytest.raises(SystemExit) as exc:
+        build.cmd_adopt_method("ariad")
+
+    assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert "Builder method adoption requires a journey" in err
 
 
 def test_build_load_allows_production_clone_when_override_passed(mocker, tmp_path, capsys):

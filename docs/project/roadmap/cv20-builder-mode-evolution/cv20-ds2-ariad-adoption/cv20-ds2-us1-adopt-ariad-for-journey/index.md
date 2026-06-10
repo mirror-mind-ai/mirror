@@ -2,7 +2,7 @@
 
 # CV20.DS2.US1 — Adopt Ariad For A Journey
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 **Type:** User Story
 
 ---

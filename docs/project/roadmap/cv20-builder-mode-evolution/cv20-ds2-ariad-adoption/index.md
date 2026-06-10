@@ -19,7 +19,7 @@ Adoption checks existing documentation, prepares required roadmap structure, gen
 | Code | Story | Type | Outcome | Status |
 |------|-------|------|---------|--------|
 | [CV20.DS2.TS1](cv20-ds2-ts1-runtime-method-state-sync/index.md) | Runtime Method State Sync | Technical Story | Runtime can record and read the Builder method adopted by a journey | ✅ Done |
-| [CV20.DS2.US1](cv20-ds2-us1-adopt-ariad-for-journey/index.md) | Adopt Ariad For A Journey | User Story | Navigator can ask Mirror to adopt Ariad and see an adoption report | 🟡 Planned |
+| [CV20.DS2.US1](cv20-ds2-us1-adopt-ariad-for-journey/index.md) | Adopt Ariad For A Journey | User Story | Navigator can ask Mirror to adopt Ariad and see an adoption report | ✅ Done |
 | CV20.DS2.US2 | Adoption Template Generation | User Story | Navigator can see adoption prepare required docs/templates and report what was created, preserved, or left pending | 🟡 Planned |
 
 ---

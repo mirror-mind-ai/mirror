@@ -149,7 +149,29 @@ uv run python -m memory build inspect-method ariad
 This is read-only inspection, not Builder activation, adoption, resume, or
 lifecycle execution.
 
-## 5. Work In Builder Mode
+## 5. Adopt Builder Method
+
+When the user asks in natural language to adopt Ariad for the active journey,
+configure this journey to use Ariad, or make Ariad the Builder method for this
+journey, run:
+
+```bash
+uv run python -m memory build adopt --method ariad
+```
+
+If the user names a specific journey, pass it explicitly:
+
+```bash
+uv run python -m memory build adopt --journey <slug> --method ariad
+```
+
+Render the adoption report visibly. This is an explicit mutation of Builder
+method state, but it must not generate roadmap templates, create a delivery
+cursor, execute lifecycle work, change story status, commit, push, or release.
+If no Builder journey is active and no journey is named, ask the user to activate
+or name a journey.
+
+## 6. Work In Builder Mode
 
 Once the user explicitly authorizes work:
 
@@ -157,7 +179,7 @@ Once the user explicitly authorizes work:
 - Keep project docs updated as the code evolves
 - Commit at the end of each session with a descriptive English commit message
 
-## 6. Project Docs Maintenance
+## 7. Project Docs Maintenance
 
 Follow the project's existing documentation structure. Do not create a generic docs scaffold unless the user explicitly asks for one.
 
@@ -171,7 +193,7 @@ Follow the project's existing documentation structure. Do not create a generic d
 - `docs/process/worklog.md`: a meaningful milestone is completed
 - `docs/product/principles.md`: product, code, testing, or process principles change
 
-## 7. Configure `project_path`
+## 8. Configure `project_path`
 
 If the journey does not yet have an associated project:
 
@@ -179,7 +201,7 @@ If the journey does not yet have an associated project:
 uv run python -m memory journey set-path <slug> /path/to/project
 ```
 
-## 8. Finalize Session
+## 9. Finalize Session
 
 When the user says "End the session":
 

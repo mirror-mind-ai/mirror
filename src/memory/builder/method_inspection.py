@@ -70,6 +70,34 @@ def render_no_active_journey() -> str:
     )
 
 
+def render_journey_method_state(journey: str, adopted_method: str | None) -> str:
+    """Render method inspection for a journey."""
+    if adopted_method:
+        return (
+            "\n".join(
+                [
+                    "■ Builder Method",
+                    "",
+                    "journey",
+                    journey,
+                    "",
+                    "adopted method",
+                    adopted_method,
+                    "",
+                    "available methods",
+                    ", ".join(AVAILABLE_METHODS),
+                    "",
+                    "status",
+                    "Ariad is adopted for this journey."
+                    if adopted_method == "ariad"
+                    else f"{adopted_method} is adopted for this journey.",
+                ]
+            )
+            + "\n"
+        )
+    return render_journey_without_adopted_method(journey)
+
+
 def render_journey_without_adopted_method(journey: str) -> str:
     """Render method inspection for a journey that has not adopted a method."""
     return (
@@ -99,7 +127,45 @@ def render_journey_without_adopted_method(journey: str) -> str:
                 "pending confirmations",
                 "",
                 "next action",
-                f"uv run python -m memory build adopt {journey} --method ariad",
+                f"uv run python -m memory build adopt --journey {journey} --method ariad",
+            ]
+        )
+        + "\n"
+    )
+
+
+def render_method_adoption_report(
+    journey: str,
+    method: str,
+    *,
+    already_adopted: bool = False,
+) -> str:
+    """Render the Builder method adoption report."""
+    status = (
+        "Ariad was already adopted for this journey."
+        if already_adopted and method == "ariad"
+        else "Ariad is now adopted for this journey."
+        if method == "ariad"
+        else f"{method} is now adopted for this journey."
+    )
+    return (
+        "\n".join(
+            [
+                "■ Builder Method Adopted",
+                "",
+                "journey",
+                journey,
+                "",
+                "adopted method",
+                method,
+                "",
+                "status",
+                status,
+                "",
+                "not performed yet",
+                "roadmap template generation",
+                "runtime delivery cursor sync",
+                "story lifecycle execution",
             ]
         )
         + "\n"

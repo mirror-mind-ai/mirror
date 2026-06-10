@@ -7,10 +7,12 @@ import sys
 from pathlib import Path
 
 from memory.builder.ariad_method import get_ariad_method
+from memory.builder.method_adoption import get_adopted_method, set_adopted_method
 from memory.builder.method_inspection import (
     AVAILABLE_METHODS,
     render_available_method,
-    render_journey_without_adopted_method,
+    render_journey_method_state,
+    render_method_adoption_report,
     render_no_active_journey,
 )
 from memory.cli.conversation_logger import switch_conversation
@@ -168,11 +170,13 @@ def cmd_inspect_method(
 ) -> None:
     mem = MemoryClient() if journey or method is None else None
     if journey:
-        journey_content = mem.get_identity("journey", journey) if mem else None
+        if mem is None:
+            mem = MemoryClient()
+        journey_content = mem.get_identity("journey", journey)
         if not journey_content:
             print(f"Error: journey '{journey}' not found.", file=sys.stderr)
             sys.exit(1)
-        print(render_journey_without_adopted_method(journey))
+        print(render_journey_method_state(journey, get_adopted_method(mem.store, journey)))
         return
 
     if method is None:
@@ -180,7 +184,12 @@ def cmd_inspect_method(
             resolved_session_id = resolve_operating_session_id(mem.store, session_id)
             active_mode = get_active_mode(mem.store, session_id=resolved_session_id)
             if active_mode and active_mode.mode == "Builder Mode" and active_mode.journey:
-                print(render_journey_without_adopted_method(active_mode.journey))
+                print(
+                    render_journey_method_state(
+                        active_mode.journey,
+                        get_adopted_method(mem.store, active_mode.journey),
+                    )
+                )
                 return
         print(render_no_active_journey())
         return
@@ -194,6 +203,51 @@ def cmd_inspect_method(
         )
         sys.exit(1)
     print(render_available_method(get_ariad_method()))
+
+
+def cmd_adopt_method(
+    method: str,
+    *,
+    journey: str | None = None,
+    session_id: str | None = None,
+) -> None:
+    mem = MemoryClient()
+    if method != "ariad":
+        print(
+            f"Error: Builder method '{method}' not found. "
+            f"Available methods: {', '.join(AVAILABLE_METHODS)}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    resolved_journey = journey
+    if not resolved_journey:
+        resolved_session_id = resolve_operating_session_id(mem.store, session_id)
+        active_mode = get_active_mode(mem.store, session_id=resolved_session_id)
+        if active_mode and active_mode.mode == "Builder Mode" and active_mode.journey:
+            resolved_journey = active_mode.journey
+    if not resolved_journey:
+        print(
+            "Error: Builder method adoption requires a journey. "
+            "Activate Builder Mode for a journey or pass --journey.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    journey_content = mem.get_identity("journey", resolved_journey)
+    if not journey_content:
+        print(f"Error: journey '{resolved_journey}' not found.", file=sys.stderr)
+        sys.exit(1)
+
+    already_adopted = get_adopted_method(mem.store, resolved_journey) == method
+    adoption = set_adopted_method(mem.store, resolved_journey, method)
+    print(
+        render_method_adoption_report(
+            adoption.journey,
+            adoption.method,
+            already_adopted=already_adopted,
+        )
+    )
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -234,6 +288,26 @@ def main(argv: list[str] | None = None) -> None:
         help="Runtime session id for resolving the active Builder journey",
     )
 
+    p_adopt = sub.add_parser(
+        "adopt",
+        help="Adopt a Builder method for a journey",
+    )
+    p_adopt.add_argument(
+        "--method",
+        required=True,
+        help="Builder method id to adopt, such as 'ariad'",
+    )
+    p_adopt.add_argument(
+        "--journey",
+        default=None,
+        help="Journey slug that should adopt the Builder method",
+    )
+    p_adopt.add_argument(
+        "--session-id",
+        default=None,
+        help="Runtime session id for resolving the active Builder journey",
+    )
+
     args = parser.parse_args(argv)
 
     if args.command == "load":
@@ -244,3 +318,5 @@ def main(argv: list[str] | None = None) -> None:
         )
     elif args.command == "inspect-method":
         cmd_inspect_method(args.method, journey=args.journey, session_id=args.session_id)
+    elif args.command == "adopt":
+        cmd_adopt_method(args.method, journey=args.journey, session_id=args.session_id)

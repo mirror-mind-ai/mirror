@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-10 — CV20 Ariad adoption command added
+
+Implemented CV20.DS2.US1 Adopt Ariad For A Journey. Builder can now adopt Ariad for an explicit or active Builder journey through `memory build adopt --method ariad`, persist the adopted method using the runtime method state helper, and report adopted Ariad through method inspection. The Pi Builder skill routes natural-language adoption requests to the contained command. Validation passed in Pi/Mirror using the `sandbox-pet-store` journey: adoption reported Ariad as adopted, follow-up inspection showed `adopted method: ariad`, and no templates, delivery cursor, or story lifecycle were executed.
+
+Validation: `uv run pytest tests/unit/memory/cli/test_build.py tests/unit/memory/builder/test_method_adoption.py tests/unit/memory/builder/test_ariad_method.py tests/unit/memory/builder/test_method_definition.py`, focused `uv run ruff check`, focused `uv run ruff format --check`, `uv run mypy src/memory/builder src/memory/cli/build.py`, CLI smoke for `build adopt` and `build inspect-method`, and Pi/Mirror natural-language validation passed.
+
 ### 2026-06-10 — CV20 runtime method adoption state added
 
 Implemented CV20.DS2.TS1 Runtime Method State Sync. Builder now has state helpers to record, read, and clear the method adopted by a journey using explicit runtime-session state keyed by journey. The slice is internal substrate only: no adoption command, Pi natural-language route, template generation, delivery cursor, or lifecycle execution was introduced.
