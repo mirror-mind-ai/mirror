@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-10 — CV20 runtime method adoption state added
+
+Implemented CV20.DS2.TS1 Runtime Method State Sync. Builder now has state helpers to record, read, and clear the method adopted by a journey using explicit runtime-session state keyed by journey. The slice is internal substrate only: no adoption command, Pi natural-language route, template generation, delivery cursor, or lifecycle execution was introduced.
+
+Validation: `uv run pytest tests/unit/memory/builder/test_method_adoption.py tests/unit/memory/cli/test_build.py`, focused `uv run ruff check`, focused `uv run ruff format --check`, and `uv run mypy src/memory/builder src/memory/cli/build.py` passed.
+
 ### 2026-06-10 — CV20 Method DSL Foundation completed
 
 Completed CV20.DS1 Method DSL Foundation. Builder now has typed method-definition structures, a built-in Ariad `MethodDefinition` fixture, and read-only method inspection through `memory build inspect-method`. The Pi Builder skill now routes natural-language questions about which Builder method governs the active journey to the inspection command. Validation confirmed the journey-not-adopted path: `builder-mode-evolution` reports no adopted Builder method yet while listing Ariad as available, without executing adoption.
