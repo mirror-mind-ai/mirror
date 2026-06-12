@@ -52,10 +52,14 @@ The command:
 
 ## 1.1 Transition Surface
 
-The `build load` output includes the conversational transition surface. Render
-that surface visibly to the user before continuing with project-doc loading or
-substantive Builder work. Do not recreate it from scratch unless the command
-failed to render it; copy the rendered surface from the command output.
+The `build load` output includes the conversational transition surface. For
+Ariad-adopted journeys, it can also include the Builder Resume Surface
+(`■ BUILDER RESUME`). Render both surfaces visibly to the user before continuing
+with project-doc loading or substantive Builder work. Do not summarize the
+Builder Resume Surface away; preserve its operational fields, including active
+item, active checkpoint, pending confirmation, last delivery event, and allowed
+next actions. Do not recreate the surfaces from scratch unless the command failed
+to render them; copy the rendered surfaces from the command output.
 
 Builder Mode surface should orient the user around:
 

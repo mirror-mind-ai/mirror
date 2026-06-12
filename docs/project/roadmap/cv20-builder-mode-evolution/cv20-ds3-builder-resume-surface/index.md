@@ -2,7 +2,7 @@
 
 # CV20.DS3 — Builder Resume Surface
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 
 ---
 
@@ -18,9 +18,9 @@ The Navigator sees a concise briefing, roadmap position, active delivery item, a
 
 | Code | Story | Type | Outcome | Status |
 |------|-------|------|---------|--------|
-| CV20.DS3.US1 | Resume Ariad journey | User Story | Builder load renders current journey, roadmap, checkpoint, and next actions | 🟡 Planned |
-| CV20.DS3.TS1 | Builder Resume Cursor Reader | Technical Story | Builder load can read DS2 cursor state and expose it to the resume surface | 🟡 Planned |
-| CV20.DS3.TS2 | Roadmap Position Resolver | Technical Story | Builder resolves active roadmap position according to Ariad taxonomy | 🟡 Planned |
+| [CV20.DS3.TS1](cv20-ds3-ts1-builder-resume-cursor-reader/index.md) | Builder Resume Cursor Reader | Technical Story | Builder load can read DS2 cursor state and expose it to the resume surface | ✅ Done |
+| [CV20.DS3.TS2](cv20-ds3-ts2-roadmap-position-resolver/index.md) | Roadmap Position Resolver | Technical Story | Builder resolves active roadmap position according to Ariad taxonomy | ✅ Done |
+| [CV20.DS3.US1](cv20-ds3-us1-resume-ariad-journey/index.md) | Resume Ariad journey | User Story | Builder load renders current journey, roadmap, checkpoint, and next actions | ✅ Done |
 
 ---
 

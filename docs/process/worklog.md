@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-10 — CV20 Builder resume surface added
+
+Implemented CV20.DS3 Builder Resume Surface. Builder now composes Ariad adoption state, runtime delivery cursor state, and compact roadmap position into a resume surface during `memory build load` for adopted journeys. Pi/Mirror validation with `sandbox-pet-store` showed `■ BUILDER RESUME`, method `ariad`, resumability, cursor fields, allowed next actions, and preserved the boundary that no story lifecycle work runs during load.
+
+Validation: focused Builder resume tests and CLI build tests passed with `51 passed`, plus focused `uv run ruff check`, `uv run ruff format --check`, and `uv run mypy src/memory/builder src/memory/cli/build.py`.
+
 ### 2026-06-10 — CV20 Ariad initial delivery cursor sync added
 
 Implemented CV20.DS2.TS2 Initial Delivery Cursor Sync and closed CV20.DS2 Ariad Adoption. Builder now persists an initial delivery cursor in SQLite runtime state through `memory build sync-cursor --method ariad`, using `__builder_delivery_cursor__:<journey>` metadata. The cursor records the adopted method, no active item, no active checkpoint, no pending confirmation, and `last_delivery_event=template_preparation`, preserving the boundary that no story lifecycle work is executed.

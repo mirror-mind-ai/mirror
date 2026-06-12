@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from memory import MemoryClient
+from memory.builder.delivery_cursor import set_delivery_cursor
 from memory.builder.method_adoption import set_adopted_method
 from memory.cli import build
 from memory.cli.runtime import CloneRole
@@ -69,6 +70,45 @@ def test_build_load_refuses_when_journey_project_path_is_production_clone(mocker
     assert "Project path:" in err
     assert "--ignore-production-role" in err
     inspect.assert_called_once_with(project_path.resolve())
+
+
+def test_build_load_renders_resume_surface_for_adopted_journey(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    project_path = tmp_path / "project"
+    roadmap = project_path / "docs/project/roadmap/cv20/index.md"
+    roadmap.parent.mkdir(parents=True)
+    roadmap.write_text(
+        "# CV20 — Builder Mode Evolution\n\n**Status:** 🟢 Active\n", encoding="utf-8"
+    )
+    mem.journeys.set_project_path("sandbox-pet-store", str(project_path))
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        last_delivery_event="template_preparation",
+    )
+
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+    mocker.patch("memory.cli.build.switch_conversation")
+    mocker.patch("memory.cli.build._persist_global_sticky_defaults")
+    mocker.patch("memory.cli.build._is_mirror_mind_checkout", return_value=False)
+    mocker.patch.object(mem, "load_mirror_context", return_value="context")
+    mocker.patch.object(mem, "search", return_value=[])
+
+    build.cmd_load("sandbox-pet-store")
+
+    out = capsys.readouterr().out
+    assert "BUILDER RESUME" in out
+    assert "journey\nsandbox-pet-store" in out
+    assert "adopted method\nariad" in out
+    assert "resumable\nyes" in out
+    assert "CV20 — Builder Mode Evolution" in out
+    assert "last delivery event\ntemplate_preparation" in out
+    assert "no story lifecycle work was executed" in out
 
 
 def test_build_load_allows_non_mirror_project_without_clone_role_guard(mocker, tmp_path, capsys):

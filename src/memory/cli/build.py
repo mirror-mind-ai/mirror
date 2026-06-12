@@ -19,6 +19,9 @@ from memory.builder.method_inspection import (
     render_method_adoption_report,
     render_no_active_journey,
 )
+from memory.builder.resume_state import read_builder_resume_state
+from memory.builder.resume_surface import render_builder_resume_surface
+from memory.builder.roadmap_position import resolve_roadmap_position
 from memory.builder.template_generation import (
     prepare_method_templates,
     render_template_preparation_report,
@@ -150,6 +153,17 @@ def cmd_load(
         for memory, _ in relevant_memories:
             print(f"\n[{memory.layer}] {memory.title}")
             print(memory.content)
+
+    adopted_method = get_adopted_method(mem.store, slug)
+    if adopted_method:
+        print(
+            render_builder_resume_surface(
+                read_builder_resume_state(mem.store, slug),
+                roadmap_position=resolve_roadmap_position(Path(project_path))
+                if project_path
+                else None,
+            )
+        )
 
     _persist_global_sticky_defaults(mem, persona="engineer", journey=slug)
     resolved_session_id = resolve_operating_session_id(mem.store, session_id)
