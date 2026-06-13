@@ -25,7 +25,12 @@ GENERATED_FILES = (
     PROJECT_PATH / "docs/project/roadmap/ariad-adoption.md",
     PROJECT_PATH / "docs/project/roadmap/technical-debt-ledger.md",
 )
-GENERATED_DIRS = (PROJECT_PATH / "docs/project/roadmap/templates",)
+GENERATED_DIRS = (
+    PROJECT_PATH / "docs/project/roadmap/templates",
+    PROJECT_PATH / "docs/project/roadmap/cv2-checkout-flow",
+    PROJECT_PATH / "docs/project/roadmap/cv2-enter-checkout-from-cart",
+)
+BUILD_OUTPUT_DIRS = (PROJECT_PATH / "dist",)
 
 ROADMAP_BASELINE = """# Roadmap
 
@@ -110,6 +115,12 @@ Potential future work:
 - order confirmation polish.
 """
 
+CART_TS_BASELINE = 'export type Product = {\n  id: string;\n  name: string;\n  description: string;\n  priceInCents: number;\n};\n\ntype CartItem = {\n  product: Product;\n  quantity: number;\n};\n\ntype CartState = {\n  item: CartItem | null;\n};\n\nexport const featuredProduct: Product = {\n  id: "sandbox-kibble",\n  name: "Sandbox Kibble",\n  description: "Balanced everyday food for curious dogs.",\n  priceInCents: 2499\n};\n\nexport function createCartApp(root: HTMLElement): void {\n  const state: CartState = { item: null };\n\n  function render(): void {\n    root.innerHTML = `\n      <section class="storefront" aria-labelledby="store-title">\n        <div class="hero">\n          <p class="eyebrow">Pet food made simple</p>\n          <h1 id="store-title">Sandbox Pet Store</h1>\n          <p>Choose a trusted food and start a clear cart review.</p>\n        </div>\n\n        <article class="product-card" id="featured-product" tabindex="-1" aria-labelledby="product-name">\n          <div>\n            <p class="eyebrow">Featured food</p>\n            <h2 id="product-name">${featuredProduct.name}</h2>\n            <p>${featuredProduct.description}</p>\n            <p class="price">${formatPrice(featuredProduct.priceInCents)}</p>\n          </div>\n          <button type="button" data-testid="add-to-cart">Add to cart</button>\n        </article>\n\n        <aside class="cart" aria-labelledby="cart-title">\n          <h2 id="cart-title">Cart</h2>\n          ${renderCart(state)}\n        </aside>\n      </section>\n    `;\n\n    root\n      .querySelector<HTMLButtonElement>("[data-testid=\'add-to-cart\']")\n      ?.addEventListener("click", () => {\n        state.item = { product: featuredProduct, quantity: 1 };\n        render();\n      });\n\n    root\n      .querySelector<HTMLButtonElement>("[data-testid=\'increase-quantity\']")\n      ?.addEventListener("click", () => {\n        if (!state.item) {\n          return;\n        }\n\n        state.item = { ...state.item, quantity: state.item.quantity + 1 };\n        render();\n      });\n\n    root\n      .querySelector<HTMLButtonElement>("[data-testid=\'decrease-quantity\']")\n      ?.addEventListener("click", () => {\n        if (!state.item || state.item.quantity === 1) {\n          return;\n        }\n\n        state.item = { ...state.item, quantity: state.item.quantity - 1 };\n        render();\n      });\n\n    root\n      .querySelector<HTMLButtonElement>("[data-testid=\'remove-item\']")\n      ?.addEventListener("click", () => {\n        state.item = null;\n        render();\n      });\n\n    root\n      .querySelector<HTMLButtonElement>("[data-testid=\'continue-shopping\']")\n      ?.addEventListener("click", () => {\n        const featuredProductElement = root.querySelector<HTMLElement>("#featured-product");\n\n        featuredProductElement?.scrollIntoView({ behavior: "smooth", block: "start" });\n        featuredProductElement?.focus({ preventScroll: true });\n      });\n  }\n\n  render();\n}\n\nfunction renderCart(state: CartState): string {\n  if (!state.item) {\n    return `<p data-testid="empty-cart">Your cart is empty.</p>`;\n  }\n\n  const itemTotal = state.item.product.priceInCents * state.item.quantity;\n\n  return `\n    <div data-testid="cart-item" class="cart-item">\n      <span>${state.item.product.name}</span>\n      <div class="quantity-controls" aria-label="Quantity controls">\n        <button\n          type="button"\n          data-testid="decrease-quantity"\n          aria-label="Decrease quantity"\n          ${state.item.quantity === 1 ? "disabled" : ""}\n        >-</button>\n        <span data-testid="cart-quantity">Quantity: ${state.item.quantity}</span>\n        <button\n          type="button"\n          data-testid="increase-quantity"\n          aria-label="Increase quantity"\n        >+</button>\n      </div>\n      <strong>${formatPrice(itemTotal)}</strong>\n      <button type="button" data-testid="remove-item" class="remove-button">Remove</button>\n    </div>\n    ${renderCartSummary(state.item)}\n  `;\n}\n\nfunction renderCartSummary(item: CartItem): string {\n  const subtotal = item.product.priceInCents * item.quantity;\n\n  return `\n    <section class="cart-summary" data-testid="cart-summary" aria-labelledby="cart-summary-title">\n      <h3 id="cart-summary-title">Cart summary</h3>\n      <dl>\n        <div>\n          <dt>Items</dt>\n          <dd data-testid="summary-items">${item.quantity}</dd>\n        </div>\n        <div>\n          <dt>Subtotal</dt>\n          <dd data-testid="summary-subtotal">${formatPrice(subtotal)}</dd>\n        </div>\n        <div>\n          <dt>Cart total</dt>\n          <dd data-testid="summary-total">${formatPrice(subtotal)}</dd>\n        </div>\n      </dl>\n      <div class="cart-actions">\n        <button type="button" data-testid="continue-shopping" class="secondary-button">\n          Continue shopping\n        </button>\n      </div>\n    </section>\n  `;\n}\n\nfunction formatPrice(priceInCents: number): string {\n  return new Intl.NumberFormat("en-US", {\n    style: "currency",\n    currency: "USD"\n  }).format(priceInCents / 100);\n}\n'
+
+STYLES_CSS_BASELINE = ':root {\n  color: #17311f;\n  background: #f7f3e8;\n  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;\n}\n\nbody {\n  margin: 0;\n}\n\nbutton {\n  border: 0;\n  border-radius: 999px;\n  background: #2f6b3f;\n  color: #ffffff;\n  cursor: pointer;\n  font: inherit;\n  font-weight: 700;\n  padding: 0.8rem 1.2rem;\n}\n\nbutton:focus-visible,\n.product-card:focus-visible {\n  outline: 3px solid #f0b84d;\n  outline-offset: 3px;\n}\n\n.storefront {\n  display: grid;\n  gap: 1.5rem;\n  margin: 0 auto;\n  max-width: 880px;\n  padding: 4rem 1.5rem;\n}\n\n.hero,\n.product-card,\n.cart {\n  background: #fffdf7;\n  border: 1px solid #e5dbc5;\n  border-radius: 24px;\n  box-shadow: 0 18px 60px rgba(23, 49, 31, 0.08);\n  padding: 2rem;\n}\n\n.hero h1,\n.product-card h2,\n.cart h2 {\n  margin-top: 0;\n}\n\n.eyebrow {\n  color: #7b5b1e;\n  font-size: 0.8rem;\n  font-weight: 800;\n  letter-spacing: 0.08em;\n  text-transform: uppercase;\n}\n\n.product-card {\n  align-items: center;\n  display: flex;\n  justify-content: space-between;\n  gap: 2rem;\n}\n\n.price {\n  font-size: 1.4rem;\n  font-weight: 800;\n}\n\n.cart-item,\n.quantity-controls {\n  align-items: center;\n  display: flex;\n  flex-wrap: wrap;\n  gap: 1rem;\n}\n\n.cart-item {\n  justify-content: space-between;\n}\n\n.quantity-controls button {\n  align-items: center;\n  display: inline-flex;\n  height: 2.4rem;\n  justify-content: center;\n  padding: 0;\n  width: 2.4rem;\n}\n\n.quantity-controls button:disabled {\n  background: #c9c1b1;\n  cursor: not-allowed;\n}\n\n.remove-button {\n  background: #8b3f32;\n}\n\n.secondary-button {\n  background: #f0eadb;\n  color: #17311f;\n}\n\n.cart-summary {\n  border-top: 1px solid #e5dbc5;\n  margin-top: 1.5rem;\n  padding-top: 1.5rem;\n}\n\n.cart-summary h3 {\n  margin-top: 0;\n}\n\n.cart-summary dl {\n  display: grid;\n  gap: 0.75rem;\n  margin: 0 0 1.5rem;\n}\n\n.cart-summary div {\n  display: flex;\n  justify-content: space-between;\n  gap: 1rem;\n}\n\n.cart-summary dd {\n  font-weight: 800;\n  margin: 0;\n}\n\n.cart-actions {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 1rem;\n}\n\n@media (max-width: 640px) {\n  .product-card {\n    align-items: stretch;\n    flex-direction: column;\n  }\n}\n'
+
+CART_TEST_TS_BASELINE = 'import { describe, expect, it, vi } from "vitest";\nimport { createCartApp } from "../src/cart";\n\ndescribe("cart app", () => {\n  it("shows an empty cart before a product is added", () => {\n    const root = document.createElement("main");\n\n    createCartApp(root);\n\n    expect(root.querySelector("[data-testid=\'empty-cart\']")?.textContent).toContain(\n      "Your cart is empty."\n    );\n  });\n\n  it("adds the featured product to the cart with quantity one", () => {\n    const root = document.createElement("main");\n\n    createCartApp(root);\n    addFeaturedProduct(root);\n\n    const cartItem = root.querySelector("[data-testid=\'cart-item\']");\n\n    expect(cartItem?.textContent).toContain("Sandbox Kibble");\n    expect(cartItem?.textContent).toContain("Quantity: 1");\n    expect(cartItem?.textContent).toContain("$24.99");\n    expect(root.querySelector("[data-testid=\'empty-cart\']")).toBeNull();\n  });\n\n  it("increases the cart quantity and item total", () => {\n    const root = document.createElement("main");\n\n    createCartApp(root);\n    addFeaturedProduct(root);\n    root.querySelector<HTMLButtonElement>("[data-testid=\'increase-quantity\']")?.click();\n\n    const cartItem = root.querySelector("[data-testid=\'cart-item\']");\n\n    expect(cartItem?.textContent).toContain("Quantity: 2");\n    expect(cartItem?.textContent).toContain("$49.98");\n  });\n\n  it("decreases the cart quantity without removing the item", () => {\n    const root = document.createElement("main");\n\n    createCartApp(root);\n    addFeaturedProduct(root);\n    root.querySelector<HTMLButtonElement>("[data-testid=\'increase-quantity\']")?.click();\n    root.querySelector<HTMLButtonElement>("[data-testid=\'decrease-quantity\']")?.click();\n\n    const cartItem = root.querySelector("[data-testid=\'cart-item\']");\n\n    expect(cartItem?.textContent).toContain("Quantity: 1");\n    expect(cartItem?.textContent).toContain("$24.99");\n    expect(cartItem).not.toBeNull();\n  });\n\n  it("does not decrease below quantity one", () => {\n    const root = document.createElement("main");\n\n    createCartApp(root);\n    addFeaturedProduct(root);\n\n    const decreaseButton = root.querySelector<HTMLButtonElement>(\n      "[data-testid=\'decrease-quantity\']"\n    );\n\n    expect(decreaseButton?.disabled).toBe(true);\n\n    decreaseButton?.click();\n\n    expect(root.querySelector("[data-testid=\'cart-item\']")?.textContent).toContain(\n      "Quantity: 1"\n    );\n  });\n\n  it("removes the cart item and restores the empty cart state", () => {\n    const root = document.createElement("main");\n\n    createCartApp(root);\n    addFeaturedProduct(root);\n    root.querySelector<HTMLButtonElement>("[data-testid=\'increase-quantity\']")?.click();\n    root.querySelector<HTMLButtonElement>("[data-testid=\'remove-item\']")?.click();\n\n    expect(root.querySelector("[data-testid=\'cart-item\']")).toBeNull();\n    expect(root.querySelector("[data-testid=\'empty-cart\']")?.textContent).toContain(\n      "Your cart is empty."\n    );\n  });\n\n  it("lets the customer add the product again after removal", () => {\n    const root = document.createElement("main");\n\n    createCartApp(root);\n    addFeaturedProduct(root);\n    root.querySelector<HTMLButtonElement>("[data-testid=\'increase-quantity\']")?.click();\n    root.querySelector<HTMLButtonElement>("[data-testid=\'remove-item\']")?.click();\n    addFeaturedProduct(root);\n\n    const cartItem = root.querySelector("[data-testid=\'cart-item\']");\n\n    expect(cartItem?.textContent).toContain("Sandbox Kibble");\n    expect(cartItem?.textContent).toContain("Quantity: 1");\n    expect(cartItem?.textContent).toContain("$24.99");\n  });\n\n  it("shows a cart summary for the selected item", () => {\n    const root = document.createElement("main");\n\n    createCartApp(root);\n    addFeaturedProduct(root);\n\n    expect(root.querySelector("[data-testid=\'cart-summary\']")?.textContent).toContain(\n      "Cart summary"\n    );\n    expect(root.querySelector("[data-testid=\'summary-items\']")?.textContent).toBe("1");\n    expect(root.querySelector("[data-testid=\'summary-subtotal\']")?.textContent).toBe(\n      "$24.99"\n    );\n    expect(root.querySelector("[data-testid=\'summary-total\']")?.textContent).toBe(\n      "$24.99"\n    );\n  });\n\n  it("updates the cart summary when quantity changes", () => {\n    const root = document.createElement("main");\n\n    createCartApp(root);\n    addFeaturedProduct(root);\n    root.querySelector<HTMLButtonElement>("[data-testid=\'increase-quantity\']")?.click();\n\n    expect(root.querySelector("[data-testid=\'summary-items\']")?.textContent).toBe("2");\n    expect(root.querySelector("[data-testid=\'summary-subtotal\']")?.textContent).toBe(\n      "$49.98"\n    );\n    expect(root.querySelector("[data-testid=\'summary-total\']")?.textContent).toBe(\n      "$49.98"\n    );\n  });\n\n  it("hides the cart summary when the cart is empty", () => {\n    const root = document.createElement("main");\n\n    createCartApp(root);\n\n    expect(root.querySelector("[data-testid=\'cart-summary\']")).toBeNull();\n\n    addFeaturedProduct(root);\n    root.querySelector<HTMLButtonElement>("[data-testid=\'remove-item\']")?.click();\n\n    expect(root.querySelector("[data-testid=\'cart-summary\']")).toBeNull();\n    expect(root.querySelector("[data-testid=\'empty-cart\']")?.textContent).toContain(\n      "Your cart is empty."\n    );\n  });\n\n  it("returns focus to the featured product without changing the cart", () => {\n    const root = document.createElement("main");\n    const scrollIntoView = vi.fn();\n\n    document.body.append(root);\n    window.HTMLElement.prototype.scrollIntoView = scrollIntoView;\n\n    createCartApp(root);\n    addFeaturedProduct(root);\n    root.querySelector<HTMLButtonElement>("[data-testid=\'increase-quantity\']")?.click();\n    root.querySelector<HTMLButtonElement>("[data-testid=\'continue-shopping\']")?.click();\n\n    const featuredProduct = root.querySelector<HTMLElement>("#featured-product");\n    const cartItem = root.querySelector("[data-testid=\'cart-item\']");\n\n    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });\n    expect(document.activeElement).toBe(featuredProduct);\n    expect(cartItem?.textContent).toContain("Quantity: 2");\n    expect(root.querySelector("[data-testid=\'summary-total\']")?.textContent).toBe(\n      "$49.98"\n    );\n  });\n});\n\nfunction addFeaturedProduct(root: HTMLElement): void {\n  root.querySelector<HTMLButtonElement>("[data-testid=\'add-to-cart\']")?.click();\n}\n'
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Reset sandbox-pet-store Builder fixture")
@@ -118,6 +129,21 @@ def main() -> None:
         choices=("clean", "ariad-ready"),
         default="ariad-ready",
         help="Reset target state. Default: ariad-ready",
+    )
+    parser.add_argument(
+        "--restore-code",
+        action="store_true",
+        help="Restore src/cart.ts, src/styles.css, and tests/cart.test.ts to the sandbox baseline.",
+    )
+    parser.add_argument(
+        "--clean-build-output",
+        action="store_true",
+        help="Remove generated build output such as dist/.",
+    )
+    parser.add_argument(
+        "--full",
+        action="store_true",
+        help="Full fixture reset: restore code and remove build output in addition to Ariad/runtime reset.",
     )
     args = parser.parse_args()
 
@@ -131,6 +157,10 @@ def main() -> None:
     mem.journeys.set_project_path(JOURNEY, str(PROJECT_PATH))
     _restore_roadmap_baseline()
     _remove_generated_ariad_files()
+    if args.restore_code or args.full:
+        _restore_code_baseline()
+    if args.clean_build_output or args.full:
+        _remove_build_output()
     clear_adopted_method(mem.store, JOURNEY)
     clear_delivery_cursor(mem.store, JOURNEY)
 
@@ -149,6 +179,10 @@ def main() -> None:
 
     print(f"sandbox-pet-store reset complete: state={args.state}")
     print(f"project_path={PROJECT_PATH}")
+    if args.restore_code or args.full:
+        print("code_baseline=restored")
+    if args.clean_build_output or args.full:
+        print("build_output=removed")
     if args.state == "ariad-ready":
         print("adopted_method=ariad")
         print("active_item=none")
@@ -164,6 +198,18 @@ def _remove_generated_ariad_files() -> None:
     for path in GENERATED_FILES:
         path.unlink(missing_ok=True)
     for path in GENERATED_DIRS:
+        if path.exists():
+            shutil.rmtree(path)
+
+
+def _restore_code_baseline() -> None:
+    (PROJECT_PATH / "src/cart.ts").write_text(CART_TS_BASELINE, encoding="utf-8")
+    (PROJECT_PATH / "src/styles.css").write_text(STYLES_CSS_BASELINE, encoding="utf-8")
+    (PROJECT_PATH / "tests/cart.test.ts").write_text(CART_TEST_TS_BASELINE, encoding="utf-8")
+
+
+def _remove_build_output() -> None:
+    for path in BUILD_OUTPUT_DIRS:
         if path.exists():
             shutil.rmtree(path)
 

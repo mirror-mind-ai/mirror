@@ -307,8 +307,12 @@ def test_build_approve_plan_allows_implementation_guard(mocker, tmp_path, capsys
     assert cursor.pending_confirmation is None
     assert cursor.last_delivery_event == "plan_approved"
     assert "PLAN APPROVED" in out
+    assert "╭────────────────────────────────────────────────────────╮" in out
+    assert "│        🟩■  PLAN APPROVED" in out
     assert "<<<ARIAD:IMPLEMENTATION_GUARD>>>" in out
-    assert "status\nallowed" in out
+    assert "│        🟧■  IMPLEMENTATION GUARD" in out
+    assert "status" in out
+    assert "allowed" in out
 
 
 def test_build_check_implementation_refuses_pending_approval(mocker, tmp_path, capsys):
@@ -334,8 +338,123 @@ def test_build_check_implementation_refuses_pending_approval(mocker, tmp_path, c
     assert exc.value.code == 1
     out = capsys.readouterr().out
     assert "<<<ARIAD:IMPLEMENTATION_GUARD>>>" in out
+    assert "╭────────────────────────────────────────────────────────╮" in out
+    assert "│        🟧■  IMPLEMENTATION GUARD" in out
     assert "navigator_approval" in out
     assert "blocked" in out
+
+
+def test_build_validate_item_renders_checkpoint_and_records_pending_navigator_validation(
+    mocker, tmp_path, capsys
+):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    project_path = tmp_path / "project"
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    mem.journeys.set_project_path("sandbox-pet-store", str(project_path))
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV2.DS1.US1",
+        active_item_title="Checkout entry and address capture",
+        active_item_level="user_story",
+        last_delivery_event="plan_approved",
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_validate_item(
+        "ariad",
+        journey="sandbox-pet-store",
+        checks=("uv run pytest tests/unit",),
+        checks_status="passed",
+        e2e_decision="required",
+        navigator_route="Validate checkout entry through Pi natural language.",
+        implementation_complete=True,
+    )
+
+    out = capsys.readouterr().out
+    cursor = get_delivery_cursor(mem.store, "sandbox-pet-store")
+    assert cursor is not None
+    assert cursor.active_checkpoint == "after_validation"
+    assert cursor.pending_confirmation == "navigator_validation"
+    assert cursor.last_delivery_event == "validate"
+    assert "<<<ARIAD:VALIDATION_CHECKPOINT>>>" in out
+    assert "╭────────────────────────────────────────────────────────╮" in out
+    assert "│        🧪■  VALIDATION CHECKPOINT" in out
+    assert "required E2E evidence is missing" in out
+    assert "Navigator validation has not been accepted" in out
+    assert "validation artifact" in out
+
+
+def test_build_validate_item_passes_when_all_evidence_is_present(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV2.DS1.US1",
+        active_item_level="user_story",
+        last_delivery_event="implementation_complete",
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_validate_item(
+        "ariad",
+        journey="sandbox-pet-store",
+        checks=("uv run pytest",),
+        checks_status="passed",
+        e2e_decision="required",
+        e2e_evidence="Navigator verified checkout entry.",
+        navigator_route="Validate checkout entry through Pi natural language.",
+        navigator_accepted=True,
+    )
+
+    out = capsys.readouterr().out
+    cursor = get_delivery_cursor(mem.store, "sandbox-pet-store")
+    assert cursor is not None
+    assert cursor.pending_confirmation is None
+    assert cursor.last_delivery_event == "validation_passed"
+    assert "│        🧪■  VALIDATION CHECKPOINT" in out
+    assert "passed" in out
+    assert "navigator accepted" in out
+    assert "✓ none" in out
+
+
+def test_build_validate_item_blocks_without_implementation_completion(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV2.DS1.US1",
+        active_item_level="user_story",
+        last_delivery_event="plan_approved",
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    with pytest.raises(SystemExit) as exc:
+        build.cmd_validate_item(
+            "ariad",
+            journey="sandbox-pet-store",
+            checks=("uv run pytest",),
+            checks_status="passed",
+        )
+
+    assert exc.value.code == 1
+    out = capsys.readouterr().out
+    assert "Implementation requires implementation completion evidence" not in out
+    assert "Validation requires implementation completion evidence" in out
 
 
 def test_build_plan_item_requires_ariad_adoption(mocker, tmp_path, capsys):

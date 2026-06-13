@@ -2,7 +2,7 @@
 
 # CV20.DS4.US4 — Validation Checkpoint
 
-**Status:** 🟡 Planned
+**Status:** 🟢 Active
 **Type:** User Story
 
 ---
@@ -58,6 +58,26 @@ And names the missing evidence or required Navigator decision
 
 ---
 
+## Implementation Notes
+
+Initial runtime support adds `validate-item`, which renders deterministic `VALIDATION_CHECKPOINT` surfaces, records validation state in the delivery cursor, materializes `validation.md` when a story package path is available, and blocks progression when automated evidence, E2E evidence, or explicit Navigator acceptance is missing. Providing a Navigator route is not treated as acceptance.
+
 ## Validation
 
 Focused tests plus Pi/Mirror natural-language validation against sandbox-pet-store.
+
+Automated validation so far:
+
+```text
+uv run pytest tests/unit/memory/builder/test_method_definition.py tests/unit/memory/builder/test_ariad_method.py tests/unit/memory/builder/test_lifecycle_ribbon.py tests/unit/memory/builder/test_lifecycle.py tests/unit/memory/builder/test_pull_candidates.py tests/unit/memory/builder/test_resume_surface.py tests/unit/memory/cli/test_build.py tests/unit/memory/builder/test_delivery_cursor.py tests/unit/memory/builder/test_method_adoption.py
+104 passed
+
+uv run ruff check src/memory tests/unit/memory/builder tests/unit/memory/cli/test_build.py
+All checks passed
+
+uv run ruff format --check src/memory tests/unit/memory/builder tests/unit/memory/cli/test_build.py
+138 files already formatted
+
+uv run mypy src/memory/builder src/memory/cli/build.py
+Success
+```

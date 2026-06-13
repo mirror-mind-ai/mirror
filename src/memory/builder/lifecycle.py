@@ -88,6 +88,28 @@ class BuilderPlanReport:
     next_event: str = "implement"
 
 
+@dataclass(frozen=True)
+class BuilderValidationReport:
+    journey: str
+    method: str
+    active_item: str
+    active_item_title: str | None
+    automated_checks: tuple[str, ...]
+    checks_status: str
+    e2e_decision: str
+    e2e_evidence: str | None
+    navigator_validation_route: str
+    navigator_accepted: bool
+    expected_observation: str
+    pass_condition: str
+    fail_condition: str
+    missing_evidence: tuple[str, ...]
+    validation_contract: ContractDefinition
+    cursor: BuilderDeliveryCursor
+    validation_artifact_path: Path | None = None
+    next_event: str = "debt_review"
+
+
 def pull_lifecycle_item(
     store: Store,
     *,
@@ -289,16 +311,18 @@ def render_plan_approval(cursor: BuilderDeliveryCursor) -> str:
             "Delivery",
             render_lifecycle_ribbon("implement"),
             "",
-            "■ PLAN APPROVED",
-            "",
-            "active item",
-            cursor.active_item or "none",
-            "",
-            "last delivery event",
-            cursor.last_delivery_event or "none",
-            "",
-            "boundary",
-            "Implementation may begin under the approved Plan contract.",
+            "╭────────────────────────────────────────────────────────╮",
+            "│        🟩■  PLAN APPROVED                              │",
+            "│                                                        │",
+            _card_text("active item"),
+            _card_text(cursor.active_item or "none"),
+            "│                                                        │",
+            _card_text("last delivery event"),
+            _card_text(cursor.last_delivery_event or "none"),
+            "│                                                        │",
+            _card_text("boundary"),
+            *_card_wrapped("Implementation may begin under the approved Plan contract."),
+            "╰────────────────────────────────────────────────────────╯",
         ]
     )
     return wrap_ariad_surface("plan_approved", body + "\n")
@@ -397,25 +421,193 @@ def render_expand_report(report: BuilderExpandReport) -> str:
     return wrap_ariad_surface("expand_decision", body + "\n")
 
 
+def validate_lifecycle_item(
+    store: Store,
+    *,
+    journey: str,
+    method: MethodDefinition,
+    automated_checks: tuple[str, ...] = (),
+    checks_status: str = "not_run",
+    e2e_decision: str = "not_required",
+    e2e_evidence: str | None = None,
+    navigator_validation_route: str | None = None,
+    navigator_accepted: bool = False,
+    expected_observation: str | None = None,
+    pass_condition: str | None = None,
+    fail_condition: str | None = None,
+    implementation_complete: bool = False,
+    validation_artifact_path: Path | None = None,
+) -> BuilderValidationReport:
+    """Render and persist the Ariad Validation checkpoint after implementation."""
+    normalized_journey = _normalize_required(journey, "journey")
+    existing = get_delivery_cursor(store, normalized_journey)
+    if existing is None:
+        raise ValueError("delivery cursor is required before validation")
+    if not existing.active_item:
+        raise ValueError("active item is required before validation")
+    if existing.pending_confirmation:
+        raise ValueError(
+            f"Validation is blocked: pending confirmation {existing.pending_confirmation}."
+        )
+    if existing.last_delivery_event not in {"plan_approved", "implementation_complete"}:
+        raise ValueError("Validation requires an approved Plan and completed implementation")
+    if existing.last_delivery_event == "plan_approved" and not implementation_complete:
+        raise ValueError("Validation requires implementation completion evidence")
+    normalized_checks = tuple(check.strip() for check in automated_checks if check.strip())
+    normalized_checks_status = _normalize_validation_choice(
+        checks_status, "checks_status", {"passed", "failed", "not_run"}
+    )
+    normalized_e2e_decision = _normalize_validation_choice(
+        e2e_decision,
+        "e2e_decision",
+        {"required", "not_required", "waived", "skipped"},
+    )
+    route = (
+        navigator_validation_route or "Navigator validates the behavior described by the Plan."
+    ).strip()
+    observation = (expected_observation or "Expected behavior from the Plan is observable.").strip()
+    pass_text = (pass_condition or "Navigator accepts the observed behavior.").strip()
+    fail_text = (fail_condition or "Navigator cannot observe the planned behavior.").strip()
+    missing = _validation_missing_evidence(
+        checks=normalized_checks,
+        checks_status=normalized_checks_status,
+        e2e_decision=normalized_e2e_decision,
+        e2e_evidence=e2e_evidence,
+        navigator_validation_route=route,
+        navigator_accepted=navigator_accepted,
+    )
+    pending_confirmation = "navigator_validation" if missing else None
+    active_checkpoint = "after_validation" if missing else None
+    last_event = "validate" if missing else "validation_passed"
+    cursor = set_delivery_cursor(
+        store,
+        journey=normalized_journey,
+        method=method.id,
+        active_item=existing.active_item,
+        active_item_title=existing.active_item_title,
+        active_item_level=existing.active_item_level,
+        active_checkpoint=active_checkpoint,
+        pending_confirmation=pending_confirmation,
+        last_delivery_event=last_event,
+        cadence_profile=existing.cadence_profile,
+        granularity_decision=existing.granularity_decision,
+    )
+    report = BuilderValidationReport(
+        journey=normalized_journey,
+        method=method.id,
+        active_item=existing.active_item,
+        active_item_title=existing.active_item_title,
+        automated_checks=normalized_checks,
+        checks_status=normalized_checks_status,
+        e2e_decision=normalized_e2e_decision,
+        e2e_evidence=(e2e_evidence.strip() if e2e_evidence and e2e_evidence.strip() else None),
+        navigator_validation_route=route,
+        navigator_accepted=navigator_accepted,
+        expected_observation=observation,
+        pass_condition=pass_text,
+        fail_condition=fail_text,
+        missing_evidence=missing,
+        validation_contract=_contract_for(method, "validation_contract"),
+        cursor=cursor,
+        validation_artifact_path=validation_artifact_path,
+    )
+    if validation_artifact_path is not None:
+        validation_artifact_path.parent.mkdir(parents=True, exist_ok=True)
+        validation_artifact_path.write_text(_render_validation_artifact(report), encoding="utf-8")
+    return report
+
+
+def render_validation_checkpoint(report: BuilderValidationReport) -> str:
+    status = "pending_navigator_validation" if report.missing_evidence else "passed"
+    missing_prefix = "✕" if report.missing_evidence else "✓"
+    boundary = (
+        "Do not move past Validation until missing evidence is resolved."
+        if report.missing_evidence
+        else "Validation is complete; Builder may proceed to Debt Review."
+    )
+    body = "\n".join(
+        [
+            "Delivery",
+            render_lifecycle_ribbon("validate"),
+            "",
+            "╭────────────────────────────────────────────────────────╮",
+            "│        🧪■  VALIDATION CHECKPOINT                      │",
+            "│                                                        │",
+            _card_text("active item"),
+            _card_text(report.active_item),
+            "│                                                        │",
+            _card_text("status"),
+            _card_text(status),
+            "│                                                        │",
+            _card_text("automated checks"),
+            *_card_prefixed(report.automated_checks or ("No automated checks declared.",), "✓"),
+            "│                                                        │",
+            _card_text("checks status"),
+            _card_text(report.checks_status),
+            "│                                                        │",
+            _card_text("e2e decision"),
+            _card_text(report.e2e_decision),
+            "│                                                        │",
+            _card_text("e2e evidence"),
+            *_card_wrapped(report.e2e_evidence or "none"),
+            "│                                                        │",
+            _card_text("navigator validation route"),
+            *_card_wrapped(report.navigator_validation_route),
+            "│                                                        │",
+            _card_text("navigator accepted"),
+            _card_text("yes" if report.navigator_accepted else "no"),
+            "│                                                        │",
+            _card_text("expected observation"),
+            *_card_wrapped(report.expected_observation),
+            "│                                                        │",
+            _card_text("pass condition"),
+            *_card_wrapped(report.pass_condition),
+            "│                                                        │",
+            _card_text("fail condition"),
+            *_card_wrapped(report.fail_condition),
+            "│                                                        │",
+            _card_text("missing evidence"),
+            *_card_prefixed(report.missing_evidence or ("none",), missing_prefix),
+            "│                                                        │",
+            _card_text("validation contract"),
+            *_card_prefixed(report.validation_contract.rules, "✓"),
+            "│                                                        │",
+            _card_text("validation artifact"),
+            *_card_wrapped(
+                str(report.validation_artifact_path)
+                if report.validation_artifact_path
+                else "not materialized"
+            ),
+            "│                                                        │",
+            _card_text("boundary"),
+            *_card_wrapped(boundary),
+            "╰────────────────────────────────────────────────────────╯",
+        ]
+    )
+    return wrap_ariad_surface("validation_checkpoint", body + "\n")
+
+
 def render_implementation_guard_allowed(cursor: BuilderDeliveryCursor) -> str:
     body = "\n".join(
         [
             "Delivery",
             render_lifecycle_ribbon("implement"),
             "",
-            "■ IMPLEMENTATION GUARD",
-            "",
-            "status",
-            "allowed",
-            "",
-            "active item",
-            cursor.active_item or "none",
-            "",
-            "last delivery event",
-            cursor.last_delivery_event or "none",
-            "",
-            "boundary",
-            "Implementation may begin under the approved Plan contract.",
+            "╭────────────────────────────────────────────────────────╮",
+            "│        🟧■  IMPLEMENTATION GUARD                       │",
+            "│                                                        │",
+            _card_text("status"),
+            _card_text("allowed"),
+            "│                                                        │",
+            _card_text("active item"),
+            _card_text(cursor.active_item or "none"),
+            "│                                                        │",
+            _card_text("last delivery event"),
+            _card_text(cursor.last_delivery_event or "none"),
+            "│                                                        │",
+            _card_text("boundary"),
+            *_card_wrapped("Implementation may begin under the approved Plan contract."),
+            "╰────────────────────────────────────────────────────────╯",
         ]
     )
     return wrap_ariad_surface("implementation_guard", body + "\n")
@@ -427,16 +619,20 @@ def render_implementation_guard_blocked(reason: str) -> str:
             "Delivery",
             render_lifecycle_ribbon("implement"),
             "",
-            "■ IMPLEMENTATION GUARD",
-            "",
-            "status",
-            "blocked",
-            "",
-            "missing checkpoint",
-            reason,
-            "",
-            "boundary",
-            "No implementation files may be mutated until the guard allows Implement.",
+            "╭────────────────────────────────────────────────────────╮",
+            "│        🟧■  IMPLEMENTATION GUARD                       │",
+            "│                                                        │",
+            _card_text("status"),
+            _card_text("blocked"),
+            "│                                                        │",
+            _card_text("missing checkpoint"),
+            *_card_wrapped(reason),
+            "│                                                        │",
+            _card_text("boundary"),
+            *_card_wrapped(
+                "No implementation files may be mutated until the guard allows Implement."
+            ),
+            "╰────────────────────────────────────────────────────────╯",
         ]
     )
     return wrap_ariad_surface("implementation_guard", body + "\n")
@@ -902,6 +1098,80 @@ def _technical_story_statement(title: str) -> str:
 
 def _user_story_outcome(title: str) -> str:
     return f"Navigator can validate {title} as an observable behavior."
+
+
+def _render_validation_artifact(report: BuilderValidationReport) -> str:
+    return f"""# Validation — {report.active_item}
+
+## Status
+
+{"Blocked" if report.missing_evidence else "Passed"}
+
+## Automated Checks
+
+{_markdown_list(report.automated_checks or ("No automated checks declared.",))}
+
+Checks status: {report.checks_status}
+
+## E2E
+
+Decision: {report.e2e_decision}
+
+Evidence: {report.e2e_evidence or "none"}
+
+## Navigator Validation
+
+Route: {report.navigator_validation_route}
+
+Navigator accepted: {"yes" if report.navigator_accepted else "no"}
+
+Expected observation: {report.expected_observation}
+
+Pass condition: {report.pass_condition}
+
+Fail condition: {report.fail_condition}
+
+## Missing Evidence
+
+{_markdown_list(report.missing_evidence or ("none",))}
+"""
+
+
+def _normalize_validation_choice(value: str, field: str, allowed: set[str]) -> str:
+    normalized = value.strip().lower().replace("-", "_") if isinstance(value, str) else ""
+    if normalized not in allowed:
+        allowed_values = ", ".join(sorted(allowed))
+        raise ValueError(f"{field} must be one of {allowed_values}")
+    return normalized
+
+
+def _validation_missing_evidence(
+    *,
+    checks: tuple[str, ...],
+    checks_status: str,
+    e2e_decision: str,
+    e2e_evidence: str | None,
+    navigator_validation_route: str,
+    navigator_accepted: bool,
+) -> tuple[str, ...]:
+    missing: list[str] = []
+    if not checks:
+        missing.append("automated checks are not declared")
+    if checks_status != "passed":
+        missing.append(f"automated checks status is {checks_status}")
+    if e2e_decision == "required" and not (e2e_evidence and e2e_evidence.strip()):
+        missing.append("required E2E evidence is missing")
+    if e2e_decision == "skipped" and not (e2e_evidence and e2e_evidence.strip()):
+        missing.append("skipped E2E requires an explicit reason")
+    if not navigator_validation_route.strip():
+        missing.append("Navigator validation route is missing")
+    elif not navigator_accepted:
+        missing.append("Navigator validation has not been accepted")
+    return tuple(missing)
+
+
+def _prefixed_lines(items: tuple[str, ...], prefix: str) -> tuple[str, ...]:
+    return tuple(f"{prefix} {item}" for item in items)
 
 
 def _markdown_list(items: tuple[str, ...]) -> str:

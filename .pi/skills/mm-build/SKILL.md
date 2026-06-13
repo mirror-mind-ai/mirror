@@ -435,3 +435,30 @@ uv run python -m memory build check-implementation --method ariad
 Render the deterministic `IMPLEMENTATION_GUARD` surface. If the guard reports
 that Navigator approval is required, return the surface and stop. Do not mutate
 files.
+
+## Validate Ariad Work
+
+After implementation is complete and before moving to Debt Review, Coherence, or
+Done, render the Validation checkpoint:
+
+```bash
+uv run python -m memory build validate-item --method ariad \
+  --implementation-complete \
+  --check "<automated check command or evidence>" \
+  --checks-status <passed|failed|not_run> \
+  --e2e-decision <required|not_required|waived|skipped> \
+  --e2e-evidence "<E2E evidence or waiver/skipped reason>" \
+  --navigator-route "<Navigator-visible validation route>" \
+  --navigator-accepted \
+  --expected-observation "<what the Navigator should observe>" \
+  --pass-condition "<what counts as pass>" \
+  --fail-condition "<what counts as fail>"
+```
+
+If the Navigator has already performed and accepted the validation route, also
+pass `--navigator-accepted`. Providing a route is not the same as acceptance.
+
+If the user names a specific journey, pass `--journey <slug>`. Render the
+deterministic `VALIDATION_CHECKPOINT` surface. If required evidence is missing or
+Navigator validation has not been accepted, return the surface and stop; do not
+advance to Debt Review, Coherence, Done, commit, push, or release.

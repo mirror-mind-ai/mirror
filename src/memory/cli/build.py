@@ -28,6 +28,8 @@ from memory.builder.lifecycle import (
     render_plan_checkpoint,
     render_prepare_report,
     render_pull_report,
+    render_validation_checkpoint,
+    validate_lifecycle_item,
 )
 from memory.builder.method_adoption import get_adopted_method, set_adopted_method
 from memory.builder.method_inspection import (
@@ -775,6 +777,62 @@ def cmd_check_implementation(
     print(render_implementation_guard_allowed(cursor))
 
 
+def cmd_validate_item(
+    method: str,
+    *,
+    journey: str | None = None,
+    session_id: str | None = None,
+    checks: tuple[str, ...] = (),
+    checks_status: str = "not_run",
+    e2e_decision: str = "not_required",
+    e2e_evidence: str | None = None,
+    navigator_route: str | None = None,
+    navigator_accepted: bool = False,
+    expected_observation: str | None = None,
+    pass_condition: str | None = None,
+    fail_condition: str | None = None,
+    implementation_complete: bool = False,
+) -> None:
+    mem = MemoryClient()
+    _reject_unknown_method(method)
+    resolved_journey = _resolve_builder_journey(
+        mem,
+        journey=journey,
+        session_id=session_id,
+        action="validation",
+    )
+    journey_content = mem.get_identity("journey", resolved_journey)
+    if not journey_content:
+        print(f"Error: journey '{resolved_journey}' not found.", file=sys.stderr)
+        sys.exit(1)
+    _require_adopted_method(mem, resolved_journey, method)
+    _require_delivery_cursor(mem, resolved_journey)
+    cursor = get_delivery_cursor(mem.store, resolved_journey)
+    project_path = mem.journeys.get_project_path(resolved_journey)
+    plan_path = _plan_artifact_path(project_path, cursor)
+    try:
+        report = validate_lifecycle_item(
+            mem.store,
+            journey=resolved_journey,
+            method=get_ariad_method(),
+            automated_checks=checks,
+            checks_status=checks_status,
+            e2e_decision=e2e_decision,
+            e2e_evidence=e2e_evidence,
+            navigator_validation_route=navigator_route,
+            navigator_accepted=navigator_accepted,
+            expected_observation=expected_observation,
+            pass_condition=pass_condition,
+            fail_condition=fail_condition,
+            implementation_complete=implementation_complete,
+            validation_artifact_path=(plan_path.parent / "validation.md") if plan_path else None,
+        )
+    except ValueError as exc:
+        print(render_implementation_guard_blocked(str(exc)))
+        sys.exit(1)
+    print(render_validation_checkpoint(report))
+
+
 def cmd_prepare_item(
     method: str,
     *,
@@ -994,6 +1052,56 @@ def main(argv: list[str] | None = None) -> None:
         help="Runtime session id for resolving the active Builder journey",
     )
 
+    p_validate = sub.add_parser(
+        "validate-item",
+        help="Render the Ariad Validation checkpoint for the active item",
+    )
+    p_validate.add_argument("--method", required=True, help="Builder method id, such as 'ariad'")
+    p_validate.add_argument("--journey", default=None, help="Journey slug for Validation")
+    p_validate.add_argument(
+        "--session-id",
+        default=None,
+        help="Runtime session id for resolving the active Builder journey",
+    )
+    p_validate.add_argument(
+        "--check",
+        dest="checks",
+        action="append",
+        default=[],
+        help="Automated check command/evidence; may be repeated",
+    )
+    p_validate.add_argument(
+        "--checks-status",
+        default="not_run",
+        choices=("passed", "failed", "not_run"),
+        help="Automated checks result",
+    )
+    p_validate.add_argument(
+        "--e2e-decision",
+        default="not_required",
+        choices=("required", "not_required", "waived", "skipped"),
+        help="E2E validation decision",
+    )
+    p_validate.add_argument("--e2e-evidence", default=None, help="E2E evidence or waiver reason")
+    p_validate.add_argument(
+        "--navigator-route", default=None, help="Navigator-visible validation route"
+    )
+    p_validate.add_argument(
+        "--navigator-accepted",
+        action="store_true",
+        help="Record explicit Navigator acceptance of the validation route/evidence",
+    )
+    p_validate.add_argument(
+        "--expected-observation", default=None, help="Expected Navigator observation"
+    )
+    p_validate.add_argument("--pass-condition", default=None, help="Validation pass condition")
+    p_validate.add_argument("--fail-condition", default=None, help="Validation fail condition")
+    p_validate.add_argument(
+        "--implementation-complete",
+        action="store_true",
+        help="Record that implementation work has completed before validation",
+    )
+
     p_prepare = sub.add_parser(
         "prepare-item",
         help="Prepare the pulled Ariad lifecycle item",
@@ -1051,6 +1159,22 @@ def main(argv: list[str] | None = None) -> None:
             item_title=args.item_title,
             item_level=args.item_level,
             why_now=args.why_now,
+        )
+    elif args.command == "validate-item":
+        cmd_validate_item(
+            args.method,
+            journey=args.journey,
+            session_id=args.session_id,
+            checks=tuple(args.checks),
+            checks_status=args.checks_status,
+            e2e_decision=args.e2e_decision,
+            e2e_evidence=args.e2e_evidence,
+            navigator_route=args.navigator_route,
+            navigator_accepted=args.navigator_accepted,
+            expected_observation=args.expected_observation,
+            pass_condition=args.pass_condition,
+            fail_condition=args.fail_condition,
+            implementation_complete=args.implementation_complete,
         )
     elif args.command == "prepare-item":
         cmd_prepare_item(args.method, journey=args.journey, session_id=args.session_id)
