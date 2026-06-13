@@ -37,6 +37,7 @@ Ariad governs the first implementation. The architecture must remain open enough
 | CV20.DS5 | Debt Ledger And Refactor Loop | Review records technical debt in a versioned ledger, requires defer rationale and revisit trigger, and routes pay-now decisions through Refactor back to Validation | 🟡 Planned |
 | CV20.DS6 | Release And Push Policies | Builder distinguishes commit, push, and release, supporting planned and emergent release intent plus configurable push policies | 🟡 Planned |
 | CV20.DS7 | Builder Documentation And Migration | User-facing docs, process docs, and journey guidance explain Ariad Builder adoption, DSL overrides, lifecycle, and operational boundaries | 🟡 Planned |
+| [CV20.DS8](cv20-ds8-method-preferences-and-overrides/index.md) | Method Preferences And Overrides | Builder resolves Ariad defaults, project-local config, and Navigator overrides into inspectable effective preferences | 🟡 Planned |
 
 ---
 
@@ -61,6 +62,7 @@ Story Lifecycle
   → Plan firma o contrato
   → Implement muda o sistema
   → Validation prova comportamento
+  → Preferences govern commit/push/checkpoint/validation behavior
   → Review encara a dívida
   → Coherence integra os rastros
   → Done registra e fecha
@@ -82,7 +84,7 @@ Story Lifecycle
 
 ## Done Condition
 
-CV20 is done when a journey can adopt Ariad, Builder can resume that journey from persisted delivery state, the Ariad DSL governs the story lifecycle through deterministic gates, the Navigator sees and confirms required checkpoints, technical debt decisions are recorded durably, and commit, push, release, and override policies are visible and respected.
+CV20 is done when a journey can adopt Ariad, Builder can resume that journey from persisted delivery state, the Ariad DSL governs the story lifecycle through deterministic gates, the Navigator sees and confirms required checkpoints, effective method preferences are inspectable and respected, technical debt decisions are recorded durably, and commit, push, release, and override policies are visible and respected.
 
 ---
 
