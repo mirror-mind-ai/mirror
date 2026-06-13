@@ -91,6 +91,9 @@ class SurfaceDefinition:
     id: str
     event: str | None = None
     stops_for: str | None = None
+    transport: str = "verbatim"
+    marker_protocol: str = "ariad_compact"
+    interpretation_policy: str = "after_block_only"
 
     def replace(self, **changes: Any) -> SurfaceDefinition:
         return replace(self, **changes)
@@ -292,6 +295,21 @@ def _validate_surfaces(
     _require_unique(surface_ids, "surface")
     for surface in surfaces:
         _require_non_empty(surface.id, "surface id")
+        _require_known_choice(
+            surface.transport,
+            allowed={"verbatim"},
+            field_name=f"surface {surface.id} transport",
+        )
+        _require_known_choice(
+            surface.marker_protocol,
+            allowed={"ariad_compact"},
+            field_name=f"surface {surface.id} marker_protocol",
+        )
+        _require_known_choice(
+            surface.interpretation_policy,
+            allowed={"after_block_only"},
+            field_name=f"surface {surface.id} interpretation_policy",
+        )
         if surface.event is not None and surface.event in {
             "adoption",
             "on_builder_load",
@@ -349,6 +367,13 @@ def _validate_templates(templates: tuple[TemplateDefinition, ...]) -> None:
 def _require_known_event(event_id: str, *, lifecycle_ids: set[str], owner: str) -> None:
     if event_id not in lifecycle_ids:
         raise MethodDefinitionError(f"{owner} references unknown lifecycle event {event_id}")
+
+
+def _require_known_choice(value: str, *, allowed: set[str], field_name: str) -> None:
+    _require_non_empty(value, field_name)
+    if value not in allowed:
+        allowed_values = ", ".join(sorted(allowed))
+        raise MethodDefinitionError(f"{field_name} must be one of {allowed_values}")
 
 
 def _require_non_empty(value: str, field_name: str) -> None:

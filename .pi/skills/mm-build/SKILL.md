@@ -241,7 +241,12 @@ change story status, commit, push, or release.
 This section applies **only when the active journey has adopted Ariad**
 (`adopted_method == ariad`).
 
-## Deterministic Ariad Surface Delivery
+## Deterministic Ariad Surface Transport Protocol
+
+This is a transport invariant for **all** Ariad commands and lifecycle phases,
+not a phase-specific instruction. In the Ariad method DSL, surfaces are runtime
+artifacts with `transport=verbatim`, `marker_protocol=ariad_compact`, and
+`interpretation_policy=after_block_only`.
 
 Ariad runtime commands emit deterministic surfaces wrapped as:
 
@@ -251,16 +256,19 @@ Ariad runtime commands emit deterministic surfaces wrapped as:
 <<<END:<SURFACE_ID>>>
 ```
 
-For any `memory build ...` command that emits one or more Ariad surface blocks,
-the final assistant response must return those blocks from stdout verbatim. Do
-not summarize, translate, reorder, trim, reformat, or mix prose inside a wrapped
-surface.
+For any command output that contains one or more Ariad surface blocks, the final
+assistant response must return **every marked block** from stdout verbatim before
+any commentary. Do not summarize, translate, reorder, trim, rewrap, re-indent,
+reformat, or mix prose inside a wrapped surface. Do not replace a surface with a
+conversational summary, even when the user phrase is short (for example,
+`validated`, `approved`, `ok`, or `continue`).
 
-After the complete surface block, add a conversational interpretation for the
-Navigator. This interpretation should explain what happened, what it means, what
-is blocked or allowed now, and what the next Ariad step is. It may be complete
-and helpful, not merely a one-line summary, but it must stay outside the surface
-block and must not contradict the runtime boundary.
+If multiple Ariad surface blocks are emitted, return all of them in the same
+order. After the complete surface block(s), add a conversational interpretation
+for the Navigator. This interpretation should explain what happened, what it
+means, what is blocked or allowed now, and what the next Ariad step is. It may be
+complete and helpful, not merely a one-line summary, but it must stay outside the
+surface block and must not contradict the runtime boundary.
 
 Use this pattern:
 

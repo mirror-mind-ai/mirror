@@ -97,6 +97,9 @@ def test_accepts_minimal_valid_method_definition() -> None:
 
     assert definition.id == "ariad"
     assert definition.lifecycle_ids == {"pull", "plan", "implement"}
+    assert definition.surfaces[0].transport == "verbatim"
+    assert definition.surfaces[0].marker_protocol == "ariad_compact"
+    assert definition.surfaces[0].interpretation_policy == "after_block_only"
     assert definition.taxonomy.level_ids == {"delivery_story", "user_story"}
 
 
@@ -211,6 +214,15 @@ def test_rejects_duplicate_contract_rules() -> None:
     )
 
     with pytest.raises(MethodDefinitionError, match="duplicate contract"):
+        validate_method_definition(definition)
+
+
+def test_rejects_unknown_surface_transport_policy() -> None:
+    definition = _valid_definition().replace(
+        surfaces=(SurfaceDefinition(id="plan_checkpoint", event="plan", transport="summary"),)
+    )
+
+    with pytest.raises(MethodDefinitionError, match="transport"):
         validate_method_definition(definition)
 
 
