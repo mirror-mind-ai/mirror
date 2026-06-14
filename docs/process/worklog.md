@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-14 — v0.26.2 Web Conversation Bulk Actions prepared
+
+Prepared emergency patch `v0.26.2 — Web Conversation Bulk Actions`. The main web Conversations view now exposes selected bulk maintenance: each row can be selected, selected conversations can be assigned to an existing journey in one click, and selected conversations can be deleted after explicit confirmation. The implementation reuses the existing safe bulk assignment and deletion APIs and keeps the existing Unassigned conversations maintenance flow intact.
+
+Validation: `uv run pytest tests/unit/memory/web/test_server.py -q`, `uv run ruff check src/memory/web tests/unit/memory/web`, `uv run ruff format --check src/memory/web tests/unit/memory/web`, and `git diff --check` passed before release-candidate commit.
+
 ### 2026-06-10 — CV20 Ariad planning lifecycle hardened
 
 Reworked DS4 planning around methodological consistency instead of a narrow Plan gate. Ariad method data now declares `expand`, work item implementability, and cadence profiles; Delivery Stories always expand into User/Technical Stories before Plan. Builder runtime now persists active item title/level/cadence/granularity metadata, automatically prepares and expands pulled Delivery Stories, materializes story packages (`index.md`, `plan.md`, `test-guide.md`) for implementable stories, and supports deterministic Plan approval before implementation is allowed.

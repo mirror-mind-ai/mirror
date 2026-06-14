@@ -12,6 +12,7 @@ Future release notes should use the structure defined in [Release Notes](../proc
 
 ## Releases
 
+- [v0.26.2 — Web Conversation Bulk Actions](v0.26.2.md) — emergency patch release that adds selected bulk assignment and deletion to the main web Conversations view.
 - [v0.26.1 — Soul Mode English Integration Copy](v0.26.1.md) — patch release that normalizes hard-coded Soul Mode integration prompts and additive identity section headings to the English baseline.
 - [v0.26.0 — Soul Mode Integration](v0.26.0.md) — minor release that adds Closing Rite, multi-layer Integration Proposal, explicit confirmation-only identity integration, additive identity updates, and atomic integration records.
 - [v0.25.0 — Soul Mode More Voices](v0.25.0.md) — minor release that adds active Wisdom Voice and Beauty Voice listening lenses, full voice-card utterances, source/aesthetic bridge guidance, and non-mutating Soul Mode voice boundaries.

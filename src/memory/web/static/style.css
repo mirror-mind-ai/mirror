@@ -2110,7 +2110,7 @@ input {
 
 .global-conversation-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 14px;
   align-items: center;
   border-bottom: 1px solid var(--border);
@@ -2389,6 +2389,12 @@ input {
 
 .bulk-conversation-check {
   margin-top: 18px;
+}
+
+.global-conversation-check {
+  display: flex;
+  margin-top: 0;
+  cursor: default;
 }
 
 .bulk-conversation-check input {

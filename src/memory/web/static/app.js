@@ -1238,6 +1238,17 @@ function renderAllConversationsContent(payload) {
       <p>${escapeHtml(payload.description || '')}</p>
       <span class="readiness-badge">${escapeHtml(payload.count || 0)} shown</span>
     </section>
+    <section class="bulk-assignment-panel">
+      <form data-bulk-journey-form>
+        <label>
+          <span>Assign selected to journey</span>
+          <select name="journey">${renderJourneySelectOptions(payload.journeys || [], '')}</select>
+        </label>
+        <button type="submit">Assign selected</button>
+        <button type="button" class="danger-action" data-delete-selected-conversations>Delete selected</button>
+      </form>
+      <small>Select one or more conversations below, choose a journey, then assign, or delete selected conversations.</small>
+    </section>
     <section class="workspace-tab-panel active all-conversation-list">
       ${groupedRows || '<p class="empty-state">No conversations found.</p>'}
     </section>
@@ -1251,6 +1262,9 @@ function renderGlobalConversationRow(card) {
   const messageLabel = messageCount === 1 ? '1 message' : `${messageCount} messages`;
   return `
     <article class="global-conversation-row conversation-card-link" role="button" tabindex="0" data-conversation-card-id="${escapeHtml(card.id)}">
+      <label class="bulk-conversation-check global-conversation-check" title="Select conversation">
+        <input type="checkbox" data-bulk-conversation-id="${escapeHtml(card.id)}" aria-label="Select conversation ${escapeHtml(card.title || card.id)}" />
+      </label>
       <div class="global-conversation-main">
         <h4>${escapeHtml(card.title || card.id)}</h4>
         <p>${escapeHtml(messageLabel)}${metadata.persona ? ` · ${escapeHtml(metadata.persona)}` : ''}${metadata.started_at ? ` · ${escapeHtml(formatDateTime(metadata.started_at))}` : ''}</p>
@@ -1915,6 +1929,14 @@ async function deleteConversationTurn(conversationId, userMessageId) {
   });
 }
 
+async function reloadCurrentBulkConversationView() {
+  if (content.querySelector('.all-conversation-list')) {
+    await loadAllConversations({ updateHistory: false });
+    return;
+  }
+  await loadUnassignedConversations();
+}
+
 function renderConversationJourneyOptions(detail) {
   return `<option value="" ${detail.journey ? '' : 'selected'}>Unassigned</option>${renderJourneySelectOptions(detail.journeys || [], detail.journey || '')}`;
 }
@@ -2379,7 +2401,7 @@ content.addEventListener('click', async (event) => {
     if (!window.confirm(`Delete ${conversationIds.length} selected conversation(s)? This cannot be undone.`)) return;
     const result = await deleteConversations(conversationIds);
     showWarning(`Deleted ${result.deletedCount} conversation(s).`);
-    await loadUnassignedConversations();
+    await reloadCurrentBulkConversationView();
     return;
   }
 
@@ -2998,7 +3020,7 @@ content.addEventListener('submit', async (event) => {
       body: JSON.stringify({ conversationIds, journey }),
     });
     showWarning(`Assigned ${result.updatedCount} conversation(s) to ${result.journey}.`);
-    await loadUnassignedConversations();
+    await reloadCurrentBulkConversationView();
     return;
   }
 
