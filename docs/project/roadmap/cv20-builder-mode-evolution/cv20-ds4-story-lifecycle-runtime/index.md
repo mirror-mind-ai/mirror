@@ -39,7 +39,7 @@ Before DS4 continues into implementation/validation stages, Builder must reach a
 | [CV20.DS4.US2](cv20-ds4-us2-plan-package-and-granularity-gate/index.md) | Plan Package And Granularity Gate | User Story | Builder expands Delivery Stories, recommends a child story, and materializes index/plan/test-guide for implementable stories | ✅ Done |
 | [CV20.DS4.US3](cv20-ds4-us3-approval-and-implementation-guard/index.md) | Approval And Implementation Guard | User Story | Navigator approval is a deterministic transition and implementation refuses without it | ✅ Done |
 | [CV20.DS4.US4](cv20-ds4-us4-validation-checkpoint/index.md) | Validation Checkpoint | User Story | Builder presents automated evidence, E2E decision/evidence, and Navigator validation route | ✅ Done |
-| [CV20.DS4.US5](cv20-ds4-us5-accelerated-and-autonomous-cadence/index.md) | Accelerated And Autonomous Cadence | User Story | Navigator can opt into higher-autonomy cadence profiles while hard gates remain enforced | 🟢 Active |
+| [CV20.DS4.US5](cv20-ds4-us5-accelerated-and-autonomous-cadence/index.md) | Accelerated And Autonomous Cadence | User Story | Navigator can opt into higher-autonomy cadence profiles while hard gates remain enforced | ✅ Done |
 | [CV20.DS4.US6](cv20-ds4-us6-coherence-and-done-gate/index.md) | Coherence And Done Gate | User Story | Builder verifies debt/coherence/history, closes the story, and recommends next Pull/collapse/release | ✅ Done |
 
 ---

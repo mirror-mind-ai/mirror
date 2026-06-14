@@ -2,7 +2,7 @@
 
 # CV20.DS4.US5 — Accelerated And Autonomous Cadence
 
-**Status:** 🟢 Active
+**Status:** ✅ Done
 **Type:** User Story
 
 ---
@@ -66,9 +66,11 @@ And stops when a hard gate, safety boundary, scope change, failing required chec
 
 ## Implementation Notes
 
-The first implementation is intentionally conservative:
+The implementation is intentionally conservative:
 
 - `accelerated` is active and means continue through soft stops only until the next hard gate.
 - `autonomous` is active only with explicit Navigator limits recorded in runtime state.
 - Hard gates remain hard: Plan approval, Navigator validation acceptance, debt decisions, unsafe operations, scope changes, push/release, and Done/history boundaries.
 - `continue-lifecycle` performs the first safe continuation behavior: in higher-autonomy cadence, it can move from `review_complete` through Coherence and, when Done/history evidence is supplied explicitly, through Done.
+
+Manual dogfooding confirmed the accelerated lifecycle reached Done without crossing hard gates.
