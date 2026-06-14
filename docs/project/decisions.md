@@ -11,6 +11,62 @@ resolved.
 
 ## Completed Decisions
 
+### CV21 converges on a canonical plugin plus MCP server, bridged by import
+
+**Date:** 2026-06-14
+**Reference:** [CV21 index](roadmap/cv21-runtime-expansion-ii/index.md), [CV21.E1 Unified Plugin & MCP spike](roadmap/cv21-runtime-expansion-ii/cv21-e1-unified-plugin-mcp-spike/index.md)
+
+The CV21.E1 spike validated — in an isolated scratch directory, mutating no
+production runtime config — that the post-CV8 ecosystem convergence is real
+enough to package Mirror Mind once instead of maintaining N bespoke adapters.
+Decision: **converge** on a canonical package (a Claude-format plugin plus a
+Mirror MCP server) propagated per runtime by import/install.
+
+Empirical findings:
+
+1. **A Mirror plugin validates on Claude.** A minimal plugin bundling `mm-*`
+   skills + lifecycle hooks passes `claude plugin validate` once unknown manifest
+   keys are dropped (the 2.1.114 validator rejects `$schema`, despite the docs).
+2. **The same component taxonomy validates on Antigravity.** `agy plugin
+   validate` recognizes the identical categories (skills, agents, commands,
+   mcpServers, hooks). The formats are structurally aligned but **not
+   byte-identical**: Claude uses `.claude-plugin/plugin.json`; `agy` expects
+   `plugin.json` at the plugin root and reads hooks/MCP from different locations.
+   `agy plugin import claude` is the conversion bridge, so Antigravity consumes
+   the Claude plugin rather than a hand-maintained agy-native copy.
+3. **Claude `@skills-dir` in-place plugins** load a plugin folder from
+   `<repo>/.claude/skills/` (project, trust-gated) or `~/.claude/skills/`
+   (personal) with no marketplace and no install step — the cleanest packaging
+   path for Mirror's `mm-*` skills + hooks + MCP.
+4. **Codex** uses a local marketplace-snapshot model plus a full Claude-style
+   hook system and native skills; it consumes the package via a marketplace
+   snapshot or project `.codex/` hooks.
+5. **MCP is portable but pull-based.** `mcpServers` is declared the same way
+   across Claude, Antigravity, and Codex, so a Mirror MCP server is portable as
+   the runtime-agnostic command surface. But MCP tools/prompts are invoked on
+   demand; MCP **cannot do automatic per-turn Mirror Mode injection**. Automatic
+   injection stays in per-runtime `UserPromptSubmit`/`BeforeAgent` hooks (now all
+   Claude-shaped and thin). Grok Build, lacking per-turn hooks, caps at L3.
+
+Canonical package shape: a **plugin** (Claude format) bundling `mm-*` skills +
+lifecycle hooks, plus an **MCP server** (`python -m memory mcp`) for the
+command surface and on-demand context. External extensions bundle into the
+plugin's `skills/` and/or expose as MCP tools, so every runtime inherits them and
+the `.agents/` exposure gap closes.
+
+Propagation: Claude loads the plugin in place (E2); Antigravity via `agy plugin
+import claude` (E6–E7); Codex via marketplace snapshot + native hooks (E3–E5);
+Grok via shared MCP + skill discovery, capped at L3 (E9–E10). Live import
+execution (which mutates each runtime's config) is deferred to those per-runtime
+epics, where that mutation is in scope.
+
+Fallback: if `agy`/`grok` plugin import proves unreliable during implementation,
+keep thin per-runtime hook adapters but still share the MCP server and skill
+surface. The foundation pays off either way, so no per-runtime epic is blocked on
+import working perfectly.
+
+---
+
 ### Soul Mode active roadmap narrows after integration and web UI
 
 **Date:** 2026-06-08

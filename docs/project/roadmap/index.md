@@ -37,6 +37,7 @@ folder and index. Stories that are non-trivial have a `plan.md` and a
 | [CV18](cv18-soul-mode-more-voices/index.md) | Soul Mode More Voices | ✅ Done |
 | [CV19](cv19-soul-mode-integration/index.md) | Soul Mode Integration | ✅ Done |
 | [CV20](cv20-builder-mode-evolution/index.md) | Builder Mode Evolution | 🟢 In Progress |
+| [CV21](cv21-runtime-expansion-ii/index.md) | Runtime Expansion II: Plugin & MCP Convergence | 🟢 In Progress |
 
 ---
 
@@ -91,6 +92,10 @@ Done. CV19 turns Soul Mode from a ritual that can produce insight into a ritual 
 ## CV20 — Builder Mode Evolution
 
 In progress. CV20 evolves Builder Mode from a context-loading skill into a disciplined delivery environment governed by a declarative method DSL. Ariad is the inaugural method, with adoption, resume, story lifecycle, debt review, coherence, history, release, and push policies represented as method data rather than hard-coded agent habit. Method DSL Foundation has started with the internal method-definition model. See the [CV20 index](cv20-builder-mode-evolution/index.md).
+
+## CV21 — Runtime Expansion II: Plugin & MCP Convergence
+
+In progress. CV21 is the successor to CV8, driven by one force: the coding-agent ecosystem (Claude, Codex, Antigravity, Grok Build, Gemini) has converged on the same primitives — plugins, hooks, skills, and MCP — and on the same plugin shape, with Claude Code's `.claude-plugin/plugin.json` emerging as the de-facto cross-runtime interchange format (`agy plugin import claude`, `grok plugin import`, Codex marketplaces). Rather than maintain N bespoke adapters, CV21 packages Mirror Mind **once** as a canonical plugin plus an MCP server and propagates it by import/install. Claude is the anchor: already L4, but shipped through the standalone `.claude/` tier when it should be a plugin — converting it produces the canonical package the others consume. Codex is upgraded L3→L4 (0.139.0 now has Claude-style hooks); Antigravity migrates the Gemini lineage (Gemini Code Assist's individual backend is deprecated 2026-06-18); Grok Build is added. External extensions ride the same package. Sequenced by implementation leverage and user base — foundation → Claude → Codex → Antigravity → Grok — not by the Gemini deadline, since few Mirror users are on Gemini. See the [CV21 index](cv21-runtime-expansion-ii/index.md).
 
 ## CV11 — Localization
 

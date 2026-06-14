@@ -88,7 +88,7 @@ decided.
 - [Decisions](project/decisions.md) — incremental decisions and open discussions
 - [Roadmap](project/roadmap/index.md) — CV → Epic → Story hierarchy with status
 
-Current state: **CV0 English Foundation ✅ · CV1 Pi Runtime ✅ · CV2 Runtime Portability ✅ · CV3 Pi Skill Parity ✅ · CV4 Framework/User Separation ✅ · CV5 Multisession Safety ✅ · CV6 Runtime Maturity ✅ · CV7 Intelligence Depth ✅ · CV8 Runtime Expansion ✅ · CV9 Mirror Mind 1.0 🟢 In Progress, with Web Visibility done · CV14 Stateful Extensions 🟢 E1–E2 Done · CV15 Cognitive Location ✅ · CV16 Explorer Mode ✅ · CV17 Soul Mode ✅ First Ritual Done · CV18 Soul Mode More Voices ✅ · CV19 Soul Mode Integration 🟢 In Progress**
+Current state: **CV0 English Foundation ✅ · CV1 Pi Runtime ✅ · CV2 Runtime Portability ✅ · CV3 Pi Skill Parity ✅ · CV4 Framework/User Separation ✅ · CV5 Multisession Safety ✅ · CV6 Runtime Maturity ✅ · CV7 Intelligence Depth ✅ · CV8 Runtime Expansion ✅ · CV9 Mirror Mind 1.0 🟢 In Progress, with Web Visibility done · CV14 Stateful Extensions 🟢 E1–E2 Done · CV15 Cognitive Location ✅ · CV16 Explorer Mode ✅ · CV17 Soul Mode ✅ First Ritual Done · CV18 Soul Mode More Voices ✅ · CV19 Soul Mode Integration ✅ · CV20 Builder Mode Evolution 🟢 In Progress · CV21 Runtime Expansion II (Plugin & MCP Convergence) 🟢 In Progress**
 
 Runtime expansion result: **Gemini CLI first at L4 full parity; Codex second at
 L3 parity through the wrapper script, JSONL backfill, `AGENTS.md`, and `$mm-*`
