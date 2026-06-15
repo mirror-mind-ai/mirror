@@ -14,6 +14,13 @@ from memory.builder.flow_unit import FLOW_UNIT_DELIVERY_STORY
 from memory.builder.surface_protocol import wrap_ariad_surface
 from memory.storage.store import Store
 
+_CHECKPOINT_ARTIFACTS: tuple[tuple[str, str], ...] = (
+    ("validation", "validation.md"),
+    ("review", "review.md"),
+    ("coherence", "coherence.md"),
+    ("done", "done.md"),
+)
+
 
 @dataclass(frozen=True)
 class DeliveryStoryClosureReport:
@@ -177,14 +184,40 @@ def render_delivery_story_closure_report(report: DeliveryStoryClosureReport) -> 
             "summary",
             report.summary,
             "",
-            "artifact",
+            _current_artifact_heading(report.checkpoint),
             str(report.artifact_path) if report.artifact_path else "not materialized",
+            "",
+            "checkpoint artifacts",
+            *_checkpoint_artifact_lines(report.artifact_path),
             "",
             "boundary",
             _boundary(report),
         ]
     )
     return wrap_ariad_surface("delivery_story_closure_checkpoint", body + "\n")
+
+
+def _current_artifact_heading(checkpoint: str) -> str:
+    if checkpoint == "debt_review":
+        return "review artifact"
+    return f"{checkpoint} artifact"
+
+
+def _checkpoint_artifact_lines(artifact_path: Path | None) -> list[str]:
+    if artifact_path is None:
+        return [
+            "- validation: not materialized",
+            "- review: not materialized",
+            "- coherence: not materialized",
+            "- done: not materialized",
+        ]
+    artifact_dir = artifact_path.parent
+    lines: list[str] = []
+    for checkpoint, filename in _CHECKPOINT_ARTIFACTS:
+        path = artifact_dir / filename
+        status = "created" if path.exists() else "pending"
+        lines.append(f"- {checkpoint}: {path} ({status})")
+    return lines
 
 
 def _require_delivery_story_cursor(store: Store, journey: str) -> BuilderDeliveryCursor:

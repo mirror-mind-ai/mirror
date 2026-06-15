@@ -111,6 +111,28 @@ def test_delivery_story_closure_progresses_to_done(tmp_path):
     )
 
 
+def test_render_delivery_story_closure_report_lists_checkpoint_artifacts(tmp_path):
+    _client, store = _store(tmp_path)
+    _seed(store)
+    artifact = tmp_path / "story" / "validation.md"
+    report = validate_delivery_story(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        summary="validated",
+        navigator_accepted=True,
+        artifact_path=artifact,
+    )
+
+    rendered = render_delivery_story_closure_report(report)
+
+    assert "validation artifact\n" in rendered
+    assert str(artifact) in rendered
+    assert "checkpoint artifacts\n" in rendered
+    assert f"- validation: {artifact} (created)" in rendered
+    assert f"- review: {artifact.parent / 'review.md'} (pending)" in rendered
+
+
 def test_render_delivery_story_closure_report_lists_child_work_items(tmp_path):
     _client, store = _store(tmp_path)
     _seed(store)
