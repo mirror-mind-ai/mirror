@@ -9,61 +9,47 @@
 
 ## Outcome
 
-Builder can render and approve an aggregate Delivery Story Plan checkpoint when `navigator_flow_unit` is `delivery_story`, while preserving child User/Technical Stories as traceable Driver work packages.
+A Navigator operating Builder Mode through Pi can request and approve an aggregate Delivery Story Plan in natural interaction when `navigator_flow_unit` is `delivery_story`.
 
 ## Story Statement
 
-As a Navigator,
-I want to approve one aggregate Delivery Story plan when I choose Delivery Story flow,
-So that cohesive work can proceed without requiring a separate Navigator-facing Plan checkpoint for every child story.
+As a Navigator using Builder Mode in Pi,
+I want to say that a Delivery Story should be planned as one aggregate flow and approve that plan conversationally,
+So that cohesive Delivery Stories can proceed without exposing me to low-level CLI commands.
 
 ## Acceptance Behavior
 
 ```text
-Given an Ariad Delivery Story has `navigator_flow_unit=delivery_story`
-And child work packages are known
-When Builder plans the Delivery Story
-Then Builder renders a DS-level Plan checkpoint
-And lists child work packages as traceable implementation units
-And blocks implementation until the DS-level plan is approved
+Given a Delivery Story is active with `navigator_flow_unit=delivery_story`
+When the Navigator asks Builder to plan the DS
+Then the Driver calls the DS-level Plan runtime operation
+And returns the `DELIVERY_STORY_PLAN_CHECKPOINT` surface verbatim
+And explains the plan after the block
 ```
 
 ```text
-Given an Ariad Delivery Story has `navigator_flow_unit=story_by_story`
-When Builder plans work
-Then existing child story Plan behavior remains unchanged
-And no aggregate DS Plan is used by default
-```
-
-```text
-Given a DS-level Plan has been approved
-When Builder resumes active delivery state
-Then the aggregate checkpoint status shows plan approval
-And child work packages remain visible for implementation evidence
+Given a DS-level Plan is pending approval
+When the Navigator approves the plan in natural language
+Then the Driver calls the DS-level Plan approval runtime operation
+And returns the approved surface verbatim
 ```
 
 ## Scope
 
-- Add the minimal runtime operation/surface for a DS-level Plan checkpoint.
-- Require `navigator_flow_unit=delivery_story` before DS-level Plan behavior is allowed.
-- Use persisted DS lifecycle state from `CV20.DS5.TS1` for child work packages and aggregate checkpoint status.
-- Preserve existing story-by-story Plan behavior as the default.
-- Add focused unit/CLI tests for DS-level Plan rendering, approval, and state preservation.
+- Update Builder Mode/Pi instructions for routing natural requests to DS-level Plan commands.
+- Preserve deterministic Ariad surface transport.
+- Validate as a Pi/Navigator behavior, not only as CLI runtime behavior.
 
 ## Out Of Scope
 
-- Implementing DS-level Validation, Debt Review, Coherence, or Done; this belongs to CV20.DS5.US3.
-- Automatically executing child stories after DS Plan approval.
-- Removing child story artifacts or evidence requirements.
-- Implementing release intent/push policy behavior from CV20.DS6.
-- Implementing DS8 preferences/config overrides.
-- Changing non-Ariad Builder behavior.
+- Runtime DS-level Plan implementation; covered by `CV20.DS5.TS2`.
+- DS-level Validation/Closure; covered by `CV20.DS5.US3`.
+- Release/push policy behavior from `CV20.DS6`.
 
 ## Validation
 
-- Automated tests cover DS-level Plan checkpoint gating, rendering, approval, and default story-by-story preservation.
-- CLI validation demonstrates that DS-level Plan is available only for `delivery_story` flow.
-- No external sandbox validation is required unless the implementation exposes new Navigator behavior beyond Builder CLI surfaces.
+- Navigator validates from Pi/Builder natural interaction.
+- Focused docs/skill checks if applicable.
 
 ---
 

@@ -20,7 +20,8 @@ The Navigator can choose whether a Delivery Story should be governed story-by-st
 |------|-------|------|---------|--------|
 | [CV20.DS5.US1](cv20-ds5-us1-choose-navigator-flow-unit/index.md) | Choose Navigator Flow Unit | User Story | Navigator can choose story-by-story or delivery-story lifecycle cadence after DS expansion | ✅ Done |
 | [CV20.DS5.TS1](cv20-ds5-ts1-delivery-story-lifecycle-state/index.md) | Delivery Story Lifecycle State | Technical Story | Runtime stores and resumes DS-level lifecycle state, flow unit, child work package list, and aggregate checkpoint status | ✅ Done |
-| [CV20.DS5.US2](cv20-ds5-us2-delivery-story-plan-checkpoint/index.md) | Delivery Story Plan Checkpoint | User Story | Navigator can approve one aggregate DS plan while child stories remain traceable execution units | 🟡 Planned |
+| [CV20.DS5.TS2](cv20-ds5-ts2-aggregate-delivery-story-plan-runtime/index.md) | Aggregate Delivery Story Plan Runtime | Technical Story | Runtime renders and approves DS-level Plan checkpoints while preserving child story traceability | 🟡 Planned |
+| [CV20.DS5.US2](cv20-ds5-us2-delivery-story-plan-checkpoint/index.md) | Delivery Story Plan Checkpoint | User Story | Navigator can request and approve one aggregate DS plan through Builder Mode natural interaction | 🟡 Planned |
 | CV20.DS5.US3 | Delivery Story Validation And Closure | User Story | Navigator validates the aggregate DS result before DS-level debt review, coherence, and done | 🟡 Planned |
 
 ---
