@@ -48,7 +48,7 @@ def test_pull_lifecycle_item_updates_cursor_and_renders_report(tmp_path):
     assert "<<<ARIAD:DELIVERY_STORY_IDENTIFIED>>>" in rendered
     assert "<<<END:DELIVERY_STORY_IDENTIFIED>>>" in rendered
     assert "Ariad: ◉ Pull | ○ Prepare | ○ Expand | ○ Plan" in rendered
-    assert "DELIVERY STORY IDENTIFIED" in rendered
+    assert "DELIVERY STORY ACTIVATED" in rendered
     assert "roadmap candidate" in rendered
     assert "roadmap placement" in rendered
     assert "🟪[CHECKOUT-FLOW] Checkout Flow" in rendered

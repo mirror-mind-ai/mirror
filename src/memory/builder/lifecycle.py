@@ -1116,7 +1116,7 @@ def _has_approved_delivery_story_plan(cursor: BuilderDeliveryCursor) -> bool:
 
 
 def render_pull_report(report: BuilderPullReport) -> str:
-    """Render an Ariad Pull report using Delivery Story Identified grammar."""
+    """Render an Ariad Pull report using Delivery Story activation grammar."""
     code_parts = report.item.code.split(".")
     cv_code = code_parts[0] if code_parts else report.item.code
     ds_code = code_parts[-1] if len(code_parts) > 1 else report.item.code
@@ -1128,7 +1128,7 @@ def render_pull_report(report: BuilderPullReport) -> str:
                 render_lifecycle_ribbon("pull"),
                 "",
                 "╭────────────────────────────────────────────────────────╮",
-                "│        🟪■  DELIVERY STORY IDENTIFIED                  │",
+                "│        🟪■  DELIVERY STORY ACTIVATED                   │",
                 "│                                                        │",
                 _card_text(title),
                 "│                                                        │",

@@ -1496,7 +1496,7 @@ def test_build_pull_item_updates_cursor(mocker, tmp_path, capsys):
 
     out = capsys.readouterr().out
     assert "Ariad: ◉ Pull | ○ Prepare | ○ Expand | ○ Plan" in out
-    assert "DELIVERY STORY IDENTIFIED" in out
+    assert "DELIVERY STORY ACTIVATED" in out
     assert "roadmap candidate" in out
     assert "active item: CHECKOUT-FLOW" in out
     assert "Prepare" in out
