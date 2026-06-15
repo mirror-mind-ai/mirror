@@ -12,6 +12,7 @@ from memory.builder.lifecycle import (
     render_plan_checkpoint,
     render_prepare_report,
     render_pull_report,
+    validate_lifecycle_item,
 )
 from memory.config import default_db_path_for_home
 
@@ -247,6 +248,54 @@ def test_plan_lifecycle_item_requires_active_item(tmp_path):
 
     with pytest.raises(ValueError, match="active item"):
         plan_lifecycle_item(store, journey="sandbox-pet-store", method=get_ariad_method())
+
+
+def test_validation_accepts_approved_delivery_story_plan_with_implementation_evidence(tmp_path):
+    _client, store = _store(tmp_path)
+    set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV2.DS1",
+        active_item_level="delivery_story",
+        last_delivery_event="delivery_story_plan_approved",
+        navigator_flow_unit="delivery_story",
+        child_work_items=("CV2.DS1.US1",),
+        aggregate_checkpoint_status=("plan:approved",),
+    )
+
+    report = validate_lifecycle_item(
+        store,
+        journey="sandbox-pet-store",
+        method=get_ariad_method(),
+        automated_checks=("npm test",),
+        checks_status="passed",
+        navigator_validation_route="Validate checkout DS.",
+        navigator_accepted=True,
+        implementation_complete=True,
+    )
+
+    assert report.missing_evidence == ()
+    assert report.cursor.last_delivery_event == "validation_passed"
+
+
+def test_implementation_guard_allows_approved_delivery_story_plan(tmp_path):
+    _client, store = _store(tmp_path)
+    set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV2.DS1",
+        active_item_level="delivery_story",
+        last_delivery_event="delivery_story_plan_approved",
+        navigator_flow_unit="delivery_story",
+        child_work_items=("CV2.DS1.US1",),
+        aggregate_checkpoint_status=("plan:approved",),
+    )
+
+    cursor = assert_implementation_allowed(store, journey="sandbox-pet-store")
+
+    assert cursor.active_item == "CV2.DS1"
 
 
 def test_implementation_guard_blocks_pending_confirmation(tmp_path):

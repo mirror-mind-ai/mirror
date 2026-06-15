@@ -895,9 +895,10 @@ def validate_lifecycle_item(
         )
     if existing.pending_confirmation == "navigator_validation" and not navigator_accepted:
         raise ValueError("Validation is blocked: pending Navigator validation acceptance.")
-    if existing.last_delivery_event not in {"plan_approved", "implementation_complete", "validate"}:
+    plan_events = {"plan_approved", "delivery_story_plan_approved"}
+    if existing.last_delivery_event not in (*plan_events, "implementation_complete", "validate"):
         raise ValueError("Validation requires an approved Plan and completed implementation")
-    if existing.last_delivery_event == "plan_approved" and not implementation_complete:
+    if existing.last_delivery_event in plan_events and not implementation_complete:
         raise ValueError("Validation requires implementation completion evidence")
     normalized_checks = tuple(check.strip() for check in automated_checks if check.strip())
     normalized_checks_status = _normalize_validation_choice(
@@ -1098,11 +1099,20 @@ def assert_implementation_allowed(store: Store, *, journey: str) -> BuilderDeliv
         raise PermissionError(
             f"Implementation is blocked: pending confirmation {cursor.pending_confirmation}."
         )
-    if cursor.last_delivery_event != "plan_approved":
-        raise PermissionError(
-            "Implementation is blocked: approved Plan is required before Implement."
-        )
-    return cursor
+    if cursor.last_delivery_event == "plan_approved":
+        return cursor
+    if _has_approved_delivery_story_plan(cursor):
+        return cursor
+    raise PermissionError("Implementation is blocked: approved Plan is required before Implement.")
+
+
+def _has_approved_delivery_story_plan(cursor: BuilderDeliveryCursor) -> bool:
+    return (
+        cursor.last_delivery_event == "delivery_story_plan_approved"
+        and cursor.active_item_level == "delivery_story"
+        and cursor.navigator_flow_unit == "delivery_story"
+        and "plan:approved" in cursor.aggregate_checkpoint_status
+    )
 
 
 def render_pull_report(report: BuilderPullReport) -> str:
