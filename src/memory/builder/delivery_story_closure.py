@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
 from memory.builder.delivery_cursor import (
     BuilderDeliveryCursor,
@@ -25,6 +26,7 @@ class DeliveryStoryClosureReport:
     status: str
     summary: str
     cursor: BuilderDeliveryCursor
+    artifact_path: Path | None = None
 
 
 def validate_delivery_story(
@@ -34,6 +36,7 @@ def validate_delivery_story(
     method: str,
     summary: str,
     navigator_accepted: bool = False,
+    artifact_path: Path | None = None,
 ) -> DeliveryStoryClosureReport:
     cursor = _require_delivery_story_cursor(store, journey)
     _require_plan_approved(cursor)
@@ -51,7 +54,9 @@ def validate_delivery_story(
         checkpoint="validation",
         status=status,
     )
-    return _report(journey, method, cursor, "validation", status, summary, updated)
+    report = _report(journey, method, cursor, "validation", status, summary, updated, artifact_path)
+    _write_artifact(report)
+    return report
 
 
 def review_delivery_story(
@@ -61,6 +66,7 @@ def review_delivery_story(
     method: str,
     decision: str,
     summary: str,
+    artifact_path: Path | None = None,
 ) -> DeliveryStoryClosureReport:
     cursor = _require_delivery_story_cursor(store, journey)
     _require_status(cursor, "validation", "passed")
@@ -78,7 +84,11 @@ def review_delivery_story(
         checkpoint="debt_review",
         status=status,
     )
-    return _report(journey, method, cursor, "debt_review", status, summary, updated)
+    report = _report(
+        journey, method, cursor, "debt_review", status, summary, updated, artifact_path
+    )
+    _write_artifact(report)
+    return report
 
 
 def coherence_delivery_story(
@@ -87,6 +97,7 @@ def coherence_delivery_story(
     journey: str,
     method: str,
     summary: str,
+    artifact_path: Path | None = None,
 ) -> DeliveryStoryClosureReport:
     cursor = _require_delivery_story_cursor(store, journey)
     _require_prefix(cursor, "debt_review", "review:")
@@ -101,7 +112,11 @@ def coherence_delivery_story(
         checkpoint="coherence",
         status="coherent",
     )
-    return _report(journey, method, cursor, "coherence", "coherent", summary, updated)
+    report = _report(
+        journey, method, cursor, "coherence", "coherent", summary, updated, artifact_path
+    )
+    _write_artifact(report)
+    return report
 
 
 def done_delivery_story(
@@ -110,6 +125,7 @@ def done_delivery_story(
     journey: str,
     method: str,
     summary: str,
+    artifact_path: Path | None = None,
 ) -> DeliveryStoryClosureReport:
     cursor = _require_delivery_story_cursor(store, journey)
     _require_status(cursor, "coherence", "coherent")
@@ -124,7 +140,9 @@ def done_delivery_story(
         checkpoint="done",
         status="done",
     )
-    return _report(journey, method, cursor, "done", "done", summary, updated)
+    report = _report(journey, method, cursor, "done", "done", summary, updated, artifact_path)
+    _write_artifact(report)
+    return report
 
 
 def render_delivery_story_closure_report(report: DeliveryStoryClosureReport) -> str:
@@ -158,6 +176,9 @@ def render_delivery_story_closure_report(report: DeliveryStoryClosureReport) -> 
             "",
             "summary",
             report.summary,
+            "",
+            "artifact",
+            str(report.artifact_path) if report.artifact_path else "not materialized",
             "",
             "boundary",
             _boundary(report),
@@ -244,6 +265,7 @@ def _report(
     status: str,
     summary: str,
     updated: BuilderDeliveryCursor,
+    artifact_path: Path | None = None,
 ) -> DeliveryStoryClosureReport:
     return DeliveryStoryClosureReport(
         journey=journey,
@@ -255,7 +277,38 @@ def _report(
         status=status,
         summary=summary.strip() or "none",
         cursor=updated,
+        artifact_path=artifact_path,
     )
+
+
+def _write_artifact(report: DeliveryStoryClosureReport) -> None:
+    if report.artifact_path is None:
+        return
+    report.artifact_path.parent.mkdir(parents=True, exist_ok=True)
+    report.artifact_path.write_text(_render_artifact(report), encoding="utf-8")
+
+
+def _render_artifact(report: DeliveryStoryClosureReport) -> str:
+    title = report.checkpoint.replace("_", " ").title()
+    child_items = "\n".join(f"- {item}" for item in report.child_work_items)
+    return f"""# {title} — {report.delivery_story}
+
+## Status
+
+{report.status}
+
+## Summary
+
+{report.summary}
+
+## Child Work Packages
+
+{child_items or "- none"}
+
+## Boundary
+
+{_boundary(report)}
+"""
 
 
 def _ribbon(checkpoint: str) -> str:

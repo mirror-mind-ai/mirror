@@ -598,12 +598,17 @@ def cmd_validate_delivery_story(
     )
     _require_adopted_method(mem, resolved_journey, method)
     try:
+        cursor = get_delivery_cursor(mem.store, resolved_journey)
+        artifact_path = _checkpoint_artifact_path(
+            mem.journeys.get_project_path(resolved_journey), cursor, "validation.md"
+        )
         report = validate_delivery_story(
             mem.store,
             journey=resolved_journey,
             method=method,
             summary=summary,
             navigator_accepted=navigator_accepted,
+            artifact_path=artifact_path,
         )
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
@@ -629,12 +634,17 @@ def cmd_review_delivery_story(
     )
     _require_adopted_method(mem, resolved_journey, method)
     try:
+        cursor = get_delivery_cursor(mem.store, resolved_journey)
+        artifact_path = _checkpoint_artifact_path(
+            mem.journeys.get_project_path(resolved_journey), cursor, "review.md"
+        )
         report = review_delivery_story(
             mem.store,
             journey=resolved_journey,
             method=method,
             decision=decision,
             summary=summary,
+            artifact_path=artifact_path,
         )
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
@@ -659,11 +669,16 @@ def cmd_coherence_delivery_story(
     )
     _require_adopted_method(mem, resolved_journey, method)
     try:
+        cursor = get_delivery_cursor(mem.store, resolved_journey)
+        artifact_path = _checkpoint_artifact_path(
+            mem.journeys.get_project_path(resolved_journey), cursor, "coherence.md"
+        )
         report = coherence_delivery_story(
             mem.store,
             journey=resolved_journey,
             method=method,
             summary=summary,
+            artifact_path=artifact_path,
         )
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
@@ -688,11 +703,16 @@ def cmd_done_delivery_story(
     )
     _require_adopted_method(mem, resolved_journey, method)
     try:
+        cursor = get_delivery_cursor(mem.store, resolved_journey)
+        artifact_path = _checkpoint_artifact_path(
+            mem.journeys.get_project_path(resolved_journey), cursor, "done.md"
+        )
         report = done_delivery_story(
             mem.store,
             journey=resolved_journey,
             method=method,
             summary=summary,
+            artifact_path=artifact_path,
         )
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
@@ -936,11 +956,32 @@ def _plan_artifact_path(
     project_path: str | None,
     cursor: object,
 ) -> Path | None:
+    package_path = _canonical_package_path(project_path, cursor)
+    if package_path is None:
+        return None
+    return package_path / "plan.md"
+
+
+def _checkpoint_artifact_path(
+    project_path: str | None,
+    cursor: object,
+    filename: str,
+) -> Path | None:
+    package_path = _canonical_package_path(project_path, cursor)
+    if package_path is None:
+        return None
+    return package_path / filename
+
+
+def _canonical_package_path(project_path: str | None, cursor: object) -> Path | None:
     active_item = getattr(cursor, "active_item", None)
     if not project_path or not active_item:
         return None
     project_root = Path(project_path)
     active_code = str(active_item)
+    existing = _find_existing_package_path(project_root, active_code)
+    if existing is not None:
+        return existing
     title_parts = _roadmap_title_parts(project_root, active_code)
     code_parts = active_code.lower().replace("_", "-").split(".")
     if not code_parts:
@@ -953,7 +994,22 @@ def _plan_artifact_path(
         title_slug = _slugify(title_parts[index]) if index < len(title_parts) else ""
         folder = f"{code_prefix}-{title_slug}" if title_slug else code_prefix
         roadmap_path = roadmap_path / folder
-    return roadmap_path / "plan.md"
+    return roadmap_path
+
+
+def _find_existing_package_path(project_root: Path, active_code: str) -> Path | None:
+    roadmap_root = project_root / "docs" / "project" / "roadmap"
+    if not roadmap_root.is_dir():
+        return None
+    prefix = active_code.lower().replace("_", "-").replace(".", "-")
+    matches = sorted(
+        path
+        for path in roadmap_root.rglob("index.md")
+        if path.parent.name == prefix or path.parent.name.startswith(f"{prefix}-")
+    )
+    if not matches:
+        return None
+    return min((path.parent for path in matches), key=lambda path: len(path.parts))
 
 
 def _roadmap_title_parts(project_root: Path, active_code: str) -> tuple[str, ...]:

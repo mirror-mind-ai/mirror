@@ -407,6 +407,34 @@ def test_build_set_cadence_records_autonomous_limits(mocker, tmp_path, capsys):
     assert "cadence limits\nstop before push, stop on scope change" in out
 
 
+def test_plan_artifact_path_prefers_existing_canonical_package(tmp_path):
+    project = tmp_path / "project"
+    canonical = (
+        project
+        / "docs/project/roadmap/cv20-builder-mode-evolution/cv20-ds5-delivery-story-level-lifecycle/cv20-ds5-ts3-lifecycle-checkpoint-artifact-materialization"
+    )
+    canonical.mkdir(parents=True)
+    (canonical / "index.md").write_text("# CV20.DS5.TS3", encoding="utf-8")
+    cursor = type("Cursor", (), {"active_item": "CV20.DS5.TS3"})()
+
+    assert build._plan_artifact_path(str(project), cursor) == canonical / "plan.md"
+
+
+def test_checkpoint_artifact_path_prefers_existing_delivery_story_package(tmp_path):
+    project = tmp_path / "project"
+    canonical = (
+        project
+        / "docs/project/roadmap/cv2-checkout-flow/cv2-ds1-checkout-entry-and-address-capture"
+    )
+    canonical.mkdir(parents=True)
+    (canonical / "index.md").write_text("# CV2.DS1", encoding="utf-8")
+    cursor = type("Cursor", (), {"active_item": "CV2.DS1"})()
+
+    assert build._checkpoint_artifact_path(str(project), cursor, "validation.md") == (
+        canonical / "validation.md"
+    )
+
+
 def test_build_plan_item_refuses_delivery_story(mocker, tmp_path, capsys):
     mirror_home = tmp_path / ".mirror" / "pati"
     db_path = default_db_path_for_home(mirror_home)

@@ -31,6 +31,25 @@ def _seed(store):
     )
 
 
+def test_validate_delivery_story_materializes_artifact(tmp_path):
+    _client, store = _store(tmp_path)
+    _seed(store)
+    artifact = tmp_path / "story" / "validation.md"
+
+    report = validate_delivery_story(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        summary="Navigator accepted the aggregate checkout behavior.",
+        navigator_accepted=True,
+        artifact_path=artifact,
+    )
+
+    assert report.artifact_path == artifact
+    assert artifact.exists()
+    assert "# Validation — CV2.DS1" in artifact.read_text(encoding="utf-8")
+
+
 def test_validate_delivery_story_records_aggregate_validation(tmp_path):
     _client, store = _store(tmp_path)
     _seed(store)
