@@ -9,15 +9,22 @@
 
 ## Outcome
 
-A Navigator operating Builder Mode through Pi can request and approve an aggregate Delivery Story Plan in natural interaction when `navigator_flow_unit` is `delivery_story`.
+A Navigator operating Builder Mode through Pi can choose Delivery Story flow, request an aggregate Delivery Story Plan, and approve that plan in natural interaction.
 
 ## Story Statement
 
 As a Navigator using Builder Mode in Pi,
-I want to say that a Delivery Story should be planned as one aggregate flow and approve that plan conversationally,
+I want to choose Delivery Story flow and approve its aggregate plan conversationally,
 So that cohesive Delivery Stories can proceed without exposing me to low-level CLI commands.
 
 ## Acceptance Behavior
+
+```text
+Given a Delivery Story is active or in focus
+When the Navigator says they want to follow work at Delivery Story level
+Then the Driver calls the flow-unit runtime operation with `delivery_story`
+And returns the `NAVIGATOR_FLOW_UNIT` surface verbatim
+```
 
 ```text
 Given a Delivery Story is active with `navigator_flow_unit=delivery_story`
@@ -36,7 +43,7 @@ And returns the approved surface verbatim
 
 ## Scope
 
-- Update Builder Mode/Pi instructions for routing natural requests to DS-level Plan commands.
+- Update Builder Mode/Pi instructions for routing natural requests to flow-unit and DS-level Plan commands.
 - Preserve deterministic Ariad surface transport.
 - Validate as a Pi/Navigator behavior, not only as CLI runtime behavior.
 

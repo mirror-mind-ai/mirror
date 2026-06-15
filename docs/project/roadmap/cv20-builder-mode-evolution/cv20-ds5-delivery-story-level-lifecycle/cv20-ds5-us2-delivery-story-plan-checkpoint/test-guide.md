@@ -20,11 +20,13 @@ Browser/UI E2E is not required. Pi/Builder natural interaction validation is req
 Validate in Builder Mode as the Navigator, without manually invoking CLI commands:
 
 1. Set up an active Ariad Delivery Story with `navigator_flow_unit=delivery_story`.
-2. Say: `planeje a Delivery Story`.
-3. Expected: Builder returns `<<<ARIAD:DELIVERY_STORY_PLAN_CHECKPOINT>>>` verbatim and states implementation remains blocked until approval.
-4. Say: `aprovo o plano da DS`.
-5. Expected: Builder returns the approved `DELIVERY_STORY_PLAN_CHECKPOINT` surface verbatim.
-6. Confirm no implementation, push, release, or child-story closure occurs.
+2. Say: `quero seguir no nível da DS`.
+3. Expected: Builder returns `<<<ARIAD:NAVIGATOR_FLOW_UNIT>>>` verbatim with `delivery_story` selected.
+4. Say: `planeje a Delivery Story`.
+5. Expected: Builder returns `<<<ARIAD:DELIVERY_STORY_PLAN_CHECKPOINT>>>` verbatim and states implementation remains blocked until approval.
+6. Say: `aprovo o plano da DS`.
+7. Expected: Builder returns the approved `DELIVERY_STORY_PLAN_CHECKPOINT` surface verbatim.
+8. Confirm no implementation, push, release, or child-story closure occurs.
 
 ## Validation Evidence
 

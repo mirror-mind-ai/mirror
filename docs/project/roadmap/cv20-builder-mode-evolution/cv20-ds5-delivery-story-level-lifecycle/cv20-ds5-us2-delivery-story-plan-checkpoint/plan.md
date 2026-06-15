@@ -2,17 +2,20 @@
 
 ## Objective
 
-Route natural Builder Mode/Pi requests for aggregate Delivery Story planning and approval through the DS-level Plan runtime substrate, returning deterministic Ariad surfaces verbatim.
+Route natural Builder Mode/Pi requests for Delivery Story-level flow choice, aggregate Delivery Story planning, and DS Plan approval through the existing runtime substrate, returning deterministic Ariad surfaces verbatim.
 
 ## Scope
 
 - Update Builder Mode instructions so the Driver recognizes natural Navigator intents such as:
+  - "seguir no nível da DS" / "use Delivery Story flow";
+  - "não preciso validar cada US";
   - "planeje a DS" / "plan the Delivery Story";
-  - "aprovo o plano da DS" / "approve the DS plan";
-  - equivalent wording when `navigator_flow_unit=delivery_story`.
+  - "aprovo o plano da DS" / "approve the DS plan".
 - Route those intents to the existing runtime commands:
+  - `uv run python -m memory build set-flow-unit ... --unit delivery_story`;
   - `uv run python -m memory build plan-delivery-story ...`;
   - `uv run python -m memory build approve-delivery-story-plan ...`.
+- If the Navigator asks to plan the DS before selecting a flow unit, Builder should first surface or request the flow-unit choice instead of silently using DS-level Plan.
 - Preserve the Ariad surface transport contract:
   - return `<<<ARIAD:DELIVERY_STORY_PLAN_CHECKPOINT>>>` blocks verbatim;
   - interpret only after the block.
@@ -28,6 +31,15 @@ Route natural Builder Mode/Pi requests for aggregate Delivery Story planning and
 - Do not route non-Ariad Builder journeys through Ariad surfaces.
 
 ## Acceptance Behavior
+
+```text
+Given Builder Mode is active for an Ariad journey
+And a Delivery Story is active or in focus
+When the Navigator says they want to follow the work at Delivery Story level
+Then the Driver calls the flow-unit runtime operation with `delivery_story`
+And returns the `NAVIGATOR_FLOW_UNIT` surface verbatim
+And explains that child stories remain traceable work packages
+```
 
 ```text
 Given Builder Mode is active for an Ariad journey
@@ -65,12 +77,14 @@ git diff --check
 
 Navigator-facing validation in Pi/Builder:
 
-1. Activate Builder for an Ariad journey with `navigator_flow_unit=delivery_story`.
-2. Ask naturally: "planeje a Delivery Story".
-3. Confirm Builder returns the `DELIVERY_STORY_PLAN_CHECKPOINT` surface verbatim.
-4. Approve naturally: "aprovo o plano da DS".
-5. Confirm Builder returns the approved surface verbatim.
-6. Confirm no implementation, push, or release occurs from planning/approval alone.
+1. Activate Builder for an Ariad journey with an active/focused Delivery Story.
+2. Say naturally: "quero seguir no nível da DS".
+3. Confirm Builder returns the `NAVIGATOR_FLOW_UNIT` surface verbatim with `delivery_story` selected.
+4. Ask naturally: "planeje a Delivery Story".
+5. Confirm Builder returns the `DELIVERY_STORY_PLAN_CHECKPOINT` surface verbatim.
+6. Approve naturally: "aprovo o plano da DS".
+7. Confirm Builder returns the approved surface verbatim.
+8. Confirm no implementation, push, or release occurs from flow choice/planning/approval alone.
 
 E2E decision: Pi/Builder natural interaction is required; browser/UI E2E is not required.
 
