@@ -22,7 +22,8 @@ The Navigator can choose whether a Delivery Story should be governed story-by-st
 | [CV20.DS5.TS1](cv20-ds5-ts1-delivery-story-lifecycle-state/index.md) | Delivery Story Lifecycle State | Technical Story | Runtime stores and resumes DS-level lifecycle state, flow unit, child work package list, and aggregate checkpoint status | ✅ Done |
 | [CV20.DS5.TS2](cv20-ds5-ts2-aggregate-delivery-story-plan-runtime/index.md) | Aggregate Delivery Story Plan Runtime | Technical Story | Runtime renders and approves DS-level Plan checkpoints while preserving child story traceability | ✅ Done |
 | [CV20.DS5.US2](cv20-ds5-us2-delivery-story-plan-checkpoint/index.md) | Delivery Story Plan Checkpoint | User Story | Navigator can request and approve one aggregate DS plan through Builder Mode natural interaction | ✅ Done |
-| [CV20.DS5.US3](cv20-ds5-us3-delivery-story-validation-and-closure/index.md) | Delivery Story Validation And Closure | User Story | Navigator validates the aggregate DS result before DS-level debt review, coherence, and done | 🟡 Planned |
+| [CV20.DS5.TS3](cv20-ds5-ts3-lifecycle-checkpoint-artifact-materialization/index.md) | Lifecycle Checkpoint Artifact Materialization | Technical Story | Runtime materializes validation, review, coherence, and done artifacts at canonical package paths for DS, US, and TS lifecycle units | 🟡 Planned |
+| [CV20.DS5.US3](cv20-ds5-us3-delivery-story-validation-and-closure/index.md) | Delivery Story Validation And Closure | User Story | Navigator validates the aggregate DS result before DS-level debt review, coherence, and done with checkpoint artifacts materialized | 🟡 Planned |
 
 ---
 
