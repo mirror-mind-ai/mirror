@@ -96,12 +96,12 @@ def write_builder_handoff_artifacts(
         title=title,
         summary=summary,
         readiness="proposed",
-        artifact_dir=str(base),
-        index_path=str(index_path),
-        exploratory_story_path=str(exploratory_story_path),
-        handoff_info_path=str(handoff_info_path),
-        product_design_proposal_path=str(product_design_path),
-        full_conversation_path=str(full_conversation_path) if full_conversation_written else None,
+        artifact_dir=base.as_posix(),
+        index_path=index_path.as_posix(),
+        exploratory_story_path=exploratory_story_path.as_posix(),
+        handoff_info_path=handoff_info_path.as_posix(),
+        product_design_proposal_path=product_design_path.as_posix(),
+        full_conversation_path=full_conversation_path.as_posix() if full_conversation_written else None,
     )
 
 

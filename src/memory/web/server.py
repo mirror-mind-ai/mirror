@@ -25,6 +25,10 @@ from memory.web.preferences import DEFAULT_AVATAR_SYMBOL, VALID_PERSPECTIVES, We
 STATIC_DIR = Path(__file__).parent / "static"
 
 
+def _web_path(path: Path | None) -> str | None:
+    return path.as_posix() if path is not None else None
+
+
 class MirrorWebHandler(BaseHTTPRequestHandler):
     browser: DocsBrowser
     mirror_home: Path | None
@@ -345,11 +349,11 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
         return {
             "mirror": {
                 "name": mirrors.current_name(),
-                "path": str(mirrors.mirror_home) if mirrors.mirror_home else None,
+                "path": _web_path(mirrors.mirror_home),
             },
             "profile": preference.profile.to_dict(),
             "theme": preference.theme,
-            "preferencesPath": str(self._preferences().path) if self._preferences().path else None,
+            "preferencesPath": _web_path(self._preferences().path),
             "mirrors": [mirror.to_dict() for mirror in mirrors.list_mirrors()],
             "defaultPerspective": preference.default_perspective,
             "validPerspectives": list(VALID_PERSPECTIVES),

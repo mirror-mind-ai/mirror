@@ -81,6 +81,18 @@ def _validate_command_name(runtime: str, command_name: str) -> None:
         raise ExtensionValidationError(f"runtime '{runtime}' command_name must start with 'ext-'")
 
 
+def _filesystem_skill_dir_name(command_name: str) -> str:
+    """Map runtime command names to cross-platform directory names.
+
+    Claude command names intentionally use the ``ext:name`` namespace, but
+    ``:`` is illegal in Windows path segments. Catalogs keep the runtime
+    command unchanged while filesystem paths use a safe reversible-enough label
+    for runtime skill surfaces.
+    """
+    safe = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "-", command_name).strip(" .")
+    return safe or "extension"
+
+
 def load_extension_manifest(extension_dir: Path) -> dict:
     manifest_path = extension_dir / "skill.yaml"
     data = _load_yaml(manifest_path)
@@ -297,7 +309,7 @@ def sync_extensions_for_runtime(
             continue
 
         command_name = runtime_data["command_name"]
-        target_dir = target_root / command_name
+        target_dir = target_root / _filesystem_skill_dir_name(command_name)
         target_dir.mkdir(parents=True, exist_ok=True)
         target_skill_path = target_dir / "SKILL.md"
         shutil.copyfile(skill_path, target_skill_path)
@@ -518,7 +530,7 @@ def expose_claude_runtime_skills(mirror_home: Path, project_root: Path) -> dict[
         source_path = Path(installed_skill_path)
         if not source_path.exists():
             continue
-        target_dir = claude_skills_root / command_name
+        target_dir = claude_skills_root / _filesystem_skill_dir_name(command_name)
         target_dir.mkdir(parents=True, exist_ok=True)
         target_skill_path = target_dir / "SKILL.md"
         shutil.copyfile(source_path, target_skill_path)
@@ -562,7 +574,7 @@ def uninstall_extension(
             continue
         runtime_root = default_runtime_skills_dir_for_home(mirror_home, runtime_name)
         command_name = runtime_data["command_name"]
-        target_dir = runtime_root / command_name
+        target_dir = runtime_root / _filesystem_skill_dir_name(command_name)
         if target_dir.exists():
             shutil.rmtree(target_dir)
         _prune_catalog_for_extension(

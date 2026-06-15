@@ -494,7 +494,13 @@ def _since_label(first_started: str | None) -> str:
 
 def _resolve_home(mirror_home: str | Path | None) -> Path | None:
     try:
-        return resolve_mirror_home(mirror_home=mirror_home)
+        if mirror_home is not None:
+            # An explicit CLI --mirror-home should be authoritative even when
+            # the repository .env provides MIRROR_USER for normal production
+            # sessions. This keeps tests and one-off diagnostics from being
+            # shadowed by the ambient user.
+            return resolve_mirror_home(mirror_home=mirror_home, mirror_user="")
+        return resolve_mirror_home()
     except ValueError:
         return None
 

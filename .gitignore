@@ -19,3 +19,6 @@ pi_exports/
 docs/project/explorations/
 .mirror-clone-role
 .mirror-update-channel
+
+# Local recovery/backup notes and patches (Windows compat workflow)
+tmp/
