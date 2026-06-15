@@ -28,16 +28,22 @@ def test_render_builder_resume_surface_shows_cursor_and_next_actions():
 
     assert "<<<ARIAD:BUILDER_RESUME>>>" in rendered
     assert "<<<END:BUILDER_RESUME>>>" in rendered
-    assert "BUILDER RESUME" in rendered
-    assert "journey\nsandbox-pet-store" in rendered
-    assert "adopted method\nariad" in rendered
-    assert "resumable\nyes" in rendered
+    assert "│        ■  BUILDER RESUME                               │" in rendered
+    assert "╭────────────────────────────────────────────────────────╮" in rendered
+    assert "│ journey                                                │" in rendered
+    assert "│ sandbox-pet-store                                      │" in rendered
+    assert "│ adopted method                                         │" in rendered
+    assert "│ ariad                                                  │" in rendered
+    assert "│ resumable                                              │" in rendered
+    assert "│ yes                                                    │" in rendered
     assert "CV20 — Builder Mode Evolution" in rendered
-    assert "active item\nnone" in rendered
-    assert "last delivery event\ntemplate_preparation" in rendered
-    assert "- inspect_roadmap" in rendered
-    assert "- pull_candidate_if_known" in rendered
-    assert "no story lifecycle work was executed" in rendered
+    assert "│ active item                                            │" in rendered
+    assert "│ none                                                   │" in rendered
+    assert "│ last delivery event                                    │" in rendered
+    assert "│ template_preparation                                   │" in rendered
+    assert "│ - inspect_roadmap                                      │" in rendered
+    assert "│ - pull_candidate_if_known                              │" in rendered
+    assert "no story lifecycle work" in rendered
 
 
 def test_render_builder_resume_surface_shows_non_resumable_reason():
@@ -52,6 +58,9 @@ def test_render_builder_resume_surface_shows_non_resumable_reason():
 
     rendered = render_builder_resume_surface(state)
 
-    assert "resumable\nno" in rendered
-    assert "reason\nadoption_required" in rendered
-    assert "roadmap position\nnone" in rendered
+    assert "│ resumable                                              │" in rendered
+    assert "│ no                                                     │" in rendered
+    assert "│ reason                                                 │" in rendered
+    assert "│ adoption_required                                      │" in rendered
+    assert "│ roadmap position                                       │" in rendered
+    assert "│ none                                                   │" in rendered

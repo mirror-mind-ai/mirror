@@ -161,8 +161,9 @@ def test_build_load_renders_resume_surface_when_adopted_journey_has_active_item(
 
     out = capsys.readouterr().out
     assert "BUILDER RESUME" in out
-    assert "active item\nCV2.DS1" in out
-    assert "- prepare_active_item" in out
+    assert "│ active item                                            │" in out
+    assert "CV2.DS1" in out
+    assert "prepare_active_item" in out
     assert "ROADMAP SNAPSHOT" not in out
 
 
