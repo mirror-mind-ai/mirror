@@ -294,7 +294,7 @@ def test_build_plan_delivery_story_records_aggregate_checkpoint(mocker, tmp_path
     assert "<<<ARIAD:DELIVERY_STORY_PLAN_CHECKPOINT>>>" in out
     assert "│ - CV20.DS5.US1                                         │" in out
     assert package.joinpath("plan.md").exists()
-    assert "plan.md" in out
+    assert "│ plan artifact                                          │" in out
 
 
 def test_build_approve_delivery_story_plan_records_approval(mocker, tmp_path, capsys):
