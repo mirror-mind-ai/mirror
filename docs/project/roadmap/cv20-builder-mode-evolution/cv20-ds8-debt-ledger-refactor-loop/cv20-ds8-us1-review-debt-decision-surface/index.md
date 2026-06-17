@@ -1,6 +1,6 @@
-[< CV20.DS7](../index.md)
+[< CV20.DS8](../index.md)
 
-# CV20.DS7.US1 — Review Debt Decision Surface
+# CV20.DS8.US1 — Review Debt Decision Surface
 
 **Status:** ✅ Done
 **Type:** User Story

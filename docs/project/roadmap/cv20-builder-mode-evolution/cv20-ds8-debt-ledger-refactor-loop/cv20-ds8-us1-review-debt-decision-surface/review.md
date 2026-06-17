@@ -1,6 +1,6 @@
 [< Story](index.md)
 
-# Review — CV20.DS7.US1 Review Debt Decision Surface
+# Review — CV20.DS8.US1 Review Debt Decision Surface
 
 ## Changed Surface
 
@@ -38,8 +38,8 @@ Debt Review is complete; Builder may proceed to Coherence.
 
 ## Debt
 
-- Durable versioned debt ledger remains planned in `CV20.DS7.TS1`.
-- Pay-now Refactor loop remains planned in `CV20.DS7.US2`.
+- Durable versioned debt ledger remains planned in `CV20.DS8.TS1`.
+- Pay-now Refactor loop remains planned in `CV20.DS8.US2`.
 
 ## Decision
 

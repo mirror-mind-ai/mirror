@@ -11,6 +11,34 @@ resolved.
 
 ## Completed Decisions
 
+### Builder adds Refinement Work before release/push governance
+
+**Date:** 2026-06-17
+**Reference:** [CV20 Builder Mode Evolution](roadmap/cv20-builder-mode-evolution/index.md), [CV20.DS6 Refinement Workbench And Flow](roadmap/cv20-builder-mode-evolution/cv20-ds6-refinement-workbench-flow/index.md), Ariad branch `ariad-refinement-workbench` commit `2447705`
+
+After CV20.DS5 made the Ariad Delivery Story lifecycle traversable end to end,
+Mirror needs a way to refine the lived Builder lifecycle through real use without
+turning every adjustment into roadmap Delivery Work. Ariad was extended on a
+feature branch with a third work area: Refinement. Mirror will implement the
+runtime side prospectively in CV20.DS6.
+
+Decision: Builder should support a Workbench outside the roadmap. The Workbench
+holds Change Requests and Refinement Stories. Roadmap items remain Delivery Work;
+Workbench items become Refinement Work. A quick fix is not a separate flow: it
+creates a minimal Refinement Story with one Change Request and pulls it
+immediately.
+
+Consequences:
+
+- `CV20.DS6` becomes `Refinement Workbench And Flow`.
+- Existing planned release/push governance moves to `CV20.DS7`.
+- Debt ledger, method preferences, and Builder documentation move to `CV20.DS8`,
+  `CV20.DS9`, and `CV20.DS10` respectively.
+- Refinement Review records patterns, debt candidates, or follow-up, but does
+  not mutate files directly. All mutations happen through Change Request cycles.
+- The first intended dogfooding target after DS6 is `RS-001 Builder lifecycle
+  end-to-end refinement`, living in the Workbench rather than the roadmap.
+
 ### Mirror Mind adopts Ariad prospectively after v0.27.0
 
 **Date:** 2026-06-14
@@ -23,8 +51,8 @@ Consequences:
 - Future Mirror Mind Builder work should be pulled, planned, validated, reviewed, checked for coherence, and closed through Ariad Builder commands when possible.
 - CV20 remains the first dogfooding area under the project-level adoption.
 - The adoption does not retroactively rewrite DS1–DS4 artifacts.
-- The current post-adoption priority order is DS5 Delivery Story Level Lifecycle, then DS6 Release And Push Policies, then DS7 Debt Ledger And Refactor Loop, then DS8 Method Preferences And Overrides, then DS9 Builder Documentation And Migration.
-- Navigator preference/config override work remains explicitly planned in CV20.DS8 rather than assumed by adoption.
+- The current post-adoption priority order is DS5 Delivery Story Level Lifecycle, then DS6 Refinement Workbench And Flow, then DS7 Release And Push Policies, then DS8 Debt Ledger And Refactor Loop, then DS9 Method Preferences And Overrides, then DS10 Builder Documentation And Migration.
+- Navigator preference/config override work remains explicitly planned in CV20.DS9 rather than assumed by adoption.
 
 ### CV21 converges on a canonical plugin plus MCP server, bridged by import
 

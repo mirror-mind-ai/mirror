@@ -52,7 +52,7 @@ Then validation.md, review.md, coherence.md, and done.md are materialized in tha
 ## Out Of Scope
 
 - Changing the lifecycle semantics of Validation, Debt Review, Coherence, or Done.
-- Implementing release intent/push/release behavior from `CV20.DS6`.
+- Implementing release intent/push/release behavior from `CV20.DS7`.
 - Implementing DS8 preferences/config overrides.
 - Rewriting historical artifact packages unless touched by active work.
 - Creating `implement.md` as a canonical artifact by default; implementation evidence remains in diffs, changed files, tests, validation, and history.

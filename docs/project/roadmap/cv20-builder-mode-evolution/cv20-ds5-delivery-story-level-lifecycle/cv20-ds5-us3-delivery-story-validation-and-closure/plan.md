@@ -18,8 +18,8 @@ Expose aggregate Delivery Story validation and closure through Builder Mode so t
 
 ## Non-Goals
 
-- Do not implement release intent, push, or release policy behavior from `CV20.DS6`.
-- Do not implement method preferences/config overrides from `CV20.DS8`.
+- Do not implement release intent, push, or release policy behavior from `CV20.DS7`.
+- Do not implement method preferences/config overrides from `CV20.DS9`.
 - Do not remove child story artifacts or evidence.
 - Do not auto-push or release at DS Done.
 - Do not silently close a DS without Navigator validation acceptance.
@@ -80,7 +80,7 @@ E2E decision: Pi/Builder natural interaction is required; browser/UI E2E is not 
 
 ## Stop Conditions
 
-- The change starts implementing CV20.DS6 release/push policy.
+- The change starts implementing CV20.DS7 release/push policy.
 - The change closes child stories invisibly without evidence.
 - Existing story-by-story closure behavior changes by default.
 - Non-Ariad Builder behavior changes.

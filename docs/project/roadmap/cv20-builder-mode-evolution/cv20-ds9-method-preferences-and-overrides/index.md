@@ -1,6 +1,6 @@
 [< CV20](../index.md)
 
-# CV20.DS8 — Method Preferences And Overrides
+# CV20.DS9 — Method Preferences And Overrides
 
 **Status:** 🟡 Planned
 **Type:** Delivery Story
@@ -96,10 +96,10 @@ And Builder does not advance to Debt Review, Coherence, or Done
 
 | Code | Story | Type | Outcome | Status |
 |------|-------|------|---------|--------|
-| CV20.DS8.TS1 | Preference DSL Model | Technical Story | Builder method definitions can declare typed preferences and source metadata | 🟡 Planned |
-| CV20.DS8.TS2 | Project Override Loader | Technical Story | Builder reads `.ariad/config.yml` and merges it with canonical method defaults | 🟡 Planned |
-| CV20.DS8.US1 | Inspect Effective Preferences | User Story | Navigator can ask Builder which preferences are active and where they came from | 🟡 Planned |
-| CV20.DS8.US2 | Commit Policy Enforcement | User Story | Builder follows the effective commit policy after validated changes | 🟡 Planned |
+| CV20.DS9.TS1 | Preference DSL Model | Technical Story | Builder method definitions can declare typed preferences and source metadata | 🟡 Planned |
+| CV20.DS9.TS2 | Project Override Loader | Technical Story | Builder reads `.ariad/config.yml` and merges it with canonical method defaults | 🟡 Planned |
+| CV20.DS9.US1 | Inspect Effective Preferences | User Story | Navigator can ask Builder which preferences are active and where they came from | 🟡 Planned |
+| CV20.DS9.US2 | Commit Policy Enforcement | User Story | Builder follows the effective commit policy after validated changes | 🟡 Planned |
 
 ---
 

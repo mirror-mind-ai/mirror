@@ -26,7 +26,7 @@ Route natural Builder Mode/Pi requests for Delivery Story-level flow choice, agg
 
 - Do not change the DS-level Plan runtime substrate; covered by `CV20.DS5.TS2`.
 - Do not implement DS-level Validation/Debt Review/Coherence/Done; covered by `CV20.DS5.US3`.
-- Do not implement release/push policy behavior from `CV20.DS6`.
+- Do not implement release/push policy behavior from `CV20.DS7`.
 - Do not implement DS8 preferences/config overrides.
 - Do not route non-Ariad Builder journeys through Ariad surfaces.
 

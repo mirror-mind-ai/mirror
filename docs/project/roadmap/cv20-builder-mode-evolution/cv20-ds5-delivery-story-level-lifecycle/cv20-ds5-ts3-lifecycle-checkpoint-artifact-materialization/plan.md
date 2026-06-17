@@ -47,8 +47,8 @@ story.
 - Do not create `implement.md` as a canonical artifact by default.
 - Do not change checkpoint semantics or approval/validation gates.
 - Do not implement DS-level Validation/Closure user behavior beyond artifact materialization; that remains `CV20.DS5.US3`.
-- Do not implement release intent, push, or release policy behavior from `CV20.DS6`.
-- Do not implement method preferences/config overrides from `CV20.DS8`.
+- Do not implement release intent, push, or release policy behavior from `CV20.DS7`.
+- Do not implement method preferences/config overrides from `CV20.DS9`.
 - Do not rewrite historical artifact packages unless touched by active work.
 
 ## Acceptance Behavior

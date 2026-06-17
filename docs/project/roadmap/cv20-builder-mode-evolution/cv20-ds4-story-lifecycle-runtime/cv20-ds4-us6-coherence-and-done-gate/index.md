@@ -36,7 +36,7 @@ And recommends next Pull, parent collapse, or release boundary
 
 ## Scope
 
-- Add Debt Review surface/operation. ✅ Covered by CV20.DS7.US1.
+- Add Debt Review surface/operation. ✅ Covered by CV20.DS8.US1.
 - Add Coherence surface/operation.
 - Add Done surface/operation.
 - Enforce required trace/doc/history policy before closure.

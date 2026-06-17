@@ -14,7 +14,7 @@ CV20.DS5.US3 completed after Navigator validation confirmed DS-level Plan, Valid
 
 ## Next Recommendation
 
-Review CV20.DS5 as a parent Delivery Story for collapse/closure, then continue to CV20.DS6 Release And Push Policies.
+Review CV20.DS5 as a parent Delivery Story for collapse/closure, then continue to CV20.DS7 Release And Push Policies.
 
 ## Missing Done
 

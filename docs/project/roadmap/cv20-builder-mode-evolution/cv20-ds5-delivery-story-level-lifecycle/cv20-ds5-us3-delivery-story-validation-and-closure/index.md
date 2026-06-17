@@ -45,7 +45,7 @@ And does not require child-story Navigator checkpoints for closure
 
 ## Out Of Scope
 
-- Implementing release intent/push/release policy from `CV20.DS6`.
+- Implementing release intent/push/release policy from `CV20.DS7`.
 - Implementing DS8 preferences/config overrides.
 - Removing child story artifacts or evidence requirements.
 - Changing non-Ariad Builder behavior.

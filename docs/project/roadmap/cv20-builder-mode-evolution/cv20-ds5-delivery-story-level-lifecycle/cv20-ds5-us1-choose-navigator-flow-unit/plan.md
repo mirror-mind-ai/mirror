@@ -19,7 +19,7 @@ Introduce the Navigator Flow Unit decision so an expanded Delivery Story can be 
 - Do not implement DS-level Plan approval beyond the flow-unit choice; that is CV20.DS5.US2.
 - Do not implement DS-level Validation/Debt Review/Coherence/Done; that is CV20.DS5.US3.
 - Do not build the full aggregate lifecycle state machine if a narrower decision model suffices; broader lifecycle state belongs to CV20.DS5.TS1.
-- Do not change release/push policy behavior from CV20.DS6.
+- Do not change release/push policy behavior from CV20.DS7.
 - Do not implement DS8 method preferences/config overrides.
 - Do not remove or flatten child story artifacts.
 

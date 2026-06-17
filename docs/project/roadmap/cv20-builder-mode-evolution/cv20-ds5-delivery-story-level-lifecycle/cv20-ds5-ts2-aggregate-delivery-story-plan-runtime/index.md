@@ -58,7 +58,7 @@ And DS-level Plan is not silently used
 - Natural-language Pi/Builder routing for the Navigator; this remains `CV20.DS5.US2`.
 - DS-level Validation/Debt Review/Coherence/Done; this belongs to `CV20.DS5.US3`.
 - Automatically executing child stories after DS Plan approval.
-- Release/push policy behavior from `CV20.DS6`.
+- Release/push policy behavior from `CV20.DS7`.
 - DS8 preferences/config overrides.
 
 ## Validation

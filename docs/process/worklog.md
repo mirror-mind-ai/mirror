@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-17 — CV20 Refinement Workbench path planned
+
+Added CV20.DS6 Refinement Workbench And Flow as the next Builder Mode Evolution story after Delivery Story Level Lifecycle. The roadmap now positions Refinement Work before release/push governance, with Workbench, Refinement Stories, Change Requests, CR cycles, and RS-level review/coherence/close as the planned runtime shape. Existing planned CV20 delivery stories were renumbered so Release And Push Policies moves to DS7, Debt Ledger And Refactor Loop to DS8, Method Preferences And Overrides to DS9, and Builder Documentation And Migration to DS10.
+
+Validation: documentation-only roadmap change; `git diff --check` passed.
+
 ### 2026-06-16 — v0.28.0 Ariad Delivery Story Lifecycle prepared
 
 Closed CV20.DS5 Delivery Story Level Lifecycle as a release boundary. Builder now supports `delivery_story` as a Navigator-facing Ariad flow unit with aggregate DS Plan, Validation, Debt Review, Coherence, and Done checkpoints while preserving child User/Technical Stories as traceable work packages. DS-level lifecycle artifacts now materialize at canonical roadmap package paths, and Navigator-facing Ariad surfaces for resume, pull candidates, flow-unit selection, DS Plan, and DS closure render with the visual card grammar.

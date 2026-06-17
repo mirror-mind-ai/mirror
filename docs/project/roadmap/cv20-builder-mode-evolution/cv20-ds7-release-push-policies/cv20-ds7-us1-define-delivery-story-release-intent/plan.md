@@ -1,4 +1,4 @@
-# Plan — CV20.DS6.US1
+# Plan — CV20.DS7.US1
 
 ## Objective
 
@@ -17,10 +17,10 @@ Introduce Delivery Story release intent as explicit planning state. The Navigato
 
 ## Non-Goals
 
-- Do not implement the release progress surface after child story Done events; that is CV20.DS6.US2.
-- Do not implement the DS collapse release decision surface; that is CV20.DS6.US3.
-- Do not implement a generic commit/push/release policy resolver; that is CV20.DS6.TS1.
-- Do not implement push checkpoint/autopush behavior; that is CV20.DS6.US4.
+- Do not implement the release progress surface after child story Done events; that is CV20.DS7.US2.
+- Do not implement the DS collapse release decision surface; that is CV20.DS7.US3.
+- Do not implement a generic commit/push/release policy resolver; that is CV20.DS7.TS1.
+- Do not implement push checkpoint/autopush behavior; that is CV20.DS7.US4.
 - Do not implement release authorization, tag creation, stable promotion, publication, or release automation.
 - Do not implement DS8 preferences/config overrides.
 - Do not push or release as part of this story without separate explicit Navigator authorization.
@@ -68,7 +68,7 @@ E2E decision: browser/UI E2E is not required; Builder CLI/Pi-visible behavior is
 
 ## Implementation Contract
 
-- Keep changes scoped to `CV20.DS6.US1`.
+- Keep changes scoped to `CV20.DS7.US1`.
 - Use TDD or characterization tests for behavior changes when testable.
 - Use uv run for Python commands and tests.
 - Do not use git add .; stage only story-scoped files.

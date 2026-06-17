@@ -1,6 +1,6 @@
 [< Parent](../index.md)
 
-# CV20.DS6.US1 — Define Delivery Story Release Intent
+# CV20.DS7.US1 — Define Delivery Story Release Intent
 
 **Status:** 🟡 Planned
 **Type:** User Story
@@ -53,10 +53,10 @@ And still requires separate authorization for commit, push, and release actions
 
 ## Out Of Scope
 
-- Showing a release progress bar after each child story Done; this belongs to CV20.DS6.US2.
-- Deciding prepare/defer/no-release at DS collapse; this belongs to CV20.DS6.US3.
-- Resolving generic commit/push/release policies; this belongs to CV20.DS6.TS1.
-- Implementing push checkpoint/autopush behavior; this belongs to CV20.DS6.US4.
+- Showing a release progress bar after each child story Done; this belongs to CV20.DS7.US2.
+- Deciding prepare/defer/no-release at DS collapse; this belongs to CV20.DS7.US3.
+- Resolving generic commit/push/release policies; this belongs to CV20.DS7.TS1.
+- Implementing push checkpoint/autopush behavior; this belongs to CV20.DS7.US4.
 - Implementing release publication, tags, stable promotion, or release automation.
 - Implementing DS8 method preference overrides or `.ariad/config.yml`.
 

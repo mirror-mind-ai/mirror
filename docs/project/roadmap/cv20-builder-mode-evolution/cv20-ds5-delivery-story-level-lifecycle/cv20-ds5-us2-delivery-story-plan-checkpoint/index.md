@@ -51,7 +51,7 @@ And returns the approved surface verbatim
 
 - Runtime DS-level Plan implementation; covered by `CV20.DS5.TS2`.
 - DS-level Validation/Closure; covered by `CV20.DS5.US3`.
-- Release/push policy behavior from `CV20.DS6`.
+- Release/push policy behavior from `CV20.DS7`.
 
 ## Validation
 

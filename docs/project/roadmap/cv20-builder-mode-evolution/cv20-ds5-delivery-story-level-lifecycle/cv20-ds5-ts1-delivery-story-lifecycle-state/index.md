@@ -47,7 +47,7 @@ And the effective flow unit remains story_by_story
 
 - Implementing DS-level Plan approval; this belongs to CV20.DS5.US2.
 - Implementing DS-level Validation/Debt Review/Coherence/Done; this belongs to CV20.DS5.US3.
-- Implementing release intent, push policy, or release authorization from CV20.DS6.
+- Implementing release intent, push policy, or release authorization from CV20.DS7.
 - Implementing DS8 preferences/config overrides.
 - Changing non-Ariad Builder behavior.
 

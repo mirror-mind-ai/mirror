@@ -22,7 +22,7 @@ Prospective adoption means:
 - new Builder delivery work should use Ariad lifecycle surfaces and runtime gates;
 - Delivery Stories expand into User/Technical Stories before Plan;
 - Plan, Validation, Debt Review, Coherence, and Done checkpoints are explicit;
-- Navigator preferences and project overrides remain future work under CV20.DS8.
+- Navigator preferences and project overrides remain future work under CV20.DS9.
 
 ## Runtime State
 
@@ -39,6 +39,7 @@ story status, commit, push, or release.
 ## Next Ariad Movement
 
 Use Ariad prospectively for the current Builder priority order: CV20.DS5
-Delivery Story Level Lifecycle, then CV20.DS6 Release And Push Policies,
-then CV20.DS7 Debt Ledger And Refactor Loop, then CV20.DS8 Method
-Preferences And Overrides, then CV20.DS9 Builder Documentation And Migration.
+Delivery Story Level Lifecycle, then CV20.DS6 Refinement Workbench And Flow,
+then CV20.DS7 Release And Push Policies, then CV20.DS8 Debt Ledger And Refactor
+Loop, then CV20.DS9 Method Preferences And Overrides, then CV20.DS10 Builder
+Documentation And Migration.

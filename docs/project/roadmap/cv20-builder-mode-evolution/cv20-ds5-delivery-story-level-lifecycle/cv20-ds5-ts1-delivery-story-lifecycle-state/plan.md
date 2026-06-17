@@ -19,8 +19,8 @@ Persist and resume the minimal Delivery Story lifecycle state needed for aggrega
 - Do not implement DS-level Plan checkpoint behavior; that is CV20.DS5.US2.
 - Do not implement DS-level Validation, Debt Review, Coherence, or Done; that is CV20.DS5.US3.
 - Do not alter the existing story-by-story lifecycle default.
-- Do not implement release/push policy behavior from CV20.DS6.
-- Do not implement method preferences/config overrides from CV20.DS8.
+- Do not implement release/push policy behavior from CV20.DS7.
+- Do not implement method preferences/config overrides from CV20.DS9.
 
 ## Acceptance Behavior
 
