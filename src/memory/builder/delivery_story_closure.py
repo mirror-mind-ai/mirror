@@ -269,7 +269,7 @@ def _checkpoint_artifact_lines(artifact_path: Path | None) -> list[str]:
     for checkpoint, filename in _CHECKPOINT_ARTIFACTS:
         path = artifact_dir / filename
         status = "created" if path.exists() else "pending"
-        lines.append(f"- {checkpoint}: {path} ({status})")
+        lines.append(f"- {checkpoint}: {filename} {path} ({status})")
     return lines
 
 
