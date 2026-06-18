@@ -224,6 +224,7 @@ def main() -> None:
         _remove_build_output()
     clear_adopted_method(mem.store, JOURNEY)
     clear_delivery_cursor(mem.store, JOURNEY)
+    _clear_workbench_state(mem)
 
     if args.state == "ariad-ready":
         set_adopted_method(mem.store, JOURNEY, "ariad")
@@ -240,6 +241,7 @@ def main() -> None:
 
     print(f"sandbox-pet-store reset complete: state={args.state}")
     print(f"project_path={PROJECT_PATH}")
+    print("workbench_state=cleared")
     if args.restore_code or args.full:
         print("code_baseline=restored")
     if args.clean_build_output or args.full:
@@ -262,6 +264,13 @@ def _restore_worklog_baseline() -> None:
 
 def _restore_reference_baseline() -> None:
     REFERENCE_PATH.write_text(REFERENCE_BASELINE, encoding="utf-8")
+
+
+def _clear_workbench_state(mem: MemoryClient) -> None:
+    mem.store.conn.execute("DELETE FROM builder_refinement_cursors WHERE journey = ?", (JOURNEY,))
+    mem.store.conn.execute("DELETE FROM builder_change_requests WHERE journey = ?", (JOURNEY,))
+    mem.store.conn.execute("DELETE FROM builder_refinement_stories WHERE journey = ?", (JOURNEY,))
+    mem.store.conn.commit()
 
 
 def _remove_generated_ariad_files() -> None:
