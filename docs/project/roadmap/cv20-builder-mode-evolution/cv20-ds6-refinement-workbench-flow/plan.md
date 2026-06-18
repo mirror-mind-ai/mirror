@@ -190,6 +190,20 @@ Implementation reminder: add regression coverage around `plan-item` when `plan.m
 
 Candidate target: a later DS6 Refinement Story once Workbench storage exists, or promotion to Delivery Work if plan artifact safety becomes a formal Ariad lifecycle contract.
 
+### CR: Validation checkpoint must show manual test script for Navigator
+
+Status: candidate.
+
+Context: during `CV20.DS6.US2`, the Validation checkpoint showed automated checks, E2E evidence, expected observation, pass condition, and fail condition, but did not present a concrete step-by-step manual script that the Navigator could run or follow directly. The manual route existed in the test guide and validation command metadata, but the checkpoint surface itself was not operational enough for Navigator validation.
+
+Requested change: every Validation checkpoint should include a Navigator-facing manual test script in addition to automated validation results. The script should be concrete and executable/followable: commands to run, conversational steps to perform when relevant, expected visible surfaces, and what counts as pass/fail. This should be part of the required validation surface, not only hidden in docs or summarized after the checkpoint.
+
+Why it matters: Validation is a Navigator decision point, not just a CI report. The Navigator needs an explicit route to experience or inspect the implemented behavior before accepting validation.
+
+Implementation reminder: extend validation checkpoint data/rendering to include a required `manual test script` or `navigator test script` section. Update tests so validation cannot pass when E2E/manual validation is required but the checkpoint lacks a concrete manual script.
+
+Candidate target: a later DS6 Refinement Story once Workbench storage exists, or promotion to Delivery Work if validation surface completeness becomes a formal Ariad lifecycle contract.
+
 ## Risks
 
 - Builder Home can become too broad if it tries to solve all navigation at once.
