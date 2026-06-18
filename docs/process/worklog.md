@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-17 — CV20.DS6.TS1 Workbench Storage Model completed
+
+Completed the durable storage substrate for Ariad Refinement Work. Mirror now creates dedicated Builder Workbench tables for Refinement Stories, Change Requests, and refinement cursors, exposes them through `BuilderWorkbenchStore` on the main `Store` facade, and provides Builder-domain helpers for snapshots and basic RS/CR creation/association. Builder Home now reports Workbench storage as implemented with durable RS/CR counts while preserving the no-execution activation boundary.
+
+Validation: focused migration, storage, builder, and CLI tests passed; ruff, format check, mypy, and diff checks passed. Sandbox validation with `sandbox-pet-store` confirmed Builder Home shows `workbench storage: implemented`, empty durable counts, and no lifecycle work executed.
+
 ### 2026-06-17 — CV20.DS6.US1 Builder Home Work Fields completed
 
 Completed the first Refinement Workbench slice. Ariad-adopted Builder activation now renders a `BUILDER_HOME` surface before roadmap and pull-candidate surfaces when a journey has no active item. The home surface shows the current Delivery field, a nascent Refinement field, honest Workbench storage status, seed Change Request count, available moves, and the no-execution activation boundary. The Pi Builder skill contract was tightened so marked Ariad surfaces are rendered before commentary.

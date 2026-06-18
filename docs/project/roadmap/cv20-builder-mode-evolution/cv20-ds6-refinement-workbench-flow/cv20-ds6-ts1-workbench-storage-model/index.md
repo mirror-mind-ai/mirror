@@ -2,7 +2,7 @@
 
 # CV20.DS6.TS1 — Workbench Storage Model
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 **Type:** Technical Story
 
 ---
@@ -57,3 +57,7 @@ And out-of-scope sibling roadmap items remain untouched
 
 - [Plan](plan.md)
 - [Test Guide](test-guide.md)
+- [Validation](validation.md)
+- [Debt Review](review.md)
+- [Coherence](coherence.md)
+- [Done](done.md)

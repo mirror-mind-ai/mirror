@@ -25,7 +25,7 @@ based on the Ariad branch `ariad-refinement-workbench` at commit `2447705`.
 | Code | Story | Type | Outcome | Status |
 |------|-------|------|---------|--------|
 | [CV20.DS6.US1](cv20-ds6-us1-builder-home-work-fields/index.md) | Builder Home Work Fields | User Story | Navigator sees current Delivery and Refinement fields during Builder activation, including roadmap state, workbench summary, active RS, and available moves | ✅ Done |
-| [CV20.DS6.TS1](cv20-ds6-ts1-workbench-storage-model/index.md) | Workbench Storage Model | Technical Story | Runtime persists Refinement Stories and Change Requests outside the roadmap, with status, ordering, association, provenance, and active RS state | 🟡 Planned |
+| [CV20.DS6.TS1](cv20-ds6-ts1-workbench-storage-model/index.md) | Workbench Storage Model | Technical Story | Runtime persists Refinement Stories and Change Requests outside the roadmap, with status, ordering, association, provenance, and active RS state | ✅ Done |
 | [CV20.DS6.US2](cv20-ds6-us2-compose-refinement-story/index.md) | Compose A Refinement Story | User Story | Navigator can create an RS and add CRs to it during use, receiving visible Change Request Captured and Refinement Story Overview surfaces | 🟡 Planned |
 | [CV20.DS6.US3](cv20-ds6-us3-pull-refinement-story/index.md) | Pull A Refinement Story | User Story | Navigator can pull an RS from the Workbench and Builder resumes into Refinement Work instead of Delivery Work | 🟡 Planned |
 | [CV20.DS6.TS2](cv20-ds6-ts2-refinement-flow-runtime/index.md) | Refinement Flow Runtime | Technical Story | Runtime supports RS-level flow and CR-level cycles, from RS pull through CR done notes and RS review, coherence, and close | 🟡 Planned |
