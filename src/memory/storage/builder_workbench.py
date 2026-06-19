@@ -246,6 +246,38 @@ class BuilderWorkbenchStore(ConnectionBacked):
         rows = self.conn.execute(sql, params).fetchall()
         return tuple(_change_request_from_row(row) for row in rows)
 
+    def update_change_request_status(
+        self,
+        change_request_id: str,
+        status: str,
+        *,
+        outcome_notes: str | None = None,
+        completed_at: str | None = None,
+    ) -> ChangeRequestRecord:
+        change_request_id = _normalize_required(change_request_id, "change_request_id")
+        status = _normalize_status(status, CHANGE_REQUEST_STATUSES, "status")
+        existing = self.get_change_request(change_request_id)
+        if existing is None:
+            raise ValueError("change_request_id does not exist")
+        now = _now()
+        self.conn.execute(
+            """UPDATE builder_change_requests
+               SET status = ?, outcome_notes = COALESCE(?, outcome_notes),
+                   completed_at = COALESCE(?, completed_at), updated_at = ?
+               WHERE id = ?""",
+            (
+                status,
+                _normalize_optional(outcome_notes),
+                _normalize_optional(completed_at),
+                now,
+                change_request_id,
+            ),
+        )
+        self.conn.commit()
+        updated = self.get_change_request(change_request_id)
+        assert updated is not None
+        return updated
+
     def attach_change_request_to_story(
         self,
         change_request_id: str,

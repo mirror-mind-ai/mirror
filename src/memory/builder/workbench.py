@@ -16,6 +16,18 @@ class RefinementStoryOverview:
 
 
 @dataclass(frozen=True)
+class RefinementFlowEvent:
+    journey: str
+    event: str
+    refinement_story: RefinementStoryRecord
+    change_request: ChangeRequestRecord | None
+    previous_status: str | None
+    new_status: str | None
+    detail: str | None
+    active_change_request_id: str | None
+
+
+@dataclass(frozen=True)
 class WorkbenchSnapshot:
     storage_state: str
     active_refinement_story: RefinementStoryRecord | None
@@ -103,6 +115,164 @@ def pull_refinement_story(
     )
 
 
+def select_change_request(
+    store: Store, *, journey: str, change_request_id: str
+) -> RefinementFlowEvent:
+    """Select a CR inside the active RS without implementing it."""
+    story, cr = _require_active_story_and_cr(store, journey, change_request_id)
+    _require_status(cr.status, {"captured"}, "select")
+    updated = store.update_change_request_status(cr.id, "active")
+    store.set_refinement_cursor(
+        journey=journey,
+        active_refinement_story_id=story.id,
+        active_change_request_id=updated.id,
+        last_refinement_event="change_request_selected",
+    )
+    return _flow_event(journey, "change_request_selected", story, updated, cr.status, None)
+
+
+def confirm_change_request(
+    store: Store, *, journey: str, change_request_id: str
+) -> RefinementFlowEvent:
+    story, cr = _require_active_story_and_cr(store, journey, change_request_id)
+    _require_active_cr(store, journey, cr.id)
+    _require_status(cr.status, {"active"}, "confirm")
+    store.set_refinement_cursor(
+        journey=journey,
+        active_refinement_story_id=story.id,
+        active_change_request_id=cr.id,
+        last_refinement_event="change_request_confirmed",
+    )
+    return _flow_event(journey, "change_request_confirmed", story, cr, cr.status, None)
+
+
+def plan_change_request(
+    store: Store, *, journey: str, change_request_id: str, summary: str
+) -> RefinementFlowEvent:
+    story, cr = _require_active_story_and_cr(store, journey, change_request_id)
+    _require_active_cr(store, journey, cr.id)
+    _require_status(cr.status, {"active"}, "plan")
+    updated = store.update_change_request_status(cr.id, "planned", outcome_notes=summary)
+    store.set_refinement_cursor(
+        journey=journey,
+        active_refinement_story_id=story.id,
+        active_change_request_id=updated.id,
+        last_refinement_event="change_request_planned",
+    )
+    return _flow_event(journey, "change_request_planned", story, updated, cr.status, summary)
+
+
+def mark_change_request_implemented(
+    store: Store, *, journey: str, change_request_id: str, evidence: str
+) -> RefinementFlowEvent:
+    story, cr = _require_active_story_and_cr(store, journey, change_request_id)
+    _require_active_cr(store, journey, cr.id)
+    _require_status(cr.status, {"planned"}, "mark implemented")
+    updated = store.update_change_request_status(cr.id, "implemented", outcome_notes=evidence)
+    store.set_refinement_cursor(
+        journey=journey,
+        active_refinement_story_id=story.id,
+        active_change_request_id=updated.id,
+        last_refinement_event="change_request_implemented",
+    )
+    return _flow_event(journey, "change_request_implemented", story, updated, cr.status, evidence)
+
+
+def validate_change_request(
+    store: Store, *, journey: str, change_request_id: str, evidence: str
+) -> RefinementFlowEvent:
+    story, cr = _require_active_story_and_cr(store, journey, change_request_id)
+    _require_active_cr(store, journey, cr.id)
+    _require_status(cr.status, {"implemented"}, "validate")
+    updated = store.update_change_request_status(cr.id, "validated", outcome_notes=evidence)
+    store.set_refinement_cursor(
+        journey=journey,
+        active_refinement_story_id=story.id,
+        active_change_request_id=updated.id,
+        last_refinement_event="change_request_validated",
+    )
+    return _flow_event(journey, "change_request_validated", story, updated, cr.status, evidence)
+
+
+def complete_change_request(
+    store: Store, *, journey: str, change_request_id: str, notes: str
+) -> RefinementFlowEvent:
+    story, cr = _require_active_story_and_cr(store, journey, change_request_id)
+    _require_active_cr(store, journey, cr.id)
+    _require_status(cr.status, {"validated"}, "done")
+    updated = store.update_change_request_status(
+        cr.id, "done", outcome_notes=notes, completed_at=_now()
+    )
+    store.set_refinement_cursor(
+        journey=journey,
+        active_refinement_story_id=story.id,
+        active_change_request_id=None,
+        last_refinement_event="change_request_done",
+    )
+    return _flow_event(journey, "change_request_done", story, updated, cr.status, notes)
+
+
+def review_refinement_story(
+    store: Store, *, journey: str, refinement_story_id: str, summary: str
+) -> RefinementFlowEvent:
+    overview = get_refinement_story_overview(
+        store, journey=journey, refinement_story_id=refinement_story_id
+    )
+    _require_status(overview.story.status, {"active"}, "review")
+    store.set_refinement_cursor(
+        journey=journey,
+        active_refinement_story_id=overview.story.id,
+        active_change_request_id=None,
+        last_refinement_event="refinement_story_reviewed",
+    )
+    return _flow_event(
+        journey, "refinement_story_reviewed", overview.story, None, overview.story.status, summary
+    )
+
+
+def coherence_refinement_story(
+    store: Store, *, journey: str, refinement_story_id: str, summary: str
+) -> RefinementFlowEvent:
+    overview = get_refinement_story_overview(
+        store, journey=journey, refinement_story_id=refinement_story_id
+    )
+    cursor = store.get_refinement_cursor(journey)
+    if cursor is None or cursor.last_refinement_event != "refinement_story_reviewed":
+        raise ValueError("coherence requires refinement story review first")
+    store.set_refinement_cursor(
+        journey=journey,
+        active_refinement_story_id=overview.story.id,
+        active_change_request_id=None,
+        last_refinement_event="refinement_story_coherent",
+    )
+    return _flow_event(
+        journey, "refinement_story_coherent", overview.story, None, overview.story.status, summary
+    )
+
+
+def close_refinement_story(
+    store: Store, *, journey: str, refinement_story_id: str, summary: str
+) -> RefinementFlowEvent:
+    overview = get_refinement_story_overview(
+        store, journey=journey, refinement_story_id=refinement_story_id
+    )
+    cursor = store.get_refinement_cursor(journey)
+    if cursor is None or cursor.last_refinement_event != "refinement_story_coherent":
+        raise ValueError("close requires refinement story coherence first")
+    updated_story = store.update_refinement_story_status(
+        overview.story.id, "closed", closed_at=_now()
+    )
+    store.set_refinement_cursor(
+        journey=journey,
+        active_refinement_story_id=None,
+        active_change_request_id=None,
+        last_refinement_event="refinement_story_closed",
+    )
+    return _flow_event(
+        journey, "refinement_story_closed", updated_story, None, overview.story.status, summary
+    )
+
+
 def get_active_refinement_story_overview(
     store: Store, journey: str
 ) -> RefinementStoryOverview | None:
@@ -132,6 +302,57 @@ def get_refinement_story_overview(
             journey,
             refinement_story_id=refinement_story_id,
         ),
+    )
+
+
+def _require_active_story_and_cr(
+    store: Store, journey: str, change_request_id: str
+) -> tuple[RefinementStoryRecord, ChangeRequestRecord]:
+    cursor = store.get_refinement_cursor(journey)
+    if cursor is None or cursor.active_refinement_story_id is None:
+        raise ValueError("active Refinement Story is required")
+    story = store.get_refinement_story(cursor.active_refinement_story_id)
+    cr = store.get_change_request(change_request_id)
+    if story is None:
+        raise ValueError("active Refinement Story does not exist")
+    if cr is None:
+        raise ValueError("change_request_id does not exist")
+    if cr.journey != journey:
+        raise ValueError("change_request_id belongs to a different journey")
+    if cr.refinement_story_id != story.id:
+        raise ValueError("Change Request does not belong to the active Refinement Story")
+    return story, cr
+
+
+def _require_active_cr(store: Store, journey: str, change_request_id: str) -> None:
+    cursor = store.get_refinement_cursor(journey)
+    if cursor is None or cursor.active_change_request_id != change_request_id:
+        raise ValueError("active Change Request is required")
+
+
+def _require_status(actual: str, allowed: set[str], action: str) -> None:
+    if actual not in allowed:
+        expected = ", ".join(sorted(allowed))
+        raise ValueError(f"cannot {action} from status '{actual}'; expected {expected}")
+
+
+def _flow_event(
+    journey: str,
+    event: str,
+    story: RefinementStoryRecord,
+    cr: ChangeRequestRecord | None,
+    previous_status: str | None,
+    detail: str | None,
+) -> RefinementFlowEvent:
+    return RefinementFlowEvent(
+        journey=journey,
+        event=event,
+        refinement_story=story,
+        change_request=cr,
+        previous_status=previous_status,
+        new_status=cr.status if cr is not None else story.status,
+        detail=detail,
+        active_change_request_id=cr.id if cr is not None and cr.status != "done" else None,
     )
 
 

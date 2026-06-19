@@ -233,8 +233,11 @@ def test_mm_build_skill_requires_marked_ariad_surfaces_to_render_verbatim():
     assert "stdout order" in skill
     assert "CHANGE_REQUEST_CAPTURED" in skill
     assert "REFINEMENT_STORY_PULLED" in skill
+    assert "REFINEMENT_FLOW_EVENT" in skill
     assert "refinement-story create" in skill
     assert "refinement-story pull" in skill
+    assert "change-request select" in skill
+    assert "refinement-story close" in skill
     assert "capture this as a CR" in skill
     assert "pull that refinement story" in skill
 
@@ -1850,3 +1853,84 @@ def test_builder_home_shows_active_refinement_story_after_pull(mocker, tmp_path,
     assert "next refinement move: continue active Refinement" in out
     assert "continue active Refinement Story" in out
     assert "No item was pulled" in out
+
+
+def test_change_request_flow_commands_update_state_and_render_surfaces(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    story = mem.store.create_refinement_story(journey="sandbox-pet-store", title="RS flow")
+    cr = mem.store.create_change_request(
+        journey="sandbox-pet-store",
+        refinement_story_id=story.id,
+        title="Validate CR flow",
+        body="State only.",
+    )
+    mem.store.update_refinement_story_status(story.id, "active")
+    mem.store.set_refinement_cursor(
+        journey="sandbox-pet-store",
+        active_refinement_story_id=story.id,
+        active_change_request_id=None,
+        last_refinement_event="refinement_story_pulled",
+    )
+    set_delivery_cursor(
+        mem.store, journey="sandbox-pet-store", method="ariad", active_item="CV2.DS1"
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_change_request_flow("select", journey="sandbox-pet-store", change_request_id=cr.id)
+    build.cmd_change_request_flow("confirm", journey="sandbox-pet-store", change_request_id=cr.id)
+    build.cmd_change_request_flow(
+        "plan", journey="sandbox-pet-store", change_request_id=cr.id, summary="Plan state"
+    )
+    build.cmd_change_request_flow(
+        "mark-implemented",
+        journey="sandbox-pet-store",
+        change_request_id=cr.id,
+        evidence="Implemented state",
+    )
+    build.cmd_change_request_flow(
+        "validate", journey="sandbox-pet-store", change_request_id=cr.id, evidence="Valid"
+    )
+    build.cmd_change_request_flow(
+        "done", journey="sandbox-pet-store", change_request_id=cr.id, notes="Done state"
+    )
+
+    out = capsys.readouterr().out
+    assert out.count("<<<ARIAD:REFINEMENT_FLOW_EVENT>>>") == 6
+    assert mem.store.get_change_request(cr.id).status == "done"
+    assert mem.store.get_refinement_cursor("sandbox-pet-store").active_change_request_id is None
+    assert get_delivery_cursor(mem.store, "sandbox-pet-store").active_item == "CV2.DS1"
+
+
+def test_refinement_story_flow_commands_review_coherence_close(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    story = mem.store.create_refinement_story(journey="sandbox-pet-store", title="RS flow")
+    mem.store.update_refinement_story_status(story.id, "active")
+    mem.store.set_refinement_cursor(
+        journey="sandbox-pet-store",
+        active_refinement_story_id=story.id,
+        active_change_request_id=None,
+        last_refinement_event="change_request_done",
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_refinement_story_flow(
+        "review", journey="sandbox-pet-store", refinement_story_id=story.id, summary="Review only"
+    )
+    build.cmd_refinement_story_flow(
+        "coherence", journey="sandbox-pet-store", refinement_story_id=story.id, summary="Coherent"
+    )
+    build.cmd_refinement_story_flow(
+        "close", journey="sandbox-pet-store", refinement_story_id=story.id, summary="Closed"
+    )
+
+    out = capsys.readouterr().out
+    assert out.count("<<<ARIAD:REFINEMENT_FLOW_EVENT>>>") == 3
+    assert "does not mutate files" in out
+    assert mem.store.get_refinement_story(story.id).status == "closed"
+    assert mem.store.get_refinement_cursor("sandbox-pet-store").active_refinement_story_id is None

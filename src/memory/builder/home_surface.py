@@ -19,6 +19,7 @@ class RefinementFieldSnapshot:
     """Read-only Builder Home snapshot of nascent Refinement state."""
 
     active_refinement_story: str | None
+    active_change_request: str | None
     storage_state: str
     seed_change_requests: int
     seed_change_request_source: str | None
@@ -96,6 +97,7 @@ def render_builder_home_surface(
         "│                                                        │",
         _card_text("🧰 Refinement field"),
         *_card_wrapped(f"active RS: {refinement.active_refinement_story or 'none'}"),
+        *_card_wrapped(f"active CR: {refinement.active_change_request or 'none'}"),
         _card_text(f"workbench storage: {refinement.storage_state}"),
         _card_text(f"stored RSs: {refinement.refinement_story_count}"),
         _card_text(f"stored CRs: {refinement.change_request_count}"),
@@ -154,6 +156,7 @@ def _refinement_snapshot(
     if workbench is None:
         return RefinementFieldSnapshot(
             active_refinement_story=None,
+            active_change_request=None,
             storage_state="not implemented yet",
             seed_change_requests=seed_count,
             seed_change_request_source=seed_source,
@@ -165,13 +168,22 @@ def _refinement_snapshot(
             if workbench.active_refinement_story
             else None
         ),
+        active_change_request=(
+            f"{workbench.active_change_request.id} — {workbench.active_change_request.title}"
+            if workbench.active_change_request
+            else None
+        ),
         storage_state=workbench.storage_state,
         seed_change_requests=seed_count,
         seed_change_request_source=seed_source,
         next_move=(
-            "continue active Refinement Story"
-            if workbench.active_refinement_story
-            else "compose or capture Refinement Work when requested"
+            "continue active Change Request"
+            if workbench.active_change_request
+            else (
+                "continue active Refinement Story"
+                if workbench.active_refinement_story
+                else "compose or capture Refinement Work when requested"
+            )
         ),
         refinement_story_count=workbench.refinement_story_count,
         change_request_count=workbench.change_request_count,

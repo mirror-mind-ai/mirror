@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 from memory.builder.ariad_method import get_ariad_method
@@ -78,14 +79,25 @@ from memory.builder.template_generation import (
     render_template_preparation_report,
 )
 from memory.builder.workbench import (
+    RefinementFlowEvent,
     attach_change_request_to_story,
     capture_change_request,
+    close_refinement_story,
+    coherence_refinement_story,
+    complete_change_request,
+    confirm_change_request,
     create_refinement_story,
     get_refinement_story_overview,
+    mark_change_request_implemented,
+    plan_change_request,
     pull_refinement_story,
+    review_refinement_story,
+    select_change_request,
+    validate_change_request,
 )
 from memory.builder.workbench_surfaces import (
     render_change_request_captured_surface,
+    render_refinement_flow_event_surface,
     render_refinement_story_overview_surface,
     render_refinement_story_pulled_surface,
 )
@@ -1481,6 +1493,120 @@ def cmd_change_request_capture(
     print(f"change_request_id={change_request.id}")
 
 
+def _print_refinement_event(action: Callable[[], RefinementFlowEvent]) -> None:
+    try:
+        event = action()
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    print(render_refinement_flow_event_surface(event))
+
+
+def cmd_change_request_flow(
+    action: str,
+    *,
+    journey: str | None = None,
+    session_id: str | None = None,
+    change_request_id: str,
+    summary: str | None = None,
+    evidence: str | None = None,
+    notes: str | None = None,
+) -> None:
+    mem = MemoryClient()
+    resolved_journey = _resolve_workbench_journey(
+        mem, journey=journey, session_id=session_id, action=f"{action} change request"
+    )
+    if action == "select":
+        _print_refinement_event(
+            lambda: select_change_request(
+                mem.store, journey=resolved_journey, change_request_id=change_request_id
+            )
+        )
+    elif action == "confirm":
+        _print_refinement_event(
+            lambda: confirm_change_request(
+                mem.store, journey=resolved_journey, change_request_id=change_request_id
+            )
+        )
+    elif action == "plan":
+        _print_refinement_event(
+            lambda: plan_change_request(
+                mem.store,
+                journey=resolved_journey,
+                change_request_id=change_request_id,
+                summary=summary or "",
+            )
+        )
+    elif action == "mark-implemented":
+        _print_refinement_event(
+            lambda: mark_change_request_implemented(
+                mem.store,
+                journey=resolved_journey,
+                change_request_id=change_request_id,
+                evidence=evidence or "",
+            )
+        )
+    elif action == "validate":
+        _print_refinement_event(
+            lambda: validate_change_request(
+                mem.store,
+                journey=resolved_journey,
+                change_request_id=change_request_id,
+                evidence=evidence or "",
+            )
+        )
+    elif action == "done":
+        _print_refinement_event(
+            lambda: complete_change_request(
+                mem.store,
+                journey=resolved_journey,
+                change_request_id=change_request_id,
+                notes=notes or "",
+            )
+        )
+
+
+def cmd_refinement_story_flow(
+    action: str,
+    *,
+    journey: str | None = None,
+    session_id: str | None = None,
+    refinement_story_id: str,
+    summary: str,
+) -> None:
+    mem = MemoryClient()
+    resolved_journey = _resolve_workbench_journey(
+        mem, journey=journey, session_id=session_id, action=f"{action} refinement story"
+    )
+    if action == "review":
+        _print_refinement_event(
+            lambda: review_refinement_story(
+                mem.store,
+                journey=resolved_journey,
+                refinement_story_id=refinement_story_id,
+                summary=summary,
+            )
+        )
+    elif action == "coherence":
+        _print_refinement_event(
+            lambda: coherence_refinement_story(
+                mem.store,
+                journey=resolved_journey,
+                refinement_story_id=refinement_story_id,
+                summary=summary,
+            )
+        )
+    elif action == "close":
+        _print_refinement_event(
+            lambda: close_refinement_story(
+                mem.store,
+                journey=resolved_journey,
+                refinement_story_id=refinement_story_id,
+                summary=summary,
+            )
+        )
+
+
 def cmd_change_request_attach(
     *,
     journey: str | None = None,
@@ -2062,6 +2188,44 @@ def main(argv: list[str] | None = None) -> None:
     p_cr_attach.add_argument("--session-id", default=None, help="Runtime session id")
     p_cr_attach.add_argument("--change-request-id", required=True, help="Change Request id")
     p_cr_attach.add_argument("--refinement-story-id", required=True, help="Refinement Story id")
+    for action_name in ("select", "confirm"):
+        p_cr_flow = change_request_sub.add_parser(
+            action_name, help=f"{action_name} a Change Request"
+        )
+        p_cr_flow.add_argument("--journey", default=None, help="Journey slug")
+        p_cr_flow.add_argument("--session-id", default=None, help="Runtime session id")
+        p_cr_flow.add_argument("--change-request-id", required=True, help="Change Request id")
+    p_cr_plan = change_request_sub.add_parser("plan", help="Plan a Change Request")
+    p_cr_plan.add_argument("--journey", default=None, help="Journey slug")
+    p_cr_plan.add_argument("--session-id", default=None, help="Runtime session id")
+    p_cr_plan.add_argument("--change-request-id", required=True, help="Change Request id")
+    p_cr_plan.add_argument("--summary", required=True, help="Plan summary")
+    p_cr_impl = change_request_sub.add_parser(
+        "mark-implemented", help="Mark a Change Request implemented"
+    )
+    p_cr_impl.add_argument("--journey", default=None, help="Journey slug")
+    p_cr_impl.add_argument("--session-id", default=None, help="Runtime session id")
+    p_cr_impl.add_argument("--change-request-id", required=True, help="Change Request id")
+    p_cr_impl.add_argument("--evidence", required=True, help="Implementation evidence")
+    p_cr_validate = change_request_sub.add_parser("validate", help="Validate a Change Request")
+    p_cr_validate.add_argument("--journey", default=None, help="Journey slug")
+    p_cr_validate.add_argument("--session-id", default=None, help="Runtime session id")
+    p_cr_validate.add_argument("--change-request-id", required=True, help="Change Request id")
+    p_cr_validate.add_argument("--evidence", required=True, help="Validation evidence")
+    p_cr_done = change_request_sub.add_parser("done", help="Record Change Request done note")
+    p_cr_done.add_argument("--journey", default=None, help="Journey slug")
+    p_cr_done.add_argument("--session-id", default=None, help="Runtime session id")
+    p_cr_done.add_argument("--change-request-id", required=True, help="Change Request id")
+    p_cr_done.add_argument("--notes", required=True, help="Done notes")
+
+    for action_name in ("review", "coherence", "close"):
+        p_rs_flow = refinement_story_sub.add_parser(
+            action_name, help=f"{action_name} a Refinement Story"
+        )
+        p_rs_flow.add_argument("--journey", default=None, help="Journey slug")
+        p_rs_flow.add_argument("--session-id", default=None, help="Runtime session id")
+        p_rs_flow.add_argument("--refinement-story-id", required=True, help="Refinement Story id")
+        p_rs_flow.add_argument("--summary", required=True, help="Summary")
 
     p_prepare = sub.add_parser(
         "prepare-item",
@@ -2253,6 +2417,14 @@ def main(argv: list[str] | None = None) -> None:
                 session_id=args.session_id,
                 refinement_story_id=args.refinement_story_id,
             )
+        elif args.refinement_story_action in {"review", "coherence", "close"}:
+            cmd_refinement_story_flow(
+                args.refinement_story_action,
+                journey=args.journey,
+                session_id=args.session_id,
+                refinement_story_id=args.refinement_story_id,
+                summary=args.summary,
+            )
     elif args.command == "change-request":
         if args.change_request_action == "capture":
             cmd_change_request_capture(
@@ -2270,6 +2442,23 @@ def main(argv: list[str] | None = None) -> None:
                 session_id=args.session_id,
                 change_request_id=args.change_request_id,
                 refinement_story_id=args.refinement_story_id,
+            )
+        elif args.change_request_action in {
+            "select",
+            "confirm",
+            "plan",
+            "mark-implemented",
+            "validate",
+            "done",
+        }:
+            cmd_change_request_flow(
+                args.change_request_action,
+                journey=args.journey,
+                session_id=args.session_id,
+                change_request_id=args.change_request_id,
+                summary=getattr(args, "summary", None),
+                evidence=getattr(args, "evidence", None),
+                notes=getattr(args, "notes", None),
             )
     elif args.command == "prepare-item":
         cmd_prepare_item(args.method, journey=args.journey, session_id=args.session_id)

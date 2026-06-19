@@ -354,6 +354,31 @@ If the Navigator's language implies immediate fixing, distinguish capture/pull
 from execution: capture or pull only when requested, and explain that executing a
 CR is a later lifecycle step.
 
+When the Navigator asks to select, confirm, plan, mark implemented, validate, or
+mark done a Change Request in active Refinement Work, route to:
+
+```bash
+uv run python -m memory build change-request select --journey <slug> --change-request-id <cr-id>
+uv run python -m memory build change-request confirm --journey <slug> --change-request-id <cr-id>
+uv run python -m memory build change-request plan --journey <slug> --change-request-id <cr-id> --summary "<plan>"
+uv run python -m memory build change-request mark-implemented --journey <slug> --change-request-id <cr-id> --evidence "<evidence>"
+uv run python -m memory build change-request validate --journey <slug> --change-request-id <cr-id> --evidence "<evidence>"
+uv run python -m memory build change-request done --journey <slug> --change-request-id <cr-id> --notes "<done note>"
+```
+
+When the Navigator asks to review, check coherence, or close an active RS, route
+to:
+
+```bash
+uv run python -m memory build refinement-story review --journey <slug> --refinement-story-id <rs-id> --summary "<review>"
+uv run python -m memory build refinement-story coherence --journey <slug> --refinement-story-id <rs-id> --summary "<coherence>"
+uv run python -m memory build refinement-story close --journey <slug> --refinement-story-id <rs-id> --summary "<close summary>"
+```
+
+Render `REFINEMENT_FLOW_EVENT` surfaces verbatim before commentary. Review and
+Coherence must not mutate files directly; required changes discovered there must
+become CRs or future work.
+
 ## Prepare Ariad Templates
 
 When the user asks to prepare Ariad templates or make the adopted journey

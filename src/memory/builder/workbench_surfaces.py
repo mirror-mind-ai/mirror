@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from memory.builder.lifecycle_ribbon import render_lifecycle_ribbon
 from memory.builder.surface_protocol import wrap_ariad_surface
-from memory.builder.workbench import RefinementStoryOverview
+from memory.builder.workbench import RefinementFlowEvent, RefinementStoryOverview
 from memory.storage.builder_workbench import ChangeRequestRecord, RefinementStoryRecord
 
 
@@ -152,6 +152,78 @@ def render_refinement_story_overview_surface(
         ]
     )
     return wrap_ariad_surface("refinement_story_overview", "\n".join(lines) + "\n")
+
+
+def render_refinement_flow_event_surface(event: RefinementFlowEvent) -> str:
+    """Render a Navigator-facing Refinement flow transition surface."""
+    lines = [
+        "Refinement",
+        render_lifecycle_ribbon("implement"),
+        "",
+        "╭────────────────────────────────────────────────────────╮",
+        "│        🧰■  REFINEMENT FLOW EVENT                      │",
+        "│                                                        │",
+        _card_text("event"),
+        _card_text(event.event),
+        "│                                                        │",
+        _card_text("journey"),
+        _card_text(event.journey),
+        "│                                                        │",
+        _card_text("refinement story"),
+        _card_text(event.refinement_story.id),
+        *_card_wrapped(event.refinement_story.title),
+    ]
+    if event.change_request is not None:
+        lines.extend(
+            [
+                "│                                                        │",
+                _card_text("change request"),
+                _card_text(event.change_request.id),
+                *_card_wrapped(event.change_request.title),
+            ]
+        )
+    lines.extend(
+        [
+            "│                                                        │",
+            _card_text("status transition"),
+            *_card_wrapped(f"{event.previous_status or 'none'} → {event.new_status or 'none'}"),
+            "│                                                        │",
+            _card_text("active cursor"),
+            _card_text(
+                f"active RS: {event.refinement_story.id if event.event != 'refinement_story_closed' else 'none'}"
+            ),
+            _card_text(f"active CR: {event.active_change_request_id or 'none'}"),
+        ]
+    )
+    if event.detail:
+        lines.extend(
+            [
+                "│                                                        │",
+                _card_text("detail"),
+                *_card_wrapped(event.detail),
+            ]
+        )
+    if event.event in {"refinement_story_reviewed", "refinement_story_coherent"}:
+        lines.extend(
+            [
+                "│                                                        │",
+                _card_text("review/coherence boundary"),
+                *_card_wrapped(
+                    "This checkpoint does not mutate files; required changes must become Change Requests or future work."
+                ),
+            ]
+        )
+    lines.extend(
+        [
+            "│                                                        │",
+            _card_text("boundary"),
+            *_card_wrapped(
+                "Runtime state transition only; no files were mutated and no Delivery Work was pulled or executed."
+            ),
+            "╰────────────────────────────────────────────────────────╯",
+        ]
+    )
+    return wrap_ariad_surface("refinement_flow_event", "\n".join(lines) + "\n")
 
 
 def _render_change_requests(change_requests: tuple[ChangeRequestRecord, ...]) -> list[str]:

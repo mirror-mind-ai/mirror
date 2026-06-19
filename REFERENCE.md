@@ -275,9 +275,18 @@ uv run python -m memory build change-request capture --journey <slug> --title "<
 uv run python -m memory build change-request attach --journey <slug> --change-request-id <cr-id> --refinement-story-id <rs-id>
 uv run python -m memory build refinement-story overview --journey <slug> --refinement-story-id <rs-id>
 uv run python -m memory build refinement-story pull --journey <slug> --refinement-story-id <rs-id>
+uv run python -m memory build change-request select --journey <slug> --change-request-id <cr-id>
+uv run python -m memory build change-request confirm --journey <slug> --change-request-id <cr-id>
+uv run python -m memory build change-request plan --journey <slug> --change-request-id <cr-id> --summary "<plan>"
+uv run python -m memory build change-request mark-implemented --journey <slug> --change-request-id <cr-id> --evidence "<evidence>"
+uv run python -m memory build change-request validate --journey <slug> --change-request-id <cr-id> --evidence "<evidence>"
+uv run python -m memory build change-request done --journey <slug> --change-request-id <cr-id> --notes "<done note>"
+uv run python -m memory build refinement-story review --journey <slug> --refinement-story-id <rs-id> --summary "<review>"
+uv run python -m memory build refinement-story coherence --journey <slug> --refinement-story-id <rs-id> --summary "<coherence>"
+uv run python -m memory build refinement-story close --journey <slug> --refinement-story-id <rs-id> --summary "<close summary>"
 ```
 
-These commands render Ariad Workbench surfaces such as `CHANGE_REQUEST_CAPTURED`, `REFINEMENT_STORY_OVERVIEW`, and `REFINEMENT_STORY_PULLED`. Composition commands capture or organize Refinement Stories and Change Requests only. Pulling an RS selects active Refinement Work only; it does not start a CR lifecycle, mutate Delivery cursor state, implement files, commit, push, or release.
+These commands render Ariad Workbench surfaces such as `CHANGE_REQUEST_CAPTURED`, `REFINEMENT_STORY_OVERVIEW`, `REFINEMENT_STORY_PULLED`, and `REFINEMENT_FLOW_EVENT`. Composition commands capture or organize Refinement Stories and Change Requests only. Pulling an RS selects active Refinement Work only. CR/RS flow commands update runtime state and evidence only; they do not mutate Delivery cursor state, implement files, commit, push, or release. Review and Coherence do not mutate files directly.
 
 ### Clone role
 
