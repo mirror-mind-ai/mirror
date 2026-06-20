@@ -179,7 +179,22 @@ def test_change_request_flow_rejects_invalid_order(store):
 
 def test_refinement_story_review_coherence_close_flow(store):
     story = create_refinement_story(store, journey="mirror", title="Builder lifecycle refinement")
+    cr = capture_change_request(
+        store,
+        journey="mirror",
+        title="Plan safety",
+        body="Preserve human-authored plan details.",
+        refinement_story_id=story.id,
+    )
     pull_refinement_story(store, journey="mirror", refinement_story_id=story.id)
+    select_change_request(store, journey="mirror", change_request_id=cr.id)
+    confirm_change_request(store, journey="mirror", change_request_id=cr.id)
+    plan_change_request(store, journey="mirror", change_request_id=cr.id, summary="Plan")
+    mark_change_request_implemented(
+        store, journey="mirror", change_request_id=cr.id, evidence="Implemented"
+    )
+    validate_change_request(store, journey="mirror", change_request_id=cr.id, evidence="Valid")
+    complete_change_request(store, journey="mirror", change_request_id=cr.id, notes="Done")
 
     review = review_refinement_story(
         store, journey="mirror", refinement_story_id=story.id, summary="Review only"
@@ -194,9 +209,53 @@ def test_refinement_story_review_coherence_close_flow(store):
     assert review.event == "refinement_story_reviewed"
     assert coherence.event == "refinement_story_coherent"
     assert close.new_status == "closed"
+    rendered = render_refinement_flow_event_surface(close)
+    assert "current RS phase" in rendered
+    assert "RS closed" in rendered
+    assert "closure record" in rendered
+    assert "notes remain stored" in rendered
     cursor = store.get_refinement_cursor("mirror")
     assert cursor is not None
     assert cursor.active_refinement_story_id is None
+    assert store.get_change_request(cr.id).outcome_notes == "Done"
+
+
+def test_refinement_story_close_rejects_unfinished_change_requests(store):
+    story = create_refinement_story(store, journey="mirror", title="Builder lifecycle refinement")
+    cr = capture_change_request(
+        store,
+        journey="mirror",
+        title="Plan safety",
+        body="Preserve human-authored plan details.",
+        refinement_story_id=story.id,
+    )
+    pull_refinement_story(store, journey="mirror", refinement_story_id=story.id)
+    review_refinement_story(store, journey="mirror", refinement_story_id=story.id, summary="Review")
+    coherence_refinement_story(
+        store, journey="mirror", refinement_story_id=story.id, summary="Coherent"
+    )
+
+    import pytest
+
+    with pytest.raises(ValueError, match="unfinished Change Requests"):
+        close_refinement_story(
+            store, journey="mirror", refinement_story_id=story.id, summary="Close"
+        )
+    cursor = store.get_refinement_cursor("mirror")
+    assert cursor is not None
+    assert cursor.active_refinement_story_id == story.id
+    assert store.get_change_request(cr.id).status == "captured"
+
+
+def test_refinement_story_review_requires_active_story(store):
+    story = create_refinement_story(store, journey="mirror", title="Builder lifecycle refinement")
+
+    import pytest
+
+    with pytest.raises(ValueError, match="active Refinement Story is required"):
+        review_refinement_story(
+            store, journey="mirror", refinement_story_id=story.id, summary="Review"
+        )
 
 
 def test_refinement_story_overview_renders_ordered_cr_surface(store):

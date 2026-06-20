@@ -381,7 +381,10 @@ implementation. The implementation step requires explicit Navigator language
 such as "implement this CR" and should be represented by the runtime transition
 only after the actual implementation/evidence exists. Review and Coherence must
 not mutate files directly; required changes discovered there must become CRs or
-future work.
+future work. Do not close an RS while any attached CR remains unfinished; finish,
+park, reject, or promote each CR first, then run RS review, coherence, and close
+in order. Closing an RS clears active Refinement Work only and must not pull or
+execute Delivery Work.
 
 ## Prepare Ariad Templates
 

@@ -240,6 +240,7 @@ def test_mm_build_skill_requires_marked_ariad_surfaces_to_render_verbatim():
     assert "refinement-story close" in skill
     assert "Do not skip" in skill
     assert "implement this CR" in skill
+    assert "Do not close an RS while any attached CR remains unfinished" in skill
     assert "capture this as a CR" in skill
     assert "pull that refinement story" in skill
 
@@ -1933,6 +1934,42 @@ def test_refinement_story_flow_commands_review_coherence_close(mocker, tmp_path,
 
     out = capsys.readouterr().out
     assert out.count("<<<ARIAD:REFINEMENT_FLOW_EVENT>>>") == 3
+    assert "current RS phase" in out
     assert "does not mutate files" in out
+    assert "notes remain stored" in out
     assert mem.store.get_refinement_story(story.id).status == "closed"
     assert mem.store.get_refinement_cursor("sandbox-pet-store").active_refinement_story_id is None
+
+
+def test_refinement_story_close_rejects_unfinished_cr(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    story = mem.store.create_refinement_story(journey="sandbox-pet-store", title="RS flow")
+    cr = mem.store.create_change_request(
+        journey="sandbox-pet-store",
+        title="Unfinished CR",
+        body="Still captured",
+        refinement_story_id=story.id,
+    )
+    mem.store.update_refinement_story_status(story.id, "active")
+    mem.store.set_refinement_cursor(
+        journey="sandbox-pet-store",
+        active_refinement_story_id=story.id,
+        active_change_request_id=None,
+        last_refinement_event="refinement_story_coherent",
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    import pytest
+
+    with pytest.raises(SystemExit):
+        build.cmd_refinement_story_flow(
+            "close", journey="sandbox-pet-store", refinement_story_id=story.id, summary="Closed"
+        )
+
+    err = capsys.readouterr().err
+    assert "unfinished Change Requests" in err
+    assert cr.id in err
+    assert mem.store.get_refinement_story(story.id).status == "active"

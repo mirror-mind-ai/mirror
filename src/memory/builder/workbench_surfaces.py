@@ -185,7 +185,7 @@ def render_refinement_flow_event_surface(event: RefinementFlowEvent) -> str:
     lines.extend(
         [
             "│                                                        │",
-            _card_text("current CR phase"),
+            _card_text(_phase_label(event)),
             _card_text(_current_phase(event)),
             "│                                                        │",
             _card_text("status transition"),
@@ -222,6 +222,16 @@ def render_refinement_flow_event_surface(event: RefinementFlowEvent) -> str:
                 ),
             ]
         )
+    if event.event == "refinement_story_closed":
+        lines.extend(
+            [
+                "│                                                        │",
+                _card_text("closure record"),
+                *_card_wrapped(
+                    "RS was closed after coherence; CR outcomes and done notes remain stored."
+                ),
+            ]
+        )
     lines.extend(
         [
             "│                                                        │",
@@ -233,6 +243,12 @@ def render_refinement_flow_event_surface(event: RefinementFlowEvent) -> str:
         ]
     )
     return wrap_ariad_surface("refinement_flow_event", "\n".join(lines) + "\n")
+
+
+def _phase_label(event: RefinementFlowEvent) -> str:
+    if event.event.startswith("refinement_story_"):
+        return "current RS phase"
+    return "current CR phase"
 
 
 def _current_phase(event: RefinementFlowEvent) -> str:

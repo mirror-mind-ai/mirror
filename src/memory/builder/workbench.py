@@ -218,6 +218,7 @@ def review_refinement_story(
     overview = get_refinement_story_overview(
         store, journey=journey, refinement_story_id=refinement_story_id
     )
+    _require_active_refinement_story(store, journey, overview.story.id, "review")
     _require_status(overview.story.status, {"active"}, "review")
     store.set_refinement_cursor(
         journey=journey,
@@ -236,6 +237,7 @@ def coherence_refinement_story(
     overview = get_refinement_story_overview(
         store, journey=journey, refinement_story_id=refinement_story_id
     )
+    _require_active_refinement_story(store, journey, overview.story.id, "coherence")
     cursor = store.get_refinement_cursor(journey)
     if cursor is None or cursor.last_refinement_event != "refinement_story_reviewed":
         raise ValueError("coherence requires refinement story review first")
@@ -256,9 +258,11 @@ def close_refinement_story(
     overview = get_refinement_story_overview(
         store, journey=journey, refinement_story_id=refinement_story_id
     )
+    _require_active_refinement_story(store, journey, overview.story.id, "close")
     cursor = store.get_refinement_cursor(journey)
     if cursor is None or cursor.last_refinement_event != "refinement_story_coherent":
         raise ValueError("close requires refinement story coherence first")
+    _require_closable_change_requests(overview.change_requests)
     updated_story = store.update_refinement_story_status(
         overview.story.id, "closed", closed_at=_now()
     )
@@ -303,6 +307,27 @@ def get_refinement_story_overview(
             refinement_story_id=refinement_story_id,
         ),
     )
+
+
+def _require_active_refinement_story(
+    store: Store, journey: str, refinement_story_id: str, action: str
+) -> None:
+    cursor = store.get_refinement_cursor(journey)
+    if cursor is None or cursor.active_refinement_story_id != refinement_story_id:
+        raise ValueError(f"active Refinement Story is required to {action}")
+    if cursor.active_change_request_id is not None:
+        raise ValueError(f"cannot {action} while a Change Request is active")
+
+
+def _require_closable_change_requests(change_requests: tuple[ChangeRequestRecord, ...]) -> None:
+    unfinished = tuple(
+        cr for cr in change_requests if cr.status not in {"done", "parked", "rejected", "promoted"}
+    )
+    if unfinished:
+        summary = ", ".join(f"{cr.id} ({cr.status})" for cr in unfinished)
+        raise ValueError(
+            "cannot close Refinement Story with unfinished Change Requests: " + summary
+        )
 
 
 def _require_active_story_and_cr(
