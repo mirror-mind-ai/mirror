@@ -12,6 +12,7 @@ Future release notes should use the structure defined in [Release Notes](../proc
 
 ## Releases
 
+- [v0.29.0 — Ariad Refinement Workbench](v0.29.0.md) — minor release that makes Refinement a first-class Builder Mode work field with Workbench storage, Refinement Stories, Change Requests, CR cycles, and RS review/coherence/close.
 - [v0.28.0 — Ariad Delivery Story Lifecycle](v0.28.0.md) — minor release that makes Delivery Story flow a first-class Ariad Builder path with aggregate DS Plan/Validation/Review/Coherence/Done, canonical checkpoint artifacts, and visual surfaces.
 - [v0.27.0 — Ariad Builder Lifecycle Runtime](v0.27.0.md) — minor release that adds the full Ariad Builder lifecycle from Pull through Done, deterministic surfaces, hard gates, story packages, validation acceptance, Debt Review, Coherence, Done, and conservative higher-autonomy cadence.
 - [v0.26.2 — Web Conversation Bulk Actions](v0.26.2.md) — emergency patch release that adds selected bulk assignment and deletion to the main web Conversations view.

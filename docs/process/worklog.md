@@ -12,6 +12,10 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-17 — v0.29.0 Ariad Refinement Workbench prepared
+
+Prepared the DS6 release boundary as `v0.29.0 — Ariad Refinement Workbench`. The release bumps package metadata, adds the narrative release note, updates the release index and project briefing, and names DS7 Release And Push Policies as the next Builder governance horizon. Push, tag, stable promotion, and publication remain separate hard gates.
+
 ### 2026-06-17 — CV20.DS6 Refinement Workbench And Flow completed
 
 Closed the aggregate Refinement Workbench And Flow delivery story. Builder now supports Ariad Refinement Work as a first-class field outside roadmap Delivery: Builder Home shows Delivery and Refinement fields, Workbench storage persists Refinement Stories and Change Requests, Navigator can compose and pull an RS, traverse CR cycles, review/coherence-check/close an RS, and reset sandbox Workbench state.

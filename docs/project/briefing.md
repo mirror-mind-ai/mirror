@@ -155,36 +155,24 @@ modules exist.
 
 ### Ariad governs Builder delivery for Mirror Mind
 
-**State as of v0.28.0:** Mirror Mind has adopted Ariad prospectively at the
+**State as of v0.29.0:** Mirror Mind has adopted Ariad prospectively at the
 parent `mirror-mind` journey level. Builder Mode remains backward-compatible for
 journeys that have not adopted Ariad, but Mirror Mind delivery work now uses
-Ariad runtime checkpoints, deterministic marked surfaces, and explicit hard
-gates.
+Ariad runtime checkpoints, deterministic marked surfaces, explicit hard gates,
+and first-class Delivery and Refinement work fields.
 
-**Completed release boundary:** `v0.28.0 — Ariad Delivery Story Lifecycle`
-closed `CV20.DS5`. Builder supports both Navigator flow units:
+**Completed release boundary:** `v0.29.0 — Ariad Refinement Workbench` closed
+`CV20.DS6`. Builder now exposes Ariad Refinement through Builder Home, durable
+Workbench Refinement Stories and Change Requests, RS pull, CR cycles, and
+RS-level review/coherence/close. Builder also retains the `v0.28.0` Delivery
+Story lifecycle: `story_by_story` and `delivery_story` Navigator flow units,
+aggregate DS checkpoints, canonical checkpoint artifacts, and visual Ariad
+surfaces.
 
-- `story_by_story`: child User/Technical Stories are Navigator-facing lifecycle
-  units.
-- `delivery_story`: the parent Delivery Story is the Navigator-facing lifecycle
-  unit while child User/Technical Stories remain traceable Driver work packages.
+**Release state:** `v0.29.0` is the current release-preparation boundary for
+DS6. Push, tag, stable promotion, and publication remain separate hard gates.
 
-In `delivery_story` flow, Builder can plan, approve, validate, review, check
-coherence, and close the Delivery Story as one aggregate lifecycle. Canonical
-checkpoint artifacts are materialized in the roadmap package as `plan.md`,
-`validation.md`, `review.md`, `coherence.md`, and `done.md`. Navigator-facing
-Ariad surfaces should render with the visual card grammar, not only as plain
-marked text blocks.
-
-**Release state:** `main` and `stable` were published for `v0.28.0`. `main` then
-received one CI-stabilization commit for a path-wrapping assertion. GitHub
-Actions passed on `main` after that fix. The `v0.28.0` tag and `stable` point at
-the release commit before the test-only stabilization commit.
-
-**Current Builder work:** `CV20.DS6 — Refinement Workbench And Flow` is complete.
-Builder now exposes Ariad Refinement through Builder Home, durable Workbench
-Refinement Stories and Change Requests, RS pull, CR cycles, and RS-level
-review/coherence/close. The next planned Builder slice is `CV20.DS7 — Release
+**Current Builder work:** The next planned Builder slice is `CV20.DS7 — Release
 And Push Policies`; do not assume push/release permission from ordinary Done, and
 keep release and stable promotion as separate Navigator-authorized hard gates.
 
