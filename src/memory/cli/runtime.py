@@ -25,7 +25,7 @@ from memory.extensions.migrations import ExtensionMigrationError, inspect_migrat
 
 _CLONE_ROLE_FILENAME = ".mirror-clone-role"
 _DEFAULT_CLONE_ROLE = "production"
-_KNOWN_CLONE_ROLES = frozenset({"production", "dev"})
+_KNOWN_CLONE_ROLES = frozenset({"production", "dev", "staging"})
 _UPDATE_CHANNEL_FILENAME = ".mirror-update-channel"
 _DEFAULT_UPDATE_CHANNEL = "stable"
 _KNOWN_UPDATE_CHANNELS = frozenset({"stable", "main"})

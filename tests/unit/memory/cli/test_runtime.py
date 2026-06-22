@@ -472,15 +472,26 @@ def test_inspect_clone_role_normalizes_whitespace_and_case(tmp_path, monkeypatch
     assert role.value == "production"
 
 
-def test_inspect_clone_role_falls_back_to_production_for_unknown_value(tmp_path, monkeypatch):
+def test_inspect_clone_role_reads_staging_marker(tmp_path, monkeypatch):
     (tmp_path / ".mirror-clone-role").write_text("staging\n", encoding="utf-8")
+    monkeypatch.setattr("memory.cli.runtime._resolve_repo_root", lambda start: Path(tmp_path))
+
+    role = inspect_clone_role(Path(tmp_path))
+
+    assert role.value == "staging"
+    assert role.source == tmp_path / ".mirror-clone-role"
+    assert role.note is None
+
+
+def test_inspect_clone_role_falls_back_to_production_for_unknown_value(tmp_path, monkeypatch):
+    (tmp_path / ".mirror-clone-role").write_text("sandbox\n", encoding="utf-8")
     monkeypatch.setattr("memory.cli.runtime._resolve_repo_root", lambda start: Path(tmp_path))
 
     role = inspect_clone_role(Path(tmp_path))
 
     assert role.value == "production"
     assert role.note is not None
-    assert "staging" in role.note
+    assert "sandbox" in role.note
 
 
 def test_inspect_clone_role_returns_production_outside_git(tmp_path, monkeypatch):
