@@ -132,6 +132,9 @@ def compose_status_line(
     if home_path is None:
         return ""
     parts = [f"◇ {home_path.name}"]
+    environment_context = _environment_status_segment()
+    if environment_context:
+        parts.append(environment_context)
     mode_context = _mode_status_segment(home_path, session_id=session_id)
     if mode_context:
         parts.append(mode_context)
@@ -145,6 +148,15 @@ def compose_status_line(
 
 
 # --------- status line ---------------------------------------------------
+
+
+def _environment_status_segment() -> str | None:
+    environment = os.environ.get("MEMORY_ENV", "production").strip().lower()
+    if environment == "development":
+        return "⧉ DEV"
+    if environment == "staging":
+        return "⧉ STAGING"
+    return None
 
 
 def _mode_status_segment(home_path: Path, *, session_id: str | None = None) -> str | None:

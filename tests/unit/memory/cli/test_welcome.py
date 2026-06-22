@@ -613,6 +613,32 @@ def test_welcome_status_line_healthy_without_cache(tmp_path, capsys):
     assert capsys.readouterr().out.strip() == "◇ alisson-vale · ◌ Mirror Mode · ✓"
 
 
+def test_welcome_status_line_marks_development_environment(monkeypatch, tmp_path, capsys):
+    _mem(tmp_path, user="mirror-dev")
+    monkeypatch.delenv("MIRROR_USER", raising=False)
+    monkeypatch.delenv("MIRROR_HOME", raising=False)
+    monkeypatch.setenv("MEMORY_ENV", "development")
+
+    from memory.cli.welcome import main
+
+    main(["--mirror-home", str(tmp_path / ".mirror" / "mirror-dev"), "--status-line"])
+
+    assert capsys.readouterr().out.strip() == "◇ mirror-dev · ⧉ DEV · ◌ Mirror Mode · ✓"
+
+
+def test_welcome_status_line_marks_staging_environment(monkeypatch, tmp_path, capsys):
+    _mem(tmp_path, user="lucas-vidal")
+    monkeypatch.delenv("MIRROR_USER", raising=False)
+    monkeypatch.delenv("MIRROR_HOME", raising=False)
+    monkeypatch.setenv("MEMORY_ENV", "staging")
+
+    from memory.cli.welcome import main
+
+    main(["--mirror-home", str(tmp_path / ".mirror" / "lucas-vidal"), "--status-line"])
+
+    assert capsys.readouterr().out.strip() == "◇ lucas-vidal · ⧉ STAGING · ◌ Mirror Mode · ✓"
+
+
 def test_welcome_status_line_includes_active_mode_context(tmp_path, capsys):
     mem, home = _mem(tmp_path, user="alisson-vale")
     mem.set_identity("journey", "explorer-mode", "# Explorer Mode\n**Status:** active")
