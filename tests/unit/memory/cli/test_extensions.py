@@ -7,11 +7,6 @@ from textwrap import dedent
 
 import pytest
 
-_NTFS_COLON_SKIP = pytest.mark.skipif(
-    sys.platform == "win32",
-    reason="NTFS does not allow ':' in directory names",
-)
-
 from memory.cli.extensions import (
     cleanup_claude_runtime_skills,
     cmd_extensions,
@@ -25,6 +20,11 @@ from memory.cli.extensions import (
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[4]
+
+_NTFS_COLON_SKIP = pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="NTFS does not allow ':' in directory names",
+)
 
 
 def _write(path, content: str) -> None:
