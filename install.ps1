@@ -370,6 +370,18 @@ function Step-InstallAdapter {
 
     Write-Log "Installing adapter layer..." "STEP"
     try {
+        $srcResolved = (Resolve-Path $adapterSource).Path.TrimEnd('\')
+        $destResolved = $adapterDest.TrimEnd('\')
+        if (Test-Path $adapterDest) {
+            $destResolved = (Resolve-Path $adapterDest).Path.TrimEnd('\')
+        }
+
+        if ($srcResolved -eq $destResolved) {
+            Write-Log "Adapter already in place at $adapterDest" "OK"
+            $script:StepsCompleted += "adapter"
+            return $true
+        }
+
         if (Test-Path $adapterDest) {
             Remove-Item -Recurse -Force $adapterDest
         }
