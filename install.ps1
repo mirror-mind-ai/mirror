@@ -22,7 +22,7 @@ param(
     [switch]$Unattended
 )
 
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
 $script:StepsCompleted = @()
 $script:LogFile = ""
 
@@ -308,7 +308,7 @@ function Install-Pi {
 
     Write-Log "Installing Pi coding agent via npm..." "STEP"
     try {
-        & npm install -g --ignore-scripts "@mariozechner/pi-coding-agent" 2>&1 | ForEach-Object { Write-Log $_ }
+        & npm install -g --ignore-scripts "@mariozechner/pi-coding-agent" 2>&1 | ForEach-Object { Write-Log "$_" }
         if (Test-Command "pi") {
             Write-Log "Pi installed successfully" "OK"
             return $true
@@ -335,18 +335,20 @@ function Step-CloneUpstream {
 
     Write-Log "Cloning Mirror Mind upstream..." "STEP"
     try {
-        # Clone with no-checkout to avoid Windows-invalid paths (e.g. mm:backup)
-        & git clone --no-checkout https://github.com/mirror-mind-ai/mirror $repoDir 2>&1 | ForEach-Object { Write-Log $_ }
+        $cloneUrl = "https://github.com/mirror-mind-ai/mirror"
+        $output = & git clone $cloneUrl $repoDir 2>&1
+        $output | ForEach-Object { Write-Log "$_" }
+        if ($LASTEXITCODE -ne 0) {
+            Write-Log "git clone exited with code $LASTEXITCODE" "ERROR"
+            return $false
+        }
 
-        # Configure sparse-checkout to exclude paths with : (illegal on Windows)
-        Set-Location $repoDir
-        & git sparse-checkout init --no-cone 2>&1 | ForEach-Object { Write-Log $_ }
-        $sparseContent = "/*`n!/.claude/skills/"
-        Set-Content (Join-Path $repoDir ".git\info\sparse-checkout") $sparseContent -Encoding utf8
-        & git checkout HEAD 2>&1 | ForEach-Object { Write-Log $_ }
-
-        # Add upstream remote for future updates
-        & git remote rename origin upstream 2>&1 | ForEach-Object { Write-Log $_ }
+        Push-Location $repoDir
+        try {
+            & git remote rename origin upstream 2>&1 | ForEach-Object { Write-Log "$_" }
+        } finally {
+            Pop-Location
+        }
 
         $script:StepsCompleted += "repo"
         Write-Log "Upstream cloned successfully" "OK"
