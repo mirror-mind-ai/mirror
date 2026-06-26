@@ -19,13 +19,14 @@ from memory.intelligence.consolidate import (
 from memory.intelligence.embeddings import embedding_to_bytes
 from memory.models import Memory
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
 
-def _memory(embedding: np.ndarray | None, *, readiness: str = "open", mid: str | None = None) -> Memory:
+def _memory(
+    embedding: np.ndarray | None, *, readiness: str = "open", mid: str | None = None
+) -> Memory:
     """Build a Memory with the given embedding and readiness_state.
 
     All other fields are filled with placeholders sufficient for cluster_memories().
