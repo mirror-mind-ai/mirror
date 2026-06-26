@@ -81,7 +81,7 @@ function Invoke-Rollback {
                 [Environment]::SetEnvironmentVariable("PYTHONSTARTUP", $null, "User")
             }
             "envfile" {
-                $envFile = Join-Path $InstallDir "repo" ".env"
+                $envFile = Join-Path (Join-Path $InstallDir "repo") ".env"
                 if (Test-Path $envFile) {
                     Remove-Item -Force $envFile -ErrorAction SilentlyContinue
                 }
@@ -446,7 +446,7 @@ function Step-Onboarding {
         $envContent = @"
 MIRROR_USER=$User
 OPENROUTER_API_KEY=$Key
-PYTHONSTARTUP=$(Join-Path $InstallDir "adapter" "win_compat.py")
+PYTHONSTARTUP=$(Join-Path (Join-Path $InstallDir "adapter") "win_compat.py")
 "@
         $envFile = Join-Path $repoDir ".env"
         Set-Content -Path $envFile -Value $envContent -Encoding utf8
@@ -505,7 +505,7 @@ function Step-ConfigurePi {
 
     Write-Log "Configuring Pi to use Windows adapter extension..." "STEP"
 
-    $piSettingsDir = Join-Path $env:USERPROFILE ".pi" "agent"
+    $piSettingsDir = Join-Path (Join-Path $env:USERPROFILE ".pi") "agent"
     if (-not (Test-Path $piSettingsDir)) {
         New-Item -ItemType Directory -Path $piSettingsDir -Force | Out-Null
     }
