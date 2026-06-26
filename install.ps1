@@ -107,6 +107,12 @@ function Test-Winget {
     }
 }
 
+function Refresh-PathEnv {
+    $machinePath = [Environment]::GetEnvironmentVariable("PATH", "Machine")
+    $userPath = [Environment]::GetEnvironmentVariable("PATH", "User")
+    $env:PATH = "$machinePath;$userPath"
+}
+
 function Install-Dependency {
     param(
         [string]$Name,
@@ -119,30 +125,141 @@ function Install-Dependency {
         return $true
     }
 
-    Write-Log "Installing $Name via winget ($WingetId)..." "STEP"
-    if (-not (Test-Winget)) {
-        Write-Log "winget not available. Please install $Name manually." "ERROR"
-        return $false
+    # Try winget first
+    if (Test-Winget) {
+        Write-Log "Installing $Name via winget ($WingetId)..." "STEP"
+        try {
+            & winget install --id $WingetId -e --silent --accept-package-agreements --accept-source-agreements 2>&1 | ForEach-Object { Write-Log $_ }
+            Refresh-PathEnv
+
+            if (Test-Command $TestCommand) {
+                $ver = & $TestCommand --version 2>&1
+                Write-Log "$Name installed successfully: $ver" "OK"
+                return $true
+            } else {
+                Write-Log "$Name installed but not found in PATH. A restart may be needed." "WARN"
+                return $true
+            }
+        } catch {
+            Write-Log "winget install of $Name failed: $_ — trying direct download..." "WARN"
+        }
+    } else {
+        Write-Log "winget not available, using direct download for $Name..." "WARN"
+    }
+
+    # Fallback: direct download
+    return Install-DirectDownload -Name $Name -TestCommand $TestCommand
+}
+
+function Install-DirectDownload {
+    param(
+        [string]$Name,
+        [string]$TestCommand
+    )
+
+    $tempDir = Join-Path $env:TEMP "MirrorMindInstall"
+    if (-not (Test-Path $tempDir)) {
+        New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
     }
 
     try {
-        & winget install --id $WingetId -e --silent --accept-package-agreements --accept-source-agreements 2>&1 | ForEach-Object { Write-Log $_ }
-        # Refresh PATH for current session
-        $machinePath = [Environment]::GetEnvironmentVariable("PATH", "Machine")
-        $userPath = [Environment]::GetEnvironmentVariable("PATH", "User")
-        $env:PATH = "$machinePath;$userPath"
-
-        if (Test-Command $TestCommand) {
-            $ver = & $TestCommand --version 2>&1
-            Write-Log "$Name installed successfully: $ver" "OK"
-            return $true
-        } else {
-            Write-Log "$Name installed but not found in PATH. A restart may be needed." "WARN"
-            return $true
+        switch ($Name) {
+            "Git" {
+                return Install-GitDirect -TempDir $tempDir
+            }
+            "Node.js" {
+                return Install-NodeDirect -TempDir $tempDir
+            }
+            default {
+                Write-Log "No direct download available for $Name" "ERROR"
+                return $false
+            }
         }
     } catch {
-        Write-Log "Failed to install $Name : $_" "ERROR"
+        Write-Log "Direct download of $Name failed: $_" "ERROR"
         return $false
+    }
+}
+
+function Install-GitDirect {
+    param([string]$TempDir)
+
+    Write-Log "Downloading Git installer..." "STEP"
+
+    # Query GitHub API for latest Git for Windows release
+    $releaseUrl = "https://api.github.com/repos/git-for-windows/git/releases/latest"
+    $release = Invoke-RestMethod -Uri $releaseUrl -UseBasicParsing
+    $asset = $release.assets | Where-Object { $_.name -match "Git-.*-64-bit\.exe$" } | Select-Object -First 1
+
+    if (-not $asset) {
+        Write-Log "Could not find Git installer in latest release" "ERROR"
+        return $false
+    }
+
+    $installerPath = Join-Path $TempDir $asset.name
+    Write-Log "Downloading $($asset.name) ($([math]::Round($asset.size / 1MB, 1)) MB)..." "STEP"
+    Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $installerPath -UseBasicParsing
+
+    Write-Log "Running Git installer (silent)..." "STEP"
+    $gitArgs = "/VERYSILENT", "/NORESTART", "/NOCANCEL", "/SP-", "/CLOSEAPPLICATIONS", "/RESTARTAPPLICATIONS", "/COMPONENTS=ext,ext\shellhere,ext\guihere,gitlfs,assoc,assoc_sh,windowsterminal"
+    Start-Process -FilePath $installerPath -ArgumentList $gitArgs -Wait -NoNewWindow
+
+    Refresh-PathEnv
+    # Git installs to Program Files — add to PATH for current session
+    $gitBin = "C:\Program Files\Git\cmd"
+    if ((Test-Path $gitBin) -and ($env:PATH -notlike "*$gitBin*")) {
+        $env:PATH = "$gitBin;$env:PATH"
+    }
+
+    if (Test-Command "git") {
+        $ver = & git --version 2>&1
+        Write-Log "Git installed successfully: $ver" "OK"
+        return $true
+    } else {
+        Write-Log "Git installed but not found in PATH" "WARN"
+        return $true
+    }
+}
+
+function Install-NodeDirect {
+    param([string]$TempDir)
+
+    Write-Log "Downloading Node.js LTS installer..." "STEP"
+
+    # Get latest LTS version from Node.js
+    $versions = Invoke-RestMethod -Uri "https://nodejs.org/dist/index.json" -UseBasicParsing
+    $lts = $versions | Where-Object { $_.lts -ne $false } | Select-Object -First 1
+
+    if (-not $lts) {
+        Write-Log "Could not determine latest Node.js LTS version" "ERROR"
+        return $false
+    }
+
+    $nodeVersion = $lts.version
+    $msiName = "node-$nodeVersion-x64.msi"
+    $downloadUrl = "https://nodejs.org/dist/$nodeVersion/$msiName"
+    $msiPath = Join-Path $TempDir $msiName
+
+    Write-Log "Downloading Node.js $nodeVersion..." "STEP"
+    Invoke-WebRequest -Uri $downloadUrl -OutFile $msiPath -UseBasicParsing
+
+    Write-Log "Running Node.js installer (silent)..." "STEP"
+    Start-Process -FilePath "msiexec.exe" -ArgumentList "/i", $msiPath, "/qn", "/norestart" -Wait -NoNewWindow
+
+    Refresh-PathEnv
+    # Node.js installs to Program Files — add to PATH for current session
+    $nodeBin = "C:\Program Files\nodejs"
+    if ((Test-Path $nodeBin) -and ($env:PATH -notlike "*$nodeBin*")) {
+        $env:PATH = "$nodeBin;$env:PATH"
+    }
+
+    if (Test-Command "node") {
+        $ver = & node --version 2>&1
+        Write-Log "Node.js installed successfully: $ver" "OK"
+        return $true
+    } else {
+        Write-Log "Node.js installed but not found in PATH" "WARN"
+        return $true
     }
 }
 
@@ -156,10 +273,16 @@ function Install-Uv {
     Write-Log "Installing uv (Python manager)..." "STEP"
     try {
         Invoke-RestMethod https://astral.sh/uv/install.ps1 | Invoke-Expression 2>&1 | ForEach-Object { Write-Log $_ }
-        # Add uv to PATH for current session
-        $uvBin = Join-Path $env:USERPROFILE ".cargo\bin"
-        if ($env:PATH -notlike "*$uvBin*") {
-            $env:PATH = "$uvBin;$env:PATH"
+        # Add uv to PATH for current session (location varies by version)
+        $uvPaths = @(
+            (Join-Path $env:USERPROFILE ".cargo\bin"),
+            (Join-Path $env:USERPROFILE ".local\bin"),
+            (Join-Path $env:LOCALAPPDATA "uv\bin")
+        )
+        foreach ($uvBin in $uvPaths) {
+            if ((Test-Path $uvBin) -and ($env:PATH -notlike "*$uvBin*")) {
+                $env:PATH = "$uvBin;$env:PATH"
+            }
         }
         if (Test-Command "uv") {
             $ver = & uv --version 2>&1
@@ -441,7 +564,7 @@ $banner = @"
  | |  | | | |  | | | (_) | |   | |  | | | | | | (_| |
  |_|  |_|_|_|  |_|  \___/|_|   |_|  |_|_|_| |_|\__,_|
 
-  Windows Installer v1.0
+  Windows Installer v1.2
 
 "@
 Write-Host $banner -ForegroundColor Cyan
@@ -509,6 +632,12 @@ try {
     Write-Host ""
     Write-Log "=== Step 7/7: Shortcut ===" "STEP"
     Step-CreateShortcut | Out-Null
+
+    # --- Cleanup ---
+    $tempDir = Join-Path $env:TEMP "MirrorMindInstall"
+    if (Test-Path $tempDir) {
+        Remove-Item -Recurse -Force $tempDir -ErrorAction SilentlyContinue
+    }
 
     # --- Done ---
     Write-Host ""
