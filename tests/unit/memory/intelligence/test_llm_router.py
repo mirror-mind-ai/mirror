@@ -51,7 +51,9 @@ def _make_urlopen(mocker, response_data: dict):
     mock_resp.read.return_value = json.dumps(response_data).encode()
     mock_resp.__enter__ = lambda s: s
     mock_resp.__exit__ = MagicMock(return_value=False)
-    return mocker.patch("memory.intelligence.llm_router.urllib.request.urlopen", return_value=mock_resp)
+    return mocker.patch(
+        "memory.intelligence.llm_router.urllib.request.urlopen", return_value=mock_resp
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -280,9 +282,7 @@ class TestGetCredits:
         assert headers.get("Authorization") == "Bearer test-key"
 
     def test_uses_certifi_ssl_context(self, mocker, api_key_set):
-        mock_urlopen = _make_urlopen(
-            mocker, {"data": {"total_credits": 5.0, "total_usage": 1.0}}
-        )
+        mock_urlopen = _make_urlopen(mocker, {"data": {"total_credits": 5.0, "total_usage": 1.0}})
         mock_context = mocker.patch("memory.intelligence.llm_router._openrouter_ssl_context")
 
         get_credits()
