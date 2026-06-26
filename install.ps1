@@ -566,7 +566,7 @@ $banner = @"
  | |  | | | |  | | | (_) | |   | |  | | | | | | (_| |
  |_|  |_|_|_|  |_|  \___/|_|   |_|  |_|_|_| |_|\__,_|
 
-  Windows Installer v1.2
+  Windows Installer v1.3
 
 "@
 Write-Host $banner -ForegroundColor Cyan

@@ -15,15 +15,7 @@ jobs:
 
     steps:
       - name: Checkout
-        shell: bash
-        run: |
-          git init
-          git remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
-          git config core.protectNTFS false
-          git sparse-checkout init --no-cone
-          echo -e '/*\n!/.claude/skills/' > .git/info/sparse-checkout
-          git fetch --depth=1 origin "${{ github.sha }}"
-          git checkout FETCH_HEAD
+        uses: actions/checkout@v6
 
       - name: Install NSIS
         run: choco install nsis -y --no-progress

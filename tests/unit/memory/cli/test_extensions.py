@@ -1,10 +1,16 @@
 """Tests for external skill extension CLI helpers."""
 
 import json
+import sys
 from pathlib import Path
 from textwrap import dedent
 
 import pytest
+
+_NTFS_COLON_SKIP = pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="NTFS does not allow ':' in directory names",
+)
 
 from memory.cli.extensions import (
     cleanup_claude_runtime_skills,
@@ -408,6 +414,7 @@ def test_install_extension_copies_source_tree_and_syncs_runtime_targets(tmp_path
     assert result["extension_id"] == "review-copy"
 
 
+@_NTFS_COLON_SKIP
 def test_install_extension_removes_owned_legacy_claude_skill_dir(tmp_path):
     mirror_home = tmp_path / ".mirror" / "pati"
     legacy_dir = mirror_home / "runtime" / "skills" / "claude" / "ext:review-copy"
@@ -424,6 +431,7 @@ def test_install_extension_removes_owned_legacy_claude_skill_dir(tmp_path):
     assert (mirror_home / "runtime" / "skills" / "claude" / "ext-review-copy" / "SKILL.md").exists()
 
 
+@_NTFS_COLON_SKIP
 def test_install_extension_preserves_unowned_legacy_claude_skill_dir(tmp_path):
     mirror_home = tmp_path / ".mirror" / "pati"
     legacy_dir = mirror_home / "runtime" / "skills" / "claude" / "ext:review-copy"
@@ -483,6 +491,7 @@ def test_install_extension_can_limit_runtime_sync(tmp_path):
     ).exists()
 
 
+@_NTFS_COLON_SKIP
 def test_uninstall_extension_removes_source_tree_and_runtime_surfaces(tmp_path):
     mirror_home = tmp_path / ".mirror" / "pati"
     install_extension(
@@ -560,6 +569,7 @@ def test_expose_claude_runtime_skills_copies_runtime_surface_into_project(tmp_pa
     assert result["exposed"]
 
 
+@_NTFS_COLON_SKIP
 def test_expose_claude_runtime_skills_prunes_previous_overlay_entries(tmp_path):
     mirror_home = tmp_path / ".mirror" / "pati"
     project_root = tmp_path / "project"
