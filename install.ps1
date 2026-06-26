@@ -141,7 +141,7 @@ function Install-Dependency {
                 return $true
             }
         } catch {
-            Write-Log "winget install of $Name failed: $_ — trying direct download..." "WARN"
+            Write-Log "winget install of $Name failed: $_ - trying direct download..." "WARN"
         }
     } else {
         Write-Log "winget not available, using direct download for $Name..." "WARN"
@@ -207,7 +207,7 @@ function Install-GitDirect {
     Start-Process -FilePath $installerPath -ArgumentList $gitArgs -Wait -NoNewWindow
 
     Refresh-PathEnv
-    # Git installs to Program Files — add to PATH for current session
+    # Git installs to Program Files - add to PATH for current session
     $gitBin = "C:\Program Files\Git\cmd"
     if ((Test-Path $gitBin) -and ($env:PATH -notlike "*$gitBin*")) {
         $env:PATH = "$gitBin;$env:PATH"
@@ -249,7 +249,7 @@ function Install-NodeDirect {
     Start-Process -FilePath "msiexec.exe" -ArgumentList "/i", $msiPath, "/qn", "/norestart" -Wait -NoNewWindow
 
     Refresh-PathEnv
-    # Node.js installs to Program Files — add to PATH for current session
+    # Node.js installs to Program Files - add to PATH for current session
     $nodeBin = "C:\Program Files\nodejs"
     if ((Test-Path $nodeBin) -and ($env:PATH -notlike "*$nodeBin*")) {
         $env:PATH = "$nodeBin;$env:PATH"
