@@ -197,7 +197,8 @@ function Install-GitDirect {
     }
 
     $installerPath = Join-Path $TempDir $asset.name
-    Write-Log "Downloading $($asset.name) ($([math]::Round($asset.size / 1MB, 1)) MB)..." "STEP"
+    $sizeMB = [math]::Round($asset.size / 1MB, 1)
+    Write-Log "Downloading $($asset.name) ($sizeMB MB)..." "STEP"
     Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $installerPath -UseBasicParsing
 
     Write-Log "Running Git installer (silent)..." "STEP"
