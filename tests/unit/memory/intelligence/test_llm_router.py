@@ -51,8 +51,9 @@ def _make_urlopen(mocker, response_data: dict):
     mock_resp.read.return_value = json.dumps(response_data).encode()
     mock_resp.__enter__ = lambda s: s
     mock_resp.__exit__ = MagicMock(return_value=False)
-    mocker.patch("memory.intelligence.llm_router.urllib.request.urlopen", return_value=mock_resp)
-    return mock_resp
+    return mocker.patch(
+        "memory.intelligence.llm_router.urllib.request.urlopen", return_value=mock_resp
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -194,7 +195,7 @@ class TestFetchGenerationCost:
         responses = [{"data": {}}, {"data": {}}, {"data": {"total_cost": 0.005}}]
         call_count = 0
 
-        def fake_urlopen(req):
+        def fake_urlopen(req, **kwargs):
             nonlocal call_count
             resp = MagicMock()
             resp.read.return_value = json.dumps(responses[call_count]).encode()
@@ -237,6 +238,14 @@ class TestFetchGenerationCost:
         assert result == 5.0
         assert isinstance(result, float)
 
+    def test_uses_certifi_ssl_context(self, mocker, api_key_set):
+        mock_urlopen = _make_urlopen(mocker, {"data": {"total_cost": 0.003}})
+        mock_context = mocker.patch("memory.intelligence.llm_router._openrouter_ssl_context")
+
+        fetch_generation_cost("gen-1")
+
+        assert mock_urlopen.call_args.kwargs["context"] == mock_context.return_value
+
 
 # ---------------------------------------------------------------------------
 # get_credits
@@ -271,3 +280,11 @@ class TestGetCredits:
         call_kwargs = mock_request.call_args[1]
         headers = call_kwargs.get("headers", {})
         assert headers.get("Authorization") == "Bearer test-key"
+
+    def test_uses_certifi_ssl_context(self, mocker, api_key_set):
+        mock_urlopen = _make_urlopen(mocker, {"data": {"total_credits": 5.0, "total_usage": 1.0}})
+        mock_context = mocker.patch("memory.intelligence.llm_router._openrouter_ssl_context")
+
+        get_credits()
+
+        assert mock_urlopen.call_args.kwargs["context"] == mock_context.return_value

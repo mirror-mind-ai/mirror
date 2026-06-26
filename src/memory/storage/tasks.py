@@ -50,7 +50,7 @@ class TaskStore(ConnectionBacked):
             return None
         return Task(**dict(row))
 
-    def update_task(self, task_id: str, **kwargs) -> None:
+    def update_task(self, task_id: str, **kwargs: object) -> None:
         from memory.models import _now
 
         kwargs["updated_at"] = _now()

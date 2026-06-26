@@ -19,8 +19,6 @@ Soul Mode
 │                                        │
 │   [Beauty Voice response]              │
 │                                        │
-│   listening for                        │
-│   [the form of aliveness]              │
 ╰────────────────────────────────────────╯
 ```
 
@@ -67,7 +65,7 @@ uv run ruff check src tests
 Manual CLI smoke:
 
 ```bash
-uv run python -m memory soul rite beauty --says "There is still care in the way this hurts." --listening-for "the form of aliveness"
+uv run python -m memory soul rite beauty --says "There is still care in the way this hurts."
 ```
 
 Pi validation:

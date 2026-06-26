@@ -27,6 +27,7 @@ def test_self_voice_prompt_injects_user_self_identity(tmp_path):
     assert "# Soul Mode — Self Voice Prompt" in prompt
     assert "Diante da urgência, não acelero" in prompt
     assert "Diante do silêncio, não preencho" in prompt
+    assert "A one-line aphorism is too thin" in prompt
     assert "{user_self_identity}" not in prompt
 
 

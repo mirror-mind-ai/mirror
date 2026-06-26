@@ -2,6 +2,31 @@
 
 import sys
 
+
+def _prefer_utf8_stdio() -> None:
+    """Keep Unicode CLI surfaces printable on Windows cp1252 consoles.
+
+    Mirror's runtime cards intentionally use glyphs such as ◇ and →. On
+    Windows, Python can inherit a legacy console encoding (commonly cp1252)
+    even when the surrounding terminal can display UTF-8. Reconfiguring the
+    text streams makes direct CLI use and Pi extension subprocesses agree with
+    Mirror's UTF-8 file/database contract. Test capture streams and custom
+    file-like objects may not expose ``reconfigure``; those are left alone.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        encoding = (getattr(stream, "encoding", None) or "").lower()
+        if encoding == "utf-8" or encoding.startswith("utf-8-"):
+            continue
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            try:
+                reconfigure(encoding="utf-8", errors="replace")
+            except (OSError, ValueError):
+                pass
+
+
+_prefer_utf8_stdio()
+
 USAGE = """Usage: python -m memory <command> [args]
 
 Commands:
@@ -31,6 +56,8 @@ Commands:
                        Usage: python -m memory conversation-logger <status|mute|unmute|switch|...>
   backup               Create a zipped backup of the memory database
                        Usage: python -m memory backup [--silent]
+  repair-encoding      Dry-run/apply repair for reversible UTF-8/Windows mojibake in user text
+                       Usage: python -m memory repair-encoding [--mirror-home PATH] [--apply] [--no-backup]
   journal              Record a journal entry
                        Usage: python -m memory journal [--journey SLUG] [--mirror-home PATH] <text>
   journey              Inspect or update a journey
@@ -42,10 +69,14 @@ Commands:
   soul                 Soul Mode context loader and surface renderer
                        Usage: python -m memory soul load [slug]
                               python -m memory soul listen [--self TEXT] [--shadow TEXT] [--wisdom TEXT] [--beauty TEXT]
-                              python -m memory soul rite self|shadow [--says TEXT] [--listening-for TEXT]
+                              python -m memory soul rite self|shadow|wisdom|beauty [--says TEXT]
+                              python -m memory soul close [--harvested TEXT] [--echoes TEXT] [--open TEXT] [--integration TEXT]
+                              python -m memory soul review [--journal TEXT] [--self TEXT] [--shadow TEXT] [--ego TEXT] [--persona TEXT] [--open TEXT]
+                              python -m memory soul propose self|shadow|ego|persona --proposed TEXT --why TEXT
+                              python -m memory soul apply self|shadow|ego|persona --proposed TEXT --confirm APPLY
                               python -m memory soul fruit set|show|clear
                               python -m memory soul harvest set|show|save|decline
-                              python -m memory soul prompt self
+                              python -m memory soul prompt self|wisdom|beauty
   memories             List memories with filters
                        Usage: python -m memory memories [--type T] [--layer L] [--journey J] [--search Q] [--mirror-home PATH]
   conversations        List recent conversations
@@ -75,6 +106,8 @@ Commands:
                        Usage: python -m memory shadow <scan|apply|reject|list|show> [args]
   web                  Run the local Mirror Web Console
                        Usage: python -m memory web [--host 127.0.0.1] [--port 8765]
+  mcp                  Run the Mirror MCP server over stdio (read + on-demand context tools)
+                       Usage: python -m memory mcp
   runtime              Inspect Mirror runtime status, drift, backups, version, plan and execute updates
                        Usage: python -m memory runtime status [--mirror-home PATH] [--channel stable|main]
                               python -m memory runtime version [--start PATH] [--channel stable|main]
@@ -163,6 +196,11 @@ def main() -> None:
         from memory.cli.backup import main as _backup_main
 
         _backup_main()
+
+    elif command == "repair-encoding":
+        from memory.cli.repair_encoding import main as _repair_encoding_main
+
+        sys.exit(_repair_encoding_main(sys.argv[2:]))
 
     elif command == "journal":
         sys.argv = [sys.argv[0], *sys.argv[2:]]
@@ -263,6 +301,11 @@ def main() -> None:
         from memory.web.server import main as _web_main
 
         _web_main(sys.argv[2:])
+
+    elif command == "mcp":
+        from memory.mcp.server import main as _mcp_main
+
+        sys.exit(_mcp_main(sys.argv[2:]))
 
     elif command == "runtime":
         from memory.cli.runtime import cmd_runtime

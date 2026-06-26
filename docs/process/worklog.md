@@ -12,6 +12,248 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-06-25 — GitHub Release publication added to release process
+
+Published the GitHub Release for `v0.29.1 — Windows Compatibility Hardening` from the committed release note and marked it as the latest repository release. The release process now explicitly treats GitHub Releases as the public repository-facing publication surface layered on top of the same Git tag that drives the stable updater channel.
+
+Validation: `gh release create v0.29.1 --latest` succeeded and `gh release view v0.29.1` reports the published release URL. Process docs and command reference now include GitHub Release publication after stable promotion and green CI.
+
+### 2026-06-25 — v0.29.1 Windows Compatibility Hardening prepared
+
+Prepared the patch release boundary for Windows compatibility hardening after homologating the self-update path on the `lucas-vidal` staging mirror. The release preserves Windows-safe Claude and plugin skill directories, UTF-8 runtime output, explicit backup-gated mojibake repair, extension legacy skill cleanup, and cross-platform path rendering without changing user-facing command names.
+
+Validation: PR #24 was merged after local focused tests, full unit tests, ruff, plugin drift check, focused mypy on touched modules, and GitHub Actions passed. Staging self-update on `~/.mirror-minds/lucas-vidal` using `~/mirror-staging` passed before preparing this release boundary. Stable promotion, tag creation, and push remain separate gates.
+
+### 2026-06-21 — CV21.E2.S2 Mirror MCP server completed
+
+Built the Mirror MCP server (`python -m memory mcp`) as a zero-dependency, hand-rolled stdio JSON-RPC 2.0 surface (decision D1 Option B), keeping the lean local-first core intact rather than pulling the official SDK's 18-package tree. The server implements the tools-only subset (`initialize`, `notifications/initialized`, `tools/list`, `tools/call`, `ping`) with a pure `handle_message` dispatch wrapped by a thin stdio loop; diagnostics go to stderr so stdout stays a clean protocol channel. Seven read + on-demand-context tools call the `MemoryClient` façade in-process (layer model `mcp → services`): `mirror_context` (side-effect-free identity, deliberately not `skills.mirror.load`), `list_journeys`, `journey_status`, `search_memories`, `list_conversations`, `recall_conversation`, `detect_persona`. Writes are out of scope by design. The plugin generator now declares the server as an `mcpServers` entry in the manifest, so the canonical package carries it.
+
+Validation: 18 new MCP tests (protocol dispatch + tool handlers, incl. a `mirror_context` no-mutation assertion), drift guard green, `claude plugin validate` passes, mypy clean on the new module. A real stdio round-trip (initialize → tools/list → tools/call) verified end-to-end, and the isolated `scripts/smoke_mirror_mcp.sh` passes leak-free across runs. The contract/REFERENCE docs are intentionally deferred to E2 close (after S3 statusLine and S4 reference smoke).
+
+### 2026-06-21 — CV21.E2.S1b Claude skill parity completed
+
+Authored Claude-tuned versions of the four formerly Pi-only skills (`discard`, `explore`, `soul`, `update`) into `.claude/skills/`, bringing the canonical plugin to full 25-skill parity with the Pi runtime. Applied the established `.pi`→`.claude` tuning derived from existing skill pairs: `mm:` invocation tokens, Claude-only usage blocks, English-only copy (translating Pi's Portuguese triggers), and Claude runtime semantics — `mm:discard` uses `--interface claude_code` (the dispatch is interface-parameterized), and `mm:soul` notes that session ids are hook-owned rather than passing a Pi `--session-id`. Mode-skill contract surfaces (required-surface rendering, Explorer/Soul → Builder boundaries) carried over unchanged. Regenerating the plugin picked the four up automatically (no hardcoded count).
+
+Also hardened `scripts/smoke_claude_plugin.sh`: the S1 production-DB checksum guard false-failed when a live Mirror session wrote to its own production DB during the test window. The guard now asserts that the run's unique session id and message never appear in any production DB — a stronger, non-flaky isolation proof (verified leak-free and stable across repeated runs).
+
+Validation: 11 plugin tests (drift guard + skill-set parity now at 25), `claude plugin validate` passed, English-only content confirmed, and the smoke test passed leak-free across three consecutive runs. Standalone `.claude/` now also carries 25 skills, closing its own gap.
+
+### 2026-06-21 — CV21.E2.S1 Claude plugin conversion completed
+
+Converted Mirror's standalone Claude integration into the canonical Claude-format plugin at `plugins/mirror-mind/` — the package CV21 propagates to the other runtimes. A new generator (`src/memory/plugins/claude.py`, driven by `scripts/build_claude_plugin.py`) materializes the manifest and the 21 Claude-tuned skills from `.claude/skills/` (the runtime-correct source — a diff proved the `.pi` and `.claude` skill bodies are independently tuned, not token-variants), normalizing two skills' lowercase `skill.md` to `SKILL.md`. Four plugin-relative hooks (`${CLAUDE_PLUGIN_ROOT}`, installed-`memory` contract) reproduce the SessionStart/UserPromptSubmit/SessionEnd lifecycle. A drift-guard test fails CI if the committed plugin diverges from `.claude/skills/`.
+
+Decisions (D1–D5): dedicated `plugins/mirror-mind/`; skills generated from `.claude/skills/` with drift guard; ship the 21 existing Claude skills now (the 4 Pi-only skills become sibling story S1b); standalone `.claude/` untouched; hooks assume an installed `python -m memory`.
+
+Validation: 11 focused plugin tests, ruff, format, mypy, and diff checks passed; `claude plugin validate` passed; the isolated smoke test fired all three hooks, logged a user message with `interface='claude_code'` to a sandboxed DB, and left the production DB checksum unchanged; Navigator validated `claude plugin validate` in an isolated `CLAUDE_CONFIG_DIR`. Two latent standalone bugs were documented (lowercase `skill.md` ×2; dangling `mm:save` reference); the plugin auto-fixes the casing. MCP (S2) and `statusLine` (S3) remain.
+
+### 2026-06-17 — v0.29.0 Ariad Refinement Workbench prepared
+
+Prepared the DS6 release boundary as `v0.29.0 — Ariad Refinement Workbench`. The release bumps package metadata, adds the narrative release note, updates the release index and project briefing, and names DS7 Release And Push Policies as the next Builder governance horizon. Push, tag, stable promotion, and publication remain separate hard gates.
+
+### 2026-06-17 — CV20.DS6 Refinement Workbench And Flow completed
+
+Closed the aggregate Refinement Workbench And Flow delivery story. Builder now supports Ariad Refinement Work as a first-class field outside roadmap Delivery: Builder Home shows Delivery and Refinement fields, Workbench storage persists Refinement Stories and Change Requests, Navigator can compose and pull an RS, traverse CR cycles, review/coherence-check/close an RS, and reset sandbox Workbench state.
+
+Validation: all DS6 child stories completed with focused automated checks and Navigator validation on `sandbox-pet-store`. Aggregate DS validation, debt review, coherence, and done artifacts were recorded. Push and release remain separate hard gates.
+
+### 2026-06-17 — CV20.DS6.US5 Close A Refinement Story completed
+
+Completed the RS-level closure slice for Ariad Refinement Work. Builder now guards RS review/coherence/close against the wrong active story or an active CR, refuses to close an RS with unfinished CRs, records RS close surfaces with explicit closure record, clears active Refinement cursor state after close, and preserves CR outcome notes.
+
+Validation: focused Builder and CLI tests passed; ruff, format check, mypy, and diff checks passed. Navigator validation through Mirror/Builder natural language on `sandbox-pet-store` created an RS/CR, traversed the CR to done, reviewed and coherence-checked the RS, closed it, and confirmed Builder Home no longer showed active Refinement Work while Delivery remained unpulled.
+
+### 2026-06-17 — CV20.DS6.US4 Traverse Change Request Cycles completed
+
+Completed the Navigator-facing CR traversal slice on top of the Refinement flow runtime. `REFINEMENT_FLOW_EVENT` surfaces now expose current CR phase, file-mutation boundary, and next conversational move; `/mm-build` guidance now enforces explicit phase order and implementation authorization for CR work.
+
+Validation: focused Builder and CLI tests passed; ruff, format check, mypy, and diff checks passed. Navigator validation through Mirror/Builder natural language on `sandbox-pet-store` traversed a CR through select, confirm, plan, explicit implementation evidence, validation evidence, and done note, with visible Ariad surfaces and no Delivery Work pulled.
+
+### 2026-06-17 — CV20.DS6.TS2 Refinement Flow Runtime completed
+
+Completed the runtime substrate for active Refinement Work. Builder now supports stateful CR transitions from select through done note, RS review/coherence/close transitions, `REFINEMENT_FLOW_EVENT` surfaces, active CR visibility in Builder Home, and natural-language routing guidance for Refinement flow commands. Review and Coherence remain non-mutating; required changes must become CRs or future work.
+
+Validation: focused storage, builder, and CLI tests passed; ruff, format check, mypy, and diff checks passed. Sandbox validation reset `sandbox-pet-store`, traversed a full runtime CR/RS flow, rendered nine `REFINEMENT_FLOW_EVENT` surfaces, and confirmed Builder Home returned to active RS/CR none while Delivery remained unpulled.
+
+### 2026-06-17 — CV20.DS6.US3 Pull A Refinement Story completed
+
+Completed the Refinement Work entry slice. Builder can now pull a composed Refinement Story into active Refinement Work, render `REFINEMENT_STORY_PULLED`, persist active RS cursor state with active CR left empty, and show the active RS on later Builder Home activation. The sandbox reset helper now clears Workbench RS/CR/cursor state for clean dogfooding runs.
+
+Validation: focused storage, builder, and CLI tests passed; ruff, format check, mypy, and diff checks passed. Navigator validation through Mirror/Builder natural language on `sandbox-pet-store` created a contextual RS and CR, pulled the RS, and confirmed Builder Home showed active RS while leaving active CR empty and Delivery work unpulled.
+
+### 2026-06-17 — CV20.DS6.US2 Compose A Refinement Story completed
+
+Completed the first Navigator-facing Refinement composition slice. Builder now supports creating Refinement Stories, capturing Change Requests, attaching CRs to RSs, and rendering `CHANGE_REQUEST_CAPTURED` and `REFINEMENT_STORY_OVERVIEW` Ariad surfaces without pulling an RS or starting CR lifecycle work. `/mm-build` guidance now routes natural-language capture/composition prompts to the Workbench commands and preserves marked surface rendering.
+
+Validation: focused storage, builder, and CLI tests passed; ruff, format check, mypy, and diff checks passed. Navigator validation through Mirror/Builder natural language on `sandbox-pet-store` created an RS, captured a CR into it, showed the RS overview, and confirmed Builder Home durable counts increased without lifecycle execution.
+
+### 2026-06-17 — CV20.DS6.TS1 Workbench Storage Model completed
+
+Completed the durable storage substrate for Ariad Refinement Work. Mirror now creates dedicated Builder Workbench tables for Refinement Stories, Change Requests, and refinement cursors, exposes them through `BuilderWorkbenchStore` on the main `Store` facade, and provides Builder-domain helpers for snapshots and basic RS/CR creation/association. Builder Home now reports Workbench storage as implemented with durable RS/CR counts while preserving the no-execution activation boundary.
+
+Validation: focused migration, storage, builder, and CLI tests passed; ruff, format check, mypy, and diff checks passed. Sandbox validation with `sandbox-pet-store` confirmed Builder Home shows `workbench storage: implemented`, empty durable counts, and no lifecycle work executed.
+
+### 2026-06-17 — CV20.DS6.US1 Builder Home Work Fields completed
+
+Completed the first Refinement Workbench slice. Ariad-adopted Builder activation now renders a `BUILDER_HOME` surface before roadmap and pull-candidate surfaces when a journey has no active item. The home surface shows the current Delivery field, a nascent Refinement field, honest Workbench storage status, seed Change Request count, available moves, and the no-execution activation boundary. The Pi Builder skill contract was tightened so marked Ariad surfaces are rendered before commentary.
+
+Validation: focused Builder unit/CLI tests, ruff, format check, mypy, and diff checks passed. Navigator validation with `sandbox-pet-store` confirmed `BUILDER_HOME`, `ROADMAP_SNAPSHOT`, and `PULL_CANDIDATES` render in order with Delivery and Refinement visible and no lifecycle work executed.
+
+### 2026-06-17 — CV20 Refinement Workbench path planned
+
+Added CV20.DS6 Refinement Workbench And Flow as the next Builder Mode Evolution story after Delivery Story Level Lifecycle. The roadmap now positions Refinement Work before release/push governance, with Workbench, Refinement Stories, Change Requests, CR cycles, and RS-level review/coherence/close as the planned runtime shape. Existing planned CV20 delivery stories were renumbered so Release And Push Policies moves to DS7, Debt Ledger And Refactor Loop to DS8, Method Preferences And Overrides to DS9, and Builder Documentation And Migration to DS10.
+
+Validation: documentation-only roadmap change; `git diff --check` passed.
+
+### 2026-06-16 — v0.28.0 Ariad Delivery Story Lifecycle prepared
+
+Closed CV20.DS5 Delivery Story Level Lifecycle as a release boundary. Builder now supports `delivery_story` as a Navigator-facing Ariad flow unit with aggregate DS Plan, Validation, Debt Review, Coherence, and Done checkpoints while preserving child User/Technical Stories as traceable work packages. DS-level lifecycle artifacts now materialize at canonical roadmap package paths, and Navigator-facing Ariad surfaces for resume, pull candidates, flow-unit selection, DS Plan, and DS closure render with the visual card grammar.
+
+Validation: focused Builder unit/CLI tests passed; ruff, format, mypy, and diff checks passed. Sandbox/Pi validation confirmed that Delivery Story flow creates `plan.md`, `validation.md`, `review.md`, `coherence.md`, and `done.md` in the canonical DS package and no longer requires child-story Navigator closure for aggregate DS Done.
+
+### 2026-06-16 — Windows UTF-8 repair command integrated
+
+Diagnosed a local Windows encoding issue where several Mirror journey descriptions and context snippets appeared as mojibake (`Ã©`, `Ã§`, `Ã£`) after runtime compatibility updates. Confirmed the current CLI already prefers UTF-8 stdio; the remaining issue was historical text persisted incorrectly in SQLite. Backed up the production memory database, repaired the local reversible rows, then added `python -m memory repair-encoding` as an explicit dry-run/apply command with backup before mutation. Documented the policy as user-data repair rather than automatic migration. This is runtime hardening, not a retroactive release boundary.
+
+Validation: local production DB scan ended with `pending reversible mojibake: 0`; command/unit tests cover Latin-1 and Windows-1252 repairs, safe handling of `Âncora`, DB scan/apply, and top-level CLI dispatch.
+
+### 2026-06-14 — v0.27.0 Ariad Builder Lifecycle Runtime prepared
+
+Closed CV20.DS4 Story Lifecycle Runtime as a release boundary. Builder now supports the complete Ariad happy path from Pull through Done with deterministic surfaces, method-level surface transport, story packages, hard Plan/Validation/Review/Coherence/Done gates, conservative higher-autonomy cadence, and repeatable sandbox dogfooding. Release notes for `v0.27.0 — Ariad Builder Lifecycle Runtime` were prepared.
+
+Validation: focused Builder method/lifecycle/cursor/CLI tests passed with `118 passed`; ruff, format, mypy, and diff checks passed before release-preparation commit.
+
+### 2026-06-14 — v0.26.2 Web Conversation Bulk Actions prepared
+
+Prepared emergency patch `v0.26.2 — Web Conversation Bulk Actions`. The main web Conversations view now exposes selected bulk maintenance: each row can be selected, selected conversations can be assigned to an existing journey in one click, and selected conversations can be deleted after explicit confirmation. The implementation reuses the existing safe bulk assignment and deletion APIs and keeps the existing Unassigned conversations maintenance flow intact.
+
+Validation: `uv run pytest tests/unit/memory/web/test_server.py -q`, `uv run ruff check src/memory/web tests/unit/memory/web`, `uv run ruff format --check src/memory/web tests/unit/memory/web`, and `git diff --check` passed before release-candidate commit.
+
+### 2026-06-10 — CV20 Ariad planning lifecycle hardened
+
+Reworked DS4 planning around methodological consistency instead of a narrow Plan gate. Ariad method data now declares `expand`, work item implementability, and cadence profiles; Delivery Stories always expand into User/Technical Stories before Plan. Builder runtime now persists active item title/level/cadence/granularity metadata, automatically prepares and expands pulled Delivery Stories, materializes story packages (`index.md`, `plan.md`, `test-guide.md`) for implementable stories, and supports deterministic Plan approval before implementation is allowed.
+
+Validation: focused Builder method, lifecycle, cursor, CLI, surface, ruff, format, and mypy checks passed.
+
+### 2026-06-10 — CV20 Ariad lifecycle contracts added
+
+Added phase-specific Ariad lifecycle contracts to the Builder method DSL. `ContractDefinition` now lets Ariad declare Pull, Prepare, Plan, Implement, Validation, Debt Review, Coherence, and Done rules as method data, including E2E placement across Plan/Implement/Validation and story-scoped/TDD implementation expectations. Method inspection now surfaces contracts, and Ariad docs were synced in `/Users/alissonvale/Code/ariad/docs/delivery/story-lifecycle.md`.
+
+Validation: focused method-definition, Ariad fixture, and CLI build tests passed; ruff, format, and mypy passed.
+
+### 2026-06-10 — CV20 Ariad roadmap inspection, pull, and prepare added
+
+Implemented the first DS4 lifecycle slice. Ariad-adopted journeys can now show the roadmap field with `ROADMAP SNAPSHOT` plus pull candidates, use method-declared surface routing, pull a candidate into active Delivery Work with `Delivery Story Identified` grammar, and prepare the pulled item with `Prepare Field Reading` grammar. Builder load now shows roadmap/candidates for Ariad journeys with no active item while preserving base Builder behavior for non-Ariad journeys. A reset script was added for the sandbox fixture at `/Users/alissonvale/Code/mirror-dev/scripts/reset_sandbox_pet_store.py`, with wrapper `/Users/alissonvale/reset-sandbox-pet-store.sh`.
+
+Validation: focused lifecycle, pull-candidate, resume, and CLI build tests passed; ruff, formatting, and mypy passed. Pi/Mirror validation with `sandbox-pet-store` passed for roadmap activation, Pull, and Prepare. Ariad visual grammar was updated in `/Users/alissonvale/Code/ariad/docs/delivery/visual-grammar.md` with `Prepare Field Reading`.
+
+### 2026-06-10 — CV20 Builder resume surface added
+
+Implemented CV20.DS3 Builder Resume Surface. Builder now composes Ariad adoption state, runtime delivery cursor state, and compact roadmap position into a resume surface during `memory build load` for adopted journeys. Pi/Mirror validation with `sandbox-pet-store` showed `■ BUILDER RESUME`, method `ariad`, resumability, cursor fields, allowed next actions, and preserved the boundary that no story lifecycle work runs during load.
+
+Validation: focused Builder resume tests and CLI build tests passed with `51 passed`, plus focused `uv run ruff check`, `uv run ruff format --check`, and `uv run mypy src/memory/builder src/memory/cli/build.py`.
+
+### 2026-06-10 — CV20 Ariad initial delivery cursor sync added
+
+Implemented CV20.DS2.TS2 Initial Delivery Cursor Sync and closed CV20.DS2 Ariad Adoption. Builder now persists an initial delivery cursor in SQLite runtime state through `memory build sync-cursor --method ariad`, using `__builder_delivery_cursor__:<journey>` metadata. The cursor records the adopted method, no active item, no active checkpoint, no pending confirmation, and `last_delivery_event=template_preparation`, preserving the boundary that no story lifecycle work is executed.
+
+Validation: `uv run pytest tests/unit/memory/builder/test_delivery_cursor.py tests/unit/memory/cli/test_build.py tests/unit/memory/builder/test_method_adoption.py`, focused `uv run ruff check`, focused `uv run ruff format --check`, `uv run mypy src/memory/builder src/memory/cli/build.py`, and CLI smoke with `sandbox-pet-store` passed.
+
+### 2026-06-10 — CV20 Ariad template preparation added
+
+Implemented CV20.DS2.US2 Adoption Template Generation. Builder method definitions now declare templates through `TemplateDefinition`, Ariad declares its adoption/readiness templates as method data, and `memory build prepare-templates --method ariad` prepares missing files for an adopted journey while preserving existing files. The Pi Builder skill routes natural-language template preparation requests to the contained command.
+
+Validation: `uv run pytest tests/unit/memory/builder/test_template_generation.py tests/unit/memory/cli/test_build.py tests/unit/memory/builder/test_method_adoption.py tests/unit/memory/builder/test_method_definition.py tests/unit/memory/builder/test_ariad_method.py`, focused `uv run ruff check`, focused `uv run ruff format --check`, `uv run mypy src/memory/builder src/memory/cli/build.py`, and Pi/Mirror natural-language validation with `sandbox-pet-store` passed.
+
+### 2026-06-10 — CV20 Ariad adoption command added
+
+Implemented CV20.DS2.US1 Adopt Ariad For A Journey. Builder can now adopt Ariad for an explicit or active Builder journey through `memory build adopt --method ariad`, persist the adopted method using the runtime method state helper, and report adopted Ariad through method inspection. The Pi Builder skill routes natural-language adoption requests to the contained command. Validation passed in Pi/Mirror using the `sandbox-pet-store` journey: adoption reported Ariad as adopted, follow-up inspection showed `adopted method: ariad`, and no templates, delivery cursor, or story lifecycle were executed.
+
+Validation: `uv run pytest tests/unit/memory/cli/test_build.py tests/unit/memory/builder/test_method_adoption.py tests/unit/memory/builder/test_ariad_method.py tests/unit/memory/builder/test_method_definition.py`, focused `uv run ruff check`, focused `uv run ruff format --check`, `uv run mypy src/memory/builder src/memory/cli/build.py`, CLI smoke for `build adopt` and `build inspect-method`, and Pi/Mirror natural-language validation passed.
+
+### 2026-06-10 — CV20 runtime method adoption state added
+
+Implemented CV20.DS2.TS1 Runtime Method State Sync. Builder now has state helpers to record, read, and clear the method adopted by a journey using explicit runtime-session state keyed by journey. The slice is internal substrate only: no adoption command, Pi natural-language route, template generation, delivery cursor, or lifecycle execution was introduced.
+
+Validation: `uv run pytest tests/unit/memory/builder/test_method_adoption.py tests/unit/memory/cli/test_build.py`, focused `uv run ruff check`, focused `uv run ruff format --check`, and `uv run mypy src/memory/builder src/memory/cli/build.py` passed.
+
+### 2026-06-10 — CV20 Method DSL Foundation completed
+
+Completed CV20.DS1 Method DSL Foundation. Builder now has typed method-definition structures, a built-in Ariad `MethodDefinition` fixture, and read-only method inspection through `memory build inspect-method`. The Pi Builder skill now routes natural-language questions about which Builder method governs the active journey to the inspection command. Validation confirmed the journey-not-adopted path: `builder-mode-evolution` reports no adopted Builder method yet while listing Ariad as available, without executing adoption.
+
+Validation: `uv run pytest tests/unit/memory/cli/test_build.py tests/unit/memory/builder/test_ariad_method.py tests/unit/memory/builder/test_method_definition.py`, focused `uv run ruff check`, focused `uv run ruff format --check`, `uv run mypy src/memory/builder src/memory/cli/build.py`, CLI smoke for `build inspect-method`, and Pi/Mirror natural-language validation passed.
+
+### 2026-06-10 — v0.26.1 Soul Mode English Integration Copy packaged
+
+Packaged `v0.26.1 — Soul Mode English Integration Copy`. Replaced Portuguese hard-coded Soul Mode integration prompts with English baseline copy in the Pi skill contract and aligned CV19 documentation. Confirmed identity integration section headings now use English defaults in code and tests: Self `New Incorporated Principles`, Shadow `New Hidden Needs Recognized`, Ego `New Operational Patterns Identified`, and Persona `New Participation Patterns Revealed`. This keeps Soul Mode consistent with Mirror Mind's English internal language until explicit localization exists.
+
+Validation: `uv run pytest tests/unit/ tests/integration/ -m "not live" -q`, `uv run ruff check src tests`, `uv run ruff format --check src tests`, `git diff --check`, `uv run python -m memory runtime release-notes latest`, and `uv run python -m memory runtime release-notes v0.26.1` passed before release-candidate commit.
+
+### 2026-06-09 — CV20 Ariad method fixture added
+
+Implemented CV20.DS1.TS2 Ariad Method Fixture. Ariad is now represented as a built-in `MethodDefinition` with resolution layers, taxonomy, lifecycle, checkpoints, policies, surfaces, and open questions. The fixture preserves Ariad as declarative method data and does not introduce parser, registry, override resolution, adoption, resume, persistence, CLI inspection, or lifecycle execution behavior.
+
+Validation: `uv run pytest tests/unit/memory/builder/test_ariad_method.py tests/unit/memory/builder/test_method_definition.py`, focused `uv run ruff check`, focused `uv run ruff format --check`, and `uv run mypy src/memory/builder` passed.
+
+### 2026-06-09 — v0.26.0 Soul Mode Integration packaged
+
+Packaged `v0.26.0 — Soul Mode Integration`. CV19 is now marked done, release notes were added, the release index was updated, and package metadata was bumped from `0.25.0` to `0.26.0`. The release includes Closing Rite, multi-layer Integration Proposal, explicit confirmation-only apply, additive identity content updates, atomic identity integration records, and the refined fruit-maturation/self-language contracts.
+
+Validation: `uv run pytest tests/unit/ tests/integration/ -m "not live" -q`, `uv run ruff check src tests`, `uv run ruff format --check src tests`, `git diff --check`, `uv run python -m memory runtime release-notes latest`, and `uv run python -m memory runtime release-notes v0.26.0` passed before release-candidate commit.
+
+### 2026-06-08 — Soul identity integrations made additive and atomic
+
+Reworked confirmed Soul identity apply so integration no longer overwrites prompt-facing identity content. Added `identity_integrations` as an atomic record table, with each confirmed Soul integration preserving layer/key/content/origin/provenance metadata. `memory soul apply` now records the individual integration and appends the exact confirmed text under layer-specific sections: Self `New Incorporated Principles`, Shadow `New Hidden Needs Recognized`, Ego `New Operational Patterns Identified`, and Persona `New Participation Patterns Revealed`. Existing identity content is preserved by default.
+
+Validation: `uv run pytest tests/unit/memory/cli/test_soul.py tests/unit/memory/services/test_soul.py -q`, focused `uv run ruff check`, focused `uv run ruff format --check`, and targeted `git diff --check` passed.
+
+### 2026-06-08 — CV20 Builder method definition model added
+
+Opened CV20 Builder Mode Evolution from the Ariad Builder DSL handoff and implemented CV20.DS1.TS1 Method Definition Model. Builder now has internal typed method-definition structures for method metadata, resolution layers, taxonomy, lifecycle events, checkpoints, policies, surfaces, and open questions, plus structural validation for duplicate ids and invalid references. This is model-only substrate: no Ariad fixture, parser, adoption command, runtime persistence, CLI inspection, or Builder load behavior changed.
+
+Validation: `uv run pytest tests/unit/memory/builder/test_method_definition.py`, focused `uv run ruff check`, focused `uv run ruff format --check`, and `uv run mypy src/memory/builder` passed. Full-project `uv run mypy src/memory` was attempted and failed on pre-existing unrelated errors outside the Builder package.
+
+### 2026-06-08 — Soul Self integration language made affirmative
+
+Tightened Soul integration proposal guidance for Self material. Self proposals must be affirmative first-person principles adopted as practice, not possibility language. The contract now explicitly avoids `can`, `may`, `maybe`, or `need to` as the center of the Self statement, preferring language such as `I care for bonds without turning immediate availability into moral proof of love; my inner measure also belongs to care.`
+
+Validation: documentation/skill-contract change; targeted `git diff --check` passed.
+
+### 2026-06-08 — Soul fruit maturation lineage tightened
+
+Tightened the Soul Mode skill contract so Fruit In Maturation thickens across turns instead of being replaced by the newest insight. The fruit should remain singular in form but plural in root: each revision synthesizes the current fruit with all new living elements that deepen the same fruit, while leaving out context, repetition, unrelated material, or unresolved open questions. Updated CV19.DS1 validation guidance to check that harvested fruit preserves lineage.
+
+Validation: documentation/skill-contract change; targeted `git diff --check` passed.
+
+### 2026-06-08 — CV19.DS3 and DS4 psyche proposal/apply implemented
+
+Implemented Soul Mode psyche enrichment proposal and safe confirmed identity mutation. The former Integration Review was simplified into a multi-layer `☾ INTEGRATION PROPOSAL`: it now uses `origin` instead of `journal`, renders `proposal only — nothing changed`, and asks directly `Do you want to record it this way in your identity? Or we can adjust anything you want.` `memory soul propose self|shadow|ego|persona` remains available as a focused single-layer proposal/refinement surface. `memory soul apply self|shadow|ego|persona` writes identity only with `--confirm APPLY`, uses conservative default keys (`self/soul`, `shadow/profile`, `ego/behavior`), requires explicit persona keys, and renders a visible identity-updated card. Journey identity remains excluded. The Pi contract now asks the assistant to load current identity when possible, confirm exact target/content before apply, avoid overwriting longer identity documents with fragments, and use layer-specific language for Self, Shadow, Ego, and Persona proposals.
+
+Validation: `uv run pytest tests/unit/memory/cli/test_soul.py tests/unit/memory/surfaces/test_soul.py -q`, focused `uv run ruff check` / `ruff format --check` on touched files, and targeted `git diff --check` passed. Full-repo validation remains deferred because unrelated parallel Builder files are present in the working tree.
+
+### 2026-06-08 — CV19.DS2 Integration Proposal implemented
+
+Implemented the Soul Mode Integration Proposal. `memory soul review` now renders a `☾ INTEGRATION PROPOSAL` card with optional proposal-only sections for journal, self, shadow, ego behavior, persona, and leave open. The renderer rejects empty reviews, omits empty categories, preserves the `proposal only — nothing changed` footer, and intentionally excludes journey identity because that category is not mature enough for this release. The Pi Soul Mode skill now uses the post-closing invitation `There is living material that may want to remain as part of your Mirror identity. Do you want to integrate it now?` and routes affirmative responses to the review surface without proposing diffs or mutating identity.
+
+Validation: `uv run pytest tests/unit/memory/cli/test_soul.py tests/unit/memory/surfaces/test_soul.py -q`, focused `uv run ruff check` / `ruff format --check` on touched Soul files, targeted `git diff --check`, and CLI smoke for `memory soul review` passed. External Pi validation passed before DS3/DS4 implementation. Full-repo ruff was not used because unrelated untracked Builder files are present in the working tree.
+
+### 2026-06-08 — CV19.DS1 Closing Rite implemented
+
+Implemented the Soul Mode Closing Rite. `memory soul close` now renders a `☾ CLOSING RITE` card with optional sections for what was harvested, what still echoes, what remains open, and what may want integration. The renderer rejects empty closing cards, preserves paragraph breaks, normalizes escaped newlines, and does not save journal entries or mutate identity. The Pi Soul Mode skill now routes natural closing requests to the contained renderer and preserves the boundary that closing is not integration. During validation, the Self Voice contract was tightened to reject one-line aphorisms, and `listening for` was removed from all active voice cards so every voice lives under `the voice says`. Harvest confirmation copy now asks whether to save as-is or change anything first. After a successful journal save, the Pi skill now immediately renders Closing Rite and asks `Is there another theme that filled the day, or shall we close here for today?`; if the user ends, Mirror deactivates Soul Mode and returns to Mirror Mode with a short farewell.
+
+Validation: `uv run pytest tests/unit/memory/cli/test_soul.py tests/unit/memory/services/test_soul_prompt.py tests/unit/memory/surfaces/test_soul.py -q`, `uv run ruff check src tests`, `uv run ruff format --check src tests`, `git diff --check`, CLI smoke for `memory soul close`, and CLI smoke for Self/Shadow cards without `listening for` passed. External Pi validation passed: harvest confirmation asked whether to save as-is or change first, saving to journal automatically rendered Closing Rite, the follow-up asked whether another theme filled the day or whether to end, and ending deactivated Soul Mode back to Mirror Mode with a farewell.
+
+### 2026-06-08 — CV19 Soul Mode Integration opened
+
+Opened CV19 as the next Soul Mode release: `v0.26.0 — Soul Mode Integration`. Added the CV19 roadmap index and the first delivery story, CV19.DS1 Closing Rite, with plan and test guide. The story boundary is explicit: Closing Rite can gather harvested material, echoes, open questions, and possible integration, but it does not classify, propose, write journal entries, or mutate identity.
+
+Validation: documentation-only roadmap change; `git diff --check` passed.
+
+### 2026-06-08 — Soul Mode post-integration roadmap narrowed
+
+Recorded the Soul Mode roadmap decision after v0.25.0 validation: Passagem, Return To Center, Closing Day / Daily Soul Ritual, and additional new voices are discarded from the active roadmap. Wisdom/Beauty source-library work remains dormant and should only return through an API/provider approach, not a local Mirror-maintained library. The remaining Soul Mode horizon is Integration followed by Web Soul Mode UI.
+
+Validation: documentation-only roadmap decision; `git diff --check` passed.
+
 ### 2026-06-08 — v0.25.0 Soul Mode More Voices prepared
 
 Completed CV18 and prepared `v0.25.0 — Soul Mode More Voices`. The release adds active Wisdom Voice and Beauty Voice listening lenses, full voice utterances inside ritual cards, no `listening for` field for the new voices, canonical Wisdom/Beauty prompts, source/aesthetic bridge guidance for Mirror outside the card, and safeguards requiring situated `--says` content so placeholder cards do not render. DS3 refinements were cancelled because the necessary tuning happened during direct DS1/DS2 Pi validation.
@@ -326,13 +568,13 @@ and Navigator accepted the configuration reference behavior.
 Added an explicit single-conversation title suggestion flow. Transcript pages can
 request a title suggestion through `/api/conversations/title-suggestion`, backed
 by `ConversationService.suggest_title()` and the existing OpenRouter LLM router
-using `EXTRACTION_MODEL`. Suggestions are preview-only: they do not save on page
+using `EXTRACTION_MODEL`. Suggestions are pproposal-only: they do not save on page
 load or after generation, and persistence still requires the manual `Save title`
 action from S3.
 
 Validation: focused Workspace/web tests passed, ruff checks passed,
 `node --check` passed, `git diff --check` passed, the web server was restarted,
-and Navigator browser validation accepted explicit generation, preview-only
+and Navigator browser validation accepted explicit generation, pproposal-only
 behavior, use-suggestion fill, and manual save persistence.
 
 ### 2026-05-25 — CV13.E4.S3 manual conversation title edit validated
@@ -2212,7 +2454,10 @@ Reference: [CV1.E4 Pi Operational Validation](../project/roadmap/cv1-pi-runtime/
 
 ---
 
-## Done
+## Earlier Milestones
+
+*Pre-consolidation worklog retained for history. Newer milestones live in the
+`## Done` section at the top of this file.*
 
 ### 2026-04-29 — CV8.E2 complete: Gemini CLI runtime implementation
 
@@ -2335,8 +2580,14 @@ Implementation plan produced for E6: `backfill-codex-session` CLI command,
 
 ## Next
 
-- **CV9 (Planned):** Mirror Mind 1.0 — refactoring, stabilization, and public release preparation.
-- **Continuous refinement** of identity based on real usage.
+- **CV9 (In Progress):** Mirror Mind 1.0 — stabilization, boundary hardening, and the remaining conversation-metadata lifecycle apply work.
+- **CV20 (In Progress):** Builder Mode Evolution — the Ariad method DSL (parser, registry, adoption, lifecycle execution).
+- **CV21 (In Progress):** Runtime Expansion II — package Mirror once as a canonical plugin + MCP server and propagate it to Claude, Codex, Antigravity, and Grok Build.
+- **Continuous refinement** of identity, memory quality, and runtime behavior based on real usage.
+
+The authoritative status of every CV/Epic/Story lives in the
+[Roadmap](../project/roadmap/index.md); this list is a pointer, not a second
+source of truth.
 
 ---
 

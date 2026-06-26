@@ -12,6 +12,13 @@ Future release notes should use the structure defined in [Release Notes](../proc
 
 ## Releases
 
+- [v0.29.1 — Windows Compatibility Hardening](v0.29.1.md) — patch release that preserves Windows-safe Claude/plugin skill paths, UTF-8 console output, explicit mojibake repair, and cross-platform path rendering.
+- [v0.29.0 — Ariad Refinement Workbench](v0.29.0.md) — minor release that makes Refinement a first-class Builder Mode work field with Workbench storage, Refinement Stories, Change Requests, CR cycles, and RS review/coherence/close.
+- [v0.28.0 — Ariad Delivery Story Lifecycle](v0.28.0.md) — minor release that makes Delivery Story flow a first-class Ariad Builder path with aggregate DS Plan/Validation/Review/Coherence/Done, canonical checkpoint artifacts, and visual surfaces.
+- [v0.27.0 — Ariad Builder Lifecycle Runtime](v0.27.0.md) — minor release that adds the full Ariad Builder lifecycle from Pull through Done, deterministic surfaces, hard gates, story packages, validation acceptance, Debt Review, Coherence, Done, and conservative higher-autonomy cadence.
+- [v0.26.2 — Web Conversation Bulk Actions](v0.26.2.md) — emergency patch release that adds selected bulk assignment and deletion to the main web Conversations view.
+- [v0.26.1 — Soul Mode English Integration Copy](v0.26.1.md) — patch release that normalizes hard-coded Soul Mode integration prompts and additive identity section headings to the English baseline.
+- [v0.26.0 — Soul Mode Integration](v0.26.0.md) — minor release that adds Closing Rite, multi-layer Integration Proposal, explicit confirmation-only identity integration, additive identity updates, and atomic integration records.
 - [v0.25.0 — Soul Mode More Voices](v0.25.0.md) — minor release that adds active Wisdom Voice and Beauty Voice listening lenses, full voice-card utterances, source/aesthetic bridge guidance, and non-mutating Soul Mode voice boundaries.
 - [v0.24.0 — Soul Mode First Ritual](v0.24.0.md) — minor release that adds the first complete Soul Mode ritual: entry, Possible Listenings, Self and Shadow listening lenses, Fruit In Maturation, Harvested Fruit, journal persistence, and pre-release web/journal refinements.
 - [v0.23.0 — Durable Explorer Mode](v0.23.0.md) — minor release that completes the first Explorer Mode release with durable stories, source-evidence handoff artifacts, required surface rendering, Builder boundary routing, and session-scoped Pi mode status.

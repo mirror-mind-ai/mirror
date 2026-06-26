@@ -78,6 +78,15 @@ def test_journeys_dispatches_without_leaking_the_top_level_command():
     mock_journeys_main.assert_called_once()
 
 
+def test_repair_encoding_dispatches():
+    with patch("memory.cli.repair_encoding.main", return_value=0) as mock_repair_main:
+        with pytest.raises(SystemExit) as exc_info:
+            _run_main(["repair-encoding", "--mirror-home", "/tmp/pati", "--apply"])
+
+    assert exc_info.value.code == 0
+    mock_repair_main.assert_called_once_with(["--mirror-home", "/tmp/pati", "--apply"])
+
+
 def test_migrate_legacy_dispatches():
     with patch("memory.cli.migrate_legacy.main") as mock_migrate_legacy_main:
         _run_main(

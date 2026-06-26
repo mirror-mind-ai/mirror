@@ -46,7 +46,7 @@ Beauty Voice is not decoration, reassurance, or shallow positivity. It listens f
 
 Given Soul Mode has enough living matter, Possible Listenings includes Beauty Voice as an available listening.
 
-Given the user asks to hear Beauty Voice, Mirror renders a Beauty Voice listening card with what the voice says and what it is listening for.
+Given the user asks to hear Beauty Voice, Mirror renders a Beauty Voice listening card with the voice response under `the voice says`.
 
 Given Beauty Voice responds, the card reveals form, aliveness, delicacy, texture, image, rhythm, or care already present in the material, omits `listening for`, and does not try to make the situation positive.
 

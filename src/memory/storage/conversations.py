@@ -107,7 +107,7 @@ class ConversationStore(ConnectionBacked):
         ).fetchall()
         return [Conversation(**dict(r)) for r in rows]
 
-    def update_conversation(self, conv_id: str, **kwargs) -> None:
+    def update_conversation(self, conv_id: str, **kwargs: object) -> None:
         sets = ", ".join(f"{k} = ?" for k in kwargs)
         vals = [*list(kwargs.values()), conv_id]
         self.conn.execute(f"UPDATE conversations SET {sets} WHERE id = ?", vals)

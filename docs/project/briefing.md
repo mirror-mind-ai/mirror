@@ -151,6 +151,33 @@ modules exist.
 
 ---
 
+## Current Builder Baseline
+
+### Ariad governs Builder delivery for Mirror Mind
+
+**State as of v0.29.0:** Mirror Mind has adopted Ariad prospectively at the
+parent `mirror-mind` journey level. Builder Mode remains backward-compatible for
+journeys that have not adopted Ariad, but Mirror Mind delivery work now uses
+Ariad runtime checkpoints, deterministic marked surfaces, explicit hard gates,
+and first-class Delivery and Refinement work fields.
+
+**Completed release boundary:** `v0.29.0 — Ariad Refinement Workbench` closed
+`CV20.DS6`. Builder now exposes Ariad Refinement through Builder Home, durable
+Workbench Refinement Stories and Change Requests, RS pull, CR cycles, and
+RS-level review/coherence/close. Builder also retains the `v0.28.0` Delivery
+Story lifecycle: `story_by_story` and `delivery_story` Navigator flow units,
+aggregate DS checkpoints, canonical checkpoint artifacts, and visual Ariad
+surfaces.
+
+**Release state:** `v0.29.0` is the current release-preparation boundary for
+DS6. Push, tag, stable promotion, and publication remain separate hard gates.
+
+**Current Builder work:** The next planned Builder slice is `CV20.DS7 — Release
+And Push Policies`; do not assume push/release permission from ordinary Done, and
+keep release and stable promotion as separate Navigator-authorized hard gates.
+
+---
+
 ## Glossary
 
 | Term | Meaning |

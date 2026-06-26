@@ -31,7 +31,7 @@ def test_write_builder_handoff_artifacts_creates_transfer_document_set(tmp_path)
     )
 
     artifact_dir = tmp_path / "docs" / "project" / "explorations" / "build-explorer-persistence"
-    assert handoff.artifact_dir == str(artifact_dir)
+    assert handoff.artifact_dir == artifact_dir.as_posix()
     index = artifact_dir / "index.md"
     exploratory_story = artifact_dir / "exploratory-story.md"
     handoff_info = artifact_dir / "handoff-info.md"
@@ -40,13 +40,15 @@ def test_write_builder_handoff_artifacts_creates_transfer_document_set(tmp_path)
     assert exploratory_story.is_file()
     assert handoff_info.is_file()
     assert product_design.is_file()
-    assert "The exploration continuously thickened" in index.read_text()
-    assert "Explorer has clarified" in exploratory_story.read_text()
-    assert "Continuous Thickening Narrative" in exploratory_story.read_text()
-    assert "What Builder Should Not Assume" not in handoff_info.read_text()
-    assert "Non-Assumptions" in handoff_info.read_text()
-    assert "Product Design Proposal" in product_design.read_text()
-    assert "does not define implementation architecture" in product_design.read_text()
+    assert "The exploration continuously thickened" in index.read_text(encoding="utf-8")
+    assert "Explorer has clarified" in exploratory_story.read_text(encoding="utf-8")
+    assert "Continuous Thickening Narrative" in exploratory_story.read_text(encoding="utf-8")
+    assert "What Builder Should Not Assume" not in handoff_info.read_text(encoding="utf-8")
+    assert "Non-Assumptions" in handoff_info.read_text(encoding="utf-8")
+    assert "Product Design Proposal" in product_design.read_text(encoding="utf-8")
+    assert "does not define implementation architecture" in product_design.read_text(
+        encoding="utf-8"
+    )
 
 
 def test_write_builder_handoff_artifacts_includes_source_evidence_and_full_conversation(tmp_path):
@@ -78,10 +80,10 @@ def test_write_builder_handoff_artifacts_includes_source_evidence_and_full_conve
     )
 
     artifact_dir = tmp_path / "docs" / "project" / "explorations" / "evidence-handoff"
-    index_text = (artifact_dir / "index.md").read_text()
-    handoff_info_text = (artifact_dir / "handoff-info.md").read_text()
-    full_text = (artifact_dir / "full-conversation.md").read_text()
-    assert handoff.full_conversation_path == str(artifact_dir / "full-conversation.md")
+    index_text = (artifact_dir / "index.md").read_text(encoding="utf-8")
+    handoff_info_text = (artifact_dir / "handoff-info.md").read_text(encoding="utf-8")
+    full_text = (artifact_dir / "full-conversation.md").read_text(encoding="utf-8")
+    assert handoff.full_conversation_path == (artifact_dir / "full-conversation.md").as_posix()
     assert "Story id: `story-123`" in index_text
     assert "`conv-123` — Explorer validation (origin conversation)" in index_text
     assert "Handoff Completeness Checklist" in handoff_info_text

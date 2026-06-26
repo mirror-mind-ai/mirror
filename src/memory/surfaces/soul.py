@@ -20,6 +20,20 @@ VOICE_LABELS = {
     "beauty": "Beauty Voice",
 }
 
+PSYCHE_LAYER_ICONS = {
+    "self": "✦",
+    "shadow": "◐",
+    "ego": "◇",
+    "persona": "◈",
+}
+
+PSYCHE_LAYER_LABELS = {
+    "self": "SELF",
+    "shadow": "SHADOW",
+    "ego": "EGO",
+    "persona": "PERSONA",
+}
+
 ACTIVE_RITE_DEFAULTS = {
     "self": {
         "title": "SELF VOICE LISTENING",
@@ -112,9 +126,116 @@ def render_harvested_fruit(fruit: str) -> str:
     for wrapped in _wrap(normalized_fruit, indent="   "):
         lines.append(_line(wrapped))
     lines.append(_line(""))
-    lines.append(_line("   save to journal?"))
+    lines.append(_line("   save to journal as it is"))
+    lines.append(_line("   or change anything first?"))
     lines.append("╰" + "─" * WIDTH + "╯")
     return "\n".join(lines)
+
+
+def render_closing_rite(
+    *,
+    harvested: str | None = None,
+    echoes: str | None = None,
+    remains_open: str | None = None,
+    integration: str | None = None,
+) -> str:
+    """Render a Soul Mode Closing Rite surface."""
+    return _render_section_card(
+        title="☾  CLOSING RITE",
+        sections=[
+            ("what was harvested", harvested),
+            ("what still echoes", echoes),
+            ("what remains open", remains_open),
+            ("what may want integration", integration),
+        ],
+        empty_error="at least one closing section is required",
+    )
+
+
+def render_integration_review(
+    *,
+    journal: str | None = None,
+    self_material: str | None = None,
+    shadow: str | None = None,
+    ego: str | None = None,
+    persona: str | None = None,
+    leave_open: str | None = None,
+) -> str:
+    """Render a review-only Soul Mode integration surface."""
+    return _render_section_card(
+        title="☾  INTEGRATION PROPOSAL",
+        sections=[
+            ("origin", journal),
+            ("self", self_material),
+            ("shadow", shadow),
+            ("ego behavior", ego),
+            ("persona", persona),
+            ("leave open", leave_open),
+        ],
+        empty_error="at least one integration review section is required",
+        footer="proposal only — nothing changed",
+    )
+
+
+def render_enrichment_proposal(
+    layer: str,
+    *,
+    key: str,
+    origin: str,
+    current: str | None,
+    proposed: str,
+    why: str,
+) -> str:
+    """Render a proposal-only psyche enrichment surface."""
+    if layer not in PSYCHE_LAYER_ICONS:
+        raise ValueError(f"unsupported psyche layer: {layer}")
+    if not key.strip():
+        raise ValueError("proposal key must not be empty")
+    if not origin.strip():
+        raise ValueError("proposal origin must not be empty")
+    if not proposed.strip():
+        raise ValueError("proposal content must not be empty")
+    if not why.strip():
+        raise ValueError("proposal rationale must not be empty")
+
+    icon = PSYCHE_LAYER_ICONS[layer]
+    label = PSYCHE_LAYER_LABELS[layer]
+    current_text = (
+        current.strip() if isinstance(current, str) and current.strip() else "none loaded"
+    )
+    return _render_section_card(
+        title=f"{icon}  {label} ENRICHMENT PROPOSAL",
+        sections=[
+            ("target", f"{layer}/{key.strip()}"),
+            ("origin", origin),
+            ("current", current_text),
+            ("proposed", proposed),
+            ("why this may belong", why),
+        ],
+        empty_error="enrichment proposal requires content",
+        footer="proposal only — no identity changed",
+    )
+
+
+def render_identity_change_applied(layer: str, *, key: str, content: str) -> str:
+    """Render a confirmed identity mutation surface."""
+    if layer not in PSYCHE_LAYER_ICONS:
+        raise ValueError(f"unsupported psyche layer: {layer}")
+    if not key.strip():
+        raise ValueError("identity key must not be empty")
+    if not content.strip():
+        raise ValueError("identity content must not be empty")
+
+    icon = PSYCHE_LAYER_ICONS[layer]
+    label = PSYCHE_LAYER_LABELS[layer]
+    return _render_section_card(
+        title=f"{icon}  {label} IDENTITY UPDATED",
+        sections=[
+            ("target", f"{layer}/{key.strip()}"),
+            ("applied", content),
+        ],
+        empty_error="identity update requires content",
+    )
 
 
 def render_active_rite(
@@ -134,11 +255,8 @@ def render_active_rite(
     if voice in {"wisdom", "beauty"} and not utterance:
         raise ValueError(f"{VOICE_LABELS[voice]} requires a situated --says response")
     voice_says = _normalize_voice_text(utterance or defaults["utterance"])
-    focus = (listening_for or defaults["listening_for"]).strip()
     if not voice_says:
         raise ValueError("active rite voice utterance must not be empty")
-    if not focus:
-        raise ValueError("active rite listening focus must not be empty")
 
     icon = VOICE_ICONS[voice]
     lines = [
@@ -151,10 +269,6 @@ def render_active_rite(
     ]
     for wrapped in _wrap_blocks(voice_says, indent="   "):
         lines.append(_line(wrapped))
-    if voice not in {"wisdom", "beauty"}:
-        lines.extend([_line(""), _line("   listening for")])
-        for wrapped in _wrap(focus, indent="   "):
-            lines.append(_line(wrapped))
     lines.append("╰" + "─" * WIDTH + "╯")
     return "\n".join(lines)
 
@@ -162,6 +276,35 @@ def render_active_rite(
 def _line(text: str) -> str:
     content = text[:WIDTH]
     return "│" + content.ljust(WIDTH) + "│"
+
+
+def _render_section_card(
+    *,
+    title: str,
+    sections: list[tuple[str, str | None]],
+    empty_error: str,
+    footer: str | None = None,
+) -> str:
+    normalized_sections = [
+        (label, _normalize_voice_text(value))
+        for label, value in sections
+        if isinstance(value, str) and value.strip()
+    ]
+    if not normalized_sections:
+        raise ValueError(empty_error)
+
+    lines = ["Soul Mode", "╭" + "─" * WIDTH + "╮", _line(f"   {title}")]
+    for label, text in normalized_sections:
+        lines.append(_line(""))
+        lines.append(_line(f"   {label}"))
+        for wrapped in _wrap_blocks(text, indent="   "):
+            lines.append(_line(wrapped))
+    if footer:
+        lines.append(_line(""))
+        for wrapped in _wrap_blocks(footer, indent="   "):
+            lines.append(_line(wrapped))
+    lines.append("╰" + "─" * WIDTH + "╯")
+    return "\n".join(lines)
 
 
 def _normalize_voice_text(text: str) -> str:

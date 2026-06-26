@@ -158,3 +158,67 @@ class TestRunMigrations:
             "details_json",
             "created_at",
         }.issubset(cols)
+
+    def test_builder_workbench_tables_created_by_migration_015(self):
+        conn = _fresh_conn()
+        run_migrations(conn)
+        tables = {
+            row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        }
+
+        assert "builder_refinement_stories" in tables
+        assert "builder_change_requests" in tables
+        assert "builder_refinement_cursors" in tables
+        story_cols = {
+            row[1] for row in conn.execute("PRAGMA table_info(builder_refinement_stories)")
+        }
+        cr_cols = {row[1] for row in conn.execute("PRAGMA table_info(builder_change_requests)")}
+        cursor_cols = {
+            row[1] for row in conn.execute("PRAGMA table_info(builder_refinement_cursors)")
+        }
+        indexes = {
+            row[1]
+            for row in conn.execute(
+                "SELECT type, name FROM sqlite_master WHERE type = 'index' AND name LIKE 'idx_builder_%'"
+            )
+        }
+
+        assert {
+            "id",
+            "journey",
+            "title",
+            "description",
+            "status",
+            "position",
+            "source",
+            "provenance",
+            "created_at",
+            "updated_at",
+            "pulled_at",
+            "closed_at",
+        }.issubset(story_cols)
+        assert {
+            "id",
+            "journey",
+            "refinement_story_id",
+            "title",
+            "body",
+            "status",
+            "position",
+            "source",
+            "provenance",
+            "outcome_notes",
+            "created_at",
+            "updated_at",
+            "completed_at",
+        }.issubset(cr_cols)
+        assert {
+            "journey",
+            "active_refinement_story_id",
+            "active_change_request_id",
+            "last_refinement_event",
+            "updated_at",
+        }.issubset(cursor_cols)
+        assert "idx_builder_refinement_stories_journey_status" in indexes
+        assert "idx_builder_change_requests_story_status" in indexes
+        assert "idx_builder_change_requests_journey_status" in indexes

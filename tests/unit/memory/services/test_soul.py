@@ -3,6 +3,7 @@
 from memory import MemoryClient
 from memory.config import default_db_path_for_home
 from memory.services.soul import (
+    apply_identity_integration,
     clear_fruit_in_maturation,
     clear_harvested_fruit,
     get_fruit_in_maturation,
@@ -94,3 +95,49 @@ def test_clear_harvested_fruit_removes_final_fruit(tmp_path):
     clear_harvested_fruit(mem.store)
 
     assert get_harvested_fruit(mem.store).fruit is None
+
+
+def test_apply_identity_integration_preserves_existing_content(tmp_path):
+    mem = _mem(tmp_path)
+    mem.set_identity("shadow", "profile", "Existing shadow profile.")
+
+    integration, updated = apply_identity_integration(
+        mem.store,
+        layer="shadow",
+        key="profile",
+        content="A part of me seeks safety through excessive availability.",
+        origin="Soul harvest",
+    )
+
+    assert integration.origin == "Soul harvest"
+    assert updated.startswith("Existing shadow profile.")
+    assert "## New Hidden Needs Recognized" in updated
+    assert "A part of me seeks safety" in updated
+    assert mem.get_identity("shadow", "profile") == updated
+    records = mem.store.list_identity_integrations(layer="shadow", key="profile")
+    assert [record.id for record in records] == [integration.id]
+
+
+def test_apply_identity_integration_appends_under_existing_section(tmp_path):
+    mem = _mem(tmp_path)
+    mem.set_identity(
+        "ego",
+        "behavior",
+        "Existing ego.\n\n"
+        "## New Operational Patterns Identified\n\n"
+        "- [2026-06-01] First pattern.\n\n"
+        "## Other Section\n\n"
+        "Keep me after the integration section.",
+    )
+
+    _, updated = apply_identity_integration(
+        mem.store,
+        layer="ego",
+        key="behavior",
+        content="When I fear judgment, I can compensate with excessive availability.",
+    )
+
+    assert updated.count("## New Operational Patterns Identified") == 1
+    assert "First pattern.\n- [" in updated
+    assert "excessive availability" in updated
+    assert "## Other Section" in updated

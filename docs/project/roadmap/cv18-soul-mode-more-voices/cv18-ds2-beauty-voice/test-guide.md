@@ -23,7 +23,7 @@ Expected:
 Run:
 
 ```bash
-uv run python -m memory soul rite beauty --says "The aliveness is in the care you still have for the shape of the day." --listening-for "the form of aliveness"
+uv run python -m memory soul rite beauty --says "The aliveness is in the care you still have for the shape of the day."
 ```
 
 Expected output includes:
@@ -31,7 +31,6 @@ Expected output includes:
 ```text
 ✺  BEAUTY VOICE LISTENING
 the voice says
-listening for
 ```
 
 Expected absence:
@@ -59,6 +58,6 @@ Expected:
 - Mirror stays in Soul Mode.
 - Beauty Voice is treated as a listening lens, not a separate character.
 - The response appears inside the ritual card under `the voice says`.
-- The card omits the `listening for` section for Beauty Voice.
+- The card omits the `listening for` section.
 - Mirror may bridge outside the card after the voice speaks.
 - The content reveals form, aliveness, delicacy, texture, image, rhythm, literature/poetry when fitting, or care without forced optimism.

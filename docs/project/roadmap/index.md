@@ -35,6 +35,10 @@ folder and index. Stories that are non-trivial have a `plan.md` and a
 | [CV16](cv16-explorer-mode/index.md) | Explorer Mode | ✅ Done |
 | [CV17](cv17-soul-mode/index.md) | Soul Mode | ✅ First Ritual Done |
 | [CV18](cv18-soul-mode-more-voices/index.md) | Soul Mode More Voices | ✅ Done |
+| [CV19](cv19-soul-mode-integration/index.md) | Soul Mode Integration | ✅ Done |
+| [CV20](cv20-builder-mode-evolution/index.md) | Builder Mode Evolution | 🟢 In Progress |
+| [CV21](cv21-runtime-expansion-ii/index.md) | Runtime Expansion II: Plugin & MCP Convergence | 🟢 In Progress |
+| [CV22](cv22-typescript-core-port/index.md) | TypeScript Core Port (Database-Seam Strangler) | 🟢 In Progress |
 
 ---
 
@@ -76,11 +80,39 @@ requests. See the [CV16 index](cv16-explorer-mode/index.md).
 
 ## CV17 — Soul Mode
 
-First ritual done. CV17 turns the Soul Mode exploration into the first usable ritual mode for inner life. The first release includes explicit Soul Mode entry, free listening to the living field, situated Possible Listenings, minimal Self Voice and Shadow Voice listening lenses, Fruit In Maturation, Harvested Fruit, and optional single-entry journal persistence. Future work remains for Wisdom Voice, Beauty Voice, Passagem, Return To Center, and psyche-layer enrichment. See the [CV17 index](cv17-soul-mode/index.md).
+First ritual done. CV17 turns the Soul Mode exploration into the first usable ritual mode for inner life. The first release includes explicit Soul Mode entry, free listening to the living field, situated Possible Listenings, minimal Self Voice and Shadow Voice listening lenses, Fruit In Maturation, Harvested Fruit, and optional single-entry journal persistence. Wisdom Voice and Beauty Voice shipped in CV18. Passagem, Return To Center, Closing Day, and additional new voices are no longer active roadmap items; the remaining Soul Mode horizon is integration followed by Web Soul Mode UI. See the [CV17 index](cv17-soul-mode/index.md).
 
 ## CV18 — Soul Mode More Voices
 
 Done. CV18 expands Soul Mode from the first ritual into a fuller listening constellation by making Wisdom Voice and Beauty Voice hearable inside the ritual flow. DS3 refinements were cancelled because the required tuning happened inside DS1/DS2 validation, and DS4 packaged `v0.25.0 — Soul Mode More Voices`. See the [CV18 index](cv18-soul-mode-more-voices/index.md).
+
+## CV19 — Soul Mode Integration
+
+Done. CV19 turns Soul Mode from a ritual that can produce insight into a ritual that can close cleanly, ask what deserves to remain, render a multi-layer Integration Proposal, and apply confirmed identity integrations additively with individual records. The release packaged `v0.26.0 — Soul Mode Integration`. See the [CV19 index](cv19-soul-mode-integration/index.md).
+
+## CV20 — Builder Mode Evolution
+
+In progress. CV20 evolves Builder Mode from a context-loading skill into a disciplined delivery environment governed by a declarative method DSL. Ariad is the inaugural method, with adoption, resume, Delivery lifecycle, Refinement Workbench, debt review, coherence, history, release, and push policies represented as method data rather than hard-coded agent habit. CV20.DS6 Refinement Workbench And Flow is complete; the next planned slice is CV20.DS7 Release And Push Policies. See the [CV20 index](cv20-builder-mode-evolution/index.md).
+
+## CV21 — Runtime Expansion II: Plugin & MCP Convergence
+
+In progress. CV21 is the successor to CV8, driven by one force: the coding-agent ecosystem (Claude, Codex, Antigravity, Grok Build, Gemini) has converged on the same primitives — plugins, hooks, skills, and MCP — and on the same plugin shape, with Claude Code's `.claude-plugin/plugin.json` emerging as the de-facto cross-runtime interchange format (`agy plugin import claude`, `grok plugin import`, Codex marketplaces). Rather than maintain N bespoke adapters, CV21 packages Mirror Mind **once** as a canonical plugin plus an MCP server and propagates it by import/install. Claude is the anchor: already L4, but shipped through the standalone `.claude/` tier when it should be a plugin — converting it produces the canonical package the others consume. Codex is upgraded L3→L4 (0.139.0 now has Claude-style hooks); Antigravity migrates the Gemini lineage (Gemini Code Assist's individual backend is deprecated 2026-06-18); Grok Build is added. External extensions ride the same package. Sequenced by implementation leverage and user base — foundation → Claude → Codex → Antigravity → Grok — not by the Gemini deadline, since few Mirror users are on Gemini. See the [CV21 index](cv21-runtime-expansion-ii/index.md).
+
+## CV22 — TypeScript Core Port (Database-Seam Strangler)
+
+In progress. CV22 is the successor to CV21: where CV21 packaged Mirror's runtime
+surface once (plugin + MCP) and propagated it across runtimes, CV22 unifies the
+**core language underneath** by porting the Python core (`src/memory/`) to
+TypeScript. The motivation is convergence — npm distribution, one language across
+core and the already-TypeScript runtimes, a wider contributor pool, and MCP/plugin
+alignment. The approach is a **database-seam strangler**, never a big-bang
+rewrite: a TS front door over a shared `memory.db`, with the Python core
+dissolving one observable command at a time, governed by a rule that new feature
+work lands in TS (Python froze to maintenance-only at the CV21.E2.S2 baseline).
+The first epic, CV22.E1, validated the riskiest assumption — hybrid-ranker parity
+between TS and Python over the same SQLite file, proven on 480 real memories with
+1536-dim embeddings and a ~1,700× margin over the near-tie risk. The strategy is
+recorded in [Decisions](../decisions.md). See the [CV22 index](cv22-typescript-core-port/index.md).
 
 ## CV11 — Localization
 

@@ -19,8 +19,6 @@ Soul Mode
 │                                        │
 │   [Wisdom Voice response]              │
 │                                        │
-│   listening for                        │
-│   [discernment / pattern / lesson]     │
 ╰────────────────────────────────────────╯
 ```
 
@@ -67,7 +65,7 @@ uv run ruff check src tests
 Manual CLI smoke:
 
 ```bash
-uv run python -m memory soul rite wisdom --says "[sample Wisdom response]" --listening-for "the lesson already present"
+uv run python -m memory soul rite wisdom --says "[sample Wisdom response]"
 ```
 
 Pi validation:

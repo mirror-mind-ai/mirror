@@ -21,6 +21,7 @@ but no fix yet are also welcome (mark them `Status: mitigated`).
 - [Changing `.mirror-update-channel` makes the git tree dirty](#changing-mirror-update-channel-makes-the-git-tree-dirty)
 - [Welcome shows channel `main` when you expected `stable`](#welcome-shows-channel-main-when-you-expected-stable)
 - [`runtime release-notes latest` says release notes were not found](#runtime-release-notes-latest-says-release-notes-were-not-found)
+- [Portuguese accents appear as mojibake on Windows](#portuguese-accents-appear-as-mojibake-on-windows)
 - [Pi Builder conversations appear without journeys](#pi-builder-conversations-appear-without-journeys)
 - [Pi logger fails silently when `python3` resolves outside the project venv](#pi-logger-fails-silently-when-python3-resolves-outside-the-project-venv)
 
@@ -132,6 +133,72 @@ lsof -i :8765
 
 Do not ask final users to do this as the normal update path. If this remains
 necessary after `v0.10.6`, treat it as a runtime lifecycle bug.
+
+---
+
+## Portuguese accents appear as mojibake on Windows
+
+**Date:** 2026-06-16
+**Status:** mitigated; explicit repair command added
+**Affected component:** local SQLite user text, Windows console/runtime compatibility
+**Severity:** display/prompt-context degradation; user data should not be mutated silently
+
+### Symptom
+
+Portuguese text appears with mojibake sequences such as:
+
+```text
+BioVault Ã© um projeto...
+EstratÃ©gia Luvia...
+transiÃ§Ã£o...
+```
+
+The same symptom can appear in journey lists, identity context, conversation
+history, or access-log context snippets.
+
+### Root cause
+
+Older local Windows/runtime combinations could persist UTF-8 text after decoding
+it through a legacy code page (Latin-1 or Windows-1252). This is distinct from a
+terminal-printing issue: the current CLI entry point already reconfigures
+`stdout`/`stderr` to UTF-8 when possible, but previously stored database content
+may still contain mojibake.
+
+### Diagnosis
+
+Run the explicit repair command in dry-run mode:
+
+```bash
+uv run python -m memory repair-encoding
+```
+
+For another Mirror home:
+
+```bash
+uv run python -m memory repair-encoding --mirror-home C:/Users/you/.mirror/Name
+```
+
+The command scans known user-text columns (`identity`, `attachments`, `messages`,
+`conversations`, `memories`, `tasks`, `memory_access_log`) and prints repairable
+rows without changing the database.
+
+### Repair
+
+Apply only after reviewing the dry-run output:
+
+```bash
+uv run python -m memory repair-encoding --apply
+```
+
+The apply path creates a database backup first and aborts if backup fails. Use
+`--no-backup` only in disposable test databases.
+
+### Policy
+
+This is not an automatic migration. The repair mutates user-owned text, so it
+must remain explicit, previewable, and backup-gated. It repairs only reversible
+mojibake patterns (`Ã©` → `é`, `Ã‰` → `É`, etc.) and deliberately leaves normal
+Portuguese such as `Âncora` unchanged.
 
 ---
 

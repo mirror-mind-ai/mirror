@@ -72,6 +72,32 @@ Current local finding:
 
 Likely interpretation: Maestro was installed with a migration file at some point, but the current installed package no longer includes it. Inspect the canonical Maestro source before touching the database.
 
+### Windows/UTF-8 mojibake in user text
+
+Portuguese mojibake such as `Ã©`, `Ã§`, `Ã£`, `Ã‰`, or `Ã“` can appear when older
+Windows/local-runtime combinations persisted UTF-8 text after decoding it through
+Latin-1 or Windows-1252. Current CLI entry points should prefer UTF-8 stdio, but
+historical database content may still need repair.
+
+Policy:
+
+- Treat this as user-data repair, not a schema migration.
+- Do not run silently during normal startup or runtime update.
+- Require an explicit dry-run/apply command.
+- Require a database backup before mutation.
+- Repair only reversible mojibake patterns; do not guess at irrecoverable
+  replacement characters or rewrite semantically ambiguous text.
+- Preserve normal Portuguese text such as `Âncora`.
+
+Current repair route:
+
+```bash
+uv run python -m memory repair-encoding
+uv run python -m memory repair-encoding --apply
+```
+
+Use `--mirror-home PATH` when repairing a non-default local Mirror home.
+
 ### Temporarily unavailable production database
 
 A production database can appear unavailable during `runtime status` when a local

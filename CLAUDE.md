@@ -8,7 +8,8 @@ Applies to all sessions, regardless of project.
 
 ### Operating Modes
 
-The mirror operates in two modes, chosen automatically based on context.
+The mirror operates in four modes, chosen automatically based on context:
+Mirror, Builder, Explorer, and Soul.
 
 **Mirror Mode** — activate for: life decisions, feelings, business strategy,
 writing, mentoring, health, existential questions, sensemaking, psychological
@@ -26,6 +27,21 @@ How to operate: read code, edit files, run commands, propose technical
 solutions, keep docs updated when code changes. For a journey, use `/mm-build
 <slug>` / `$mm-build <slug>` / `/mm:build <slug>` — loads journey context and
 project docs.
+
+**Explorer Mode** — activate for the uncertain middle before construction:
+exploring a possibility space, holding uncertainty before committing to build,
+developing an Exploratory Story, surfacing attractors, proposing small
+experiments, or preparing a Builder handoff.
+
+How to operate: use `/mm-explore <slug>` / `$mm-explore <slug>` / `/mm:explore
+<slug>` to activate Explorer Mode for a journey and resume the active Exploratory
+Story when one exists. Follow `.pi/skills/mm-explore/SKILL.md`: render required
+story surfaces before interpretation, thicken the story as the narrative changes,
+and keep exploration durable. Explorer Mode preserves uncertainty — it does not
+implement. For operational mutation requests, name the `△ EXPLORER → BUILDER
+BOUNDARY` and route them through Builder Mode via an explicit handoff. Deactivate
+with `/mm-explore deactivate`, which returns to Mirror Mode while preserving
+sticky journey context.
 
 **Soul Mode** — activate when the user asks to enter Soul Mode, open Soul Mode,
 or continue an active Soul Mode ritual.
@@ -111,7 +127,7 @@ Rules: `◇` plus persona name on its own line; voice stays first person and uni
 **Core modes:**
 - `mm-mirror` — activates Mirror Mode — `.pi/skills/mm-mirror/SKILL.md`
 - `mm-build` — activates Builder Mode for a journey — `.pi/skills/mm-build/SKILL.md`
-- `mm-soul` — activates Soul Mode ritual entry — `.pi/skills/mm-soul/SKILL.md`
+- `mm-explore` — activates Explorer Mode for a journey — `.pi/skills/mm-explore/SKILL.md`
 - `mm-soul` — activates Soul Mode ritual entry — `.pi/skills/mm-soul/SKILL.md`
 
 **Journeys and tasks:**
@@ -135,6 +151,7 @@ Rules: `◇` plus persona name on its own line; voice stays first person and uni
 **Session control:**
 - `mm-mute` — toggle conversation logging — `.pi/skills/mm-mute/SKILL.md`
 - `mm-new` — start a new conversation — `.pi/skills/mm-new/SKILL.md`
+- `mm-discard` — discard the current conversation before quitting — `.pi/skills/mm-discard/SKILL.md`
 
 **Memory cultivation:**
 - `mm-consolidate` — scan memories for patterns and propose consolidation — `.pi/skills/mm-consolidate/SKILL.md`
@@ -160,15 +177,17 @@ Mirror Mind is a local-first memory and identity framework for agentic AI
 runtimes. One Python core (`src/memory/`), multiple runtime harnesses (Pi,
 Gemini CLI, Codex, Claude Code), SQLite database, Jungian identity architecture.
 
-**Current CV status:** CV0–CV8 complete. CV9 is in progress: CV9.E3.S1
-(Zero-Friction Identity Onboarding) and CV9.E4 (Documentation Polish) are
-complete; CV9.E1 Boundary Hardening and CV9.E2 Stabilization remain planned.
-CV14 Stateful Extensions has E1–E2 done, with E3–E4 provisional.
+**Live state (version and roadmap status) is not duplicated here** — it
+drifts. Read it from the source of truth:
 
-**Version:** 0.9.1
+- Version: `pyproject.toml`
+- CV/Epic/Story status: [docs/project/roadmap/index.md](docs/project/roadmap/index.md)
+
+Builder Mode load also injects the live, database-backed journey status at
+session start.
 
 **Key references:**
-- Architecture: [docs/architecture.md](docs/architecture.md)
+- Architecture: [docs/product/architecture.md](docs/product/architecture.md)
 - Development guide: [docs/process/development-guide.md](docs/process/development-guide.md)
 - Engineering principles: [docs/process/engineering-principles.md](docs/process/engineering-principles.md)
 - Roadmap: [docs/project/roadmap/index.md](docs/project/roadmap/index.md)

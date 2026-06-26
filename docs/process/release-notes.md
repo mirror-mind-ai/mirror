@@ -8,6 +8,30 @@ The version says which level of work collapsed into a release. The release note 
 
 ---
 
+## GitHub Release Publication
+
+Every promoted stable release should also be published as a GitHub Release on the same tag. The GitHub Release is the public repository-facing surface; the committed `docs/releases/vX.Y.Z.md` file remains the canonical source inside the project and runtime.
+
+After `runtime release-promote --target vX.Y.Z --push` succeeds and CI is green on the promoted commit, publish or update the GitHub Release:
+
+```bash
+gh release create vX.Y.Z \
+  --title "vX.Y.Z — Release Title" \
+  --notes-file /tmp/mirror-release-notes.md \
+  --latest
+```
+
+If the GitHub Release already exists:
+
+```bash
+gh release edit vX.Y.Z \
+  --title "vX.Y.Z — Release Title" \
+  --notes-file /tmp/mirror-release-notes.md \
+  --latest
+```
+
+The notes file may be generated from `docs/releases/vX.Y.Z.md` by removing the YAML frontmatter block. GitHub does not need the frontmatter; Mirror's runtime release-note reader does.
+
 ## Runtime Access
 
 Users should not need to run a command to read release notes. Runtime skills can answer natural-language requests such as:

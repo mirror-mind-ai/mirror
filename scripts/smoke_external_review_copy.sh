@@ -32,9 +32,9 @@ echo "== Verify expected artifacts =="
 test -f "$MIRROR_HOME/extensions/review-copy/skill.yaml"
 test -f "$MIRROR_HOME/runtime/skills/pi/ext-review-copy/SKILL.md"
 test -f "$MIRROR_HOME/runtime/skills/pi/extensions.json"
-test -f "$MIRROR_HOME/runtime/skills/claude/ext:review-copy/SKILL.md"
+test -f "$MIRROR_HOME/runtime/skills/claude/ext-review-copy/SKILL.md"
 test -f "$MIRROR_HOME/runtime/skills/claude/extensions.json"
-test -f "$PROJECT_ROOT/.claude/skills/ext:review-copy/SKILL.md"
+test -f "$PROJECT_ROOT/.claude/skills/ext-review-copy/SKILL.md"
 test -f "$PROJECT_ROOT/.claude/skills/extensions.external.json"
 
 echo
@@ -42,7 +42,7 @@ echo "== Clean Claude project exposure =="
 python -m memory extensions clean-claude \
   --target-root "$PROJECT_ROOT"
 
-test ! -f "$PROJECT_ROOT/.claude/skills/ext:review-copy/SKILL.md"
+test ! -f "$PROJECT_ROOT/.claude/skills/ext-review-copy/SKILL.md"
 test ! -f "$PROJECT_ROOT/.claude/skills/extensions.external.json"
 
 echo

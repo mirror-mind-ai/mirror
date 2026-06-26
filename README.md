@@ -61,7 +61,9 @@ This is not a chatbot with memory. This is a mirror — and yours.
 ## How It Works
 
 Local-first. SQLite. Four supported runtimes: Pi, Gemini CLI, Codex, Claude
-Code. One Python core. Jungian architecture: Self, Ego, Personas, Shadow. The
+Code. One Python core. Jungian architecture: Self, Ego, Personas, Shadow.
+Context-activated modes — Mirror, Builder, Explorer, and Soul — plus an optional
+local web console for browsing your identity, journeys, and conversations. The
 identity lives in your machine, not a server.
 
 → Get started in ten minutes: [Getting Started](docs/getting-started.md)  

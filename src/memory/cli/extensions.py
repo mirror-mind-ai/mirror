@@ -81,6 +81,57 @@ def _validate_command_name(runtime: str, command_name: str) -> None:
         raise ExtensionValidationError(f"runtime '{runtime}' command_name must start with 'ext-'")
 
 
+def _filesystem_skill_dir_name(command_name: str) -> str:
+    """Map runtime command names to cross-platform directory names.
+
+    Claude command names intentionally use the ``ext:name`` namespace, but
+    ``:`` is illegal in Windows path segments. Catalogs keep the runtime
+    command unchanged while filesystem paths use a safe reversible-enough label
+    for runtime skill surfaces.
+    """
+    safe = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "-", command_name).strip(" .")
+    return safe or "extension"
+
+
+def _legacy_filesystem_skill_dir_names(command_name: str) -> tuple[str, ...]:
+    """Return pre-Windows-safe skill directory names for opportunistic cleanup."""
+    safe_name = _filesystem_skill_dir_name(command_name)
+    return (command_name,) if command_name != safe_name else ()
+
+
+def _skill_markdown_declares_command(skill_path: Path, command_name: str) -> bool:
+    try:
+        content = skill_path.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    names = {command_name, _filesystem_skill_dir_name(command_name)}
+    markers = tuple(
+        marker
+        for name in names
+        for marker in (f'name: "{name}"', f"name: '{name}'", f"name: {name}")
+    )
+    return any(marker in content for marker in markers)
+
+
+def _remove_legacy_skill_dir_if_owned(root: Path, command_name: str) -> list[str]:
+    """Remove legacy command-named dirs only when their SKILL.md belongs to us.
+
+    Existing macOS/Linux installs may have Claude extension directories such as
+    ``ext:review-copy``. New installs use ``ext-review-copy`` so Windows can
+    checkout and sync the same surface. This cleanup is intentionally
+    conservative: it removes only a legacy directory whose SKILL.md declares the
+    same runtime command name or its Windows-safe filesystem label.
+    """
+    removed: list[str] = []
+    for legacy_name in _legacy_filesystem_skill_dir_names(command_name):
+        legacy_dir = root / legacy_name
+        skill_path = legacy_dir / "SKILL.md"
+        if legacy_dir.is_dir() and _skill_markdown_declares_command(skill_path, command_name):
+            shutil.rmtree(legacy_dir)
+            removed.append(str(legacy_dir))
+    return removed
+
+
 def load_extension_manifest(extension_dir: Path) -> dict:
     manifest_path = extension_dir / "skill.yaml"
     data = _load_yaml(manifest_path)
@@ -297,10 +348,11 @@ def sync_extensions_for_runtime(
             continue
 
         command_name = runtime_data["command_name"]
-        target_dir = target_root / command_name
+        target_dir = target_root / _filesystem_skill_dir_name(command_name)
         target_dir.mkdir(parents=True, exist_ok=True)
         target_skill_path = target_dir / "SKILL.md"
         shutil.copyfile(skill_path, target_skill_path)
+        _remove_legacy_skill_dir_if_owned(target_root, command_name)
         synced.append(_catalog_entry_for_manifest(manifest, runtime, target_skill_path))
 
     catalog_path = target_root / "extensions.json"
@@ -518,10 +570,13 @@ def expose_claude_runtime_skills(mirror_home: Path, project_root: Path) -> dict[
         source_path = Path(installed_skill_path)
         if not source_path.exists():
             continue
-        target_dir = claude_skills_root / command_name
+        target_dir = claude_skills_root / _filesystem_skill_dir_name(command_name)
         target_dir.mkdir(parents=True, exist_ok=True)
         target_skill_path = target_dir / "SKILL.md"
         shutil.copyfile(source_path, target_skill_path)
+        cleanup["removed"].extend(
+            _remove_legacy_skill_dir_if_owned(claude_skills_root, command_name)
+        )
         exposed.append(
             {
                 "command_name": command_name,
@@ -562,13 +617,19 @@ def uninstall_extension(
             continue
         runtime_root = default_runtime_skills_dir_for_home(mirror_home, runtime_name)
         command_name = runtime_data["command_name"]
-        target_dir = runtime_root / command_name
-        if target_dir.exists():
-            shutil.rmtree(target_dir)
+        target_dirs = [runtime_root / _filesystem_skill_dir_name(command_name)]
+        target_dirs.extend(
+            runtime_root / name for name in _legacy_filesystem_skill_dir_names(command_name)
+        )
+        removed_paths: list[str] = []
+        for target_dir in target_dirs:
+            if target_dir.exists():
+                shutil.rmtree(target_dir)
+                removed_paths.append(str(target_dir))
         _prune_catalog_for_extension(
             runtime_root / "extensions.json", extension_id, runtime_name, runtime_root
         )
-        removed[runtime_name] = [str(target_dir)]
+        removed[runtime_name] = removed_paths
 
     bindings_removed = 0
     if runtime is None and installed_dir.exists():

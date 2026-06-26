@@ -1627,12 +1627,16 @@ def render_runtime_update_dry_run(dry_run: RuntimeUpdateDryRun) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _display_path(path: Path | None) -> str:
+    return path.as_posix() if path else "unknown"
+
+
 def render_runtime_status(report: RuntimeStatusReport) -> str:
     lines: list[str] = []
     lines.append("Mirror runtime status")
     lines.append("")
     lines.append(f"Version: {report.version}")
-    lines.append(f"Repository: {report.git.repository if report.git.repository else 'unknown'}")
+    lines.append(f"Repository: {_display_path(report.git.repository)}")
     lines.append(f"Git branch: {report.git.branch or 'unknown'}")
     lines.append(f"Git commit: {report.git.commit or 'unknown'}")
     lines.append(f"Git dirty: {_yes_no(report.git.dirty)}")

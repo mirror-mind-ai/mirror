@@ -89,7 +89,7 @@ def run_controlled_command(command: ControlledCommand) -> CommandResult:
         return CommandResult(
             command_id=command.id,
             argv=command.argv,
-            cwd=str(cwd),
+            cwd=cwd.as_posix(),
             return_code=None,
             timed_out=True,
             stdout=_bounded_text(exc.stdout or "", command.output_limit),
@@ -99,7 +99,7 @@ def run_controlled_command(command: ControlledCommand) -> CommandResult:
     return CommandResult(
         command_id=command.id,
         argv=command.argv,
-        cwd=str(cwd),
+        cwd=cwd.as_posix(),
         return_code=completed.returncode,
         timed_out=False,
         stdout=_bounded_text(completed.stdout, command.output_limit),

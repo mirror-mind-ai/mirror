@@ -261,7 +261,7 @@ project operation, never an implicit write to the current working directory.
 This creates project-visible skill directories such as:
 
 ```text
-/path/to/project/.claude/skills/ext:review-copy/SKILL.md
+/path/to/project/.claude/skills/ext-review-copy/SKILL.md
 /path/to/project/.claude/skills/extensions.external.json
 ```
 
@@ -341,7 +341,7 @@ For prompt-skills, the materialized shape is:
 or, for Claude:
 
 ```text
-~/.mirror-minds/<user>/runtime/skills/claude/ext:review-copy/SKILL.md
+~/.mirror-minds/<user>/runtime/skills/claude/ext-review-copy/SKILL.md
 ~/.mirror-minds/<user>/runtime/skills/claude/extensions.json
 ```
 

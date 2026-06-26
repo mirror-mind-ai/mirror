@@ -59,7 +59,7 @@ def test_install_copies_runs_migrations_and_validates_register(source_root, mirr
 
     # Runtime SKILL.md surfaces created for every declared runtime.
     pi_skill = mirror_home / "runtime" / "skills" / "pi" / "ext-hello" / "SKILL.md"
-    claude_skill = mirror_home / "runtime" / "skills" / "claude" / "ext:hello" / "SKILL.md"
+    claude_skill = mirror_home / "runtime" / "skills" / "claude" / "ext-hello" / "SKILL.md"
     assert pi_skill.exists()
     assert claude_skill.exists()
 

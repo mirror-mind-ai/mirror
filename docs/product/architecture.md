@@ -221,6 +221,9 @@ This is permanent supported behavior. See
 | `conversation_embeddings` | Conversation summary embeddings | `conversation_id`, `summary_embedding` |
 | `runtime_sessions` | Runtime session ↔ conversation registry | `session_id`, `conversation_id`, `interface`, `mirror_active`, `persona`, `journey`, `hook_injected`, `active`, `started_at`, `updated_at`, `closed_at` |
 | `exploratory_stories` | Durable Explorer Mode stories | `id`, `journey`, `title`, `status`, `current_story`, `narrative_summary`, `attractors_json`, `experiment_proposal_json`, `builder_handoff_json`, `source_conversations_json` |
+| `identity_integrations` | Atomic Soul Mode identity integration records; additive identity updates with provenance | `id`, `layer`, `key`, `content`, `source`, `origin`, `conversation_id`, `journal_id`, `status`, `created_at` |
+| `operation_runs` | Asynchronous Mirror Web Console operation runs | `id`, `operation_id`, `status`, `outcome`, `parameters_json`, `summary_json`, `result_json`, `started_at`, `completed_at`, `created_at` |
+| `operation_run_events` | Event timeline for a web operation run | `id`, `run_id`, `sequence`, `kind`, `message`, `details_json`, `created_at` |
 | `consolidations` | Memory consolidation proposals and decisions | `id`, `action`, `source_memory_ids`, `proposal`, `status`, `applied_content`, `created_at` |
 | `identity_descriptors` | Routing-optimized descriptors for personas and journeys | `layer`, `key`, `descriptor`, `generated_at` |
 | `llm_calls` | LLM call log for observability (when enabled) | `id`, `role`, `model`, `prompt`, `response`, `latency_ms`, `created_at` |

@@ -148,6 +148,14 @@ class MigrationRehearsalResult:
     applied_migrations: tuple[str, ...]
 
 
+def _environment_home() -> Path:
+    """Return a home directory that honors HOME in Windows test/process envs."""
+    home = os.environ.get("HOME")
+    if home:
+        return Path(home).expanduser()
+    return Path.home()
+
+
 def resolve_production_db_path() -> Path:
     """Resolve the production DB path without importing config or copying legacy DBs."""
     configured_db_path = os.environ.get("DB_PATH")
@@ -159,8 +167,9 @@ def resolve_production_db_path() -> Path:
     if configured_prod_dir or configured_memory_dir:
         base_dir = Path(configured_prod_dir or configured_memory_dir or "").expanduser()
     else:
-        mirror_dir = Path("~/.mirror").expanduser()
-        legacy_dir = Path("~/.espelho").expanduser()
+        home = _environment_home()
+        mirror_dir = home / ".mirror"
+        legacy_dir = home / ".espelho"
         base_dir = mirror_dir if mirror_dir.exists() or not legacy_dir.exists() else legacy_dir
 
     new_path = base_dir / "memory.db"

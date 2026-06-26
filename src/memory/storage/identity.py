@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 
-from memory.models import Identity, IdentityDescriptor
+from memory.models import Identity, IdentityDescriptor, IdentityIntegration
 from memory.storage.base import ConnectionBacked
 
 
@@ -78,6 +78,58 @@ class IdentityStore(ConnectionBacked):
         cursor = self.conn.execute("DELETE FROM identity WHERE layer = ? AND key = ?", (layer, key))
         self.conn.commit()
         return cursor.rowcount > 0
+
+    # --- Identity integrations ---
+
+    def add_identity_integration(self, integration: IdentityIntegration) -> IdentityIntegration:
+        self.conn.execute(
+            """
+            INSERT INTO identity_integrations (
+                id, layer, key, content, source, origin, conversation_id,
+                journal_id, created_at, status, metadata
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                integration.id,
+                integration.layer,
+                integration.key,
+                integration.content,
+                integration.source,
+                integration.origin,
+                integration.conversation_id,
+                integration.journal_id,
+                integration.created_at,
+                integration.status,
+                integration.metadata,
+            ),
+        )
+        self.conn.commit()
+        return integration
+
+    def list_identity_integrations(
+        self,
+        *,
+        layer: str | None = None,
+        key: str | None = None,
+        status: str | None = None,
+    ) -> list[IdentityIntegration]:
+        clauses: list[str] = []
+        params: list[str] = []
+        if layer is not None:
+            clauses.append("layer = ?")
+            params.append(layer)
+        if key is not None:
+            clauses.append("key = ?")
+            params.append(key)
+        if status is not None:
+            clauses.append("status = ?")
+            params.append(status)
+        where = f" WHERE {' AND '.join(clauses)}" if clauses else ""
+        rows = self.conn.execute(
+            f"SELECT * FROM identity_integrations{where} ORDER BY created_at, id",
+            params,
+        ).fetchall()
+        return [IdentityIntegration(**dict(row)) for row in rows]
 
     # --- Descriptors ---
 

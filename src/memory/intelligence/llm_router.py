@@ -1,11 +1,13 @@
 """LLM router for sending messages to models through OpenRouter."""
 
 import json
+import ssl
 import time
 import urllib.request
 from dataclasses import dataclass
 from typing import cast
 
+import certifi
 from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam
 
@@ -33,6 +35,11 @@ class CreditInfo:
     total_credits: float
     total_usage: float
     balance: float
+
+
+def _openrouter_ssl_context() -> ssl.SSLContext:
+    """Return a certificate-backed SSL context for OpenRouter urllib calls."""
+    return ssl.create_default_context(cafile=certifi.where())
 
 
 def resolve_model(family: str, tier: str = "mid") -> str:
@@ -123,7 +130,7 @@ def fetch_generation_cost(generation_id: str, retries: int = 4) -> float | None:
         if attempt > 0:
             time.sleep(attempt)  # backoff: 1s, 2s, 3s, 4s
         try:
-            with urllib.request.urlopen(req) as resp:
+            with urllib.request.urlopen(req, context=_openrouter_ssl_context()) as resp:
                 data = json.loads(resp.read().decode()).get("data", {})
                 cost = data.get("total_cost")
                 if cost is not None:
@@ -142,7 +149,7 @@ def get_credits() -> CreditInfo:
         f"{OPENROUTER_BASE_URL}/credits",
         headers={"Authorization": f"Bearer {OPENROUTER_API_KEY}"},
     )
-    with urllib.request.urlopen(req) as resp:
+    with urllib.request.urlopen(req, context=_openrouter_ssl_context()) as resp:
         data = json.loads(resp.read().decode())["data"]
 
     total = data.get("total_credits", 0)

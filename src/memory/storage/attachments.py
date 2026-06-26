@@ -54,7 +54,7 @@ class AttachmentStore(ConnectionBacked):
         ).fetchall()
         return [Attachment(**dict(r)) for r in rows]
 
-    def update_attachment(self, attachment_id: str, **kwargs) -> None:
+    def update_attachment(self, attachment_id: str, **kwargs: object) -> None:
         sets = ", ".join(f"{k} = ?" for k in kwargs)
         vals = [*list(kwargs.values()), attachment_id]
         self.conn.execute(f"UPDATE attachments SET {sets} WHERE id = ?", vals)

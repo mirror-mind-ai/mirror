@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import PurePath
+
 from memory.services.explorer_story import ExplorerStory
 
 WIDTH = 56
@@ -90,6 +92,11 @@ def render_experiment_proposal(story: ExplorerStory) -> str:
     return _box("△  EXPERIMENT PROPOSAL", rows)
 
 
+def _handoff_path_label(path: str) -> str:
+    name = PurePath(path.replace("\\", "/")).name
+    return f"{name} — {path}" if name else path
+
+
 def render_builder_handoff_proposed(story: ExplorerStory) -> str:
     rows = [("journey", story.journey)]
     handoff = story.builder_handoff
@@ -98,17 +105,19 @@ def render_builder_handoff_proposed(story: ExplorerStory) -> str:
         if handoff.summary:
             rows.append(("summary", handoff.summary))
         if handoff.artifact_dir:
-            rows.append(("artifact directory", handoff.artifact_dir))
+            rows.append(("artifact directory", _handoff_path_label(handoff.artifact_dir)))
         if handoff.index_path:
-            rows.append(("index", handoff.index_path))
+            rows.append(("index", _handoff_path_label(handoff.index_path)))
         if handoff.exploratory_story_path:
-            rows.append(("exploratory story", handoff.exploratory_story_path))
+            rows.append(("exploratory story", _handoff_path_label(handoff.exploratory_story_path)))
         if handoff.handoff_info_path:
-            rows.append(("handoff info", handoff.handoff_info_path))
+            rows.append(("handoff info", _handoff_path_label(handoff.handoff_info_path)))
         if handoff.product_design_proposal_path:
-            rows.append(("product design", handoff.product_design_proposal_path))
+            rows.append(
+                ("product design", _handoff_path_label(handoff.product_design_proposal_path))
+            )
         if handoff.full_conversation_path:
-            rows.append(("full conversation", handoff.full_conversation_path))
+            rows.append(("full conversation", _handoff_path_label(handoff.full_conversation_path)))
     else:
         rows.append(("handoff", "No Builder handoff has been proposed yet."))
     if story.source_conversations:

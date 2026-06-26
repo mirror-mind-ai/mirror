@@ -44,6 +44,7 @@ Codex uses the `$mm-` prefix. All runtimes call the same Python core.
 | `/mm-help` | `$mm-help` | `/mm:help` | Lists available commands | no arguments |
 | `python -m memory runtime` | — | — | Inspects Mirror runtime status, version, drift, backups, release notes, release promotion readiness, plans updates, and executes safe updates | `status [--mirror-home PATH] [--channel stable|main]`, `version [--start PATH] [--channel stable|main]`, `diagnose [--mirror-home PATH]`, `backup [--mirror-home PATH]`, `backup --verify PATH`, `release-notes [latest|vX.Y.Z]`, `release-notes pending [--from vX.Y.Z] [--ref REF] [--no-fetch]`, `release-doctor --target vX.Y.Z [--stable REF]`, `release-promote --target vX.Y.Z [--stable BRANCH] [--remote REMOTE] [--dry-run] [--push]`, `update --dry-run [--mirror-home PATH] [--channel stable|main]`, `update --check [--channel stable|main]`, `update [--no-fetch] [--skip-migrations] [--mirror-home PATH] [--channel stable|main]`, `update --repair-updater [--no-fetch] [--mirror-home PATH] [--channel stable|main]` |
 | `python -m memory conversation-logger` | — | — | Runtime conversation logging and repair utilities | `discard-current [--interface pi] [--session-id ID]`, `repair-journeys [--limit N] [--apply]` |
+| `python -m memory web` | — | — | Runs the local Mirror Web Console — Identity and Workspace perspectives, conversation intelligence, bulk conversation maintenance (assign/delete), and allowlisted operation runs | `[--host 127.0.0.1] [--port 8765]` |
 | `ext-review-copy` | — | `ext:review-copy` | External multi-LLM copy review skill; install and expose it before use | skill-driven workflow |
 
 ## Operating Mode Lifecycle
@@ -240,7 +241,18 @@ uv run python -m memory runtime release-promote --target vX.Y.Z
 uv run python -m memory runtime release-promote --target vX.Y.Z --push
 ```
 
-Promotes a release to the stable channel through a controlled path. The command runs the release doctor first and blocks on failures. Dry-run prints planned stages without creating tags, moving branches, or pushing. Local promotion creates the missing target tag at `HEAD` or reuses an existing tag already at `HEAD`, then creates or fast-forwards the local `stable` branch to `HEAD`. Remote publication happens only with `--push`, which pushes the tag and stable branch to `origin`. The command does not fetch, force-push, rewrite existing tags, bump versions, write release notes, back up, migrate, or update production clones.
+Promotes a release to the stable channel through a controlled path. The command runs the release doctor first and blocks on failures. Dry-run prints planned stages without creating tags, moving branches, or pushing. Local promotion creates the missing target tag at `HEAD` or reuses an existing tag already at `HEAD`, then creates or fast-forwards the local `stable` branch to `HEAD`. Remote publication happens only with `--push`, which pushes the tag and stable branch to `origin`. The command does not fetch, force-push, rewrite existing tags, bump versions, write release notes, create GitHub Releases, back up, migrate, or update production clones.
+
+After `release-promote --push` succeeds and CI is green, publish the matching GitHub Release on the same tag:
+
+```bash
+gh release create vX.Y.Z \
+  --title "vX.Y.Z — Release Title" \
+  --notes-file /tmp/mirror-release-notes.md \
+  --latest
+```
+
+Use `gh release edit vX.Y.Z ... --latest` if the GitHub Release already exists. The notes body should come from `docs/releases/vX.Y.Z.md` with the YAML frontmatter removed.
 
 ### Update execution
 
@@ -264,6 +276,29 @@ Failures print a recovery block with the backup path and previous commit when re
 
 If the full status gate crashes before update planning, `runtime update` automatically falls back to updater self-repair. The repair lane uses a minimal safety gate: clean git tree, configured upstream, optional fetch, optional database backup when the Mirror home and database are available, fast-forward only code update, and migrations skipped. It then asks the user to rerun `runtime update` with the repaired updater. The same lane can be invoked explicitly with `runtime update --repair-updater`. Older production clones whose updater is blocked before they receive the latest recovery behavior may need this explicit repair lane once.
 
+### Builder Workbench composition
+
+Ariad-adopted Builder journeys can compose Refinement Work without pulling it into active lifecycle execution:
+
+```bash
+uv run python -m memory build refinement-story create --journey <slug> --title "<title>" [--description "<description>"]
+uv run python -m memory build change-request capture --journey <slug> --title "<title>" --body "<body>" [--refinement-story-id <rs-id>]
+uv run python -m memory build change-request attach --journey <slug> --change-request-id <cr-id> --refinement-story-id <rs-id>
+uv run python -m memory build refinement-story overview --journey <slug> --refinement-story-id <rs-id>
+uv run python -m memory build refinement-story pull --journey <slug> --refinement-story-id <rs-id>
+uv run python -m memory build change-request select --journey <slug> --change-request-id <cr-id>
+uv run python -m memory build change-request confirm --journey <slug> --change-request-id <cr-id>
+uv run python -m memory build change-request plan --journey <slug> --change-request-id <cr-id> --summary "<plan>"
+uv run python -m memory build change-request mark-implemented --journey <slug> --change-request-id <cr-id> --evidence "<evidence>"
+uv run python -m memory build change-request validate --journey <slug> --change-request-id <cr-id> --evidence "<evidence>"
+uv run python -m memory build change-request done --journey <slug> --change-request-id <cr-id> --notes "<done note>"
+uv run python -m memory build refinement-story review --journey <slug> --refinement-story-id <rs-id> --summary "<review>"
+uv run python -m memory build refinement-story coherence --journey <slug> --refinement-story-id <rs-id> --summary "<coherence>"
+uv run python -m memory build refinement-story close --journey <slug> --refinement-story-id <rs-id> --summary "<close summary>"
+```
+
+These commands render Ariad Workbench surfaces such as `CHANGE_REQUEST_CAPTURED`, `REFINEMENT_STORY_OVERVIEW`, `REFINEMENT_STORY_PULLED`, and `REFINEMENT_FLOW_EVENT`. Composition commands capture or organize Refinement Stories and Change Requests only. Pulling an RS selects active Refinement Work only. CR/RS flow commands update runtime state and evidence only; they do not mutate Delivery cursor state, implement files, commit, push, or release. Review and Coherence do not mutate files directly.
+
 ### Clone role
 
 Each Mirror Mind clone declares its role through a `.mirror-clone-role` file at the repository root. Valid values are `production` and `dev`. The file is local to each clone and ignored by git. When the file is missing, unreadable, or contains an unknown value, the role defaults to `production`.
@@ -281,7 +316,7 @@ Each clone declares its update channel through `.mirror-update-channel`. Valid v
 - `stable` is the user-facing release channel.
 - `main` is the integration/dogfooding channel.
 - A push to `main` is not a release.
-- `stable` advances only through release promotion after versioning, release notes, CI, smoke validation, tagging, and fast-forward.
+- `stable` advances only through release promotion after versioning, release notes, CI, smoke validation, tagging, fast-forward, and GitHub Release publication.
 
 Change a clone to stable releases:
 

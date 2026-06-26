@@ -118,7 +118,7 @@ def test_soul_rite_renders_self_voice(capsys):
     assert "✦  SELF VOICE LISTENING" in out
     assert "the voice says" in out
     assert "usefulness can remain a gift" in out
-    assert "what remains true without proof" in out
+    assert "what remains true without proof" not in out
     assert "FRUIT IN MATURATION" not in out
     assert "HARVESTED FRUIT" not in out
 
@@ -129,7 +129,7 @@ def test_soul_rite_renders_shadow_voice(capsys):
     out = capsys.readouterr().out
     assert "◐  SHADOW VOICE LISTENING" in out
     assert "if they depend on me" in out
-    assert "the protection inside control" in out
+    assert "the protection inside control" not in out
 
 
 def test_soul_rite_renders_wisdom_voice_without_listening_for(capsys):
@@ -199,6 +199,156 @@ def test_soul_rite_rejects_unsupported_voice(capsys):
         raise AssertionError("expected SystemExit")
 
     assert "unsupported active rite voice" in capsys.readouterr().err
+
+
+def test_soul_close_renders_closing_rite(capsys):
+    soul.cmd_close(
+        harvested="A clear fruit became visible.",
+        echoes="A quiet sentence still echoes.",
+        remains_open="A question about belonging remains open.",
+        integration="This may later belong to Self.",
+    )
+
+    out = capsys.readouterr().out
+    assert "☾  CLOSING RITE" in out
+    assert "what was harvested" in out
+    assert "A clear fruit became visible." in out
+    assert "what still echoes" in out
+    assert "A quiet sentence still echoes." in out
+    assert "what remains open" in out
+    assert "A question about belonging remains" in out
+    assert "what may want integration" in out
+    assert "This may later belong to Self." in out
+    assert "Harvest saved to journal" not in out
+
+
+def test_soul_close_rejects_empty_closing_rite(capsys):
+    try:
+        soul.cmd_close()
+    except SystemExit as exc:
+        assert exc.code == 1
+    else:  # pragma: no cover
+        raise AssertionError("expected SystemExit")
+
+    assert "at least one closing section" in capsys.readouterr().err
+
+
+def test_soul_review_renders_integration_proposal(capsys):
+    soul.cmd_review(
+        journal="The fruit was saved as journal.",
+        self_material="Commitment may belong to truth rather than image management.",
+        shadow="A part fears being seen as careless without over-availability.",
+        ego="Staying late can become image management.",
+        persona="The committed professional persona may overperform availability.",
+        leave_open="How to sustain measure under uncertain gaze.",
+    )
+
+    out = capsys.readouterr().out
+    assert "☾  INTEGRATION PROPOSAL" in out
+    assert "origin" in out
+    assert "The fruit was saved as journal." in out
+    assert "self" in out
+    assert "Commitment may belong to truth" in out
+    assert "shadow" in out
+    assert "A part fears being seen" in out
+    assert "ego behavior" in out
+    assert "Staying late can become image" in out
+    assert "persona" in out
+    assert "committed professional persona" in out
+    assert "leave open" in out
+    assert "How to sustain measure" in out
+    assert "proposal only — nothing changed" in out
+    assert "journey" not in out.lower()
+
+
+def test_soul_review_rejects_empty_review(capsys):
+    try:
+        soul.cmd_review()
+    except SystemExit as exc:
+        assert exc.code == 1
+    else:  # pragma: no cover
+        raise AssertionError("expected SystemExit")
+
+    assert "at least one integration review section" in capsys.readouterr().err
+
+
+def test_soul_propose_renders_enrichment_proposal(capsys):
+    soul.cmd_propose(
+        "self",
+        origin="Soul Mode harvest 88ae2650",
+        current="Existing Self material.",
+        proposed="Commitment belongs to truth, not image management.",
+        why="This names a principle that may deserve to remain.",
+    )
+
+    out = capsys.readouterr().out
+    assert "✦  SELF ENRICHMENT PROPOSAL" in out
+    assert "self/soul" in out
+    assert "Soul Mode harvest" in out
+    assert "Existing Self material." in out
+    assert "Commitment belongs to truth" in out
+    assert "proposal only — no identity changed" in out
+
+
+def test_soul_propose_requires_persona_key(capsys):
+    try:
+        soul.cmd_propose(
+            "persona",
+            origin="Soul Mode harvest",
+            proposed="A professional persona pattern.",
+            why="It belongs to presentation style.",
+        )
+    except SystemExit as exc:
+        assert exc.code == 1
+    else:  # pragma: no cover
+        raise AssertionError("expected SystemExit")
+
+    assert "persona proposals require --key" in capsys.readouterr().err
+
+
+def test_soul_apply_requires_confirmation(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "alisson-vale"
+    mem = MemoryClient(db_path=default_db_path_for_home(mirror_home))
+    mocker.patch("memory.cli.soul.MemoryClient", return_value=mem)
+
+    try:
+        soul.cmd_apply("self", proposed="New Self content.")
+    except SystemExit as exc:
+        assert exc.code == 1
+    else:  # pragma: no cover
+        raise AssertionError("expected SystemExit")
+
+    assert "requires --confirm APPLY" in capsys.readouterr().err
+    assert mem.get_identity("self", "soul") is None
+
+
+def test_soul_apply_appends_identity_integration_after_confirmation(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "alisson-vale"
+    mem = MemoryClient(db_path=default_db_path_for_home(mirror_home))
+    mem.set_identity("self", "soul", "Existing Self material.")
+    mocker.patch("memory.cli.soul.MemoryClient", return_value=mem)
+
+    soul.cmd_apply(
+        "self",
+        proposed="I care for bonds without turning immediate availability into moral proof of love.",
+        confirm="APPLY",
+        origin="Soul Mode harvest",
+    )
+
+    out = capsys.readouterr().out
+    assert "✦  SELF IDENTITY UPDATED" in out
+    assert "self/soul" in out
+    assert "I care for bonds" in out
+    content = mem.get_identity("self", "soul")
+    assert content is not None
+    assert content.startswith("Existing Self material.")
+    assert "## New Incorporated Principles" in content
+    assert "- [" in content
+    assert "I care for bonds" in content
+    integrations = mem.store.list_identity_integrations(layer="self", key="soul")
+    assert len(integrations) == 1
+    assert integrations[0].content.startswith("I care for bonds")
+    assert integrations[0].origin == "Soul Mode harvest"
 
 
 def test_soul_fruit_set_stores_and_renders_fruit(mocker, tmp_path, capsys):
@@ -283,7 +433,8 @@ def test_soul_harvest_set_closes_fruit_and_renders_harvest(mocker, tmp_path, cap
     out = capsys.readouterr().out
     assert "❦  HARVESTED FRUIT" in out
     assert "A final fruit." in out
-    assert "save to journal?" in out
+    assert "save to journal as it is" in out
+    assert "or change anything first?" in out
     from memory.services.soul import get_fruit_in_maturation
 
     assert get_fruit_in_maturation(mem.store).fruit is None
@@ -410,6 +561,7 @@ def test_soul_prompt_self_renders_composed_prompt(mocker, tmp_path, capsys):
     out = capsys.readouterr().out
     assert "# Soul Mode — Self Voice Prompt" in out
     assert "Diante da urgência, não acelero" in out
+    assert "A one-line aphorism is too thin" in out
     assert "{user_self_identity}" not in out
 
 

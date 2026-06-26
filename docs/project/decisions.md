@@ -11,6 +11,209 @@ resolved.
 
 ## Completed Decisions
 
+### Mirror Mind ports to TypeScript via a database-seam strangler, not a rewrite
+
+**Date:** 2026-06-23
+**Reference:** journey `mirror`, [CV21 converges on a canonical plugin plus MCP server](#cv21-converges-on-a-canonical-plugin-plus-mcp-server-bridged-by-import), [Architecture](../product/architecture.md)
+**Participants:** Vinícius Teles and Alisson Vale
+
+Mirror Mind will be ported from its Python core (`src/memory/`) to TypeScript.
+The motivation is **convergence**, not packaging alone: easier distribution
+through npm, a single language across core and the already-TypeScript runtime
+harnesses, a wider contributor pool, and alignment with the MCP/plugin ecosystem
+that CV21 is already moving toward. The risks and benefits were weighed
+explicitly before committing.
+
+Decision: the port is a **strangler**, never a big-bang rewrite. The valuable
+asset is not the code but the accumulated correctness — the hybrid-search
+ranker, two-pass extraction, MMR dedup, consolidation, and shadow cultivation,
+encoded in the existing test suite. A rewrite would discard the regression net at
+the exact moment it is most needed; the strangler keeps a working Mirror every
+day.
+
+The spine of the approach:
+
+1. **Seam — the database.** The integration point is the SQLite file
+   (`~/.mirror-minds/<user>/memory.db`), not an in-process language bridge. Two
+   cores, one database, one shared schema and FTS5 config. Local-first means the
+   strangler seam already exists on disk: language-neutral, durable, observable.
+2. **Unit — the command.** The strangler unit is the CLI/MCP command, whose
+   contract is observable as `command + args -> stdout`. Progress is a visible
+   burn-down: commands-on-TS / total. The port is done when the Python core has
+   no commands left and can be deleted.
+3. **Front door — Pi.** The first TS surface is a TypeScript front door on Pi,
+   the runtime both authors use daily. On day one it wraps the frozen Python
+   engine (shelling out for everything), and commands are strangled into the TS
+   core behind it. The runtimes never notice which language answers.
+4. **New-work policy — Python freezes now.** The Python core moves to
+   maintenance-only effective immediately. All new feature work lands in TS
+   behind the seam. A strangler only converges when the old system is allowed to
+   shrink; a system that keeps sprinting in the old language never finishes.
+5. **In-flight consequence.** Unfinished CV20 Ariad and CV21 MCP work becomes
+   the *first* TS feature work, built once in the target language rather than
+   twice.
+6. **Team and cadence.** Vinícius owns the engineering of the seam; Alisson owns
+   the Jungian-architecture semantics that must survive the port. The work is
+   part-time with no deadline — a background burn — so the transition state (TS
+   front door over a frozen Python engine) is durable and must be comfortable to
+   live in, with no throwaway intermediate states.
+7. **Sequencing by risk.** Port read-only, deterministic commands first (proving
+   ranker parity), deterministic writes next, and external-API,
+   non-deterministic commands last. For the last bucket, freeze embeddings into
+   the test corpus so the ranker is tested deterministically, and record/replay
+   LLM responses to test orchestration and parsing rather than model output.
+8. **Parity oracle.** The existing Python test suite is converted into a
+   language-agnostic golden-data corpus (inputs -> expected ranked outputs). The
+   corpus is the specification the TS core must satisfy, turning otherwise
+   throwaway tests into the migration's oracle.
+
+Safety discipline: the strangler runs against a **copy** of the real
+`memory.db`, never the live one, until each command proves parity. The
+production database is both the seam and the authors' daily intelligence asset,
+so that is where data-corruption risk concentrates. Read-only commands may run
+live; any write stays with Python until its ported version passes golden tests on
+a copy. Back up first (`mm-backup`).
+
+Consequences:
+
+- The Python core is now maintenance-only; new Builder/Soul/Explorer feature work
+  targets the TS core behind the seam, not `src/memory/`.
+- CV20 and CV21 in-flight work is re-homed to TypeScript rather than being
+  completed in Python.
+- The SQLite schema and FTS5 configuration are effectively frozen and must be
+  treated as a compatibility contract; schema changes require explicit migration
+  discipline so existing user databases keep working.
+- The first two concrete artifacts are this decision record and a **Pi read-only
+  search spike**: a copied `memory.db` -> TS core -> `search` returning ranked
+  results identical to Python on the golden corpus. The spike de-risks the
+  hardest assumption (ranker parity) before broader commitment.
+- A future TS package rename from `memory` to `mirror` can be reconsidered during
+  the port, superseding the historical-namespace decision when intentionally
+  planned.
+- The strategic spine is now realized as [CV22 — TypeScript Core Port](roadmap/cv22-typescript-core-port/index.md),
+  derived from this record after the hybrid-search parity spike (CV22.E1)
+  validated the approach on synthetic and real-DB data.
+
+### Builder adds Refinement Work before release/push governance
+
+**Date:** 2026-06-17
+**Reference:** [CV20 Builder Mode Evolution](roadmap/cv20-builder-mode-evolution/index.md), [CV20.DS6 Refinement Workbench And Flow](roadmap/cv20-builder-mode-evolution/cv20-ds6-refinement-workbench-flow/index.md), Ariad branch `ariad-refinement-workbench` commit `2447705`
+
+After CV20.DS5 made the Ariad Delivery Story lifecycle traversable end to end,
+Mirror needs a way to refine the lived Builder lifecycle through real use without
+turning every adjustment into roadmap Delivery Work. Ariad was extended on a
+feature branch with a third work area: Refinement. Mirror will implement the
+runtime side prospectively in CV20.DS6.
+
+Decision: Builder should support a Workbench outside the roadmap. The Workbench
+holds Change Requests and Refinement Stories. Roadmap items remain Delivery Work;
+Workbench items become Refinement Work. A quick fix is not a separate flow: it
+creates a minimal Refinement Story with one Change Request and pulls it
+immediately.
+
+Consequences:
+
+- `CV20.DS6` becomes `Refinement Workbench And Flow`.
+- Existing planned release/push governance moves to `CV20.DS7`.
+- Debt ledger, method preferences, and Builder documentation move to `CV20.DS8`,
+  `CV20.DS9`, and `CV20.DS10` respectively.
+- Refinement Review records patterns, debt candidates, or follow-up, but does
+  not mutate files directly. All mutations happen through Change Request cycles.
+- The first intended dogfooding target after DS6 is `RS-001 Builder lifecycle
+  end-to-end refinement`, living in the Workbench rather than the roadmap.
+
+### Mirror Mind adopts Ariad prospectively after v0.27.0
+
+**Date:** 2026-06-14
+**Reference:** [CV20 Builder Mode Evolution](roadmap/cv20-builder-mode-evolution/index.md), [Ariad adoption note](roadmap/ariad-adoption.md), [v0.27.0 release note](../releases/v0.27.0.md)
+
+After publishing `v0.27.0 — Ariad Builder Lifecycle Runtime`, Mirror Mind adopts Ariad as the project-level Builder method through the parent `mirror-mind` journey. The Builder Mode Evolution child journey remains adopted as the first dogfooding workstream until method inheritance between parent/child journeys is modeled explicitly. The adoption is **prospective**: existing CV20 roadmap and story artifacts remain valid historical records unless touched by active work, and new Builder delivery work should use Ariad's runtime lifecycle gates and deterministic surfaces.
+
+Consequences:
+
+- Future Mirror Mind Builder work should be pulled, planned, validated, reviewed, checked for coherence, and closed through Ariad Builder commands when possible.
+- CV20 remains the first dogfooding area under the project-level adoption.
+- The adoption does not retroactively rewrite DS1–DS4 artifacts.
+- The current post-adoption priority order is DS5 Delivery Story Level Lifecycle, then DS6 Refinement Workbench And Flow, then DS7 Release And Push Policies, then DS8 Debt Ledger And Refactor Loop, then DS9 Method Preferences And Overrides, then DS10 Builder Documentation And Migration.
+- Navigator preference/config override work remains explicitly planned in CV20.DS9 rather than assumed by adoption.
+
+### CV21 converges on a canonical plugin plus MCP server, bridged by import
+
+**Date:** 2026-06-14
+**Reference:** [CV21 index](roadmap/cv21-runtime-expansion-ii/index.md), [CV21.E1 Unified Plugin & MCP spike](roadmap/cv21-runtime-expansion-ii/cv21-e1-unified-plugin-mcp-spike/index.md)
+
+The CV21.E1 spike validated — in an isolated scratch directory, mutating no
+production runtime config — that the post-CV8 ecosystem convergence is real
+enough to package Mirror Mind once instead of maintaining N bespoke adapters.
+Decision: **converge** on a canonical package (a Claude-format plugin plus a
+Mirror MCP server) propagated per runtime by import/install.
+
+Empirical findings:
+
+1. **A Mirror plugin validates on Claude.** A minimal plugin bundling `mm-*`
+   skills + lifecycle hooks passes `claude plugin validate` once unknown manifest
+   keys are dropped (the 2.1.114 validator rejects `$schema`, despite the docs).
+2. **The same component taxonomy validates on Antigravity.** `agy plugin
+   validate` recognizes the identical categories (skills, agents, commands,
+   mcpServers, hooks). The formats are structurally aligned but **not
+   byte-identical**: Claude uses `.claude-plugin/plugin.json`; `agy` expects
+   `plugin.json` at the plugin root and reads hooks/MCP from different locations.
+   `agy plugin import claude` is the conversion bridge, so Antigravity consumes
+   the Claude plugin rather than a hand-maintained agy-native copy.
+3. **Claude `@skills-dir` in-place plugins** load a plugin folder from
+   `<repo>/.claude/skills/` (project, trust-gated) or `~/.claude/skills/`
+   (personal) with no marketplace and no install step — the cleanest packaging
+   path for Mirror's `mm-*` skills + hooks + MCP.
+4. **Codex** uses a local marketplace-snapshot model plus a full Claude-style
+   hook system and native skills; it consumes the package via a marketplace
+   snapshot or project `.codex/` hooks.
+5. **MCP is portable but pull-based.** `mcpServers` is declared the same way
+   across Claude, Antigravity, and Codex, so a Mirror MCP server is portable as
+   the runtime-agnostic command surface. But MCP tools/prompts are invoked on
+   demand; MCP **cannot do automatic per-turn Mirror Mode injection**. Automatic
+   injection stays in per-runtime `UserPromptSubmit`/`BeforeAgent` hooks (now all
+   Claude-shaped and thin). Grok Build, lacking per-turn hooks, caps at L3.
+
+Canonical package shape: a **plugin** (Claude format) bundling `mm-*` skills +
+lifecycle hooks, plus an **MCP server** (`python -m memory mcp`) for the
+command surface and on-demand context. External extensions bundle into the
+plugin's `skills/` and/or expose as MCP tools, so every runtime inherits them and
+the `.agents/` exposure gap closes.
+
+Propagation: Claude loads the plugin in place (E2); Antigravity via `agy plugin
+import claude` (E6–E7); Codex via marketplace snapshot + native hooks (E3–E5);
+Grok via shared MCP + skill discovery, capped at L3 (E9–E10). Live import
+execution (which mutates each runtime's config) is deferred to those per-runtime
+epics, where that mutation is in scope.
+
+Fallback: if `agy`/`grok` plugin import proves unreliable during implementation,
+keep thin per-runtime hook adapters but still share the MCP server and skill
+surface. The foundation pays off either way, so no per-runtime epic is blocked on
+import working perfectly.
+
+---
+
+### Soul Mode active roadmap narrows after integration and web UI
+
+**Date:** 2026-06-08
+**Reference:** [CV18 Soul Mode More Voices](roadmap/cv18-soul-mode-more-voices/index.md)
+
+After validating Wisdom Voice and Beauty Voice, the Soul Mode roadmap is narrowed. Passagem, Return To Center, Closing Day / Daily Soul Ritual, and additional new voices are discarded from the active roadmap. They remain historical exploration context, not planned product commitments.
+
+The future Soul Mode sequence is:
+
+1. Soul Mode Integration: closing rite, review, and safe identity enrichment proposals with explicit confirmation.
+2. Soul Mode Web Ritual UI: a web experience for the ritual grammar already validated in text.
+
+Wisdom/Beauty source libraries remain dormant rather than planned. Mirror should not maintain a local canonical library of texts only for Soul Mode. Source/library work may return only if there is a strong API/provider solution that can retrieve or ground sources externally without embedding a bespoke library in the core framework.
+
+Consequences:
+
+- Do not open delivery stories for Passagem, Return To Center, Closing Day, or new voice expansion unless this decision is explicitly revisited.
+- Treat references to those rites in older Soul Mode docs as historical/exploratory context.
+- Keep source-provider/library ideas out of the active roadmap until an API-based approach is identified.
+- Prioritize integration first, then Web Soul Mode UI.
+
 ### Explorer persistence splits durable story state from handoff evidence
 
 **Date:** 2026-06-07
@@ -120,7 +323,7 @@ Consequences:
 
 - DS4 stores `current_exploratory_story`, `narrative_field_summary`, and `last_story_card` only.
 - Signal/radar behavior is deferred until practice proves it adds value.
-- DS5 should render story-opening, story-thickening, narrative snapshot, and promotion surfaces before reintroducing a broader signal model.
+- DS7 should render story-opening, story-thickening, narrative snapshot, and promotion surfaces before reintroducing a broader signal model.
 - Explorer remains a cognitive lens for uncertainty before commitment, not a taxonomy of every exploratory fragment.
 
 ### Historical conversation journey repair is explicit and backup-gated

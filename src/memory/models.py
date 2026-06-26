@@ -126,6 +126,20 @@ class Identity(BaseModel):
     metadata: str | None = None
 
 
+class IdentityIntegration(BaseModel):
+    id: str = Field(default_factory=lambda: _uuid())
+    layer: str
+    key: str
+    content: str
+    source: str = "soul_mode"
+    origin: str | None = None
+    conversation_id: str | None = None
+    journal_id: str | None = None
+    created_at: str = Field(default_factory=lambda: _now())
+    status: str = "active"
+    metadata: str = "{}"
+
+
 class Attachment(_DomainModel):
     id: str = Field(default_factory=lambda: _uuid())
     journey_id: str

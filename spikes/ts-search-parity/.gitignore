@@ -1,0 +1,14 @@
+# Generated spike artifacts — reproducible from generate_golden.py
+fixture.db
+fixture.db-wal
+fixture.db-shm
+*.bootstrap.lock
+inputs.json
+golden.json
+
+# Real-DB parity run — NEVER commit (contains personal memory data)
+real_copy.db
+real_copy.db-wal
+real_copy.db-shm
+inputs_real.json
+golden_real.json

@@ -266,6 +266,13 @@ What to check:
 > Your first session will use a generic identity — that is expected and
 > correct. The mirror sharpens through use.
 
+- **Operating modes:** Mirror Mind activates four context-driven modes — Mirror
+  (reflection), Builder (construction), Explorer (the uncertain middle before you
+  commit), and Soul (inner-life listening). You do not pick them manually; they
+  activate from what you ask.
+- **Web console:** run `uv run python -m memory web` and open
+  <http://127.0.0.1:8765> to browse your identity, journeys, and conversations
+  locally in the browser.
 - **Commands:** [REFERENCE.md](../REFERENCE.md) — full command reference with arguments and flags
 - **Architecture:** [docs/product/architecture.md](product/architecture.md) — how the system works internally
 - **Extensions:** [docs/product/extensions/](product/extensions/index.md) — Mirror Mind can be

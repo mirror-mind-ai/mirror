@@ -84,6 +84,12 @@ Soul Mode Entry
 - No multiple fruits.
 - No Return To Center implementation.
 
+## Post-Release Roadmap Decision
+
+After CV18 validation, Passagem, Return To Center, Closing Day / Daily Soul Ritual, and additional new voices were removed from the active roadmap. Source-library work remains dormant: it should only return if there is a strong API/provider approach, not as a local Mirror-maintained library.
+
+The remaining Soul Mode horizon is integration first, then Web Soul Mode UI.
+
 ---
 
 ## Done Condition

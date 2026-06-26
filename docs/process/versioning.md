@@ -81,7 +81,9 @@ Mirror Mind separates integration from published releases:
 - `main` is the integration and dogfooding channel.
 - `stable` is the user-facing release channel.
 
-A push to `main` is not a release. `stable` advances only through release promotion after the release arc is closed, validated, versioned, documented, and tagged. Local clones choose the channel through `.mirror-update-channel`; missing or invalid values default to `stable`.
+A push to `main` is not a release. `stable` advances only through release promotion after the release arc is closed, validated, versioned, documented, tagged, and published as a GitHub Release. Local clones choose the channel through `.mirror-update-channel`; missing or invalid values default to `stable`.
+
+Git tags and the `stable` branch are the updater contract. GitHub Releases are the public release surface. Every promoted stable release should have a GitHub Release attached to the same tag, marked latest when it is the newest stable release, and using the repository release note as its body.
 
 ## Release Notes Are Required for Future Releases
 
