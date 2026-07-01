@@ -59,10 +59,12 @@ Source: "launcher\mirror.cmd"; DestDir: "{app}\bin";                 Flags: igno
 Source: "bootstrap.ps1";      DestDir: "{app}\bin";                  Flags: ignoreversion
 Source: "configure.ps1";      DestDir: "{app}\bin";                  Flags: ignoreversion
 Source: "install.ps1";        DestDir: "{app}\bin";                  Flags: ignoreversion
+Source: "health-check.ps1";   DestDir: "{app}\bin";                  Flags: ignoreversion
 Source: "assets\mirror.ico";  DestDir: "{app}\bin";                  Flags: ignoreversion skipifsourcedoesntexist
 
 [Icons]
 Name: "{group}\{#AppName}";            Filename: "{app}\bin\mirror.cmd"; WorkingDir: "{app}\app"; IconFilename: "{app}\bin\mirror.ico"
+Name: "{group}\{#AppName} Health Check"; Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -NoExit -File ""{app}\bin\health-check.ps1"" -InstallDir ""{app}"""; WorkingDir: "{app}\app"
 Name: "{userdesktop}\{#AppName}";      Filename: "{app}\bin\mirror.cmd"; WorkingDir: "{app}\app"; IconFilename: "{app}\bin\mirror.ico"; Tasks: desktopicon
 
 [UninstallDelete]

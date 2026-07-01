@@ -16,7 +16,10 @@
 #>
 
 Set-StrictMode -Version Latest
-$ErrorActionPreference = 'Stop'
+# PS 5.1: 'Continue' avoids native commands (e.g. version probes) turning stderr
+# output into terminating errors. Functions that probe native tools handle their
+# own failures via try/catch and $LASTEXITCODE.
+$ErrorActionPreference = 'Continue'
 
 # ---------------------------------------------------------------------------
 # Logging

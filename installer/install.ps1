@@ -22,12 +22,32 @@ param(
 )
 
 Set-StrictMode -Version Latest
-$ErrorActionPreference = 'Stop'
+# PS 5.1: 'Continue' so native/child commands writing to stderr do not raise
+# spurious terminating errors; child exit codes are checked explicitly.
+$ErrorActionPreference = 'Continue'
 
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
-Import-Module (Join-Path $here 'lib\MirrorInstall.psm1') -Force
+Import-Module (Join-Path $here 'lib\MirrorInstall.psm1') -Force -ErrorAction Stop
+
+# Share one persistent detail log across install + child scripts (children inherit
+# this via the environment). Kept next to the install folder so it survives.
+if (-not $env:MIRROR_INSTALL_LOG) {
+    $env:MIRROR_INSTALL_LOG = Join-Path (Split-Path $InstallDir -Parent) 'mirror-detail.log'
+}
 
 try { chcp 65001 > $null } catch { }
+
+function Show-DetailLog {
+    $lp = Get-MirrorLogPath
+    Write-Host ''
+    Write-Host "----- detail log ($lp) -----"
+    if (Test-Path -LiteralPath $lp) {
+        Get-Content -LiteralPath $lp | ForEach-Object { Write-Host $_ }
+    } else {
+        Write-Host '(no detail log found)'
+    }
+    Write-Host '----- end detail log -----'
+}
 
 function Write-Banner {
     Write-Host '============================================'
@@ -49,7 +69,11 @@ function Write-Phase {
 function Invoke-Child {
     param([Parameter(Mandatory)][string]$Script, [Parameter(Mandatory)][string[]]$ScriptArgs)
     $ps = (Get-Command 'powershell.exe').Source
-    & $ps -NoProfile -ExecutionPolicy Bypass -File $Script @ScriptArgs
+    # Stream the child's output straight to the host (-> the redirected transcript)
+    # via Out-Host. Without Out-Host, the native command's stdout would be captured
+    # as this function's return value, swallowing the child's progress lines and
+    # polluting the exit code with output strings.
+    & $ps -NoProfile -ExecutionPolicy Bypass -File $Script @ScriptArgs 2>&1 | Out-Host
     return $LASTEXITCODE
 }
 
@@ -63,8 +87,9 @@ try {
     )
     if ($rc -ne 0) {
         Write-Host ''
-        Write-Host 'Installation stopped during setup of prerequisites/files.'
+        Write-Host "Installation stopped during setup of prerequisites/files (bootstrap exit code $rc)."
         Write-Host "See the messages above and the log: $(Get-MirrorLogPath)"
+        Show-DetailLog
         exit 1
     }
 
@@ -74,8 +99,9 @@ try {
     )
     if ($rc -ne 0) {
         Write-Host ''
-        Write-Host 'Files were installed, but configuration did not finish.'
+        Write-Host "Files were installed, but configuration did not finish (configure exit code $rc)."
         Write-Host "You can re-run configuration later. Log: $(Get-MirrorLogPath)"
+        Show-DetailLog
         exit 1
     }
 

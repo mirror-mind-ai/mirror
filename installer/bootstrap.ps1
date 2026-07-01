@@ -40,18 +40,40 @@ param(
 )
 
 Set-StrictMode -Version Latest
-$ErrorActionPreference = 'Stop'
+# PS 5.1: keep 'Continue' so a native command writing to stderr (git/npm/uv print
+# progress there on success) does not raise a spurious terminating error. Native
+# failures are detected explicitly via $LASTEXITCODE / Start-Process ExitCode, and
+# cmdlets that must fail hard get an explicit -ErrorAction Stop.
+$ErrorActionPreference = 'Continue'
 
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
+
+# Visible, immediate marker so the wizard transcript shows the bootstrap started,
+# even if something fails during module import on a clean machine.
+Write-Host 'Mirror bootstrap: initializing...'
 
 # Early heartbeat to the log BEFORE importing the module, so even an import or
 # parse failure leaves a trace on a clean machine.
 try {
     $__log = if ($env:MIRROR_INSTALL_LOG) { $env:MIRROR_INSTALL_LOG } else { Join-Path $env:TEMP 'mirror-install.log' }
-    Add-Content -LiteralPath $__log -Value ("[{0}] [STEP] bootstrap.ps1 starting" -f (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')) -Encoding UTF8
+    Add-Content -LiteralPath $__log -Value ("[{0}] [STEP] bootstrap.ps1 starting (here=$here)" -f (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')) -Encoding UTF8
 } catch { }
 
-Import-Module (Join-Path $here 'lib\MirrorInstall.psm1') -Force
+try {
+    Import-Module (Join-Path $here 'lib\MirrorInstall.psm1') -Force
+} catch {
+    Write-Host "Mirror bootstrap: FAILED to load installer helpers from '$here\lib\MirrorInstall.psm1'"
+    Write-Host "  $($_.Exception.Message)"
+    exit 1
+}
+Write-Host 'Mirror bootstrap: helpers loaded.'
+
+# Clean Windows machines may default to an older TLS; force TLS 1.2 for the
+# GitHub/nodejs/astral downloads below.
+try {
+    [Net.ServicePointManager]::SecurityProtocol = `
+        [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+} catch { }
 
 # ---------------------------------------------------------------------------
 # Dependency catalog
@@ -89,7 +111,9 @@ $script:Dependencies = @(
 )
 
 # Pi is installed via npm (needs Node first), handled separately after Node.
-$script:PiPackage = '@earendil-works/coding-agent'
+# The npm package that provides the `pi` binary is @earendil-works/pi-coding-agent
+# (the earlier @mariozechner/pi-coding-agent name is legacy).
+$script:PiPackage = '@earendil-works/pi-coding-agent'
 $script:PiCommand = 'pi'
 $script:PiMinVersion = '0.1.0'
 
@@ -104,10 +128,10 @@ function Test-WingetAvailable {
 function Install-ViaWinget {
     param([Parameter(Mandatory)][string]$Id, [Parameter(Mandatory)][string]$Name)
     Write-MirrorLog -Message "winget install $Id" | Out-Null
-    $args = @('install', '--id', $Id, '--exact', '--silent',
+    $wingetArgs = @('install', '--id', $Id, '--exact', '--silent',
         '--accept-package-agreements', '--accept-source-agreements',
         '--disable-interactivity')
-    $p = Start-Process -FilePath 'winget' -ArgumentList $args -Wait -PassThru -NoNewWindow
+    $p = Start-Process -FilePath 'winget' -ArgumentList $wingetArgs -Wait -PassThru -NoNewWindow
     # winget exit codes: 0 ok; -1978335189 (0x8A15002B) already installed / no upgrade.
     if ($p.ExitCode -ne 0 -and $p.ExitCode -ne -1978335189) {
         throw "winget install '$Id' failed with exit code $($p.ExitCode)"
@@ -122,7 +146,7 @@ function Install-FromDownload {
     )
     $dest = Join-Path $env:TEMP ("mirror-dep-{0}.exe" -f ([regex]::Replace($Name, '\W', '')))
     Write-MirrorLog -Message "download $Name from $Url" | Out-Null
-    Invoke-WebRequest -Uri $Url -OutFile $dest -UseBasicParsing
+    Invoke-WebRequest -Uri $Url -OutFile $dest -UseBasicParsing -ErrorAction Stop
     $p = Start-Process -FilePath $dest -ArgumentList $SilentArgs -Wait -PassThru
     if ($p.ExitCode -ne 0) {
         throw "$Name installer exited with code $($p.ExitCode)"
@@ -132,7 +156,7 @@ function Install-FromDownload {
 function Install-Node {
     <# Silent Node.js LTS install via the official MSI (works without winget). #>
     Write-MirrorLog -Message 'install Node.js LTS via MSI' | Out-Null
-    $index = Invoke-RestMethod -Uri 'https://nodejs.org/dist/index.json' -UseBasicParsing
+    $index = Invoke-RestMethod -Uri 'https://nodejs.org/dist/index.json' -UseBasicParsing -ErrorAction Stop
     $lts = $index | Where-Object { $_.lts } | Select-Object -First 1
     if (-not $lts) { throw 'Could not determine the latest Node.js LTS version.' }
     $ver = $lts.version
@@ -140,7 +164,7 @@ function Install-Node {
     $url = "https://nodejs.org/dist/$ver/node-$ver-$arch.msi"
     $dest = Join-Path $env:TEMP "node-$ver-$arch.msi"
     Write-MirrorLog -Message "download Node.js $ver ($arch) from $url" | Out-Null
-    Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing
+    Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing -ErrorAction Stop
     $p = Start-Process -FilePath 'msiexec.exe' -ArgumentList @('/i', "`"$dest`"", '/qn', '/norestart') -Wait -PassThru
     if ($p.ExitCode -ne 0) { throw "Node.js MSI install failed ($($p.ExitCode))" }
     Update-SessionPath
@@ -154,10 +178,23 @@ function Install-Uv {
 }
 
 function Update-SessionPath {
-    <# Refresh $env:PATH from the registry so freshly installed tools resolve. #>
+    <# Rebuild $env:PATH from the registry AND add the well-known install dirs of
+       freshly installed tools, which are often not yet reflected in the registry
+       PATH within the same session (the reason a clone/uv sync can fail right
+       after installing Git/Node). #>
     $machine = [System.Environment]::GetEnvironmentVariable('Path', 'Machine')
     $user = [System.Environment]::GetEnvironmentVariable('Path', 'User')
-    $env:PATH = @($machine, $user, "$env:LOCALAPPDATA\Microsoft\WindowsApps") -join ';'
+    $extra = @(
+        "${env:ProgramFiles}\Git\cmd",
+        "${env:ProgramFiles}\nodejs",
+        "$env:APPDATA\npm",
+        (Join-Path $env:USERPROFILE '.local\bin'),
+        (Join-Path $env:USERPROFILE '.cargo\bin'),
+        "$env:LOCALAPPDATA\uv\bin",
+        "$env:LOCALAPPDATA\Microsoft\WindowsApps"
+    )
+    $parts = @($machine, $user) + $extra
+    $env:PATH = ($parts | Where-Object { $_ } | Select-Object -Unique) -join ';'
 }
 
 function Install-Dependency {
@@ -223,7 +260,9 @@ function Ensure-Pi {
     }
     Write-Host ("  [install] {0,-14} {1}" -f 'Pi', 'installing via npm') -ForegroundColor Cyan
     Invoke-MirrorStep -Name 'install Pi (npm global)' -Action {
-        $p = Start-Process -FilePath 'npm' -ArgumentList @('install', '-g', $script:PiPackage) -Wait -PassThru -NoNewWindow
+        # --ignore-scripts avoids native postinstall/build steps that are
+        # unreliable on a fresh Windows; npm still creates the `pi` bin shim.
+        $p = Start-Process -FilePath 'npm' -ArgumentList @('install', '-g', '--ignore-scripts', $script:PiPackage) -Wait -PassThru -NoNewWindow
         if ($p.ExitCode -ne 0) { throw "npm install -g $($script:PiPackage) failed ($($p.ExitCode))" }
         Update-SessionPath
     } -OnErrorFriendly {
@@ -249,7 +288,13 @@ function Sync-MirrorRepo {
             }
             Write-MirrorLog -Message "cloning $RepoUrl ($Branch) into $Dir" | Out-Null
             & git clone --branch $Branch --single-branch $RepoUrl $Dir
-            if ($LASTEXITCODE -ne 0) { throw "git clone failed ($LASTEXITCODE)" }
+            if ($LASTEXITCODE -ne 0) {
+                # Roll back a partial/corrupt clone so a re-run starts clean.
+                if (Test-Path -LiteralPath (Join-Path $Dir '.git')) {
+                    Remove-Item -Recurse -Force -LiteralPath $Dir -ErrorAction SilentlyContinue
+                }
+                throw "git clone failed ($LASTEXITCODE)"
+            }
         }
         Write-MirrorLog -Message "uv sync in $Dir" | Out-Null
         Push-Location $Dir

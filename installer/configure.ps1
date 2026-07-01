@@ -30,7 +30,10 @@ param(
 )
 
 Set-StrictMode -Version Latest
-$ErrorActionPreference = 'Stop'
+# PS 5.1: 'Continue' so native commands (uv run ...) writing to stderr do not
+# raise spurious terminating errors; failures are detected via $LASTEXITCODE and
+# explicit throws, and hard-failing cmdlets get -ErrorAction Stop.
+$ErrorActionPreference = 'Continue'
 
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 Import-Module (Join-Path $here 'lib\MirrorInstall.psm1') -Force
@@ -91,7 +94,7 @@ function Test-OpenRouter {
         try {
             $resp = Invoke-WebRequest -Uri 'https://openrouter.ai/api/v1/key' `
                 -Headers @{ Authorization = "Bearer $ApiKey" } `
-                -UseBasicParsing -TimeoutSec 20
+                -UseBasicParsing -TimeoutSec 20 -ErrorAction Stop
             if ($resp.StatusCode -ne 200) { throw "unexpected status $($resp.StatusCode)" }
         } catch {
             throw 'OpenRouter did not accept the API key.'
