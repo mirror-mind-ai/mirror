@@ -3,12 +3,12 @@
     Generate the Inno Setup wizard bitmaps from a Mirror repo illustration.
 
 .DESCRIPTION
-    Produces two 24-bit BMPs used by the installer wizard (see mirror.iss):
+    Produces the 24-bit BMPs used by the installer wizard (see mirror.iss):
       * wizard-large.bmp (328x628, 164x314 aspect) - the Welcome/Finished panel.
         The full illustration is letterboxed ("contain") on a white panel.
-      * wizard-small.bmp (110x116, 55x58 aspect) - the top-right image shown on
-        every interior page. A center crop ("cover") so the small square is
-        filled with the heart of the scene.
+      * wizard-banner.bmp (900x300, 3:1) - a horizontal banner placed at the top
+        of the final identity page (a custom TBitmapImage), where a landscape
+        illustration reads well instead of a tiny corner thumbnail.
 
     Source defaults to the README hero image
     (docs/assets/mirror-mind-contractor-team-1200px.jpg). Override with -Source.
@@ -86,4 +86,4 @@ function New-WizardBitmap {
 }
 
 New-WizardBitmap -SourcePath $Source -OutPath (Join-Path $here 'wizard-large.bmp') -Width 328 -Height 628 -Fit 'contain'
-New-WizardBitmap -SourcePath $Source -OutPath (Join-Path $here 'wizard-small.bmp') -Width 110 -Height 116 -Fit 'cover'
+New-WizardBitmap -SourcePath $Source -OutPath (Join-Path $here 'wizard-banner.bmp') -Width 900 -Height 300 -Fit 'cover'

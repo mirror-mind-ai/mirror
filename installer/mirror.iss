@@ -46,7 +46,6 @@ Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
 WizardImageFile=assets\wizard-large.bmp
-WizardSmallImageFile=assets\wizard-small.bmp
 WizardImageStretch=yes
 ArchitecturesInstallIn64BitMode=x64compatible
 SetupLogging=yes
@@ -110,6 +109,8 @@ Source: "configure.ps1";      DestDir: "{app}\bin";                  Flags: igno
 Source: "install.ps1";        DestDir: "{app}\bin";                  Flags: ignoreversion
 Source: "health-check.ps1";   DestDir: "{app}\bin";                  Flags: ignoreversion
 Source: "assets\mirror.ico";  DestDir: "{app}\bin";                  Flags: ignoreversion skipifsourcedoesntexist
+; Wizard banner illustration, extracted to {tmp} and loaded by [Code].
+Source: "assets\wizard-banner.bmp"; Flags: dontcopy
 
 [Icons]
 Name: "{group}\{#AppName}";            Filename: "{app}\bin\mirror.cmd"; WorkingDir: "{app}\app"; IconFilename: "{app}\bin\mirror.ico"
@@ -129,11 +130,87 @@ function SendMessage(Wnd: LongInt; Msg: LongInt; wParam: LongInt; lParam: LongIn
   external 'SendMessageW@user32.dll stdcall';
 
 var
-  UserPage: TInputQueryWizardPage;
-  LogMemo: TNewMemo;      { bootstrap progress, on the Installing page }
-  ConfigMemo: TNewMemo;   { configure progress, on the final identity page }
+  IdPage: TWizardPage;         { final identity page (custom) }
+  BannerImage: TBitmapImage;
+  LangLabel, BodyText, NameLabel, KeyLabel: TNewStaticText;
+  LangCombo: TNewComboBox;
+  NameEdit: TNewEdit;
+  KeyEdit: TPasswordEdit;
+  LogMemo: TNewMemo;           { bootstrap progress, on the Installing page }
+  ConfigMemo: TNewMemo;        { configure progress, on the identity page }
   BootstrapOk: Boolean;
+  CurLang: String;             { 'en' or 'pt' }
   AppBinDir, AppCloneDir, AppLogsDir, DetailLogPath: String;
+
+function L(const Key: String): String;
+begin
+  Result := '';
+  if CurLang = 'pt' then
+  begin
+    if Key = 'title' then Result := 'Configure seu Mirror'
+    else if Key = 'subtitle' then Result := 'Duas ultimas coisas para o Mirror funcionar'
+    else if Key = 'body' then Result :=
+      'O Mirror foi instalado. Faltam duas coisas antes de comecar:' + #13#10 + #13#10 +
+      '1) Seu nome - uma identidade e memoria privadas, guardadas somente NESTE computador (num arquivo .env local; nada e enviado para a internet).' + #13#10 + #13#10 +
+      '2) Uma chave da OpenRouter - habilita embeddings de memoria, extracao e recursos multi-modelo. Precisa de uma conta OpenRouter com pelo menos US$5 de credito: https://openrouter.ai/keys'
+    else if Key = 'name' then Result := 'Seu nome (MIRROR_USER):'
+    else if Key = 'key' then Result := 'Chave de API da OpenRouter:'
+    else if Key = 'lang' then Result := 'Idioma:'
+    else if Key = 'needname' then Result := 'Por favor, informe seu nome (MIRROR_USER).'
+    else if Key = 'needkey' then Result := 'Por favor, informe sua chave de API da OpenRouter.'
+    else if Key = 'configuring' then Result := 'Configurando a identidade do seu Mirror...'
+    else if Key = 'installing' then Result := 'Instalando pre-requisitos e baixando o Mirror. Isso pode levar alguns minutos...'
+    else if Key = 'installed' then Result := 'Pre-requisitos instalados e Mirror baixado.'
+    else if Key = 'failed' then Result := 'A instalacao do Mirror Mind nao foi concluida.'
+    else if Key = 'cfgfail' then Result := 'A configuracao nao foi concluida com sucesso.' + #13#10 + 'Os detalhes aparecem acima e um log completo esta em:'
+    else if Key = 'cfghint' then Result := 'Verifique sua chave/creditos da OpenRouter e tente novamente.'
+    else if Key = 'instfail' then Result := 'A instalacao nao foi concluida com sucesso.' + #13#10 + 'Um log completo esta em:'
+    else if Key = 'insthint' then Result := 'Voce pode executar o instalador novamente para tentar de novo.';
+  end
+  else
+  begin
+    if Key = 'title' then Result := 'Set up your Mirror'
+    else if Key = 'subtitle' then Result := 'Two last things Mirror needs to run'
+    else if Key = 'body' then Result :=
+      'Mirror is installed. Two last things before you start:' + #13#10 + #13#10 +
+      '1) Your name - a private identity and memory kept only on THIS computer (in a local .env file; nothing is uploaded).' + #13#10 + #13#10 +
+      '2) An OpenRouter API key - powers memory embeddings, extraction and multi-model features. Needs an OpenRouter account with at least US$5 in credits: https://openrouter.ai/keys'
+    else if Key = 'name' then Result := 'Your name (MIRROR_USER):'
+    else if Key = 'key' then Result := 'OpenRouter API key:'
+    else if Key = 'lang' then Result := 'Language:'
+    else if Key = 'needname' then Result := 'Please enter your name (MIRROR_USER).'
+    else if Key = 'needkey' then Result := 'Please enter your OpenRouter API key.'
+    else if Key = 'configuring' then Result := 'Configuring your Mirror identity...'
+    else if Key = 'installing' then Result := 'Installing prerequisites and downloading Mirror. This can take a few minutes...'
+    else if Key = 'installed' then Result := 'Prerequisites installed and Mirror downloaded.'
+    else if Key = 'failed' then Result := 'Mirror Mind installation did not finish.'
+    else if Key = 'cfgfail' then Result := 'Configuration did not finish successfully.' + #13#10 + 'The details are shown above, and a full log is at:'
+    else if Key = 'cfghint' then Result := 'Check your OpenRouter key/credits and try again.'
+    else if Key = 'instfail' then Result := 'The installation did not finish successfully.' + #13#10 + 'A full log is at:'
+    else if Key = 'insthint' then Result := 'You can re-run the installer to try again.';
+  end;
+end;
+
+procedure ApplyLang();
+begin
+  IdPage.Caption := L('title');
+  IdPage.Description := L('subtitle');
+  if WizardForm.CurPageID = IdPage.ID then
+  begin
+    WizardForm.PageNameLabel.Caption := L('title');
+    WizardForm.PageDescriptionLabel.Caption := L('subtitle');
+  end;
+  BodyText.Caption := L('body');
+  NameLabel.Caption := L('name');
+  KeyLabel.Caption := L('key');
+  LangLabel.Caption := L('lang');
+end;
+
+procedure LangComboChange(Sender: TObject);
+begin
+  if LangCombo.ItemIndex = 1 then CurLang := 'pt' else CurLang := 'en';
+  ApplyLang();
+end;
 
 procedure EnsurePaths();
 begin
@@ -150,19 +227,94 @@ begin
 end;
 
 procedure InitializeWizard;
+var
+  SW, SH: Integer;
 begin
   BootstrapOk := False;
+  if Lowercase(ActiveLanguage()) = 'pt' then CurLang := 'pt' else CurLang := 'en';
 
   { Identity page created AFTER the Installing page, so it appears at the END,
     once prerequisites and the Mirror download have already succeeded. }
-  UserPage := CreateInputQueryPage(wpInstalling,
-    ExpandConstant('{cm:PageTitle}'),
-    ExpandConstant('{cm:PageSubtitle}'),
-    ExpandConstant('{cm:BodyIntro}') + #13#10 + #13#10 +
-    ExpandConstant('{cm:BodyName}') + #13#10 + #13#10 +
-    ExpandConstant('{cm:BodyKey}'));
-  UserPage.Add(ExpandConstant('{cm:FieldName}'), False);
-  UserPage.Add(ExpandConstant('{cm:FieldKey}'), True);   { masked }
+  IdPage := CreateCustomPage(wpInstalling, L('title'), L('subtitle'));
+  SW := IdPage.SurfaceWidth;
+  SH := IdPage.SurfaceHeight;
+
+  { Landscape Mirror illustration as a centered banner at the top. }
+  ExtractTemporaryFile('wizard-banner.bmp');
+  BannerImage := TBitmapImage.Create(WizardForm);
+  BannerImage.Parent := IdPage.Surface;
+  BannerImage.Bitmap.LoadFromFile(ExpandConstant('{tmp}\wizard-banner.bmp'));
+  BannerImage.Stretch := True;
+  BannerImage.Width := ScaleX(246);
+  BannerImage.Height := ScaleY(82);
+  BannerImage.Left := (SW - BannerImage.Width) div 2;
+  BannerImage.Top := 0;
+
+  { Visible language selector (switches this page's text live). }
+  LangCombo := TNewComboBox.Create(WizardForm);
+  LangCombo.Parent := IdPage.Surface;
+  LangCombo.Style := csDropDownList;
+  LangCombo.Width := ScaleX(160);
+  LangCombo.Left := SW - LangCombo.Width;
+  LangCombo.Top := BannerImage.Top + BannerImage.Height + ScaleY(6);
+  LangCombo.Items.Add('English');
+  LangCombo.Items.Add('Portugues (Brasil)');
+  if CurLang = 'pt' then LangCombo.ItemIndex := 1 else LangCombo.ItemIndex := 0;
+  LangCombo.OnChange := @LangComboChange;
+
+  LangLabel := TNewStaticText.Create(WizardForm);
+  LangLabel.Parent := IdPage.Surface;
+  LangLabel.AutoSize := True;
+  LangLabel.Top := LangCombo.Top + ScaleY(3);
+  LangLabel.Left := LangCombo.Left - ScaleX(72);
+
+  { Fields anchored to the bottom; the body fills the middle (overflow-proof). }
+  KeyEdit := TPasswordEdit.Create(WizardForm);
+  KeyEdit.Parent := IdPage.Surface;
+  KeyEdit.Left := 0;
+  KeyEdit.Width := SW;
+  KeyEdit.Top := SH - ScaleY(23);
+
+  KeyLabel := TNewStaticText.Create(WizardForm);
+  KeyLabel.Parent := IdPage.Surface;
+  KeyLabel.AutoSize := True;
+  KeyLabel.Left := 0;
+  KeyLabel.Top := KeyEdit.Top - ScaleY(16);
+
+  NameEdit := TNewEdit.Create(WizardForm);
+  NameEdit.Parent := IdPage.Surface;
+  NameEdit.Left := 0;
+  NameEdit.Width := SW;
+  NameEdit.Top := KeyLabel.Top - ScaleY(30);
+
+  NameLabel := TNewStaticText.Create(WizardForm);
+  NameLabel.Parent := IdPage.Surface;
+  NameLabel.AutoSize := True;
+  NameLabel.Left := 0;
+  NameLabel.Top := NameEdit.Top - ScaleY(16);
+
+  BodyText := TNewStaticText.Create(WizardForm);
+  BodyText.Parent := IdPage.Surface;
+  BodyText.AutoSize := False;
+  BodyText.WordWrap := True;
+  BodyText.Left := 0;
+  BodyText.Width := SW;
+  BodyText.Top := LangCombo.Top + LangCombo.Height + ScaleY(10);
+  BodyText.Height := NameLabel.Top - BodyText.Top - ScaleY(6);
+
+  { Configure progress overlays the body area (shown during the configure phase). }
+  ConfigMemo := TNewMemo.Create(WizardForm);
+  ConfigMemo.Parent := IdPage.Surface;
+  ConfigMemo.Left := 0;
+  ConfigMemo.Width := SW;
+  ConfigMemo.Top := BodyText.Top;
+  ConfigMemo.Height := BodyText.Height;
+  ConfigMemo.ScrollBars := ssVertical;
+  ConfigMemo.ReadOnly := True;
+  ConfigMemo.WantReturns := False;
+  ConfigMemo.Font.Name := 'Consolas';
+  ConfigMemo.Font.Size := 8;
+  ConfigMemo.Visible := False;
 
   { Live progress memo on the standard Installing page (bootstrap phase). }
   LogMemo := TNewMemo.Create(WizardForm);
@@ -178,19 +330,16 @@ begin
   LogMemo.Font.Size := 8;
   LogMemo.Visible := False;
 
-  { Live progress memo on the final identity page (configure phase). }
-  ConfigMemo := TNewMemo.Create(WizardForm);
-  ConfigMemo.Parent := UserPage.Surface;
-  ConfigMemo.Left := 0;
-  ConfigMemo.Width := UserPage.SurfaceWidth;
-  ConfigMemo.Top := UserPage.Edits[1].Top + UserPage.Edits[1].Height + ScaleY(16);
-  ConfigMemo.Height := UserPage.SurfaceHeight - ConfigMemo.Top - ScaleY(4);
-  ConfigMemo.ScrollBars := ssVertical;
-  ConfigMemo.ReadOnly := True;
-  ConfigMemo.WantReturns := False;
-  ConfigMemo.Font.Name := 'Consolas';
-  ConfigMemo.Font.Size := 8;
-  ConfigMemo.Visible := False;
+  ApplyLang();
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  if CurPageID = IdPage.ID then
+  begin
+    WizardForm.PageNameLabel.Caption := L('title');
+    WizardForm.PageDescriptionLabel.Caption := L('subtitle');
+  end;
 end;
 
 procedure UpdateMemoCtrl(Memo: TNewMemo; const Content: String);
@@ -279,7 +428,7 @@ function ShouldSkipPage(PageID: Integer): Boolean;
 begin
   Result := False;
   { If bootstrap failed, do not ask for identity - nothing to configure. }
-  if (PageID = UserPage.ID) and (not BootstrapOk) then
+  if (PageID = IdPage.ID) and (not BootstrapOk) then
     Result := True;
 end;
 
@@ -288,28 +437,29 @@ var
   rc: Integer;
 begin
   Result := True;
-  if CurPageID = UserPage.ID then
+  if CurPageID = IdPage.ID then
   begin
-    if Trim(UserPage.Values[0]) = '' then
+    if Trim(NameEdit.Text) = '' then
     begin
-      MsgBox(ExpandConstant('{cm:NeedName}'), mbError, MB_OK);
+      MsgBox(L('needname'), mbError, MB_OK);
       Result := False;
       Exit;
     end;
-    if Trim(UserPage.Values[1]) = '' then
+    if Trim(KeyEdit.Text) = '' then
     begin
-      MsgBox(ExpandConstant('{cm:NeedKey}'), mbError, MB_OK);
+      MsgBox(L('needkey'), mbError, MB_OK);
       Result := False;
       Exit;
     end;
-    WizardForm.StatusLabel.Caption := ExpandConstant('{cm:StatusConfiguring}');
-    rc := RunPhase('configure', Trim(UserPage.Values[0]), Trim(UserPage.Values[1]), ConfigMemo);
+    WizardForm.StatusLabel.Caption := L('configuring');
+    BodyText.Visible := False;
+    ConfigMemo.Visible := True;
+    rc := RunPhase('configure', Trim(NameEdit.Text), Trim(KeyEdit.Text), ConfigMemo);
     if rc <> 0 then
     begin
-      MsgBox(ExpandConstant('{cm:ConfigFailedHead}') + #13#10 +
-        ExpandConstant('{cm:ConfigFailedLog}') + #13#10 +
-        DetailLogPath + #13#10 + #13#10 +
-        ExpandConstant('{cm:ConfigFailedHint}'), mbError, MB_OK);
+      MsgBox(L('cfgfail') + #13#10 + DetailLogPath + #13#10 + #13#10 + L('cfghint'), mbError, MB_OK);
+      ConfigMemo.Visible := False;
+      BodyText.Visible := True;
       Result := False;
     end;
   end;
@@ -321,17 +471,15 @@ begin
   begin
     EnsurePaths();
     LogMemo.Visible := True;
-    WizardForm.StatusLabel.Caption := ExpandConstant('{cm:StatusInstalling}');
+    WizardForm.StatusLabel.Caption := L('installing');
     UpdateMemoCtrl(LogMemo, 'Starting...');
     BootstrapOk := (RunPhase('bootstrap', '', '', LogMemo) = 0);
     if BootstrapOk then
-      WizardForm.StatusLabel.Caption := ExpandConstant('{cm:StatusInstalled}')
+      WizardForm.StatusLabel.Caption := L('installed')
     else
     begin
-      WizardForm.StatusLabel.Caption := ExpandConstant('{cm:StatusFailed}');
-      MsgBox(ExpandConstant('{cm:InstallFailedHead}') + #13#10 +
-        ExpandConstant('{cm:InstallFailedLog}') + #13#10 + DetailLogPath + #13#10 + #13#10 +
-        ExpandConstant('{cm:InstallFailedHint}'), mbError, MB_OK);
+      WizardForm.StatusLabel.Caption := L('failed');
+      MsgBox(L('instfail') + #13#10 + DetailLogPath + #13#10 + #13#10 + L('insthint'), mbError, MB_OK);
     end;
   end;
 end;
