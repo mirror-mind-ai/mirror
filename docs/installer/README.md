@@ -65,12 +65,17 @@ reinstall the `.exe` to move to a new version.
 # One-time: install the Inno Setup compiler
 winget install --id JRSoftware.InnoSetup --exact
 
-# Build (stamps the version from pyproject.toml; override URL/branch for testing)
+# Build (stamps the installer's own version from installer/VERSION;
+# override URL/branch for testing)
 pwsh -File installer\build.ps1
 pwsh -File installer\build.ps1 -RepoUrl https://github.com/rodrigoimmaginario/mirror.git -RepoBranch feature/windows-installer
 ```
 
 Output: `dist\MirrorMind-Setup-<version>.exe` (+ printed SHA256).
+
+The installer is a **bootstrapper**, so its version is **decoupled** from the
+Mirror product version: Mirror updates itself in place via the git-based runtime
+updater. Bump `installer/VERSION` only when the installer itself changes.
 
 ## Testing
 

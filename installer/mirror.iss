@@ -21,8 +21,11 @@
 
 #define AppName "Mirror Mind"
 #define AppPublisher "Mirror Mind"
+; Installer's own version (a bootstrapper, decoupled from the Mirror product
+; version). Bump installer/VERSION when the installer changes; build.ps1 passes
+; it as AppVersion. This fallback is only used for a bare 'iscc mirror.iss'.
 #ifndef AppVersion
-  #define AppVersion "0.29.1"
+  #define AppVersion "0.30.0"
 #endif
 #ifndef RepoUrl
   #define RepoUrl "https://github.com/mirror-mind-ai/mirror.git"
@@ -152,7 +155,7 @@ begin
     else if Key = 'body' then Result :=
       'O Mirror foi instalado. Faltam duas coisas antes de comecar:' + #13#10 + #13#10 +
       '1) Seu nome - uma identidade e memoria privadas, guardadas somente NESTE computador (num arquivo .env local; nada e enviado para a internet).' + #13#10 + #13#10 +
-      '2) Uma chave da OpenRouter - habilita embeddings de memoria, extracao e recursos multi-modelo. Precisa de uma conta OpenRouter com pelo menos US$5 de credito: https://openrouter.ai/keys'
+      '2) Uma chave da OpenRouter - alimenta a MEMORIA do Mirror (embeddings, extracao, multi-modelo), nao o modelo de chat em si. Precisa de uma conta OpenRouter com pelo menos US$5 de credito: https://openrouter.ai/keys'
     else if Key = 'name' then Result := 'Seu nome (MIRROR_USER):'
     else if Key = 'key' then Result := 'Chave de API da OpenRouter:'
     else if Key = 'lang' then Result := 'Idioma:'
@@ -165,7 +168,8 @@ begin
     else if Key = 'cfgfail' then Result := 'A configuracao nao foi concluida com sucesso.' + #13#10 + 'Os detalhes aparecem acima e um log completo esta em:'
     else if Key = 'cfghint' then Result := 'Verifique sua chave/creditos da OpenRouter e tente novamente.'
     else if Key = 'instfail' then Result := 'A instalacao nao foi concluida com sucesso.' + #13#10 + 'Um log completo esta em:'
-    else if Key = 'insthint' then Result := 'Voce pode executar o instalador novamente para tentar de novo.';
+    else if Key = 'insthint' then Result := 'Voce pode executar o instalador novamente para tentar de novo.'
+    else if Key = 'loginnote' then Result := 'Mais uma coisa: o Mirror roda a conversa por uma assinatura de IA (Codex Plus recomendado). No primeiro acesso, digite  /login  dentro do Mirror para conectar. A chave OpenRouter cuida da memoria, nao do modelo de chat.';
   end
   else
   begin
@@ -174,7 +178,7 @@ begin
     else if Key = 'body' then Result :=
       'Mirror is installed. Two last things before you start:' + #13#10 + #13#10 +
       '1) Your name - a private identity and memory kept only on THIS computer (in a local .env file; nothing is uploaded).' + #13#10 + #13#10 +
-      '2) An OpenRouter API key - powers memory embeddings, extraction and multi-model features. Needs an OpenRouter account with at least US$5 in credits: https://openrouter.ai/keys'
+      '2) An OpenRouter API key - powers Mirror MEMORY (embeddings, extraction, multi-model), not the chat model itself. Needs an OpenRouter account with at least US$5 in credits: https://openrouter.ai/keys'
     else if Key = 'name' then Result := 'Your name (MIRROR_USER):'
     else if Key = 'key' then Result := 'OpenRouter API key:'
     else if Key = 'lang' then Result := 'Language:'
@@ -187,7 +191,8 @@ begin
     else if Key = 'cfgfail' then Result := 'Configuration did not finish successfully.' + #13#10 + 'The details are shown above, and a full log is at:'
     else if Key = 'cfghint' then Result := 'Check your OpenRouter key/credits and try again.'
     else if Key = 'instfail' then Result := 'The installation did not finish successfully.' + #13#10 + 'A full log is at:'
-    else if Key = 'insthint' then Result := 'You can re-run the installer to try again.';
+    else if Key = 'insthint' then Result := 'You can re-run the installer to try again.'
+    else if Key = 'loginnote' then Result := 'One more thing: Mirror runs the conversation through an AI subscription (Codex Plus recommended). On first launch, type  /login  inside Mirror to connect it. Your OpenRouter key powers memory, not the chat model.';
   end;
 end;
 
@@ -340,6 +345,10 @@ begin
     WizardForm.PageNameLabel.Caption := L('title');
     WizardForm.PageDescriptionLabel.Caption := L('subtitle');
   end;
+  { On the Finished page, add the subscription / first-run /login guidance. }
+  if (CurPageID = wpFinished) and BootstrapOk then
+    WizardForm.FinishedLabel.Caption :=
+      WizardForm.FinishedLabel.Caption + #13#10 + #13#10 + L('loginnote');
 end;
 
 procedure UpdateMemoCtrl(Memo: TNewMemo; const Content: String);

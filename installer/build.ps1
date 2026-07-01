@@ -8,7 +8,8 @@
     installer is written to <repo>\dist\MirrorMind-Setup-<version>.exe.
 
 .PARAMETER Version
-    Version stamped into the installer. Defaults to the version in pyproject.toml.
+    Version stamped into the installer. Defaults to installer/VERSION - the
+    installer's own version, decoupled from the Mirror product version.
 
 .PARAMETER RepoUrl
     Overrides the clone URL baked into the installer (useful for testing a fork).
@@ -42,15 +43,25 @@ function Find-Iscc {
     return ($candidates | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -First 1)
 }
 
-function Get-VersionFromPyproject {
-    $py = Join-Path $repoRoot 'pyproject.toml'
-    if (-not (Test-Path $py)) { return '0.0.0' }
-    $line = Select-String -Path $py -Pattern '^version\s*=\s*"([^"]+)"' | Select-Object -First 1
-    if ($line) { return $line.Matches[0].Groups[1].Value }
-    return '0.0.0'
+function Get-InstallerVersion {
+    <#
+    .SYNOPSIS
+        The installer's OWN version - independent of the Mirror product version.
+    .DESCRIPTION
+        The installer is a bootstrapper. Mirror updates itself in place through
+        the git-based runtime updater, so the .exe version is intentionally
+        decoupled from whatever Mirror version it installs. Bump installer/VERSION
+        only when the installer itself changes.
+    #>
+    $vf = Join-Path $here 'VERSION'
+    if (Test-Path -LiteralPath $vf) {
+        $v = (Get-Content -LiteralPath $vf -Raw).Trim()
+        if ($v) { return $v }
+    }
+    return '0.30.0'
 }
 
-if (-not $Version) { $Version = Get-VersionFromPyproject }
+if (-not $Version) { $Version = Get-InstallerVersion }
 
 $iscc = Find-Iscc
 if (-not $iscc) {
