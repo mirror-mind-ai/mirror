@@ -1,141 +1,194 @@
-# Mirror Mind — Windows Installer (.exe)
+# Mirror Mind — Windows Installer (.exe) — Execution & Development Plan
 
-> Execution plan for a native Windows installer that sets up Mirror Mind + Pi on
-> a clean Windows machine, silently installing every prerequisite, preserving
-> Windows compatibility and self-updates, and exposing a one-click desktop
-> shortcut.
+> Native Windows installer that sets up Mirror Mind + Pi on a clean machine:
+> silently installs every prerequisite, configures identity, keeps self-updates
+> working, and drops a one-click Desktop shortcut.
 >
-> **Upstream intent:** at the end of the project, open a Pull Request to
-> `mirror-mind-ai/mirror` from the author's GitHub account (`rodrigoimmaginario`).
-> **Before the PR, the author performs a real acceptance test by installing the
-> generated `.exe` himself on a Windows machine.** Work is executed as
-> autonomously as possible, stopping only for dangerous decisions (destructive
-> git ops, force-push, publishing/signing, network installs requiring credentials
-> or admin elevation, and opening the PR).
+> **Upstream intent:** at the end, open a Pull Request to `mirror-mind-ai/mirror`
+> from the author's account (`rodrigoimmaginario`). **Before the PR, the author
+> installs the generated `.exe` himself on a real Windows machine and confirms it
+> works.** Work runs as autonomously as possible, stopping only for dangerous
+> decisions (destructive git ops, force-push, publishing/signing, admin/credential
+> network installs, and opening the PR).
+>
+> This plan was **rebuilt after the working chat history was lost**. It is grounded
+> in the two-route comparison in [analysis-two-routes.md](analysis-two-routes.md).
 
 ---
 
-## Technical baseline (from repo analysis)
+## Where we actually are (current state, verified on disk)
 
-- **Python core** (`memory` package, Python >=3.10) managed by **uv** (`uv sync`
-  builds `.venv` and installs the package editable).
-- **Pi** = recommended harness = `@earendil-works/coding-agent` (npm) → requires
-  **Node.js**. `.pi/extensions/mirror-logger.ts` runs under Node and must call
-  `uv run python` (not `python3`) to find the venv on Windows.
-- **Updates are git-based**: `memory runtime update` does fetch + fast-forward on
-  the tracked branch (`stable`/`main`), with backup, migrations and validation.
-  ⟹ The installed product MUST be a git clone so updates keep working.
-- **OpenRouter API key** + `MIRROR_USER` are required (`.env`), then
-  `python -m memory init <user>`.
-- **Windows compatibility** already in upstream main (v0.29.1):
-  - Skill directories use Windows-safe `mm-` names (no `:` — illegal in Windows
-    paths). Must be preserved.
-  - CLI reconfigures stdout/stderr to UTF-8; `memory repair-encoding` repairs
-    legacy mojibake. Launcher should force `PYTHONUTF8=1` / code page 65001.
+- Route chosen: **upstream-native** installer at `C:\VSCode\mirror-windows`
+  (branch `feature/windows-installer`), Inno Setup wizard around
+  `installer/install.ps1` → `bootstrap.ps1` + `configure.ps1`.
+- Most v1.3 hard-won fixes already ported (commit `c8358ff`): Pi package name,
+  PS 5.1 native-command safety, `Update-SessionPath`, `--ignore-scripts`, TLS 1.2,
+  clone rollback, `health-check.ps1`.
+- **Blocker:** the `.exe` fails on each install attempt in **Windows Sandbox**
+  because the **winget-absent fallback download** of Git is not resilient (redirect
+  URL + single non-retried `Invoke-WebRequest` → "connection closed unexpectedly").
+- **Both installers are tested first in the same Windows Sandbox.** v1.3
+  (`C:\VSCode\mirro-mind-ai-windows`) **passes** there; the current route
+  **fails** there. Same test bed → the difference is **code, not environment**.
+  v1.3 downloads Git via a **GitHub-API-resolved** URL (proven green in the
+  sandbox); the current route uses a redirect URL.
 
-**Silent dependencies to install:** Git, Node.js LTS, uv, Pi (npm global), the
-repo clone, and `uv sync`.
-
----
-
-## Phases
-
-### Phase 0 — Project setup & baseline
-- Create `mirror-windows` journey (done) with `project_path=C:\VSCode\mirror-windows`.
-- Clone `mirror-mind-ai/mirror` (`main`) into `C:\VSCode\mirror-windows` (done).
-- `uv sync` + run current test suite → establish a green baseline on Windows.
-
-### Phase 1 — Installer specification (architecture decision)
-- **Tech: Inno Setup** (native `.exe`, `/VERYSILENT` support, Pascal scripting to
-  orchestrate downloads/detection, shortcuts, friendly messages). Alt: NSIS.
-- Install model = `git clone` into a user-chosen dir (default
-  `%LOCALAPPDATA%\MirrorMind`), keeping `.git` for updates.
-- Dependency matrix with detection (installed? min version?) → install only what
-  is missing.
-
-### Requirement — Visible progress panel (real-time feedback)
-- The installer must show a **visible progress panel** with what is happening at
-  each step (never run fully hidden). `install.ps1` is a visible orchestrator
-  that streams bootstrap + configure output live and **keeps the window open on
-  error** so failures are readable (no silent "it flashed and said done").
-
-### Phase 2 — Dependency bootstrapper (silent)
-| Dependency | Silent strategy |
-|---|---|
-| Git | Git for Windows `/VERYSILENT /NORESTART` or `winget install Git.Git` |
-| Node.js LTS | `msiexec /i node.msi /qn` or winget |
-| uv | official PowerShell installer `irm https://astral.sh/uv/install.ps1 \| iex` |
-| Pi | `npm install -g @earendil-works/coding-agent` |
-| Mirror | `git clone` + `uv sync` |
-
-Prefer winget when available, fallback to direct download. Ensure PATH updated
-(session + persistent). Logs to `%TEMP%\mirror-install.log`.
-
-### Phase 3 — First-run configuration (onboarding)
-- Collect `MIRROR_USER` + `OPENROUTER_API_KEY` → write `.env`.
-- Run `python -m memory init <user>` (identity seed).
-- Validate OpenRouter with a friendly message on failure.
-
-### Phase 4 — Windows compatibility guarantees
-- UTF-8: launcher forces `PYTHONUTF8=1` and `chcp 65001`; run
-  `repair-encoding --dry-run` post-install.
-- Paths with `:`: test ensuring no `:` in generated skill/dir names.
-- Investigate: path separators in `MEMORY_DIR`/`MIRROR_HOME`, junctions vs
-  symlinks, long paths (>260), CRLF in generated files, permissions.
-- Findings recorded in [windows-compatibility.md](windows-compatibility.md):
-  UTF-8 and `:` are handled + guarded by tests; MAX_PATH/long-paths is a
-  documented finding with an optional admin-gated fix
-  (`installer/enable-long-paths.ps1`); line endings handled via `.gitattributes`.
-
-### Phase 5 — Update preservation
-- git-clone install keeps `memory runtime update` working natively.
-- Pi self-update: `npm update -g @earendil-works/coding-agent` (+ optional
-  launcher update check).
-- Clone tracks a release branch; keep tree clean so fast-forward is not blocked.
-
-### Phase 6 — Desktop shortcut + launcher
-- Launcher (`mirror.cmd`/`mirror.ps1`): cd into install dir, set UTF-8/env, run `pi`.
-- Installer creates a Desktop shortcut "Mirror Mind" (dedicated icon), opening in
-  Windows Terminal when available.
-
-### Phase 7 — Tests, coverage & friendly errors
-- Install tests on clean Windows (CI `windows-latest`): fresh install, partial
-  deps present, reinstall, uninstall.
-- Post-install smoke: `runtime status`, seed, one Pi turn with logging, update
-  dry-run.
-- Friendly error catalog for each failure point (no internet, download fail, no
-  admin, invalid OpenRouter, missing Node/uv, PATH) with cause + suggested action.
-
-### Phase 8 — Packaging, signing & distribution
-- Reproducible `.exe` build via Inno Setup in CI, versioned with Mirror.
-- Optional code signing (SmartScreen); publish checksum.
-- Deliver `MirrorMind-Setup-x.y.z.exe` + release notes + Windows install guide.
-
-### Phase 8.5 — User acceptance test (author installs)  [GATE]
-- The author builds/obtains the `.exe` and installs it himself on a real Windows
-  machine (ideally a clean one), following the install guide.
-- Validate: silent dependency install, first-run config, launcher + desktop
-  shortcut, one working Pi session, `runtime update` dry-run, friendly errors.
-- This is a **hard gate**: the upstream PR is not opened until the author
-  confirms the install worked for him.
-
-### Phase 9 — Upstream PR
-- Only after Phase 8.5 acceptance is confirmed by the author.
-- Open PR to `mirror-mind-ai/mirror` from `rodrigoimmaginario` fork.
-- (DANGEROUS: opening the PR and any push to remotes are explicit stop points.)
+**Root cause:** the dependency **fallback download layer** is the whole failure,
+and the fix is a **known-good technique** (v1.3's API-resolved download), not a
+hypothesis. Everything else (wizard, phases, friendly errors, clone/sync, config)
+is sound.
 
 ---
 
-## Risks
-1. Non-admin install → prefer per-user installers.
-2. SmartScreen/AV blocking unsigned `.exe` → signing or reputation.
-3. Divergence between `main` and local fixes → align base branch before packaging.
-4. Pre-installed old uv/Node → clear "use existing vs upgrade" policy.
+## Guiding decisions
+
+1. **Keep upstream-native.** Do not revert to the v1.3 fork. The PR target is
+   upstream, so the installer must stay close to it.
+2. **Harden the download/dependency layer** as the top priority, reusing v1.3's
+   proven techniques and adding real network resilience.
+3. **Make Windows Sandbox a first-class, repeatable clean-room test** so we stop
+   guessing whether a failure is our bug or an environment flake.
+4. **Every fix ships with a test** (unit/Pester where possible, plus a Sandbox
+   smoke run) before moving on.
+
+---
+
+## Phase A — Harden the dependency download layer  ← START HERE
+
+Target files: `installer/bootstrap.ps1`, `installer/lib/MirrorInstall.psm1`.
+
+### A1. Port v1.3's API-resolved Git download (the proven fix) + resilient transport
+The primary, sandbox-proven fix is **A2** (GitHub-API-resolved URL). A1 wraps it
+in a resilient transport helper (`Invoke-MirrorDownload`) used by every download.
+Order of attempts:
+1. **`curl.exe`** (built into Windows 10 1803+): native TLS, redirects, resumable,
+   robust on flaky links — `curl.exe -L --fail --retry 3 --retry-all-errors -o <dest> <url>`.
+2. **BITS** (`Start-BitsTransfer`) as a second transport.
+3. **`Invoke-WebRequest`** as last resort, with `TLS 1.2`/`1.3` set explicitly
+   (not `-bor` onto legacy protocols) and `-UseBasicParsing`.
+- Wrap all three in **retry with backoff** (e.g. 3 tries, 2s→4s→8s).
+- Validate the downloaded file exists and is non-trivially sized before use.
+- Log each attempt/transport to the detail log.
+
+### A2. API-resolved Git URL (v1.3 technique)
+Resolve Git's installer through `api.github.com/repos/git-for-windows/git/releases/latest`
+→ pick the `Git-*-64-bit.exe` asset `browser_download_url`, then download via A1.
+Keep the redirect URL only as a final fallback.
+
+### A3. Node.js already API-resolved
+`Install-Node` already resolves the LTS MSI from `nodejs.org/dist/index.json`;
+route its download through A1 too.
+
+### A4. Preflight connectivity check
+Before installing deps, a quick reachability probe (github.com, nodejs.org,
+astral.sh, registry.npmjs.org). On failure, emit a friendly `NO_INTERNET` error
+early instead of failing mid-Git. (Good hygiene — not the root cause, since the
+sandbox has working networking that v1.3 uses successfully.)
+
+**Validation A:** Pester unit tests for `Invoke-MirrorDownload` (transport
+selection, retry, size check) with mocked transports; `bootstrap.ps1 -DetectOnly`
+green; full `smoke.ps1`.
+
+---
+
+## Phase B — Reliable Windows Sandbox clean-room test
+
+Target: `installer/tests/` + a `.wsb` config.
+
+### B1. Sandbox launcher (`installer/tests/sandbox/mirror-sandbox.wsb`)
+A `.wsb` that maps the `dist\` folder (read-only) into the sandbox and, optionally,
+auto-runs a logon command that launches the `.exe` or a headless
+`bootstrap.ps1 -DetectOnly` and copies logs back to a mapped host folder.
+
+### B2. Headless bootstrap smoke in Sandbox
+A script that, inside the sandbox, runs `bootstrap.ps1` (deps + clone + uv sync)
+and writes a pass/fail + log to the mapped folder — so a Sandbox run is
+reproducible and its result is inspectable on the host.
+
+### B3. Regression guard: current route must match v1.3 in the sandbox
+Since v1.3 passes in the sandbox and the current route fails, the smoke run is a
+direct A/B regression check: after Phase A, the current `bootstrap` must reach
+parity with v1.3 in the **same** sandbox. Per-transport logging records which
+transport/URL succeeded.
+
+**Validation B:** two consecutive clean-Sandbox runs of `bootstrap` succeed
+(Git → Node → uv → Pi → clone → uv sync), logs captured on the host — matching
+v1.3's known-good result.
+
+---
+
+## Phase C — First-run configuration & launcher (confirm intact)
+
+Target: `installer/configure.ps1`, `installer/launcher/mirror.cmd`, `mirror.iss`.
+
+- Confirm `.env` (`MIRROR_USER`, `OPENROUTER_API_KEY`, `PYTHONUTF8=1`),
+  `memory init <user>`, OpenRouter validation with friendly `OPENROUTER_INVALID`.
+- Confirm UTF-8 launcher (code page 65001 + `PYTHONUTF8=1`) and Desktop shortcut.
+- Re-verify after Phase A changes; no rework expected unless A touches config.
+
+**Validation C:** post-install smoke — `runtime status`, one Pi turn with logging,
+`runtime update --dry-run`.
+
+---
+
+## Phase D — Full-install acceptance in Sandbox (dress rehearsal)
+
+Run the actual **`.exe`** end-to-end in a clean Sandbox: silent deps, config,
+launcher, shortcut, one Pi session, update dry-run, and confirm every friendly
+error renders (simulate no-internet, bad key). This is the automated rehearsal
+**before** the author's own gate.
+
+**Validation D:** `.exe` completes end-to-end in a clean Sandbox with logs
+captured; friendly-error catalog exercised.
+
+---
+
+## Phase E — Author acceptance test  [HARD GATE]
+
+The author builds/obtains the `.exe` and installs it **himself on a real Windows
+machine** (ideally clean), following the install guide. Validates silent deps,
+first-run config, launcher + Desktop shortcut, one working Pi session,
+`runtime update` dry-run, friendly errors.
+
+> The upstream PR is **not** opened until the author confirms the install worked
+> for him.
+
+---
+
+## Phase F — Upstream PR  [DANGEROUS — explicit stop]
+
+Only after Phase E. Open PR to `mirror-mind-ai/mirror` from the
+`rodrigoimmaginario` fork. Any push to remotes and opening the PR are explicit
+stop points.
+
+---
+
+## Immediate next actions (ordered)
+
+1. **A1** — implement `Invoke-MirrorDownload` (curl→BITS→IWR + retry) in the module.
+2. **A2** — switch Git fallback to API-resolved URL via A1.
+3. **A3/A4** — route Node download through A1; add preflight connectivity check.
+4. **Validation A** — Pester + `smoke.ps1` + `-DetectOnly` green.
+5. **B1/B2** — add the `.wsb` clean-room and headless bootstrap smoke; run twice.
+6. Rebuild `.exe`, then **Phase D** rehearsal, then hand off to **Phase E** gate.
+
+---
 
 ## Dangerous decisions (explicit stop points)
+
 - Any `git push`, force-push, branch deletion, or history rewrite.
 - Opening the upstream Pull Request (only after the author's own install test).
-- Skipping the author's acceptance install test (Phase 8.5 gate).
+- Skipping the author's acceptance install test (Phase E gate).
 - Code signing / publishing artifacts.
-- Network installs that require admin elevation or credentials.
+- Network installs requiring admin elevation or credentials.
 - Anything that mutates the user's existing production Mirror home.
+
+## Risks
+
+1. Non-admin install → prefer per-user installers.
+2. SmartScreen/AV blocking unsigned `.exe` → signing or reputation (Phase F+).
+3. `main` vs local divergence → align base branch before packaging.
+4. Pre-installed old uv/Node → clear "use existing vs upgrade" policy (already in
+   `Test-MirrorDependency` min-version logic).
+5. Windows Sandbox is the shared test bed (v1.3 passes there) → not a variance
+   risk; A1/A2 bring the current route to parity.
