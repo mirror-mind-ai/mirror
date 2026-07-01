@@ -1,0 +1,20 @@
+# Normalize line endings. Windows installer scripts must keep CRLF so they run
+# correctly when checked out on Windows; POSIX shell scripts must stay LF.
+* text=auto eol=lf
+
+*.ps1   text eol=crlf
+*.psm1  text eol=crlf
+*.psd1  text eol=crlf
+*.cmd   text eol=crlf
+*.bat   text eol=crlf
+*.iss   text eol=crlf
+
+*.sh    text eol=lf
+
+# Binary assets — never touch.
+*.ico   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary

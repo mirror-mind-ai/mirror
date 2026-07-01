@@ -1,0 +1,70 @@
+name: Windows Installer
+
+on:
+  push:
+    branches: [main, "feature/windows-installer", "claude/**"]
+    paths:
+      - "installer/**"
+      - ".github/workflows/windows-installer.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "installer/**"
+      - ".github/workflows/windows-installer.yml"
+
+jobs:
+  installer-scripts:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Pester 5
+        shell: pwsh
+        run: |
+          Install-Module Pester -MinimumVersion 5.5.0 -Force -Scope CurrentUser -SkipPublisherCheck
+          Import-Module Pester -MinimumVersion 5.5.0
+
+      - name: Run Pester tests
+        shell: pwsh
+        run: |
+          $cfg = New-PesterConfiguration
+          $cfg.Run.Path = 'installer/tests/MirrorInstall.Tests.ps1'
+          $cfg.Output.Verbosity = 'Detailed'
+          $cfg.Run.Exit = $true
+          Invoke-Pester -Configuration $cfg
+
+      - name: Dependency-free smoke test
+        shell: pwsh
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File installer/tests/smoke.ps1
+
+      - name: Bootstrap detection (no install, no clone)
+        shell: pwsh
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File installer/bootstrap.ps1 -DetectOnly
+
+      - name: Static analysis (PSScriptAnalyzer)
+        shell: pwsh
+        run: |
+          Install-Module PSScriptAnalyzer -Force -Scope CurrentUser -SkipPublisherCheck
+          $issues = Invoke-ScriptAnalyzer -Path installer -Recurse -Severity Error
+          if ($issues) { $issues | Format-Table -AutoSize; throw "PSScriptAnalyzer found $($issues.Count) error(s)." }
+
+  build-installer:
+    runs-on: windows-latest
+    needs: installer-scripts
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --no-progress -y
+
+      - name: Compile installer
+        shell: pwsh
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File installer/build.ps1
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MirrorMind-Setup
+          path: dist/*.exe
+          if-no-files-found: error
