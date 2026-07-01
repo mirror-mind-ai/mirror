@@ -13,13 +13,19 @@ self-updates working, and drops a one-click Desktop shortcut.
 1. **Prerequisites (silent):** Git, Node.js LTS, uv, and Pi. Detects what is
    already present and installs only what is missing (winget first, direct
    download fallback).
-2. **Mirror files:** `git clone` of the Mirror repository into
-   `%LOCALAPPDATA%\Programs\MirrorMind\app`, then `uv sync`. Cloning (not a
-   zip) is what keeps `runtime update` working without reinstalling.
-3. **First-run config:** writes `.env` (`MIRROR_USER`, `OPENROUTER_API_KEY`,
-   `PYTHONUTF8=1`), runs `memory init <user>`, and verifies the OpenRouter key.
+2. **Mirror files:** a shallow `git clone` of the Mirror **`stable`** release
+   branch into `%LOCALAPPDATA%\Programs\MirrorMind\app`, then `uv sync`. Cloning
+   the `stable` branch (not a zip) is what installs the latest release AND keeps
+   `runtime update` fast-forwarding in place without reinstalling.
+3. **First-run config (asked at the END):** after prerequisites and the download
+   succeed, a final page explains why Mirror needs a name and an OpenRouter key,
+   then writes `.env` (`MIRROR_USER`, `OPENROUTER_API_KEY`, `PYTHONUTF8=1`), runs
+   `memory init <user>`, and verifies the OpenRouter key.
 4. **Desktop shortcut:** "Mirror Mind" → a UTF-8-safe launcher that starts Pi in
    the Mirror folder.
+
+A timestamped install log is kept under `...\MirrorMind\logs\` (with an
+environment banner, no secrets) for future analysis.
 
 Installation runs through a **visible progress panel** (`install.ps1`): it shows
 each step live and keeps the window open if anything fails, so errors are always

@@ -40,6 +40,34 @@ is sound.
 
 ---
 
+## Review decisions (implemented on top of Phase A)
+
+Three review findings were implemented after the first Phase A fix:
+
+1. **Latest Mirror + preserved updates (install from `stable`).** Mirror has no
+   PyPI/binary release; its unit of distribution is the git repo and its updater
+   is `git fetch` + fast-forward on the tracked branch. The default update
+   channel is **`stable`** (`origin/stable`). The installer now clones
+   `--branch stable --single-branch --depth 1` (a light, install-like footprint
+   that still keeps `.git`), so `memory runtime update` fast-forwards in place
+   without a reinstall. Reinstalling over an existing clone now fetches and
+   **fast-forwards** to the latest stable (previously it only `fetch`ed and left
+   the tree stale). Pi stays latest via `npm install -g` + `npm update -g`.
+   Fixes the earlier bug where a `main` single-branch clone left the default
+   `stable` update channel **blocked** ("update channel stable is not fetched").
+2. **Persistent install log for future analysis.** A timestamped detail log is
+   kept under `{app}\logs\install-detail-<ts>.log`, opened with an environment
+   banner (OS/build, arch, PowerShell, winget/curl availability, chosen download
+   order, pre-existing tool versions, install dir, repo/branch, MIRROR_USER).
+   Secrets are never logged. Per-phase transcripts live beside it.
+3. **Identity asked at the END, with a plain-language why.** The Inno wizard now
+   runs prerequisites + clone first (no personal data), then a final page
+   explains — in user terms grounded in Mirror's requirements — why it needs a
+   name (local private identity/memory) and an OpenRouter key (embeddings,
+   memory extraction, multi-model features; ≥ US$5 credit) before collecting
+   them. `install.ps1` gained a `-Phase bootstrap|configure|all` split to support
+   this.
+
 ## Guiding decisions
 
 1. **Keep upstream-native.** Do not revert to the v1.3 fork. The PR target is

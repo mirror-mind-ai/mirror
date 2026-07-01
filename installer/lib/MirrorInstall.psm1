@@ -281,6 +281,58 @@ function Invoke-MirrorStep {
 }
 
 # ---------------------------------------------------------------------------
+# Environment diagnostics (for future analysis)
+# ---------------------------------------------------------------------------
+
+function Write-MirrorEnvironmentBanner {
+    <#
+    .SYNOPSIS
+        Record a machine/environment snapshot to the install log for later
+        analysis. Never logs secrets (no OpenRouter key).
+    .DESCRIPTION
+        Captures OS/build, architecture, PowerShell version, winget availability,
+        already-installed tool versions (git/node/uv/pi), the install target and
+        repo/branch, and the resolved user. This is what makes a failed install
+        diagnosable weeks later from the log file alone.
+    #>
+    [CmdletBinding()]
+    param(
+        [string]$InstallerVersion = '',
+        [string]$InstallDir = '',
+        [string]$RepoUrl = '',
+        [string]$RepoBranch = '',
+        [string]$MirrorUser = ''
+    )
+    $os = try { Get-CimInstance Win32_OperatingSystem -ErrorAction Stop } catch { $null }
+    $osCaption = if ($os) { $os.Caption } else { [Environment]::OSVersion.VersionString }
+    $osVersion = if ($os) { $os.Version } else { [Environment]::OSVersion.Version.ToString() }
+    $arch = if ([Environment]::Is64BitOperatingSystem) { 'x64' } else { 'x86' }
+    $psVer = $PSVersionTable.PSVersion.ToString()
+    $winget = if (Test-CommandAvailable -Name 'winget') { 'available' } else { 'absent' }
+    $curl = if (Test-CommandAvailable -Name 'curl.exe') { 'available' } else { 'absent' }
+
+    $lines = @(
+        '===== Mirror Mind install environment =====',
+        ("installer version : {0}" -f $InstallerVersion),
+        ("timestamp         : {0}" -f (Get-Date).ToString('yyyy-MM-dd HH:mm:ss zzz')),
+        ("OS                : {0} ({1}, {2})" -f $osCaption, $osVersion, $arch),
+        ("PowerShell        : {0}" -f $psVer),
+        ("winget            : {0}" -f $winget),
+        ("curl.exe          : {0}" -f $curl),
+        ("download order    : {0}" -f ((Get-MirrorDownloadTransport) -join ' -> ')),
+        ("git               : {0}" -f ((Get-CommandVersion -Name 'git'  -Arguments @('--version')) | ForEach-Object { $_ }) ),
+        ("node              : {0}" -f (Get-CommandVersion -Name 'node' -Arguments @('--version'))),
+        ("uv                : {0}" -f (Get-CommandVersion -Name 'uv'   -Arguments @('--version'))),
+        ("pi                : {0}" -f (Get-CommandVersion -Name 'pi'   -Arguments @('--version'))),
+        ("install dir       : {0}" -f $InstallDir),
+        ("repo              : {0} ({1})" -f $RepoUrl, $RepoBranch),
+        ("MIRROR_USER       : {0}" -f $MirrorUser),
+        '==========================================='
+    )
+    foreach ($l in $lines) { Write-MirrorLog -Message $l | Out-Null }
+}
+
+# ---------------------------------------------------------------------------
 # Resilient downloads
 # ---------------------------------------------------------------------------
 
@@ -430,4 +482,4 @@ Export-ModuleMember -Function `
     Test-CommandAvailable, ConvertTo-VersionString, Compare-MirrorVersion, `
     Get-CommandVersion, Test-MirrorDependency, Invoke-MirrorStep, `
     Set-MirrorTls, Get-MirrorDownloadTransport, Invoke-MirrorDownload, `
-    Resolve-GitHubLatestAsset
+    Resolve-GitHubLatestAsset, Write-MirrorEnvironmentBanner

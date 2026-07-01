@@ -18,7 +18,9 @@
     Git URL to clone. Default: https://github.com/mirror-mind-ai/mirror.git
 
 .PARAMETER Branch
-    Branch to track. Default: main (release channel is managed by the runtime).
+    Branch to track. Default: stable (the release channel the Mirror runtime
+    updater fast-forwards from). Cloning this branch is what keeps
+    'memory runtime update' working in place without a reinstall.
 
 .PARAMETER DetectOnly
     Only report dependency status; never install or clone. Safe on any machine.
@@ -34,7 +36,7 @@
 param(
     [string]$InstallDir = (Join-Path $env:LOCALAPPDATA 'Programs\MirrorMind'),
     [string]$RepoUrl = 'https://github.com/mirror-mind-ai/mirror.git',
-    [string]$Branch = 'main',
+    [string]$Branch = 'stable',
     [switch]$DetectOnly,
     [switch]$SkipDeps
 )
@@ -300,16 +302,30 @@ function Ensure-Pi {
 function Sync-MirrorRepo {
     param([Parameter(Mandatory)][string]$Dir)
     Invoke-MirrorStep -Name 'clone/sync Mirror repository' -Action {
+        # Explicit refspec so 'origin/<Branch>' is created even when an older
+        # clone was configured single-branch on a different branch (e.g. main).
+        $refspec = "+refs/heads/$Branch`:refs/remotes/origin/$Branch"
         if (Test-Path -LiteralPath (Join-Path $Dir '.git')) {
-            Write-MirrorLog -Message "existing clone at $Dir; fetching" | Out-Null
-            & git -C $Dir fetch --all --quiet
+            # Existing clone: fetch the latest tip of the release branch and
+            # fast-forward the working tree onto it so a reinstall always lands
+            # on the newest stable (untracked files like .env are preserved).
+            Write-MirrorLog -Message "existing clone at $Dir; updating to latest '$Branch'" | Out-Null
+            & git -C $Dir fetch --depth 1 origin $refspec
+            if ($LASTEXITCODE -ne 0) { throw "git fetch failed ($LASTEXITCODE)" }
+            & git -C $Dir checkout -B $Branch "origin/$Branch"
+            if ($LASTEXITCODE -ne 0) { throw "git checkout '$Branch' failed ($LASTEXITCODE)" }
+            & git -C $Dir reset --hard "origin/$Branch"
+            if ($LASTEXITCODE -ne 0) { throw "git reset to origin/$Branch failed ($LASTEXITCODE)" }
         } else {
             if (Test-Path -LiteralPath $Dir) {
                 $items = Get-ChildItem -LiteralPath $Dir -Force -ErrorAction SilentlyContinue
                 if ($items) { throw "Install directory '$Dir' exists and is not empty." }
             }
-            Write-MirrorLog -Message "cloning $RepoUrl ($Branch) into $Dir" | Out-Null
-            & git clone --branch $Branch --single-branch $RepoUrl $Dir
+            # Shallow, single-branch clone of the release branch: a light,
+            # install-like footprint that still keeps .git so the runtime
+            # updater can fetch + fast-forward in place.
+            Write-MirrorLog -Message "cloning $RepoUrl ($Branch, shallow) into $Dir" | Out-Null
+            & git clone --branch $Branch --single-branch --depth 1 $RepoUrl $Dir
             if ($LASTEXITCODE -ne 0) {
                 # Roll back a partial/corrupt clone so a re-run starts clean.
                 if (Test-Path -LiteralPath (Join-Path $Dir '.git')) {
