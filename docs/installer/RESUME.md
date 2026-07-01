@@ -7,6 +7,21 @@
 > (Written because the runtime chat history is not persisted; git + this file +
 > the journey note in the DB are the durable record.)
 
+## STATUS: Upstream PR opened
+
+- **PR:** https://github.com/mirror-mind-ai/mirror/pull/26 — *Add a native Windows
+  installer (.exe) for Mirror Mind + Pi* (author `rodrigoimmaginario`, base
+  `mirror-mind-ai/mirror:main`, head `rodrigoimmaginario:feature/windows-installer`).
+  State: OPEN. 26 files, +3204/-0.
+- **CI on the fork is green** (`installer-scripts` + `build-installer` on
+  `windows-latest`).
+- **Installer version is decoupled** from the Mirror product version (bootstrapper;
+  Mirror self-updates). Fixed at **0.30.0** in `installer/VERSION`; bump only on
+  installer changes. Output: `dist/MirrorMind-Setup-0.30.0.exe`.
+- **Open follow-ups:** real-machine (non-Sandbox) acceptance install; code-signing
+  the `.exe` (SmartScreen); addressing any upstream review feedback (new commits
+  pushed to `feature/windows-installer` update the PR automatically).
+
 ## How to re-enter the journey (Builder Mode)
 
 The journey lives in the **development** database (not production):
@@ -77,21 +92,29 @@ Each fix was proven by a real Sandbox run getting one step further:
 
 ## NEXT STEPS (in order)
 
-1. **Re-run the new `.exe` in Windows Sandbox** and confirm the full flow now
-   completes: bootstrap → stable clone → `uv sync` → Pi → **`memory init` OK** →
-   configure → Finished. Collect `{app}\logs\install-detail-*.log`.
-2. **Verify update capability** post-install (the point-1 acceptance):
+1. **Watch PR #26** for upstream review; address feedback with new commits on
+   `feature/windows-installer` + push to the fork (updates the PR automatically).
+2. **Real-machine acceptance:** install `dist/MirrorMind-Setup-0.30.0.exe` on a
+   real (non-Sandbox) Windows machine end-to-end; confirm `/login` onboarding and
+   that `memory runtime status` shows the `stable` channel NOT blocked:
    ```powershell
    cd "$env:LOCALAPPDATA\Programs\MirrorMind\app"
    uv run python -m memory runtime status
    ```
-   The `stable` channel must NOT be blocked.
-3. Optional polish: pt accents (save `.iss` as UTF-8 BOM), or swap the wizard
-   image to the before/after "mirror" cartoon.
-4. **Phase E (HARD GATE)**: author installs the `.exe` on real Windows and
-   confirms it works.
-5. **Phase F (DANGEROUS)**: open the upstream PR to `mirror-mind-ai/mirror` from
-   `rodrigoimmaginario` — only after Phase E.
+3. **Code-signing** the `.exe` (SmartScreen reputation) — packaging/publishing
+   follow-up.
+4. Optional polish: pt accents (save `.iss` as UTF-8 BOM); swap the wizard image
+   to the before/after "mirror" cartoon if preferred.
+
+### Already done this session (validated)
+
+- Sandbox full flow completes: bootstrap → stable clone → `uv sync` → Pi →
+  `memory init` → configure → Finished.
+- Fixes: resilient downloads (Git via API), Pi npm via `cmd.exe`, `uv` PATH in the
+  configure process.
+- UX: identity asked at the END; visible pt/en switch; Mirror banner illustration;
+  persistent env-banner log; first-run `/login` + subscription guidance.
+- Installer version decoupled (0.30.0). CI green. PR #26 opened.
 
 ## Key files
 
