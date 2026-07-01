@@ -201,25 +201,8 @@ function Install-Uv {
     Update-SessionPath
 }
 
-function Update-SessionPath {
-    <# Rebuild $env:PATH from the registry AND add the well-known install dirs of
-       freshly installed tools, which are often not yet reflected in the registry
-       PATH within the same session (the reason a clone/uv sync can fail right
-       after installing Git/Node). #>
-    $machine = [System.Environment]::GetEnvironmentVariable('Path', 'Machine')
-    $user = [System.Environment]::GetEnvironmentVariable('Path', 'User')
-    $extra = @(
-        "${env:ProgramFiles}\Git\cmd",
-        "${env:ProgramFiles}\nodejs",
-        "$env:APPDATA\npm",
-        (Join-Path $env:USERPROFILE '.local\bin'),
-        (Join-Path $env:USERPROFILE '.cargo\bin'),
-        "$env:LOCALAPPDATA\uv\bin",
-        "$env:LOCALAPPDATA\Microsoft\WindowsApps"
-    )
-    $parts = @($machine, $user) + $extra
-    $env:PATH = ($parts | Where-Object { $_ } | Select-Object -Unique) -join ';'
-}
+# Update-SessionPath now lives in MirrorInstall.psm1 (shared with configure.ps1,
+# whose separate process must also pick up freshly installed tools like uv).
 
 function Install-Dependency {
     param([Parameter(Mandatory)][pscustomobject]$Dep)

@@ -281,6 +281,39 @@ function Invoke-MirrorStep {
 }
 
 # ---------------------------------------------------------------------------
+# PATH refresh
+# ---------------------------------------------------------------------------
+
+function Update-SessionPath {
+    <#
+    .SYNOPSIS
+        Rebuild $env:PATH so freshly installed tools resolve in THIS process.
+    .DESCRIPTION
+        Rebuilds from the machine + user registry PATH and adds the well-known
+        install dirs of the tools this installer places (Git, Node, npm globals,
+        uv). Freshly installed tools are often not yet reflected in a running
+        process's PATH, which is why a clone/uv sync/'memory init' can fail right
+        after install - especially when the configure phase runs in a separate
+        process that started before the tools existed.
+    #>
+    [CmdletBinding()]
+    param()
+    $machine = [System.Environment]::GetEnvironmentVariable('Path', 'Machine')
+    $user = [System.Environment]::GetEnvironmentVariable('Path', 'User')
+    $extra = @(
+        "${env:ProgramFiles}\Git\cmd",
+        "${env:ProgramFiles}\nodejs",
+        "$env:APPDATA\npm",
+        (Join-Path $env:USERPROFILE '.local\bin'),
+        (Join-Path $env:USERPROFILE '.cargo\bin'),
+        "$env:LOCALAPPDATA\uv\bin",
+        "$env:LOCALAPPDATA\Microsoft\WindowsApps"
+    )
+    $parts = @($machine, $user) + $extra
+    $env:PATH = ($parts | Where-Object { $_ } | Select-Object -Unique) -join ';'
+}
+
+# ---------------------------------------------------------------------------
 # Environment diagnostics (for future analysis)
 # ---------------------------------------------------------------------------
 
@@ -482,4 +515,4 @@ Export-ModuleMember -Function `
     Test-CommandAvailable, ConvertTo-VersionString, Compare-MirrorVersion, `
     Get-CommandVersion, Test-MirrorDependency, Invoke-MirrorStep, `
     Set-MirrorTls, Get-MirrorDownloadTransport, Invoke-MirrorDownload, `
-    Resolve-GitHubLatestAsset, Write-MirrorEnvironmentBanner
+    Resolve-GitHubLatestAsset, Write-MirrorEnvironmentBanner, Update-SessionPath

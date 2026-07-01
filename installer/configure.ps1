@@ -38,6 +38,10 @@ $ErrorActionPreference = 'Continue'
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 Import-Module (Join-Path $here 'lib\MirrorInstall.psm1') -Force
 
+# This phase runs in its own process (launched after bootstrap), so refresh PATH
+# to pick up tools installed moments ago - notably uv, needed by 'memory init'.
+Update-SessionPath
+
 function Read-NonEmpty {
     param([string]$Prompt, [switch]$Secret)
     while ($true) {
