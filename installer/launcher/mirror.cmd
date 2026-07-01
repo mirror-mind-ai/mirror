@@ -46,11 +46,32 @@ if errorlevel 1 (
   echo   X  Pi ^(the Mirror harness^) was not found on PATH.
   echo.
   echo      Open a new terminal, or re-run the Mirror Mind installer.
-  echo      Manual install: npm install -g @earendil-works/coding-agent
+  echo      Manual install: npm install -g @earendil-works/pi-coding-agent
   echo.
   popd
   pause
   exit /b 1
+)
+
+rem First-launch guidance: Mirror needs an AI subscription for the conversation
+rem (via Pi's /login). The OpenRouter key only powers memory. Shown once.
+if not exist "%~dp0.mirror-first-run" (
+  echo.
+  echo   ===========================================================
+  echo    First launch  /  Primeiro acesso
+  echo   -----------------------------------------------------------
+  echo    Mirror runs the CONVERSATION through your AI subscription.
+  echo    On first launch, type   /login   inside Mirror to connect
+  echo    it ^(Codex Plus recommended^). Your OpenRouter key powers
+  echo    the MEMORY, not the chat model.
+  echo.
+  echo    O Mirror roda a CONVERSA pela sua assinatura de IA.
+  echo    No primeiro acesso, digite   /login   dentro do Mirror para
+  echo    conectar ^(Codex Plus recomendado^). A chave OpenRouter
+  echo    cuida da MEMORIA, nao do modelo de chat.
+  echo   ===========================================================
+  echo.
+  >"%~dp0.mirror-first-run" echo shown
 )
 
 title Mirror Mind
