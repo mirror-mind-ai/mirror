@@ -7,9 +7,11 @@
 >
 > **Upstream intent:** at the end of the project, open a Pull Request to
 > `mirror-mind-ai/mirror` from the author's GitHub account (`rodrigoimmaginario`).
-> Work is executed as autonomously as possible, stopping only for dangerous
-> decisions (destructive git ops, force-push, publishing/signing, network installs
-> requiring credentials or admin elevation, opening the PR).
+> **Before the PR, the author performs a real acceptance test by installing the
+> generated `.exe` himself on a Windows machine.** Work is executed as
+> autonomously as possible, stopping only for dangerous decisions (destructive
+> git ops, force-push, publishing/signing, network installs requiring credentials
+> or admin elevation, and opening the PR).
 
 ---
 
@@ -99,7 +101,16 @@ Prefer winget when available, fallback to direct download. Ensure PATH updated
 - Optional code signing (SmartScreen); publish checksum.
 - Deliver `MirrorMind-Setup-x.y.z.exe` + release notes + Windows install guide.
 
+### Phase 8.5 — User acceptance test (author installs)  [GATE]
+- The author builds/obtains the `.exe` and installs it himself on a real Windows
+  machine (ideally a clean one), following the install guide.
+- Validate: silent dependency install, first-run config, launcher + desktop
+  shortcut, one working Pi session, `runtime update` dry-run, friendly errors.
+- This is a **hard gate**: the upstream PR is not opened until the author
+  confirms the install worked for him.
+
 ### Phase 9 — Upstream PR
+- Only after Phase 8.5 acceptance is confirmed by the author.
 - Open PR to `mirror-mind-ai/mirror` from `rodrigoimmaginario` fork.
 - (DANGEROUS: opening the PR and any push to remotes are explicit stop points.)
 
@@ -113,7 +124,8 @@ Prefer winget when available, fallback to direct download. Ensure PATH updated
 
 ## Dangerous decisions (explicit stop points)
 - Any `git push`, force-push, branch deletion, or history rewrite.
-- Opening the upstream Pull Request.
+- Opening the upstream Pull Request (only after the author's own install test).
+- Skipping the author's acceptance install test (Phase 8.5 gate).
 - Code signing / publishing artifacts.
 - Network installs that require admin elevation or credentials.
 - Anything that mutates the user's existing production Mirror home.
