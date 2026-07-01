@@ -284,9 +284,14 @@ function Ensure-Pi {
     }
     Write-Host ("  [install] {0,-14} {1}" -f 'Pi', 'installing via npm') -ForegroundColor Cyan
     Invoke-MirrorStep -Name 'install Pi (npm global)' -Action {
+        # npm on Windows is a shim (npm.cmd / extensionless script), not an .exe:
+        # Start-Process -FilePath 'npm' fails with "%1 is not a valid Win32
+        # application". Run it through cmd.exe so PATHEXT resolves npm.cmd, while
+        # still capturing the real exit code.
         # --ignore-scripts avoids native postinstall/build steps that are
         # unreliable on a fresh Windows; npm still creates the `pi` bin shim.
-        $p = Start-Process -FilePath 'npm' -ArgumentList @('install', '-g', '--ignore-scripts', $script:PiPackage) -Wait -PassThru -NoNewWindow
+        $npmArgs = @('/c', 'npm', 'install', '-g', '--ignore-scripts', $script:PiPackage)
+        $p = Start-Process -FilePath $env:ComSpec -ArgumentList $npmArgs -Wait -PassThru -NoNewWindow
         if ($p.ExitCode -ne 0) { throw "npm install -g $($script:PiPackage) failed ($($p.ExitCode))" }
         Update-SessionPath
     } -OnErrorFriendly {
