@@ -76,6 +76,10 @@ Prefer winget when available, fallback to direct download. Ensure PATH updated
 - Paths with `:`: test ensuring no `:` in generated skill/dir names.
 - Investigate: path separators in `MEMORY_DIR`/`MIRROR_HOME`, junctions vs
   symlinks, long paths (>260), CRLF in generated files, permissions.
+- Findings recorded in [windows-compatibility.md](windows-compatibility.md):
+  UTF-8 and `:` are handled + guarded by tests; MAX_PATH/long-paths is a
+  documented finding with an optional admin-gated fix
+  (`installer/enable-long-paths.ps1`); line endings handled via `.gitattributes`.
 
 ### Phase 5 — Update preservation
 - git-clone install keeps `memory runtime update` working natively.
