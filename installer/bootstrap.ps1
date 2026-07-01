@@ -43,6 +43,14 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
+
+# Early heartbeat to the log BEFORE importing the module, so even an import or
+# parse failure leaves a trace on a clean machine.
+try {
+    $__log = if ($env:MIRROR_INSTALL_LOG) { $env:MIRROR_INSTALL_LOG } else { Join-Path $env:TEMP 'mirror-install.log' }
+    Add-Content -LiteralPath $__log -Value ("[{0}] [STEP] bootstrap.ps1 starting" -f (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')) -Encoding UTF8
+} catch { }
+
 Import-Module (Join-Path $here 'lib\MirrorInstall.psm1') -Force
 
 # ---------------------------------------------------------------------------
@@ -68,7 +76,7 @@ $script:Dependencies = @(
         VersionArgs = @('--version')
         MinVersion  = '18.0.0'
         WingetId    = 'OpenJS.NodeJS.LTS'
-        Fallback    = { throw 'Node.js is required. Install the LTS MSI from https://nodejs.org/en/download' }
+        Fallback    = { Install-Node }
     },
     [pscustomobject]@{
         Name        = 'uv'
@@ -119,6 +127,23 @@ function Install-FromDownload {
     if ($p.ExitCode -ne 0) {
         throw "$Name installer exited with code $($p.ExitCode)"
     }
+}
+
+function Install-Node {
+    <# Silent Node.js LTS install via the official MSI (works without winget). #>
+    Write-MirrorLog -Message 'install Node.js LTS via MSI' | Out-Null
+    $index = Invoke-RestMethod -Uri 'https://nodejs.org/dist/index.json' -UseBasicParsing
+    $lts = $index | Where-Object { $_.lts } | Select-Object -First 1
+    if (-not $lts) { throw 'Could not determine the latest Node.js LTS version.' }
+    $ver = $lts.version
+    $arch = if ([Environment]::Is64BitOperatingSystem) { 'x64' } else { 'x86' }
+    $url = "https://nodejs.org/dist/$ver/node-$ver-$arch.msi"
+    $dest = Join-Path $env:TEMP "node-$ver-$arch.msi"
+    Write-MirrorLog -Message "download Node.js $ver ($arch) from $url" | Out-Null
+    Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing
+    $p = Start-Process -FilePath 'msiexec.exe' -ArgumentList @('/i', "`"$dest`"", '/qn', '/norestart') -Wait -PassThru
+    if ($p.ExitCode -ne 0) { throw "Node.js MSI install failed ($($p.ExitCode))" }
+    Update-SessionPath
 }
 
 function Install-Uv {
