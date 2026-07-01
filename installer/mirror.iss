@@ -45,12 +45,58 @@ OutputBaseFilename=MirrorMind-Setup-{#AppVersion}
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
+WizardImageFile=assets\wizard-large.bmp
+WizardSmallImageFile=assets\wizard-small.bmp
+WizardImageStretch=yes
 ArchitecturesInstallIn64BitMode=x64compatible
 SetupLogging=yes
+ShowLanguageDialog=yes
 
 [Languages]
 Name: "en"; MessagesFile: "compiler:Default.isl"
 Name: "pt"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"
+
+[CustomMessages]
+; --- English ---
+en.PageTitle=Set up your Mirror
+en.PageSubtitle=Two last things Mirror needs to run
+en.BodyIntro=Mirror is installed on your computer. Before you start, it needs:
+en.BodyName=1) Your name - Mirror keeps a private memory and identity for you on THIS computer. Your name is simply how Mirror knows which identity to load. Nothing is uploaded; it is saved in a local .env file in your installation.
+en.BodyKey=2) An OpenRouter API key - Mirror uses AI models through OpenRouter to create memory embeddings, extract what matters from your conversations, and power its multi-model features. You need an OpenRouter account with at least US$5 in credits. Get a key at https://openrouter.ai/keys
+en.FieldName=Your name (MIRROR_USER):
+en.FieldKey=OpenRouter API key:
+en.NeedName=Please enter your name (MIRROR_USER).
+en.NeedKey=Please enter your OpenRouter API key.
+en.StatusConfiguring=Configuring your Mirror identity...
+en.StatusInstalling=Installing prerequisites and downloading Mirror. This can take a few minutes...
+en.StatusInstalled=Prerequisites installed and Mirror downloaded.
+en.StatusFailed=Mirror Mind installation did not finish.
+en.ConfigFailedHead=Configuration did not finish successfully.
+en.ConfigFailedLog=The details are shown above, and a full log is at:
+en.ConfigFailedHint=Check your OpenRouter key/credits and try again.
+en.InstallFailedHead=The installation did not finish successfully.
+en.InstallFailedLog=A full log is at:
+en.InstallFailedHint=You can re-run the installer to try again.
+; --- Portugues (Brasil) --- (sem acentos para compatibilidade de codificacao)
+pt.PageTitle=Configure seu Mirror
+pt.PageSubtitle=Duas ultimas coisas que o Mirror precisa para funcionar
+pt.BodyIntro=O Mirror foi instalado no seu computador. Antes de comecar, ele precisa de:
+pt.BodyName=1) Seu nome - o Mirror mantem uma memoria e identidade privadas para voce NESTE computador. Seu nome e simplesmente como o Mirror sabe qual identidade carregar. Nada e enviado para a internet; fica salvo em um arquivo .env local na sua instalacao.
+pt.BodyKey=2) Uma chave de API da OpenRouter - o Mirror usa modelos de IA pela OpenRouter para criar embeddings de memoria, extrair o que importa das suas conversas e habilitar os recursos multi-modelo. Voce precisa de uma conta na OpenRouter com pelo menos US$5 de credito. Pegue uma chave em https://openrouter.ai/keys
+pt.FieldName=Seu nome (MIRROR_USER):
+pt.FieldKey=Chave de API da OpenRouter:
+pt.NeedName=Por favor, informe seu nome (MIRROR_USER).
+pt.NeedKey=Por favor, informe sua chave de API da OpenRouter.
+pt.StatusConfiguring=Configurando a identidade do seu Mirror...
+pt.StatusInstalling=Instalando pre-requisitos e baixando o Mirror. Isso pode levar alguns minutos...
+pt.StatusInstalled=Pre-requisitos instalados e Mirror baixado.
+pt.StatusFailed=A instalacao do Mirror Mind nao foi concluida.
+pt.ConfigFailedHead=A configuracao nao foi concluida com sucesso.
+pt.ConfigFailedLog=Os detalhes aparecem acima e um log completo esta em:
+pt.ConfigFailedHint=Verifique sua chave/creditos da OpenRouter e tente novamente.
+pt.InstallFailedHead=A instalacao nao foi concluida com sucesso.
+pt.InstallFailedLog=Um log completo esta em:
+pt.InstallFailedHint=Voce pode executar o instalador novamente para tentar de novo.
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: checkedonce
@@ -110,18 +156,13 @@ begin
   { Identity page created AFTER the Installing page, so it appears at the END,
     once prerequisites and the Mirror download have already succeeded. }
   UserPage := CreateInputQueryPage(wpInstalling,
-    'Set up your Mirror',
-    'Two last things Mirror needs to run',
-    'Mirror is installed on your computer. Before you start, it needs:' + #13#10 + #13#10 +
-    '1) Your name - Mirror keeps a private memory and identity for you on THIS ' +
-    'computer. Your name is simply how Mirror knows which identity to load. ' +
-    'Nothing is uploaded; it is saved in a local .env file in your installation.' + #13#10 + #13#10 +
-    '2) An OpenRouter API key - Mirror uses AI models through OpenRouter to ' +
-    'create memory embeddings, extract what matters from your conversations, ' +
-    'and power its multi-model features. You need an OpenRouter account with at ' +
-    'least US$5 in credits. Get a key at https://openrouter.ai/keys');
-  UserPage.Add('Your name (MIRROR_USER):', False);
-  UserPage.Add('OpenRouter API key:', True);   { masked }
+    ExpandConstant('{cm:PageTitle}'),
+    ExpandConstant('{cm:PageSubtitle}'),
+    ExpandConstant('{cm:BodyIntro}') + #13#10 + #13#10 +
+    ExpandConstant('{cm:BodyName}') + #13#10 + #13#10 +
+    ExpandConstant('{cm:BodyKey}'));
+  UserPage.Add(ExpandConstant('{cm:FieldName}'), False);
+  UserPage.Add(ExpandConstant('{cm:FieldKey}'), True);   { masked }
 
   { Live progress memo on the standard Installing page (bootstrap phase). }
   LogMemo := TNewMemo.Create(WizardForm);
@@ -251,24 +292,24 @@ begin
   begin
     if Trim(UserPage.Values[0]) = '' then
     begin
-      MsgBox('Please enter your name (MIRROR_USER).', mbError, MB_OK);
+      MsgBox(ExpandConstant('{cm:NeedName}'), mbError, MB_OK);
       Result := False;
       Exit;
     end;
     if Trim(UserPage.Values[1]) = '' then
     begin
-      MsgBox('Please enter your OpenRouter API key.', mbError, MB_OK);
+      MsgBox(ExpandConstant('{cm:NeedKey}'), mbError, MB_OK);
       Result := False;
       Exit;
     end;
-    WizardForm.StatusLabel.Caption := 'Configuring your Mirror identity...';
+    WizardForm.StatusLabel.Caption := ExpandConstant('{cm:StatusConfiguring}');
     rc := RunPhase('configure', Trim(UserPage.Values[0]), Trim(UserPage.Values[1]), ConfigMemo);
     if rc <> 0 then
     begin
-      MsgBox('Configuration did not finish successfully.' + #13#10 +
-        'The details are shown above, and a full log is at:' + #13#10 +
+      MsgBox(ExpandConstant('{cm:ConfigFailedHead}') + #13#10 +
+        ExpandConstant('{cm:ConfigFailedLog}') + #13#10 +
         DetailLogPath + #13#10 + #13#10 +
-        'Check your OpenRouter key/credits and try again.', mbError, MB_OK);
+        ExpandConstant('{cm:ConfigFailedHint}'), mbError, MB_OK);
       Result := False;
     end;
   end;
@@ -280,18 +321,17 @@ begin
   begin
     EnsurePaths();
     LogMemo.Visible := True;
-    WizardForm.StatusLabel.Caption :=
-      'Installing prerequisites and downloading Mirror. This can take a few minutes...';
+    WizardForm.StatusLabel.Caption := ExpandConstant('{cm:StatusInstalling}');
     UpdateMemoCtrl(LogMemo, 'Starting...');
     BootstrapOk := (RunPhase('bootstrap', '', '', LogMemo) = 0);
     if BootstrapOk then
-      WizardForm.StatusLabel.Caption := 'Prerequisites installed and Mirror downloaded.'
+      WizardForm.StatusLabel.Caption := ExpandConstant('{cm:StatusInstalled}')
     else
     begin
-      WizardForm.StatusLabel.Caption := 'Mirror Mind installation did not finish.';
-      MsgBox('The installation did not finish successfully.' + #13#10 +
-        'A full log is at:' + #13#10 + DetailLogPath + #13#10 + #13#10 +
-        'You can re-run the installer to try again.', mbError, MB_OK);
+      WizardForm.StatusLabel.Caption := ExpandConstant('{cm:StatusFailed}');
+      MsgBox(ExpandConstant('{cm:InstallFailedHead}') + #13#10 +
+        ExpandConstant('{cm:InstallFailedLog}') + #13#10 + DetailLogPath + #13#10 + #13#10 +
+        ExpandConstant('{cm:InstallFailedHint}'), mbError, MB_OK);
     end;
   end;
 end;
