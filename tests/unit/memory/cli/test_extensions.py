@@ -1,6 +1,7 @@
 """Tests for external skill extension CLI helpers."""
 
 import json
+import os
 from pathlib import Path
 from textwrap import dedent
 
@@ -19,6 +20,15 @@ from memory.cli.extensions import (
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[4]
+
+# Legacy Claude skill directories used the ``ext:name`` namespace on disk. A colon
+# is an illegal path character on Windows, so such a directory can never exist on
+# an NTFS filesystem. These tests seed a legacy ``ext:...`` directory to exercise
+# the migration/cleanup path, which is only reachable on POSIX systems.
+requires_posix_colon_paths = pytest.mark.skipif(
+    os.name == "nt",
+    reason="legacy 'ext:' skill directories cannot exist on Windows (':' is illegal in paths)",
+)
 
 
 def _write(path, content: str) -> None:
@@ -408,6 +418,7 @@ def test_install_extension_copies_source_tree_and_syncs_runtime_targets(tmp_path
     assert result["extension_id"] == "review-copy"
 
 
+@requires_posix_colon_paths
 def test_install_extension_removes_owned_legacy_claude_skill_dir(tmp_path):
     mirror_home = tmp_path / ".mirror" / "pati"
     legacy_dir = mirror_home / "runtime" / "skills" / "claude" / "ext:review-copy"
@@ -424,6 +435,7 @@ def test_install_extension_removes_owned_legacy_claude_skill_dir(tmp_path):
     assert (mirror_home / "runtime" / "skills" / "claude" / "ext-review-copy" / "SKILL.md").exists()
 
 
+@requires_posix_colon_paths
 def test_install_extension_preserves_unowned_legacy_claude_skill_dir(tmp_path):
     mirror_home = tmp_path / ".mirror" / "pati"
     legacy_dir = mirror_home / "runtime" / "skills" / "claude" / "ext:review-copy"
@@ -483,6 +495,7 @@ def test_install_extension_can_limit_runtime_sync(tmp_path):
     ).exists()
 
 
+@requires_posix_colon_paths
 def test_uninstall_extension_removes_source_tree_and_runtime_surfaces(tmp_path):
     mirror_home = tmp_path / ".mirror" / "pati"
     install_extension(
@@ -560,6 +573,7 @@ def test_expose_claude_runtime_skills_copies_runtime_surface_into_project(tmp_pa
     assert result["exposed"]
 
 
+@requires_posix_colon_paths
 def test_expose_claude_runtime_skills_prunes_previous_overlay_entries(tmp_path):
     mirror_home = tmp_path / ".mirror" / "pati"
     project_root = tmp_path / "project"
