@@ -58,6 +58,7 @@ Source: "lib\*";              DestDir: "{app}\bin\lib";              Flags: recu
 Source: "launcher\mirror.cmd"; DestDir: "{app}\bin";                 Flags: ignoreversion
 Source: "bootstrap.ps1";      DestDir: "{app}\bin";                  Flags: ignoreversion
 Source: "configure.ps1";      DestDir: "{app}\bin";                  Flags: ignoreversion
+Source: "install.ps1";        DestDir: "{app}\bin";                  Flags: ignoreversion
 Source: "assets\mirror.ico";  DestDir: "{app}\bin";                  Flags: ignoreversion skipifsourcedoesntexist
 
 [Icons]
@@ -65,17 +66,12 @@ Name: "{group}\{#AppName}";            Filename: "{app}\bin\mirror.cmd"; Working
 Name: "{userdesktop}\{#AppName}";      Filename: "{app}\bin\mirror.cmd"; WorkingDir: "{app}\app"; IconFilename: "{app}\bin\mirror.ico"; Tasks: desktopicon
 
 [Run]
-; 1) Install prerequisites + clone/sync the repo into {app}\app.
+; Single VISIBLE orchestrator so the user sees a live progress panel and the
+; window stays open on error (no silent "it flashed and said done").
 Filename: "powershell.exe"; \
-  Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\bin\bootstrap.ps1"" -InstallDir ""{app}\app"" -RepoUrl ""{#RepoUrl}"" -Branch ""{#RepoBranch}"""; \
-  StatusMsg: "Installing prerequisites and downloading Mirror..."; \
-  Flags: runhidden waituntilterminated
-
-; 2) Write .env, initialize identity, validate OpenRouter.
-Filename: "powershell.exe"; \
-  Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\bin\configure.ps1"" -InstallDir ""{app}\app"" -MirrorUser ""{code:GetMirrorUser}"" -OpenRouterApiKey ""{code:GetOpenRouterKey}"""; \
-  StatusMsg: "Configuring your Mirror..."; \
-  Flags: runhidden waituntilterminated
+  Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\bin\install.ps1"" -InstallDir ""{app}\app"" -MirrorUser ""{code:GetMirrorUser}"" -OpenRouterApiKey ""{code:GetOpenRouterKey}"" -RepoUrl ""{#RepoUrl}"" -RepoBranch ""{#RepoBranch}"""; \
+  StatusMsg: "Installing Mirror - a progress window will open..."; \
+  Flags: waituntilterminated
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\app"

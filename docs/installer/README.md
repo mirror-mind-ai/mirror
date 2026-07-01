@@ -21,6 +21,10 @@ self-updates working, and drops a one-click Desktop shortcut.
 4. **Desktop shortcut:** "Mirror Mind" → a UTF-8-safe launcher that starts Pi in
    the Mirror folder.
 
+Installation runs through a **visible progress panel** (`install.ps1`): it shows
+each step live and keeps the window open if anything fails, so errors are always
+readable.
+
 ## Layout after install
 
 ```

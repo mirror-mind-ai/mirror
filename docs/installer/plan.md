@@ -53,6 +53,12 @@ repo clone, and `uv sync`.
 - Dependency matrix with detection (installed? min version?) → install only what
   is missing.
 
+### Requirement — Visible progress panel (real-time feedback)
+- The installer must show a **visible progress panel** with what is happening at
+  each step (never run fully hidden). `install.ps1` is a visible orchestrator
+  that streams bootstrap + configure output live and **keeps the window open on
+  error** so failures are readable (no silent "it flashed and said done").
+
 ### Phase 2 — Dependency bootstrapper (silent)
 | Dependency | Silent strategy |
 |---|---|
