@@ -83,3 +83,56 @@ Describe 'Logging' {
         (Get-Content -LiteralPath (Get-MirrorLogPath) -Raw) | Should -Match 'hello'
     }
 }
+
+Describe 'Get-MirrorDownloadTransport' {
+    It 'always ends with the always-present Invoke-WebRequest' {
+        $t = @(Get-MirrorDownloadTransport)
+        $t.Count | Should -BeGreaterThan 0
+        $t[-1]   | Should -Be 'Invoke-WebRequest'
+    }
+}
+
+Describe 'Resolve-GitHubLatestAsset' {
+    It 'returns the matching asset browser_download_url' {
+        Mock -ModuleName MirrorInstall Invoke-RestMethod {
+            [pscustomobject]@{ assets = @(
+                [pscustomobject]@{ name = 'Git-1.2.3-64-bit.exe'; browser_download_url = 'https://example/git.exe'; size = 123 },
+                [pscustomobject]@{ name = 'other.zip';           browser_download_url = 'https://example/o.zip';   size = 1 }
+            ) }
+        }
+        $a = Resolve-GitHubLatestAsset -Repo 'git-for-windows/git' -Pattern 'Git-.*-64-bit\.exe$'
+        $a.Url  | Should -Be 'https://example/git.exe'
+        $a.Name | Should -Be 'Git-1.2.3-64-bit.exe'
+    }
+    It 'throws a clear error when no asset matches' {
+        Mock -ModuleName MirrorInstall Invoke-RestMethod {
+            [pscustomobject]@{ assets = @([pscustomobject]@{ name = 'only.zip'; browser_download_url = 'u'; size = 1 }) }
+        }
+        { Resolve-GitHubLatestAsset -Repo 'r/r' -Pattern 'nope$' } | Should -Throw '*No asset matching*'
+    }
+}
+
+Describe 'Invoke-MirrorDownload' {
+    It 'returns the destination when a transport yields a large-enough file' {
+        Mock -ModuleName MirrorInstall Get-MirrorDownloadTransport { @('Invoke-WebRequest') }
+        Mock -ModuleName MirrorInstall Invoke-WebRequest { Set-Content -LiteralPath $OutFile -Value ('y' * 5000) }
+        $dest = Join-Path $TestDrive 'ok.bin'
+        Invoke-MirrorDownload -Url 'http://x/ok' -Destination $dest -MinBytes 100 -MaxAttempts 1 | Should -Be $dest
+        (Test-Path -LiteralPath $dest) | Should -BeTrue
+    }
+    It 'throws when every transport produces a too-small file' {
+        Mock -ModuleName MirrorInstall Get-MirrorDownloadTransport { @('Invoke-WebRequest') }
+        Mock -ModuleName MirrorInstall Invoke-WebRequest { Set-Content -LiteralPath $OutFile -Value 'x' }
+        $dest = Join-Path $TestDrive 'small.bin'
+        { Invoke-MirrorDownload -Url 'http://x/small' -Destination $dest -MinBytes 1000000 -MaxAttempts 1 } |
+            Should -Throw '*All download transports failed*'
+    }
+    It 'falls through to the next transport when the first one fails' {
+        Mock -ModuleName MirrorInstall Get-MirrorDownloadTransport { @('BITS', 'Invoke-WebRequest') }
+        Mock -ModuleName MirrorInstall Start-BitsTransfer { throw 'BITS down' }
+        Mock -ModuleName MirrorInstall Invoke-WebRequest { Set-Content -LiteralPath $OutFile -Value ('z' * 5000) }
+        $dest = Join-Path $TestDrive 'fallthrough.bin'
+        Invoke-MirrorDownload -Url 'http://x/ft' -Destination $dest -MinBytes 100 -MaxAttempts 1 | Should -Be $dest
+        Should -Invoke -ModuleName MirrorInstall Invoke-WebRequest -Times 1
+    }
+}

@@ -88,9 +88,7 @@ $script:Dependencies = @(
         VersionArgs = @('--version')
         MinVersion  = '2.30.0'
         WingetId    = 'Git.Git'
-        Fallback    = { Install-FromDownload -Name 'Git' `
-                -Url 'https://github.com/git-for-windows/git/releases/latest/download/Git-64-bit.exe' `
-                -SilentArgs @('/VERYSILENT', '/NORESTART', '/NOCANCEL', '/SP-') }
+        Fallback    = { Install-Git }
     },
     [pscustomobject]@{
         Name        = 'Node.js LTS'
@@ -142,15 +140,39 @@ function Install-FromDownload {
     param(
         [Parameter(Mandatory)][string]$Name,
         [Parameter(Mandatory)][string]$Url,
-        [string[]]$SilentArgs = @()
+        [string[]]$SilentArgs = @(),
+        [long]$MinBytes = 1048576
     )
     $dest = Join-Path $env:TEMP ("mirror-dep-{0}.exe" -f ([regex]::Replace($Name, '\W', '')))
     Write-MirrorLog -Message "download $Name from $Url" | Out-Null
-    Invoke-WebRequest -Uri $Url -OutFile $dest -UseBasicParsing -ErrorAction Stop
+    # Resilient transport (curl.exe -> BITS -> Invoke-WebRequest, retry + backoff).
+    Invoke-MirrorDownload -Url $Url -Destination $dest -MinBytes $MinBytes | Out-Null
     $p = Start-Process -FilePath $dest -ArgumentList $SilentArgs -Wait -PassThru
     if ($p.ExitCode -ne 0) {
         throw "$Name installer exited with code $($p.ExitCode)"
     }
+}
+
+function Install-Git {
+    <# Silent Git for Windows install without winget. Primary path resolves the
+       installer through the GitHub API (browser_download_url) - the technique
+       proven to work in Windows Sandbox. Falls back to the bare redirect URL
+       only if the API resolution itself fails. #>
+    $dest = Join-Path $env:TEMP 'mirror-dep-Git.exe'
+    $silent = @('/VERYSILENT', '/NORESTART', '/NOCANCEL', '/SP-')
+    try {
+        $asset = Resolve-GitHubLatestAsset -Repo 'git-for-windows/git' -Pattern 'Git-.*-64-bit\.exe$'
+        Write-MirrorLog -Message "Git latest asset: $($asset.Name)" | Out-Null
+        Invoke-MirrorDownload -Url $asset.Url -Destination $dest -MinBytes 1048576 | Out-Null
+    } catch {
+        Write-MirrorLog -Level WARN -Message "API-resolved Git download failed ($($_.Exception.Message)); trying redirect URL" | Out-Null
+        Invoke-MirrorDownload `
+            -Url 'https://github.com/git-for-windows/git/releases/latest/download/Git-64-bit.exe' `
+            -Destination $dest -MinBytes 1048576 | Out-Null
+    }
+    $p = Start-Process -FilePath $dest -ArgumentList $silent -Wait -PassThru
+    if ($p.ExitCode -ne 0) { throw "Git installer exited with code $($p.ExitCode)" }
+    Update-SessionPath
 }
 
 function Install-Node {
@@ -164,7 +186,7 @@ function Install-Node {
     $url = "https://nodejs.org/dist/$ver/node-$ver-$arch.msi"
     $dest = Join-Path $env:TEMP "node-$ver-$arch.msi"
     Write-MirrorLog -Message "download Node.js $ver ($arch) from $url" | Out-Null
-    Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing -ErrorAction Stop
+    Invoke-MirrorDownload -Url $url -Destination $dest -MinBytes 1048576 | Out-Null
     $p = Start-Process -FilePath 'msiexec.exe' -ArgumentList @('/i', "`"$dest`"", '/qn', '/norestart') -Wait -PassThru
     if ($p.ExitCode -ne 0) { throw "Node.js MSI install failed ($($p.ExitCode))" }
     Update-SessionPath

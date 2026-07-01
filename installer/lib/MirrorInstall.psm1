@@ -280,8 +280,154 @@ function Invoke-MirrorStep {
     }
 }
 
+# ---------------------------------------------------------------------------
+# Resilient downloads
+# ---------------------------------------------------------------------------
+
+function Set-MirrorTls {
+    <#
+    .SYNOPSIS
+        Force a modern TLS floor for .NET web requests on clean machines.
+    .DESCRIPTION
+        Sets TLS 1.2 (and 1.3 when the runtime supports it) EXPLICITLY rather
+        than OR-ing onto the legacy default, which can leave SSL3/TLS1.0 enabled
+        and cause "the connection was closed unexpectedly" during the handshake.
+    #>
+    [CmdletBinding()]
+    param()
+    try {
+        $proto = [Net.SecurityProtocolType]::Tls12
+        if ([enum]::GetNames([Net.SecurityProtocolType]) -contains 'Tls13') {
+            $proto = $proto -bor [Net.SecurityProtocolType]::Tls13
+        }
+        [Net.ServicePointManager]::SecurityProtocol = $proto
+    } catch { }
+}
+
+function Get-MirrorDownloadTransport {
+    <#
+    .SYNOPSIS
+        Return the ordered list of available download transports.
+    .DESCRIPTION
+        Pure (no downloads): inspects the machine and returns the transports
+        that exist, most robust first. curl.exe (Windows 10 1803+) handles TLS,
+        redirects and flaky links best; BITS is a resilient second; the built-in
+        Invoke-WebRequest is the always-present last resort.
+    #>
+    [CmdletBinding()]
+    param()
+    $names = @()
+    if (Get-Command 'curl.exe' -ErrorAction SilentlyContinue) { $names += 'curl.exe' }
+    if (Get-Command 'Start-BitsTransfer' -ErrorAction SilentlyContinue) { $names += 'BITS' }
+    $names += 'Invoke-WebRequest'
+    return $names
+}
+
+function Invoke-MirrorDownload {
+    <#
+    .SYNOPSIS
+        Download a file resiliently: multiple transports x retry with backoff.
+    .DESCRIPTION
+        Tries curl.exe -> BITS -> Invoke-WebRequest, each wrapped in a retry
+        loop with exponential backoff. Forces a modern TLS floor and validates
+        the resulting file is present and at least -MinBytes in size before
+        returning. Every attempt is logged. Throws only if ALL transports fail
+        across ALL attempts.
+    .OUTPUTS
+        The destination path on success.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$Url,
+        [Parameter(Mandatory)][string]$Destination,
+        [int]$MaxAttempts = 3,
+        [long]$MinBytes = 1024
+    )
+    Set-MirrorTls
+    $destDir = Split-Path -Parent $Destination
+    if ($destDir -and -not (Test-Path -LiteralPath $destDir)) {
+        New-Item -ItemType Directory -Path $destDir -Force | Out-Null
+    }
+    $transports = Get-MirrorDownloadTransport
+    $lastError = $null
+    for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
+        foreach ($t in $transports) {
+            try {
+                if (Test-Path -LiteralPath $Destination) {
+                    Remove-Item -LiteralPath $Destination -Force -ErrorAction SilentlyContinue
+                }
+                Write-MirrorLog -Message "download via $t (attempt $attempt/$MaxAttempts): $Url" | Out-Null
+                if ($t -eq 'curl.exe') {
+                    $curl = (Get-Command 'curl.exe').Source
+                    & $curl -L --fail --silent --show-error --retry 2 --retry-all-errors `
+                        --connect-timeout 30 -o $Destination $Url
+                    if ($LASTEXITCODE -ne 0) { throw "curl.exe exited with code $LASTEXITCODE" }
+                } elseif ($t -eq 'BITS') {
+                    Start-BitsTransfer -Source $Url -Destination $Destination -ErrorAction Stop
+                } else {
+                    Invoke-WebRequest -Uri $Url -OutFile $Destination -UseBasicParsing -ErrorAction Stop
+                }
+                if (-not (Test-Path -LiteralPath $Destination)) {
+                    throw "$t reported success but no file was written"
+                }
+                $size = (Get-Item -LiteralPath $Destination).Length
+                if ($size -lt $MinBytes) {
+                    throw "$t produced a file that is too small ($size bytes, expected >= $MinBytes)"
+                }
+                Write-MirrorLog -Message "download OK via $t ($size bytes) -> $Destination" | Out-Null
+                return $Destination
+            } catch {
+                $lastError = $_
+                Write-MirrorLog -Level WARN -Message "download via $t failed: $($_.Exception.Message)" | Out-Null
+            }
+        }
+        if ($attempt -lt $MaxAttempts) {
+            $delay = [int][Math]::Pow(2, $attempt)  # 2s, 4s
+            Write-MirrorLog -Message "retrying download in ${delay}s" | Out-Null
+            Start-Sleep -Seconds $delay
+        }
+    }
+    $msg = if ($lastError) { $lastError.Exception.Message } else { 'unknown error' }
+    throw "All download transports failed for $Url after $MaxAttempts attempts. Last error: $msg"
+}
+
+function Resolve-GitHubLatestAsset {
+    <#
+    .SYNOPSIS
+        Resolve a release asset's direct download URL via the GitHub API.
+    .DESCRIPTION
+        Queries api.github.com for the latest release of <Repo> and returns the
+        first asset whose name matches <Pattern>. This API-resolved URL is the
+        technique proven to work in Windows Sandbox, unlike the bare
+        'releases/latest/download/...' redirect URL.
+    .OUTPUTS
+        pscustomobject: Name, Url, Size
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$Repo,
+        [Parameter(Mandatory)][string]$Pattern
+    )
+    Set-MirrorTls
+    $api = "https://api.github.com/repos/$Repo/releases/latest"
+    # GitHub requires a User-Agent header or it returns 403.
+    $headers = @{ 'User-Agent' = 'MirrorMind-Installer' }
+    $release = Invoke-RestMethod -Uri $api -Headers $headers -UseBasicParsing -ErrorAction Stop
+    $asset = $release.assets | Where-Object { $_.name -match $Pattern } | Select-Object -First 1
+    if (-not $asset) {
+        throw "No asset matching '$Pattern' in the latest release of $Repo"
+    }
+    return [pscustomobject]@{
+        Name = $asset.name
+        Url  = $asset.browser_download_url
+        Size = $asset.size
+    }
+}
+
 Export-ModuleMember -Function `
     Get-MirrorLogPath, Write-MirrorLog, `
     New-FriendlyError, Format-FriendlyError, `
     Test-CommandAvailable, ConvertTo-VersionString, Compare-MirrorVersion, `
-    Get-CommandVersion, Test-MirrorDependency, Invoke-MirrorStep
+    Get-CommandVersion, Test-MirrorDependency, Invoke-MirrorStep, `
+    Set-MirrorTls, Get-MirrorDownloadTransport, Invoke-MirrorDownload, `
+    Resolve-GitHubLatestAsset

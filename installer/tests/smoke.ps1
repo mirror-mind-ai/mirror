@@ -83,6 +83,49 @@ try {
 }
 Assert-True -Condition $threw 'failing step raises'
 
+Write-Host "== Get-MirrorDownloadTransport (pure) =="
+$transports = @(Get-MirrorDownloadTransport)
+Assert-True -Condition ($transports.Count -ge 1) 'at least one transport available'
+Assert-True -Condition ($transports[-1] -eq 'Invoke-WebRequest') 'Invoke-WebRequest is the always-present last resort'
+
+# Network-dependent checks are best-effort: skipped (not failed) when offline so
+# the smoke stays dependency-free in CI. The authoritative coverage is Pester.
+$online = $false
+try {
+    $online = Test-Connection -ComputerName 'raw.githubusercontent.com' -Count 1 -Quiet -ErrorAction SilentlyContinue
+} catch { $online = $false }
+
+if ($online) {
+    Write-Host "== Resolve-GitHubLatestAsset (no-match validation) =="
+    $threwResolve = $false
+    try {
+        Resolve-GitHubLatestAsset -Repo 'git-for-windows/git' -Pattern 'this-asset-name-cannot-exist-xyz\.zzz$' | Out-Null
+    } catch {
+        $threwResolve = $true
+        Assert-True -Condition ($_.Exception.Message -like '*No asset matching*') 'resolve throws a clear no-match error'
+    }
+    Assert-True -Condition $threwResolve 'resolve raises on no matching asset'
+
+    Write-Host "== Invoke-MirrorDownload (too-small file is rejected) =="
+    # Require an impossibly large MinBytes so the size guard rejects the file and
+    # the whole call must throw after exhausting transports.
+    $tinyDest = Join-Path ([System.IO.Path]::GetTempPath()) ("mirror-dl-guard-{0}.bin" -f ([guid]::NewGuid().ToString('N')))
+    $threwSize = $false
+    try {
+        Invoke-MirrorDownload -Url 'https://raw.githubusercontent.com/git-for-windows/git/main/README.md' `
+            -Destination $tinyDest -MinBytes 999999999 -MaxAttempts 1 | Out-Null
+    } catch {
+        $threwSize = $true
+        Assert-True -Condition ($_.Exception.Message -like '*All download transports failed*') 'size guard fails the download'
+    } finally {
+        Remove-Item -LiteralPath $tinyDest -Force -ErrorAction SilentlyContinue
+    }
+    Assert-True -Condition $threwSize 'download raises when the file is too small'
+} else {
+    Write-Host "== Resolve-GitHubLatestAsset / Invoke-MirrorDownload =="
+    Write-Host "  SKIP  network unavailable (best-effort checks skipped)" -ForegroundColor Yellow
+}
+
 Write-Host "== log file written =="
 Assert-True -Condition (Test-Path -LiteralPath (Get-MirrorLogPath)) 'log file exists'
 
