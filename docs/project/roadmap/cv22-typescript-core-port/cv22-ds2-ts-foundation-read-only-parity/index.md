@@ -53,16 +53,19 @@ Recorded in [Decisions — CV22 TypeScript core scaffolding](../../../decisions.
 | Code | Story | Type | Outcome | Status |
 |------|-------|------|---------|--------|
 | [CV22.DS2.TS1](cv22-ds2-ts1-ts-package-scaffold/index.md) | TS Package Scaffold & Driver Seam | Technical Story | A compiling, linted, tested `ts/` package with the `node:sqlite` driver seam (read-only DB open + query) and a CI Node job; no Mirror command ported yet | ✅ Done |
-| [CV22.DS2.TS2](cv22-ds2-ts2-golden-corpus-contract/index.md) | Golden-Corpus Contract & Frozen-`now` Harness | Technical Story | The language-agnostic oracle mechanism: a Python generator drives the real ranker with frozen `now` + frozen embeddings into committed synthetic goldens; TS verifier + BLOB/embedding decode consume them | 🟡 Planned |
+| [CV22.DS2.TS2](cv22-ds2-ts2-golden-corpus-contract/index.md) | Golden-Corpus Contract & Frozen-`now` Harness | Technical Story | The language-agnostic oracle mechanism: a Python generator drives the real ranker with frozen `now` + frozen embeddings into committed synthetic goldens; TS verifier + BLOB/embedding decode consume them | ✅ Done |
 | CV22.DS2.US1 | `search` Command Parity | User Story | The hybrid ranker, promoted from the spike into a tested TS module, reaches ordered parity on synthetic goldens (CI) and a real-DB copy (manual) | 🟡 Planned |
 | CV22.DS2.US2 | `detect-persona` Parity | User Story | TS `detect-persona` reproduces the Python routing score/threshold decision on the golden corpus | 🟡 Planned |
 | CV22.DS2.US3 | Journeys & Memory Listing Parity | User Story | TS read of journeys and memory listing reproduces Python's ordered/behavioral output on the golden corpus | 🟡 Planned |
 
-**TS1** is done. **TS2** is fully specified and is the next pullable story — the
-golden-corpus contract the command ports depend on. **US1–US3** are a risk-ordered
-decomposition of the remaining done condition kept at candidate level; each is
-specified and planned when pulled (expand-on-pull), and the breakdown may still
-change as TS2 lands.
+**TS1** and **TS2** are done — the `node:sqlite` seam, the parity-critical decoders
+(`blobToFloat32`/`parseUtcMs`), the golden-corpus generator (driving the real
+oracle with frozen `now` + embeddings), the ordered-id grader, and the CI
+determinism gate are all in place. **US1** is now the next pullable story: promote
+the hybrid ranker into a tested TS module and **extend the generator + golden
+schema** with the remaining ranker inputs (`use_count`, `relevance_score`,
+`access_count`, `last_accessed_at`, and the lexical/text surface) so the corpus
+can replay the full ranker. **US2–US3** follow at candidate level (expand-on-pull).
 
 ---
 

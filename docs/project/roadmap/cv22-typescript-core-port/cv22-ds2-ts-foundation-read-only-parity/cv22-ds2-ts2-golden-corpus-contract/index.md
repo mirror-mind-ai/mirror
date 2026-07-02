@@ -2,7 +2,7 @@
 
 # CV22.DS2.TS2 — Golden-Corpus Contract & Frozen-`now` Harness
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 **Type:** Technical Story
 **Delivery Story:** CV22.DS2 — TS Foundation & Read-Only Command Parity
 **Depends on:** [CV22.DS2.TS1 TS Package Scaffold & Driver Seam](../cv22-ds2-ts1-ts-package-scaffold/index.md) (done)
