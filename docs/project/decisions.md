@@ -91,13 +91,13 @@ Consequences:
   the port, superseding the historical-namespace decision when intentionally
   planned.
 - The strategic spine is now realized as [CV22 — TypeScript Core Port](roadmap/cv22-typescript-core-port/index.md),
-  derived from this record after the hybrid-search parity spike (CV22.E1)
+  derived from this record after the hybrid-search parity spike (CV22.DS1)
   validated the approach on synthetic and real-DB data.
 
 ### CV22 TypeScript core scaffolding: node:sqlite, single `ts/` package, Node 24, Biome
 
 **Date:** 2026-06-23
-**Reference:** [CV22 — TypeScript Core Port](roadmap/cv22-typescript-core-port/index.md), [CV22.E2 — TS Foundation & Read-Only Command Parity](roadmap/cv22-typescript-core-port/cv22-e2-ts-foundation-read-only-parity/index.md), parent decision [database-seam strangler](#mirror-mind-ports-to-typescript-via-a-database-seam-strangler-not-a-rewrite)
+**Reference:** [CV22 — TypeScript Core Port](roadmap/cv22-typescript-core-port/index.md), [CV22.DS2 — TS Foundation & Read-Only Command Parity](roadmap/cv22-typescript-core-port/cv22-ds2-ts-foundation-read-only-parity/index.md), parent decision [database-seam strangler](#mirror-mind-ports-to-typescript-via-a-database-seam-strangler-not-a-rewrite)
 **Participants:** Vinícius Teles
 
 The strangler's transition state is durable — it must be comfortable to live in
@@ -129,7 +129,7 @@ choices for the TS core were settled before standing it up:
   `node:test` on synthetic goldens, pinned to Node 24); the Python job is
   unchanged.
 
-These are realized first in CV22.E2.S1 (TS package scaffold & driver seam).
+These are realized first in CV22.DS2.TS1 (TS package scaffold & driver seam).
 
 ### Builder adds Refinement Work before release/push governance
 

@@ -109,10 +109,12 @@ alignment. The approach is a **database-seam strangler**, never a big-bang
 rewrite: a TS front door over a shared `memory.db`, with the Python core
 dissolving one observable command at a time, governed by a rule that new feature
 work lands in TS (Python froze to maintenance-only at the CV21.E2.S2 baseline).
-The first epic, CV22.E1, validated the riskiest assumption — hybrid-ranker parity
-between TS and Python over the same SQLite file, proven on 480 real memories with
-1536-dim embeddings and a ~1,700× margin over the near-tie risk. The strategy is
-recorded in [Decisions](../decisions.md). See the [CV22 index](cv22-typescript-core-port/index.md).
+CV22 is governed by Ariad; its former epics are now Delivery Stories (DS1–DS6).
+The first delivery story, CV22.DS1, validated the riskiest assumption —
+hybrid-ranker parity between TS and Python over the same SQLite file, proven on
+480 real memories with 1536-dim embeddings and a ~1,700× margin over the near-tie
+risk. The strategy is recorded in [Decisions](../decisions.md). See the
+[CV22 index](cv22-typescript-core-port/index.md).
 
 ## CV11 — Localization
 

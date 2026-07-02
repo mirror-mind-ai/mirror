@@ -1,6 +1,6 @@
 [< Story](index.md)
 
-# Test Guide — CV22.E2.S1 TS Package Scaffold & Driver Seam
+# Test Guide — CV22.DS2.TS1 TS Package Scaffold & Driver Seam
 
 ## Automated Validation
 
@@ -44,7 +44,7 @@ git diff --check         → clean
 (`test_operations.py::test_run_operation_creates_and_verifies_database_backup`,
 `test_server.py::test_operations_run_api_executes_database_backup`). These were
 confirmed to fail on a clean tree with **all** CV22 changes stashed, so they are
-pre-existing debt unrelated to this story. CV22.E2.S1 adds no Python; it touches
+pre-existing debt unrelated to this story. CV22.DS2.TS1 adds no Python; it touches
 only `ts/`, `docs/`, and the CI workflow. The gate is not silently treated as
 green — the failures are recorded here and left to their own future fix.
 

@@ -1,10 +1,10 @@
-[< CV22.E2 TS Foundation & Read-Only Command Parity](../index.md)
+[< CV22.DS2 TS Foundation & Read-Only Command Parity](../index.md)
 
-# CV22.E2.S1 — TS Package Scaffold & Driver Seam
+# CV22.DS2.TS1 — TS Package Scaffold & Driver Seam
 
 **Status:** Done
-**Epic:** CV22.E2 — TS Foundation & Read-Only Command Parity
-**Type:** Foundation / contributor-facing
+**Delivery Story:** CV22.DS2 — TS Foundation & Read-Only Command Parity
+**Type:** Technical Story
 
 ---
 
@@ -17,7 +17,7 @@ Python job.
 
 This story stands up the **skeleton the rest of CV22 builds on**. It deliberately
 ports **no Mirror command** — no `search`, no `detect-persona`, no journeys, no
-memory listing. Those arrive in CV22.E2.S2–S5 on top of this foundation. Keeping
+memory listing. Those arrive in CV22.DS2.TS2 and DS2.US1–US3 on top of this foundation. Keeping
 the scaffold command-free keeps it small enough to verify end to end in one
 session.
 
@@ -46,14 +46,14 @@ session.
 ## Non-Goals
 
 - No port of any Mirror command (`search`, `detect-persona`, journeys, memory
-  listing) — those are S3–S5.
-- No golden-corpus mechanism or frozen-`now` contract — that is S2.
-- No BLOB/embedding decode helper — introduced with the golden contract in S2.
+  listing) — those are DS2.US1–US3.
+- No golden-corpus mechanism or frozen-`now` contract — that is DS2.TS2.
+- No BLOB/embedding decode helper — introduced with the golden contract in DS2.TS2.
 - No reading of a real `memory.db`; the driver test uses a throwaway temp DB.
 - No Python changes, no schema changes, no FTS5 changes.
 - No npm publish/build pipeline and no package-name decision (`memory` vs
-  `mirror`) — those are CV22.E6.
-- No Pi front door or runtime wiring — that is CV22.E3.
+  `mirror`) — those are CV22.DS6.
+- No Pi front door or runtime wiring — that is CV22.DS3.
 
 ---
 
@@ -61,6 +61,6 @@ session.
 
 - [Plan](plan.md)
 - [Test Guide](test-guide.md)
-- [CV22.E2 index](../index.md)
+- [CV22.DS2 index](../index.md)
 - [Decisions — CV22 scaffolding](../../../../decisions.md#cv22-typescript-core-scaffolding-nodesqlite-single-ts-package-node-24-biome)
 </content>

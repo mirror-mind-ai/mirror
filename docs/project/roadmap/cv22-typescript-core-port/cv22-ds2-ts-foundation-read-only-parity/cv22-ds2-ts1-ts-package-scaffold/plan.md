@@ -1,12 +1,12 @@
 [< Story](index.md)
 
-# Plan — CV22.E2.S1 TS Package Scaffold & Driver Seam
+# Plan — CV22.DS2.TS1 TS Package Scaffold & Driver Seam
 
 ## Context Read
 
 - `docs/project/roadmap/cv22-typescript-core-port/index.md`
-- `docs/project/roadmap/cv22-typescript-core-port/cv22-e1-hybrid-search-parity-spike/index.md`
-- `docs/project/roadmap/cv22-typescript-core-port/cv22-e2-ts-foundation-read-only-parity/index.md`
+- `docs/project/roadmap/cv22-typescript-core-port/cv22-ds1-hybrid-search-parity-spike/index.md`
+- `docs/project/roadmap/cv22-typescript-core-port/cv22-ds2-ts-foundation-read-only-parity/index.md`
 - `docs/project/decisions.md` (database-seam strangler + CV22 scaffolding)
 - `spikes/ts-search-parity/parity.ts` (driver + scoring learnings to promote)
 - `.pi/tsconfig.json`, `.pi/package.json` (existing repo TS conventions)
@@ -71,7 +71,7 @@ Extend CI:
 ```
 
 `name` is an internal placeholder — the published npm name (`memory` vs `mirror`,
-scoped or not) is a deliberate CV22.E6 decision, not this story's call.
+scoped or not) is a deliberate CV22.DS6 decision, not this story's call.
 
 ### `tsconfig.json` (shape)
 
@@ -145,7 +145,7 @@ defense the scaffolding decision named.
 4. Run `npm run typecheck`, `npm run lint`, `npm test` clean.
 5. Add the `ts` job to `.github/workflows/tests.yml`; leave the Python job
    untouched.
-6. Update the CV22.E2 index story status and add the worklog entry at closeout.
+6. Update the CV22.DS2 index story status and add the worklog entry at closeout.
 7. Stop for Navigator validation, then commit.
 
 ## Test Strategy

@@ -1,13 +1,14 @@
 [< CV22](../index.md)
 
-# CV22.E1 — Hybrid-Search Parity Spike
+# CV22.DS1 — Hybrid-Search Parity Spike
 
 **Status:** ✅ Done
+**Type:** Delivery Story (spike)
 **Goal:** Prove the riskiest assumption of the TypeScript port before committing to it — that a TypeScript reimplementation of Mirror's hybrid search, reading the **same SQLite file**, reproduces the Python ranker's ordered results, on synthetic data and on a real-database snapshot.
 
 ---
 
-## Why this epic came first
+## Why this delivery story came first
 
 The strangler bets that a TS core can replicate Mirror's subtlest behavior. The
 hybrid ranker is the subtlest piece: semantic similarity + recency decay + honest
@@ -62,8 +63,8 @@ comparison and did not occur.
 
 1. **Live embedding path** — probes used stored embeddings as query vectors,
    valid for *ranker* parity but not exercising the `query → OpenAI embedding →
-   search` path with a fresh embedding. → CV22.E5.
-2. **Writes** — `log_access` was stubbed for read-only parity. → CV22.E4.
+   search` path with a fresh embedding. → CV22.DS5.
+2. **Writes** — `log_access` was stubbed for read-only parity. → CV22.DS4.
 3. **Scale** — 480 memories is small; the ranker is a full scan + cosine per row.
    A performance question (both languages), separate from parity.
 
