@@ -42,6 +42,14 @@ jobs:
           ECONOMY_ENV: test
           # API keys intentionally absent — all live tests are excluded via -m "not live"
 
+      - name: Golden parity determinism (regenerate must be a no-op)
+        run: |
+          uv run python ts/parity/generate_golden.py
+          git diff --exit-code ts/test/goldens/
+        env:
+          MEMORY_ENV: test
+          ECONOMY_ENV: test
+
   ts:
     runs-on: ubuntu-latest
     defaults:

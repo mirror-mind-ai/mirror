@@ -40,13 +40,42 @@ npm run format      # Biome format --write
   parity over committed **synthetic** (PII-free) golden corpora; real-`memory.db`
   parity is a manual pre-merge gate and never enters CI.
 
+## Parity harness (golden corpus)
+
+The golden-corpus contract is how TS is graded against the Python ranker without
+re-deriving the answer (CV22.DS2.TS2):
+
+- `parity/generate_golden.py` drives the **real** `MemorySearch.search` over a
+  synthetic corpus with the two impure inputs frozen (`datetime.now()` and the
+  query embedding), and writes a committed golden to `test/goldens/`.
+- `src/parity/decode.ts` holds the two parity-critical decoders — `blobToFloat32`
+  (little-endian float32 BLOB) and `parseUtcMs` (ISO timestamp -> epoch ms) —
+  which are graded against Python-computed reference values embedded in the golden.
+- `src/parity/golden.ts` loads the fixture and provides `orderedIdsMatch`, the
+  success metric (ranked **ids**, not scores).
+
+Regenerate the golden (must be a no-op in CI — a determinism gate enforces it):
+
+```bash
+uv run python ts/parity/generate_golden.py
+git diff --exit-code ts/test/goldens/
+```
+
+The TS ranker that reproduces `expected_order` from the corpus lands in DS2.US1;
+this harness proves the load/decode/compare mechanism is correct and stable.
+
 ## Layout
 
 ```
 src/
-  index.ts        # package entry point
-  db/database.ts  # node:sqlite driver seam (read-only handle)
-test/             # node:test suites
+  index.ts          # package entry point
+  db/database.ts    # node:sqlite driver seam (read-only handle)
+  parity/decode.ts  # blobToFloat32 / parseUtcMs (parity-critical decoders)
+  parity/golden.ts  # golden loader + ordered-id grader
+parity/
+  generate_golden.py  # Python oracle -> committed golden (frozen now + embedding)
+test/               # node:test suites
+  goldens/          # committed synthetic golden corpora (PII-free)
 ```
 
 Seams mirror the Python core (`db`, and — as the port proceeds — `storage`,

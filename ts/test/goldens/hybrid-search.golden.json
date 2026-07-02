@@ -1,0 +1,167 @@
+{
+  "expected_order": [
+    "m1",
+    "m6",
+    "m3",
+    "m7",
+    "m8"
+  ],
+  "memories": [
+    {
+      "created_at": "2026-06-20T12:00:00Z",
+      "created_at_ms": 1781956800000,
+      "embedding": [
+        1.0,
+        0.44999998807907104,
+        0.05000000074505806,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "embedding_b64": "AACAP2Zm5j7NzEw9AAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+      "id": "m1"
+    },
+    {
+      "created_at": "2026-06-21T12:00:00Z",
+      "created_at_ms": 1782043200000,
+      "embedding": [
+        0.9900000095367432,
+        0.46000000834465027,
+        0.05000000074505806,
+        0.009999999776482582,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "embedding_b64": "pHB9Px+F6z7NzEw9CtcjPAAAAAAAAAAAAAAAAAAAAAA=",
+      "id": "m2"
+    },
+    {
+      "created_at": "2026-05-01T12:00:00Z",
+      "created_at_ms": 1777636800000,
+      "embedding": [
+        0.0,
+        0.0,
+        1.0,
+        0.5,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "embedding_b64": "AAAAAAAAAAAAAIA/AAAAPwAAAAAAAAAAAAAAAAAAAAA=",
+      "id": "m3"
+    },
+    {
+      "created_at": "2026-06-23T11:00:00Z",
+      "created_at_ms": 1782212400000,
+      "embedding": [
+        0.8999999761581421,
+        0.5,
+        0.10000000149011612,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "embedding_b64": "ZmZmPwAAAD/NzMw9AAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+      "id": "m4"
+    },
+    {
+      "created_at": "2025-01-01T12:00:00Z",
+      "created_at_ms": 1735732800000,
+      "embedding": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "embedding_b64": "AAAAAAAAAAAAAAAAAAAAAAAAgD8AAAAAAAAAAAAAAAA=",
+      "id": "m5"
+    },
+    {
+      "created_at": "2026-03-01T12:00:00Z",
+      "created_at_ms": 1772366400000,
+      "embedding": [
+        0.20000000298023224,
+        0.10000000149011612,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "embedding_b64": "zcxMPs3MzD0AAAAAAAAAAAAAAAAAAIA/AAAAAAAAAAA=",
+      "id": "m6"
+    },
+    {
+      "created_at": "2026-06-01T12:00:00Z",
+      "created_at_ms": 1780315200000,
+      "embedding": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "embedding_b64": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAAA=",
+      "id": "m7"
+    },
+    {
+      "created_at": "2026-06-10T12:00:00Z",
+      "created_at_ms": 1781092800000,
+      "embedding": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "embedding_b64": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgD8=",
+      "id": "m8"
+    }
+  ],
+  "meta": {
+    "frozen_now": "2026-06-23T12:00:00Z",
+    "frozen_now_ms": 1782216000000,
+    "limit": 5,
+    "mmr_threshold": 0.92,
+    "query": "freedom and digital nomad business",
+    "query_embedding": [
+      1.0,
+      0.5,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "recency_half_life_days": 90,
+    "reinforcement_decay_days": 180,
+    "reinforcement_retrieval_weight": 0.3,
+    "reinforcement_use_weight": 0.7,
+    "weights": {
+      "lexical": 0.15,
+      "recency": 0.15,
+      "reinforcement": 0.1,
+      "relevance": 0.1,
+      "semantic": 0.5
+    }
+  }
+}
