@@ -160,6 +160,7 @@ CV22 is done when:
 ## References
 
 - [Decisions — database-seam strangler](../../decisions.md)
+- [CV22 Collaboration Strategy](collaboration-strategy.md)
 - [CV21 — Runtime Expansion II](../cv21-runtime-expansion-ii/index.md)
 - Parity harness: [`spikes/ts-search-parity/`](../../../../spikes/ts-search-parity/)
 - [Architecture](../../../product/architecture.md)
