@@ -29,11 +29,15 @@ echo "   fake session: $FAKE_SESSION_ID"
 echo
 
 # Production DB guard: record checksum of the real production DB before the test.
-# We derive it from MIRROR_USER (set in .env) → ~/.mirror/<user>/memory.db
-_PROD_USER="${MIRROR_USER:-$(whoami)}"
-PROD_DB="$HOME/.mirror/${_PROD_USER}/memory.db"
+# Ask the core to resolve the path (reads .env / MIRROR_HOME / MIRROR_USER and the
+# ~/.mirror-minds default with legacy ~/.mirror fallback) so this guard protects the
+# actual production DB regardless of home-directory naming. Must run before the
+# DB_PATH/MEMORY_ENV exports below. Empty on failure → guard degrades to a no-op.
+PROD_DB="$(cd "$ROOT_DIR" && uv run python -c \
+  'from memory.config import resolve_mirror_home, default_db_path_for_home; print(default_db_path_for_home(resolve_mirror_home()))' \
+  2>/dev/null || true)"
 PROD_DB_CHECKSUM=""
-if [[ -f "$PROD_DB" ]]; then
+if [[ -n "$PROD_DB" && -f "$PROD_DB" ]]; then
   PROD_DB_CHECKSUM=$(md5 -q "$PROD_DB" 2>/dev/null || md5sum "$PROD_DB" | awk '{print $1}')
 fi
 

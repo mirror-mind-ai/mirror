@@ -13,23 +13,100 @@
  * Failures are swallowed to never block Pi — but logged to $MEMORY_DIR/mirror-logger.log.
  *
  * External skill prep note:
- * Pi should eventually read installed external skills from
- *   ~/.mirror/<user>/runtime/skills/pi/extensions.json
- * rather than from source manifests under ~/.mirror/<user>/extensions/.
+ * Pi reads installed external skills from
+ *   ~/.mirror-minds/<user>/runtime/skills/pi/extensions.json
+ * rather than from source manifests under ~/.mirror-minds/<user>/extensions/.
  */
 
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { spawn } from "node:child_process";
 
+// Mirror home directory names. Mirrors the Python core contract in
+// src/memory/config.py (_DEFAULT_USER_HOMES_DIR_NAME / _LEGACY_USER_HOMES_DIR_NAME).
+// The core migrated the default homes root from ~/.mirror to ~/.mirror-minds; the
+// legacy layout stays supported indefinitely. This extension is TypeScript and cannot
+// import the Python constants, so it duplicates the contract — keep the names here.
+const NEW_HOMES_DIR = ".mirror-minds";
+const LEGACY_HOMES_DIR = ".mirror";
+
 // Respect MEMORY_DIR so Pi session files land in the same directory Python reads.
-// Fallback to ~/.mirror if unset.
+// Fallback to ~/.mirror-minds if unset (matches config.DEFAULT_MEMORY_DIR).
 function _resolveMemoryDir(): string {
 	const raw = process.env.MEMORY_DIR;
-	if (!raw) return join(homedir(), ".mirror");
+	if (!raw) return join(homedir(), NEW_HOMES_DIR);
 	return raw.startsWith("~") ? join(homedir(), raw.slice(2)) : raw;
+}
+
+/** True when the path is an existing directory. */
+function _isDir(path: string): boolean {
+	try {
+		return statSync(path).isDirectory();
+	} catch {
+		return false;
+	}
+}
+
+/** True when a user home has an installed Pi external-skill catalog. */
+function _hasPiCatalog(userHome: string): boolean {
+	try {
+		return existsSync(join(userHome, "runtime", "skills", "pi", "extensions.json"));
+	} catch {
+		return false;
+	}
+}
+
+/** User homes under a homes root that carry an installed Pi external-skill catalog. */
+function _piCatalogHomes(homesDirName: string): string[] {
+	const root = join(homedir(), homesDirName);
+	try {
+		return readdirSync(root)
+			.map((name) => join(root, name))
+			.filter((path) => _isDir(path) && _hasPiCatalog(path));
+	} catch {
+		return [];
+	}
+}
+
+// Read the nearest .env by walking upward from startDir, mirroring the Python
+// core's dotenv loading in src/memory/config.py (first file wins, no quote
+// stripping, only KEY=VALUE lines that are not comments). Pi (Node) never loads
+// .env on its own, so without this the extension cannot see the per-workspace
+// MIRROR_USER that Python reads.
+function _readDotenv(startDir: string): Record<string, string> {
+	let dir = startDir;
+	for (;;) {
+		const candidate = join(dir, ".env");
+		try {
+			if (statSync(candidate).isFile()) {
+				const out: Record<string, string> = {};
+				for (const rawLine of readFileSync(candidate, "utf-8").split(/\r?\n/)) {
+					const line = rawLine.trim();
+					if (!line || line.startsWith("#") || !line.includes("=")) continue;
+					const eq = line.indexOf("=");
+					const key = line.slice(0, eq).trim();
+					if (key) out[key] = line.slice(eq + 1).trim();
+				}
+				return out;
+			}
+		} catch {
+			// Not a readable file — keep walking upward.
+		}
+		const parent = dirname(dir);
+		if (parent === dir) return {};
+		dir = parent;
+	}
+}
+
+// Effective Mirror env: real shell env wins over .env, matching Python's
+// os.environ.setdefault semantics (shell present → keep it; else fill from .env).
+function _effectiveMirrorEnv(): { home?: string; user?: string } {
+	const dotenv = _readDotenv(process.cwd());
+	const rawHome = "MIRROR_HOME" in process.env ? process.env.MIRROR_HOME : dotenv.MIRROR_HOME;
+	const rawUser = "MIRROR_USER" in process.env ? process.env.MIRROR_USER : dotenv.MIRROR_USER;
+	return { home: rawHome?.trim() || undefined, user: rawUser?.trim() || undefined };
 }
 
 const MIRROR_DIR = _resolveMemoryDir();
@@ -156,38 +233,42 @@ export default function (pi: ExtensionAPI) {
 		);
 	}
 
+	// Resolve the active Mirror home the same way the Python core does
+	// (src/memory/config.py resolve_mirror_home), including the per-workspace
+	// .env that Node would otherwise never see.
 	function resolveMirrorHome(): string | null {
-		const explicitHome = process.env.MIRROR_HOME?.trim();
+		const { home: explicitHome, user: mirrorUser } = _effectiveMirrorEnv();
+
 		if (explicitHome) {
 			return explicitHome.startsWith("~") ? join(homedir(), explicitHome.slice(2)) : explicitHome;
 		}
-		const mirrorUser = process.env.MIRROR_USER?.trim();
+
+		// Prefer the new ~/.mirror-minds/<user> location, and fall back to the
+		// legacy ~/.mirror/<user> only when the new home does not exist.
 		if (mirrorUser) {
-			return join(homedir(), ".mirror", mirrorUser);
+			const newUserHome = join(homedir(), NEW_HOMES_DIR, mirrorUser);
+			const legacyUserHome = join(homedir(), LEGACY_HOMES_DIR, mirrorUser);
+			if (!_isDir(newUserHome) && _isDir(legacyUserHome)) {
+				return legacyUserHome;
+			}
+			return newUserHome;
 		}
 
-		// Pi may be started without Mirror-specific environment variables.
-		// In that case, infer the active Mirror home when exactly one user home
-		// has an installed Pi external-skill catalog.
-		const root = join(homedir(), ".mirror");
-		try {
-			const candidates = readdirSync(root)
-				.map((name) => join(root, name))
-				.filter((path) => {
-					try {
-						return statSync(path).isDirectory() && existsSync(join(path, "runtime", "skills", "pi", "extensions.json"));
-					} catch {
-						return false;
-					}
-				});
+		// No explicit home/user from shell or .env: infer the active Mirror home
+		// from a single installed catalog. Prefer the new homes root; only fall
+		// back to legacy when the new root has none. Ambiguity (more than one
+		// candidate under a root) requires MIRROR_USER/MIRROR_HOME — never guess.
+		for (const homesDir of [NEW_HOMES_DIR, LEGACY_HOMES_DIR]) {
+			const candidates = _piCatalogHomes(homesDir);
 			if (candidates.length === 1) return candidates[0];
 			if (candidates.length > 1) {
-				log("WARN", `multiple Mirror homes with Pi external skill catalogs; set MIRROR_USER or MIRROR_HOME`);
+				log(
+					"WARN",
+					`multiple Mirror homes with Pi external skill catalogs under ${homesDir}; set MIRROR_USER or MIRROR_HOME`,
+				);
+				return null;
 			}
-		} catch {
-			// No Mirror home to infer from.
 		}
-
 		return null;
 	}
 
