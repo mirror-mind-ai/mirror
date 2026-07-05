@@ -35,7 +35,7 @@ def test_sanitizer_removes_colon(command_name, expected):
 
 @pytest.mark.parametrize(
     "command_name",
-    ["ext:review-copy", 'weird<name>', 'a|b', 'c*d', 'e?f', 'g"h', "mm:mirror"],
+    ["ext:review-copy", "weird<name>", "a|b", "c*d", "e?f", 'g"h', "mm:mirror"],
 )
 def test_sanitizer_output_is_windows_safe(command_name):
     result = _filesystem_skill_dir_name(command_name)
