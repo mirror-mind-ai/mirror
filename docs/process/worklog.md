@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-07-05 — CV22.DS2.TS3 reusable real-DB-copy parity harness completed
+
+Paid the validation debt carried from CV22.DS2.US1 by turning the local real-DB-copy parity route into a reusable, privacy-conscious harness. The new route generates a public synthetic Mirror `memory.db` with real schema/FTS/embeddings/access logs, copies any explicit source DB into ignored `tmp/` storage before validation, verifies Python-vs-TS ordered parity through the TS ranker, and emits redacted evidence by default: probe labels, result counts, hashes, and pass/fail only. The CV22 collaboration strategy now tells Vinícius how to reproduce the route without Alisson's private filesystem.
+
+Validation: `npm run typecheck`, `npm run lint`, and `npm test` passed in `ts/` with 21 tests. The portable harness route passed using `uv run python ts/parity/generate_demo_memory_db.py --out tmp/parity/demo-memory.db` followed by `uv run python ts/parity/real_db_copy_parity.py --source-db tmp/parity/demo-memory.db`. Generated DBs and fixtures stayed under ignored `tmp/` storage, and `git diff --check` passed.
+
 ### 2026-07-05 — CV22.DS2.US1 `search` command parity completed
 
 Promoted the DS1 hybrid-search parity spike into the durable TypeScript core. The new `ts/src/search/ranker.ts` reproduces Python `MemorySearch.search` scoring over frozen inputs: semantic cosine, recency, honest reinforcement, manual relevance, ordinal lexical signal, stable score ordering, MMR deduplication, and limit handling. The golden-corpus generator now emits the full replay surface needed by the TS verifier, including lexical/content, use/relevance/access signals, timestamps, embeddings, frozen query embedding, weights, and MMR config.

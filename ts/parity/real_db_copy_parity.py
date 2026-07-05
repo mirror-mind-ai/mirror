@@ -1,0 +1,175 @@
+"""Run redacted real-DB-copy parity for CV22.DS2.
+
+The harness validates TS replay against the Python oracle over a copied SQLite
+file. It never reads from the live source after the copy step, writes generated
+real-data fixtures only under ignored local storage, and prints redacted evidence
+by default.
+"""
+
+from __future__ import annotations
+
+import argparse
+import base64
+import json
+import sqlite3
+import subprocess
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+import numpy as np
+
+import memory.intelligence.search as search_mod
+from memory.db.connection import get_connection
+from memory.intelligence.embeddings import bytes_to_embedding
+from memory.intelligence.search import MemorySearch, _parse_datetime_utc
+from memory.storage.store import Store
+
+DEFAULT_WORK_DIR = Path("tmp/parity/real-db-copy")
+DEFAULT_PROBES: tuple[tuple[str, str], ...] = (
+    ("search_demo_1", "mirror journey"),
+    ("search_demo_2", "builder memory"),
+    ("search_demo_3", "identity context"),
+    ("search_demo_4", "runtime mode"),
+    ("search_demo_5", "conversation search"),
+)
+
+
+class _FrozenDateTime(datetime):
+    frozen_now: datetime
+
+    @classmethod
+    def now(cls, tz=None):  # noqa: ANN001, ANN206
+        return cls.frozen_now if tz else cls.frozen_now.replace(tzinfo=None)
+
+
+def _to_ms(value: str | None) -> int | None:
+    parsed = _parse_datetime_utc(value) if value else None
+    return int(parsed.timestamp() * 1000) if parsed else None
+
+
+def _safe_copy_database(source: Path, destination: Path) -> None:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if destination.exists():
+        destination.unlink()
+    # `backup()` is used so validation reads a stable copy. We open the source
+    # normally because Python's sqlite backup API can fail against read-only URI
+    # handles on some local builds; the harness never executes writes on this
+    # connection.
+    with sqlite3.connect(str(source)) as src, sqlite3.connect(destination) as dst:
+        src.backup(dst)
+
+
+def _memory_entry(store: Store, mem, lexical_scores: dict[str, float]) -> dict:
+    if mem.embedding is None:
+        raise ValueError(f"memory {mem.id} has no embedding")
+    decoded = bytes_to_embedding(mem.embedding)
+    return {
+        "id": mem.id,
+        "content": mem.content,
+        "created_at": mem.created_at,
+        "created_at_ms": _to_ms(mem.created_at),
+        "last_accessed_at": mem.last_accessed_at,
+        "last_accessed_at_ms": _to_ms(mem.last_accessed_at),
+        "use_count": mem.use_count,
+        "relevance_score": mem.relevance_score,
+        "access_count": store.get_access_count(mem.id),
+        "lexical_score": lexical_scores.get(mem.id, 0.0),
+        "embedding_b64": base64.b64encode(mem.embedding).decode("ascii"),
+        "embedding": [float(x) for x in decoded],
+    }
+
+
+def _build_fixture(*, source_db: Path, work_dir: Path, limit: int) -> Path:
+    copied_db = work_dir / "memory.real-db-copy-parity.db"
+    fixture_path = work_dir / "real-db-copy-fixture.json"
+    _safe_copy_database(source_db, copied_db)
+
+    conn = get_connection(copied_db)
+    store = Store(conn)
+    store.log_access = lambda *a, **k: None  # type: ignore[assignment]
+
+    frozen_now = datetime.now(timezone.utc)
+    _FrozenDateTime.frozen_now = frozen_now
+    original_datetime = search_mod.datetime
+    original_generate_embedding = search_mod.generate_embedding
+    search_mod.datetime = _FrozenDateTime
+
+    try:
+        all_memories = [
+            mem for mem in store.get_all_memories_with_embeddings() if mem.embedding is not None
+        ]
+        if not all_memories:
+            raise RuntimeError("copied database has no memories with embeddings")
+
+        probes: list[dict] = []
+        for index, (label, query) in enumerate(DEFAULT_PROBES):
+            lexical_scores = dict(store.fts_search(query))
+            seed_id = next(iter(lexical_scores), None)
+            fallback_memory = all_memories[index % len(all_memories)]
+            seed_memory = next((mem for mem in all_memories if mem.id == seed_id), fallback_memory)
+            query_embedding = bytes_to_embedding(seed_memory.embedding)
+            search_mod.generate_embedding = lambda _q, vec=query_embedding: vec
+            results = MemorySearch(store).search(query, limit=limit)
+            probes.append(
+                {
+                    "label": label,
+                    "query_embedding": [
+                        float(x) for x in np.asarray(query_embedding, dtype=np.float32)
+                    ],
+                    "expected_order": [result.memory.id for result in results],
+                    "memories": [
+                        _memory_entry(store, mem, lexical_scores) for mem in all_memories
+                    ],
+                }
+            )
+    finally:
+        search_mod.datetime = original_datetime
+        search_mod.generate_embedding = original_generate_embedding
+        conn.close()
+
+    fixture = {
+        "source_label": source_db.name,
+        "frozen_now_ms": int(frozen_now.timestamp() * 1000),
+        "limit": limit,
+        "weights": dict(search_mod.SEARCH_WEIGHTS),
+        "mmr_threshold": search_mod.MMR_DEDUP_THRESHOLD,
+        "recency_half_life_days": search_mod.RECENCY_HALF_LIFE_DAYS,
+        "reinforcement_decay_days": search_mod.REINFORCEMENT_DECAY_DAYS,
+        "reinforcement_use_weight": search_mod.REINFORCEMENT_USE_WEIGHT,
+        "reinforcement_retrieval_weight": search_mod.REINFORCEMENT_RETRIEVAL_WEIGHT,
+        "probes": probes,
+    }
+    fixture_path.write_text(json.dumps(fixture), encoding="utf-8")
+    return fixture_path
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--source-db", required=True, type=Path)
+    parser.add_argument("--work-dir", default=DEFAULT_WORK_DIR, type=Path)
+    parser.add_argument("--limit", default=5, type=int)
+    parser.add_argument("--debug-sensitive-output", action="store_true")
+    args = parser.parse_args(argv)
+
+    source_db = args.source_db.expanduser().resolve()
+    if not source_db.exists():
+        parser.error(f"source DB does not exist: {source_db}")
+
+    work_dir = args.work_dir
+    fixture_path = _build_fixture(source_db=source_db, work_dir=work_dir, limit=args.limit)
+
+    command = [
+        "node",
+        "ts/parity/real_db_copy_verify.ts",
+        "--fixture",
+        str(fixture_path),
+    ]
+    if args.debug_sensitive_output:
+        command.append("--debug-sensitive-output")
+    completed = subprocess.run(command, check=False, text=True, cwd=Path.cwd())
+    return completed.returncode
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
