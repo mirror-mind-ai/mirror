@@ -13,10 +13,24 @@ import { readFileSync } from "node:fs";
 /** One synthetic memory in the golden corpus. */
 export interface GoldenMemory {
   id: string;
+  /** Lexical surface indexed by Python FTS. */
+  content: string;
   /** ISO timestamp as written by the Python core. */
   created_at: string;
   /** Python-computed epoch milliseconds for `created_at` (the parity reference). */
   created_at_ms: number | null;
+  /** Cached last access timestamp as written by the Python core. */
+  last_accessed_at: string | null;
+  /** Python-computed epoch milliseconds for `last_accessed_at` (the parity reference). */
+  last_accessed_at_ms: number | null;
+  /** Honest-reinforcement explicit use count. */
+  use_count: number;
+  /** Manual relevance signal. */
+  relevance_score: number;
+  /** Retrieval/access count from `memory_access_log`. */
+  access_count: number;
+  /** Ordinal lexical score returned by Python `Store.fts_search`. */
+  lexical_score: number;
   /** Base64 of the raw little-endian float32 embedding BLOB. */
   embedding_b64: string;
   /** Python-decoded embedding (`np.frombuffer`) — the parity reference for `blobToFloat32`. */

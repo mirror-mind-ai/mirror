@@ -4,6 +4,7 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { blobToFloat32, parseUtcMs } from "../../src/parity/decode.ts";
 import { loadGolden, orderedIdsMatch } from "../../src/parity/golden.ts";
+import { rankMemories } from "../../src/search/ranker.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const GOLDEN_PATH = join(HERE, "..", "goldens", "hybrid-search.golden.json");
@@ -36,8 +37,37 @@ test("blobToFloat32 reproduces the Python-decoded embedding for every memory", (
 test("parseUtcMs reproduces the Python epoch-ms for every timestamp", () => {
   for (const mem of golden.memories) {
     assert.equal(parseUtcMs(mem.created_at), mem.created_at_ms, `created_at for ${mem.id}`);
+    assert.equal(
+      parseUtcMs(mem.last_accessed_at),
+      mem.last_accessed_at_ms,
+      `last_accessed_at for ${mem.id}`,
+    );
   }
   assert.equal(parseUtcMs(golden.meta.frozen_now), golden.meta.frozen_now_ms, "frozen_now");
+});
+
+test("TS ranker reproduces the Python oracle ordered ids", () => {
+  const ranked = rankMemories(golden.memories, {
+    queryEmbedding: golden.meta.query_embedding,
+    frozenNowMs: golden.meta.frozen_now_ms,
+    limit: golden.meta.limit,
+    weights: {
+      semantic: golden.meta.weights.semantic,
+      recency: golden.meta.weights.recency,
+      reinforcement: golden.meta.weights.reinforcement,
+      relevance: golden.meta.weights.relevance,
+      lexical: golden.meta.weights.lexical,
+    },
+    mmrThreshold: golden.meta.mmr_threshold,
+    recencyHalfLifeDays: golden.meta.recency_half_life_days,
+    reinforcementDecayDays: golden.meta.reinforcement_decay_days,
+    reinforcementUseWeight: golden.meta.reinforcement_use_weight,
+    reinforcementRetrievalWeight: golden.meta.reinforcement_retrieval_weight,
+  });
+  assert.deepEqual(
+    ranked.map((memory) => memory.id),
+    golden.expected_order,
+  );
 });
 
 test("orderedIdsMatch grades the oracle's own order as a pass", () => {

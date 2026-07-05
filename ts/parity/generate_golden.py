@@ -114,16 +114,24 @@ def _build_fixture(db_path: Path) -> Store:
     return store
 
 
-def _memory_entries() -> list[dict]:
+def _memory_entries(store: Store) -> list[dict]:
+    lexical_scores = dict(store.fts_search(QUERY))
     entries: list[dict] = []
-    for mid, _content, created, _u, _r, vec, _acc, _last in SEED:
+    for mid, content, created, use_count, relevance, vec, access_count, last_accessed in SEED:
         raw = embedding_to_bytes(np.array(vec, dtype=np.float32))
         decoded = [float(x) for x in np.frombuffer(raw, dtype=np.float32)]
         entries.append(
             {
                 "id": mid,
+                "content": content,
                 "created_at": created,
                 "created_at_ms": _to_ms(created),
+                "last_accessed_at": last_accessed,
+                "last_accessed_at_ms": _to_ms(last_accessed),
+                "use_count": use_count,
+                "relevance_score": relevance,
+                "access_count": access_count,
+                "lexical_score": lexical_scores.get(mid, 0.0),
                 "embedding_b64": base64.b64encode(raw).decode("ascii"),
                 "embedding": decoded,
             }
@@ -156,7 +164,7 @@ def main() -> None:
             "reinforcement_use_weight": search_mod.REINFORCEMENT_USE_WEIGHT,
             "reinforcement_retrieval_weight": search_mod.REINFORCEMENT_RETRIEVAL_WEIGHT,
         },
-        "memories": _memory_entries(),
+        "memories": _memory_entries(store),
         "expected_order": [sr.memory.id for sr in results],
     }
 

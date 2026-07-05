@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-07-05 — CV22.DS2.US1 `search` command parity completed
+
+Promoted the DS1 hybrid-search parity spike into the durable TypeScript core. The new `ts/src/search/ranker.ts` reproduces Python `MemorySearch.search` scoring over frozen inputs: semantic cosine, recency, honest reinforcement, manual relevance, ordinal lexical signal, stable score ordering, MMR deduplication, and limit handling. The golden-corpus generator now emits the full replay surface needed by the TS verifier, including lexical/content, use/relevance/access signals, timestamps, embeddings, frozen query embedding, weights, and MMR config.
+
+Validation: `npm run typecheck`, `npm run lint`, and `npm test` passed in `ts/` with 19 tests. Synthetic golden regeneration is deterministic after the schema update, production TS source keeps `node:sqlite` isolated to `ts/src/db/database.ts`, and `git diff --check` passed. Real-DB-copy parity passed across five probes against `tmp/parity/memory.search-parity.db`, copied from `/Users/alissonvale/.mirror-minds/mirror-dev/memory.db`, with Python and TS ordered ids matching exactly. Carried debt: the real-DB-copy parity route currently lives as local ignored `tmp/` scripts; before closing CV22.DS2 or during the next read-only parity stories, decide whether to promote it into a reusable documented harness.
+
 ### 2026-07-02 — v0.29.2 Ariad Builder Flow Refinement prepared
 
 Prepared the patch release boundary for Ariad Builder flow refinement after closing RS001 Refinement Surfaces Improvements and RS003 Ariad Delivery Builder Experience Adjustments. The release adds persisted RS/CR display codes, simplifies Refinement and Delivery surfaces, separates raw `ROADMAP_SNAPSHOT` from narrative `PROJECT_POSITION`, centralizes artifact materialization reporting, folds Delivery Coherence into Done, clarifies validation/debt/Done handoffs, and includes development/test status-line environment orientation.

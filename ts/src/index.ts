@@ -5,3 +5,11 @@
 
 export type { Database, PreparedQuery, Row, SqlValue } from "./db/database.ts";
 export { openDatabaseReadOnly } from "./db/database.ts";
+export type { RankableMemory, RankedMemory, RankerConfig, SearchWeights } from "./search/ranker.ts";
+export {
+  cosineSimilarity,
+  hybridScore,
+  rankMemories,
+  recencyScore,
+  reinforcementScore,
+} from "./search/ranker.ts";
