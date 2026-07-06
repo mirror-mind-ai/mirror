@@ -7,10 +7,13 @@
 
 cd "$CLAUDE_PROJECT_DIR" 2>/dev/null || exit 0
 
+# Run through the project's uv environment; the system python3 lacks deps.
+PY="uv run python"
+
 INPUT=$(cat)
 
-PROMPT=$(printf '%s' "$INPUT" | python3 -m memory.hooks.extract_prompt 2>/dev/null)
-SESSION_ID=$(printf '%s' "$INPUT" | python3 -c 'import json,sys; data=json.load(sys.stdin); print(data.get("session_id", ""))' 2>/dev/null)
+PROMPT=$(printf '%s' "$INPUT" | $PY -m memory.hooks.extract_prompt 2>/dev/null)
+SESSION_ID=$(printf '%s' "$INPUT" | $PY -c 'import json,sys; data=json.load(sys.stdin); print(data.get("session_id", ""))' 2>/dev/null)
 
 # Case 1: explicit /mm:mirror invocation.
 if printf '%s' "$PROMPT" | grep -qE "^/mm:mirror"; then
@@ -20,7 +23,7 @@ if printf '%s' "$PROMPT" | grep -qE "^/mm:mirror"; then
     # --context-only avoids creating a new conversation session; the model does that.
     ARGS=(mirror load --context-only --query "$QUERY")
     [ -n "$SESSION_ID" ] && ARGS+=(--session-id "$SESSION_ID")
-    CONTEXT=$(python3 -m memory "${ARGS[@]}" 2>/dev/null)
+    CONTEXT=$($PY -m memory "${ARGS[@]}" 2>/dev/null)
 
     if [ -n "$CONTEXT" ]; then
         echo "$CONTEXT"
@@ -31,22 +34,22 @@ fi
 # Case 2: Mirror Mode is active by automatic routing and context is not injected yet.
 STATE_ARGS=()
 [ -n "$SESSION_ID" ] && STATE_ARGS+=(--session-id "$SESSION_ID")
-NEEDS_INJECT=$(python3 -m memory.hooks.mirror_state "${STATE_ARGS[@]}" needs-inject 2>/dev/null)
+NEEDS_INJECT=$($PY -m memory.hooks.mirror_state "${STATE_ARGS[@]}" needs-inject 2>/dev/null)
 
 if [ "$NEEDS_INJECT" = "true" ]; then
-    PERSONA=$(python3 -m memory.hooks.mirror_state "${STATE_ARGS[@]}" get persona 2>/dev/null)
-    JOURNEY=$(python3 -m memory.hooks.mirror_state "${STATE_ARGS[@]}" get journey 2>/dev/null)
+    PERSONA=$($PY -m memory.hooks.mirror_state "${STATE_ARGS[@]}" get persona 2>/dev/null)
+    JOURNEY=$($PY -m memory.hooks.mirror_state "${STATE_ARGS[@]}" get journey 2>/dev/null)
 
     ARGS=(mirror load --context-only --query "$PROMPT")
     [ -n "$SESSION_ID" ] && ARGS+=(--session-id "$SESSION_ID")
     [ -n "$PERSONA" ] && ARGS+=(--persona "$PERSONA")
     [ -n "$JOURNEY" ] && ARGS+=(--journey "$JOURNEY")
 
-    CONTEXT=$(python3 -m memory "${ARGS[@]}" 2>/dev/null)
+    CONTEXT=$($PY -m memory "${ARGS[@]}" 2>/dev/null)
 
     if [ -n "$CONTEXT" ]; then
         echo "$CONTEXT"
-        python3 -m memory.hooks.mirror_state "${STATE_ARGS[@]}" mark-injected 2>/dev/null
+        $PY -m memory.hooks.mirror_state "${STATE_ARGS[@]}" mark-injected 2>/dev/null
     fi
 fi
 

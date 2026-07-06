@@ -6,6 +6,6 @@ export PYTHONPATH="$CLAUDE_PROJECT_DIR/src${PYTHONPATH:+:$PYTHONPATH}"
 INPUT=$(cat)
 
 # Record the user message using the explicit session_id from the hook payload.
-printf '%s' "$INPUT" | python3 -c "from memory.cli.conversation_logger import hook_user_prompt; hook_user_prompt()" 2>/dev/null
+printf '%s' "$INPUT" | uv run python -c "from memory.cli.conversation_logger import hook_user_prompt; hook_user_prompt()" 2>/dev/null
 
 exit 0
