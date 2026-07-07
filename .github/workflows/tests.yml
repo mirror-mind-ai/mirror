@@ -2,9 +2,10 @@ name: Tests
 
 on:
   push:
-    branches: [main, "claude/**"]
+    branches: [main, "claude/**", mirror-ts-core]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   test:
