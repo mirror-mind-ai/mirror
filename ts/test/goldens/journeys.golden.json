@@ -1,0 +1,80 @@
+{
+  "expected": [
+    {
+      "id": "alpha-root-active",
+      "name": "Alpha Root Active",
+      "parent_journey": "",
+      "status": "active"
+    },
+    {
+      "id": "child-active",
+      "name": "Child Active",
+      "parent_journey": "alpha-root-active",
+      "status": "active"
+    },
+    {
+      "id": "child-paused",
+      "name": "Child Paused",
+      "parent_journey": "alpha-root-active",
+      "status": "paused"
+    },
+    {
+      "id": "orphan-child",
+      "name": "Orphan Child",
+      "parent_journey": "missing-parent",
+      "status": "active"
+    },
+    {
+      "id": "zed-root-active",
+      "name": "Zed Root Active",
+      "parent_journey": "",
+      "status": "active"
+    },
+    {
+      "id": "beta-root-done",
+      "name": "Beta Root Done",
+      "parent_journey": "",
+      "status": "completed"
+    }
+  ],
+  "expected_order": [
+    "alpha-root-active",
+    "child-active",
+    "child-paused",
+    "orphan-child",
+    "zed-root-active",
+    "beta-root-done"
+  ],
+  "journey_rows": [
+    {
+      "content": "# Alpha Root Active\n**Status:** active",
+      "key": "alpha-root-active",
+      "metadata": null
+    },
+    {
+      "content": "# Beta Root Done\n**Status:** completed",
+      "key": "beta-root-done",
+      "metadata": null
+    },
+    {
+      "content": "# Child Active\n**Status:** active",
+      "key": "child-active",
+      "metadata": "{\"parent_journey\": \"alpha-root-active\"}"
+    },
+    {
+      "content": "# Child Paused\n**Status:** paused",
+      "key": "child-paused",
+      "metadata": "{\"parent_journey\": \"alpha-root-active\"}"
+    },
+    {
+      "content": "# Orphan Child\n**Status:** active",
+      "key": "orphan-child",
+      "metadata": "{\"parent_journey\": \"missing-parent\"}"
+    },
+    {
+      "content": "# Zed Root Active\n**Status:** active",
+      "key": "zed-root-active",
+      "metadata": null
+    }
+  ]
+}

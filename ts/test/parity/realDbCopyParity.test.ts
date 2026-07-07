@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  evaluateJourneyProbes,
   evaluatePersonaProbes,
   orderedIdsHash,
   type RealDbCopyFixture,
   renderRedactedReport,
+  toProbeResult,
 } from "../../src/parity/realDbCopyParity.ts";
 
 test("orderedIdsHash is stable and order-sensitive", () => {
@@ -93,4 +95,44 @@ test("evaluatePersonaProbes returns nothing on a search-only fixture", () => {
   searchOnly.persona_probes = undefined;
   searchOnly.persona_threshold = undefined;
   assert.deepEqual(evaluatePersonaProbes(searchOnly), []);
+});
+
+test("toProbeResult redacts by default and exposes orders only under debug", () => {
+  const redacted = toProbeResult("p", ["a", "b"], ["a", "b"]);
+  assert.equal(redacted.match, true);
+  assert.equal(redacted.expectedOrder, undefined);
+  const debug = toProbeResult("p", ["a", "b"], ["b", "a"], { includeSensitiveDebug: true });
+  assert.equal(debug.match, false);
+  assert.deepEqual(debug.actualOrder, ["b", "a"]);
+});
+
+test("evaluateJourneyProbes replays the pure listing logic against the oracle order", () => {
+  const fixture: RealDbCopyFixture = {
+    ...personaFixture,
+    journey_rows: [
+      { key: "root", content: "# Root\n**Status:** active" },
+      {
+        key: "child",
+        content: "# Child\n**Status:** active",
+        metadata: JSON.stringify({ parent_journey: "root" }),
+      },
+      { key: "done", content: "# Done\n**Status:** completed" },
+    ],
+    journey_probes: [{ label: "journeys_all", expected_order: ["root", "child", "done"] }],
+  };
+  const [result] = evaluateJourneyProbes(fixture);
+  assert.equal(result.label, "journeys_all");
+  assert.equal(result.match, true);
+});
+
+test("evaluateJourneyProbes flags a divergent oracle order, redacted", () => {
+  const fixture: RealDbCopyFixture = {
+    ...personaFixture,
+    journey_rows: [{ key: "a", content: "# A\n**Status:** active" }],
+    journey_probes: [{ label: "journeys_all", expected_order: ["wrong"] }],
+  };
+  const [result] = evaluateJourneyProbes(fixture);
+  assert.equal(result.match, false);
+  const report = renderRedactedReport([result]);
+  assert.doesNotMatch(report, /wrong/);
 });

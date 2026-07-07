@@ -54,28 +54,21 @@ Handoff statement to Vinícius:
 
 ### Baton 2: Vinícius closes the rest of CV22.DS2
 
-Vinícius carries `CV22.DS2.US2` and `CV22.DS2.US3`.
+Vinícius carried the second DS2 baton through `CV22.DS2.US2` (`detect-persona`) and `CV22.DS2.US3` (journeys & memory listing), closing CV22.DS2.
 
-Starting assets from Baton 1:
+Plateau reached:
 
-- durable TS package and DB seam under `ts/`;
-- TS ranker reference implementation at `ts/src/search/ranker.ts`;
-- golden generator/verifier pattern under `ts/parity/` and `ts/test/goldens/`;
-- redacted real-DB-copy parity harness at `ts/parity/real_db_copy_parity.py`;
-- synthetic demo DB generator at `ts/parity/generate_demo_memory_db.py`;
-- story artifact examples under `cv22-ds2-us1-search-command-parity/` and `cv22-ds2-ts3-reusable-real-db-copy-parity-harness/`.
-
-Expected plateau:
-
-- `detect-persona` parity is implemented and validated;
-- journeys and memory listing parity are implemented and validated;
-- the golden corpus and verifier pattern are hardened by use across multiple commands;
-- real-DB-copy validation remains redacted by default and never commits real database artifacts;
-- DS2 can close as the read-only deterministic foundation for the strangler.
+- `detect-persona` parity is implemented and validated — the pure Python router is ported to `ts/src/persona/detectPersona.ts` with exact behavioral parity (persona keys, hit-count scores, match type) on a branch-covering committed golden;
+- journeys parity is implemented and validated — `list_journey_options` + the hierarchical sort are ported to `ts/src/journey/journeyOptions.ts` (pure) with a committed golden;
+- memory listing parity is implemented and validated — `list_recent_memory_summaries` + `count_memories_by_type` are ported to `ts/src/memory/listing.ts` as a query builder + row mapper over the DB seam, with the sort pushed down to SQLite and listing-order realism proven against a copied DB in the harness (option B: CI covers builder/mapper, the harness covers ordering);
+- the golden generator/verifier pattern is hardened by use across four command families, and the reusable real-DB-copy harness now carries `search`, `detect-persona`, `journeys`, and `memory-listing` probe families, redacted by default;
+- real-DB-copy validation remains redacted by default and never commits real database artifacts; the portable demo DB now also carries synthetic personas and journeys with diversified memory types/layers/journeys;
+- the CI determinism gate regenerates all three synthetic goldens;
+- DS2 is closed as the read-only deterministic foundation for the strangler.
 
 Handoff statement to Alisson:
 
-> The TS core can now read Mirror deterministically with validated parity across the DS2 command set. The foundation is ready to be put behind a runtime front door.
+> The TS core can now read Mirror deterministically with validated parity across the full DS2 command set — `search`, `detect-persona`, journeys, and memory listing — on synthetic goldens in CI and on real-DB copies through the redacted harness. The pure logic (ranker, router, journey sort) lives in tested `ts/src/` modules; the memory listing read model already issues real SQL through the `node:sqlite` seam, which is exactly the shape DS3 will call. The foundation is ready to be put behind a runtime front door. Please carry `CV22.DS3` and route these ported read commands to the TS core behind Pi, falling back to the frozen Python engine for everything unported, dogfooded daily with no user-visible language switch.
 
 ### Baton 3: Alisson carries CV22.DS3, Pi TS Front Door
 

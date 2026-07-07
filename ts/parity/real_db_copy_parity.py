@@ -25,6 +25,7 @@ from memory.intelligence.embeddings import bytes_to_embedding
 from memory.intelligence.search import MemorySearch, _parse_datetime_utc
 from memory.services.attachment import AttachmentService
 from memory.services.identity import IdentityService
+from memory.services.journey import JourneyService
 from memory.storage.store import Store
 
 DEFAULT_WORK_DIR = Path("tmp/parity/real-db-copy")
@@ -132,6 +133,82 @@ def _persona_probes(store: Store, persona_rows: list[dict]) -> list[dict]:
     return probes
 
 
+def _journey_probes(store: Store) -> tuple[list[dict], list[dict]]:
+    """Journey routing rows and the oracle's ordered options (pure JSON replay)."""
+    rows = [
+        {"key": ident.key, "content": ident.content or "", "metadata": ident.metadata}
+        for ident in store.get_identity_by_layer("journey")
+    ]
+    journeys = JourneyService(store, IdentityService(store, AttachmentService(store)))
+    options = journeys.list_journey_options()
+    probes = [{"label": "journeys_all", "expected_order": [option["id"] for option in options]}]
+    return rows, probes
+
+
+def _listing_probes(store: Store, limit: int) -> list[dict]:
+    """Filter/limit probes; expected order comes from the Python read model."""
+    corpus = store.list_recent_memory_summaries(limit=100000)
+
+    def order(**kwargs) -> list[str]:
+        return [summary.id for summary in store.list_recent_memory_summaries(**kwargs)]
+
+    probes = [
+        {
+            "label": "listing_recent_all",
+            "memory_type": None,
+            "layer": None,
+            "journey": None,
+            "limit": limit,
+            "expected_order": order(limit=limit),
+        },
+        {
+            "label": "listing_small_limit",
+            "memory_type": None,
+            "layer": None,
+            "journey": None,
+            "limit": 3,
+            "expected_order": order(limit=3),
+        },
+    ]
+    first_type = next((s.memory_type for s in corpus if s.memory_type), None)
+    if first_type:
+        probes.append(
+            {
+                "label": "listing_by_type",
+                "memory_type": first_type,
+                "layer": None,
+                "journey": None,
+                "limit": limit,
+                "expected_order": order(limit=limit, memory_type=first_type),
+            }
+        )
+    first_layer = next((s.layer for s in corpus if s.layer), None)
+    if first_layer:
+        probes.append(
+            {
+                "label": "listing_by_layer",
+                "memory_type": None,
+                "layer": first_layer,
+                "journey": None,
+                "limit": limit,
+                "expected_order": order(limit=limit, layer=first_layer),
+            }
+        )
+    first_journey = next((s.journey for s in corpus if s.journey), None)
+    if first_journey:
+        probes.append(
+            {
+                "label": "listing_by_journey",
+                "memory_type": None,
+                "layer": None,
+                "journey": first_journey,
+                "limit": limit,
+                "expected_order": order(limit=limit, journey=first_journey),
+            }
+        )
+    return probes
+
+
 def _build_fixture(*, source_db: Path, work_dir: Path, limit: int) -> Path:
     copied_db = work_dir / "memory.real-db-copy-parity.db"
     fixture_path = work_dir / "real-db-copy-fixture.json"
@@ -177,6 +254,11 @@ def _build_fixture(*, source_db: Path, work_dir: Path, limit: int) -> Path:
             )
         persona_rows = _persona_rows(store)
         persona_probes = _persona_probes(store, persona_rows)
+        journey_rows, journey_probes = _journey_probes(store)
+        listing_probes = _listing_probes(store, limit)
+        count_by_type_expected = sorted(
+            f"{memory_type}={count}" for memory_type, count in store.count_memories_by_type()
+        )
     finally:
         search_mod.datetime = original_datetime
         search_mod.generate_embedding = original_generate_embedding
@@ -196,6 +278,11 @@ def _build_fixture(*, source_db: Path, work_dir: Path, limit: int) -> Path:
         "persona_threshold": PERSONA_THRESHOLD,
         "persona_rows": persona_rows,
         "persona_probes": persona_probes,
+        "journey_rows": journey_rows,
+        "journey_probes": journey_probes,
+        "copied_db_path": str(copied_db.resolve()),
+        "listing_probes": listing_probes,
+        "count_by_type_expected": count_by_type_expected,
     }
     fixture_path.write_text(json.dumps(fixture), encoding="utf-8")
     return fixture_path

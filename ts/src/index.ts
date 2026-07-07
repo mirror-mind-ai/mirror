@@ -5,17 +5,30 @@
 
 export type { Database, PreparedQuery, Row, SqlValue } from "./db/database.ts";
 export { openDatabaseReadOnly } from "./db/database.ts";
+export type { JourneyIdentityRow, JourneyOption } from "./journey/journeyOptions.ts";
+export { listJourneyOptions } from "./journey/journeyOptions.ts";
+export type { ListRecentFilters, MemorySummary } from "./memory/listing.ts";
+export {
+  buildListRecentQuery,
+  countMemoriesByType,
+  listRecentMemorySummaries,
+} from "./memory/listing.ts";
 export type {
+  JourneyProbe,
+  ListingProbe,
   PersonaProbe,
   ProbeParityResult,
   RealDbCopyFixture,
   RealDbCopyProbe,
 } from "./parity/realDbCopyParity.ts";
 export {
+  evaluateJourneyProbes,
+  evaluateListingProbes,
   evaluatePersonaProbes,
   evaluateRealDbCopyFixture,
   orderedIdsHash,
   renderRedactedReport,
+  toProbeResult,
 } from "./parity/realDbCopyParity.ts";
 export type { PersonaMatch, PersonaRoutingRow } from "./persona/detectPersona.ts";
 export { detectPersona, normalizeRoutingText } from "./persona/detectPersona.ts";

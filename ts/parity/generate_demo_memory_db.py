@@ -21,6 +21,9 @@ from memory.services.attachment import AttachmentService
 from memory.services.identity import IdentityService
 from memory.storage.store import Store
 
+# id, title, content, created_at, use_count, relevance, vector, access_count,
+# last_accessed, memory_type, layer, journey. Types/layers/journeys are varied so
+# the listing filter probes demonstrably narrow the result set.
 DEMO_MEMORIES = (
     (
         "demo-search-1",
@@ -32,6 +35,9 @@ DEMO_MEMORIES = (
         [1.0, 0.45, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0],
         2,
         "2026-06-22T12:00:00Z",
+        "insight",
+        "ego",
+        "demo-parity",
     ),
     (
         "demo-builder-1",
@@ -43,6 +49,9 @@ DEMO_MEMORIES = (
         [0.82, 0.5, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0],
         3,
         "2026-06-22T15:00:00Z",
+        "decision",
+        "ego",
+        "demo-parity",
     ),
     (
         "demo-identity-1",
@@ -54,6 +63,9 @@ DEMO_MEMORIES = (
         [0.1, 0.0, 1.0, 0.45, 0.0, 0.0, 0.0, 0.0],
         1,
         "2026-06-11T12:00:00Z",
+        "insight",
+        "self",
+        "demo-identity",
     ),
     (
         "demo-runtime-1",
@@ -65,6 +77,9 @@ DEMO_MEMORIES = (
         [0.0, 0.0, 0.7, 0.7, 0.1, 0.0, 0.0, 0.0],
         0,
         None,
+        "pattern",
+        "shadow",
+        "demo-parity",
     ),
     (
         "demo-conversation-1",
@@ -76,6 +91,9 @@ DEMO_MEMORIES = (
         [0.2, 0.1, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
         4,
         "2026-06-20T12:00:00Z",
+        "insight",
+        "ego",
+        "demo-conversations",
     ),
     (
         "demo-journey-1",
@@ -87,6 +105,9 @@ DEMO_MEMORIES = (
         [0.0, 0.2, 0.0, 0.0, 0.0, 1.0, 0.1, 0.0],
         0,
         None,
+        "idea",
+        "ego",
+        "demo-parity",
     ),
 )
 
@@ -95,6 +116,15 @@ DEMO_PERSONAS = (
     ("demo-code-reviewer", ["code", "pull request", "refactor", "bug"]),
     ("demo-finance-coach", ["budget", "savings-plan", "investment", "cash flow"]),
     ("demo-garden-planner", ["garden", "soil", "compost bin", "seedling"]),
+)
+
+# Synthetic journey identity rows (with hierarchy) for the portable journey route.
+# key, content (first line -> name, **Status:** -> status), parent_journey
+DEMO_JOURNEYS = (
+    ("demo-root-active", "# Demo Root Active\n**Status:** active", None),
+    ("demo-root-done", "# Demo Root Done\n**Status:** completed", None),
+    ("demo-child-beta", "# Demo Child Beta\n**Status:** active", "demo-root-active"),
+    ("demo-child-alpha", "# Demo Child Alpha\n**Status:** paused", "demo-root-active"),
 )
 
 
@@ -106,18 +136,31 @@ def generate_demo_db(path: Path) -> None:
 
     conn = get_connection(path)
     store = Store(conn)
-    for mid, title, content, created_at, use_count, relevance, vector, access_count, last_accessed in DEMO_MEMORIES:
+    for (
+        mid,
+        title,
+        content,
+        created_at,
+        use_count,
+        relevance,
+        vector,
+        access_count,
+        last_accessed,
+        memory_type,
+        layer,
+        journey,
+    ) in DEMO_MEMORIES:
         store.create_memory(
             Memory(
                 id=mid,
-                memory_type="insight",
-                layer="ego",
+                memory_type=memory_type,
+                layer=layer,
                 title=title,
                 content=content,
                 created_at=created_at,
                 relevance_score=relevance,
                 use_count=use_count,
-                journey="demo-parity",
+                journey=journey,
                 embedding=embedding_to_bytes(np.array(vector, dtype=np.float32)),
             )
         )
@@ -137,6 +180,13 @@ def generate_demo_db(path: Path) -> None:
             key=key,
             content=f"Synthetic persona {key} for parity fixtures.",
             metadata=json.dumps({"routing_keywords": keywords}),
+        )
+    for key, content, parent in DEMO_JOURNEYS:
+        identity.set_identity(
+            layer="journey",
+            key=key,
+            content=content,
+            metadata=json.dumps({"parent_journey": parent}) if parent else None,
         )
     conn.close()
 

@@ -1,4 +1,7 @@
 import { createHash } from "node:crypto";
+import type { Database } from "../db/database.ts";
+import { type JourneyIdentityRow, listJourneyOptions } from "../journey/journeyOptions.ts";
+import { countMemoriesByType, listRecentMemorySummaries } from "../memory/listing.ts";
 import { detectPersona, type PersonaRoutingRow } from "../persona/detectPersona.ts";
 import {
   type RankableMemory,
@@ -25,6 +28,22 @@ export interface PersonaProbe {
   expected_order: string[];
 }
 
+/** A journey-listing probe: the ordered journey ids the Python oracle returned. */
+export interface JourneyProbe {
+  label: string;
+  expected_order: string[];
+}
+
+/** A memory-listing probe: filter inputs and the ordered ids the oracle returned. */
+export interface ListingProbe {
+  label: string;
+  memory_type?: string | null;
+  layer?: string | null;
+  journey?: string | null;
+  limit: number;
+  expected_order: string[];
+}
+
 export interface RealDbCopyFixture {
   source_label?: string;
   frozen_now_ms: number;
@@ -40,6 +59,14 @@ export interface RealDbCopyFixture {
   persona_rows?: PersonaRoutingRow[];
   persona_threshold?: number;
   persona_probes?: PersonaProbe[];
+  /** The copied DB's journey routing rows and the oracle's ordered options. */
+  journey_rows?: JourneyIdentityRow[];
+  journey_probes?: JourneyProbe[];
+  /** Absolute path to the copied DB, so the listing read model runs over the seam. */
+  copied_db_path?: string;
+  listing_probes?: ListingProbe[];
+  /** Sorted `type=count` tokens for the `count_by_type` cross-check. */
+  count_by_type_expected?: string[];
 }
 
 export interface ProbeParityResult {
@@ -85,6 +112,68 @@ export function evaluateRealDbCopyFixture(
         : {}),
     };
   });
+}
+
+/** Build a redacted probe result from an expected/actual ordered-id pair. */
+export function toProbeResult(
+  label: string,
+  expectedOrder: readonly string[],
+  actualOrder: readonly string[],
+  options: { includeSensitiveDebug?: boolean } = {},
+): ProbeParityResult {
+  const match = JSON.stringify([...actualOrder]) === JSON.stringify([...expectedOrder]);
+  return {
+    label,
+    resultCount: expectedOrder.length,
+    pythonOrderHash: orderedIdsHash(expectedOrder),
+    tsOrderHash: orderedIdsHash(actualOrder),
+    match,
+    ...(options.includeSensitiveDebug
+      ? { expectedOrder: [...expectedOrder], actualOrder: [...actualOrder] }
+      : {}),
+  };
+}
+
+export function evaluateJourneyProbes(
+  fixture: RealDbCopyFixture,
+  options: { includeSensitiveDebug?: boolean } = {},
+): ProbeParityResult[] {
+  const rows = fixture.journey_rows ?? [];
+  const actualOrder = listJourneyOptions(rows).map((option) => option.id);
+  return (fixture.journey_probes ?? []).map((probe) =>
+    toProbeResult(probe.label, probe.expected_order, actualOrder, options),
+  );
+}
+
+/**
+ * Replay the memory-listing read model against the copied DB through the seam.
+ * The ordering is SQLite's (`ORDER BY created_at DESC`), so this is where listing
+ * order parity is proven (US3 option B); the CI unit suite covers the query
+ * builder and mapper without a DB.
+ */
+export function evaluateListingProbes(
+  fixture: RealDbCopyFixture,
+  db: Database,
+  options: { includeSensitiveDebug?: boolean } = {},
+): ProbeParityResult[] {
+  const results = (fixture.listing_probes ?? []).map((probe) => {
+    const actualOrder = listRecentMemorySummaries(db, {
+      limit: probe.limit,
+      memoryType: probe.memory_type ?? null,
+      layer: probe.layer ?? null,
+      journey: probe.journey ?? null,
+    }).map((summary) => summary.id);
+    return toProbeResult(probe.label, probe.expected_order, actualOrder, options);
+  });
+  if (fixture.count_by_type_expected) {
+    const actual = countMemoriesByType(db)
+      .map(([type, count]) => `${type}=${count}`)
+      .sort();
+    results.push(
+      toProbeResult("listing_count_by_type", fixture.count_by_type_expected, actual, options),
+    );
+  }
+  return results;
 }
 
 export function evaluatePersonaProbes(

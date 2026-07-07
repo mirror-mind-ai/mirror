@@ -1,5 +1,8 @@
 import { readFileSync } from "node:fs";
+import { openDatabaseReadOnly } from "../src/db/database.ts";
 import {
+  evaluateJourneyProbes,
+  evaluateListingProbes,
   evaluatePersonaProbes,
   evaluateRealDbCopyFixture,
   type ProbeParityResult,
@@ -24,6 +27,17 @@ if (!fixturePath) {
 const fixture = JSON.parse(readFileSync(fixturePath, "utf8")) as RealDbCopyFixture;
 const searchResults = evaluateRealDbCopyFixture(fixture, { includeSensitiveDebug });
 const personaResults = evaluatePersonaProbes(fixture, { includeSensitiveDebug });
+const journeyResults = evaluateJourneyProbes(fixture, { includeSensitiveDebug });
+
+let listingResults: ProbeParityResult[] = [];
+if ((fixture.listing_probes?.length || fixture.count_by_type_expected) && fixture.copied_db_path) {
+  const db = openDatabaseReadOnly(fixture.copied_db_path);
+  try {
+    listingResults = evaluateListingProbes(fixture, db, { includeSensitiveDebug });
+  } finally {
+    db.close();
+  }
+}
 
 process.stdout.write("== search ==\n");
 process.stdout.write(renderRedactedReport(searchResults));
@@ -31,8 +45,16 @@ if (personaResults.length > 0) {
   process.stdout.write("== detect-persona ==\n");
   process.stdout.write(renderRedactedReport(personaResults));
 }
+if (journeyResults.length > 0) {
+  process.stdout.write("== journeys ==\n");
+  process.stdout.write(renderRedactedReport(journeyResults));
+}
+if (listingResults.length > 0) {
+  process.stdout.write("== memory-listing ==\n");
+  process.stdout.write(renderRedactedReport(listingResults));
+}
 
-const allResults = [...searchResults, ...personaResults];
+const allResults = [...searchResults, ...personaResults, ...journeyResults, ...listingResults];
 if (includeSensitiveDebug) {
   process.stdout.write("\nSENSITIVE DEBUG OUTPUT ENABLED\n");
   for (const result of allResults as ProbeParityResult[]) {
