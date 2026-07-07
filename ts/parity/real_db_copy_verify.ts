@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import {
+  evaluatePersonaProbes,
   evaluateRealDbCopyFixture,
+  type ProbeParityResult,
   renderRedactedReport,
   type RealDbCopyFixture,
 } from "../src/parity/realDbCopyParity.ts";
@@ -20,16 +22,24 @@ if (!fixturePath) {
 }
 
 const fixture = JSON.parse(readFileSync(fixturePath, "utf8")) as RealDbCopyFixture;
-const results = evaluateRealDbCopyFixture(fixture, { includeSensitiveDebug });
-process.stdout.write(renderRedactedReport(results));
+const searchResults = evaluateRealDbCopyFixture(fixture, { includeSensitiveDebug });
+const personaResults = evaluatePersonaProbes(fixture, { includeSensitiveDebug });
 
+process.stdout.write("== search ==\n");
+process.stdout.write(renderRedactedReport(searchResults));
+if (personaResults.length > 0) {
+  process.stdout.write("== detect-persona ==\n");
+  process.stdout.write(renderRedactedReport(personaResults));
+}
+
+const allResults = [...searchResults, ...personaResults];
 if (includeSensitiveDebug) {
   process.stdout.write("\nSENSITIVE DEBUG OUTPUT ENABLED\n");
-  for (const result of results) {
+  for (const result of allResults as ProbeParityResult[]) {
     process.stdout.write(`probe: ${result.label}\n`);
     process.stdout.write(`python_order: ${(result.expectedOrder ?? []).join(",")}\n`);
     process.stdout.write(`ts_order: ${(result.actualOrder ?? []).join(",")}\n`);
   }
 }
 
-process.exit(results.every((result) => result.match) ? 0 : 1);
+process.exit(allResults.every((result) => result.match) ? 0 : 1);

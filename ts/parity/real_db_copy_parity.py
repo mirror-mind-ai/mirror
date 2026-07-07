@@ -23,9 +23,13 @@ import memory.intelligence.search as search_mod
 from memory.db.connection import get_connection
 from memory.intelligence.embeddings import bytes_to_embedding
 from memory.intelligence.search import MemorySearch, _parse_datetime_utc
+from memory.services.attachment import AttachmentService
+from memory.services.identity import IdentityService
 from memory.storage.store import Store
 
 DEFAULT_WORK_DIR = Path("tmp/parity/real-db-copy")
+PERSONA_THRESHOLD = 1.0
+PERSONA_NO_MATCH_QUERY = "zzzz nonexistent routing token qqqq"
 DEFAULT_PROBES: tuple[tuple[str, str], ...] = (
     ("search_demo_1", "mirror journey"),
     ("search_demo_2", "builder memory"),
@@ -80,6 +84,54 @@ def _memory_entry(store: Store, mem, lexical_scores: dict[str, float]) -> dict:
     }
 
 
+def _persona_rows(store: Store) -> list[dict]:
+    """The copied DB's persona routing table, parsed exactly as the oracle reads it."""
+    rows: list[dict] = []
+    for ident in store.get_identity_by_layer("persona"):
+        if not ident.metadata:
+            continue
+        try:
+            metadata = json.loads(ident.metadata)
+        except (json.JSONDecodeError, TypeError):
+            continue
+        keywords = metadata.get("routing_keywords") or []
+        if not isinstance(keywords, list):
+            continue
+        rows.append(
+            {
+                "key": ident.key,
+                "routing_keywords": [kw for kw in keywords if isinstance(kw, str)],
+            }
+        )
+    return rows
+
+
+def _persona_probes(store: Store, persona_rows: list[dict]) -> list[dict]:
+    """Derive probes from each persona's own routing keywords (guaranteed real hits),
+    plus a deliberate no-match probe, and record the oracle's ordered persona keys."""
+    identity = IdentityService(store, AttachmentService(store))
+    probes: list[dict] = []
+    for index, row in enumerate(persona_rows):
+        query = " ".join(row["routing_keywords"][:3]) or row["key"]
+        matches = identity.detect_persona(query, threshold=PERSONA_THRESHOLD)
+        probes.append(
+            {
+                "label": f"persona_derived_{index + 1}",
+                "query": query,
+                "expected_order": [key for key, _score, _match_type in matches],
+            }
+        )
+    no_match = identity.detect_persona(PERSONA_NO_MATCH_QUERY, threshold=PERSONA_THRESHOLD)
+    probes.append(
+        {
+            "label": "persona_no_match",
+            "query": PERSONA_NO_MATCH_QUERY,
+            "expected_order": [key for key, _score, _match_type in no_match],
+        }
+    )
+    return probes
+
+
 def _build_fixture(*, source_db: Path, work_dir: Path, limit: int) -> Path:
     copied_db = work_dir / "memory.real-db-copy-parity.db"
     fixture_path = work_dir / "real-db-copy-fixture.json"
@@ -123,6 +175,8 @@ def _build_fixture(*, source_db: Path, work_dir: Path, limit: int) -> Path:
                     ],
                 }
             )
+        persona_rows = _persona_rows(store)
+        persona_probes = _persona_probes(store, persona_rows)
     finally:
         search_mod.datetime = original_datetime
         search_mod.generate_embedding = original_generate_embedding
@@ -139,6 +193,9 @@ def _build_fixture(*, source_db: Path, work_dir: Path, limit: int) -> Path:
         "reinforcement_use_weight": search_mod.REINFORCEMENT_USE_WEIGHT,
         "reinforcement_retrieval_weight": search_mod.REINFORCEMENT_RETRIEVAL_WEIGHT,
         "probes": probes,
+        "persona_threshold": PERSONA_THRESHOLD,
+        "persona_rows": persona_rows,
+        "persona_probes": persona_probes,
     }
     fixture_path.write_text(json.dumps(fixture), encoding="utf-8")
     return fixture_path

@@ -1,0 +1,126 @@
+{
+  "meta": {
+    "threshold": 1.0
+  },
+  "personas": [
+    {
+      "key": "code-reviewer",
+      "routing_keywords": [
+        "code",
+        "pull request",
+        "refactor",
+        "bug"
+      ]
+    },
+    {
+      "key": "finance-coach",
+      "routing_keywords": [
+        "budget",
+        "savings-plan",
+        "investment",
+        "cash flow"
+      ]
+    },
+    {
+      "key": "garden-planner",
+      "routing_keywords": [
+        "garden",
+        "soil",
+        "compost bin",
+        "seedling"
+      ]
+    },
+    {
+      "key": "travel-guide",
+      "routing_keywords": [
+        "travel",
+        "itinerary",
+        "packing list",
+        "flight"
+      ]
+    }
+  ],
+  "probes": [
+    {
+      "expected": [
+        {
+          "key": "code-reviewer",
+          "match_type": "keyword",
+          "score": 4.0
+        }
+      ],
+      "label": "multi_hit_code",
+      "query": "How do I refactor this code and fix a bug in the pull request?"
+    },
+    {
+      "expected": [
+        {
+          "key": "travel-guide",
+          "match_type": "keyword",
+          "score": 4.0
+        }
+      ],
+      "label": "multi_hit_travel",
+      "query": "I need a packing list for my travel itinerary and a flight"
+    },
+    {
+      "expected": [
+        {
+          "key": "finance-coach",
+          "match_type": "keyword",
+          "score": 3.0
+        }
+      ],
+      "label": "hyphen_savings_plan",
+      "query": "review my budget and cash flow with a savings-plan"
+    },
+    {
+      "expected": [
+        {
+          "key": "code-reviewer",
+          "match_type": "keyword",
+          "score": 2.0
+        }
+      ],
+      "label": "punctuation_normalization",
+      "query": "CODE!! (Pull-Request) time"
+    },
+    {
+      "expected": [
+        {
+          "key": "code-reviewer",
+          "match_type": "keyword",
+          "score": 1.0
+        },
+        {
+          "key": "garden-planner",
+          "match_type": "keyword",
+          "score": 1.0
+        }
+      ],
+      "label": "tie_break_by_key",
+      "query": "code and garden in one line"
+    },
+    {
+      "expected": [
+        {
+          "key": "travel-guide",
+          "match_type": "keyword",
+          "score": 1.0
+        }
+      ],
+      "label": "threshold_boundary_single_hit",
+      "query": "just booking a flight"
+    },
+    {
+      "expected": [],
+      "label": "no_match",
+      "query": "the quiet ocean at dawn"
+    },
+    {
+      "expected": [],
+      "label": "empty_after_normalization",
+      "query": "!!! ??? ..."
+    }
+  ]
+}

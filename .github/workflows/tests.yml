@@ -45,6 +45,7 @@ jobs:
       - name: Golden parity determinism (regenerate must be a no-op)
         run: |
           uv run python ts/parity/generate_golden.py
+          uv run python ts/parity/generate_persona_golden.py
           git diff --exit-code ts/test/goldens/
         env:
           MEMORY_ENV: test

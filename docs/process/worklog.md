@@ -12,6 +12,14 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-07-07 — CV22.DS2.US2 `detect-persona` parity completed
+
+Ported the pure Python router `IdentityService.detect_persona` into the durable TypeScript core as the first Baton 2 slice (Vinícius) of the CV22 collaboration strategy. The new `ts/src/persona/detectPersona.ts` reproduces `_normalize_routing_text` and the routing decision exactly: lowercase/hyphen/underscore/punctuation normalization, single-word keyword token membership versus multi-word keyword raw-substring matching (including keywords that become multi-word after normalization, e.g. `savings-plan` → `savings plan`), the `hit_count >= threshold` gate, and the `(-score, key)` tie-break. Because the router reads no clock and no embeddings, parity is exact behavioral equality (persona keys, hit-count scores, match type) rather than the ordered-id-with-drift metric `search` uses, so the golden contract freezes nothing.
+
+A new `ts/parity/generate_persona_golden.py` drives the real oracle over synthetic personas into a committed golden whose probes exercise every branch (multi-hit, hyphenated-keyword substring, punctuation normalization, ties, single-hit threshold boundary, no-match, empty-after-normalization). The reusable real-DB-copy harness (TS3) was extended to cover a second command family: `evaluatePersonaProbes`, a `== detect-persona ==` report section, persona rows/probes read from the copied DB, and synthetic personas seeded into the portable demo DB — all redacted by default. The CI determinism gate now regenerates both goldens.
+
+Validation: `npm run typecheck`, `npm run lint`, and `npm test` passed in `ts/` with 35 tests (up from 21). Both synthetic goldens regenerate deterministically (`git diff --exit-code` clean), production TS source keeps `node:sqlite` isolated to `ts/src/db/database.ts`, and `git diff --check` passed. The portable end-to-end route (`generate_demo_memory_db.py` → `real_db_copy_parity.py --source-db tmp/parity/demo-memory.db`) passed with 5/5 search probes and 4/4 detect-persona probes matching, evidence redacted, no live database touched. Navigator validated locally.
+
 ### 2026-07-05 — CV22.DS2.TS3 reusable real-DB-copy parity harness completed
 
 Paid the validation debt carried from CV22.DS2.US1 by turning the local real-DB-copy parity route into a reusable, privacy-conscious harness. The new route generates a public synthetic Mirror `memory.db` with real schema/FTS/embeddings/access logs, copies any explicit source DB into ignored `tmp/` storage before validation, verifies Python-vs-TS ordered parity through the TS ranker, and emits redacted evidence by default: probe labels, result counts, hashes, and pass/fail only. The CV22 collaboration strategy now tells Vinícius how to reproduce the route without Alisson's private filesystem.

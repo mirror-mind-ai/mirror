@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { detectPersona, type PersonaRoutingRow } from "../persona/detectPersona.ts";
 import {
   type RankableMemory,
   type RankerConfig,
@@ -13,6 +14,17 @@ export interface RealDbCopyProbe {
   memories: RankableMemory[];
 }
 
+/**
+ * A `detect-persona` probe over the copied DB's real routing metadata. The
+ * ordered persona keys the Python oracle returned are compared against the TS
+ * router replaying the same `persona_rows` and threshold.
+ */
+export interface PersonaProbe {
+  label: string;
+  query: string;
+  expected_order: string[];
+}
+
 export interface RealDbCopyFixture {
   source_label?: string;
   frozen_now_ms: number;
@@ -24,6 +36,10 @@ export interface RealDbCopyFixture {
   reinforcement_use_weight: number;
   reinforcement_retrieval_weight: number;
   probes: RealDbCopyProbe[];
+  /** The copied DB's persona routing table (optional; absent on search-only fixtures). */
+  persona_rows?: PersonaRoutingRow[];
+  persona_threshold?: number;
+  persona_probes?: PersonaProbe[];
 }
 
 export interface ProbeParityResult {
@@ -57,6 +73,28 @@ export function evaluateRealDbCopyFixture(
       reinforcementRetrievalWeight: fixture.reinforcement_retrieval_weight,
     };
     const actualOrder = rankMemories(probe.memories, config).map((memory) => memory.id);
+    const match = JSON.stringify(actualOrder) === JSON.stringify(probe.expected_order);
+    return {
+      label: probe.label,
+      resultCount: probe.expected_order.length,
+      pythonOrderHash: orderedIdsHash(probe.expected_order),
+      tsOrderHash: orderedIdsHash(actualOrder),
+      match,
+      ...(options.includeSensitiveDebug
+        ? { expectedOrder: probe.expected_order, actualOrder }
+        : {}),
+    };
+  });
+}
+
+export function evaluatePersonaProbes(
+  fixture: RealDbCopyFixture,
+  options: { includeSensitiveDebug?: boolean } = {},
+): ProbeParityResult[] {
+  const personas = fixture.persona_rows ?? [];
+  const threshold = fixture.persona_threshold ?? 1.0;
+  return (fixture.persona_probes ?? []).map((probe) => {
+    const actualOrder = detectPersona(probe.query, personas, threshold).map((match) => match.key);
     const match = JSON.stringify(actualOrder) === JSON.stringify(probe.expected_order);
     return {
       label: probe.label,

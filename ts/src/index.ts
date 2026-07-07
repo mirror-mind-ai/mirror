@@ -6,15 +6,19 @@
 export type { Database, PreparedQuery, Row, SqlValue } from "./db/database.ts";
 export { openDatabaseReadOnly } from "./db/database.ts";
 export type {
+  PersonaProbe,
   ProbeParityResult,
   RealDbCopyFixture,
   RealDbCopyProbe,
 } from "./parity/realDbCopyParity.ts";
 export {
+  evaluatePersonaProbes,
   evaluateRealDbCopyFixture,
   orderedIdsHash,
   renderRedactedReport,
 } from "./parity/realDbCopyParity.ts";
+export type { PersonaMatch, PersonaRoutingRow } from "./persona/detectPersona.ts";
+export { detectPersona, normalizeRoutingText } from "./persona/detectPersona.ts";
 export type { RankableMemory, RankedMemory, RankerConfig, SearchWeights } from "./search/ranker.ts";
 export {
   cosineSimilarity,

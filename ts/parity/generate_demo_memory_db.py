@@ -9,6 +9,7 @@ requiring any private local mirror.
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 import numpy as np
@@ -16,6 +17,8 @@ import numpy as np
 from memory.db.connection import get_connection
 from memory.intelligence.embeddings import embedding_to_bytes
 from memory.models import Memory
+from memory.services.attachment import AttachmentService
+from memory.services.identity import IdentityService
 from memory.storage.store import Store
 
 DEMO_MEMORIES = (
@@ -87,6 +90,13 @@ DEMO_MEMORIES = (
     ),
 )
 
+# Synthetic persona routing rows for the portable `detect-persona` parity route.
+DEMO_PERSONAS = (
+    ("demo-code-reviewer", ["code", "pull request", "refactor", "bug"]),
+    ("demo-finance-coach", ["budget", "savings-plan", "investment", "cash flow"]),
+    ("demo-garden-planner", ["garden", "soil", "compost bin", "seedling"]),
+)
+
 
 def generate_demo_db(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -119,6 +129,15 @@ def generate_demo_db(path: Path) -> None:
         if last_accessed is not None:
             conn.execute("UPDATE memories SET last_accessed_at = ? WHERE id = ?", (last_accessed, mid))
     conn.commit()
+
+    identity = IdentityService(store, AttachmentService(store))
+    for key, keywords in DEMO_PERSONAS:
+        identity.set_identity(
+            layer="persona",
+            key=key,
+            content=f"Synthetic persona {key} for parity fixtures.",
+            metadata=json.dumps({"routing_keywords": keywords}),
+        )
     conn.close()
 
 
