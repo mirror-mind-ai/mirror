@@ -2,7 +2,7 @@
 
 # CV22.DS3.US1 — Pi TS Front Door
 
-**Status:** 🟢 Implemented locally, awaiting validation
+**Status:** ✅ Done
 **Type:** User Story
 
 ---

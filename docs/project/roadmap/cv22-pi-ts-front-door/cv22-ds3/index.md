@@ -2,7 +2,7 @@
 
 # CV22.DS3 — Pi TS Front Door
 
-**Status:** 🟢 Implemented locally, awaiting validation
+**Status:** ✅ Done
 **Type:** Delivery Story
 
 ---
@@ -15,7 +15,7 @@ Pi TS Front Door
 
 | Code | Story | Type | Outcome | Status |
 |------|-------|------|---------|--------|
-| [CV22.DS3.US1](cv22-ds3-us1-pi-ts-front-door/index.md) | Pi TS Front Door | User Story | Navigator can validate Pi TS Front Door as an observable behavior. | 🟡 Planned |
+| [CV22.DS3.US1](cv22-ds3-us1-pi-ts-front-door/index.md) | Pi TS Front Door | User Story | Navigator can validate Pi TS Front Door as an observable behavior. | ✅ Done |
 
 ## Done Condition
 

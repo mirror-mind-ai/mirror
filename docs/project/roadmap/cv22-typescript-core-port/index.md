@@ -93,14 +93,15 @@ the write commands (DS4), and behavior at larger scale (the ranker is a full sca
 CV22 is governed by [Ariad](../ariad-adoption.md); its former epics are now
 Delivery Stories (`DS1`–`DS6`, aligned one-to-one with the former `E1`–`E6`).
 Each Delivery Story expands into User/Technical Stories on pull — only the active
-DS is expanded here; DS3–DS6 stay as delivery-level scope until pulled.
+or completed expanded DS packages are linked here; DS4–DS6 stay as delivery-level
+scope until pulled.
 
 | Code | Delivery Story | Done condition | Status |
 |------|----------------|----------------|--------|
 | [CV22.DS1](cv22-ds1-hybrid-search-parity-spike/index.md) | Hybrid-Search Parity Spike | A TS reimplementation of the hybrid ranker, reading the same SQLite file, reproduces Python's ordered results on synthetic data and on a real-DB snapshot; near-tie risk quantified | ✅ Done |
 | [CV22.DS2](cv22-ds2-ts-foundation-read-only-parity/index.md) | TS Foundation & Read-Only Command Parity | Stand up the TS core (`node:sqlite`, BLOB/embedding read, frozen-`now` golden contract); reach ordered/behavioral parity for read-only deterministic commands (`search`, `detect-persona`, journeys, memory listing) on real-DB copies | ✅ Done |
-| CV22.DS3 | Pi TS Front Door | A TS front door on Pi that wraps the frozen Python engine and routes ported read commands to the TS core; dogfooded daily; runtimes unaffected | 🟡 Planned · next (Baton 3) |
-| CV22.DS4 | Deterministic Writes | Port write commands (journey/identity CRUD, `log_access`) with parity proven on DB copies; backup-gated; schema-compatible | 🟡 Planned |
+| [CV22.DS3](../cv22-pi-ts-front-door/cv22-ds3/index.md) | Pi TS Front Door | A TS front door on Pi that wraps the frozen Python engine and routes ported read commands to the TS core; dogfooded daily; runtimes unaffected | ✅ Done |
+| CV22.DS4 | Deterministic Writes | Port write commands (journey/identity CRUD, `log_access`) with parity proven on DB copies; backup-gated; schema-compatible | 🟡 Planned · next (Baton 4) |
 | CV22.DS5 | External-API Commands | Port extraction (Gemini), embeddings (OpenAI), and consult; record/replay for non-determinism; live embedding-determinism contract; the end-to-end fresh-query path | 🟡 Planned |
 | CV22.DS6 | Convergence & Python Retirement | TS MCP server; re-home unfinished CV20 Ariad / CV21 MCP feature work to TS; burn down to a deletable Python core; reconsider the `memory → mirror` package rename; npm distribution | 🟡 Planned |
 
@@ -128,10 +129,10 @@ Risk-first, mirroring the decision spine:
 
 1. **DS1 — parity spike** (done): prove the hardest thing (ranker parity) before
    committing to anything broader.
-2. **DS2 — read-only parity**: the deterministic core, validated on real-DB copies.
-3. **DS3 — Pi front door**: make the transition state durable and dogfooded; begin
+2. **DS2 — read-only parity** (done): the deterministic core, validated on real-DB copies.
+3. **DS3 — Pi front door** (done): make the transition state durable and dogfooded; begin
    the command burn-down.
-4. **DS4 — writes**: backup-gated, copy-validated.
+4. **DS4 — writes** (next): backup-gated, copy-validated.
 5. **DS5 — external-API commands**: isolate non-determinism at the boundary.
 6. **DS6 — convergence & retirement**: TS MCP server, re-homed feature work, Python
    core deleted, npm distribution.
