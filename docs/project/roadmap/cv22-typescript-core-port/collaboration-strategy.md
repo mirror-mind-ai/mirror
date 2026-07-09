@@ -70,21 +70,24 @@ Handoff statement to Alisson:
 
 > The TS core can now read Mirror deterministically with validated parity across the full DS2 command set — `search`, `detect-persona`, journeys, and memory listing — on synthetic goldens in CI and on real-DB copies through the redacted harness. The pure logic (ranker, router, journey sort) lives in tested `ts/src/` modules; the memory listing read model already issues real SQL through the `node:sqlite` seam, which is exactly the shape DS3 will call. The foundation is ready to be put behind a runtime front door. Please carry `CV22.DS3` and route these ported read commands to the TS core behind Pi, falling back to the frozen Python engine for everything unported, dogfooded daily with no user-visible language switch.
 
-### Baton 3: Alisson carries CV22.DS3, Pi TS Front Door
+### Baton 3: Alisson closes CV22.DS3, Pi TS Front Door
 
-Alisson carries the first runtime-facing transition state.
+Alisson carried the first runtime-facing transition state through `CV22.DS3`.
 
-Expected plateau:
+Plateau reached:
 
-- Pi has a TS front door that can route commands;
-- ported commands go to the TS core;
-- unported commands fall back to the frozen Python engine;
-- the transition state is dogfoodable in daily use;
-- the runtime does not expose language switching as a user-visible disruption.
+- the TS core is reachable through a Pi-facing front door at `ts/src/frontDoor/cli.ts`;
+- routing is explicit and conservative in `ts/src/frontDoor/routing.ts`;
+- DS2-ported read routes now enter TS: `detect-persona`, `journeys`, and non-search `memories`;
+- `memories --search` remains on Python fallback because fresh semantic embedding/search is DS5 scope;
+- every unported or mutating command remains on Python fallback, including writes, Builder/Ariad, Soul, Explorer, extraction, consult, and runtime operations;
+- Pi skill docs for `/mm-journeys` and `/mm-memories` now enter through the front door without exposing a user-visible Python/TS switch;
+- DS3 was validated locally with TS typecheck/lint/tests, `.pi` TypeScript check, generated-demo-DB front-door smoke routes, and Navigator-run smoke commands;
+- commit `061ff86` (`Add Pi TypeScript front door for read-only routes`) was pushed to `mirror-ts-core`, and GitHub Actions passed across TS plus Python 3.10/3.12.
 
 Handoff statement to Vinícius:
 
-> The TS core is now reachable through the runtime front door. The system can live in the transition state. Please carry deterministic writes with backup-gated, copy-validated parity.
+> DS3 is closed and pushed. The TS core is now reachable through the runtime front door for the DS2 read allowlist, while `memories --search`, all writes, and all unported/mutating flows still fall back to Python. CI is green at `061ff86`. Please carry `CV22.DS4` by porting deterministic writes with backup-gated, copy-validated parity, keeping mutation safety explicit and never proving write parity against the live production database.
 
 ### Baton 4: Vinícius carries CV22.DS4, Deterministic Writes
 
