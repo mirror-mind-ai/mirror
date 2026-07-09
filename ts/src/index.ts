@@ -5,6 +5,8 @@
 
 export type { Database, PreparedQuery, Row, SqlValue } from "./db/database.ts";
 export { openDatabaseReadOnly } from "./db/database.ts";
+export type { FrontDoorEngine, RouteDecision } from "./frontDoor/routing.ts";
+export { routeMemoryCommand } from "./frontDoor/routing.ts";
 export type { JourneyIdentityRow, JourneyOption } from "./journey/journeyOptions.ts";
 export { listJourneyOptions } from "./journey/journeyOptions.ts";
 export type { ListRecentFilters, MemorySummary } from "./memory/listing.ts";
