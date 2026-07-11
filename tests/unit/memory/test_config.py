@@ -143,20 +143,6 @@ def test_transcript_export_dir_can_be_configured_from_environment(tmp_path):
         assert cfg.TRANSCRIPT_EXPORT_DIR == transcript_dir
 
 
-def test_backup_dir_defaults_from_mirror_home(tmp_path):
-    mirror_home = tmp_path / ".mirror" / "testuser"
-
-    with _config_with_env(MIRROR_HOME=str(mirror_home)) as cfg:
-        assert cfg.BACKUP_DIR == mirror_home / "backups"
-
-
-def test_backup_dir_can_be_configured_from_environment(tmp_path):
-    backup_dir = tmp_path / "dropbox" / "backups"
-
-    with _config_with_env(BACKUP_DIR=str(backup_dir)) as cfg:
-        assert cfg.BACKUP_DIR == backup_dir
-
-
 def test_mute_flag_path_is_derived_from_memory_dir():
     with _config_with_env() as cfg:
         assert cfg.MUTE_FLAG_PATH == cfg.MEMORY_DIR / "mute"

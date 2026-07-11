@@ -11,6 +11,33 @@ resolved.
 
 ## Completed Decisions
 
+### BACKUP_DIR is demoted: redirection becomes an explicit, per-invocation choice
+
+**Date:** 2026-07-08
+**Reference:** journey `mirror`, [CV9.E2.S5](roadmap/cv9-mirror-1-0/cv9-e2-stabilization/cv9-e2-s5-backup-destination-resolution/index.md)
+**Participants:** Vinícius Teles
+
+The `BACKUP_DIR` environment variable used to override the backup destination
+even when a caller passed an explicit `mirror_home`. That coupling was the root
+cause of a class of defect: a personal `.env` `BACKUP_DIR` leaked into the test
+suite (green in CI, red locally), a process-global env silently outranked an
+explicit scope, and a single global backup folder shared across mirrors risked
+filename collisions between users.
+
+Decision: **backup destination resolution is explicit and scope-first.** A pure
+`resolve_backup_dir()` applies one precedence — explicit path >
+`mirror_home/backups` > global default — and reads no environment or global
+config. `BACKUP_DIR` no longer redirects backups. Redirection is now an
+intentional, per-invocation `--backup-dir` flag on `python -m memory backup`.
+
+This is a deliberate behavior change. Setups that relied on `BACKUP_DIR` to
+redirect the CLI backup will write under the mirror home until they adopt
+`--backup-dir`; the change is made non-silent by a deprecation warning when the
+variable is still set. `DB_BACKUP_PATH` is retained as the global default for the
+no-`mirror_home` fallback. Per-user filename namespacing for shared directories
+is deferred as a future note, relevant only if multi-user shared-backup becomes a
+real need.
+
 ### Mirror Mind ports to TypeScript via a database-seam strangler, not a rewrite
 
 **Date:** 2026-06-23

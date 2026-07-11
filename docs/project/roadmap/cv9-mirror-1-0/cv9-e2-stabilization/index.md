@@ -3,7 +3,7 @@
 # CV9.E2 — Stabilization & Robustness
 
 **Epic:** Harden failure modes so Mirror Mind degrades safely instead of breaking or corrupting runtime state  
-**Status:** Planned, with CV9.E2.S3 production updater fix and CV9.E2.S4 conversation title hardening done; conversation metadata lifecycle identified as [CV9.DS7](../cv9-ds7-conversation-metadata-lifecycle/index.md)
+**Status:** Planned, with CV9.E2.S3 production updater fix, CV9.E2.S4 conversation title hardening, and CV9.E2.S5 backup destination resolution done; conversation metadata lifecycle identified as [CV9.DS7](../cv9-ds7-conversation-metadata-lifecycle/index.md)
 **Depends on:** CV9.E1 Boundary Hardening, except for isolated production-bug fixes that are already understood
 
 ---
@@ -44,6 +44,7 @@ recoverable.
 | [CV9.E2.S2](cv9-e2-s2-external-extension-runtime-surface/index.md) | External Extension Runtime Surface Parity | Planned |
 | [CV9.E2.S3](cv9-e2-s3-runtime-update-preflight-resilience/index.md) | Runtime Update Preflight Resilience | Done |
 | [CV9.E2.S4](cv9-e2-s4-conversation-title-hardening/index.md) | Conversation Title Hardening | Done |
+| [CV9.E2.S5](cv9-e2-s5-backup-destination-resolution/index.md) | Backup Destination Resolution & `BACKUP_DIR` Demotion | Done |
 
 ---
 

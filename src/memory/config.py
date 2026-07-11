@@ -189,10 +189,6 @@ _DEFAULT_DB_PATH = (
 DB_PATH = _path_from_env("DB_PATH", _DEFAULT_DB_PATH)
 DB_BACKUP_PATH = _path_from_env("DB_BACKUP_PATH", DB_PATH.parent / "backups")
 
-BACKUP_DIR = _path_from_env(
-    "BACKUP_DIR",
-    default_backup_dir_for_home(_RESOLVED_MIRROR_HOME) if _RESOLVED_MIRROR_HOME else DB_BACKUP_PATH,
-)
 EXPORT_DIR = _path_from_env(
     "EXPORT_DIR",
     default_export_dir_for_home(_RESOLVED_MIRROR_HOME)

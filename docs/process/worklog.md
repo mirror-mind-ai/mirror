@@ -12,6 +12,14 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-07-08 — CV9.E2.S5 Backup destination resolution & `BACKUP_DIR` demotion completed
+
+Hardened how `python -m memory backup` decides where an archive goes. The destination policy used to live inside `backup()` as a nested conditional that read `os.environ["BACKUP_DIR"]` and `config.BACKUP_DIR`, which made the destination untestable without env manipulation (a developer's personal `.env` `BACKUP_DIR` leaked into the suite — green in CI, red locally), surprising (a process-global env silently outranked an explicit `mirror_home`), and multi-user-unsafe (one shared folder, colliding `memory_{timestamp}.zip` names).
+
+Tier 1 extracts a pure `resolve_backup_dir()` with explicit precedence — explicit path > `mirror_home/backups` > global default — that reads no environment or global config; `backup()` delegates to it. Tier 2 demotes `BACKUP_DIR`: `backup()` no longer consults it, redirection becomes an intentional per-invocation `--backup-dir` flag, and when `BACKUP_DIR` is still set in the environment the CLI prints a deprecation warning and writes under the mirror home instead of silently redirecting. The now-unused `config.BACKUP_DIR` constant was removed. This behavior change is deliberate and recorded in [Decisions](../project/decisions.md#backup_dir-is-demoted-redirection-becomes-an-explicit-per-invocation-choice).
+
+Validation: TDD'd the resolver and CLI (red → green); focused backup, runtime, web-operations, web-server, and main-dispatch suites pass; the earlier web/runtime backup failures that this class of leak caused are now green because `backup()` no longer reads the ambient env. Full suite, ruff, and format gates green before the release boundary.
+
 ### 2026-07-04 — v0.29.3 Pi External-Skill Discovery Fix prepared
 
 Prepared the patch release boundary for the Pi external-skill discovery fix. On the `~/.mirror-minds` home layout the Pi logger extension hardcoded the legacy `~/.mirror` root and never loaded the per-workspace `.env`, so it read a non-existent catalog and — because runtime extensions fail quietly — silently exposed zero installed external skills. The extension now replicates the Python core's `resolve_mirror_home` contract (shell env > upward `.env` walk > single-catalog auto-scan, `~/.mirror-minds` preferred with legacy `~/.mirror` fallback), returning null on multi-home ambiguity instead of guessing. The resulting cross-language resolution duplication is recorded as accepted, tracked debt (TD-001) with an explicit revisit trigger, and the Gemini smoke test's production-DB guard was hardened to resolve the DB path through the core so it protects the database the workspace actually uses.

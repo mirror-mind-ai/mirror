@@ -3,7 +3,36 @@
 import zipfile
 from datetime import datetime, timedelta
 
-from memory.cli.backup import RETENTION_DAYS, backup
+from memory.cli.backup import RETENTION_DAYS, backup, main, resolve_backup_dir
+
+
+class TestResolveBackupDir:
+    def test_explicit_path_wins_over_mirror_home_and_default(self, tmp_path):
+        explicit = tmp_path / "explicit"
+        result = resolve_backup_dir(
+            db_backup_path=explicit,
+            mirror_home=tmp_path / "home",
+            default_backup_path=tmp_path / "default",
+        )
+        assert result == explicit
+
+    def test_mirror_home_default_used_when_no_explicit_path(self, tmp_path):
+        home = tmp_path / "home"
+        result = resolve_backup_dir(
+            db_backup_path=None,
+            mirror_home=home,
+            default_backup_path=tmp_path / "default",
+        )
+        assert result == home / "backups"
+
+    def test_global_default_used_when_no_path_and_no_mirror_home(self, tmp_path):
+        default = tmp_path / "default"
+        result = resolve_backup_dir(
+            db_backup_path=None,
+            mirror_home=None,
+            default_backup_path=default,
+        )
+        assert result == default
 
 
 def test_backup_reads_from_db_path_and_writes_to_db_backup_path(tmp_path):
@@ -90,14 +119,10 @@ def test_backup_explicit_mirror_home_overrides_config_defaults(tmp_path, monkeyp
         assert zf.read("memory.db") == b"explicit db content"
 
 
-def test_backup_backup_dir_env_overrides_mirror_home_default(tmp_path, monkeypatch):
-    custom_backup_dir = tmp_path / "custom_backups"
-    # Set the env var so the os.environ.get("BACKUP_DIR") check inside backup() triggers.
-    monkeypatch.setenv("BACKUP_DIR", str(custom_backup_dir))
-    # Also patch the already-imported module-level constant so the resolved path matches.
-    import memory.config as cfg
-
-    monkeypatch.setattr(cfg, "BACKUP_DIR", custom_backup_dir)
+def test_backup_ignores_backup_dir_env_and_uses_mirror_home_default(tmp_path, monkeypatch):
+    # After the demote, backup() never consults BACKUP_DIR: an explicit
+    # mirror_home always wins over the deprecated process-global env var.
+    monkeypatch.setenv("BACKUP_DIR", str(tmp_path / "custom_backups"))
 
     mirror_home = tmp_path / ".mirror" / "pati"
     db_path = mirror_home / "memory.db"
@@ -107,7 +132,20 @@ def test_backup_backup_dir_env_overrides_mirror_home_default(tmp_path, monkeypat
     result = backup(silent=True, mirror_home=mirror_home)
 
     assert result is not None
-    assert result.parent == custom_backup_dir
+    assert result.parent == mirror_home / "backups"
+
+
+def test_backup_explicit_db_backup_path_wins_over_mirror_home(tmp_path):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = mirror_home / "memory.db"
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    db_path.write_text("db content")
+    explicit = tmp_path / "chosen"
+
+    result = backup(silent=True, mirror_home=mirror_home, db_backup_path=explicit)
+
+    assert result is not None
+    assert result.parent == explicit
 
 
 def test_backup_returns_none_when_database_does_not_exist(tmp_path):
@@ -126,6 +164,53 @@ def test_backup_returns_none_when_explicit_mirror_home_has_no_database(tmp_path)
 
     assert result is None
     assert not (mirror_home / "backups").exists()
+
+
+def _make_mirror_home_with_db(tmp_path):
+    mirror_home = tmp_path / ".mirror" / "vinicius"
+    db_path = mirror_home / "memory.db"
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    db_path.write_text("db content")
+    return mirror_home
+
+
+def test_main_backup_dir_flag_redirects_intentionally(tmp_path, monkeypatch):
+    monkeypatch.delenv("BACKUP_DIR", raising=False)
+    mirror_home = _make_mirror_home_with_db(tmp_path)
+    chosen = tmp_path / "chosen"
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "memory backup",
+            "--mirror-home",
+            str(mirror_home),
+            "--backup-dir",
+            str(chosen),
+            "--silent",
+        ],
+    )
+
+    main()
+
+    archives = list(chosen.glob("memory_*.zip"))
+    assert len(archives) == 1
+
+
+def test_main_warns_and_uses_mirror_home_when_backup_dir_env_set(tmp_path, monkeypatch, capsys):
+    mirror_home = _make_mirror_home_with_db(tmp_path)
+    monkeypatch.setenv("BACKUP_DIR", str(tmp_path / "dropbox"))
+    monkeypatch.setattr(
+        "sys.argv",
+        ["memory backup", "--mirror-home", str(mirror_home), "--silent"],
+    )
+
+    main()
+
+    err = capsys.readouterr().err
+    assert "BACKUP_DIR" in err
+    assert "--backup-dir" in err
+    assert list((mirror_home / "backups").glob("memory_*.zip"))
+    assert not (tmp_path / "dropbox").exists()
 
 
 def test_backup_removes_backups_older_than_retention_window(tmp_path):

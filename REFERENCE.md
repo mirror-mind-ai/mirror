@@ -404,8 +404,8 @@ override the default layout.
 | `MEMORY_DIR` | `MIRROR_HOME` (prod) or `~/.mirror-minds` | Runtime working dir for `mute` and `.bootstrap.lock`. |
 | `MEMORY_PROD_DIR` | `MEMORY_DIR` | Production-only override. |
 | `DB_PATH` | `<MIRROR_HOME>/memory.db` | Full SQLite path. |
-| `DB_BACKUP_PATH` | `<DB_PATH parent>/backups` | Legacy alias for `BACKUP_DIR`. |
-| `BACKUP_DIR` | `<MIRROR_HOME>/backups` | `memory backup` output. |
+| `DB_BACKUP_PATH` | `<DB_PATH parent>/backups` | Global backup default used only when no mirror home is in scope. |
+| `BACKUP_DIR` | — | **Deprecated.** No longer redirects backups. `python -m memory backup` now writes to `<mirror_home>/backups`; if this variable is set, the command warns and ignores it. Use `--backup-dir <path>` for an intentional, per-invocation destination. |
 | `EXPORT_DIR` | `<MIRROR_HOME>/exports` | Markdown export root. |
 | `TRANSCRIPT_EXPORT_DIR` | `<EXPORT_DIR>/transcripts` | Full-transcript export dir. |
 
