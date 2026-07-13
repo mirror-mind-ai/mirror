@@ -2,7 +2,7 @@
 
 # CV22.DS4.TS1 — Write Parity Harness & Backup Gate
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 **Type:** Technical Story
 **Depends on:** the reusable real-DB-copy parity harness from CV22.DS2.TS3 and the Pi front door from CV22.DS3.
 
