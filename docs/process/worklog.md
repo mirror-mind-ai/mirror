@@ -12,6 +12,18 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-07-12 — Git network timeout fix for release promotion (maintenance)
+
+Fixed the defect surfaced during the v0.30.1 promotion: `_run_git` in
+`cli/runtime.py` used one 2-second timeout for every git subprocess, so
+`release-promote --push` reported failure while the tag push had actually
+landed on the remote. Local inspections (status, rev-parse, branch) keep the
+tight 2-second default; network operations — `_git_push_ref`, `_git_fetch`,
+and the release-notes fetch — now use a 120-second network timeout. Covered
+by six focused unit tests, including a guard asserting the network timeout
+stays meaningfully larger than the local one. Maintenance work; rides the
+next release boundary.
+
 ### 2026-07-12 — CV9.E2.S6 Runtime state home containment completed
 
 Contained all user-scoped runtime state inside the resolved mirror home. A field investigation found the homes root (`~/.mirror-minds`) accumulating live state: an orphan production `memory.db` (190 conversations bulk-imported in a 22-second burst on 2026-06-15 with no resolvable home), a live root `memory_dev.db` holding this repository's development sessions (the development and test environments bypassed the mirror home entirely — pre-CV4 flat-layout semantics), the Pi `mirror-logger.log`, bootstrap locks, and a `backups/` directory. The same split let one session straddle two databases — extension state in `<home>/memory.db`, session registration in the root `memory_dev.db` — which caused the 2026-07-12 wrong-session export incident.

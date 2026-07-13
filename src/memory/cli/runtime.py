@@ -498,7 +498,7 @@ def _fetch_release_notes_ref(ref: str, repository: Path) -> None:
     if split is None:
         return
     remote, branch = split
-    _run_git(["fetch", remote, branch], cwd=repository)
+    _run_git(["fetch", remote, branch], cwd=repository, timeout=_GIT_NETWORK_TIMEOUT_SECONDS)
 
 
 def build_pending_release_notes(
@@ -722,14 +722,24 @@ def _version_from_pyproject(start: Path) -> str | None:
     return None
 
 
-def _run_git(args: list[str], *, cwd: Path) -> tuple[int, str, str]:
+# Local git inspections (status, rev-parse, branch) are near-instant; network
+# operations (push, fetch) are not. One shared 2-second timeout caused the
+# v0.30.1 release incident: release-promote --push reported failure while the
+# tag push actually landed on the remote.
+_GIT_LOCAL_TIMEOUT_SECONDS = 2
+_GIT_NETWORK_TIMEOUT_SECONDS = 120
+
+
+def _run_git(
+    args: list[str], *, cwd: Path, timeout: float = _GIT_LOCAL_TIMEOUT_SECONDS
+) -> tuple[int, str, str]:
     try:
         completed = subprocess.run(
             ["git", *args],
             cwd=cwd,
             text=True,
             capture_output=True,
-            timeout=2,
+            timeout=timeout,
             check=False,
         )
     except (OSError, subprocess.TimeoutExpired) as exc:
@@ -1712,7 +1722,9 @@ def render_runtime_status(report: RuntimeStatusReport) -> str:
 
 
 def _git_fetch(remote: str, branch: str, cwd: Path) -> tuple[bool, str]:
-    code, _stdout, stderr = _run_git(["fetch", remote, branch], cwd=cwd)
+    code, _stdout, stderr = _run_git(
+        ["fetch", remote, branch], cwd=cwd, timeout=_GIT_NETWORK_TIMEOUT_SECONDS
+    )
     if code != 0:
         return False, stderr or "git fetch failed"
     return True, ""
@@ -1740,7 +1752,9 @@ def _git_move_branch(branch: str, cwd: Path) -> tuple[bool, str]:
 
 
 def _git_push_ref(remote: str, ref: str, cwd: Path) -> tuple[bool, str]:
-    code, _stdout, stderr = _run_git(["push", remote, ref], cwd=cwd)
+    code, _stdout, stderr = _run_git(
+        ["push", remote, ref], cwd=cwd, timeout=_GIT_NETWORK_TIMEOUT_SECONDS
+    )
     if code != 0:
         return False, stderr or f"git push {remote} {ref} failed"
     return True, ""
