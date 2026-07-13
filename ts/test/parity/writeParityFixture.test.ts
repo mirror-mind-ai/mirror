@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
+import { BackupGateError, sha256File } from "../../src/db/backupGate.ts";
 import { openDatabaseCopyForWrite } from "../../src/db/database.ts";
 import {
   verifyWriteFixture,
@@ -47,6 +48,7 @@ function fixtureWithOracleUseCount(
     source_label: "unit",
     seed_db_path: ws.seedPath,
     ts_copy_path: ws.tsCopyPath,
+    backup: { path: ws.seedPath, sha256: sha256File(ws.seedPath) },
     probes: [
       {
         label: "log_access_1",
@@ -92,6 +94,18 @@ test("verifyWriteFixture rejects an unknown probe type", () => {
     const fixture = fixtureWithOracleUseCount(4, ws);
     fixture.probes[0].probe_type = "nonexistent";
     assert.throws(() => verifyWriteFixture(fixture), /unknown write probe type/);
+  } finally {
+    ws.cleanup();
+  }
+});
+
+test("verifyWriteFixture aborts when no backup is recorded", () => {
+  const ws = tempWorkspace();
+  seed(ws.seedPath);
+  try {
+    const fixture = fixtureWithOracleUseCount(4, ws);
+    fixture.backup = undefined;
+    assert.throws(() => verifyWriteFixture(fixture), BackupGateError);
   } finally {
     ws.cleanup();
   }

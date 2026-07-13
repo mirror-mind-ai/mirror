@@ -9,6 +9,7 @@ source database is never mutated.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sqlite3
 import subprocess
@@ -22,6 +23,14 @@ def _js_iso(ms: int) -> str:
     """Format a millisecond epoch exactly like JavaScript's Date.toISOString()."""
     dt = datetime.fromtimestamp(ms / 1000, tz=timezone.utc)
     return dt.strftime("%Y-%m-%dT%H:%M:%S.") + f"{dt.microsecond // 1000:03d}Z"
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(65536), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def _safe_copy_database(source: Path, destination: Path) -> None:
@@ -94,6 +103,7 @@ def _build_fixture(*, source_db: Path, work_dir: Path, targets: int) -> Path:
         "source_label": source_db.name,
         "seed_db_path": str(seed_db.resolve()),
         "ts_copy_path": str(ts_copy.resolve()),
+        "backup": {"path": str(seed_db.resolve()), "sha256": _sha256_file(seed_db)},
         "probes": [
             {
                 "label": "log_access_demo",

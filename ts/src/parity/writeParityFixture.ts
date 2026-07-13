@@ -9,6 +9,7 @@
 // guard so a verification can never touch a live database.
 
 import { copyFileSync } from "node:fs";
+import { type BackupRecord, requireBackup } from "../db/backupGate.ts";
 import { assertCopyTarget } from "../db/copyGuard.ts";
 import { openDatabaseCopyForWrite } from "../db/database.ts";
 import { evaluateWriteProbe, type MutatedRow, type WriteProbeParityResult } from "./writeParity.ts";
@@ -32,6 +33,8 @@ export interface WriteParityFixture {
   seed_db_path: string;
   /** Where the TS side writes its copy (must pass the copy-only guard). */
   ts_copy_path: string;
+  /** Hash-verified backup that must exist before any destructive apply. */
+  backup?: BackupRecord;
   probes: WriteProbeFixture[];
 }
 
@@ -69,6 +72,7 @@ export function verifyWriteFixture(
   fixture: WriteParityFixture,
   options: { includeSensitiveDebug?: boolean } = {},
 ): WriteProbeParityResult[] {
+  requireBackup(fixture.backup);
   return fixture.probes.map((probe) => {
     const factory = WRITE_PROBE_FACTORIES[probe.probe_type];
     if (!factory) {
