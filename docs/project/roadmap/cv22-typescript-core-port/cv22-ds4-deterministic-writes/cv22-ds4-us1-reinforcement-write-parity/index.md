@@ -2,7 +2,7 @@
 
 # CV22.DS4.US1 — Reinforcement Write Parity (`log_access`)
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 **Type:** User Story
 **Depends on:** [CV22.DS4.TS1 Write Parity Harness & Backup Gate](../cv22-ds4-ts1-write-parity-harness/index.md)
 
