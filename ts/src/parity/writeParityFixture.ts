@@ -1,17 +1,17 @@
-// Fixture-driven write-parity verification for CV22.DS4.TS1.
+// Fixture-driven write-parity verification for CV22.DS4.
 //
 // The Python oracle driver (`ts/parity/write_parity.py`) copies a source DB,
-// applies a sample deterministic write on its own copy under a frozen now, and
-// records the resulting rows as `python_state` in a fixture. This module replays
-// the *same* write through the TS core on a fresh copy of the same seed and
-// grades the two states. Each probe starts from the pristine seed so probes can
-// never contaminate one another, and the TS copy is opened through the copy-only
-// guard so a verification can never touch a live database.
+// applies the real reinforcement writes on its own copy under a frozen clock, and
+// records the resulting two-table rows as `python_state`. This module replays the
+// same writes through the TS core on a fresh copy of the same seed and grades the
+// states. Each probe starts from the pristine seed, opened through the copy-only
+// guard, and a hash-verified backup is required first.
 
 import { copyFileSync } from "node:fs";
 import { type BackupRecord, requireBackup } from "../db/backupGate.ts";
 import { assertCopyTarget } from "../db/copyGuard.ts";
 import { openDatabaseCopyForWrite } from "../db/database.ts";
+import { logAccess, logUse } from "../memory/reinforcement.ts";
 import { evaluateWriteProbe, type MutatedRow, type WriteProbeParityResult } from "./writeParity.ts";
 import { applyWriteProbe, type WriteProbe } from "./writeProbe.ts";
 
@@ -20,33 +20,26 @@ export interface WriteProbeFixture {
   label: string;
   probe_type: string;
   frozen_now_ms: number;
-  table: string;
-  id_column: string;
-  columns: string[];
+  /** Exact ISO timestamp the oracle stamped, injected so TS matches it. */
+  now_iso: string;
+  access_context: string | null;
   target_ids: string[];
   python_state: MutatedRow[];
 }
 
 export interface WriteParityFixture {
   source_label?: string;
-  /** Pristine copy both sides start from; the TS side re-copies it per probe. */
   seed_db_path: string;
-  /** Where the TS side writes its copy (must pass the copy-only guard). */
   ts_copy_path: string;
-  /** Hash-verified backup that must exist before any destructive apply. */
   backup?: BackupRecord;
   probes: WriteProbeFixture[];
 }
 
 type WriteProbeFactory = (fixture: WriteProbeFixture) => WriteProbe;
 
-/**
- * TS-side implementations of the sample write probes the Python oracle mirrors.
- * TS1 ships the `log_access`-shaped sample that exercises the harness; US1 will
- * register the real ported write here.
- */
+/** TS-side implementations of the write probes the Python oracle mirrors. */
 const WRITE_PROBE_FACTORIES: Record<string, WriteProbeFactory> = {
-  log_access: (fixture) => ({
+  reinforcement: (fixture) => ({
     label: fixture.label,
     snapshots: [
       {
@@ -56,14 +49,18 @@ const WRITE_PROBE_FACTORIES: Record<string, WriteProbeFactory> = {
         selectorColumn: "id",
         selectorValues: fixture.target_ids,
       },
+      {
+        table: "memory_access_log",
+        keyColumn: "id",
+        columns: ["memory_id", "accessed_at", "access_context"],
+        selectorColumn: "memory_id",
+        selectorValues: fixture.target_ids,
+      },
     ],
-    apply(db, frozenNowMs) {
-      const iso = new Date(frozenNowMs).toISOString();
-      const stampTime = db.prepare("UPDATE memories SET last_accessed_at = ? WHERE id = ?");
-      const bumpCount = db.prepare("UPDATE memories SET use_count = use_count + 1 WHERE id = ?");
+    apply(db) {
       for (const id of fixture.target_ids) {
-        stampTime.run(iso, id);
-        bumpCount.run(id);
+        logAccess(db, id, fixture.now_iso, fixture.access_context);
+        logUse(db, id);
       }
     },
   }),

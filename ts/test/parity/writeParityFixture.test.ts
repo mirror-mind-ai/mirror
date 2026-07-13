@@ -10,8 +10,8 @@ import {
   type WriteParityFixture,
 } from "../../src/parity/writeParityFixture.ts";
 
-const FROZEN_NOW_MS = Date.UTC(2026, 5, 23, 12, 0, 0);
-const FROZEN_ISO = new Date(FROZEN_NOW_MS).toISOString();
+const NOW_ISO = "2026-06-23T12:00:00.123456Z";
+const CONTEXT = "retrieval";
 
 function tempWorkspace(): { seedPath: string; tsCopyPath: string; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), "mirror-core-wpf-"));
@@ -30,6 +30,9 @@ function seed(dbPath: string): void {
     db.exec(
       "CREATE TABLE memories (id TEXT PRIMARY KEY, last_accessed_at TEXT, use_count INTEGER)",
     );
+    db.exec(
+      "CREATE TABLE memory_access_log (id INTEGER PRIMARY KEY AUTOINCREMENT, memory_id TEXT, accessed_at TEXT, access_context TEXT)",
+    );
     db.prepare("INSERT INTO memories (id, last_accessed_at, use_count) VALUES (?, ?, ?)").run(
       "m1",
       "2020-01-01T00:00:00",
@@ -40,8 +43,9 @@ function seed(dbPath: string): void {
   }
 }
 
-function fixtureWithOracleUseCount(
+function fixtureWithOracle(
   useCount: number,
+  accessContext: string | null,
   ws: { seedPath: string; tsCopyPath: string },
 ): WriteParityFixture {
   return {
@@ -51,26 +55,29 @@ function fixtureWithOracleUseCount(
     backup: { path: ws.seedPath, sha256: sha256File(ws.seedPath) },
     probes: [
       {
-        label: "log_access_1",
-        probe_type: "log_access",
-        frozen_now_ms: FROZEN_NOW_MS,
-        table: "memories",
-        id_column: "id",
-        columns: ["last_accessed_at", "use_count"],
+        label: "reinforcement_1",
+        probe_type: "reinforcement",
+        frozen_now_ms: 0,
+        now_iso: NOW_ISO,
+        access_context: CONTEXT,
         target_ids: ["m1"],
         python_state: [
-          { id: "memories:m1", cells: { last_accessed_at: FROZEN_ISO, use_count: useCount } },
+          { id: "memories:m1", cells: { last_accessed_at: NOW_ISO, use_count: useCount } },
+          {
+            id: "memory_access_log:1",
+            cells: { memory_id: "m1", accessed_at: NOW_ISO, access_context: accessContext },
+          },
         ],
       },
     ],
   };
 }
 
-test("verifyWriteFixture replays the TS probe on a seed copy and PASSes a matching oracle", () => {
+test("verifyWriteFixture PASSes a matching two-table reinforcement oracle", () => {
   const ws = tempWorkspace();
   seed(ws.seedPath);
   try {
-    const results = verifyWriteFixture(fixtureWithOracleUseCount(4, ws));
+    const results = verifyWriteFixture(fixtureWithOracle(4, CONTEXT, ws));
     assert.equal(results.length, 1);
     assert.equal(results[0].match, true);
   } finally {
@@ -78,12 +85,21 @@ test("verifyWriteFixture replays the TS probe on a seed copy and PASSes a matchi
   }
 });
 
-test("verifyWriteFixture FAILs when the oracle state diverges from the TS replay", () => {
+test("verifyWriteFixture FAILs when the oracle use_count diverges", () => {
   const ws = tempWorkspace();
   seed(ws.seedPath);
   try {
-    const results = verifyWriteFixture(fixtureWithOracleUseCount(5, ws));
-    assert.equal(results[0].match, false);
+    assert.equal(verifyWriteFixture(fixtureWithOracle(5, CONTEXT, ws))[0].match, false);
+  } finally {
+    ws.cleanup();
+  }
+});
+
+test("verifyWriteFixture FAILs when the oracle access_context diverges", () => {
+  const ws = tempWorkspace();
+  seed(ws.seedPath);
+  try {
+    assert.equal(verifyWriteFixture(fixtureWithOracle(4, "different", ws))[0].match, false);
   } finally {
     ws.cleanup();
   }
@@ -93,7 +109,7 @@ test("verifyWriteFixture rejects an unknown probe type", () => {
   const ws = tempWorkspace();
   seed(ws.seedPath);
   try {
-    const fixture = fixtureWithOracleUseCount(4, ws);
+    const fixture = fixtureWithOracle(4, CONTEXT, ws);
     fixture.probes[0].probe_type = "nonexistent";
     assert.throws(() => verifyWriteFixture(fixture), /unknown write probe type/);
   } finally {
@@ -105,7 +121,7 @@ test("verifyWriteFixture aborts when no backup is recorded", () => {
   const ws = tempWorkspace();
   seed(ws.seedPath);
   try {
-    const fixture = fixtureWithOracleUseCount(4, ws);
+    const fixture = fixtureWithOracle(4, CONTEXT, ws);
     fixture.backup = undefined;
     assert.throws(() => verifyWriteFixture(fixture), BackupGateError);
   } finally {
