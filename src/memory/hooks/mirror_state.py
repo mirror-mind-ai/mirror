@@ -29,7 +29,8 @@ def _load_state(session_id: str | None) -> dict[str, Any]:
     resolved_session_id = _normalize_session_id(session_id)
     if not resolved_session_id:
         return {}
-    session = _memory_client().store.get_runtime_session(resolved_session_id)
+    client = _memory_client()
+    session = client.store.get_runtime_session(resolved_session_id)
     if not session:
         return {}
     data: dict[str, Any] = {
@@ -74,7 +75,8 @@ def write_state(
     resolved_session_id = _normalize_session_id(session_id)
     if not resolved_session_id:
         return
-    _memory_client().store.upsert_runtime_session(
+    client = _memory_client()
+    client.store.upsert_runtime_session(
         resolved_session_id,
         mirror_active=active,
         persona=persona,
