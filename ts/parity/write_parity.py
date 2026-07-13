@@ -82,7 +82,7 @@ def _build_fixture(*, source_db: Path, work_dir: Path, targets: int) -> Path:
         conn.commit()
         python_state = [
             {
-                "id": str(row["id"]),
+                "id": f"memories:{row['id']}",
                 "cells": {
                     "last_accessed_at": row["last_accessed_at"],
                     "use_count": row["use_count"],

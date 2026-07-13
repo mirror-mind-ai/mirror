@@ -3,19 +3,35 @@
 // A probe applies a deterministic write to a DB *copy* and reports the resulting
 // state of its target rows as `MutatedRow[]`, ready for `evaluateWriteProbe`.
 // This is the DB-touching layer; the pure state-diff core stays in
-// `writeParity.ts`. Integer columns are normalized (safe bigint -> number) so a
-// TS snapshot and a Python-oracle JSON fixture hash identically.
+// `writeParity.ts`.
+//
+// A probe declares one or more `SnapshotSpec`s, so a single write that touches
+// several tables (e.g. `log_access` updates `memories` and inserts into
+// `memory_access_log`) is graded as one state transition. Snapshots select rows
+// by a `WHERE ... IN` clause rather than by known id, so newly INSERTed rows are
+// captured too. Row ids are namespaced by table (`table:key`) so states from
+// different tables never collide. Integer columns are normalized (safe bigint ->
+// number) so a TS snapshot and a Python-oracle JSON fixture hash identically.
 
 import type { WritableDatabase } from "../db/database.ts";
 import type { MutatedRow, WriteCell } from "./writeParity.ts";
 
-/** A deterministic write plus the target rows whose post-write state is graded. */
+/** One table's contribution to a probe's snapshot. */
+export interface SnapshotSpec {
+  table: string;
+  /** Column identifying each row; namespaced into `MutatedRow.id` as `table:key`. */
+  keyColumn: string;
+  /** Columns whose values are compared. */
+  columns: string[];
+  /** Restrict the snapshot to rows where this column is in `selectorValues`. */
+  selectorColumn: string;
+  selectorValues: string[];
+}
+
+/** A deterministic write plus the multi-table snapshot whose state is graded. */
 export interface WriteProbe {
   label: string;
-  table: string;
-  idColumn: string;
-  columns: string[];
-  targetIds: string[];
+  snapshots: SnapshotSpec[];
   /** Mutate the copy. `frozenNowMs` stamps any time-based write deterministically. */
   apply(db: WritableDatabase, frozenNowMs: number): void;
 }
@@ -23,8 +39,8 @@ export interface WriteProbe {
 const IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 /**
- * Probe identifiers (table/columns) are interpolated into SQL, so they must be
- * trusted. Probes are internal harness definitions, never user input, but we
+ * Snapshot identifiers (table/columns) are interpolated into SQL, so they must
+ * be trusted. Probes are internal harness definitions, never user input, but we
  * still fail closed on anything but a plain identifier.
  */
 function assertIdentifier(name: string): void {
@@ -47,28 +63,34 @@ function normalizeCell(value: unknown): WriteCell {
   throw new Error(`unsupported write-parity cell type: ${typeof value}`);
 }
 
-/** Read the target rows' snapshot columns as normalized `MutatedRow[]`. */
-export function snapshotRows(db: WritableDatabase, probe: WriteProbe): MutatedRow[] {
-  assertIdentifier(probe.table);
-  assertIdentifier(probe.idColumn);
-  for (const column of probe.columns) {
+function snapshotSpec(db: WritableDatabase, spec: SnapshotSpec): MutatedRow[] {
+  assertIdentifier(spec.table);
+  assertIdentifier(spec.keyColumn);
+  assertIdentifier(spec.selectorColumn);
+  for (const column of spec.columns) {
     assertIdentifier(column);
   }
-  const columnList = [probe.idColumn, ...probe.columns].join(", ");
+  if (spec.selectorValues.length === 0) {
+    return [];
+  }
+  const selectColumns = [spec.keyColumn, ...spec.columns].join(", ");
+  const placeholders = spec.selectorValues.map(() => "?").join(", ");
   const statement = db.prepare(
-    `SELECT ${columnList} FROM ${probe.table} WHERE ${probe.idColumn} = ?`,
+    `SELECT ${selectColumns} FROM ${spec.table} ` +
+      `WHERE ${spec.selectorColumn} IN (${placeholders}) ORDER BY ${spec.keyColumn}`,
   );
-  return probe.targetIds.map((id) => {
-    const row = statement.get(id);
-    if (row === undefined) {
-      throw new Error(`write-parity target row not found: ${probe.table}.${probe.idColumn}=${id}`);
-    }
+  return statement.all(...spec.selectorValues).map((row) => {
     const cells: Record<string, WriteCell> = {};
-    for (const column of probe.columns) {
+    for (const column of spec.columns) {
       cells[column] = normalizeCell(row[column]);
     }
-    return { id: String(row[probe.idColumn]), cells };
+    return { id: `${spec.table}:${String(row[spec.keyColumn])}`, cells };
   });
+}
+
+/** Read every snapshot spec's rows as normalized, table-namespaced `MutatedRow[]`. */
+export function snapshotState(db: WritableDatabase, probe: WriteProbe): MutatedRow[] {
+  return probe.snapshots.flatMap((spec) => snapshotSpec(db, spec));
 }
 
 /** Apply a probe to a writable copy under a frozen now, then snapshot the result. */
@@ -78,5 +100,5 @@ export function applyWriteProbe(
   frozenNowMs: number,
 ): MutatedRow[] {
   probe.apply(db, frozenNowMs);
-  return snapshotRows(db, probe);
+  return snapshotState(db, probe);
 }

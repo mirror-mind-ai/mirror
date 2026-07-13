@@ -58,7 +58,9 @@ function fixtureWithOracleUseCount(
         id_column: "id",
         columns: ["last_accessed_at", "use_count"],
         target_ids: ["m1"],
-        python_state: [{ id: "m1", cells: { last_accessed_at: FROZEN_ISO, use_count: useCount } }],
+        python_state: [
+          { id: "memories:m1", cells: { last_accessed_at: FROZEN_ISO, use_count: useCount } },
+        ],
       },
     ],
   };

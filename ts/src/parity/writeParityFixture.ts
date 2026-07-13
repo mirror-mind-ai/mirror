@@ -48,10 +48,15 @@ type WriteProbeFactory = (fixture: WriteProbeFixture) => WriteProbe;
 const WRITE_PROBE_FACTORIES: Record<string, WriteProbeFactory> = {
   log_access: (fixture) => ({
     label: fixture.label,
-    table: "memories",
-    idColumn: "id",
-    columns: ["last_accessed_at", "use_count"],
-    targetIds: fixture.target_ids,
+    snapshots: [
+      {
+        table: "memories",
+        keyColumn: "id",
+        columns: ["last_accessed_at", "use_count"],
+        selectorColumn: "id",
+        selectorValues: fixture.target_ids,
+      },
+    ],
     apply(db, frozenNowMs) {
       const iso = new Date(frozenNowMs).toISOString();
       const stampTime = db.prepare("UPDATE memories SET last_accessed_at = ? WHERE id = ?");
