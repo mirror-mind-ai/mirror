@@ -8,6 +8,8 @@
 
 import { DatabaseSync } from "node:sqlite";
 
+import { assertCopyTarget } from "./copyGuard.ts";
+
 /** A SQLite-storable value. Mirrored here so callers don't import driver types. */
 export type SqlValue = null | number | bigint | string | Uint8Array;
 
@@ -47,6 +49,50 @@ export function openDatabaseReadOnly(path: string): Database {
           return row === undefined ? undefined : { ...row };
         },
       };
+    },
+    close: (): void => {
+      driver.close();
+    },
+  };
+}
+
+/** A prepared query that can also execute a write. */
+export interface WritablePreparedQuery extends PreparedQuery {
+  run(...params: SqlValue[]): void;
+}
+
+/** A writable handle over a SQLite *copy*. */
+export interface WritableDatabase extends Database {
+  prepare(sql: string): WritablePreparedQuery;
+  exec(sql: string): void;
+}
+
+/**
+ * Open a SQLite file for writing — permitted ONLY for a copy. `assertCopyTarget`
+ * runs first and throws before the driver touches the file if the path is a live
+ * `memory.db` or is not under a `tmp/` directory. This is how DS4 mutates state
+ * during parity proofs without ever risking the authors' real database.
+ */
+export function openDatabaseCopyForWrite(path: string): WritableDatabase {
+  assertCopyTarget(path);
+  const driver = new DatabaseSync(path);
+  return {
+    prepare(sql: string): WritablePreparedQuery {
+      const statement = driver.prepare(sql);
+      return {
+        all: (...params: SqlValue[]): Row[] =>
+          (statement.all(...params) as Row[]).map((row) => ({ ...row })),
+        get: (...params: SqlValue[]): Row | undefined => {
+          const row = statement.get(...params) as Row | undefined;
+          return row === undefined ? undefined : { ...row };
+        },
+        run: (...params: SqlValue[]): void => {
+          statement.run(...params);
+        },
+      };
+    },
+    exec: (sql: string): void => {
+      driver.exec(sql);
     },
     close: (): void => {
       driver.close();

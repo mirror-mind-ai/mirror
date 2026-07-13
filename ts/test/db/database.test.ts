@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { test } from "node:test";
-import { openDatabaseReadOnly } from "../../src/db/database.ts";
+import { CopyOnlyGuardError } from "../../src/db/copyGuard.ts";
+import { openDatabaseCopyForWrite, openDatabaseReadOnly } from "../../src/db/database.ts";
 
 function seedTempDb(): { path: string; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), "mirror-core-db-"));
@@ -58,4 +59,34 @@ test("openDatabaseReadOnly rejects writes", () => {
     db.close();
     cleanup();
   }
+});
+
+function tempWriteCopy(): { dbPath: string; cleanup: () => void } {
+  const dir = mkdtempSync(join(tmpdir(), "mirror-core-wp-"));
+  const tmpDir = join(dir, "tmp");
+  mkdirSync(tmpDir);
+  return {
+    dbPath: join(tmpDir, "copy.db"),
+    cleanup: () => rmSync(dir, { recursive: true, force: true }),
+  };
+}
+
+test("openDatabaseCopyForWrite creates, mutates, and reads a copy under tmp/", () => {
+  const { dbPath, cleanup } = tempWriteCopy();
+  const db = openDatabaseCopyForWrite(dbPath);
+  try {
+    db.exec("CREATE TABLE memories (id TEXT PRIMARY KEY, use_count INTEGER)");
+    db.prepare("INSERT INTO memories (id, use_count) VALUES (?, ?)").run("m1", 1);
+    db.prepare("UPDATE memories SET use_count = use_count + 1 WHERE id = ?").run("m1");
+    const row = db.prepare("SELECT id, use_count FROM memories WHERE id = ?").get("m1");
+    assert.deepEqual(row, { id: "m1", use_count: 2 });
+  } finally {
+    db.close();
+    cleanup();
+  }
+});
+
+test("openDatabaseCopyForWrite refuses a live memory.db and non-tmp paths", () => {
+  assert.throws(() => openDatabaseCopyForWrite("/home/x/.mirror/memory.db"), CopyOnlyGuardError);
+  assert.throws(() => openDatabaseCopyForWrite("/home/x/other.db"), CopyOnlyGuardError);
 });

@@ -1,12 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
-  assertCopyTarget,
   evaluateWriteProbe,
   type MutatedRow,
   renderRedactedWriteReport,
   stateHash,
-  WriteParityGuardError,
 } from "../../src/parity/writeParity.ts";
 
 const pythonRows: MutatedRow[] = [
@@ -60,16 +58,6 @@ test("evaluateWriteProbe redacts state by default and reveals it only on demand"
     includeSensitiveDebug: true,
   });
   assert.deepEqual(sensitive.pythonState, pythonRows);
-});
-
-test("assertCopyTarget refuses a live memory.db and paths outside tmp/", () => {
-  assert.throws(() => assertCopyTarget("/home/x/.mirror/memory.db"), WriteParityGuardError);
-  assert.throws(() => assertCopyTarget("/home/x/other.db"), WriteParityGuardError);
-});
-
-test("assertCopyTarget allows a copy under tmp/", () => {
-  assert.doesNotThrow(() => assertCopyTarget("tmp/parity/python-copy.db"));
-  assert.doesNotThrow(() => assertCopyTarget("/repo/tmp/parity/ts-copy.db"));
 });
 
 test("renderRedactedWriteReport emits hashes and verdict without raw cell values", () => {

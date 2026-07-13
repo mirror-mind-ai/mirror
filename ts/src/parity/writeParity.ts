@@ -4,12 +4,11 @@
 // write mutates rows, so this module grades a *state transition*: the mutated
 // rows produced by the Python oracle are compared against the mutated rows
 // produced by the TS core, by hashing a canonical serialization. Evidence is
-// redacted by default (label, row count, hashes, match) — never raw cell
-// values, matching the DS2.TS3 privacy posture — and a copy-only guard refuses
-// to run against a live `memory.db`.
+// redacted by default (label, row count, hashes, match) — never raw cell values,
+// matching the DS2.TS3 privacy posture. The copy-only guard that keeps writes off
+// the live database is a db-seam concern and lives in `db/copyGuard.ts`.
 
 import { createHash } from "node:crypto";
-import { basename } from "node:path";
 
 /** A SQLite-storable scalar as seen after a deterministic write. */
 export type WriteCell = string | number | bigint | boolean | null;
@@ -87,24 +86,6 @@ export function evaluateWriteProbe(
       ? { pythonState: [...pythonRows], tsState: [...tsRows] }
       : {}),
   };
-}
-
-/** Raised when the write-parity harness is aimed at anything but a DB copy. */
-export class WriteParityGuardError extends Error {}
-
-/**
- * Copy-only guard. A write-parity proof mutates its target, so it must run only
- * against a copy under a `tmp/` directory — never a live `memory.db`. Fails
- * closed: a `memory.db` basename or any path without a `tmp` segment aborts.
- */
-export function assertCopyTarget(path: string): void {
-  if (basename(path) === "memory.db") {
-    throw new WriteParityGuardError("refusing to run write parity against a live memory.db");
-  }
-  const segments = path.split(/[/\\]/);
-  if (!segments.includes("tmp")) {
-    throw new WriteParityGuardError("write-parity target must be a copy under a tmp/ directory");
-  }
 }
 
 /** Render an ordered, redacted verdict for a set of write probes. */
