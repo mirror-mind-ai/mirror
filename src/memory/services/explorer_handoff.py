@@ -38,6 +38,7 @@ def write_builder_handoff_artifacts(
     include_full_conversation: bool = False,
 ) -> ExplorerBuilderHandoff:
     """Write Explorer handoff docs under a project's exploration folder."""
+    project_path = project_path.expanduser()
     es_id = _slugify(title or story.current_exploratory_story or story.journey)
     base = project_path / "docs" / "project" / "explorations" / es_id
     suffix = 2

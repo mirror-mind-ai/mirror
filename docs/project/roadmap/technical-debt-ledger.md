@@ -10,6 +10,11 @@ Ariad Review records technical debt here when debt should be paid now or deferre
 
 When debt is deferred, record the defer reason and revisit trigger.
 
+- **TD-001 scope note (2026-07-12, CV9.E2.S6):** the duplicated TS-side
+  resolution now also feeds the mirror-logger log destination
+  (`_resolveMemoryDir`: `MEMORY_DIR` > resolved home > homes-root bootstrap
+  fallback). No third copy was added — the log path reuses the existing
+  `_effectiveMirrorEnv` machinery — and the same revisit trigger applies.
 - **TD-001** — Defer reason: a Pi (TypeScript) extension cannot import the Python
   `memory.config` constants, so duplicating the resolution contract is the smallest
   correct fix today. Revisit trigger: any change to the core mirror-home resolution

@@ -143,23 +143,11 @@ def test_transcript_export_dir_can_be_configured_from_environment(tmp_path):
         assert cfg.TRANSCRIPT_EXPORT_DIR == transcript_dir
 
 
-def test_backup_dir_defaults_from_mirror_home(tmp_path):
-    mirror_home = tmp_path / ".mirror" / "testuser"
+def test_mute_flag_path_is_derived_from_memory_dir(tmp_path):
+    memory_dir = tmp_path / "memory"
 
-    with _config_with_env(MIRROR_HOME=str(mirror_home)) as cfg:
-        assert cfg.BACKUP_DIR == mirror_home / "backups"
-
-
-def test_backup_dir_can_be_configured_from_environment(tmp_path):
-    backup_dir = tmp_path / "dropbox" / "backups"
-
-    with _config_with_env(BACKUP_DIR=str(backup_dir)) as cfg:
-        assert cfg.BACKUP_DIR == backup_dir
-
-
-def test_mute_flag_path_is_derived_from_memory_dir():
-    with _config_with_env() as cfg:
-        assert cfg.MUTE_FLAG_PATH == cfg.MEMORY_DIR / "mute"
+    with _config_with_env(MEMORY_DIR=str(memory_dir)) as cfg:
+        assert cfg.MUTE_FLAG_PATH == memory_dir / "mute"
 
 
 def test_memory_dir_defaults_from_mirror_home_in_production(tmp_path):
@@ -211,8 +199,10 @@ def test_memory_prod_dir_is_primary_production_directory_name(tmp_path):
         assert cfg.db_path_for_env("production") == memory_prod_dir / "memory.db"
 
 
-def test_default_db_backup_path_uses_backups_dir_next_to_db_path():
-    with _config_with_env() as cfg:
+def test_default_db_backup_path_uses_backups_dir_next_to_db_path(tmp_path):
+    mirror_home = tmp_path / ".mirror-minds" / "testuser"
+
+    with _config_with_env(MIRROR_HOME=str(mirror_home)) as cfg:
         assert cfg.DB_BACKUP_PATH == cfg.DB_PATH.parent / "backups"
 
 
@@ -239,9 +229,88 @@ def test_db_path_for_unknown_env_uses_env_name_in_database_file(tmp_path):
         assert cfg.db_path_for_env("custom") == memory_dir / "memory_custom.db"
 
 
-def test_db_path_defaults_to_current_environment_path():
-    with _config_with_env() as cfg:
+def test_db_path_defaults_to_current_environment_path(tmp_path):
+    mirror_home = tmp_path / ".mirror-minds" / "testuser"
+
+    with _config_with_env(MIRROR_HOME=str(mirror_home)) as cfg:
         assert cfg.DB_PATH == cfg.db_path_for_env()
+
+
+# ---------------------------------------------------------------------------
+# CV9.E2.S6 — Runtime state home containment
+# ---------------------------------------------------------------------------
+# The runtime directory is the resolved mirror home for every MEMORY_ENV; the
+# environment selects only the database *name*. Without a resolvable home and
+# without explicit overrides, path resolution fails loudly instead of silently
+# targeting the homes root (~/.mirror-minds).
+
+
+def test_memory_dir_uses_mirror_home_for_every_environment(tmp_path):
+    mirror_home = tmp_path / ".mirror-minds" / "testuser"
+
+    for env in ("production", "development", "test"):
+        with _config_with_env(MIRROR_HOME=str(mirror_home), MEMORY_ENV=env) as cfg:
+            assert cfg.MEMORY_DIR == mirror_home
+
+
+def test_db_path_uses_mirror_home_and_env_database_name(tmp_path):
+    mirror_home = tmp_path / ".mirror-minds" / "testuser"
+
+    with _config_with_env(MIRROR_HOME=str(mirror_home), MEMORY_ENV="development") as cfg:
+        assert cfg.DB_PATH == mirror_home / "memory_dev.db"
+
+    with _config_with_env(MIRROR_HOME=str(mirror_home), MEMORY_ENV="test") as cfg:
+        assert cfg.DB_PATH == mirror_home / "memory_test.db"
+
+
+def test_db_path_for_env_raises_actionable_error_without_home_or_override():
+    with _config_with_env() as cfg:
+        try:
+            cfg.db_path_for_env()
+            raise AssertionError("Expected db_path_for_env() to fail without a mirror home")
+        except ValueError as exc:
+            assert "MIRROR_HOME" in str(exc)
+            assert "MIRROR_USER" in str(exc)
+
+
+def test_runtime_state_constants_are_none_without_home_or_override():
+    with _config_with_env() as cfg:
+        assert cfg.MEMORY_DIR is None
+        assert cfg.DB_PATH is None
+        assert cfg.MUTE_FLAG_PATH is None
+        assert cfg.DB_BACKUP_PATH is None
+
+
+def test_memory_dir_override_works_without_mirror_home(tmp_path):
+    memory_dir = tmp_path / "memory"
+
+    with _config_with_env(MEMORY_DIR=str(memory_dir), MEMORY_ENV="development") as cfg:
+        assert cfg.MEMORY_DIR == memory_dir
+        assert cfg.DB_PATH == memory_dir / "memory_dev.db"
+
+
+def test_db_path_for_home_selects_environment_database_name(tmp_path):
+    with _config_with_env(MEMORY_ENV="development") as cfg:
+        assert cfg.db_path_for_home(tmp_path) == tmp_path / "memory_dev.db"
+        assert cfg.db_path_for_home(tmp_path, "production") == tmp_path / "memory.db"
+        assert cfg.db_path_for_home(tmp_path, "test") == tmp_path / "memory_test.db"
+
+
+def test_require_db_path_raises_actionable_error_without_configuration():
+    with _config_with_env() as cfg:
+        try:
+            cfg.require_db_path()
+            raise AssertionError("Expected require_db_path() to fail without configuration")
+        except ValueError as exc:
+            assert "MIRROR_HOME" in str(exc)
+            assert "MIRROR_USER" in str(exc)
+
+
+def test_require_db_path_returns_configured_path(tmp_path):
+    db_path = tmp_path / "custom.db"
+
+    with _config_with_env(DB_PATH=str(db_path)) as cfg:
+        assert cfg.require_db_path() == db_path
 
 
 def test_db_path_defaults_from_mirror_home_in_production(tmp_path):

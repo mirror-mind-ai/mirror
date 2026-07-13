@@ -143,28 +143,54 @@ DEFAULT_MIRROR_DIR = _HOME / ".mirror-minds"
 DEFAULT_MEMORY_DIR = _default_memory_dir(_HOME)
 
 try:
-    _RESOLVED_MIRROR_HOME = resolve_mirror_home()
+    _RESOLVED_MIRROR_HOME: Path | None = resolve_mirror_home()
 except ValueError:
     _RESOLVED_MIRROR_HOME = None
 
-_DEFAULT_RUNTIME_DIR = (
-    _RESOLVED_MIRROR_HOME
-    if _RESOLVED_MIRROR_HOME and MEMORY_ENV == "production" and not os.environ.get("MEMORY_DIR")
-    else DEFAULT_MEMORY_DIR
+# CV9.E2.S6 — runtime state home containment. The runtime directory is the
+# resolved mirror home for *every* MEMORY_ENV; the environment selects only
+# the database name. Explicit overrides (MEMORY_PROD_DIR for production,
+# MEMORY_DIR, DB_PATH) always win. Without a resolvable home and without
+# overrides, resolution fails loudly at use — runtime state is never written
+# silently to the homes root (~/.mirror-minds).
+MIRROR_HOME_REQUIRED_HINT = (
+    "Mirror home is not configured. Set MIRROR_HOME or MIRROR_USER "
+    "(or pass an explicit MEMORY_DIR/DB_PATH override)."
 )
-_LOCAL_DIR = _path_from_env("MEMORY_DIR", _DEFAULT_RUNTIME_DIR)
 
-# All environments use the local memory directory, isolated by database name.
-_ENV_DIRS = {
-    "production": _path_from_env("MEMORY_PROD_DIR", _LOCAL_DIR),
-    "development": _LOCAL_DIR,
-    "test": _LOCAL_DIR,
-}
-MEMORY_DIR = _ENV_DIRS.get(MEMORY_ENV, _LOCAL_DIR)
+
+class MirrorHomeNotConfiguredError(ValueError):
+    """Raised when runtime-state paths are needed but nothing is configured.
+
+    A ``ValueError`` subclass so existing callers that catch ``ValueError``
+    keep working; the CLI entrypoint catches this type to render the hint
+    without a traceback.
+    """
+
+
+def runtime_dir_for_env(env: str | None = None) -> Path | None:
+    """Directory holding runtime state for ``env``.
+
+    Precedence: ``MEMORY_PROD_DIR`` (production only) > ``MEMORY_DIR`` >
+    resolved mirror home. Returns ``None`` when nothing is configured;
+    callers that require a directory fail with ``MIRROR_HOME_REQUIRED_HINT``.
+    """
+    selected_env = env or MEMORY_ENV
+    if selected_env == "production":
+        prod_override = os.environ.get("MEMORY_PROD_DIR")
+        if prod_override:
+            return Path(prod_override).expanduser()
+    override = os.environ.get("MEMORY_DIR")
+    if override:
+        return Path(override).expanduser()
+    return _RESOLVED_MIRROR_HOME
+
+
+MEMORY_DIR: Path | None = runtime_dir_for_env()
 # Session routing and mirror state used to live in singleton JSON files under
 # MEMORY_DIR. CV5 replaced that with the SQLite `runtime_sessions` table; the
 # legacy paths are no longer written or read by any runtime code.
-MUTE_FLAG_PATH = MEMORY_DIR / "mute"
+MUTE_FLAG_PATH: Path | None = MEMORY_DIR / "mute" if MEMORY_DIR is not None else None
 
 # Database isolated by environment.
 _DB_NAMES = {
@@ -174,25 +200,53 @@ _DB_NAMES = {
 }
 
 
+def db_name_for_env(env: str | None = None) -> str:
+    selected_env = env or MEMORY_ENV
+    return _DB_NAMES.get(selected_env, f"memory_{selected_env}.db")
+
+
+def db_path_for_home(home: str | Path, env: str | None = None) -> Path:
+    """Database path for an explicit mirror home and environment.
+
+    The single mapping rule shared by core and extension dispatch: one
+    (mirror home, environment) pair resolves to exactly one database file.
+    """
+    return Path(home).expanduser() / db_name_for_env(env)
+
+
 def db_path_for_env(env: str | None = None) -> Path:
     selected_env = env or MEMORY_ENV
-    env_dir = _ENV_DIRS.get(selected_env, _LOCAL_DIR)
-    db_name = _DB_NAMES.get(selected_env, f"memory_{selected_env}.db")
-    return env_dir / db_name
+    env_dir = runtime_dir_for_env(selected_env)
+    if env_dir is None:
+        raise MirrorHomeNotConfiguredError(MIRROR_HOME_REQUIRED_HINT)
+    return env_dir / db_name_for_env(selected_env)
 
 
-_DEFAULT_DB_PATH = (
-    default_db_path_for_home(_RESOLVED_MIRROR_HOME)
-    if _RESOLVED_MIRROR_HOME and MEMORY_ENV == "production" and not os.environ.get("DB_PATH")
-    else db_path_for_env()
+def require_db_path() -> Path:
+    """Effective database path, failing loudly when nothing is configured."""
+    if DB_PATH is None:
+        raise MirrorHomeNotConfiguredError(MIRROR_HOME_REQUIRED_HINT)
+    return DB_PATH
+
+
+def _default_db_path() -> Path | None:
+    try:
+        return db_path_for_env()
+    except ValueError:
+        return None
+
+
+_db_path_override = os.environ.get("DB_PATH")
+DB_PATH: Path | None = (
+    Path(_db_path_override).expanduser() if _db_path_override else _default_db_path()
 )
-DB_PATH = _path_from_env("DB_PATH", _DEFAULT_DB_PATH)
-DB_BACKUP_PATH = _path_from_env("DB_BACKUP_PATH", DB_PATH.parent / "backups")
-
-BACKUP_DIR = _path_from_env(
-    "BACKUP_DIR",
-    default_backup_dir_for_home(_RESOLVED_MIRROR_HOME) if _RESOLVED_MIRROR_HOME else DB_BACKUP_PATH,
+_db_backup_override = os.environ.get("DB_BACKUP_PATH")
+DB_BACKUP_PATH: Path | None = (
+    Path(_db_backup_override).expanduser()
+    if _db_backup_override
+    else (DB_PATH.parent / "backups" if DB_PATH is not None else None)
 )
+
 EXPORT_DIR = _path_from_env(
     "EXPORT_DIR",
     default_export_dir_for_home(_RESOLVED_MIRROR_HOME)

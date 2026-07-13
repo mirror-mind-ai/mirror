@@ -61,9 +61,9 @@ def _bootstrap_lock(db_path: Path) -> Iterator[None]:
 def get_connection(db_path: Path | None = None) -> sqlite3.Connection:
     """Return a database connection, creating directory and schema if needed."""
     if db_path is None:
-        from memory.config import DB_PATH
+        from memory.config import require_db_path
 
-        db_path = DB_PATH
+        db_path = require_db_path()
     db_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Everything that writes to the database during bootstrap (journal-mode

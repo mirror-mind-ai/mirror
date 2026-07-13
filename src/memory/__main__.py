@@ -132,6 +132,18 @@ def main() -> None:
         print(USAGE)
         sys.exit(1)
 
+    from memory.config import MirrorHomeNotConfiguredError
+
+    try:
+        _dispatch()
+    except MirrorHomeNotConfiguredError as exc:
+        # CV9.E2.S6: an unconfigured mirror home is an expected operator
+        # error — surface the actionable hint, not a traceback.
+        print(str(exc), file=sys.stderr)
+        sys.exit(2)
+
+
+def _dispatch() -> None:
     command = sys.argv[1]
 
     if command == "init":

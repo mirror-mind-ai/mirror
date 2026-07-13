@@ -11,6 +11,65 @@ resolved.
 
 ## Completed Decisions
 
+### Runtime state is contained in the mirror home for every environment
+
+**Date:** 2026-07-12
+**Reference:** journey `mirror`, [CV9.E2.S6](roadmap/cv9-mirror-1-0/cv9-e2-stabilization/cv9-e2-s6-runtime-state-home-containment/index.md)
+**Participants:** Vinícius Teles
+
+Before this decision, the runtime directory honored the resolved mirror home
+only when `MEMORY_ENV=production`; development and test environments — and any
+run with an unresolvable home — silently targeted the homes root
+(`~/.mirror-minds`), pre-CV4 flat-layout semantics. Field evidence showed the
+consequence: orphan and live databases, logs, and locks accumulating in the
+root, and one session straddling two databases (the wrong-session export
+incident).
+
+Decided:
+
+1. **One mapping rule.** The runtime directory is the resolved mirror home for
+   every `MEMORY_ENV`; the environment selects only the database name
+   (`memory.db`, `memory_dev.db`, `memory_test.db`). Core and extension
+   dispatch share the rule (`db_path_for_home`).
+2. **Explicit overrides keep winning.** `MEMORY_PROD_DIR` (production),
+   `MEMORY_DIR`, and `DB_PATH` are never second-guessed.
+3. **Loud failure.** With no resolvable home and no overrides,
+   database-touching commands fail with an actionable one-line hint
+   (`MirrorHomeNotConfiguredError`, exit 2). Silent root fallback is removed.
+4. **Bootstrap exception.** The Pi logger may still write
+   `~/.mirror-minds/mirror-logger.log` when no home is resolvable — it is the
+   error channel that records exactly that failure class.
+5. **No automatic migration.** Legacy root artifacts are detected by
+   `runtime diagnose` (`legacy_root_runtime_state`) and relocated manually via
+   the documented REFERENCE route; histories are never merged automatically.
+
+### BACKUP_DIR is demoted: redirection becomes an explicit, per-invocation choice
+
+**Date:** 2026-07-08
+**Reference:** journey `mirror`, [CV9.E2.S5](roadmap/cv9-mirror-1-0/cv9-e2-stabilization/cv9-e2-s5-backup-destination-resolution/index.md)
+**Participants:** Vinícius Teles
+
+The `BACKUP_DIR` environment variable used to override the backup destination
+even when a caller passed an explicit `mirror_home`. That coupling was the root
+cause of a class of defect: a personal `.env` `BACKUP_DIR` leaked into the test
+suite (green in CI, red locally), a process-global env silently outranked an
+explicit scope, and a single global backup folder shared across mirrors risked
+filename collisions between users.
+
+Decision: **backup destination resolution is explicit and scope-first.** A pure
+`resolve_backup_dir()` applies one precedence — explicit path >
+`mirror_home/backups` > global default — and reads no environment or global
+config. `BACKUP_DIR` no longer redirects backups. Redirection is now an
+intentional, per-invocation `--backup-dir` flag on `python -m memory backup`.
+
+This is a deliberate behavior change. Setups that relied on `BACKUP_DIR` to
+redirect the CLI backup will write under the mirror home until they adopt
+`--backup-dir`; the change is made non-silent by a deprecation warning when the
+variable is still set. `DB_BACKUP_PATH` is retained as the global default for the
+no-`mirror_home` fallback. Per-user filename namespacing for shared directories
+is deferred as a future note, relevant only if multi-user shared-backup becomes a
+real need.
+
 ### Mirror Mind ports to TypeScript via a database-seam strangler, not a rewrite
 
 **Date:** 2026-06-23

@@ -392,20 +392,23 @@ is permanent supported behavior. To stop the warning, run
 
 | Variable | Default | Role |
 |----------|---------|------|
-| `MEMORY_ENV` | `production` | One of `production`, `development`, `test`. Controls DB file name and gates `MemoryClient.reset`. |
+| `MEMORY_ENV` | `production` | One of `production`, `development`, `test`. Selects the database **name** only (`memory.db`, `memory_dev.db`, `memory_test.db`) — never the directory — and gates `MemoryClient.reset`. |
 
 ### Path Overrides
 
-All of these derive from `MIRROR_HOME` in production. Set them only to
-override the default layout.
+All of these derive from the resolved mirror home in **every** environment
+(CV9.E2.S6 — runtime state home containment). Set them only to override the
+default layout. When no mirror home is resolvable and no override is set,
+database-touching commands fail with an actionable error instead of writing
+to the homes root (`~/.mirror-minds`).
 
 | Variable | Default | Role |
 |----------|---------|------|
-| `MEMORY_DIR` | `MIRROR_HOME` (prod) or `~/.mirror-minds` | Runtime working dir for `mute` and `.bootstrap.lock`. |
+| `MEMORY_DIR` | resolved mirror home | Runtime working dir for the database, `mute`, and `.bootstrap.lock`. |
 | `MEMORY_PROD_DIR` | `MEMORY_DIR` | Production-only override. |
-| `DB_PATH` | `<MIRROR_HOME>/memory.db` | Full SQLite path. |
-| `DB_BACKUP_PATH` | `<DB_PATH parent>/backups` | Legacy alias for `BACKUP_DIR`. |
-| `BACKUP_DIR` | `<MIRROR_HOME>/backups` | `memory backup` output. |
+| `DB_PATH` | `<mirror home>/<env db name>` | Full SQLite path. |
+| `DB_BACKUP_PATH` | `<DB_PATH parent>/backups` | Global backup default used only when no mirror home is in scope. |
+| `BACKUP_DIR` | — | **Deprecated.** No longer redirects backups. `python -m memory backup` now writes to `<mirror_home>/backups`; if this variable is set, the command warns and ignores it. Use `--backup-dir <path>` for an intentional, per-invocation destination. |
 | `EXPORT_DIR` | `<MIRROR_HOME>/exports` | Markdown export root. |
 | `TRANSCRIPT_EXPORT_DIR` | `<EXPORT_DIR>/transcripts` | Full-transcript export dir. |
 
@@ -422,6 +425,33 @@ override the default layout.
 - `CLAUDE_PROJECT_DIR` — injected by Claude Code when it invokes hooks.
 - Claude Code hook payloads carry `session_id` on stdin.
 - Pi's extension passes the session file path to the logger CLI.
+
+### Relocating Legacy Root Runtime State
+
+Before CV9.E2.S6, development/test databases, the Pi `mirror-logger.log`,
+bootstrap locks, and a `backups/` directory could land directly in the homes
+root (`~/.mirror-minds/`) instead of inside a mirror home. `python -m memory
+runtime diagnose` reports such artifacts as `legacy_root_runtime_state`.
+
+Relocation is deliberately manual — histories are never merged automatically:
+
+1. Stop running Pi/agent sessions that may still hold the old paths.
+2. For each reported database, decide which mirror home owns it, then move it:
+   `mv ~/.mirror-minds/memory_dev.db ~/.mirror-minds/<user>/memory_dev.db`.
+   If the destination already has a database of the same name, keep both
+   files and choose one as the survivor — merging is out of scope; the
+   non-survivor can be archived elsewhere.
+3. `*.bootstrap.lock`, `*.db-wal`, and `*.db-shm` sidecars belong next to
+   their database; move them with it (or delete lock files when no process
+   is running).
+4. `mirror-logger.log` in the root can be deleted or archived; new sessions
+   write to `<mirror home>/mirror-logger.log`.
+5. Re-run `python -m memory runtime diagnose` and confirm no
+   `legacy_root_runtime_state` findings remain.
+
+The Pi logger still falls back to `~/.mirror-minds/mirror-logger.log` when no
+mirror home is resolvable — that file reappearing is itself a signal that a
+workspace is running without `MIRROR_USER`/`MIRROR_HOME`.
 
 ---
 

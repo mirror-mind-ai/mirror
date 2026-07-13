@@ -12,6 +12,34 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-07-12 — Git network timeout fix for release promotion (maintenance)
+
+Fixed the defect surfaced during the v0.30.1 promotion: `_run_git` in
+`cli/runtime.py` used one 2-second timeout for every git subprocess, so
+`release-promote --push` reported failure while the tag push had actually
+landed on the remote. Local inspections (status, rev-parse, branch) keep the
+tight 2-second default; network operations — `_git_push_ref`, `_git_fetch`,
+and the release-notes fetch — now use a 120-second network timeout. Covered
+by six focused unit tests, including a guard asserting the network timeout
+stays meaningfully larger than the local one. Maintenance work; rides the
+next release boundary.
+
+### 2026-07-12 — CV9.E2.S6 Runtime state home containment completed
+
+Contained all user-scoped runtime state inside the resolved mirror home. A field investigation found the homes root (`~/.mirror-minds`) accumulating live state: an orphan production `memory.db` (190 conversations bulk-imported in a 22-second burst on 2026-06-15 with no resolvable home), a live root `memory_dev.db` holding this repository's development sessions (the development and test environments bypassed the mirror home entirely — pre-CV4 flat-layout semantics), the Pi `mirror-logger.log`, bootstrap locks, and a `backups/` directory. The same split let one session straddle two databases — extension state in `<home>/memory.db`, session registration in the root `memory_dev.db` — which caused the 2026-07-12 wrong-session export incident.
+
+The fix separates the two axes `config.py` had entangled: the runtime directory is the resolved mirror home for **every** `MEMORY_ENV`; the environment selects only the database name. Explicit `MEMORY_PROD_DIR`/`MEMORY_DIR`/`DB_PATH` overrides keep winning. Unconfigured resolution fails loudly (`MirrorHomeNotConfiguredError`, one-line actionable hint, exit 2) instead of silently writing to the homes root — the rule that would have prevented the June-15 orphan on day one. Extension dispatch resolves through the shared `db_path_for_home()` mapping, the Pi logger writes to `<mirror home>/mirror-logger.log` (homes root retained only as the bootstrap error channel; TD-001 scope note added), and `runtime diagnose` reports `legacy_root_runtime_state` findings with a manual relocation route in REFERENCE.md. Relocation of existing root artifacts is deliberately manual; histories are never merged automatically. The containment decision is recorded in [Decisions](../project/decisions.md#runtime-state-is-contained-in-the-mirror-home-for-every-environment).
+
+Validation: TDD (containment matrix red → green); full unit+integration suite green; ruff check/format clean; mypy 111 errors vs 119 pre-change baseline (net −8); isolated smoke proved a dev-env run writes only under the temporary mirror home and an unconfigured run refuses with exit 2 and zero root writes; live `runtime diagnose` reported all seven real root artifacts; Navigator validated manually and confirmed.
+
+### 2026-07-08 — CV9.E2.S5 Backup destination resolution & `BACKUP_DIR` demotion completed
+
+Hardened how `python -m memory backup` decides where an archive goes. The destination policy used to live inside `backup()` as a nested conditional that read `os.environ["BACKUP_DIR"]` and `config.BACKUP_DIR`, which made the destination untestable without env manipulation (a developer's personal `.env` `BACKUP_DIR` leaked into the suite — green in CI, red locally), surprising (a process-global env silently outranked an explicit `mirror_home`), and multi-user-unsafe (one shared folder, colliding `memory_{timestamp}.zip` names).
+
+Tier 1 extracts a pure `resolve_backup_dir()` with explicit precedence — explicit path > `mirror_home/backups` > global default — that reads no environment or global config; `backup()` delegates to it. Tier 2 demotes `BACKUP_DIR`: `backup()` no longer consults it, redirection becomes an intentional per-invocation `--backup-dir` flag, and when `BACKUP_DIR` is still set in the environment the CLI prints a deprecation warning and writes under the mirror home instead of silently redirecting. The now-unused `config.BACKUP_DIR` constant was removed. This behavior change is deliberate and recorded in [Decisions](../project/decisions.md#backup_dir-is-demoted-redirection-becomes-an-explicit-per-invocation-choice).
+
+Validation: TDD'd the resolver and CLI (red → green); focused backup, runtime, web-operations, web-server, and main-dispatch suites pass; the earlier web/runtime backup failures that this class of leak caused are now green because `backup()` no longer reads the ambient env. Full suite, ruff, and format gates green before the release boundary.
+
 ### 2026-07-07 — CV22.DS2.US3 journeys & memory listing parity completed — CV22.DS2 closed
 
 Closed the second Baton 2 slice and, with it, CV22.DS2 — the read-only deterministic foundation of the TypeScript core. US3 ports the last two read surfaces, split by nature. Journey listing is pure logic over `journey` identity rows: `ts/src/journey/journeyOptions.ts` reproduces `JourneyService.list_journey_options` + `_sort_journey_options` (name from the first content line, status via `**Status:**` regex, parent from metadata JSON, then a stable `(status != 'active', name.lower())` roots-then-children sort), validated by a committed golden driven by the real oracle. Memory listing is a database-seam SQL read: `ts/src/memory/listing.ts` reproduces `Store.list_recent_memory_summaries` (dynamic `WHERE` + `ORDER BY created_at DESC LIMIT`) and `count_memories_by_type` as a query builder + row→summary mapper, with the sort pushed down to SQLite. Per the agreed option B, CI covers the query builder and mapper without a database and the listing *ordering* is proven against a copied DB in the reusable harness.
@@ -39,6 +67,12 @@ Validation: `npm run typecheck`, `npm run lint`, and `npm test` passed in `ts/` 
 Promoted the DS1 hybrid-search parity spike into the durable TypeScript core. The new `ts/src/search/ranker.ts` reproduces Python `MemorySearch.search` scoring over frozen inputs: semantic cosine, recency, honest reinforcement, manual relevance, ordinal lexical signal, stable score ordering, MMR deduplication, and limit handling. The golden-corpus generator now emits the full replay surface needed by the TS verifier, including lexical/content, use/relevance/access signals, timestamps, embeddings, frozen query embedding, weights, and MMR config.
 
 Validation: `npm run typecheck`, `npm run lint`, and `npm test` passed in `ts/` with 19 tests. Synthetic golden regeneration is deterministic after the schema update, production TS source keeps `node:sqlite` isolated to `ts/src/db/database.ts`, and `git diff --check` passed. Real-DB-copy parity passed across five probes against `tmp/parity/memory.search-parity.db`, copied from `/Users/alissonvale/.mirror-minds/mirror-dev/memory.db`, with Python and TS ordered ids matching exactly. Carried debt: the real-DB-copy parity route currently lives as local ignored `tmp/` scripts; before closing CV22.DS2 or during the next read-only parity stories, decide whether to promote it into a reusable documented harness.
+
+### 2026-07-04 — v0.29.3 Pi External-Skill Discovery Fix prepared
+
+Prepared the patch release boundary for the Pi external-skill discovery fix. On the `~/.mirror-minds` home layout the Pi logger extension hardcoded the legacy `~/.mirror` root and never loaded the per-workspace `.env`, so it read a non-existent catalog and — because runtime extensions fail quietly — silently exposed zero installed external skills. The extension now replicates the Python core's `resolve_mirror_home` contract (shell env > upward `.env` walk > single-catalog auto-scan, `~/.mirror-minds` preferred with legacy `~/.mirror` fallback), returning null on multi-home ambiguity instead of guessing. The resulting cross-language resolution duplication is recorded as accepted, tracked debt (TD-001) with an explicit revisit trigger, and the Gemini smoke test's production-DB guard was hardened to resolve the DB path through the core so it protects the database the workspace actually uses.
+
+Validation: CI green on `main` at the fix commit (`ed81ed9`); Claude plugin regenerated from the bumped version and drift check clean. Stable promotion, tag creation, push, and GitHub Release publication remain separate explicit gates.
 
 ### 2026-07-02 — v0.29.2 Ariad Builder Flow Refinement prepared
 

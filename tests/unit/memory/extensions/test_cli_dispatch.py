@@ -14,6 +14,7 @@ from pathlib import Path
 import pytest
 
 from memory.cli.ext import cmd_ext
+from memory.config import db_path_for_home
 
 
 @pytest.fixture
@@ -28,12 +29,15 @@ def mirror_home(tmp_path: Path, hello_fixture_dir: Path) -> Path:
     (home / "extensions").mkdir(parents=True)
     shutil.copytree(hello_fixture_dir, home / "extensions" / "hello")
 
-    # Apply migrations against the soon-to-be-shared memory.db so the
-    # extension can read/write its own tables.
+    # Apply migrations against the shared env-aware database so the
+    # extension can read/write its own tables. CV9.E2.S6: the fixture must
+    # bootstrap the same file the dispatcher resolves — one database per
+    # (mirror home, environment).
+    from memory.config import db_path_for_home
     from memory.db.connection import get_connection
     from memory.extensions.migrations import run_migrations
 
-    conn = get_connection(home / "memory.db")
+    conn = get_connection(db_path_for_home(home))
     try:
         run_migrations(
             conn,
@@ -133,7 +137,7 @@ def test_bind_persona_creates_row(mirror_home, capsys):
 
     from memory.db.connection import get_connection
 
-    conn = get_connection(mirror_home / "memory.db")
+    conn = get_connection(db_path_for_home(mirror_home))
     rows = conn.execute("SELECT * FROM _ext_bindings WHERE extension_id='hello'").fetchall()
     conn.close()
     assert len(rows) == 1
@@ -148,7 +152,7 @@ def test_bind_is_idempotent(mirror_home, capsys):
 
     from memory.db.connection import get_connection
 
-    conn = get_connection(mirror_home / "memory.db")
+    conn = get_connection(db_path_for_home(mirror_home))
     rows = conn.execute("SELECT * FROM _ext_bindings WHERE extension_id='hello'").fetchall()
     conn.close()
     assert len(rows) == 1
@@ -160,7 +164,7 @@ def test_bind_multiple_targets_for_same_capability(mirror_home):
 
     from memory.db.connection import get_connection
 
-    conn = get_connection(mirror_home / "memory.db")
+    conn = get_connection(db_path_for_home(mirror_home))
     rows = conn.execute(
         "SELECT * FROM _ext_bindings WHERE extension_id='hello' ORDER BY target_id"
     ).fetchall()
@@ -177,7 +181,7 @@ def test_unbind_removes_binding(mirror_home, capsys):
 
     from memory.db.connection import get_connection
 
-    conn = get_connection(mirror_home / "memory.db")
+    conn = get_connection(db_path_for_home(mirror_home))
     rows = conn.execute("SELECT * FROM _ext_bindings WHERE extension_id='hello'").fetchall()
     conn.close()
     assert rows == []
@@ -194,7 +198,7 @@ def test_bind_journey(mirror_home):
 
     from memory.db.connection import get_connection
 
-    conn = get_connection(mirror_home / "memory.db")
+    conn = get_connection(db_path_for_home(mirror_home))
     rows = conn.execute("SELECT * FROM _ext_bindings WHERE target_kind='journey'").fetchall()
     conn.close()
     assert len(rows) == 1
@@ -206,7 +210,7 @@ def test_bind_global(mirror_home):
 
     from memory.db.connection import get_connection
 
-    conn = get_connection(mirror_home / "memory.db")
+    conn = get_connection(db_path_for_home(mirror_home))
     rows = conn.execute("SELECT * FROM _ext_bindings WHERE target_kind='global'").fetchall()
     conn.close()
     assert len(rows) == 1

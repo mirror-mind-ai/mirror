@@ -8,6 +8,19 @@ import pytest
 from memory.db.schema import SCHEMA
 
 
+@pytest.fixture(autouse=True)
+def _isolate_developer_env(monkeypatch):
+    """Neutralize developer-only env leaked from a personal .env.
+
+    ``memory.config`` loads .env at import time via ``os.environ.setdefault``.
+    On a developer machine, ``BACKUP_DIR`` then points at a real personal
+    backup location and silently overrides the explicit ``mirror_home`` that
+    backup tests pass, so those tests fail locally while passing in CI (where
+    no .env exists). Clearing it makes local runs match CI.
+    """
+    monkeypatch.delenv("BACKUP_DIR", raising=False)
+
+
 @pytest.fixture
 def db_conn():
     """Conexão SQLite em memória com schema completo. Isolada por teste."""

@@ -10,7 +10,9 @@
  * - session_shutdown   → close conversation + backup database
  *
  * All heavy logic lives in the Python CLI. This extension is a thin dispatcher.
- * Failures are swallowed to never block Pi — but logged to $MEMORY_DIR/mirror-logger.log.
+ * Failures are swallowed to never block Pi — but logged to mirror-logger.log
+ * in the resolved mirror home (homes root only as bootstrap fallback when no
+ * mirror home is resolvable).
  *
  * External skill prep note:
  * Pi reads installed external skills from
@@ -35,9 +37,22 @@ const LEGACY_HOMES_DIR = ".mirror";
 // Respect MEMORY_DIR so Pi session files land in the same directory Python reads.
 // Fallback to ~/.mirror-minds if unset (matches config.DEFAULT_MEMORY_DIR).
 function _resolveMemoryDir(): string {
+	// CV9.E2.S6 — log containment. Precedence mirrors the Python core:
+	// explicit MEMORY_DIR > resolved mirror home (shell env > .env, with the
+	// legacy ~/.mirror/<user> location honored when only it exists) > homes
+	// root. The homes-root fallback is deliberate: it is the bootstrap error
+	// channel that records "could not resolve the mirror home" itself.
 	const raw = process.env.MEMORY_DIR;
-	if (!raw) return join(homedir(), NEW_HOMES_DIR);
-	return raw.startsWith("~") ? join(homedir(), raw.slice(2)) : raw;
+	if (raw) return raw.startsWith("~") ? join(homedir(), raw.slice(2)) : raw;
+	const { home, user } = _effectiveMirrorEnv();
+	if (home) return home.startsWith("~") ? join(homedir(), home.slice(2)) : home;
+	if (user) {
+		const newHome = join(homedir(), NEW_HOMES_DIR, user);
+		const legacyHome = join(homedir(), LEGACY_HOMES_DIR, user);
+		if (!_isDir(newHome) && _isDir(legacyHome)) return legacyHome;
+		return newHome;
+	}
+	return join(homedir(), NEW_HOMES_DIR);
 }
 
 /** True when the path is an existing directory. */

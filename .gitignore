@@ -22,3 +22,7 @@ docs/project/explorations/
 
 # Local recovery/backup notes and patches (Windows compat workflow)
 tmp/
+
+# Windows installer build artifacts
+dist/
+*.exe

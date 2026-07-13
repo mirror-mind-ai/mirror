@@ -36,6 +36,19 @@ def _config_with_env(**env):
         importlib.reload(config)
 
 
+def test_client_raises_actionable_error_without_home_or_overrides(mocker):
+    """CV9.E2.S6: no silent homes-root fallback — unconfigured clients fail loudly."""
+    mocker.patch("memory.client.get_connection", return_value=MagicMock())
+
+    with _config_with_env():
+        try:
+            MemoryClient()
+            raise AssertionError("Expected MemoryClient() to fail without a mirror home")
+        except ValueError as exc:
+            assert "MIRROR_HOME" in str(exc)
+            assert "MIRROR_USER" in str(exc)
+
+
 def test_client_uses_configured_db_path_when_env_is_not_explicit(mocker, tmp_path):
     configured_db_path = tmp_path / "configured.db"
     get_connection = mocker.patch("memory.client.get_connection", return_value=MagicMock())
@@ -51,7 +64,9 @@ def test_client_uses_env_specific_default_when_env_is_explicit(mocker, tmp_path)
     configured_db_path = tmp_path / "configured.db"
     get_connection = mocker.patch("memory.client.get_connection", return_value=MagicMock())
 
-    with _config_with_env(DB_PATH=str(configured_db_path)) as cfg:
+    mirror_home = tmp_path / ".mirror-minds" / "testuser"
+
+    with _config_with_env(DB_PATH=str(configured_db_path), MIRROR_HOME=str(mirror_home)) as cfg:
         expected_db_path = cfg.db_path_for_env("test")
         client = MemoryClient(env="test")
 

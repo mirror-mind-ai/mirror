@@ -18,6 +18,11 @@ JOURNEY_LAYER = "journey"
 JOURNEY_PATH_LAYER = "journey_path"
 
 
+def _normalize_project_path(value: str) -> str:
+    """Return a canonical absolute project path (expands ~, resolves symlinks)."""
+    return str(Path(value).expanduser().resolve())
+
+
 def _metadata_dict(raw: str | None) -> dict:
     if not raw:
         return {}
@@ -340,7 +345,11 @@ class JourneyService:
         try:
             meta = json.loads(ident.metadata)
             project_path = meta.get("project_path")
-            return project_path if isinstance(project_path, str) else None
+            if not isinstance(project_path, str):
+                return None
+            # Defensively expand legacy values stored before write-side
+            # normalization (e.g. "~/project"). No-op for canonical paths.
+            return str(Path(project_path).expanduser())
         except (json.JSONDecodeError, TypeError):
             return None
 
@@ -353,7 +362,7 @@ class JourneyService:
             meta = json.loads(ident.metadata) if ident.metadata else {}
         except (json.JSONDecodeError, TypeError):
             meta = {}
-        resolved_path = str(Path(project_path).expanduser().resolve())
+        resolved_path = _normalize_project_path(project_path)
         meta["project_path"] = resolved_path
         self.store.update_identity_metadata(ident.layer, journey, json.dumps(meta))
         return resolved_path
@@ -432,6 +441,8 @@ class JourneyService:
                 raise ValueError(f"{key} must be at most 500 characters")
             if key == "parent_journey":
                 self._validate_parent_journey(journey, value or None)
+            if key == "project_path" and value:
+                value = _normalize_project_path(value)
             if value:
                 meta[key] = value
             else:
@@ -529,6 +540,8 @@ class JourneyService:
                 raise ValueError(f"{key} must be at most 500 characters")
             if key == "parent_journey" and clean:
                 self._validate_parent_journey(journey, clean)
+            if key == "project_path" and clean:
+                clean = _normalize_project_path(clean)
             if clean:
                 metadata[key] = clean
         return metadata

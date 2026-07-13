@@ -354,6 +354,10 @@ class TestSessionStart:
 
     def test_reports_counts(self, mocker, tmp_path):
         mocker.patch("memory.cli.conversation_logger._MUTE_FLAG_PATH", tmp_path / "mute")
+        # CV9.E2.S6: without this mock the test reached a real MemoryClient
+        # with no configuration — which used to open a silent homes-root
+        # database and now fails loudly, as designed.
+        mocker.patch("memory.cli.conversation_logger._reset_session_orientation")
         mocker.patch("memory.cli.conversation_logger.extract_pending", return_value=3)
         mocker.patch("memory.cli.conversation_logger.close_stale_orphans", return_value=2)
         mocker.patch("memory.cli.conversation_logger.backfill_pi_sessions", return_value=1)

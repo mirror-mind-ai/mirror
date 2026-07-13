@@ -323,6 +323,41 @@ class TestJourneyServiceProjectPath:
         with pytest.raises(ValueError, match="not found"):
             journey_service.set_project_path("inexistente", "/tmp/project")
 
+    def test_create_journey_expands_project_path(self, journey_service, tmp_path, monkeypatch):
+        monkeypatch.setenv("HOME", str(tmp_path))
+        monkeypatch.setenv("USERPROFILE", str(tmp_path))
+        content = (
+            "# Child\n**Status:** active\n\n## Description\n\n"
+            "Child journey with enough content for creation.\n"
+        )
+        journey_service.create_journey(slug="child", content=content, project_path="~/project")
+        expected = str((tmp_path / "project").resolve())
+        assert journey_service.get_project_path("child") == expected
+
+    def test_update_metadata_fields_expands_project_path(
+        self, journey_service, identity_service, tmp_path, monkeypatch
+    ):
+        monkeypatch.setenv("HOME", str(tmp_path))
+        monkeypatch.setenv("USERPROFILE", str(tmp_path))
+        identity_service.set_identity("journey", "reflexo", "# Reflexo\n**Status:** active")
+        journey_service.update_metadata_fields("reflexo", {"project_path": "~/project"})
+        expected = str((tmp_path / "project").resolve())
+        assert journey_service.get_project_path("reflexo") == expected
+
+    def test_get_project_path_expands_legacy_tilde_value(
+        self, journey_service, identity_service, tmp_path, monkeypatch
+    ):
+        monkeypatch.setenv("HOME", str(tmp_path))
+        monkeypatch.setenv("USERPROFILE", str(tmp_path))
+        identity_service.set_identity(
+            "journey",
+            "legacy",
+            "# Legacy\n**Status:** active",
+            metadata='{"project_path": "~/legacy"}',
+        )
+        result = journey_service.get_project_path("legacy")
+        assert result == str(tmp_path / "legacy")
+
 
 class TestJourneyServiceGetSyncFile:
     def test_returns_none_when_no_identity(self, journey_service):

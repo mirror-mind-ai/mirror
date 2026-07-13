@@ -1,6 +1,7 @@
 """Backup and cleanup for the configured memory database."""
 
 import argparse
+import os
 import sys
 import zipfile
 from datetime import datetime, timedelta
@@ -9,10 +10,36 @@ from pathlib import Path
 RETENTION_DAYS = 30
 
 
-def _default_paths() -> tuple[Path, Path]:
+def _default_paths() -> tuple[Path | None, Path | None]:
     from memory.config import DB_BACKUP_PATH, DB_PATH
 
     return DB_PATH, DB_BACKUP_PATH
+
+
+def resolve_backup_dir(
+    *,
+    db_backup_path: Path | None,
+    mirror_home: Path | None,
+    default_backup_path: Path | None,
+) -> Path | None:
+    """Resolve the backup destination from explicit inputs only.
+
+    Precedence, most to least specific:
+
+    1. ``db_backup_path`` — an explicit, per-invocation choice (the caller or the
+       ``--backup-dir`` flag knows exactly where the archive should go).
+    2. ``mirror_home / "backups"`` — the scoped default: back up where the mirror
+       being backed up actually lives.
+    3. ``default_backup_path`` — the global fallback when there is no mirror scope.
+
+    This is a pure function: it never reads process environment or global config,
+    which keeps the destination policy explicit and testable.
+    """
+    if db_backup_path is not None:
+        return db_backup_path
+    if mirror_home is not None:
+        return mirror_home / "backups"
+    return default_backup_path
 
 
 def backup(
@@ -26,22 +53,26 @@ def backup(
     Returns:
         Created backup path, or None when the database does not exist.
     """
-    if db_path is None and db_backup_path is None and mirror_home is not None:
-        import os
-
-        db_path = mirror_home / "memory.db"
-        if os.environ.get("BACKUP_DIR"):
-            from memory.config import BACKUP_DIR
-
-            db_backup_path = BACKUP_DIR
-        else:
-            db_backup_path = mirror_home / "backups"
-    elif db_path is None or db_backup_path is None:
+    default_db_path: Path | None = None
+    default_db_backup_path: Path | None = None
+    if mirror_home is None:
         default_db_path, default_db_backup_path = _default_paths()
-        if db_path is None:
-            db_path = default_db_path
-        if db_backup_path is None:
-            db_backup_path = default_db_backup_path
+
+    if db_path is None:
+        db_path = (mirror_home / "memory.db") if mirror_home is not None else default_db_path
+
+    if db_path is None:
+        from memory.config import MIRROR_HOME_REQUIRED_HINT
+
+        if not silent:
+            print(MIRROR_HOME_REQUIRED_HINT)
+        return None
+
+    db_backup_path = resolve_backup_dir(
+        db_backup_path=db_backup_path,
+        mirror_home=mirror_home,
+        default_backup_path=default_db_backup_path,
+    )
 
     if not silent:
         if mirror_home is not None:
@@ -52,6 +83,13 @@ def backup(
     if not db_path.exists():
         if not silent:
             print(f"Database not found: {db_path}")
+        return None
+
+    if db_backup_path is None:
+        from memory.config import MIRROR_HOME_REQUIRED_HINT
+
+        if not silent:
+            print(MIRROR_HOME_REQUIRED_HINT)
         return None
 
     db_backup_path.mkdir(parents=True, exist_ok=True)
@@ -105,10 +143,25 @@ def main():
         default=None,
         help="Explicit user home to back up; overrides MIRROR_HOME-derived defaults for this command",
     )
+    parser.add_argument(
+        "--backup-dir",
+        default=None,
+        help="Explicit destination directory for this backup; overrides the mirror-home default",
+    )
     args = parser.parse_args()
 
     mirror_home = Path(args.mirror_home).expanduser() if args.mirror_home else _RESOLVED_MIRROR_HOME
-    result = backup(silent=args.silent, mirror_home=mirror_home)
+
+    db_backup_path = Path(args.backup_dir).expanduser() if args.backup_dir else None
+    if db_backup_path is None and os.environ.get("BACKUP_DIR"):
+        print(
+            "warning: BACKUP_DIR is deprecated and no longer redirects backups. "
+            "Backups are written under <mirror_home>/backups. "
+            "Use --backup-dir <path> to choose a destination.",
+            file=sys.stderr,
+        )
+
+    result = backup(silent=args.silent, mirror_home=mirror_home, db_backup_path=db_backup_path)
     if result is None and not args.silent:
         sys.exit(1)
 

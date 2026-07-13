@@ -10,7 +10,7 @@ from pathlib import Path
 
 from memory.cli.common import db_path_from_mirror_home
 from memory.client import MemoryClient
-from memory.config import MUTE_FLAG_PATH
+from memory.config import MIRROR_HOME_REQUIRED_HINT, MUTE_FLAG_PATH
 
 _DEFAULT_PI_SESSIONS_DIR = Path.home() / ".pi" / "agent" / "sessions"
 
@@ -37,6 +37,8 @@ _MUTE_FLAG_PATH = MUTE_FLAG_PATH
 
 def _mute_flag_path(mirror_home: str | Path | None = None) -> Path:
     if mirror_home is None:
+        if _MUTE_FLAG_PATH is None:
+            raise ValueError(MIRROR_HOME_REQUIRED_HINT)
         return _MUTE_FLAG_PATH
     return Path(mirror_home).expanduser() / "mute"
 

@@ -903,7 +903,7 @@ Interview five users.
         metadata = json.loads(ident.metadata)
         assert metadata["icon"] == "◇"
         assert metadata["color"] == "violet"
-        assert metadata["project_path"] == "/tmp/customer-discovery"
+        assert metadata["project_path"] == str(Path("/tmp/customer-discovery").resolve())
         assert metadata["parent_journey"] == "parent"
         assert "customer-discovery" in {item["id"] for item in mem.journeys.list_active_journeys()}
 

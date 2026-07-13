@@ -67,8 +67,12 @@ def _resolve_home(flags: dict[str, str]) -> Path:
 
 
 def _open_connection(mirror_home: Path) -> sqlite3.Connection:
-    db_path = mirror_home / "memory.db"
-    return get_connection(db_path)
+    # CV9.E2.S6: extension dispatch resolves the same env-aware database as
+    # the core (one database per mirror home and environment) so a session
+    # can never straddle two files.
+    from memory.config import db_path_for_home
+
+    return get_connection(db_path_for_home(mirror_home))
 
 
 def _installed_extension_dir(mirror_home: Path, extension_id: str) -> Path:

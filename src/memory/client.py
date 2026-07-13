@@ -25,7 +25,7 @@ def _require_journey(value: str | None, *, argument: str = "journey") -> str:
 
 class MemoryClient:
     def __init__(self, env: str | None = None, db_path: str | Path | None = None):
-        from memory.config import DB_PATH, MEMORY_ENV, db_path_for_env
+        from memory.config import MEMORY_ENV, db_path_for_env, require_db_path
 
         if env is None:
             env = MEMORY_ENV
@@ -33,7 +33,7 @@ class MemoryClient:
         if db_path is not None:
             self.db_path = Path(db_path).expanduser()
         elif env == MEMORY_ENV:
-            self.db_path = DB_PATH
+            self.db_path = require_db_path()
         else:
             self.db_path = db_path_for_env(env)
         self.env = env

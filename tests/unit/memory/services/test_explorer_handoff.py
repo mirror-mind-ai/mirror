@@ -1,5 +1,7 @@
 """Tests for Explorer Builder handoff artifact generation."""
 
+from pathlib import Path
+
 from memory.services.explorer_handoff import (
     HandoffConversationSource,
     HandoffSourceMessage,
@@ -92,6 +94,22 @@ def test_write_builder_handoff_artifacts_includes_source_evidence_and_full_conve
     assert "[LOCAL_PATH]" in full_text
     assert "token=[SECRET]" in full_text
     assert "[PRIVATE_EMAIL]" in full_text
+
+
+def test_write_builder_handoff_artifacts_expands_user_home(tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    story = ExplorerStory(journey="explorer-mode")
+
+    handoff = write_builder_handoff_artifacts(
+        Path("~/project"),
+        story,
+        title="Home handoff",
+    )
+
+    expected_dir = tmp_path / "project" / "docs" / "project" / "explorations" / "home-handoff"
+    assert handoff.artifact_dir == expected_dir.as_posix()
+    assert expected_dir.is_dir()
 
 
 def test_write_builder_handoff_artifacts_avoids_existing_directory(tmp_path):

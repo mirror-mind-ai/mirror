@@ -51,8 +51,12 @@ Alignment (CV9.E5), and Distribution & Tooling (CV9.E3) are complete. Web
 Visibility (CV9.E6) is complete: the read-only Identity and Workspace
 perspectives were validated against the personal Mirror, including a repaired Pi
 Builder journey-association bug that had made Workspace conversation data look
-stale. Stabilization now includes production updater resilience and conversation
-title hardening, released in v0.16.1 and v0.17.0 respectively. Conversation
+stale. Stabilization now includes production updater resilience, conversation title
+hardening (released in v0.16.1 and v0.17.0 respectively), and runtime state
+home containment (CV9.E2.S6): the runtime directory is the resolved mirror
+home for every environment, unconfigured resolution fails loudly instead of
+writing to the homes root, and `runtime diagnose` reports legacy root
+artifacts. Conversation
 metadata lifecycle has entered Delivery as CV9.DS7; its dry-run decision path
 and evidence-based policy are done, with apply behavior still remaining.
 Boundary Hardening and the remaining stabilization stories are still open before
@@ -255,7 +259,8 @@ recent persistence failures to the user without breaking the
 fail-quietly contract. Possible shapes, in increasing weight:
 
 - A health subcommand: `uv run python -m memory conversation-logger health` that
-  scans `~/.mirror-minds/mirror-logger.log` for recent WARN/ERROR lines and reports
+  scans `<mirror home>/mirror-logger.log` (homes-root fallback only when no
+  mirror home is resolvable, per CV9.E2.S6) for recent WARN/ERROR lines and reports
   a green/yellow/red status with the last error message.
 - An automatic one-line note at the top of `mm-mirror` output when the
   health check is non-green, e.g. `⚠️ Mirror logger has 47 errors in the
