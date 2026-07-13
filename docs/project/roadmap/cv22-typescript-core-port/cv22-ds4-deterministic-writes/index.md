@@ -63,12 +63,13 @@ source, so validation stays independent of any private filesystem.
 
 ## Candidate Stories
 
-Materialized on expand/pull; listed here as delivery-level scope.
+TS1 and US1 are materialized as story packages; US2 and US3 stay as
+delivery-level scope until pulled.
 
 | Code | Story | Type | Outcome |
 |------|-------|------|---------|
-| CV22.DS4.TS1 | Write Parity Harness & Backup Gate | Technical Story | The reusable write-parity route: seed → copy → apply (Python ‖ TS) → state-diff under frozen `now`, backup-gated, redacted by default — the write counterpart to DS2.TS3 |
-| CV22.DS4.US1 | Reinforcement Write Parity (`log_access`) | User Story | `log_access` + `increment_use_count` ported to the TS seam with state-diff parity on a copy; `last_accessed_at` frozen-`now` correct; front door routes reinforcement writes to TS |
+| [CV22.DS4.TS1](cv22-ds4-ts1-write-parity-harness/index.md) | Write Parity Harness & Backup Gate | Technical Story | The reusable write-parity route: seed → copy → apply (Python ‖ TS) → state-diff under frozen `now`, backup-gated, redacted by default — the write counterpart to DS2.TS3 |
+| [CV22.DS4.US1](cv22-ds4-us1-reinforcement-write-parity/index.md) | Reinforcement Write Parity (`log_access`) | User Story | `log_access` + `increment_use_count` ported to the TS seam with state-diff parity on a copy; `last_accessed_at` frozen-`now` correct; front door routes reinforcement writes to TS |
 | CV22.DS4.US2 | Journey Write Parity | User Story | Journey writes (create, set path/stage/status) ported to the TS seam with state-diff parity on a copy; front-door journey-write routes enter TS |
 | CV22.DS4.US3 | Identity Write Parity | User Story | Identity writes (`upsert_identity`, `update_identity_metadata` / `set_identity`) ported to the TS seam with state-diff parity on a copy; deterministic `mm-identity` / `mm-seed` write paths enter TS |
 
