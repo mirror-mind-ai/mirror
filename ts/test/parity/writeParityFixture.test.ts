@@ -128,3 +128,82 @@ test("verifyWriteFixture aborts when no backup is recorded", () => {
     ws.cleanup();
   }
 });
+
+const JOURNEY_META = '{"color": "blue", "icon": "star", "project_path": "/resolved"}';
+
+function seedIdentity(dbPath: string): void {
+  const db = openDatabaseCopyForWrite(dbPath);
+  try {
+    db.exec(
+      "CREATE TABLE identity (id TEXT PRIMARY KEY, layer TEXT NOT NULL, key TEXT NOT NULL, " +
+        "content TEXT NOT NULL, version TEXT DEFAULT '1.0.0', created_at TEXT NOT NULL, " +
+        "updated_at TEXT NOT NULL, metadata TEXT, UNIQUE(layer, key))",
+    );
+  } finally {
+    db.close();
+  }
+}
+
+function journeyFixture(
+  metadata: string,
+  ws: { seedPath: string; tsCopyPath: string },
+): WriteParityFixture {
+  return {
+    source_label: "unit",
+    seed_db_path: ws.seedPath,
+    ts_copy_path: ws.tsCopyPath,
+    backup: { path: ws.seedPath, sha256: sha256File(ws.seedPath) },
+    probes: [
+      {
+        label: "journey_1",
+        probe_type: "journey",
+        frozen_now_ms: 0,
+        now_iso: NOW_ISO,
+        target_ids: [],
+        journey: {
+          id: "j-1",
+          slug: "demo",
+          content: "# Demo",
+          icon: "star",
+          color: "blue",
+          project_path_normalized: "/resolved",
+        },
+        python_state: [
+          {
+            id: "identity:j-1",
+            cells: {
+              layer: "journey",
+              key: "demo",
+              content: "# Demo",
+              version: "1.0.0",
+              created_at: NOW_ISO,
+              updated_at: NOW_ISO,
+              metadata,
+            },
+          },
+        ],
+      },
+    ],
+  };
+}
+
+test("verifyWriteFixture PASSes a matching journey oracle (identity row incl. metadata)", () => {
+  const ws = tempWorkspace();
+  seedIdentity(ws.seedPath);
+  try {
+    assert.equal(verifyWriteFixture(journeyFixture(JOURNEY_META, ws))[0].match, true);
+  } finally {
+    ws.cleanup();
+  }
+});
+
+test("verifyWriteFixture FAILs when the journey metadata JSON diverges", () => {
+  const ws = tempWorkspace();
+  seedIdentity(ws.seedPath);
+  try {
+    const divergent = '{"color": "blue", "icon": "star", "project_path": "/DIFFERENT"}';
+    assert.equal(verifyWriteFixture(journeyFixture(divergent, ws))[0].match, false);
+  } finally {
+    ws.cleanup();
+  }
+});

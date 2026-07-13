@@ -1,29 +1,40 @@
 // Fixture-driven write-parity verification for CV22.DS4.
 //
 // The Python oracle driver (`ts/parity/write_parity.py`) copies a source DB,
-// applies the real reinforcement writes on its own copy under a frozen clock, and
-// records the resulting two-table rows as `python_state`. This module replays the
-// same writes through the TS core on a fresh copy of the same seed and grades the
-// states. Each probe starts from the pristine seed, opened through the copy-only
-// guard, and a hash-verified backup is required first.
+// applies real writes on its own copy under a frozen clock, and records the
+// resulting rows as `python_state`. This module replays the same writes through
+// the TS core on a fresh copy of the same seed and grades the states. Each probe
+// starts from the pristine seed, opened through the copy-only guard, and a
+// hash-verified backup is required first.
 
 import { copyFileSync } from "node:fs";
 import { type BackupRecord, requireBackup } from "../db/backupGate.ts";
 import { assertCopyTarget } from "../db/copyGuard.ts";
 import { openDatabaseCopyForWrite } from "../db/database.ts";
+import { createJourney, setProjectPath } from "../journey/journeyWrite.ts";
 import { logAccess, logUse } from "../memory/reinforcement.ts";
 import { evaluateWriteProbe, type MutatedRow, type WriteProbeParityResult } from "./writeParity.ts";
 import { applyWriteProbe, type WriteProbe } from "./writeProbe.ts";
+
+/** Journey-probe inputs (id, now, and project_path are injected from the oracle). */
+export interface JourneyProbeParams {
+  id: string;
+  slug: string;
+  content: string;
+  icon: string | null;
+  color: string | null;
+  project_path_normalized: string;
+}
 
 /** One probe as recorded by the Python oracle. */
 export interface WriteProbeFixture {
   label: string;
   probe_type: string;
   frozen_now_ms: number;
-  /** Exact ISO timestamp the oracle stamped, injected so TS matches it. */
   now_iso: string;
-  access_context: string | null;
   target_ids: string[];
+  access_context?: string | null;
+  journey?: JourneyProbeParams;
   python_state: MutatedRow[];
 }
 
@@ -36,6 +47,16 @@ export interface WriteParityFixture {
 }
 
 type WriteProbeFactory = (fixture: WriteProbeFixture) => WriteProbe;
+
+const IDENTITY_COLUMNS = [
+  "layer",
+  "key",
+  "content",
+  "version",
+  "created_at",
+  "updated_at",
+  "metadata",
+];
 
 /** TS-side implementations of the write probes the Python oracle mirrors. */
 const WRITE_PROBE_FACTORIES: Record<string, WriteProbeFactory> = {
@@ -59,12 +80,48 @@ const WRITE_PROBE_FACTORIES: Record<string, WriteProbeFactory> = {
     ],
     apply(db) {
       for (const id of fixture.target_ids) {
-        logAccess(db, id, fixture.now_iso, fixture.access_context);
+        logAccess(db, id, fixture.now_iso, fixture.access_context ?? null);
         logUse(db, id);
       }
     },
   }),
+  journey: (fixture) => {
+    const params = requireJourneyParams(fixture);
+    return {
+      label: fixture.label,
+      snapshots: [
+        {
+          table: "identity",
+          keyColumn: "id",
+          columns: IDENTITY_COLUMNS,
+          selectorColumn: "id",
+          selectorValues: [params.id],
+        },
+      ],
+      apply(db) {
+        createJourney(
+          db,
+          {
+            id: params.id,
+            slug: params.slug,
+            content: params.content,
+            icon: params.icon,
+            color: params.color,
+          },
+          fixture.now_iso,
+        );
+        setProjectPath(db, params.slug, params.project_path_normalized, fixture.now_iso);
+      },
+    };
+  },
 };
+
+function requireJourneyParams(fixture: WriteProbeFixture): JourneyProbeParams {
+  if (!fixture.journey) {
+    throw new Error("journey probe requires journey params");
+  }
+  return fixture.journey;
+}
 
 /**
  * Replay each probe on a fresh copy of the seed through the TS core and grade it
