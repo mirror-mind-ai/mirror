@@ -7,7 +7,7 @@
 // golden generator and the test so both build the identical fixture.
 
 import { openDatabaseCopyForWrite } from "../../src/db/database.ts";
-import { KNOWN_MIGRATION_IDS } from "../../src/db/schemaState.ts";
+import { createIdentityTable, seedKnownMigrations } from "./identitySchema.ts";
 
 const LONG_CONTENT =
   "This is a deliberately long memory body used to exercise the 200-character " +
@@ -17,19 +17,14 @@ const LONG_CONTENT =
 /** Create the deterministic render fixture at `dbPath` (must be under tmp/). */
 export function buildRenderFixture(dbPath: string): void {
   const db = openDatabaseCopyForWrite(dbPath);
+  createIdentityTable(db);
   db.exec(
-    "CREATE TABLE identity (id TEXT PRIMARY KEY, layer TEXT NOT NULL, key TEXT NOT NULL, " +
-      "content TEXT NOT NULL, version TEXT DEFAULT '1.0.0', created_at TEXT NOT NULL, " +
-      "updated_at TEXT NOT NULL, metadata TEXT, UNIQUE(layer, key));" +
-      "CREATE TABLE memories (id TEXT PRIMARY KEY, memory_type TEXT NOT NULL, " +
+    "CREATE TABLE memories (id TEXT PRIMARY KEY, memory_type TEXT NOT NULL, " +
       "layer TEXT NOT NULL DEFAULT 'ego', title TEXT NOT NULL, content TEXT NOT NULL, " +
       "context TEXT, journey TEXT, persona TEXT, tags TEXT, created_at TEXT NOT NULL, " +
-      "use_count INTEGER NOT NULL DEFAULT 0);" +
-      "CREATE TABLE _migrations (id TEXT PRIMARY KEY, applied_at TEXT NOT NULL)",
+      "use_count INTEGER NOT NULL DEFAULT 0)",
   );
-  for (const id of KNOWN_MIGRATION_IDS) {
-    db.prepare("INSERT INTO _migrations (id, applied_at) VALUES (?, 't')").run(id);
-  }
+  seedKnownMigrations(db);
 
   const identity = db.prepare(
     "INSERT INTO identity (id, layer, key, content, version, created_at, updated_at, metadata) " +

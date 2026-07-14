@@ -6,6 +6,7 @@ import { test } from "node:test";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
 import { applyJourneySetPath } from "../../src/frontDoor/journeyWriteRoute.ts";
 import { createJourney } from "../../src/journey/journeyWrite.ts";
+import { createIdentityTable } from "../helpers/identitySchema.ts";
 
 const NOW = "2026-06-23T12:00:00.123000Z";
 const LATER = "2026-06-24T00:00:00.000000Z";
@@ -22,11 +23,7 @@ function workspace(): { tmpDir: string; dbPath: string; cleanup: () => void } {
 }
 
 function seedJourney(db: WritableDatabase): void {
-  db.exec(
-    "CREATE TABLE identity (id TEXT PRIMARY KEY, layer TEXT NOT NULL, key TEXT NOT NULL, " +
-      "content TEXT NOT NULL, version TEXT DEFAULT '1.0.0', created_at TEXT NOT NULL, " +
-      "updated_at TEXT NOT NULL, metadata TEXT, UNIQUE(layer, key))",
-  );
+  createIdentityTable(db);
   createJourney(db, { id: "j-1", slug: "demo", content: "# Demo", icon: "star" }, NOW);
 }
 

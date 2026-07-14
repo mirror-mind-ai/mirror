@@ -6,6 +6,7 @@ import { test } from "node:test";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
 import { upsertIdentity } from "../../src/identity/identityStore.ts";
 import { setIdentity } from "../../src/identity/setIdentity.ts";
+import { createIdentityTable } from "../helpers/identitySchema.ts";
 
 const NOW = "2026-06-23T12:00:00.123456Z";
 const LATER = "2026-06-24T09:30:00.500000Z";
@@ -21,11 +22,7 @@ function tempCopy(): { dbPath: string; cleanup: () => void } {
 }
 
 function seed(db: WritableDatabase): void {
-  db.exec(
-    "CREATE TABLE identity (id TEXT PRIMARY KEY, layer TEXT NOT NULL, key TEXT NOT NULL, " +
-      "content TEXT NOT NULL, version TEXT DEFAULT '1.0.0', created_at TEXT NOT NULL, " +
-      "updated_at TEXT NOT NULL, metadata TEXT, UNIQUE(layer, key))",
-  );
+  createIdentityTable(db);
 }
 
 function readRow(db: WritableDatabase, layer: string, key: string): unknown {

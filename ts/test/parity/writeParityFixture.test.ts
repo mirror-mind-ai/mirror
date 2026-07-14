@@ -9,6 +9,7 @@ import {
   verifyWriteFixture,
   type WriteParityFixture,
 } from "../../src/parity/writeParityFixture.ts";
+import { createIdentityTable } from "../helpers/identitySchema.ts";
 
 const NOW_ISO = "2026-06-23T12:00:00.123456Z";
 const CONTEXT = "retrieval";
@@ -134,11 +135,7 @@ const JOURNEY_META = '{"color": "blue", "icon": "star", "project_path": "/resolv
 function seedIdentity(dbPath: string): void {
   const db = openDatabaseCopyForWrite(dbPath);
   try {
-    db.exec(
-      "CREATE TABLE identity (id TEXT PRIMARY KEY, layer TEXT NOT NULL, key TEXT NOT NULL, " +
-        "content TEXT NOT NULL, version TEXT DEFAULT '1.0.0', created_at TEXT NOT NULL, " +
-        "updated_at TEXT NOT NULL, metadata TEXT, UNIQUE(layer, key))",
-    );
+    createIdentityTable(db);
   } finally {
     db.close();
   }
@@ -214,11 +211,7 @@ const OLD_ISO = "2020-01-01T00:00:00.000000Z";
 function seedIdentityRows(dbPath: string): void {
   const db = openDatabaseCopyForWrite(dbPath);
   try {
-    db.exec(
-      "CREATE TABLE identity (id TEXT PRIMARY KEY, layer TEXT NOT NULL, key TEXT NOT NULL, " +
-        "content TEXT NOT NULL, version TEXT DEFAULT '1.0.0', created_at TEXT NOT NULL, " +
-        "updated_at TEXT NOT NULL, metadata TEXT, UNIQUE(layer, key))",
-    );
+    createIdentityTable(db);
     const insert = db.prepare(
       "INSERT INTO identity (id, layer, key, content, version, created_at, updated_at, metadata) " +
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",

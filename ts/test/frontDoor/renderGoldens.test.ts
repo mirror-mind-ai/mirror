@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { openDatabaseCopyForWrite } from "../../src/db/database.ts";
-import { KNOWN_MIGRATION_IDS } from "../../src/db/schemaState.ts";
+import { createIdentityTable, seedKnownMigrations } from "../helpers/identitySchema.ts";
 import { buildRenderFixture } from "../helpers/renderFixture.ts";
 
 const CLI = "src/frontDoor/cli.ts";
@@ -70,18 +70,13 @@ test("detect-persona render output matches the golden", () => {
 /** A schema-valid database with no journeys or memories (empty-state edges). */
 function buildEmptyFixture(dbPath: string): void {
   const db = openDatabaseCopyForWrite(dbPath);
+  createIdentityTable(db);
   db.exec(
-    "CREATE TABLE identity (id TEXT PRIMARY KEY, layer TEXT NOT NULL, key TEXT NOT NULL, " +
-      "content TEXT NOT NULL, version TEXT DEFAULT '1.0.0', created_at TEXT NOT NULL, " +
-      "updated_at TEXT NOT NULL, metadata TEXT, UNIQUE(layer, key));" +
-      "CREATE TABLE memories (id TEXT PRIMARY KEY, memory_type TEXT NOT NULL, layer TEXT NOT NULL, " +
+    "CREATE TABLE memories (id TEXT PRIMARY KEY, memory_type TEXT NOT NULL, layer TEXT NOT NULL, " +
       "title TEXT NOT NULL, content TEXT NOT NULL, context TEXT, journey TEXT, persona TEXT, " +
-      "tags TEXT, created_at TEXT NOT NULL);" +
-      "CREATE TABLE _migrations (id TEXT PRIMARY KEY, applied_at TEXT NOT NULL)",
+      "tags TEXT, created_at TEXT NOT NULL)",
   );
-  for (const id of KNOWN_MIGRATION_IDS) {
-    db.prepare("INSERT INTO _migrations (id, applied_at) VALUES (?, 't')").run(id);
-  }
+  seedKnownMigrations(db);
   db.close();
 }
 

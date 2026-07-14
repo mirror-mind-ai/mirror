@@ -5,8 +5,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { openDatabaseCopyForWrite } from "../../src/db/database.ts";
-import { KNOWN_MIGRATION_IDS } from "../../src/db/schemaState.ts";
 import { frontDoorLogPath, logFrontDoor } from "../../src/frontDoor/frontDoorLog.ts";
+import { createIdentityTable, seedKnownMigrations } from "../helpers/identitySchema.ts";
 
 const CLI = "src/frontDoor/cli.ts";
 
@@ -27,15 +27,8 @@ test("the front-door log records metadata but never the --content payload (CR033
   mkdirSync(tmpDir);
   const dbPath = join(tmpDir, "copy.db");
   const db = openDatabaseCopyForWrite(dbPath);
-  db.exec(
-    "CREATE TABLE identity (id TEXT PRIMARY KEY, layer TEXT NOT NULL, key TEXT NOT NULL, " +
-      "content TEXT NOT NULL, version TEXT DEFAULT '1.0.0', created_at TEXT NOT NULL, " +
-      "updated_at TEXT NOT NULL, metadata TEXT, UNIQUE(layer, key));" +
-      "CREATE TABLE _migrations (id TEXT PRIMARY KEY, applied_at TEXT NOT NULL)",
-  );
-  for (const id of KNOWN_MIGRATION_IDS) {
-    db.prepare("INSERT INTO _migrations (id, applied_at) VALUES (?, 't')").run(id);
-  }
+  createIdentityTable(db);
+  seedKnownMigrations(db);
   db.close();
 
   const secret = "TOPSECRET-soul-content-42";
