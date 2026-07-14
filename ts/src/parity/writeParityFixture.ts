@@ -11,6 +11,7 @@ import { copyFileSync } from "node:fs";
 import { type BackupRecord, requireBackup } from "../db/backupGate.ts";
 import { assertCopyTarget } from "../db/copyGuard.ts";
 import { openDatabaseCopyForWrite } from "../db/database.ts";
+import { assertFtsIntegrity } from "../db/ftsIntegrity.ts";
 import { updateIdentityMetadata } from "../identity/identityStore.ts";
 import { setIdentity } from "../identity/setIdentity.ts";
 import { createJourney, setProjectPath } from "../journey/journeyWrite.ts";
@@ -209,6 +210,9 @@ export function verifyWriteFixture(
     const db = openDatabaseCopyForWrite(fixture.ts_copy_path);
     try {
       const tsState = applyWriteProbe(db, buildWriteProbe(probe));
+      // Grade the FTS side-effect of the write, not just the declared columns:
+      // a memories mutation fires the memories_fts triggers (no-op if absent).
+      assertFtsIntegrity(db);
       return evaluateWriteProbe(probe.label, probe.python_state, tsState, options);
     } finally {
       db.close();

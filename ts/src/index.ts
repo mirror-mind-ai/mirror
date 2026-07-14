@@ -28,6 +28,7 @@ export {
   withTransaction,
 } from "./db/database.ts";
 export { blobToFloat32, parseUtcMs } from "./db/decode.ts";
+export { assertFtsIntegrity, FtsIntegrityError } from "./db/ftsIntegrity.ts";
 export { optionalNumber, optionalString, requireString } from "./db/rowDecode.ts";
 export { assertSchemaState, KNOWN_MIGRATION_IDS, SchemaStateError } from "./db/schemaState.ts";
 

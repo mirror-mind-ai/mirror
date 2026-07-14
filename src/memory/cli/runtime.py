@@ -1586,6 +1586,48 @@ def _front_door_error_findings(report: RuntimeStatusReport) -> list[DriftFinding
     ]
 
 
+def _fts_consistency_findings(report: RuntimeStatusReport) -> list[DriftFinding]:
+    """Report a corrupt ``memories_fts`` index via a read-only MATCH probe (CR021).
+
+    ``memories_fts`` is an external-content FTS5 index kept in sync by triggers.
+    A row-count comparison cannot detect desync (external content mirrors the
+    content table's count), but a corrupt index raises
+    ``database disk image is malformed`` on any MATCH query — a genuine
+    read-only detector. The authoritative FTS5 ``integrity-check`` needs a
+    writable handle and runs in the write path instead.
+    """
+    if report.db_path is None or not report.db_exists:
+        return []
+    try:
+        conn = sqlite3.connect(f"file:{report.db_path}?mode=ro", uri=True)
+    except sqlite3.Error:
+        return []
+    try:
+        tables = {
+            row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
+        }
+        if "memories_fts" not in tables:
+            return []
+        conn.execute(
+            "SELECT rowid FROM memories_fts WHERE memories_fts MATCH ? LIMIT 1",
+            ("mirror_fts_integrity_probe",),
+        ).fetchone()
+    except sqlite3.DatabaseError as exc:
+        return [
+            DriftFinding(
+                "fts_corrupt",
+                "attention",
+                "memories_fts",
+                f"FTS query failed ({exc}); the index may be corrupt or desynced",
+                "rebuild the FTS index: INSERT INTO memories_fts(memories_fts) VALUES('rebuild')",
+                "rebuild memories_fts",
+            )
+        ]
+    finally:
+        conn.close()
+    return []
+
+
 def diagnose_runtime(
     report: RuntimeStatusReport,
     worktree_entries: tuple[GitWorktreeEntry, ...] = (),
@@ -1593,6 +1635,7 @@ def diagnose_runtime(
     findings: list[DriftFinding] = []
     findings.extend(_loose_permission_findings(report))
     findings.extend(_front_door_error_findings(report))
+    findings.extend(_fts_consistency_findings(report))
     if report.mirror_home_error:
         findings.append(
             DriftFinding(

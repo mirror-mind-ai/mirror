@@ -213,6 +213,26 @@ Add new items at the top. Each entry should name the problem (not just the
 solution), point at evidence or source, and sketch the rough shape of the
 work.
 
+### FTS write amplification: the memories_fts update trigger fires on every row change
+
+**Source:** RS003 database-architect audit of the CV22 persistence seam (CR021)
+**Surfaced:** 2026-07-14
+
+`memories_fts` is an external-content FTS5 index kept in sync by triggers on
+`memories`. The update trigger `memories_fts_au` fires on **any** `UPDATE` of
+`memories`, not `UPDATE OF title, content, context` — so every reinforcement
+write (`log_access`/`log_use`, which touch `last_accessed_at` and `use_count`)
+rewrites the full FTS entry (delete + reinsert) on the hottest write path in
+the system, even though no indexed column changed.
+
+Shape of the work (post-CV22 — a schema change gated on migration discipline
+and the DS6 schema-custody transfer): scope the update trigger to the indexed
+columns with `AFTER UPDATE OF title, content, context ON memories`. Integrity
+is now verified: the write-parity harness runs FTS5 `integrity-check` after
+writes (`ts/src/db/ftsIntegrity.ts`) and `runtime diagnose` probes the index
+read-only, so the trigger change can be made and validated safely when the
+schema opens for change.
+
 ### `memory_access_log` grows forever and has no retention policy
 
 **Source:** RS003 database-architect audit of the CV22 persistence seam (CR022)
