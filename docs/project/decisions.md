@@ -11,6 +11,24 @@ resolved.
 
 ## Completed Decisions
 
+### CV22 ports semantics, not query plans — first application: DS5 access counts
+
+**Date:** 2026-07-14 · **Origin:** RS003 database audit, CR020
+
+The parity contract is the *observable result* (values, ordered ids, rendered
+output), never the SQL shape that produced it. Where the Python oracle has an
+accidental plan — an N+1, a per-row query — the TS port may choose a better
+plan **if and only if** a parity probe proves the results identical on a
+real-DB copy.
+
+First application, binding on the DS5 plan: Python computes reinforcement
+inputs with one `get_access_count(memory_id)` COUNT per candidate per search
+(`src/memory/intelligence/search.py:177`) over the unboundedly growing
+`memory_access_log`. The TS live-search path computes all counts in a single
+`GROUP BY memory_id` aggregate. Semantics are identical (same counts); the
+DS5 plan must include a probe on a real-DB copy proving `GROUP BY` counts
+equal the per-id counts before the ranker consumes them.
+
 ### Supply-chain posture: zero runtime npm deps as policy; tag-pinned CI actions accepted
 
 **Date:** 2026-07-14 · **Origin:** RS005 security audit, CR035

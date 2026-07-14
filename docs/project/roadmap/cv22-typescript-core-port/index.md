@@ -157,7 +157,11 @@ Risk-first, mirroring the decision spine:
    the command burn-down.
 4. **DS4 — writes** (done): backup-gated, copy-validated parity plus CLI-write
    front-door routing (identity + journey).
-5. **DS5 — external-API commands** (next): isolate non-determinism at the boundary.
+5. **DS5 — external-API commands** (next): isolate non-determinism at the
+   boundary. Plan inputs already recorded: the access-count read strategy
+   (single `GROUP BY` with a parity probe — see
+   [Decisions](../../decisions.md), *ports semantics, not query plans*) and
+   the DS5 secrets rider above.
 6. **DS6 — convergence & retirement**: TS MCP server, re-homed feature work, Python
    core deleted, npm distribution.
 
