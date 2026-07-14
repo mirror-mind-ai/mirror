@@ -2,7 +2,7 @@
 
 # CV22.DS4.US4 — Front-Door Write Routing
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 **Type:** User Story
 **Depends on:** CV22.DS4.US3 (the ported `setIdentity`, including metadata-None
 inheritance); [CV22.DS3 Pi TS Front Door](../../cv22-pi-ts-front-door/cv22-ds3/index.md)
