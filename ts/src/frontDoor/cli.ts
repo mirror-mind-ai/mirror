@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { Database, Row } from "../db/database.ts";
+import { openDatabaseForWrite } from "../db/database.ts";
 import {
   type JourneyIdentityRow,
   type JourneyOption,
@@ -16,6 +17,8 @@ import {
   type MemorySummary,
 } from "../memory/listing.ts";
 import { detectPersona, type PersonaRoutingRow } from "../persona/detectPersona.ts";
+import { newId, nowIso } from "../util/pyIdentifiers.ts";
+import { applyIdentitySet, ensureBackup } from "./identityWrite.ts";
 import { routeMemoryCommand } from "./routing.ts";
 
 const ICONS: Record<string, string> = {
@@ -260,9 +263,59 @@ async function runTs(argv: readonly string[]): Promise<number> {
   }
 }
 
+function readStdinContent(): string {
+  try {
+    return readFileSync(0, "utf8");
+  } catch {
+    return "";
+  }
+}
+
+function isIdentityWrite(argv: readonly string[]): boolean {
+  return argv[0] === "identity" && argv[1] === "set";
+}
+
+/**
+ * Route `identity set <layer> <key> --content ... | stdin` to the TS core. Mirrors
+ * the Python `identity set` interface and output, but writes through the sanctioned
+ * live-write seam after a backup, reusing the ported `setIdentity`.
+ */
+async function runIdentityWrite(argv: readonly string[]): Promise<number> {
+  const args = argv.slice(2);
+  const positionals = stripOption(
+    stripOption(stripOption(args, "--content"), "--db-path"),
+    "--mirror-home",
+  );
+  const layer = positionals[0];
+  const key = positionals[1];
+  if (!layer || !key) {
+    console.error("identity set requires <layer> <key>");
+    return 2;
+  }
+  const content = optionValue(args, "--content") ?? readStdinContent();
+  if (!content.trim()) {
+    console.error("Error: content is empty.");
+    return 1;
+  }
+  const dbPath = resolveDbPath(args);
+  if (!existsSync(dbPath)) {
+    console.error(`Mirror TS front door could not find database: ${dbPath}`);
+    return 2;
+  }
+  const db = openDatabaseForWrite(dbPath, ensureBackup(dbPath));
+  try {
+    const outcome = applyIdentitySet(db, { layer, key, content, id: newId(), nowIso: nowIso() });
+    process.stdout.write(`\u2713 ${outcome.layer}/${outcome.key} ${outcome.action}\n`);
+    return 0;
+  } finally {
+    db.close();
+  }
+}
+
 export async function main(argv = process.argv.slice(2)): Promise<number> {
   const decision = routeMemoryCommand(argv);
   if (decision.engine === "python") return fallbackPython(argv);
+  if (isIdentityWrite(argv)) return runIdentityWrite(argv);
   return runTs(argv);
 }
 

@@ -27,5 +27,14 @@ export function routeMemoryCommand(argv: readonly string[]): RouteDecision {
     return { command, engine: "ts", reason: "DS2 memory listing read ported to TS" };
   }
 
+  if (command === "identity") {
+    // Only the non-interactive deterministic write `identity set` is ported.
+    // `identity edit` spawns $EDITOR and identity reads stay on Python for now.
+    if (argv[1] === "set") {
+      return { command, engine: "ts", reason: "DS4 identity set write ported to TS" };
+    }
+    return { command, engine: "python", reason: "identity edit/read not ported to TS" };
+  }
+
   return { command, engine: "python", reason: "command not ported to TS" };
 }

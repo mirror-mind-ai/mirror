@@ -19,8 +19,20 @@ test("keeps fresh semantic search and unported commands on Python fallback", () 
     reason: "fresh semantic search remains Python until CV22.DS5",
   });
   assert.equal(routeMemoryCommand(["build", "load", "mirror-ts-core"]).engine, "python");
-  assert.equal(routeMemoryCommand(["identity", "set", "ego", "x"]).engine, "python");
   assert.equal(routeMemoryCommand(["journal", "hello"]).engine, "python");
+});
+
+test("routes `identity set` writes to TS but keeps edit/reads and journey writes on Python", () => {
+  assert.deepEqual(routeMemoryCommand(["identity", "set", "ego", "behavior", "--content", "x"]), {
+    command: "identity",
+    engine: "ts",
+    reason: "DS4 identity set write ported to TS",
+  });
+  assert.equal(routeMemoryCommand(["identity", "edit", "ego", "behavior"]).engine, "python");
+  assert.equal(routeMemoryCommand(["identity", "get", "ego", "behavior"]).engine, "python");
+  assert.equal(routeMemoryCommand(["identity", "list"]).engine, "python");
+  // Journey writes are the fast-follow (US5), still Python for now.
+  assert.equal(routeMemoryCommand(["journey", "set-path", "demo", "/x"]).engine, "python");
 });
 
 test("uses Python fallback when no command is present", () => {
