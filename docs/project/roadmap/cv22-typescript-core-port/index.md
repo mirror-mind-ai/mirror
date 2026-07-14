@@ -103,7 +103,7 @@ scope until pulled.
 | [CV22.DS3](../cv22-pi-ts-front-door/cv22-ds3/index.md) | Pi TS Front Door | A TS front door on Pi that wraps the frozen Python engine and routes ported read commands to the TS core; dogfooded daily; runtimes unaffected | ✅ Done |
 | [CV22.DS4](cv22-ds4-deterministic-writes/index.md) | Deterministic Writes | Port write commands (journey/identity CRUD, `log_access`) with parity proven on DB copies; backup-gated; schema-compatible; CLI-write routing on the TS front door (identity + journey) | ✅ Done |
 | CV22.DS5 | External-API Commands | Port extraction (Gemini), embeddings (OpenAI), and consult; record/replay for non-determinism; live embedding-determinism contract; the end-to-end fresh-query path | 🟡 Planned |
-| CV22.DS6 | Convergence & Python Retirement | TS MCP server; re-home unfinished CV20 Ariad / CV21 MCP feature work to TS; burn down to a deletable Python core; reconsider the `memory → mirror` package rename; npm distribution | 🟡 Planned |
+| CV22.DS6 | Convergence & Python Retirement | TS MCP server; re-home unfinished CV20 Ariad / CV21 MCP feature work to TS; **schema custody transfer** (bootstrap DDL — rewritten in English per CV0 — migration engine and `_migrations` bookkeeping, cross-process bootstrap locking, connection pragma discipline, proven over real legacy databases); burn down to a deletable Python core; reconsider the `memory → mirror` package rename; npm distribution | 🟡 Planned |
 
 ---
 
@@ -162,8 +162,14 @@ Risk-first, mirroring the decision spine:
    (single `GROUP BY` with a parity probe — see
    [Decisions](../../decisions.md), *ports semantics, not query plans*) and
    the DS5 secrets rider above.
-6. **DS6 — convergence & retirement**: TS MCP server, re-homed feature work, Python
-   core deleted, npm distribution.
+6. **DS6 — convergence & retirement**: TS MCP server, re-homed feature work,
+   **schema custody transfer** — everything that creates, migrates, and
+   disciplines the database lives only in Python today (schema DDL, migration
+   engine, `fcntl` bootstrap locking, WAL/busy-timeout/FK pragmas in
+   `src/memory/db/connection.py`) and dies with it; TS must own all of it,
+   with compatibility proven over real legacy databases, **before** the
+   Python core is deleted — then deletion and npm distribution. The MCP
+   threat-model rider above is a DS6 plan input.
 
 Part-time, no deadline — a background burn. The transition state (TS front door
 over a frozen Python engine) is durable and must stay comfortable to live in; no

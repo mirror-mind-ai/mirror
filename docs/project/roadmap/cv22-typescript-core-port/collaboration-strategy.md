@@ -104,6 +104,17 @@ Expected plateau:
 
 DS5 and DS6 should be divided once the earlier plateaus reveal the real shape of the external-API and convergence work.
 
+One DS6 deliverable is already named and must not be lost in the division:
+**schema custody transfer** (RS003/CR019). Everything that creates, migrates,
+and disciplines the database lives only in Python (schema DDL, migration
+engine and `_migrations` bookkeeping, cross-process bootstrap locking, WAL and
+pragma discipline in `src/memory/db/connection.py`). TS must own all of it,
+proven over real legacy databases, before the Python core can be deleted.
+Recorded plan inputs for the same horizon: the DS5 access-count read strategy
+and the DS5/DS6 security riders in the CV22 index; the schema-state guard
+(`ts/src/db/schemaState.ts`) already holds the seam closed during the
+transition and its `KNOWN_MIGRATION_IDS` snapshot becomes the handover manifest.
+
 Likely ownership pattern:
 
 - Vinícius leads mechanical engineering of deterministic seams, fixtures, record/replay, and package mechanics.
