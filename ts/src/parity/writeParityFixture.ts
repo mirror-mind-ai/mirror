@@ -11,6 +11,8 @@ import { copyFileSync } from "node:fs";
 import { type BackupRecord, requireBackup } from "../db/backupGate.ts";
 import { assertCopyTarget } from "../db/copyGuard.ts";
 import { openDatabaseCopyForWrite } from "../db/database.ts";
+import { updateIdentityMetadata } from "../identity/identityStore.ts";
+import { setIdentity } from "../identity/setIdentity.ts";
 import { createJourney, setProjectPath } from "../journey/journeyWrite.ts";
 import { logAccess, logUse } from "../memory/reinforcement.ts";
 import { evaluateWriteProbe, type MutatedRow, type WriteProbeParityResult } from "./writeParity.ts";
@@ -26,6 +28,27 @@ export interface JourneyProbeParams {
   project_path_normalized: string;
 }
 
+/** One identity write operation the probe replays, mirroring a real Python call. */
+export type IdentityOperation =
+  | {
+      op: "set_identity";
+      /** Injected from the oracle (the generated id on INSERT; the existing id on UPDATE). */
+      id: string;
+      layer: string;
+      key: string;
+      content: string;
+      /** null/absent => default "1.0.0", matching set_identity. */
+      version?: string | null;
+      /** null/absent => inherit the stored metadata, matching set_identity. */
+      metadata?: string | null;
+    }
+  | { op: "update_metadata"; layer: string; key: string; metadata: string };
+
+/** Identity-probe inputs: the ordered operations to replay under the frozen now. */
+export interface IdentityProbeParams {
+  operations: IdentityOperation[];
+}
+
 /** One probe as recorded by the Python oracle. */
 export interface WriteProbeFixture {
   label: string;
@@ -35,6 +58,7 @@ export interface WriteProbeFixture {
   target_ids: string[];
   access_context?: string | null;
   journey?: JourneyProbeParams;
+  identity?: IdentityProbeParams;
   python_state: MutatedRow[];
 }
 
@@ -114,6 +138,41 @@ const WRITE_PROBE_FACTORIES: Record<string, WriteProbeFactory> = {
       },
     };
   },
+  identity: (fixture) => {
+    const params = requireIdentityParams(fixture);
+    return {
+      label: fixture.label,
+      snapshots: [
+        {
+          table: "identity",
+          keyColumn: "id",
+          columns: IDENTITY_COLUMNS,
+          selectorColumn: "id",
+          selectorValues: fixture.target_ids,
+        },
+      ],
+      apply(db) {
+        for (const op of params.operations) {
+          if (op.op === "update_metadata") {
+            updateIdentityMetadata(db, op.layer, op.key, op.metadata, fixture.now_iso);
+          } else {
+            setIdentity(
+              db,
+              {
+                id: op.id,
+                layer: op.layer,
+                key: op.key,
+                content: op.content,
+                version: op.version ?? undefined,
+                metadata: op.metadata,
+              },
+              fixture.now_iso,
+            );
+          }
+        }
+      },
+    };
+  },
 };
 
 function requireJourneyParams(fixture: WriteProbeFixture): JourneyProbeParams {
@@ -121,6 +180,13 @@ function requireJourneyParams(fixture: WriteProbeFixture): JourneyProbeParams {
     throw new Error("journey probe requires journey params");
   }
   return fixture.journey;
+}
+
+function requireIdentityParams(fixture: WriteProbeFixture): IdentityProbeParams {
+  if (!fixture.identity) {
+    throw new Error("identity probe requires identity params");
+  }
+  return fixture.identity;
 }
 
 /**

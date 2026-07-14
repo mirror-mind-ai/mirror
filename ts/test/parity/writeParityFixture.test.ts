@@ -207,3 +207,158 @@ test("verifyWriteFixture FAILs when the journey metadata JSON diverges", () => {
     ws.cleanup();
   }
 });
+
+const OLD_ISO = "2020-01-01T00:00:00.000000Z";
+
+/** Seed the three pre-existing identity rows the identity probe's UPDATE cases target. */
+function seedIdentityRows(dbPath: string): void {
+  const db = openDatabaseCopyForWrite(dbPath);
+  try {
+    db.exec(
+      "CREATE TABLE identity (id TEXT PRIMARY KEY, layer TEXT NOT NULL, key TEXT NOT NULL, " +
+        "content TEXT NOT NULL, version TEXT DEFAULT '1.0.0', created_at TEXT NOT NULL, " +
+        "updated_at TEXT NOT NULL, metadata TEXT, UNIQUE(layer, key))",
+    );
+    const insert = db.prepare(
+      "INSERT INTO identity (id, layer, key, content, version, created_at, updated_at, metadata) " +
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    );
+    insert.run("u1", "persona", "to-update", "# Old", "1.0.0", OLD_ISO, OLD_ISO, '{"a": 1}');
+    insert.run("i1", "persona", "to-inherit", "# Old", "1.0.0", OLD_ISO, OLD_ISO, '{"keep": true}');
+    insert.run(
+      "mo1",
+      "journey",
+      "meta-only",
+      "# MO",
+      "1.0.0",
+      OLD_ISO,
+      OLD_ISO,
+      '{"parent_journey": "x"}',
+    );
+  } finally {
+    db.close();
+  }
+}
+
+/** `inheritMetadata` is the metadata the inherit-case row is expected to keep. */
+function identityFixture(
+  inheritMetadata: string,
+  ws: { seedPath: string; tsCopyPath: string },
+): WriteParityFixture {
+  return {
+    source_label: "unit",
+    seed_db_path: ws.seedPath,
+    ts_copy_path: ws.tsCopyPath,
+    backup: { path: ws.seedPath, sha256: sha256File(ws.seedPath) },
+    probes: [
+      {
+        label: "identity_1",
+        probe_type: "identity",
+        frozen_now_ms: 0,
+        now_iso: NOW_ISO,
+        target_ids: ["n1", "u1", "i1", "mo1"],
+        identity: {
+          operations: [
+            {
+              op: "set_identity",
+              id: "n1",
+              layer: "persona",
+              key: "fresh",
+              content: "# Fresh",
+              version: "1.2.3",
+              metadata: '{"new": 1}',
+            },
+            {
+              op: "set_identity",
+              id: "u1",
+              layer: "persona",
+              key: "to-update",
+              content: "# Upd",
+              version: "1.1.0",
+              metadata: '{"b": 2}',
+            },
+            // No version/metadata => default version + inherit stored metadata.
+            { op: "set_identity", id: "i1", layer: "persona", key: "to-inherit", content: "# Inh" },
+            {
+              op: "update_metadata",
+              layer: "journey",
+              key: "meta-only",
+              metadata: '{"parent_journey": "y"}',
+            },
+          ],
+        },
+        python_state: [
+          {
+            id: "identity:n1",
+            cells: {
+              layer: "persona",
+              key: "fresh",
+              content: "# Fresh",
+              version: "1.2.3",
+              created_at: NOW_ISO,
+              updated_at: NOW_ISO,
+              metadata: '{"new": 1}',
+            },
+          },
+          {
+            id: "identity:u1",
+            cells: {
+              layer: "persona",
+              key: "to-update",
+              content: "# Upd",
+              version: "1.1.0",
+              created_at: OLD_ISO,
+              updated_at: NOW_ISO,
+              metadata: '{"b": 2}',
+            },
+          },
+          {
+            id: "identity:i1",
+            cells: {
+              layer: "persona",
+              key: "to-inherit",
+              content: "# Inh",
+              version: "1.0.0",
+              created_at: OLD_ISO,
+              updated_at: NOW_ISO,
+              metadata: inheritMetadata,
+            },
+          },
+          {
+            id: "identity:mo1",
+            cells: {
+              layer: "journey",
+              key: "meta-only",
+              content: "# MO",
+              version: "1.0.0",
+              created_at: OLD_ISO,
+              updated_at: NOW_ISO,
+              metadata: '{"parent_journey": "y"}',
+            },
+          },
+        ],
+      },
+    ],
+  };
+}
+
+test("verifyWriteFixture PASSes an identity oracle (insert, update, inherit, metadata-only)", () => {
+  const ws = tempWorkspace();
+  seedIdentityRows(ws.seedPath);
+  try {
+    assert.equal(verifyWriteFixture(identityFixture('{"keep": true}', ws))[0].match, true);
+  } finally {
+    ws.cleanup();
+  }
+});
+
+test("verifyWriteFixture FAILs when the inherited identity metadata diverges", () => {
+  const ws = tempWorkspace();
+  seedIdentityRows(ws.seedPath);
+  try {
+    // The inherit case must keep {"keep": true}; expecting anything else must FAIL.
+    assert.equal(verifyWriteFixture(identityFixture('{"keep": false}', ws))[0].match, false);
+  } finally {
+    ws.cleanup();
+  }
+});
