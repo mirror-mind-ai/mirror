@@ -32,8 +32,12 @@ export interface SnapshotSpec {
 export interface WriteProbe {
   label: string;
   snapshots: SnapshotSpec[];
-  /** Mutate the copy. `frozenNowMs` stamps any time-based write deterministically. */
-  apply(db: WritableDatabase, frozenNowMs: number): void;
+  /**
+   * Mutate the copy. Any time-based write is stamped from a frozen clock the
+   * probe closes over (the oracle's `now_iso`), so the transition is
+   * deterministic without threading a clock argument through the seam.
+   */
+  apply(db: WritableDatabase): void;
 }
 
 const IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/;
@@ -93,12 +97,8 @@ export function snapshotState(db: WritableDatabase, probe: WriteProbe): MutatedR
   return probe.snapshots.flatMap((spec) => snapshotSpec(db, spec));
 }
 
-/** Apply a probe to a writable copy under a frozen now, then snapshot the result. */
-export function applyWriteProbe(
-  db: WritableDatabase,
-  probe: WriteProbe,
-  frozenNowMs: number,
-): MutatedRow[] {
-  probe.apply(db, frozenNowMs);
+/** Apply a probe to a writable copy, then snapshot the resulting state. */
+export function applyWriteProbe(db: WritableDatabase, probe: WriteProbe): MutatedRow[] {
+  probe.apply(db);
   return snapshotState(db, probe);
 }

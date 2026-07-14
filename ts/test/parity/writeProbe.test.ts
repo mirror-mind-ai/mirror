@@ -60,8 +60,8 @@ function reinforcementProbe(): WriteProbe {
         selectorValues: ["m1"],
       },
     ],
-    apply(db, frozenNowMs) {
-      const iso = new Date(frozenNowMs).toISOString();
+    apply(db) {
+      const iso = new Date(FROZEN_NOW_MS).toISOString();
       db.prepare(
         "INSERT INTO access_log (memory_id, accessed_at, access_context) VALUES (?, ?, ?)",
       ).run("m1", iso, "retrieval");
@@ -76,7 +76,7 @@ test("snapshotState captures multiple tables including an inserted row", () => {
   seed(aPath);
   const db = openDatabaseCopyForWrite(aPath);
   try {
-    const rows = applyWriteProbe(db, reinforcementProbe(), FROZEN_NOW_MS);
+    const rows = applyWriteProbe(db, reinforcementProbe());
     assert.deepEqual(rows, [
       { id: "memories:m1", cells: { last_accessed_at: ISO, use_count: 4 } },
       {
@@ -97,8 +97,8 @@ test("identical two-table applies across copies yield PASS", () => {
   const a = openDatabaseCopyForWrite(aPath);
   const b = openDatabaseCopyForWrite(bPath);
   try {
-    const pythonRows = applyWriteProbe(a, reinforcementProbe(), FROZEN_NOW_MS);
-    const tsRows = applyWriteProbe(b, reinforcementProbe(), FROZEN_NOW_MS);
+    const pythonRows = applyWriteProbe(a, reinforcementProbe());
+    const tsRows = applyWriteProbe(b, reinforcementProbe());
     assert.equal(evaluateWriteProbe("reinforcement", pythonRows, tsRows).match, true);
   } finally {
     a.close();
@@ -114,7 +114,7 @@ test("a divergent access_context in the inserted row yields FAIL", () => {
   const a = openDatabaseCopyForWrite(aPath);
   const b = openDatabaseCopyForWrite(bPath);
   try {
-    const good = applyWriteProbe(a, reinforcementProbe(), FROZEN_NOW_MS);
+    const good = applyWriteProbe(a, reinforcementProbe());
     const drifted = reinforcementProbe();
     drifted.apply = (db) => {
       db.prepare(
@@ -123,7 +123,7 @@ test("a divergent access_context in the inserted row yields FAIL", () => {
       db.prepare("UPDATE memories SET last_accessed_at = ? WHERE id = ?").run(ISO, "m1");
       db.prepare("UPDATE memories SET use_count = use_count + 1 WHERE id = ?").run("m1");
     };
-    const bad = applyWriteProbe(b, drifted, FROZEN_NOW_MS);
+    const bad = applyWriteProbe(b, drifted);
     assert.equal(evaluateWriteProbe("reinforcement", good, bad).match, false);
   } finally {
     a.close();
@@ -150,7 +150,7 @@ test("snapshotState rejects an unsafe SQL identifier before querying", () => {
       ],
       apply() {},
     };
-    assert.throws(() => applyWriteProbe(db, badProbe, FROZEN_NOW_MS), /unsafe SQL identifier/);
+    assert.throws(() => applyWriteProbe(db, badProbe), /unsafe SQL identifier/);
   } finally {
     db.close();
     cleanup();

@@ -111,7 +111,8 @@ test("verifyWriteFixture rejects an unknown probe type", () => {
   seed(ws.seedPath);
   try {
     const fixture = fixtureWithOracle(4, CONTEXT, ws);
-    fixture.probes[0].probe_type = "nonexistent";
+    // Simulate malformed oracle JSON: the union forbids this at compile time.
+    (fixture.probes[0] as { probe_type: string }).probe_type = "nonexistent";
     assert.throws(() => verifyWriteFixture(fixture), /unknown write probe type/);
   } finally {
     ws.cleanup();

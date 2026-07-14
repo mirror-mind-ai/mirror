@@ -50,17 +50,24 @@ export interface IdentityProbeParams {
 }
 
 /** One probe as recorded by the Python oracle. */
-export interface WriteProbeFixture {
+/** Fields every write probe fixture carries, regardless of type. */
+interface WriteProbeBase {
   label: string;
-  probe_type: string;
   frozen_now_ms: number;
   now_iso: string;
   target_ids: string[];
-  access_context?: string | null;
-  journey?: JourneyProbeParams;
-  identity?: IdentityProbeParams;
   python_state: MutatedRow[];
 }
+
+/**
+ * One probe as recorded by the Python oracle, discriminated on `probe_type`:
+ * the journey/identity payload is required in its branch, so replaying a probe
+ * needs no runtime presence checks and illegal shapes are unrepresentable.
+ */
+export type WriteProbeFixture =
+  | (WriteProbeBase & { probe_type: "reinforcement"; access_context?: string | null })
+  | (WriteProbeBase & { probe_type: "journey"; journey: JourneyProbeParams })
+  | (WriteProbeBase & { probe_type: "identity"; identity: IdentityProbeParams });
 
 export interface WriteParityFixture {
   source_label?: string;
@@ -69,8 +76,6 @@ export interface WriteParityFixture {
   backup?: BackupRecord;
   probes: WriteProbeFixture[];
 }
-
-type WriteProbeFactory = (fixture: WriteProbeFixture) => WriteProbe;
 
 const IDENTITY_COLUMNS = [
   "layer",
@@ -82,111 +87,111 @@ const IDENTITY_COLUMNS = [
   "metadata",
 ];
 
-/** TS-side implementations of the write probes the Python oracle mirrors. */
-const WRITE_PROBE_FACTORIES: Record<string, WriteProbeFactory> = {
-  reinforcement: (fixture) => ({
-    label: fixture.label,
-    snapshots: [
-      {
-        table: "memories",
-        keyColumn: "id",
-        columns: ["last_accessed_at", "use_count"],
-        selectorColumn: "id",
-        selectorValues: fixture.target_ids,
-      },
-      {
-        table: "memory_access_log",
-        keyColumn: "id",
-        columns: ["memory_id", "accessed_at", "access_context"],
-        selectorColumn: "memory_id",
-        selectorValues: fixture.target_ids,
-      },
-    ],
-    apply(db) {
-      for (const id of fixture.target_ids) {
-        logAccess(db, id, fixture.now_iso, fixture.access_context ?? null);
-        logUse(db, id);
-      }
-    },
-  }),
-  journey: (fixture) => {
-    const params = requireJourneyParams(fixture);
-    return {
-      label: fixture.label,
-      snapshots: [
-        {
-          table: "identity",
-          keyColumn: "id",
-          columns: IDENTITY_COLUMNS,
-          selectorColumn: "id",
-          selectorValues: [params.id],
-        },
-      ],
-      apply(db) {
-        createJourney(
-          db,
-          {
-            id: params.id,
-            slug: params.slug,
-            content: params.content,
-            icon: params.icon,
-            color: params.color,
-          },
-          fixture.now_iso,
-        );
-        setProjectPath(db, params.slug, params.project_path_normalized, fixture.now_iso);
-      },
-    };
-  },
-  identity: (fixture) => {
-    const params = requireIdentityParams(fixture);
-    return {
-      label: fixture.label,
-      snapshots: [
-        {
-          table: "identity",
-          keyColumn: "id",
-          columns: IDENTITY_COLUMNS,
-          selectorColumn: "id",
-          selectorValues: fixture.target_ids,
-        },
-      ],
-      apply(db) {
-        for (const op of params.operations) {
-          if (op.op === "update_metadata") {
-            updateIdentityMetadata(db, op.layer, op.key, op.metadata, fixture.now_iso);
-          } else {
-            setIdentity(
-              db,
-              {
-                id: op.id,
-                layer: op.layer,
-                key: op.key,
-                content: op.content,
-                version: op.version ?? undefined,
-                metadata: op.metadata,
-              },
-              fixture.now_iso,
-            );
-          }
-        }
-      },
-    };
-  },
-};
-
-function requireJourneyParams(fixture: WriteProbeFixture): JourneyProbeParams {
-  if (!fixture.journey) {
-    throw new Error("journey probe requires journey params");
-  }
-  return fixture.journey;
+function assertNever(value: never): never {
+  throw new Error(`unknown write probe type: ${JSON.stringify(value)}`);
 }
 
-function requireIdentityParams(fixture: WriteProbeFixture): IdentityProbeParams {
-  if (!fixture.identity) {
-    throw new Error("identity probe requires identity params");
+/**
+ * Build the TS-side write probe for a fixture. Exhaustive over `probe_type`:
+ * the discriminated union makes each branch's payload required (no runtime
+ * requireX guards), and `assertNever` catches a malformed `probe_type` from
+ * bad fixture JSON.
+ */
+function buildWriteProbe(fixture: WriteProbeFixture): WriteProbe {
+  switch (fixture.probe_type) {
+    case "reinforcement":
+      return {
+        label: fixture.label,
+        snapshots: [
+          {
+            table: "memories",
+            keyColumn: "id",
+            columns: ["last_accessed_at", "use_count"],
+            selectorColumn: "id",
+            selectorValues: fixture.target_ids,
+          },
+          {
+            table: "memory_access_log",
+            keyColumn: "id",
+            columns: ["memory_id", "accessed_at", "access_context"],
+            selectorColumn: "memory_id",
+            selectorValues: fixture.target_ids,
+          },
+        ],
+        apply(db) {
+          for (const id of fixture.target_ids) {
+            logAccess(db, id, fixture.now_iso, fixture.access_context ?? null);
+            logUse(db, id);
+          }
+        },
+      };
+    case "journey": {
+      const params = fixture.journey;
+      return {
+        label: fixture.label,
+        snapshots: [
+          {
+            table: "identity",
+            keyColumn: "id",
+            columns: IDENTITY_COLUMNS,
+            selectorColumn: "id",
+            selectorValues: [params.id],
+          },
+        ],
+        apply(db) {
+          createJourney(
+            db,
+            {
+              id: params.id,
+              slug: params.slug,
+              content: params.content,
+              icon: params.icon,
+              color: params.color,
+            },
+            fixture.now_iso,
+          );
+          setProjectPath(db, params.slug, params.project_path_normalized, fixture.now_iso);
+        },
+      };
+    }
+    case "identity": {
+      const params = fixture.identity;
+      return {
+        label: fixture.label,
+        snapshots: [
+          {
+            table: "identity",
+            keyColumn: "id",
+            columns: IDENTITY_COLUMNS,
+            selectorColumn: "id",
+            selectorValues: fixture.target_ids,
+          },
+        ],
+        apply(db) {
+          for (const op of params.operations) {
+            if (op.op === "update_metadata") {
+              updateIdentityMetadata(db, op.layer, op.key, op.metadata, fixture.now_iso);
+            } else {
+              setIdentity(
+                db,
+                {
+                  id: op.id,
+                  layer: op.layer,
+                  key: op.key,
+                  content: op.content,
+                  version: op.version ?? undefined,
+                  metadata: op.metadata,
+                },
+                fixture.now_iso,
+              );
+            }
+          }
+        },
+      };
+    }
+    default:
+      return assertNever(fixture);
   }
-  return fixture.identity;
 }
 
 /**
@@ -199,15 +204,11 @@ export function verifyWriteFixture(
 ): WriteProbeParityResult[] {
   requireBackup(fixture.backup);
   return fixture.probes.map((probe) => {
-    const factory = WRITE_PROBE_FACTORIES[probe.probe_type];
-    if (!factory) {
-      throw new Error(`unknown write probe type: ${probe.probe_type}`);
-    }
     assertCopyTarget(fixture.ts_copy_path);
     copyFileSync(fixture.seed_db_path, fixture.ts_copy_path);
     const db = openDatabaseCopyForWrite(fixture.ts_copy_path);
     try {
-      const tsState = applyWriteProbe(db, factory(probe), probe.frozen_now_ms);
+      const tsState = applyWriteProbe(db, buildWriteProbe(probe));
       return evaluateWriteProbe(probe.label, probe.python_state, tsState, options);
     } finally {
       db.close();
