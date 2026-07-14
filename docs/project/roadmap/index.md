@@ -213,6 +213,27 @@ Add new items at the top. Each entry should name the problem (not just the
 solution), point at evidence or source, and sketch the rough shape of the
 work.
 
+### `memory_access_log` grows forever and has no retention policy
+
+**Source:** RS003 database-architect audit of the CV22 persistence seam (CR022)
+**Surfaced:** 2026-07-14
+
+Every search retrieval appends rows to `memory_access_log` (the
+highest-frequency insert in the system), and nothing in production ever
+deletes from it — the only `DELETE` lives in the dev/test-only
+`client.reset()`. Reinforcement scoring reads the table on every search
+(access counts per candidate). The table therefore grows without bound for
+the lifetime of a Mirror while sitting on the search hot path.
+
+Shape of the work (post-CV22 — the port's no-behavior-change rule excludes
+it now): either age-based pruning or aggregate-table compaction. The data
+model invites the latter cheaply — reinforcement only needs the count and the
+latest access time per memory, and `last_accessed_at` is already cached on
+`memories` — but `access_context` rows may retain observability value worth
+keeping by age. Interacts with the recorded DS5 read strategy (single
+`GROUP BY` for access counts): a compaction design should keep that aggregate
+cheap. See [Decisions](../decisions.md) for the read-strategy entry.
+
 ### Mirror Web Experience staged major release
 
 **Source:** CV9.E6 validation, Agentic Web Console exploration, and Navigator product review
