@@ -420,6 +420,55 @@ Current prototype status:
 
 ---
 
+## Security Posture And Abuse Cases
+
+Recorded by the RS005 security audit (CR032). The protected asset is a person:
+identity, memories, journal, and conversations in one SQLite file, mutated by
+commands that AI agents can invoke.
+
+### Identity poisoning (the signature attack)
+
+`identity set` overwrites identity content for any `(layer, key)` — and
+identity content feeds **future system prompts**. A manipulated agent (prompt
+injection arriving through conversation content, a poisoned document, or a
+malicious skill) that reaches `identity set` achieves persistent injection:
+instructions written into the soul/ego layers survive across sessions and
+runtimes, shaping every later response.
+
+**Current mitigations, honestly stated:** runtime tool-permission gates (the
+agent asks before running commands), `mm-identity` being user-invocable rather
+than ambient, and the pre-write snapshot (`backups/frontdoor-pre-write-
+backup.db`) which can rewind the most recent routed write.
+
+**Known limits:** identity mutations leave no forensic trail — identity
+storage has no audit, provenance, or history mechanism; an overwrite is silent
+except `updated_at`. The snapshot is overwritten by the *next* routed write,
+so detection must be prompt for the undo to help.
+
+**Direction:** the front-door log records `command + layer/key + route` —
+never content (see the CV22 index, Security Riders) — as the interim trail;
+mutation provenance (session id, source runtime, timestamp) is a post-CV22
+schema consideration, gated on the DS6 schema-custody transfer.
+
+### Journey-path redirection
+
+`journey set-path` writes `project_path` into journey metadata; Builder later
+treats that directory as the working project. An attacker-influenced set-path
+can point a journey at a sensitive directory, which the agent then reads and
+summarizes in-session. Mitigations: the same tool-permission gates, and the
+path being normalized and echoed on write (stderr) so redirection is visible.
+
+### Content-mediated injection routes
+
+Everything the extraction pipeline stores (memories, titles, tags) re-enters
+future context windows. Poisoned conversation content can therefore attempt
+delayed injection through stored memories. This is inherent to the product
+category; the mitigations are the identity/memory layer separation (memories
+inform, identity *instructs*) and human review surfaces (`mm-memories`,
+consolidation, shadow cultivation). Treat any design that auto-promotes
+memory content into identity as crossing a security boundary requiring
+explicit review.
+
 ## CLI Reference
 
 All commands assume the `memory` package is installed and accessible via
