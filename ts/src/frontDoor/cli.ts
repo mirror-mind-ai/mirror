@@ -17,8 +17,10 @@ import {
   type MemorySummary,
 } from "../memory/listing.ts";
 import { detectPersona, type PersonaRoutingRow } from "../persona/detectPersona.ts";
+import { expandHome } from "../util/paths.ts";
 import { newId, nowIso } from "../util/pyIdentifiers.ts";
 import { applyIdentitySet, ensureBackup } from "./identityWrite.ts";
+import { applyJourneySetPath } from "./journeyWriteRoute.ts";
 import { routeMemoryCommand } from "./routing.ts";
 
 const ICONS: Record<string, string> = {
@@ -53,10 +55,6 @@ function stripOption(args: readonly string[], name: string): string[] {
     out.push(args[i]);
   }
   return out;
-}
-
-function expandHome(path: string): string {
-  return path.startsWith("~") ? join(homedir(), path.slice(2)) : path;
 }
 
 function resolveDbPath(args: readonly string[]): string {
@@ -312,10 +310,52 @@ async function runIdentityWrite(argv: readonly string[]): Promise<number> {
   }
 }
 
+function isJourneyWrite(argv: readonly string[]): boolean {
+  return argv[0] === "journey" && argv[1] === "set-path";
+}
+
+/**
+ * Route `journey set-path <slug> <path>` to the TS core. Normalizes the path like
+ * Python (`Path.expanduser().resolve()`), writes through the live-write seam after a
+ * backup via the ported setProjectPath, and mirrors Python's output: the resolved
+ * path on stdout, a status line on stderr, and a not-found error + exit 1.
+ */
+async function runJourneyWrite(argv: readonly string[]): Promise<number> {
+  const args = argv.slice(2);
+  const positionals = stripOption(stripOption(args, "--db-path"), "--mirror-home");
+  const slug = positionals[0];
+  const rawPath = positionals[1];
+  if (!slug || !rawPath) {
+    console.error("Usage: journey set-path <slug> <path>");
+    return 2;
+  }
+  const dbPath = resolveDbPath(args);
+  if (!existsSync(dbPath)) {
+    console.error(`Mirror TS front door could not find database: ${dbPath}`);
+    return 2;
+  }
+  const db = openDatabaseForWrite(dbPath, ensureBackup(dbPath));
+  try {
+    const resolved = applyJourneySetPath(db, slug, rawPath, nowIso());
+    console.error(`project_path set for '${slug}': ${resolved}`);
+    process.stdout.write(`${resolved}\n`);
+    return 0;
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith("journey not found")) {
+      console.error(`Error: journey '${slug}' not found.`);
+      return 1;
+    }
+    throw error;
+  } finally {
+    db.close();
+  }
+}
+
 export async function main(argv = process.argv.slice(2)): Promise<number> {
   const decision = routeMemoryCommand(argv);
   if (decision.engine === "python") return fallbackPython(argv);
   if (isIdentityWrite(argv)) return runIdentityWrite(argv);
+  if (isJourneyWrite(argv)) return runJourneyWrite(argv);
   return runTs(argv);
 }
 

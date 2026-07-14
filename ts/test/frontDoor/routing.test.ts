@@ -31,8 +31,18 @@ test("routes `identity set` writes to TS but keeps edit/reads and journey writes
   assert.equal(routeMemoryCommand(["identity", "edit", "ego", "behavior"]).engine, "python");
   assert.equal(routeMemoryCommand(["identity", "get", "ego", "behavior"]).engine, "python");
   assert.equal(routeMemoryCommand(["identity", "list"]).engine, "python");
-  // Journey writes are the fast-follow (US5), still Python for now.
-  assert.equal(routeMemoryCommand(["journey", "set-path", "demo", "/x"]).engine, "python");
+});
+
+test("routes `journey set-path` writes to TS but keeps other journey commands on Python", () => {
+  assert.deepEqual(routeMemoryCommand(["journey", "set-path", "demo", "/x"]), {
+    command: "journey",
+    engine: "ts",
+    reason: "DS4 journey set-path write ported to TS",
+  });
+  assert.equal(routeMemoryCommand(["journey", "update", "demo", "text"]).engine, "python");
+  assert.equal(routeMemoryCommand(["journey", "status", "demo"]).engine, "python");
+  // `journeys` (plural) is the DS2 read route, still TS.
+  assert.equal(routeMemoryCommand(["journeys"]).engine, "ts");
 });
 
 test("uses Python fallback when no command is present", () => {

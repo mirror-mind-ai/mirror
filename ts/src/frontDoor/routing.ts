@@ -36,5 +36,13 @@ export function routeMemoryCommand(argv: readonly string[]): RouteDecision {
     return { command, engine: "python", reason: "identity edit/read not ported to TS" };
   }
 
+  if (command === "journey") {
+    // Only `journey set-path` is ported; `update`/`status`/reads stay on Python.
+    if (argv[1] === "set-path") {
+      return { command, engine: "ts", reason: "DS4 journey set-path write ported to TS" };
+    }
+    return { command, engine: "python", reason: "journey update/status/read not ported to TS" };
+  }
+
   return { command, engine: "python", reason: "command not ported to TS" };
 }
