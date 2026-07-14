@@ -208,6 +208,19 @@ function renderMemories(db: Database, args: readonly string[]): string {
   return lines.join("\n");
 }
 
+/**
+ * Default ceiling for a fallback Python command. Generous on purpose —
+ * unported commands include LLM extraction and consult — but finite, so a
+ * process blocked on stdin or a hung network call cannot hang the session
+ * forever. Tests override via MIRROR_FRONTDOOR_PYTHON_TIMEOUT_MS.
+ */
+const DEFAULT_PYTHON_TIMEOUT_MS = 10 * 60 * 1000;
+
+function pythonTimeoutMs(): number {
+  const raw = Number(process.env.MIRROR_FRONTDOOR_PYTHON_TIMEOUT_MS);
+  return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_PYTHON_TIMEOUT_MS;
+}
+
 function fallbackPython(argv: readonly string[]): number {
   const explicitDbPath = optionValue(argv, "--db-path");
   const pythonArgv = stripOptionWithValue(argv, "--db-path");
@@ -215,7 +228,26 @@ function fallbackPython(argv: readonly string[]): number {
     cwd: process.cwd(),
     env: explicitDbPath ? { ...process.env, DB_PATH: expandHome(explicitDbPath) } : process.env,
     stdio: "inherit",
+    timeout: pythonTimeoutMs(),
   });
+  if (result.error) {
+    const code = (result.error as NodeJS.ErrnoException).code;
+    if (code === "ENOENT") {
+      console.error(
+        "Mirror TS front door: could not spawn `uv` — the Python fallback needs uv on PATH. " +
+          "Install it (https://docs.astral.sh/uv/) or fix PATH for the runtime that launched this session.",
+      );
+    } else if (code === "ETIMEDOUT") {
+      console.error(
+        `Mirror TS front door: Python fallback timed out after ${pythonTimeoutMs()}ms ` +
+          `(command: memory ${pythonArgv.join(" ")}). The process was terminated; ` +
+          "if this command legitimately runs longer, raise MIRROR_FRONTDOOR_PYTHON_TIMEOUT_MS.",
+      );
+    } else {
+      console.error(`Mirror TS front door: Python fallback failed to run: ${result.error.message}`);
+    }
+    return 1;
+  }
   return typeof result.status === "number" ? result.status : 1;
 }
 
