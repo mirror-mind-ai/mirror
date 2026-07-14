@@ -13,6 +13,7 @@ import base64
 import contextlib
 import json
 import os
+import shutil
 import sqlite3
 import subprocess
 from datetime import datetime, timezone
@@ -292,11 +293,38 @@ def _build_fixture(*, source_db: Path, work_dir: Path, limit: int) -> Path:
     return fixture_path
 
 
+def _cleanup_work_dir(work_dir: Path, *, keep: bool, passed: bool) -> None:
+    """Remove the work dir on a passing run; retain it (stated) otherwise.
+
+    The copied database and the fixture are equivalent to the live memory
+    database, so they are not left lying around by default.
+    """
+    if keep:
+        print(f"retained work dir (--keep): {work_dir}")
+        return
+    if not passed:
+        print(f"parity failed; retained work dir for debugging: {work_dir}")
+        return
+    shutil.rmtree(work_dir, ignore_errors=True)
+    print(f"cleaned up work dir (use --keep to retain): {work_dir}")
+
+
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        epilog=(
+            "The copied database and generated fixture are equivalent to your live "
+            "memory database (raw memory and identity content). They are written under "
+            "the work dir with owner-only permissions and removed on a passing run; "
+            "pass --keep to retain them for debugging."
+        ),
+    )
     parser.add_argument("--source-db", required=True, type=Path)
     parser.add_argument("--work-dir", default=DEFAULT_WORK_DIR, type=Path)
     parser.add_argument("--limit", default=5, type=int)
+    parser.add_argument(
+        "--keep", action="store_true", help="retain the work dir (copy + fixture) after the run"
+    )
     parser.add_argument("--debug-sensitive-output", action="store_true")
     args = parser.parse_args(argv)
 
@@ -316,6 +344,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.debug_sensitive_output:
         command.append("--debug-sensitive-output")
     completed = subprocess.run(command, check=False, text=True, cwd=Path.cwd())
+    _cleanup_work_dir(work_dir, keep=args.keep, passed=completed.returncode == 0)
     return completed.returncode
 
 

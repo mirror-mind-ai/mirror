@@ -393,7 +393,10 @@ expected filesystem posture is **owner-only**: directories `0700`, data files
   propagates the file mode to `-wal`/`-shm`); the TS front door creates
   `backups/` at `0700` and its snapshot at `0600`; the parity harness keeps its
   work directory owner-only. Pre-existing directories are never mutated — a
-  user-chosen location like `~/Documents` stays as the user set it.
+  user-chosen location like `~/Documents` stays as the user set it. The
+  real-DB parity harness copies and fixtures are equivalent to the live
+  database (raw memory and identity content); they are owner-only and removed
+  on a passing run (pass `--keep` to retain them for debugging).
 - **Reported on drift:** `uv run python -m memory runtime diagnose` emits a
   `loose_permissions` finding (severity: attention) when the mirror home or
   database is group/other-accessible, including the exact `chmod` to run.
