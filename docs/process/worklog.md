@@ -12,6 +12,34 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-07-14 — CV22.DS4 Deterministic Writes completed (Baton 4)
+
+Closed CV22.DS4, the first writing stage of the TypeScript core strangler. Two
+halves: deterministic write **parity** proven on copies of `memory.db` (never the
+live database) under a backup gate and a frozen clock — reinforcement
+(`log_access`/`log_use`), journey (`create_journey`/`set_project_path`), and
+identity (`set_identity`/`update_identity_metadata`) via a reusable state-diff
+harness (TS1, US1, US2, US3) — then **live CLI-write routing** on the Pi front door
+(US4 `identity set`, US5 `journey set-path`).
+
+US4 opened the first sanctioned live-write seam (`openDatabaseForWrite`), which the
+copy guard had forbidden, failing closed without a hash-verified backup; it added
+Python-matching id/now generation (`uuid4().hex[:8]`, microsecond ISO-`Z`). US5
+added `normalizeProjectPath` matching Python's `Path.expanduser().resolve()`. Scope
+was narrowed honestly where the terrain required it: `identity edit` is interactive
+(`$EDITOR`) and stays on Python, and journeys have no `create` CLI, so routing
+covers `identity set` and `journey set-path`.
+
+Validation: the parity harness (synthetic goldens in CI + redacted real-DB-copy
+probes), routing/handler unit tests, spawn E2E writes against DB copies, and live
+dogfood confirmations on a dev-DB copy. CI green across TS + Python 3.10/3.12.
+
+Carried follow-ups (not DS4 story work): the production `mm-identity`/`mm-journey`
+skill cutovers stay dormant until dev-runtime dogfooding is accepted, and
+reinforcement-write routing lands with CV22.DS5 (it fires inside the Python search
+path). Baton 4 (Vinícius) is complete; CV22.DS5 (External-API Commands) is the next
+baton boundary and leans to Alisson per the collaboration strategy.
+
 ### 2026-07-12 — Git network timeout fix for release promotion (maintenance)
 
 Fixed the defect surfaced during the v0.30.1 promotion: `_run_git` in
