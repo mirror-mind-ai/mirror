@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { openDatabaseCopyForWrite, openDatabaseReadOnly } from "../../src/db/database.ts";
+import { KNOWN_MIGRATION_IDS } from "../../src/db/schemaState.ts";
 
 const CLI = "src/frontDoor/cli.ts";
 
@@ -17,8 +18,12 @@ function identityDbCopy(): { dbPath: string; cleanup: () => void } {
   db.exec(
     "CREATE TABLE identity (id TEXT PRIMARY KEY, layer TEXT NOT NULL, key TEXT NOT NULL, " +
       "content TEXT NOT NULL, version TEXT DEFAULT '1.0.0', created_at TEXT NOT NULL, " +
-      "updated_at TEXT NOT NULL, metadata TEXT, UNIQUE(layer, key))",
+      "updated_at TEXT NOT NULL, metadata TEXT, UNIQUE(layer, key));" +
+      "CREATE TABLE _migrations (id TEXT PRIMARY KEY, applied_at TEXT NOT NULL)",
   );
+  for (const id of KNOWN_MIGRATION_IDS) {
+    db.prepare("INSERT INTO _migrations (id, applied_at) VALUES (?, 't')").run(id);
+  }
   db.close();
   return { dbPath, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
 }

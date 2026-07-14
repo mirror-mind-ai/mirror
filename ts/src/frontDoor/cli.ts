@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import type { Database, Row } from "../db/database.ts";
 import { openDatabaseForWrite } from "../db/database.ts";
+import { assertSchemaState, SchemaStateError } from "../db/schemaState.ts";
 import {
   type JourneyIdentityRow,
   type JourneyOption,
@@ -234,11 +235,18 @@ async function runTs(argv: readonly string[]): Promise<number> {
   const { openDatabaseReadOnly } = await import("../db/database.ts");
   const db = openDatabaseReadOnly(dbPath);
   try {
+    assertSchemaState(db);
     if (command === "detect-persona") process.stdout.write(renderDetectPersona(db, args));
     else if (command === "journeys") process.stdout.write(renderJourneys(db));
     else if (command === "memories") process.stdout.write(renderMemories(db, args));
     else throw new Error(`Unsupported TS route: ${command}`);
     return 0;
+  } catch (error) {
+    if (error instanceof SchemaStateError) {
+      console.error(`Mirror TS front door: ${error.message}`);
+      return 2;
+    }
+    throw error;
   } finally {
     db.close();
   }
@@ -286,9 +294,16 @@ async function runIdentityWrite(argv: readonly string[]): Promise<number> {
   }
   const db = openDatabaseForWrite(dbPath, ensureBackup(dbPath));
   try {
+    assertSchemaState(db);
     const outcome = applyIdentitySet(db, { layer, key, content, id: newId(), nowIso: nowIso() });
     process.stdout.write(`\u2713 ${outcome.layer}/${outcome.key} ${outcome.action}\n`);
     return 0;
+  } catch (error) {
+    if (error instanceof SchemaStateError) {
+      console.error(`Mirror TS front door: ${error.message}`);
+      return 2;
+    }
+    throw error;
   } finally {
     db.close();
   }
@@ -324,11 +339,16 @@ async function runJourneyWrite(argv: readonly string[]): Promise<number> {
   }
   const db = openDatabaseForWrite(dbPath, ensureBackup(dbPath));
   try {
+    assertSchemaState(db);
     const resolved = applyJourneySetPath(db, slug, rawPath, nowIso());
     console.error(`project_path set for '${slug}': ${resolved}`);
     process.stdout.write(`${resolved}\n`);
     return 0;
   } catch (error) {
+    if (error instanceof SchemaStateError) {
+      console.error(`Mirror TS front door: ${error.message}`);
+      return 2;
+    }
     if (error instanceof Error && error.message.startsWith("journey not found")) {
       console.error(`Error: journey '${slug}' not found.`);
       return 1;
