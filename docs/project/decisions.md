@@ -11,6 +11,31 @@ resolved.
 
 ## Completed Decisions
 
+### identity.metadata contract: Python json.dumps bytes during CV22; canonicalize at DS6
+
+**Date:** 2026-07-14 · **Origin:** RS003 database audit, CR023
+
+The de facto contract of `identity.metadata` is the exact byte output of
+Python `json.dumps` — in two dialects: `create_journey` serializes with
+`sort_keys=True, ensure_ascii=False`, while `set_project_path` re-serializes
+with defaults (`sort_keys=False, ensure_ascii=True`). `ts/src/util/pyJson.ts`
+exists solely to reproduce both byte-for-byte. Journey hierarchy integrity
+(`parent_journey`) lives inside that JSON with no schema constraint; orphan
+parents are handled in application code.
+
+Decided: byte-mimicry is the **transition** contract and must not outlive the
+transition. At DS6, alongside the schema custody transfer:
+
+1. choose a canonical serialization (plain `JSON.stringify` is the natural
+   candidate) with either a one-time normalization of existing rows or a
+   read-tolerant policy — an explicit choice, not drift;
+2. revisit graduating `parent_journey` from JSON metadata to a first-class
+   column with an index, giving the hierarchy real referential integrity — a
+   schema change gated on custody transfer.
+
+Until then, `pyJson.ts` stays byte-faithful and any new metadata writer must
+state which dialect it reproduces.
+
 ### CV22 ports semantics, not query plans — first application: DS5 access counts
 
 **Date:** 2026-07-14 · **Origin:** RS003 database audit, CR020
