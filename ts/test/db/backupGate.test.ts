@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -42,6 +42,20 @@ test("requireBackup throws when the backup file is missing", () => {
     () => requireBackup({ path: "/no/such/tmp/backup.db", sha256: "0".repeat(64) }),
     BackupGateError,
   );
+});
+
+test("requireBackup refuses a symlinked backup path (indirection after verification)", () => {
+  const { path, cleanup } = tempFile("real backup bytes");
+  try {
+    const link = join(path, "..", "backup-link.db");
+    symlinkSync(path, link);
+    assert.throws(
+      () => requireBackup({ path: link, sha256: sha256File(path) }),
+      /not a regular file/,
+    );
+  } finally {
+    cleanup();
+  }
 });
 
 test("requireBackup throws when the recorded hash no longer matches", () => {

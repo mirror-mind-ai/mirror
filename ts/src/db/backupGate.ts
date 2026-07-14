@@ -7,7 +7,7 @@
 // always recoverable.
 
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
+import { lstatSync, readFileSync } from "node:fs";
 
 /** Raised when the required pre-write backup is missing or altered. */
 export class BackupGateError extends Error {}
@@ -23,13 +23,23 @@ export function sha256File(path: string): string {
   return createHash("sha256").update(readFileSync(path)).digest("hex");
 }
 
-/** Require a present, hash-verified backup before any destructive apply. */
+/**
+ * Require a present, hash-verified backup before any destructive apply. The
+ * recorded path must be a regular file — a symlinked backup could be
+ * redirected after verification, so indirection is refused (CR030).
+ */
 export function requireBackup(backup: BackupRecord | undefined): void {
-  if (!backup || !backup.path) {
+  if (!backup?.path) {
     throw new BackupGateError("no backup recorded before a destructive write");
   }
-  if (!existsSync(backup.path)) {
+  let isRegularFile: boolean;
+  try {
+    isRegularFile = lstatSync(backup.path).isFile();
+  } catch {
     throw new BackupGateError(`recorded backup is missing: ${backup.path}`);
+  }
+  if (!isRegularFile) {
+    throw new BackupGateError(`recorded backup is not a regular file: ${backup.path}`);
   }
   if (sha256File(backup.path) !== backup.sha256) {
     throw new BackupGateError("recorded backup hash does not match the backup file");

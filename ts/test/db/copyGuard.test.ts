@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
 import { assertCopyTarget, CopyOnlyGuardError } from "../../src/db/copyGuard.ts";
 
@@ -10,4 +13,30 @@ test("assertCopyTarget refuses a live memory.db and paths outside tmp/", () => {
 test("assertCopyTarget allows a copy under tmp/", () => {
   assert.doesNotThrow(() => assertCopyTarget("tmp/parity/python-copy.db"));
   assert.doesNotThrow(() => assertCopyTarget("/repo/tmp/parity/ts-copy.db"));
+});
+
+test("assertCopyTarget refuses a symlink under tmp/ pointing at a live database", () => {
+  const dir = mkdtempSync(join(tmpdir(), "mirror-core-guard-"));
+  try {
+    const live = join(dir, "memory.db");
+    writeFileSync(live, "live");
+    const tmpDir = join(dir, "tmp");
+    mkdirSync(tmpDir);
+    const link = join(tmpDir, "copy.db");
+    symlinkSync(live, link);
+    assert.throws(() => assertCopyTarget(link), /symlink/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("assertCopyTarget refuses a tmp/.. traversal that resolves outside tmp/", () => {
+  const dir = mkdtempSync(join(tmpdir(), "mirror-core-guard-"));
+  try {
+    mkdirSync(join(dir, "tmp"));
+    const traversal = join(dir, "tmp", "..", "outside.db");
+    assert.throws(() => assertCopyTarget(traversal), CopyOnlyGuardError);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
