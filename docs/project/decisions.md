@@ -11,6 +11,22 @@ resolved.
 
 ## Completed Decisions
 
+### TS front door delegates a missing database to Python (first-run self-heal)
+
+**Date:** 2026-07-14 · **Origin:** RS002 QA audit, CR015
+
+Python's `get_connection` creates the directory, schema, and migrations when the
+database file is absent; the TS front door originally refused with exit 2. Since
+`mm-journeys`/`mm-memories` route through TS, a brand-new user hit the TS refusal
+where the Python path used to self-heal.
+
+Decided: when the resolved database file does not exist, the TS front door
+**delegates to the Python fallback** (which bootstraps and answers) rather than
+refusing or reimplementing schema creation in TS. It is the cheapest option,
+preserves onboarding exactly, and keeps schema bootstrap single-sourced in Python
+until the DS6 custody transfer. TS serves only an existing database;
+configuration failures (no home resolvable) still fail loudly with exit 2.
+
 ### identity.metadata contract: Python json.dumps bytes during CV22; canonicalize at DS6
 
 **Date:** 2026-07-14 · **Origin:** RS003 database audit, CR023

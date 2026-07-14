@@ -266,10 +266,11 @@ async function runTs(argv: readonly string[]): Promise<number> {
   const args = argv.slice(1);
   const dbPath = resolveDbPathForCli(args);
   if (dbPath === null) return 2;
-  if (!existsSync(dbPath)) {
-    console.error(`Mirror TS front door could not find database: ${dbPath}`);
-    return 2;
-  }
+  // First-run contract: a missing database means an unbootstrapped install.
+  // Delegate to Python, which creates the directory, schema, and migrations
+  // and answers — the same self-heal a new user got before the DS3 cutover
+  // (see docs/project/decisions.md). TS only serves an existing database.
+  if (!existsSync(dbPath)) return fallbackPython(argv);
   process.on("warning", (warning) => {
     if (warning.name === "ExperimentalWarning" && warning.message.includes("SQLite")) return;
     console.warn(warning);
@@ -330,10 +331,8 @@ async function runIdentityWrite(argv: readonly string[]): Promise<number> {
   }
   const dbPath = resolveDbPathForCli(args);
   if (dbPath === null) return 2;
-  if (!existsSync(dbPath)) {
-    console.error(`Mirror TS front door could not find database: ${dbPath}`);
-    return 2;
-  }
+  // Missing DB => unbootstrapped install; let Python bootstrap and write.
+  if (!existsSync(dbPath)) return fallbackPython(argv);
   const db = openDatabaseForWrite(dbPath, ensureBackup(dbPath));
   try {
     assertSchemaState(db);
@@ -375,10 +374,8 @@ async function runJourneyWrite(argv: readonly string[]): Promise<number> {
   }
   const dbPath = resolveDbPathForCli(args);
   if (dbPath === null) return 2;
-  if (!existsSync(dbPath)) {
-    console.error(`Mirror TS front door could not find database: ${dbPath}`);
-    return 2;
-  }
+  // Missing DB => unbootstrapped install; let Python bootstrap and write.
+  if (!existsSync(dbPath)) return fallbackPython(argv);
   const db = openDatabaseForWrite(dbPath, ensureBackup(dbPath));
   try {
     assertSchemaState(db);
