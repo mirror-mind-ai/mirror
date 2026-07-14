@@ -107,6 +107,29 @@ scope until pulled.
 
 ---
 
+## Security Riders (RS005)
+
+Recorded by the security-engineer audit (RS005, CR033) so no future plan
+checkpoint can claim these requirements were unknown:
+
+- **Front-door observability (OPS CR026):** the front-door log records command
+  names, routing decisions, layers/keys, and errors — **never argument
+  payloads**. `--content` carries identity text and stdin can carry entire
+  soul documents. A redaction test is part of the observability acceptance
+  criteria.
+- **DS5 external-API commands:** API keys (OpenRouter/Gemini/OpenAI) enter TS
+  for the first time. Secure defaults are plan inputs, not review findings:
+  keys are read from env/config only, never accepted as argv (process listings
+  and shell history leak), never logged, redacted from error messages; DS5
+  record/replay fixtures must be scrubbed of authorization headers before they
+  are committed.
+- **DS6 MCP server:** the plan must include a threat model before
+  implementation — transport and binding (localhost-only by default),
+  authentication story, per-tool permission scoping (read tools vs write tools
+  vs identity-mutating tools), and abuse/rate considerations. Identity-mutating
+  tools deserve the tightest gate: identity content feeds future system
+  prompts (see the abuse-cases section of the runtime-interface spec).
+
 ## Non-Goals
 
 - **No big-bang rewrite.** The Python core is never replaced wholesale; it
