@@ -75,7 +75,7 @@ SEED = [
 
 class _FrozenDateTime(datetime):
     @classmethod
-    def now(cls, tz=None):  # noqa: ANN001, ANN206
+    def now(cls, tz=None):
         return FROZEN_NOW if tz else FROZEN_NOW.replace(tzinfo=None)
 
 

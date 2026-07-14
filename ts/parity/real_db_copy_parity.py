@@ -10,10 +10,11 @@ from __future__ import annotations
 
 import argparse
 import base64
+import contextlib
 import json
+import os
 import sqlite3
 import subprocess
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -44,7 +45,7 @@ class _FrozenDateTime(datetime):
     frozen_now: datetime
 
     @classmethod
-    def now(cls, tz=None):  # noqa: ANN001, ANN206
+    def now(cls, tz=None):
         return cls.frozen_now if tz else cls.frozen_now.replace(tzinfo=None)
 
 
@@ -54,7 +55,12 @@ def _to_ms(value: str | None) -> int | None:
 
 
 def _safe_copy_database(source: Path, destination: Path) -> None:
+    # The copy and fixture are database-equivalent artifacts (raw memory and
+    # identity content): keep the work dir owner-only (see REFERENCE, Data at
+    # rest). Best-effort on non-POSIX platforms.
     destination.parent.mkdir(parents=True, exist_ok=True)
+    with contextlib.suppress(OSError):
+        os.chmod(destination.parent, 0o700)
     if destination.exists():
         destination.unlink()
     # `backup()` is used so validation reads a stable copy. We open the source
@@ -247,9 +253,7 @@ def _build_fixture(*, source_db: Path, work_dir: Path, limit: int) -> Path:
                         float(x) for x in np.asarray(query_embedding, dtype=np.float32)
                     ],
                     "expected_order": [result.memory.id for result in results],
-                    "memories": [
-                        _memory_entry(store, mem, lexical_scores) for mem in all_memories
-                    ],
+                    "memories": [_memory_entry(store, mem, lexical_scores) for mem in all_memories],
                 }
             )
         persona_rows = _persona_rows(store)

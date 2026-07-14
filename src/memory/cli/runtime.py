@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import sqlite3
 import subprocess
@@ -1480,11 +1481,49 @@ def root_state_findings(homes_root: Path) -> tuple[DriftFinding, ...]:
     )
 
 
+def _loose_permission_findings(report: RuntimeStatusReport) -> list[DriftFinding]:
+    """Report group/other-accessible modes on the mirror home and database.
+
+    The mirror home holds a person's identity, memories, and conversations;
+    the expected posture is owner-only (0o700 directories, 0o600 files — see
+    REFERENCE "Data at rest"). Creation points enforce the posture; this
+    check only reports drift on pre-existing installs. POSIX only — Windows
+    ACLs are explicitly out of scope here.
+    """
+    if os.name != "posix":
+        return []
+    targets: list[tuple[str, Path]] = []
+    if report.mirror_home is not None and report.mirror_home_error is None:
+        targets.append(("mirror home", report.mirror_home))
+    if report.db_path is not None and report.db_exists:
+        targets.append(("database", report.db_path))
+    findings: list[DriftFinding] = []
+    for area, path in targets:
+        try:
+            mode = path.stat().st_mode & 0o777
+        except OSError:
+            continue
+        if mode & 0o077:
+            wanted = "700" if path.is_dir() else "600"
+            findings.append(
+                DriftFinding(
+                    "loose_permissions",
+                    "attention",
+                    area,
+                    f"{path} is group/other-accessible (mode {mode:o})",
+                    "mirror data should be owner-only; restrict directories to 700 and files to 600",
+                    f"chmod {wanted} {path}",
+                )
+            )
+    return findings
+
+
 def diagnose_runtime(
     report: RuntimeStatusReport,
     worktree_entries: tuple[GitWorktreeEntry, ...] = (),
 ) -> tuple[DriftFinding, ...]:
     findings: list[DriftFinding] = []
+    findings.extend(_loose_permission_findings(report))
     if report.mirror_home_error:
         findings.append(
             DriftFinding(

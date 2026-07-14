@@ -365,6 +365,27 @@ Two starter files live at the repo root:
 - `.env.example` — minimal template (identity + API keys)
 - `.env.example.advanced` — canonical reference with every variable documented
 
+### Data at rest
+
+A mirror home holds a person's identity, memories, and conversations. The
+expected filesystem posture is **owner-only**: directories `0700`, data files
+`0600` (POSIX; Windows ACLs are currently out of scope).
+
+- **Enforced at creation points:** the Python connection bootstrap applies the
+  posture to directories it creates and to the database file (SQLite then
+  propagates the file mode to `-wal`/`-shm`); the TS front door creates
+  `backups/` at `0700` and its snapshot at `0600`; the parity harness keeps its
+  work directory owner-only. Pre-existing directories are never mutated — a
+  user-chosen location like `~/Documents` stays as the user set it.
+- **Reported on drift:** `uv run python -m memory runtime diagnose` emits a
+  `loose_permissions` finding (severity: attention) when the mirror home or
+  database is group/other-accessible, including the exact `chmod` to run.
+- **Pre-write backup:** every front-door live write first snapshots the
+  database (WAL-safe `VACUUM INTO`) to `<mirror home>/backups/`
+  `frontdoor-pre-write-backup.db`. The name is fixed and overwritten per write:
+  it is an undo of the most recent routed write, not an archive — scheduled
+  archives remain `mm-backup`'s job.
+
 ### Identity (CV4 user home)
 
 | Variable | Default | Role |

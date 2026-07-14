@@ -31,7 +31,6 @@ import tempfile
 from pathlib import Path
 
 from memory.db.connection import get_connection
-from memory.models import Identity
 from memory.services.attachment import AttachmentService
 from memory.services.identity import IdentityService
 from memory.storage.store import Store

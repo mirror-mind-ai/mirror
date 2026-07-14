@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import contextlib
+import os
 import sqlite3
 import threading
 from collections.abc import Iterator
@@ -64,7 +66,15 @@ def get_connection(db_path: Path | None = None) -> sqlite3.Connection:
         from memory.config import require_db_path
 
         db_path = require_db_path()
+    # Data-at-rest posture (owner-only) is enforced at creation points: a
+    # directory we create becomes 0o700, but a pre-existing directory is never
+    # mutated — it may be a user-chosen location like ~/Documents. Drift on
+    # existing installs is *reported* by `runtime diagnose`, not rewritten.
+    parent_preexisting = db_path.parent.exists()
     db_path.parent.mkdir(parents=True, exist_ok=True)
+    if not parent_preexisting:
+        with contextlib.suppress(OSError):
+            os.chmod(db_path.parent, 0o700)
 
     # Everything that writes to the database during bootstrap (journal-mode
     # switch, schema DDL, migrations) must happen under a cross-process lock.
@@ -86,5 +96,10 @@ def get_connection(db_path: Path | None = None) -> sqlite3.Connection:
         # new tables/indexes on top. Both layers are idempotent.
         run_migrations(conn)
         conn.executescript(SCHEMA)
+
+    # The database file itself is unambiguously ours: keep it owner-only.
+    # SQLite creates -wal/-shm sidecars with the database file's permissions.
+    with contextlib.suppress(OSError):
+        os.chmod(db_path, 0o600)
 
     return conn
