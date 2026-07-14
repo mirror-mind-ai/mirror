@@ -63,8 +63,12 @@ source, so validation stays independent of any private filesystem.
 
 ## Candidate Stories
 
-All four candidate stories are complete and linked below (TS1, US1, US2, US3
-all ✅ Done); DS4's deterministic-write scope is finished and ready to collapse.
+TS1, US1, US2, and US3 delivered the deterministic-write parity (all ✅ Done) and
+are linked below. Front-door **write routing** remains: CV22.DS4.US4 opens the
+sanctioned live-write seam and routes identity writes; journey-write routing is its
+fast-follow; reinforcement-write routing moves to CV22.DS5 (it fires inside the
+Python search path). DS4 collapses once the identity + journey CLI writes are
+routed.
 
 | Code | Story | Type | Outcome |
 |------|-------|------|---------|
@@ -72,9 +76,11 @@ all ✅ Done); DS4's deterministic-write scope is finished and ready to collapse
 | [CV22.DS4.US1](cv22-ds4-us1-reinforcement-write-parity/index.md) | Reinforcement Write Parity (`log_access`) | User Story | `log_access` + `increment_use_count` ported to the TS seam with state-diff parity on a copy; `last_accessed_at` frozen-`now` correct; front door routes reinforcement writes to TS |
 | [CV22.DS4.US2](cv22-ds4-us2-journey-write-parity/index.md) | Journey Write Parity | User Story | Journey writes (create, set path/stage/status) ported to the TS seam with state-diff parity on a copy; front-door journey-write routes enter TS |
 | [CV22.DS4.US3](cv22-ds4-us3-identity-write-parity/index.md) | Identity Write Parity | User Story | Identity writes (`upsert_identity`, `update_identity_metadata` / `set_identity`) ported to the TS seam with state-diff parity on a copy; deterministic `mm-identity` / `mm-seed` write paths enter TS |
+| [CV22.DS4.US4](cv22-ds4-us4-front-door-write-routing/index.md) | Front-Door Write Routing | User Story | Open the first sanctioned live-write seam in the TS front door and route `identity set` to TS (reusing US3 `setIdentity`), backup-gated, Python fallback for everything else (`identity edit` is interactive → Python); journey routing is the fast-follow, reinforcement routing moves to DS5 |
 
 Suggested sequence: **TS1** first (the safety/harness foundation), then **US1**
-(highest-value, ranker-adjacent), then **US2** / **US3**.
+(highest-value, ranker-adjacent), then **US2** / **US3**; finally **US4**
+(front-door write routing) to close DS4.
 
 ---
 
@@ -88,8 +94,10 @@ Suggested sequence: **TS1** first (the safety/harness foundation), then **US1**
   **never** proven against the live production database.
 - The schema/FTS5 compatibility contract holds; existing `memory.db` files keep
   working with no migration.
-- The Pi front door routes these ported writes to TS; every unported or
-  non-deterministic command still falls back to Python; no user-visible change.
+- The Pi front door routes the ported **CLI** writes (identity, journey) to TS;
+  reinforcement-write routing lands with CV22.DS5 (it fires inside the Python search
+  path, not as a CLI command). Every unported or non-deterministic command still
+  falls back to Python; no user-visible change.
 - Mutation safety is explicit: the harness refuses to run against a non-copy, and
   a backup precedes any destructive parity proof.
 
