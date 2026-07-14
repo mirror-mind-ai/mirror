@@ -48,8 +48,8 @@ test("front door `identity set` writes to the live DB via TS (create, then updat
       .get("ego", "probe");
     db.close();
     assert.equal(row?.content, "# Two");
-    // The pre-write backup was taken next to the DB.
-    assert.ok(existsSync(join(dbPath, "..", ".mirror-frontdoor-backup.db")));
+    // The pre-write backup was taken under the home's backups/ convention.
+    assert.ok(existsSync(join(dbPath, "..", "backups", "frontdoor-pre-write-backup.db")));
   } finally {
     cleanup();
   }

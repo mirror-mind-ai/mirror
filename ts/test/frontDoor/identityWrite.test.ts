@@ -1,11 +1,10 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { sha256File } from "../../src/db/backupGate.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
-import { applyIdentitySet, ensureBackup } from "../../src/frontDoor/identityWrite.ts";
+import { applyIdentitySet } from "../../src/frontDoor/identityWrite.ts";
 import { upsertIdentity } from "../../src/identity/identityStore.ts";
 
 const NOW = "2026-06-23T12:00:00.123000Z";
@@ -90,21 +89,6 @@ test("applyIdentitySet reports 'updated' and inherits stored metadata (metadata=
     );
   } finally {
     db.close();
-    cleanup();
-  }
-});
-
-test("ensureBackup writes a hash-verified backup copy next to the DB", () => {
-  const { dbPath, cleanup } = tempCopy();
-  const db = openDatabaseCopyForWrite(dbPath);
-  seed(db);
-  db.close();
-  try {
-    const backup = ensureBackup(dbPath);
-    assert.ok(existsSync(backup.path));
-    assert.equal(backup.sha256, sha256File(dbPath));
-    assert.equal(backup.sha256, sha256File(backup.path));
-  } finally {
     cleanup();
   }
 });

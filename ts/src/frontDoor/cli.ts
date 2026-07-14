@@ -19,8 +19,9 @@ import { expandHome } from "../util/paths.ts";
 import { newId, nowIso } from "../util/pyIdentifiers.ts";
 import { hasOption, optionValue, stripOptionWithValue } from "./args.ts";
 import { MirrorHomeNotConfiguredError, resolveDbPath } from "./dbPath.ts";
-import { applyIdentitySet, ensureBackup } from "./identityWrite.ts";
+import { applyIdentitySet } from "./identityWrite.ts";
 import { applyJourneySetPath } from "./journeyWriteRoute.ts";
+import { ensureBackup } from "./liveBackup.ts";
 import { routeMemoryCommand } from "./routing.ts";
 
 const ICONS: Record<string, string> = {

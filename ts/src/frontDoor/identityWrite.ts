@@ -2,14 +2,11 @@
 //
 // `applyIdentitySet` is the testable core of routing `identity set` to the TS
 // core: it decides the created/updated verb from the pre-write state and applies
-// the ported `setIdentity` (US3) with a generated id/now. `ensureBackup` takes the
-// hash-verified backup that `openDatabaseForWrite` requires, so a live write is
-// never unguarded. Only `identity set` is routed here; `identity edit` is
-// interactive ($EDITOR) and stays on Python.
+// the ported `setIdentity` (US3) with a generated id/now. The pre-write backup
+// that `openDatabaseForWrite` requires lives in `liveBackup.ts`. Only
+// `identity set` is routed here; `identity edit` is interactive ($EDITOR) and
+// stays on Python.
 
-import { copyFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { type BackupRecord, sha256File } from "../db/backupGate.ts";
 import type { WritableDatabase } from "../db/database.ts";
 import { setIdentity } from "../identity/setIdentity.ts";
 
@@ -34,15 +31,4 @@ export function applyIdentitySet(
     params.nowIso,
   );
   return { action: existing ? "updated" : "created", layer: params.layer, key: params.key };
-}
-
-/**
- * Copy the live DB to a sibling backup and return its verified record. A fixed
- * name means only the latest pre-write state is retained (last-known-good before
- * this write), avoiding unbounded backup accumulation on a rare command.
- */
-export function ensureBackup(dbPath: string): BackupRecord {
-  const backupPath = join(dirname(dbPath), ".mirror-frontdoor-backup.db");
-  copyFileSync(dbPath, backupPath);
-  return { path: backupPath, sha256: sha256File(backupPath) };
 }

@@ -164,3 +164,21 @@ export function openDatabaseForWrite(
   applyConnectionPragmas(driver, options);
   return writableHandle(driver);
 }
+
+/**
+ * Snapshot a live database into `targetPath` using `VACUUM INTO` from a
+ * read-only connection. Unlike a raw file copy, this captures committed
+ * transactions still living in the `-wal` sidecar and cannot produce a torn
+ * copy mid-checkpoint — it is the only sanctioned way to back up a live
+ * `memory.db` (the parity harness uses the equivalent Python `backup()` API
+ * for the same reason). The target must not exist; callers remove any
+ * previous snapshot first.
+ */
+export function snapshotDatabaseTo(sourcePath: string, targetPath: string): void {
+  const driver = new DatabaseSync(sourcePath, { readOnly: true });
+  try {
+    driver.prepare("VACUUM INTO ?").run(targetPath);
+  } finally {
+    driver.close();
+  }
+}
