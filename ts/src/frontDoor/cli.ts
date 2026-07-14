@@ -20,8 +20,13 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
-import { openDatabaseForWrite, openDatabaseReadOnly } from "../db/database.ts";
+import {
+  openDatabaseForWrite,
+  openDatabaseReadOnly,
+  type WritableDatabase,
+} from "../db/database.ts";
 import { assertSchemaState, SchemaStateError } from "../db/schemaState.ts";
+import { JourneyNotFoundError } from "../journey/journeyWrite.ts";
 import { expandHome } from "../util/paths.ts";
 import { newId, nowIso } from "../util/pyIdentifiers.ts";
 import { optionValue, stripOptionWithValue } from "./args.ts";
@@ -134,6 +139,33 @@ function readStdinContent(): string {
   }
 }
 
+/**
+ * Shared skeleton for the sanctioned live-write commands: resolve the DB (exit 2
+ * on config failure), self-heal a missing DB via Python, open the backup-gated
+ * live-write seam, assert schema state, run `write`, and always close. Schema
+ * drift maps to exit 2; every other error propagates for the caller's own
+ * handling. Callers do their argument pre-validation before invoking this.
+ */
+function withLiveWriteDb(argv: readonly string[], write: (db: WritableDatabase) => number): number {
+  const dbPath = resolveDbPathForCli(argv.slice(2));
+  if (dbPath === null) return 2;
+  // Missing DB => unbootstrapped install; let Python bootstrap and write.
+  if (!existsSync(dbPath)) return fallbackPython(argv);
+  const db = openDatabaseForWrite(dbPath, ensureBackup(dbPath));
+  try {
+    assertSchemaState(db);
+    return write(db);
+  } catch (error) {
+    if (error instanceof SchemaStateError) {
+      console.error(`Mirror TS front door: ${error.message}`);
+      return 2;
+    }
+    throw error;
+  } finally {
+    db.close();
+  }
+}
+
 function isIdentityWrite(argv: readonly string[]): boolean {
   return argv[0] === "identity" && argv[1] === "set";
 }
@@ -160,25 +192,11 @@ function runIdentityWrite(argv: readonly string[]): number {
     console.error("Error: content is empty.");
     return 1;
   }
-  const dbPath = resolveDbPathForCli(args);
-  if (dbPath === null) return 2;
-  // Missing DB => unbootstrapped install; let Python bootstrap and write.
-  if (!existsSync(dbPath)) return fallbackPython(argv);
-  const db = openDatabaseForWrite(dbPath, ensureBackup(dbPath));
-  try {
-    assertSchemaState(db);
+  return withLiveWriteDb(argv, (db) => {
     const outcome = applyIdentitySet(db, { layer, key, content, id: newId(), nowIso: nowIso() });
     process.stdout.write(`\u2713 ${outcome.layer}/${outcome.key} ${outcome.action}\n`);
     return 0;
-  } catch (error) {
-    if (error instanceof SchemaStateError) {
-      console.error(`Mirror TS front door: ${error.message}`);
-      return 2;
-    }
-    throw error;
-  } finally {
-    db.close();
-  }
+  });
 }
 
 function isJourneyWrite(argv: readonly string[]): boolean {
@@ -203,30 +221,20 @@ function runJourneyWrite(argv: readonly string[]): number {
     console.error("Usage: journey set-path <slug> <path>");
     return 2;
   }
-  const dbPath = resolveDbPathForCli(args);
-  if (dbPath === null) return 2;
-  // Missing DB => unbootstrapped install; let Python bootstrap and write.
-  if (!existsSync(dbPath)) return fallbackPython(argv);
-  const db = openDatabaseForWrite(dbPath, ensureBackup(dbPath));
-  try {
-    assertSchemaState(db);
-    const resolved = applyJourneySetPath(db, slug, rawPath, nowIso());
-    console.error(`project_path set for '${slug}': ${resolved}`);
-    process.stdout.write(`${resolved}\n`);
-    return 0;
-  } catch (error) {
-    if (error instanceof SchemaStateError) {
-      console.error(`Mirror TS front door: ${error.message}`);
-      return 2;
+  return withLiveWriteDb(argv, (db) => {
+    try {
+      const resolved = applyJourneySetPath(db, slug, rawPath, nowIso());
+      console.error(`project_path set for '${slug}': ${resolved}`);
+      process.stdout.write(`${resolved}\n`);
+      return 0;
+    } catch (error) {
+      if (error instanceof JourneyNotFoundError) {
+        console.error(`Error: journey '${slug}' not found.`);
+        return 1;
+      }
+      throw error;
     }
-    if (error instanceof Error && error.message.startsWith("journey not found")) {
-      console.error(`Error: journey '${slug}' not found.`);
-      return 1;
-    }
-    throw error;
-  } finally {
-    db.close();
-  }
+  });
 }
 
 /** Best-effort log path from the same resolver; null when unconfigured. */

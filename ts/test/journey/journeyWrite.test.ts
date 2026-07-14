@@ -4,7 +4,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
-import { createJourney, journeyMetadata, setProjectPath } from "../../src/journey/journeyWrite.ts";
+import {
+  createJourney,
+  JourneyNotFoundError,
+  journeyMetadata,
+  setProjectPath,
+} from "../../src/journey/journeyWrite.ts";
 
 const NOW = "2026-06-23T12:00:00.123456Z";
 const LATER = "2026-06-24T09:30:00.500000Z";
@@ -26,6 +31,25 @@ function seedIdentity(db: WritableDatabase): void {
       "updated_at TEXT NOT NULL, metadata TEXT, UNIQUE(layer, key))",
   );
 }
+
+test("setProjectPath throws a typed JourneyNotFoundError carrying the slug", () => {
+  const { dbPath, cleanup } = tempCopy();
+  const db = openDatabaseCopyForWrite(dbPath);
+  seedIdentity(db);
+  try {
+    let caught: unknown;
+    try {
+      setProjectPath(db, "nope", "/x", NOW);
+    } catch (error) {
+      caught = error;
+    }
+    assert.ok(caught instanceof JourneyNotFoundError);
+    assert.equal(caught.slug, "nope");
+  } finally {
+    db.close();
+    cleanup();
+  }
+});
 
 test("journeyMetadata keeps only non-empty trimmed fields", () => {
   assert.deepEqual(journeyMetadata({ icon: " star ", parentJourney: "", color: "blue" }), {

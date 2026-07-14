@@ -17,6 +17,15 @@ import { pyJsonDumps } from "../util/pyJson.ts";
 
 export const JOURNEY_LAYER = "journey";
 
+/** Raised when a journey slug has no identity row to update. */
+export class JourneyNotFoundError extends Error {
+  readonly slug: string;
+  constructor(slug: string) {
+    super(`journey not found: ${slug}`);
+    this.slug = slug;
+  }
+}
+
 export interface JourneyFields {
   /** Already normalized (Path.resolve equivalent) when present. */
   projectPath?: string | null;
@@ -93,7 +102,7 @@ export function setProjectPath(
     .prepare("SELECT metadata FROM identity WHERE layer = ? AND key = ?")
     .get(JOURNEY_LAYER, slug);
   if (row === undefined) {
-    throw new Error(`journey not found: ${slug}`);
+    throw new JourneyNotFoundError(slug);
   }
   const existing =
     typeof row.metadata === "string" && row.metadata.length > 0
