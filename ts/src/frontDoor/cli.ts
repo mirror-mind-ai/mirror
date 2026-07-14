@@ -30,11 +30,12 @@ import { expandHome } from "../util/paths.ts";
 import { newId, nowIso } from "../util/pyIdentifiers.ts";
 import { hasOption, optionValue, stripOptionWithValue } from "./args.ts";
 import { MirrorHomeNotConfiguredError, resolveDbPath } from "./dbPath.ts";
+import { frontDoorLogPath, logFrontDoor } from "./frontDoorLog.ts";
 import { nodeVersionError } from "./nodeSupport.ts";
 import { applyIdentitySet } from "./identityWrite.ts";
 import { applyJourneySetPath } from "./journeyWriteRoute.ts";
 import { ensureBackup } from "./liveBackup.ts";
-import { routeMemoryCommand } from "./routing.ts";
+import { type FrontDoorEngine, routeMemoryCommand } from "./routing.ts";
 
 const ICONS: Record<string, string> = {
   decision: "⚖️",
@@ -399,6 +400,22 @@ async function runJourneyWrite(argv: readonly string[]): Promise<number> {
   }
 }
 
+/** Best-effort log path from the same resolver; null when unconfigured. */
+function resolveLogPath(argv: readonly string[]): string | null {
+  try {
+    return frontDoorLogPath(resolveDbPath(argv));
+  } catch {
+    return null;
+  }
+}
+
+async function dispatch(argv: readonly string[], engine: FrontDoorEngine): Promise<number> {
+  if (engine === "python") return fallbackPython(argv);
+  if (isIdentityWrite(argv)) return runIdentityWrite(argv);
+  if (isJourneyWrite(argv)) return runJourneyWrite(argv);
+  return runTs(argv);
+}
+
 export async function main(argv = process.argv.slice(2)): Promise<number> {
   const nodeError = nodeVersionError(process.versions.node);
   if (nodeError) {
@@ -406,10 +423,22 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
     return 1;
   }
   const decision = routeMemoryCommand(argv);
-  if (decision.engine === "python") return fallbackPython(argv);
-  if (isIdentityWrite(argv)) return runIdentityWrite(argv);
-  if (isJourneyWrite(argv)) return runJourneyWrite(argv);
-  return runTs(argv);
+  const logPath = resolveLogPath(argv);
+  try {
+    const exitCode = await dispatch(argv, decision.engine);
+    logFrontDoor(logPath, { command: decision.command, route: decision.engine, exitCode });
+    return exitCode;
+  } catch (error) {
+    // Metadata-only: the error's name/category, never argument values.
+    const detail = error instanceof Error ? error.name : "unknown error";
+    logFrontDoor(logPath, {
+      command: decision.command,
+      route: decision.engine,
+      exitCode: 1,
+      detail,
+    });
+    throw error;
+  }
 }
 
 process.exitCode = await main();

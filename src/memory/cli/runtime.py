@@ -10,6 +10,7 @@ import subprocess
 import sys
 import zipfile
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 from importlib import metadata
 from pathlib import Path
 
@@ -1542,12 +1543,56 @@ def _loose_permission_findings(report: RuntimeStatusReport) -> list[DriftFinding
     return findings
 
 
+def _front_door_error_findings(report: RuntimeStatusReport) -> list[DriftFinding]:
+    """Report recent errors from the TS front-door log (CR026).
+
+    The front door appends redacted, metadata-only lines to
+    ``<mirror home>/front-door.log`` beside ``mirror-logger.log``. Surface a
+    non-green summary when ERROR lines appear in the last 24h so backup, guard,
+    or routing failures stop being invisible.
+    """
+    if report.db_path is None:
+        return []
+    log_path = report.db_path.parent / "front-door.log"
+    if not log_path.exists():
+        return []
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+    recent_errors = 0
+    try:
+        lines = log_path.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return []
+    for line in lines[-1000:]:
+        parts = line.split("\t")
+        if len(parts) < 2 or parts[1] != "ERROR":
+            continue
+        try:
+            stamp = datetime.fromisoformat(parts[0].replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if stamp >= cutoff:
+            recent_errors += 1
+    if recent_errors == 0:
+        return []
+    return [
+        DriftFinding(
+            "front_door_errors",
+            "attention",
+            "front door",
+            f"{recent_errors} front-door error(s) in the last 24h ({log_path})",
+            "inspect the front-door log; rule out routing, schema-guard, and backup failures",
+            "review front-door.log",
+        )
+    ]
+
+
 def diagnose_runtime(
     report: RuntimeStatusReport,
     worktree_entries: tuple[GitWorktreeEntry, ...] = (),
 ) -> tuple[DriftFinding, ...]:
     findings: list[DriftFinding] = []
     findings.extend(_loose_permission_findings(report))
+    findings.extend(_front_door_error_findings(report))
     if report.mirror_home_error:
         findings.append(
             DriftFinding(
