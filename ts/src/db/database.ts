@@ -30,12 +30,31 @@ export interface Database {
 }
 
 /**
+ * Connection discipline matching the Python core (`src/memory/db/connection.py`):
+ * every connection — read-only included — gets `busy_timeout=30000` so lock
+ * contention waits instead of failing instantly, and `foreign_keys=ON` so FK
+ * enforcement never depends on an unasserted driver default. The timeout is
+ * configurable only so contention tests can use a short one.
+ */
+export interface OpenOptions {
+  busyTimeoutMs?: number;
+}
+
+const DEFAULT_BUSY_TIMEOUT_MS = 30_000;
+
+function applyConnectionPragmas(driver: DatabaseSync, options: OpenOptions): void {
+  driver.exec(`PRAGMA busy_timeout=${options.busyTimeoutMs ?? DEFAULT_BUSY_TIMEOUT_MS}`);
+  driver.exec("PRAGMA foreign_keys=ON");
+}
+
+/**
  * Open a SQLite file read-only. The handle can prepare and run read queries;
  * any write rejects at the driver level, keeping the database-as-seam contract
  * safe against the authors' live `memory.db`.
  */
-export function openDatabaseReadOnly(path: string): Database {
+export function openDatabaseReadOnly(path: string, options: OpenOptions = {}): Database {
   const driver = new DatabaseSync(path, { readOnly: true });
+  applyConnectionPragmas(driver, options);
   return {
     prepare(sql: string): PreparedQuery {
       const statement = driver.prepare(sql);
@@ -100,9 +119,32 @@ function writableHandle(driver: DatabaseSync): WritableDatabase {
  * `memory.db` or is not under a `tmp/` directory. This is how DS4 mutates state
  * during parity proofs without ever risking the authors' real database.
  */
-export function openDatabaseCopyForWrite(path: string): WritableDatabase {
+export function openDatabaseCopyForWrite(
+  path: string,
+  options: OpenOptions = {},
+): WritableDatabase {
   assertCopyTarget(path);
-  return writableHandle(new DatabaseSync(path));
+  const driver = new DatabaseSync(path);
+  applyConnectionPragmas(driver, options);
+  return writableHandle(driver);
+}
+
+/**
+ * Run `fn` inside an explicit `BEGIN IMMEDIATE` transaction, committing on
+ * success and rolling back on any throw. Multi-statement writes must use this
+ * so a failure between statements can never leave partial state — the Python
+ * core commits such sequences as one transaction (e.g. `log_access`).
+ */
+export function withTransaction<T>(db: WritableDatabase, fn: () => T): T {
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    const result = fn();
+    db.exec("COMMIT");
+    return result;
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
 }
 
 /**
@@ -112,7 +154,13 @@ export function openDatabaseCopyForWrite(path: string): WritableDatabase {
  * the file if no valid backup was recorded. Used only by the front door's
  * allowlisted deterministic write commands.
  */
-export function openDatabaseForWrite(path: string, backup: BackupRecord): WritableDatabase {
+export function openDatabaseForWrite(
+  path: string,
+  backup: BackupRecord,
+  options: OpenOptions = {},
+): WritableDatabase {
   requireBackup(backup);
-  return writableHandle(new DatabaseSync(path));
+  const driver = new DatabaseSync(path);
+  applyConnectionPragmas(driver, options);
+  return writableHandle(driver);
 }

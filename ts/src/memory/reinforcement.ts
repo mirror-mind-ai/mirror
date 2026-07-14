@@ -7,19 +7,26 @@
 // a parity run can freeze the clock and match the Python oracle byte-for-byte;
 // the two statements in log_access share the one `nowIso`, as in Python.
 
-import type { WritableDatabase } from "../db/database.ts";
+import { type WritableDatabase, withTransaction } from "../db/database.ts";
 
-/** Record a retrieval: append to memory_access_log and cache last_accessed_at. */
+/**
+ * Record a retrieval: append to memory_access_log and cache last_accessed_at.
+ * The two statements commit as one transaction, matching Python's single
+ * `conn.commit()` — a failure between them must never leave the access row
+ * without the cached timestamp (or vice versa).
+ */
 export function logAccess(
   db: WritableDatabase,
   memoryId: string,
   nowIso: string,
   context: string | null,
 ): void {
-  db.prepare(
-    "INSERT INTO memory_access_log (memory_id, accessed_at, access_context) VALUES (?, ?, ?)",
-  ).run(memoryId, nowIso, context);
-  db.prepare("UPDATE memories SET last_accessed_at = ? WHERE id = ?").run(nowIso, memoryId);
+  withTransaction(db, () => {
+    db.prepare(
+      "INSERT INTO memory_access_log (memory_id, accessed_at, access_context) VALUES (?, ?, ?)",
+    ).run(memoryId, nowIso, context);
+    db.prepare("UPDATE memories SET last_accessed_at = ? WHERE id = ?").run(nowIso, memoryId);
+  });
 }
 
 /** Record a use: increment use_count (the stronger reinforcement signal). */
