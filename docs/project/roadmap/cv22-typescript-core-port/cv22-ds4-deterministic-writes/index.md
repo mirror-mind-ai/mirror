@@ -63,8 +63,8 @@ source, so validation stays independent of any private filesystem.
 
 ## Candidate Stories
 
-All four candidate stories are now materialized as story packages and linked
-below (TS1, US1, US2 complete; US3 in progress).
+All four candidate stories are complete and linked below (TS1, US1, US2, US3
+all ✅ Done); DS4's deterministic-write scope is finished and ready to collapse.
 
 | Code | Story | Type | Outcome |
 |------|-------|------|---------|

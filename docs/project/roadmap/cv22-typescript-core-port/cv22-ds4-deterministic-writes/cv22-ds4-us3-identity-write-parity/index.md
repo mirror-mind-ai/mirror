@@ -2,7 +2,7 @@
 
 # CV22.DS4.US3 — Identity Write Parity
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 **Type:** User Story
 **Depends on:** CV22.DS4.TS1 (write-parity harness & backup gate), CV22.DS4.US2
 (identity write primitives `upsertIdentity` / `updateIdentityMetadata` and
