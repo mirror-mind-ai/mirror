@@ -8,6 +8,7 @@
 
 import { DatabaseSync } from "node:sqlite";
 
+import { type BackupRecord, requireBackup } from "./backupGate.ts";
 import { assertCopyTarget } from "./copyGuard.ts";
 
 /** A SQLite-storable value. Mirrored here so callers don't import driver types. */
@@ -67,15 +68,8 @@ export interface WritableDatabase extends Database {
   exec(sql: string): void;
 }
 
-/**
- * Open a SQLite file for writing — permitted ONLY for a copy. `assertCopyTarget`
- * runs first and throws before the driver touches the file if the path is a live
- * `memory.db` or is not under a `tmp/` directory. This is how DS4 mutates state
- * during parity proofs without ever risking the authors' real database.
- */
-export function openDatabaseCopyForWrite(path: string): WritableDatabase {
-  assertCopyTarget(path);
-  const driver = new DatabaseSync(path);
+/** Wrap a raw driver as the writable seam handle (prepare/exec/close). */
+function writableHandle(driver: DatabaseSync): WritableDatabase {
   return {
     prepare(sql: string): WritablePreparedQuery {
       const statement = driver.prepare(sql);
@@ -98,4 +92,27 @@ export function openDatabaseCopyForWrite(path: string): WritableDatabase {
       driver.close();
     },
   };
+}
+
+/**
+ * Open a SQLite file for writing — permitted ONLY for a copy. `assertCopyTarget`
+ * runs first and throws before the driver touches the file if the path is a live
+ * `memory.db` or is not under a `tmp/` directory. This is how DS4 mutates state
+ * during parity proofs without ever risking the authors' real database.
+ */
+export function openDatabaseCopyForWrite(path: string): WritableDatabase {
+  assertCopyTarget(path);
+  return writableHandle(new DatabaseSync(path));
+}
+
+/**
+ * Open a real database for writing — the sanctioned live-write seam (US4). Unlike
+ * the copy path, this is allowed to touch a live `memory.db`, so it fails closed
+ * without a hash-verified backup: `requireBackup` throws before the driver opens
+ * the file if no valid backup was recorded. Used only by the front door's
+ * allowlisted deterministic write commands.
+ */
+export function openDatabaseForWrite(path: string, backup: BackupRecord): WritableDatabase {
+  requireBackup(backup);
+  return writableHandle(new DatabaseSync(path));
 }
