@@ -11,6 +11,25 @@ resolved.
 
 ## Completed Decisions
 
+### Supply-chain posture: zero runtime npm deps as policy; tag-pinned CI actions accepted
+
+**Date:** 2026-07-14 · **Origin:** RS005 security audit, CR035
+
+Two related stances, made deliberate instead of accidental:
+
+1. **Zero runtime npm dependencies is policy** for the TS core, recorded in
+   [engineering principles](../process/engineering-principles.md). It is also
+   a user-trust feature to advertise when DS6 publishes to npm: the package
+   executes nothing from the npm dependency graph at runtime.
+2. **CI actions remain tag-pinned** (`actions/checkout@v6`,
+   `actions/setup-python@v6`, `actions/setup-node@v5`,
+   `astral-sh/setup-uv@v8.1.0`). Tags are mutable, so this trades some
+   supply-chain rigor for upgrade ergonomics — accepted because every pinned
+   action comes from a first-party publisher (GitHub, Astral) and the
+   workflows carry no repository secrets beyond the default token. Revisit
+   and SHA-pin when a third-party action enters a workflow or when npm
+   publishing (DS6) adds release credentials to CI.
+
 ### Runtime state is contained in the mirror home for every environment
 
 **Date:** 2026-07-12

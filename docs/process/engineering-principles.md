@@ -9,6 +9,15 @@ to all work on this codebase.
 
 ## Code
 
+**The TS core ships with zero runtime npm dependencies.**
+`ts/package.json` carries devDependencies only (Biome, TypeScript, types);
+users install nothing from npm to run Mirror. This is a security property,
+not a coincidence — the npm supply chain is currently unreachable from user
+machines, and `node:sqlite` over `better-sqlite3` was the load-bearing choice.
+Adding a runtime dependency requires a named justification and a security
+review; dev dependencies stay ranged behind the committed lockfile.
+(RS005/CR035; see also the decisions log on CI action pinning.)
+
 **Service layer is the architecture.**
 `MemoryClient` is a façade. Services are the implementation. Storage handles
 persistence. The import direction rule and full layer model are in
