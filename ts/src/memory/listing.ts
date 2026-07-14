@@ -8,6 +8,7 @@
 // is out of scope here: it reuses the US1 hybrid ranker.
 
 import type { Database, SqlValue } from "../db/database.ts";
+import { optionalString, requireString } from "../db/rowDecode.ts";
 
 /** The listing projection, mirroring the Python `MemorySummary` DTO. */
 export interface MemorySummary {
@@ -68,16 +69,16 @@ export function buildListRecentQuery(filters: ListRecentFilters = {}): {
 
 function toSummary(row: Record<string, unknown>): MemorySummary {
   return {
-    id: row.id as string,
-    memory_type: row.memory_type as string,
-    layer: row.layer as string,
-    title: row.title as string,
-    content: row.content as string,
-    context: (row.context as string | null) ?? null,
-    journey: (row.journey as string | null) ?? null,
-    persona: (row.persona as string | null) ?? null,
-    tags: (row.tags as string | null) ?? null,
-    created_at: row.created_at as string,
+    id: requireString(row, "id"),
+    memory_type: requireString(row, "memory_type"),
+    layer: requireString(row, "layer"),
+    title: requireString(row, "title"),
+    content: requireString(row, "content"),
+    context: optionalString(row, "context"),
+    journey: optionalString(row, "journey"),
+    persona: optionalString(row, "persona"),
+    tags: optionalString(row, "tags"),
+    created_at: requireString(row, "created_at"),
   };
 }
 
@@ -102,5 +103,5 @@ export function countMemoriesByType(db: Database): [string, number][] {
   return db
     .prepare("SELECT memory_type, COUNT(*) as count FROM memories GROUP BY memory_type")
     .all()
-    .map((row) => [row.memory_type as string, Number(row.count)] as [string, number]);
+    .map((row) => [requireString(row, "memory_type"), Number(row.count)] as [string, number]);
 }

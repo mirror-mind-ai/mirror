@@ -2,6 +2,7 @@
 // format the matches. Extracted from cli.ts (CR002).
 
 import type { Database } from "../../db/database.ts";
+import { requireString } from "../../db/rowDecode.ts";
 import { detectPersona, type PersonaRoutingRow } from "../../persona/detectPersona.ts";
 import { stripOptionWithValue } from "../args.ts";
 import { identityRows } from "./identityRows.ts";
@@ -23,7 +24,7 @@ export function routingRows(db: Database): PersonaRoutingRow[] {
         keywords = [];
       }
     }
-    return { key: row.key as string, routing_keywords: keywords };
+    return { key: requireString(row, "key"), routing_keywords: keywords };
   });
 }
 

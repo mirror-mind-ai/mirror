@@ -6,7 +6,7 @@
 // `node:sqlite` is still experimental and emits an ExperimentalWarning to stderr;
 // that is non-fatal and stays out of stdout.
 
-import { DatabaseSync } from "node:sqlite";
+import { DatabaseSync, type StatementSync } from "node:sqlite";
 
 import { type BackupRecord, requireBackup } from "./backupGate.ts";
 import { assertCopyTarget } from "./copyGuard.ts";
@@ -52,24 +52,28 @@ function applyConnectionPragmas(driver: DatabaseSync, options: OpenOptions): voi
  * any write rejects at the driver level, keeping the database-as-seam contract
  * safe against the authors' live `memory.db`.
  */
+/**
+ * Wrap a driver statement's read methods with row normalization. `node:sqlite`
+ * returns null-prototype row objects; normalizing to plain objects keeps the
+ * seam's row shape driver-independent and predictable for every consumer (and
+ * for strict equality in tests). Shared by the read-only and writable handles.
+ */
+function readableStatement(statement: StatementSync): PreparedQuery {
+  return {
+    all: (...params: SqlValue[]): Row[] =>
+      (statement.all(...params) as Row[]).map((row) => ({ ...row })),
+    get: (...params: SqlValue[]): Row | undefined => {
+      const row = statement.get(...params) as Row | undefined;
+      return row === undefined ? undefined : { ...row };
+    },
+  };
+}
+
 export function openDatabaseReadOnly(path: string, options: OpenOptions = {}): Database {
   const driver = new DatabaseSync(path, { readOnly: true });
   applyConnectionPragmas(driver, options);
   return {
-    prepare(sql: string): PreparedQuery {
-      const statement = driver.prepare(sql);
-      return {
-        // `node:sqlite` returns null-prototype row objects. Normalize to plain
-        // objects so the seam's row shape is driver-independent and predictable
-        // for every consumer (and for strict equality in tests).
-        all: (...params: SqlValue[]): Row[] =>
-          (statement.all(...params) as Row[]).map((row) => ({ ...row })),
-        get: (...params: SqlValue[]): Row | undefined => {
-          const row = statement.get(...params) as Row | undefined;
-          return row === undefined ? undefined : { ...row };
-        },
-      };
-    },
+    prepare: (sql: string): PreparedQuery => readableStatement(driver.prepare(sql)),
     close: (): void => {
       driver.close();
     },
@@ -93,12 +97,7 @@ function writableHandle(driver: DatabaseSync): WritableDatabase {
     prepare(sql: string): WritablePreparedQuery {
       const statement = driver.prepare(sql);
       return {
-        all: (...params: SqlValue[]): Row[] =>
-          (statement.all(...params) as Row[]).map((row) => ({ ...row })),
-        get: (...params: SqlValue[]): Row | undefined => {
-          const row = statement.get(...params) as Row | undefined;
-          return row === undefined ? undefined : { ...row };
-        },
+        ...readableStatement(statement),
         run: (...params: SqlValue[]): void => {
           statement.run(...params);
         },

@@ -9,6 +9,7 @@
 // and stamps a microsecond now inside upsert_identity).
 
 import type { WritableDatabase } from "../db/database.ts";
+import { optionalString } from "../db/rowDecode.ts";
 import { type IdentityRow, upsertIdentity } from "./identityStore.ts";
 
 /** Inputs to set_identity. `version` defaults to "1.0.0"; a null/absent metadata inherits. */
@@ -59,5 +60,5 @@ function resolveMetadata(db: WritableDatabase, input: SetIdentityInput): string 
   if (existing === undefined) {
     return null;
   }
-  return (existing.metadata as string | null) ?? null;
+  return optionalString(existing, "metadata");
 }

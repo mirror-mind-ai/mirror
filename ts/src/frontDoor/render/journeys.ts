@@ -2,6 +2,7 @@
 // format the roots-then-children hierarchy. Extracted from cli.ts (CR002).
 
 import type { Database } from "../../db/database.ts";
+import { optionalString, requireString } from "../../db/rowDecode.ts";
 import {
   groupJourneysByParent,
   type JourneyIdentityRow,
@@ -22,8 +23,8 @@ const STATUS_ICONS: Record<string, string> = { active: "🚧", completed: "✅",
 function contentByKey(db: Database, layer: string): Map<string, string> {
   return new Map(
     identityRows(db, layer).map((row) => [
-      row.key as string,
-      typeof row.content === "string" ? row.content : "",
+      requireString(row, "key"),
+      optionalString(row, "content") ?? "",
     ]),
   );
 }
@@ -38,9 +39,9 @@ export function journeyRows(db: Database): JourneyDisplayRow[] {
   const journeyContent = contentByKey(db, "journey");
   const stageContent = contentByKey(db, "journey_path");
   const identityForOptions: JourneyIdentityRow[] = identityRows(db, "journey").map((row) => ({
-    key: row.key as string,
-    content: typeof row.content === "string" ? row.content : "",
-    metadata: (row.metadata as string | null) ?? null,
+    key: requireString(row, "key"),
+    content: optionalString(row, "content") ?? "",
+    metadata: optionalString(row, "metadata"),
   }));
   return listJourneyOptions(identityForOptions).map((option) => {
     const desc = (journeyContent.get(option.id) ?? "")
