@@ -24,6 +24,7 @@ but no fix yet are also welcome (mark them `Status: mitigated`).
 - [Portuguese accents appear as mojibake on Windows](#portuguese-accents-appear-as-mojibake-on-windows)
 - [Pi Builder conversations appear without journeys](#pi-builder-conversations-appear-without-journeys)
 - [Pi logger fails silently when `python3` resolves outside the project venv](#pi-logger-fails-silently-when-python3-resolves-outside-the-project-venv)
+- [TS front door misbehaves: telling it apart, rolling back, restoring data](#ts-front-door-misbehaves-telling-it-apart-rolling-back-restoring-data)
 
 ---
 
@@ -455,6 +456,83 @@ docs/releases/vMAJOR.MINOR.PATCH.md
 
 After the first post-adoption release is published, `runtime release-notes
 latest` should render that release note.
+
+---
+
+## TS front door misbehaves: telling it apart, rolling back, restoring data
+
+Since CV22.DS4, the Pi skills `mm-journeys`, `mm-memories`, `mm-identity set`,
+and `mm-build journey set-path` enter through the TypeScript front door
+(`ts/src/frontDoor/cli.ts`), which routes ported commands to the TS core and
+everything else to the frozen Python engine.
+
+### Symptoms — is the TS route the problem?
+
+TS-route failures are identifiable:
+
+- Error lines prefixed `Mirror TS front door:` (configuration, schema-state
+  guard) or `Mirror TS front door could not find database:` — exit code 2.
+- Schema-guard messages name migrations explicitly: `database schema is older
+  than this TS core (pending migrations: …)` → run any Python
+  `uv run python -m memory` command once to migrate; `… newer than this TS
+  core …` → `git pull` the checkout.
+- Node-level stack traces or `node: command not found` — the runtime
+  prerequisite (Node ≥ 24), not Mirror data.
+
+Python failures look like Python: `uv` resolution errors, tracebacks,
+argparse usage text.
+
+### Rollback — return the skills to the Python CLI
+
+The cutover is one commit touching exactly two skill files
+(`.pi/skills/mm-identity/SKILL.md`, `.pi/skills/mm-build/SKILL.md`):
+
+```bash
+git revert ae56322   # "Cut over identity set + journey set-path skills…"
+```
+
+(Verified to apply cleanly against current HEAD.) Read routes can be rolled
+back the same way via the commit that pointed `mm-journeys`/`mm-memories` at
+the front door (`061ff86`), or by editing the skill files to call
+`uv run python -m memory …` directly. Skills and TS code ride the same
+repository, so `git pull`/`git revert` keep them atomic — partial states can
+only come from local edits.
+
+### Recovery — restore the pre-write snapshot
+
+Every front-door live write first takes a WAL-safe snapshot at
+`<mirror home>/backups/frontdoor-pre-write-backup.db`. It holds the state
+immediately before the **most recent** routed write (fixed name, overwritten
+per write — an undo, not an archive). To restore, with **no session or
+process holding the database open**:
+
+```bash
+cd <mirror home>
+cp backups/frontdoor-pre-write-backup.db memory.db
+rm -f memory.db-wal memory.db-shm   # stale sidecars must not replay over the restore
+chmod 600 memory.db
+```
+
+The restore semantics (verify, copy back, clear sidecars) are implemented and
+tested in `ts/src/frontDoor/liveBackup.ts` (`restoreFromBackup`); the manual
+steps above are their operator form. For scheduled archives use `mm-backup` —
+the pre-write snapshot only rewinds the last routed write.
+
+### Verify — prove the state you rolled back to
+
+```bash
+# TS route (before rollback) — or Python route (after rollback):
+NODE_OPTIONS=--no-warnings node ts/src/frontDoor/cli.ts journeys
+uv run python -m memory journeys
+
+# Write path smoke (either route):
+uv run python -m memory identity get ego behavior | head -2
+```
+
+Both routes read the same `memory.db`; identical listings mean the seam is
+healthy. If the schema guard still refuses after a rollback, the database
+and checkout are from different eras — align them (`git pull` or migrate)
+before writing anything.
 
 ---
 
