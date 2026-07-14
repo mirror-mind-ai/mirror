@@ -3,6 +3,7 @@
 
 import type { Database } from "../../db/database.ts";
 import {
+  groupJourneysByParent,
   type JourneyIdentityRow,
   type JourneyOption,
   listJourneyOptions,
@@ -17,26 +18,39 @@ export interface JourneyDisplayRow extends JourneyOption {
 
 const STATUS_ICONS: Record<string, string> = { active: "🚧", completed: "✅", paused: "⏸" };
 
-/** Read journeys and enrich each with its stage (from journey_path) and description. */
-export function journeyRows(db: Database): JourneyDisplayRow[] {
-  const options = listJourneyOptions(
-    identityRows(db, "journey") as unknown as JourneyIdentityRow[],
+/** Read the `content` column of an identity layer keyed by identity key. */
+function contentByKey(db: Database, layer: string): Map<string, string> {
+  return new Map(
+    identityRows(db, layer).map((row) => [
+      row.key as string,
+      typeof row.content === "string" ? row.content : "",
+    ]),
   );
-  return options.map((option) => {
-    const ident = db
-      .prepare("SELECT content FROM identity WHERE layer = ? AND key = ?")
-      .get("journey", option.id);
-    const content = typeof ident?.content === "string" ? ident.content : "";
-    const desc = content
+}
+
+/**
+ * Read journeys and enrich each with its stage (from journey_path) and
+ * description. Two queries total (journey + journey_path layers), not the
+ * former 1 + 2N: the journey content is loaded once into a map and the stage
+ * layer once, instead of a per-journey pair of lookups.
+ */
+export function journeyRows(db: Database): JourneyDisplayRow[] {
+  const journeyContent = contentByKey(db, "journey");
+  const stageContent = contentByKey(db, "journey_path");
+  const identityForOptions: JourneyIdentityRow[] = identityRows(db, "journey").map((row) => ({
+    key: row.key as string,
+    content: typeof row.content === "string" ? row.content : "",
+    metadata: (row.metadata as string | null) ?? null,
+  }));
+  return listJourneyOptions(identityForOptions).map((option) => {
+    const desc = (journeyContent.get(option.id) ?? "")
       .split("\n")
       .map((line) => line.trim())
       .find((line) => line && !line.startsWith("#") && !line.startsWith("**"));
-    const journeyPath = db
-      .prepare("SELECT content FROM identity WHERE layer = ? AND key = ?")
-      .get("journey_path", option.id);
-    const pathContent = typeof journeyPath?.content === "string" ? journeyPath.content : "";
     const stage =
-      pathContent.match(/\*\*(?:Current stage|Etapa atual):\*\*\s*(.+)/)?.[1]?.trim() ?? "—";
+      (stageContent.get(option.id) ?? "")
+        .match(/\*\*(?:Current stage|Etapa atual):\*\*\s*(.+)/)?.[1]
+        ?.trim() ?? "—";
     return { ...option, stage, description: (desc ?? "").slice(0, 80) };
   });
 }
@@ -59,22 +73,12 @@ export function renderJourney(row: JourneyDisplayRow, child = false): string[] {
 export function renderJourneys(db: Database): string {
   const rows = journeyRows(db);
   if (rows.length === 0) return "No journeys found.\n";
-  const known = new Set(rows.map((row) => row.id));
-  const children = new Map<string, JourneyDisplayRow[]>();
-  const roots: JourneyDisplayRow[] = [];
-  for (const row of rows) {
-    if (row.parent_journey && known.has(row.parent_journey)) {
-      const bucket = children.get(row.parent_journey);
-      if (bucket) bucket.push(row);
-      else children.set(row.parent_journey, [row]);
-    } else {
-      roots.push(row);
-    }
-  }
+  const { roots, childrenByParent } = groupJourneysByParent(rows);
   const lines: string[] = [];
   for (const row of roots) {
     lines.push(...renderJourney(row));
-    for (const child of children.get(row.id) ?? []) lines.push(...renderJourney(child, true));
+    for (const child of childrenByParent.get(row.id) ?? [])
+      lines.push(...renderJourney(child, true));
   }
   return lines.join("\n");
 }

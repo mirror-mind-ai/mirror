@@ -4,10 +4,30 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import {
+  groupJourneysByParent,
   type JourneyIdentityRow,
   type JourneyOption,
   listJourneyOptions,
 } from "../../src/journey/journeyOptions.ts";
+
+test("groupJourneysByParent splits roots and children and treats orphan parents as roots", () => {
+  const items = [
+    { id: "a", parent_journey: "" },
+    { id: "b", parent_journey: "a" },
+    { id: "c", parent_journey: "a" },
+    { id: "d", parent_journey: "missing" }, // parent absent -> root
+  ];
+  const { roots, childrenByParent } = groupJourneysByParent(items);
+  assert.deepEqual(
+    roots.map((r) => r.id),
+    ["a", "d"],
+  );
+  assert.deepEqual(
+    (childrenByParent.get("a") ?? []).map((r) => r.id),
+    ["b", "c"],
+  );
+  assert.equal(childrenByParent.get("missing"), undefined);
+});
 
 interface JourneysGolden {
   journey_rows: JourneyIdentityRow[];

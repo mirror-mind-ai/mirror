@@ -54,6 +54,37 @@ function toOption(row: JourneyIdentityRow): JourneyOption {
   };
 }
 
+/** A roots-then-children split of journey-like items keyed by `parent_journey`. */
+export interface JourneyHierarchy<T> {
+  roots: T[];
+  childrenByParent: Map<string, T[]>;
+}
+
+/**
+ * Split items into roots and children by `parent_journey`, preserving input
+ * order within each group. An item whose parent is empty or absent from the set
+ * is a root. Shared by the journey sort and the journey renderer so the
+ * roots-then-children bucketing lives in exactly one place.
+ */
+export function groupJourneysByParent<T extends { id: string; parent_journey: string }>(
+  items: readonly T[],
+): JourneyHierarchy<T> {
+  const knownIds = new Set(items.map((item) => item.id));
+  const roots: T[] = [];
+  const childrenByParent = new Map<string, T[]>();
+  for (const item of items) {
+    const parent = item.parent_journey || "";
+    if (parent && knownIds.has(parent)) {
+      const bucket = childrenByParent.get(parent);
+      if (bucket) bucket.push(item);
+      else childrenByParent.set(parent, [item]);
+    } else {
+      roots.push(item);
+    }
+  }
+  return { roots, childrenByParent };
+}
+
 /**
  * Order options roots-then-children, mirroring `_sort_journey_options`.
  *
@@ -63,19 +94,7 @@ function toOption(row: JourneyIdentityRow): JourneyOption {
  * preserve the incoming `ORDER BY key` order, matching Python's stable `sorted`.
  */
 function sortJourneyOptions(options: JourneyOption[]): JourneyOption[] {
-  const byId = new Map(options.map((option) => [option.id, option]));
-  const children = new Map<string, JourneyOption[]>();
-  const roots: JourneyOption[] = [];
-  for (const option of options) {
-    const parent = option.parent_journey || "";
-    if (parent && byId.has(parent)) {
-      const bucket = children.get(parent);
-      if (bucket) bucket.push(option);
-      else children.set(parent, [option]);
-    } else {
-      roots.push(option);
-    }
-  }
+  const { roots, childrenByParent } = groupJourneysByParent(options);
 
   const compare = (a: JourneyOption, b: JourneyOption): number => {
     const aInactive = a.status !== "active" ? 1 : 0;
@@ -89,7 +108,7 @@ function sortJourneyOptions(options: JourneyOption[]): JourneyOption[] {
   const ordered: JourneyOption[] = [];
   for (const root of [...roots].sort(compare)) {
     ordered.push(root);
-    ordered.push(...[...(children.get(root.id) ?? [])].sort(compare));
+    ordered.push(...[...(childrenByParent.get(root.id) ?? [])].sort(compare));
   }
   return ordered;
 }
