@@ -58,14 +58,14 @@ uv run python -m memory identity get <layer> <key> [--mirror-home PATH]
 Update identity content directly in the database.
 
 ```bash
-uv run python -m memory identity set <layer> <key> --content "..." [--mirror-home PATH]
+NODE_OPTIONS=--no-warnings node ts/src/frontDoor/cli.ts identity set <layer> <key> --content "..." [--mirror-home PATH]
 ```
 
 If `--content` is omitted, content is read from stdin.
 
 **Examples:**
-- `uv run python -m memory identity set ego behavior --content "Be direct."`
-- `cat new-soul.md | uv run python -m memory identity set self soul`
+- `NODE_OPTIONS=--no-warnings node ts/src/frontDoor/cli.ts identity set ego behavior --content "Be direct."`
+- `cat new-soul.md | NODE_OPTIONS=--no-warnings node ts/src/frontDoor/cli.ts identity set self soul`
 
 ---
 
