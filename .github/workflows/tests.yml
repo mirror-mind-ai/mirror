@@ -54,7 +54,12 @@ jobs:
           ECONOMY_ENV: test
 
   ts:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        # macOS coverage guards the environment-dependent tmpdir/permission
+        # behavior that a Linux-only matrix cannot catch.
+        os: [ubuntu-latest, macos-latest]
     defaults:
       run:
         working-directory: ts
@@ -67,6 +72,23 @@ jobs:
         with:
           node-version: "24"
 
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: true
+
+      # The Python fallback e2e tests spawn `uv run python -m memory`; sync the
+      # project (from the repo root) so those tests run for real instead of
+      # skipping. uv resolves the root project from the ts/ working directory.
+      - name: Install Python deps (for the fallback e2e)
+        working-directory: ${{ github.workspace }}
+        run: uv sync --extra dev --frozen
+
       - name: Install dependencies
         run: npm ci
 
@@ -78,3 +100,42 @@ jobs:
 
       - name: Run tests (node:test)
         run: npm test
+        env:
+          MEMORY_ENV: test
+
+  parity:
+    # Realism proof: behavioral parity against a real-shaped database, not only
+    # synthetic-golden determinism. Needs both runtimes (Python oracle + TS core).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --extra dev --frozen
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+
+      - name: Generate portable demo database
+        run: |
+          mkdir -p tmp/parity
+          uv run python ts/parity/generate_demo_memory_db.py --out tmp/parity/demo-memory.db
+        env:
+          MEMORY_ENV: test
+
+      - name: Real-DB-copy parity (redacted, must pass)
+        run: uv run python ts/parity/real_db_copy_parity.py --source-db tmp/parity/demo-memory.db
+        env:
+          MEMORY_ENV: test
