@@ -2,7 +2,7 @@
 
 # CV22.DS4.US5 — Journey Write Routing
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 **Type:** User Story
 **Depends on:** CV22.DS4.US2 (ported `setProjectPath`), CV22.DS4.US4 (the sanctioned
 live-write seam + front-door write-handler pattern), CV22.DS3 (the routing table).
