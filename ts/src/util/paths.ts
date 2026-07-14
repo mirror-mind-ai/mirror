@@ -8,9 +8,16 @@ import { realpathSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 
-/** Expand a leading `~` to the home directory (matches the front door's DB-path handling). */
+/**
+ * Expand a leading `~` or `~/` to the home directory. A `~user` path passes
+ * through unchanged (Python's expanduser resolves known users; for the front
+ * door's purposes pass-through matches the unknown-user behavior and never
+ * fabricates a wrong path — pre-CR007 this mangled `~user/x` into home+`ser/x`).
+ */
 export function expandHome(path: string): string {
-  return path.startsWith("~") ? join(homedir(), path.slice(2)) : path;
+  if (path === "~") return homedir();
+  if (path.startsWith("~/")) return join(homedir(), path.slice(2));
+  return path;
 }
 
 /**

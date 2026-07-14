@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { homedir } from "node:os";
-import { join } from "node:path";
 import type { Database, Row } from "../db/database.ts";
 import { openDatabaseForWrite } from "../db/database.ts";
 import {
@@ -19,6 +17,8 @@ import {
 import { detectPersona, type PersonaRoutingRow } from "../persona/detectPersona.ts";
 import { expandHome } from "../util/paths.ts";
 import { newId, nowIso } from "../util/pyIdentifiers.ts";
+import { hasOption, optionValue, stripOptionWithValue } from "./args.ts";
+import { MirrorHomeNotConfiguredError, resolveDbPath } from "./dbPath.ts";
 import { applyIdentitySet, ensureBackup } from "./identityWrite.ts";
 import { applyJourneySetPath } from "./journeyWriteRoute.ts";
 import { routeMemoryCommand } from "./routing.ts";
@@ -35,40 +35,21 @@ const ICONS: Record<string, string> = {
   reflection: "🪞",
 };
 
-function optionValue(args: readonly string[], name: string): string | null {
-  const index = args.indexOf(name);
-  if (index === -1) return null;
-  return args[index + 1] ?? null;
-}
-
-function hasOption(args: readonly string[], name: string): boolean {
-  return args.includes(name);
-}
-
-function stripOption(args: readonly string[], name: string): string[] {
-  const out: string[] = [];
-  for (let i = 0; i < args.length; i += 1) {
-    if (args[i] === name) {
-      i += 1;
-      continue;
+/**
+ * Resolve the database path for a CLI invocation, mapping a configuration
+ * failure (no home/env resolvable) to a printed error and null — callers
+ * translate null into exit code 2.
+ */
+function resolveDbPathForCli(args: readonly string[]): string | null {
+  try {
+    return resolveDbPath(args);
+  } catch (error) {
+    if (error instanceof MirrorHomeNotConfiguredError) {
+      console.error(`Mirror TS front door: ${error.message}`);
+      return null;
     }
-    out.push(args[i]);
+    throw error;
   }
-  return out;
-}
-
-function resolveDbPath(args: readonly string[]): string {
-  const explicitDbPath = optionValue(args, "--db-path");
-  if (explicitDbPath) return expandHome(explicitDbPath);
-  const explicitHome = optionValue(args, "--mirror-home") ?? process.env.MIRROR_HOME;
-  if (explicitHome) return join(expandHome(explicitHome), "memory.db");
-  if (process.env.DB_PATH) return expandHome(process.env.DB_PATH);
-  const user = process.env.MIRROR_USER;
-  if (user) return join(homedir(), ".mirror-minds", user, "memory.db");
-  const memoryDir = process.env.MEMORY_DIR
-    ? expandHome(process.env.MEMORY_DIR)
-    : join(homedir(), ".mirror-minds");
-  return join(memoryDir, "memory.db");
 }
 
 function identityRows(db: Database, layer: string): Row[] {
@@ -98,7 +79,7 @@ function routingRows(db: Database): PersonaRoutingRow[] {
 }
 
 function renderDetectPersona(db: Database, args: readonly string[]): string {
-  const query = stripOption(args, "--mirror-home").join(" ").trim();
+  const query = stripOptionWithValue(args, "--mirror-home").join(" ").trim();
   const matches = detectPersona(query, routingRows(db));
   const lines = [`query: ${query}`];
   if (matches.length === 0) {
@@ -227,7 +208,7 @@ function renderMemories(db: Database, args: readonly string[]): string {
 
 function fallbackPython(argv: readonly string[]): number {
   const explicitDbPath = optionValue(argv, "--db-path");
-  const pythonArgv = stripOption(argv, "--db-path");
+  const pythonArgv = stripOptionWithValue(argv, "--db-path");
   const result = spawnSync("uv", ["run", "python", "-m", "memory", ...pythonArgv], {
     cwd: process.cwd(),
     env: explicitDbPath ? { ...process.env, DB_PATH: expandHome(explicitDbPath) } : process.env,
@@ -239,7 +220,8 @@ function fallbackPython(argv: readonly string[]): number {
 async function runTs(argv: readonly string[]): Promise<number> {
   const command = argv[0];
   const args = argv.slice(1);
-  const dbPath = resolveDbPath(args);
+  const dbPath = resolveDbPathForCli(args);
+  if (dbPath === null) return 2;
   if (!existsSync(dbPath)) {
     console.error(`Mirror TS front door could not find database: ${dbPath}`);
     return 2;
@@ -280,8 +262,8 @@ function isIdentityWrite(argv: readonly string[]): boolean {
  */
 async function runIdentityWrite(argv: readonly string[]): Promise<number> {
   const args = argv.slice(2);
-  const positionals = stripOption(
-    stripOption(stripOption(args, "--content"), "--db-path"),
+  const positionals = stripOptionWithValue(
+    stripOptionWithValue(stripOptionWithValue(args, "--content"), "--db-path"),
     "--mirror-home",
   );
   const layer = positionals[0];
@@ -295,7 +277,8 @@ async function runIdentityWrite(argv: readonly string[]): Promise<number> {
     console.error("Error: content is empty.");
     return 1;
   }
-  const dbPath = resolveDbPath(args);
+  const dbPath = resolveDbPathForCli(args);
+  if (dbPath === null) return 2;
   if (!existsSync(dbPath)) {
     console.error(`Mirror TS front door could not find database: ${dbPath}`);
     return 2;
@@ -322,14 +305,18 @@ function isJourneyWrite(argv: readonly string[]): boolean {
  */
 async function runJourneyWrite(argv: readonly string[]): Promise<number> {
   const args = argv.slice(2);
-  const positionals = stripOption(stripOption(args, "--db-path"), "--mirror-home");
+  const positionals = stripOptionWithValue(
+    stripOptionWithValue(args, "--db-path"),
+    "--mirror-home",
+  );
   const slug = positionals[0];
   const rawPath = positionals[1];
   if (!slug || !rawPath) {
     console.error("Usage: journey set-path <slug> <path>");
     return 2;
   }
-  const dbPath = resolveDbPath(args);
+  const dbPath = resolveDbPathForCli(args);
+  if (dbPath === null) return 2;
   if (!existsSync(dbPath)) {
     console.error(`Mirror TS front door could not find database: ${dbPath}`);
     return 2;

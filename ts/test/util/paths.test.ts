@@ -12,6 +12,10 @@ test("expandHome expands a leading ~ to the home directory", () => {
   assert.equal(expandHome("rel/path"), "rel/path");
 });
 
+test("expandHome passes a ~user path through unchanged instead of mangling it", () => {
+  assert.equal(expandHome("~alice/x"), "~alice/x");
+});
+
 test("normalizeProjectPath returns an absolute path for a relative input", () => {
   const result = normalizeProjectPath(".");
   assert.ok(isAbsolute(result));
