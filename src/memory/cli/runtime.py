@@ -233,6 +233,7 @@ class RuntimeStatusReport:
     update_channel: UpdateChannel = field(
         default_factory=lambda: UpdateChannel(_DEFAULT_UPDATE_CHANNEL, None)
     )
+    node_version: str | None = None
 
     @property
     def status(self) -> str:
@@ -317,6 +318,28 @@ def package_version() -> str:
         return metadata.version("mirror")
     except metadata.PackageNotFoundError:
         return _version_from_pyproject(Path.cwd()) or "unknown"
+
+
+def detect_node_version() -> str | None:
+    """Return the installed Node version (no leading ``v``), or ``None``.
+
+    The TS front door runs on Node (>= 24); surfacing its version makes a
+    missing or too-old runtime visible in ``runtime status`` instead of only
+    at skill-invocation time.
+    """
+    try:
+        result = subprocess.run(
+            ["node", "--version"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if result.returncode != 0:
+        return None
+    return result.stdout.strip().lstrip("v") or None
 
 
 def _repo_file(start: Path, *parts: str) -> Path:
@@ -1002,6 +1025,7 @@ def build_runtime_status(
         python_version=sys.version.split()[0],
         memory_env=MEMORY_ENV,
         update_channel=inspect_update_channel(start_path, override=channel),
+        node_version=detect_node_version(),
     )
 
 
@@ -1754,6 +1778,8 @@ def render_runtime_status(report: RuntimeStatusReport) -> str:
     if report.update_channel.note:
         lines.append(f"Update channel note: {report.update_channel.note}")
     lines.append(f"Python: {report.python_version}")
+    node_display = report.node_version or "not found (TS front door requires Node >= 24)"
+    lines.append(f"Node: {node_display}")
     lines.append(f"MEMORY_ENV: {report.memory_env}")
     lines.append("")
     lines.append(f"Status: {report.status}")

@@ -75,6 +75,8 @@ identity lives in your machine, not a server.
 
 - [uv](https://docs.astral.sh/uv/getting-started/installation/) — package
   manager (handles Python 3.10+)
+- [Node.js 24+](https://nodejs.org/) — runs the TypeScript core front door
+  (`node --version` must be ≥ v24; POSIX/macOS/Linux supported)
 - [OpenRouter](https://openrouter.ai) account with at least $5 in credits —
   embeddings, memory extraction, and multi-LLM
 - An AI runtime subscription:

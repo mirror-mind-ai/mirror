@@ -46,6 +46,22 @@ Windows: [https://docs.astral.sh/uv/getting-started/installation/](https://docs.
 
 Python 3.10+ is handled by uv automatically — no separate Python install needed.
 
+### Node.js 24+
+
+Mirror Mind's core runs partly on a TypeScript front door executed by Node.js,
+so **Node.js 24 or newer** must be on your `PATH`. Pi and the other harnesses
+are themselves Node applications, so you likely have Node already — verify the
+version:
+
+```bash
+node --version   # must be v24.0.0 or newer
+```
+
+Install or upgrade from [nodejs.org](https://nodejs.org/). `runtime status`
+reports the detected Node version alongside Python. Currently POSIX
+(macOS/Linux) is the supported platform for the front door; see
+[REFERENCE.md](../REFERENCE.md) for the platform envelope.
+
 ### Pi — recommended harness
 
 ```bash

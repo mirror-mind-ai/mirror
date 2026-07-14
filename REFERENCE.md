@@ -365,6 +365,23 @@ Two starter files live at the repo root:
 - `.env.example` — minimal template (identity + API keys)
 - `.env.example.advanced` — canonical reference with every variable documented
 
+### Platform envelope
+
+Mirror Mind's core spans two runtimes: the Python engine (via `uv`, Python
+3.10+) and the TypeScript front door (via **Node.js ≥ 24**, required for
+`node:sqlite` and direct `.ts` execution). `runtime status` reports both
+versions; the front door refuses to run on Node below 24 with an actionable
+message.
+
+**Supported today: POSIX (macOS, Linux).** The documented skill invocation uses
+POSIX shell syntax (`NODE_OPTIONS=--no-warnings node ts/src/frontDoor/cli.ts …`),
+which native Windows PowerShell does not parse. Windows is served by the
+PowerShell installer for the Python side; a native-Windows story for the TS
+front door (invocation syntax, path handling, ACL-based data-at-rest posture)
+is explicitly deferred. The front door must be invoked from the repository root
+(the relative-path invocation enforces this; the Python fallback inherits the
+working directory).
+
 ### Data at rest
 
 A mirror home holds a person's identity, memories, and conversations. The

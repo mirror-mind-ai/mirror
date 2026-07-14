@@ -30,6 +30,7 @@ import { expandHome } from "../util/paths.ts";
 import { newId, nowIso } from "../util/pyIdentifiers.ts";
 import { hasOption, optionValue, stripOptionWithValue } from "./args.ts";
 import { MirrorHomeNotConfiguredError, resolveDbPath } from "./dbPath.ts";
+import { nodeVersionError } from "./nodeSupport.ts";
 import { applyIdentitySet } from "./identityWrite.ts";
 import { applyJourneySetPath } from "./journeyWriteRoute.ts";
 import { ensureBackup } from "./liveBackup.ts";
@@ -399,6 +400,11 @@ async function runJourneyWrite(argv: readonly string[]): Promise<number> {
 }
 
 export async function main(argv = process.argv.slice(2)): Promise<number> {
+  const nodeError = nodeVersionError(process.versions.node);
+  if (nodeError) {
+    console.error(nodeError);
+    return 1;
+  }
   const decision = routeMemoryCommand(argv);
   if (decision.engine === "python") return fallbackPython(argv);
   if (isIdentityWrite(argv)) return runIdentityWrite(argv);
