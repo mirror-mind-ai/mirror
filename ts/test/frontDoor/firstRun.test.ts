@@ -8,10 +8,20 @@ import { test } from "node:test";
 const CLI = "src/frontDoor/cli.ts";
 
 // First-run contract (CR015): a TS-routed command against a *missing* database
-// must self-heal by delegating to Python, which bootstraps schema+migrations —
-// the same experience a new user had before the front-door cutover. Spawns real
-// uv/python (present in dev and CI).
-test("a ported read command on a missing database self-heals via Python bootstrap", () => {
+// must self-heal by delegating to Python, which bootstraps schema+migrations.
+// Spawns real uv/python; skips on the Node-only ts CI job until CR017 adds uv.
+function uvAvailable(): boolean {
+  const probe = spawnSync("uv", ["--version"], { stdio: "ignore" });
+  return !probe.error && probe.status === 0;
+}
+
+const skipWithoutUv = uvAvailable()
+  ? false
+  : "uv not on PATH (first-run e2e; CR017 adds uv to the ts CI job)";
+
+test("a ported read command on a missing database self-heals via Python bootstrap", {
+  skip: skipWithoutUv,
+}, () => {
   const dir = mkdtempSync(join(tmpdir(), "mirror-core-firstrun-"));
   const dbPath = join(dir, "memory.db");
   try {

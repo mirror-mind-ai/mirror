@@ -7,11 +7,24 @@ import { test } from "node:test";
 
 const CLI = "src/frontDoor/cli.ts";
 
+// This spawns real `uv run python -m memory`, so it needs uv on PATH. It runs
+// locally and anywhere uv is present; the Node-only `ts` CI job has no uv, so
+// it skips there until CR017 adds uv to that job. `list journeys` is unported,
+// DB-only, and needs no API keys.
+function uvAvailable(): boolean {
+  const probe = spawnSync("uv", ["--version"], { stdio: "ignore" });
+  return !probe.error && probe.status === 0;
+}
+
+const skipWithoutUv = uvAvailable()
+  ? false
+  : "uv not on PATH (Python fallback e2e; CR017 adds uv to the ts CI job)";
+
 // End-to-end: an unported command must reach the frozen Python engine, and the
 // front door's --db-path must translate into the DB_PATH the Python core reads.
-// This spawns real `uv run python -m memory`, so it needs uv on PATH (present in
-// dev and CI). `list journeys` is unported, DB-only, and needs no API keys.
-test("an unported command routes to Python and honors the translated --db-path", () => {
+test("an unported command routes to Python and honors the translated --db-path", {
+  skip: skipWithoutUv,
+}, () => {
   const dir = mkdtempSync(join(tmpdir(), "mirror-core-fallback-"));
   const dbPath = join(dir, "memory.db");
   try {

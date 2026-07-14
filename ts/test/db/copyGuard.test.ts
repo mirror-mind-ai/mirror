@@ -31,12 +31,11 @@ test("assertCopyTarget refuses a symlink under tmp/ pointing at a live database"
 });
 
 test("assertCopyTarget refuses a tmp/.. traversal that resolves outside tmp/", () => {
-  const dir = mkdtempSync(join(tmpdir(), "mirror-core-guard-"));
-  try {
-    mkdirSync(join(dir, "tmp"));
-    const traversal = join(dir, "tmp", "..", "outside.db");
-    assert.throws(() => assertCopyTarget(traversal), CopyOnlyGuardError);
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
+  // Synthetic, environment-independent: the parent chain does not exist, so the
+  // guard normalizes lexically and `tmp/..` cancels out. The OLD guard checked
+  // the raw string (which contains a `tmp` segment) and would have allowed this;
+  // the resolved path `/mirror-guard-root/escape.db` has no `tmp` segment. Using
+  // a real mkdtemp dir here would be wrong on Linux, where the system tmpdir is
+  // itself `/tmp` and a traversal staying under it is legitimately in tmp.
+  assert.throws(() => assertCopyTarget("/mirror-guard-root/tmp/../escape.db"), CopyOnlyGuardError);
 });
