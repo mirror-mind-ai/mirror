@@ -28,7 +28,7 @@ import {
 import { assertSchemaState, SchemaStateError } from "../db/schemaState.ts";
 import { JourneyNotFoundError } from "../journey/journeyWrite.ts";
 import { expandHome } from "../util/paths.ts";
-import { newId, nowIso } from "../util/pyIdentifiers.ts";
+import { newId, nowIso } from "../util/pyGenerators.ts";
 import { optionValue, stripOptionWithValue } from "./args.ts";
 import { MirrorHomeNotConfiguredError, resolveDbPath } from "./dbPath.ts";
 import { frontDoorLogPath, logFrontDoor } from "./frontDoorLog.ts";

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { newId, nowIso, toMicrosecondIso } from "../../src/util/pyIdentifiers.ts";
+import { newId, nowIso, toMicrosecondIso } from "../../src/util/pyGenerators.ts";
 
 test("newId is 8 lowercase hex chars, like Python uuid4().hex[:8]", () => {
   for (let i = 0; i < 50; i += 1) {
