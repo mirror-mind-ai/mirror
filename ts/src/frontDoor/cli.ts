@@ -31,10 +31,10 @@ import { newId, nowIso } from "../util/pyIdentifiers.ts";
 import { hasOption, optionValue, stripOptionWithValue } from "./args.ts";
 import { MirrorHomeNotConfiguredError, resolveDbPath } from "./dbPath.ts";
 import { frontDoorLogPath, logFrontDoor } from "./frontDoorLog.ts";
-import { nodeVersionError } from "./nodeSupport.ts";
 import { applyIdentitySet } from "./identityWrite.ts";
 import { applyJourneySetPath } from "./journeyWriteRoute.ts";
 import { ensureBackup } from "./liveBackup.ts";
+import { nodeVersionError } from "./nodeSupport.ts";
 import { type FrontDoorEngine, routeMemoryCommand } from "./routing.ts";
 
 const ICONS: Record<string, string> = {
