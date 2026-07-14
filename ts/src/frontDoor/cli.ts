@@ -1,53 +1,40 @@
 #!/usr/bin/env node
 //
+// Front-door entry: route a command to the TS core or the frozen Python engine,
+// dispatch reads/writes, and log the outcome. Argument parsing lives in
+// `args.ts`, DB-path resolution in `dbPath.ts`, and the read renderers in
+// `render/`. The module is importable (the entry guard at the bottom runs
+// `main` only when invoked directly), so its pieces can be tested in-process.
+//
 // Working-directory invariant: the production skills invoke this front door by
 // its relative path (`node ts/src/frontDoor/cli.ts …`), which only resolves
 // from the repository root — so the process cwd is the repo root by
-// construction. The Python fallback below inherits that cwd and runs
-// `uv run python -m memory`, and uv walks upward to find the root
-// `pyproject.toml`, so any repo-rooted (or sub-directory) cwd works. Invoking
-// the front door by an absolute path from an unrelated directory is
-// unsupported: the fallback's uv would not find the project. See the TS
-// front-door section of docs/process/troubleshooting.md.
+// construction. The Python fallback inherits that cwd and runs
+// `uv run python -m memory`; uv walks upward to find the root `pyproject.toml`.
+// Invoking by an absolute path from an unrelated directory is unsupported. See
+// the TS front-door section of docs/process/troubleshooting.md.
+//
+// node:sqlite emits an ExperimentalWarning at import; the skills pass
+// NODE_OPTIONS=--no-warnings to keep it off stdout/stderr.
+
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import type { Database, Row } from "../db/database.ts";
-import { openDatabaseForWrite } from "../db/database.ts";
+import { pathToFileURL } from "node:url";
+import { openDatabaseForWrite, openDatabaseReadOnly } from "../db/database.ts";
 import { assertSchemaState, SchemaStateError } from "../db/schemaState.ts";
-import {
-  type JourneyIdentityRow,
-  type JourneyOption,
-  listJourneyOptions,
-} from "../journey/journeyOptions.ts";
-import {
-  countMemoriesByType,
-  type ListRecentFilters,
-  listRecentMemorySummaries,
-  type MemorySummary,
-} from "../memory/listing.ts";
-import { detectPersona, type PersonaRoutingRow } from "../persona/detectPersona.ts";
 import { expandHome } from "../util/paths.ts";
 import { newId, nowIso } from "../util/pyIdentifiers.ts";
-import { hasOption, optionValue, stripOptionWithValue } from "./args.ts";
+import { optionValue, stripOptionWithValue } from "./args.ts";
 import { MirrorHomeNotConfiguredError, resolveDbPath } from "./dbPath.ts";
 import { frontDoorLogPath, logFrontDoor } from "./frontDoorLog.ts";
 import { applyIdentitySet } from "./identityWrite.ts";
 import { applyJourneySetPath } from "./journeyWriteRoute.ts";
 import { ensureBackup } from "./liveBackup.ts";
 import { nodeVersionError } from "./nodeSupport.ts";
+import { renderDetectPersona } from "./render/detectPersona.ts";
+import { renderJourneys } from "./render/journeys.ts";
+import { renderMemories } from "./render/memories.ts";
 import { type FrontDoorEngine, routeMemoryCommand } from "./routing.ts";
-
-const ICONS: Record<string, string> = {
-  decision: "⚖️",
-  insight: "💡",
-  idea: "🌱",
-  journal: "📓",
-  tension: "⚡",
-  learning: "📚",
-  pattern: "🔄",
-  commitment: "🤝",
-  reflection: "🪞",
-};
 
 /**
  * Resolve the database path for a CLI invocation, mapping a configuration
@@ -64,160 +51,6 @@ function resolveDbPathForCli(args: readonly string[]): string | null {
     }
     throw error;
   }
-}
-
-function identityRows(db: Database, layer: string): Row[] {
-  return db
-    .prepare("SELECT key, content, metadata FROM identity WHERE layer = ? ORDER BY key")
-    .all(layer);
-}
-
-function routingRows(db: Database): PersonaRoutingRow[] {
-  return identityRows(db, "persona").map((row) => {
-    let keywords: string[] = [];
-    const metadata = row.metadata;
-    if (typeof metadata === "string" && metadata) {
-      try {
-        const parsed = JSON.parse(metadata) as Record<string, unknown>;
-        if (Array.isArray(parsed.routing_keywords)) {
-          keywords = parsed.routing_keywords.filter(
-            (item): item is string => typeof item === "string",
-          );
-        }
-      } catch {
-        keywords = [];
-      }
-    }
-    return { key: row.key as string, routing_keywords: keywords };
-  });
-}
-
-function renderDetectPersona(db: Database, args: readonly string[]): string {
-  const query = stripOptionWithValue(args, "--mirror-home").join(" ").trim();
-  const matches = detectPersona(query, routingRows(db));
-  const lines = [`query: ${query}`];
-  if (matches.length === 0) {
-    lines.push("  (no persona match)");
-  } else {
-    for (const match of matches) {
-      lines.push(`  ${match.key} score=${match.score} match=${match.matchType}`);
-    }
-  }
-  return `${lines.join("\n")}\n`;
-}
-
-function journeyRows(db: Database): Array<JourneyOption & { stage: string; description: string }> {
-  const options = listJourneyOptions(
-    identityRows(db, "journey") as unknown as JourneyIdentityRow[],
-  );
-  return options.map((option) => {
-    const ident = db
-      .prepare("SELECT content FROM identity WHERE layer = ? AND key = ?")
-      .get("journey", option.id);
-    const content = typeof ident?.content === "string" ? ident.content : "";
-    const desc = content
-      .split("\n")
-      .map((line) => line.trim())
-      .find((line) => line && !line.startsWith("#") && !line.startsWith("**"));
-    const journeyPath = db
-      .prepare("SELECT content FROM identity WHERE layer = ? AND key = ?")
-      .get("journey_path", option.id);
-    const pathContent = typeof journeyPath?.content === "string" ? journeyPath.content : "";
-    const stage =
-      pathContent.match(/\*\*(?:Current stage|Etapa atual):\*\*\s*(.+)/)?.[1]?.trim() ?? "—";
-    return { ...option, stage, description: (desc ?? "").slice(0, 80) };
-  });
-}
-
-function renderJourney(
-  row: JourneyOption & { stage: string; description: string },
-  child = false,
-): string[] {
-  const icon = { active: "🚧", completed: "✅", paused: "⏸" }[row.status] ?? "•";
-  const prefix = child ? "  └─ " : "";
-  const detailIndent = child ? "       " : "  ";
-  const lines = [
-    `${prefix}${icon} **${row.id}** (${row.status})`,
-    `${detailIndent}Stage: ${row.stage}`,
-  ];
-  if (row.description) lines.push(`${detailIndent}${row.description}`);
-  lines.push("");
-  return lines;
-}
-
-function renderJourneys(db: Database): string {
-  const rows = journeyRows(db);
-  if (rows.length === 0) return "No journeys found.\n";
-  const known = new Set(rows.map((row) => row.id));
-  const children = new Map<string, typeof rows>();
-  const roots: typeof rows = [];
-  for (const row of rows) {
-    if (row.parent_journey && known.has(row.parent_journey)) {
-      const bucket = children.get(row.parent_journey);
-      if (bucket) bucket.push(row);
-      else children.set(row.parent_journey, [row]);
-    } else {
-      roots.push(row);
-    }
-  }
-  const lines: string[] = [];
-  for (const row of roots) {
-    lines.push(...renderJourney(row));
-    for (const child of children.get(row.id) ?? []) lines.push(...renderJourney(child, true));
-  }
-  return lines.join("\n");
-}
-
-function tagsText(tags: string | null): string {
-  if (!tags) return "";
-  try {
-    const parsed = JSON.parse(tags) as unknown;
-    return Array.isArray(parsed)
-      ? parsed.filter((item) => typeof item === "string").join(", ")
-      : "";
-  } catch {
-    return "";
-  }
-}
-
-function renderMemoryRow(memory: MemorySummary): string[] {
-  const icon = ICONS[memory.memory_type] ?? "•";
-  const date = memory.created_at ? memory.created_at.slice(0, 10) : "?";
-  const journey = memory.journey ? ` 🧭 ${memory.journey}` : "";
-  const persona = memory.persona ? ` ◇ ${memory.persona}` : "";
-  const tags = tagsText(memory.tags);
-  const lines = [
-    `${icon} **${memory.title}**`,
-    `  ${date} | \`${memory.id.slice(0, 8)}\` | ${memory.memory_type} [${memory.layer}]${journey}${persona}`,
-    `  ${memory.content.slice(0, 200)}`,
-  ];
-  if (tags) lines.push(`  🏷 ${tags}`);
-  lines.push("");
-  return lines;
-}
-
-function renderMemories(db: Database, args: readonly string[]): string {
-  if (hasOption(args, "--search")) throw new Error("search route must fallback to Python");
-  const filters: ListRecentFilters = {
-    limit: Number(optionValue(args, "--limit") ?? 20),
-    memoryType: optionValue(args, "--type"),
-    layer: optionValue(args, "--layer"),
-    journey: optionValue(args, "--journey"),
-  };
-  const memories = listRecentMemorySummaries(db, filters);
-  if (memories.length === 0) return "No memories found.\n";
-  const filterParts = [];
-  if (filters.memoryType) filterParts.push(`type=${filters.memoryType}`);
-  if (filters.layer) filterParts.push(`layer=${filters.layer}`);
-  if (filters.journey) filterParts.push(`journey=${filters.journey}`);
-  const filterText = filterParts.length ? ` (${filterParts.join(", ")})` : "";
-  const totals = countMemoriesByType(db)
-    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-    .map(([type, count]) => `${ICONS[type] ?? "•"} ${type}: ${count}`)
-    .join(" | ");
-  const lines = [`📦 Memories${filterText} — ${memories.length} shown`, totals, ""];
-  for (const memory of memories) lines.push(...renderMemoryRow(memory));
-  return lines.join("\n");
 }
 
 /**
@@ -263,21 +96,17 @@ function fallbackPython(argv: readonly string[]): number {
   return typeof result.status === "number" ? result.status : 1;
 }
 
-async function runTs(argv: readonly string[]): Promise<number> {
+/** Serve a ported read command from the TS core, or self-heal a missing DB via Python. */
+function runTs(argv: readonly string[]): number {
   const command = argv[0];
   const args = argv.slice(1);
   const dbPath = resolveDbPathForCli(args);
   if (dbPath === null) return 2;
   // First-run contract: a missing database means an unbootstrapped install.
-  // Delegate to Python, which creates the directory, schema, and migrations
-  // and answers — the same self-heal a new user got before the DS3 cutover
-  // (see docs/project/decisions.md). TS only serves an existing database.
+  // Delegate to Python, which creates the directory, schema, and migrations and
+  // answers — the same self-heal a new user got before the DS3 cutover (see
+  // docs/project/decisions.md). TS only serves an existing database.
   if (!existsSync(dbPath)) return fallbackPython(argv);
-  process.on("warning", (warning) => {
-    if (warning.name === "ExperimentalWarning" && warning.message.includes("SQLite")) return;
-    console.warn(warning);
-  });
-  const { openDatabaseReadOnly } = await import("../db/database.ts");
   const db = openDatabaseReadOnly(dbPath);
   try {
     assertSchemaState(db);
@@ -314,7 +143,7 @@ function isIdentityWrite(argv: readonly string[]): boolean {
  * the Python `identity set` interface and output, but writes through the sanctioned
  * live-write seam after a backup, reusing the ported `setIdentity`.
  */
-async function runIdentityWrite(argv: readonly string[]): Promise<number> {
+function runIdentityWrite(argv: readonly string[]): number {
   const args = argv.slice(2);
   const positionals = stripOptionWithValue(
     stripOptionWithValue(stripOptionWithValue(args, "--content"), "--db-path"),
@@ -362,7 +191,7 @@ function isJourneyWrite(argv: readonly string[]): boolean {
  * backup via the ported setProjectPath, and mirrors Python's output: the resolved
  * path on stdout, a status line on stderr, and a not-found error + exit 1.
  */
-async function runJourneyWrite(argv: readonly string[]): Promise<number> {
+function runJourneyWrite(argv: readonly string[]): number {
   const args = argv.slice(2);
   const positionals = stripOptionWithValue(
     stripOptionWithValue(args, "--db-path"),
@@ -409,14 +238,14 @@ function resolveLogPath(argv: readonly string[]): string | null {
   }
 }
 
-async function dispatch(argv: readonly string[], engine: FrontDoorEngine): Promise<number> {
+function dispatch(argv: readonly string[], engine: FrontDoorEngine): number {
   if (engine === "python") return fallbackPython(argv);
   if (isIdentityWrite(argv)) return runIdentityWrite(argv);
   if (isJourneyWrite(argv)) return runJourneyWrite(argv);
   return runTs(argv);
 }
 
-export async function main(argv = process.argv.slice(2)): Promise<number> {
+export function main(argv = process.argv.slice(2)): number {
   const nodeError = nodeVersionError(process.versions.node);
   if (nodeError) {
     console.error(nodeError);
@@ -425,7 +254,7 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
   const decision = routeMemoryCommand(argv);
   const logPath = resolveLogPath(argv);
   try {
-    const exitCode = await dispatch(argv, decision.engine);
+    const exitCode = dispatch(argv, decision.engine);
     logFrontDoor(logPath, { command: decision.command, route: decision.engine, exitCode });
     return exitCode;
   } catch (error) {
@@ -441,4 +270,8 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
   }
 }
 
-process.exitCode = await main();
+// Run only when invoked as the CLI entry, not when imported (keeps the module
+// importable for tests and tooling).
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+  process.exitCode = main();
+}
