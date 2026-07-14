@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { blobToFloat32, parseUtcMs } from "../../src/parity/decode.ts";
+import { blobToFloat32, parseUtcMs } from "../../src/db/decode.ts";
 import { loadGolden, orderedIdsMatch } from "../../src/parity/golden.ts";
 import { rankMemories } from "../../src/search/ranker.ts";
 

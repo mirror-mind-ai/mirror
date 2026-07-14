@@ -1,4 +1,4 @@
-import { blobToFloat32, parseUtcMs } from "../parity/decode.ts";
+import { blobToFloat32, parseUtcMs } from "../db/decode.ts";
 
 export interface SearchWeights {
   semantic: number;

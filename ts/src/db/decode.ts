@@ -1,9 +1,10 @@
-// Parity-critical decoders for the golden-corpus contract (CV22.DS2.TS2).
+// Core decoders for on-disk value shapes (originally CV22.DS2.TS2).
 //
-// These two functions turn the exact on-disk shapes the Python core writes into
-// the values the ranker consumes. They are the pieces most likely to silently
-// break TS/Python parity, so they live in one small, independently-tested module
-// that only the parity harness and (later, DS2.US1) the ranker consume.
+// These two functions turn the exact on-disk shapes the Python core writes
+// (little-endian float32 embedding BLOBs, ISO timestamps) into the values the
+// ranker consumes. They live in the db layer because both the production core
+// (search/ranker.ts) and the parity harness depend on them — the dependency
+// flows downward into the core, never from core into parity (CR006).
 
 /**
  * Decode a little-endian IEEE-754 float32 BLOB into a `Float32Array`.
