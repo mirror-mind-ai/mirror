@@ -1,4 +1,14 @@
 #!/usr/bin/env node
+//
+// Working-directory invariant: the production skills invoke this front door by
+// its relative path (`node ts/src/frontDoor/cli.ts …`), which only resolves
+// from the repository root — so the process cwd is the repo root by
+// construction. The Python fallback below inherits that cwd and runs
+// `uv run python -m memory`, and uv walks upward to find the root
+// `pyproject.toml`, so any repo-rooted (or sub-directory) cwd works. Invoking
+// the front door by an absolute path from an unrelated directory is
+// unsupported: the fallback's uv would not find the project. See the TS
+// front-door section of docs/process/troubleshooting.md.
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import type { Database, Row } from "../db/database.ts";
