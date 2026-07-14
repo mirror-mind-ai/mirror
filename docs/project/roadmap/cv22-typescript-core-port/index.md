@@ -196,6 +196,7 @@ CV22 is done when:
 
 - [Decisions — database-seam strangler](../../decisions.md)
 - [CV22 Collaboration Strategy](collaboration-strategy.md)
+- [Refinement Campaign — the five-audit code-quality sweep (RS001–RS005)](refinement/index.md)
 - [CV21 — Runtime Expansion II](../cv21-runtime-expansion-ii/index.md)
 - Parity harness: [`spikes/ts-search-parity/`](../../../../spikes/ts-search-parity/)
 - [Architecture](../../../product/architecture.md)
