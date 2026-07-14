@@ -1,31 +1,21 @@
-import { readFileSync } from "node:fs";
 import { openDatabaseReadOnly } from "../src/db/database.ts";
 import {
   evaluateJourneyProbes,
   evaluateListingProbes,
   evaluatePersonaProbes,
-  evaluateRealDbCopyFixture,
+  evaluateSearchProbes,
   type ProbeParityResult,
-  renderRedactedReport,
   type RealDbCopyFixture,
+  renderRedactedReport,
 } from "../src/parity/realDbCopyParity.ts";
+import { loadFixture, parseVerifyArgs } from "../src/parity/verifyCli.ts";
 
-function argValue(name: string): string | undefined {
-  const index = process.argv.indexOf(name);
-  if (index === -1) return undefined;
-  return process.argv[index + 1];
-}
+const { fixturePath, includeSensitiveDebug } = parseVerifyArgs(
+  "Usage: node ts/parity/real_db_copy_verify.ts --fixture <path> [--debug-sensitive-output]",
+);
 
-const fixturePath = argValue("--fixture");
-const includeSensitiveDebug = process.argv.includes("--debug-sensitive-output");
-
-if (!fixturePath) {
-  console.error("Usage: node ts/parity/real_db_copy_verify.ts --fixture <path> [--debug-sensitive-output]");
-  process.exit(2);
-}
-
-const fixture = JSON.parse(readFileSync(fixturePath, "utf8")) as RealDbCopyFixture;
-const searchResults = evaluateRealDbCopyFixture(fixture, { includeSensitiveDebug });
+const fixture = loadFixture<RealDbCopyFixture>(fixturePath);
+const searchResults = evaluateSearchProbes(fixture, { includeSensitiveDebug });
 const personaResults = evaluatePersonaProbes(fixture, { includeSensitiveDebug });
 const journeyResults = evaluateJourneyProbes(fixture, { includeSensitiveDebug });
 

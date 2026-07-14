@@ -9,6 +9,7 @@ import {
   rankMemories,
   type SearchWeights,
 } from "../search/ranker.ts";
+import { orderedIdsMatch } from "./golden.ts";
 
 export interface RealDbCopyProbe {
   label: string;
@@ -83,7 +84,8 @@ export function orderedIdsHash(ids: readonly string[]): string {
   return createHash("sha256").update(ids.join("\u001f"), "utf8").digest("hex");
 }
 
-export function evaluateRealDbCopyFixture(
+/** Grade the search probes: replay the ranker on each probe's memories. */
+export function evaluateSearchProbes(
   fixture: RealDbCopyFixture,
   options: { includeSensitiveDebug?: boolean } = {},
 ): ProbeParityResult[] {
@@ -100,28 +102,22 @@ export function evaluateRealDbCopyFixture(
       reinforcementRetrievalWeight: fixture.reinforcement_retrieval_weight,
     };
     const actualOrder = rankMemories(probe.memories, config).map((memory) => memory.id);
-    const match = JSON.stringify(actualOrder) === JSON.stringify(probe.expected_order);
-    return {
-      label: probe.label,
-      resultCount: probe.expected_order.length,
-      pythonOrderHash: orderedIdsHash(probe.expected_order),
-      tsOrderHash: orderedIdsHash(actualOrder),
-      match,
-      ...(options.includeSensitiveDebug
-        ? { expectedOrder: probe.expected_order, actualOrder }
-        : {}),
-    };
+    return toProbeResult(probe.label, probe.expected_order, actualOrder, options);
   });
 }
 
-/** Build a redacted probe result from an expected/actual ordered-id pair. */
+/**
+ * Build a redacted probe result from an expected/actual ordered-id pair. The
+ * PASS/FAIL verdict uses the canonical `orderedIdsMatch` metric so every
+ * evaluator grades ordering identically.
+ */
 export function toProbeResult(
   label: string,
   expectedOrder: readonly string[],
   actualOrder: readonly string[],
   options: { includeSensitiveDebug?: boolean } = {},
 ): ProbeParityResult {
-  const match = JSON.stringify([...actualOrder]) === JSON.stringify([...expectedOrder]);
+  const match = orderedIdsMatch(actualOrder, expectedOrder);
   return {
     label,
     resultCount: expectedOrder.length,
@@ -183,18 +179,8 @@ export function evaluatePersonaProbes(
   const personas = fixture.persona_rows ?? [];
   const threshold = fixture.persona_threshold ?? 1.0;
   return (fixture.persona_probes ?? []).map((probe) => {
-    const actualOrder = detectPersona(probe.query, personas, threshold).map((match) => match.key);
-    const match = JSON.stringify(actualOrder) === JSON.stringify(probe.expected_order);
-    return {
-      label: probe.label,
-      resultCount: probe.expected_order.length,
-      pythonOrderHash: orderedIdsHash(probe.expected_order),
-      tsOrderHash: orderedIdsHash(actualOrder),
-      match,
-      ...(options.includeSensitiveDebug
-        ? { expectedOrder: probe.expected_order, actualOrder }
-        : {}),
-    };
+    const actualOrder = detectPersona(probe.query, personas, threshold).map((hit) => hit.key);
+    return toProbeResult(probe.label, probe.expected_order, actualOrder, options);
   });
 }
 

@@ -27,7 +27,7 @@ export {
   evaluateJourneyProbes,
   evaluateListingProbes,
   evaluatePersonaProbes,
-  evaluateRealDbCopyFixture,
+  evaluateSearchProbes,
   orderedIdsHash,
   renderRedactedReport,
   toProbeResult,

@@ -1,27 +1,15 @@
-import { readFileSync } from "node:fs";
 import { renderRedactedWriteReport } from "../src/parity/writeParity.ts";
 import {
   verifyWriteFixture,
   type WriteParityFixture,
 } from "../src/parity/writeParityFixture.ts";
+import { loadFixture, parseVerifyArgs } from "../src/parity/verifyCli.ts";
 
-function argValue(name: string): string | undefined {
-  const index = process.argv.indexOf(name);
-  if (index === -1) return undefined;
-  return process.argv[index + 1];
-}
+const { fixturePath, includeSensitiveDebug } = parseVerifyArgs(
+  "Usage: node ts/parity/write_parity_verify.ts --fixture <path> [--debug-sensitive-output]",
+);
 
-const fixturePath = argValue("--fixture");
-const includeSensitiveDebug = process.argv.includes("--debug-sensitive-output");
-
-if (!fixturePath) {
-  console.error(
-    "Usage: node ts/parity/write_parity_verify.ts --fixture <path> [--debug-sensitive-output]",
-  );
-  process.exit(2);
-}
-
-const fixture = JSON.parse(readFileSync(fixturePath, "utf8")) as WriteParityFixture;
+const fixture = loadFixture<WriteParityFixture>(fixturePath);
 const results = verifyWriteFixture(fixture, { includeSensitiveDebug });
 
 process.stdout.write("== write-parity ==\n");
