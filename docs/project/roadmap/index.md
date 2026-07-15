@@ -117,9 +117,11 @@ CV22 is governed by Ariad; its former epics are now Delivery Stories (DS1–DS6)
 DS1 validated hybrid-ranker parity between TS and Python over the same SQLite
 file; DS2 completed read-only deterministic parity for `search`, `detect-persona`,
 journeys, and memory listing; DS3 closed the Pi-facing TS front door transition
-state with Python fallback preserved for unported and mutating flows. The next
-baton is DS4 deterministic writes. The strategy is recorded in
-[Decisions](../decisions.md). See the [CV22 index](cv22-typescript-core-port/index.md).
+state with Python fallback preserved for unported and mutating flows; DS4 closed
+deterministic writes with backup-gated, copy-validated parity plus TS front-door
+routing for `identity set` and `journey set-path`. The next baton is DS5 External
+API Commands. The strategy is recorded in [Decisions](../decisions.md). See the
+[CV22 index](cv22-typescript-core-port/index.md).
 
 ## CV11 — Localization
 

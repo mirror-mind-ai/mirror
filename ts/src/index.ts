@@ -88,6 +88,18 @@ export {
 // --- Persona routing ---
 export type { PersonaMatch, PersonaRoutingRow } from "./persona/detectPersona.ts";
 export { detectPersona, normalizeRoutingText } from "./persona/detectPersona.ts";
+// --- External providers (DS5 substrate) ---
+export type { ProviderConfig, ProviderConfigOptions, ProviderName } from "./providers/config.ts";
+export { ProviderConfigError, resolveProviderConfig } from "./providers/config.ts";
+export type { RedactionOptions } from "./providers/redaction.ts";
+export {
+  assertFixtureSafe,
+  redactJson,
+  redactString,
+  UnsafeFixtureError,
+} from "./providers/redaction.ts";
+export type { ReplayFixture } from "./providers/replay.ts";
+export { loadReplayFixture } from "./providers/replay.ts";
 // --- Hybrid search ranker ---
 export type { RankableMemory, RankedMemory, RankerConfig, SearchWeights } from "./search/ranker.ts";
 export {
