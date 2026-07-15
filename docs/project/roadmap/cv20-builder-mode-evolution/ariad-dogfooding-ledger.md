@@ -35,6 +35,7 @@ migration (that journey's Chapter 7). Sequence exercised: `build adopt` →
 | AF-004 | Minor | Scope-confirmation checkpoint collapses into plan | CV20.DS5 + cadence | Open |
 | AF-005 | Minor | Self-nested roadmap tree; child == parent | CV20.DS5 (expansion) | Open |
 | AF-006 | Minor | Approve reports "updated story index" but file is unchanged | CV20.DS4.TS3 (deterministic surfaces) | Open |
+| AF-007 | Minor | Next-pull recommendation points at a legacy/archived item, ignoring the active chapter sequence | CV20.DS4/DS5 (roadmap awareness) | Open |
 
 ## What Worked (calibration)
 
@@ -228,6 +229,33 @@ but `git status` immediately afterward showed `index.md` unmodified — no diff.
 **Impact.** Same class as AF-002: the surface claims a write that did not occur. A Navigator trusting the surface believes the story index was refreshed when it was not. Because the surface is the runtime's trust boundary, false "updated" lines are as corrosive as false "created" lines.
 
 **Suggested fix.** Fold into the AF-002 fix: drive `ARTIFACTS_MATERIALIZED` from the file-writer's real result with a content-diff check — emit `created` only on new files, `updated` only on a real content change, and `unchanged` (or nothing) otherwise. One regression test covering create / update / no-op covers both AF-002 and AF-006.
+
+## AF-007 — Next-pull recommendation points at a legacy item, ignoring the active sequence
+
+**Severity:** Minor **Status:** Open **Likely owner:** CV20.DS4/DS5 (roadmap awareness / pull-candidate logic)
+
+**Context.** After closing DS-31 (`done-delivery-story`), the `PROJECT_POSITION` surface recommended the next pull.
+
+**Observed.**
+
+```text
+What looks next?
+🟶[CV5] Learning Loop — recommended next pull
+Available path
+- CV5 — Learning Loop [cv] Planned
+  (docs/project/roadmap/legacy/cv5-learning-loop/index.md)
+```
+
+The recommended next pull was **CV5 — Learning Loop**, a legacy imported CV under `roadmap/legacy/`, rather than **DS-32** (the next migration Delivery Story in the active Chapter 7 sequence, DS-31 → DS-38 with explicit dependencies).
+
+**Expected.** The recommendation should surface the next unblocked item in the active roadmap sequence (DS-32), and should never point at an archived `legacy/` item.
+
+**Impact.** A Navigator trusting the recommendation would pull the wrong thing — an archived CV instead of the live migration story. The runtime does not read the hand-authored chapter structure or DS dependency ordering; it appears to scan roadmap docs and pick a `Planned` item without excluding the legacy archive.
+
+**Suggested fix.**
+- Exclude `docs/project/roadmap/legacy/**` from pull-candidate scanning immediately (archived work is never a next pull).
+- Teach the roadmap reader the active method's structure: chapters, DS codes, and the `Dependencies` sections in each DS index, so the recommendation is the next *unblocked* item in sequence.
+- When sequencing is ambiguous, recommend nothing rather than an arbitrary `Planned` item.
 
 ## Harvest Workflow
 
