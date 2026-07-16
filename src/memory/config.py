@@ -260,13 +260,13 @@ TRANSCRIPT_EXPORT_DIR = _path_from_env(
     else EXPORT_DIR / "transcripts",
 )
 # Embeddings — routed through OpenRouter (same model, no separate OpenAI key needed).
-EMBEDDING_MODEL = "openai/text-embedding-3-small"
+EMBEDDING_MODEL = os.getenv("MEMORY_EMBEDDING_MODEL", "openai/text-embedding-3-small")
 EMBEDDING_DIMENSIONS = 1536
 
 # OpenRouter — used for embeddings, extraction, and multi-LLM consult.
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-EXTRACTION_MODEL = "google/gemini-2.5-flash-lite"
+EXTRACTION_MODEL = os.getenv("MEMORY_EXTRACTION_MODEL", "google/gemini-2.5-flash-lite")
 
 # LLM/embedding call timeouts (seconds) and retry ceiling — bound every model
 # call at client construction so a hung provider connection cannot stall a

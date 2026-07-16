@@ -12,6 +12,16 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-07-16 — CV9.E2.S12 Model-pin overrides & reachability probe completed
+
+Made the pipeline's model pins overridable and their deprecation visible (AI Engineering Audit, AI-06 — the last P0). `EXTRACTION_MODEL` and `EMBEDDING_MODEL` were hard-coded and non-overridable; a deprecated model (a certainty on a 1.0 timescale) would 404 every extraction and, because those paths fail soft, degrade the system silently for weeks. `runtime diagnose` had no check that the pins still resolve.
+
+The pins now read `MEMORY_EXTRACTION_MODEL` / `MEMORY_EMBEDDING_MODEL` (defaulting to today's values), so a deployed 1.0 can be repointed without a release. `runtime diagnose` gained a `probe_model_pins()` step: one cheap OpenRouter `/models` lookup (`llm_router.list_available_models`) that warns with an `attention` finding and the exact env-override remedy when the extraction pin is not in the catalog; any fetch failure (offline / no key) is inconclusive and yields no finding, so diagnose stays green offline. `runtime status` prints the effective pins next to the AI-01 timeout line. Part 3 of the finding (persistent-failure visibility at session start) was already delivered by CV9.E2.S7's quarantine line.
+
+Navigator validation caught a false positive: OpenRouter's `/models` endpoint lists completion models only (verified: 344 completions, 0 embeddings), so the embedding pin was flagged as unavailable even though it works. The probe now checks only the extraction pin; embedding-model failure is caught reactively by degraded search (S10) and extraction quarantine (S7/S9), and a regression test pins the embedding-absent case.
+
+Validation: TDD (5 story tests — extraction absent/present, embedding-absent-does-not-warn, fetch-failure inconclusive, env override via subprocess); full unit+integration suite 1856 passed, verified keyless; ruff check/format clean; mypy 111 net-zero; a live route confirmed status shows the pins, a bogus extraction pin flags only extraction, and a clean run reports zero model-pin findings; Navigator validated. This completes the AI Engineering Audit P0 tier (AI-01, AI-02, AI-03, AI-04, AI-06, AI-12).
+
 ### 2026-07-16 — CV9.E2.S11 Reinforcement signal integrity completed
 
 Stopped internal machinery from polluting the retrieval reinforcement signal (AI Engineering Audit, AI-12). `MemorySearch.search()` called `store.log_access()` for every returned memory unconditionally, and `access_count` feeds `reinforcement_score` and the hybrid ranker — so the extraction curation pass, MCP agent searches, and exploratory `memories --search` runs all inflated retrieval reinforcement, letting the ranker learn from its own exhaust. The MCP module also claimed "no writes/mutations live here" while its search wrote access rows.

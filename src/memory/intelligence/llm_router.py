@@ -14,6 +14,7 @@ from openai.types.chat import ChatCompletionMessageParam
 from memory.config import (
     LLM_FAMILIES,
     LLM_MAX_RETRIES,
+    LLM_TIMEOUT_EMBEDDING,
     LLM_TIMEOUT_EXTRACTION,
     OPENROUTER_API_KEY,
     OPENROUTER_BASE_URL,
@@ -172,3 +173,24 @@ def get_credits() -> CreditInfo:
         total_usage=usage,
         balance=total - usage,
     )
+
+
+def list_available_models() -> set[str]:
+    """Return the set of model ids OpenRouter currently serves.
+
+    One cheap GET to ``/models``, bounded by the embedding timeout. Raises
+    ``RuntimeError`` without a key so callers (e.g. ``runtime diagnose``) can
+    treat a failed lookup as inconclusive rather than a confirmed missing pin.
+    """
+    if not OPENROUTER_API_KEY:
+        raise RuntimeError("OPENROUTER_API_KEY is not configured.")
+
+    req = urllib.request.Request(
+        f"{OPENROUTER_BASE_URL}/models",
+        headers={"Authorization": f"Bearer {OPENROUTER_API_KEY}"},
+    )
+    with urllib.request.urlopen(
+        req, context=_openrouter_ssl_context(), timeout=LLM_TIMEOUT_EMBEDDING
+    ) as resp:
+        data = json.loads(resp.read().decode()).get("data", [])
+    return {model["id"] for model in data if isinstance(model, dict) and model.get("id")}

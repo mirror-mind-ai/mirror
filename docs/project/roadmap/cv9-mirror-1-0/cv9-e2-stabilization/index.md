@@ -3,7 +3,7 @@
 # CV9.E2 — Stabilization & Robustness
 
 **Epic:** Harden failure modes so Mirror Mind degrades safely instead of breaking or corrupting runtime state  
-**Status:** Planned, with CV9.E2.S3 production updater fix, CV9.E2.S4 conversation title hardening, CV9.E2.S5 backup destination resolution, and CV9.E2.S6 runtime state home containment done; CV9.E2.S7 extraction failure isolation and CV9.E2.S8 mirror-state connection lifecycle done, CV9.E2.S9 extraction idempotency done, CV9.E2.S10 search offline degradation done, CV9.E2.S11 reinforcement signal integrity done; conversation metadata lifecycle identified as [CV9.DS7](../cv9-ds7-conversation-metadata-lifecycle/index.md). The [AI Engineering Audit](../../../ai-engineering-audit.md) supplies the model-in-the-loop stabilization backlog (AI-01 timeouts landed on `main`; AI-02 is S7).
+**Status:** Planned, with CV9.E2.S3 production updater fix, CV9.E2.S4 conversation title hardening, CV9.E2.S5 backup destination resolution, and CV9.E2.S6 runtime state home containment done; CV9.E2.S7 extraction failure isolation and CV9.E2.S8 mirror-state connection lifecycle done, CV9.E2.S9 extraction idempotency done, CV9.E2.S10 search offline degradation done, CV9.E2.S11 reinforcement signal integrity done, CV9.E2.S12 model-pin overrides & probe done; conversation metadata lifecycle identified as [CV9.DS7](../cv9-ds7-conversation-metadata-lifecycle/index.md). The [AI Engineering Audit](../../../ai-engineering-audit.md) supplies the model-in-the-loop stabilization backlog (AI-01 timeouts landed on `main`; AI-02 is S7).
 **Depends on:** CV9.E1 Boundary Hardening, except for isolated production-bug fixes that are already understood
 
 ---
@@ -51,6 +51,7 @@ recoverable.
 | [CV9.E2.S9](cv9-e2-s9-extraction-idempotency/index.md) | Extraction Idempotency Across Partial Failure (AI-03) | Done |
 | [CV9.E2.S10](cv9-e2-s10-search-offline-degradation/index.md) | Search Offline / No-Key Degradation (AI-04) | Done |
 | [CV9.E2.S11](cv9-e2-s11-reinforcement-signal-integrity/index.md) | Reinforcement Signal Integrity (AI-12) | Done |
+| [CV9.E2.S12](cv9-e2-s12-model-pin-overrides-probe/index.md) | Model-Pin Overrides & Reachability Probe (AI-06) | Done |
 
 ---
 

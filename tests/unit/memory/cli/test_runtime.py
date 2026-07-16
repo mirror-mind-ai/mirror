@@ -820,6 +820,7 @@ def test_cmd_runtime_diagnose_dispatches(monkeypatch, capsys):
         ),
     )
     monkeypatch.setattr("memory.cli.runtime.inspect_git_worktree", lambda repository: ())
+    monkeypatch.setattr("memory.cli.runtime.probe_model_pins", lambda: ())
 
     rc = cmd_runtime(["diagnose"])
 
