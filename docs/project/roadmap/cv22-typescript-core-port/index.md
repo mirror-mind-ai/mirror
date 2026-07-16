@@ -130,6 +130,36 @@ checkpoint can claim these requirements were unknown:
   tools deserve the tightest gate: identity content feeds future system
   prompts (see the abuse-cases section of the runtime-interface spec).
 
+## AI Engineering Riders (RS006 audit)
+
+Recorded by the ai-engineer audit (the model-in-the-loop lens). Its live
+Python-core reliability findings were re-homed to CV9 (stabilization on `main`);
+these two are the genuinely-CV22 slice — DS5/DS6 plan inputs, kept here so no
+future plan checkpoint can claim they were unknown:
+
+- **DS5 LLM transport seam (AI-18):** the ported external-API path needs one TS
+  `LlmTransport` (chat + embeddings) with three modes — `live`, `record`,
+  `replay` — and, designed in as the contract rather than patched later:
+  explicit per-role timeouts and bounded retries (the CV9 Python values are
+  extraction 60s, reception 10s, embedding 15s, 2 retries), an error taxonomy
+  (`timeout | auth | rate_limit | malformed_output | provider_error`), and
+  metadata-only call logging. Replay fixtures assert the deterministic
+  surroundings (request shape, parsing, storage transitions) — never model
+  output equality; the live path gets a separate embedding smoke contract
+  (dimension, finite values, self-similarity ≈ 1.0). Fixtures scrubbed of auth
+  headers **and** of transcript/identity content (live-database-equivalent
+  sensitivity). Embedding writes assert dimension and record provenance.
+- **DS6 MCP denial-of-wallet (AI-19):** the DS6 MCP threat model must include
+  the wallet. `search_memories` triggers a paid embedding call per invocation
+  and extraction-class tools cost more, so an agent loop stuck on a tool is a
+  denial-of-wallet vector against the user's own OpenRouter balance. Per-tool
+  rate/budget guards (calls per minute; optional daily USD ceiling) belong in
+  the plan, alongside the decision on whether agent-initiated searches reinforce
+  the ranker.
+
+Full audit and the CV9 backlog live at `docs/project/ai-engineering-audit.md`
+(on `main`).
+
 ## Non-Goals
 
 - **No big-bang rewrite.** The Python core is never replaced wholesale; it
