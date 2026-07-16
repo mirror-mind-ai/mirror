@@ -13,12 +13,29 @@ def _isolate_developer_env(monkeypatch):
     """Neutralize developer-only env leaked from a personal .env.
 
     ``memory.config`` loads .env at import time via ``os.environ.setdefault``.
-    On a developer machine, ``BACKUP_DIR`` then points at a real personal
-    backup location and silently overrides the explicit ``mirror_home`` that
-    backup tests pass, so those tests fail locally while passing in CI (where
-    no .env exists). Clearing it makes local runs match CI.
+    On a developer machine this leaks values that make local runs diverge from
+    CI (which has no .env):
+
+    - ``BACKUP_DIR`` points at a real personal backup location and silently
+      overrides the explicit ``mirror_home`` that backup tests pass.
+    - ``MEMORY_ENV=development`` switches the resolved database name to
+      ``memory_dev.db``; CI resolves the production default ``memory.db``.
+      Any test that exercises env-aware database resolution without managing
+      the environment itself would then pass in one place and fail in the
+      other (e.g. the extension install path once its migration step became
+      env-aware).
+
+    Clearing both makes local runs match CI. Tests that need a specific
+    environment set it explicitly and reload ``memory.config`` (see
+    tests/unit/memory/cli/test_ext_env_database.py).
     """
     monkeypatch.delenv("BACKUP_DIR", raising=False)
+    monkeypatch.delenv("MEMORY_ENV", raising=False)
+    # config.MEMORY_ENV was already computed at import time from the leaked
+    # .env; delenv alone cannot undo that. Pin the module global to the CI
+    # default so env-aware resolvers (db_name_for_env / db_path_for_home)
+    # agree with CI for tests that do not manage the environment themselves.
+    monkeypatch.setattr("memory.config.MEMORY_ENV", "production")
 
 
 @pytest.fixture

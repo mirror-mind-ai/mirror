@@ -24,6 +24,7 @@ but no fix yet are also welcome (mark them `Status: mitigated`).
 - [Portuguese accents appear as mojibake on Windows](#portuguese-accents-appear-as-mojibake-on-windows)
 - [Pi Builder conversations appear without journeys](#pi-builder-conversations-appear-without-journeys)
 - [Pi logger fails silently when `python3` resolves outside the project venv](#pi-logger-fails-silently-when-python3-resolves-outside-the-project-venv)
+- [`extensions install` writes migrations to the wrong database outside production](#extensions-install-writes-migrations-to-the-wrong-database-outside-production)
 
 ---
 
@@ -585,6 +586,55 @@ Three avenues are worth considering:
 3. **Periodic backfill.** Even with the fix in place, running
    `conversation-logger session-start` opportunistically catches any future
    regressions before they accumulate.
+
+---
+
+## `extensions install` writes migrations to the wrong database outside production
+
+**Date:** 2026-07-16
+**Status:** fixed
+**Affected component:** `extensions install`, `extensions uninstall`
+**Severity:** extension unusable outside production; stray database file
+
+### Symptom
+
+In a non-production environment (`MEMORY_ENV=development` or `test`), installing
+a command-skill extension appears to succeed, but the extension's tables are
+missing at runtime. Extension subcommands (`python -m memory ext <id> ...`)
+fail with `no such table: ext_<id>_*`, and a stray `<mirror home>/memory.db`
+appears next to the real `memory_dev.db`.
+
+### Root cause
+
+The install path (`_post_install_command_skill`) and the uninstall binding
+sweep hardcoded `<mirror home>/memory.db` for their migration, register, and
+binding-cleanup steps, ignoring `MEMORY_ENV`. Extension *dispatch* (`ext.py`)
+already resolved the env-aware database (`db_path_for_home`, CV9.E2.S6), so
+install wrote schema into one file while the runtime read another. The two
+straddled different databases for every environment except production.
+
+### Fix
+
+`extensions install` and `extensions uninstall` now resolve the database with
+`db_path_for_home(mirror_home)` — the same one-(mirror home, environment)→one
+database rule the dispatch path uses. Migrations, register validation, and the
+binding sweep all land in the database the runtime actually reads.
+
+A companion test-harness fix pins `MEMORY_ENV` to the production default in
+`tests/conftest.py`, so a developer's `.env` (which may set
+`MEMORY_ENV=development`) can no longer make env-aware tests pass locally while
+diverging from CI.
+
+### Validation evidence
+
+New regression tests in
+`tests/unit/memory/extensions/test_install_env_database.py` assert that
+installing under `MEMORY_ENV=development` creates `memory_dev.db` (not
+`memory.db`) with the extension's tables, and that uninstall sweeps bindings
+from the same env database. Full suite green, ruff clean. The personal dev
+Mirror (`vinicius-dev`) then had `admin`, `meta-ads`, `session-export`, and
+`video-processing` migrated into `memory_dev.db`, reaching parity with the
+production Mirror's installed-extension set.
 
 ---
 

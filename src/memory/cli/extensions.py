@@ -13,6 +13,7 @@ from typing import Any
 import yaml
 
 from memory.config import (
+    db_path_for_home,
     default_extensions_dir_for_home,
     default_runtime_skills_dir_for_home,
     resolve_mirror_home,
@@ -486,7 +487,11 @@ def _post_install_command_skill(
     from memory.extensions.migrations import run_migrations
 
     migrations_dir = target_extension_dir / "migrations"
-    db_path = mirror_home / "memory.db"
+    # One (mirror home, MEMORY_ENV) pair maps to exactly one database file, the
+    # same rule the extension dispatch path uses (see cli/ext._open_connection).
+    # Hardcoding memory.db here would apply migrations to a database the runtime
+    # never reads under any non-production MEMORY_ENV.
+    db_path = db_path_for_home(mirror_home)
     db_path.parent.mkdir(parents=True, exist_ok=True)
     conn = get_connection(db_path)
     try:
@@ -643,7 +648,7 @@ def uninstall_extension(
         if manifest.get("kind") == "command-skill":
             from memory.db.connection import get_connection
 
-            conn = get_connection(mirror_home / "memory.db")
+            conn = get_connection(db_path_for_home(mirror_home))
             try:
                 cursor = conn.execute(
                     "DELETE FROM _ext_bindings WHERE extension_id = ?",
