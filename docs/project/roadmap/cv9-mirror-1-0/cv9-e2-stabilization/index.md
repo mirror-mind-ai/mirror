@@ -72,5 +72,6 @@ CV9.E2 is done when:
 ## See also
 
 - [CV9 Mirror Mind 1.0](../index.md)
+- [AI Engineering Audit — model-in-the-loop stabilization backlog (AI-01 done; AI-02…AI-21 open)](../../../ai-engineering-audit.md)
 - [Development Guide](../../../../process/development-guide.md)
 - [Runtime Interface Contract](../../../../product/specs/runtime-interface/index.md)
