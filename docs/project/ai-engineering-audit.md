@@ -18,10 +18,16 @@
 > AI-18/AI-19 (the DS5 transport seam and DS6 MCP wallet threat model), which
 > stay CV22 DS5/DS6 plan inputs.
 >
-> **Status.** This is the CV9 backlog, living on `main`. **AI-01** (call
-> timeouts) is **done** — landed on `main` (commit `96202e9`), validated by the
-> CI-equivalent suite (1818 passed), with six tests added for the timeout/retry
-> wiring. **AI-02…AI-21** are the open CV9.E2 work, in the priority tiers below.
+> **Status (updated 2026-07-16).** This is the CV9 backlog, living on `main`. The
+> **entire P0 tier is done** — AI-01 (call timeouts, `96202e9`), AI-02 (extraction
+> failure isolation & quarantine, CV9.E2.S7), AI-03 (extraction idempotency,
+> CV9.E2.S9), AI-04 (search offline/no-key degradation, CV9.E2.S10), AI-12
+> (reinforcement signal integrity, CV9.E2.S11), and AI-06 (model-pin overrides &
+> reachability probe, CV9.E2.S12) — each TDD'd, keyless-CI-green, and
+> Navigator-validated. Two defects that Navigator validation surfaced were also
+> fixed: the `mirror_state` connection-lifecycle bug (CV9.E2.S8) and a repo-wide
+> architecture guard against the chained-`MemoryClient` footgun. The remaining
+> **P1 and P2** findings are the open CV9.E2 work, in the priority tiers below.
 > **AI-18/AI-19** are the exception — they stay CV22 DS5/DS6 plan inputs (they
 > describe how to port the model boundary to TS), recorded as riders in the CV22
 > index.
@@ -564,7 +570,7 @@ method:
 
 | Priority | Findings | Theme | Effort |
 |----------|----------|-------|--------|
-| **P0** | AI-01, AI-02, AI-03, AI-04, AI-06, AI-12 | The pipeline survives failure, the model pin survives time, the ranker signal survives the machinery | Small — days, all maintenance-class |
+| **P0 ✅ done** | AI-01, AI-02, AI-03, AI-04, AI-06, AI-12 | The pipeline survives failure, the model pin survives time, the ranker signal survives the machinery | Delivered as CV9.E2.S7–S12 (+ S8 and the architecture guard), keyless-CI-green |
 | **P1** | AI-05, AI-07, AI-09, AI-10, AI-11, AI-13, AI-15, AI-16, AI-18, AI-19, AI-20 | Evidence (cost/status/evals), boundary validation, DS5/DS6 plan inputs | Moderate — the two plan inputs are documentation-now |
 | **P2** | AI-08, AI-14, AI-17, AI-21 | Refinements once the evidence base exists | Opportunistic |
 
@@ -580,10 +586,11 @@ every fix on its next `main` merge — no cherry-pick, no branch split.
 (development-guide lifecycle, not the CV22 Ariad Workbench — this is trunk
 stabilization, not port refinement), continuing the CV9.E2 series whose S1 is
 already *embedding resilience*. Tiered, evidence-first, one story per change.
-The P0 tier is one focused sitting; AI-01 is already done (landed on `main`,
-commit `96202e9`). AI-18/AI-19 are the exception — they stay **CV22 DS5/DS6 plan
-inputs** (riders in the CV22 index next to the RS005 security riders), because
-they describe how to port the model boundary to TS.
+The P0 tier is complete — AI-01 (`96202e9`) plus CV9.E2.S7–S12 (with S8 and the
+architecture guard), all keyless-CI-green and Navigator-validated. AI-18/AI-19
+are the exception — they stay **CV22 DS5/DS6 plan inputs** (riders in the CV22
+index next to the RS005 security riders), because they describe how to port the
+model boundary to TS.
 
 ---
 
