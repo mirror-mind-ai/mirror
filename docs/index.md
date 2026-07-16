@@ -87,6 +87,7 @@ decided.
 - [Briefing](project/briefing.md) — foundational decisions (D1–D8), architecture premises, glossary
 - [Decisions](project/decisions.md) — incremental decisions and open discussions
 - [Roadmap](project/roadmap/index.md) — CV → Epic → Story hierarchy with status
+- [AI Engineering Audit](project/ai-engineering-audit.md) — model-in-the-loop readiness findings for 1.0 (ai-engineer lens)
 
 Current state: **CV0 English Foundation ✅ · CV1 Pi Runtime ✅ · CV2 Runtime Portability ✅ · CV3 Pi Skill Parity ✅ · CV4 Framework/User Separation ✅ · CV5 Multisession Safety ✅ · CV6 Runtime Maturity ✅ · CV7 Intelligence Depth ✅ · CV8 Runtime Expansion ✅ · CV9 Mirror Mind 1.0 🟢 In Progress, with Web Visibility done · CV13 Mirror Web Experience ✅ · CV14 Stateful Extensions 🟢 E1–E2 Done · CV15 Cognitive Location ✅ · CV16 Explorer Mode ✅ · CV17 Soul Mode ✅ First Ritual Done · CV18 Soul Mode More Voices ✅ · CV19 Soul Mode Integration ✅ · CV20 Builder Mode Evolution 🟢 In Progress · CV21 Runtime Expansion II (Plugin & MCP Convergence) 🟢 In Progress**
 
