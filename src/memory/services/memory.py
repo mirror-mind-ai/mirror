@@ -9,7 +9,7 @@ from memory.config import LOG_LLM_CALLS
 from memory.intelligence.embeddings import embedding_to_bytes, generate_embedding
 from memory.intelligence.llm_router import LLMResponse
 from memory.intelligence.search import MemorySearch
-from memory.models import Memory, MemorySummary, SearchResult
+from memory.models import Memory, MemorySummary, SearchOutcome, SearchResult
 from memory.storage.store import Store
 
 
@@ -74,6 +74,23 @@ class MemoryService:
     ) -> list[SearchResult]:
         """Search memories by hybrid similarity."""
         return self.search_engine.search(
+            query,
+            limit=limit,
+            memory_type=memory_type,
+            layer=layer,
+            journey=journey,
+        )
+
+    def search_with_status(
+        self,
+        query: str,
+        limit: int = 5,
+        memory_type: str | None = None,
+        layer: str | None = None,
+        journey: str | None = None,
+    ) -> SearchOutcome:
+        """Search reporting whether it ran degraded (lexical-only fallback)."""
+        return self.search_engine.search_with_status(
             query,
             limit=limit,
             memory_type=memory_type,

@@ -12,6 +12,14 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-07-16 — CV9.E2.S10 Search offline / no-key degradation completed
+
+Made memory search survive an unreachable embedding provider (AI Engineering Audit, AI-04). `MemorySearch.search()` generated the query embedding on its first line with no guard, so offline / no-key / timeout made every search path raise — `memories --search`, Builder/Mirror context injection, and the MCP `search_memories` tool — even though a complete FTS5 index sits in the same local database. A local-first product whose recall died offline.
+
+The fix adds `search_with_status()` returning `SearchOutcome(results, degraded)`: on any embedding failure it drops the semantic term and restricts candidates to FTS-matched memories (true lexical-only), while `search()` delegates and returns the results — so every existing caller stops crashing offline. MMR dedup was already degraded-safe (it ranks on the stored memory embeddings, not the query). `generate_embedding` also gained a no-key guard mirroring `send_to_model` (clear RuntimeError instead of an opaque 401), and `memories --search` renders an explicit degraded marker. Surfacing the marker in the MCP tool (a JSON-shape change) and in Builder/Mirror context are tracked follow-ups; the crash-proof fallback already covers both.
+
+Validation: TDD (6 red-first tests — degrade-to-lexical, legacy no-raise, service delegation, normal-mode regression, no-key guard, CLI marker — red → green); full unit+integration suite 1846 passed; ruff check/format clean; mypy 111 net-zero; a real empty-key route returned only the FTS match with degraded=True and no traceback; Navigator validated.
+
 ### 2026-07-16 — CV9.E2.S9 Extraction idempotency across partial failure completed
 
 Made memory extraction idempotent across partial failure (AI Engineering Audit, AI-03). `_extract_and_persist` generated each memory's embedding inside `add_memory` and committed per row (`create_memory`), setting `metadata.extracted` only after the whole loop — so an embedding failure on the third of five memories left the first two committed, the flag unset, and (via the CV9.E2.S7 retry) the next run re-ran the LLM and re-stored, accumulating duplicates with doubled embedding spend.

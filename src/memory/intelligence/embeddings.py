@@ -22,7 +22,13 @@ def get_embedding_client() -> OpenAI:
 
 
 def generate_embedding(text: str) -> np.ndarray:
-    """Generate an embedding for text using OpenAI text-embedding-3-small via OpenRouter."""
+    """Generate an embedding for text using OpenAI text-embedding-3-small via OpenRouter.
+
+    Raises ``RuntimeError`` on a missing key (mirrors ``send_to_model``) so callers
+    fail clearly and fast instead of hitting an opaque 401 after retries.
+    """
+    if not OPENROUTER_API_KEY:
+        raise RuntimeError("OPENROUTER_API_KEY is not configured.")
     client = get_embedding_client()
     response = client.embeddings.create(
         input=text,

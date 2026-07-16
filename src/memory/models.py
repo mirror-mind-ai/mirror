@@ -245,6 +245,13 @@ class SearchResult(NamedTuple):
     score: float
 
 
+class SearchOutcome(NamedTuple):
+    """A search's results plus whether it ran degraded (lexical-only fallback)."""
+
+    results: list[SearchResult]
+    degraded: bool
+
+
 def _uuid() -> str:
     import uuid
 

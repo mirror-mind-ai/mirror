@@ -61,17 +61,23 @@ def main(argv: list[str] | None = None) -> None:
     mem = MemoryClient(db_path=db_path_from_mirror_home(args.mirror_home))
 
     if args.search:
-        results = mem.search(
+        outcome = mem.search_with_status(
             args.search,
             limit=args.limit,
             memory_type=args.memory_type,
             layer=args.layer,
             journey=args.journey,
         )
+        results = outcome.results
+        degraded_note = (
+            "⚠ Degraded: lexical-only search (embedding unavailable — offline or no API key)."
+        )
         if not results:
-            print("No memories found.")
+            print(degraded_note if outcome.degraded else "No memories found.")
             return
 
+        if outcome.degraded:
+            print(degraded_note + " Ranked by keyword match.\n")
         print(f'🔍 Search: "{args.search}" ({len(results)} results)\n')
         for memory, score in results:
             icon = ICONS.get(memory.memory_type, "•")
