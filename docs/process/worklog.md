@@ -12,6 +12,23 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-07-16 — CV22.DS5 External-API Commands completed and re-homed
+
+Closed CV22.DS5 under the main CV22 TypeScript Core Port roadmap tree. The DS5
+package now lives at `docs/project/roadmap/cv22-typescript-core-port/cv22-ds5-external-api-commands/`,
+not as a separate pseudo-CV folder.
+
+Delivered the replay-safe external-API plateau: provider config/redaction/replay
+substrate, fresh embedding search core, replay-backed extraction orchestration,
+replay-backed consult core, and gated front-door routing for validated external
+surfaces (`memories --search`, `consult credits`, and consult ask). Unsafe,
+unconfigured, unknown, extraction-lifecycle, and out-of-scope paths remain Python
+fallback. CI remains free of live provider credentials and network requirements.
+
+A post-implementation multi-persona handoff review found no blockers and updated
+the collaboration protocol: future significant Delivery Stories should receive
+technical persona review at Plan time and again before handoff.
+
 ### 2026-07-14 — CV22.DS4 Deterministic Writes completed (Baton 4)
 
 Closed CV22.DS4, the first writing stage of the TypeScript core strangler. Two

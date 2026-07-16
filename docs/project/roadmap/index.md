@@ -119,10 +119,10 @@ file; DS2 completed read-only deterministic parity for `search`, `detect-persona
 journeys, and memory listing; DS3 closed the Pi-facing TS front door transition
 state with Python fallback preserved for unported and mutating flows; DS4 closed
 deterministic writes with backup-gated, copy-validated parity plus TS front-door
-routing for `identity set` and `journey set-path`. DS5 is in progress: the
-provider record/replay + secrets substrate, fresh embedding search core,
-extraction record/replay core, and consult command core are complete, with
-front-door external-API routing and dogfood next. The strategy is recorded in
+routing for `identity set` and `journey set-path`. DS5 closed the replay-safe
+external-API plateau: provider record/replay + secrets substrate, fresh embedding
+search, extraction orchestration, consult core, and gated front-door routing for
+validated external command surfaces. The strategy is recorded in
 [Decisions](../decisions.md). See the [CV22 index](cv22-typescript-core-port/index.md).
 
 ## CV11 — Localization

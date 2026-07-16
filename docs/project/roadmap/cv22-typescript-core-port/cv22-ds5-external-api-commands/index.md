@@ -81,7 +81,7 @@ A post-implementation multi-persona handoff review was recorded in [`handoff-rev
 
 - [Done](done.md)
 - [Handoff Review](handoff-review.md)
-- [CV22 index](../../cv22-typescript-core-port/index.md)
-- [CV22 Collaboration Strategy](../../cv22-typescript-core-port/collaboration-strategy.md)
-- [CV22 Refinement Campaign](../../cv22-typescript-core-port/refinement/index.md)
+- [CV22 index](../index.md)
+- [CV22 Collaboration Strategy](../collaboration-strategy.md)
+- [CV22 Refinement Campaign](../refinement/index.md)
 - [Decisions](../../../decisions.md)
