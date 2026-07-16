@@ -3,7 +3,7 @@
 - **Date:** 2026-07-16
 - **Area:** mirror-core / Builder Mode (Ariad) roadmap reader
 - **Status:** Open
-- **Severity:** Medium — steers the Navigator toward retired work; degrades Expand fidelity
+- **Severity:** Medium-High — steers the Navigator toward retired work, degrades Expand fidelity, and corrupts live Delivery cursor scope
 - **Found while:** working the `uncle-vinny` journey (Chapter 7 migration), pulling DS-35
 - **Scope:** this is a Mirror Mind (`memory` core) defect, not an uncle-vinny defect.
   uncle-vinny's roadmap is correct; the parser fails to read its format.
@@ -17,7 +17,10 @@ Status |` tables), the Ariad roadmap reader:
 1. recommends a **legacy** CV (from `docs/project/roadmap/legacy/**`) as the pull
    candidate, and reports the real DS backlog as empty; and
 2. on Expand, fabricates a **generic boilerplate child** instead of importing the
-   Delivery Story's documented candidate stories.
+   Delivery Story's documented candidate stories; and
+3. on the Delivery Story flow-unit scope confirmation, lists the **previous
+   Delivery Story's** child work packages as the new item's scope (stale cursor
+   carryover).
 
 ## Symptoms (observed)
 
@@ -50,6 +53,19 @@ Expected: the six candidate stories documented in the DS-35 index's
 financial routing, US-3 consent, US-4 admin, TS-1 admin auth parity, TS-2
 Playwright suite).
 
+### Symptom 3 — flow-unit scope confirmation shows the previous item's children
+
+`uv run python -m memory build set-flow-unit --method ariad --unit delivery_story`
+(active delivery correctly `🟦[DS-35]`) returned a
+`DELIVERY_STORY_SCOPE_CONFIRMATION` whose "Work packages in scope" were the eight
+children of the **previous, done** Delivery Story:
+`DS-34.US-1…US-6`, `DS-34.TS-1`, `DS-34.TS-2`.
+
+Expected: DS-35's six children (`DS-35.US-1…US-4`, `DS-35.TS-1`, `DS-35.TS-2`).
+Confirmed by diffing the two DS index candidate tables. The drift has now
+escalated from advisory (recommendation) to **live cursor/flow state** used to
+build the DS Plan.
+
 ## Root cause (confirmed for Symptom 1)
 
 `src/memory/builder/pull_candidates.py`:
@@ -79,6 +95,15 @@ The Expand path (suspected `src/memory/builder/ariad_method.py`) does not read t
 Delivery Story index's `| Code | Story | Type | Status |` candidate table; it
 synthesizes a single generic `US1`. Not yet confirmed at source level.
 
+## Root cause (suspected for Symptom 3)
+
+The delivery cursor appears to **retain the prior Delivery Story's child work
+packages** when a new DS is pulled/flow-set. Because Expand (Symptom 2) did not
+populate DS-35's real children, the scope confirmation falls back to the stale
+DS-34 child list held in the cursor. Suspected in the cursor/flow-unit state
+handling (`src/memory/builder/flow_unit.py` and the delivery cursor persistence).
+Not yet confirmed at source level.
+
 ## Impact
 
 - The Navigator is steered toward **retired** legacy work as the recommended pull.
@@ -86,6 +111,9 @@ synthesizes a single generic `US1`. Not yet confirmed at source level.
   invisible Delivery backlog and an empty roadmap snapshot/position.
 - Expand produces low-fidelity child packages that drop the real decomposition, so
   `story_by_story` flow operates on a placeholder.
+- A newly pulled Delivery Story inherits the **previous item's** work packages as
+  its scope, so the DS Plan is built against the wrong children unless corrected
+  by passing explicit `--child` codes.
 
 ## Suggested fix directions (not executed)
 
@@ -98,9 +126,13 @@ synthesizes a single generic `US1`. Not yet confirmed at source level.
    and the per-DS `| Code | Story | Type | Status |` candidate table for Expand.
 4. Add fixtures for a DS-format roadmap (hyphenated codes, Chapter sections,
    Delivery Story tables) to lock the behavior in.
+5. Reset/repopulate the delivery cursor's child work packages on Pull/Expand so a
+   new Delivery Story never inherits the previous item's children.
 
 ## Provenance
 
 Observed 2026-07-16 during `uncle-vinny` DS-35 pull. Related uncle-vinny
 decisions: `docs/project/roadmap/ariad-adoption.md` (legacy CV → DS import).
-Workaround used: explicit `pull-item --item-code DS-35` by code.
+Workarounds used: explicit `pull-item --item-code DS-35` by code; and (planned)
+explicit `plan-delivery-story --child DS-35.US-1 … --child DS-35.TS-2` to override
+the stale cursor scope.
