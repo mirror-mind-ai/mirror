@@ -2,36 +2,48 @@
 
 # CV22.DS5.US3 — Consult Command Parity
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 **Type:** User Story
 
 ---
 
-## User Story
-
-As a Mirror user,
-I want consult-style model calls to run through the TS core when ported,
-So that external model access converges without changing command behavior.
-
 ## Outcome
 
-The consult command family has a TS implementation path with provider safety,
-replayable tests, redacted diagnostics, and Python-compatible output.
+Port the consult command core to TS behind replayable provider/credits/cost seams and Python-compatible rendering, without front-door routing or live-provider CI dependency.
+
+## Story Statement
+
+As a user,
+I want to Consult Command Parity,
+So that I can receive the value of this story.
+
+## Acceptance Behavior
+
+```text
+Given the starting state needed for Consult Command Parity
+When the Navigator exercises Consult Command Parity
+Then the planned observable behavior is visible
+And out-of-scope sibling roadmap items remain untouched
+```
 
 ## Scope
 
-- Identify the current Python consult command contract.
-- Port transport/config handling through the DS5 provider boundary.
-- Add record/replay tests with scrubbed responses.
-- Preserve output shape and failure semantics.
+- Deliver Consult Command Parity as an observable slice.
+- Keep the implementation narrow enough to validate at the Plan-defined checkpoint.
 
 ## Out Of Scope
 
-- Changing provider selection policy.
-- Adding new consult capabilities.
-- MCP server work.
+- Do not implement sibling roadmap item: Front-Door External-API Routing And Dogfood.
+- Do not implement sibling roadmap item: External-API Commands.
 
 ## Validation
 
-Replay tests, output compatibility checks, and optional manual live-provider smoke
-outside CI.
+- Run automated tests that cover the planned behavior.
+- Provide a Navigator-visible route with expected observation, pass condition, and fail condition.
+
+---
+
+## Artifacts
+
+- [Plan](plan.md)
+- [Test Guide](test-guide.md)

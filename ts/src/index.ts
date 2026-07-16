@@ -7,6 +7,36 @@
 // other by deep path; only the public API lives here, and it is kept in sync as
 // the strangler grows (CR011).
 
+// --- Consult command core ---
+export type {
+  ConsultAskCommand,
+  ConsultCreditsCommand,
+  ConsultParseResult,
+} from "./consult/args.ts";
+export { CONSULT_USAGE, ConsultArgError, parseConsultArgs } from "./consult/args.ts";
+export type {
+  ConsultContextLoader,
+  ConsultContextRequest,
+  RunConsultOptions,
+} from "./consult/core.ts";
+export {
+  buildConsultLlmRequest,
+  runConsult,
+  runConsultAsk,
+  runConsultCredits,
+  SYSTEM_PREAMBLE,
+} from "./consult/core.ts";
+export type { ConsultTier } from "./consult/modelCatalog.ts";
+export { CONSULT_TIERS, LLM_FAMILIES, resolveConsultModel } from "./consult/modelCatalog.ts";
+export type { CreditInfo as ConsultCreditInfo } from "./consult/render.ts";
+export {
+  BALANCE_BAR_WIDTH,
+  renderConsultAsk,
+  renderCost,
+  renderCredits,
+  USD_TO_BRL,
+} from "./consult/render.ts";
+
 // --- Conversation extraction ---
 export type {
   ConversationExtractionOptions,
@@ -108,6 +138,12 @@ export { detectPersona, normalizeRoutingText } from "./persona/detectPersona.ts"
 // --- External providers (DS5 substrate) ---
 export type { ProviderConfig, ProviderConfigOptions, ProviderName } from "./providers/config.ts";
 export { ProviderConfigError, resolveProviderConfig } from "./providers/config.ts";
+export type { CreditInfo, CreditProvider, ReplayCreditFixture } from "./providers/credits.ts";
+export {
+  assertReplayCreditFixture,
+  loadReplayCreditProvider,
+  ReplayCreditProvider,
+} from "./providers/credits.ts";
 export type { EmbeddingProvider, ReplayEmbeddingFixture } from "./providers/embedding.ts";
 export {
   assertReplayEmbeddingFixture,

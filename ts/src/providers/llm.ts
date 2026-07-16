@@ -1,10 +1,11 @@
 import { loadReplayFixture } from "./replay.ts";
 
-export type LlmRole = "extraction" | "task_extraction" | "summary" | "curation";
+export type LlmRole = "extraction" | "task_extraction" | "summary" | "curation" | "consult";
 
 export interface LlmRequest {
   role: LlmRole;
   prompt: string;
+  model?: string;
   temperature?: number;
   maxTokens?: number;
 }
@@ -12,6 +13,7 @@ export interface LlmRequest {
 export interface LlmResponse {
   content: string;
   model?: string;
+  generationId?: string | null;
   promptTokens?: number;
   completionTokens?: number;
   latencyMs?: number;
@@ -73,7 +75,8 @@ function isLlmRole(value: string): value is LlmRole {
     value === "extraction" ||
     value === "task_extraction" ||
     value === "summary" ||
-    value === "curation"
+    value === "curation" ||
+    value === "consult"
   );
 }
 
