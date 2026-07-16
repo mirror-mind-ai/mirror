@@ -91,6 +91,12 @@ export { detectPersona, normalizeRoutingText } from "./persona/detectPersona.ts"
 // --- External providers (DS5 substrate) ---
 export type { ProviderConfig, ProviderConfigOptions, ProviderName } from "./providers/config.ts";
 export { ProviderConfigError, resolveProviderConfig } from "./providers/config.ts";
+export type { EmbeddingProvider, ReplayEmbeddingFixture } from "./providers/embedding.ts";
+export {
+  assertReplayEmbeddingFixture,
+  loadReplayEmbeddingProvider,
+  ReplayEmbeddingProvider,
+} from "./providers/embedding.ts";
 export type { RedactionOptions } from "./providers/redaction.ts";
 export {
   assertFixtureSafe,
@@ -101,6 +107,19 @@ export {
 export type { ReplayFixture } from "./providers/replay.ts";
 export { loadReplayFixture } from "./providers/replay.ts";
 // --- Hybrid search ranker ---
+export type {
+  FreshSearchFilters,
+  FreshSearchOptions,
+  FreshSearchResult,
+} from "./search/memorySearch.ts";
+export {
+  accessCountsByMemoryId,
+  DEFAULT_SEARCH_RANKER_CONFIG,
+  ftsLexicalScores,
+  ftsQuery,
+  listSearchMemoryRows,
+  searchMemories,
+} from "./search/memorySearch.ts";
 export type { RankableMemory, RankedMemory, RankerConfig, SearchWeights } from "./search/ranker.ts";
 export {
   cosineSimilarity,

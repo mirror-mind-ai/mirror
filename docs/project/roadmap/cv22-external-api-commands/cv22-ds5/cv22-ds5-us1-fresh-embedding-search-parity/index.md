@@ -2,7 +2,7 @@
 
 # CV22.DS5.US1 — Fresh Embedding Search Parity
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 **Type:** User Story
 
 ---
@@ -10,40 +10,48 @@
 ## User Story
 
 As a Mirror user,
-I want semantic memory search with fresh query embeddings to run through the TS core,
-So that the strangler no longer depends on Python for the full search path.
+I want semantic memory search with a fresh query embedding to run through the TS core,
+So that search can leave Python without changing ranking behavior or provider safety.
 
 ## Outcome
 
-`memories --search` / semantic search uses TS for the fresh-query path with provider
-safety, ranker reuse, access-count semantic parity, and appropriate reinforcement
-write routing.
+The TypeScript core can execute the fresh semantic search composition using a replayed embedding provider: load embedded memories, apply filters, compute lexical scores and grouped access counts, reuse the TS ranker, and log returned access on a DB copy. Runtime front-door cutover remains deferred to `CV22.DS5.US4`.
 
 ## Acceptance Behavior
 
 ```text
-Given a configured external embedding provider
-When I run semantic memory search through the front door
-Then the fresh query embedding is obtained safely
-And TS returns Python-compatible ranked results
-And access/reinforcement behavior remains compatible
-And secrets are not logged or committed
+Given a database copy with embedded memories and access-log rows
+And a replayed provider fixture for the query embedding
+When TS fresh search runs with the same query, filters, ranker config, and frozen now as Python
+Then the ordered result ids match the Python oracle
+And returned memories receive access-log writes with context truncated to 200 chars
+And no live provider call or credential is required in CI
 ```
 
 ## Scope
 
-- Provider-backed embedding retrieval through the DS5 boundary.
-- Record/replay tests for embedding-dependent search.
-- Access-count read strategy parity probe on a DB copy.
-- Integration with the existing TS ranker.
-- Reinforcement-write routing if it belongs to the completed search path.
+- Replay-backed embedding provider for fresh query vectors.
+- TS search composition over the SQLite seam.
+- FTS lexical ordinal scores.
+- Grouped access-count strategy with parity evidence against per-id COUNT semantics.
+- Access logging for returned results on DB copies.
 
 ## Out Of Scope
 
+- Front-door route cutover for `memories --search`.
 - Extraction and consult command parity.
-- Schema custody transfer.
+- Live provider requirement in CI.
+- Schema or ranker semantic changes.
 
 ## Validation
 
-Replay tests, copied-DB parity probes, and one optional live-provider smoke with
-explicit credentials outside CI.
+- Automated TS checks.
+- Focused search/provider/parity tests.
+- DB-copy fixture validation for ranking composition and access-log side effects.
+
+---
+
+## Artifacts
+
+- [Plan](plan.md)
+- [Test Guide](test-guide.md)

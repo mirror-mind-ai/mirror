@@ -2,7 +2,7 @@
 
 # CV22.DS5.TS1 — External-API Record/Replay + Secrets Harness
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 **Type:** Technical Story
 
 ---

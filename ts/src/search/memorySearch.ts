@@ -1,0 +1,187 @@
+import type { SqlValue, WritableDatabase } from "../db/database.ts";
+import { optionalNumber, optionalString, requireString } from "../db/rowDecode.ts";
+import { logAccess } from "../memory/reinforcement.ts";
+import type { EmbeddingProvider } from "../providers/embedding.ts";
+import { nowIso } from "../util/pyGenerators.ts";
+import {
+  type RankableMemory,
+  type RankedMemory,
+  type RankerConfig,
+  rankMemories,
+} from "./ranker.ts";
+
+export interface FreshSearchFilters {
+  memoryType?: string | null;
+  layer?: string | null;
+  journey?: string | null;
+}
+
+export interface FreshSearchOptions extends FreshSearchFilters {
+  query: string;
+  limit?: number;
+  frozenNowMs?: number;
+  now?: string;
+  provider: EmbeddingProvider;
+}
+
+export interface FreshSearchResult extends RankedMemory {}
+
+export const DEFAULT_SEARCH_RANKER_CONFIG = {
+  weights: { semantic: 0.5, recency: 0.15, reinforcement: 0.1, relevance: 0.1, lexical: 0.15 },
+  mmrThreshold: 0.92,
+  recencyHalfLifeDays: 90,
+  reinforcementDecayDays: 180,
+  reinforcementUseWeight: 0.7,
+  reinforcementRetrievalWeight: 0.3,
+} satisfies Omit<RankerConfig, "queryEmbedding" | "frozenNowMs" | "limit">;
+
+interface MemoryRow {
+  id: string;
+  created_at: string;
+  last_accessed_at: string | null;
+  use_count: number;
+  relevance_score: number;
+  embedding_b64: string;
+}
+
+export async function searchMemories(
+  db: WritableDatabase,
+  options: FreshSearchOptions,
+): Promise<FreshSearchResult[]> {
+  const limit = options.limit ?? 5;
+  const queryEmbedding = await options.provider.embed(options.query);
+  const memories = listSearchMemoryRows(db, options);
+  const accessCounts = accessCountsByMemoryId(
+    db,
+    memories.map((memory) => memory.id),
+  );
+  const lexicalScores = ftsLexicalScores(db, options.query, options);
+  const rankable = memories.map(
+    (memory): RankableMemory => ({
+      ...memory,
+      access_count: accessCounts.get(memory.id) ?? 0,
+      lexical_score: lexicalScores.get(memory.id) ?? 0,
+    }),
+  );
+  const ranked = rankMemories(rankable, {
+    ...DEFAULT_SEARCH_RANKER_CONFIG,
+    queryEmbedding,
+    frozenNowMs: options.frozenNowMs ?? Date.now(),
+    limit,
+  });
+
+  const accessNow = options.now ?? nowIso();
+  for (const result of ranked) {
+    logAccess(db, result.id, accessNow, options.query.slice(0, 200));
+  }
+  return ranked;
+}
+
+export function listSearchMemoryRows(
+  db: WritableDatabase,
+  filters: FreshSearchFilters = {},
+): MemoryRow[] {
+  const conditions = ["embedding IS NOT NULL"];
+  const params: SqlValue[] = [];
+  if (filters.memoryType) {
+    conditions.push("memory_type = ?");
+    params.push(filters.memoryType);
+  }
+  if (filters.layer) {
+    conditions.push("layer = ?");
+    params.push(filters.layer);
+  }
+  if (filters.journey) {
+    conditions.push("journey = ?");
+    params.push(filters.journey);
+  }
+
+  return db
+    .prepare(
+      `SELECT id, created_at, last_accessed_at, use_count, relevance_score, embedding ` +
+        `FROM memories WHERE ${conditions.join(" AND ")} ORDER BY created_at DESC`,
+    )
+    .all(...params)
+    .map(toMemoryRow);
+}
+
+export function accessCountsByMemoryId(
+  db: WritableDatabase,
+  memoryIds: readonly string[],
+): Map<string, number> {
+  if (memoryIds.length === 0) return new Map();
+  const placeholders = memoryIds.map(() => "?").join(", ");
+  const rows = db
+    .prepare(
+      `SELECT memory_id, COUNT(*) AS count FROM memory_access_log ` +
+        `WHERE memory_id IN (${placeholders}) GROUP BY memory_id`,
+    )
+    .all(...memoryIds);
+  const counts = new Map(memoryIds.map((id): [string, number] => [id, 0]));
+  for (const row of rows) {
+    counts.set(requireString(row, "memory_id"), Number(row.count));
+  }
+  return counts;
+}
+
+export function ftsLexicalScores(
+  db: WritableDatabase,
+  query: string,
+  filters: FreshSearchFilters = {},
+  limit = 100,
+): Map<string, number> {
+  const safeQuery = ftsQuery(query);
+  if (!safeQuery) return new Map();
+  const conditions: string[] = [];
+  const params: SqlValue[] = [safeQuery];
+  if (filters.memoryType) {
+    conditions.push("m.memory_type = ?");
+    params.push(filters.memoryType);
+  }
+  if (filters.layer) {
+    conditions.push("m.layer = ?");
+    params.push(filters.layer);
+  }
+  if (filters.journey) {
+    conditions.push("m.journey = ?");
+    params.push(filters.journey);
+  }
+  params.push(limit);
+  const whereExtra = conditions.length > 0 ? ` AND ${conditions.join(" AND ")}` : "";
+  try {
+    const rows = db
+      .prepare(
+        `SELECT m.id FROM memories_fts f ` +
+          `JOIN memories m ON m.rowid = f.rowid ` +
+          `WHERE memories_fts MATCH ?${whereExtra} ` +
+          `ORDER BY bm25(memories_fts) LIMIT ?`,
+      )
+      .all(...params);
+    return new Map(rows.map((row, index) => [requireString(row, "id"), 1 / (1 + index)]));
+  } catch {
+    return new Map();
+  }
+}
+
+export function ftsQuery(query: string): string {
+  const words = query
+    .split(/\s+/)
+    .map((word) => word.replaceAll('"', ""))
+    .filter((word) => word.length > 0);
+  return words.map((word) => `"${word}"`).join(" ");
+}
+
+function toMemoryRow(row: Record<string, unknown>): MemoryRow {
+  const embedding = row.embedding;
+  if (!(embedding instanceof Uint8Array)) {
+    throw new Error("memory embedding must be a BLOB/Uint8Array");
+  }
+  return {
+    id: requireString(row, "id"),
+    created_at: requireString(row, "created_at"),
+    last_accessed_at: optionalString(row, "last_accessed_at"),
+    use_count: optionalNumber(row, "use_count") ?? 0,
+    relevance_score: optionalNumber(row, "relevance_score") ?? 0,
+    embedding_b64: Buffer.from(embedding).toString("base64"),
+  };
+}
