@@ -25,6 +25,7 @@ but no fix yet are also welcome (mark them `Status: mitigated`).
 - [Pi Builder conversations appear without journeys](#pi-builder-conversations-appear-without-journeys)
 - [Pi logger fails silently when `python3` resolves outside the project venv](#pi-logger-fails-silently-when-python3-resolves-outside-the-project-venv)
 - [`extensions install` writes migrations to the wrong database outside production](#extensions-install-writes-migrations-to-the-wrong-database-outside-production)
+- [`extensions install` copies through a symlinked extension path](#extensions-install-copies-through-a-symlinked-extension-path)
 
 ---
 
@@ -635,6 +636,50 @@ from the same env database. Full suite green, ruff clean. The personal dev
 Mirror (`vinicius-dev`) then had `admin`, `meta-ads`, `session-export`, and
 `video-processing` migrated into `memory_dev.db`, reaching parity with the
 production Mirror's installed-extension set.
+
+---
+
+## `extensions install` copies through a symlinked extension path
+
+**Date:** 2026-07-16
+**Status:** fixed
+**Affected component:** `extensions install`
+**Severity:** external directory mutated, or install aborts with a same-file error
+
+### Symptom
+
+Re-installing an extension whose installed path under
+`<mirror home>/extensions/<id>` is a symlink either aborts with a `shutil`
+"are the same file" error, or silently writes the source tree *through* the
+symlink into an unrelated directory. The production layout links installed
+extensions straight at their source repos, so an install could overwrite a real
+source repo or hit the self-copy error.
+
+### Root cause
+
+`install_extension` called `shutil.copytree(source, target, dirs_exist_ok=True)`
+unconditionally. When `target` resolves to the same tree as `source` (a symlink
+back at the source, or `--extensions-root` pointing at the installed dir),
+copytree copies files onto themselves and raises. When `target` is a symlink to
+a *different* directory, `dirs_exist_ok=True` makes copytree write into the
+link's target.
+
+### Fix
+
+A pre-copy guard (`_should_copy_source_tree`) resolves both paths. It skips the
+copy when source and target are the same tree (the install proceeds to
+migrations, register, and runtime sync through the link, leaving the symlink
+intact), and refuses with a clear `ExtensionValidationError` when the target is
+a symlink pointing outside the source — pointing the user at
+`ext <id> migrate` to re-run migrations without copying.
+
+### Validation evidence
+
+Regression tests in `tests/unit/memory/extensions/test_install_e2e.py` cover all
+three shapes: symlink-to-source (copy skipped, symlink preserved, install
+completes), source == installed dir (idempotent, no same-file error), and
+symlink-to-external (refused, external directory untouched). Full suite green,
+ruff clean.
 
 ---
 

@@ -240,3 +240,63 @@ def test_install_prompt_skill_does_not_touch_db(tmp_path, mirror_home):
     assert result["register_validated"] is False
     # No memory.db is created when nothing required it.
     assert not (mirror_home / "memory.db").exists()
+
+
+def test_install_skips_copy_when_target_symlinks_to_source(source_root, mirror_home):
+    """Users may link an installed extension straight at its source repo
+    (the production layout). Re-installing must not copytree the source over a
+    symlink that points back at it -- that raises SameFileError while writing
+    the tree onto itself. The copy is skipped, the symlink preserved, and the
+    rest of the install (migrations, register, runtime sync) still runs.
+    """
+    ext_root = mirror_home / "extensions"
+    ext_root.mkdir(parents=True)
+    (ext_root / "hello").symlink_to(source_root / "hello", target_is_directory=True)
+
+    result = install_extension("hello", source_root=source_root, mirror_home=mirror_home)
+
+    # The intentional symlink is preserved, not silently replaced by a copy.
+    assert (ext_root / "hello").is_symlink()
+    assert (ext_root / "hello").resolve() == (source_root / "hello").resolve()
+    # Install still completed through the link.
+    assert result["migrations_applied"] == 1
+    assert result["register_validated"] is True
+    assert (mirror_home / "runtime" / "skills" / "pi" / "ext-hello" / "SKILL.md").exists()
+
+
+def test_install_skips_copy_when_source_is_the_installed_dir(source_root, mirror_home):
+    """Pointing --extensions-root at the mirror home's own extensions dir makes
+    source_dir == target_extension_dir. copytree onto the same path raises
+    SameFileError; the guard skips the copy and the install is idempotent.
+    """
+    install_extension("hello", source_root=source_root, mirror_home=mirror_home)
+
+    installed_root = mirror_home / "extensions"
+    result = install_extension("hello", source_root=installed_root, mirror_home=mirror_home)
+
+    assert result["migrations_applied"] == 0
+    assert result["register_validated"] is True
+    assert (installed_root / "hello" / "skill.yaml").exists()
+
+
+def test_install_refuses_to_write_through_symlinked_target(source_root, mirror_home, tmp_path):
+    """When the installed path is a symlink to an *unrelated* directory,
+    copytree(dirs_exist_ok=True) would write through the link and mutate that
+    external directory. Install must refuse and leave the target untouched.
+    """
+    external = tmp_path / "external-repo"
+    external.mkdir()
+    sentinel = external / "DO_NOT_TOUCH.txt"
+    sentinel.write_text("original\n")
+
+    ext_root = mirror_home / "extensions"
+    ext_root.mkdir(parents=True)
+    (ext_root / "hello").symlink_to(external, target_is_directory=True)
+
+    with pytest.raises(ExtensionValidationError) as excinfo:
+        install_extension("hello", source_root=source_root, mirror_home=mirror_home)
+    assert "symlink" in str(excinfo.value)
+
+    # The external directory was never written into.
+    assert sentinel.read_text() == "original\n"
+    assert {entry.name for entry in external.iterdir()} == {"DO_NOT_TOUCH.txt"}

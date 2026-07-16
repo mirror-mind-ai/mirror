@@ -416,6 +416,33 @@ def _prune_catalog_for_extension(
     _write_catalog(catalog_path, runtime, target_root, items)
 
 
+def _should_copy_source_tree(source_dir: Path, target_dir: Path) -> bool:
+    """Decide whether the source tree should be copied over the installed path.
+
+    Returns ``True`` when a normal ``copytree`` is safe. Returns ``False`` when
+    source and destination already resolve to the same tree (the installed path
+    *is*, or is symlinked to, this exact source): ``copytree`` would raise a
+    same-file error copying the tree onto itself, and there is nothing to do.
+
+    Raises :class:`ExtensionValidationError` when the installed path is a
+    symlink pointing somewhere other than the source. ``copytree`` with
+    ``dirs_exist_ok=True`` writes *through* such a link and would mutate an
+    external directory the user never asked to change (the production layout
+    links installed extensions straight at their source repos).
+    """
+    if target_dir.exists() and source_dir.resolve() == target_dir.resolve():
+        return False
+    if target_dir.is_symlink():
+        raise ExtensionValidationError(
+            f"installed extension path is a symlink pointing outside the install "
+            f"source: {target_dir} -> {target_dir.resolve()}. Refusing to install "
+            f"through it, which would modify the link target. Remove the symlink "
+            f"first, or run `python -m memory ext {target_dir.name} migrate` to "
+            f"re-run migrations without copying."
+        )
+    return True
+
+
 def install_extension(
     extension_id: str,
     *,
@@ -429,12 +456,13 @@ def install_extension(
     target_extensions_root = default_extensions_dir_for_home(mirror_home)
     target_extension_dir = target_extensions_root / extension_id
     target_extensions_root.mkdir(parents=True, exist_ok=True)
-    shutil.copytree(
-        source_dir,
-        target_extension_dir,
-        dirs_exist_ok=True,
-        ignore=shutil.ignore_patterns(*_COPY_IGNORE_PATTERNS),
-    )
+    if _should_copy_source_tree(source_dir, target_extension_dir):
+        shutil.copytree(
+            source_dir,
+            target_extension_dir,
+            dirs_exist_ok=True,
+            ignore=shutil.ignore_patterns(*_COPY_IGNORE_PATTERNS),
+        )
 
     installed_manifest = load_extension_manifest(target_extension_dir)
     runtimes = [runtime] if runtime is not None else sorted(installed_manifest["runtimes"].keys())
