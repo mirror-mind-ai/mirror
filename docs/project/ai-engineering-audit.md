@@ -2,10 +2,28 @@
 
 # AI Engineering Audit — Model-in-the-Loop Readiness for 1.0
 
-**Lens:** ai-engineer · **Date:** 2026-07-16 · **Status:** captured as [RS006](roadmap/cv22-typescript-core-port/refinement/rs006-ai-engineering-audit.md) (CR036–CR055) — execution not started
-**Scope:** the entire project's model-in-the-loop surfaces — LLM calls, embeddings, retrieval, extraction, evals, cost, degradation, and the CV22 DS5/DS6 port of all of it — audited against the goal of a **stable 1.0 release** (CV9).
+**Lens:** ai-engineer · **Date:** 2026-07-16 · **Home:** CV9 — Mirror Mind 1.0 (stabilization), tracked as CV9.E2 roadmap stories on `main`
+**Scope:** the entire project's model-in-the-loop surfaces — LLM calls, embeddings, retrieval, extraction, evals, cost, degradation — audited against the goal of a **stable 1.0 release** (CV9).
 
-> *The sixth lens. RS001–RS005 audited the code, the trust, the data, the operations, and the attack surface of the CV22 front door. Nobody had yet audited the model itself as a dependency: what happens on the thousandth extraction, with the provider down, a poisoned transcript, a deprecated model ID, and a cost ledger that was never written.*
+> *Audits the model itself as a dependency: what happens on the thousandth extraction, with the provider down, a poisoned transcript, a deprecated model ID, and a cost ledger that was never written.*
+
+> **Re-homing note (2026-07-16).** This audit was first captured as a CV22
+> refinement story (RS006, "the sixth lens" after RS001–RS005). That was a
+> mis-file. CV22's founding non-goal is *parity, not improvement*, and these
+> findings are improvements to the **production Python core** — they would be
+> equally true if CV22 had never started, and they protect today's users, who
+> ship from `main`. So this is **CV9 stabilization**, landed directly on `main`
+> as plain roadmap stories (CV9.E2), not CV22 port work. `mirror-ts-core`
+> inherits each fix on its next `main` merge. The one genuinely-CV22 slice is
+> AI-18/AI-19 (the DS5 transport seam and DS6 MCP wallet threat model), which
+> stay CV22 DS5/DS6 plan inputs.
+>
+> **Status.** AI-01 (call timeouts) is implemented and validated (1917 tests
+> green) and preserved as
+> [`ai-engineering-audit-handoff/cr036-ai01-timeouts.patch`](ai-engineering-audit-handoff/cr036-ai01-timeouts.patch)
+> to apply on `main`. AI-02…AI-21 are CV9.E2 story candidates (tiers below). The
+> CV22 Workbench RS006 record was withdrawn — its 19 still-captured Change
+> Requests discarded there, this document kept as the durable finding record.
 
 ---
 
@@ -549,18 +567,22 @@ method:
 | **P1** | AI-05, AI-07, AI-09, AI-10, AI-11, AI-13, AI-15, AI-16, AI-18, AI-19, AI-20 | Evidence (cost/status/evals), boundary validation, DS5/DS6 plan inputs | Moderate — the two plan inputs are documentation-now |
 | **P2** | AI-08, AI-14, AI-17, AI-21 | Refinements once the evidence base exists | Opportunistic |
 
-**Python-maintenance-only tension, resolved:** the P0 items are live-path
-reliability defects, squarely maintenance-class under the CV22 freeze — fix
-them in Python now (they protect today's users) *and* encode each as a DS5
-acceptance criterion so the TS port cannot inherit the gap. The port then
-retires the Python fix along with the code it fixed.
+**Where this lands:** the P0 items are live-path reliability defects in the
+production Python core — CV9 stabilization work, authored directly on `main` as
+CV9.E2 roadmap stories so they reach today's users without waiting on the CV22
+port. Each should *also* be encoded as a DS5 acceptance criterion so the TS port
+reproduces the fixed behavior, not the original gap; when DS5 ports the surface,
+it retires the Python fix along with the code it fixed. `mirror-ts-core` inherits
+every fix on its next `main` merge — no cherry-pick, no branch split.
 
-**Execution route:** captured as Change Requests in the Ariad Workbench under
-[RS006](roadmap/cv22-typescript-core-port/refinement/rs006-ai-engineering-audit.md)
-(ai-engineer lens, CR036–CR055), joining the RS001–RS005 campaign pattern —
-tiered, evidence-first, one CR per commit. The P0 tier is one focused sitting;
-AI-18/AI-19 (CR053) are riders to write into the CV22 index next to the
-security riders before DS5 is pulled.
+**Execution route:** tracked as **CV9.E2 stabilization stories on `main`**
+(development-guide lifecycle, not the CV22 Ariad Workbench — this is trunk
+stabilization, not port refinement), continuing the CV9.E2 series whose S1 is
+already *embedding resilience*. Tiered, evidence-first, one story per change.
+The P0 tier is one focused sitting; AI-01 is already done and staged as a patch.
+AI-18/AI-19 are the exception — they stay **CV22 DS5/DS6 plan inputs** (riders in
+the CV22 index next to the RS005 security riders), because they describe how to
+port the model boundary to TS.
 
 ---
 
@@ -601,8 +623,8 @@ grows:
 
 ---
 
-**See also:** [RS006 story record](roadmap/cv22-typescript-core-port/refinement/rs006-ai-engineering-audit.md) ·
-[CV22 index — Security Riders](roadmap/cv22-typescript-core-port/index.md) ·
-[Refinement Campaign RS001–RS005](roadmap/cv22-typescript-core-port/refinement/index.md) ·
-[Decisions](decisions.md) · [Engineering Principles](../process/engineering-principles.md) ·
-[CV9 — Mirror Mind 1.0](roadmap/cv9-mirror-1-0/index.md)
+**See also:** [CV9 — Mirror Mind 1.0](roadmap/cv9-mirror-1-0/index.md) ·
+[CV9.E2 — Stabilization](roadmap/cv9-mirror-1-0/cv9-e2-stabilization/index.md) ·
+[AI-01 patch for main](ai-engineering-audit-handoff/cr036-ai01-timeouts.patch) ·
+[CV22 index — Security Riders (AI-18/AI-19 land here)](roadmap/cv22-typescript-core-port/index.md) ·
+[Decisions](decisions.md) · [Engineering Principles](../process/engineering-principles.md)
