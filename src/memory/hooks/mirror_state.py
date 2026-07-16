@@ -29,7 +29,11 @@ def _load_state(session_id: str | None) -> dict[str, Any]:
     resolved_session_id = _normalize_session_id(session_id)
     if not resolved_session_id:
         return {}
-    session = _memory_client().store.get_runtime_session(resolved_session_id)
+    # Hold the client in a local: chaining _memory_client().store.x() lets the
+    # temporary client be GC-collected — closing its connection via __del__ —
+    # before the query runs. Same reasoning as mark_injected below.
+    mem = _memory_client()
+    session = mem.store.get_runtime_session(resolved_session_id)
     if not session:
         return {}
     data: dict[str, Any] = {
@@ -74,7 +78,10 @@ def write_state(
     resolved_session_id = _normalize_session_id(session_id)
     if not resolved_session_id:
         return
-    _memory_client().store.upsert_runtime_session(
+    # Hold the client in a local — see _load_state / mark_injected: a chained
+    # temporary closes its own connection via __del__ before the call runs.
+    mem = _memory_client()
+    mem.store.upsert_runtime_session(
         resolved_session_id,
         mirror_active=active,
         persona=persona,
