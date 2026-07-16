@@ -35,6 +35,16 @@ Production database mutations require explicit confirmation. Extraction requires
 explicit guard conditions (journey + ≥4 messages). The system does not guess;
 it requires.
 
+**Never chain on a freshly constructed `MemoryClient`.**
+`get_connection()` opens a new connection per call and `MemoryClient.__del__`
+closes it (the Python 3.14 file-descriptor fix). `MemoryClient(...).store.x()` or
+`_memory_client(...).store.x()` lets the temporary be garbage-collected —
+closing its connection before the call runs (`Cannot operate on a closed
+database`), silently in production hook subprocesses. Bind the client to a local
+(`mem = _memory_client(...); mem.store...`) or use `with`; a direct method call
+(`MemoryClient(...).close()`) is safe. Enforced by
+[`tests/unit/architecture/test_client_connection_lifecycle.py`](../../tests/unit/architecture/test_client_connection_lifecycle.py).
+
 ---
 
 ## Testing

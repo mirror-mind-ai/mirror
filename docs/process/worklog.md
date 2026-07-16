@@ -12,6 +12,10 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-07-16 — Architecture guard against chained MemoryClient temporaries
+
+Closed the connection-lifecycle footgun behind CV9.E2.S7 and CV9.E2.S8 with a durable guard. `tests/unit/architecture/test_client_connection_lifecycle.py` AST-parses every module under `src/memory` and `tests` and fails if a data attribute is read off a freshly constructed client (`MemoryClient(...).store.x()` / `_memory_client(...).store.x()`) — the pattern whose temporary is garbage-collected, closing its connection via `__del__`, before the call runs. Direct method calls on the temporary (`MemoryClient(...).close()`) are allowed because the bound method keeps the client alive for the call. A self-test proves both detection and the safe forms (bind / `with` / method call); the rule is documented as a code principle in the engineering principles. Runs in the existing CI with no new workflow and no production code change.
+
 ### 2026-07-16 — CV9.E2.S8 Mirror Mode state hook connection lifecycle fixed
 
 Fixed a production bug in `hooks/mirror_state.py` discovered during CV9.E2.S7 validation. `_load_state` and `write_state` chained on a temporary `MemoryClient` (`_memory_client().store.x(...)`); because `get_connection()` opens a fresh connection per call and `MemoryClient.__del__` closes it (the Python 3.14 file-descriptor fix), CPython refcount-collected the temporary right after `.store` — closing the connection before the store method ran — so both the Mirror Mode state read path (`needs-inject`, `get`) and the write path raised `sqlite3.ProgrammingError: Cannot operate on a closed database` whenever `_memory_client()` returned a fresh client, which is the production hook-subprocess path. Every existing test injected a single held client via `return_value=`, so a temporary was never created and the bug stayed invisible; `mark_injected` already sidestepped it by holding the client in a local.
