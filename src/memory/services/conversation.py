@@ -816,7 +816,9 @@ class ConversationService:
             seen_ids: set[str] = set()
             for candidate in extracted:
                 query = f"{candidate.title} {candidate.content[:60]}"
-                results = self.memories.search(query, limit=3, journey=conv.journey)
+                results = self.memories.search(
+                    query, limit=3, journey=conv.journey, log_access=False
+                )
                 for sr in results:
                     if sr.memory.id not in seen_ids:
                         similar.append(sr.memory)

@@ -12,6 +12,14 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-07-16 — CV9.E2.S11 Reinforcement signal integrity completed
+
+Stopped internal machinery from polluting the retrieval reinforcement signal (AI Engineering Audit, AI-12). `MemorySearch.search()` called `store.log_access()` for every returned memory unconditionally, and `access_count` feeds `reinforcement_score` and the hybrid ranker — so the extraction curation pass, MCP agent searches, and exploratory `memories --search` runs all inflated retrieval reinforcement, letting the ranker learn from its own exhaust. The MCP module also claimed "no writes/mutations live here" while its search wrote access rows.
+
+The fix threads `log_access: bool = True` through `search` / `search_with_status` at the engine, service, and client layers; the access-log loop runs only when true. The three non-genuine callers pass `log_access=False` (curation, MCP `search_memories`, CLI `--search`), while Builder context load keeps the default and still reinforces. The MCP docstring's accuracy is restored. No schema change and no reinforcement-math change; a `source` column and an explicit MCP `reinforce` argument are deferred non-goals.
+
+Validation: TDD (4 red-first opt-out tests — engine flag, curation, MCP, CLI — red → green, plus a default-reinforcement regression guard); full unit+integration suite 1851 passed, verified keyless (`OPENROUTER_API_KEY=""`) to match CI; ruff check/format clean; mypy 111 net-zero; a real route showed an agent search leaving access_count at 0 while the default retrieval reinforced to 1; Navigator validated. This leaves AI-06 (model-pin overrides + reachability probe) as the one remaining AI-audit P0 item.
+
 ### 2026-07-16 — CV9.E2.S10 Search offline / no-key degradation completed
 
 Made memory search survive an unreachable embedding provider (AI Engineering Audit, AI-04). `MemorySearch.search()` generated the query embedding on its first line with no guard, so offline / no-key / timeout made every search path raise — `memories --search`, Builder/Mirror context injection, and the MCP `search_memories` tool — even though a complete FTS5 index sits in the same local database. A local-first product whose recall died offline.

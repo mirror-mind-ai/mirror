@@ -67,6 +67,7 @@ def main(argv: list[str] | None = None) -> None:
             memory_type=args.memory_type,
             layer=args.layer,
             journey=args.journey,
+            log_access=False,
         )
         results = outcome.results
         degraded_note = (

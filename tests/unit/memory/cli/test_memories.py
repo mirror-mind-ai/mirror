@@ -36,6 +36,27 @@ def test_search_prints_degraded_marker_when_embedding_unavailable(mocker, tmp_pa
     assert "Nomad freedom" in out
 
 
+def test_search_does_not_reinforce(mocker, tmp_path):
+    unit = np.ones(1536, dtype=np.float32) / np.sqrt(1536)
+    mocker.patch("memory.services.memory.generate_embedding", return_value=unit)
+    mocker.patch("memory.intelligence.search.generate_embedding", return_value=unit)
+    log_spy = mocker.patch("memory.storage.store.Store.log_access")
+    mirror_home = tmp_path / ".mirror" / "u"
+    mem = MemoryClient(env="test", db_path=default_db_path_for_home(mirror_home))
+    mem.add_memory(
+        title="Nomad freedom",
+        content="digital nomad lifestyle",
+        memory_type="insight",
+        journey="mirror",
+    )
+
+    from memory.cli.memories import main
+
+    main(["--mirror-home", str(mirror_home), "--search", "nomad"])
+
+    log_spy.assert_not_called()
+
+
 def test_memories_reads_from_explicit_mirror_home(mocker, tmp_path, capsys):
     _mock_embeddings(mocker)
     mirror_home = tmp_path / ".mirror" / "pati"

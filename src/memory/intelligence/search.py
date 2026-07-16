@@ -146,13 +146,19 @@ class MemorySearch:
         memory_type: str | None = None,
         layer: str | None = None,
         journey: str | None = None,
+        log_access: bool = True,
     ) -> list[SearchResult]:
         """Hybrid search (semantic + lexical + recency + reinforcement) with MMR dedup.
 
         Thin wrapper over ``search_with_status`` returning only the results.
         """
         return self.search_with_status(
-            query, limit=limit, memory_type=memory_type, layer=layer, journey=journey
+            query,
+            limit=limit,
+            memory_type=memory_type,
+            layer=layer,
+            journey=journey,
+            log_access=log_access,
         ).results
 
     def search_with_status(
@@ -162,6 +168,7 @@ class MemorySearch:
         memory_type: str | None = None,
         layer: str | None = None,
         journey: str | None = None,
+        log_access: bool = True,
     ) -> SearchOutcome:
         """Hybrid search that also reports whether it ran degraded (lexical-only).
 
@@ -214,8 +221,10 @@ class MemorySearch:
         # MMR deduplication (ranks on stored embeddings — degraded-safe).
         results = mmr_dedupe(candidates, limit=limit, threshold=MMR_DEDUP_THRESHOLD)
 
-        # Log access for returned memories.
-        for sr in results:
-            self.store.log_access(sr.memory.id, context=query[:200])
+        # Reinforce only on genuine context loads; internal machinery (curation,
+        # MCP agent search, exploratory CLI) passes log_access=False (AI-12).
+        if log_access:
+            for sr in results:
+                self.store.log_access(sr.memory.id, context=query[:200])
 
         return SearchOutcome(results=results, degraded=degraded)

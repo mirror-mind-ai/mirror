@@ -71,6 +71,7 @@ class MemoryService:
         memory_type: str | None = None,
         layer: str | None = None,
         journey: str | None = None,
+        log_access: bool = True,
     ) -> list[SearchResult]:
         """Search memories by hybrid similarity."""
         return self.search_engine.search(
@@ -79,6 +80,7 @@ class MemoryService:
             memory_type=memory_type,
             layer=layer,
             journey=journey,
+            log_access=log_access,
         )
 
     def search_with_status(
@@ -88,6 +90,7 @@ class MemoryService:
         memory_type: str | None = None,
         layer: str | None = None,
         journey: str | None = None,
+        log_access: bool = True,
     ) -> SearchOutcome:
         """Search reporting whether it ran degraded (lexical-only fallback)."""
         return self.search_engine.search_with_status(
@@ -96,6 +99,7 @@ class MemoryService:
             memory_type=memory_type,
             layer=layer,
             journey=journey,
+            log_access=log_access,
         )
 
     def list_recent(

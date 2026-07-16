@@ -176,8 +176,9 @@ class MemoryClient:
         memory_type=None,
         layer=None,
         journey=None,
+        log_access: bool = True,
     ) -> list[SearchResult]:
-        return self.memories.search(query, limit, memory_type, layer, journey)
+        return self.memories.search(query, limit, memory_type, layer, journey, log_access)
 
     def search_with_status(
         self,
@@ -186,8 +187,11 @@ class MemoryClient:
         memory_type: str | None = None,
         layer: str | None = None,
         journey: str | None = None,
+        log_access: bool = True,
     ) -> SearchOutcome:
-        return self.memories.search_with_status(query, limit, memory_type, layer, journey)
+        return self.memories.search_with_status(
+            query, limit, memory_type, layer, journey, log_access
+        )
 
     def get_by_type(self, memory_type: str) -> list[Memory]:
         return self.memories.get_by_type(memory_type)
