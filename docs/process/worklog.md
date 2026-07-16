@@ -12,6 +12,14 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-07-17 — `extensions install` runtime-catalog eviction fixed (maintenance)
+
+Fixed a silent extension-visibility bug found while auditing the `mirror` journey's installed extensions. `install_extension` refreshed each runtime's `extensions.json` by calling `sync_extensions_for_runtime` with only the manifest being installed, and that function overwrites the catalog with exactly the manifests it is given. Because the catalog is the sole discovery source for Pi (`resources_discover` in `.pi/extensions/mirror-logger.ts`) and Claude (`expose-claude`) — with no directory-scan fallback — every single install evicted all previously-installed extensions from the catalog while leaving their `SKILL.md` on disk. On the personal `vinicius-dev` Mirror this had collapsed a 7-extension Pi catalog (and a 6-extension Claude catalog) down to just `admin`, the last extension installed on 2026-07-12; the other six were invisible to the runtime.
+
+The asymmetry that revealed the oversight: `uninstall_extension` already merges via `_prune_catalog_for_extension` (load, drop one, rewrite the rest), while `install` clobbered. The fix rebuilds each affected runtime catalog from the full installed set (`discover_extensions` over the mirror-home extensions dir), which both fixes the eviction and self-heals a catalog a prior single-install run had already truncated. The CLI install report still lists only the just-installed extension, and runtime scope is preserved: `--runtime pi` rebuilds only the pi catalog. The live `vinicius-dev` catalogs were repaired immediately with a full `extensions sync` per runtime (pi restored to 7, claude to 6) ahead of the code fix.
+
+Validation: TDD (red-first `test_second_install_preserves_prior_extensions_in_runtime_catalog` asserting a second install keeps the first in both the pi and claude catalogs, red → green); extensions suites 141 passed including the limit-runtime and uninstall-empties-catalog guards; full unit+integration suite 1863 passed, verified keyless; ruff check/format clean; mypy 111 net-zero. Recorded in [Troubleshooting](troubleshooting.md#extensions-install-collapses-the-runtime-skill-catalog-to-one-extension).
+
 ### 2026-07-16 — CV9.E2.S12 Model-pin overrides & reachability probe completed
 
 Made the pipeline's model pins overridable and their deprecation visible (AI Engineering Audit, AI-06 — the last P0). `EXTRACTION_MODEL` and `EMBEDDING_MODEL` were hard-coded and non-overridable; a deprecated model (a certainty on a 1.0 timescale) would 404 every extraction and, because those paths fail soft, degrade the system silently for weeks. `runtime diagnose` had no check that the pins still resolve.

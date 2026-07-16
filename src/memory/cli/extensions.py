@@ -479,12 +479,26 @@ def install_extension(
             extension_id=extension_id,
         )
 
+    # Rebuild each runtime catalog from the *full* set of installed extensions,
+    # not just the one being installed. `sync_extensions_for_runtime` overwrites
+    # extensions.json with exactly the manifests it is given, so feeding it a
+    # single manifest drops every previously-installed extension from the catalog
+    # while leaving its SKILL.md on disk. The catalog is the discovery source for
+    # Pi (`resources_discover`) and Claude (`expose-claude`) with no directory
+    # fallback, so a truncated catalog makes prior extensions invisible. Passing
+    # the complete installed set keeps the catalog authoritative and self-heals a
+    # catalog that a previous single-install run had already truncated.
+    installed_manifests, _ = discover_extensions(target_extensions_root)
+
     synced: dict[str, list[dict[str, str]]] = {}
     for runtime_name in runtimes:
         runtime_target_root = default_runtime_skills_dir_for_home(mirror_home, runtime_name)
-        synced[runtime_name] = sync_extensions_for_runtime(
-            [installed_manifest], runtime_name, runtime_target_root
+        all_synced = sync_extensions_for_runtime(
+            installed_manifests, runtime_name, runtime_target_root
         )
+        # The catalog on disk holds the full set; the CLI report stays focused on
+        # the extension the user just installed.
+        synced[runtime_name] = [entry for entry in all_synced if entry["id"] == extension_id]
 
     return {
         "extension_id": extension_id,

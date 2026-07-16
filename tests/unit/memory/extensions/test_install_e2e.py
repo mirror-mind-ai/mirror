@@ -71,6 +71,43 @@ def test_install_is_idempotent_on_migrations(source_root, mirror_home):
     assert second["register_validated"] is True
 
 
+def test_second_install_preserves_prior_extensions_in_runtime_catalog(source_root, mirror_home):
+    """A later install must not evict earlier extensions from the runtime catalog.
+
+    ``extensions.json`` is the discovery source for Pi (``resources_discover``)
+    and Claude (``expose-claude``); there is no directory-scan fallback. A single
+    install used to overwrite the catalog with only the just-installed manifest,
+    so every previously-installed extension became invisible to the runtime while
+    its ``SKILL.md`` stayed on disk. Installing a second extension must leave the
+    first in every runtime catalog it belongs to.
+    """
+    from memory.cli.extensions import load_runtime_catalog
+
+    # A second, independent prompt-skill staged next to hello.
+    second_dir = source_root / "second"
+    second_dir.mkdir()
+    (second_dir / "SKILL.md").write_text("# Second\n")
+    (second_dir / "skill.yaml").write_text(
+        "id: second\n"
+        "name: Second\n"
+        "category: extension\n"
+        "kind: prompt-skill\n"
+        "summary: second prompt skill\n"
+        "runtimes:\n"
+        "  pi:\n    command_name: ext-second\n    skill_file: SKILL.md\n"
+        "  claude:\n    command_name: ext:second\n    skill_file: SKILL.md\n"
+    )
+
+    install_extension("hello", source_root=source_root, mirror_home=mirror_home)
+    install_extension("second", source_root=source_root, mirror_home=mirror_home)
+
+    for runtime in ("pi", "claude"):
+        ids = {entry["id"] for entry in load_runtime_catalog(runtime, mirror_home)["extensions"]}
+        assert {"hello", "second"} <= ids, (
+            f"{runtime} catalog lost a prior extension after a later install: {sorted(ids)}"
+        )
+
+
 def test_install_surfaces_migration_failure_as_validation_error(tmp_path, mirror_home):
     """A migration that violates the prefix is reported as a validation
     error from the install path so the CLI shows a single error type."""

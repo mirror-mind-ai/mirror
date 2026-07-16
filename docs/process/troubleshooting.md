@@ -26,6 +26,7 @@ but no fix yet are also welcome (mark them `Status: mitigated`).
 - [Pi logger fails silently when `python3` resolves outside the project venv](#pi-logger-fails-silently-when-python3-resolves-outside-the-project-venv)
 - [`extensions install` writes migrations to the wrong database outside production](#extensions-install-writes-migrations-to-the-wrong-database-outside-production)
 - [`extensions install` copies through a symlinked extension path](#extensions-install-copies-through-a-symlinked-extension-path)
+- [`extensions install` collapses the runtime skill catalog to one extension](#extensions-install-collapses-the-runtime-skill-catalog-to-one-extension)
 
 ---
 
@@ -680,6 +681,72 @@ three shapes: symlink-to-source (copy skipped, symlink preserved, install
 completes), source == installed dir (idempotent, no same-file error), and
 symlink-to-external (refused, external directory untouched). Full suite green,
 ruff clean.
+
+---
+
+## `extensions install` collapses the runtime skill catalog to one extension
+
+**Date:** 2026-07-17
+**Status:** fixed
+**Affected component:** `extensions install`, Pi `resources_discover`, `expose-claude`
+**Severity:** silent loss of extension visibility (installed extensions become unreachable by the runtime)
+
+### Symptom
+
+After installing several extensions one at a time, only the **last-installed**
+extension is available to the runtime. On Pi, `resources_discover` loads a single
+external skill; on Claude, `expose-claude` copies only one `ext:*` skill into
+`.claude/skills/`. The other extensions' `SKILL.md` directories still exist under
+`<mirror home>/runtime/skills/<runtime>/`, and `extensions list` (which scans the
+extensions source dir) still shows every extension — but the runtime catalog
+lists only one:
+
+```bash
+uv run python -m memory inspect runtime-catalog pi --mirror-home <home>
+# extensions: admin -> ext-admin        (only one, though 7 ext-* dirs exist)
+```
+
+### Root cause
+
+`install_extension` refreshed the runtime catalog by calling
+`sync_extensions_for_runtime([installed_manifest], ...)` — a single manifest.
+`sync_extensions_for_runtime` ends by overwriting `extensions.json` with exactly
+the manifests it is given, so each single install truncated the catalog to that
+one extension. The copy step never removes sibling skill directories, so the
+`SKILL.md` files remained on disk while the catalog — the sole discovery source
+for Pi (`resources_discover`, no directory-scan fallback) and Claude
+(`expose-claude`) — dropped them. `uninstall_extension` already merged correctly
+via `_prune_catalog_for_extension`; only the install path clobbered.
+
+### Fix
+
+`install_extension` now rebuilds each affected runtime catalog from the **full**
+set of installed extensions (`discover_extensions` over the mirror-home
+extensions dir) instead of the single installed manifest. This fixes the
+eviction and self-heals a catalog a previous single-install run had already
+truncated. The CLI install report still lists only the just-installed extension,
+and `--runtime <name>` still rebuilds only that runtime's catalog.
+
+### Recovery
+
+A full sync per runtime rebuilds the complete catalog without a code change (it
+also runs automatically on the next install once the fix is present):
+
+```bash
+uv run python -m memory extensions sync --runtime pi \
+  --mirror-home <home> --target-root <home>/runtime/skills/pi
+uv run python -m memory extensions sync --runtime claude \
+  --mirror-home <home> --target-root <home>/runtime/skills/claude
+```
+
+### Validation evidence
+
+Red-first `test_second_install_preserves_prior_extensions_in_runtime_catalog` in
+`tests/unit/memory/extensions/test_install_e2e.py` installs two extensions and
+asserts both survive in the pi and claude catalogs (red → green). Full
+unit+integration suite 1863 passed keyless; ruff and format clean; mypy
+net-zero. The personal `vinicius-dev` Mirror was repaired live: pi restored to 7
+extensions, claude to 6.
 
 ---
 
