@@ -2,7 +2,7 @@
 
 # AI Engineering Audit — Model-in-the-Loop Readiness for 1.0
 
-**Lens:** ai-engineer · **Date:** 2026-07-16 · **Status:** findings recorded, no CRs captured yet
+**Lens:** ai-engineer · **Date:** 2026-07-16 · **Status:** captured as [RS006](roadmap/cv22-typescript-core-port/refinement/rs006-ai-engineering-audit.md) (CR036–CR055) — execution not started
 **Scope:** the entire project's model-in-the-loop surfaces — LLM calls, embeddings, retrieval, extraction, evals, cost, degradation, and the CV22 DS5/DS6 port of all of it — audited against the goal of a **stable 1.0 release** (CV9).
 
 > *The sixth lens. RS001–RS005 audited the code, the trust, the data, the operations, and the attack surface of the CV22 front door. Nobody had yet audited the model itself as a dependency: what happens on the thousandth extraction, with the provider down, a poisoned transcript, a deprecated model ID, and a cost ledger that was never written.*
@@ -555,11 +555,12 @@ them in Python now (they protect today's users) *and* encode each as a DS5
 acceptance criterion so the TS port cannot inherit the gap. The port then
 retires the Python fix along with the code it fixed.
 
-**Suggested execution route:** capture these as Change Requests in the Ariad
-Workbench under a new Refinement Story (RS006, ai-engineer lens), joining the
-RS001–RS005 campaign pattern — tiered, evidence-first, one CR per commit. The
-P0 tier is one focused sitting; AI-18/AI-19 are riders to write into the CV22
-index next to the security riders before DS5 is pulled.
+**Execution route:** captured as Change Requests in the Ariad Workbench under
+[RS006](roadmap/cv22-typescript-core-port/refinement/rs006-ai-engineering-audit.md)
+(ai-engineer lens, CR036–CR055), joining the RS001–RS005 campaign pattern —
+tiered, evidence-first, one CR per commit. The P0 tier is one focused sitting;
+AI-18/AI-19 (CR053) are riders to write into the CV22 index next to the
+security riders before DS5 is pulled.
 
 ---
 
@@ -600,7 +601,8 @@ grows:
 
 ---
 
-**See also:** [CV22 index — Security Riders](roadmap/cv22-typescript-core-port/index.md) ·
+**See also:** [RS006 story record](roadmap/cv22-typescript-core-port/refinement/rs006-ai-engineering-audit.md) ·
+[CV22 index — Security Riders](roadmap/cv22-typescript-core-port/index.md) ·
 [Refinement Campaign RS001–RS005](roadmap/cv22-typescript-core-port/refinement/index.md) ·
 [Decisions](decisions.md) · [Engineering Principles](../process/engineering-principles.md) ·
 [CV9 — Mirror Mind 1.0](roadmap/cv9-mirror-1-0/index.md)

@@ -131,6 +131,20 @@ A few CRs shared a commit because they touched the same code seam:
 journey-scoped") is a pre-existing, unattached Workbench capture from earlier
 work and remains `captured`; it is unrelated to CV22.
 
+## Follow-on story
+
+After the campaign closed, a sixth lens audited the half the campaign did not
+reach — the model as a dependency (LLM calls, embeddings, retrieval,
+extraction, evals, cost, degradation), mostly in the Python intelligence layer
+that CV22.DS5 will port:
+
+| Story | Lens | CRs | Status |
+|-------|------|-----|--------|
+| [RS006](rs006-ai-engineering-audit.md) | ai-engineer | CR036–CR055 (20) | captured — execution not started |
+
+RS006 is not part of this campaign's 34/34 count. Its findings record is the
+[AI Engineering Audit](../../../ai-engineering-audit.md).
+
 ---
 
 ## Net effect
