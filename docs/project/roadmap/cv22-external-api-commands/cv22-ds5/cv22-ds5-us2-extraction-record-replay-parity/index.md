@@ -2,37 +2,49 @@
 
 # CV22.DS5.US2 — Extraction Record/Replay Parity
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 **Type:** User Story
 
 ---
 
-## User Story
-
-As a Mirror user,
-I want conversation-to-memory extraction to behave the same through the TS core,
-So that memory creation can move toward TS without losing extraction semantics.
-
 ## Outcome
 
-Extraction orchestration is ported behind replayable provider responses, preserving
-Python-compatible parsing, curation, and persistence boundaries without live API use
-in CI.
+Port TS conversation extraction core behind scrubbed replay providers and DB-copy validation, without front-door routing or live-provider CI dependency.
+
+## Story Statement
+
+As a user,
+I want to Extraction Record/Replay Parity,
+So that I can receive the value of this story.
+
+## Acceptance Behavior
+
+```text
+Given the starting state needed for Replay Parity
+When the Navigator exercises Replay Parity
+Then the planned observable behavior is visible
+And out-of-scope sibling roadmap items remain untouched
+```
 
 ## Scope
 
-- Map the Python extraction orchestration and prompt/response parsing contract.
-- Use recorded/scrubbed LLM responses for deterministic tests.
-- Preserve journey and quality guards where extraction is invoked.
-- Prove persistence effects on DB copies only.
+- Deliver Replay Parity as an observable slice.
+- Keep the implementation narrow enough to validate at the Plan-defined checkpoint.
 
 ## Out Of Scope
 
-- Redesigning extraction quality.
-- Live LLM evals in CI.
-- Consult command parity.
+- Do not implement sibling roadmap item: Consult Command Parity.
+- Do not implement sibling roadmap item: Front-Door External-API Routing And Dogfood.
+- Do not implement sibling roadmap item: External-API Commands.
 
 ## Validation
 
-Replay fixtures, parser parity checks, DB-copy persistence checks, and optional
-manual live-provider smoke outside CI.
+- Run automated tests that cover the planned behavior.
+- Provide a Navigator-visible route with expected observation, pass condition, and fail condition.
+
+---
+
+## Artifacts
+
+- [Plan](plan.md)
+- [Test Guide](test-guide.md)

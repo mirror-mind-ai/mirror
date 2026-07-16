@@ -7,6 +7,12 @@
 // other by deep path; only the public API lives here, and it is kept in sync as
 // the strangler grows (CR011).
 
+// --- Conversation extraction ---
+export type {
+  ConversationExtractionOptions,
+  ConversationExtractionResult,
+} from "./conversation/extraction.ts";
+export { runConversationExtraction } from "./conversation/extraction.ts";
 export type { BackupRecord } from "./db/backupGate.ts";
 export { BackupGateError, requireBackup, sha256File } from "./db/backupGate.ts";
 export { assertCopyTarget, CopyOnlyGuardError } from "./db/copyGuard.ts";
@@ -31,17 +37,28 @@ export { blobToFloat32, parseUtcMs } from "./db/decode.ts";
 export { assertFtsIntegrity, FtsIntegrityError } from "./db/ftsIntegrity.ts";
 export { optionalNumber, optionalString, requireString } from "./db/rowDecode.ts";
 export { assertSchemaState, KNOWN_MIGRATION_IDS, SchemaStateError } from "./db/schemaState.ts";
-
+export type {
+  ExistingMemoryForCuration,
+  ExtractedMemory,
+  ExtractedTask,
+  ExtractionMessage,
+} from "./extraction/conversation.ts";
+export {
+  curateAgainstExisting,
+  extractMemories,
+  extractTasks,
+  formatTranscript,
+  naiveSummary,
+} from "./extraction/conversation.ts";
+export { parseJsonResponse } from "./extraction/json.ts";
 // --- Front-door routing ---
 export type { FrontDoorEngine, RouteDecision } from "./frontDoor/routing.ts";
 export { routeMemoryCommand } from "./frontDoor/routing.ts";
-
 // --- Identity (read model + writes) ---
 export type { IdentityRow } from "./identity/identityStore.ts";
 export { updateIdentityMetadata, upsertIdentity } from "./identity/identityStore.ts";
 export type { SetIdentityInput } from "./identity/setIdentity.ts";
 export { setIdentity } from "./identity/setIdentity.ts";
-
 // --- Journeys (options + writes) ---
 export type {
   JourneyHierarchy,
@@ -57,7 +74,6 @@ export {
   journeyMetadata,
   setProjectPath,
 } from "./journey/journeyWrite.ts";
-
 // --- Memory (listing + reinforcement writes) ---
 export type { ListRecentFilters, MemorySummary } from "./memory/listing.ts";
 export {
@@ -88,6 +104,7 @@ export {
 // --- Persona routing ---
 export type { PersonaMatch, PersonaRoutingRow } from "./persona/detectPersona.ts";
 export { detectPersona, normalizeRoutingText } from "./persona/detectPersona.ts";
+
 // --- External providers (DS5 substrate) ---
 export type { ProviderConfig, ProviderConfigOptions, ProviderName } from "./providers/config.ts";
 export { ProviderConfigError, resolveProviderConfig } from "./providers/config.ts";
@@ -97,6 +114,18 @@ export {
   loadReplayEmbeddingProvider,
   ReplayEmbeddingProvider,
 } from "./providers/embedding.ts";
+export type {
+  LlmProvider,
+  LlmRequest,
+  LlmResponse,
+  LlmRole,
+  ReplayLlmFixture,
+} from "./providers/llm.ts";
+export {
+  assertReplayLlmFixture,
+  loadReplayLlmProvider,
+  ReplayLlmProvider,
+} from "./providers/llm.ts";
 export type { RedactionOptions } from "./providers/redaction.ts";
 export {
   assertFixtureSafe,
