@@ -30,6 +30,7 @@ import { JourneyNotFoundError } from "../journey/journeyWrite.ts";
 import { expandHome } from "../util/paths.ts";
 import { newId, nowIso } from "../util/pyGenerators.ts";
 import { optionValue, stripOptionWithValue } from "./args.ts";
+import { runConsultRoute } from "./consultRoute.ts";
 import { MirrorHomeNotConfiguredError, resolveDbPath } from "./dbPath.ts";
 import { frontDoorLogPath, logFrontDoor } from "./frontDoorLog.ts";
 import { applyIdentitySet } from "./identityWrite.ts";
@@ -40,6 +41,7 @@ import { renderDetectPersona } from "./render/detectPersona.ts";
 import { renderJourneys } from "./render/journeys.ts";
 import { renderMemories } from "./render/memories.ts";
 import { type FrontDoorEngine, routeMemoryCommand } from "./routing.ts";
+import { runMemorySearchRoute } from "./searchRoute.ts";
 
 /**
  * Resolve the database path for a CLI invocation, mapping a configuration
@@ -203,6 +205,14 @@ function isJourneyWrite(argv: readonly string[]): boolean {
   return argv[0] === "journey" && argv[1] === "set-path";
 }
 
+function isMemorySearch(argv: readonly string[]): boolean {
+  return argv[0] === "memories" && argv.includes("--search");
+}
+
+function isConsult(argv: readonly string[]): boolean {
+  return argv[0] === "consult";
+}
+
 /**
  * Route `journey set-path <slug> <path>` to the TS core. Normalizes the path like
  * Python (`Path.expanduser().resolve()`), writes through the live-write seam after a
@@ -246,14 +256,39 @@ function resolveLogPath(argv: readonly string[]): string | null {
   }
 }
 
-function dispatch(argv: readonly string[], engine: FrontDoorEngine): number {
+async function runMemorySearch(argv: readonly string[]): Promise<number> {
+  const dbPath = resolveDbPathForCli(argv.slice(1));
+  if (dbPath === null) return 2;
+  if (!existsSync(dbPath)) return fallbackPython(argv);
+  const db = openDatabaseForWrite(dbPath, ensureBackup(dbPath));
+  try {
+    assertSchemaState(db);
+    process.stdout.write(await runMemorySearchRoute(db, argv.slice(1)));
+    return 0;
+  } catch (error) {
+    if (error instanceof SchemaStateError) {
+      console.error(`Mirror TS front door: ${error.message}`);
+      return 2;
+    }
+    throw error;
+  } finally {
+    db.close();
+  }
+}
+
+async function dispatch(argv: readonly string[], engine: FrontDoorEngine): Promise<number> {
   if (engine === "python") return fallbackPython(argv);
   if (isIdentityWrite(argv)) return runIdentityWrite(argv);
   if (isJourneyWrite(argv)) return runJourneyWrite(argv);
+  if (isMemorySearch(argv)) return runMemorySearch(argv);
+  if (isConsult(argv)) {
+    process.stdout.write(await runConsultRoute(argv.slice(1)));
+    return 0;
+  }
   return runTs(argv);
 }
 
-export function main(argv = process.argv.slice(2)): number {
+export async function main(argv = process.argv.slice(2)): Promise<number> {
   const nodeError = nodeVersionError(process.versions.node);
   if (nodeError) {
     console.error(nodeError);
@@ -262,7 +297,7 @@ export function main(argv = process.argv.slice(2)): number {
   const decision = routeMemoryCommand(argv);
   const logPath = resolveLogPath(argv);
   try {
-    const exitCode = dispatch(argv, decision.engine);
+    const exitCode = await dispatch(argv, decision.engine);
     logFrontDoor(logPath, { command: decision.command, route: decision.engine, exitCode });
     return exitCode;
   } catch (error) {
@@ -281,5 +316,5 @@ export function main(argv = process.argv.slice(2)): number {
 // Run only when invoked as the CLI entry, not when imported (keeps the module
 // importable for tests and tooling).
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
-  process.exitCode = main();
+  process.exitCode = await main();
 }

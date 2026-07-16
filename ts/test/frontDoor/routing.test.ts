@@ -12,14 +12,52 @@ test("routes DS2 read commands to TS", () => {
   assert.equal(routeMemoryCommand(["memories", "--limit", "5"]).engine, "ts");
 });
 
-test("keeps fresh semantic search and unported commands on Python fallback", () => {
+test("routes DS5 external commands to TS only under replay-safe gate", () => {
   assert.deepEqual(routeMemoryCommand(["memories", "--search", "builder"]), {
     command: "memories",
     engine: "python",
-    reason: "fresh semantic search remains Python until CV22.DS5",
+    reason: "fresh semantic search needs DS5 replay/live config for TS route",
   });
+  assert.deepEqual(
+    routeMemoryCommand(["memories", "--search", "builder"], {
+      MIRROR_TS_EXTERNAL_ROUTES: "1",
+      MIRROR_TS_SEARCH_EMBEDDING_REPLAY: "/tmp/embedding.json",
+    }),
+    {
+      command: "memories",
+      engine: "ts",
+      reason: "DS5 fresh semantic search routed to TS under replay-safe config",
+    },
+  );
+  assert.deepEqual(
+    routeMemoryCommand(["consult", "credits"], {
+      MIRROR_TS_EXTERNAL_ROUTES: "1",
+      MIRROR_TS_CREDITS_REPLAY: "/tmp/credits.json",
+    }),
+    {
+      command: "consult",
+      engine: "ts",
+      reason: "DS5 consult credits routed to TS under replay-safe config",
+    },
+  );
+  assert.deepEqual(
+    routeMemoryCommand(["consult", "gemini", "hello"], {
+      MIRROR_TS_EXTERNAL_ROUTES: "1",
+      MIRROR_TS_CONSULT_LLM_REPLAY: "/tmp/llm.json",
+      MIRROR_TS_CREDITS_REPLAY: "/tmp/credits.json",
+    }),
+    {
+      command: "consult",
+      engine: "ts",
+      reason: "DS5 consult ask routed to TS under replay-safe config",
+    },
+  );
+});
+
+test("keeps unported commands on Python fallback", () => {
   assert.equal(routeMemoryCommand(["build", "load", "mirror-ts-core"]).engine, "python");
   assert.equal(routeMemoryCommand(["journal", "hello"]).engine, "python");
+  assert.equal(routeMemoryCommand(["conversation-logger", "extract-pending"]).engine, "python");
 });
 
 test("routes `identity set` writes to TS but keeps edit/reads and journey writes on Python", () => {
