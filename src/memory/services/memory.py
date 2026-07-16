@@ -3,12 +3,22 @@
 import json
 from collections.abc import Callable
 
+import numpy as np
+
 from memory.config import LOG_LLM_CALLS
 from memory.intelligence.embeddings import embedding_to_bytes, generate_embedding
 from memory.intelligence.llm_router import LLMResponse
 from memory.intelligence.search import MemorySearch
 from memory.models import Memory, MemorySummary, SearchResult
 from memory.storage.store import Store
+
+
+def memory_embed_text(title: str, content: str, context: str | None = None) -> str:
+    """The text embedded for a memory: title, content, and optional context."""
+    text = f"{title}. {content}"
+    if context:
+        text += f" Context: {context}"
+    return text
 
 
 class MemoryService:
@@ -28,13 +38,16 @@ class MemoryService:
         tags: list[str] | None = None,
         conversation_id: str | None = None,
         metadata: str | None = None,
+        embedding: np.ndarray | None = None,
     ) -> Memory:
-        """Add a manual memory without automatic extraction."""
-        embed_text = f"{title}. {content}"
-        if context:
-            embed_text += f" Context: {context}"
+        """Add a manual memory without automatic extraction.
 
-        emb = generate_embedding(embed_text)
+        ``embedding`` may be a precomputed vector — staged up front by the
+        extraction pipeline so a partial failure persists nothing (CV9.E2.S9).
+        When omitted, the embedding is generated here.
+        """
+        if embedding is None:
+            embedding = generate_embedding(memory_embed_text(title, content, context))
 
         mem = Memory(
             conversation_id=conversation_id,
@@ -46,7 +59,7 @@ class MemoryService:
             journey=journey,
             persona=persona,
             tags=json.dumps(tags) if tags else None,
-            embedding=embedding_to_bytes(emb),
+            embedding=embedding_to_bytes(embedding),
             metadata=metadata,
         )
         return self.store.create_memory(mem)

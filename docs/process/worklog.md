@@ -12,6 +12,14 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-07-16 — CV9.E2.S9 Extraction idempotency across partial failure completed
+
+Made memory extraction idempotent across partial failure (AI Engineering Audit, AI-03). `_extract_and_persist` generated each memory's embedding inside `add_memory` and committed per row (`create_memory`), setting `metadata.extracted` only after the whole loop — so an embedding failure on the third of five memories left the first two committed, the flag unset, and (via the CV9.E2.S7 retry) the next run re-ran the LLM and re-stored, accumulating duplicates with doubled embedding spend.
+
+The fix stages every network embedding first — the summary embedding and each memory's — before any write. A failure now propagates before a single memory is persisted, so the S7 retry starts clean. `add_memory` gained an optional precomputed `embedding` parameter (backward compatible) and a shared `memory_embed_text` helper keeps the staged and generated text identical. No transaction wrapper and no schema change: after staging, the store phase is local-only.
+
+Validation: TDD (3 red-first tests — partial-store, retry-duplication, precomputed-embedding — red → green, plus summary-failure and happy-path guards); full unit+integration suite 1840 passed; ruff check/format clean; mypy 111 net-zero; a real partial-failure route showed 0 memories after the failed attempt and exactly 3 (not 5) after the retry; Navigator validated.
+
 ### 2026-07-16 — Architecture guard against chained MemoryClient temporaries
 
 Closed the connection-lifecycle footgun behind CV9.E2.S7 and CV9.E2.S8 with a durable guard. `tests/unit/architecture/test_client_connection_lifecycle.py` AST-parses every module under `src/memory` and `tests` and fails if a data attribute is read off a freshly constructed client (`MemoryClient(...).store.x()` / `_memory_client(...).store.x()`) — the pattern whose temporary is garbage-collected, closing its connection via `__del__`, before the call runs. Direct method calls on the temporary (`MemoryClient(...).close()`) are allowed because the bound method keeps the client alive for the call. A self-test proves both detection and the safe forms (bind / `with` / method call); the rule is documented as a code principle in the engineering principles. Runs in the existing CI with no new workflow and no production code change.

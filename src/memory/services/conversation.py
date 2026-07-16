@@ -23,6 +23,7 @@ from memory.intelligence.extraction import (
 )
 from memory.intelligence.llm_router import LLMResponse
 from memory.models import Conversation, ConversationSummary, Memory, Message
+from memory.services.memory import memory_embed_text
 from memory.services.metadata_lifecycle import (
     dry_run_metadata_lifecycle as dry_run_metadata_lifecycle_policy,
 )
@@ -861,16 +862,25 @@ class ConversationService:
         else:
             summary_text = _naive_summary(messages)
 
+        # Stage every network embedding first — the summary and each memory — so
+        # a failure leaves nothing persisted. The S7 retry then starts clean and
+        # does not duplicate rows or re-spend on embeddings (AI-03 / CV9.E2.S9).
+        summary_bytes: bytes | None = None
         if summary_text:
-            summary_emb = generate_embedding(summary_text)
-            self.store.store_conversation_embedding(
-                conversation_id, embedding_to_bytes(summary_emb)
-            )
+            summary_bytes = embedding_to_bytes(generate_embedding(summary_text))
+
+        staged_memories = [
+            (ext, generate_embedding(memory_embed_text(ext.title, ext.content, ext.context)))
+            for ext in extracted
+        ]
+
+        # All embeddings succeeded — only local writes remain.
+        if summary_bytes is not None:
+            self.store.store_conversation_embedding(conversation_id, summary_bytes)
             self.store.update_conversation(conversation_id, summary=summary_text[:1000])
 
-        # Persist extracted memories with embeddings.
         stored_memories = []
-        for ext in extracted:
+        for ext, emb in staged_memories:
             stored = self.memories.add_memory(
                 title=ext.title,
                 content=ext.content,
@@ -881,6 +891,7 @@ class ConversationService:
                 persona=ext.persona,
                 tags=ext.tags,
                 conversation_id=conversation_id,
+                embedding=emb,
             )
             stored_memories.append(stored)
 

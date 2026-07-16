@@ -3,7 +3,7 @@
 # CV9.E2 — Stabilization & Robustness
 
 **Epic:** Harden failure modes so Mirror Mind degrades safely instead of breaking or corrupting runtime state  
-**Status:** Planned, with CV9.E2.S3 production updater fix, CV9.E2.S4 conversation title hardening, CV9.E2.S5 backup destination resolution, and CV9.E2.S6 runtime state home containment done; CV9.E2.S7 extraction failure isolation and CV9.E2.S8 mirror-state connection lifecycle done; conversation metadata lifecycle identified as [CV9.DS7](../cv9-ds7-conversation-metadata-lifecycle/index.md). The [AI Engineering Audit](../../../ai-engineering-audit.md) supplies the model-in-the-loop stabilization backlog (AI-01 timeouts landed on `main`; AI-02 is S7).
+**Status:** Planned, with CV9.E2.S3 production updater fix, CV9.E2.S4 conversation title hardening, CV9.E2.S5 backup destination resolution, and CV9.E2.S6 runtime state home containment done; CV9.E2.S7 extraction failure isolation and CV9.E2.S8 mirror-state connection lifecycle done, CV9.E2.S9 extraction idempotency done; conversation metadata lifecycle identified as [CV9.DS7](../cv9-ds7-conversation-metadata-lifecycle/index.md). The [AI Engineering Audit](../../../ai-engineering-audit.md) supplies the model-in-the-loop stabilization backlog (AI-01 timeouts landed on `main`; AI-02 is S7).
 **Depends on:** CV9.E1 Boundary Hardening, except for isolated production-bug fixes that are already understood
 
 ---
@@ -48,6 +48,7 @@ recoverable.
 | [CV9.E2.S6](cv9-e2-s6-runtime-state-home-containment/index.md) | Runtime State Home Containment | Done |
 | [CV9.E2.S7](cv9-e2-s7-extraction-failure-isolation/index.md) | Extraction Failure Isolation & Quarantine (AI-02) | Done |
 | [CV9.E2.S8](cv9-e2-s8-mirror-state-connection-lifecycle/index.md) | Mirror Mode State Hook Connection Lifecycle | Done |
+| [CV9.E2.S9](cv9-e2-s9-extraction-idempotency/index.md) | Extraction Idempotency Across Partial Failure (AI-03) | Done |
 
 ---
 
