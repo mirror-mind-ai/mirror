@@ -2,7 +2,7 @@
 
 # CV22.DS5 — External-API Commands
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 **Type:** Delivery Story
 **Flow unit:** story-by-story — DS5 is intentionally not a single implementation unit.
 
@@ -36,7 +36,7 @@ families.
 | [CV22.DS5.US1](cv22-ds5-us1-fresh-embedding-search-parity/index.md) | Fresh Embedding Search Parity | User Story | `memories --search` / semantic search can use TS for the full fresh-query path, including embedding retrieval, access-count strategy, ranker reuse, and reinforcement-write routing where appropriate. | ✅ Done |
 | [CV22.DS5.US2](cv22-ds5-us2-extraction-record-replay-parity/index.md) | Extraction Record/Replay Parity | User Story | Conversation/memory extraction orchestration is ported with recorded provider responses, parser parity, and no live-provider dependency in CI. | ✅ Done |
 | [CV22.DS5.US3](cv22-ds5-us3-consult-command-parity/index.md) | Consult Command Parity | User Story | Consult-style external model calls have a TS command path with provider safety, replayable tests, and Python-compatible user-facing behavior. | ✅ Done |
-| [CV22.DS5.US4](cv22-ds5-us4-front-door-external-api-routing/index.md) | Front-Door External-API Routing And Dogfood | User Story | Ported external-API commands are selectively routed through the TS front door under safe config, with Python fallback for anything unported or unsafe. | 🟡 Planned |
+| [CV22.DS5.US4](cv22-ds5-us4-front-door-external-api-routing/index.md) | Front-Door External-API Routing And Dogfood | User Story | Ported external-API commands are selectively routed through the TS front door under safe config, with Python fallback for anything unported or unsafe. | ✅ Done |
 
 ## Required Plan Inputs
 
@@ -73,8 +73,14 @@ families.
 - No committed real provider secrets, raw live payloads, or private database
   material.
 
+## Handoff Review
+
+A post-implementation multi-persona handoff review was recorded in [`handoff-review.md`](handoff-review.md). The review found no blockers and documents the collaboration-protocol update: future major DS work should receive technical persona review at Plan time and again before handoff.
+
 ## See also
 
+- [Done](done.md)
+- [Handoff Review](handoff-review.md)
 - [CV22 index](../../cv22-typescript-core-port/index.md)
 - [CV22 Collaboration Strategy](../../cv22-typescript-core-port/collaboration-strategy.md)
 - [CV22 Refinement Campaign](../../cv22-typescript-core-port/refinement/index.md)

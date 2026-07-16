@@ -100,9 +100,27 @@ Expected plateau:
 - backup gates and mutation safety are explicit;
 - schema compatibility remains intact.
 
-### Later batons: CV22.DS5 and CV22.DS6
+### Baton 5: Alisson closes CV22.DS5, External-API Commands
 
-DS5 and DS6 should be divided once the earlier plateaus reveal the real shape of the external-API and convergence work.
+Alisson carried DS5 through the external-API command plateau after Vinícius closed DS4.
+
+Plateau reached:
+
+- TS has a safe provider substrate for external calls: env/config-only secrets, redaction, deterministic replay fixtures, and committed tests that do not hit live APIs;
+- fresh semantic search can run through TS with replayed embeddings, TS ranking, grouped access-count semantics, and backup-gated access logging;
+- conversation extraction orchestration is ported behind replayed LLM/embedding providers, with DB-copy validation and no live-provider CI dependency;
+- consult command parsing, model resolution, request construction, credits/cost handling, and rendering have TS parity behind replayed providers;
+- the front door now routes only the validated external surfaces under explicit replay-safe gates: `memories --search`, `consult credits`, and consult ask;
+- unsafe, unconfigured, unknown, extraction-lifecycle, and out-of-scope paths remain Python fallback;
+- DS5 closure includes a post-implementation multi-persona handoff review. Plan-stage persona review was skipped only because the protocol was adopted after implementation.
+
+Handoff statement to Vinícius:
+
+> DS5 is closed at the replay-safe external-API plateau. The TS core can exercise external-provider-backed command families without live credentials in CI, and the front door routes only validated DS5 surfaces under explicit gates while preserving Python fallback everywhere else. Please treat this as replay/copy-safe parity, not live-provider cutover. The next work should either verify/push the DS5 closure and then move toward DS6 convergence/schema custody, or explicitly plan a live-provider cutover story with the new multi-persona Plan review protocol before implementation.
+
+### Later baton: CV22.DS6
+
+DS6 should be divided after DS5 handoff and CI verification clarify the remaining convergence work.
 
 One DS6 deliverable is already named and must not be lost in the division:
 **schema custody transfer** (RS003/CR019). Everything that creates, migrates,
@@ -130,6 +148,25 @@ But this should not become fine-grained slicing too early. The same baton rule a
 
 A handoff should say: “this state is coherent and resumable.” Avoid handing off while the code is merely locally understandable to the current driver.
 
+### Use multi-persona technical review at baton boundaries
+
+For significant Delivery Stories and handoffs, run a structured review with the shared technical personas before the baton changes hands. The baseline review panel is:
+
+- engineer;
+- QA;
+- database architect;
+- devops;
+- security.
+
+The review has two checkpoints:
+
+1. **Plan review, before implementation** — each persona reviews the planned slice, risks, validation route, and missing constraints. This is the preferred protocol for new work, following Vinícius's Ariad practice: enrich the plan before code starts, similar in spirit to TDD but with the full technical team shaping the target.
+2. **Implementation/handoff review, after validation** — each persona reviews the delivered code, tests, safety posture, operational risks, and handoff clarity. Findings are classified as blockers, non-blocking debt, questions for the next driver, or accepted scope boundaries.
+
+If a story is already implemented before this protocol is applied, do not reopen the Plan artificially. Run the implementation/handoff review and record that the plan-stage review was skipped because the protocol was adopted mid-story.
+
+The handoff should include a compact review summary: personas consulted, blockers resolved or absent, non-blocking findings, explicit scope boundaries, and the final recommendation.
+
 ### Preserve the database-seam discipline
 
 The shared SQLite database remains the seam. Read-only commands may be validated live when safe. Writes must prove parity on database copies before they are trusted against real user data.
@@ -155,7 +192,8 @@ Alisson: CV22.DS2.US1 search parity + CV22.DS2.TS3 reusable redacted real-DB-cop
 → Vinícius: finish CV22.DS2 read-only deterministic parity
 → Alisson: CV22.DS3 Pi TS front door and dogfooding
 → Vinícius: CV22.DS4 deterministic writes
-→ Later: divide CV22.DS5 and CV22.DS6 after earlier plateaus clarify the terrain
+→ Alisson: CV22.DS5 replay-safe external-API commands and gated front-door routing
+→ Next: verify/push DS5 closure, hand off to Vinícius, then divide CV22.DS6/live-provider convergence after the new Plan-review protocol
 ```
 
 ---
