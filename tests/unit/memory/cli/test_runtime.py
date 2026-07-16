@@ -101,6 +101,24 @@ runtimes:
     return ext_dir
 
 
+def test_render_runtime_status_reports_llm_timeouts():
+    from memory.config import (
+        LLM_MAX_RETRIES,
+        LLM_TIMEOUT_EMBEDDING,
+        LLM_TIMEOUT_EXTRACTION,
+        LLM_TIMEOUT_RECEPTION,
+    )
+
+    rendered = render_runtime_status(_report())
+
+    assert (
+        "LLM timeouts (s): "
+        f"reception={LLM_TIMEOUT_RECEPTION:g}, "
+        f"embedding={LLM_TIMEOUT_EMBEDDING:g}, "
+        f"extraction={LLM_TIMEOUT_EXTRACTION:g}; retries={LLM_MAX_RETRIES}"
+    ) in rendered
+
+
 def test_render_runtime_status_ready():
     rendered = render_runtime_status(_report())
 

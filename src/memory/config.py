@@ -268,6 +268,15 @@ OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 EXTRACTION_MODEL = "google/gemini-2.5-flash-lite"
 
+# LLM/embedding call timeouts (seconds) and retry ceiling — bound every model
+# call at client construction so a hung provider connection cannot stall a
+# session hook or the interactive Mirror path (the OpenAI SDK default timeout is
+# 600s). Per-role, env-overridable.
+LLM_TIMEOUT_EXTRACTION = float(os.getenv("MEMORY_LLM_TIMEOUT_EXTRACTION", "60"))
+LLM_TIMEOUT_RECEPTION = float(os.getenv("MEMORY_LLM_TIMEOUT_RECEPTION", "10"))
+LLM_TIMEOUT_EMBEDDING = float(os.getenv("MEMORY_LLM_TIMEOUT_EMBEDDING", "15"))
+LLM_MAX_RETRIES = int(os.getenv("MEMORY_LLM_MAX_RETRIES", "2"))
+
 # LLM model families: family -> tier -> OpenRouter model_id.
 LLM_FAMILIES = {
     "gemini": {

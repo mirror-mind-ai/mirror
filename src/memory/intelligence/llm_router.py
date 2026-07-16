@@ -13,6 +13,8 @@ from openai.types.chat import ChatCompletionMessageParam
 
 from memory.config import (
     LLM_FAMILIES,
+    LLM_MAX_RETRIES,
+    LLM_TIMEOUT_EXTRACTION,
     OPENROUTER_API_KEY,
     OPENROUTER_BASE_URL,
 )
@@ -68,14 +70,24 @@ def send_to_model(
     messages: list[dict],
     temperature: float = 0.7,
     max_tokens: int = 4096,
+    timeout: float | None = None,
+    max_retries: int | None = None,
 ) -> LLMResponse:
-    """Send messages to one model through OpenRouter and return response metadata."""
+    """Send messages to one model through OpenRouter and return response metadata.
+
+    ``timeout`` (seconds) and ``max_retries`` bound the call at client
+    construction; both default to the extraction-tier values from config so a
+    hung provider connection cannot stall a hook. Interactive callers (reception)
+    pass a shorter timeout.
+    """
     if not OPENROUTER_API_KEY:
         raise RuntimeError("OPENROUTER_API_KEY is not configured.")
 
     client = OpenAI(
         api_key=OPENROUTER_API_KEY,
         base_url=OPENROUTER_BASE_URL,
+        timeout=LLM_TIMEOUT_EXTRACTION if timeout is None else timeout,
+        max_retries=LLM_MAX_RETRIES if max_retries is None else max_retries,
     )
 
     prompt_str = json.dumps(messages, ensure_ascii=False)

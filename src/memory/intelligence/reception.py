@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from memory.config import EXTRACTION_MODEL
+from memory.config import EXTRACTION_MODEL, LLM_TIMEOUT_RECEPTION
 from memory.intelligence.extraction import _parse_json_response
 from memory.intelligence.llm_router import LLMResponse, send_to_model
 from memory.intelligence.prompts import RECEPTION_PROMPT
@@ -78,6 +78,7 @@ def reception(
             EXTRACTION_MODEL,
             [{"role": "user", "content": prompt}],
             temperature=0.1,
+            timeout=LLM_TIMEOUT_RECEPTION,
         )
     except Exception:
         return ReceptionResult.empty()

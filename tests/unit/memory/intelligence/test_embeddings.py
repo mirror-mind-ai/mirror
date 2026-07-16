@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 
-from memory.config import OPENROUTER_BASE_URL
+from memory.config import LLM_MAX_RETRIES, LLM_TIMEOUT_EMBEDDING, OPENROUTER_BASE_URL
 from memory.intelligence.embeddings import (
     bytes_to_embedding,
     embedding_to_bytes,
@@ -74,6 +74,14 @@ class TestGetEmbeddingClient:
         with patch("memory.intelligence.embeddings.OPENROUTER_API_KEY", "test-key"):
             client = get_embedding_client()
         assert client.api_key == "test-key"
+
+    def test_applies_embedding_timeout(self):
+        client = get_embedding_client()
+        assert client.timeout == LLM_TIMEOUT_EMBEDDING
+
+    def test_applies_retry_ceiling(self):
+        client = get_embedding_client()
+        assert client.max_retries == LLM_MAX_RETRIES
 
 
 class TestGenerateEmbedding:

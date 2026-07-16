@@ -16,6 +16,10 @@ from memory.cli.backup import backup as create_backup
 from memory.cli.extensions import ExtensionValidationError, load_extension_manifest
 from memory.config import (
     DEFAULT_USER_HOMES_DIR,
+    LLM_MAX_RETRIES,
+    LLM_TIMEOUT_EMBEDDING,
+    LLM_TIMEOUT_EXTRACTION,
+    LLM_TIMEOUT_RECEPTION,
     MEMORY_ENV,
     default_db_path_for_home,
     default_extensions_dir_for_home,
@@ -1716,6 +1720,12 @@ def render_runtime_status(report: RuntimeStatusReport) -> str:
         lines.append(f"Update channel note: {report.update_channel.note}")
     lines.append(f"Python: {report.python_version}")
     lines.append(f"MEMORY_ENV: {report.memory_env}")
+    lines.append(
+        "LLM timeouts (s): "
+        f"reception={LLM_TIMEOUT_RECEPTION:g}, "
+        f"embedding={LLM_TIMEOUT_EMBEDDING:g}, "
+        f"extraction={LLM_TIMEOUT_EXTRACTION:g}; retries={LLM_MAX_RETRIES}"
+    )
     lines.append("")
     lines.append(f"Status: {report.status}")
     return "\n".join(lines) + "\n"

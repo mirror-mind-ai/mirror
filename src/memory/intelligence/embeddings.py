@@ -3,11 +3,22 @@
 import numpy as np
 from openai import OpenAI
 
-from memory.config import EMBEDDING_MODEL, OPENROUTER_API_KEY, OPENROUTER_BASE_URL
+from memory.config import (
+    EMBEDDING_MODEL,
+    LLM_MAX_RETRIES,
+    LLM_TIMEOUT_EMBEDDING,
+    OPENROUTER_API_KEY,
+    OPENROUTER_BASE_URL,
+)
 
 
 def get_embedding_client() -> OpenAI:
-    return OpenAI(api_key=OPENROUTER_API_KEY, base_url=OPENROUTER_BASE_URL)
+    return OpenAI(
+        api_key=OPENROUTER_API_KEY,
+        base_url=OPENROUTER_BASE_URL,
+        timeout=LLM_TIMEOUT_EMBEDDING,
+        max_retries=LLM_MAX_RETRIES,
+    )
 
 
 def generate_embedding(text: str) -> np.ndarray:
