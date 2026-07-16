@@ -92,7 +92,10 @@ class TestGenerateEmbedding:
             data=[MagicMock(embedding=fake_vector.tolist())]
         )
 
-        with patch("memory.intelligence.embeddings.get_embedding_client", return_value=mock_client):
+        with (
+            patch("memory.intelligence.embeddings.OPENROUTER_API_KEY", "test-key"),
+            patch("memory.intelligence.embeddings.get_embedding_client", return_value=mock_client),
+        ):
             result = generate_embedding("hello world")
 
         mock_client.embeddings.create.assert_called_once_with(
@@ -109,7 +112,10 @@ class TestGenerateEmbedding:
             data=[MagicMock(embedding=fake_vector)]
         )
 
-        with patch("memory.intelligence.embeddings.get_embedding_client", return_value=mock_client):
+        with (
+            patch("memory.intelligence.embeddings.OPENROUTER_API_KEY", "test-key"),
+            patch("memory.intelligence.embeddings.get_embedding_client", return_value=mock_client),
+        ):
             result = generate_embedding("test")
 
         assert isinstance(result, np.ndarray)
