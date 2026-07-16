@@ -1,5 +1,7 @@
 """Focused tests for conversation storage read models."""
 
+import json
+
 from memory.models import Conversation, Message
 
 
@@ -85,3 +87,44 @@ def test_list_recent_conversation_summaries_filters_by_journey_and_persona(store
     )
 
     assert [summary.id for summary in summaries] == [match.id]
+
+
+# --- CV9.E2.S7 (AI-02) — quarantine exclusion & count ---
+
+
+def _make_eligible(store, conv_id, *, quarantined=False, extracted=False):
+    """An ended, journey-bound, 4-message conversation eligible for extraction."""
+    meta = {}
+    if quarantined:
+        meta["extraction_quarantined"] = True
+    if extracted:
+        meta["extracted"] = True
+    store.create_conversation(
+        Conversation(
+            id=conv_id,
+            interface="cli",
+            journey="mirror",
+            ended_at="2026-01-01T00:00:00Z",
+            metadata=json.dumps(meta) if meta else None,
+        )
+    )
+    for i in range(4):
+        store.add_message(Message(conversation_id=conv_id, role="user", content=f"m{i}"))
+
+
+def test_get_unextracted_conversations_excludes_quarantined(store):
+    _make_eligible(store, "healthy")
+    _make_eligible(store, "quarantined", quarantined=True)
+
+    ids = {c.id for c in store.get_unextracted_conversations()}
+
+    assert "healthy" in ids
+    assert "quarantined" not in ids
+
+
+def test_count_quarantined_conversations(store):
+    _make_eligible(store, "q1", quarantined=True)
+    _make_eligible(store, "q2", quarantined=True)
+    _make_eligible(store, "healthy")
+
+    assert store.count_quarantined_conversations() == 2

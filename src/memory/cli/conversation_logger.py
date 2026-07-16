@@ -339,12 +339,42 @@ def end_session(
 
 
 def extract_pending(mirror_home: str | Path | None = None) -> int:
-    """Extract memories from ended conversations not yet processed."""
+    """Extract memories from ended conversations not yet processed.
+
+    Each conversation is isolated: a failure (provider outage, poison-pill
+    transcript, auth error) is recorded and skipped so it cannot crash the
+    batch or block the conversations queued behind it. Returns the number of
+    conversations successfully extracted.
+    """
     mem = _memory_client(mirror_home)
     pending = mem.store.get_unextracted_conversations()
+    extracted = 0
     for conv in pending:
-        mem.conversations.extract_conversation(conv.id)
-    return len(pending)
+        try:
+            mem.conversations.extract_conversation(conv.id)
+            extracted += 1
+        except Exception:
+            continue
+    return extracted
+
+
+def _count_quarantined_conversations(mirror_home: str | Path | None = None) -> int:
+    """Conversations quarantined after repeated extraction failure (fail-quiet).
+
+    The client is held in a local for the whole read. Chaining
+    ``_memory_client(...).store.count_...()`` lets the temporary client be
+    garbage-collected — closing its connection via ``__del__`` — before the
+    query runs, which raises "Cannot operate on a closed database".
+    """
+    mem = None
+    try:
+        mem = _memory_client(mirror_home)
+        return mem.store.count_quarantined_conversations()
+    except Exception:
+        return 0
+    finally:
+        if mem is not None:
+            mem.close()
 
 
 def retitle_pending_conversations(
@@ -449,6 +479,11 @@ def session_maintenance(mirror_home: str | Path | None = None) -> str:
     parts = ["Conversation maintenance complete."]
     for label, count, elapsed in steps:
         parts.append(f"{label}: {count} ({elapsed:.1f}s)")
+    quarantined = _count_quarantined_conversations(mirror_home)
+    if quarantined:
+        parts.append(
+            f"⚠ {quarantined} conversation(s) quarantined after repeated extraction failure"
+        )
     return "\n".join(parts)
 
 
@@ -473,7 +508,12 @@ def close_stale_orphans(
     for conv in orphans:
         if conv.id in active_conv_ids:
             continue
-        mem.conversations.end_conversation(conv.id, extract=True)
+        try:
+            mem.conversations.end_conversation(conv.id, extract=True)
+        except Exception:
+            # The orphan is still closed (ended_at is set before extraction);
+            # an extraction failure is recorded and must not stop the loop.
+            pass
         count += 1
     return count
 

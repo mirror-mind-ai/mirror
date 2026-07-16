@@ -277,6 +277,12 @@ LLM_TIMEOUT_RECEPTION = float(os.getenv("MEMORY_LLM_TIMEOUT_RECEPTION", "10"))
 LLM_TIMEOUT_EMBEDDING = float(os.getenv("MEMORY_LLM_TIMEOUT_EMBEDDING", "15"))
 LLM_MAX_RETRIES = int(os.getenv("MEMORY_LLM_MAX_RETRIES", "2"))
 
+# Extraction failure isolation (CV9.E2.S7 / AI-02). A conversation whose
+# extraction repeatedly fails (provider outage, oversized transcript, auth
+# error) is quarantined after this many attempts so it stops being retried
+# every session start and stops blocking the pending queue behind it.
+EXTRACTION_MAX_ATTEMPTS = int(os.getenv("MEMORY_EXTRACTION_MAX_ATTEMPTS", "3"))
+
 # LLM model families: family -> tier -> OpenRouter model_id.
 LLM_FAMILIES = {
     "gemini": {

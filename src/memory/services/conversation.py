@@ -6,7 +6,12 @@ import json
 import re
 from typing import TYPE_CHECKING
 
-from memory.config import LOG_LLM_CALLS, SUMMARIZE_ENABLED, TWO_PASS_ENABLED
+from memory.config import (
+    EXTRACTION_MAX_ATTEMPTS,
+    LOG_LLM_CALLS,
+    SUMMARIZE_ENABLED,
+    TWO_PASS_ENABLED,
+)
 from memory.intelligence.embeddings import embedding_to_bytes, generate_embedding
 from memory.intelligence.extraction import (
     curate_against_existing,
@@ -681,9 +686,14 @@ class ConversationService:
 
         self.store.update_conversation(conversation_id, ended_at=_now())
         memories: list[Memory] = []
-        if extract:
-            memories = self._run_extraction(conversation_id)
-        self.finalize_metadata_on_close(conversation_id)
+        try:
+            if extract:
+                memories = self._run_extraction(conversation_id)
+        finally:
+            # The orphan is closed regardless of extraction outcome (ended_at is
+            # set above), and non-manual metadata is finalized even when
+            # extraction fails — today's code skips finalize on failure.
+            self.finalize_metadata_on_close(conversation_id)
         return memories
 
     def finalize_metadata_on_close(self, conversation_id: str) -> dict:
@@ -750,7 +760,13 @@ class ConversationService:
         return _log
 
     def _run_extraction(self, conversation_id: str) -> list[Memory]:
-        """Run memory/task extraction. Marks metadata.extracted=True on success."""
+        """Run memory/task extraction, isolating and recording repeated failures.
+
+        Marks metadata.extracted=True on success. On failure it records an
+        extraction attempt (quarantining after EXTRACTION_MAX_ATTEMPTS) and
+        re-raises, so the caller's per-conversation loop can isolate the failure
+        instead of letting one poison-pill conversation crash the batch.
+        """
         conv = self.store.get_conversation(conversation_id)
         messages = self.store.get_messages(conversation_id)
 
@@ -758,6 +774,16 @@ class ConversationService:
         if not messages or not conv or not conv.journey or len(messages) < 4:
             return []
 
+        try:
+            return self._extract_and_persist(conv, messages, conversation_id)
+        except Exception:
+            self._record_failed_extraction_attempt(conversation_id)
+            raise
+
+    def _extract_and_persist(
+        self, conv: Conversation, messages: list[Message], conversation_id: str
+    ) -> list[Memory]:
+        """Run the extraction pipeline and persist memories. Raises on LLM failure."""
         # Load the user's first name for the transcript when available.
         user_name = "User"
         try:
@@ -866,6 +892,27 @@ class ConversationService:
         )
 
         return stored_memories
+
+    def _record_failed_extraction_attempt(self, conversation_id: str) -> int:
+        """Increment the extraction attempt counter; quarantine after the max.
+
+        The counter lives in the conversation metadata JSON (no schema change,
+        like `extracted`). Once attempts reach EXTRACTION_MAX_ATTEMPTS the
+        conversation is flagged `extraction_quarantined`, which drops it out of
+        get_unextracted_conversations() so it stops being retried.
+        """
+        conv = self.store.get_conversation(conversation_id)
+        if conv is None:
+            return 0
+        meta = self._metadata_dict(conv)
+        attempts = int(meta.get("extraction_attempts", 0)) + 1
+        meta["extraction_attempts"] = attempts
+        if attempts >= EXTRACTION_MAX_ATTEMPTS:
+            meta["extraction_quarantined"] = True
+        self.store.update_conversation(
+            conversation_id, metadata=json.dumps(meta, ensure_ascii=False)
+        )
+        return attempts
 
     def title_needs_improvement(self, conversation: Conversation) -> bool:
         """Return True when the title is missing or known to be low quality."""

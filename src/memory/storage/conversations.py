@@ -84,15 +84,30 @@ class ConversationStore(ConnectionBacked):
         return [Conversation(**dict(r)) for r in rows]
 
     def get_unextracted_conversations(self) -> list[Conversation]:
-        """Return ended conversations eligible for extraction that haven't been extracted."""
+        """Return ended conversations eligible for extraction that haven't been extracted.
+
+        Quarantined conversations (repeated extraction failures, CV9.E2.S7) are
+        excluded so a poison-pill conversation is not retried at every session
+        start and does not block the conversations queued behind it.
+        """
         rows = self.conn.execute(
             """SELECT c.* FROM conversations c
                WHERE c.ended_at IS NOT NULL
                  AND c.journey IS NOT NULL
                  AND (c.metadata IS NULL OR json_extract(c.metadata, '$.extracted') IS NOT 1)
+                 AND (c.metadata IS NULL
+                      OR json_extract(c.metadata, '$.extraction_quarantined') IS NOT 1)
                  AND (SELECT COUNT(*) FROM messages m WHERE m.conversation_id = c.id) >= 4"""
         ).fetchall()
         return [Conversation(**dict(r)) for r in rows]
+
+    def count_quarantined_conversations(self) -> int:
+        """Count conversations quarantined after repeated extraction failure."""
+        row = self.conn.execute(
+            """SELECT COUNT(*) AS n FROM conversations c
+               WHERE json_extract(c.metadata, '$.extraction_quarantined') IS 1"""
+        ).fetchone()
+        return int(row["n"]) if row else 0
 
     def get_open_conversations_idle_since(self, threshold_dt: str) -> list[Conversation]:
         """Return open conversations with no message activity since threshold_dt."""

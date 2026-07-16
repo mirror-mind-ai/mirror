@@ -176,6 +176,18 @@ The Configuration page does not dump `os.environ`, does not expose secrets, and 
 
 **Effects:** when enabled, Mirror may make an LLM call to classify a turn for persona/journey routing. When disabled, routing falls back to cheaper deterministic behavior.
 
+## MEMORY_EXTRACTION_MAX_ATTEMPTS
+
+**What it is:** the retry budget before a conversation whose memory extraction keeps failing is quarantined.
+
+**Used by:** the session-maintenance extraction loops (`extract_pending`, `close_stale_orphans`). Each failed extraction (provider outage, oversized transcript, auth error) increments an `extraction_attempts` counter in the conversation metadata.
+
+**How to change it:** set `MEMORY_EXTRACTION_MAX_ATTEMPTS` to a positive integer. Absence defaults to `3`.
+
+**Active in code:** yes. It maps to `config.EXTRACTION_MAX_ATTEMPTS`.
+
+**Effects:** once attempts reach this value the conversation is flagged quarantined and dropped from the pending extraction queue, so a poison-pill conversation is not retried at every session start and does not block the conversations queued behind it. The session-maintenance report names the quarantine count. Quarantine is sticky: a conversation quarantined by a transient outage stays quarantined until the flag is cleared.
+
 ## Environment
 
 See [MEMORY_ENV](#memory-env).

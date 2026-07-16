@@ -12,6 +12,16 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-07-16 — CV9.E2.S7 Extraction failure isolation & quarantine completed
+
+Hardened the memory-extraction maintenance loops so one failing conversation can no longer swallow the memory of every conversation behind it (AI Engineering Audit, AI-02). `extract_pending` and `close_stale_orphans` called extraction with no per-conversation isolation, and `extract_memories` — unlike its title/tags/summary siblings — did not wrap `send_to_model`, so one conversation that reliably fails (provider outage, oversized transcript, auth error) crashed the batch. Because `metadata.extracted` is set only on success, the same conversation was re-attempted every session start and everything queued behind it was never processed — silent, compounding memory loss with a wasted LLM call each run.
+
+The fix isolates each conversation in both loops (try/except + continue), records an `extraction_attempts` counter in the conversation metadata JSON (no schema change), and quarantines a conversation after `MEMORY_EXTRACTION_MAX_ATTEMPTS` (default 3). Quarantined conversations drop out of `get_unextracted_conversations()` so they stop being retried and stop burning calls; the session-maintenance report names the quarantine count. `end_conversation` now finalizes metadata even when extraction throws (previously skipped) — the orphan is still closed because `ended_at` is set before extraction. Attempt-counting lives in one service chokepoint (`_run_extraction` → `_extract_and_persist`) that both entry paths inherit.
+
+Navigator validation surfaced a defect the mocked unit test missed: the report line never rendered because `_count_quarantined_conversations` chained `.store.count_...()` on a temporary `MemoryClient`, which CPython refcount-GCs after `.store` — closing its connection via `__del__` (added for the 3.14 file-descriptor fix) before the query ran — and the helper's fail-quiet `try/except` swallowed the closed-database error. Fixed by holding the client in a local; added a real-connection regression test a MagicMock cannot reproduce. The same footgun was found and empirically confirmed broken in `hooks/mirror_state.py` (`_load_state`, `write_state`), masked in its tests by `return_value=<held client>`, and flagged as a separate follow-up.
+
+Validation: TDD (11 story tests red → green plus the real-connection regression); full unit+integration suite 1830 passed; ruff check/format clean; mypy 111 errors, net-zero vs baseline; a real unmocked route (empty API key forcing a genuine failure) showed run 1 isolating three failures, run 2 skipping the quarantined set, and the `⚠ 3 conversation(s) quarantined` maintenance line; Navigator validated manually.
+
 ### 2026-07-12 — Git network timeout fix for release promotion (maintenance)
 
 Fixed the defect surfaced during the v0.30.1 promotion: `_run_git` in
