@@ -247,8 +247,43 @@ def _inspect_runtime_catalog(runtime: str, mirror_home: str | None) -> None:
         print(f"    installed_skill_path: {item.get('installed_skill_path', '(unknown)')}")
 
 
+def _fmt_summary_cost(cost: float | None) -> str:
+    return f"~${cost:.6f}" if cost is not None else "—"
+
+
+def _print_llm_call_summary(summary: dict, *, since: str | None) -> None:
+    """Render by-role and by-week spend buckets with a TOTAL line."""
+    total = summary["total"]
+    if total["calls"] == 0:
+        print("(no llm_calls rows match the given filters)")
+        return
+
+    scope = f" since {since}" if since else ""
+    print(f"=== llm_calls summary{scope} ===")
+
+    def _buckets(title: str, buckets: list[dict]) -> None:
+        print(f"\n{title}")
+        for b in buckets:
+            unpriced = f"  ({b['unpriced']} unpriced)" if b["unpriced"] else ""
+            print(
+                f"  {b['bucket']:<18} {b['calls']:>5} calls  "
+                f"{b['prompt_tokens']}→{b['completion_tokens']} tokens  "
+                f"{_fmt_summary_cost(b['cost_usd'])}{unpriced}"
+            )
+
+    _buckets("By role:", summary["by_role"])
+    _buckets("By week:", summary["by_week"])
+
+    unpriced = f"  ({total['unpriced']} unpriced)" if total["unpriced"] else ""
+    print(
+        f"\nTOTAL  {total['calls']} calls  "
+        f"{total['prompt_tokens']}→{total['completion_tokens']} tokens  "
+        f"{_fmt_summary_cost(total['cost_usd'])}{unpriced}"
+    )
+
+
 def cmd_inspect_llm_calls(args: list[str]) -> None:
-    """python -m memory inspect llm-calls [--conversation ID] [--session ID] [--role ROLE] [--since DATE] [--limit N] [--mirror-home PATH]"""
+    """python -m memory inspect llm-calls [--conversation ID] [--session ID] [--role ROLE] [--since DATE] [--limit N] [--summary] [--mirror-home PATH]"""
     import argparse
 
     parser = argparse.ArgumentParser(
@@ -268,6 +303,11 @@ def cmd_inspect_llm_calls(args: list[str]) -> None:
         "--since", default=None, help="Filter rows called_at >= DATE (YYYY-MM-DD or ISO timestamp)"
     )
     parser.add_argument("--limit", type=int, default=20, help="Maximum rows to show (default: 20)")
+    parser.add_argument(
+        "--summary",
+        action="store_true",
+        help="Aggregate spend by role and week instead of listing rows",
+    )
     parser.add_argument("--mirror-home", default=None, help="Explicit user home")
     parsed = parser.parse_args(args)
 
@@ -275,6 +315,13 @@ def cmd_inspect_llm_calls(args: list[str]) -> None:
     from memory.client import MemoryClient
 
     mem = MemoryClient(db_path=db_path_from_mirror_home(parsed.mirror_home))
+
+    if parsed.summary:
+        _print_llm_call_summary(
+            mem.store.get_llm_call_summary(since=parsed.since), since=parsed.since
+        )
+        return
+
     rows = mem.store.get_llm_calls(
         conversation_id=parsed.conversation_id,
         role=parsed.role,

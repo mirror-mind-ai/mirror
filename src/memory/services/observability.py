@@ -30,12 +30,15 @@ def build_llm_logger(
     role: str,
     conversation_id: str | None = None,
     session_id: str | None = None,
+    cost_usd: float | None = None,
 ) -> Callable[[LLMResponse], None] | None:
     """Return an ``on_llm_call`` callback, or ``None`` when logging is off.
 
     In ``metadata`` mode (the default) the prompt and response bodies are stored
     as empty strings; only ``full`` mode persists them. Cost is estimated from
-    the response's token usage via the cost authority.
+    the response's token usage via the cost authority, unless ``cost_usd`` is
+    provided — callers holding a truer figure (e.g. consult's fetched generation
+    cost) pass it to override the static estimate.
     """
     if not LOG_LLM_CALLS:
         return None
@@ -50,7 +53,9 @@ def build_llm_logger(
                 prompt_tokens=response.prompt_tokens,
                 completion_tokens=response.completion_tokens,
                 latency_ms=response.latency_ms,
-                cost_usd=compute_cost(
+                cost_usd=cost_usd
+                if cost_usd is not None
+                else compute_cost(
                     response.model, response.prompt_tokens, response.completion_tokens
                 ),
                 conversation_id=conversation_id,

@@ -101,3 +101,20 @@ class TestFailSoft:
         store = MagicMock()
         build_llm_logger(store, role="extraction")(_response())  # must not raise
         store.log_llm_call.assert_not_called()
+
+
+class TestCostOverride:
+    def test_override_wins_over_computed(self, metadata_mode):
+        store = MagicMock()
+        build_llm_logger(store, role="consult", cost_usd=0.99)(_response())
+        assert store.log_llm_call.call_args.kwargs["cost_usd"] == pytest.approx(0.99)
+
+    def test_none_override_falls_back_to_computed(self, metadata_mode):
+        from memory.intelligence.cost import compute_cost
+
+        store = MagicMock()
+        build_llm_logger(store, role="extraction", cost_usd=None)(
+            _response(prompt_tokens=1000, completion_tokens=1000)
+        )
+        expected = compute_cost("google/gemini-2.5-flash-lite", 1000, 1000)
+        assert store.log_llm_call.call_args.kwargs["cost_usd"] == pytest.approx(expected)

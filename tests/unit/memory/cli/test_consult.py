@@ -1,7 +1,85 @@
 """Tests for consult CLI behavior."""
 
+import pytest
+
 from memory import MemoryClient
 from memory.config import default_db_path_for_home
+
+
+def _seed_identity(mem):
+    mem.set_identity("self", "soul", "soul")
+    mem.set_identity("ego", "behavior", "behavior")
+    mem.set_identity("ego", "identity", "ego")
+    mem.set_identity("user", "identity", "user")
+
+
+def test_consult_logs_call_to_ledger_with_fetched_cost(mocker, tmp_path):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    _seed_identity(MemoryClient(env="test", db_path=db_path))
+
+    mocker.patch("memory.services.observability.LOG_LLM_CALLS", True)
+    mocker.patch("memory.services.observability.LOG_LLM_BODIES", False)
+
+    def _fake_send(model_id, messages):
+        return mocker.Mock(
+            model=model_id,
+            content="the reply",
+            prompt='[{"role":"system","content":"SECRET IDENTITY CONTEXT"}]',
+            prompt_tokens=1200,
+            completion_tokens=300,
+            latency_ms=88,
+            generation_id="gen-1",
+        )
+
+    mocker.patch("memory.cli.consult.send_to_model", side_effect=_fake_send)
+    mocker.patch("memory.cli.consult.fetch_generation_cost", return_value=0.0123)
+    mocker.patch("memory.cli.consult.resolve_model", return_value="x-ai/grok-test")
+    mocker.patch("memory.cli.consult.cmd_credits")
+
+    from memory.cli.consult import main
+
+    main(["grok", "hello", "--mirror-home", str(mirror_home)])
+
+    reader = MemoryClient(env="test", db_path=db_path)
+    rows = reader.store.get_llm_calls(role="consult")
+    assert len(rows) == 1
+    row = rows[0]
+    assert row["model"] == "x-ai/grok-test"
+    assert row["cost_usd"] == pytest.approx(0.0123)  # real fetched cost, not a static estimate
+    assert row["prompt"] == ""  # identity context withheld in metadata mode
+    assert row["response"] == ""
+    assert row["prompt_tokens"] == 1200
+
+
+def test_consult_off_mode_logs_nothing(mocker, tmp_path):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    _seed_identity(MemoryClient(env="test", db_path=db_path))
+
+    mocker.patch("memory.services.observability.LOG_LLM_CALLS", False)
+    mocker.patch(
+        "memory.cli.consult.send_to_model",
+        return_value=mocker.Mock(
+            model="m",
+            content="ok",
+            prompt="p",
+            prompt_tokens=1,
+            completion_tokens=1,
+            latency_ms=1,
+            generation_id="gen-1",
+        ),
+    )
+    mocker.patch("memory.cli.consult.fetch_generation_cost", return_value=0.01)
+    mocker.patch("memory.cli.consult.resolve_model", return_value="x-ai/grok-test")
+    mocker.patch("memory.cli.consult.cmd_credits")
+
+    from memory.cli.consult import main
+
+    main(["grok", "hello", "--mirror-home", str(mirror_home)])
+
+    reader = MemoryClient(env="test", db_path=db_path)
+    assert reader.store.get_llm_calls(role="consult") == []
 
 
 def test_consult_uses_context_from_explicit_mirror_home(mocker, tmp_path, capsys):
