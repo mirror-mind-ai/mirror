@@ -2,13 +2,9 @@
 
 # CV9.E2.S14 — LLM Spend Summary & Consult Ledger
 
-**Status:** Planned
+**Status:** Done — Navigator validated 2026-07-17
 **Epic:** CV9.E2 — Stabilization & Robustness
 **Source:** [AI Engineering Audit — AI-09](../../../../ai-engineering-audit.md) (P1)
-
-> `plan.md` and `test-guide.md` are authored when this story is pulled, after
-> [CV9.E2.S13](../cv9-e2-s13-llm-cost-authority-metadata-logging/index.md)
-> establishes the cost authority and the logger seam this story reads from.
 
 ---
 
@@ -52,5 +48,6 @@ be rolled up, and the one place with true (not estimated) cost throws it away.
 
 ## See also
 
+- [plan.md](plan.md) · [test-guide.md](test-guide.md)
 - [CV9.E2.S13 — Cost Authority & Metadata-Default Logging](../cv9-e2-s13-llm-cost-authority-metadata-logging/index.md)
 - [AI Engineering Audit — AI-09](../../../../ai-engineering-audit.md)

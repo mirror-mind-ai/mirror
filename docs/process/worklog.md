@@ -12,6 +12,14 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-07-17 — CV9.E2.S14 LLM spend summary & consult ledger completed
+
+Closed AI-09 (AI Engineering Audit) by making the per-call cost S13 records rollupable and pulling consult into the ledger. S13 recorded cost per row but there was no aggregate view, and `consult` computed a real fetched cost (`fetch_generation_cost`) only to print and discard it — it never wrote `llm_calls`.
+
+Added `get_llm_call_summary` to the store: one `GROUP BY` per axis (by role; by week via `strftime('%Y-W%W')`) plus a Python-side total. `SUM(cost_usd)` skips NULLs, so an all-unpriced bucket reports no cost with a non-zero unpriced count — spend stays honestly unpriced, never summed as $0. `inspect llm-calls --summary [--since]` renders the by-role and by-week tables with a TOTAL line and per-bucket unpriced counts (`—` for unknown cost). `build_llm_logger` gained an optional `cost_usd` override so consult logs its real fetched cost through the same seam rather than the static estimate; consult now writes a metadata-only `consult` row (the identity-context prompt is withheld unless `full`). Posture unchanged from S13's metadata-by-default decision.
+
+Validation: TDD (15 new tests — summary grouping/unpriced/since/total, `--summary` render + dash + empty, seam cost override, consult ledger with real cost + withheld bodies + off-mode); full unit+integration suite 1925 passed, verified keyless; ruff check/format clean; `git diff --check` clean; mypy 109 net-zero (CI gates ruff + pytest, not mypy); Navigator validated via an isolated `--summary` smoke showing per-role/week spend, the unpriced consult bucket, and a TOTAL summing only priced calls. TDD surfaced (and the test then respected) the chained-`MemoryClient` closed-connection guard from S13. This closes AI-09; the remaining audit P1 work is AI-05/07/10/11/13/15/16/20.
+
 ### 2026-07-17 — CV9.E2.S13 LLM cost authority & metadata-default logging completed
 
 Turned model-in-the-loop observability from off-by-default and content-heavy into on-by-default and content-free (AI Engineering Audit, AI-09 — the first P1). `MEMORY_LOG_LLM_CALLS` defaulted **off**, so the shipped mirror recorded nothing about its own model use; when enabled it stored full prompt/response bodies; and `cost_usd` was always NULL because `send_to_model` never populated cost and no logger passed it. "Evidence over vibes" is the project's posture, yet the default gave the user and developers no token counts, no latency, no cost.

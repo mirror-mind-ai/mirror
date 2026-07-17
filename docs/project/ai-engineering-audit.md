@@ -37,7 +37,9 @@
 > `full`), a single cost authority (`intelligence/cost.py`) records estimated
 > `cost_usd`, the six duplicated logger closures collapsed into one fail-soft
 > seam, and `inspect llm-calls` renders per-row cost. The spend-summary view and
-> consult ledger are the remainder, tracked as **CV9.E2.S14** (planned).
+> consult ledger landed as **CV9.E2.S14** (`inspect llm-calls --summary` reports
+> spend by role and week; consult records its real fetched cost in the ledger).
+> **AI-09 is closed.**
 
 ---
 
