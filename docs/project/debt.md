@@ -21,6 +21,7 @@ Dropped   no longer relevant or replaced by another item
 | D-001 | Metadata lifecycle policy and evidence filtering live inside ConversationService | design | medium | Paid | CV9.DS7.US1 / CV9.DS7.TS1 / CV9.DS7.TS2 | Policy boundary extracted before US2 apply behavior |
 | D-002 | Journey search silently returns `[]` on embedding failure | product | low | Carried | CV9.E2.S1 (AI-E4) | A "no journeys matched" report that is actually an embedding outage, or unifying journey degradation with memory-search's lexical fallback |
 | D-003 | Embedding calls bypass the `llm_calls` ledger (invisible spend, amplified by S1 retry) | observability | medium | Carried | CV9.E2.S1 (AI-E1, AI-09 tail) | An AI-09 follow-up, or the first time retry-driven embedding spend needs measuring |
+| D-004 | Full test suite exhausts file descriptors under a low `ulimit -n` (macOS default) | testing | low | Carried | CV9.E2.S1 validation | Recurs for a contributor on a default limit, or CI descriptor limits tighten |
 
 ## D-001 — Metadata lifecycle policy and evidence filtering live inside ConversationService
 
@@ -113,3 +114,34 @@ be measured or attributed.
 Embedding calls record a metadata-only `llm_calls` row (role, model, tokens,
 latency, computed cost) through the same fail-soft seam as the rest of the
 pipeline.
+
+## D-004 — Full test suite exhausts file descriptors under a low `ulimit -n`
+
+**Kind:** testing  
+**Severity:** low  
+**Status:** Carried  
+**Source:** CV9.E2.S1 (Navigator validation)  
+
+### Carrying reason
+
+Running the full `tests/unit tests/integration -m "not live"` suite on a shell
+with the macOS default `ulimit -n` (256) fails a burst of CLI/migration/runtime
+tests with `OSError: [Errno 24] Too many open files` and
+`sqlite3.OperationalError: unable to open database file`. The failures cluster
+where several tests open SQLite connections and temp database files in quick
+succession and do not release the descriptors fast enough. It is not a product
+defect and not caused by S1 — the same tests pass in isolation and under a higher
+limit, and CI (Linux, higher default limit) is green. The workaround is
+`ulimit -n 8192` before the run.
+
+### Revisit trigger
+
+The failures recur for a contributor who runs the full suite on a stock macOS
+limit, or CI file-descriptor limits tighten.
+
+### Closure condition
+
+The descriptor-heavy fixtures/tests close their SQLite connections and temp
+database handles deterministically (context managers or fixture teardown), or
+the suite bounds the number of concurrently open databases, so a default-limit
+run is clean without raising `ulimit`.
