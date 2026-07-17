@@ -7,6 +7,31 @@ import pytest
 
 from memory.db.schema import SCHEMA
 
+try:
+    import resource
+except ImportError:  # pragma: no cover - Windows has no resource module
+    resource = None
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Pay debt D-004: raise the test process's soft file-descriptor limit.
+
+    The suite opens many temporary SQLite databases; on a stock macOS shell
+    (soft ``RLIMIT_NOFILE`` = 256) the full run exhausts descriptors mid-suite
+    and fails unrelated CLI/migration tests with 'Too many open files'. Lifting
+    the soft limit toward the hard cap removes the dependency on the caller
+    remembering ``ulimit -n``. Best-effort; a sandbox that forbids it is ignored.
+    """
+    if resource is None:
+        return
+    try:
+        soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+        target = 8192 if hard == resource.RLIM_INFINITY else hard
+        if soft < target:
+            resource.setrlimit(resource.RLIMIT_NOFILE, (target, hard))
+    except (ValueError, OSError):  # pragma: no cover - platform/sandbox dependent
+        pass
+
 
 @pytest.fixture(autouse=True)
 def _isolate_developer_env(monkeypatch):

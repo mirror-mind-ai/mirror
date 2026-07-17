@@ -21,7 +21,7 @@ Dropped   no longer relevant or replaced by another item
 | D-001 | Metadata lifecycle policy and evidence filtering live inside ConversationService | design | medium | Paid | CV9.DS7.US1 / CV9.DS7.TS1 / CV9.DS7.TS2 | Policy boundary extracted before US2 apply behavior |
 | D-002 | Journey search silently returns `[]` on embedding failure | product | low | Carried | CV9.E2.S1 (AI-E4) | A "no journeys matched" report that is actually an embedding outage, or unifying journey degradation with memory-search's lexical fallback |
 | D-003 | Embedding calls bypass the `llm_calls` ledger (invisible spend, amplified by S1 retry) | observability | medium | Paid | CV9.E2.S1 (AI-E1, AI-09 tail) → CV9.E2.S18 | Paid by CV9.E2.S18 embedding call observability |
-| D-004 | Full test suite exhausts file descriptors under a low `ulimit -n` (macOS default) | testing | low | Carried | CV9.E2.S1 validation | Recurs for a contributor on a default limit, or CI descriptor limits tighten |
+| D-004 | Full test suite exhausts file descriptors under a low `ulimit -n` (macOS default) | testing | low | Paid | CV9.E2.S1 validation | Paid: conftest raises the soft fd limit at startup |
 
 ## D-001 — Metadata lifecycle policy and evidence filtering live inside ConversationService
 
@@ -127,8 +127,8 @@ growth is tracked as a retention radar item.
 
 **Kind:** testing  
 **Severity:** low  
-**Status:** Carried  
-**Source:** CV9.E2.S1 (Navigator validation)  
+**Status:** Paid  
+**Source:** CV9.E2.S1 (Navigator validation) · paid alongside CV9.E2.S18  
 
 ### Carrying reason
 
@@ -153,3 +153,15 @@ The descriptor-heavy fixtures/tests close their SQLite connections and temp
 database handles deterministically (context managers or fixture teardown), or
 the suite bounds the number of concurrently open databases, so a default-limit
 run is clean without raising `ulimit`.
+
+### Result
+
+Paid pragmatically: `tests/conftest.py` `pytest_configure` now raises the process
+soft `RLIMIT_NOFILE` toward the hard cap at startup, so the full not-live suite
+runs clean under a stock macOS shell (verified under `ulimit -Sn 256`, hard
+unlimited) without the caller raising `ulimit`. The hook is platform-guarded
+(no-op where `resource` is unavailable or a sandbox forbids the raise). This
+lifts the ceiling rather than reducing per-test fd usage — the fixtures still open
+many temp databases — so the underlying leak is masked, not eliminated; a future
+fixture-cleanup pass could still reduce concurrent open handles, but the
+validation-blocking symptom is resolved.
