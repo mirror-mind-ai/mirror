@@ -47,6 +47,13 @@
 > and fences the transcript as untrusted data with a "not instructions" guard. An
 > adversarial `prompt-injection-resisted` eval probe passes on the live model. The
 > self-layer→review demotion remains deferred.
+>
+> **Status (updated 2026-07-17).** AI-10 closed as **CV9.E2.S16**: every extracted
+> conversation records `extraction_status` (`ok | no_signal | parse_failed |
+> llm_failed`) and `extraction_dropped` counts in its metadata, and session
+> maintenance surfaces a `⚠ … unreadable model output` line — silent extraction
+> failure is now distinguishable from a genuinely empty result. The optional
+> parse_failed repair retry remains deferred (measure cost via AI-09 first).
 
 ---
 

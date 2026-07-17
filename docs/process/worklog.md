@@ -12,6 +12,14 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-07-17 — CV9.E2.S16 Extraction status legibility completed
+
+Closed AI-10 (AI Engineering Audit) by making silent extraction failure legible. `extract_memories` returned `[]` for both a malformed-JSON response and a genuinely empty one, and LLM failures raised into a path that only counted attempts — so a conversation the mirror failed to read looked identical to one with nothing worth keeping, on a product whose promise is memory.
+
+Each conversation that runs extraction now records `extraction_status` (`ok | no_signal | parse_failed | llm_failed`) in its metadata, plus the `extraction_dropped` counts CV9.E2.S15 already computed. The parse-vs-empty distinction rides a backward-compatible `status` sink on `extract_memories` (the list return is unchanged, so evals and the ~10 mocked-extraction service tests are untouched; the caller falls back to a count-based status when the sink is empty). `llm_failed` is set in the existing exception path, which still re-raises so S7 quarantine/retry is intact, and a successful retry overwrites it with `ok`. Session maintenance gained a `⚠ N conversation(s) with unreadable model output (parse_failed)` line, backed by a new `count_conversations_with_extraction_status` store query mirroring the S7 quarantined count. The optional parse_failed repair retry is deferred (measure cost via AI-09 first); journey-less/too-short conversations carry no status (that is AI-21).
+
+Validation: TDD (15 new tests — the status sink's four paths + dropped counts + no-sink compatibility; metadata recording per status incl. llm_failed-still-raises and fail-then-retry→ok; the store count; and the maintenance line present/absent); full unit+integration suite 1951 passed, verified keyless; ruff check/format clean; `git diff --check` clean; mypy 109 net-zero (CI gates ruff + pytest, not mypy); a keyless smoke confirmed the recorded status and the maintenance ⚠ line end to end. Metadata additivity was verified by inspection — every conversation-metadata reader uses `.get()`, so the new keys cannot break a reader. This closes AI-10; remaining audit P1 work is AI-05/07/11/13/20 (plus CV22 riders AI-18/19).
+
 ### 2026-07-17 — CV9.E2.S15 Extraction boundary hardening completed
 
 Closed AI-15 and AI-16 (AI Engineering Audit) by hardening the extraction seam against garbage and transcript-borne injection. `ExtractedMemory.layer`/`memory_type` were plain `str` — `layer: "banana"` or thirty items passed straight into the store, and the per-item failure was silently `continue`d with no cap; the extraction prompt appended the raw transcript with no fence and no "treat this as data" instruction, so a pasted document impersonating the memory system could steer what was recorded (a persistent influence, since memories feed future prompts and consolidation).
