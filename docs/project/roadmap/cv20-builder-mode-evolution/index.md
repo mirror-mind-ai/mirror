@@ -42,6 +42,7 @@ Ariad governs the first implementation. The architecture must remain open enough
 | [CV20.DS10](cv20-ds10-builder-documentation-migration/index.md) | Builder Documentation And Migration | User-facing docs, process docs, and journey guidance explain Ariad Builder adoption, DSL overrides, lifecycle, and operational boundaries | 🟡 Planned |
 | [CV20.DS11](cv20-ds11-refinement-lifecycle-dsl-governance/index.md) | Refinement Lifecycle DSL Governance | Refinement Stories, Change Requests, CR-cycle gates, transition prompts, and Refinement surfaces are governed by Ariad method data like Delivery Work | 🟡 Planned |
 | [CV20.DS12](cv20-ds12-refinement-work-artifacts/index.md) | Refinement Work Artifacts | Refinement Stories and Change Requests produce durable project artifacts for scope, plan, evidence, validation, review, coherence, and closure | 🟡 Planned |
+| [CV20.DS13](cv20-ds13-ds-grammar-roadmap-support/index.md) | Delivery Story Grammar Roadmap Support | Builder reads Delivery Story grammar roadmaps (hyphenated `DS-NN` codes, `## Chapter N —` sections, DS tables) as correctly as the CV grammar — fixing pull candidates, expand, and delivery-cursor drift | ✅ Done |
 
 ---
 

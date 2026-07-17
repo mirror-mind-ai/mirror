@@ -6,6 +6,7 @@ from memory.builder.delivery_cursor import get_delivery_cursor, set_delivery_cur
 from memory.builder.lifecycle import (
     BuilderLifecycleItem,
     assert_implementation_allowed,
+    expand_delivery_story,
     plan_lifecycle_item,
     prepare_lifecycle_item,
     pull_lifecycle_item,
@@ -312,3 +313,230 @@ def test_implementation_guard_blocks_pending_confirmation(tmp_path):
 
     with pytest.raises(PermissionError, match="navigator_approval"):
         assert_implementation_allowed(store, journey="sandbox-pet-store")
+
+
+# --- CV20.DS13 — expand reads the Delivery Story candidate table ---
+
+
+def _seed_ds_cursor(store, *, active_item="DS-35", title="Application & Admin Parity", children=()):
+    set_delivery_cursor(
+        store,
+        journey="uncle-vinny",
+        method="ariad",
+        active_item=active_item,
+        active_item_title=title,
+        active_item_level="delivery_story",
+        child_work_items=children,
+    )
+
+
+def _write_ds_index(project, body, folder="ds-35-application-admin-parity"):
+    ds_index = project / "docs" / "project" / "roadmap" / folder / "index.md"
+    ds_index.parent.mkdir(parents=True, exist_ok=True)
+    ds_index.write_text(body, encoding="utf-8")
+    return ds_index
+
+
+_FOUR_COL_DS_INDEX = """# DS-35 — Application & Admin Parity
+
+**Status:** 🟡 Planned
+
+## Candidate Stories
+
+| Code | Story | Type | Status |
+|------|-------|------|--------|
+| DS-35.US-1 | Port the application step flow | User Story | 🟡 Planned |
+| DS-35.US-2 | Port the review step | User Story | 🟡 Planned |
+| DS-35.TS-1 | Admin authentication parity | Technical Story | 🟡 Planned |
+
+## Done Condition
+
+Done when children deliver a coherent outcome.
+"""
+
+
+def test_expand_reads_candidate_table_children(tmp_path):
+    _client, store = _store(tmp_path)
+    project = tmp_path / "project"
+    ds_index = _write_ds_index(project, _FOUR_COL_DS_INDEX)
+    _seed_ds_cursor(store)
+
+    report = expand_delivery_story(
+        store, journey="uncle-vinny", method="ariad", project_path=project
+    )
+
+    assert report.cursor.child_work_items == ("DS-35.US-1", "DS-35.US-2", "DS-35.TS-1")
+    assert report.recommended_story == "DS-35.US-1"
+    assert report.recommended_story_title == "Port the application step flow"
+    # No fabricated US1 package.
+    assert not (ds_index.parent / "ds-35-us1-application-admin-parity").exists()
+    # Real child materialized with its real folder name.
+    assert (ds_index.parent / "ds-35-us-1-port-the-application-step-flow" / "index.md").exists()
+
+
+def test_expand_parses_generated_five_column_table(tmp_path):
+    _client, store = _store(tmp_path)
+    project = tmp_path / "project"
+    _write_ds_index(
+        project,
+        """# DS-35 — Application & Admin Parity
+
+**Status:** 🟡 Planned
+
+## Candidate Stories
+
+| Code | Story | Type | Outcome | Status |
+|------|-------|------|---------|--------|
+| DS-35.US-1 | Port the application step flow | User Story | Observable flow | 🟡 Planned |
+| DS-35.TS-1 | Admin authentication parity | Technical Story | Admin can log in | 🟡 Planned |
+
+## Done Condition
+
+Done.
+""",
+    )
+    _seed_ds_cursor(store)
+
+    report = expand_delivery_story(
+        store, journey="uncle-vinny", method="ariad", project_path=project
+    )
+
+    assert report.cursor.child_work_items == ("DS-35.US-1", "DS-35.TS-1")
+    assert report.recommended_story == "DS-35.US-1"
+
+
+def test_expand_recommends_first_pending_child(tmp_path):
+    _client, store = _store(tmp_path)
+    project = tmp_path / "project"
+    _write_ds_index(
+        project,
+        """# DS-35 — Application & Admin Parity
+
+**Status:** 🟡 Planned
+
+## Candidate Stories
+
+| Code | Story | Type | Status |
+|------|-------|------|--------|
+| DS-35.US-1 | Port the application step flow | User Story | ✅ Done |
+| DS-35.US-2 | Port the review step | User Story | 🟡 Planned |
+
+## Done Condition
+
+Done.
+""",
+    )
+    _seed_ds_cursor(store)
+
+    report = expand_delivery_story(
+        store, journey="uncle-vinny", method="ariad", project_path=project
+    )
+
+    assert report.recommended_story == "DS-35.US-2"
+    assert report.cursor.child_work_items == ("DS-35.US-1", "DS-35.US-2")
+
+
+def test_expand_fallback_still_resets_child_work_items(tmp_path):
+    _client, store = _store(tmp_path)
+    project = tmp_path / "project"
+    # No DS index on disk -> fallback synthetic child.
+    _seed_ds_cursor(
+        store,
+        active_item="DS-99",
+        title="Orphan Story",
+        children=("DS-34.US-1", "DS-34.US-2"),
+    )
+
+    report = expand_delivery_story(
+        store, journey="uncle-vinny", method="ariad", project_path=project
+    )
+
+    assert report.recommended_story == "DS-99.US1"
+    assert report.cursor.child_work_items == ("DS-99.US1",)
+
+
+def test_expand_replaces_stale_children_from_previous_delivery_story(tmp_path):
+    _client, store = _store(tmp_path)
+    project = tmp_path / "project"
+    _write_ds_index(project, _FOUR_COL_DS_INDEX)
+    # Cursor still carries the previous DS-34's children.
+    _seed_ds_cursor(store, children=("DS-34.US-1", "DS-34.US-2", "DS-34.TS-1"))
+
+    report = expand_delivery_story(
+        store, journey="uncle-vinny", method="ariad", project_path=project
+    )
+
+    assert report.cursor.child_work_items == ("DS-35.US-1", "DS-35.US-2", "DS-35.TS-1")
+    assert all(not code.startswith("DS-34") for code in report.cursor.child_work_items)
+
+
+def test_expand_materializes_technical_story_package_with_type(tmp_path):
+    _client, store = _store(tmp_path)
+    project = tmp_path / "project"
+    ds_index = _write_ds_index(project, _FOUR_COL_DS_INDEX)
+    _seed_ds_cursor(store)
+
+    expand_delivery_story(store, journey="uncle-vinny", method="ariad", project_path=project)
+
+    ts_index = ds_index.parent / "ds-35-ts-1-admin-authentication-parity" / "index.md"
+    assert ts_index.exists()
+    assert "**Type:** Technical Story" in ts_index.read_text(encoding="utf-8")
+
+
+# --- CV20.DS13 — pull clears stale delivery-cursor state on item change ---
+
+
+def test_pull_clears_stale_children_when_active_item_changes(tmp_path):
+    _client, store = _store(tmp_path)
+    set_delivery_cursor(
+        store,
+        journey="uncle-vinny",
+        method="ariad",
+        active_item="DS-34",
+        active_item_title="Data Model Migration",
+        active_item_level="delivery_story",
+        child_work_items=("DS-34.US-1", "DS-34.US-2"),
+        aggregate_checkpoint_status=("plan:approved",),
+    )
+
+    report = pull_lifecycle_item(
+        store,
+        journey="uncle-vinny",
+        method="ariad",
+        item=BuilderLifecycleItem(
+            code="DS-35",
+            title="Application & Admin Parity",
+            level="delivery_story",
+            why_now="next candidate",
+        ),
+    )
+
+    assert report.cursor.child_work_items == ()
+    assert report.cursor.aggregate_checkpoint_status == ()
+
+
+def test_pull_preserves_children_when_repulling_same_item(tmp_path):
+    _client, store = _store(tmp_path)
+    set_delivery_cursor(
+        store,
+        journey="uncle-vinny",
+        method="ariad",
+        active_item="DS-35",
+        active_item_title="Application & Admin Parity",
+        active_item_level="delivery_story",
+        child_work_items=("DS-35.US-1",),
+    )
+
+    report = pull_lifecycle_item(
+        store,
+        journey="uncle-vinny",
+        method="ariad",
+        item=BuilderLifecycleItem(
+            code="DS-35",
+            title="Application & Admin Parity",
+            level="delivery_story",
+            why_now="resume",
+        ),
+    )
+
+    assert report.cursor.child_work_items == ("DS-35.US-1",)

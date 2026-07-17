@@ -11,6 +11,50 @@ resolved.
 
 ## Completed Decisions
 
+### Builder reads roadmaps in two grammars, additively
+
+**Date:** 2026-07-17
+**Reference:** journey `mirror`, [CV20.DS13](roadmap/cv20-builder-mode-evolution/cv20-ds13-ds-grammar-roadmap-support/index.md)
+**Participants:** Vinícius Teles
+
+The Ariad Builder runtime originally parsed only the legacy `CV → Epic → Story`
+grammar. A journey whose roadmap was imported to the `Delivery Story` grammar
+(hyphenated `DS-NN` codes, `## Chapter N —` sections, `| Code | Delivery Story |
+Status |` tables) broke three surfaces: pull candidates recommended a retired
+legacy CV, Expand fabricated a generic `US1` child, and the delivery cursor
+carried the previous Delivery Story's children.
+
+Decided:
+
+1. **Additive, not a migration.** Builder supports the CV grammar **and** the DS
+   grammar. Mirror's own roadmap stays CV-grammar and must never regress; a
+   CV-grammar regression fixture guards it. Roadmap-code character classes accept
+   hyphens (safe — CV codes have none), and top-level `DS-NN` codes classify as
+   `delivery_story`.
+2. **The `legacy/` archive is never a live candidate or position.** Both the
+   pull-candidate scan and the roadmap-position scan skip any path under
+   `docs/project/roadmap/legacy/`.
+3. **Expand reads the documented candidate table, header-driven.** It parses the
+   active DS index's `| Code | Story | Type | Status |` table (tolerating the
+   5-column generated variant with `Outcome`), materializes one package per
+   missing child with the real code/title/type, and never overwrites existing
+   files. The synthetic `US1` fallback remains only when no candidate table
+   exists.
+4. **Staleness is cleared where it originates.** `pull` clears
+   `child_work_items` and `aggregate_checkpoint_status` when replacing a
+   different, previously-active item; a first pull or same-item re-pull preserves
+   them. Expand always sets children from the parsed table.
+5. **Minimal roadmap-position semantics.** A pulled-but-planned DS yields
+   position `none` by design; a cursor-preferred position was deferred as a
+   separate future story rather than changing `build load` surface semantics now.
+6. **One grammar module.** Heading/status regex, the legacy filter, and markdown
+   link stripping live in `src/memory/builder/roadmap_grammar.py`, consumed by
+   pull candidates, roadmap position, and expand. The duplicated regex was the
+   root cause of the drift; centralizing it prevents recurrence.
+
+Deferred, not done here: the affected `uncle-vinny` workspace still has a dirty
+delivery cursor from the buggy runtime; its cleanup is separate operational work.
+
 ### Runtime state is contained in the mirror home for every environment
 
 **Date:** 2026-07-12

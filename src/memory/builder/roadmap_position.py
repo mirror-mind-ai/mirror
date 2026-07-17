@@ -2,13 +2,20 @@
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from memory.builder.roadmap_grammar import (
+    HEADING_RE as _HEADING_RE,
+)
+from memory.builder.roadmap_grammar import (
+    STATUS_RE as _STATUS_RE,
+)
+from memory.builder.roadmap_grammar import (
+    is_legacy_path as _is_legacy_path,
+)
+
 _ACTIVE_STATUS_MARKERS = ("🟢 Active", "Active")
-_HEADING_RE = re.compile(r"^#\s+(?P<code>[A-Z0-9.]+)\s+[—-]\s+(?P<title>.+?)\s*$", re.MULTILINE)
-_STATUS_RE = re.compile(r"\*\*Status:\*\*\s*(?P<status>.+?)\s*$", re.MULTILINE)
 
 
 @dataclass(frozen=True)
@@ -30,6 +37,8 @@ def resolve_roadmap_position(project_path: Path | None) -> RoadmapPosition | Non
 
     candidates: list[RoadmapPosition] = []
     for path in sorted(roadmap_root.rglob("index.md")):
+        if _is_legacy_path(path, roadmap_root):
+            continue
         position = _position_from_file(root, path)
         if position is not None:
             candidates.append(position)

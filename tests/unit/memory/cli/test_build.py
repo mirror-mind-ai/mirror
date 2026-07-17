@@ -1592,6 +1592,7 @@ def test_build_pull_delivery_story_prepares_and_expands(mocker, tmp_path, capsys
     assert cursor.last_delivery_event == "expand"
     assert cursor.active_checkpoint == "next_story_confirmation"
     assert cursor.pending_confirmation == "navigator_story_confirmation"
+    assert cursor.child_work_items == ("CV2.DS1.US1",)
     assert "<<<ARIAD:DELIVERY_STORY_READY>>>" in out
     assert "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>" in out
     assert "Expand — CV2.DS1" in out
@@ -2114,3 +2115,98 @@ def test_refinement_story_close_rejects_unfinished_cr(mocker, tmp_path, capsys):
     assert "unfinished Change Requests" in err
     assert cr.id in err
     assert mem.store.get_refinement_story(story.id).status == "active"
+
+
+# --- CV20.DS13 — Delivery Story grammar roadmap support (CLI) ---
+
+
+def _ds_grammar_project(project_path):
+    roadmap = project_path / "docs" / "project" / "roadmap"
+    (roadmap / "ds-35-application-admin-parity").mkdir(parents=True)
+    (roadmap / "index.md").write_text(
+        """# Roadmap
+
+## Chapter 7 — Platform Migration — 🟡 Planned
+
+| Code | Delivery Story | Status |
+|------|----------------|--------|
+| [DS-34](ds-34-data-model-migration/index.md) | Data Model Migration | ✅ Done |
+| [DS-35](ds-35-application-admin-parity/index.md) | Application & Admin Parity | 🟡 Planned |
+""",
+        encoding="utf-8",
+    )
+    (roadmap / "ds-35-application-admin-parity" / "index.md").write_text(
+        """# DS-35 — Application & Admin Parity
+
+**Status:** 🟡 Planned
+
+## Candidate Stories
+
+| Code | Story | Type | Status |
+|------|-------|------|--------|
+| DS-35.US-1 | Port the application step flow | User Story | 🟡 Planned |
+| DS-35.TS-1 | Admin authentication parity | Technical Story | 🟡 Planned |
+""",
+        encoding="utf-8",
+    )
+    (roadmap / "ds-34-data-model-migration").mkdir(parents=True)
+    (roadmap / "ds-34-data-model-migration" / "index.md").write_text(
+        "# DS-34 — Data Model Migration\n\n**Status:** ✅ Done\n", encoding="utf-8"
+    )
+    legacy = roadmap / "legacy" / "cv5-learning-loop"
+    legacy.mkdir(parents=True)
+    legacy.joinpath("index.md").write_text(
+        "# CV5 — Learning Loop\n\n**Status:** Planned\n", encoding="utf-8"
+    )
+
+
+def test_build_pull_ds_grammar_delivery_story_expands_real_children(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    project_path = tmp_path / "project"
+    _ds_grammar_project(project_path)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "uncle-vinny", JOURNEY_CONTENT)
+    mem.journeys.set_project_path("uncle-vinny", str(project_path))
+    set_adopted_method(mem.store, "uncle-vinny", "ariad")
+    set_delivery_cursor(mem.store, journey="uncle-vinny", method="ariad")
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_pull_item(
+        "ariad",
+        journey="uncle-vinny",
+        item_code="DS-35",
+        item_title="Application & Admin Parity",
+        item_level="delivery_story",
+        why_now="next candidate capability",
+    )
+
+    out = capsys.readouterr().out
+    cursor = get_delivery_cursor(mem.store, "uncle-vinny")
+    assert cursor is not None
+    assert cursor.child_work_items == ("DS-35.US-1", "DS-35.TS-1")
+    assert "<<<ARIAD:DELIVERY_STORY_READY>>>" in out
+    assert "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>" in out
+    assert "created US-1 package" in out
+    assert "created TS-1 package" in out
+    assert "US1 package" not in out
+
+
+def test_build_pull_candidates_excludes_legacy_on_ds_roadmap(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    project_path = tmp_path / "project"
+    _ds_grammar_project(project_path)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "uncle-vinny", JOURNEY_CONTENT)
+    mem.journeys.set_project_path("uncle-vinny", str(project_path))
+    set_adopted_method(mem.store, "uncle-vinny", "ariad")
+    set_delivery_cursor(mem.store, journey="uncle-vinny", method="ariad")
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_pull_candidates("ariad", journey="uncle-vinny")
+
+    out = capsys.readouterr().out
+    assert "DS-35 — Application & Admin Parity" in out
+    assert "CV5" not in out
+    assert "Learning Loop" not in out

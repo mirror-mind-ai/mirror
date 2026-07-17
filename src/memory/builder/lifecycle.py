@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -13,6 +14,7 @@ from memory.builder.delivery_cursor import (
 )
 from memory.builder.lifecycle_ribbon import render_lifecycle_ribbon
 from memory.builder.method_definition import ContractDefinition, MethodDefinition
+from memory.builder.roadmap_grammar import strip_markdown_link as _strip_markdown_link
 from memory.builder.surface_protocol import wrap_ariad_surface
 from memory.storage.store import Store
 
@@ -175,6 +177,12 @@ def pull_lifecycle_item(
     existing = get_delivery_cursor(store, normalized_journey)
     if existing is None:
         raise ValueError("delivery cursor is required before pull")
+    # Replacing a different, previously-active item must not inherit that item's
+    # child work packages or aggregate checkpoint status. A first pull (no prior
+    # active item) or a re-pull of the same item keeps existing state.
+    item_changed = existing.active_item is not None and existing.active_item != normalized_item.code
+    child_work_items = () if item_changed else existing.child_work_items
+    aggregate_checkpoint_status = () if item_changed else existing.aggregate_checkpoint_status
     cursor = set_delivery_cursor(
         store,
         journey=normalized_journey,
@@ -188,8 +196,8 @@ def pull_lifecycle_item(
         cadence_profile=existing.cadence_profile,
         cadence_limits=existing.cadence_limits,
         navigator_flow_unit=existing.navigator_flow_unit,
-        child_work_items=existing.child_work_items,
-        aggregate_checkpoint_status=existing.aggregate_checkpoint_status,
+        child_work_items=child_work_items,
+        aggregate_checkpoint_status=aggregate_checkpoint_status,
     )
     return BuilderPullReport(
         journey=normalized_journey,
@@ -413,27 +421,70 @@ def expand_delivery_story(
     if not existing.active_item:
         raise ValueError("active item is required before expand")
     title = existing.active_item_title or existing.active_item
-    recommended_code = f"{existing.active_item}.US1"
-    recommended_title = _title_leaf(title)
     ds_dir = _artifact_directory(project_path, existing.active_item, title)
-    us_dir = ds_dir / _story_folder_name(recommended_code, recommended_title)
-    ds_dir.mkdir(parents=True, exist_ok=True)
-    us_dir.mkdir(parents=True, exist_ok=True)
     ds_index = ds_dir / "index.md"
-    us_index = us_dir / "index.md"
     ds_exists = ds_index.exists()
-    us_exists = us_index.exists()
-    if not ds_exists:
-        ds_index.write_text(
-            _render_delivery_story_index(
-                existing.active_item, title, recommended_code, recommended_title
-            ),
-            encoding="utf-8",
+    children = _parse_candidate_stories(ds_index.read_text(encoding="utf-8")) if ds_exists else []
+
+    materialized_paths: list[Path] = [ds_index]
+    materialized_artifacts: list[MaterializedArtifact] = []
+
+    if children:
+        recommended = _first_pending_child(children)
+        recommended_code = recommended.code
+        recommended_title = recommended.title
+        ds_dir.mkdir(parents=True, exist_ok=True)
+        if not ds_exists:
+            ds_index.write_text(
+                _render_delivery_story_index(
+                    existing.active_item, title, recommended_code, recommended_title
+                ),
+                encoding="utf-8",
+            )
+        materialized_artifacts.append(
+            existing_artifact("DS package", ds_index)
+            if ds_exists
+            else MaterializedArtifact("DS package", ds_index, "created")
         )
-    if not us_exists:
-        us_index.write_text(
-            _render_user_story_index(recommended_code, recommended_title), encoding="utf-8"
+        for child in children:
+            child_index = _materialize_child_package(ds_dir, child)
+            materialized_paths.append(child_index.path)
+            materialized_artifacts.append(child_index.artifact)
+        child_work_items = tuple(child.code for child in children)
+    else:
+        recommended_code = f"{existing.active_item}.US1"
+        recommended_title = _title_leaf(title)
+        us_dir = ds_dir / _story_folder_name(recommended_code, recommended_title)
+        us_index = us_dir / "index.md"
+        ds_dir.mkdir(parents=True, exist_ok=True)
+        us_dir.mkdir(parents=True, exist_ok=True)
+        us_exists = us_index.exists()
+        if not ds_exists:
+            ds_index.write_text(
+                _render_delivery_story_index(
+                    existing.active_item, title, recommended_code, recommended_title
+                ),
+                encoding="utf-8",
+            )
+        if not us_exists:
+            us_index.write_text(
+                _render_user_story_index(recommended_code, recommended_title), encoding="utf-8"
+            )
+        materialized_artifacts.append(
+            existing_artifact("DS package", ds_index)
+            if ds_exists
+            else MaterializedArtifact("DS package", ds_index, "created")
         )
+        materialized_artifacts.append(
+            existing_artifact(f"{recommended_code.split('.')[-1]} package", us_index)
+            if us_exists
+            else MaterializedArtifact(
+                f"{recommended_code.split('.')[-1]} package", us_index, "created"
+            )
+        )
+        materialized_paths.append(us_index)
+        child_work_items = (recommended_code,)
+
     cursor = set_delivery_cursor(
         store,
         journey=normalized_journey,
@@ -448,7 +499,7 @@ def expand_delivery_story(
         cadence_limits=existing.cadence_limits,
         granularity_decision="expanded_to_implementable_stories",
         navigator_flow_unit=existing.navigator_flow_unit,
-        child_work_items=existing.child_work_items,
+        child_work_items=child_work_items,
         aggregate_checkpoint_status=existing.aggregate_checkpoint_status,
     )
     return BuilderExpandReport(
@@ -456,21 +507,87 @@ def expand_delivery_story(
         method=normalized_method,
         delivery_story=existing.active_item,
         delivery_story_title=title,
-        materialized_paths=(ds_index, us_index),
-        materialized_artifacts=(
-            existing_artifact("DS package", ds_index)
-            if ds_exists
-            else MaterializedArtifact("DS package", ds_index, "created"),
-            existing_artifact(f"{recommended_code.split('.')[-1]} package", us_index)
-            if us_exists
-            else MaterializedArtifact(
-                f"{recommended_code.split('.')[-1]} package", us_index, "created"
-            ),
-        ),
+        materialized_paths=tuple(materialized_paths),
+        materialized_artifacts=tuple(materialized_artifacts),
         recommended_story=recommended_code,
         recommended_story_title=recommended_title,
         cursor=cursor,
     )
+
+
+@dataclass(frozen=True)
+class _CandidateChild:
+    code: str
+    title: str
+    level: str
+    status: str
+
+
+@dataclass(frozen=True)
+class _MaterializedChild:
+    path: Path
+    artifact: MaterializedArtifact
+
+
+def _materialize_child_package(ds_dir: Path, child: _CandidateChild) -> _MaterializedChild:
+    child_dir = ds_dir / _story_folder_name(child.code, child.title)
+    child_index = child_dir / "index.md"
+    child_exists = child_index.exists()
+    if not child_exists:
+        child_dir.mkdir(parents=True, exist_ok=True)
+        child_index.write_text(
+            _render_story_index(child.code, child.title, child.level), encoding="utf-8"
+        )
+    label = f"{child.code.split('.')[-1]} package"
+    artifact = (
+        existing_artifact(label, child_index)
+        if child_exists
+        else MaterializedArtifact(label, child_index, "created")
+    )
+    return _MaterializedChild(path=child_index, artifact=artifact)
+
+
+def _parse_candidate_stories(content: str) -> list[_CandidateChild]:
+    """Parse a Delivery Story candidate-stories table (header-driven, 4- or 5-column)."""
+    children: list[_CandidateChild] = []
+    columns: dict[str, int] | None = None
+    for raw_line in content.splitlines():
+        line = raw_line.strip()
+        if not line.startswith("|"):
+            if columns is not None:
+                break
+            continue
+        cells = [cell.strip() for cell in line.strip("|").split("|")]
+        if columns is None:
+            lowered = [cell.lower() for cell in cells]
+            if {"code", "story", "type", "status"}.issubset(lowered):
+                columns = {name: index for index, name in enumerate(lowered)}
+            continue
+        if line.startswith("|---") or set(cells) <= {""} or all(set(c) <= {"-"} for c in cells):
+            continue
+        if len(cells) <= max(columns.values()):
+            continue
+        code = _strip_markdown_link(cells[columns["code"]])
+        if not code:
+            continue
+        type_text = cells[columns["type"]].lower()
+        level = "technical_story" if "technical" in type_text else "user_story"
+        children.append(
+            _CandidateChild(
+                code=code,
+                title=_strip_markdown_link(cells[columns["story"]]),
+                level=level,
+                status=cells[columns["status"]],
+            )
+        )
+    return children
+
+
+def _first_pending_child(children: list[_CandidateChild]) -> _CandidateChild:
+    for child in children:
+        if "Done" not in child.status and "done" not in child.status:
+            return child
+    return children[0]
 
 
 def render_expand_report(report: BuilderExpandReport) -> str:
@@ -1532,6 +1649,53 @@ The Delivery Story is done when child User/Technical Stories produce a coherent 
 """
 
 
+def _render_story_index(code: str, title: str, level: str) -> str:
+    if level == "technical_story":
+        return _render_technical_story_index(code, title)
+    return _render_user_story_index(code, title)
+
+
+def _render_technical_story_index(code: str, title: str) -> str:
+    return f"""[< Parent](../index.md)
+
+# {code} — {title}
+
+**Status:** 🟡 Planned
+**Type:** Technical Story
+
+---
+
+## Technical Story
+
+{_technical_story_statement(title)}
+
+## Outcome
+
+{_user_story_outcome(title)}
+
+## Acceptance Behavior
+
+```text
+Given the system is ready for {title}
+When the planned technical change is applied
+Then the expected technical outcome is observable
+And unrelated Delivery Story scope remains untouched
+```
+
+## Scope
+
+- {title}
+
+## Out Of Scope
+
+- Sibling Delivery Story scope.
+
+## Validation
+
+Navigator-visible validation route plus automated checks.
+"""
+
+
 def _render_user_story_index(code: str, title: str) -> str:
     return f"""[< Parent](../index.md)
 
@@ -1673,8 +1837,6 @@ def _story_folder_name(code: str, title: str) -> str:
 
 
 def _slugify(text: str) -> str:
-    import re
-
     slug = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
     return re.sub(r"-+", "-", slug)
 

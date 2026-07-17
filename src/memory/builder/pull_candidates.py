@@ -6,11 +6,23 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from memory.builder.roadmap_grammar import (
+    HEADING_RE as _HEADING_RE,
+)
+from memory.builder.roadmap_grammar import (
+    STATUS_RE as _STATUS_RE,
+)
+from memory.builder.roadmap_grammar import (
+    is_legacy_path as _is_legacy_path,
+)
+from memory.builder.roadmap_grammar import (
+    strip_markdown_link as _strip_markdown_link,
+)
 from memory.builder.surface_protocol import wrap_ariad_surface
 
 _CANDIDATE_STATUSES = ("Planned", "Active", "Blocked", "Candidate")
-_STATUS_RE = re.compile(r"\*\*Status:\*\*\s*(?P<status>.+?)\s*$", re.MULTILINE)
-_HEADING_RE = re.compile(r"^#\s+(?P<code>[A-Z0-9.]+)\s+[—-]\s+(?P<title>.+?)\s*$", re.MULTILINE)
+_DS_TABLE_HEADER = "| Code | Delivery Story | Status |"
+_TOP_LEVEL_DS_RE = re.compile(r"^DS-\d+$")
 _TYPE_RE = re.compile(r"\*\*Type:\*\*\s*(?P<type>.+?)\s*$", re.MULTILINE)
 
 
@@ -88,6 +100,7 @@ def inspect_pull_candidates(
     raw_candidates = tuple(
         candidate
         for path in sorted(roadmap_root.rglob("index.md"))
+        if not _is_legacy_path(path, roadmap_root)
         for candidate in _candidates_from_file(root, path)
     )
     candidates = tuple(
@@ -279,6 +292,16 @@ def render_pull_candidates_report(report: PullCandidatesReport) -> str:
 
 
 def _snapshot_items_from_content(content: str) -> list[RoadmapSnapshotItem]:
+    items = _cv_table_items(content)
+    if items:
+        return items
+    items = _ds_table_items(content)
+    if items:
+        return items
+    return _cv_heading_items(content)
+
+
+def _cv_table_items(content: str) -> list[RoadmapSnapshotItem]:
     items: list[RoadmapSnapshotItem] = []
     in_table = False
     for raw_line in content.splitlines():
@@ -301,9 +324,38 @@ def _snapshot_items_from_content(content: str) -> list[RoadmapSnapshotItem]:
             continue
         if in_table and line:
             break
-    if items:
-        return items
+    return items
 
+
+def _ds_table_items(content: str) -> list[RoadmapSnapshotItem]:
+    """Read Delivery Story tables, accumulating across ``## Chapter N —`` sections."""
+    items: list[RoadmapSnapshotItem] = []
+    in_table = False
+    for raw_line in content.splitlines():
+        line = raw_line.strip()
+        if line == _DS_TABLE_HEADER:
+            in_table = True
+            continue
+        if in_table and line.startswith("|---"):
+            continue
+        if in_table and line.startswith("|"):
+            parts = [part.strip() for part in line.strip("|").split("|")]
+            if len(parts) >= 3:
+                items.append(
+                    RoadmapSnapshotItem(
+                        code=_strip_markdown_link(parts[0]),
+                        title=_strip_markdown_link(parts[1]),
+                        status=parts[2],
+                    )
+                )
+            continue
+        if in_table:
+            in_table = False
+    return items
+
+
+def _cv_heading_items(content: str) -> list[RoadmapSnapshotItem]:
+    items: list[RoadmapSnapshotItem] = []
     current_cv: tuple[str, str] | None = None
     for raw_line in content.splitlines():
         line = raw_line.strip()
@@ -417,6 +469,8 @@ def _candidate_has_done_artifact(root: Path, candidate: PullCandidate) -> bool:
             path for path in roadmap_root.rglob("index.md") if _index_code(path) == candidate.code
         ]
     for index_path in search_paths:
+        if _is_legacy_path(index_path, roadmap_root):
+            continue
         if _has_done_artifact(index_path.parent, roadmap_root=roadmap_root):
             return True
     return False
@@ -448,7 +502,7 @@ def _level_for(code: str, content: str) -> str:
             return "technical_story"
         if "user" in story_type:
             return "user_story"
-    if ".DS" in code:
+    if ".DS" in code or _TOP_LEVEL_DS_RE.match(code):
         return "delivery_story"
     return "cv"
 
@@ -490,11 +544,6 @@ def _status_marker(status: str) -> str:
     if "Done" in status:
         return "✓ done"
     return f"○ {status.lower()}"
-
-
-def _strip_markdown_link(value: str) -> str:
-    match = re.fullmatch(r"\[(?P<label>[^\]]+)\]\([^)]*\)", value.strip())
-    return match.group("label") if match else value
 
 
 def _card_line(left: str, right: str) -> str:
