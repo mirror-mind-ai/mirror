@@ -58,6 +58,7 @@ recoverable.
 | [CV9.E2.S16](cv9-e2-s16-extraction-status-legibility/index.md) | Extraction Status Legibility (AI-10) | Done |
 | [CV9.E2.S17](cv9-e2-s17-embedding-provenance/index.md) | Embedding Provenance (AI-07) | Done |
 | [CV9.E2.S18](cv9-e2-s18-embedding-call-observability/index.md) | Embedding Call Observability (D-003, AI-09 tail) | Done |
+| [CV9.E2.S19](cv9-e2-s19-eval-run-persistence/index.md) | Eval Run Persistence & Trend (AI-11) | Planned |
 
 ---
 
