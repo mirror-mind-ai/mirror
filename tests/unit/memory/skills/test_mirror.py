@@ -326,7 +326,6 @@ def test_reception_overrides_sticky_persona_when_enabled(mocker):
     from memory.models import ReceptionResult
 
     mocker.patch("memory.skills.mirror.RECEPTION_ENABLED", True)
-    mocker.patch("memory.skills.mirror.LOG_LLM_CALLS", False)
     # reception is imported locally inside _resolve_defaults — patch at source.
     mocker.patch(
         "memory.intelligence.reception.reception",
@@ -368,7 +367,6 @@ def test_sticky_applies_when_reception_returns_empty(mocker):
     from memory.models import ReceptionResult
 
     mocker.patch("memory.skills.mirror.RECEPTION_ENABLED", True)
-    mocker.patch("memory.skills.mirror.LOG_LLM_CALLS", False)
     mocker.patch(
         "memory.intelligence.reception.reception",
         return_value=ReceptionResult.empty(),
@@ -401,7 +399,6 @@ def test_explicit_arg_not_overridden_by_reception(mocker):
     from memory.models import ReceptionResult
 
     mocker.patch("memory.skills.mirror.RECEPTION_ENABLED", True)
-    mocker.patch("memory.skills.mirror.LOG_LLM_CALLS", False)
     mocker.patch(
         "memory.intelligence.reception.reception",
         return_value=ReceptionResult(

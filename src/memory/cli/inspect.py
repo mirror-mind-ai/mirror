@@ -302,9 +302,11 @@ def cmd_inspect_llm_calls(args: list[str]) -> None:
         c_tok = row.get("completion_tokens") or 0
         conv = (row.get("conversation_id") or "")[:8] or "—"
         row_id = (row.get("id") or "")[:8]
+        cost = row.get("cost_usd")
+        cost_str = f"~${cost:.6f}" if cost is not None else "$—"
 
         print(f"\n[{called_at}] {role} | {model}")
-        print(f"  id:{row_id}  conv:{conv}  {p_tok}→{c_tok} tokens  {latency_str}")
+        print(f"  id:{row_id}  conv:{conv}  {p_tok}→{c_tok} tokens  {latency_str}  {cost_str}")
 
         prompt = (row.get("prompt") or "").strip()[:200]
         response = (row.get("response") or "").strip()[:200]

@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 
 from memory.config import (
     EXTRACTION_MAX_ATTEMPTS,
-    LOG_LLM_CALLS,
     SUMMARIZE_ENABLED,
     TWO_PASS_ENABLED,
 )
@@ -21,7 +20,6 @@ from memory.intelligence.extraction import (
     generate_conversation_tags,
     generate_conversation_title,
 )
-from memory.intelligence.llm_router import LLMResponse
 from memory.models import Conversation, ConversationSummary, Memory, Message
 from memory.services.memory import memory_embed_text
 from memory.services.metadata_lifecycle import (
@@ -32,6 +30,7 @@ from memory.services.metadata_lifecycle import (
     metadata_execution_profile,
     metadata_profile_action,
 )
+from memory.services.observability import build_llm_logger
 from memory.storage.store import Store
 
 if TYPE_CHECKING:
@@ -743,22 +742,7 @@ class ConversationService:
         return self._run_extraction(conversation_id)
 
     def _make_logger(self, role: str, conversation_id: str):
-        if not LOG_LLM_CALLS:
-            return None
-
-        def _log(response: LLMResponse) -> None:
-            self.store.log_llm_call(
-                role=role,
-                model=response.model,
-                prompt=response.prompt or "",
-                response_text=response.content,
-                prompt_tokens=response.prompt_tokens,
-                completion_tokens=response.completion_tokens,
-                latency_ms=response.latency_ms,
-                conversation_id=conversation_id,
-            )
-
-        return _log
+        return build_llm_logger(self.store, role=role, conversation_id=conversation_id)
 
     def _run_extraction(self, conversation_id: str) -> list[Memory]:
         """Run memory/task extraction, isolating and recording repeated failures.

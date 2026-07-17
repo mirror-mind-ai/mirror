@@ -1,15 +1,13 @@
 """MemoryService: storage and search for memories and journal entries."""
 
 import json
-from collections.abc import Callable
 
 import numpy as np
 
-from memory.config import LOG_LLM_CALLS
 from memory.intelligence.embeddings import embedding_to_bytes, generate_embedding
-from memory.intelligence.llm_router import LLMResponse
 from memory.intelligence.search import MemorySearch
 from memory.models import Memory, MemorySummary, SearchOutcome, SearchResult
+from memory.services.observability import build_llm_logger
 from memory.storage.store import Store
 
 
@@ -152,22 +150,7 @@ class MemoryService:
         from memory.intelligence.extraction import classify_journal_entry
 
         if not title or not layer or not tags:
-            llm_logger: Callable[[LLMResponse], None] | None = None
-            if LOG_LLM_CALLS:
-
-                def _log_llm_call(response: LLMResponse) -> None:
-                    self.store.log_llm_call(
-                        role="journal_classification",
-                        model=response.model,
-                        prompt=response.prompt or "",
-                        response_text=response.content,
-                        prompt_tokens=response.prompt_tokens,
-                        completion_tokens=response.completion_tokens,
-                        latency_ms=response.latency_ms,
-                    )
-
-                llm_logger = _log_llm_call
-
+            llm_logger = build_llm_logger(self.store, role="journal_classification")
             classification = classify_journal_entry(content, on_llm_call=llm_logger)
             title = title or classification["title"]
             layer = layer or classification["layer"]

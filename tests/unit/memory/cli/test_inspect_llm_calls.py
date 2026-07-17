@@ -179,3 +179,32 @@ class TestInspectLlmCallsFilters:
         cmd_inspect_llm_calls(["--mirror-home", mirror_home, "--since", "2030-01-01"])
         out = capsys.readouterr().out
         assert "no llm_calls rows" in out
+
+
+class TestInspectLlmCallsCost:
+    def test_shows_estimated_cost_when_present(self, tmp_path, capsys):
+        mem, mirror_home = _seed_db(tmp_path)
+        mem.store.log_llm_call(
+            role="extraction",
+            model="google/gemini-2.5-flash-lite",
+            prompt="",
+            response_text="",
+            prompt_tokens=1000,
+            completion_tokens=1000,
+            latency_ms=100,
+            cost_usd=0.00050,
+        )
+        from memory.cli.inspect import cmd_inspect_llm_calls
+
+        cmd_inspect_llm_calls(["--mirror-home", mirror_home])
+        out = capsys.readouterr().out
+        assert "0.0005" in out  # estimated cost is rendered
+
+    def test_renders_dash_when_cost_missing(self, tmp_path, capsys):
+        # The seeded rows carry NULL cost_usd.
+        _, mirror_home = _seed_db(tmp_path)
+        from memory.cli.inspect import cmd_inspect_llm_calls
+
+        cmd_inspect_llm_calls(["--mirror-home", mirror_home])
+        out = capsys.readouterr().out
+        assert "$—" in out

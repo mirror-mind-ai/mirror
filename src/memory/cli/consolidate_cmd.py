@@ -19,13 +19,13 @@ import sys
 
 from memory.cli.common import db_path_from_mirror_home
 from memory.client import MemoryClient
-from memory.config import LOG_LLM_CALLS
 from memory.intelligence.consolidate import (
     DEFAULT_CLUSTER_THRESHOLD,
     cluster_memories,
     propose_consolidation,
 )
 from memory.models import Consolidation, Identity
+from memory.services.observability import build_llm_logger
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -37,22 +37,8 @@ def _client(mirror_home: str | None) -> MemoryClient:
 
 
 def _make_llm_logger(store):
-    """Return an on_llm_call callback that logs to llm_calls if LOG_LLM_CALLS is set."""
-    if not LOG_LLM_CALLS:
-        return None
-
-    def _log(response) -> None:
-        store.log_llm_call(
-            role="consolidation",
-            model=response.model,
-            prompt=response.prompt or "",
-            response_text=response.content,
-            prompt_tokens=response.prompt_tokens,
-            completion_tokens=response.completion_tokens,
-            latency_ms=response.latency_ms,
-        )
-
-    return _log
+    """Return an on_llm_call callback for consolidation, honoring MEMORY_LOG_LLM_CALLS."""
+    return build_llm_logger(store, role="consolidation")
 
 
 def _identity_context(mem: MemoryClient) -> str:

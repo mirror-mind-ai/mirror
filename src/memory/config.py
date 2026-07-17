@@ -342,8 +342,24 @@ REINFORCEMENT_DECAY_DAYS = int(os.getenv("MEMORY_REINFORCEMENT_DECAY_DAYS", "180
 REINFORCEMENT_USE_WEIGHT = float(os.getenv("MEMORY_REINFORCEMENT_USE_WEIGHT", "0.7"))
 REINFORCEMENT_RETRIEVAL_WEIGHT = float(os.getenv("MEMORY_REINFORCEMENT_RETRIEVAL_WEIGHT", "0.3"))
 
-# Observability — set MEMORY_LOG_LLM_CALLS=1 to write every LLM call to llm_calls table
-LOG_LLM_CALLS = os.getenv("MEMORY_LOG_LLM_CALLS", "") == "1"
+
+# Observability (AI-09 / CV9.E2.S13) — MEMORY_LOG_LLM_CALLS = off | metadata | full.
+# Default "metadata": always record role/model/tokens/latency/cost/conversation,
+# never prompt/response bodies. "full" adds the bodies (explicit opt-in). "off"
+# (or "0") disables logging entirely. Back-compat: legacy "1" keeps its original
+# body-logging meaning and maps to "full".
+def _resolve_log_llm_calls_mode(raw: str) -> str:
+    value = raw.strip().lower()
+    if value in ("", "metadata"):
+        return "metadata"
+    if value in ("1", "full"):
+        return "full"
+    return "off"
+
+
+LOG_LLM_CALLS_MODE = _resolve_log_llm_calls_mode(os.getenv("MEMORY_LOG_LLM_CALLS", ""))
+LOG_LLM_CALLS = LOG_LLM_CALLS_MODE != "off"
+LOG_LLM_BODIES = LOG_LLM_CALLS_MODE == "full"
 
 # Reception — set MEMORY_RECEPTION=0 to disable LLM-based turn classification
 # When enabled (default), persona/journey routing uses the LLM instead of keywords.
