@@ -182,6 +182,12 @@ class ExtractedWeekItem(_DomainModel):
     context: str | None = None
 
 
+VALID_MEMORY_LAYERS = frozenset({"self", "ego", "shadow"})
+VALID_MEMORY_TYPES = frozenset(
+    {"decision", "insight", "idea", "tension", "learning", "pattern", "commitment", "reflection"}
+)
+
+
 class ExtractedMemory(_DomainModel):
     """Memory extracted by the LLM before id and embedding are assigned."""
 

@@ -1,6 +1,7 @@
 """Automatic memory and task extraction through an LLM."""
 
 import json
+import logging
 from collections.abc import Callable
 from datetime import datetime
 from typing import Any
@@ -18,7 +19,51 @@ from memory.intelligence.prompts import (
     TASK_EXTRACTION_PROMPT,
     WEEK_PLAN_PROMPT,
 )
-from memory.models import ExtractedMemory, ExtractedTask, ExtractedWeekItem, Memory, Message
+from memory.models import (
+    VALID_MEMORY_LAYERS,
+    VALID_MEMORY_TYPES,
+    ExtractedMemory,
+    ExtractedTask,
+    ExtractedWeekItem,
+    Memory,
+    Message,
+)
+
+logger = logging.getLogger(__name__)
+
+# Extraction boundary caps (AI-15) — hard limits on what one conversation may
+# write, so a degenerate or prompt-injected response cannot flood the store.
+MAX_MEMORIES_PER_CONVERSATION = 8
+MAX_TASKS_PER_CONVERSATION = 5
+
+
+def _fence_transcript(body: str) -> str:
+    """Wrap transcript text so the model reads it as fenced, untrusted data (AI-16)."""
+    return f"<transcript>\n{body}\n</transcript>"
+
+
+def _sanitize_extracted(
+    memories: list[ExtractedMemory], *, max_count: int
+) -> tuple[list[ExtractedMemory], dict[str, int]]:
+    """Drop memories with an invalid layer or type and cap the count (AI-15).
+
+    Returns the kept memories and counts of what was dropped, so callers can log
+    it instead of silently swallowing garbage or an over-large response.
+    """
+    kept: list[ExtractedMemory] = []
+    dropped = {"invalid_layer": 0, "invalid_type": 0, "over_cap": 0}
+    for mem in memories:
+        if mem.layer not in VALID_MEMORY_LAYERS:
+            dropped["invalid_layer"] += 1
+            continue
+        if mem.memory_type not in VALID_MEMORY_TYPES:
+            dropped["invalid_type"] += 1
+            continue
+        if len(kept) >= max_count:
+            dropped["over_cap"] += 1
+            continue
+        kept.append(mem)
+    return kept, dropped
 
 
 def format_transcript(messages: list[Message], user_name: str = "User") -> str:
@@ -60,7 +105,7 @@ def extract_memories(
     if not messages:
         return []
 
-    prompt = EXTRACTION_PROMPT + format_transcript(messages, user_name=user_name)
+    prompt = EXTRACTION_PROMPT + _fence_transcript(format_transcript(messages, user_name=user_name))
     response = send_to_model(
         EXTRACTION_MODEL,
         [{"role": "user", "content": prompt}],
@@ -85,7 +130,10 @@ def extract_memories(
         except Exception:
             continue
 
-    return memories
+    kept, dropped = _sanitize_extracted(memories, max_count=MAX_MEMORIES_PER_CONVERSATION)
+    if any(dropped.values()):
+        logger.warning("extraction dropped memory items: %s", dropped)
+    return kept
 
 
 def generate_descriptor(
@@ -293,7 +341,10 @@ def curate_against_existing(
         except Exception:
             continue
 
-    return curated
+    kept, dropped = _sanitize_extracted(curated, max_count=MAX_MEMORIES_PER_CONVERSATION)
+    if any(dropped.values()):
+        logger.warning("curation dropped memory items: %s", dropped)
+    return kept
 
 
 def extract_tasks(
@@ -306,7 +357,9 @@ def extract_tasks(
     if not messages:
         return []
 
-    prompt = TASK_EXTRACTION_PROMPT + format_transcript(messages, user_name=user_name)
+    prompt = TASK_EXTRACTION_PROMPT + _fence_transcript(
+        format_transcript(messages, user_name=user_name)
+    )
     response = send_to_model(
         EXTRACTION_MODEL,
         [{"role": "user", "content": prompt}],
@@ -333,6 +386,9 @@ def extract_tasks(
         except (KeyError, TypeError):
             continue
 
+    if len(tasks) > MAX_TASKS_PER_CONVERSATION:
+        logger.warning("extraction capped tasks: %d -> %d", len(tasks), MAX_TASKS_PER_CONVERSATION)
+        tasks = tasks[:MAX_TASKS_PER_CONVERSATION]
     return tasks
 
 
