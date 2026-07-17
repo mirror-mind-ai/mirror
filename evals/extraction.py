@@ -12,15 +12,22 @@ Requires OPENROUTER_API_KEY. Costs a few cents per run.
 from __future__ import annotations
 
 from evals.types import EvalProbe
+from memory.config import EXTRACTION_MODEL
 from memory.intelligence.extraction import (
     curate_against_existing,
     extract_memories,
     generate_conversation_summary,
     generate_descriptor,
 )
+from memory.intelligence.prompts import CURATION_PROMPT, EXTRACTION_PROMPT, TASK_EXTRACTION_PROMPT
 from memory.models import ExtractedMemory, Memory, Message
 
 THRESHOLD = 0.8
+# CV9.E2.S19 (AI-11): the prompts this eval's probes actually exercise —
+# extraction, task extraction, and the two-pass-dedup probe's curation pass —
+# so a persisted run's prompt_hash is attributable to what moved.
+EVAL_MODEL = EXTRACTION_MODEL
+EVAL_PROMPTS = (EXTRACTION_PROMPT, TASK_EXTRACTION_PROMPT, CURATION_PROMPT)
 
 
 # ---------------------------------------------------------------------------

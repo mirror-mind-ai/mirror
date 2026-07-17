@@ -1,5 +1,6 @@
 .DS_Store
 __pycache__/
+evals/.history/  # CV9.E2.S19: fallback eval-run history when no mirror home is configured
 *.pyc
 .env
 claude.sh

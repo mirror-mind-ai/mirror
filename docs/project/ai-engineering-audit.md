@@ -394,6 +394,16 @@ probes; nothing requires a green eval before a release or a model swap.
 deprecation reality) ships on vibes. A regression in shadow-layer
 discipline — the prompt's most delicate classification — would be invisible.
 
+> **Status (updated 2026-07-17).** Fix item 1 (persistence) **done** as
+> CV9.E2.S19: every `eval <name>` run appends a JSONL record (model, a
+> **per-eval** prompt-drift hash, score, per-probe results, run window) under
+> `<mirror_home>/eval-history/`, and `eval <name> --history` trends runs and
+> flags any probe that flipped — including `two-pass-dedup`, closing the
+> quality half of the AI-20 two-pass revisit interlock (CV9.E2.S18 closed the
+> cost half). Fix items 2 (additional probes — scene-synthesis is still the
+> most valuable) and 3 (the model-upgrade playbook, release-checklist gate)
+> remain open; AI-11 stays in the P1 backlog for those.
+
 **Fix.**
 1. Persist eval reports (JSON artifact under the mirror home or an
    `eval_runs` metadata row) with model ID, prompt hash, pass rate, cost.

@@ -22,6 +22,7 @@ Dropped   no longer relevant or replaced by another item
 | D-002 | Journey search silently returns `[]` on embedding failure | product | low | Carried | CV9.E2.S1 (AI-E4) | A "no journeys matched" report that is actually an embedding outage, or unifying journey degradation with memory-search's lexical fallback |
 | D-003 | Embedding calls bypass the `llm_calls` ledger (invisible spend, amplified by S1 retry) | observability | medium | Paid | CV9.E2.S1 (AI-E1, AI-09 tail) → CV9.E2.S18 | Paid by CV9.E2.S18 embedding call observability |
 | D-004 | Full test suite exhausts file descriptors under a low `ulimit -n` (macOS default) | testing | low | Paid | CV9.E2.S1 validation | Paid: conftest raises the soft fd limit at startup |
+| D-005 | `evals/routing.py` fixtures are stale against the current persona catalog | testing | low | Carried | CV9.E2.S19 validation | Update fixtures to the current catalog (treasurer → cfo/financial; add scholar coverage), or the next persona-catalog change |
 
 ## D-001 — Metadata lifecycle policy and evidence filtering live inside ConversationService
 
@@ -165,3 +166,40 @@ lifts the ceiling rather than reducing per-test fd usage — the fixtures still 
 many temp databases — so the underlying leak is masked, not eliminated; a future
 fixture-cleanup pass could still reduce concurrent open handles, but the
 validation-blocking symptom is resolved.
+
+## D-005 — `evals/routing.py` fixtures are stale against the current persona catalog
+
+**Kind:** testing  
+**Severity:** low  
+**Status:** Carried  
+**Source:** CV9.E2.S19 validation  
+
+### Carrying reason
+
+Navigator validation of CV9.E2.S19 (`eval routing` against the real production
+database) surfaced a genuine 11/15 score (0.73, below the 0.85 threshold) that
+is unrelated to S19 itself — S19 only added `EVAL_MODEL`/`EVAL_PROMPTS`
+constants, never touching `_top_persona()` or fixture content. The persona
+catalog has evolved since the eval's fixtures were last written
+(`e10067c`, CV7.E1.S3): `treasurer` no longer exists (`cfo`/`financial` cover
+that ground now), and newer personas (`cfo`, `scholar`) route queries the
+fixtures did not anticipate (`treasurer-finances → None`,
+`ambiguous-finance-over-research → 'cfo'`, `null-open-question → 'scholar'`).
+This is exactly the drift AI-11/CV9.E2.S19 exists to surface — it is now
+persisted and trendable instead of a number that flashed on stdout. Fixing
+fixture content is out of S19's scope (persistence infrastructure, not eval
+content).
+
+### Revisit trigger
+
+Before the routing eval is treated as a red/green release-gate signal, or the
+next time the persona catalog changes and the fixtures need re-verification
+anyway.
+
+### Closure condition
+
+`evals/routing.py`'s fixed queries and expected personas are reconciled with
+the current persona catalog (`treasurer` references updated to `cfo`/`financial`;
+`scholar` and other newer personas get explicit coverage or documented
+exclusion), and the eval scores at or above threshold on a representative
+seeded database.

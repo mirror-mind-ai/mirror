@@ -2,7 +2,7 @@
 
 # CV9.E2.S19 — Eval Run Persistence & Trend
 
-**Status:** Planned
+**Status:** Done
 **Epic:** CV9.E2 Stabilization & Robustness
 **Advances:** AI Engineering Audit **AI-11** (persistence half; additional probes
 and the model-upgrade playbook stay follow-ups)
@@ -84,6 +84,17 @@ gate.
   (every run is recorded as it occurred, never asserted equal to a prior run).
 - Unit tests cover the edge matrix using the existing mocked-probe harness
   pattern (`test_runner.py`) — no live LLM required.
+
+## As-built (implementation)
+
+Shipped as planned. One test-design note: `test_eval_modules.py`'s
+`EVAL_MODULES` list was missing `evals.retrieval` (a pre-existing gap,
+unrelated to persistence) — added it while extending the contract tests for
+`EVAL_MODEL`/`EVAL_PROMPTS`, since the new contract specifically needed to
+cover retrieval's prompt-free declaration. One test bug caught during RED→GREEN:
+double-patching `importlib.import_module` on the same target within one test
+caused a mock-resolution error unrelated to production code; fixed with
+`side_effect` (a single patch, two return values) — cleaner test design anyway.
 
 ## See also
 

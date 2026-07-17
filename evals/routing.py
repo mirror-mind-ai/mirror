@@ -19,6 +19,10 @@ from evals.types import EvalProbe
 from memory.client import MemoryClient
 
 THRESHOLD = 0.85
+# CV9.E2.S19 (AI-11): keyword-based routing makes no LLM call (see module
+# docstring) — genuinely prompt-free, not an omission.
+EVAL_MODEL: str | None = None
+EVAL_PROMPTS: tuple[str, ...] = ()
 
 
 # ---------------------------------------------------------------------------

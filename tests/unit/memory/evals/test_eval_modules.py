@@ -11,7 +11,18 @@ from evals.types import EvalProbe
 
 pytestmark = pytest.mark.unit
 
-EVAL_MODULES = ["evals.extraction", "evals.routing", "evals.proportionality", "evals.reception"]
+EVAL_MODULES = [
+    "evals.extraction",
+    "evals.routing",
+    "evals.proportionality",
+    "evals.reception",
+    "evals.retrieval",
+]
+
+# CV9.E2.S19 (AI-11): evals that genuinely make no LLM call must declare an
+# empty EVAL_PROMPTS/None EVAL_MODEL, not a fake hash — grounded from each
+# module's own docstring ("no LLM calls" / "deterministic math").
+_PROMPT_FREE_MODULES = {"evals.routing", "evals.retrieval"}
 
 
 @pytest.fixture(params=EVAL_MODULES)
@@ -53,3 +64,20 @@ class TestEvalModuleContract:
     def test_all_probes_have_callable_run(self, eval_module):
         for probe in eval_module.PROBES:
             assert callable(probe.run), f"probe {probe.id!r} run is not callable"
+
+    def test_exposes_eval_model(self, eval_module):
+        assert hasattr(eval_module, "EVAL_MODEL"), "module must expose EVAL_MODEL"
+
+    def test_exposes_eval_prompts_tuple(self, eval_module):
+        assert hasattr(eval_module, "EVAL_PROMPTS"), "module must expose EVAL_PROMPTS"
+        assert isinstance(eval_module.EVAL_PROMPTS, tuple)
+
+    def test_prompt_free_evals_declare_empty_prompts_and_no_model(self, eval_module):
+        if eval_module.__name__ in _PROMPT_FREE_MODULES:
+            assert eval_module.EVAL_PROMPTS == ()
+            assert eval_module.EVAL_MODEL is None
+
+    def test_llm_evals_declare_nonempty_prompts_and_a_model(self, eval_module):
+        if eval_module.__name__ not in _PROMPT_FREE_MODULES:
+            assert len(eval_module.EVAL_PROMPTS) > 0
+            assert eval_module.EVAL_MODEL is not None

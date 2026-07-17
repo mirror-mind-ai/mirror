@@ -21,6 +21,10 @@ from memory.config import (
 from memory.intelligence.search import hybrid_score, reinforcement_score
 
 THRESHOLD = 1.0  # all probes must pass — these are deterministic math contracts
+# CV9.E2.S19 (AI-11): pure scoring math, no LLM call (see module docstring) —
+# genuinely prompt-free, not an omission.
+EVAL_MODEL: str | None = None
+EVAL_PROMPTS: tuple[str, ...] = ()
 
 
 # ---------------------------------------------------------------------------

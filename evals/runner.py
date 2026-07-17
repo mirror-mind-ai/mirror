@@ -10,9 +10,12 @@ Each eval module must expose:
 
 from __future__ import annotations
 
+import hashlib
 import importlib
 import sys
+from datetime import datetime, timezone
 
+from evals.persistence import EvalRunRecord, append_run, read_history
 from evals.types import EvalProbe, EvalReport, EvalResult
 
 _PASS = "\033[32m✓\033[0m"
@@ -31,10 +34,13 @@ def run_eval(eval_name: str) -> EvalReport:
 
     probes: list[EvalProbe] = getattr(module, "PROBES", None)
     threshold: float = getattr(module, "THRESHOLD", 0.8)
+    eval_model: str | None = getattr(module, "EVAL_MODEL", None)
+    eval_prompts: tuple[str, ...] = getattr(module, "EVAL_PROMPTS", ())
 
     if probes is None:
         raise ValueError(f"Eval module '{module_path}' must expose a PROBES list.")
 
+    started_at = datetime.now(timezone.utc).isoformat()
     report = EvalReport(eval_name=eval_name, threshold=threshold)
 
     for probe in probes:
@@ -45,7 +51,42 @@ def run_eval(eval_name: str) -> EvalReport:
             notes = f"probe raised: {exc}"
         report.results.append(EvalResult(probe_id=probe.id, passed=passed, notes=notes))
 
+    ended_at = datetime.now(timezone.utc).isoformat()
+    _persist_run(eval_name, report, started_at, ended_at, eval_model, eval_prompts)
+
     return report
+
+
+def _persist_run(
+    eval_name: str,
+    report: EvalReport,
+    started_at: str,
+    ended_at: str,
+    eval_model: str | None,
+    eval_prompts: tuple[str, ...],
+) -> None:
+    """Build and persist one EvalRunRecord. Defense in depth: never raises,
+    even if ``append_run``'s own fail-soft contract were ever violated — a
+    persistence error must never surface as an eval failure (CV9.E2.S19).
+    """
+    prompt_hash = (
+        hashlib.sha256("".join(eval_prompts).encode()).hexdigest()[:12] if eval_prompts else None
+    )
+    record = EvalRunRecord(
+        eval_name=eval_name,
+        started_at=started_at,
+        ended_at=ended_at,
+        model=eval_model,
+        prompt_hash=prompt_hash,
+        score=report.score,
+        threshold=report.threshold,
+        passed=report.passed,
+        probes=[{"id": r.probe_id, "passed": r.passed, "notes": r.notes} for r in report.results],
+    )
+    try:
+        append_run(record)
+    except Exception:
+        pass
 
 
 def print_report(report: EvalReport) -> None:
@@ -67,14 +108,53 @@ def print_report(report: EvalReport) -> None:
     print(f"\n  {passes}/{total} passed  (threshold: {report.threshold:.2f})  {outcome}\n")
 
 
+def print_history(eval_name: str, limit: int = 10) -> None:
+    """Print recent persisted runs for one eval, newest first.
+
+    Surfaces any probe whose pass/fail flipped relative to the run
+    immediately before it — a regression can hide inside an aggregate score
+    that still clears threshold (CV9.E2.S19).
+    """
+    records = read_history(eval_name, limit=limit)
+    if not records:
+        print(f"\n(no persisted history for '{eval_name}' yet)\n")
+        return
+
+    print(f"\n{_BOLD}── {eval_name} history (most recent {len(records)}) {'─' * 20}{_RESET}\n")
+    for i, rec in enumerate(records):
+        outcome = _PASS if rec.passed else _FAIL
+        print(
+            f"  {outcome}  {rec.started_at}  score={rec.score:.2f}/{rec.threshold:.2f}"
+            f"  model={rec.model or '—'}  prompt_hash={rec.prompt_hash or '—'}"
+        )
+        older = records[i + 1] if i + 1 < len(records) else None
+        if older is not None:
+            older_status = {p["id"]: p["passed"] for p in older.probes}
+            for p in rec.probes:
+                prior = older_status.get(p["id"])
+                if prior is not None and prior != p["passed"]:
+                    direction = "regressed" if prior and not p["passed"] else "recovered"
+                    print(f"      ⚠ probe '{p['id']}' {direction} vs previous run")
+    print()
+
+
 def main(args: list[str] | None = None) -> int:
-    """Entry point for `python -m memory eval <name>`. Returns exit code."""
+    """Entry point for `python -m memory eval <name> [--history [N]]`."""
     argv = args if args is not None else sys.argv[1:]
     if not argv:
-        print("Usage: python -m memory eval <name>", file=sys.stderr)
+        print("Usage: python -m memory eval <name> [--history [N]]", file=sys.stderr)
         return 1
 
     eval_name = argv[0]
+
+    if "--history" in argv:
+        idx = argv.index("--history")
+        limit = 10
+        if idx + 1 < len(argv) and argv[idx + 1].isdigit():
+            limit = int(argv[idx + 1])
+        print_history(eval_name, limit=limit)
+        return 0
+
     try:
         report = run_eval(eval_name)
     except ValueError as exc:
