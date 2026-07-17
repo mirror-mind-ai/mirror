@@ -128,3 +128,18 @@ def test_count_quarantined_conversations(store):
     _make_eligible(store, "healthy")
 
     assert store.count_quarantined_conversations() == 2
+
+
+def test_count_conversations_with_extraction_status(store):
+    for cid, status in (("p1", "parse_failed"), ("p2", "parse_failed"), ("ok1", "ok")):
+        store.create_conversation(
+            Conversation(
+                id=cid,
+                interface="cli",
+                journey="mirror",
+                ended_at="2026-01-01T00:00:00Z",
+                metadata=json.dumps({"extraction_status": status}),
+            )
+        )
+    assert store.count_conversations_with_extraction_status("parse_failed") == 2
+    assert store.count_conversations_with_extraction_status("ok") == 1

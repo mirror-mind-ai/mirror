@@ -109,6 +109,15 @@ class ConversationStore(ConnectionBacked):
         ).fetchone()
         return int(row["n"]) if row else 0
 
+    def count_conversations_with_extraction_status(self, status: str) -> int:
+        """Count conversations whose recorded extraction_status matches (AI-10)."""
+        row = self.conn.execute(
+            """SELECT COUNT(*) AS n FROM conversations c
+               WHERE json_extract(c.metadata, '$.extraction_status') = ?""",
+            (status,),
+        ).fetchone()
+        return int(row["n"]) if row else 0
+
     def get_open_conversations_idle_since(self, threshold_dt: str) -> list[Conversation]:
         """Return open conversations with no message activity since threshold_dt."""
         rows = self.conn.execute(

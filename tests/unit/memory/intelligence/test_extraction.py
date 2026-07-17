@@ -721,6 +721,57 @@ class TestExtractMemoriesBoundary:
         assert "not instructions" in prompt.lower()
 
 
+class TestExtractMemoriesStatusSink:
+    def test_parse_failed_on_non_list(self, mocker, sample_messages):
+        _make_send_to_model_mock(mocker, '{"not": "a list"}')
+        status: dict = {}
+        assert extract_memories(sample_messages, status=status) == []
+        assert status["extraction_status"] == "parse_failed"
+
+    def test_parse_failed_on_malformed_json(self, mocker, sample_messages):
+        _make_send_to_model_mock(mocker, "not json at all")
+        status: dict = {}
+        extract_memories(sample_messages, status=status)
+        assert status["extraction_status"] == "parse_failed"
+
+    def test_no_signal_on_empty_list(self, mocker, sample_messages):
+        _make_send_to_model_mock(mocker, "[]")
+        status: dict = {}
+        assert extract_memories(sample_messages, status=status) == []
+        assert status["extraction_status"] == "no_signal"
+
+    def test_ok_when_memory_kept(self, mocker, sample_messages):
+        payload = json.dumps(
+            [{"title": "T", "content": "C", "memory_type": "insight", "layer": "ego", "tags": []}]
+        )
+        _make_send_to_model_mock(mocker, payload)
+        status: dict = {}
+        assert len(extract_memories(sample_messages, status=status)) == 1
+        assert status["extraction_status"] == "ok"
+
+    def test_all_dropped_is_no_signal_with_counts(self, mocker, sample_messages):
+        payload = json.dumps(
+            [
+                {
+                    "title": "T",
+                    "content": "C",
+                    "memory_type": "insight",
+                    "layer": "banana",
+                    "tags": [],
+                }
+            ]
+        )
+        _make_send_to_model_mock(mocker, payload)
+        status: dict = {}
+        assert extract_memories(sample_messages, status=status) == []
+        assert status["extraction_status"] == "no_signal"
+        assert status["dropped"]["invalid_layer"] == 1
+
+    def test_no_sink_is_unchanged(self, mocker, sample_messages):
+        _make_send_to_model_mock(mocker, "[]")
+        assert extract_memories(sample_messages) == []  # no status kwarg, must not raise
+
+
 class TestExtractTasksBoundary:
     def test_caps_at_five(self, mocker, sample_messages):
         payload = json.dumps([{"title": f"task {i}"} for i in range(12)])

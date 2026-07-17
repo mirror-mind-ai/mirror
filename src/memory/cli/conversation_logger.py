@@ -372,6 +372,20 @@ def _count_quarantined_conversations(mirror_home: str | Path | None = None) -> i
         return mem.store.count_quarantined_conversations()
     except Exception:
         return 0
+
+
+def _count_parse_failed_conversations(mirror_home: str | Path | None = None) -> int:
+    """Conversations whose model output could not be parsed (fail-quiet, AI-10).
+
+    Held in a local for the whole read for the same closed-connection reason as
+    ``_count_quarantined_conversations``.
+    """
+    mem = None
+    try:
+        mem = _memory_client(mirror_home)
+        return mem.store.count_conversations_with_extraction_status("parse_failed")
+    except Exception:
+        return 0
     finally:
         if mem is not None:
             mem.close()
@@ -483,6 +497,11 @@ def session_maintenance(mirror_home: str | Path | None = None) -> str:
     if quarantined:
         parts.append(
             f"⚠ {quarantined} conversation(s) quarantined after repeated extraction failure"
+        )
+    parse_failed = _count_parse_failed_conversations(mirror_home)
+    if parse_failed:
+        parts.append(
+            f"⚠ {parse_failed} conversation(s) with unreadable model output (parse_failed)"
         )
     return "\n".join(parts)
 

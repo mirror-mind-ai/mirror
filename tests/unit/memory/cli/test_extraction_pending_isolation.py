@@ -135,6 +135,7 @@ class TestSessionMaintenanceReport:
             mocker.patch(f"memory.cli.conversation_logger.{step}", return_value=0)
         mock_mem = MagicMock()
         mock_mem.store.count_quarantined_conversations.return_value = 2
+        mock_mem.store.count_conversations_with_extraction_status.return_value = 0
         mocker.patch("memory.cli.conversation_logger._memory_client", return_value=mock_mem)
 
         from memory.cli.conversation_logger import session_maintenance
@@ -186,8 +187,46 @@ class TestSessionMaintenanceReport:
             mocker.patch(f"memory.cli.conversation_logger.{step}", return_value=0)
         mock_mem = MagicMock()
         mock_mem.store.count_quarantined_conversations.return_value = 0
+        mock_mem.store.count_conversations_with_extraction_status.return_value = 0
         mocker.patch("memory.cli.conversation_logger._memory_client", return_value=mock_mem)
 
         from memory.cli.conversation_logger import session_maintenance
 
         assert "quarantined" not in session_maintenance().lower()
+
+    def test_reports_parse_failed_count_when_present(self, mocker):
+        for step in (
+            "close_stale_orphans",
+            "backfill_pi_sessions",
+            "retitle_pending_conversations",
+            "extract_pending",
+        ):
+            mocker.patch(f"memory.cli.conversation_logger.{step}", return_value=0)
+        mock_mem = MagicMock()
+        mock_mem.store.count_quarantined_conversations.return_value = 0
+        mock_mem.store.count_conversations_with_extraction_status.return_value = 3
+        mocker.patch("memory.cli.conversation_logger._memory_client", return_value=mock_mem)
+
+        from memory.cli.conversation_logger import session_maintenance
+
+        report = session_maintenance()
+        assert "3" in report
+        assert "unreadable model output" in report.lower()
+        mock_mem.store.count_conversations_with_extraction_status.assert_called_with("parse_failed")
+
+    def test_no_parse_failed_line_when_none(self, mocker):
+        for step in (
+            "close_stale_orphans",
+            "backfill_pi_sessions",
+            "retitle_pending_conversations",
+            "extract_pending",
+        ):
+            mocker.patch(f"memory.cli.conversation_logger.{step}", return_value=0)
+        mock_mem = MagicMock()
+        mock_mem.store.count_quarantined_conversations.return_value = 0
+        mock_mem.store.count_conversations_with_extraction_status.return_value = 0
+        mocker.patch("memory.cli.conversation_logger._memory_client", return_value=mock_mem)
+
+        from memory.cli.conversation_logger import session_maintenance
+
+        assert "unreadable" not in session_maintenance().lower()

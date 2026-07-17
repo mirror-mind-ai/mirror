@@ -786,12 +786,14 @@ class ConversationService:
             pass
 
         # Extract memories through the LLM (candidate pass).
+        extraction_diag: dict = {}
         extracted = extract_memories(
             messages,
             persona=conv.persona if conv else None,
             journey=conv.journey if conv else None,
             user_name=user_name,
             on_llm_call=self._make_logger("extraction", conversation_id),
+            status=extraction_diag,
         )
 
         # Curation pass: deduplicate candidates against existing memories.
@@ -881,9 +883,17 @@ class ConversationService:
             )
             stored_memories.append(stored)
 
-        # Mark as extracted so extract_pending skips this conversation.
+        # Mark as extracted so extract_pending skips this conversation, and record
+        # why extraction produced what it did (AI-10): unreadable model output
+        # (parse_failed) is distinct from a genuinely empty result (no_signal).
         meta = self._metadata_dict(conv)
         meta["extracted"] = True
+        meta["extraction_status"] = extraction_diag.get("extraction_status") or (
+            "ok" if stored_memories else "no_signal"
+        )
+        dropped = extraction_diag.get("dropped")
+        if dropped and any(dropped.values()):
+            meta["extraction_dropped"] = dropped
         self.store.update_conversation(
             conversation_id, metadata=json.dumps(meta, ensure_ascii=False)
         )
@@ -904,6 +914,7 @@ class ConversationService:
         meta = self._metadata_dict(conv)
         attempts = int(meta.get("extraction_attempts", 0)) + 1
         meta["extraction_attempts"] = attempts
+        meta["extraction_status"] = "llm_failed"
         if attempts >= EXTRACTION_MAX_ATTEMPTS:
             meta["extraction_quarantined"] = True
         self.store.update_conversation(

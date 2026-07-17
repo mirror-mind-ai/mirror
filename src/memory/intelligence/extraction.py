@@ -100,8 +100,15 @@ def extract_memories(
     journey: str | None = None,
     user_name: str = "User",
     on_llm_call: Callable[[LLMResponse], None] | None = None,
+    status: dict | None = None,
 ) -> list[ExtractedMemory]:
-    """Extract memories from a conversation using an LLM."""
+    """Extract memories from a conversation using an LLM.
+
+    When ``status`` is provided it is populated with ``extraction_status``
+    (``parse_failed`` | ``no_signal`` | ``ok``) and a ``dropped`` count map, so the
+    caller can distinguish unreadable model output from a genuinely empty result
+    (AI-10). The list return is unchanged.
+    """
     if not messages:
         return []
 
@@ -116,6 +123,8 @@ def extract_memories(
 
     data = _parse_json_response(response.content)
     if not isinstance(data, list):
+        if status is not None:
+            status["extraction_status"] = "parse_failed"
         return []
 
     memories = []
@@ -133,6 +142,9 @@ def extract_memories(
     kept, dropped = _sanitize_extracted(memories, max_count=MAX_MEMORIES_PER_CONVERSATION)
     if any(dropped.values()):
         logger.warning("extraction dropped memory items: %s", dropped)
+    if status is not None:
+        status["extraction_status"] = "ok" if kept else "no_signal"
+        status["dropped"] = dropped
     return kept
 
 
