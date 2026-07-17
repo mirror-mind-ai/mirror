@@ -61,6 +61,14 @@
 > AI-07's provenance recording (embedding model/dimensions in metadata) stays
 > open as debt **D-003**; the check verifies vector *shape*, not *space*, so a
 > silent same-dim provider re-route stays invisible until provenance lands.
+>
+> **Status (updated 2026-07-17).** AI-07 **closed** by CV9.E2.S17: every persisted
+> vector write path (`add_memory`, `add_attachment`, consolidation) records
+> `embedding_model` + `embedding_dimensions` in row metadata, and `inspect
+> embedding-provenance` reports the distribution with an `unknown (pre-provenance)`
+> bucket. This makes deliberate model changes attributable; a provider-side silent
+> re-route under the same model ID stays an AI-11 (eval) concern, not AI-07.
+> Provenance columns and a historical backfill remain deferred (metadata JSON now).
 
 ---
 

@@ -3,7 +3,7 @@
 # CV9.E2 — Stabilization & Robustness
 
 **Epic:** Harden failure modes so Mirror Mind degrades safely instead of breaking or corrupting runtime state  
-**Status:** Planned, with CV9.E2.S1 embedding resilience done, CV9.E2.S3 production updater fix, CV9.E2.S4 conversation title hardening, CV9.E2.S5 backup destination resolution, and CV9.E2.S6 runtime state home containment done; CV9.E2.S7 extraction failure isolation and CV9.E2.S8 mirror-state connection lifecycle done, CV9.E2.S9 extraction idempotency done, CV9.E2.S10 search offline degradation done, CV9.E2.S11 reinforcement signal integrity done, CV9.E2.S12 model-pin overrides & probe done, CV9.E2.S13 LLM cost authority & metadata-default logging done, CV9.E2.S14 LLM spend summary & consult ledger done, CV9.E2.S15 extraction boundary hardening done, CV9.E2.S16 extraction status legibility done; conversation metadata lifecycle identified as [CV9.DS7](../cv9-ds7-conversation-metadata-lifecycle/index.md). The [AI Engineering Audit](../../../ai-engineering-audit.md) supplies the model-in-the-loop stabilization backlog (AI-01 timeouts landed on `main`; AI-02 is S7; AI-09 observability & cost delivered across CV9.E2.S13 and CV9.E2.S14 (both done, AI-09 closed); AI-15/AI-16 extraction boundary hardening is CV9.E2.S15 (done, AI-15/AI-16 closed); AI-10 extraction status legibility is CV9.E2.S16 (done, AI-10 closed)).
+**Status:** Planned, with CV9.E2.S1 embedding resilience done, CV9.E2.S3 production updater fix, CV9.E2.S4 conversation title hardening, CV9.E2.S5 backup destination resolution, and CV9.E2.S6 runtime state home containment done; CV9.E2.S7 extraction failure isolation and CV9.E2.S8 mirror-state connection lifecycle done, CV9.E2.S9 extraction idempotency done, CV9.E2.S10 search offline degradation done, CV9.E2.S11 reinforcement signal integrity done, CV9.E2.S12 model-pin overrides & probe done, CV9.E2.S13 LLM cost authority & metadata-default logging done, CV9.E2.S14 LLM spend summary & consult ledger done, CV9.E2.S15 extraction boundary hardening done, CV9.E2.S16 extraction status legibility done, CV9.E2.S17 embedding provenance done; conversation metadata lifecycle identified as [CV9.DS7](../cv9-ds7-conversation-metadata-lifecycle/index.md). The [AI Engineering Audit](../../../ai-engineering-audit.md) supplies the model-in-the-loop stabilization backlog (AI-01 timeouts landed on `main`; AI-02 is S7; AI-09 observability & cost delivered across CV9.E2.S13 and CV9.E2.S14 (both done, AI-09 closed); AI-15/AI-16 extraction boundary hardening is CV9.E2.S15 (done, AI-15/AI-16 closed); AI-10 extraction status legibility is CV9.E2.S16 (done, AI-10 closed); AI-07 embedding provenance is CV9.E2.S1 (shape guard) + CV9.E2.S17 (provenance, done, AI-07 closed)).
 **Depends on:** CV9.E1 Boundary Hardening, except for isolated production-bug fixes that are already understood
 
 ---
@@ -56,6 +56,7 @@ recoverable.
 | [CV9.E2.S14](cv9-e2-s14-llm-spend-summary-consult-ledger/index.md) | LLM Spend Summary & Consult Ledger (AI-09) | Done |
 | [CV9.E2.S15](cv9-e2-s15-extraction-boundary-hardening/index.md) | Extraction Boundary Hardening (AI-15, AI-16) | Done |
 | [CV9.E2.S16](cv9-e2-s16-extraction-status-legibility/index.md) | Extraction Status Legibility (AI-10) | Done |
+| [CV9.E2.S17](cv9-e2-s17-embedding-provenance/index.md) | Embedding Provenance (AI-07) | Done |
 
 ---
 

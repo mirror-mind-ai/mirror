@@ -242,10 +242,15 @@ def cmd_apply(args: list[str]) -> None:
             relevance_score=1.0,
         )
         # Embed and store.
-        from memory.intelligence.embeddings import embedding_to_bytes, generate_embedding
+        from memory.intelligence.embeddings import (
+            add_embedding_provenance,
+            embedding_to_bytes,
+            generate_embedding,
+        )
 
         emb = generate_embedding(result_content)
         merged.embedding = embedding_to_bytes(emb)
+        merged.metadata = add_embedding_provenance(merged.metadata)
         mem.store.create_memory(merged)
         print(f"✓ Created merged memory: [{merged.id[:8]}] {merged.title}")
         # Mark originals as 'integrated'.

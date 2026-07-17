@@ -1,5 +1,6 @@
 """Wrapper for generating embeddings through OpenRouter."""
 
+import json
 import time
 
 import numpy as np
@@ -120,3 +121,30 @@ def embedding_to_bytes(embedding: np.ndarray) -> bytes:
 def bytes_to_embedding(data: bytes) -> np.ndarray:
     """Convert SQLite bytes back to a numpy array."""
     return np.frombuffer(data, dtype=np.float32)
+
+
+def embedding_provenance() -> dict[str, object]:
+    """Provenance for a vector produced by the currently configured embedding pin."""
+    return {"embedding_model": EMBEDDING_MODEL, "embedding_dimensions": EMBEDDING_DIMENSIONS}
+
+
+def add_embedding_provenance(metadata: str | None) -> str:
+    """Merge current embedding provenance into a metadata JSON string.
+
+    Foreign keys are preserved; the provenance keys are authoritative for this
+    write (a re-embed must be able to overwrite a stale model). Never raises on
+    malformed or non-object existing metadata — it falls back to a fresh object,
+    so a bad metadata value can never fail a memory/attachment write (the boundary
+    CV9.E2.S1 made crash-safe). Records the *configured* model, which equals the
+    generation model unless the pin is hot-swapped mid-process.
+    """
+    base: dict[str, object] = {}
+    if metadata:
+        try:
+            parsed = json.loads(metadata)
+            if isinstance(parsed, dict):
+                base = parsed
+        except (json.JSONDecodeError, TypeError):
+            base = {}
+    base.update(embedding_provenance())
+    return json.dumps(base)

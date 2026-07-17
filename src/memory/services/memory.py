@@ -4,7 +4,11 @@ import json
 
 import numpy as np
 
-from memory.intelligence.embeddings import embedding_to_bytes, generate_embedding
+from memory.intelligence.embeddings import (
+    add_embedding_provenance,
+    embedding_to_bytes,
+    generate_embedding,
+)
 from memory.intelligence.search import MemorySearch
 from memory.models import Memory, MemorySummary, SearchOutcome, SearchResult
 from memory.services.observability import build_llm_logger
@@ -58,7 +62,7 @@ class MemoryService:
             persona=persona,
             tags=json.dumps(tags) if tags else None,
             embedding=embedding_to_bytes(embedding),
-            metadata=metadata,
+            metadata=add_embedding_provenance(metadata),
         )
         return self.store.create_memory(mem)
 

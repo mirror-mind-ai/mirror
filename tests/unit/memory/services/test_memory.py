@@ -27,6 +27,50 @@ class TestMemoryServiceEmbeddingFailure:
         assert len(store.get_all_memories_with_embeddings()) == before
 
 
+class TestMemoryServiceEmbeddingProvenance:
+    """CV9.E2.S17 (AI-07) — every stored memory vector records its embedding model."""
+
+    def test_add_memory_records_provenance(self, memory_service, store, mock_memory_embedding):
+        from memory.config import EMBEDDING_DIMENSIONS, EMBEDDING_MODEL
+
+        mem = memory_service.add_memory(title="t", content="c", memory_type="insight")
+        meta = json.loads(store.get_memory(mem.id).metadata)
+        assert meta["embedding_model"] == EMBEDDING_MODEL
+        assert meta["embedding_dimensions"] == EMBEDDING_DIMENSIONS
+
+    def test_staging_path_records_provenance(self, memory_service, store, emb_vec):
+        # Extraction stages the vector and passes it precomputed — the highest-volume path.
+        mem = memory_service.add_memory(
+            title="t", content="c", memory_type="insight", embedding=emb_vec
+        )
+        assert "embedding_model" in json.loads(store.get_memory(mem.id).metadata)
+
+    def test_caller_metadata_is_merged_not_clobbered(
+        self, memory_service, store, mock_memory_embedding
+    ):
+        mem = memory_service.add_memory(
+            title="t", content="c", memory_type="insight", metadata='{"k": 1}'
+        )
+        meta = json.loads(store.get_memory(mem.id).metadata)
+        assert meta["k"] == 1
+        assert "embedding_model" in meta
+
+    def test_count_by_model_buckets_null_as_unknown(
+        self, memory_service, store, mock_memory_embedding
+    ):
+        from memory.config import EMBEDDING_MODEL
+
+        memory_service.add_memory(title="a", content="b", memory_type="insight")
+        m2 = memory_service.add_memory(title="c", content="d", memory_type="insight")
+        store.conn.execute("UPDATE memories SET metadata = NULL WHERE id = ?", (m2.id,))
+        store.conn.execute("UPDATE memories SET metadata = 'not json' WHERE id = ?", (m2.id,))
+        store.conn.commit()
+
+        dist = dict(store.count_memories_by_embedding_model())
+        assert dist[EMBEDDING_MODEL] == 1
+        assert dist.get(None) == 1
+
+
 class TestMemoryServiceAddMemory:
     def test_returns_memory_object(self, memory_service, mock_memory_embedding):
         mem = memory_service.add_memory(

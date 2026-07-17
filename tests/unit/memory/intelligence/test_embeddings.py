@@ -1,5 +1,6 @@
 """Tests for embedding generation and serialisation."""
 
+import json
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -8,7 +9,9 @@ import pytest
 from memory.config import LLM_MAX_RETRIES, LLM_TIMEOUT_EMBEDDING, OPENROUTER_BASE_URL
 from memory.intelligence.embeddings import (
     EmbeddingError,
+    add_embedding_provenance,
     bytes_to_embedding,
+    embedding_provenance,
     embedding_to_bytes,
     generate_embedding,
     get_embedding_client,
@@ -221,3 +224,39 @@ class TestEmbeddingResilience:
         _mock_client(mocker, side_effect=[_empty_data(), _resp([0.2] * 1536)])
         generate_embedding("hello", attempts=3)
         _fast_sleep.assert_called_once()
+
+
+class TestEmbeddingProvenance:
+    """CV9.E2.S17 (AI-07) — provenance is recorded, and the merge never raises."""
+
+    def test_provenance_reports_current_pin(self):
+        from memory.config import EMBEDDING_DIMENSIONS, EMBEDDING_MODEL
+
+        prov = embedding_provenance()
+        assert prov["embedding_model"] == EMBEDDING_MODEL
+        assert prov["embedding_dimensions"] == EMBEDDING_DIMENSIONS
+
+    def test_from_none_adds_provenance(self):
+        from memory.config import EMBEDDING_MODEL
+
+        result = json.loads(add_embedding_provenance(None))
+        assert result["embedding_model"] == EMBEDDING_MODEL
+
+    def test_preserves_foreign_keys(self):
+        result = json.loads(add_embedding_provenance('{"source": "import"}'))
+        assert result["source"] == "import"
+        assert "embedding_model" in result
+
+    def test_provenance_keys_are_authoritative(self):
+        from memory.config import EMBEDDING_MODEL
+
+        result = json.loads(add_embedding_provenance('{"embedding_model": "old/model"}'))
+        assert result["embedding_model"] == EMBEDDING_MODEL
+
+    def test_malformed_or_non_object_metadata_never_raises(self):
+        for bad in ("not json", "[1, 2]", "42", ""):
+            result = json.loads(add_embedding_provenance(bad))
+            assert "embedding_model" in result
+
+    def test_returns_valid_json_object(self):
+        assert isinstance(json.loads(add_embedding_provenance(None)), dict)

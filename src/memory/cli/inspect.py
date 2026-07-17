@@ -361,17 +361,50 @@ def cmd_inspect_llm_calls(args: list[str]) -> None:
         print(f"  response: {response!r}")
 
 
+def render_embedding_provenance(distribution: list[tuple[str | None, int]]) -> str:
+    """Render the embedding-model distribution of stored memory vectors."""
+    total = sum(n for _, n in distribution)
+    if total == 0:
+        return "(no stored memory vectors)"
+    lines = [f"=== embedding provenance ({total} memory vector{'s' if total != 1 else ''}) ==="]
+    for model, n in distribution:
+        label = model if model else "unknown (pre-provenance)"
+        lines.append(f"  {n:>6}  {label}")
+    return "\n".join(lines)
+
+
+def cmd_inspect_embedding_provenance(args: list[str]) -> None:
+    """python -m memory inspect embedding-provenance [--mirror-home PATH]"""
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        prog="memory inspect embedding-provenance",
+        description="Report the embedding-model provenance of stored memory vectors.",
+    )
+    parser.add_argument("--mirror-home", default=None, help="Explicit user home")
+    parsed = parser.parse_args(args)
+
+    from memory.cli.common import db_path_from_mirror_home
+    from memory.client import MemoryClient
+
+    mem = MemoryClient(db_path=db_path_from_mirror_home(parsed.mirror_home))
+    print(render_embedding_provenance(mem.store.count_memories_by_embedding_model()))
+
+
 def cmd_inspect(args: list[str]) -> None:
-    """python -m memory inspect persona|extension|runtime-catalog|llm-calls [args] [--mirror-home PATH]"""
-    # llm-calls is a self-contained subcommand — dispatch before positional parsing.
+    """python -m memory inspect persona|extension|runtime-catalog|llm-calls|embedding-provenance [args] [--mirror-home PATH]"""
+    # Self-contained subcommands dispatch before positional parsing.
     if args and args[0] == "llm-calls":
         cmd_inspect_llm_calls(args[1:])
+        return
+    if args and args[0] == "embedding-provenance":
+        cmd_inspect_embedding_provenance(args[1:])
         return
 
     mirror_home, extensions_root, positional = _parse_inspect_args(args)
     if len(positional) != 2 or positional[0] not in {"persona", "extension", "runtime-catalog"}:
         print(
-            "Usage: python -m memory inspect persona|extension|runtime-catalog|llm-calls <id> [--mirror-home PATH] [--extensions-root PATH]"
+            "Usage: python -m memory inspect persona|extension|runtime-catalog|llm-calls|embedding-provenance <id> [--mirror-home PATH] [--extensions-root PATH]"
         )
         sys.exit(1)
 

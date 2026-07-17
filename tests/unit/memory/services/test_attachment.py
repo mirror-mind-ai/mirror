@@ -42,6 +42,19 @@ class TestAttachmentServiceEmbeddingFailure:
             attachment_service.search_attachments("j", "query")
 
 
+class TestAttachmentServiceEmbeddingProvenance:
+    """CV9.E2.S17 (AI-07) — stored attachment vectors record their embedding model."""
+
+    def test_add_attachment_records_provenance(
+        self, attachment_service, store, mock_attachment_embedding
+    ):
+        from memory.config import EMBEDDING_MODEL
+
+        attachment_service.add_attachment(journey_id="j", name="n", content="c")
+        stored = store.get_attachment_by_name("j", "n")
+        assert json.loads(stored.metadata)["embedding_model"] == EMBEDDING_MODEL
+
+
 class TestAttachmentServiceAddAttachment:
     def test_returns_attachment_object(self, attachment_service, mock_attachment_embedding):
         att = attachment_service.add_attachment(

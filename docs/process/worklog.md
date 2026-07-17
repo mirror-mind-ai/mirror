@@ -12,6 +12,18 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-07-17 — CV9.E2.S17 Embedding provenance completed
+
+Closed AI-07 (AI Engineering Audit) by recording, for every stored vector, which model produced it — the provenance half of the finding whose shape-assertion half shipped in CV9.E2.S1. A stored embedding was a raw BLOB with no origin, so a pin change or a provider re-route left no way to tell which vectors came from where, and an incremental re-embed migration would be blind.
+
+Two helpers in `embeddings.py`: `embedding_provenance()` (the current `EMBEDDING_MODEL` + `EMBEDDING_DIMENSIONS`) and `add_embedding_provenance(metadata)`, which merges provenance into a row's metadata JSON — preserving foreign keys, treating the provenance keys as authoritative for the write, and **never raising** on malformed or non-object existing metadata (fresh-object fallback, so provenance can never become a new way for a write to fail — the boundary S1 made crash-safe). Applied at all three persisted-vector write paths: `add_memory` (manual + the extraction staging path that passes a precomputed vector), `add_attachment`, and the consolidation merge. No schema change — the `metadata` TEXT column already exists on both tables.
+
+The reader ships as `inspect embedding-provenance` (self-contained subcommand beside `inspect llm-calls`), backed by `count_memories_by_embedding_model()` which aggregates in Python — not SQLite `json_extract` — so a legacy or malformed metadata row degrades to the `unknown (pre-provenance)` bucket instead of raising. Reconciliation from the plan: the reader was framed as a "runtime diagnose line," but `diagnose` emits only drift findings (and any finding flips its exit code), so an always-visible distribution belongs in the `inspect` family; a diagnose drift-finding (vectors off the current pin) is an optional follow-up.
+
+Reviewed through three lenses before implementation: engineer (stamp at the write path, not storage, so a future migration's old-model vectors are not mislabeled), QA (the merge must never crash the write; malformed/non-object metadata and the staging path tested explicitly), ai-engineer (ship a reader or it is write-only; make the two-population split legible; name that this closes attribution of deliberate model changes, not silent-drift detection, which stays AI-11).
+
+Validation: TDD (13 new tests — helper taxonomy incl. never-raises and authoritative-keys, add_memory/add_attachment/staging/merge provenance, the store distribution incl. null+malformed→unknown, and the render); one expected ripple fixed (a Soul harvest journal entry is a memory vector, so `test_soul` relaxed its exact-metadata assertion to allow provenance enrichment); full unit+integration suite 1976 passed, verified keyless; ruff check/format clean; `git diff --check` clean; mypy 109 net-zero (CI gates ruff + pytest, not mypy). A data-backed smoke of `inspect embedding-provenance` rendered a 2-provenanced / 1-unknown split. Remaining audit P1 work is AI-05/11/13/20 (plus CV22 riders AI-18/19); AI-07 provenance columns and a historical backfill stay deferred (metadata JSON now, per the audit).
+
 ### 2026-07-17 — CV9.E2.S1 Embedding resilience completed
 
 Made the embedding boundary fail safely, closing the story behind the live crash `ValueError: No embedding data received` while recording a memory. `generate_embedding` trusted the provider (`response.data[0].embedding` → `IndexError` on an empty-but-successful response) and had no application-level retry: the SDK's `max_retries` covers transport failures, not a 200 that returns empty `data`, which is exactly what fired.

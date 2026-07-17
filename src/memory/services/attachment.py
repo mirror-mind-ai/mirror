@@ -4,6 +4,7 @@ import json
 import re
 
 from memory.intelligence.embeddings import (
+    add_embedding_provenance,
     bytes_to_embedding,
     embedding_to_bytes,
     generate_embedding,
@@ -43,6 +44,7 @@ class AttachmentService:
             content_type=content_type,
             tags=json.dumps(tags) if tags else None,
             embedding=embedding_to_bytes(emb),
+            metadata=add_embedding_provenance(None),
         )
         return self.store.create_attachment(att)
 
