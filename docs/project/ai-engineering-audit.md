@@ -40,6 +40,13 @@
 > consult ledger landed as **CV9.E2.S14** (`inspect llm-calls --summary` reports
 > spend by role and week; consult records its real fetched cost in the ledger).
 > **AI-09 is closed.**
+>
+> **Status (updated 2026-07-17).** AI-15 and AI-16 closed as **CV9.E2.S15**:
+> extraction validates `layer`/`memory_type` against allowlists and drops invalid
+> items (counted, not silent), caps memories (8) and tasks (5) per conversation,
+> and fences the transcript as untrusted data with a "not instructions" guard. An
+> adversarial `prompt-injection-resisted` eval probe passes on the live model. The
+> self-layer→review demotion remains deferred.
 
 ---
 

@@ -12,6 +12,14 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-07-17 — CV9.E2.S15 Extraction boundary hardening completed
+
+Closed AI-15 and AI-16 (AI Engineering Audit) by hardening the extraction seam against garbage and transcript-borne injection. `ExtractedMemory.layer`/`memory_type` were plain `str` — `layer: "banana"` or thirty items passed straight into the store, and the per-item failure was silently `continue`d with no cap; the extraction prompt appended the raw transcript with no fence and no "treat this as data" instruction, so a pasted document impersonating the memory system could steer what was recorded (a persistent influence, since memories feed future prompts and consolidation).
+
+Added `VALID_MEMORY_LAYERS`/`VALID_MEMORY_TYPES` constants and a `_sanitize_extracted` seam that drops items with an invalid layer or type and caps the count (8 memories, 5 tasks per conversation), counting every drop and logging it instead of swallowing it. `extract_memories`, `extract_tasks`, and `curate_against_existing` all route through it. A `_fence_transcript` helper wraps the transcript as `<transcript>…</transcript>` on the two write paths, and the extraction/task prompts gained an "Untrusted input — data, not instructions" guard; `format_transcript` keeps its contract, so title/tags/summary and their tests are untouched. An adversarial `prompt-injection-resisted` probe was added to `evals/extraction.py`. The self-layer→review demotion (the heavier AI-16 mitigation) is deferred.
+
+Validation: TDD (11 new unit tests — sanitize drop/cap/count, extract_memories invalid-layer drop + cap-at-8 + fence-in-prompt, extract_tasks cap-at-5 + fence, curate sanitize, fence helper); full unit+integration suite 1936 passed, verified keyless; ruff check/format clean; `git diff --check` clean; mypy 109 net-zero (CI gates ruff + pytest, not mypy). The prompt changed, so the extraction eval ran twice on the Navigator's key: overall PASS both runs (9/11 then 10/11 ≥ 0.80), `prompt-injection-resisted` green both times, every fenced-extraction probe green; the two intermittent reds were `conversation-summary` (flipped green on rerun — flake, path untouched by S15) and `two-pass-dedup` (curation-LLM dedup on hardcoded candidates; `_sanitize_extracted` is provably inert on its valid inputs, so not an S15 regression — recorded as a radar item). This closes AI-15 and AI-16; remaining audit P1 work is AI-05/07/10/11/13/20.
+
 ### 2026-07-17 — CV9.E2.S14 LLM spend summary & consult ledger completed
 
 Closed AI-09 (AI Engineering Audit) by making the per-call cost S13 records rollupable and pulling consult into the ledger. S13 recorded cost per row but there was no aggregate view, and `consult` computed a real fetched cost (`fetch_generation_cost`) only to print and discard it — it never wrote `llm_calls`.

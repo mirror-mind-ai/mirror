@@ -210,6 +210,20 @@ Add new items at the top. Each entry should name the problem (not just the
 solution), point at evidence or source, and sketch the rough shape of the
 work.
 
+### Curation dedup is soft on close paraphrases
+
+**Source:** CV9.E2.S15 validation — `evals/extraction.py` `two-pass-dedup` failed both runs
+**Surfaced:** 2026-07-17
+
+The two-pass curation LLM intermittently keeps a near-duplicate memory when the
+paraphrase is close (observed: an "auth module split before OAuth" candidate not
+deduplicated against an existing "split auth module" memory). Extraction and the
+S15 boundary hardening are unaffected — `_sanitize_extracted` is inert on valid
+inputs, so this is curation-prompt quality, not a regression. Possible shapes:
+tighten `CURATION_PROMPT` dedup guidance, add a similarity pre-filter before the
+curation call, or accept soft dedup and lean on MMR at retrieval. Low priority;
+surfaced for visibility.
+
 ### Mirror Web Experience staged major release
 
 **Source:** CV9.E6 validation, Agentic Web Console exploration, and Navigator product review
