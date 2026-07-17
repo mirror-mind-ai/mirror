@@ -11,6 +11,60 @@ resolved.
 
 ## Completed Decisions
 
+### 1.0 intelligence-flag posture: reception on, two-pass and summarize off
+
+**Date:** 2026-07-17
+**Reference:** AI Engineering Audit AI-20; two-pass blocker closed by AI-12 / [CV9.E2.S11](roadmap/cv9-mirror-1-0/cv9-e2-stabilization/cv9-e2-s11-reinforcement-signal-integrity/index.md); two-pass revisit gated on embedding-ledger debt **D-003**; logging flag decided separately (see the entry below, CV9.E2.S13)
+**Participants:** Vinícius Teles
+
+The four intelligence flags — `MEMORY_RECEPTION`, `MEMORY_TWO_PASS`,
+`MEMORY_SUMMARIZE`, `MEMORY_LOG_LLM_CALLS` — determine what the mirror does and
+what it costs on every conversation, yet their shipped defaults were set by the
+order stories happened to land, never by a deliberate 1.0 decision (the AI-20
+finding). Logging was resolved in CV9.E2.S13 (metadata by default). This settles
+the remaining three, completing the posture.
+
+Decided (the 1.0 defaults, each with its failure direction named):
+
+1. **Reception — on.** One cheap classification call per Mirror-mode turn reads
+   "what kind of moment is this?" before the mirror answers. It sits on the
+   interactive path, but its degradation is designed: on any failure it falls
+   back to keyword routing (`ReceptionResult.empty()`), bounded by the AI-01 10s
+   timeout. Proven, cheap, and safe under failure — keep it on.
+
+2. **Two-pass — off (revisit when embedding spend is measurable, D-003).**
+   Two-pass is a write-time hygiene tax: for each candidate memory it searches
+   the existing pool (a query embedding per candidate) and then makes one
+   curation LLM call to dedup and refine against history before storing. Its
+   value is real — pass-one extraction is blind to prior memories, so without
+   curation the same insight across sessions accumulates as near-duplicates,
+   caught only softly by MMR at *retrieval*, not at write. But the trade is
+   neither free nor clean:
+   - **Off fails toward noise** — near-duplicates pile up in the pool.
+   - **On fails toward loss and cost** — the curation model can drop a genuinely
+     distinct candidate as "duplicate," the dedup is imperfect (the
+     `two-pass-dedup` eval still keeps some close paraphrases), and every
+     conversation pays extra calls.
+   The original reason it was frozen — curation searches inflating the honest
+   reinforcement signal — is **closed**: AI-12 / CV9.E2.S11 gave search a
+   `log_access` switch, and the curation pass now passes `log_access=False`, so
+   dedup no longer teaches the ranker from its own exhaust. What remains is a
+   pure cost/quality call, and its cost rides on embedding calls that are **not
+   yet in the `llm_calls` ledger** (debt D-003). Enabling it now would switch on
+   unmeasurable, imperfect spend immediately before a release. So: off for 1.0;
+   revisit once D-003 makes embedding spend a number, then decide with evidence.
+
+3. **Summarize — off.** The naive mechanical conversation summary
+   (`_naive_summary`) is adequate for the summary embedding and free; the LLM
+   summary costs a call per conversation for marginal quality gain. Keep it off.
+
+Full 1.0 posture, therefore: **reception on, two-pass off, summarize off, logging
+metadata-on.** This is a posture, not a permanent fact — two-pass carries an
+explicit revisit trigger (D-003), and any future change ships with the cost
+numbers the AI-09 ledger now records rather than on intuition.
+
+---
+
 ### LLM observability defaults to metadata, content only on request
 
 **Date:** 2026-07-17

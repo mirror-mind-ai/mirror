@@ -69,6 +69,14 @@
 > bucket. This makes deliberate model changes attributable; a provider-side silent
 > re-route under the same model ID stays an AI-11 (eval) concern, not AI-07.
 > Provenance columns and a historical backfill remain deferred (metadata JSON now).
+>
+> **Status (updated 2026-07-17).** AI-20 **resolved** (a decision, not code): the
+> 1.0 intelligence-flag posture is recorded in [Decisions](decisions.md) and
+> [REFERENCE](../../REFERENCE.md#intelligence-flags) — reception on, two-pass off,
+> summarize off, logging metadata-on (the last already decided in CV9.E2.S13).
+> Two-pass carries an explicit revisit trigger: reconsider once embedding spend
+> is measurable (debt D-003). Remaining P1: AI-05, AI-11, AI-13 (plus CV22 riders
+> AI-18/19).
 
 ---
 
