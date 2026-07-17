@@ -2,7 +2,29 @@
 
 import json
 
+import pytest
+
 from memory.models import Memory
+
+
+class TestMemoryServiceEmbeddingFailure:
+    """CV9.E2.S1 — no memory row is written when embedding generation fails."""
+
+    def test_add_memory_does_not_persist_on_embedding_failure(self, memory_service, store, mocker):
+        from memory.intelligence.embeddings import EmbeddingError
+
+        create_spy = mocker.spy(store, "create_memory")
+        mocker.patch(
+            "memory.services.memory.generate_embedding",
+            side_effect=EmbeddingError("No embedding generated after 3 attempts"),
+        )
+        before = len(store.get_all_memories_with_embeddings())
+
+        with pytest.raises(EmbeddingError):
+            memory_service.add_memory(title="t", content="c", memory_type="insight")
+
+        create_spy.assert_not_called()
+        assert len(store.get_all_memories_with_embeddings()) == before
 
 
 class TestMemoryServiceAddMemory:

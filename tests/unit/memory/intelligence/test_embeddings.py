@@ -3,9 +3,11 @@
 from unittest.mock import MagicMock, patch
 
 import numpy as np
+import pytest
 
 from memory.config import LLM_MAX_RETRIES, LLM_TIMEOUT_EMBEDDING, OPENROUTER_BASE_URL
 from memory.intelligence.embeddings import (
+    EmbeddingError,
     bytes_to_embedding,
     embedding_to_bytes,
     generate_embedding,
@@ -121,3 +123,101 @@ class TestGenerateEmbedding:
         assert isinstance(result, np.ndarray)
         assert result.dtype == np.float32
         assert result.shape == (1536,)
+
+
+# --- CV9.E2.S1 Embedding Resilience helpers ---
+
+
+def _resp(embedding):
+    """A provider response carrying one embedding payload."""
+    return MagicMock(data=[MagicMock(embedding=embedding)])
+
+
+def _empty_data():
+    """A well-formed response whose data list is empty (the live-failure shape)."""
+    return MagicMock(data=[])
+
+
+def _mock_client(mocker, *, side_effect=None, return_value=None):
+    client = MagicMock()
+    if side_effect is not None:
+        client.embeddings.create.side_effect = side_effect
+    else:
+        client.embeddings.create.return_value = return_value
+    mocker.patch("memory.intelligence.embeddings.get_embedding_client", return_value=client)
+    return client
+
+
+@pytest.fixture(autouse=True)
+def _fast_sleep(mocker):
+    """No test may actually sleep during retry backoff."""
+    return mocker.patch("memory.intelligence.embeddings.time.sleep")
+
+
+@pytest.fixture
+def _key(mocker):
+    mocker.patch("memory.intelligence.embeddings.OPENROUTER_API_KEY", "test-key")
+
+
+class TestEmbeddingResilience:
+    """CV9.E2.S1 (AI-04 sibling) — the embedding boundary fails safely.
+
+    Three failure classes: permanent-input (empty text, no call), transient
+    (empty data/payload, retried), and permanent-config (dimension mismatch,
+    fail-fast). Provider exceptions are wrapped once — the SDK already retried.
+    """
+
+    def test_empty_text_fails_permanently_without_calling_provider(self, mocker, _key):
+        client = _mock_client(mocker, return_value=_resp([0.1] * 1536))
+        with pytest.raises(EmbeddingError) as exc:
+            generate_embedding("")
+        assert exc.value.permanent is True
+        client.embeddings.create.assert_not_called()
+
+    def test_whitespace_text_fails_permanently_without_calling_provider(self, mocker, _key):
+        client = _mock_client(mocker, return_value=_resp([0.1] * 1536))
+        with pytest.raises(EmbeddingError):
+            generate_embedding("  \n\t ")
+        client.embeddings.create.assert_not_called()
+
+    def test_empty_data_retries_then_succeeds(self, mocker, _key):
+        client = _mock_client(mocker, side_effect=[_empty_data(), _resp([0.2] * 1536)])
+        result = generate_embedding("hello", attempts=3)
+        assert result.shape == (1536,)
+        assert result.dtype == np.float32
+        assert client.embeddings.create.call_count == 2
+
+    def test_empty_payload_retries_then_succeeds(self, mocker, _key):
+        client = _mock_client(mocker, side_effect=[_resp([]), _resp([0.2] * 1536)])
+        result = generate_embedding("hello", attempts=3)
+        assert result.shape == (1536,)
+        assert client.embeddings.create.call_count == 2
+
+    def test_retry_exhaustion_raises_after_configured_attempts(self, mocker, _key):
+        client = _mock_client(mocker, side_effect=[_empty_data(), _empty_data(), _empty_data()])
+        with pytest.raises(EmbeddingError) as exc:
+            generate_embedding("hello", attempts=3)
+        assert "3 attempts" in str(exc.value)
+        assert exc.value.permanent is False
+        assert client.embeddings.create.call_count == 3
+
+    def test_dimension_mismatch_fails_fast_without_retry(self, mocker, _key):
+        client = _mock_client(mocker, return_value=_resp([0.1] * 512))
+        with pytest.raises(EmbeddingError) as exc:
+            generate_embedding("hello", attempts=3)
+        assert exc.value.permanent is True
+        message = str(exc.value)
+        assert "512" in message and "1536" in message
+        assert client.embeddings.create.call_count == 1
+
+    def test_provider_exception_wrapped_without_app_retry(self, mocker, _key):
+        client = _mock_client(mocker, side_effect=RuntimeError("provider 500"))
+        with pytest.raises(EmbeddingError) as exc:
+            generate_embedding("hello", attempts=3)
+        assert client.embeddings.create.call_count == 1
+        assert "provider 500" in str(exc.value)
+
+    def test_backoff_sleeps_between_transient_retries(self, mocker, _key, _fast_sleep):
+        _mock_client(mocker, side_effect=[_empty_data(), _resp([0.2] * 1536)])
+        generate_embedding("hello", attempts=3)
+        _fast_sleep.assert_called_once()

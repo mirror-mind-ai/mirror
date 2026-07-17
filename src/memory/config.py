@@ -276,6 +276,13 @@ LLM_TIMEOUT_EXTRACTION = float(os.getenv("MEMORY_LLM_TIMEOUT_EXTRACTION", "60"))
 LLM_TIMEOUT_RECEPTION = float(os.getenv("MEMORY_LLM_TIMEOUT_RECEPTION", "10"))
 LLM_TIMEOUT_EMBEDDING = float(os.getenv("MEMORY_LLM_TIMEOUT_EMBEDDING", "15"))
 LLM_MAX_RETRIES = int(os.getenv("MEMORY_LLM_MAX_RETRIES", "2"))
+# Embedding application-level retry: how many times a *valid request that returns
+# an empty payload* is retried. The SDK's max_retries only covers transport
+# failures, not a 200 with empty data (the observed live failure). Kept small so
+# resilience does not reintroduce the interactive-path stall AI-01's timeouts
+# removed (worst case is EMBEDDING_ATTEMPTS x LLM_TIMEOUT_EMBEDDING).
+EMBEDDING_ATTEMPTS = int(os.getenv("MEMORY_EMBEDDING_ATTEMPTS", "3"))
+EMBEDDING_RETRY_BACKOFF = float(os.getenv("MEMORY_EMBEDDING_RETRY_BACKOFF", "0.5"))
 
 # Extraction failure isolation (CV9.E2.S7 / AI-02). A conversation whose
 # extraction repeatedly fails (provider outage, oversized transcript, auth

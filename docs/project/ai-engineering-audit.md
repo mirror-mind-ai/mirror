@@ -54,6 +54,13 @@
 > maintenance surfaces a `⚠ … unreadable model output` line — silent extraction
 > failure is now distinguishable from a genuinely empty result. The optional
 > parse_failed repair retry remains deferred (measure cost via AI-09 first).
+>
+> **Status (updated 2026-07-17).** CV9.E2.S1 (embedding resilience) landed AI-07's
+> **shape-guard half**: `generate_embedding` asserts `len(embedding) ==
+> EMBEDDING_DIMENSIONS` and refuses a mismatch loudly (permanent, not retried).
+> AI-07's provenance recording (embedding model/dimensions in metadata) stays
+> open as debt **D-003**; the check verifies vector *shape*, not *space*, so a
+> silent same-dim provider re-route stays invisible until provenance lands.
 
 ---
 
