@@ -210,6 +210,20 @@ Add new items at the top. Each entry should name the problem (not just the
 solution), point at evidence or source, and sketch the rough shape of the
 work.
 
+### `llm_calls` table growth after embedding logging
+
+**Source:** CV9.E2.S18 (D-003) / database-architect review
+**Surfaced:** 2026-07-17
+
+CV9.E2.S18 routed every embedding call into `llm_calls`, making it the
+fastest-growing table in the database — embeddings fire on every search, stored
+memory, and staged extraction. The table is indexed (`role`, `called_at`,
+`conversation_id`) so the spend summary stays fast, but there is **no retention
+or rollup policy**: it grows unbounded. 1.0 should decide whether `llm_calls`
+prunes (e.g. keep N days) or rolls old rows into a summary table. Metadata-only
+rows are small, so this is not urgent — but the growth class changed. Low
+priority; additive.
+
 ### Curation dedup is soft on close paraphrases
 
 **Source:** CV9.E2.S15 validation — `evals/extraction.py` `two-pass-dedup` failed both runs

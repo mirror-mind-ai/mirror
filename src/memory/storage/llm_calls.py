@@ -20,8 +20,14 @@ class LLMCallStore(ConnectionBacked):
         cost_usd: float | None = None,
         conversation_id: str | None = None,
         session_id: str | None = None,
+        commit: bool = True,
     ) -> str:
-        """Insert one LLM call row and return its id."""
+        """Insert one LLM call row and return its id.
+
+        ``commit=False`` defers the commit so a batch caller (extraction staging,
+        the two-pass curation loop) can log many rows under one transaction
+        instead of an fsync per row on the hot path (CV9.E2.S18).
+        """
         row_id = _uuid()
         self.conn.execute(
             """
@@ -46,7 +52,8 @@ class LLMCallStore(ConnectionBacked):
                 _now(),
             ),
         )
-        self.conn.commit()
+        if commit:
+            self.conn.commit()
         return row_id
 
     def get_llm_calls(

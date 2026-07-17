@@ -20,7 +20,7 @@ Dropped   no longer relevant or replaced by another item
 |----|-------|------|----------|--------|--------|-----------------|
 | D-001 | Metadata lifecycle policy and evidence filtering live inside ConversationService | design | medium | Paid | CV9.DS7.US1 / CV9.DS7.TS1 / CV9.DS7.TS2 | Policy boundary extracted before US2 apply behavior |
 | D-002 | Journey search silently returns `[]` on embedding failure | product | low | Carried | CV9.E2.S1 (AI-E4) | A "no journeys matched" report that is actually an embedding outage, or unifying journey degradation with memory-search's lexical fallback |
-| D-003 | Embedding calls bypass the `llm_calls` ledger (invisible spend, amplified by S1 retry) | observability | medium | Carried | CV9.E2.S1 (AI-E1, AI-09 tail) | An AI-09 follow-up, or the first time retry-driven embedding spend needs measuring |
+| D-003 | Embedding calls bypass the `llm_calls` ledger (invisible spend, amplified by S1 retry) | observability | medium | Paid | CV9.E2.S1 (AI-E1, AI-09 tail) → CV9.E2.S18 | Paid by CV9.E2.S18 embedding call observability |
 | D-004 | Full test suite exhausts file descriptors under a low `ulimit -n` (macOS default) | testing | low | Carried | CV9.E2.S1 validation | Recurs for a contributor on a default limit, or CI descriptor limits tighten |
 
 ## D-001 — Metadata lifecycle policy and evidence filtering live inside ConversationService
@@ -90,8 +90,8 @@ or deliberately documents the empty-on-failure behavior as intended.
 
 **Kind:** observability  
 **Severity:** medium  
-**Status:** Carried  
-**Source:** CV9.E2.S1 (AI-E1, AI-09 tail)  
+**Status:** Paid  
+**Source:** CV9.E2.S1 (AI-E1, AI-09 tail) · paid by CV9.E2.S18  
 
 ### Carrying reason
 
@@ -114,6 +114,14 @@ be measured or attributed.
 Embedding calls record a metadata-only `llm_calls` row (role, model, tokens,
 latency, computed cost) through the same fail-soft seam as the rest of the
 pipeline.
+
+### Result
+
+Paid by CV9.E2.S18. `generate_embedding` now logs once per API round-trip via an
+optional `on_llm_call`; failures land as unpriced rows; two-pass's curation
+searches use `role="embedding:curation"` so their spend is separable. The AI-20
+two-pass revisit trigger (measurable embedding spend) is now satisfied. Table
+growth is tracked as a retention radar item.
 
 ## D-004 — Full test suite exhausts file descriptors under a low `ulimit -n`
 

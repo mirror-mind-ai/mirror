@@ -10,6 +10,7 @@ from memory.intelligence.embeddings import (
     generate_embedding,
 )
 from memory.models import Attachment
+from memory.services.observability import build_llm_logger
 from memory.storage.store import Store
 from memory.utils import strip_accents
 
@@ -34,7 +35,9 @@ class AttachmentService:
             raise TypeError("add_attachment() missing required argument: 'name'")
         if content is None:
             raise TypeError("add_attachment() missing required argument: 'content'")
-        emb = generate_embedding(content[:8000])
+        emb = generate_embedding(
+            content[:8000], on_llm_call=build_llm_logger(self.store, role="embedding")
+        )
 
         att = Attachment(
             journey_id=journey_id,

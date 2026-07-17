@@ -1,6 +1,7 @@
 """MemoryService: storage and search for memories and journal entries."""
 
 import json
+from collections.abc import Callable
 
 import numpy as np
 
@@ -9,6 +10,7 @@ from memory.intelligence.embeddings import (
     embedding_to_bytes,
     generate_embedding,
 )
+from memory.intelligence.llm_router import LLMResponse
 from memory.intelligence.search import MemorySearch
 from memory.models import Memory, MemorySummary, SearchOutcome, SearchResult
 from memory.services.observability import build_llm_logger
@@ -49,7 +51,10 @@ class MemoryService:
         When omitted, the embedding is generated here.
         """
         if embedding is None:
-            embedding = generate_embedding(memory_embed_text(title, content, context))
+            embedding = generate_embedding(
+                memory_embed_text(title, content, context),
+                on_llm_call=build_llm_logger(self.store, role="embedding"),
+            )
 
         mem = Memory(
             conversation_id=conversation_id,
@@ -74,8 +79,11 @@ class MemoryService:
         layer: str | None = None,
         journey: str | None = None,
         log_access: bool = True,
+        on_llm_call: Callable[[LLMResponse], None] | None = None,
     ) -> list[SearchResult]:
         """Search memories by hybrid similarity."""
+        if on_llm_call is None:
+            on_llm_call = build_llm_logger(self.store, role="embedding")
         return self.search_engine.search(
             query,
             limit=limit,
@@ -83,6 +91,7 @@ class MemoryService:
             layer=layer,
             journey=journey,
             log_access=log_access,
+            on_llm_call=on_llm_call,
         )
 
     def search_with_status(
@@ -93,8 +102,11 @@ class MemoryService:
         layer: str | None = None,
         journey: str | None = None,
         log_access: bool = True,
+        on_llm_call: Callable[[LLMResponse], None] | None = None,
     ) -> SearchOutcome:
         """Search reporting whether it ran degraded (lexical-only fallback)."""
+        if on_llm_call is None:
+            on_llm_call = build_llm_logger(self.store, role="embedding")
         return self.search_engine.search_with_status(
             query,
             limit=limit,
@@ -102,6 +114,7 @@ class MemoryService:
             layer=layer,
             journey=journey,
             log_access=log_access,
+            on_llm_call=on_llm_call,
         )
 
     def list_recent(

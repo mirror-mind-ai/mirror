@@ -2,6 +2,7 @@
 
 import json
 import time
+from collections.abc import Callable
 
 import numpy as np
 from openai import OpenAI
@@ -16,6 +17,7 @@ from memory.config import (
     OPENROUTER_API_KEY,
     OPENROUTER_BASE_URL,
 )
+from memory.intelligence.llm_router import LLMResponse
 
 
 class EmbeddingError(RuntimeError):
@@ -69,7 +71,44 @@ def _extract_embedding(response: object) -> np.ndarray:
     return np.array(payload, dtype=np.float32)
 
 
-def generate_embedding(text: str, *, attempts: int = EMBEDDING_ATTEMPTS) -> np.ndarray:
+def _log_embedding_call(
+    on_llm_call: Callable[[LLMResponse], None] | None,
+    response: object,
+    text: str,
+    t0: float,
+) -> None:
+    """Emit one ledger callback per embedding API round-trip (D-003 / CV9.E2.S18).
+
+    Logged per attempt so retries and failures — real, billable spend — are not
+    undercounted. A failed round-trip has no usage, so it lands as an unpriced
+    row (``prompt_tokens=None`` → ``cost_usd`` NULL) rather than vanishing. The
+    response body is always empty: a vector is not text.
+    """
+    if on_llm_call is None:
+        return
+    prompt_tokens = None
+    usage = getattr(response, "usage", None) if response is not None else None
+    if usage is not None:
+        raw = getattr(usage, "prompt_tokens", None)
+        prompt_tokens = raw if isinstance(raw, int) else None
+    on_llm_call(
+        LLMResponse(
+            model=EMBEDDING_MODEL,
+            content="",
+            prompt_tokens=prompt_tokens,
+            completion_tokens=None,
+            latency_ms=int((time.perf_counter() - t0) * 1000),
+            prompt=text,
+        )
+    )
+
+
+def generate_embedding(
+    text: str,
+    *,
+    attempts: int = EMBEDDING_ATTEMPTS,
+    on_llm_call: Callable[[LLMResponse], None] | None = None,
+) -> np.ndarray:
     """Generate an embedding for ``text`` via OpenRouter, with bounded retry.
 
     Failure taxonomy:
@@ -93,10 +132,13 @@ def generate_embedding(text: str, *, attempts: int = EMBEDDING_ATTEMPTS) -> np.n
     client = get_embedding_client()
     last_error: EmbeddingError | None = None
     for attempt in range(1, attempts + 1):
+        response = None
+        t0 = time.perf_counter()
         try:
             response = client.embeddings.create(input=text, model=EMBEDDING_MODEL)
-            return _extract_embedding(response)
+            vector = _extract_embedding(response)
         except EmbeddingError as exc:
+            _log_embedding_call(on_llm_call, response, text, t0)  # response came back invalid
             if exc.permanent:
                 raise
             last_error = exc  # empty response — retry within budget
@@ -104,7 +146,11 @@ def generate_embedding(text: str, *, attempts: int = EMBEDDING_ATTEMPTS) -> np.n
             # The SDK already retried transient transport failures; a raised
             # provider error here is terminal for this call. Re-type it so
             # callers catch one embedding failure contract.
+            _log_embedding_call(on_llm_call, None, text, t0)  # no response — unpriced
             raise EmbeddingError(f"Embedding provider call failed: {exc}") from exc
+        else:
+            _log_embedding_call(on_llm_call, response, text, t0)
+            return vector
         if attempt < attempts:
             time.sleep(EMBEDDING_RETRY_BACKOFF * attempt)
 

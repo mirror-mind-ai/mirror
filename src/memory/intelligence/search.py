@@ -1,6 +1,7 @@
 """Hybrid search: semantic similarity + recency + reinforcement + relevance."""
 
 import math
+from collections.abc import Callable
 from datetime import datetime, timezone
 
 import numpy as np
@@ -14,6 +15,7 @@ from memory.config import (
     SEARCH_WEIGHTS,
 )
 from memory.intelligence.embeddings import bytes_to_embedding, generate_embedding
+from memory.intelligence.llm_router import LLMResponse
 from memory.models import Memory, SearchOutcome, SearchResult
 from memory.storage.store import Store
 
@@ -147,6 +149,7 @@ class MemorySearch:
         layer: str | None = None,
         journey: str | None = None,
         log_access: bool = True,
+        on_llm_call: Callable[[LLMResponse], None] | None = None,
     ) -> list[SearchResult]:
         """Hybrid search (semantic + lexical + recency + reinforcement) with MMR dedup.
 
@@ -159,6 +162,7 @@ class MemorySearch:
             layer=layer,
             journey=journey,
             log_access=log_access,
+            on_llm_call=on_llm_call,
         ).results
 
     def search_with_status(
@@ -169,6 +173,7 @@ class MemorySearch:
         layer: str | None = None,
         journey: str | None = None,
         log_access: bool = True,
+        on_llm_call: Callable[[LLMResponse], None] | None = None,
     ) -> SearchOutcome:
         """Hybrid search that also reports whether it ran degraded (lexical-only).
 
@@ -179,7 +184,7 @@ class MemorySearch:
         """
         degraded = False
         try:
-            query_embedding: np.ndarray | None = generate_embedding(query)
+            query_embedding: np.ndarray | None = generate_embedding(query, on_llm_call=on_llm_call)
         except Exception:
             query_embedding = None
             degraded = True

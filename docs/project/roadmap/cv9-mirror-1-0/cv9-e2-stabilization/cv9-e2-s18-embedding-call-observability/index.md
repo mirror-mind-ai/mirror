@@ -2,7 +2,7 @@
 
 # CV9.E2.S18 — Embedding Call Observability
 
-**Status:** Planned
+**Status:** Done
 **Epic:** CV9.E2 Stabilization & Robustness
 **Closes:** debt **D-003** (embedding calls bypass the `llm_calls` ledger) — the
 last dark hot-path model call, completing the **AI-09** observability arc.
@@ -73,6 +73,17 @@ to the two-pass default (that decision follows once this makes its cost visible)
 - Retention radar item filed.
 - Unit tests cover the edge matrix (retry, failure, empty-input, degraded,
   metadata-only, fail-soft); a `--summary` smoke shows the buckets.
+
+## As-built (implementation)
+
+The planned two `llm_calls` indexes were **already present** — `idx_llm_calls_role`
+and `idx_llm_calls_called_at` exist in `schema.py` and migration
+`006_create_llm_calls`. The database-architect's "no index" finding came from a
+`head`-truncated grep; the planned index migration was dropped as redundant, and
+a regression test now guards their presence. Everything else shipped as planned:
+per-attempt logging, unpriced failures, `embedding` vs `embedding:curation` roles,
+the `commit` control, fail-soft metadata-only logging, and the retention radar
+item.
 
 ## See also
 

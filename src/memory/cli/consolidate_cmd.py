@@ -247,8 +247,11 @@ def cmd_apply(args: list[str]) -> None:
             embedding_to_bytes,
             generate_embedding,
         )
+        from memory.services.observability import build_llm_logger
 
-        emb = generate_embedding(result_content)
+        emb = generate_embedding(
+            result_content, on_llm_call=build_llm_logger(mem.store, role="embedding")
+        )
         merged.embedding = embedding_to_bytes(emb)
         merged.metadata = add_embedding_provenance(merged.metadata)
         mem.store.create_memory(merged)

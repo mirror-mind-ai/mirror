@@ -31,6 +31,7 @@ def build_llm_logger(
     conversation_id: str | None = None,
     session_id: str | None = None,
     cost_usd: float | None = None,
+    commit: bool = True,
 ) -> Callable[[LLMResponse], None] | None:
     """Return an ``on_llm_call`` callback, or ``None`` when logging is off.
 
@@ -60,6 +61,7 @@ def build_llm_logger(
                 ),
                 conversation_id=conversation_id,
                 session_id=session_id,
+                commit=commit,
             )
         except Exception:  # observability must never break the pipeline it observes
             logger.warning("llm_call logging failed for role=%s", role, exc_info=True)

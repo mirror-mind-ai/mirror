@@ -800,10 +800,20 @@ class ConversationService:
         if TWO_PASS_ENABLED and extracted:
             similar: list[Memory] = []
             seen_ids: set[str] = set()
+            curation_emb_logger = build_llm_logger(
+                self.store,
+                role="embedding:curation",
+                conversation_id=conversation_id,
+                commit=False,
+            )
             for candidate in extracted:
                 query = f"{candidate.title} {candidate.content[:60]}"
                 results = self.memories.search(
-                    query, limit=3, journey=conv.journey, log_access=False
+                    query,
+                    limit=3,
+                    journey=conv.journey,
+                    log_access=False,
+                    on_llm_call=curation_emb_logger,
                 )
                 for sr in results:
                     if sr.memory.id not in seen_ids:
@@ -853,12 +863,23 @@ class ConversationService:
         # Stage every network embedding first — the summary and each memory — so
         # a failure leaves nothing persisted. The S7 retry then starts clean and
         # does not duplicate rows or re-spend on embeddings (AI-03 / CV9.E2.S9).
+        embedding_logger = build_llm_logger(
+            self.store, role="embedding", conversation_id=conversation_id, commit=False
+        )
         summary_bytes: bytes | None = None
         if summary_text:
-            summary_bytes = embedding_to_bytes(generate_embedding(summary_text))
+            summary_bytes = embedding_to_bytes(
+                generate_embedding(summary_text, on_llm_call=embedding_logger)
+            )
 
         staged_memories = [
-            (ext, generate_embedding(memory_embed_text(ext.title, ext.content, ext.context)))
+            (
+                ext,
+                generate_embedding(
+                    memory_embed_text(ext.title, ext.content, ext.context),
+                    on_llm_call=embedding_logger,
+                ),
+            )
             for ext in extracted
         ]
 

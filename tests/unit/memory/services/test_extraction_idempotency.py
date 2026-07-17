@@ -15,7 +15,7 @@ from memory.models import ExtractedMemory
 _UNIT = np.ones(1536, dtype=np.float32) / np.sqrt(1536)
 
 
-def _embed_or_fail(text: str):
+def _embed_or_fail(text: str, **kwargs):
     """Fake embedding provider that fails for any text carrying the poison marker."""
     if "FAIL_EMB" in text:
         raise RuntimeError("embedding provider down")
