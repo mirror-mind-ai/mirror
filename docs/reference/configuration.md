@@ -154,15 +154,15 @@ The Configuration page does not dump `os.environ`, does not expose secrets, and 
 
 ## MEMORY_LOG_LLM_CALLS
 
-**What it is:** an observability toggle for local LLM audit logging.
+**What it is:** the mode for local LLM call logging.
 
-**Used by:** service-layer LLM call wrappers for extraction, curation, task extraction, summaries, reception, and conversation title suggestions.
+**Used by:** the shared logger seam behind extraction, curation, task extraction, summaries, reception, journal classification, consolidation, shadow scan, and conversation title/tag suggestions.
 
-**How to change it:** set `MEMORY_LOG_LLM_CALLS=1` to enable. Any other value or absence disables it.
+**How to change it:** one of `off | metadata | full`. Absence or `metadata` (the default) records call metadata only. `full` additionally stores prompt and response bodies. `off` (or `0`) disables logging. Legacy `1` maps to `full`.
 
-**Active in code:** yes. It maps to `config.LOG_LLM_CALLS`.
+**Active in code:** yes. It maps to `config.LOG_LLM_CALLS_MODE`, with `config.LOG_LLM_CALLS` (on/off) and `config.LOG_LLM_BODIES` (full only) derived from it.
 
-**Effects:** when enabled, Mirror writes prompt/response metadata to the local `llm_calls` table for audit/debugging. This can increase local storage and may retain sensitive prompt content locally.
+**Effects:** in `metadata` mode Mirror records role, model, token counts, latency, estimated cost, and conversation id to the local `llm_calls` table with empty prompt/response — no conversation content is retained. `full` adds the bodies, which can retain sensitive prompt content locally and increase storage. Estimated cost comes from a static price table (`intelligence/cost.py`) and is labeled accordingly. Inspect with `python -m memory inspect llm-calls`.
 
 ## MEMORY_RECEPTION
 

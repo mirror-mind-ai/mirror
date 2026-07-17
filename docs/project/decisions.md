@@ -11,6 +11,39 @@ resolved.
 
 ## Completed Decisions
 
+### LLM observability defaults to metadata, content only on request
+
+**Date:** 2026-07-17
+**Reference:** [CV9.E2.S13](roadmap/cv9-mirror-1-0/cv9-e2-stabilization/cv9-e2-s13-llm-cost-authority-metadata-logging/index.md), AI Engineering Audit AI-09 / AI-20
+**Participants:** Vinícius Teles
+
+`MEMORY_LOG_LLM_CALLS` previously defaulted **off**, so the shipped product
+recorded nothing about its own model use; when enabled, it stored full
+prompt/response bodies. Cost was never recorded at all. This left both the user
+and the developers with no evidence of what the mirror did or what it cost — at
+odds with the project's "evidence over vibes" posture — while the only "on"
+setting retained sensitive conversation content locally.
+
+Decided (the AI-20 flag-posture question, resolved for this flag):
+
+1. **Metadata by default, content by consent.** `MEMORY_LOG_LLM_CALLS` resolves
+   to `off | metadata | full`, defaulting to `metadata`: always record
+   role/model/tokens/latency/estimated-cost/conversation, never prompt or
+   response bodies. `full` adds the bodies as an explicit opt-in; `off` (or `0`)
+   disables logging entirely. Legacy `1` keeps its historical body-logging
+   meaning and maps to `full`, so existing installs are not silently downgraded.
+2. **One cost authority; cost is estimated.** A static `model → price/1K-tokens`
+   table (`intelligence/cost.py`) computes `cost_usd` from token usage. Prices
+   drift, so pipeline cost is labeled *estimated* and the table is updated
+   alongside the model pins (AI-06). An unknown model yields `None`, never a
+   silent `0`.
+
+Flipping a shipped default is a conscious behavior change, accepted because the
+metadata path never stores content and the opt-out is one env var. The
+spend-summary view and consult ledger are the remainder, tracked as CV9.E2.S14.
+
+---
+
 ### Builder reads roadmaps in two grammars, additively
 
 **Date:** 2026-07-17

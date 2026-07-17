@@ -31,6 +31,13 @@
 > **AI-18/AI-19** are the exception — they stay CV22 DS5/DS6 plan inputs (they
 > describe how to port the model boundary to TS), recorded as riders in the CV22
 > index.
+>
+> **Status (updated 2026-07-17).** AI-09's core landed as **CV9.E2.S13**:
+> `MEMORY_LOG_LLM_CALLS` now defaults to metadata-only logging (bodies only in
+> `full`), a single cost authority (`intelligence/cost.py`) records estimated
+> `cost_usd`, the six duplicated logger closures collapsed into one fail-soft
+> seam, and `inspect llm-calls` renders per-row cost. The spend-summary view and
+> consult ledger are the remainder, tracked as **CV9.E2.S14** (planned).
 
 ---
 
