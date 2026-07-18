@@ -276,3 +276,36 @@ are corrected to state mypy's real status (review-only / advisory, not
 CI-enforced), so the documented gate matches the enforced gate. Either path
 closes the honesty gap — the choice is whether to raise the gate to the claim or
 the claim to the gate.
+
+## D-008 — `layer` domain constraint enforced inconsistently across write paths
+
+**Kind:** data integrity  
+**Severity:** low  
+**Status:** Carried  
+**Source:** CV9.E2.S25 (AI-24) database-architect review  
+
+### Carrying reason
+
+`VALID_MEMORY_LAYERS = frozenset({"self", "ego", "shadow"})` defines the `layer`
+domain, but enforcement is scattered across three inconsistent seams:
+`_sanitize_extracted` (extraction path only), `classify_journal_entry` (journal
+path only, added by CV9.E2.S25's AI-24 fix), and nothing for direct
+`add_memory()` callers (consolidation, hypothetical future surfaces). The SQLite
+`layer` column has no `CHECK` constraint, so the invariant is enforced zero-to-
+two places depending on which write path you call. CV9.E2.S25 chose the
+proportionate surface-local coercion for journal, but the correct **single
+enforcement seam** is `add_memory()` itself (the one function every memory write
+flows through), with the durable end state being a SQLite `CHECK` constraint.
+
+### Revisit trigger
+
+When a new write path bypasses both existing coercions (extraction, journal), or
+when `add_memory()` is touched for another reason, or when a schema migration is
+already planned (the CHECK constraint belongs there, not as a standalone change).
+
+### Closure condition
+
+`add_memory()` validates `layer ∈ VALID_MEMORY_LAYERS` and raises on mismatch
+(the S23 "validate at the storage/service boundary" lesson applied to `layer`),
+with the eventual SQLite `CHECK` constraint added as part of a larger schema
+migration.

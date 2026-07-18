@@ -898,3 +898,20 @@ grows:
 [CV9.E2 — Stabilization](roadmap/cv9-mirror-1-0/cv9-e2-stabilization/index.md) ·
 [CV22 index — Security Riders (AI-18/AI-19 land here)](roadmap/cv22-typescript-core-port/index.md) ·
 [Decisions](decisions.md) · [Engineering Principles](../process/engineering-principles.md)
+>
+> **Status (updated 2026-07-20).** **AI-11 fully closed** by CV9.E2.S25 — the
+> last two item-2 surfaces (journal classification, conversation title/tags)
+> now have eval probes. `evals/title_tags.py` (6 probes: title captures topic,
+> bounded/no-names, safe-null trivial, injection-resisted; tags capture themes,
+> exclude noise) and `evals/journal.py` (5 probes, with the three layer probes
+> pre-registered n=10 per ai-engineer review: self/ego/shadow criteria). These
+> are quality surfaces (regression detection across model swaps), distinct from
+> the injection/identity class of scene/shadow/consolidation. Closed in the
+> same story: **AI-24** — journal layer classification bypassed the AI-15
+> allowlist; fixed with observable surface-local coercion (invalid → `"ego"`)
+> using imported `VALID_MEMORY_LAYERS`, deterministic CI unit test, and D-008
+> registered for the broader `add_memory`-seam validation. AI-11 is now done:
+> item 1 (S19 persistence + trend), item 2 (S20 scene + S22 shadow + S23
+> consolidation + S25 journal/title-tags), item 3 (S24 `eval --all` gate +
+> playbook). The audit's conceptual core — *"no gate uses them"* — is closed.
+

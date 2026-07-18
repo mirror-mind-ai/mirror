@@ -356,12 +356,14 @@ class TestDiscoverEvalNames:
         assert set(discover_eval_names()) == {
             "consolidate",
             "extraction",
+            "journal",
             "proportionality",
             "reception",
             "retrieval",
             "routing",
             "scene",
             "shadow",
+            "title_tags",
         }
 
     def test_excludes_infrastructure_modules(self):

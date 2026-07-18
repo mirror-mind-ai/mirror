@@ -19,7 +19,14 @@ from memory.intelligence.extraction import (
     generate_descriptor,
 )
 from memory.intelligence.llm_router import LLMResponse
-from memory.models import ExtractedMemory, ExtractedTask, ExtractedWeekItem, Memory, Message
+from memory.models import (
+    VALID_MEMORY_LAYERS,
+    ExtractedMemory,
+    ExtractedTask,
+    ExtractedWeekItem,
+    Memory,
+    Message,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -980,3 +987,74 @@ class TestGenerateDescriptor:
         generate_descriptor("", layer="persona", key="engineer", on_llm_call=callback)
         mock_send.assert_not_called()
         callback.assert_not_called()
+
+
+class TestClassifyJournalEntryLayerValidation:
+    """CV9.E2.S25 (AI-24) — journal classification coerces invalid model-chosen
+    layers to 'ego' using VALID_MEMORY_LAYERS, so the journal path inherits the
+    domain constraint extraction already enforces.
+    """
+
+    def test_valid_layer_returned_unchanged(self, mocker):
+        mocker.patch(
+            "memory.intelligence.extraction.send_to_model",
+            return_value=LLMResponse(
+                model="test/model",
+                content=json.dumps({"title": "Journal title", "layer": "self", "tags": ["tag"]}),
+                prompt_tokens=10,
+                completion_tokens=5,
+                latency_ms=100,
+                prompt="test",
+            ),
+        )
+        result = classify_journal_entry("my journal entry")
+        assert result["layer"] == "self"
+
+    def test_invalid_layer_coerced_to_ego(self, mocker):
+        # AI-24: model returns layer not in VALID_MEMORY_LAYERS → coerce to 'ego'
+        mocker.patch(
+            "memory.intelligence.extraction.send_to_model",
+            return_value=LLMResponse(
+                model="test/model",
+                content=json.dumps({"title": "Journal title", "layer": "banana", "tags": ["tag"]}),
+                prompt_tokens=10,
+                completion_tokens=5,
+                latency_ms=100,
+                prompt="test",
+            ),
+        )
+        result = classify_journal_entry("my journal entry")
+        assert result["layer"] == "ego"
+
+    def test_each_valid_layer_accepted(self, mocker):
+        # Verify every layer in VALID_MEMORY_LAYERS passes through unchanged
+        for valid_layer in VALID_MEMORY_LAYERS:
+            mocker.patch(
+                "memory.intelligence.extraction.send_to_model",
+                return_value=LLMResponse(
+                    model="test/model",
+                    content=json.dumps({"title": "Title", "layer": valid_layer, "tags": []}),
+                    prompt_tokens=10,
+                    completion_tokens=5,
+                    latency_ms=100,
+                    prompt="test",
+                ),
+            )
+            result = classify_journal_entry("content")
+            assert result["layer"] == valid_layer
+
+    def test_parse_failure_defaults_to_ego(self, mocker):
+        # Pre-existing behavior: malformed JSON → fallback with layer='ego'
+        mocker.patch(
+            "memory.intelligence.extraction.send_to_model",
+            return_value=LLMResponse(
+                model="test/model",
+                content="not valid json",
+                prompt_tokens=10,
+                completion_tokens=5,
+                latency_ms=100,
+                prompt="test",
+            ),
+        )
+        result = classify_journal_entry("content")
+        assert result["layer"] == "ego"

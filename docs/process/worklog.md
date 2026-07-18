@@ -12,6 +12,12 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-07-20 — CV9.E2.S25 Journal + metadata eval probes completed (AI-11 fully closed, AI-24 closed)
+
+Closed AI-11 fully: the last two uncovered LLM surfaces (journal classification, conversation title/tags) now have eval probes. These are quality surfaces (regression detection across model swaps), distinct from the injection/identity class. `evals/title_tags.py` (6 probes) and `evals/journal.py` (5 probes, with layer probes pre-registered n=10 per ai-engineer: layer misclassification is the quality risk). Also closed AI-24 (found while tracing): journal layer classification bypassed the AI-15 `VALID_MEMORY_LAYERS` allowlist — fixed with observable surface-local coercion (invalid → `"ego"`) using imported `VALID_MEMORY_LAYERS`, deterministic CI unit test. Registered D-008 for the broader `add_memory`-seam validation (database-architect's follow-up). Discovery contract test 8→10.
+
+Validation: TDD (RED on AI-24 coercion test, GREEN after fix); structural eval contracts green; full keyless suite green; mypy D-006 baseline unchanged. AI-11 is now fully closed: item 1 (S19), item 2 (S20/S22/S23/S25), item 3 (S24).
+
 ### 2026-07-20 — CV9.E2.S24 Model-upgrade playbook + release eval gate completed (AI-11 item 3 done)
 
 Closed the conceptual core of AI-11: the eval suite existed but nothing ran it as a whole, so the finding's headline complaint — *"no gate uses them"* — stayed true no matter how many probes were added (S19 persistence, S20/S22/S23 scene/shadow/consolidation surfaces). Item 3 delivers the gate as a real command plus the migration procedure that uses it. Item 1 (S19) and item 3 (S24) are now done; AI-11 stays open only for item 2's two remaining surface probes (journal classification, title/tags quality).

@@ -454,7 +454,14 @@ def classify_journal_entry(
     content: str,
     on_llm_call: Callable[[LLMResponse], None] | None = None,
 ) -> dict:
-    """Classify a journal entry through an LLM: title, layer, and tags."""
+    """Classify a journal entry through an LLM: title, layer, and tags.
+
+    AI-24 (CV9.E2.S25): coerces model-chosen layer to 'ego' when not in
+    VALID_MEMORY_LAYERS, so the journal path inherits the same domain constraint
+    extraction already enforces.
+    """
+    from memory.models import VALID_MEMORY_LAYERS
+
     prompt = JOURNAL_CLASSIFICATION_PROMPT + content
     response = send_to_model(
         EXTRACTION_MODEL,
@@ -468,8 +475,14 @@ def classify_journal_entry(
     if not isinstance(data, dict):
         return {"title": content[:60], "layer": "ego", "tags": []}
 
+    # Coerce invalid layer to 'ego' (the existing fallback) rather than
+    # letting it flow to add_memory unchecked.
+    layer = data.get("layer", "ego")
+    if layer not in VALID_MEMORY_LAYERS:
+        layer = "ego"
+
     return {
         "title": data.get("title", content[:60]),
-        "layer": data.get("layer", "ego"),
+        "layer": layer,
         "tags": data.get("tags", []),
     }
