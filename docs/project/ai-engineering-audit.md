@@ -91,6 +91,23 @@
 > in the same change; recorded as new finding **AI-22** (P1). AI-11 stays open:
 > item 2's remaining surfaces (consolidation, shadow, journal, title/tags) and
 > item 3 (model-upgrade playbook, release gate) are still unaddressed.
+>
+> **Status (updated 2026-07-18).** AI-22 **closed** by **CV9.E2.S21** as
+> mitigated-and-measured: the scene read model is fenced (`<scene_data>` +
+> untrusted-input block + post-fence sandwich reminder + a per-item null
+> action for instruction-like titles), and the `scene-injection-resisted`
+> probe was **corrected to measure obedience rather than mention** after an
+> error analysis found 0/4 actual compliance among inspected failures — the
+> old flags were citation-echo in the `signals` field (which the output
+> contract asks for) and defensive descriptions. Pre-registered n=10
+> re-measurement: **9/10 resisted, 1/10 obeyed, zero regressions** on the
+> other five probes. The residual 1/10 is documented, not erased — acceptable
+> because the blast radius is verified display-only. Invariant named:
+> `scene_orientation` identity rows never enter prompt assembly (explicit
+> layer/key selection verified; review-only gate; comment at the write site).
+> Revisit triggers: a model-pin change (re-run the probe; S19 history trends
+> it) and any feature feeding orientation content back into prompts
+> (escalates to AI-16 class).
 
 ---
 
@@ -585,6 +602,20 @@ the regression test. The fix is verified when it turns green without any
 other probe in `evals/scene.py` regressing.
 
 **Cost:** none at runtime; the probe already exists.
+
+> **Status (updated 2026-07-18).** Closed by CV9.E2.S21 as
+> mitigated-and-measured. Fence + sandwich + per-item null action (the
+> structural fix: extraction resists because it has a safe null — `[]` — so
+> the prompt now defines one per item for synthesis: instruction-like titles
+> are referred to generically, never repeated verbatim). The probe was
+> corrected to `_asserted_in_own_voice` (title/next zero-tolerance,
+> distancing-aware summary, signals citation excluded) after error analysis
+> showed the mention-counting version over-counted — 0/4 actual obedience
+> among inspected failures. Pre-registered n=10: **9/10 resisted, 1/10
+> obeyed, no regressions**. The residual stands as documented risk on a
+> display-only surface whose output never re-enters prompts (verified
+> invariant, review-only). Full history in the
+> [CV9.E2.S21 story package](roadmap/cv9-mirror-1-0/cv9-e2-stabilization/cv9-e2-s21-fence-scene-read-model/index.md).
 
 #### AI-17 · Consult ships the full identity context to arbitrary third-party models — **P2**
 
