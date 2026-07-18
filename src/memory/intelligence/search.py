@@ -203,6 +203,11 @@ class MemorySearch:
             self.store.fts_search(query, memory_type=memory_type, layer=layer, journey=journey)
         )
 
+        # Batched access counts (CV9.E2.S27, AI-13): one GROUP BY instead of a
+        # per-memory COUNT inside the loop below — collapses search()'s N+1. A
+        # memory absent from the dict has zero accesses (never logged).
+        access_counts = self.store.get_access_counts()
+
         # Score every candidate. In degraded mode drop the semantic term and keep
         # only FTS matches so results stay lexically relevant (not recency noise).
         lexical_weight = SEARCH_WEIGHTS.get("lexical", 0.0)
@@ -215,7 +220,7 @@ class MemorySearch:
             emb = bytes_to_embedding(mem.embedding)
             sem = 0.0 if query_embedding is None else cosine_similarity(query_embedding, emb)
             rec = recency_score(mem.created_at)
-            access_count = self.store.get_access_count(mem.id)
+            access_count = access_counts.get(mem.id, 0)
             reinf = reinforcement_score(access_count, mem.use_count, mem.last_accessed_at)
             score = hybrid_score(sem, rec, reinf, mem.relevance_score)
             score += lexical_weight * fts_lookup.get(mem.id, 0.0)

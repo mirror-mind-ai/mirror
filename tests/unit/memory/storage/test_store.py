@@ -217,6 +217,57 @@ class TestAccessLog:
         assert store.get_access_count("ghost") == 0
 
 
+class TestAccessCounts:
+    """CV9.E2.S27 (AI-13) — the batched accessor that collapses search()'s N+1."""
+
+    def test_returns_counts_for_accessed_memories(self, store):
+        m1 = Memory(memory_type="insight", layer="ego", title="A", content="a")
+        m2 = Memory(memory_type="insight", layer="ego", title="B", content="b")
+        store.create_memory(m1)
+        store.create_memory(m2)
+        store.log_access(m1.id)
+        store.log_access(m1.id)
+        store.log_access(m2.id)
+
+        counts = store.get_access_counts()
+
+        assert counts[m1.id] == 2
+        assert counts[m2.id] == 1
+
+    def test_omits_never_accessed_memories(self, store):
+        # The exact boundary the N+1 collapse must preserve: GROUP BY naturally
+        # has no row for a memory with zero access_log entries. The caller must
+        # default via .get(id, 0), matching get_access_count's return of 0.
+        mem = Memory(memory_type="insight", layer="ego", title="T", content="x")
+        store.create_memory(mem)
+
+        counts = store.get_access_counts()
+
+        assert mem.id not in counts
+
+    def test_empty_when_no_access_log_rows(self, store):
+        assert store.get_access_counts() == {}
+
+    def test_matches_get_access_count_for_every_memory(self, store):
+        # Parity between the singular and plural accessors — the invariant the
+        # collapse must preserve exactly, including the zero-access case.
+        m1 = Memory(memory_type="insight", layer="ego", title="A", content="a")
+        m2 = Memory(memory_type="insight", layer="ego", title="B", content="b")
+        m3 = Memory(memory_type="insight", layer="ego", title="C", content="c")
+        for m in (m1, m2, m3):
+            store.create_memory(m)
+        store.log_access(m1.id)
+        store.log_access(m1.id)
+        store.log_access(m1.id)
+        store.log_access(m2.id)
+        # m3: never accessed — the boundary case
+
+        counts = store.get_access_counts()
+
+        for m in (m1, m2, m3):
+            assert counts.get(m.id, 0) == store.get_access_count(m.id)
+
+
 # ---------------------------------------------------------------------------
 # Identity
 # ---------------------------------------------------------------------------

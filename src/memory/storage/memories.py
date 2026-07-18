@@ -220,6 +220,19 @@ class MemoryStore(ConnectionBacked):
         ).fetchone()
         return row["cnt"] if row else 0
 
+    def get_access_counts(self) -> dict[str, int]:
+        """Batched access counts for every memory with at least one log row.
+
+        Collapses search()'s N+1 (CV9.E2.S27, AI-13): one GROUP BY instead of a
+        per-memory COUNT. A memory absent from the returned dict has zero
+        accesses — callers must default via ``.get(memory_id, 0)``, identical to
+        what ``get_access_count`` returns for an unlogged memory.
+        """
+        rows = self.conn.execute(
+            "SELECT memory_id, COUNT(*) as cnt FROM memory_access_log GROUP BY memory_id"
+        ).fetchall()
+        return {row["memory_id"]: row["cnt"] for row in rows}
+
     def fts_search(
         self,
         query: str,

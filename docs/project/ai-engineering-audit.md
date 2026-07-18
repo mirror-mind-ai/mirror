@@ -212,6 +212,28 @@
 > capping total system throughput — a backlog now drains deterministically
 > over successive session starts rather than either hanging one session or
 > silently growing forever.
+>
+> **Status (updated 2026-07-21).** **AI-13 closed** by **CV9.E2.S27**:
+> `search()`'s N+1 (`get_access_count` called once per candidate memory inside
+> the scoring loop — 1+N SQLite round-trips per search) is collapsed to a
+> single `get_access_counts()` batched query (one `GROUP BY memory_id`),
+> mirroring the single-`GROUP BY` strategy DS5 already commits the TS port to.
+> The audit asked for "a 10k latency probe so scale behavior is a number, not
+> a guess"; this split into a **deterministic, CI-gated invariant** (search
+> calls the batched accessor exactly once and the singular per-memory accessor
+> never — a call-count spy immune to unrelated scaling) plus an **opt-in,
+> informational 10k wall-clock benchmark** (`tests/benchmark/`, structurally
+> outside CI's test paths, 0.132s measured locally) — because wall-clock
+> timing is inherently flaky and should report, not gate. A real measurement
+> subtlety surfaced while building the first version of the query-count guard:
+> SQLite FTS5's own internal BM25 ranking (`memories_fts_idx`/`docsize`
+> lookups) legitimately scales with the number of *matching* documents, an
+> orthogonal, accepted cost unrelated to this finding; diagnosed by tracing
+> actual SQL statements rather than assumed, and resolved by isolating the
+> measurement to a non-matching query term. Both new regression tests were
+> confirmed genuinely red against the pre-fix code by temporarily reverting
+> the change, not merely written to pass. Read-only fix — `log_access`/
+> `log_use` and the reinforcement formula are untouched, protecting AI-12.
 
 ---
 

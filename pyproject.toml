@@ -51,6 +51,7 @@ markers = [
     "unit: fast, no I/O, no network",
     "integration: real SQLite, may be slow",
     "live: requires real API keys (excluded from CI)",
+    "benchmark: opt-in performance probe, informational only, not run in CI",
 ]
 
 # ---------------------------------------------------------------------------
