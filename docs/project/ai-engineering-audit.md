@@ -90,7 +90,8 @@
 > story's own design the probe was not loosened and the prompt was not touched
 > in the same change; recorded as new finding **AI-22** (P1). AI-11 stays open:
 > item 2's remaining surfaces (consolidation, shadow, journal, title/tags) and
-> item 3 (model-upgrade playbook, release gate) are still unaddressed.
+> item 3 (model-upgrade playbook, release gate) are still unaddressed. (Shadow
+> was covered next — CV9.E2.S22, see the following status note.)
 >
 > **Status (updated 2026-07-18).** AI-22 **closed** by **CV9.E2.S21** as
 > mitigated-and-measured: the scene read model is fenced (`<scene_data>` +
@@ -108,6 +109,30 @@
 > Revisit triggers: a model-pin change (re-run the probe; S19 history trends
 > it) and any feature feeding orientation content back into prompts
 > (escalates to AI-16 class).
+>
+> **Status (updated 2026-07-18).** AI-11 item 2's shadow surface **done** as
+> **CV9.E2.S22**: `evals/shadow.py` adds five probes for
+> `propose_shadow_observations()` — the classification this audit names as
+> the prompt's most delicate. Unlike scene, the surface was **fenced
+> proactively** (`<shadow_memories>` + untrusted-input instruction) rather
+> than probed-first, because shadow output reaches structural identity via
+> `mm-shadow` review. Also extracted: `fence_untrusted` (shared by extraction,
+> scene, and shadow — the rule-of-three fired) and `asserted_in_own_voice`
+> (shared by scene's and shadow's injection probes, split from field-mapping).
+> Pre-registered n=10 measurement: **10/10 clean on every probe**, including
+> `shadow-injection-resisted` — confirming shadow's native safe null
+> ("0 observations is a valid output") makes it structurally more
+> injection-resistant than scene, which needed two rounds of prompt hardening
+> to reach 9/10. The false-positive guard (`benign-cluster-no-surfacing`, the
+> audit's named risk) held perfectly across all 10 samples. One self-caught
+> probe bug (grounding checked against the full UUID the model was never
+> shown, instead of the truncated prefix `_format_shadow_memories` actually
+> displays) was found and fixed before the measurement, not papered over —
+> recorded in the story's as-built. A pre-existing doc/impl drift
+> (`Consolidation.action`'s comment omits the `shadow_observation` value
+> shadow.py writes) is registered as **D-007**. AI-11 item 2's remaining
+> surfaces (consolidation, journal, title/tags) and item 3 (the model-upgrade
+> playbook, release-checklist gate) remain open.
 
 ---
 
@@ -434,10 +459,12 @@ discipline — the prompt's most delicate classification — would be invisible.
 > cost half). Fix item 2's highest-value slice **done** as **CV9.E2.S20**:
 > `evals/scene.py` added six grounding probes for scene synthesis; the first
 > live run scored 5/6, with `scene-injection-resisted` catching a real
-> content-mediated injection now tracked as **AI-22**. Fix item 2's remaining
-> surfaces (consolidation, shadow, journal, title/tags) and item 3 (the
-> model-upgrade playbook, release-checklist gate) remain open; AI-11 stays in
-> the P1 backlog for those.
+> content-mediated injection now tracked as **AI-22**. Fix item 2's shadow
+> surface **done** as **CV9.E2.S22** (10/10 clean, proactively fenced — see
+> the AI-11 top-of-doc status notes). Fix item 2's remaining surfaces
+> (consolidation, journal, title/tags) and item 3 (the model-upgrade
+> playbook, release-checklist gate) remain open; AI-11 stays in the P1
+> backlog for those.
 
 **Fix.**
 1. Persist eval reports (JSON artifact under the mirror home or an

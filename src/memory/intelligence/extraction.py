@@ -18,6 +18,7 @@ from memory.intelligence.prompts import (
     JOURNAL_CLASSIFICATION_PROMPT,
     TASK_EXTRACTION_PROMPT,
     WEEK_PLAN_PROMPT,
+    fence_untrusted,
 )
 from memory.models import (
     VALID_MEMORY_LAYERS,
@@ -38,8 +39,13 @@ MAX_TASKS_PER_CONVERSATION = 5
 
 
 def _fence_transcript(body: str) -> str:
-    """Wrap transcript text so the model reads it as fenced, untrusted data (AI-16)."""
-    return f"<transcript>\n{body}\n</transcript>"
+    """Wrap transcript text so the model reads it as fenced, untrusted data (AI-16).
+
+    Thin wrapper over the shared fence_untrusted (CV9.E2.S22) — kept as a named
+    function so call sites read `_fence_transcript(...)` rather than a bare tag
+    string, and so this file's own fence test stays behaviour-anchored.
+    """
+    return fence_untrusted("transcript", body)
 
 
 def _sanitize_extracted(

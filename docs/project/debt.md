@@ -24,6 +24,7 @@ Dropped   no longer relevant or replaced by another item
 | D-004 | Full test suite exhausts file descriptors under a low `ulimit -n` (macOS default) | testing | low | Paid | CV9.E2.S1 validation | Paid: conftest raises the soft fd limit at startup |
 | D-005 | `evals/routing.py` fixtures are stale against the current persona catalog | testing | low | Carried | CV9.E2.S19 validation | Update fixtures to the current catalog (treasurer → cfo/financial; add scholar coverage), or the next persona-catalog change |
 | D-006 | `mypy` is documented as a CI gate but is enforced in no workflow; `src/memory` carries 109 mypy errors | process | medium | Carried | CV9.E2.S20 QA audit | Wire `mypy` into CI (clear/baseline the 109 errors) so the claim becomes true, or correct §10/the checklist to mypy's real (review-only) status |
+| D-007 | `Consolidation.action` field comment doesn't list the `shadow_observation` value shadow.py actually writes | design | low | Carried | CV9.E2.S22 (database-architect review) | Reconcile the model's action-enum comment with the real value set, or the next time `Consolidation.action` is touched |
 
 ## D-001 — Metadata lifecycle policy and evidence filtering live inside ConversationService
 
@@ -204,6 +205,38 @@ the current persona catalog (`treasurer` references updated to `cfo`/`financial`
 `scholar` and other newer personas get explicit coverage or documented
 exclusion), and the eval scores at or above threshold on a representative
 seeded database.
+
+## D-007 — `Consolidation.action` field comment omits `shadow_observation`
+
+**Kind:** design  
+**Severity:** low  
+**Status:** Carried  
+**Source:** CV9.E2.S22 (database-architect review)  
+
+### Carrying reason
+
+`Consolidation.action`'s field comment in `models.py` enumerates
+`'merge' | 'identity_update' | 'shadow_candidate'`, but `intelligence/shadow.py`'s
+`propose_shadow_observations()` writes a fourth value, `shadow_observation`, to
+that same column — discovered while building the CV9.E2.S22 shadow-scan eval
+probe, whose `well-formed-observations` probe asserts the code's real behavior
+(`action == "shadow_observation"`) rather than the comment's stale enum. The
+drift is between documentation and implementation, not a runtime defect — no
+constraint enforces the comment, so nothing breaks — but a future reader
+validating actions against that comment would wrongly flag every shadow row as
+invalid.
+
+### Revisit trigger
+
+The next time `Consolidation.action` or its callers are touched, or a reader
+reports confusion between the documented and actual action set.
+
+### Closure condition
+
+The field comment's enum is updated to include `shadow_observation` (the
+cheap fix), or the codebase is reconciled to use one of the three originally
+documented values instead (a larger, likely unwarranted change given
+`shadow_observation`'s distinct review path via `mm-shadow`).
 
 ## D-006 — `mypy` is documented as a CI gate but is enforced nowhere
 
