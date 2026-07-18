@@ -23,6 +23,7 @@ Dropped   no longer relevant or replaced by another item
 | D-003 | Embedding calls bypass the `llm_calls` ledger (invisible spend, amplified by S1 retry) | observability | medium | Paid | CV9.E2.S1 (AI-E1, AI-09 tail) → CV9.E2.S18 | Paid by CV9.E2.S18 embedding call observability |
 | D-004 | Full test suite exhausts file descriptors under a low `ulimit -n` (macOS default) | testing | low | Paid | CV9.E2.S1 validation | Paid: conftest raises the soft fd limit at startup |
 | D-005 | `evals/routing.py` fixtures are stale against the current persona catalog | testing | low | Carried | CV9.E2.S19 validation | Update fixtures to the current catalog (treasurer → cfo/financial; add scholar coverage), or the next persona-catalog change |
+| D-006 | `mypy` is documented as a CI gate but is enforced in no workflow; `src/memory` carries 109 mypy errors | process | medium | Carried | CV9.E2.S20 QA audit | Wire `mypy` into CI (clear/baseline the 109 errors) so the claim becomes true, or correct §10/the checklist to mypy's real (review-only) status |
 
 ## D-001 — Metadata lifecycle policy and evidence filtering live inside ConversationService
 
@@ -203,3 +204,42 @@ the current persona catalog (`treasurer` references updated to `cfo`/`financial`
 `scholar` and other newer personas get explicit coverage or documented
 exclusion), and the eval scores at or above threshold on a representative
 seeded database.
+
+## D-006 — `mypy` is documented as a CI gate but is enforced nowhere
+
+**Kind:** process  
+**Severity:** medium  
+**Status:** Carried  
+**Source:** CV9.E2.S20 QA audit (engineering-principles.md compliance review)  
+
+### Carrying reason
+
+`engineering-principles.md` §10's gate table lists `mypy` under **CI-enforced**
+("a green `main` is impossible without it"), and the development-guide
+[Verification Checklist](../process/development-guide.md#verification-checklist)
+lists `uv run mypy src/memory` as a required local step. Neither is backed by
+reality: no `.github/workflows/*` runs mypy, there is no `.pre-commit-config.yaml`,
+and `uv run mypy src/memory` currently reports **109 errors across 26 files**
+(identical at `6049b2e^` and `main` — pre-existing, not introduced by CV9.E2.S20,
+whose own files sit outside the `src/memory` mypy target anyway). So the
+type-check gate the rulebook claims as a hard safety net does not exist, and
+could not be switched on today without first clearing or baselining those
+errors. By the document's own standard — "a rule with no real gate is a hope,
+not a rule" — this is a false safety net, surfaced by the S20 compliance audit
+rather than left implicit.
+
+### Revisit trigger
+
+Before `mypy` is relied on as a release or CI signal; or the next change to the
+CI workflow or the verification checklist; or whenever the 109-error backlog is
+addressed for another reason.
+
+### Closure condition
+
+Either (a) `mypy` — with a defined target and an agreed error baseline — is wired
+into `tests.yml` so a green `main` genuinely depends on it, making the §10
+gate-table claim true; or (b) the §10 gate table and the verification checklist
+are corrected to state mypy's real status (review-only / advisory, not
+CI-enforced), so the documented gate matches the enforced gate. Either path
+closes the honesty gap — the choice is whether to raise the gate to the claim or
+the claim to the gate.
