@@ -673,7 +673,13 @@ real gate is a hope, not a rule.
 - **CI-enforced** (a green `main` is impossible without it): `ruff check`,
   `ruff format --check`, `mypy`, the unit/integration suites (keyless,
   `-m "not live"`), the TS `tsc`/Biome/`node:test` job, the coverage floor,
-  the `MemoryClient` lifecycle architecture test.
+  the `MemoryClient` lifecycle architecture test, and the `docs` workflow's
+  link/anchor check
+  ([`scripts/check_doc_links.py`](../../scripts/check_doc_links.py), logic
+  in [`src/memory/docs_lint.py`](../../src/memory/docs_lint.py), self-tested
+  in [`tests/unit/memory/test_docs_lint.py`](../../tests/unit/memory/test_docs_lint.py)
+  — network-free, no baseline exceptions, every relative link and anchor
+  under `docs/**` and every root `*.md` must resolve).
 - **Eval-enforced** (a real model, run deliberately, not on every push):
   the six [`evals/`](../../evals/) probes — behavior drift is caught only
   when someone runs them per the [§7](#7-the-model-in-the-loop) cadence.
