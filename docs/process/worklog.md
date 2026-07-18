@@ -12,6 +12,16 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-07-18 — Engineering principles doc rewritten with evidence-linked, gate-honest rules (maintenance)
+
+Rewrote `docs/process/engineering-principles.md` (150 lines, Code/Testing/Process only) after diagnosing it against kia-desktop's `engineering-principles.md`: missing the model-in-the-loop, privacy/trust, data-integrity, and release-confidence domains an AI-memory product actually needs, and asserting rules with no stated gate. Reviewed by the full technical team — quality-assurance, database-architect, devops-engineer, ai-engineer, prompt-engineer — each returning domain-specific deltas grounded in this repo's own evidence rather than imported wholesale from Kia (QA's runtime-skill CI gap, the database-architect's pragma-contract and schema-authority rules, devops's restore-vs-verify distinction, ai-engineer's eval-cadence and gate-honesty framing, prompt-engineer's wider instruction-asset inventory beyond `prompts.py`).
+
+Result: four new sections (Privacy & Trust Boundaries, Data & Persistence, The Model In The Loop, Release Confidence), a Definition of Done checklist, and a CI/eval/review-only gate table naming which rules have a machine gate and which don't. At the Navigator's explicit request, a final `writer`-led pass converted every `§`-reference and ledger code (`D-*`, `TD-*`, `AI-*`, `CV` story codes) into a real link, verified programmatically against actual headings (91 unique targets, file-exists + GitHub-slug match, zero misses) rather than left as inline code pretending to be a citation.
+
+Trying to link a claim forced a real correction: the doc described the TS core as `mirror-ts-core` and claimed its `database.ts` already mirrors Python's `busy_timeout`/`foreign_keys=ON`/WAL pragma contract — but that code only exists on an unmerged sibling branch. The canonical TS core is the `ts/` package already on `main` (per `decisions.md` and the CI `ts` job), and its `database.ts` is read-only today (CV22's read-only-parity foundation), so it does not yet set write-time pragmas. Corrected every mention and rewrote the pragma-contract principle to state the true current posture plus the forward rule that matters: replication becomes mandatory the moment the TS core gains write capability.
+
+Validation: no TDD (docs-only, no `src`/`ts` change) — verification was a custom link-resolution script (path existence + heading-slug computation matching GitHub's real algorithm, including underscore preservation and duplicate-heading suffixing) plus `git diff --check`. CI green on push (`ts`, 3.10, 3.12; `gh run watch` confirmed, exit 0). Committed as `8cae5c4`.
+
 ### 2026-07-18 — CV9.E2.S20 Scene-synthesis eval probe completed
 
 Delivered the highest-value probe named in AI-11 item 2: `generate_scene_synthesis()` — the Workspace cognitive-location orientation — was the one LLM surface carrying an explicit grounding contract in its own prompt ("use only the provided Scene read model… do not invent journeys, goals, emotions, priorities, facts, or relationships; if signals are thin, say so") and yet had zero eval coverage. CV9.E2.S19 built the persistence rail; this is the first new probe module to ride it.
