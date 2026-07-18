@@ -24,7 +24,7 @@ from memory.intelligence.consolidate import (
     cluster_memories,
     propose_consolidation,
 )
-from memory.models import Consolidation, Identity
+from memory.models import Consolidation
 from memory.services.observability import build_llm_logger
 
 # ---------------------------------------------------------------------------
@@ -207,17 +207,19 @@ def cmd_apply(args: list[str]) -> None:
                 "Error: identity_update proposal has no target_layer/target_key.", file=sys.stderr
             )
             sys.exit(1)
-        existing = mem.store.get_identity(consolidation.target_layer, consolidation.target_key)
-        if existing:
-            updated_content = existing.content.rstrip() + "\n\n" + result_content
-        else:
-            updated_content = result_content
-        identity = Identity(
-            layer=consolidation.target_layer,
-            key=consolidation.target_key,
-            content=updated_content,
-        )
-        mem.store.upsert_identity(identity)
+        # AI-23 (CV9.E2.S23): target_layer is model-chosen and untrusted --
+        # routed through the allowlisted service method instead of a direct
+        # storage write, so a hallucinated/injected layer is refused loudly
+        # rather than silently accepted.
+        try:
+            mem.identity.apply_consolidation_identity_update(
+                target_layer=consolidation.target_layer,
+                target_key=consolidation.target_key,
+                content=result_content,
+            )
+        except ValueError as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            sys.exit(1)
         print(f"✓ Updated identity: {consolidation.target_layer}/{consolidation.target_key}")
         # Advance source memories to 'acknowledged'.
         for mid in source_ids:

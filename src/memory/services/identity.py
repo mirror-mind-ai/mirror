@@ -6,7 +6,7 @@ import json
 import re
 from typing import TYPE_CHECKING, overload
 
-from memory.models import Identity
+from memory.models import VALID_IDENTITY_UPDATE_LAYERS, Identity
 from memory.storage.store import Store
 
 if TYPE_CHECKING:
@@ -50,6 +50,37 @@ class IdentityService:
             version=version,
             metadata=metadata,
         )
+        return self.store.upsert_identity(identity)
+
+    def apply_consolidation_identity_update(
+        self,
+        *,
+        target_layer: str,
+        target_key: str,
+        content: str,
+    ) -> Identity:
+        """Apply a consolidation-proposed identity_update, gated by layer (AI-23).
+
+        Unlike set_identity (general-purpose, unconditional write used for
+        seeding, Soul Mode integration, etc.), this is narrowly for the
+        propose_consolidation() -> mm-consolidate accept flow: target_layer is
+        model-chosen and untrusted, so it is checked against
+        VALID_IDENTITY_UPDATE_LAYERS before anything is written. A rejected
+        layer raises -- it never silently no-ops or redirects, and it never
+        writes a partial row.
+
+        Preserves the accept flow's existing append semantics for an allowed
+        write: new content is appended after a blank line, never replaces
+        existing content outright.
+        """
+        if target_layer not in VALID_IDENTITY_UPDATE_LAYERS:
+            raise ValueError(
+                f"Refusing identity_update to layer {target_layer!r}: not in "
+                f"the consolidation allowlist {sorted(VALID_IDENTITY_UPDATE_LAYERS)}."
+            )
+        existing = self.store.get_identity(target_layer, target_key)
+        updated_content = f"{existing.content.rstrip()}\n\n{content}" if existing else content
+        identity = Identity(layer=target_layer, key=target_key, content=updated_content)
         return self.store.upsert_identity(identity)
 
     @overload

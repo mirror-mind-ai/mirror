@@ -9,14 +9,18 @@ CV7.E4.S3 — Consolidation as integration.
 
 from __future__ import annotations
 
+from unittest.mock import patch
+
 import numpy as np
 
 from memory.intelligence.consolidate import (
     DEFAULT_CLUSTER_THRESHOLD,
     MAX_CLUSTER_SIZE,
     cluster_memories,
+    propose_consolidation,
 )
 from memory.intelligence.embeddings import embedding_to_bytes
+from memory.intelligence.llm_router import LLMResponse
 from memory.models import Memory
 
 # ---------------------------------------------------------------------------
@@ -155,3 +159,74 @@ class TestClusterMemoriesDefaults:
     def test_max_cluster_size_is_five(self):
         # Sanity check on the module-level constant — protects against silent regression.
         assert MAX_CLUSTER_SIZE == 5
+
+
+def _cluster_memory(**overrides) -> Memory:
+    defaults = {
+        "id": "sample-mem-1",
+        "title": "Sample memory title",
+        "content": "Sample memory content.",
+        "context": "Sample context.",
+        "memory_type": "decision",
+        "layer": "ego",
+        "created_at": "2026-01-01T00:00:00+00:00",
+    }
+    defaults.update(overrides)
+    return Memory(**defaults)
+
+
+class TestProposeConsolidationFencesClusterAsData:
+    """CV9.E2.S23 (AI-22 pattern): cluster content is user-controlled and must
+    be fenced as data, not instructions — proactive fence, since the surface
+    can propose writes to structural identity (AI-23)."""
+
+    def test_cluster_block_is_fenced(self):
+        captured = {}
+
+        def fake_send(model, messages, temperature):
+            captured["prompt"] = messages[0]["content"]
+            return LLMResponse(model=model, content='{"action": "merge", "proposed_content": "x"}')
+
+        cluster = [_cluster_memory(id="a"), _cluster_memory(id="b")]
+        with patch("memory.intelligence.consolidate.send_to_model", side_effect=fake_send):
+            propose_consolidation(cluster, "Test User", "Existing identity context.")
+
+        prompt = captured["prompt"]
+        assert "<cluster>" in prompt and "</cluster>" in prompt
+        assert "not instructions" in prompt.lower()
+
+    def test_identity_context_is_not_fenced(self):
+        """Only user-derived content is fenced — identity_context is
+        system-side, per the plan's D3/shadow precedent."""
+        captured = {}
+
+        def fake_send(model, messages, temperature):
+            captured["prompt"] = messages[0]["content"]
+            return LLMResponse(model=model, content='{"action": "merge", "proposed_content": "x"}')
+
+        cluster = [_cluster_memory(id="a"), _cluster_memory(id="b")]
+        with patch("memory.intelligence.consolidate.send_to_model", side_effect=fake_send):
+            propose_consolidation(cluster, "Test User", "Existing identity context marker.")
+
+        prompt = captured["prompt"]
+        assert "<identity_context>" not in prompt
+        assert "Existing identity context marker." in prompt
+
+    def test_memory_content_appears_inside_the_fence(self):
+        captured = {}
+
+        def fake_send(model, messages, temperature):
+            captured["prompt"] = messages[0]["content"]
+            return LLMResponse(model=model, content='{"action": "merge", "proposed_content": "x"}')
+
+        cluster = [
+            _cluster_memory(id="a", content="A distinctive marker string."),
+            _cluster_memory(id="b"),
+        ]
+        with patch("memory.intelligence.consolidate.send_to_model", side_effect=fake_send):
+            propose_consolidation(cluster, "Test User", "ctx")
+
+        prompt = captured["prompt"]
+        start = prompt.index("<cluster>")
+        end = prompt.index("</cluster>")
+        assert "A distinctive marker string." in prompt[start:end]

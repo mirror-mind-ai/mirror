@@ -133,6 +133,31 @@
 > shadow.py writes) is registered as **D-007**. AI-11 item 2's remaining
 > surfaces (consolidation, journal, title/tags) and item 3 (the model-upgrade
 > playbook, release-checklist gate) remain open.
+>
+> **Status (updated 2026-07-18).** AI-11 item 2's consolidation surface
+> **done** as **CV9.E2.S23**, alongside a new finding, **AI-23**, closed in
+> the same story. `propose_consolidation()`'s `identity_update` action is the
+> most consequential model output in the system — it proposes structural
+> identity writes — and has no safe null (unlike scene/shadow, it must
+> always pick one of `merge`/`identity_update`/`shadow_candidate`; its only
+> rail is "prefer MERGE, lower stakes, always safe"). Tracing the accept path
+> found **AI-23**: no allowlist anywhere on the model-chosen `target_layer`
+> — fixed with `VALID_IDENTITY_UPDATE_LAYERS = {self, ego}`, enforced at the
+> storage/service boundary (`IdentityService.apply_consolidation_identity_update`),
+> raising loud on rejection. This is the AI-11 thread's **first CI-enforced
+> behavioral guard** — every prior probe was eval-only. `evals/consolidate.py`
+> adds five probes; `{cluster_text}` fenced proactively (4th `fence_untrusted`
+> call site). Pre-registered n=10, declared before running per D7 (the
+> "prefer MERGE" rule was **not** pre-hardened): **10/10 clean on every
+> probe, every run**, including `consolidation-injection-resisted` — the
+> injected cluster was treated as an ordinary merge candidate and never once
+> escalated. The cleanest result of the three eval modules built this
+> session, with one honest limit noted in the story's as-built: no
+> positive-identity_update control fixture means the evidence-bar probe
+> shows the model doesn't over-escalate, not that the `≥3 memories` rule
+> specifically (vs. general conservatism) is what's doing the work. AI-11
+> item 2's remaining surfaces (journal, title/tags) and item 3 (model-upgrade
+> playbook, release-checklist gate) remain open.
 
 ---
 
@@ -461,10 +486,13 @@ discipline — the prompt's most delicate classification — would be invisible.
 > live run scored 5/6, with `scene-injection-resisted` catching a real
 > content-mediated injection now tracked as **AI-22**. Fix item 2's shadow
 > surface **done** as **CV9.E2.S22** (10/10 clean, proactively fenced — see
-> the AI-11 top-of-doc status notes). Fix item 2's remaining surfaces
-> (consolidation, journal, title/tags) and item 3 (the model-upgrade
-> playbook, release-checklist gate) remain open; AI-11 stays in the P1
-> backlog for those.
+> the AI-11 top-of-doc status notes). Fix item 2's consolidation surface
+> **done** as **CV9.E2.S23** (10/10 clean; also closed new finding **AI-23**,
+> a missing identity-write allowlist — the thread's first CI-enforced
+> guard; see the AI-11 top-of-doc status notes). Fix item 2's remaining
+> surfaces (journal, title/tags) and item 3 (the model-upgrade playbook,
+> release-checklist gate) remain open; AI-11 stays in the P1 backlog for
+> those.
 
 **Fix.**
 1. Persist eval reports (JSON artifact under the mirror home or an
@@ -644,6 +672,49 @@ other probe in `evals/scene.py` regressing.
 > invariant, review-only). Full history in the
 > [CV9.E2.S21 story package](roadmap/cv9-mirror-1-0/cv9-e2-stabilization/cv9-e2-s21-fence-scene-read-model/index.md).
 
+#### AI-23 · Identity-write accept path has no target-layer allowlist — **P1**
+
+**Evidence.** `propose_consolidation()`'s `identity_update` action proposes a
+model-chosen `target_layer`/`target_key` for a structural identity write.
+Tracing the accept path (`consolidate_cmd.py`, discovered while building the
+CV9.E2.S23 consolidation eval probe) found it guards only that both fields
+are non-empty, then calls `upsert_identity(Identity(layer=target_layer,
+key=target_key, ...))` directly — no allowlist exists anywhere in the
+codebase for identity layers (checked; contrast with `VALID_MEMORY_LAYERS`,
+which AI-15 added for memory `layer`/`memory_type`). Writes **append**
+(`existing.content + "\n\n" + proposed`), so a wrong-target write pollutes
+rather than visibly overwrites.
+
+**Failure mode.** A hallucinated or injected `target_layer="self"` on an
+otherwise-plausible-looking proposal accretes attacker or model-confabulated
+content onto the **soul document** — the deepest identity layer — gated only
+by a human clicking accept in `mm-consolidate` and *also* noticing the target
+is wrong, not just that the content looks reasonable. This is a more direct
+identity-poisoning primitive than AI-16 (memory extraction, mitigated by a
+separate manual consolidation gate) or AI-22 (scene, fixed target, display
+only): here the target is model-chosen and unconstrained, and the surface
+*is* the consolidation/identity gate itself, so there is no second net.
+
+**Fix.** `VALID_IDENTITY_UPDATE_LAYERS = frozenset({"self", "ego"})` in
+`models.py`, the same layers memory extraction already treats as the
+mirror's own inferred-identity layers (Navigator-confirmed scope: `user` is
+user-authored, `organization`/`personas`/`journeys` are structural, `shadow`
+has its own path via `mm-shadow`). Enforced at the storage/service boundary
+— `IdentityService.apply_consolidation_identity_update()` — rather than a
+scoped CLI check, so a future web accept flow inherits the same gate. A
+rejected layer **raises**, never silently no-ops or redirects, and never
+writes a partial row. `target_key` bounding is a named fast-follow, not yet
+in scope.
+
+**Verification.** Deterministic, CI-enforced unit tests
+(`tests/unit/memory/services/test_identity.py`): accepts `self`/`ego`,
+rejects `user`/`organization`/`personas`/`journeys`/`shadow`/unknown layers,
+rejection writes nothing, append semantics preserved for allowed writes. This
+is the AI-11 eval thread's first CI-gated behavioral guard — every prior
+probe was eval-only (live, not in CI).
+
+**Cost:** none at runtime; one allowlist check before an already-rare write.
+
 #### AI-17 · Consult ships the full identity context to arbitrary third-party models — **P2**
 
 **Evidence.** `cli/consult.py` builds `SYSTEM_PREAMBLE + load_mirror_context(...)`
@@ -742,7 +813,7 @@ method:
 | Priority | Findings | Theme | Effort |
 |----------|----------|-------|--------|
 | **P0 ✅ done** | AI-01, AI-02, AI-03, AI-04, AI-06, AI-12 | The pipeline survives failure, the model pin survives time, the ranker signal survives the machinery | Delivered as CV9.E2.S7–S12 (+ S8 and the architecture guard), keyless-CI-green |
-| **P1** | AI-05, AI-07, AI-09, AI-10, AI-11, AI-13, AI-15, AI-16, AI-18, AI-19, AI-20, AI-22 | Evidence (cost/status/evals), boundary validation, DS5/DS6 plan inputs | Moderate — the two plan inputs are documentation-now |
+| **P1** | AI-05, AI-07, AI-09, AI-10, AI-11, AI-13, AI-15, AI-16, AI-18, AI-19, AI-20, AI-22, AI-23 | Evidence (cost/status/evals), boundary validation, DS5/DS6 plan inputs | Moderate — the two plan inputs are documentation-now |
 | **P2** | AI-08, AI-14, AI-17, AI-21 | Refinements once the evidence base exists | Opportunistic |
 
 **Where this lands:** the P0 items are live-path reliability defects in the

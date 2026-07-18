@@ -19,6 +19,7 @@ EVAL_MODULES = [
     "evals.retrieval",
     "evals.scene",
     "evals.shadow",
+    "evals.consolidate",
 ]
 
 # CV9.E2.S19 (AI-11): evals that genuinely make no LLM call must declare an
