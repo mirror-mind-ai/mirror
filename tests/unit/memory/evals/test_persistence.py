@@ -61,11 +61,13 @@ class TestAppendRun:
         mocker.patch("pathlib.Path.open", side_effect=OSError("disk full"))
         append_run(_record())  # must not raise
 
-    def test_schema_version_defaults_to_one(self, mocker, tmp_path):
+    def test_schema_version_defaults_to_two(self, mocker, tmp_path):
+        # CV9.E2.S24 bumped the record shape to v2 with the additive
+        # suite_run_id field.
         mocker.patch("evals.persistence.resolve_mirror_home", return_value=tmp_path)
         append_run(_record())
         line = (tmp_path / "eval-history" / "x.jsonl").read_text().splitlines()[0]
-        assert json.loads(line)["schema_version"] == 1
+        assert json.loads(line)["schema_version"] == 2
 
 
 class TestReadHistory:
@@ -103,3 +105,46 @@ class TestReadHistory:
         records = read_history("x")
         assert records[0].model is None
         assert records[0].prompt_hash is None
+
+
+class TestSuiteRunId:
+    """CV9.E2.S24 (AI-11 item 3) — a suite_run_id correlates the per-eval
+    records written by one ``eval --all`` invocation into one queryable set.
+    """
+
+    def test_record_round_trips_suite_run_id(self, mocker, tmp_path):
+        mocker.patch("evals.persistence.resolve_mirror_home", return_value=tmp_path)
+        append_run(_record(suite_run_id="suite-abc"))
+        records = read_history("x")
+        assert records[0].suite_run_id == "suite-abc"
+
+    def test_standalone_record_defaults_suite_run_id_none(self, mocker, tmp_path):
+        mocker.patch("evals.persistence.resolve_mirror_home", return_value=tmp_path)
+        append_run(_record())
+        records = read_history("x")
+        assert records[0].suite_run_id is None
+
+    def test_reads_legacy_record_without_suite_run_id(self, mocker, tmp_path):
+        # A pre-S24 history line has no suite_run_id and schema_version=1. It
+        # must still parse (field defaults to None) — additive append log, no
+        # migration. This is the DB-architect's backward-read integrity check.
+        mocker.patch("evals.persistence.resolve_mirror_home", return_value=tmp_path)
+        path = tmp_path / "eval-history" / "x.jsonl"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        legacy = {
+            "eval_name": "x",
+            "started_at": "t0",
+            "ended_at": "t1",
+            "model": "m",
+            "prompt_hash": "h",
+            "score": 1.0,
+            "threshold": 0.8,
+            "passed": True,
+            "probes": [],
+            "schema_version": 1,
+        }
+        path.write_text(json.dumps(legacy) + "\n")
+        records = read_history("x")
+        assert len(records) == 1
+        assert records[0].suite_run_id is None
+        assert records[0].schema_version == 1

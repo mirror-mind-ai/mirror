@@ -158,6 +158,24 @@
 > specifically (vs. general conservatism) is what's doing the work. AI-11
 > item 2's remaining surfaces (journal, title/tags) and item 3 (model-upgrade
 > playbook, release-checklist gate) remain open.
+>
+> **Status (updated 2026-07-20).** AI-11 **item 3 done** as **CV9.E2.S24** —
+> the eval suite now runs as a whole and a gate uses it. `eval --all` discovers
+> every eval module by capability (any `evals/*.py` exposing `PROBES`, so item
+> 2's future journal/title-tags probes join the gate for free), runs the suite,
+> and exits non-zero naming which evals failed; a `suite_run_id` (additive
+> `EvalRunRecord` field, `schema_version` → 2) correlates the per-eval records
+> of one `--all` invocation. The **model-upgrade playbook** (baseline → swap →
+> re-run → per-probe diff, with the `prompt_hash`-equal + `model`-changed +
+> flip = model-attributable regression invariant, and single-run-smoke vs
+> n≥5-confirmation) and the **release gate** (a model-pin or `prompts.py`
+> change must clear a green `eval --all` or a recorded waiver) landed in the
+> development guide, with the stale §7 eval list corrected in
+> engineering-principles. Found and fixed in-cycle: an inline comment on the
+> `.gitignore` pattern line had silently disabled the `evals/.history/` ignore
+> since S19. **AI-11 now stays open only for item 2's two remaining surface
+> probes (journal classification, title/tags quality)** — item 1 (S19) and
+> item 3 (S24) are done.
 
 ---
 
@@ -489,10 +507,13 @@ discipline — the prompt's most delicate classification — would be invisible.
 > the AI-11 top-of-doc status notes). Fix item 2's consolidation surface
 > **done** as **CV9.E2.S23** (10/10 clean; also closed new finding **AI-23**,
 > a missing identity-write allowlist — the thread's first CI-enforced
-> guard; see the AI-11 top-of-doc status notes). Fix item 2's remaining
-> surfaces (journal, title/tags) and item 3 (the model-upgrade playbook,
-> release-checklist gate) remain open; AI-11 stays in the P1 backlog for
-> those.
+> guard; see the AI-11 top-of-doc status notes). Fix item 3 (the model-upgrade
+> playbook + release gate) **done** as **CV9.E2.S24**: `eval --all` runs the
+> whole suite by capability-discovery and gates non-zero on any failure, the
+> playbook makes a model swap a measured migration, and the release gate
+> requires a green suite (or a recorded waiver) for a model-pin/`prompts.py`
+> change. Only item 2's remaining surfaces (journal, title/tags) stay open,
+> keeping AI-11 in the P1 backlog for those.
 
 **Fix.**
 1. Persist eval reports (JSON artifact under the mirror home or an

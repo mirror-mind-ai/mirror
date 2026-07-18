@@ -31,6 +31,12 @@ class EvalRunRecord:
     ``model``/``prompt_hash`` are ``None`` for a genuinely prompt-free eval
     (e.g. keyword-based routing, pure scoring math) — a distinguishable state
     from "hash unchanged", not a fake/blank hash.
+
+    ``suite_run_id`` (CV9.E2.S24) correlates the per-eval records written by a
+    single ``eval --all`` invocation into one queryable set; it is ``None`` for
+    a standalone ``eval <name>`` run. Added with a default so pre-v2 history
+    lines (which lack the field) still parse — an additive append log, not a
+    migration.
     """
 
     eval_name: str
@@ -42,7 +48,8 @@ class EvalRunRecord:
     threshold: float
     passed: bool
     probes: list[dict] = field(default_factory=list)
-    schema_version: int = 1
+    schema_version: int = 2
+    suite_run_id: str | None = None
 
 
 def history_path(eval_name: str) -> Path:

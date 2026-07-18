@@ -478,9 +478,10 @@ hiding it). Materialize runtime skill copies from one canonical source
 rather than hand-forking them per runtime — the same DRY discipline as
 [§3](#3-code), applied to prompt space.
 
-**Evals lock behavior; the cadence is a rule.** Six probe modules live under
+**Evals lock behavior; the cadence is a rule.** Eight probe modules live under
 [`evals/`](../../evals/) (`extraction`, `reception`, `retrieval`, `routing`,
-`proportionality`, `scene`), run with `uv run python -m memory eval <name>`.
+`proportionality`, `scene`, `shadow`, `consolidate`), run with
+`uv run python -m memory eval <name>` or as a suite with `eval --all`.
 They hit real model APIs, cost a few cents, and are non-deterministic by
 design — never added to CI. Run them before changing a prompt, before
 shipping a change to extraction/routing/reception/consolidation/shadow
@@ -653,7 +654,8 @@ is true.
       pins, routing keywords, or extraction/routing/reception/consolidation/
       shadow logic: the relevant eval ran and is recorded; cost stays inside
       the one authority; the change degrades gracefully and says so
-      ([§7](#7-the-model-in-the-loop)).
+      ([§7](#7-the-model-in-the-loop)); a model-pin change clears a green
+      `eval --all` or a recorded waiver before release.
 - [ ] **Privacy and trust considered** — if the change touches untrusted
       content, secrets, or logging: content stays fenced as data, not
       instruction; secrets and identity content never reach a log
@@ -681,8 +683,11 @@ real gate is a hope, not a rule.
   — network-free, no baseline exceptions, every relative link and anchor
   under `docs/**` and every root `*.md` must resolve).
 - **Eval-enforced** (a real model, run deliberately, not on every push):
-  the six [`evals/`](../../evals/) probes — behavior drift is caught only
-  when someone runs them per the [§7](#7-the-model-in-the-loop) cadence.
+  the eight [`evals/`](../../evals/) probe modules (`eval --all` runs the
+  suite) — behavior drift is caught only when someone runs them per the
+  [§7](#7-the-model-in-the-loop) cadence, and a model-pin change additionally
+  requires a green `eval --all` before release
+  ([model upgrade playbook](development-guide.md#model-upgrade-playbook)).
 - **Review-only** (a human is the only gate today): cohesion, coupling,
   naming, dead code, DRY-and-wire, `SKILL.md`/`AGENTS.md` instruction
   quality, and all four runtime skill surfaces end to end

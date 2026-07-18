@@ -1,7 +1,8 @@
 """Eval runner: loads a named eval module, runs its probes, prints a report.
 
 Usage:
-    uv run python -m memory eval <name>
+    uv run python -m memory eval <name>       # one eval
+    uv run python -m memory eval --all        # the whole suite (release gate)
 
 Each eval module must expose:
     PROBES: list[EvalProbe]
@@ -12,9 +13,13 @@ from __future__ import annotations
 
 import hashlib
 import importlib
+import pkgutil
 import sys
+import uuid
+from collections.abc import Callable
 from datetime import datetime, timezone
 
+import evals
 from evals.persistence import EvalRunRecord, append_run, read_history
 from evals.types import EvalProbe, EvalReport, EvalResult
 
@@ -24,8 +29,12 @@ _BOLD = "\033[1m"
 _RESET = "\033[0m"
 
 
-def run_eval(eval_name: str) -> EvalReport:
-    """Load and run a named eval. Raises ValueError for unknown names."""
+def run_eval(eval_name: str, suite_run_id: str | None = None) -> EvalReport:
+    """Load and run a named eval. Raises ValueError for unknown names.
+
+    ``suite_run_id`` is stamped into the persisted record when this run is part
+    of an ``eval --all`` suite (CV9.E2.S24); ``None`` for a standalone run.
+    """
     module_path = f"evals.{eval_name}"
     try:
         module = importlib.import_module(module_path)
@@ -52,9 +61,49 @@ def run_eval(eval_name: str) -> EvalReport:
         report.results.append(EvalResult(probe_id=probe.id, passed=passed, notes=notes))
 
     ended_at = datetime.now(timezone.utc).isoformat()
-    _persist_run(eval_name, report, started_at, ended_at, eval_model, eval_prompts)
+    _persist_run(eval_name, report, started_at, ended_at, eval_model, eval_prompts, suite_run_id)
 
     return report
+
+
+def discover_eval_names() -> list[str]:
+    """Every eval module — defined as a module exposing a ``PROBES`` list — sorted.
+
+    Discovery is by capability, not a hand-maintained list, so a new eval
+    module joins ``eval --all`` (and the release gate) the moment it exists.
+    Infrastructure modules (runner, persistence, types, _support) expose no
+    PROBES and are excluded for free — no skip-list to drift.
+    """
+    names: list[str] = []
+    for info in pkgutil.iter_modules(evals.__path__):
+        module = importlib.import_module(f"evals.{info.name}")
+        if hasattr(module, "PROBES"):
+            names.append(info.name)
+    return sorted(names)
+
+
+def run_all(
+    names: list[str],
+    runner: Callable[..., EvalReport] | None = None,
+    on_report: Callable[[EvalReport], None] | None = None,
+) -> list[EvalReport]:
+    """Run each named eval under one shared ``suite_run_id``; return reports in order.
+
+    A probe or module failure in one eval never aborts the rest — the whole
+    suite always runs so ``eval --all`` gives the full picture, not a fail-fast
+    on the first red. ``runner`` is injectable so the aggregation seam is
+    testable without touching the network; ``on_report`` streams each report as
+    it completes (the CLI prints incrementally over a minutes-long live run).
+    """
+    runner = runner or run_eval
+    suite_run_id = str(uuid.uuid4())
+    reports: list[EvalReport] = []
+    for name in names:
+        report = runner(name, suite_run_id=suite_run_id)
+        if on_report is not None:
+            on_report(report)
+        reports.append(report)
+    return reports
 
 
 def _persist_run(
@@ -64,6 +113,7 @@ def _persist_run(
     ended_at: str,
     eval_model: str | None,
     eval_prompts: tuple[str, ...],
+    suite_run_id: str | None,
 ) -> None:
     """Build and persist one EvalRunRecord. Defense in depth: never raises,
     even if ``append_run``'s own fail-soft contract were ever violated — a
@@ -82,6 +132,7 @@ def _persist_run(
         threshold=report.threshold,
         passed=report.passed,
         probes=[{"id": r.probe_id, "passed": r.passed, "notes": r.notes} for r in report.results],
+        suite_run_id=suite_run_id,
     )
     try:
         append_run(record)
@@ -106,6 +157,24 @@ def print_report(report: EvalReport) -> None:
     total = len(report.results)
     outcome = f"{_BOLD}✓ PASS{_RESET}" if report.passed else f"{_BOLD}\033[31m✗ FAIL\033[0m{_RESET}"
     print(f"\n  {passes}/{total} passed  (threshold: {report.threshold:.2f})  {outcome}\n")
+
+
+def print_all_summary(reports: list[EvalReport]) -> None:
+    """Print the aggregate verdict of an ``eval --all`` run.
+
+    Names every failing eval explicitly — a bare count would force a re-run to
+    find which surface drifted.
+    """
+    failed = [r for r in reports if not r.passed]
+    passed_n = len(reports) - len(failed)
+    outcome = (
+        f"{_BOLD}\033[31m✗ SUITE FAIL\033[0m{_RESET}" if failed else f"{_BOLD}✓ SUITE PASS{_RESET}"
+    )
+    print(f"\n{_BOLD}══ eval --all {'═' * 48}{_RESET}")
+    print(f"  {passed_n}/{len(reports)} evals passed  {outcome}")
+    if failed:
+        print(f"  failing: {', '.join(r.eval_name for r in failed)}")
+    print()
 
 
 def print_history(eval_name: str, limit: int = 10) -> None:
@@ -142,8 +211,14 @@ def main(args: list[str] | None = None) -> int:
     """Entry point for `python -m memory eval <name> [--history [N]]`."""
     argv = args if args is not None else sys.argv[1:]
     if not argv:
-        print("Usage: python -m memory eval <name> [--history [N]]", file=sys.stderr)
+        print("Usage: python -m memory eval <name|--all> [--history [N]]", file=sys.stderr)
         return 1
+
+    # --all runs the whole suite and takes precedence over per-eval flags.
+    if "--all" in argv:
+        reports = run_all(discover_eval_names(), on_report=print_report)
+        print_all_summary(reports)
+        return 0 if all(r.passed for r in reports) else 1
 
     eval_name = argv[0]
 
