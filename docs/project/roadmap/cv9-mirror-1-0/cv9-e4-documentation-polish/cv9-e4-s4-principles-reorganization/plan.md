@@ -54,7 +54,7 @@ pointer:
 > **Service layer is the architecture.**  
 > `MemoryClient` is a façade. Services are the implementation. Storage handles
 > persistence. The import direction rule and full layer model are in
-> [docs/product/architecture.md](../../architecture.md).
+> [docs/product/architecture.md](../../../../../product/architecture.md).
 
 Do not reproduce the layer detail here. The pointer is sufficient.
 

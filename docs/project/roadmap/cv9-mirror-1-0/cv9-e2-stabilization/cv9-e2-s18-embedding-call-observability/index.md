@@ -88,5 +88,5 @@ item.
 ## See also
 
 - [Plan](plan.md) · [Test Guide](test-guide.md)
-- [Decisions — 1.0 flag posture (two-pass revisit gate)](../../../decisions.md)
-- [Debt D-003](../../../debt.md) · [AI Engineering Audit — AI-09](../../../ai-engineering-audit.md)
+- [Decisions — 1.0 flag posture (two-pass revisit gate)](../../../../decisions.md)
+- [Debt D-003](../../../../debt.md) · [AI Engineering Audit — AI-09](../../../../ai-engineering-audit.md)

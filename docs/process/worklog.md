@@ -2618,7 +2618,7 @@ added to the unified CLI.
 
 532 tests passing. ruff, pyright, git diff --check all clean.
 
-Reference: [CV1.E1 Shared Command Core](../project/roadmap/cv1-pi-runtime/cv1-e1-shared-command-core/index.md)
+Reference: [CV1 Pi Runtime — Shared Command Core](../project/roadmap/cv1-pi-runtime/index.md)
 
 ---
 
@@ -2632,7 +2632,7 @@ Extended `conversation-logger` with full Pi session lifecycle support:
 Extraction tracking added to `ConversationService` via `metadata.extracted`
 JSON field — no schema migration needed. 549 tests passing.
 
-Reference: [CV1.E3 Pi Session Lifecycle](../project/roadmap/cv1-pi-runtime/cv1-e3-pi-session-lifecycle/index.md)
+Reference: [CV1 Pi Runtime — Pi Session Lifecycle](../project/roadmap/cv1-pi-runtime/index.md)
 
 ---
 
@@ -2645,7 +2645,7 @@ extension ported from mirror-pi with English runtime names. Added
 
 552 tests passing.
 
-Reference: [CV1.E2 Pi Skill Surface](../project/roadmap/cv1-pi-runtime/cv1-e2-pi-skill-surface/index.md)
+Reference: [CV1 Pi Runtime — Pi Skill Surface](../project/roadmap/cv1-pi-runtime/index.md)
 
 ---
 
@@ -2662,7 +2662,7 @@ Fixed bug: `mirror-logger.ts` hardcoded `~/.mirror-minds/` instead of reading
 CV1 done condition met: dual-interface (Claude Code + Pi), shared Python core,
 all four epics complete, 552 tests passing.
 
-Reference: [CV1.E4 Pi Operational Validation](../project/roadmap/cv1-pi-runtime/cv1-e4-pi-operational-validation/index.md)
+Reference: [CV1 Pi Runtime — Pi Operational Validation](../project/roadmap/cv1-pi-runtime/index.md)
 
 ---
 

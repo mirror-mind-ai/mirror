@@ -101,5 +101,5 @@ CV18 is done when a user can enter Soul Mode, reach Possible Listenings, choose 
 ## References
 
 - [CV17 — Soul Mode](../cv17-soul-mode/index.md)
-- [Mirror Soul Mode handoff](../../explorations/mirror-soul-mode-gram-tica-ritual-e-visual/index.md)
-- [Product design proposal](../../explorations/mirror-soul-mode-gram-tica-ritual-e-visual/product-design-proposal.md)
+- Mirror Soul Mode handoff
+- Product design proposal

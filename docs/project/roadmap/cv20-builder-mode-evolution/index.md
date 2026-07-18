@@ -4,7 +4,7 @@
 
 **Status:** 🟢 In Progress
 
-**Exploration handoff:** [Ariad Builder DSL](../../explorations/ariad-builder-dsl/index.md)
+**Exploration handoff:** Ariad Builder DSL
 
 ---
 
@@ -109,6 +109,6 @@ CV20 is done when a journey can adopt Ariad, Builder can resume that journey fro
 
 ## References
 
-- [Ariad Builder DSL handoff](../../explorations/ariad-builder-dsl/index.md)
-- [Ariad Builder Method DSL](../../explorations/ariad-builder-dsl/method-dsl.md)
+- Ariad Builder DSL handoff
+- Ariad Builder Method DSL
 - [Development Guide](../../../process/development-guide.md)

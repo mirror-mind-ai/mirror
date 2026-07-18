@@ -100,5 +100,5 @@ caused a mock-resolution error unrelated to production code; fixed with
 
 - [Plan](plan.md) · [Test Guide](test-guide.md)
 - [AI Engineering Audit — AI-11](../../../../ai-engineering-audit.md)
-- [Decisions — 1.0 flag posture (two-pass quality signal)](../../../decisions.md)
+- [Decisions — 1.0 flag posture (two-pass quality signal)](../../../../decisions.md)
 - [CV9.E2.S18 — Embedding Call Observability (the cost half)](../cv9-e2-s18-embedding-call-observability/index.md)

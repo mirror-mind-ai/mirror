@@ -58,5 +58,5 @@ horizon, and recent movement.
 
 - [Plan](plan.md)
 - [Test Guide](test-guide.md)
-- [ES-002 Hierarchical Journeys](../../exploration/es-002-hierarchical-journeys.md)
+- [ES-002 Hierarchical Journeys](../../../exploration/es-002-hierarchical-journeys.md)
 - [CV15.DS1 Hierarchical Journey Organization](../cv15-ds1-hierarchical-journey-organization/index.md)

@@ -1153,7 +1153,7 @@ but the architectural and operational direction is no longer open.
 ### Default mirror home directory renamed from `~/.mirror` to `~/.mirror-minds`
 
 **Date:** 2026-05-18
-**Reference:** [Architecture — Database Schema](../architecture.md#7-database-schema), [REFERENCE — Identity (CV4 user home)](../../REFERENCE.md)
+**Reference:** [Architecture — Database Schema](../product/architecture.md#7-database-schema), [REFERENCE — Identity (CV4 user home)](../../REFERENCE.md)
 
 The default container for user mirror homes was renamed from `~/.mirror` to
 `~/.mirror-minds`. Two motivations:

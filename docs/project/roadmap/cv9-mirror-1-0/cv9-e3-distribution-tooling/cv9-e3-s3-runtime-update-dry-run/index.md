@@ -71,5 +71,5 @@ Out of scope:
 ## See also
 
 - [CV9.E3.S2 Runtime Status Health Checks](../cv9-e3-s2-runtime-status-health/index.md)
-- [Command Reference](../../../../../REFERENCE.md)
-- [Development Guide](../../../../process/development-guide.md)
+- [Command Reference](../../../../../../REFERENCE.md)
+- [Development Guide](../../../../../process/development-guide.md)

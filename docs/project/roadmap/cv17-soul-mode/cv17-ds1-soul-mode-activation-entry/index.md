@@ -68,4 +68,4 @@ Given another explicit mode is active, Soul Mode activation should make the tran
 ## References
 
 - [CV17 Soul Mode](../index.md)
-- [Product Design Proposal](../../../explorations/mirror-soul-mode-gram-tica-ritual-e-visual/product-design-proposal.md)
+- Product Design Proposal

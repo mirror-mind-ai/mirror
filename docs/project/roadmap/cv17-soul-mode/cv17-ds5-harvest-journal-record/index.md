@@ -68,4 +68,4 @@ Given the user never harvests, no journal entry is created from Soul Mode by def
 ## References
 
 - [CV17 Soul Mode](../index.md)
-- [Product Design Proposal](../../../explorations/mirror-soul-mode-gram-tica-ritual-e-visual/product-design-proposal.md)
+- Product Design Proposal

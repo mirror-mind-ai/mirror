@@ -86,4 +86,4 @@ is absorbing user-scoped runtime state.
 
 - [plan.md](plan.md) · [test-guide.md](test-guide.md)
 - [CV9.E2.S5 — Backup Destination Resolution](../cv9-e2-s5-backup-destination-resolution/index.md) — the same containment principle applied to backups
-- [Briefing D3 — Database is the runtime source of truth](../../../../project/briefing.md)
+- [Briefing D3 — Database is the runtime source of truth](../../../../briefing.md)

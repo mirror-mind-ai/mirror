@@ -55,4 +55,4 @@ Given the user responds inside the rite, Mirror can deepen once or twice without
 ## References
 
 - [CV17 Soul Mode](../index.md)
-- [Product Design Proposal](../../../explorations/mirror-soul-mode-gram-tica-ritual-e-visual/product-design-proposal.md)
+- Product Design Proposal

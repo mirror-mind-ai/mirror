@@ -92,4 +92,4 @@ git diff --check
 ## See also
 
 - [CV8.E6 Codex Runtime Implementation](../cv8-e6-codex-runtime-implementation/index.md)
-- [Development Guide](../../../process/development-guide.md)
+- [Development Guide](../../../../process/development-guide.md)

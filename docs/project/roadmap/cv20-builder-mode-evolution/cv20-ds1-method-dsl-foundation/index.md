@@ -42,4 +42,4 @@ DS1 is done. Builder can load, validate, and inspect the Ariad method definition
 
 ## References
 
-- [Ariad Builder Method DSL](../../../explorations/ariad-builder-dsl/method-dsl.md)
+- Ariad Builder Method DSL

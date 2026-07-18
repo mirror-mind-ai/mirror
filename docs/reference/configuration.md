@@ -190,7 +190,7 @@ The Configuration page does not dump `os.environ`, does not expose secrets, and 
 
 ## Environment
 
-See [MEMORY_ENV](#memory-env).
+See [MEMORY_ENV](#memory_env).
 
 ## Memory search model
 
@@ -218,8 +218,8 @@ See [MEMORY_ENV](#memory-env).
 
 ## LLM audit logging
 
-See [MEMORY_LOG_LLM_CALLS](#memory-log-llm-calls).
+See [MEMORY_LOG_LLM_CALLS](#memory_log_llm_calls).
 
 ## Conversation routing
 
-See [MEMORY_RECEPTION](#memory-reception).
+See [MEMORY_RECEPTION](#memory_reception).

@@ -68,4 +68,4 @@ Given the session has a fruit in maturation, no journal entry exists yet.
 ## References
 
 - [CV17 Soul Mode](../index.md)
-- [Product Design Proposal](../../../explorations/mirror-soul-mode-gram-tica-ritual-e-visual/product-design-proposal.md)
+- Product Design Proposal

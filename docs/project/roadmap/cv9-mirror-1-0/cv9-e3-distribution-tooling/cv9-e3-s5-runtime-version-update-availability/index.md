@@ -93,4 +93,4 @@ Out of scope:
 
 - [CV9.E3.S3 Runtime Update Dry Run](../cv9-e3-s3-runtime-update-dry-run/index.md)
 - [CV9.E3.S4 Runtime Backup and Recovery Prerequisite](../cv9-e3-s4-runtime-backup-recovery/index.md)
-- [Command Reference](../../../../../REFERENCE.md)
+- [Command Reference](../../../../../../REFERENCE.md)

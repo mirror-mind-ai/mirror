@@ -238,4 +238,4 @@ All unit tests mock `send_to_model` — no real LLM, no API key.
 
 ---
 
-**See also:** [CV7.E2 index](../index.md) · [draft-analysis §4.2](../../draft-analysis.md) · [E1 baseline scores](../../../../process/worklog.md)
+**See also:** [CV7.E2 index](../index.md) · [draft-analysis §4.2](../../draft-analysis.md) · [E1 baseline scores](../../../../../process/worklog.md)

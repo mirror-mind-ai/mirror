@@ -73,4 +73,4 @@ Given no living matter has emerged, Mirror should ask or reflect rather than sho
 ## References
 
 - [CV17 Soul Mode](../index.md)
-- [Product Design Proposal](../../../explorations/mirror-soul-mode-gram-tica-ritual-e-visual/product-design-proposal.md)
+- Product Design Proposal

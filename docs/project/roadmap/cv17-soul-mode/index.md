@@ -4,7 +4,7 @@
 
 **Status:** 🟡 Planned
 
-**Source exploration:** [Mirror Soul Mode, Ritual and Visual Grammar](../../explorations/mirror-soul-mode-gram-tica-ritual-e-visual/index.md)
+**Source exploration:** Mirror Soul Mode, Ritual and Visual Grammar
 
 ---
 
@@ -136,6 +136,6 @@ CV17 first release is done when a user can explicitly enter Soul Mode, see the r
 
 ## References
 
-- [Mirror Soul Mode handoff](../../explorations/mirror-soul-mode-gram-tica-ritual-e-visual/index.md)
-- [Product design proposal](../../explorations/mirror-soul-mode-gram-tica-ritual-e-visual/product-design-proposal.md)
-- [Handoff info](../../explorations/mirror-soul-mode-gram-tica-ritual-e-visual/handoff-info.md)
+- Mirror Soul Mode handoff
+- Product design proposal
+- Handoff info
