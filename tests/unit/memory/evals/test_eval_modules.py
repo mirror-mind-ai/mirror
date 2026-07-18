@@ -17,6 +17,7 @@ EVAL_MODULES = [
     "evals.proportionality",
     "evals.reception",
     "evals.retrieval",
+    "evals.scene",
 ]
 
 # CV9.E2.S19 (AI-11): evals that genuinely make no LLM call must declare an
