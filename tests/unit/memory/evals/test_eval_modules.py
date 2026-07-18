@@ -20,12 +20,21 @@ EVAL_MODULES = [
     "evals.scene",
     "evals.shadow",
     "evals.consolidate",
+    # CV9.E2.S25 additions — previously built but never added to this list, so
+    # their structural contract was never actually checked here (found and
+    # fixed in CV9.E2.S28 while adding retrieval_relevance below).
+    "evals.journal",
+    "evals.title_tags",
+    # CV9.E2.S28 (AI-14)
+    "evals.retrieval_relevance",
 ]
 
 # CV9.E2.S19 (AI-11): evals that genuinely make no LLM call must declare an
 # empty EVAL_PROMPTS/None EVAL_MODEL, not a fake hash — grounded from each
 # module's own docstring ("no LLM calls" / "deterministic math").
-_PROMPT_FREE_MODULES = {"evals.routing", "evals.retrieval"}
+# retrieval_relevance (CV9.E2.S28): frozen fixture, no live model call at eval
+# run time — genuinely prompt-free by the same standard, not an omission.
+_PROMPT_FREE_MODULES = {"evals.routing", "evals.retrieval", "evals.retrieval_relevance"}
 
 
 @pytest.fixture(params=EVAL_MODULES)

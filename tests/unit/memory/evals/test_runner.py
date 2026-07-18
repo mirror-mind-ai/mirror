@@ -360,6 +360,7 @@ class TestDiscoverEvalNames:
             "proportionality",
             "reception",
             "retrieval",
+            "retrieval_relevance",
             "routing",
             "scene",
             "shadow",
