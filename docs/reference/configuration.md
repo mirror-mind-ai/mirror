@@ -188,6 +188,18 @@ The Configuration page does not dump `os.environ`, does not expose secrets, and 
 
 **Effects:** once attempts reach this value the conversation is flagged quarantined and dropped from the pending extraction queue, so a poison-pill conversation is not retried at every session start and does not block the conversations queued behind it. The session-maintenance report names the quarantine count. Quarantine is sticky: a conversation quarantined by a transient outage stays quarantined until the flag is cleared.
 
+## MEMORY_MAINTENANCE_MAX_EXTRACTIONS
+
+**What it is:** the maximum number of pending conversations `extract_pending` processes in one session-start maintenance run.
+
+**Used by:** `session_maintenance`, on every session start. Eligible conversations (ended, journey-bound, ≥4 messages, not quarantined) are processed oldest-ended first; any remainder stays pending and carries over to the next session start rather than being dropped.
+
+**How to change it:** set `MEMORY_MAINTENANCE_MAX_EXTRACTIONS` to a positive integer. Absence defaults to `10`.
+
+**Active in code:** yes. It maps to `config.MEMORY_MAINTENANCE_MAX_EXTRACTIONS`.
+
+**Effects:** bounds the worst-case spend and latency of a single session start — each processed conversation costs at least 2 LLM calls plus up to ~9 embedding calls. Without a cap, a backlog (a gap in usage, a dead API key, a quarantine-adjacent failure period) turns the next session start into a long, invisible, unbounded spend burst. The session-maintenance report names the carried-over count when it is greater than zero, so a chronic backlog (more eligible conversations generated per session than the cap drains) stays visible instead of silently lagging.
+
 ## Environment
 
 See [MEMORY_ENV](#memory_env).

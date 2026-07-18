@@ -10,7 +10,11 @@ from pathlib import Path
 
 from memory.cli.common import db_path_from_mirror_home
 from memory.client import MemoryClient
-from memory.config import MIRROR_HOME_REQUIRED_HINT, MUTE_FLAG_PATH
+from memory.config import (
+    MEMORY_MAINTENANCE_MAX_EXTRACTIONS,
+    MIRROR_HOME_REQUIRED_HINT,
+    MUTE_FLAG_PATH,
+)
 
 _DEFAULT_PI_SESSIONS_DIR = Path.home() / ".pi" / "agent" / "sessions"
 
@@ -338,16 +342,25 @@ def end_session(
 # --- Pi session lifecycle ---
 
 
-def extract_pending(mirror_home: str | Path | None = None) -> int:
+def extract_pending(mirror_home: str | Path | None = None, limit: int | None = None) -> int:
     """Extract memories from ended conversations not yet processed.
 
     Each conversation is isolated: a failure (provider outage, poison-pill
     transcript, auth error) is recorded and skipped so it cannot crash the
     batch or block the conversations queued behind it. Returns the number of
     conversations successfully extracted.
+
+    ``limit`` bounds worst-case startup spend (CV9.E2.S26, AI-05): at most
+    ``limit`` conversations are processed per call, oldest-ended first. Any
+    remainder is left pending and carries over to the next call (typically the
+    next session start) rather than being silently dropped. Defaults to
+    ``MEMORY_MAINTENANCE_MAX_EXTRACTIONS`` so a backlog can never turn one
+    session start into an unbounded, invisible spend loop.
     """
+    if limit is None:
+        limit = MEMORY_MAINTENANCE_MAX_EXTRACTIONS
     mem = _memory_client(mirror_home)
-    pending = mem.store.get_unextracted_conversations()
+    pending = mem.store.get_unextracted_conversations(limit=limit)
     extracted = 0
     for conv in pending:
         try:
@@ -384,6 +397,23 @@ def _count_parse_failed_conversations(mirror_home: str | Path | None = None) -> 
     try:
         mem = _memory_client(mirror_home)
         return mem.store.count_conversations_with_extraction_status("parse_failed")
+    except Exception:
+        return 0
+    finally:
+        if mem is not None:
+            mem.close()
+
+
+def _count_carried_over_conversations(mirror_home: str | Path | None = None) -> int:
+    """Conversations still eligible for extraction after a capped run (CV9.E2.S26, AI-05).
+
+    Held in a local for the whole read for the same closed-connection reason as
+    ``_count_quarantined_conversations``.
+    """
+    mem = None
+    try:
+        mem = _memory_client(mirror_home)
+        return mem.store.count_unextracted_conversations()
     except Exception:
         return 0
     finally:
@@ -502,6 +532,12 @@ def session_maintenance(mirror_home: str | Path | None = None) -> str:
     if parse_failed:
         parts.append(
             f"⚠ {parse_failed} conversation(s) with unreadable model output (parse_failed)"
+        )
+    carried_over = _count_carried_over_conversations(mirror_home)
+    if carried_over:
+        parts.append(
+            f"{carried_over} conversation(s) carried over to the next run "
+            "(maintenance extraction budget)"
         )
     return "\n".join(parts)
 

@@ -130,6 +130,83 @@ def test_count_quarantined_conversations(store):
     assert store.count_quarantined_conversations() == 2
 
 
+# --- CV9.E2.S26 (AI-05) — budgeted maintenance extraction ---
+
+
+def _make_eligible_at(store, conv_id, ended_at):
+    """An eligible conversation with an explicit ended_at, for ordering tests."""
+    store.create_conversation(
+        Conversation(
+            id=conv_id,
+            interface="cli",
+            journey="mirror",
+            ended_at=ended_at,
+        )
+    )
+    for i in range(4):
+        store.add_message(Message(conversation_id=conv_id, role="user", content=f"m{i}"))
+
+
+class TestGetUnextractedConversationsLimit:
+    def test_no_limit_returns_all_eligible(self, store):
+        _make_eligible(store, "a")
+        _make_eligible(store, "b")
+        assert len(store.get_unextracted_conversations()) == 2
+
+    def test_limit_caps_the_result_count(self, store):
+        for i in range(15):
+            _make_eligible_at(store, f"c{i}", f"2026-01-{i + 1:02d}T00:00:00Z")
+        result = store.get_unextracted_conversations(limit=10)
+        assert len(result) == 10
+
+    def test_limit_returns_oldest_first(self, store):
+        _make_eligible_at(store, "newest", "2026-01-03T00:00:00Z")
+        _make_eligible_at(store, "oldest", "2026-01-01T00:00:00Z")
+        _make_eligible_at(store, "middle", "2026-01-02T00:00:00Z")
+        result = store.get_unextracted_conversations(limit=2)
+        assert [c.id for c in result] == ["oldest", "middle"]
+
+    def test_limit_larger_than_pending_returns_all(self, store):
+        _make_eligible(store, "only-one")
+        result = store.get_unextracted_conversations(limit=10)
+        assert len(result) == 1
+
+    def test_limit_none_still_excludes_quarantined(self, store):
+        _make_eligible(store, "healthy")
+        _make_eligible(store, "quarantined", quarantined=True)
+        result = store.get_unextracted_conversations(limit=10)
+        assert {c.id for c in result} == {"healthy"}
+
+
+class TestCountUnextractedConversations:
+    def test_counts_all_eligible(self, store):
+        _make_eligible(store, "a")
+        _make_eligible(store, "b")
+        _make_eligible(store, "c")
+        assert store.count_unextracted_conversations() == 3
+
+    def test_excludes_quarantined(self, store):
+        _make_eligible(store, "healthy")
+        _make_eligible(store, "quarantined", quarantined=True)
+        assert store.count_unextracted_conversations() == 1
+
+    def test_excludes_already_extracted(self, store):
+        _make_eligible(store, "healthy")
+        _make_eligible(store, "done", extracted=True)
+        assert store.count_unextracted_conversations() == 1
+
+    def test_zero_when_none_pending(self, store):
+        assert store.count_unextracted_conversations() == 0
+
+    def test_matches_get_unextracted_conversations_predicate(self, store):
+        # The count must reflect the SAME eligible set get_unextracted_conversations
+        # returns, regardless of any limit passed to the latter — this is what lets
+        # session_maintenance compute "carried over" as count() after a capped run.
+        for i in range(5):
+            _make_eligible_at(store, f"c{i}", f"2026-01-{i + 1:02d}T00:00:00Z")
+        assert store.count_unextracted_conversations() == len(store.get_unextracted_conversations())
+
+
 def test_count_conversations_with_extraction_status(store):
     for cid, status in (("p1", "parse_failed"), ("p2", "parse_failed"), ("ok1", "ok")):
         store.create_conversation(

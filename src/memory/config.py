@@ -349,6 +349,12 @@ REINFORCEMENT_DECAY_DAYS = int(os.getenv("MEMORY_REINFORCEMENT_DECAY_DAYS", "180
 REINFORCEMENT_USE_WEIGHT = float(os.getenv("MEMORY_REINFORCEMENT_USE_WEIGHT", "0.7"))
 REINFORCEMENT_RETRIEVAL_WEIGHT = float(os.getenv("MEMORY_REINFORCEMENT_RETRIEVAL_WEIGHT", "0.3"))
 
+# Maintenance extraction budget (CV9.E2.S26, AI-05) — max conversations
+# extract_pending() processes in one session-start maintenance run. Bounds
+# worst-case startup spend (LLM calls + embeddings) when a backlog has
+# accumulated; the remainder carries over to the next session start.
+MEMORY_MAINTENANCE_MAX_EXTRACTIONS = int(os.getenv("MEMORY_MAINTENANCE_MAX_EXTRACTIONS", "10"))
+
 
 # Observability (AI-09 / CV9.E2.S13) — MEMORY_LOG_LLM_CALLS = off | metadata | full.
 # Default "metadata": always record role/model/tokens/latency/cost/conversation,

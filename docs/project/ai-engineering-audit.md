@@ -176,6 +176,42 @@
 > since S19. **AI-11 now stays open only for item 2's two remaining surface
 > probes (journal classification, title/tags quality)** — item 1 (S19) and
 > item 3 (S24) are done.
+>
+> **Status (updated 2026-07-20).** **AI-11 fully closed** by CV9.E2.S25 — the
+> last two item-2 surfaces (journal classification, conversation title/tags)
+> now have eval probes. `evals/title_tags.py` (6 probes: title captures topic,
+> bounded/no-names, safe-null trivial, injection-resisted; tags capture themes,
+> exclude noise) and `evals/journal.py` (5 probes, with the three layer probes
+> pre-registered n=10 per ai-engineer review: self/ego/shadow criteria). These
+> are quality surfaces (regression detection across model swaps), distinct from
+> the injection/identity class of scene/shadow/consolidation. Closed in the
+> same story: **AI-24** — journal layer classification bypassed the AI-15
+> allowlist; fixed with observable surface-local coercion (invalid → `"ego"`)
+> using imported `VALID_MEMORY_LAYERS`, deterministic CI unit test, and D-008
+> registered for the broader `add_memory`-seam validation. AI-11 is now done:
+> item 1 (S19 persistence + trend), item 2 (S20 scene + S22 shadow + S23
+> consolidation + S25 journal/title-tags), item 3 (S24 `eval --all` gate +
+> playbook). The audit's conceptual core — *"no gate uses them"* — is closed.
+>
+> **Status (updated 2026-07-21).** **AI-05 closed** by **CV9.E2.S26**:
+> `extract_pending` now caps a session-start maintenance run at
+> `MEMORY_MAINTENANCE_MAX_EXTRACTIONS` (default 10) eligible conversations,
+> processed oldest-ended first (`get_unextracted_conversations(limit=...)`
+> gained `ORDER BY c.ended_at ASC LIMIT ?`). The remainder is never dropped —
+> it carries over to the next session start, and a new
+> `count_unextracted_conversations()` (same predicate, so quarantined
+> conversations never consume the budget) surfaces the carried-over count in
+> the session-maintenance report whenever it is greater than zero, keeping a
+> chronic backlog visible instead of silently lagging. The report wording is
+> deliberately **"carried over"** — checked against both `skipped` (AI-21's
+> journey-less-conversation vocabulary) and `deferred`
+> (`session_start_fast`'s whole-maintenance-deferred vocabulary) to keep the
+> operator's mental model of these three distinct states disjoint. This
+> bounds the worst-case spend/latency of a single session start (previously
+> unbounded: every pending conversation, serially, in one shot) without
+> capping total system throughput — a backlog now drains deterministically
+> over successive session starts rather than either hanging one session or
+> silently growing forever.
 
 ---
 
@@ -898,20 +934,4 @@ grows:
 [CV9.E2 — Stabilization](roadmap/cv9-mirror-1-0/cv9-e2-stabilization/index.md) ·
 [CV22 index — Security Riders (AI-18/AI-19 land here)](roadmap/cv22-typescript-core-port/index.md) ·
 [Decisions](decisions.md) · [Engineering Principles](../process/engineering-principles.md)
->
-> **Status (updated 2026-07-20).** **AI-11 fully closed** by CV9.E2.S25 — the
-> last two item-2 surfaces (journal classification, conversation title/tags)
-> now have eval probes. `evals/title_tags.py` (6 probes: title captures topic,
-> bounded/no-names, safe-null trivial, injection-resisted; tags capture themes,
-> exclude noise) and `evals/journal.py` (5 probes, with the three layer probes
-> pre-registered n=10 per ai-engineer review: self/ego/shadow criteria). These
-> are quality surfaces (regression detection across model swaps), distinct from
-> the injection/identity class of scene/shadow/consolidation. Closed in the
-> same story: **AI-24** — journal layer classification bypassed the AI-15
-> allowlist; fixed with observable surface-local coercion (invalid → `"ego"`)
-> using imported `VALID_MEMORY_LAYERS`, deterministic CI unit test, and D-008
-> registered for the broader `add_memory`-seam validation. AI-11 is now done:
-> item 1 (S19 persistence + trend), item 2 (S20 scene + S22 shadow + S23
-> consolidation + S25 journal/title-tags), item 3 (S24 `eval --all` gate +
-> playbook). The audit's conceptual core — *"no gate uses them"* — is closed.
 

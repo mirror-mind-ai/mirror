@@ -93,6 +93,108 @@ class TestExtractPendingIsolation:
         assert _meta(mem, poison).get("extraction_attempts") == 1
 
 
+class TestExtractPendingBudget:
+    """CV9.E2.S26 (AI-05) — extract_pending caps worst-case startup spend."""
+
+    def _ended_conversations_at(self, mem, n, start="2026-01-01T00:00:00Z"):
+        """n eligible conversations with distinct, increasing ended_at timestamps."""
+        from datetime import datetime, timedelta
+
+        base = datetime.fromisoformat(start.replace("Z", "+00:00"))
+        ids = []
+        for i in range(n):
+            conv = mem.conversations.start_conversation(interface="cli", journey="mirror")
+            for j in range(4):
+                mem.conversations.add_message(conv.id, role="user", content=f"clean {j}")
+            mem.conversations.end_conversation(conv.id, extract=False)
+            ended_at = (base + timedelta(minutes=i)).isoformat().replace("+00:00", "Z")
+            mem.store.conn.execute(
+                "UPDATE conversations SET ended_at = ? WHERE id = ?", (ended_at, conv.id)
+            )
+            ids.append(conv.id)
+        mem.store.conn.commit()
+        return ids
+
+    def test_default_cap_processes_at_most_ten(self, mocker, tmp_path):
+        _patch_pipeline(mocker)
+        mem = _client(tmp_path)
+        self._ended_conversations_at(mem, 15)
+        mocker.patch("memory.cli.conversation_logger._memory_client", return_value=mem)
+        from memory.cli.conversation_logger import extract_pending
+
+        extracted = extract_pending()
+
+        assert extracted == 10
+        assert mem.store.count_unextracted_conversations() == 5
+
+    def test_second_run_drains_the_carried_over_remainder(self, mocker, tmp_path):
+        _patch_pipeline(mocker)
+        mem = _client(tmp_path)
+        self._ended_conversations_at(mem, 15)
+        mocker.patch("memory.cli.conversation_logger._memory_client", return_value=mem)
+        from memory.cli.conversation_logger import extract_pending
+
+        extract_pending()  # first run: 10 processed, 5 carried over
+        second = extract_pending()  # second run: drains the remainder
+
+        assert second == 5
+        assert mem.store.count_unextracted_conversations() == 0
+
+    def test_processes_all_when_pending_is_exactly_the_cap(self, mocker, tmp_path):
+        _patch_pipeline(mocker)
+        mem = _client(tmp_path)
+        self._ended_conversations_at(mem, 10)
+        mocker.patch("memory.cli.conversation_logger._memory_client", return_value=mem)
+        from memory.cli.conversation_logger import extract_pending
+
+        assert extract_pending() == 10
+        assert mem.store.count_unextracted_conversations() == 0
+
+    def test_processes_all_when_under_the_cap_regression(self, mocker, tmp_path):
+        # Pre-S26 behavior preserved: a small backlog is fully processed in one run.
+        _patch_pipeline(mocker)
+        mem = _client(tmp_path)
+        self._ended_conversations_at(mem, 3)
+        mocker.patch("memory.cli.conversation_logger._memory_client", return_value=mem)
+        from memory.cli.conversation_logger import extract_pending
+
+        assert extract_pending() == 3
+
+    def test_explicit_limit_overrides_the_config_default(self, mocker, tmp_path):
+        _patch_pipeline(mocker)
+        mem = _client(tmp_path)
+        self._ended_conversations_at(mem, 5)
+        mocker.patch("memory.cli.conversation_logger._memory_client", return_value=mem)
+        from memory.cli.conversation_logger import extract_pending
+
+        assert extract_pending(limit=2) == 2
+
+    def test_config_override_changes_the_default_cap(self, mocker, tmp_path):
+        mocker.patch("memory.cli.conversation_logger.MEMORY_MAINTENANCE_MAX_EXTRACTIONS", 3)
+        _patch_pipeline(mocker)
+        mem = _client(tmp_path)
+        self._ended_conversations_at(mem, 5)
+        mocker.patch("memory.cli.conversation_logger._memory_client", return_value=mem)
+        from memory.cli.conversation_logger import extract_pending
+
+        assert extract_pending() == 3
+
+    def test_oldest_ended_conversations_processed_first(self, mocker, tmp_path):
+        _patch_pipeline(mocker)
+        mem = _client(tmp_path)
+        ids = self._ended_conversations_at(mem, 5)
+        mocker.patch("memory.cli.conversation_logger._memory_client", return_value=mem)
+        from memory.cli.conversation_logger import extract_pending
+
+        extract_pending(limit=2)
+
+        # The two oldest (first created, per _ended_conversations_at's increasing
+        # timestamps) are extracted; the rest remain pending.
+        assert _meta(mem, ids[0]).get("extracted") is True
+        assert _meta(mem, ids[1]).get("extracted") is True
+        assert _meta(mem, ids[4]).get("extracted") is not True
+
+
 class TestCloseStaleOrphansIsolation:
     def test_all_non_active_orphans_close_despite_a_failure(self, mocker, tmp_path):
         _patch_pipeline(mocker)
@@ -230,3 +332,68 @@ class TestSessionMaintenanceReport:
         from memory.cli.conversation_logger import session_maintenance
 
         assert "unreadable" not in session_maintenance().lower()
+
+    def test_reports_carried_over_count_when_backlog_remains(self, mocker):
+        # CV9.E2.S26 (AI-05): after a capped extraction run, the remaining
+        # eligible count is reported so a chronic backlog stays visible.
+        for step in (
+            "close_stale_orphans",
+            "backfill_pi_sessions",
+            "retitle_pending_conversations",
+        ):
+            mocker.patch(f"memory.cli.conversation_logger.{step}", return_value=0)
+        mocker.patch("memory.cli.conversation_logger.extract_pending", return_value=10)
+        mock_mem = MagicMock()
+        mock_mem.store.count_quarantined_conversations.return_value = 0
+        mock_mem.store.count_conversations_with_extraction_status.return_value = 0
+        mock_mem.store.count_unextracted_conversations.return_value = 5
+        mocker.patch("memory.cli.conversation_logger._memory_client", return_value=mock_mem)
+
+        from memory.cli.conversation_logger import session_maintenance
+
+        report = session_maintenance()
+
+        assert "5" in report
+        assert "carried over" in report.lower()
+
+    def test_no_carried_over_line_when_backlog_fully_drained(self, mocker):
+        for step in (
+            "close_stale_orphans",
+            "backfill_pi_sessions",
+            "retitle_pending_conversations",
+        ):
+            mocker.patch(f"memory.cli.conversation_logger.{step}", return_value=0)
+        mocker.patch("memory.cli.conversation_logger.extract_pending", return_value=3)
+        mock_mem = MagicMock()
+        mock_mem.store.count_quarantined_conversations.return_value = 0
+        mock_mem.store.count_conversations_with_extraction_status.return_value = 0
+        mock_mem.store.count_unextracted_conversations.return_value = 0
+        mocker.patch("memory.cli.conversation_logger._memory_client", return_value=mock_mem)
+
+        from memory.cli.conversation_logger import session_maintenance
+
+        assert "carried over" not in session_maintenance().lower()
+
+    def test_carried_over_wording_does_not_collide_with_skipped_or_deferred(self, mocker):
+        # Word-collision guard (prompt-engineer, S25 precedent): "skipped" is
+        # AI-21's journey-less-conversation vocabulary; "deferred" is
+        # session_start_fast's whole-maintenance-deferred vocabulary. The
+        # per-conversation carry-over count must use neither.
+        for step in (
+            "close_stale_orphans",
+            "backfill_pi_sessions",
+            "retitle_pending_conversations",
+        ):
+            mocker.patch(f"memory.cli.conversation_logger.{step}", return_value=0)
+        mocker.patch("memory.cli.conversation_logger.extract_pending", return_value=10)
+        mock_mem = MagicMock()
+        mock_mem.store.count_quarantined_conversations.return_value = 0
+        mock_mem.store.count_conversations_with_extraction_status.return_value = 0
+        mock_mem.store.count_unextracted_conversations.return_value = 5
+        mocker.patch("memory.cli.conversation_logger._memory_client", return_value=mock_mem)
+
+        from memory.cli.conversation_logger import session_maintenance
+
+        report = session_maintenance()
+        assert "skipped" not in report.lower()
+        assert "deferred" not in report.lower()
