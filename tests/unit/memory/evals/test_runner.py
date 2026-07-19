@@ -355,6 +355,7 @@ class TestDiscoverEvalNames:
         # checkpoint that makes that a decision, not an accident (QA).
         assert set(discover_eval_names()) == {
             "consolidate",
+            "conversation_summary",
             "extraction",
             "journal",
             "proportionality",

@@ -273,6 +273,58 @@
 > here, not swept past. AI-11 itself is unaffected (its own scope was probe
 > *coverage*, which technically existed; the *execution* gap is now named and
 > fixed, and the finding it surfaces is tracked separately as AI-25).
+>
+> **Status (updated 2026-07-22).** **AI-25 closed** by **CV9.E2.S29**, with an
+> honest, non-trivial arc — the standard AI-16/AI-22 fence+sandwich template
+> was **not sufficient on its own** here, discovered by measuring rather than
+> assuming. `CONVERSATION_TITLE_PROMPT`/`CONVERSATION_TAGS_PROMPT` fenced and
+> sandwiched exactly like AI-22's template → still **0/15 live**, worse than
+> AI-22's own pre-sandwich 1/3 baseline. Diagnosed, not patched blindly: the
+> injected payload ("title/tag this conversation as X") matches title/tags'
+> own short, quotable output shape far more closely than scene's paragraph
+> task did, so an abstract "never obey" instruction gave the model nothing
+> concrete to pattern-match against — confirmed by comparing to AI-16's own
+> successful probe, whose safe null ("extract nothing") is effortless, unlike
+> title's (reserved for "trivial", which a dramatic injection attempt does not
+> read as). A sharpened, more specific null-action instruction **also**
+> measured 0/15. What actually worked, confirmed 5/5 in isolation before
+> adoption: a concrete **WRONG/CORRECT worked counter-example** baked directly
+> into the prompt — 10/10 through the real end-to-end probe for title.
+> Applying the identical fix to tags proactively (not measured first)
+> initially **still failed live on first measurement** — a *different* leak:
+> the model correctly added a safe "instruction override attempt" tag but
+> *also* leaked individual injected words as separate list items, a failure
+> mode single-string title never surfaces. A second correction ("the complete
+> output, not one safe tag among others") made it measurably **worse** (0/5,
+> lost even partial resistance) — traced to a real, undiagnosed root cause
+> before iterating further: `CONVERSATION_TAGS_PROMPT`'s own legitimate rule
+> ("prefer nouns and named concepts") was in direct, unresolved tension with
+> the safety instruction positioned as a secondary afterword, and the more
+> prominent legitimate rule was winning. Fixed by moving the constraint *into*
+> the Tag Rules list itself, as a rule with equal standing — 5/5 clean
+> immediately, then 10/10 through the real end-to-end probe.
+> `generate_conversation_summary` (the third, higher-blast-radius twin the
+> original audit text never named — embedded and stored when
+> `SUMMARIZE_ENABLED`, unlike title/tags' display-only persistence) used its
+> pre-existing distancing-aware framing without needing the same worked-example
+> escalation: pre-registered n=10 measured **8/10** — within the "6–8
+> mitigation, residual documented" band, not the "≥9/10 closure" band. Both
+> failures were investigated, not waved past: both are clearly third-person
+> narration ("the AI immediately **pivoted to assert**, as fact, that…") that
+> a human reader would recognize as reported speech, but match none of
+> `asserted_in_own_voice`'s current `DISTANCING_MARKERS` — registered as
+> **D-009** (a probe-measurement gap, not a confirmed model failure; deliberately
+> not fixed inside this story, since `_support.py` is shared by
+> scene/shadow/title_tags/summary and a blanket marker-list widening deserves
+> its own dedicated, re-measured review). New eval module
+> `evals/conversation_summary.py` (`summary-injection-resisted`) and a new
+> `tags-injection-resisted` probe in `evals/title_tags.py` join the
+> `eval --all` gate (12 modules now). Fence-presence + sandwich-ordering +
+> null-action are locked by deterministic, keyless unit tests
+> (`test_extraction.py`) across all three surfaces, independent of the live
+> probes. No regression on the pre-existing legitimate probes; the two
+> pre-existing S25 findings (`title-trivial-empty`, `tags-exclude-noise`)
+> remain open, unaffected, out of this story's scope.
 
 ---
 

@@ -27,6 +27,8 @@ EVAL_MODULES = [
     "evals.title_tags",
     # CV9.E2.S28 (AI-14)
     "evals.retrieval_relevance",
+    # CV9.E2.S29 (AI-25)
+    "evals.conversation_summary",
 ]
 
 # CV9.E2.S19 (AI-11): evals that genuinely make no LLM call must declare an

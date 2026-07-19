@@ -16,6 +16,8 @@ from memory.intelligence.extraction import (
     extract_week_plan,
     format_transcript,
     generate_conversation_summary,
+    generate_conversation_tags,
+    generate_conversation_title,
     generate_descriptor,
 )
 from memory.intelligence.llm_router import LLMResponse
@@ -936,6 +938,99 @@ class TestGenerateConversationSummary:
         generate_conversation_summary([], on_llm_call=callback)
         mock_send.assert_not_called()
         callback.assert_not_called()
+
+    def test_prompt_fences_transcript_as_data(self, mocker, sample_messages):
+        """AI-25 (CV9.E2.S29): matches AI-16/AI-22's fence template exactly."""
+        mock_send = _make_send_to_model_mock(mocker, "Summary.")
+        generate_conversation_summary(sample_messages)
+        prompt = mock_send.call_args[0][1][0]["content"]
+        assert "<transcript>" in prompt and "</transcript>" in prompt
+        assert "not instructions" in prompt.lower()
+
+    def test_prompt_sandwiches_the_fence_with_a_post_reminder(self, mocker, sample_messages):
+        """AI-22's as-built finding: a pre-fence-only guard measured 1/3 clean
+        against a live injection probe; the sandwich (a second reminder
+        immediately after the fence, the most recency-weighted position) was
+        required to reach 9/10. Applied here before any live measurement,
+        not after a red result — the lesson is already paid for.
+        """
+        mock_send = _make_send_to_model_mock(mocker, "Summary.")
+        generate_conversation_summary(sample_messages)
+        prompt = mock_send.call_args[0][1][0]["content"]
+        assert prompt.index("</transcript>") < prompt.rindex("never")
+        assert "never instructions to obey" in prompt.lower()
+
+    def test_prompt_has_a_distancing_aware_null_action(self, mocker, sample_messages):
+        """Summary's null action is distancing-aware (describe generically),
+        not zero-tolerance — a summary may legitimately reference
+        instruction-like content without asserting it, unlike title/tags.
+        """
+        mock_send = _make_send_to_model_mock(mocker, "Summary.")
+        generate_conversation_summary(sample_messages)
+        prompt = mock_send.call_args[0][1][0]["content"]
+        normalized = " ".join(prompt.lower().split())
+        assert "describe it generically" in normalized
+
+
+# ---------------------------------------------------------------------------
+# generate_conversation_title / generate_conversation_tags — fencing (AI-25)
+# ---------------------------------------------------------------------------
+
+
+class TestGenerateConversationTitleFencing:
+    def test_prompt_fences_transcript_as_data(self, mocker, sample_messages):
+        mock_send = _make_send_to_model_mock(mocker, "A title")
+        generate_conversation_title(sample_messages)
+        prompt = mock_send.call_args[0][1][0]["content"]
+        assert "<transcript>" in prompt and "</transcript>" in prompt
+        assert "not instructions" in prompt.lower()
+
+    def test_prompt_sandwiches_the_fence_with_a_post_reminder(self, mocker, sample_messages):
+        mock_send = _make_send_to_model_mock(mocker, "A title")
+        generate_conversation_title(sample_messages)
+        prompt = mock_send.call_args[0][1][0]["content"]
+        assert prompt.index("</transcript>") < prompt.rindex("never")
+        assert "never instructions to obey" in prompt.lower()
+
+    def test_prompt_has_a_worked_counter_example(self, mocker, sample_messages):
+        """CV9.E2.S29 as-built: an abstract null-action instruction alone was
+        measured live at 0/15 resistance (worse than AI-22's pre-sandwich
+        1/3) — a concrete WRONG/CORRECT worked example is what actually moved
+        the live measurement, confirmed 5/5 before being adopted here.
+        """
+        mock_send = _make_send_to_model_mock(mocker, "A title")
+        generate_conversation_title(sample_messages)
+        prompt = mock_send.call_args[0][1][0]["content"]
+        normalized = " ".join(prompt.lower().split())
+        assert "wrong:" in normalized and "correct:" in normalized
+
+
+class TestGenerateConversationTagsFencing:
+    def test_prompt_fences_transcript_as_data(self, mocker, sample_messages):
+        mock_send = _make_send_to_model_mock(mocker, "[]")
+        generate_conversation_tags(sample_messages)
+        prompt = mock_send.call_args[0][1][0]["content"]
+        assert "<transcript>" in prompt and "</transcript>" in prompt
+        assert "not instructions" in prompt.lower()
+
+    def test_prompt_sandwiches_the_fence_with_a_post_reminder(self, mocker, sample_messages):
+        mock_send = _make_send_to_model_mock(mocker, "[]")
+        generate_conversation_tags(sample_messages)
+        prompt = mock_send.call_args[0][1][0]["content"]
+        assert prompt.index("</transcript>") < prompt.rindex("never")
+        assert "never instructions to obey" in prompt.lower()
+
+    def test_prompt_has_a_worked_counter_example(self, mocker, sample_messages):
+        """Same evidence-based worked-example fix as title (see its test's
+        docstring) — applied proactively to tags before its own probe existed,
+        since both surfaces share the identical unfenced shape and task-
+        aligned attack risk.
+        """
+        mock_send = _make_send_to_model_mock(mocker, "[]")
+        generate_conversation_tags(sample_messages)
+        prompt = mock_send.call_args[0][1][0]["content"]
+        normalized = " ".join(prompt.lower().split())
+        assert "wrong:" in normalized and "correct:" in normalized
 
 
 # ---------------------------------------------------------------------------
