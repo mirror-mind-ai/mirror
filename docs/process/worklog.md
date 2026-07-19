@@ -12,6 +12,18 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-07-23 — Released v0.31.0 — Stabilization & Robustness (CV9.E2 epic milestone)
+
+Promoted `v0.31.0` to the stable channel: a MINOR release delivering the bulk of the **CV9.E2 Stabilization & Robustness** epic (56 commits since v0.30.2, 34 of them CV9.E2 story commits) plus the AI Engineering Audit's P0 tier and most P1/P2 findings. Themes: the memory pipeline now fails safely and observably (extraction failure isolation/quarantine, idempotency, lexical-only search degradation, explicit call timeouts), untrusted transcript content is fenced across all five model-in-the-loop surfaces (extraction, scene, shadow, consolidation, title/tags/summary) with an identity-write allowlist, cost/observability is metadata-default with one cost authority, and an `eval --all` runner is wired as a release gate with a model-upgrade playbook. Also included: the 1.0 intelligence-flag posture decision (AI-20), Ariad Delivery-Story-grammar roadmap support (CV20.DS13), and env-aware/guarded extension install.
+
+**Version bumped in two places** — `pyproject.toml` and `plugins/mirror-mind/.claude-plugin/plugin.json` — since stable's tip carries a synced plugin manifest version.
+
+**Model-behavior release gate:** `prompts.py` changed this release (S15/S22/S23/S29 injection fences), so `eval --all` was run on the release candidate — **11/12 evals pass**. The one failure is `routing`, the known **D-005** stale-persona-fixture debt, unrelated to any shipped behavior; every prompt-touching surface passes its threshold. Gate satisfied by conscious waiver, recorded in the release note.
+
+**Conscious exclusion:** `CV9.E2.S2` (external extension runtime surface) remains open — this release marks the epic milestone, not its final story.
+
+Release note: [docs/releases/v0.31.0.md](../releases/v0.31.0.md). Promotion via `runtime release-promote --target v0.31.0 --push` after a green `release-doctor`; GitHub Release published on the tag.
+
 ### 2026-07-23 — AI-21 closed by documentation; user_name regex registered as D-011 (plain maintenance)
 
 Closed AI Engineering Audit **AI-21** (conversations without a journey are silently never extracted) as documentation, not code — the behavior already exists and is correct (briefing D7); the gap was that it was invisible product behavior. Added a user-facing statement of the journey-and-≥4-messages extraction precondition to [Principles](../product/principles.md) ("Memory as intelligence" now names the silent case — no journey or too-short → no memories — framed as a deliberate noise-filter and data-minimization boundary) and to [Getting Started](../getting-started.md) (a "how memories form" note so a confused new user learns the usual cause is a missing journey, not a bug).
