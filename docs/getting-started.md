@@ -266,6 +266,13 @@ What to check:
 > Your first session will use a generic identity — that is expected and
 > correct. The mirror sharpens through use.
 
+- **How memories form:** the mirror distills a conversation into memories only
+  when it has a **journey set** and runs at least four messages. This is
+  deliberate — casual, unscoped chatter stays out of your durable memory, and
+  nothing is mined from a conversation you never anchored. If a session felt
+  substantive but produced no memories, the usual cause is a missing journey,
+  not a bug: anchor the work to a journey (for example, activate Builder Mode
+  with `/mm-build <slug>`) and the conversation becomes eligible.
 - **Operating modes:** Mirror Mind activates four context-driven modes — Mirror
   (reflection), Builder (construction), Explorer (the uncertain middle before you
   commit), and Soul (inner-life listening). You do not pick them manually; they

@@ -17,6 +17,14 @@ Conversations that vanish are waste. Every conversation that ends with a journey
 set and enough messages should produce memories. The memory bank is not a log —
 it is an intelligence layer. Quality matters more than quantity.
 
+The same principle sets a deliberate floor. A conversation with no journey, or
+one shorter than four messages, produces no memories — by design, not by
+failure. The journey requirement is a noise filter and a data-minimization
+boundary at once: casual, unscoped exchanges do not accumulate into durable
+memory, and nothing is quietly mined from a conversation the user never
+anchored. So if a substantive conversation left no trace, the usual cause is a
+missing journey, not a broken pipeline.
+
 **Journeys as continuity.**  
 Nothing important should be re-explained. If a topic has a journey, the mirror
 loads that context automatically. The mirror is not a stateless assistant — it

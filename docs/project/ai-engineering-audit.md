@@ -325,6 +325,29 @@
 > probes. No regression on the pre-existing legitimate probes; the two
 > pre-existing S25 findings (`title-trivial-empty`, `tags-exclude-noise`)
 > remain open, unaffected, out of this story's scope.
+>
+> **Status (updated 2026-07-23).** **AI-21 closed by documentation, not code.**
+> The journey-and-≥4-messages extraction precondition is now stated as
+> user-facing product behavior in [Principles](../product/principles.md) (the
+> "Memory as intelligence" principle now names the silent case — no journey or
+> too-short → no memories, framed as a deliberate noise-filter and
+> data-minimization boundary) and in [Getting Started](../getting-started.md) (a
+> "how memories form" note, so a new user who sees no memories learns the usual
+> cause is a missing journey, not a broken pipeline). The team pass
+> (quality-assurance, engineer, database-architect, devops-engineer,
+> security-engineer, prompt-engineer) **rejected the "count skips in the
+> maintenance report" option** for now: journey-less is the steady-state default
+> (not an anomaly like quarantined/parse_failed/carried-over), so an all-time
+> count is unbounded, unactionable noise that would dilute the report's genuine
+> ⚠ warnings — and it is an unindexed full-scan on the startup path. A bounded,
+> time-windowed, only-when->0 count remains a deferred option if user-confusion
+> evidence ever pulls it. AI-21's **secondary** finding — the brittle bilingual
+> `user_name` regex in `_extract_and_persist` — was split out and registered as
+> debt **D-011** rather than fixed here (a coupling/robustness issue, not part of
+> the extraction-visibility gap, and not a security surface — it reads trusted
+> identity prose, not the fenced transcript). Delivered as plain documentation
+> maintenance, no story wrapper. Remaining open audit items: AI-08, AI-17 (P2)
+> and AI-18/AI-19 (CV22 DS5/DS6 plan inputs).
 
 ---
 

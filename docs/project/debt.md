@@ -28,6 +28,7 @@ Dropped   no longer relevant or replaced by another item
 | D-008 | `layer` domain constraint enforced inconsistently across write paths | data integrity | low | Carried | CV9.E2.S25 (AI-24) database-architect review | A new write path bypasses both existing coercions, `add_memory()` is touched for another reason, or a schema migration is already planned |
 | D-009 | `asserted_in_own_voice`'s `DISTANCING_MARKERS` list misses common reported-speech verbs | eval measurement | low | Paid | CV9.E2.S29 (AI-25) → CV9.E2.S30 | Paid by CV9.E2.S30 narrator-frame marker widening |
 | D-010 | `asserted_in_own_voice` matches markers anywhere in the text, not proximate to the sentinel | security / design | low | Carried | CV9.E2.S30 (security-engineer adversarial review) | Before another `DISTANCING_MARKERS` widening, or before treating any `asserted_in_own_voice` result as more than a smoke-test signal |
+| D-011 | Extraction sniffs the user's first name from identity prose with a brittle bilingual regex | design | low | Carried | AI Engineering Audit AI-21 (team review) | Replace with a structured `user/identity` name field, or the next time the identity template wording or `_extract_and_persist` is touched |
 
 ## D-001 — Metadata lifecycle policy and evidence filtering live inside ConversationService
 
@@ -422,3 +423,48 @@ rather than a whole-text scan — or a structured narrator-detection strategy
 (Option C from CV9.E2.S30's design review) replaces keyword matching
 entirely, re-validated against all five consumers' existing golden fixtures
 to confirm no regression.
+
+## D-011 — Extraction sniffs the user's first name from identity prose with a brittle bilingual regex
+
+**Kind:** design (coupling / robustness)
+**Severity:** low
+**Status:** Carried
+**Source:** AI Engineering Audit AI-21 (secondary finding), CV9 team review
+
+### Carrying reason
+
+`ConversationService._extract_and_persist` derives the user's first name for the
+extraction transcript by regex-matching identity *prose*:
+
+```python
+match = re.search(
+    r"(?:You are talking to|Você está falando com) ([A-Z][a-zA-Záéíóúãõ]+)",
+    user_identity.content,
+)
+```
+
+This couples the extraction path to the exact phrasing of the `user/identity`
+template, across two hardcoded languages (EN/PT). If the template wording
+changes, a user writes their identity in a different structure, or a third
+language is added, the match silently fails and `user_name` falls back to
+`"User"` — degrading every extraction transcript's personalization with no
+signal. It is a cohesion violation (extraction should not know how identity
+prose is worded) and a natural-language-parsing-in-code brittleness at once.
+Harmless when it misses — the pipeline still runs, only the name goes generic —
+so it is low severity, but it is real debt, not a non-issue. This is **not** a
+security surface: the regex reads user-owned, trusted identity content, not the
+untrusted transcript (which is fenced separately).
+
+### Revisit trigger
+
+The next time the `user/identity` template wording changes, localization adds a
+language, `_extract_and_persist` is touched for another reason, or a structured
+identity schema is introduced.
+
+### Closure condition
+
+The user's display/first name is read from a **structured** `user/identity`
+field (a dedicated key, or a `display_name` on the identity row) rather than
+parsed from prose — removing the language coupling and the silent `"User"`
+fallback. The bilingual regex is deleted once the structured field is the
+source of truth.
