@@ -286,5 +286,5 @@ Codex:      $ext-<id>
 ## See also
 
 - [CV9.E2 Stabilization & Robustness](../index.md)
-- [Runtime Interface Contract](../../../../product/specs/runtime-interface/index.md)
-- [Extension Architecture](../../../../product/extensions/architecture.md)
+- [Runtime Interface Contract](../../../../../product/specs/runtime-interface/index.md)
+- [Extension Architecture](../../../../../product/extensions/architecture.md)

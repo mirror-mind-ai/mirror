@@ -62,5 +62,5 @@ Ariad's pattern:
 ## See also
 
 - [S1 Review Notes](../cv9-e5-s1-adopt-development-process/review-notes.md)
-- [Development Guide](../../../../process/development-guide.md)
-- [Docs index](../../../../index.md)
+- [Development Guide](../../../../../process/development-guide.md)
+- [Docs index](../../../../../index.md)

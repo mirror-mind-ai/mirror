@@ -70,5 +70,5 @@ Out of scope:
 ## See also
 
 - [CV9.E3.S3 Runtime Update Dry Run](../cv9-e3-s3-runtime-update-dry-run/index.md)
-- [Command Reference](../../../../../REFERENCE.md)
-- [Development Guide](../../../../process/development-guide.md)
+- [Command Reference](../../../../../../REFERENCE.md)
+- [Development Guide](../../../../../process/development-guide.md)

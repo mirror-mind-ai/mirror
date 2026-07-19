@@ -18,9 +18,9 @@ import sys
 
 from memory.cli.common import db_path_from_mirror_home
 from memory.client import MemoryClient
-from memory.config import LOG_LLM_CALLS
 from memory.intelligence.shadow import propose_shadow_observations
 from memory.models import Consolidation, Identity
+from memory.services.observability import build_llm_logger
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -32,21 +32,8 @@ def _client(mirror_home: str | None) -> MemoryClient:
 
 
 def _make_llm_logger(store):
-    if not LOG_LLM_CALLS:
-        return None
-
-    def _log(response) -> None:
-        store.log_llm_call(
-            role="shadow_scan",
-            model=response.model,
-            prompt=response.prompt or "",
-            response_text=response.content,
-            prompt_tokens=response.prompt_tokens,
-            completion_tokens=response.completion_tokens,
-            latency_ms=response.latency_ms,
-        )
-
-    return _log
+    """Return an on_llm_call callback for shadow scan, honoring MEMORY_LOG_LLM_CALLS."""
+    return build_llm_logger(store, role="shadow_scan")
 
 
 def _user_name(mem: MemoryClient) -> str:

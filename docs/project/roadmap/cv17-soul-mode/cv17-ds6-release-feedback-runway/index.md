@@ -113,5 +113,5 @@ But identity changes require an explicit confirmation flow with visible diff bef
 ## References
 
 - [CV17 Soul Mode](../index.md)
-- [Development Guide](../../../process/development-guide.md)
-- [Product Design Proposal](../../../explorations/mirror-soul-mode-gram-tica-ritual-e-visual/product-design-proposal.md)
+- [Development Guide](../../../../process/development-guide.md)
+- Product Design Proposal

@@ -48,5 +48,5 @@ Given CI is green, `v0.25.0` is tagged and stable is promoted according to the r
 ## References
 
 - [CV18 — Soul Mode More Voices](../index.md)
-- [Release notes index](../../../releases/index.md)
-- [Development guide](../../../process/development-guide.md)
+- [Release notes index](../../../../releases/index.md)
+- [Development guide](../../../../process/development-guide.md)

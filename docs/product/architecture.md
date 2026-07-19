@@ -226,7 +226,7 @@ This is permanent supported behavior. See
 | `operation_run_events` | Event timeline for a web operation run | `id`, `run_id`, `sequence`, `kind`, `message`, `details_json`, `created_at` |
 | `consolidations` | Memory consolidation proposals and decisions | `id`, `action`, `source_memory_ids`, `proposal`, `status`, `applied_content`, `created_at` |
 | `identity_descriptors` | Routing-optimized descriptors for personas and journeys | `layer`, `key`, `descriptor`, `generated_at` |
-| `llm_calls` | LLM call log for observability (when enabled) | `id`, `role`, `model`, `prompt`, `response`, `latency_ms`, `created_at` |
+| `llm_calls` | LLM call log for observability (metadata by default; bodies only in `full` mode) | `id`, `role`, `model`, `prompt`, `response`, `prompt_tokens`, `completion_tokens`, `cost_usd`, `latency_ms`, `called_at` |
 
 ---
 

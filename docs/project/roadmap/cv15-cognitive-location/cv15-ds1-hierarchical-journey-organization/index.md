@@ -59,4 +59,4 @@ hierarchically wherever journeys are listed in the web console and in the
 
 - [Plan](plan.md)
 - [Test Guide](test-guide.md)
-- [ES-002 Hierarchical Journeys](../../exploration/es-002-hierarchical-journeys.md)
+- [ES-002 Hierarchical Journeys](../../../exploration/es-002-hierarchical-journeys.md)

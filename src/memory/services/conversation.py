@@ -6,7 +6,11 @@ import json
 import re
 from typing import TYPE_CHECKING
 
-from memory.config import LOG_LLM_CALLS, SUMMARIZE_ENABLED, TWO_PASS_ENABLED
+from memory.config import (
+    EXTRACTION_MAX_ATTEMPTS,
+    SUMMARIZE_ENABLED,
+    TWO_PASS_ENABLED,
+)
 from memory.intelligence.embeddings import embedding_to_bytes, generate_embedding
 from memory.intelligence.extraction import (
     curate_against_existing,
@@ -16,8 +20,8 @@ from memory.intelligence.extraction import (
     generate_conversation_tags,
     generate_conversation_title,
 )
-from memory.intelligence.llm_router import LLMResponse
 from memory.models import Conversation, ConversationSummary, Memory, Message
+from memory.services.memory import memory_embed_text
 from memory.services.metadata_lifecycle import (
     dry_run_metadata_lifecycle as dry_run_metadata_lifecycle_policy,
 )
@@ -26,6 +30,7 @@ from memory.services.metadata_lifecycle import (
     metadata_execution_profile,
     metadata_profile_action,
 )
+from memory.services.observability import build_llm_logger
 from memory.storage.store import Store
 
 if TYPE_CHECKING:
@@ -681,9 +686,14 @@ class ConversationService:
 
         self.store.update_conversation(conversation_id, ended_at=_now())
         memories: list[Memory] = []
-        if extract:
-            memories = self._run_extraction(conversation_id)
-        self.finalize_metadata_on_close(conversation_id)
+        try:
+            if extract:
+                memories = self._run_extraction(conversation_id)
+        finally:
+            # The orphan is closed regardless of extraction outcome (ended_at is
+            # set above), and non-manual metadata is finalized even when
+            # extraction fails — today's code skips finalize on failure.
+            self.finalize_metadata_on_close(conversation_id)
         return memories
 
     def finalize_metadata_on_close(self, conversation_id: str) -> dict:
@@ -732,25 +742,16 @@ class ConversationService:
         return self._run_extraction(conversation_id)
 
     def _make_logger(self, role: str, conversation_id: str):
-        if not LOG_LLM_CALLS:
-            return None
-
-        def _log(response: LLMResponse) -> None:
-            self.store.log_llm_call(
-                role=role,
-                model=response.model,
-                prompt=response.prompt or "",
-                response_text=response.content,
-                prompt_tokens=response.prompt_tokens,
-                completion_tokens=response.completion_tokens,
-                latency_ms=response.latency_ms,
-                conversation_id=conversation_id,
-            )
-
-        return _log
+        return build_llm_logger(self.store, role=role, conversation_id=conversation_id)
 
     def _run_extraction(self, conversation_id: str) -> list[Memory]:
-        """Run memory/task extraction. Marks metadata.extracted=True on success."""
+        """Run memory/task extraction, isolating and recording repeated failures.
+
+        Marks metadata.extracted=True on success. On failure it records an
+        extraction attempt (quarantining after EXTRACTION_MAX_ATTEMPTS) and
+        re-raises, so the caller's per-conversation loop can isolate the failure
+        instead of letting one poison-pill conversation crash the batch.
+        """
         conv = self.store.get_conversation(conversation_id)
         messages = self.store.get_messages(conversation_id)
 
@@ -758,6 +759,16 @@ class ConversationService:
         if not messages or not conv or not conv.journey or len(messages) < 4:
             return []
 
+        try:
+            return self._extract_and_persist(conv, messages, conversation_id)
+        except Exception:
+            self._record_failed_extraction_attempt(conversation_id)
+            raise
+
+    def _extract_and_persist(
+        self, conv: Conversation, messages: list[Message], conversation_id: str
+    ) -> list[Memory]:
+        """Run the extraction pipeline and persist memories. Raises on LLM failure."""
         # Load the user's first name for the transcript when available.
         user_name = "User"
         try:
@@ -775,21 +786,35 @@ class ConversationService:
             pass
 
         # Extract memories through the LLM (candidate pass).
+        extraction_diag: dict = {}
         extracted = extract_memories(
             messages,
             persona=conv.persona if conv else None,
             journey=conv.journey if conv else None,
             user_name=user_name,
             on_llm_call=self._make_logger("extraction", conversation_id),
+            status=extraction_diag,
         )
 
         # Curation pass: deduplicate candidates against existing memories.
         if TWO_PASS_ENABLED and extracted:
             similar: list[Memory] = []
             seen_ids: set[str] = set()
+            curation_emb_logger = build_llm_logger(
+                self.store,
+                role="embedding:curation",
+                conversation_id=conversation_id,
+                commit=False,
+            )
             for candidate in extracted:
                 query = f"{candidate.title} {candidate.content[:60]}"
-                results = self.memories.search(query, limit=3, journey=conv.journey)
+                results = self.memories.search(
+                    query,
+                    limit=3,
+                    journey=conv.journey,
+                    log_access=False,
+                    on_llm_call=curation_emb_logger,
+                )
                 for sr in results:
                     if sr.memory.id not in seen_ids:
                         similar.append(sr.memory)
@@ -835,16 +860,36 @@ class ConversationService:
         else:
             summary_text = _naive_summary(messages)
 
+        # Stage every network embedding first — the summary and each memory — so
+        # a failure leaves nothing persisted. The S7 retry then starts clean and
+        # does not duplicate rows or re-spend on embeddings (AI-03 / CV9.E2.S9).
+        embedding_logger = build_llm_logger(
+            self.store, role="embedding", conversation_id=conversation_id, commit=False
+        )
+        summary_bytes: bytes | None = None
         if summary_text:
-            summary_emb = generate_embedding(summary_text)
-            self.store.store_conversation_embedding(
-                conversation_id, embedding_to_bytes(summary_emb)
+            summary_bytes = embedding_to_bytes(
+                generate_embedding(summary_text, on_llm_call=embedding_logger)
             )
+
+        staged_memories = [
+            (
+                ext,
+                generate_embedding(
+                    memory_embed_text(ext.title, ext.content, ext.context),
+                    on_llm_call=embedding_logger,
+                ),
+            )
+            for ext in extracted
+        ]
+
+        # All embeddings succeeded — only local writes remain.
+        if summary_bytes is not None:
+            self.store.store_conversation_embedding(conversation_id, summary_bytes)
             self.store.update_conversation(conversation_id, summary=summary_text[:1000])
 
-        # Persist extracted memories with embeddings.
         stored_memories = []
-        for ext in extracted:
+        for ext, emb in staged_memories:
             stored = self.memories.add_memory(
                 title=ext.title,
                 content=ext.content,
@@ -855,17 +900,48 @@ class ConversationService:
                 persona=ext.persona,
                 tags=ext.tags,
                 conversation_id=conversation_id,
+                embedding=emb,
             )
             stored_memories.append(stored)
 
-        # Mark as extracted so extract_pending skips this conversation.
+        # Mark as extracted so extract_pending skips this conversation, and record
+        # why extraction produced what it did (AI-10): unreadable model output
+        # (parse_failed) is distinct from a genuinely empty result (no_signal).
         meta = self._metadata_dict(conv)
         meta["extracted"] = True
+        meta["extraction_status"] = extraction_diag.get("extraction_status") or (
+            "ok" if stored_memories else "no_signal"
+        )
+        dropped = extraction_diag.get("dropped")
+        if dropped and any(dropped.values()):
+            meta["extraction_dropped"] = dropped
         self.store.update_conversation(
             conversation_id, metadata=json.dumps(meta, ensure_ascii=False)
         )
 
         return stored_memories
+
+    def _record_failed_extraction_attempt(self, conversation_id: str) -> int:
+        """Increment the extraction attempt counter; quarantine after the max.
+
+        The counter lives in the conversation metadata JSON (no schema change,
+        like `extracted`). Once attempts reach EXTRACTION_MAX_ATTEMPTS the
+        conversation is flagged `extraction_quarantined`, which drops it out of
+        get_unextracted_conversations() so it stops being retried.
+        """
+        conv = self.store.get_conversation(conversation_id)
+        if conv is None:
+            return 0
+        meta = self._metadata_dict(conv)
+        attempts = int(meta.get("extraction_attempts", 0)) + 1
+        meta["extraction_attempts"] = attempts
+        meta["extraction_status"] = "llm_failed"
+        if attempts >= EXTRACTION_MAX_ATTEMPTS:
+            meta["extraction_quarantined"] = True
+        self.store.update_conversation(
+            conversation_id, metadata=json.dumps(meta, ensure_ascii=False)
+        )
+        return attempts
 
     def title_needs_improvement(self, conversation: Conversation) -> bool:
         """Return True when the title is missing or known to be low quality."""

@@ -87,4 +87,4 @@ Expected observation: Mirror runs the contained template preparation command, re
 ## References
 
 - [CV20.DS2.US1 — Adopt Ariad For A Journey](../cv20-ds2-us1-adopt-ariad-for-journey/index.md)
-- [Ariad Builder Method DSL](../../../explorations/ariad-builder-dsl/method-dsl.md)
+- Ariad Builder Method DSL

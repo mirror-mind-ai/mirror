@@ -54,4 +54,4 @@ uv run mypy src/memory/builder
 ## References
 
 - [Plan](plan.md)
-- [Ariad Builder Method DSL](../../../../explorations/ariad-builder-dsl/method-dsl.md)
+- Ariad Builder Method DSL

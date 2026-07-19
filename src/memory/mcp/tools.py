@@ -2,7 +2,8 @@
 
 Read + on-demand-context tools, each a thin wrapper over the ``MemoryClient``
 façade. Handlers receive a shared client and the call arguments and return text
-content. No writes/mutations live here (a later story owns those).
+content. No writes/mutations live here (a later story owns those);
+``search_memories`` does not reinforce retrieval (``log_access=False``).
 """
 
 from __future__ import annotations
@@ -70,7 +71,12 @@ def _search_memories(client: MemoryClient, args: dict[str, Any]) -> str:
     journey = args.get("journey")
     if query:
         results = client.search(
-            query, limit=limit, memory_type=memory_type, layer=layer, journey=journey
+            query,
+            limit=limit,
+            memory_type=memory_type,
+            layer=layer,
+            journey=journey,
+            log_access=False,
         )
         return _json([_memory_to_dict(r.memory) | {"score": r.score} for r in results])
     if journey:

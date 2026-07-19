@@ -11,6 +11,137 @@ resolved.
 
 ## Completed Decisions
 
+### 1.0 intelligence-flag posture: reception on, two-pass and summarize off
+
+**Date:** 2026-07-17
+**Reference:** AI Engineering Audit AI-20; two-pass blocker closed by AI-12 / [CV9.E2.S11](roadmap/cv9-mirror-1-0/cv9-e2-stabilization/cv9-e2-s11-reinforcement-signal-integrity/index.md); two-pass revisit gated on embedding-ledger debt **D-003**; logging flag decided separately (see the entry below, CV9.E2.S13)
+**Participants:** Vinícius Teles
+
+The four intelligence flags — `MEMORY_RECEPTION`, `MEMORY_TWO_PASS`,
+`MEMORY_SUMMARIZE`, `MEMORY_LOG_LLM_CALLS` — determine what the mirror does and
+what it costs on every conversation, yet their shipped defaults were set by the
+order stories happened to land, never by a deliberate 1.0 decision (the AI-20
+finding). Logging was resolved in CV9.E2.S13 (metadata by default). This settles
+the remaining three, completing the posture.
+
+Decided (the 1.0 defaults, each with its failure direction named):
+
+1. **Reception — on.** One cheap classification call per Mirror-mode turn reads
+   "what kind of moment is this?" before the mirror answers. It sits on the
+   interactive path, but its degradation is designed: on any failure it falls
+   back to keyword routing (`ReceptionResult.empty()`), bounded by the AI-01 10s
+   timeout. Proven, cheap, and safe under failure — keep it on.
+
+2. **Two-pass — off (revisit when embedding spend is measurable, D-003).**
+   Two-pass is a write-time hygiene tax: for each candidate memory it searches
+   the existing pool (a query embedding per candidate) and then makes one
+   curation LLM call to dedup and refine against history before storing. Its
+   value is real — pass-one extraction is blind to prior memories, so without
+   curation the same insight across sessions accumulates as near-duplicates,
+   caught only softly by MMR at *retrieval*, not at write. But the trade is
+   neither free nor clean:
+   - **Off fails toward noise** — near-duplicates pile up in the pool.
+   - **On fails toward loss and cost** — the curation model can drop a genuinely
+     distinct candidate as "duplicate," the dedup is imperfect (the
+     `two-pass-dedup` eval still keeps some close paraphrases), and every
+     conversation pays extra calls.
+   The original reason it was frozen — curation searches inflating the honest
+   reinforcement signal — is **closed**: AI-12 / CV9.E2.S11 gave search a
+   `log_access` switch, and the curation pass now passes `log_access=False`, so
+   dedup no longer teaches the ranker from its own exhaust. What remains is a
+   pure cost/quality call, and its cost rides on embedding calls that are **not
+   yet in the `llm_calls` ledger** (debt D-003). Enabling it now would switch on
+   unmeasurable, imperfect spend immediately before a release. So: off for 1.0;
+   revisit once D-003 makes embedding spend a number, then decide with evidence.
+
+3. **Summarize — off.** The naive mechanical conversation summary
+   (`_naive_summary`) is adequate for the summary embedding and free; the LLM
+   summary costs a call per conversation for marginal quality gain. Keep it off.
+
+Full 1.0 posture, therefore: **reception on, two-pass off, summarize off, logging
+metadata-on.** This is a posture, not a permanent fact — two-pass carries an
+explicit revisit trigger (D-003), and any future change ships with the cost
+numbers the AI-09 ledger now records rather than on intuition.
+
+---
+
+### LLM observability defaults to metadata, content only on request
+
+**Date:** 2026-07-17
+**Reference:** [CV9.E2.S13](roadmap/cv9-mirror-1-0/cv9-e2-stabilization/cv9-e2-s13-llm-cost-authority-metadata-logging/index.md), AI Engineering Audit AI-09 / AI-20
+**Participants:** Vinícius Teles
+
+`MEMORY_LOG_LLM_CALLS` previously defaulted **off**, so the shipped product
+recorded nothing about its own model use; when enabled, it stored full
+prompt/response bodies. Cost was never recorded at all. This left both the user
+and the developers with no evidence of what the mirror did or what it cost — at
+odds with the project's "evidence over vibes" posture — while the only "on"
+setting retained sensitive conversation content locally.
+
+Decided (the AI-20 flag-posture question, resolved for this flag):
+
+1. **Metadata by default, content by consent.** `MEMORY_LOG_LLM_CALLS` resolves
+   to `off | metadata | full`, defaulting to `metadata`: always record
+   role/model/tokens/latency/estimated-cost/conversation, never prompt or
+   response bodies. `full` adds the bodies as an explicit opt-in; `off` (or `0`)
+   disables logging entirely. Legacy `1` keeps its historical body-logging
+   meaning and maps to `full`, so existing installs are not silently downgraded.
+2. **One cost authority; cost is estimated.** A static `model → price/1K-tokens`
+   table (`intelligence/cost.py`) computes `cost_usd` from token usage. Prices
+   drift, so pipeline cost is labeled *estimated* and the table is updated
+   alongside the model pins (AI-06). An unknown model yields `None`, never a
+   silent `0`.
+
+Flipping a shipped default is a conscious behavior change, accepted because the
+metadata path never stores content and the opt-out is one env var. The
+spend-summary view and consult ledger are the remainder, tracked as CV9.E2.S14.
+
+---
+
+### Builder reads roadmaps in two grammars, additively
+
+**Date:** 2026-07-17
+**Reference:** journey `mirror`, [CV20.DS13](roadmap/cv20-builder-mode-evolution/cv20-ds13-ds-grammar-roadmap-support/index.md)
+**Participants:** Vinícius Teles
+
+The Ariad Builder runtime originally parsed only the legacy `CV → Epic → Story`
+grammar. A journey whose roadmap was imported to the `Delivery Story` grammar
+(hyphenated `DS-NN` codes, `## Chapter N —` sections, `| Code | Delivery Story |
+Status |` tables) broke three surfaces: pull candidates recommended a retired
+legacy CV, Expand fabricated a generic `US1` child, and the delivery cursor
+carried the previous Delivery Story's children.
+
+Decided:
+
+1. **Additive, not a migration.** Builder supports the CV grammar **and** the DS
+   grammar. Mirror's own roadmap stays CV-grammar and must never regress; a
+   CV-grammar regression fixture guards it. Roadmap-code character classes accept
+   hyphens (safe — CV codes have none), and top-level `DS-NN` codes classify as
+   `delivery_story`.
+2. **The `legacy/` archive is never a live candidate or position.** Both the
+   pull-candidate scan and the roadmap-position scan skip any path under
+   `docs/project/roadmap/legacy/`.
+3. **Expand reads the documented candidate table, header-driven.** It parses the
+   active DS index's `| Code | Story | Type | Status |` table (tolerating the
+   5-column generated variant with `Outcome`), materializes one package per
+   missing child with the real code/title/type, and never overwrites existing
+   files. The synthetic `US1` fallback remains only when no candidate table
+   exists.
+4. **Staleness is cleared where it originates.** `pull` clears
+   `child_work_items` and `aggregate_checkpoint_status` when replacing a
+   different, previously-active item; a first pull or same-item re-pull preserves
+   them. Expand always sets children from the parsed table.
+5. **Minimal roadmap-position semantics.** A pulled-but-planned DS yields
+   position `none` by design; a cursor-preferred position was deferred as a
+   separate future story rather than changing `build load` surface semantics now.
+6. **One grammar module.** Heading/status regex, the legacy filter, and markdown
+   link stripping live in `src/memory/builder/roadmap_grammar.py`, consumed by
+   pull candidates, roadmap position, and expand. The duplicated regex was the
+   root cause of the drift; centralizing it prevents recurrence.
+
+Deferred, not done here: the affected `uncle-vinny` workspace still has a dirty
+delivery cursor from the buggy runtime; its cleanup is separate operational work.
+
 ### TS front door delegates a missing database to Python (first-run self-heal)
 
 **Date:** 2026-07-14 · **Origin:** RS002 QA audit, CR015
@@ -1100,7 +1231,7 @@ but the architectural and operational direction is no longer open.
 ### Default mirror home directory renamed from `~/.mirror` to `~/.mirror-minds`
 
 **Date:** 2026-05-18
-**Reference:** [Architecture — Database Schema](../architecture.md#7-database-schema), [REFERENCE — Identity (CV4 user home)](../../REFERENCE.md)
+**Reference:** [Architecture — Database Schema](../product/architecture.md#7-database-schema), [REFERENCE — Identity (CV4 user home)](../../REFERENCE.md)
 
 The default container for user mirror homes was renamed from `~/.mirror` to
 `~/.mirror-minds`. Two motivations:

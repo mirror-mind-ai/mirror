@@ -7,18 +7,60 @@ import pytest
 
 from memory.db.schema import SCHEMA
 
+try:
+    import resource
+except ImportError:  # pragma: no cover - Windows has no resource module
+    resource = None
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Pay debt D-004: raise the test process's soft file-descriptor limit.
+
+    The suite opens many temporary SQLite databases; on a stock macOS shell
+    (soft ``RLIMIT_NOFILE`` = 256) the full run exhausts descriptors mid-suite
+    and fails unrelated CLI/migration tests with 'Too many open files'. Lifting
+    the soft limit toward the hard cap removes the dependency on the caller
+    remembering ``ulimit -n``. Best-effort; a sandbox that forbids it is ignored.
+    """
+    if resource is None:
+        return
+    try:
+        soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+        target = 8192 if hard == resource.RLIM_INFINITY else hard
+        if soft < target:
+            resource.setrlimit(resource.RLIMIT_NOFILE, (target, hard))
+    except (ValueError, OSError):  # pragma: no cover - platform/sandbox dependent
+        pass
+
 
 @pytest.fixture(autouse=True)
 def _isolate_developer_env(monkeypatch):
     """Neutralize developer-only env leaked from a personal .env.
 
     ``memory.config`` loads .env at import time via ``os.environ.setdefault``.
-    On a developer machine, ``BACKUP_DIR`` then points at a real personal
-    backup location and silently overrides the explicit ``mirror_home`` that
-    backup tests pass, so those tests fail locally while passing in CI (where
-    no .env exists). Clearing it makes local runs match CI.
+    On a developer machine this leaks values that make local runs diverge from
+    CI (which has no .env):
+
+    - ``BACKUP_DIR`` points at a real personal backup location and silently
+      overrides the explicit ``mirror_home`` that backup tests pass.
+    - ``MEMORY_ENV=development`` switches the resolved database name to
+      ``memory_dev.db``; CI resolves the production default ``memory.db``.
+      Any test that exercises env-aware database resolution without managing
+      the environment itself would then pass in one place and fail in the
+      other (e.g. the extension install path once its migration step became
+      env-aware).
+
+    Clearing both makes local runs match CI. Tests that need a specific
+    environment set it explicitly and reload ``memory.config`` (see
+    tests/unit/memory/cli/test_ext_env_database.py).
     """
     monkeypatch.delenv("BACKUP_DIR", raising=False)
+    monkeypatch.delenv("MEMORY_ENV", raising=False)
+    # config.MEMORY_ENV was already computed at import time from the leaked
+    # .env; delenv alone cannot undo that. Pin the module global to the CI
+    # default so env-aware resolvers (db_name_for_env / db_path_for_home)
+    # agree with CI for tests that do not manage the environment themselves.
+    monkeypatch.setattr("memory.config.MEMORY_ENV", "production")
 
 
 @pytest.fixture

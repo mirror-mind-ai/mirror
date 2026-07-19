@@ -1,5 +1,6 @@
 """Memory persistence operations."""
 
+import json
 import sqlite3
 from datetime import datetime, timezone
 
@@ -98,6 +99,32 @@ class MemoryStore(ConnectionBacked):
         ).fetchall()
         return [(row["memory_type"], row["count"]) for row in rows]
 
+    def count_memories_by_embedding_model(self) -> list[tuple[str | None, int]]:
+        """Distribution of stored memory vectors by recorded embedding model.
+
+        Aggregates in Python (not SQLite ``json_extract``) so a legacy or malformed
+        ``metadata`` row degrades to the ``None`` (unknown / pre-provenance) bucket
+        instead of raising — the same crash-safety rule the write helper follows
+        (CV9.E2.S17 / AI-07).
+        """
+        rows = self.conn.execute(
+            "SELECT metadata FROM memories WHERE embedding IS NOT NULL"
+        ).fetchall()
+        counts: dict[str | None, int] = {}
+        for row in rows:
+            model: str | None = None
+            metadata = row["metadata"]
+            if metadata:
+                try:
+                    parsed = json.loads(metadata)
+                    if isinstance(parsed, dict):
+                        value = parsed.get("embedding_model")
+                        model = value if isinstance(value, str) else None
+                except (json.JSONDecodeError, TypeError):
+                    model = None
+            counts[model] = counts.get(model, 0) + 1
+        return sorted(counts.items(), key=lambda kv: (-kv[1], str(kv[0])))
+
     def get_memories_by_type(self, memory_type: str) -> list[Memory]:
         rows = self.conn.execute(
             "SELECT * FROM memories WHERE memory_type = ? ORDER BY created_at DESC",
@@ -192,6 +219,19 @@ class MemoryStore(ConnectionBacked):
             (memory_id,),
         ).fetchone()
         return row["cnt"] if row else 0
+
+    def get_access_counts(self) -> dict[str, int]:
+        """Batched access counts for every memory with at least one log row.
+
+        Collapses search()'s N+1 (CV9.E2.S27, AI-13): one GROUP BY instead of a
+        per-memory COUNT. A memory absent from the returned dict has zero
+        accesses — callers must default via ``.get(memory_id, 0)``, identical to
+        what ``get_access_count`` returns for an unlogged memory.
+        """
+        rows = self.conn.execute(
+            "SELECT memory_id, COUNT(*) as cnt FROM memory_access_log GROUP BY memory_id"
+        ).fetchall()
+        return {row["memory_id"]: row["cnt"] for row in rows}
 
     def fts_search(
         self,

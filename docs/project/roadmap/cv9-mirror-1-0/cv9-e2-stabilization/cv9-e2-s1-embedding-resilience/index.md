@@ -2,7 +2,7 @@
 
 # CV9.E2.S1 — Embedding Resilience
 
-**Status:** Planned  
+**Status:** Done  
 **Epic:** CV9.E2 Stabilization & Robustness  
 **Trigger:** Live failure while recording an active Mirror memory: `ValueError: No embedding data received`
 

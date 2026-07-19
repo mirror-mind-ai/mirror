@@ -1,6 +1,7 @@
 """Hybrid search: semantic similarity + recency + reinforcement + relevance."""
 
 import math
+from collections.abc import Callable
 from datetime import datetime, timezone
 
 import numpy as np
@@ -14,7 +15,8 @@ from memory.config import (
     SEARCH_WEIGHTS,
 )
 from memory.intelligence.embeddings import bytes_to_embedding, generate_embedding
-from memory.models import Memory, SearchResult
+from memory.intelligence.llm_router import LLMResponse
+from memory.models import Memory, SearchOutcome, SearchResult
 from memory.storage.store import Store
 
 
@@ -146,10 +148,46 @@ class MemorySearch:
         memory_type: str | None = None,
         layer: str | None = None,
         journey: str | None = None,
+        log_access: bool = True,
+        on_llm_call: Callable[[LLMResponse], None] | None = None,
     ) -> list[SearchResult]:
-        """Search memories using hybrid scoring (semantic + lexical + recency + reinforcement)
-        with MMR deduplication."""
-        query_embedding = generate_embedding(query)
+        """Hybrid search (semantic + lexical + recency + reinforcement) with MMR dedup.
+
+        Thin wrapper over ``search_with_status`` returning only the results.
+        """
+        return self.search_with_status(
+            query,
+            limit=limit,
+            memory_type=memory_type,
+            layer=layer,
+            journey=journey,
+            log_access=log_access,
+            on_llm_call=on_llm_call,
+        ).results
+
+    def search_with_status(
+        self,
+        query: str,
+        limit: int = 5,
+        memory_type: str | None = None,
+        layer: str | None = None,
+        journey: str | None = None,
+        log_access: bool = True,
+        on_llm_call: Callable[[LLMResponse], None] | None = None,
+    ) -> SearchOutcome:
+        """Hybrid search that also reports whether it ran degraded (lexical-only).
+
+        When the query embedding cannot be generated (offline, missing key,
+        timeout) the search falls back to the local FTS5 index: the semantic term
+        is dropped and only FTS-matched memories are ranked. MMR dedup is
+        unaffected — it ranks on the stored memory embeddings, not the query.
+        """
+        degraded = False
+        try:
+            query_embedding: np.ndarray | None = generate_embedding(query, on_llm_call=on_llm_call)
+        except Exception:
+            query_embedding = None
+            degraded = True
 
         # Load all memories with embeddings and apply filters.
         all_memories = self.store.get_all_memories_with_embeddings()
@@ -165,16 +203,24 @@ class MemorySearch:
             self.store.fts_search(query, memory_type=memory_type, layer=layer, journey=journey)
         )
 
-        # Score every candidate.
+        # Batched access counts (CV9.E2.S27, AI-13): one GROUP BY instead of a
+        # per-memory COUNT inside the loop below — collapses search()'s N+1. A
+        # memory absent from the dict has zero accesses (never logged).
+        access_counts = self.store.get_access_counts()
+
+        # Score every candidate. In degraded mode drop the semantic term and keep
+        # only FTS matches so results stay lexically relevant (not recency noise).
         lexical_weight = SEARCH_WEIGHTS.get("lexical", 0.0)
         candidates: list[tuple] = []
         for mem in all_memories:
             if mem.embedding is None:
                 continue
+            if degraded and mem.id not in fts_lookup:
+                continue
             emb = bytes_to_embedding(mem.embedding)
-            sem = cosine_similarity(query_embedding, emb)
+            sem = 0.0 if query_embedding is None else cosine_similarity(query_embedding, emb)
             rec = recency_score(mem.created_at)
-            access_count = self.store.get_access_count(mem.id)
+            access_count = access_counts.get(mem.id, 0)
             reinf = reinforcement_score(access_count, mem.use_count, mem.last_accessed_at)
             score = hybrid_score(sem, rec, reinf, mem.relevance_score)
             score += lexical_weight * fts_lookup.get(mem.id, 0.0)
@@ -182,11 +228,13 @@ class MemorySearch:
 
         candidates.sort(key=lambda x: x[1], reverse=True)
 
-        # MMR deduplication.
+        # MMR deduplication (ranks on stored embeddings — degraded-safe).
         results = mmr_dedupe(candidates, limit=limit, threshold=MMR_DEDUP_THRESHOLD)
 
-        # Log access for returned memories.
-        for sr in results:
-            self.store.log_access(sr.memory.id, context=query[:200])
+        # Reinforce only on genuine context loads; internal machinery (curation,
+        # MCP agent search, exploratory CLI) passes log_access=False (AI-12).
+        if log_access:
+            for sr in results:
+                self.store.log_access(sr.memory.id, context=query[:200])
 
-        return results
+        return SearchOutcome(results=results, degraded=degraded)

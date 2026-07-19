@@ -260,13 +260,35 @@ TRANSCRIPT_EXPORT_DIR = _path_from_env(
     else EXPORT_DIR / "transcripts",
 )
 # Embeddings — routed through OpenRouter (same model, no separate OpenAI key needed).
-EMBEDDING_MODEL = "openai/text-embedding-3-small"
+EMBEDDING_MODEL = os.getenv("MEMORY_EMBEDDING_MODEL", "openai/text-embedding-3-small")
 EMBEDDING_DIMENSIONS = 1536
 
 # OpenRouter — used for embeddings, extraction, and multi-LLM consult.
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-EXTRACTION_MODEL = "google/gemini-2.5-flash-lite"
+EXTRACTION_MODEL = os.getenv("MEMORY_EXTRACTION_MODEL", "google/gemini-2.5-flash-lite")
+
+# LLM/embedding call timeouts (seconds) and retry ceiling — bound every model
+# call at client construction so a hung provider connection cannot stall a
+# session hook or the interactive Mirror path (the OpenAI SDK default timeout is
+# 600s). Per-role, env-overridable.
+LLM_TIMEOUT_EXTRACTION = float(os.getenv("MEMORY_LLM_TIMEOUT_EXTRACTION", "60"))
+LLM_TIMEOUT_RECEPTION = float(os.getenv("MEMORY_LLM_TIMEOUT_RECEPTION", "10"))
+LLM_TIMEOUT_EMBEDDING = float(os.getenv("MEMORY_LLM_TIMEOUT_EMBEDDING", "15"))
+LLM_MAX_RETRIES = int(os.getenv("MEMORY_LLM_MAX_RETRIES", "2"))
+# Embedding application-level retry: how many times a *valid request that returns
+# an empty payload* is retried. The SDK's max_retries only covers transport
+# failures, not a 200 with empty data (the observed live failure). Kept small so
+# resilience does not reintroduce the interactive-path stall AI-01's timeouts
+# removed (worst case is EMBEDDING_ATTEMPTS x LLM_TIMEOUT_EMBEDDING).
+EMBEDDING_ATTEMPTS = int(os.getenv("MEMORY_EMBEDDING_ATTEMPTS", "3"))
+EMBEDDING_RETRY_BACKOFF = float(os.getenv("MEMORY_EMBEDDING_RETRY_BACKOFF", "0.5"))
+
+# Extraction failure isolation (CV9.E2.S7 / AI-02). A conversation whose
+# extraction repeatedly fails (provider outage, oversized transcript, auth
+# error) is quarantined after this many attempts so it stops being retried
+# every session start and stops blocking the pending queue behind it.
+EXTRACTION_MAX_ATTEMPTS = int(os.getenv("MEMORY_EXTRACTION_MAX_ATTEMPTS", "3"))
 
 # LLM model families: family -> tier -> OpenRouter model_id.
 LLM_FAMILIES = {
@@ -327,8 +349,30 @@ REINFORCEMENT_DECAY_DAYS = int(os.getenv("MEMORY_REINFORCEMENT_DECAY_DAYS", "180
 REINFORCEMENT_USE_WEIGHT = float(os.getenv("MEMORY_REINFORCEMENT_USE_WEIGHT", "0.7"))
 REINFORCEMENT_RETRIEVAL_WEIGHT = float(os.getenv("MEMORY_REINFORCEMENT_RETRIEVAL_WEIGHT", "0.3"))
 
-# Observability — set MEMORY_LOG_LLM_CALLS=1 to write every LLM call to llm_calls table
-LOG_LLM_CALLS = os.getenv("MEMORY_LOG_LLM_CALLS", "") == "1"
+# Maintenance extraction budget (CV9.E2.S26, AI-05) — max conversations
+# extract_pending() processes in one session-start maintenance run. Bounds
+# worst-case startup spend (LLM calls + embeddings) when a backlog has
+# accumulated; the remainder carries over to the next session start.
+MEMORY_MAINTENANCE_MAX_EXTRACTIONS = int(os.getenv("MEMORY_MAINTENANCE_MAX_EXTRACTIONS", "10"))
+
+
+# Observability (AI-09 / CV9.E2.S13) — MEMORY_LOG_LLM_CALLS = off | metadata | full.
+# Default "metadata": always record role/model/tokens/latency/cost/conversation,
+# never prompt/response bodies. "full" adds the bodies (explicit opt-in). "off"
+# (or "0") disables logging entirely. Back-compat: legacy "1" keeps its original
+# body-logging meaning and maps to "full".
+def _resolve_log_llm_calls_mode(raw: str) -> str:
+    value = raw.strip().lower()
+    if value in ("", "metadata"):
+        return "metadata"
+    if value in ("1", "full"):
+        return "full"
+    return "off"
+
+
+LOG_LLM_CALLS_MODE = _resolve_log_llm_calls_mode(os.getenv("MEMORY_LOG_LLM_CALLS", ""))
+LOG_LLM_CALLS = LOG_LLM_CALLS_MODE != "off"
+LOG_LLM_BODIES = LOG_LLM_CALLS_MODE == "full"
 
 # Reception — set MEMORY_RECEPTION=0 to disable LLM-based turn classification
 # When enabled (default), persona/journey routing uses the LLM instead of keywords.

@@ -182,6 +182,21 @@ class ExtractedWeekItem(_DomainModel):
     context: str | None = None
 
 
+VALID_MEMORY_LAYERS = frozenset({"self", "ego", "shadow"})
+VALID_MEMORY_TYPES = frozenset(
+    {"decision", "insight", "idea", "tension", "learning", "pattern", "commitment", "reflection"}
+)
+
+# AI-23 (CV9.E2.S23): the only identity layers a consolidation-sourced
+# identity_update may target. The mirror's own inferred-identity layers
+# (self/soul, ego/behavior, ego/identity) are legitimate consolidation
+# targets; `user` is user-authored, `organization`/`personas`/`journeys` are
+# structural, and `shadow` has its own path (mm-shadow) — a model proposing
+# any of those as an identity_update target is a bug by definition, not a
+# legitimate proposal.
+VALID_IDENTITY_UPDATE_LAYERS = frozenset({"self", "ego"})
+
+
 class ExtractedMemory(_DomainModel):
     """Memory extracted by the LLM before id and embedding are assigned."""
 
@@ -243,6 +258,13 @@ class SearchResult(NamedTuple):
 
     memory: "Memory"
     score: float
+
+
+class SearchOutcome(NamedTuple):
+    """A search's results plus whether it ran degraded (lexical-only fallback)."""
+
+    results: list[SearchResult]
+    degraded: bool
 
 
 def _uuid() -> str:

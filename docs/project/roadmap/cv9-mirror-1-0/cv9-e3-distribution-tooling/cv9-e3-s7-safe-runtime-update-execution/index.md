@@ -115,4 +115,4 @@ The likely update policy is:
 - [CV9.E3.S3 Runtime Update Dry Run](../cv9-e3-s3-runtime-update-dry-run/index.md)
 - [CV9.E3.S4 Runtime Backup and Recovery Prerequisite](../cv9-e3-s4-runtime-backup-recovery/index.md)
 - [CV9.E3.S5 Runtime Version and Update Availability](../cv9-e3-s5-runtime-version-update-availability/index.md)
-- [Command Reference](../../../../../REFERENCE.md)
+- [Command Reference](../../../../../../REFERENCE.md)

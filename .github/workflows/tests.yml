@@ -3,8 +3,10 @@ name: Tests
 on:
   push:
     branches: [main, "claude/**", mirror-ts-core]
+    paths-ignore: ["docs/**"]
   pull_request:
     branches: [main]
+    paths-ignore: ["docs/**"]
   workflow_dispatch:
 
 jobs:

@@ -118,4 +118,4 @@ test prompt content. The eval fixtures are the quality gate.
 
 ---
 
-**See also:** [CV7.E3 index](../index.md) · [draft-analysis §5.1](../../draft-analysis.md) · [E1 baseline](../../../../process/worklog.md)
+**See also:** [CV7.E3 index](../index.md) · [draft-analysis §5.1](../../draft-analysis.md) · [E1 baseline](../../../../../process/worklog.md)

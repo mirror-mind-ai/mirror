@@ -18,6 +18,12 @@ from memory.cli.backup import backup as create_backup
 from memory.cli.extensions import ExtensionValidationError, load_extension_manifest
 from memory.config import (
     DEFAULT_USER_HOMES_DIR,
+    EMBEDDING_MODEL,
+    EXTRACTION_MODEL,
+    LLM_MAX_RETRIES,
+    LLM_TIMEOUT_EMBEDDING,
+    LLM_TIMEOUT_EXTRACTION,
+    LLM_TIMEOUT_RECEPTION,
     MEMORY_ENV,
     default_db_path_for_home,
     default_extensions_dir_for_home,
@@ -25,6 +31,7 @@ from memory.config import (
 )
 from memory.db.migrations import MIGRATIONS
 from memory.extensions.migrations import ExtensionMigrationError, inspect_migration_files
+from memory.intelligence.llm_router import list_available_models
 
 _CLONE_ROLE_FILENAME = ".mirror-clone-role"
 _DEFAULT_CLONE_ROLE = "production"
@@ -1743,6 +1750,36 @@ def diagnose_runtime(
     return tuple(findings)
 
 
+def probe_model_pins() -> tuple[DriftFinding, ...]:
+    """Warn when the extraction model pin no longer resolves on OpenRouter.
+
+    OpenRouter's ``/models`` endpoint lists completion models only, so the
+    extraction pin (a chat model) is catalog-verifiable while the embedding pin
+    is not — flagging the embedding pin against this catalog would be a false
+    positive. An embedding-model failure instead surfaces through degraded
+    search (CV9.E2.S10) and extraction quarantine (CV9.E2.S7). Any fetch failure
+    (offline or no key) is inconclusive and yields no findings, so
+    ``runtime diagnose`` stays green offline and only a confirmed-missing pin
+    warns.
+    """
+    try:
+        available = list_available_models()
+    except Exception:
+        return ()
+    if EXTRACTION_MODEL in available:
+        return ()
+    return (
+        DriftFinding(
+            "model_pin_unresolved",
+            "attention",
+            "model pin",
+            f"{EXTRACTION_MODEL} is not available on OpenRouter",
+            "set MEMORY_EXTRACTION_MODEL to a current model id (see https://openrouter.ai/models)",
+            "repoint model pin",
+        ),
+    )
+
+
 def render_runtime_diagnosis(findings: tuple[DriftFinding, ...]) -> str:
     lines: list[str] = ["Mirror runtime drift diagnosis", ""]
     if not findings:
@@ -1869,6 +1906,13 @@ def render_runtime_status(report: RuntimeStatusReport) -> str:
     node_display = report.node_version or "not found (TS front door requires Node >= 24)"
     lines.append(f"Node: {node_display}")
     lines.append(f"MEMORY_ENV: {report.memory_env}")
+    lines.append(
+        "LLM timeouts (s): "
+        f"reception={LLM_TIMEOUT_RECEPTION:g}, "
+        f"embedding={LLM_TIMEOUT_EMBEDDING:g}, "
+        f"extraction={LLM_TIMEOUT_EXTRACTION:g}; retries={LLM_MAX_RETRIES}"
+    )
+    lines.append(f"Models: extraction={EXTRACTION_MODEL}, embedding={EMBEDDING_MODEL}")
     lines.append("")
     lines.append(f"Status: {report.status}")
     return "\n".join(lines) + "\n"
@@ -2758,7 +2802,11 @@ def cmd_runtime(argv: list[str]) -> int:
     if args.command == "diagnose":
         report = build_runtime_status(mirror_home_arg=args.mirror_home)
         entries = inspect_git_worktree(report.git.repository)
-        findings = diagnose_runtime(report, entries) + root_state_findings(DEFAULT_USER_HOMES_DIR)
+        findings = (
+            diagnose_runtime(report, entries)
+            + root_state_findings(DEFAULT_USER_HOMES_DIR)
+            + probe_model_pins()
+        )
         sys.stdout.write(render_runtime_diagnosis(findings))
         return 0 if not findings else 1
 

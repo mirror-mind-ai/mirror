@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from memory.config import LLM_TIMEOUT_RECEPTION
 from memory.intelligence.llm_router import LLMResponse
 from memory.intelligence.reception import reception
 from memory.models import ReceptionResult
@@ -37,6 +38,16 @@ def _make_mock(mocker, content: str) -> MagicMock:
         "memory.intelligence.reception.send_to_model",
         return_value=mock_response,
     )
+
+
+class TestReceptionTimeout:
+    def test_passes_reception_timeout_to_send_to_model(self, mocker):
+        mock = _make_mock(
+            mocker,
+            '{"personas": [], "journey": null, "touches_identity": false, "touches_shadow": false}',
+        )
+        reception("hello", _PERSONAS, _JOURNEYS)
+        assert mock.call_args.kwargs["timeout"] == LLM_TIMEOUT_RECEPTION
 
 
 class TestReceptionHappyPath:

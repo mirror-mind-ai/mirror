@@ -10,7 +10,11 @@ from pathlib import Path
 
 from memory.cli.common import db_path_from_mirror_home
 from memory.client import MemoryClient
-from memory.config import MIRROR_HOME_REQUIRED_HINT, MUTE_FLAG_PATH
+from memory.config import (
+    MEMORY_MAINTENANCE_MAX_EXTRACTIONS,
+    MIRROR_HOME_REQUIRED_HINT,
+    MUTE_FLAG_PATH,
+)
 
 _DEFAULT_PI_SESSIONS_DIR = Path.home() / ".pi" / "agent" / "sessions"
 
@@ -338,13 +342,83 @@ def end_session(
 # --- Pi session lifecycle ---
 
 
-def extract_pending(mirror_home: str | Path | None = None) -> int:
-    """Extract memories from ended conversations not yet processed."""
+def extract_pending(mirror_home: str | Path | None = None, limit: int | None = None) -> int:
+    """Extract memories from ended conversations not yet processed.
+
+    Each conversation is isolated: a failure (provider outage, poison-pill
+    transcript, auth error) is recorded and skipped so it cannot crash the
+    batch or block the conversations queued behind it. Returns the number of
+    conversations successfully extracted.
+
+    ``limit`` bounds worst-case startup spend (CV9.E2.S26, AI-05): at most
+    ``limit`` conversations are processed per call, oldest-ended first. Any
+    remainder is left pending and carries over to the next call (typically the
+    next session start) rather than being silently dropped. Defaults to
+    ``MEMORY_MAINTENANCE_MAX_EXTRACTIONS`` so a backlog can never turn one
+    session start into an unbounded, invisible spend loop.
+    """
+    if limit is None:
+        limit = MEMORY_MAINTENANCE_MAX_EXTRACTIONS
     mem = _memory_client(mirror_home)
-    pending = mem.store.get_unextracted_conversations()
+    pending = mem.store.get_unextracted_conversations(limit=limit)
+    extracted = 0
     for conv in pending:
-        mem.conversations.extract_conversation(conv.id)
-    return len(pending)
+        try:
+            mem.conversations.extract_conversation(conv.id)
+            extracted += 1
+        except Exception:
+            continue
+    return extracted
+
+
+def _count_quarantined_conversations(mirror_home: str | Path | None = None) -> int:
+    """Conversations quarantined after repeated extraction failure (fail-quiet).
+
+    The client is held in a local for the whole read. Chaining
+    ``_memory_client(...).store.count_...()`` lets the temporary client be
+    garbage-collected — closing its connection via ``__del__`` — before the
+    query runs, which raises "Cannot operate on a closed database".
+    """
+    mem = None
+    try:
+        mem = _memory_client(mirror_home)
+        return mem.store.count_quarantined_conversations()
+    except Exception:
+        return 0
+
+
+def _count_parse_failed_conversations(mirror_home: str | Path | None = None) -> int:
+    """Conversations whose model output could not be parsed (fail-quiet, AI-10).
+
+    Held in a local for the whole read for the same closed-connection reason as
+    ``_count_quarantined_conversations``.
+    """
+    mem = None
+    try:
+        mem = _memory_client(mirror_home)
+        return mem.store.count_conversations_with_extraction_status("parse_failed")
+    except Exception:
+        return 0
+    finally:
+        if mem is not None:
+            mem.close()
+
+
+def _count_carried_over_conversations(mirror_home: str | Path | None = None) -> int:
+    """Conversations still eligible for extraction after a capped run (CV9.E2.S26, AI-05).
+
+    Held in a local for the whole read for the same closed-connection reason as
+    ``_count_quarantined_conversations``.
+    """
+    mem = None
+    try:
+        mem = _memory_client(mirror_home)
+        return mem.store.count_unextracted_conversations()
+    except Exception:
+        return 0
+    finally:
+        if mem is not None:
+            mem.close()
 
 
 def retitle_pending_conversations(
@@ -449,6 +523,22 @@ def session_maintenance(mirror_home: str | Path | None = None) -> str:
     parts = ["Conversation maintenance complete."]
     for label, count, elapsed in steps:
         parts.append(f"{label}: {count} ({elapsed:.1f}s)")
+    quarantined = _count_quarantined_conversations(mirror_home)
+    if quarantined:
+        parts.append(
+            f"⚠ {quarantined} conversation(s) quarantined after repeated extraction failure"
+        )
+    parse_failed = _count_parse_failed_conversations(mirror_home)
+    if parse_failed:
+        parts.append(
+            f"⚠ {parse_failed} conversation(s) with unreadable model output (parse_failed)"
+        )
+    carried_over = _count_carried_over_conversations(mirror_home)
+    if carried_over:
+        parts.append(
+            f"{carried_over} conversation(s) carried over to the next run "
+            "(maintenance extraction budget)"
+        )
     return "\n".join(parts)
 
 
@@ -473,7 +563,12 @@ def close_stale_orphans(
     for conv in orphans:
         if conv.id in active_conv_ids:
             continue
-        mem.conversations.end_conversation(conv.id, extract=True)
+        try:
+            mem.conversations.end_conversation(conv.id, extract=True)
+        except Exception:
+            # The orphan is still closed (ended_at is set before extraction);
+            # an extraction failure is recorded and must not stop the loop.
+            pass
         count += 1
     return count
 

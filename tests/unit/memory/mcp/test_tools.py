@@ -26,6 +26,20 @@ def test_search_memories_requires_query_or_filter(mcp_client) -> None:
         tools._search_memories(mcp_client, {})
 
 
+def test_search_memories_does_not_reinforce(mcp_client, mocker) -> None:
+    import numpy as np
+
+    unit = np.ones(1536, dtype=np.float32) / np.sqrt(1536)
+    mocker.patch("memory.services.memory.generate_embedding", return_value=unit)
+    mocker.patch("memory.intelligence.search.generate_embedding", return_value=unit)
+    mcp_client.add_memory(title="Nomad freedom", content="digital nomad", memory_type="insight")
+    spy = mocker.spy(mcp_client.store, "log_access")
+
+    tools._search_memories(mcp_client, {"query": "nomad"})
+
+    spy.assert_not_called()
+
+
 def test_recall_requires_conversation_id(mcp_client) -> None:
     with pytest.raises(ValueError):
         tools._recall_conversation(mcp_client, {})

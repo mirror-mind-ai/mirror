@@ -4,7 +4,16 @@ from pathlib import Path
 
 from memory.db import get_connection
 from memory.intelligence.search import MemorySearch
-from memory.models import Attachment, Conversation, Identity, Memory, Message, SearchResult, Task
+from memory.models import (
+    Attachment,
+    Conversation,
+    Identity,
+    Memory,
+    Message,
+    SearchOutcome,
+    SearchResult,
+    Task,
+)
 from memory.services.attachment import AttachmentService
 from memory.services.conversation import ConversationService
 from memory.services.identity import IdentityService
@@ -167,8 +176,22 @@ class MemoryClient:
         memory_type=None,
         layer=None,
         journey=None,
+        log_access: bool = True,
     ) -> list[SearchResult]:
-        return self.memories.search(query, limit, memory_type, layer, journey)
+        return self.memories.search(query, limit, memory_type, layer, journey, log_access)
+
+    def search_with_status(
+        self,
+        query: str,
+        limit: int = 5,
+        memory_type: str | None = None,
+        layer: str | None = None,
+        journey: str | None = None,
+        log_access: bool = True,
+    ) -> SearchOutcome:
+        return self.memories.search_with_status(
+            query, limit, memory_type, layer, journey, log_access
+        )
 
     def get_by_type(self, memory_type: str) -> list[Memory]:
         return self.memories.get_by_type(memory_type)

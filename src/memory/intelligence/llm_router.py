@@ -13,6 +13,9 @@ from openai.types.chat import ChatCompletionMessageParam
 
 from memory.config import (
     LLM_FAMILIES,
+    LLM_MAX_RETRIES,
+    LLM_TIMEOUT_EMBEDDING,
+    LLM_TIMEOUT_EXTRACTION,
     OPENROUTER_API_KEY,
     OPENROUTER_BASE_URL,
 )
@@ -68,14 +71,24 @@ def send_to_model(
     messages: list[dict],
     temperature: float = 0.7,
     max_tokens: int = 4096,
+    timeout: float | None = None,
+    max_retries: int | None = None,
 ) -> LLMResponse:
-    """Send messages to one model through OpenRouter and return response metadata."""
+    """Send messages to one model through OpenRouter and return response metadata.
+
+    ``timeout`` (seconds) and ``max_retries`` bound the call at client
+    construction; both default to the extraction-tier values from config so a
+    hung provider connection cannot stall a hook. Interactive callers (reception)
+    pass a shorter timeout.
+    """
     if not OPENROUTER_API_KEY:
         raise RuntimeError("OPENROUTER_API_KEY is not configured.")
 
     client = OpenAI(
         api_key=OPENROUTER_API_KEY,
         base_url=OPENROUTER_BASE_URL,
+        timeout=LLM_TIMEOUT_EXTRACTION if timeout is None else timeout,
+        max_retries=LLM_MAX_RETRIES if max_retries is None else max_retries,
     )
 
     prompt_str = json.dumps(messages, ensure_ascii=False)
@@ -160,3 +173,24 @@ def get_credits() -> CreditInfo:
         total_usage=usage,
         balance=total - usage,
     )
+
+
+def list_available_models() -> set[str]:
+    """Return the set of model ids OpenRouter currently serves.
+
+    One cheap GET to ``/models``, bounded by the embedding timeout. Raises
+    ``RuntimeError`` without a key so callers (e.g. ``runtime diagnose``) can
+    treat a failed lookup as inconclusive rather than a confirmed missing pin.
+    """
+    if not OPENROUTER_API_KEY:
+        raise RuntimeError("OPENROUTER_API_KEY is not configured.")
+
+    req = urllib.request.Request(
+        f"{OPENROUTER_BASE_URL}/models",
+        headers={"Authorization": f"Bearer {OPENROUTER_API_KEY}"},
+    )
+    with urllib.request.urlopen(
+        req, context=_openrouter_ssl_context(), timeout=LLM_TIMEOUT_EMBEDDING
+    ) as resp:
+        data = json.loads(resp.read().decode()).get("data", [])
+    return {model["id"] for model in data if isinstance(model, dict) and model.get("id")}

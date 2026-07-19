@@ -1,5 +1,9 @@
 .DS_Store
 __pycache__/
+# Fallback eval-run history when no mirror home is configured (CV9.E2.S19).
+# The comment must sit on its own line — git treats trailing text after a
+# pattern as part of the pattern, so an inline comment silently disabled this.
+evals/.history/
 *.pyc
 .env
 claude.sh

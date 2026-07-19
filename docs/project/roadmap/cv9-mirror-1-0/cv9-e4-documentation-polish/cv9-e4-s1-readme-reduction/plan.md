@@ -125,8 +125,8 @@ architecture. No details — just enough to recognize the shape of the system.
 The README ends with the two exits the reader needs: onboarding and command
 reference. Nothing else.
 
-> → Get started in ten minutes: [Getting Started](docs/getting-started.md)  
-> → Full command reference: [REFERENCE](REFERENCE.md)
+> → Get started in ten minutes: [Getting Started](../../../../../getting-started.md)  
+> → Full command reference: [REFERENCE](../../../../../../REFERENCE.md)
 
 ---
 

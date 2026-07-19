@@ -247,4 +247,4 @@ All unit tests mock LLM I/O. No real API calls. No `OPENROUTER_API_KEY` required
 
 ---
 
-**See also:** [CV7.E1 index](../index.md) · [Principles](../../../../product/principles.md)
+**See also:** [CV7.E1 index](../index.md) · [Principles](../../../../../product/principles.md)

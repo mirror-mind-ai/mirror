@@ -218,6 +218,8 @@ Pull request policy:
 
 If the work creates a release boundary, follow [Versioning](versioning.md) and write a release note using [Release Notes](release-notes.md).
 
+**Model-behavior release gate.** A release that changes `EXTRACTION_MODEL`, `EMBEDDING_MODEL`, or any prompt in `src/memory/intelligence/prompts.py` must show a green `eval --all` (following the [model upgrade playbook](#model-upgrade-playbook)) or a consciously recorded waiver naming the reason. No green run and no waiver means no release.
+
 ---
 
 ## Pause Discipline
@@ -317,15 +319,57 @@ Run evals:
 - after a model change in `src/memory/config.py`,
 - before closing a story that changes LLM behavior.
 
-Commands:
+Run one eval, or the whole suite:
 
 ```bash
-uv run python -m memory eval extraction
-uv run python -m memory eval routing
-uv run python -m memory eval proportionality
+uv run python -m memory eval extraction          # one named eval
+uv run python -m memory eval --all               # every eval (release gate)
+uv run python -m memory eval extraction --history # trend past runs of one eval
 ```
 
-Exit code 0 means the probe score met the threshold. Exit code 1 means it did not. Investigate before shipping.
+Exit code 0 means the probe score met the threshold; 1 means it did not. `eval
+--all` discovers every eval module by capability (any `evals/*.py` exposing
+`PROBES`), so a new probe module joins the suite automatically; it exits 0 only
+when **every** eval passes and names which evals failed otherwise. Each run
+appends a JSONL record under `<mirror_home>/eval-history/` (a shared
+`suite_run_id` ties one `--all` invocation together), and `--history` trends
+them and flags any probe that flipped. The gate writes only that history — never
+the product database. Investigate before shipping.
+
+### Model upgrade playbook
+
+A model pin is a versioned dependency, and a model upgrade is a migration. When
+changing `EXTRACTION_MODEL` or `EMBEDDING_MODEL`:
+
+1. **Baseline first, before touching the pin.** Run `eval --all` on the
+   *current* pin. This is the step most easily skipped and the one the whole
+   comparison depends on — without a fresh baseline, `--history` compares
+   against stale runs.
+2. **Swap the pin** in `src/memory/config.py` (or via the
+   `MEMORY_EXTRACTION_MODEL` / `MEMORY_EMBEDDING_MODEL` env overrides for a dry
+   run).
+3. **Re-run** `eval --all` on the new pin.
+4. **Diff per probe, not just score.** `eval <name> --history` surfaces any
+   probe that flipped. For a pure model swap the `prompt_hash` is unchanged and
+   only `model` differs, so **`prompt_hash` equal + `model` changed + a flipped
+   probe = a model-attributable regression** — distinct from a prompt-change
+   regression.
+5. **Confirm a flip is real, not noise.** Evals are non-deterministic. A single
+   `--all` run is a release *smoke*; before calling a flipped probe a genuine
+   regression, re-run that eval **n≥5** times.
+6. **Only then commit.** Investigate every real regression first.
+
+If a swap ships and misbehaves, the rollback is to revert the pin commit; an
+installed user can roll back immediately via the `MEMORY_EXTRACTION_MODEL` env
+override without waiting for a release.
+
+Example of the regression signal in `--history`:
+
+```text
+✓  2026-07-20T…  score=1.00/0.80  model=google/gemini-2.5-flash-lite  prompt_hash=a1b2c3
+✗  2026-07-20T…  score=0.83/0.80  model=google/gemini-3.0-flash       prompt_hash=a1b2c3
+      ⚠ probe 'grounded-no-fabrication' regressed vs previous run
+```
 
 ---
 

@@ -72,5 +72,5 @@ Out of scope:
 ## See also
 
 - [CV9.E3 Distribution & Tooling](../index.md)
-- [Command Reference](../../../../../REFERENCE.md)
-- [Development Guide](../../../../process/development-guide.md)
+- [Command Reference](../../../../../../REFERENCE.md)
+- [Development Guide](../../../../../process/development-guide.md)

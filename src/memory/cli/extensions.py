@@ -13,6 +13,7 @@ from typing import Any
 import yaml
 
 from memory.config import (
+    db_path_for_home,
     default_extensions_dir_for_home,
     default_runtime_skills_dir_for_home,
     resolve_mirror_home,
@@ -415,6 +416,33 @@ def _prune_catalog_for_extension(
     _write_catalog(catalog_path, runtime, target_root, items)
 
 
+def _should_copy_source_tree(source_dir: Path, target_dir: Path) -> bool:
+    """Decide whether the source tree should be copied over the installed path.
+
+    Returns ``True`` when a normal ``copytree`` is safe. Returns ``False`` when
+    source and destination already resolve to the same tree (the installed path
+    *is*, or is symlinked to, this exact source): ``copytree`` would raise a
+    same-file error copying the tree onto itself, and there is nothing to do.
+
+    Raises :class:`ExtensionValidationError` when the installed path is a
+    symlink pointing somewhere other than the source. ``copytree`` with
+    ``dirs_exist_ok=True`` writes *through* such a link and would mutate an
+    external directory the user never asked to change (the production layout
+    links installed extensions straight at their source repos).
+    """
+    if target_dir.exists() and source_dir.resolve() == target_dir.resolve():
+        return False
+    if target_dir.is_symlink():
+        raise ExtensionValidationError(
+            f"installed extension path is a symlink pointing outside the install "
+            f"source: {target_dir} -> {target_dir.resolve()}. Refusing to install "
+            f"through it, which would modify the link target. Remove the symlink "
+            f"first, or run `python -m memory ext {target_dir.name} migrate` to "
+            f"re-run migrations without copying."
+        )
+    return True
+
+
 def install_extension(
     extension_id: str,
     *,
@@ -428,12 +456,13 @@ def install_extension(
     target_extensions_root = default_extensions_dir_for_home(mirror_home)
     target_extension_dir = target_extensions_root / extension_id
     target_extensions_root.mkdir(parents=True, exist_ok=True)
-    shutil.copytree(
-        source_dir,
-        target_extension_dir,
-        dirs_exist_ok=True,
-        ignore=shutil.ignore_patterns(*_COPY_IGNORE_PATTERNS),
-    )
+    if _should_copy_source_tree(source_dir, target_extension_dir):
+        shutil.copytree(
+            source_dir,
+            target_extension_dir,
+            dirs_exist_ok=True,
+            ignore=shutil.ignore_patterns(*_COPY_IGNORE_PATTERNS),
+        )
 
     installed_manifest = load_extension_manifest(target_extension_dir)
     runtimes = [runtime] if runtime is not None else sorted(installed_manifest["runtimes"].keys())
@@ -450,12 +479,26 @@ def install_extension(
             extension_id=extension_id,
         )
 
+    # Rebuild each runtime catalog from the *full* set of installed extensions,
+    # not just the one being installed. `sync_extensions_for_runtime` overwrites
+    # extensions.json with exactly the manifests it is given, so feeding it a
+    # single manifest drops every previously-installed extension from the catalog
+    # while leaving its SKILL.md on disk. The catalog is the discovery source for
+    # Pi (`resources_discover`) and Claude (`expose-claude`) with no directory
+    # fallback, so a truncated catalog makes prior extensions invisible. Passing
+    # the complete installed set keeps the catalog authoritative and self-heals a
+    # catalog that a previous single-install run had already truncated.
+    installed_manifests, _ = discover_extensions(target_extensions_root)
+
     synced: dict[str, list[dict[str, str]]] = {}
     for runtime_name in runtimes:
         runtime_target_root = default_runtime_skills_dir_for_home(mirror_home, runtime_name)
-        synced[runtime_name] = sync_extensions_for_runtime(
-            [installed_manifest], runtime_name, runtime_target_root
+        all_synced = sync_extensions_for_runtime(
+            installed_manifests, runtime_name, runtime_target_root
         )
+        # The catalog on disk holds the full set; the CLI report stays focused on
+        # the extension the user just installed.
+        synced[runtime_name] = [entry for entry in all_synced if entry["id"] == extension_id]
 
     return {
         "extension_id": extension_id,
@@ -486,7 +529,11 @@ def _post_install_command_skill(
     from memory.extensions.migrations import run_migrations
 
     migrations_dir = target_extension_dir / "migrations"
-    db_path = mirror_home / "memory.db"
+    # One (mirror home, MEMORY_ENV) pair maps to exactly one database file, the
+    # same rule the extension dispatch path uses (see cli/ext._open_connection).
+    # Hardcoding memory.db here would apply migrations to a database the runtime
+    # never reads under any non-production MEMORY_ENV.
+    db_path = db_path_for_home(mirror_home)
     db_path.parent.mkdir(parents=True, exist_ok=True)
     conn = get_connection(db_path)
     try:
@@ -643,7 +690,7 @@ def uninstall_extension(
         if manifest.get("kind") == "command-skill":
             from memory.db.connection import get_connection
 
-            conn = get_connection(mirror_home / "memory.db")
+            conn = get_connection(db_path_for_home(mirror_home))
             try:
                 cursor = conn.execute(
                     "DELETE FROM _ext_bindings WHERE extension_id = ?",

@@ -163,3 +163,48 @@ is useful but can blur the meaning of hybrid scores if done carelessly.
 
 **Default recommendation:** clear failure in S1, fallback as a later story if real
 usage shows it is worth the added semantics.
+
+---
+
+## As-Built (reconciled at implementation)
+
+This plan predated three landed stories. What actually shipped:
+
+**Already in place before S1 (removed from scope):**
+
+- The missing-key guard landed with CV9.E2.S10 (AI-04).
+- Client-level `timeout` + `max_retries` landed with AI-01.
+- Memory search already degrades to lexical-only and flags `degraded=True`
+  (CV9.E2.S10). The plan's open question — fail clearly vs. lexical fallback for
+  *memory* search — was therefore already answered (fallback), and
+  `test_search_degradation.py` remains its guard. S1 left that path unchanged.
+
+**What S1 added — a three-way failure taxonomy** (refined from three-lens review):
+
+1. **permanent-input** — empty/whitespace text raises `EmbeddingError(permanent=True)`
+   *before* any network call (no doomed spend);
+2. **transient** — empty `data`/payload is retried up to `EMBEDDING_ATTEMPTS`
+   (default 3) with short backoff. This is the class the SDK's `max_retries`
+   cannot see (a 200 with empty data), i.e. the actual live failure;
+3. **permanent-config** — a dimension mismatch raises `EmbeddingError(permanent=True)`
+   immediately with a diagnostic message (expected vs. actual + the
+   `MEMORY_EMBEDDING_MODEL` remedy). It is *not* retried, so a config error is
+   never mislabeled "failed after 3 attempts".
+
+Provider exceptions surface after the SDK's own retries and are wrapped once
+(`EmbeddingError`) — this layer does not re-retry them, bounding interactive-path
+latency (AI-01 philosophy).
+
+**Conscious exclusions (recorded, not built):**
+
+- The dimension check is *shape* verification, not *space* verification. A silent
+  provider re-route to a different 1536-dim space is invisible until AI-07
+  embedding provenance + a drift eval (AI-11). Named in `_extract_embedding`.
+- Embedding calls still bypass the `llm_calls` ledger — deferred as an AI-09
+  follow-up (debt **D-003**), safe because `EMBEDDING_ATTEMPTS` bounds retry
+  amplification.
+- Journey search's silent `[]` on embedding failure is pre-existing and out of
+  scope (debt **D-002**).
+- CLI messaging kept minimal: the clean `EmbeddingError` is the deliverable;
+  write-path callers already isolate it (extraction quarantine, S7) or degrade
+  (memory search, S10).

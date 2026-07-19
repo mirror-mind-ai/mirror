@@ -3,12 +3,26 @@
 import json
 from collections.abc import Callable
 
-from memory.config import LOG_LLM_CALLS
-from memory.intelligence.embeddings import embedding_to_bytes, generate_embedding
+import numpy as np
+
+from memory.intelligence.embeddings import (
+    add_embedding_provenance,
+    embedding_to_bytes,
+    generate_embedding,
+)
 from memory.intelligence.llm_router import LLMResponse
 from memory.intelligence.search import MemorySearch
-from memory.models import Memory, MemorySummary, SearchResult
+from memory.models import Memory, MemorySummary, SearchOutcome, SearchResult
+from memory.services.observability import build_llm_logger
 from memory.storage.store import Store
+
+
+def memory_embed_text(title: str, content: str, context: str | None = None) -> str:
+    """The text embedded for a memory: title, content, and optional context."""
+    text = f"{title}. {content}"
+    if context:
+        text += f" Context: {context}"
+    return text
 
 
 class MemoryService:
@@ -28,13 +42,19 @@ class MemoryService:
         tags: list[str] | None = None,
         conversation_id: str | None = None,
         metadata: str | None = None,
+        embedding: np.ndarray | None = None,
     ) -> Memory:
-        """Add a manual memory without automatic extraction."""
-        embed_text = f"{title}. {content}"
-        if context:
-            embed_text += f" Context: {context}"
+        """Add a manual memory without automatic extraction.
 
-        emb = generate_embedding(embed_text)
+        ``embedding`` may be a precomputed vector — staged up front by the
+        extraction pipeline so a partial failure persists nothing (CV9.E2.S9).
+        When omitted, the embedding is generated here.
+        """
+        if embedding is None:
+            embedding = generate_embedding(
+                memory_embed_text(title, content, context),
+                on_llm_call=build_llm_logger(self.store, role="embedding"),
+            )
 
         mem = Memory(
             conversation_id=conversation_id,
@@ -46,8 +66,8 @@ class MemoryService:
             journey=journey,
             persona=persona,
             tags=json.dumps(tags) if tags else None,
-            embedding=embedding_to_bytes(emb),
-            metadata=metadata,
+            embedding=embedding_to_bytes(embedding),
+            metadata=add_embedding_provenance(metadata),
         )
         return self.store.create_memory(mem)
 
@@ -58,14 +78,43 @@ class MemoryService:
         memory_type: str | None = None,
         layer: str | None = None,
         journey: str | None = None,
+        log_access: bool = True,
+        on_llm_call: Callable[[LLMResponse], None] | None = None,
     ) -> list[SearchResult]:
         """Search memories by hybrid similarity."""
+        if on_llm_call is None:
+            on_llm_call = build_llm_logger(self.store, role="embedding")
         return self.search_engine.search(
             query,
             limit=limit,
             memory_type=memory_type,
             layer=layer,
             journey=journey,
+            log_access=log_access,
+            on_llm_call=on_llm_call,
+        )
+
+    def search_with_status(
+        self,
+        query: str,
+        limit: int = 5,
+        memory_type: str | None = None,
+        layer: str | None = None,
+        journey: str | None = None,
+        log_access: bool = True,
+        on_llm_call: Callable[[LLMResponse], None] | None = None,
+    ) -> SearchOutcome:
+        """Search reporting whether it ran degraded (lexical-only fallback)."""
+        if on_llm_call is None:
+            on_llm_call = build_llm_logger(self.store, role="embedding")
+        return self.search_engine.search_with_status(
+            query,
+            limit=limit,
+            memory_type=memory_type,
+            layer=layer,
+            journey=journey,
+            log_access=log_access,
+            on_llm_call=on_llm_call,
         )
 
     def list_recent(
@@ -118,22 +167,7 @@ class MemoryService:
         from memory.intelligence.extraction import classify_journal_entry
 
         if not title or not layer or not tags:
-            llm_logger: Callable[[LLMResponse], None] | None = None
-            if LOG_LLM_CALLS:
-
-                def _log_llm_call(response: LLMResponse) -> None:
-                    self.store.log_llm_call(
-                        role="journal_classification",
-                        model=response.model,
-                        prompt=response.prompt or "",
-                        response_text=response.content,
-                        prompt_tokens=response.prompt_tokens,
-                        completion_tokens=response.completion_tokens,
-                        latency_ms=response.latency_ms,
-                    )
-
-                llm_logger = _log_llm_call
-
+            llm_logger = build_llm_logger(self.store, role="journal_classification")
             classification = classify_journal_entry(content, on_llm_call=llm_logger)
             title = title or classification["title"]
             layer = layer or classification["layer"]

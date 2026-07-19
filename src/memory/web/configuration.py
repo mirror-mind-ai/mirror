@@ -154,8 +154,8 @@ def build_configuration_overview(mirror_home: str | Path | None) -> Configuratio
                 ),
                 ConfigurationItem(
                     "LLM audit logging",
-                    "enabled" if config.LOG_LLM_CALLS else "disabled",
-                    "When enabled, Mirror records LLM calls for local audit/debugging evidence.",
+                    config.LOG_LLM_CALLS_MODE,
+                    "Mode for local LLM call logging: 'metadata' (default) records role/model/tokens/latency/cost with no bodies, 'full' also stores prompt/response, 'off' disables it.",
                     doc_href=_doc_href("llm-audit-logging"),
                 ),
                 ConfigurationItem(
@@ -182,7 +182,7 @@ def _environment_items() -> list[ConfigurationItem]:
         ("MEMORY_DIR", "Optional memory runtime directory override."),
         ("DB_PATH", "Optional database path override."),
         ("OPENROUTER_API_KEY", "OpenRouter API key used for model calls."),
-        ("MEMORY_LOG_LLM_CALLS", "Enables local LLM audit logging when set to 1."),
+        ("MEMORY_LOG_LLM_CALLS", "Local LLM call logging mode: off | metadata (default) | full."),
         ("MEMORY_RECEPTION", "Controls LLM-assisted conversation routing."),
     ]
     return [_environment_item(name, description) for name, description in entries]

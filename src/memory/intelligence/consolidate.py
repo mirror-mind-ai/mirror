@@ -20,7 +20,7 @@ import numpy as np
 from memory.config import EXTRACTION_MODEL
 from memory.intelligence.embeddings import bytes_to_embedding
 from memory.intelligence.llm_router import LLMResponse, send_to_model
-from memory.intelligence.prompts import CONSOLIDATION_PROMPT
+from memory.intelligence.prompts import CONSOLIDATION_PROMPT, fence_untrusted
 from memory.intelligence.search import cosine_similarity
 from memory.models import Consolidation, Memory
 
@@ -134,7 +134,11 @@ def propose_consolidation(
     Returns:
         A Consolidation instance (not yet persisted), or None on failure.
     """
-    cluster_text = _format_cluster(cluster)
+    # AI-23 pattern (CV9.E2.S23), applied proactively: an identity_update
+    # proposal can target structural identity, so this surface is fenced
+    # before it ever ships red. Only the user-derived cluster is fenced --
+    # identity_context is system-side, not user-injected.
+    cluster_text = fence_untrusted("cluster", _format_cluster(cluster))
     prompt = CONSOLIDATION_PROMPT.format(
         user_name=user_name,
         identity_context=identity_context,

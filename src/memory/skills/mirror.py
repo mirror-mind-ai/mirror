@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import re
 import sys
-from collections.abc import Callable
 
 from memory.cli.conversation_logger import (
     bind_conversation_context,
@@ -13,9 +12,9 @@ from memory.cli.conversation_logger import (
     update_current_conversation,
 )
 from memory.client import MemoryClient
-from memory.config import LOG_LLM_CALLS, RECEPTION_ENABLED, resolve_mirror_home
+from memory.config import RECEPTION_ENABLED, resolve_mirror_home
 from memory.hooks.mirror_state import write_state
-from memory.intelligence.llm_router import LLMResponse
+from memory.services.observability import build_llm_logger
 from memory.services.operating_mode import activate_mode
 from memory.surfaces.mode_transition import render_mirror_mode_transition
 
@@ -111,21 +110,7 @@ def _resolve_defaults(
             for j in raw_journeys
         ]
 
-        llm_logger: Callable[[LLMResponse], None] | None = None
-        if LOG_LLM_CALLS:
-
-            def _log_llm_call(response: LLMResponse) -> None:
-                mem.store.log_llm_call(
-                    role="reception",
-                    model=response.model,
-                    prompt=response.prompt or "",
-                    response_text=response.content,
-                    prompt_tokens=response.prompt_tokens,
-                    completion_tokens=response.completion_tokens,
-                    latency_ms=response.latency_ms,
-                )
-
-            llm_logger = _log_llm_call
+        llm_logger = build_llm_logger(mem.store, role="reception")
 
         result = reception(query, personas_meta, journeys_meta, on_llm_call=llm_logger)
 

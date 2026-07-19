@@ -2,6 +2,8 @@
 
 import json
 
+import pytest
+
 from memory.models import Identity
 
 
@@ -244,3 +246,79 @@ class TestIdentityServiceLoadFullIdentity:
         result = identity_service.load_full_identity()
         assert "--- ego/identity ---" in result
         assert "--- self/soul ---" in result
+
+
+class TestApplyConsolidationIdentityUpdate:
+    """CV9.E2.S23 (AI-23): the identity-write accept path had no allowlist —
+    a model-chosen target_layer could write to any identity layer. This gates
+    consolidation-sourced identity writes to the mirror's own inferred-
+    identity layers (self, ego) only."""
+
+    def test_accepts_self_layer(self, identity_service, store):
+        identity_service.apply_consolidation_identity_update(
+            target_layer="self", target_key="soul", content="New insight."
+        )
+        result = store.get_identity("self", "soul")
+        assert result is not None
+        assert "New insight." in result.content
+
+    def test_accepts_ego_layer(self, identity_service, store):
+        identity_service.apply_consolidation_identity_update(
+            target_layer="ego", target_key="behavior", content="New pattern."
+        )
+        result = store.get_identity("ego", "behavior")
+        assert result is not None
+
+    def test_rejects_user_layer(self, identity_service):
+        with pytest.raises(ValueError):
+            identity_service.apply_consolidation_identity_update(
+                target_layer="user", target_key="identity", content="x"
+            )
+
+    def test_rejects_organization_layer(self, identity_service):
+        with pytest.raises(ValueError):
+            identity_service.apply_consolidation_identity_update(
+                target_layer="organization", target_key="identity", content="x"
+            )
+
+    def test_rejects_shadow_layer(self, identity_service):
+        # Shadow has its own path (mm-shadow) -- consolidation must not write it.
+        with pytest.raises(ValueError):
+            identity_service.apply_consolidation_identity_update(
+                target_layer="shadow", target_key="profile", content="x"
+            )
+
+    def test_rejects_unknown_layer(self, identity_service):
+        with pytest.raises(ValueError):
+            identity_service.apply_consolidation_identity_update(
+                target_layer="not-a-real-layer", target_key="whatever", content="x"
+            )
+
+    def test_rejection_does_not_write_anything(self, identity_service, store):
+        with pytest.raises(ValueError):
+            identity_service.apply_consolidation_identity_update(
+                target_layer="user", target_key="identity", content="attacker content"
+            )
+        assert store.get_identity("user", "identity") is None
+
+    def test_appends_to_existing_content(self, identity_service, store):
+        identity_service.set_identity("ego", "behavior", "Original line.")
+        identity_service.apply_consolidation_identity_update(
+            target_layer="ego", target_key="behavior", content="New line."
+        )
+        result = store.get_identity("ego", "behavior")
+        assert result.content == "Original line.\n\nNew line."
+
+    def test_no_existing_content_is_not_appended(self, identity_service, store):
+        identity_service.apply_consolidation_identity_update(
+            target_layer="ego", target_key="fresh-key", content="First content."
+        )
+        result = store.get_identity("ego", "fresh-key")
+        assert result.content == "First content."
+
+    def test_returns_identity_object(self, identity_service):
+        result = identity_service.apply_consolidation_identity_update(
+            target_layer="ego", target_key="behavior", content="x"
+        )
+        assert isinstance(result, Identity)
+        assert result.layer == "ego"

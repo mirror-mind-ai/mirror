@@ -10,6 +10,7 @@ from memory.intelligence.llm_router import (
     resolve_model,
     send_to_model,
 )
+from memory.services.observability import build_llm_logger
 
 TIERS = ("lite", "mid", "flagship")
 
@@ -59,14 +60,18 @@ def cmd_ask(
     if cost_parts:
         print(f"[{', '.join(cost_parts)}]")
 
-    if resp.generation_id:
-        total_cost = fetch_generation_cost(resp.generation_id)
-        if total_cost is not None:
-            cost_brl = total_cost * USD_TO_BRL
-            if total_cost < 0.01:
-                print(f"Call cost: ${total_cost:.6f} (R$ {cost_brl:.4f})")
-            else:
-                print(f"Call cost: ${total_cost:.4f} (R$ {cost_brl:.2f})")
+    total_cost = fetch_generation_cost(resp.generation_id) if resp.generation_id else None
+    if total_cost is not None:
+        cost_brl = total_cost * USD_TO_BRL
+        if total_cost < 0.01:
+            print(f"Call cost: ${total_cost:.6f} (R$ {cost_brl:.4f})")
+        else:
+            print(f"Call cost: ${total_cost:.4f} (R$ {cost_brl:.2f})")
+
+    # Consult joins the ledger with its real fetched cost (metadata-only unless full).
+    log = build_llm_logger(mem.store, role="consult", cost_usd=total_cost)
+    if log:
+        log(resp)
 
     cmd_credits()
 

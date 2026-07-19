@@ -81,4 +81,4 @@ Validates end-to-end without touching production. Verified:
 - [CV8.E2 Gemini CLI Runtime Implementation](../cv8-e2-gemini-cli-runtime-implementation/index.md)
 - [CV8.E4 Runtime Adapter Hardening](../cv8-e4-runtime-adapter-hardening/index.md)
 - [Runtime Interface Contract](../../../../product/specs/runtime-interface/index.md)
-- [Smoke test script](../../../../scripts/smoke_gemini_cli.sh)
+- [Smoke test script](../../../../../scripts/smoke_gemini_cli.sh)

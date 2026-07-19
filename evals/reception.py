@@ -17,10 +17,16 @@ import json
 
 from evals.types import EvalProbe
 from memory.client import MemoryClient
+from memory.config import EXTRACTION_MODEL
+from memory.intelligence.prompts import RECEPTION_PROMPT
 from memory.intelligence.reception import reception
 from memory.models import ReceptionResult
 
 THRESHOLD = 0.80
+# CV9.E2.S19 (AI-11): reception() pins EXTRACTION_MODEL (a shorter timeout,
+# same model) and exercises RECEPTION_PROMPT.
+EVAL_MODEL = EXTRACTION_MODEL
+EVAL_PROMPTS = (RECEPTION_PROMPT,)
 
 
 # ---------------------------------------------------------------------------

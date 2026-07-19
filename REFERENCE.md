@@ -429,6 +429,19 @@ is permanent supported behavior. To stop the warning, run
 |----------|------|
 | `OPENROUTER_API_KEY` | Embeddings (`openai/text-embedding-3-small` via OpenRouter), extraction (Gemini Flash), and the multi-LLM `consult` command. |
 
+### Intelligence Flags
+
+The four flags that determine what the mirror does and costs on every
+conversation. Their 1.0 posture and full reasoning are recorded in
+[Decisions](docs/project/decisions.md).
+
+| Variable | Default | Effect, cost, and trade-off |
+|----------|---------|------------------------------|
+| `MEMORY_RECEPTION` | `1` (on) | One classification call per Mirror-mode turn before the mirror answers; fails safe to keyword routing (10s timeout). Set `0` to disable — saves one interactive call per turn, loses turn-aware response shaping. |
+| `MEMORY_TWO_PASS` | unset (off) | Second-pass curation that dedups and refines new memories against history at write time: a query embedding per candidate plus one curation call. Set `1` to enable — fewer near-duplicate memories, at added per-conversation cost (not yet in the `llm_calls` ledger, debt D-003) and a risk of over-merging distinct memories. Off for 1.0; revisit when embedding spend is measurable. |
+| `MEMORY_SUMMARIZE` | unset (off) | LLM-written conversation summary instead of the free mechanical one. Set `1` to enable — marginal summary-quality gain for one call per conversation. |
+| `MEMORY_LOG_LLM_CALLS` | `metadata` | `off`, `metadata`, or `full`. `metadata` records role/model/tokens/latency/estimated-cost with no bodies; `full` adds prompt/response bodies; `off` disables logging. Legacy `1` maps to `full`. |
+
 ### Environment Selection
 
 | Variable | Default | Role |

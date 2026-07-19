@@ -7,6 +7,54 @@ import pytest
 from memory.models import Attachment
 
 
+class TestAttachmentServiceEmbeddingFailure:
+    """CV9.E2.S1 — write fails cleanly; search reports the failure (no silent [])."""
+
+    def test_add_attachment_does_not_persist_on_embedding_failure(
+        self, attachment_service, store, mocker
+    ):
+        from memory.intelligence.embeddings import EmbeddingError
+
+        create_spy = mocker.spy(store, "create_attachment")
+        mocker.patch(
+            "memory.services.attachment.generate_embedding",
+            side_effect=EmbeddingError("No embedding generated after 3 attempts"),
+        )
+
+        with pytest.raises(EmbeddingError):
+            attachment_service.add_attachment(journey_id="j", name="n", content="c")
+
+        create_spy.assert_not_called()
+
+    def test_search_attachments_raises_on_query_embedding_failure(
+        self, attachment_service, mocker, emb_vec
+    ):
+        from memory.intelligence.embeddings import EmbeddingError
+
+        mocker.patch("memory.services.attachment.generate_embedding", return_value=emb_vec)
+        attachment_service.add_attachment(journey_id="j", name="n", content="seed content")
+
+        mocker.patch(
+            "memory.services.attachment.generate_embedding",
+            side_effect=EmbeddingError("provider unreachable"),
+        )
+        with pytest.raises(EmbeddingError):
+            attachment_service.search_attachments("j", "query")
+
+
+class TestAttachmentServiceEmbeddingProvenance:
+    """CV9.E2.S17 (AI-07) — stored attachment vectors record their embedding model."""
+
+    def test_add_attachment_records_provenance(
+        self, attachment_service, store, mock_attachment_embedding
+    ):
+        from memory.config import EMBEDDING_MODEL
+
+        attachment_service.add_attachment(journey_id="j", name="n", content="c")
+        stored = store.get_attachment_by_name("j", "n")
+        assert json.loads(stored.metadata)["embedding_model"] == EMBEDDING_MODEL
+
+
 class TestAttachmentServiceAddAttachment:
     def test_returns_attachment_object(self, attachment_service, mock_attachment_embedding):
         att = attachment_service.add_attachment(

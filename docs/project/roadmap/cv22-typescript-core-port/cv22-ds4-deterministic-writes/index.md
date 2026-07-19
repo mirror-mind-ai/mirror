@@ -5,7 +5,7 @@
 **Delivery Story:** Port the deterministic write commands to the TypeScript core over the shared database seam, with parity proven on copies of `memory.db` — never the live database — behind an explicit backup gate.
 **Status:** ✅ Done — deterministic write parity (TS1/US1/US2/US3) plus CLI-write front-door routing (US4 identity, US5 journey). Carried follow-ups, not DS4 story work: the production `mm-identity`/`mm-journey` skill cutovers (dogfood-gated) and reinforcement-write routing (→ CV22.DS5).
 **Type:** Delivery Story
-**Depends on:** [CV22.DS2 TS Foundation & Read-Only Command Parity](../cv22-ds2-ts-foundation-read-only-parity/index.md) (done) for the `node:sqlite` seam and the redacted parity-harness pattern; [CV22.DS3 Pi TS Front Door](../../cv22-pi-ts-front-door/cv22-ds3/index.md) (done) for the routing table that currently sends every write to the Python fallback; the [database-seam strangler decision](../../../decisions.md).
+**Depends on:** [CV22.DS2 TS Foundation & Read-Only Command Parity](../cv22-ds2-ts-foundation-read-only-parity/index.md) (done) for the `node:sqlite` seam and the redacted parity-harness pattern; [CV22.DS3 Pi TS Front Door](../cv22-ds3-pi-ts-front-door/index.md) (done) for the routing table that currently sends every write to the Python fallback; the [database-seam strangler decision](../../../decisions.md).
 
 ---
 
@@ -121,5 +121,5 @@ write routing) and **US5** (journey `set-path` routing) to close DS4.
 - [CV22 index](../index.md)
 - [CV22 Collaboration Strategy — Baton 4](../collaboration-strategy.md)
 - [CV22.DS2 TS Foundation & Read-Only Command Parity](../cv22-ds2-ts-foundation-read-only-parity/index.md)
-- [CV22.DS3 Pi TS Front Door](../../cv22-pi-ts-front-door/cv22-ds3/index.md)
+- [CV22.DS3 Pi TS Front Door](../cv22-ds3-pi-ts-front-door/index.md)
 - [Decisions — database-seam strangler](../../../decisions.md)

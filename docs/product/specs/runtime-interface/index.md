@@ -626,4 +626,4 @@ Established labels: `claude_code`, `pi`, `gemini_cli`, `codex`.
 
 ---
 
-**See also:** [CV2 Runtime Portability](roadmap/cv2-runtime-portability/index.md) · [Briefing](briefing.md) · [CV8.E4 Runtime Adapter Hardening](roadmap/cv8-runtime-expansion/cv8-e4-runtime-adapter-hardening/index.md)
+**See also:** [CV2 Runtime Portability](../../../project/roadmap/cv2-runtime-portability/index.md) · [Briefing](../../../project/briefing.md) · [CV8.E4 Runtime Adapter Hardening](../../../project/roadmap/cv8-runtime-expansion/cv8-e4-runtime-adapter-hardening/index.md)

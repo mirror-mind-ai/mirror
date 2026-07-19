@@ -242,4 +242,4 @@ All unit tests use mocked probes — no real LLM calls, no API keys required.
 
 ---
 
-**See also:** [CV7.E1 index](../index.md) · [draft-analysis §4.5](../../draft-analysis.md) · [Principles](../../../../product/principles.md)
+**See also:** [CV7.E1 index](../index.md) · [draft-analysis §4.5](../../draft-analysis.md) · [Principles](../../../../../product/principles.md)

@@ -145,7 +145,7 @@ def main() -> None:
 
         # Freeze the two impure inputs and the read-only side effect.
         search_mod.datetime = _FrozenDateTime
-        search_mod.generate_embedding = lambda _q: QUERY_VEC
+        search_mod.generate_embedding = lambda _q, **_kw: QUERY_VEC
         store.log_access = lambda *a, **k: None  # type: ignore[assignment]
 
         results = MemorySearch(store).search(QUERY, limit=LIMIT)

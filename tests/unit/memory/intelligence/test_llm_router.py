@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from memory.config import LLM_MAX_RETRIES, LLM_TIMEOUT_EXTRACTION
 from memory.intelligence.llm_router import (
     CreditInfo,
     LLMResponse,
@@ -172,6 +173,34 @@ class TestSendToModel:
     def test_prompt_contains_message_content(self, mock_openai_client):
         result = send_to_model("m", [{"role": "user", "content": "hello world"}])
         assert "hello world" in result.prompt
+
+
+class TestSendToModelTimeouts:
+    def _stub_completion(self, mock_openai):
+        completion = mock_openai.return_value.chat.completions.create.return_value
+        completion.choices[0].message.content = "ok"
+        completion.usage = None
+        return completion
+
+    def test_defaults_to_extraction_timeout_and_retry_ceiling(self, mocker, api_key_set):
+        mock_openai = mocker.patch("memory.intelligence.llm_router.OpenAI")
+        self._stub_completion(mock_openai)
+
+        send_to_model("m", [])
+
+        kwargs = mock_openai.call_args.kwargs
+        assert kwargs["timeout"] == LLM_TIMEOUT_EXTRACTION
+        assert kwargs["max_retries"] == LLM_MAX_RETRIES
+
+    def test_explicit_timeout_and_retries_override_defaults(self, mocker, api_key_set):
+        mock_openai = mocker.patch("memory.intelligence.llm_router.OpenAI")
+        self._stub_completion(mock_openai)
+
+        send_to_model("m", [], timeout=3.0, max_retries=0)
+
+        kwargs = mock_openai.call_args.kwargs
+        assert kwargs["timeout"] == 3.0
+        assert kwargs["max_retries"] == 0
 
 
 # ---------------------------------------------------------------------------

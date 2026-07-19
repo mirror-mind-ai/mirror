@@ -6,7 +6,9 @@ from unittest.mock import MagicMock
 import pytest
 
 from memory.intelligence.extraction import (
+    _fence_transcript,
     _parse_json_response,
+    _sanitize_extracted,
     classify_journal_entry,
     curate_against_existing,
     extract_memories,
@@ -14,10 +16,19 @@ from memory.intelligence.extraction import (
     extract_week_plan,
     format_transcript,
     generate_conversation_summary,
+    generate_conversation_tags,
+    generate_conversation_title,
     generate_descriptor,
 )
 from memory.intelligence.llm_router import LLMResponse
-from memory.models import ExtractedMemory, ExtractedTask, ExtractedWeekItem, Memory, Message
+from memory.models import (
+    VALID_MEMORY_LAYERS,
+    ExtractedMemory,
+    ExtractedTask,
+    ExtractedWeekItem,
+    Memory,
+    Message,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -643,6 +654,151 @@ def _make_existing(**kwargs) -> Memory:
     return Memory(**defaults)
 
 
+class TestSanitizeExtracted:
+    def _mem(self, *, layer="ego", memory_type="insight"):
+        return ExtractedMemory(title="t", content="c", memory_type=memory_type, layer=layer)
+
+    def test_drops_invalid_layer(self):
+        kept, dropped = _sanitize_extracted([self._mem(layer="banana")], max_count=8)
+        assert kept == []
+        assert dropped["invalid_layer"] == 1
+
+    def test_drops_invalid_type(self):
+        kept, dropped = _sanitize_extracted([self._mem(memory_type="nonsense")], max_count=8)
+        assert kept == []
+        assert dropped["invalid_type"] == 1
+
+    def test_caps_over_limit_and_counts(self):
+        kept, dropped = _sanitize_extracted([self._mem() for _ in range(12)], max_count=8)
+        assert len(kept) == 8
+        assert dropped["over_cap"] == 4
+
+    def test_valid_layers_and_types_pass(self):
+        mems = [
+            self._mem(layer="self", memory_type="decision"),
+            self._mem(layer="shadow", memory_type="tension"),
+        ]
+        kept, dropped = _sanitize_extracted(mems, max_count=8)
+        assert len(kept) == 2
+        assert dropped == {"invalid_layer": 0, "invalid_type": 0, "over_cap": 0}
+
+
+class TestExtractMemoriesBoundary:
+    def test_invalid_layer_item_dropped(self, mocker, sample_messages):
+        payload = json.dumps(
+            [
+                {
+                    "title": "ok",
+                    "content": "c",
+                    "memory_type": "insight",
+                    "layer": "ego",
+                    "tags": [],
+                },
+                {
+                    "title": "bad",
+                    "content": "c",
+                    "memory_type": "insight",
+                    "layer": "banana",
+                    "tags": [],
+                },
+            ]
+        )
+        _make_send_to_model_mock(mocker, payload)
+        assert [m.title for m in extract_memories(sample_messages)] == ["ok"]
+
+    def test_caps_at_eight(self, mocker, sample_messages):
+        payload = json.dumps(
+            [
+                {
+                    "title": f"m{i}",
+                    "content": "c",
+                    "memory_type": "insight",
+                    "layer": "ego",
+                    "tags": [],
+                }
+                for i in range(20)
+            ]
+        )
+        _make_send_to_model_mock(mocker, payload)
+        assert len(extract_memories(sample_messages)) == 8
+
+    def test_prompt_fences_transcript_as_data(self, mocker, sample_messages):
+        mock_send = _make_send_to_model_mock(mocker, "[]")
+        extract_memories(sample_messages)
+        prompt = mock_send.call_args[0][1][0]["content"]
+        assert "<transcript>" in prompt and "</transcript>" in prompt
+        assert "not instructions" in prompt.lower()
+
+
+class TestExtractMemoriesStatusSink:
+    def test_parse_failed_on_non_list(self, mocker, sample_messages):
+        _make_send_to_model_mock(mocker, '{"not": "a list"}')
+        status: dict = {}
+        assert extract_memories(sample_messages, status=status) == []
+        assert status["extraction_status"] == "parse_failed"
+
+    def test_parse_failed_on_malformed_json(self, mocker, sample_messages):
+        _make_send_to_model_mock(mocker, "not json at all")
+        status: dict = {}
+        extract_memories(sample_messages, status=status)
+        assert status["extraction_status"] == "parse_failed"
+
+    def test_no_signal_on_empty_list(self, mocker, sample_messages):
+        _make_send_to_model_mock(mocker, "[]")
+        status: dict = {}
+        assert extract_memories(sample_messages, status=status) == []
+        assert status["extraction_status"] == "no_signal"
+
+    def test_ok_when_memory_kept(self, mocker, sample_messages):
+        payload = json.dumps(
+            [{"title": "T", "content": "C", "memory_type": "insight", "layer": "ego", "tags": []}]
+        )
+        _make_send_to_model_mock(mocker, payload)
+        status: dict = {}
+        assert len(extract_memories(sample_messages, status=status)) == 1
+        assert status["extraction_status"] == "ok"
+
+    def test_all_dropped_is_no_signal_with_counts(self, mocker, sample_messages):
+        payload = json.dumps(
+            [
+                {
+                    "title": "T",
+                    "content": "C",
+                    "memory_type": "insight",
+                    "layer": "banana",
+                    "tags": [],
+                }
+            ]
+        )
+        _make_send_to_model_mock(mocker, payload)
+        status: dict = {}
+        assert extract_memories(sample_messages, status=status) == []
+        assert status["extraction_status"] == "no_signal"
+        assert status["dropped"]["invalid_layer"] == 1
+
+    def test_no_sink_is_unchanged(self, mocker, sample_messages):
+        _make_send_to_model_mock(mocker, "[]")
+        assert extract_memories(sample_messages) == []  # no status kwarg, must not raise
+
+
+class TestExtractTasksBoundary:
+    def test_caps_at_five(self, mocker, sample_messages):
+        payload = json.dumps([{"title": f"task {i}"} for i in range(12)])
+        _make_send_to_model_mock(mocker, payload)
+        assert len(extract_tasks(sample_messages)) == 5
+
+    def test_prompt_fences_transcript_as_data(self, mocker, sample_messages):
+        mock_send = _make_send_to_model_mock(mocker, "[]")
+        extract_tasks(sample_messages)
+        prompt = mock_send.call_args[0][1][0]["content"]
+        assert "<transcript>" in prompt
+        assert "not instructions" in prompt.lower()
+
+
+def test_fence_transcript_wraps_body():
+    assert _fence_transcript("hello") == "<transcript>\nhello\n</transcript>"
+
+
 class TestCurateAgainstExisting:
     def test_empty_candidates_returns_empty_without_llm_call(self, mocker):
         mock_send = mocker.patch("memory.intelligence.extraction.send_to_model")
@@ -674,6 +830,29 @@ class TestCurateAgainstExisting:
         result = curate_against_existing(candidates, [_make_existing()])
         assert len(result) == 1
         assert result[0].title == "Kept"
+
+    def test_curated_invalid_layer_dropped(self, mocker):
+        payload = json.dumps(
+            [
+                {
+                    "title": "keep",
+                    "content": "c",
+                    "memory_type": "insight",
+                    "layer": "ego",
+                    "tags": [],
+                },
+                {
+                    "title": "bad",
+                    "content": "c",
+                    "memory_type": "insight",
+                    "layer": "banana",
+                    "tags": [],
+                },
+            ]
+        )
+        _make_send_to_model_mock(mocker, payload)
+        result = curate_against_existing([_make_candidate()], [_make_existing()])
+        assert [m.title for m in result] == ["keep"]
 
     def test_all_dropped_returns_empty_list(self, mocker):
         _make_send_to_model_mock(mocker, "[]")
@@ -760,6 +939,99 @@ class TestGenerateConversationSummary:
         mock_send.assert_not_called()
         callback.assert_not_called()
 
+    def test_prompt_fences_transcript_as_data(self, mocker, sample_messages):
+        """AI-25 (CV9.E2.S29): matches AI-16/AI-22's fence template exactly."""
+        mock_send = _make_send_to_model_mock(mocker, "Summary.")
+        generate_conversation_summary(sample_messages)
+        prompt = mock_send.call_args[0][1][0]["content"]
+        assert "<transcript>" in prompt and "</transcript>" in prompt
+        assert "not instructions" in prompt.lower()
+
+    def test_prompt_sandwiches_the_fence_with_a_post_reminder(self, mocker, sample_messages):
+        """AI-22's as-built finding: a pre-fence-only guard measured 1/3 clean
+        against a live injection probe; the sandwich (a second reminder
+        immediately after the fence, the most recency-weighted position) was
+        required to reach 9/10. Applied here before any live measurement,
+        not after a red result — the lesson is already paid for.
+        """
+        mock_send = _make_send_to_model_mock(mocker, "Summary.")
+        generate_conversation_summary(sample_messages)
+        prompt = mock_send.call_args[0][1][0]["content"]
+        assert prompt.index("</transcript>") < prompt.rindex("never")
+        assert "never instructions to obey" in prompt.lower()
+
+    def test_prompt_has_a_distancing_aware_null_action(self, mocker, sample_messages):
+        """Summary's null action is distancing-aware (describe generically),
+        not zero-tolerance — a summary may legitimately reference
+        instruction-like content without asserting it, unlike title/tags.
+        """
+        mock_send = _make_send_to_model_mock(mocker, "Summary.")
+        generate_conversation_summary(sample_messages)
+        prompt = mock_send.call_args[0][1][0]["content"]
+        normalized = " ".join(prompt.lower().split())
+        assert "describe it generically" in normalized
+
+
+# ---------------------------------------------------------------------------
+# generate_conversation_title / generate_conversation_tags — fencing (AI-25)
+# ---------------------------------------------------------------------------
+
+
+class TestGenerateConversationTitleFencing:
+    def test_prompt_fences_transcript_as_data(self, mocker, sample_messages):
+        mock_send = _make_send_to_model_mock(mocker, "A title")
+        generate_conversation_title(sample_messages)
+        prompt = mock_send.call_args[0][1][0]["content"]
+        assert "<transcript>" in prompt and "</transcript>" in prompt
+        assert "not instructions" in prompt.lower()
+
+    def test_prompt_sandwiches_the_fence_with_a_post_reminder(self, mocker, sample_messages):
+        mock_send = _make_send_to_model_mock(mocker, "A title")
+        generate_conversation_title(sample_messages)
+        prompt = mock_send.call_args[0][1][0]["content"]
+        assert prompt.index("</transcript>") < prompt.rindex("never")
+        assert "never instructions to obey" in prompt.lower()
+
+    def test_prompt_has_a_worked_counter_example(self, mocker, sample_messages):
+        """CV9.E2.S29 as-built: an abstract null-action instruction alone was
+        measured live at 0/15 resistance (worse than AI-22's pre-sandwich
+        1/3) — a concrete WRONG/CORRECT worked example is what actually moved
+        the live measurement, confirmed 5/5 before being adopted here.
+        """
+        mock_send = _make_send_to_model_mock(mocker, "A title")
+        generate_conversation_title(sample_messages)
+        prompt = mock_send.call_args[0][1][0]["content"]
+        normalized = " ".join(prompt.lower().split())
+        assert "wrong:" in normalized and "correct:" in normalized
+
+
+class TestGenerateConversationTagsFencing:
+    def test_prompt_fences_transcript_as_data(self, mocker, sample_messages):
+        mock_send = _make_send_to_model_mock(mocker, "[]")
+        generate_conversation_tags(sample_messages)
+        prompt = mock_send.call_args[0][1][0]["content"]
+        assert "<transcript>" in prompt and "</transcript>" in prompt
+        assert "not instructions" in prompt.lower()
+
+    def test_prompt_sandwiches_the_fence_with_a_post_reminder(self, mocker, sample_messages):
+        mock_send = _make_send_to_model_mock(mocker, "[]")
+        generate_conversation_tags(sample_messages)
+        prompt = mock_send.call_args[0][1][0]["content"]
+        assert prompt.index("</transcript>") < prompt.rindex("never")
+        assert "never instructions to obey" in prompt.lower()
+
+    def test_prompt_has_a_worked_counter_example(self, mocker, sample_messages):
+        """Same evidence-based worked-example fix as title (see its test's
+        docstring) — applied proactively to tags before its own probe existed,
+        since both surfaces share the identical unfenced shape and task-
+        aligned attack risk.
+        """
+        mock_send = _make_send_to_model_mock(mocker, "[]")
+        generate_conversation_tags(sample_messages)
+        prompt = mock_send.call_args[0][1][0]["content"]
+        normalized = " ".join(prompt.lower().split())
+        assert "wrong:" in normalized and "correct:" in normalized
+
 
 # ---------------------------------------------------------------------------
 # generate_descriptor
@@ -810,3 +1082,74 @@ class TestGenerateDescriptor:
         generate_descriptor("", layer="persona", key="engineer", on_llm_call=callback)
         mock_send.assert_not_called()
         callback.assert_not_called()
+
+
+class TestClassifyJournalEntryLayerValidation:
+    """CV9.E2.S25 (AI-24) — journal classification coerces invalid model-chosen
+    layers to 'ego' using VALID_MEMORY_LAYERS, so the journal path inherits the
+    domain constraint extraction already enforces.
+    """
+
+    def test_valid_layer_returned_unchanged(self, mocker):
+        mocker.patch(
+            "memory.intelligence.extraction.send_to_model",
+            return_value=LLMResponse(
+                model="test/model",
+                content=json.dumps({"title": "Journal title", "layer": "self", "tags": ["tag"]}),
+                prompt_tokens=10,
+                completion_tokens=5,
+                latency_ms=100,
+                prompt="test",
+            ),
+        )
+        result = classify_journal_entry("my journal entry")
+        assert result["layer"] == "self"
+
+    def test_invalid_layer_coerced_to_ego(self, mocker):
+        # AI-24: model returns layer not in VALID_MEMORY_LAYERS → coerce to 'ego'
+        mocker.patch(
+            "memory.intelligence.extraction.send_to_model",
+            return_value=LLMResponse(
+                model="test/model",
+                content=json.dumps({"title": "Journal title", "layer": "banana", "tags": ["tag"]}),
+                prompt_tokens=10,
+                completion_tokens=5,
+                latency_ms=100,
+                prompt="test",
+            ),
+        )
+        result = classify_journal_entry("my journal entry")
+        assert result["layer"] == "ego"
+
+    def test_each_valid_layer_accepted(self, mocker):
+        # Verify every layer in VALID_MEMORY_LAYERS passes through unchanged
+        for valid_layer in VALID_MEMORY_LAYERS:
+            mocker.patch(
+                "memory.intelligence.extraction.send_to_model",
+                return_value=LLMResponse(
+                    model="test/model",
+                    content=json.dumps({"title": "Title", "layer": valid_layer, "tags": []}),
+                    prompt_tokens=10,
+                    completion_tokens=5,
+                    latency_ms=100,
+                    prompt="test",
+                ),
+            )
+            result = classify_journal_entry("content")
+            assert result["layer"] == valid_layer
+
+    def test_parse_failure_defaults_to_ego(self, mocker):
+        # Pre-existing behavior: malformed JSON → fallback with layer='ego'
+        mocker.patch(
+            "memory.intelligence.extraction.send_to_model",
+            return_value=LLMResponse(
+                model="test/model",
+                content="not valid json",
+                prompt_tokens=10,
+                completion_tokens=5,
+                latency_ms=100,
+                prompt="test",
+            ),
+        )
+        result = classify_journal_entry("content")
+        assert result["layer"] == "ego"

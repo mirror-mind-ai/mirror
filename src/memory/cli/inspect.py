@@ -247,8 +247,43 @@ def _inspect_runtime_catalog(runtime: str, mirror_home: str | None) -> None:
         print(f"    installed_skill_path: {item.get('installed_skill_path', '(unknown)')}")
 
 
+def _fmt_summary_cost(cost: float | None) -> str:
+    return f"~${cost:.6f}" if cost is not None else "—"
+
+
+def _print_llm_call_summary(summary: dict, *, since: str | None) -> None:
+    """Render by-role and by-week spend buckets with a TOTAL line."""
+    total = summary["total"]
+    if total["calls"] == 0:
+        print("(no llm_calls rows match the given filters)")
+        return
+
+    scope = f" since {since}" if since else ""
+    print(f"=== llm_calls summary{scope} ===")
+
+    def _buckets(title: str, buckets: list[dict]) -> None:
+        print(f"\n{title}")
+        for b in buckets:
+            unpriced = f"  ({b['unpriced']} unpriced)" if b["unpriced"] else ""
+            print(
+                f"  {b['bucket']:<18} {b['calls']:>5} calls  "
+                f"{b['prompt_tokens']}→{b['completion_tokens']} tokens  "
+                f"{_fmt_summary_cost(b['cost_usd'])}{unpriced}"
+            )
+
+    _buckets("By role:", summary["by_role"])
+    _buckets("By week:", summary["by_week"])
+
+    unpriced = f"  ({total['unpriced']} unpriced)" if total["unpriced"] else ""
+    print(
+        f"\nTOTAL  {total['calls']} calls  "
+        f"{total['prompt_tokens']}→{total['completion_tokens']} tokens  "
+        f"{_fmt_summary_cost(total['cost_usd'])}{unpriced}"
+    )
+
+
 def cmd_inspect_llm_calls(args: list[str]) -> None:
-    """python -m memory inspect llm-calls [--conversation ID] [--session ID] [--role ROLE] [--since DATE] [--limit N] [--mirror-home PATH]"""
+    """python -m memory inspect llm-calls [--conversation ID] [--session ID] [--role ROLE] [--since DATE] [--limit N] [--summary] [--mirror-home PATH]"""
     import argparse
 
     parser = argparse.ArgumentParser(
@@ -268,6 +303,11 @@ def cmd_inspect_llm_calls(args: list[str]) -> None:
         "--since", default=None, help="Filter rows called_at >= DATE (YYYY-MM-DD or ISO timestamp)"
     )
     parser.add_argument("--limit", type=int, default=20, help="Maximum rows to show (default: 20)")
+    parser.add_argument(
+        "--summary",
+        action="store_true",
+        help="Aggregate spend by role and week instead of listing rows",
+    )
     parser.add_argument("--mirror-home", default=None, help="Explicit user home")
     parsed = parser.parse_args(args)
 
@@ -275,6 +315,13 @@ def cmd_inspect_llm_calls(args: list[str]) -> None:
     from memory.client import MemoryClient
 
     mem = MemoryClient(db_path=db_path_from_mirror_home(parsed.mirror_home))
+
+    if parsed.summary:
+        _print_llm_call_summary(
+            mem.store.get_llm_call_summary(since=parsed.since), since=parsed.since
+        )
+        return
+
     rows = mem.store.get_llm_calls(
         conversation_id=parsed.conversation_id,
         role=parsed.role,
@@ -302,9 +349,11 @@ def cmd_inspect_llm_calls(args: list[str]) -> None:
         c_tok = row.get("completion_tokens") or 0
         conv = (row.get("conversation_id") or "")[:8] or "—"
         row_id = (row.get("id") or "")[:8]
+        cost = row.get("cost_usd")
+        cost_str = f"~${cost:.6f}" if cost is not None else "$—"
 
         print(f"\n[{called_at}] {role} | {model}")
-        print(f"  id:{row_id}  conv:{conv}  {p_tok}→{c_tok} tokens  {latency_str}")
+        print(f"  id:{row_id}  conv:{conv}  {p_tok}→{c_tok} tokens  {latency_str}  {cost_str}")
 
         prompt = (row.get("prompt") or "").strip()[:200]
         response = (row.get("response") or "").strip()[:200]
@@ -312,17 +361,50 @@ def cmd_inspect_llm_calls(args: list[str]) -> None:
         print(f"  response: {response!r}")
 
 
+def render_embedding_provenance(distribution: list[tuple[str | None, int]]) -> str:
+    """Render the embedding-model distribution of stored memory vectors."""
+    total = sum(n for _, n in distribution)
+    if total == 0:
+        return "(no stored memory vectors)"
+    lines = [f"=== embedding provenance ({total} memory vector{'s' if total != 1 else ''}) ==="]
+    for model, n in distribution:
+        label = model if model else "unknown (pre-provenance)"
+        lines.append(f"  {n:>6}  {label}")
+    return "\n".join(lines)
+
+
+def cmd_inspect_embedding_provenance(args: list[str]) -> None:
+    """python -m memory inspect embedding-provenance [--mirror-home PATH]"""
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        prog="memory inspect embedding-provenance",
+        description="Report the embedding-model provenance of stored memory vectors.",
+    )
+    parser.add_argument("--mirror-home", default=None, help="Explicit user home")
+    parsed = parser.parse_args(args)
+
+    from memory.cli.common import db_path_from_mirror_home
+    from memory.client import MemoryClient
+
+    mem = MemoryClient(db_path=db_path_from_mirror_home(parsed.mirror_home))
+    print(render_embedding_provenance(mem.store.count_memories_by_embedding_model()))
+
+
 def cmd_inspect(args: list[str]) -> None:
-    """python -m memory inspect persona|extension|runtime-catalog|llm-calls [args] [--mirror-home PATH]"""
-    # llm-calls is a self-contained subcommand — dispatch before positional parsing.
+    """python -m memory inspect persona|extension|runtime-catalog|llm-calls|embedding-provenance [args] [--mirror-home PATH]"""
+    # Self-contained subcommands dispatch before positional parsing.
     if args and args[0] == "llm-calls":
         cmd_inspect_llm_calls(args[1:])
+        return
+    if args and args[0] == "embedding-provenance":
+        cmd_inspect_embedding_provenance(args[1:])
         return
 
     mirror_home, extensions_root, positional = _parse_inspect_args(args)
     if len(positional) != 2 or positional[0] not in {"persona", "extension", "runtime-catalog"}:
         print(
-            "Usage: python -m memory inspect persona|extension|runtime-catalog|llm-calls <id> [--mirror-home PATH] [--extensions-root PATH]"
+            "Usage: python -m memory inspect persona|extension|runtime-catalog|llm-calls|embedding-provenance <id> [--mirror-home PATH] [--extensions-root PATH]"
         )
         sys.exit(1)
 

@@ -13,10 +13,15 @@ Requires OPENROUTER_API_KEY. Costs a few cents per run.
 from __future__ import annotations
 
 from evals.types import EvalProbe
+from memory.config import EXTRACTION_MODEL
 from memory.intelligence.extraction import extract_memories
+from memory.intelligence.prompts import EXTRACTION_PROMPT
 from memory.models import Message
 
 THRESHOLD = 0.80
+# CV9.E2.S19 (AI-11): this eval only calls extract_memories().
+EVAL_MODEL = EXTRACTION_MODEL
+EVAL_PROMPTS = (EXTRACTION_PROMPT,)
 
 
 # ---------------------------------------------------------------------------

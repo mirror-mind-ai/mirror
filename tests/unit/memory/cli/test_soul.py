@@ -463,15 +463,16 @@ def test_soul_harvest_save_creates_one_journal_entry(mocker, tmp_path, capsys):
     assert entries[0].title == "A final fruit"
     assert entries[0].layer == "self"
     assert entries[0].journey == "soul-mode"
-    assert json.loads(entries[0].metadata or "{}") == {
-        "format": "markdown",
-        "origin": {
-            "mode": "soul",
-            "conversation_id": None,
-            "conversation_uri": None,
-        },
-        "harvested_fruit": "A final fruit.",
+    stored_meta = json.loads(entries[0].metadata or "{}")
+    assert stored_meta["format"] == "markdown"
+    assert stored_meta["origin"] == {
+        "mode": "soul",
+        "conversation_id": None,
+        "conversation_uri": None,
     }
+    assert stored_meta["harvested_fruit"] == "A final fruit."
+    # add_memory stamps embedding provenance on the journal vector (CV9.E2.S17 / AI-07)
+    assert "embedding_model" in stored_meta
 
     try:
         soul.cmd_harvest("save", journey="soul-mode")

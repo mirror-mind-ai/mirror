@@ -257,3 +257,62 @@ def test_render_pull_candidates_report_preserves_boundary(tmp_path):
     assert "CV2.DS1 — Checkout Flow" in rendered
     assert "│ recommended pull                                       │" in rendered
     assert "No item was pulled" in rendered
+
+
+# --- CV20.DS13 — Delivery Story grammar roadmap support ---
+
+
+def test_inspect_pull_candidates_excludes_legacy_archive(make_ds_roadmap, tmp_path):
+    make_ds_roadmap(tmp_path)
+
+    report = inspect_pull_candidates(tmp_path, journey="uncle-vinny", method="ariad")
+
+    codes = {candidate.code for candidate in report.candidates}
+    assert "CV5" not in codes
+    assert all("legacy" not in candidate.path for candidate in report.candidates)
+
+
+def test_inspect_pull_candidates_reads_hyphenated_ds_codes(make_ds_roadmap, tmp_path):
+    make_ds_roadmap(tmp_path)
+
+    report = inspect_pull_candidates(tmp_path, journey="uncle-vinny", method="ariad")
+
+    candidates = {candidate.code: candidate for candidate in report.candidates}
+    assert "DS-35" in candidates
+    assert candidates["DS-35"].level == "delivery_story"
+    assert candidates["DS-35"].title == "Application & Admin Parity"
+
+
+def test_inspect_pull_candidates_recommends_planned_ds_on_ds_grammar(make_ds_roadmap, tmp_path):
+    make_ds_roadmap(tmp_path)
+
+    report = inspect_pull_candidates(tmp_path, journey="uncle-vinny", method="ariad")
+
+    codes = [candidate.code for candidate in report.candidates]
+    assert "DS-34" not in codes  # Done, not a candidate
+    assert set(codes) == {"DS-35", "DS-36"}
+    assert report.recommended is not None
+    assert report.recommended.code == "DS-35"
+
+
+def test_snapshot_reads_delivery_story_tables_under_chapters(make_ds_roadmap, tmp_path):
+    make_ds_roadmap(tmp_path)
+
+    report = inspect_roadmap_snapshot(tmp_path, journey="uncle-vinny", method="ariad")
+
+    items = {item.code: item for item in report.items}
+    assert set(items) == {"DS-34", "DS-35", "DS-36"}
+    assert items["DS-35"].title == "Application & Admin Parity"
+    assert items["DS-35"].status == "🟡 Planned"
+
+
+def test_snapshot_ds_grammar_reports_focus_not_none(make_ds_roadmap, tmp_path):
+    make_ds_roadmap(tmp_path)
+
+    snapshot = inspect_roadmap_snapshot(tmp_path, journey="uncle-vinny", method="ariad")
+    candidates = inspect_pull_candidates(tmp_path, journey="uncle-vinny", method="ariad")
+    rendered = render_roadmap_snapshot_report(snapshot, candidates=candidates.candidates)
+
+    assert "roadmap field                                      none" not in rendered
+    assert "🟪[DS-35]  Application & Admin Parity" in rendered
+    assert "CV5" not in rendered

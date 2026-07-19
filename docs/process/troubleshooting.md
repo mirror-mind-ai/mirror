@@ -25,6 +25,9 @@ but no fix yet are also welcome (mark them `Status: mitigated`).
 - [Pi Builder conversations appear without journeys](#pi-builder-conversations-appear-without-journeys)
 - [Pi logger fails silently when `python3` resolves outside the project venv](#pi-logger-fails-silently-when-python3-resolves-outside-the-project-venv)
 - [TS front door misbehaves: telling it apart, rolling back, restoring data](#ts-front-door-misbehaves-telling-it-apart-rolling-back-restoring-data)
+- [`extensions install` writes migrations to the wrong database outside production](#extensions-install-writes-migrations-to-the-wrong-database-outside-production)
+- [`extensions install` copies through a symlinked extension path](#extensions-install-copies-through-a-symlinked-extension-path)
+- [`extensions install` collapses the runtime skill catalog to one extension](#extensions-install-collapses-the-runtime-skill-catalog-to-one-extension)
 
 ---
 
@@ -663,6 +666,165 @@ Three avenues are worth considering:
 3. **Periodic backfill.** Even with the fix in place, running
    `conversation-logger session-start` opportunistically catches any future
    regressions before they accumulate.
+
+---
+
+## `extensions install` writes migrations to the wrong database outside production
+
+**Date:** 2026-07-16
+**Status:** fixed
+**Affected component:** `extensions install`, `extensions uninstall`
+**Severity:** extension unusable outside production; stray database file
+
+### Symptom
+
+In a non-production environment (`MEMORY_ENV=development` or `test`), installing
+a command-skill extension appears to succeed, but the extension's tables are
+missing at runtime. Extension subcommands (`python -m memory ext <id> ...`)
+fail with `no such table: ext_<id>_*`, and a stray `<mirror home>/memory.db`
+appears next to the real `memory_dev.db`.
+
+### Root cause
+
+The install path (`_post_install_command_skill`) and the uninstall binding
+sweep hardcoded `<mirror home>/memory.db` for their migration, register, and
+binding-cleanup steps, ignoring `MEMORY_ENV`. Extension *dispatch* (`ext.py`)
+already resolved the env-aware database (`db_path_for_home`, CV9.E2.S6), so
+install wrote schema into one file while the runtime read another. The two
+straddled different databases for every environment except production.
+
+### Fix
+
+`extensions install` and `extensions uninstall` now resolve the database with
+`db_path_for_home(mirror_home)` — the same one-(mirror home, environment)→one
+database rule the dispatch path uses. Migrations, register validation, and the
+binding sweep all land in the database the runtime actually reads.
+
+A companion test-harness fix pins `MEMORY_ENV` to the production default in
+`tests/conftest.py`, so a developer's `.env` (which may set
+`MEMORY_ENV=development`) can no longer make env-aware tests pass locally while
+diverging from CI.
+
+### Validation evidence
+
+New regression tests in
+`tests/unit/memory/extensions/test_install_env_database.py` assert that
+installing under `MEMORY_ENV=development` creates `memory_dev.db` (not
+`memory.db`) with the extension's tables, and that uninstall sweeps bindings
+from the same env database. Full suite green, ruff clean. The personal dev
+Mirror (`vinicius-dev`) then had `admin`, `meta-ads`, `session-export`, and
+`video-processing` migrated into `memory_dev.db`, reaching parity with the
+production Mirror's installed-extension set.
+
+---
+
+## `extensions install` copies through a symlinked extension path
+
+**Date:** 2026-07-16
+**Status:** fixed
+**Affected component:** `extensions install`
+**Severity:** external directory mutated, or install aborts with a same-file error
+
+### Symptom
+
+Re-installing an extension whose installed path under
+`<mirror home>/extensions/<id>` is a symlink either aborts with a `shutil`
+"are the same file" error, or silently writes the source tree *through* the
+symlink into an unrelated directory. The production layout links installed
+extensions straight at their source repos, so an install could overwrite a real
+source repo or hit the self-copy error.
+
+### Root cause
+
+`install_extension` called `shutil.copytree(source, target, dirs_exist_ok=True)`
+unconditionally. When `target` resolves to the same tree as `source` (a symlink
+back at the source, or `--extensions-root` pointing at the installed dir),
+copytree copies files onto themselves and raises. When `target` is a symlink to
+a *different* directory, `dirs_exist_ok=True` makes copytree write into the
+link's target.
+
+### Fix
+
+A pre-copy guard (`_should_copy_source_tree`) resolves both paths. It skips the
+copy when source and target are the same tree (the install proceeds to
+migrations, register, and runtime sync through the link, leaving the symlink
+intact), and refuses with a clear `ExtensionValidationError` when the target is
+a symlink pointing outside the source — pointing the user at
+`ext <id> migrate` to re-run migrations without copying.
+
+### Validation evidence
+
+Regression tests in `tests/unit/memory/extensions/test_install_e2e.py` cover all
+three shapes: symlink-to-source (copy skipped, symlink preserved, install
+completes), source == installed dir (idempotent, no same-file error), and
+symlink-to-external (refused, external directory untouched). Full suite green,
+ruff clean.
+
+---
+
+## `extensions install` collapses the runtime skill catalog to one extension
+
+**Date:** 2026-07-17
+**Status:** fixed
+**Affected component:** `extensions install`, Pi `resources_discover`, `expose-claude`
+**Severity:** silent loss of extension visibility (installed extensions become unreachable by the runtime)
+
+### Symptom
+
+After installing several extensions one at a time, only the **last-installed**
+extension is available to the runtime. On Pi, `resources_discover` loads a single
+external skill; on Claude, `expose-claude` copies only one `ext:*` skill into
+`.claude/skills/`. The other extensions' `SKILL.md` directories still exist under
+`<mirror home>/runtime/skills/<runtime>/`, and `extensions list` (which scans the
+extensions source dir) still shows every extension — but the runtime catalog
+lists only one:
+
+```bash
+uv run python -m memory inspect runtime-catalog pi --mirror-home <home>
+# extensions: admin -> ext-admin        (only one, though 7 ext-* dirs exist)
+```
+
+### Root cause
+
+`install_extension` refreshed the runtime catalog by calling
+`sync_extensions_for_runtime([installed_manifest], ...)` — a single manifest.
+`sync_extensions_for_runtime` ends by overwriting `extensions.json` with exactly
+the manifests it is given, so each single install truncated the catalog to that
+one extension. The copy step never removes sibling skill directories, so the
+`SKILL.md` files remained on disk while the catalog — the sole discovery source
+for Pi (`resources_discover`, no directory-scan fallback) and Claude
+(`expose-claude`) — dropped them. `uninstall_extension` already merged correctly
+via `_prune_catalog_for_extension`; only the install path clobbered.
+
+### Fix
+
+`install_extension` now rebuilds each affected runtime catalog from the **full**
+set of installed extensions (`discover_extensions` over the mirror-home
+extensions dir) instead of the single installed manifest. This fixes the
+eviction and self-heals a catalog a previous single-install run had already
+truncated. The CLI install report still lists only the just-installed extension,
+and `--runtime <name>` still rebuilds only that runtime's catalog.
+
+### Recovery
+
+A full sync per runtime rebuilds the complete catalog without a code change (it
+also runs automatically on the next install once the fix is present):
+
+```bash
+uv run python -m memory extensions sync --runtime pi \
+  --mirror-home <home> --target-root <home>/runtime/skills/pi
+uv run python -m memory extensions sync --runtime claude \
+  --mirror-home <home> --target-root <home>/runtime/skills/claude
+```
+
+### Validation evidence
+
+Red-first `test_second_install_preserves_prior_extensions_in_runtime_catalog` in
+`tests/unit/memory/extensions/test_install_e2e.py` installs two extensions and
+asserts both survive in the pi and claude catalogs (red → green). Full
+unit+integration suite 1863 passed keyless; ruff and format clean; mypy
+net-zero. The personal `vinicius-dev` Mirror was repaired live: pi restored to 7
+extensions, claude to 6.
 
 ---
 

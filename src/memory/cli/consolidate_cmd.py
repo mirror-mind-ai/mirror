@@ -19,13 +19,13 @@ import sys
 
 from memory.cli.common import db_path_from_mirror_home
 from memory.client import MemoryClient
-from memory.config import LOG_LLM_CALLS
 from memory.intelligence.consolidate import (
     DEFAULT_CLUSTER_THRESHOLD,
     cluster_memories,
     propose_consolidation,
 )
-from memory.models import Consolidation, Identity
+from memory.models import Consolidation
+from memory.services.observability import build_llm_logger
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -37,22 +37,8 @@ def _client(mirror_home: str | None) -> MemoryClient:
 
 
 def _make_llm_logger(store):
-    """Return an on_llm_call callback that logs to llm_calls if LOG_LLM_CALLS is set."""
-    if not LOG_LLM_CALLS:
-        return None
-
-    def _log(response) -> None:
-        store.log_llm_call(
-            role="consolidation",
-            model=response.model,
-            prompt=response.prompt or "",
-            response_text=response.content,
-            prompt_tokens=response.prompt_tokens,
-            completion_tokens=response.completion_tokens,
-            latency_ms=response.latency_ms,
-        )
-
-    return _log
+    """Return an on_llm_call callback for consolidation, honoring MEMORY_LOG_LLM_CALLS."""
+    return build_llm_logger(store, role="consolidation")
 
 
 def _identity_context(mem: MemoryClient) -> str:
@@ -221,17 +207,19 @@ def cmd_apply(args: list[str]) -> None:
                 "Error: identity_update proposal has no target_layer/target_key.", file=sys.stderr
             )
             sys.exit(1)
-        existing = mem.store.get_identity(consolidation.target_layer, consolidation.target_key)
-        if existing:
-            updated_content = existing.content.rstrip() + "\n\n" + result_content
-        else:
-            updated_content = result_content
-        identity = Identity(
-            layer=consolidation.target_layer,
-            key=consolidation.target_key,
-            content=updated_content,
-        )
-        mem.store.upsert_identity(identity)
+        # AI-23 (CV9.E2.S23): target_layer is model-chosen and untrusted --
+        # routed through the allowlisted service method instead of a direct
+        # storage write, so a hallucinated/injected layer is refused loudly
+        # rather than silently accepted.
+        try:
+            mem.identity.apply_consolidation_identity_update(
+                target_layer=consolidation.target_layer,
+                target_key=consolidation.target_key,
+                content=result_content,
+            )
+        except ValueError as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            sys.exit(1)
         print(f"✓ Updated identity: {consolidation.target_layer}/{consolidation.target_key}")
         # Advance source memories to 'acknowledged'.
         for mid in source_ids:
@@ -256,10 +244,18 @@ def cmd_apply(args: list[str]) -> None:
             relevance_score=1.0,
         )
         # Embed and store.
-        from memory.intelligence.embeddings import embedding_to_bytes, generate_embedding
+        from memory.intelligence.embeddings import (
+            add_embedding_provenance,
+            embedding_to_bytes,
+            generate_embedding,
+        )
+        from memory.services.observability import build_llm_logger
 
-        emb = generate_embedding(result_content)
+        emb = generate_embedding(
+            result_content, on_llm_call=build_llm_logger(mem.store, role="embedding")
+        )
         merged.embedding = embedding_to_bytes(emb)
+        merged.metadata = add_embedding_provenance(merged.metadata)
         mem.store.create_memory(merged)
         print(f"✓ Created merged memory: [{merged.id[:8]}] {merged.title}")
         # Mark originals as 'integrated'.

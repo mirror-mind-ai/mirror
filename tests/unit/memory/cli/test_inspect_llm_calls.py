@@ -179,3 +179,90 @@ class TestInspectLlmCallsFilters:
         cmd_inspect_llm_calls(["--mirror-home", mirror_home, "--since", "2030-01-01"])
         out = capsys.readouterr().out
         assert "no llm_calls rows" in out
+
+
+class TestInspectLlmCallsCost:
+    def test_shows_estimated_cost_when_present(self, tmp_path, capsys):
+        mem, mirror_home = _seed_db(tmp_path)
+        mem.store.log_llm_call(
+            role="extraction",
+            model="google/gemini-2.5-flash-lite",
+            prompt="",
+            response_text="",
+            prompt_tokens=1000,
+            completion_tokens=1000,
+            latency_ms=100,
+            cost_usd=0.00050,
+        )
+        from memory.cli.inspect import cmd_inspect_llm_calls
+
+        cmd_inspect_llm_calls(["--mirror-home", mirror_home])
+        out = capsys.readouterr().out
+        assert "0.0005" in out  # estimated cost is rendered
+
+    def test_renders_dash_when_cost_missing(self, tmp_path, capsys):
+        # The seeded rows carry NULL cost_usd.
+        _, mirror_home = _seed_db(tmp_path)
+        from memory.cli.inspect import cmd_inspect_llm_calls
+
+        cmd_inspect_llm_calls(["--mirror-home", mirror_home])
+        out = capsys.readouterr().out
+        assert "$—" in out
+
+
+class TestInspectLlmCallsSummary:
+    def test_summary_shows_role_week_total(self, tmp_path, capsys):
+        mem, mirror_home = _seed_db(tmp_path)
+        mem.store.log_llm_call(
+            role="extraction",
+            model="google/gemini-2.5-flash-lite",
+            prompt="",
+            response_text="",
+            prompt_tokens=1000,
+            completion_tokens=200,
+            cost_usd=0.0005,
+        )
+        from memory.cli.inspect import cmd_inspect_llm_calls
+
+        cmd_inspect_llm_calls(["--mirror-home", mirror_home, "--summary"])
+        out = capsys.readouterr().out
+        assert "summary" in out
+        assert "By role:" in out
+        assert "By week:" in out
+        assert "TOTAL" in out
+        assert "extraction" in out
+
+    def test_summary_marks_unpriced_with_dash(self, tmp_path, capsys):
+        # _seed_db rows all carry NULL cost_usd.
+        _, mirror_home = _seed_db(tmp_path)
+        from memory.cli.inspect import cmd_inspect_llm_calls
+
+        cmd_inspect_llm_calls(["--mirror-home", mirror_home, "--summary"])
+        out = capsys.readouterr().out
+        assert "unpriced" in out
+        assert "—" in out
+
+    def test_summary_renders_priced_cost(self, tmp_path, capsys):
+        mem, mirror_home = _seed_db(tmp_path)
+        mem.store.log_llm_call(
+            role="consult",
+            model="vendor/model",
+            prompt="",
+            response_text="",
+            prompt_tokens=10,
+            completion_tokens=5,
+            cost_usd=0.0005,
+        )
+        from memory.cli.inspect import cmd_inspect_llm_calls
+
+        cmd_inspect_llm_calls(["--mirror-home", mirror_home, "--summary"])
+        out = capsys.readouterr().out
+        assert "0.0005" in out
+
+    def test_summary_since_excluding_all_prints_no_rows(self, tmp_path, capsys):
+        _, mirror_home = _seed_db(tmp_path)
+        from memory.cli.inspect import cmd_inspect_llm_calls
+
+        cmd_inspect_llm_calls(["--mirror-home", mirror_home, "--summary", "--since", "2030-01-01"])
+        out = capsys.readouterr().out
+        assert "no llm_calls rows" in out

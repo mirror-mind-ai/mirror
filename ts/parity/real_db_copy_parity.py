@@ -245,7 +245,7 @@ def _build_fixture(*, source_db: Path, work_dir: Path, limit: int) -> Path:
             fallback_memory = all_memories[index % len(all_memories)]
             seed_memory = next((mem for mem in all_memories if mem.id == seed_id), fallback_memory)
             query_embedding = bytes_to_embedding(seed_memory.embedding)
-            search_mod.generate_embedding = lambda _q, vec=query_embedding: vec
+            search_mod.generate_embedding = lambda _q, vec=query_embedding, **_kw: vec
             results = MemorySearch(store).search(query, limit=limit)
             probes.append(
                 {

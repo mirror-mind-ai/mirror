@@ -120,3 +120,96 @@ class TestLogLlmCall:
         store.log_llm_call(role="week_plan", model="m", prompt="p2", response_text="r")
         rows = store.get_llm_calls()
         assert len(rows) == 2
+
+
+class TestGetLlmCallSummary:
+    def _insert(
+        self,
+        store,
+        *,
+        role="extraction",
+        prompt_tokens=100,
+        completion_tokens=20,
+        cost_usd=0.001,
+        called_at="2026-07-15T10:00:00Z",
+    ):
+        from memory.models import _uuid
+
+        store.conn.execute(
+            """
+            INSERT INTO llm_calls (id, role, model, prompt, response, prompt_tokens,
+                completion_tokens, latency_ms, cost_usd, conversation_id, session_id, called_at)
+            VALUES (?, ?, ?, '', '', ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                _uuid(),
+                role,
+                "google/gemini-2.5-flash-lite",
+                prompt_tokens,
+                completion_tokens,
+                10,
+                cost_usd,
+                None,
+                None,
+                called_at,
+            ),
+        )
+        store.conn.commit()
+
+    def test_groups_by_role(self, store):
+        self._insert(store, role="extraction", cost_usd=0.001)
+        self._insert(store, role="extraction", cost_usd=0.002)
+        self._insert(store, role="reception", cost_usd=0.0005)
+        by_role = {r["bucket"]: r for r in store.get_llm_call_summary()["by_role"]}
+        assert by_role["extraction"]["calls"] == 2
+        assert by_role["extraction"]["cost_usd"] == pytest.approx(0.003)
+        assert by_role["reception"]["calls"] == 1
+
+    def test_unpriced_counted_never_summed_as_zero(self, store):
+        self._insert(store, role="consult", cost_usd=None)
+        self._insert(store, role="consult", cost_usd=None)
+        row = next(r for r in store.get_llm_call_summary()["by_role"] if r["bucket"] == "consult")
+        assert row["calls"] == 2
+        assert row["unpriced"] == 2
+        assert row["cost_usd"] is None  # honest, not 0.0
+
+    def test_mixed_priced_and_unpriced(self, store):
+        self._insert(store, role="consult", cost_usd=0.01)
+        self._insert(store, role="consult", cost_usd=None)
+        row = next(r for r in store.get_llm_call_summary()["by_role"] if r["bucket"] == "consult")
+        assert row["calls"] == 2
+        assert row["unpriced"] == 1
+        assert row["cost_usd"] == pytest.approx(0.01)
+
+    def test_groups_by_week(self, store):
+        self._insert(store, called_at="2026-07-06T10:00:00Z")  # W27
+        self._insert(store, called_at="2026-07-15T10:00:00Z")  # W28
+        self._insert(store, called_at="2026-07-16T10:00:00Z")  # W28
+        weeks = {r["bucket"]: r for r in store.get_llm_call_summary()["by_week"]}
+        assert weeks["2026-W28"]["calls"] == 2
+        assert weeks["2026-W27"]["calls"] == 1
+
+    def test_since_scopes_window(self, store):
+        self._insert(store, called_at="2026-06-01T10:00:00Z")
+        self._insert(store, called_at="2026-07-15T10:00:00Z")
+        assert store.get_llm_call_summary(since="2026-07-01")["total"]["calls"] == 1
+
+    def test_total_aggregates_across_buckets(self, store):
+        self._insert(
+            store, role="extraction", prompt_tokens=100, completion_tokens=20, cost_usd=0.001
+        )
+        self._insert(
+            store, role="reception", prompt_tokens=50, completion_tokens=10, cost_usd=0.002
+        )
+        total = store.get_llm_call_summary()["total"]
+        assert total["calls"] == 2
+        assert total["prompt_tokens"] == 150
+        assert total["completion_tokens"] == 30
+        assert total["cost_usd"] == pytest.approx(0.003)
+
+    def test_empty_summary(self, store):
+        summary = store.get_llm_call_summary()
+        assert summary["by_role"] == []
+        assert summary["by_week"] == []
+        assert summary["total"]["calls"] == 0
+        assert summary["total"]["cost_usd"] is None

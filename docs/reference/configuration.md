@@ -154,15 +154,15 @@ The Configuration page does not dump `os.environ`, does not expose secrets, and 
 
 ## MEMORY_LOG_LLM_CALLS
 
-**What it is:** an observability toggle for local LLM audit logging.
+**What it is:** the mode for local LLM call logging.
 
-**Used by:** service-layer LLM call wrappers for extraction, curation, task extraction, summaries, reception, and conversation title suggestions.
+**Used by:** the shared logger seam behind extraction, curation, task extraction, summaries, reception, journal classification, consolidation, shadow scan, and conversation title/tag suggestions.
 
-**How to change it:** set `MEMORY_LOG_LLM_CALLS=1` to enable. Any other value or absence disables it.
+**How to change it:** one of `off | metadata | full`. Absence or `metadata` (the default) records call metadata only. `full` additionally stores prompt and response bodies. `off` (or `0`) disables logging. Legacy `1` maps to `full`.
 
-**Active in code:** yes. It maps to `config.LOG_LLM_CALLS`.
+**Active in code:** yes. It maps to `config.LOG_LLM_CALLS_MODE`, with `config.LOG_LLM_CALLS` (on/off) and `config.LOG_LLM_BODIES` (full only) derived from it.
 
-**Effects:** when enabled, Mirror writes prompt/response metadata to the local `llm_calls` table for audit/debugging. This can increase local storage and may retain sensitive prompt content locally.
+**Effects:** in `metadata` mode Mirror records role, model, token counts, latency, estimated cost, and conversation id to the local `llm_calls` table with empty prompt/response — no conversation content is retained. `full` adds the bodies, which can retain sensitive prompt content locally and increase storage. Estimated cost comes from a static price table (`intelligence/cost.py`) and is labeled accordingly. Inspect with `python -m memory inspect llm-calls`.
 
 ## MEMORY_RECEPTION
 
@@ -176,9 +176,33 @@ The Configuration page does not dump `os.environ`, does not expose secrets, and 
 
 **Effects:** when enabled, Mirror may make an LLM call to classify a turn for persona/journey routing. When disabled, routing falls back to cheaper deterministic behavior.
 
+## MEMORY_EXTRACTION_MAX_ATTEMPTS
+
+**What it is:** the retry budget before a conversation whose memory extraction keeps failing is quarantined.
+
+**Used by:** the session-maintenance extraction loops (`extract_pending`, `close_stale_orphans`). Each failed extraction (provider outage, oversized transcript, auth error) increments an `extraction_attempts` counter in the conversation metadata.
+
+**How to change it:** set `MEMORY_EXTRACTION_MAX_ATTEMPTS` to a positive integer. Absence defaults to `3`.
+
+**Active in code:** yes. It maps to `config.EXTRACTION_MAX_ATTEMPTS`.
+
+**Effects:** once attempts reach this value the conversation is flagged quarantined and dropped from the pending extraction queue, so a poison-pill conversation is not retried at every session start and does not block the conversations queued behind it. The session-maintenance report names the quarantine count. Quarantine is sticky: a conversation quarantined by a transient outage stays quarantined until the flag is cleared.
+
+## MEMORY_MAINTENANCE_MAX_EXTRACTIONS
+
+**What it is:** the maximum number of pending conversations `extract_pending` processes in one session-start maintenance run.
+
+**Used by:** `session_maintenance`, on every session start. Eligible conversations (ended, journey-bound, ≥4 messages, not quarantined) are processed oldest-ended first; any remainder stays pending and carries over to the next session start rather than being dropped.
+
+**How to change it:** set `MEMORY_MAINTENANCE_MAX_EXTRACTIONS` to a positive integer. Absence defaults to `10`.
+
+**Active in code:** yes. It maps to `config.MEMORY_MAINTENANCE_MAX_EXTRACTIONS`.
+
+**Effects:** bounds the worst-case spend and latency of a single session start — each processed conversation costs at least 2 LLM calls plus up to ~9 embedding calls. Without a cap, a backlog (a gap in usage, a dead API key, a quarantine-adjacent failure period) turns the next session start into a long, invisible, unbounded spend burst. The session-maintenance report names the carried-over count when it is greater than zero, so a chronic backlog (more eligible conversations generated per session than the cap drains) stays visible instead of silently lagging.
+
 ## Environment
 
-See [MEMORY_ENV](#memory-env).
+See [MEMORY_ENV](#memory_env).
 
 ## Memory search model
 
@@ -206,8 +230,8 @@ See [MEMORY_ENV](#memory-env).
 
 ## LLM audit logging
 
-See [MEMORY_LOG_LLM_CALLS](#memory-log-llm-calls).
+See [MEMORY_LOG_LLM_CALLS](#memory_log_llm_calls).
 
 ## Conversation routing
 
-See [MEMORY_RECEPTION](#memory-reception).
+See [MEMORY_RECEPTION](#memory_reception).

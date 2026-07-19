@@ -8,6 +8,11 @@ from memory.builder.flow_unit import (
     render_navigator_flow_unit_report,
     set_navigator_flow_unit,
 )
+from memory.builder.lifecycle import (
+    BuilderLifecycleItem,
+    expand_delivery_story,
+    pull_lifecycle_item,
+)
 from memory.config import default_db_path_for_home
 
 
@@ -150,3 +155,58 @@ def test_render_story_scope_confirmation_after_flow_unit_selection(tmp_path):
     assert "1. Is this the right next story?" in rendered
     assert "out of scope" not in rendered
     assert "validation evidence" not in rendered
+
+
+# --- CV20.DS13 — scope confirmation reflects the active DS after pull->expand ---
+
+
+def test_scope_confirmation_lists_active_ds_children_after_pull_expand_flow_unit(tmp_path):
+    _client, store = _store(tmp_path)
+    project = tmp_path / "project"
+    ds_index = project / "docs/project/roadmap/ds-35-application-admin-parity/index.md"
+    ds_index.parent.mkdir(parents=True)
+    ds_index.write_text(
+        """# DS-35 — Application & Admin Parity
+
+**Status:** 🟡 Planned
+
+## Candidate Stories
+
+| Code | Story | Type | Status |
+|------|-------|------|--------|
+| DS-35.US-1 | Port the application step flow | User Story | 🟡 Planned |
+| DS-35.TS-1 | Admin authentication parity | Technical Story | 🟡 Planned |
+""",
+        encoding="utf-8",
+    )
+    # Cursor carries the previous DS-34's stale children.
+    set_delivery_cursor(
+        store,
+        journey="uncle-vinny",
+        method="ariad",
+        active_item="DS-34",
+        active_item_title="Data Model Migration",
+        active_item_level="delivery_story",
+        child_work_items=("DS-34.US-1", "DS-34.US-2"),
+    )
+
+    pull_lifecycle_item(
+        store,
+        journey="uncle-vinny",
+        method="ariad",
+        item=BuilderLifecycleItem(
+            code="DS-35",
+            title="Application & Admin Parity",
+            level="delivery_story",
+            why_now="next",
+        ),
+    )
+    expand_delivery_story(store, journey="uncle-vinny", method="ariad", project_path=project)
+    report = set_navigator_flow_unit(
+        store, journey="uncle-vinny", method="ariad", flow_unit=FLOW_UNIT_DELIVERY_STORY
+    )
+
+    rendered = render_flow_unit_scope_confirmation_report(report)
+    assert "DS-35.US-1" in rendered
+    assert "DS-35.TS-1" in rendered
+    assert "DS-34" not in rendered

@@ -16,7 +16,7 @@ from collections.abc import Callable
 
 from memory.config import EXTRACTION_MODEL
 from memory.intelligence.llm_router import LLMResponse, send_to_model
-from memory.intelligence.prompts import SHADOW_SCAN_PROMPT
+from memory.intelligence.prompts import SHADOW_SCAN_PROMPT, fence_untrusted
 from memory.models import Consolidation, Memory
 
 # Threshold for clustering shadow memories (looser than general consolidation
@@ -77,7 +77,12 @@ def propose_shadow_observations(
     if not memories:
         return []
 
-    shadow_memories_text = _format_shadow_memories(memories)
+    # AI-22 pattern (CV9.E2.S22), applied proactively: shadow output reaches
+    # structural identity via mm-shadow review, so this surface is fenced
+    # before it ever ships red, unlike scene's probe-first sequence. Only the
+    # user-derived {shadow_memories} block is fenced — {shadow_structure} is
+    # system-side identity content, not user-injected.
+    shadow_memories_text = fence_untrusted("shadow_memories", _format_shadow_memories(memories))
     shadow_structure_text = _format_shadow_structure(shadow_entries)
 
     prompt = SHADOW_SCAN_PROMPT.format(

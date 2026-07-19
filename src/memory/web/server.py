@@ -475,6 +475,12 @@ class MirrorWebHandler(BaseHTTPRequestHandler):
             "orientation": normalized,
             "text": normalized.get("summary") or "Scene orientation is unavailable right now.",
         }
+        # AI-22 invariant (CV9.E2.S21): scene_orientation rows are display-layer
+        # content generated from user-controlled strings. They must never be
+        # read into prompt assembly, memory extraction, or tool paths without
+        # re-crossing a trust boundary. Context assembly currently selects
+        # identity layers explicitly by (layer, key) — keep it that way for
+        # this layer.
         mem.identity.set_identity(
             "scene_orientation",
             scope,

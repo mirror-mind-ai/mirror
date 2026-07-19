@@ -217,6 +217,34 @@ Add new items at the top. Each entry should name the problem (not just the
 solution), point at evidence or source, and sketch the rough shape of the
 work.
 
+### `llm_calls` table growth after embedding logging
+
+**Source:** CV9.E2.S18 (D-003) / database-architect review
+**Surfaced:** 2026-07-17
+
+CV9.E2.S18 routed every embedding call into `llm_calls`, making it the
+fastest-growing table in the database — embeddings fire on every search, stored
+memory, and staged extraction. The table is indexed (`role`, `called_at`,
+`conversation_id`) so the spend summary stays fast, but there is **no retention
+or rollup policy**: it grows unbounded. 1.0 should decide whether `llm_calls`
+prunes (e.g. keep N days) or rolls old rows into a summary table. Metadata-only
+rows are small, so this is not urgent — but the growth class changed. Low
+priority; additive.
+
+### Curation dedup is soft on close paraphrases
+
+**Source:** CV9.E2.S15 validation — `evals/extraction.py` `two-pass-dedup` failed both runs
+**Surfaced:** 2026-07-17
+
+The two-pass curation LLM intermittently keeps a near-duplicate memory when the
+paraphrase is close (observed: an "auth module split before OAuth" candidate not
+deduplicated against an existing "split auth module" memory). Extraction and the
+S15 boundary hardening are unaffected — `_sanitize_extracted` is inert on valid
+inputs, so this is curation-prompt quality, not a regression. Possible shapes:
+tighten `CURATION_PROMPT` dedup guidance, add a similarity pre-filter before the
+curation call, or accept soft dedup and lean on MMR at retrieval. Low priority;
+surfaced for visibility.
+
 ### FTS write amplification: the memories_fts update trigger fires on every row change
 
 **Source:** RS003 database-architect audit of the CV22 persistence seam (CR021)

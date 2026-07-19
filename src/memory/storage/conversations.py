@@ -83,16 +83,63 @@ class ConversationStore(ConnectionBacked):
         ).fetchall()
         return [Conversation(**dict(r)) for r in rows]
 
-    def get_unextracted_conversations(self) -> list[Conversation]:
-        """Return ended conversations eligible for extraction that haven't been extracted."""
-        rows = self.conn.execute(
-            """SELECT c.* FROM conversations c
-               WHERE c.ended_at IS NOT NULL
-                 AND c.journey IS NOT NULL
-                 AND (c.metadata IS NULL OR json_extract(c.metadata, '$.extracted') IS NOT 1)
-                 AND (SELECT COUNT(*) FROM messages m WHERE m.conversation_id = c.id) >= 4"""
-        ).fetchall()
+    _UNEXTRACTED_WHERE = """
+        WHERE c.ended_at IS NOT NULL
+          AND c.journey IS NOT NULL
+          AND (c.metadata IS NULL OR json_extract(c.metadata, '$.extracted') IS NOT 1)
+          AND (c.metadata IS NULL
+               OR json_extract(c.metadata, '$.extraction_quarantined') IS NOT 1)
+          AND (SELECT COUNT(*) FROM messages m WHERE m.conversation_id = c.id) >= 4
+    """
+
+    def get_unextracted_conversations(self, limit: int | None = None) -> list[Conversation]:
+        """Return ended conversations eligible for extraction that haven't been extracted.
+
+        Quarantined conversations (repeated extraction failures, CV9.E2.S7) are
+        excluded so a poison-pill conversation is not retried at every session
+        start and does not block the conversations queued behind it.
+
+        ``limit`` bounds the maintenance run's worst-case spend (CV9.E2.S26,
+        AI-05): oldest-ended first (FIFO), so a backlog drains deterministically
+        instead of starving. ``None`` returns every eligible conversation
+        (pre-S26 behavior, used by callers that intentionally want the full set).
+        """
+        query = f"SELECT c.* FROM conversations c{self._UNEXTRACTED_WHERE}ORDER BY c.ended_at ASC"
+        params: tuple = ()
+        if limit is not None:
+            query += " LIMIT ?"
+            params = (limit,)
+        rows = self.conn.execute(query, params).fetchall()
         return [Conversation(**dict(r)) for r in rows]
+
+    def count_unextracted_conversations(self) -> int:
+        """Count conversations eligible for extraction but not yet extracted.
+
+        Same predicate as ``get_unextracted_conversations`` (CV9.E2.S26, AI-05).
+        Calling this *after* a capped extraction run gives the "carried over to
+        next run" count without materializing or re-fetching the full row set.
+        """
+        row = self.conn.execute(
+            f"SELECT COUNT(*) AS n FROM conversations c{self._UNEXTRACTED_WHERE}"
+        ).fetchone()
+        return int(row["n"]) if row else 0
+
+    def count_quarantined_conversations(self) -> int:
+        """Count conversations quarantined after repeated extraction failure."""
+        row = self.conn.execute(
+            """SELECT COUNT(*) AS n FROM conversations c
+               WHERE json_extract(c.metadata, '$.extraction_quarantined') IS 1"""
+        ).fetchone()
+        return int(row["n"]) if row else 0
+
+    def count_conversations_with_extraction_status(self, status: str) -> int:
+        """Count conversations whose recorded extraction_status matches (AI-10)."""
+        row = self.conn.execute(
+            """SELECT COUNT(*) AS n FROM conversations c
+               WHERE json_extract(c.metadata, '$.extraction_status') = ?""",
+            (status,),
+        ).fetchone()
+        return int(row["n"]) if row else 0
 
     def get_open_conversations_idle_since(self, threshold_dt: str) -> list[Conversation]:
         """Return open conversations with no message activity since threshold_dt."""
