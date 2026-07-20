@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   curateAgainstExisting,
   extractMemories,
+  extractMemoriesWithStatus,
   extractTasks,
   formatTranscript,
   naiveSummary,
@@ -215,6 +216,96 @@ test("curateAgainstExisting drops a curated item with an invalid layer (CR041 / 
     curated.map((m) => m.title),
     ["ok"],
   );
+});
+
+test("extractMemoriesWithStatus reports parse_failed for a non-array response (AI-10)", async () => {
+  const provider = new ReplayLlmProvider({
+    kind: "llm",
+    responses: { extraction: '{"not":"a list"}' },
+  });
+  const outcome = await extractMemoriesWithStatus(provider, [{ role: "user", content: "x" }]);
+  assert.deepEqual(outcome.memories, []);
+  assert.deepEqual(outcome.status, { status: "parse_failed" });
+});
+
+test("extractMemoriesWithStatus reports no_signal with an all-zero dropped map for an empty response (AI-10)", async () => {
+  const provider = new ReplayLlmProvider({ kind: "llm", responses: { extraction: "[]" } });
+  const outcome = await extractMemoriesWithStatus(provider, [{ role: "user", content: "x" }]);
+  assert.deepEqual(outcome.memories, []);
+  assert.deepEqual(outcome.status, {
+    status: "no_signal",
+    dropped: { invalidLayer: 0, invalidType: 0, overCap: 0 },
+  });
+});
+
+test("extractMemoriesWithStatus reports ok with an all-zero dropped map when nothing is dropped (AI-10)", async () => {
+  const provider = new ReplayLlmProvider({
+    kind: "llm",
+    responses: {
+      extraction: JSON.stringify([{ title: "ok", content: "c", memory_type: "insight" }]),
+    },
+  });
+  const outcome = await extractMemoriesWithStatus(provider, [{ role: "user", content: "x" }]);
+  assert.equal(outcome.memories.length, 1);
+  assert.deepEqual(outcome.status, {
+    status: "ok",
+    dropped: { invalidLayer: 0, invalidType: 0, overCap: 0 },
+  });
+});
+
+test("extractMemoriesWithStatus reports ok and counts a real drop when one item survives (AI-10)", async () => {
+  const provider = new ReplayLlmProvider({
+    kind: "llm",
+    responses: {
+      extraction: JSON.stringify([
+        { title: "ok", content: "c", memory_type: "insight", layer: "ego" },
+        { title: "bad", content: "c", memory_type: "insight", layer: "banana" },
+      ]),
+    },
+  });
+  const outcome = await extractMemoriesWithStatus(provider, [{ role: "user", content: "x" }]);
+  assert.deepEqual(
+    outcome.memories.map((m) => m.title),
+    ["ok"],
+  );
+  assert.deepEqual(outcome.status, {
+    status: "ok",
+    dropped: { invalidLayer: 1, invalidType: 0, overCap: 0 },
+  });
+});
+
+test("extractMemoriesWithStatus reports no_signal and counts drops when every item is dropped (AI-10)", async () => {
+  const provider = new ReplayLlmProvider({
+    kind: "llm",
+    responses: {
+      extraction: JSON.stringify([
+        { title: "bad", content: "c", memory_type: "insight", layer: "banana" },
+      ]),
+    },
+  });
+  const outcome = await extractMemoriesWithStatus(provider, [{ role: "user", content: "x" }]);
+  assert.deepEqual(outcome.memories, []);
+  assert.deepEqual(outcome.status, {
+    status: "no_signal",
+    dropped: { invalidLayer: 1, invalidType: 0, overCap: 0 },
+  });
+});
+
+test("extractMemoriesWithStatus reports no_signal with no dropped key for zero messages (AI-10, documented divergence)", async () => {
+  const provider = new ReplayLlmProvider({ kind: "llm", responses: {} });
+  const outcome = await extractMemoriesWithStatus(provider, []);
+  assert.deepEqual(outcome.memories, []);
+  assert.deepEqual(outcome.status, { status: "no_signal" });
+  assert.equal(provider.calls.length, 0);
+});
+
+test("extractMemories (legacy) still returns only the memories array, unaffected by status (AI-10)", async () => {
+  const provider = new ReplayLlmProvider({
+    kind: "llm",
+    responses: { extraction: '{"not":"a list"}' },
+  });
+  const memories = await extractMemories(provider, [{ role: "user", content: "x" }]);
+  assert.deepEqual(memories, []);
 });
 
 test("naiveSummary matches Python chunk and total truncation", () => {

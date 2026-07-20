@@ -3,6 +3,7 @@ import {
   fenceTranscript,
   MAX_MEMORIES_PER_CONVERSATION,
   MAX_TASKS_PER_CONVERSATION,
+  type SanitizeDropped,
   sanitizeExtracted,
 } from "./fencing.ts";
 import { parseJsonResponse } from "./json.ts";
@@ -58,25 +59,70 @@ export function naiveSummary(messages: readonly ExtractionMessage[]): string {
     .slice(0, 2000);
 }
 
-export async function extractMemories(
+export type ExtractionStatusValue = "parse_failed" | "no_signal" | "ok";
+
+export interface ExtractionStatus {
+  status: ExtractionStatusValue;
+  dropped?: SanitizeDropped;
+}
+
+export interface ExtractMemoriesOutcome {
+  memories: ExtractedMemory[];
+  status: ExtractionStatus;
+}
+
+/**
+ * Extracts memories and reports why the result is what it is, mirroring
+ * Python's `extract_memories(status=...)` (AI-10, CV9.E2.S16). A caller can
+ * distinguish unreadable model output (parse_failed) from a genuinely empty
+ * result (no_signal) instead of both looking identical to an empty array.
+ *
+ * `"llm_failed"` is deliberately not part of `ExtractionStatusValue`: this
+ * function cannot structurally report it -- that value only exists when the
+ * call throws, which is the orchestration layer's (`runConversationExtraction`)
+ * concern, not this function's return shape.
+ *
+ * Documented divergence: Python's status dict is left untouched (no key set
+ * at all) for a truly-empty messages call -- a mutate-if-present out-param
+ * behavior this return-based design cannot replicate exactly. This returns
+ * `{ status: "no_signal" }` instead. Zero observable impact:
+ * `runConversationExtraction` already guards `messages.length < 4` before
+ * ever calling this, so the path is unreachable from the real orchestration
+ * call site.
+ */
+export async function extractMemoriesWithStatus(
   provider: LlmProvider,
   messages: readonly ExtractionMessage[],
   options: { persona?: string | null; journey?: string | null; userName?: string } = {},
-): Promise<ExtractedMemory[]> {
-  if (messages.length === 0) return [];
+): Promise<ExtractMemoriesOutcome> {
+  if (messages.length === 0) return { memories: [], status: { status: "no_signal" } };
   const response = await provider.complete({
     role: "extraction",
     prompt: fenceTranscript(formatTranscript(messages, options.userName ?? "User")),
     temperature: 0.3,
   });
   const data = parseJsonResponse(response.content);
-  if (!Array.isArray(data)) return [];
+  if (!Array.isArray(data)) {
+    return { memories: [], status: { status: "parse_failed" } };
+  }
   const memories: ExtractedMemory[] = [];
   for (const item of data) {
     const memory = toExtractedMemory(item, options);
     if (memory) memories.push(memory);
   }
-  return sanitizeExtracted(memories, MAX_MEMORIES_PER_CONVERSATION).kept;
+  const { kept, dropped } = sanitizeExtracted(memories, MAX_MEMORIES_PER_CONVERSATION);
+  return { memories: kept, status: { status: kept.length > 0 ? "ok" : "no_signal", dropped } };
+}
+
+/** Thin, non-breaking wrapper over `extractMemoriesWithStatus`, returning only
+ * the memories array for existing callers -- mirrors Python's `extract_memories`
+ * default (`status=None`) shape. */
+export async function extractMemories(
+  provider: LlmProvider,
+  messages: readonly ExtractionMessage[],
+  options: { persona?: string | null; journey?: string | null; userName?: string } = {},
+): Promise<ExtractedMemory[]> {
+  return (await extractMemoriesWithStatus(provider, messages, options)).memories;
 }
 
 export async function extractTasks(

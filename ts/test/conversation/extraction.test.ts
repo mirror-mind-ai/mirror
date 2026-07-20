@@ -6,7 +6,24 @@ import test from "node:test";
 import { runConversationExtraction } from "../../src/conversation/extraction.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
 import { ReplayEmbeddingProvider } from "../../src/providers/embedding.ts";
+import type { LlmProvider } from "../../src/providers/llm.ts";
 import { ReplayLlmProvider } from "../../src/providers/llm.ts";
+
+/** Mirrors the FailingEmbeddingProvider pattern from CR037, applied to
+ * LlmProvider -- deterministic proof of the llm_failed path without a live
+ * network dependency. */
+class FailingLlmProvider implements LlmProvider {
+  async complete(): Promise<never> {
+    throw new Error("llm provider unreachable");
+  }
+}
+
+function metadataOf(db: WritableDatabase, conversationId: string): Record<string, unknown> {
+  const raw = db
+    .prepare("SELECT metadata FROM conversations WHERE id = ?")
+    .get(conversationId)?.metadata;
+  return raw ? JSON.parse(String(raw)) : {};
+}
 
 const TMP_DIR = join(process.cwd(), "tmp", "test-conversation-extraction");
 
@@ -98,12 +115,142 @@ test("runConversationExtraction persists replayed memories, tasks, summary, embe
         .prepare("SELECT summary_embedding FROM conversation_embeddings WHERE conversation_id = ?")
         .get("c1")?.summary_embedding instanceof Uint8Array,
     );
-    assert.deepEqual(
-      JSON.parse(
-        String(db.prepare("SELECT metadata FROM conversations WHERE id = ?").get("c1")?.metadata),
-      ),
-      { kept: true, extracted: true },
+    assert.deepEqual(metadataOf(db, "c1"), {
+      kept: true,
+      extracted: true,
+      extraction_status: "ok",
+    });
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("runConversationExtraction records extraction_status: no_signal when the LLM returns no memories (AI-10)", async () => {
+  const { db, path } = await makeDb("status-no-signal.db");
+  try {
+    insertConversation(db, { id: "c1", journey: "cv22" });
+    for (let i = 1; i <= 4; i += 1)
+      insertMessage(db, "c1", i % 2 ? "user" : "assistant", `m${i}`, i);
+    const llm = new ReplayLlmProvider({
+      kind: "llm",
+      responses: { extraction: "[]", task_extraction: "[]", summary: "Summary" },
+    });
+
+    const result = await runConversationExtraction(db, "c1", {
+      llm,
+      embeddings: new ReplayEmbeddingProvider({
+        kind: "embedding",
+        response: { embedding: [1, 0] },
+      }),
+      now: fixedNow,
+      id: idSequence([]),
+    });
+
+    assert.deepEqual(result.memoryIds, []);
+    assert.deepEqual(metadataOf(db, "c1"), { extracted: true, extraction_status: "no_signal" });
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("runConversationExtraction records extraction_status: parse_failed for a non-array LLM response (AI-10)", async () => {
+  const { db, path } = await makeDb("status-parse-failed.db");
+  try {
+    insertConversation(db, { id: "c1", journey: "cv22" });
+    for (let i = 1; i <= 4; i += 1)
+      insertMessage(db, "c1", i % 2 ? "user" : "assistant", `m${i}`, i);
+    const llm = new ReplayLlmProvider({
+      kind: "llm",
+      responses: {
+        extraction: '{"not":"a list"}',
+        task_extraction: "[]",
+        summary: "Summary",
+      },
+    });
+
+    const result = await runConversationExtraction(db, "c1", {
+      llm,
+      embeddings: new ReplayEmbeddingProvider({
+        kind: "embedding",
+        response: { embedding: [1, 0] },
+      }),
+      now: fixedNow,
+      id: idSequence([]),
+    });
+
+    assert.deepEqual(result.memoryIds, []);
+    assert.deepEqual(metadataOf(db, "c1"), { extracted: true, extraction_status: "parse_failed" });
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("runConversationExtraction records extraction_dropped only when sanitize actually drops something (AI-10)", async () => {
+  const { db, path } = await makeDb("status-dropped.db");
+  try {
+    insertConversation(db, { id: "c1", journey: "cv22" });
+    for (let i = 1; i <= 4; i += 1)
+      insertMessage(db, "c1", i % 2 ? "user" : "assistant", `m${i}`, i);
+    const llm = new ReplayLlmProvider({
+      kind: "llm",
+      responses: {
+        extraction: JSON.stringify([
+          { title: "Keep", content: "Content", memory_type: "insight", layer: "ego" },
+          { title: "Bad", content: "Content", memory_type: "insight", layer: "banana" },
+        ]),
+        task_extraction: "[]",
+        summary: "Summary",
+      },
+    });
+
+    const result = await runConversationExtraction(db, "c1", {
+      llm,
+      embeddings: new ReplayEmbeddingProvider({
+        kind: "embedding",
+        response: { embedding: [1, 0] },
+      }),
+      now: fixedNow,
+      id: idSequence(["m1"]),
+    });
+
+    assert.deepEqual(result.memoryIds, ["m1"]);
+    assert.deepEqual(metadataOf(db, "c1"), {
+      extracted: true,
+      extraction_status: "ok",
+      extraction_dropped: { invalidLayer: 1, invalidType: 0, overCap: 0 },
+    });
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("runConversationExtraction records extraction_status: llm_failed and still throws when the LLM call fails (AI-10)", async () => {
+  const { db, path } = await makeDb("status-llm-failed.db");
+  try {
+    insertConversation(db, { id: "c1", journey: "cv22", metadata: '{"kept":true}' });
+    for (let i = 1; i <= 4; i += 1)
+      insertMessage(db, "c1", i % 2 ? "user" : "assistant", `m${i}`, i);
+
+    await assert.rejects(
+      runConversationExtraction(db, "c1", {
+        llm: new FailingLlmProvider(),
+        embeddings: new ReplayEmbeddingProvider({
+          kind: "embedding",
+          response: { embedding: [1, 0] },
+        }),
+        now: fixedNow,
+      }),
+      /llm provider unreachable/,
     );
+
+    // Recorded, but NOT marked extracted -- a failed attempt is not "done"
+    // (mirrors Python not setting meta["extracted"] on the exception path).
+    assert.deepEqual(metadataOf(db, "c1"), { kept: true, extraction_status: "llm_failed" });
+    assert.equal(db.prepare("SELECT COUNT(*) AS count FROM memories").get()?.count, 0);
   } finally {
     db.close();
     await rm(path, { force: true });

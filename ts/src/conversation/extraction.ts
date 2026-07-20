@@ -5,7 +5,8 @@ import {
   type ExistingMemoryForCuration,
   type ExtractedMemory,
   type ExtractionMessage,
-  extractMemories,
+  type ExtractionStatus,
+  extractMemoriesWithStatus,
   extractTasks,
   formatTranscript,
   naiveSummary,
@@ -51,13 +52,36 @@ export async function runConversationExtraction(
   const now = options.now ?? nowIso;
   const id = options.id ?? newId;
   const userName = resolveUserName(db);
-  let extracted = await extractMemories(options.llm, messages, {
-    persona: conv.persona,
-    journey: conv.journey,
-    userName,
-  });
-  if (options.twoPass && extracted.length > 0) {
-    extracted = await curateAgainstExisting(options.llm, extracted, options.curationExisting ?? []);
+
+  let extractedMemories: ExtractedMemory[];
+  let extractionStatus: ExtractionStatus;
+  try {
+    const outcome = await extractMemoriesWithStatus(options.llm, messages, {
+      persona: conv.persona,
+      journey: conv.journey,
+      userName,
+    });
+    extractedMemories = outcome.memories;
+    extractionStatus = outcome.status;
+  } catch (error) {
+    // Mirrors Python's exception path (AI-10, CV9.E2.S16): record why, then
+    // still propagate. Deliberately does NOT set `extracted` -- a failed
+    // attempt is not "done" -- and re-throws the original error unmodified.
+    const failureMetadata = metadataDict(conv.metadata);
+    failureMetadata.extraction_status = "llm_failed";
+    db.prepare("UPDATE conversations SET metadata = ? WHERE id = ?").run(
+      JSON.stringify(failureMetadata),
+      conversationId,
+    );
+    throw error;
+  }
+
+  if (options.twoPass && extractedMemories.length > 0) {
+    extractedMemories = await curateAgainstExisting(
+      options.llm,
+      extractedMemories,
+      options.curationExisting ?? [],
+    );
   }
 
   const taskIds = await persistExtractedTasks(db, options.llm, messages, {
@@ -85,7 +109,7 @@ export async function runConversationExtraction(
   }
 
   const memoryIds: string[] = [];
-  for (const memory of extracted) {
+  for (const memory of extractedMemories) {
     const memoryId = id();
     const embeddingText = `${memory.title}. ${memory.content}${memory.context ? ` Context: ${memory.context}` : ""}`;
     const embedding = await options.embeddings.embed(embeddingText);
@@ -95,6 +119,13 @@ export async function runConversationExtraction(
 
   const metadata = metadataDict(conv.metadata);
   metadata.extracted = true;
+  metadata.extraction_status = extractionStatus.status;
+  if (
+    extractionStatus.dropped &&
+    Object.values(extractionStatus.dropped).some((count) => count > 0)
+  ) {
+    metadata.extraction_dropped = extractionStatus.dropped;
+  }
   db.prepare("UPDATE conversations SET metadata = ? WHERE id = ?").run(
     JSON.stringify(metadata),
     conversationId,
