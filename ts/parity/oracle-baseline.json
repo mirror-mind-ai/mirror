@@ -1,0 +1,18 @@
+{
+  "_semantics": "Green means no ported Python oracle changed since this baseline. It does NOT prove the TypeScript port is in behavioral parity -- reconcile the port (RS007) and prove parity separately.",
+  "oracles": {
+    "src/memory/intelligence/search.py": "593596a67d89275a35fb4afedb4aeef802ddc493",
+    "src/memory/intelligence/extraction.py": "4cb800f28ac125ff275f7f692c928b92273f7c54",
+    "src/memory/intelligence/embeddings.py": "faba891f7fec6ee3ab94b5b21769ce4ce805d94f",
+    "src/memory/intelligence/cost.py": "c631cf60e2711c5f436ce0535e51f4f625dfcc50",
+    "src/memory/intelligence/llm_router.py": "664af72b73564bf1ebb7c39f6bb2283f2a4624c6",
+    "src/memory/intelligence/prompts.py": "eb0645dadc36b30ef6c8c859237e16a20904ad13",
+    "src/memory/cli/consult.py": "88b51b3227b22b6a9126bc8e5b6fa7671f724f99",
+    "src/memory/services/identity.py": "926f0a3f747e3363dc94190d4dca62ae7bc4a71e",
+    "src/memory/storage/memories.py": "ac69aa8adc47faddd4743f4a477ffe942daf6ac4",
+    "src/memory/models.py": "6f282df413cc085e8447f6a40c77dbc4aeb9f39e",
+    "src/memory/db/connection.py": "bba2793a2c91331d0fc51d5f25ea0477223ad79a",
+    "src/memory/db/migrations.py": "0a09c38e12890dea88fc329d72d7d9129eb492be",
+    "src/memory/storage/store.py": "22f18f775e180a9a3a856b33b016f5bba8010054"
+  }
+}

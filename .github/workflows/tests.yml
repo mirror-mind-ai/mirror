@@ -55,6 +55,12 @@ jobs:
           MEMORY_ENV: test
           ECONOMY_ENV: test
 
+      # Fails when a ported Python oracle (DS4/DS5/DS6 surfaces) drifts from the
+      # recorded baseline without a conscious advance. Green here means "no
+      # oracle changed since baseline", NOT "TS is in parity" (see CR044/RS007).
+      - name: Oracle-drift tripwire (ported Python oracles must match the baseline)
+        run: uv run python scripts/check_oracle_drift.py
+
   ts:
     runs-on: ${{ matrix.os }}
     strategy:
