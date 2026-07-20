@@ -4,13 +4,24 @@ import { join } from "node:path";
 import test from "node:test";
 
 import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
+import type { EmbeddingProvider } from "../../src/providers/embedding.ts";
 import { ReplayEmbeddingProvider } from "../../src/providers/embedding.ts";
 import {
   accessCountsByMemoryId,
   ftsLexicalScores,
   ftsQuery,
   searchMemories,
+  searchMemoriesWithStatus,
 } from "../../src/search/memorySearch.ts";
+
+/** Mirrors Python's `mocker.patch(..., side_effect=RuntimeError(...))` -- a
+ * provider that always fails, so degraded-mode is exercised deterministically
+ * without a live network dependency. */
+class FailingEmbeddingProvider implements EmbeddingProvider {
+  async embed(): Promise<readonly number[]> {
+    throw new Error("embedding provider unreachable");
+  }
+}
 
 const TMP_DIR = join(process.cwd(), "tmp", "test-memory-search");
 
@@ -132,6 +143,145 @@ test("searchMemories ranks with replayed embedding and logs returned access only
       db.prepare("SELECT last_accessed_at FROM memories WHERE id = ?").get("semantic-hit")
         ?.last_accessed_at,
       "2026-01-05T00:00:00Z",
+    );
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("searchMemoriesWithStatus degrades to lexical-only and filters non-FTS-matched candidates (AI-04)", async () => {
+  const { db, path } = await makeDb("degraded-filter.db");
+  try {
+    insertMemory(db, {
+      id: "lexical-hit",
+      content: "mirror builder release notes",
+      embedding: [1, 0, 0],
+      createdAt: "2026-01-03T00:00:00Z",
+    });
+    insertMemory(db, {
+      id: "lexical-miss",
+      content: "completely unrelated weather report",
+      embedding: [0, 1, 0],
+      createdAt: "2026-01-04T00:00:00Z",
+    });
+    rebuildFts(db);
+
+    const outcome = await searchMemoriesWithStatus(db, {
+      query: "release",
+      limit: 5,
+      provider: new FailingEmbeddingProvider(),
+    });
+
+    assert.equal(outcome.degraded, true);
+    assert.deepEqual(
+      outcome.results.map((result) => result.id),
+      ["lexical-hit"],
+    );
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("searchMemories (legacy) does not throw when the embedding provider fails, and still returns FTS-matched results", async () => {
+  const { db, path } = await makeDb("degraded-legacy.db");
+  try {
+    insertMemory(db, {
+      id: "lexical-hit",
+      content: "mirror builder release notes",
+      embedding: [1, 0, 0],
+      createdAt: "2026-01-03T00:00:00Z",
+    });
+    insertMemory(db, {
+      id: "lexical-miss",
+      content: "completely unrelated weather report",
+      embedding: [0, 1, 0],
+      createdAt: "2026-01-04T00:00:00Z",
+    });
+    rebuildFts(db);
+
+    const results = await searchMemories(db, {
+      query: "release",
+      limit: 5,
+      provider: new FailingEmbeddingProvider(),
+    });
+
+    assert.deepEqual(
+      results.map((result) => result.id),
+      ["lexical-hit"],
+    );
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("searchMemoriesWithStatus reports degraded: false when the embedding succeeds (normal-mode regression)", async () => {
+  const { db, path } = await makeDb("degraded-false.db");
+  try {
+    insertMemory(db, {
+      id: "semantic-hit",
+      content: "mirror builder ariad",
+      embedding: [1, 0, 0],
+      createdAt: "2026-01-03T00:00:00Z",
+    });
+    rebuildFts(db);
+
+    const provider = new ReplayEmbeddingProvider({
+      kind: "embedding",
+      response: { embedding: [1, 0, 0] },
+    });
+
+    const outcome = await searchMemoriesWithStatus(db, { query: "builder", limit: 5, provider });
+
+    assert.equal(outcome.degraded, false);
+    assert.ok(outcome.results.length >= 1);
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("searchMemoriesWithStatus composes the FTS-match filter with an existing journey filter when degraded", async () => {
+  const { db, path } = await makeDb("degraded-compose-journey.db");
+  try {
+    insertMemory(db, {
+      id: "match-both",
+      content: "mirror builder session",
+      embedding: [1, 0, 0],
+      createdAt: "2026-01-03T00:00:00Z",
+      journey: "cv22",
+    });
+    insertMemory(db, {
+      id: "fts-match-wrong-journey",
+      content: "another session here",
+      embedding: [0, 1, 0],
+      createdAt: "2026-01-04T00:00:00Z",
+      journey: "other",
+    });
+    insertMemory(db, {
+      id: "journey-match-no-fts",
+      content: "totally different words",
+      embedding: [0, 0, 1],
+      createdAt: "2026-01-05T00:00:00Z",
+      journey: "cv22",
+    });
+    rebuildFts(db);
+
+    const outcome = await searchMemoriesWithStatus(db, {
+      query: "session",
+      limit: 5,
+      journey: "cv22",
+      provider: new FailingEmbeddingProvider(),
+    });
+
+    // Degraded narrows (FTS-match required); the existing journey filter must
+    // still apply too -- neither filter alone should let a result through.
+    assert.equal(outcome.degraded, true);
+    assert.deepEqual(
+      outcome.results.map((result) => result.id),
+      ["match-both"],
     );
   } finally {
     db.close();

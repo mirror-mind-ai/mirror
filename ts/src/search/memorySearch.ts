@@ -26,6 +26,11 @@ export interface FreshSearchOptions extends FreshSearchFilters {
 
 export interface FreshSearchResult extends RankedMemory {}
 
+export interface FreshSearchOutcome {
+  results: FreshSearchResult[];
+  degraded: boolean;
+}
+
 export const DEFAULT_SEARCH_RANKER_CONFIG = {
   weights: { semantic: 0.5, recency: 0.15, reinforcement: 0.1, relevance: 0.1, lexical: 0.15 },
   mmrThreshold: 0.92,
@@ -44,19 +49,42 @@ interface MemoryRow {
   embedding_b64: string;
 }
 
-export async function searchMemories(
+/**
+ * Hybrid search that also reports whether it ran degraded (lexical-only),
+ * mirroring Python's `search_with_status` (AI-04, CV9.E2.S10).
+ *
+ * When the query embedding cannot be generated (offline, missing key,
+ * timeout) the search falls back to the local FTS5 index: the semantic term
+ * is dropped (an empty `queryEmbedding` makes `cosineSimilarity`'s zero-norm
+ * path return 0 for every candidate, so `ranker.ts` needs no change) and only
+ * FTS-matched memories are ranked -- a hard filter, not just a lower score,
+ * matching Python's `mem.id not in fts_lookup: continue`. MMR dedup is
+ * unaffected -- it ranks on the stored memory embeddings, not the query.
+ */
+export async function searchMemoriesWithStatus(
   db: WritableDatabase,
   options: FreshSearchOptions,
-): Promise<FreshSearchResult[]> {
+): Promise<FreshSearchOutcome> {
   const limit = options.limit ?? 5;
-  const queryEmbedding = await options.provider.embed(options.query);
+  let queryEmbedding: readonly number[] = [];
+  let degraded = false;
+  try {
+    queryEmbedding = await options.provider.embed(options.query);
+  } catch {
+    degraded = true;
+  }
+
   const memories = listSearchMemoryRows(db, options);
   const accessCounts = accessCountsByMemoryId(
     db,
     memories.map((memory) => memory.id),
   );
   const lexicalScores = ftsLexicalScores(db, options.query, options);
-  const rankable = memories.map(
+
+  const candidateMemories = degraded
+    ? memories.filter((memory) => lexicalScores.has(memory.id))
+    : memories;
+  const rankable = candidateMemories.map(
     (memory): RankableMemory => ({
       ...memory,
       access_count: accessCounts.get(memory.id) ?? 0,
@@ -70,11 +98,24 @@ export async function searchMemories(
     limit,
   });
 
+  // Reinforce only on genuine context loads. This mirrors Python's log_access
+  // param (AI-12) firing regardless of degraded status -- the two concerns are
+  // orthogonal and intentionally not coupled; do not make this conditional.
   const accessNow = options.now ?? nowIso();
   for (const result of ranked) {
     logAccess(db, result.id, accessNow, options.query.slice(0, 200));
   }
-  return ranked;
+  return { results: ranked, degraded };
+}
+
+/** Thin, non-breaking wrapper over `searchMemoriesWithStatus`, mirroring
+ * Python's `search()` over `search_with_status()`: existing callers keep the
+ * plain-array shape, and an embedding failure no longer propagates uncaught. */
+export async function searchMemories(
+  db: WritableDatabase,
+  options: FreshSearchOptions,
+): Promise<FreshSearchResult[]> {
+  return (await searchMemoriesWithStatus(db, options)).results;
 }
 
 export function listSearchMemoryRows(
