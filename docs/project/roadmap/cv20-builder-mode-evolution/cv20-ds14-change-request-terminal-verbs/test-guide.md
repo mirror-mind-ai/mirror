@@ -121,4 +121,23 @@ Pass: 4/4 correct, and `reject` never routes to `discard`. Failures feed the fas
 
 ## Validation evidence
 
-Pending implementation and validation.
+**Navigator validation route** — ✅ Confirmed by Vinicius, 2026-07-20. Route run in
+Builder Mode on a throwaway journey: capture 3 CRs, pull RS, park/reject/promote
+each, overview, review → coherence → close. Reported outcome: "all good" — the
+RS closed cleanly with all three terminal verbs succeeding.
+
+**Routing probe** — ✅ Confirmed by Vinicius, 2026-07-20, alongside the route above.
+
+**CR023 reconciliation** — ✅ Confirmed MATCH by Vinicius, 2026-07-20. Ran the
+read-only inspection script against production: `status=parked`,
+`outcome_notes` set (the historical free-text note, kept verbatim per D5 — not
+rewritten to the new verb's format), `completed_at=None`, and the `kia-desktop`
+cursor does not point at CR023 as active (`active_change_request_id: None`).
+All four structural checks passed. No migration or re-emit needed (D5). The
+note's own text documents its genesis: "parked via storage API (no 'park' verb
+in the Ariad CR CLI; discard would delete)" — the exact gap this DS closes.
+
+**Automated gates** — ✅ Full suite green (exit 0, zero F/E across the run); ruff
+check, ruff format, and mypy clean on all four touched `src/` files; repo-wide
+pre-existing lint/type debt (4 ruff + 109 mypy errors) confirmed unrelated via
+`git stash` diff; `git diff --check` clean.

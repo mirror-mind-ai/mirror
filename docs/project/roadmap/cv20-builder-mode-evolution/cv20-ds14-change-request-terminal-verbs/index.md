@@ -2,9 +2,16 @@
 
 # CV20.DS14 — Change Request Terminal Verbs (park / reject / promote)
 
-**Status:** 🟡 Planned — plan authored and revised after a six-persona review
-(quality-assurance, database-architect, security-engineer, ai-engineer,
-devops-engineer, prompt-engineer). Pending Navigator approval before implementation.
+**Status:** ✅ Done — plan approved and built TDD-first after a six-persona
+review (quality-assurance, database-architect, security-engineer, ai-engineer,
+devops-engineer, prompt-engineer). Full suite, ruff, mypy, and `git diff --check`
+are green. Vinicius confirmed the Navigator validation route and verb-routing
+probe on 2026-07-20 ("all good"), and the CR023 backup-first prod
+reconciliation matched the verb's expected output shape — no migration needed
+(D5). Full evidence in [test-guide.md](test-guide.md). Two fast-follows
+(automated verb-routing eval, Claude/Codex Refinement-skill parity) were
+registered on the [roadmap Radar](../../index.md#radar) rather than left to
+evaporate.
 **Delivery Story of:** CV20 — Builder Mode Evolution (follow-up to
 [CV20.DS6](../cv20-ds6-refinement-workbench-flow/index.md))
 **Design input:** [handoff.md](handoff.md) · **Plan:** [plan.md](plan.md) · **Tests:** [test-guide.md](test-guide.md)
