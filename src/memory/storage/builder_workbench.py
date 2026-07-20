@@ -22,6 +22,10 @@ CHANGE_REQUEST_STATUSES = frozenset(
         "promoted",
     }
 )
+# The Change Request lifecycle's terminal states (CV20.DS14). A CR in any of
+# these statuses is closed for further transitions; this is the single
+# authority other modules must reuse instead of re-declaring the set inline.
+TERMINAL_CHANGE_REQUEST_STATUSES = frozenset({"done", "parked", "rejected", "promoted"})
 
 
 @dataclass(frozen=True)

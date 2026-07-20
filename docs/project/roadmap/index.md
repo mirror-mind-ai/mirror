@@ -217,6 +217,42 @@ Add new items at the top. Each entry should name the problem (not just the
 solution), point at evidence or source, and sketch the rough shape of the
 work.
 
+### Change Request verb selection has no automated eval
+
+**Source:** CV20.DS14 (park/reject/promote) / ai-engineer review
+**Surfaced:** 2026-07-20
+
+CV20.DS14 added three Change Request terminal verbs (`park`, `reject`,
+`promote`) alongside the pre-existing `discard`. The riskiest confusion is
+`reject` vs. `discard` — `reject` keeps the record with a rationale, `discard`
+**deletes** it — and which verb a Navigator's natural language routes to is
+currently checked only by a manual routing probe (`cv20-ds14-.../test-guide.md`),
+not an automated eval. The service functions themselves are pure deterministic
+seams (no model in the loop), so DS14 shipped without one; the manual probe plus
+a disambiguation clause and a "never write storage directly" guardrail in
+`mm-build/SKILL.md` mitigate the immediate risk. Rough shape: a small golden-set
+eval (~10–15 Navigator phrases → expected verb), deterministic assertion on the
+invoked command, following the existing `evals/` harness pattern. Low cost;
+worth building before Refinement Work sees heavier natural-language use.
+
+### Refinement Workbench (CR/RS commands) is Pi-only in the skills
+
+**Source:** CV20.DS14 documentation pass / devops-engineer + prompt-engineer review
+**Surfaced:** 2026-07-20
+
+While updating skill docs for CV20.DS14, `.pi/skills/mm-build/SKILL.md` was
+confirmed to document the full Refinement Workbench command set (capture,
+attach, select, confirm, plan, mark-implemented, validate, done, park, reject,
+promote, plus RS review/coherence/close/park), but `.claude/skills/mm-build/SKILL.md`
+has **zero** references to `change-request`/`refinement-story` commands, and
+Codex/Gemini carry no `mm-build` skill surface at all. The underlying CLI
+(`src/memory/cli/build.py`) behaves identically regardless of runtime — this is
+a skill-documentation/discoverability gap, not a functional one. Rough shape:
+decide whether Refinement Work should be surfaced in the Claude skill (and
+Codex, once it reaches parity) the same way Delivery Work already is, then port
+the equivalent `SKILL.md` sections. Likely resolved for good by CV21's plugin
+convergence (one canonical skill package instead of N hand-maintained copies).
+
 ### `llm_calls` table growth after embedding logging
 
 **Source:** CV9.E2.S18 (D-003) / database-architect review

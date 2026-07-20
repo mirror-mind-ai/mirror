@@ -2,11 +2,28 @@
 
 - **Date:** 2026-07-16
 - **Area:** mirror-core / Builder Mode (Ariad) roadmap reader
-- **Status:** Open
+- **Status:** ✅ Resolved by [CV20.DS13](../roadmap/cv20-builder-mode-evolution/cv20-ds13-ds-grammar-roadmap-support/index.md) (`f954417`, 2026-07-17)
 - **Severity:** Medium-High — steers the Navigator toward retired work, degrades Expand fidelity, and corrupts live Delivery cursor scope
 - **Found while:** working the `uncle-vinny` journey (Chapter 7 migration), pulling DS-35
 - **Scope:** this is a Mirror Mind (`memory` core) defect, not an uncle-vinny defect.
   uncle-vinny's roadmap is correct; the parser fails to read its format.
+
+## Resolution
+
+Fixed by **[CV20.DS13 — Delivery Story Grammar Roadmap Support](../roadmap/cv20-builder-mode-evolution/cv20-ds13-ds-grammar-roadmap-support/index.md)**
+(`f954417`, 2026-07-17). All three symptoms are resolved; both roadmap grammars
+(CV and DS) are now supported additively, guarded by a CV-grammar regression
+fixture so Mirror's own roadmap cannot regress.
+
+| Symptom | Resolution |
+|---------|------------|
+| 1 — legacy CV recommended, empty DS backlog | `pull_candidates`/snapshot exclude `legacy/`, accept hyphenated codes, classify top-level `DS-NN` as `delivery_story`, and read DS tables under `## Chapter N —` sections |
+| 2 — Expand fabricates a generic child | `expand_delivery_story` parses the DS index candidate table and materializes one package per missing child with its real code/title/type |
+| 3 — stale cursor carryover | `pull_lifecycle_item` clears stale `child_work_items`/`aggregate_checkpoint_status` when replacing a different active item |
+
+Shared grammar primitives were extracted into a `roadmap_grammar` module, and
+DS-format fixtures lock the behavior in. The already-dirtied `uncle-vinny` cursor
+is separate workspace cleanup, deferred by DS13 as a non-goal.
 
 ## Summary
 
@@ -115,7 +132,7 @@ Not yet confirmed at source level.
   its scope, so the DS Plan is built against the wrong children unless corrected
   by passing explicit `--child` codes.
 
-## Suggested fix directions (not executed)
+## Suggested fix directions (executed by CV20.DS13)
 
 1. **Exclude `legacy/`** from candidate/position globs (retired history is never a
    pull candidate).

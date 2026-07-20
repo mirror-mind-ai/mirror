@@ -92,6 +92,42 @@ Also fixed in-cycle: while closing AI-05 in the audit document, found that a pre
 
 Validation: TDD at each layer (storage → config → CLI → report), RED confirmed before each implementation step; 9 new storage tests (limit/ordering/quarantine-exclusion, predicate-parity between the count and the fetch) + 10 new CLI tests (default cap, drain-over-runs, exactly-N regression, explicit `limit=` override, config override, oldest-first wiring end to end, carried-over line present/absent, and an explicit word-collision guard test); full keyless suite green; ruff/format clean; mypy at the 109-error D-006 baseline with zero added (stash-confirmed both ways); doc links clean. `docs/reference/configuration.md` documents the new knob matching the sibling `MEMORY_EXTRACTION_MAX_ATTEMPTS` entry's exact format.
 
+### 2026-07-20 — CV20.DS14 Change Request terminal verbs shipped and validated (park/reject/promote)
+
+Closed CV20.DS14: `park`, `reject`, and `promote` are now real Builder CLI verbs
+for the three Change Request terminal states the domain already modeled but the
+runtime could not reach — closing the gap that forced a raw off-contract
+storage write for CR023 (RS003, journey `kia-desktop`) in an earlier session.
+
+Planned via a six-persona review (quality-assurance, database-architect,
+security-engineer, ai-engineer, devops-engineer, prompt-engineer) before any
+code was touched. The review surfaced and fixed real issues beyond the original
+handoff: `outcome_notes` prepend-preserve (parking a `validated` CR no longer
+clobbers its evidence — database-architect), an Ariad-marker injection fence at
+the `_card_text` chokepoint for CR free-text rendered into surfaces
+(security-engineer), and the RS progress surface's terminal-vs-"remaining"
+accounting bug (QA) — the same class of surface-trust bug DS13 and the
+dogfooding ledger had already flagged elsewhere, caught here before shipping.
+TDD throughout: 32 new tests, full suite green (exit 0, zero failures across the
+run), ruff/mypy clean on all touched files (the pre-existing 4 ruff + 109 mypy
+repo-wide errors confirmed unrelated via `git stash` diff).
+
+Also fixed the latent `_flow_event` bug found during planning
+(`cr.status != "done"` mis-flagged parked/rejected/promoted CRs as still
+active) and extracted `TERMINAL_CHANGE_REQUEST_STATUSES` as the single
+authority, replacing three duplicated inline sets.
+
+Navigator-validated 2026-07-20: the full park/reject/promote → RS
+review/coherence/close route in Builder Mode, the reject-vs-discard-vs-park
+routing probe, and — the one production-touching step, run by the Navigator via
+a read-only script, not the agent — CR023 itself: `status=parked`,
+`outcome_notes` set, `completed_at=None`, cursor not pointing at it as active.
+All four checks matched the verb's expected output shape; no migration needed
+(D5). Two fast-follows registered on the Radar rather than left implicit: an
+automated verb-routing eval (this story's manual probe is the stand-in) and the
+Claude/Codex Refinement-skill parity gap (Refinement Work is Pi-only in the
+skills today).
+
 ### 2026-07-20 — CV9.E2.S25 Journal + metadata eval probes completed (AI-11 fully closed, AI-24 closed)
 
 Closed AI-11 fully: the last two uncovered LLM surfaces (journal classification, conversation title/tags) now have eval probes. These are quality surfaces (regression detection across model swaps), distinct from the injection/identity class. `evals/title_tags.py` (6 probes) and `evals/journal.py` (5 probes, with layer probes pre-registered n=10 per ai-engineer: layer misclassification is the quality risk). Also closed AI-24 (found while tracing): journal layer classification bypassed the AI-15 `VALID_MEMORY_LAYERS` allowlist — fixed with observable surface-local coercion (invalid → `"ego"`) using imported `VALID_MEMORY_LAYERS`, deterministic CI unit test. Registered D-008 for the broader `add_memory`-seam validation (database-architect's follow-up). Discovery contract test 8→10.

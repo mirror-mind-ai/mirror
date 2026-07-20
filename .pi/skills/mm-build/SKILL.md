@@ -366,6 +366,30 @@ uv run python -m memory build change-request validate --journey <slug> --change-
 uv run python -m memory build change-request done --journey <slug> --change-request-id <cr-id> --notes "<done note>"
 ```
 
+When the Navigator wants to defer, decline, or graduate a CR instead of
+finishing it, route to the matching terminal verb:
+
+```bash
+uv run python -m memory build change-request park --journey <slug> --change-request-id <cr-id> --reason "<why deferred>" --revisit-trigger "<what reopens it>"
+uv run python -m memory build change-request reject --journey <slug> --change-request-id <cr-id> --reason "<decided no>"
+uv run python -m memory build change-request promote --journey <slug> --change-request-id <cr-id> --target "<delivery target>" [--notes "<note>"]
+```
+
+These are distinct verbs, not synonyms — do not substitute one for another:
+
+- `park` — a deliberate defer; requires both `--reason` and `--revisit-trigger`.
+- `reject` — a decided no; **keeps** the record with a reason (contrast `discard`, below).
+- `promote` — the CR outgrew Refinement Work and becomes Delivery Work; records
+  a `--target` pointer only, does **not** create or mutate a roadmap item.
+- `discard` — deletes an **accidental capture**; the only one of the four that
+  removes the record. If in doubt between `reject` and `discard`, prefer
+  `reject`: it preserves the decision instead of erasing it.
+
+Render the `CHANGE_REQUEST_PARKED` / `_REJECTED` / `_PROMOTED` events as
+`REFINEMENT_FLOW_EVENT` surfaces verbatim, same as the other CR transitions. If
+a needed transition has no supported verb, stop and report the gap to the
+Navigator — never write to storage directly to work around it.
+
 When the Navigator asks to review, check coherence, or close an active RS, route
 to:
 
@@ -375,6 +399,13 @@ uv run python -m memory build refinement-story coherence --journey <slug> --refi
 uv run python -m memory build refinement-story close --journey <slug> --refinement-story-id <rs-id> --summary "<close summary>"
 ```
 
+If the Navigator wants to defer the whole Refinement Story rather than an
+individual CR, route to:
+
+```bash
+uv run python -m memory build refinement-story park --journey <slug> --refinement-story-id <rs-id> --reason "<why deferred>" --revisit-trigger "<what reopens it>"
+```
+
 Render `REFINEMENT_FLOW_EVENT` surfaces verbatim before commentary. Do not skip
 CR phases: if a CR has not been selected, confirmed, and planned, do not jump to
 implementation. The implementation step requires explicit Navigator language
@@ -382,9 +413,9 @@ such as "implement this CR" and should be represented by the runtime transition
 only after the actual implementation/evidence exists. Review and Coherence must
 not mutate files directly; required changes discovered there must become CRs or
 future work. Do not close an RS while any attached CR remains unfinished; finish,
-park, reject, or promote each CR first, then run RS review, coherence, and close
-in order. Closing an RS clears active Refinement Work only and must not pull or
-execute Delivery Work.
+park, reject, or promote each CR first (`change-request done` / `park` / `reject`
+/ `promote`), then run RS review, coherence, and close in order. Closing an RS
+clears active Refinement Work only and must not pull or execute Delivery Work.
 
 ## Prepare Ariad Templates
 

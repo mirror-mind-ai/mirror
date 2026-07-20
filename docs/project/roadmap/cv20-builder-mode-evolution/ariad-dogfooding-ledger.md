@@ -29,13 +29,13 @@ migration (that journey's Chapter 7). Sequence exercised: `build adopt` →
 
 | ID | Severity | Area | Likely CV20 owner | Status |
 |----|----------|------|-------------------|--------|
-| AF-001 | Major | Expand ignores authored candidate-story table | CV20.DS5 (child expansion) | Open |
+| AF-001 | Major | Expand ignores authored candidate-story table | CV20.DS5 (child expansion) | ✅ Fixed (CV20.DS13) |
 | AF-002 | Major | Surface reports a file it did not write | CV20.DS4.TS3 (deterministic surfaces) | Open |
 | AF-003 | Major | DS plan template thinner than `plan_contract` | CV20.DS5 (DS plan artifact) | Open |
 | AF-004 | Minor | Scope-confirmation checkpoint collapses into plan | CV20.DS5 + cadence | Open |
-| AF-005 | Minor | Self-nested roadmap tree; child == parent | CV20.DS5 (expansion) | Open |
+| AF-005 | Minor | Self-nested roadmap tree; child == parent | CV20.DS5 (expansion) | ✅ Fixed (CV20.DS13) |
 | AF-006 | Minor | Approve reports "updated story index" but file is unchanged | CV20.DS4.TS3 (deterministic surfaces) | Open |
-| AF-007 | Minor | Next-pull recommendation points at a legacy/archived item, ignoring the active chapter sequence | CV20.DS4/DS5 (roadmap awareness) | Open |
+| AF-007 | Minor | Next-pull recommendation points at a legacy/archived item, ignoring the active chapter sequence | CV20.DS4/DS5 (roadmap awareness) | ✅ Fixed (CV20.DS13) |
 
 ## What Worked (calibration)
 
@@ -49,7 +49,12 @@ fidelity* behind the surfaces, not the surface protocol.
 
 ## AF-001 — Expand ignores the authored candidate-story table
 
-**Severity:** Major **Status:** Open **Likely owner:** CV20.DS5 (Delivery Story child expansion)
+**Severity:** Major **Status:** ✅ Fixed (CV20.DS13, `f954417`) **Likely owner:** CV20.DS5 (Delivery Story child expansion)
+
+**Resolution.** DS13.TS3 taught `expand_delivery_story` to parse the DS index
+`## Candidate Stories` table and materialize one package per missing child with
+its real code/title/type; the generic-`US1` fallback now applies only when no
+table is present.
 
 **Context.** `build pull-item --item-level delivery_story` for DS-31, whose
 `index.md` contains a `## Candidate Stories` table with ten authored rows
@@ -180,7 +185,11 @@ it weakens the meaning of a checkpoint.
 
 ## AF-005 — Self-nested roadmap tree; child indistinguishable from parent
 
-**Severity:** Minor **Status:** Open **Likely owner:** CV20.DS5 (expansion) — largely resolved by AF-001
+**Severity:** Minor **Status:** ✅ Fixed (CV20.DS13, `f954417`) **Likely owner:** CV20.DS5 (expansion) — largely resolved by AF-001
+
+**Resolution.** Closed with AF-001: DS13.TS3 renders children from the candidate
+table with their own namespaced codes/titles, so a Delivery Story no longer nests
+an identically-coded child under itself.
 
 **Context.** `DELIVERY_STORY_READY` surface after pulling DS-31.
 
@@ -232,7 +241,11 @@ but `git status` immediately afterward showed `index.md` unmodified — no diff.
 
 ## AF-007 — Next-pull recommendation points at a legacy item, ignoring the active sequence
 
-**Severity:** Minor **Status:** Open **Likely owner:** CV20.DS4/DS5 (roadmap awareness / pull-candidate logic)
+**Severity:** Minor **Status:** ✅ Fixed (CV20.DS13, `f954417`) **Likely owner:** CV20.DS4/DS5 (roadmap awareness / pull-candidate logic)
+
+**Resolution.** DS13.TS1 excludes `docs/project/roadmap/legacy/**` from
+pull-candidate scanning and reads the DS-grammar backlog, so the next pull is the
+next planned `DS-NN`, never an archived legacy CV.
 
 **Context.** After closing DS-31 (`done-delivery-story`), the `PROJECT_POSITION` surface recommended the next pull.
 
