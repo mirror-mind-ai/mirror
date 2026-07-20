@@ -12,7 +12,11 @@ from memory.builder.workbench import (
     RefinementFlowEvent,
     RefinementStoryOverview,
 )
-from memory.storage.builder_workbench import ChangeRequestRecord, RefinementStoryRecord
+from memory.storage.builder_workbench import (
+    TERMINAL_CHANGE_REQUEST_STATUSES,
+    ChangeRequestRecord,
+    RefinementStoryRecord,
+)
 
 
 def render_change_request_discarded_surface(discard: ChangeRequestDiscard) -> str:
@@ -152,9 +156,13 @@ def _event_icon(event: RefinementFlowEvent) -> str:
         "change_request_implemented": "🟧",
         "change_request_validated": "🟩",
         "change_request_done": "◻",
+        "change_request_parked": "🟫",
+        "change_request_rejected": "🟥",
+        "change_request_promoted": "🔷",
         "refinement_story_reviewed": "🔎",
         "refinement_story_coherent": "◉",
         "refinement_story_closed": "◻",
+        "refinement_story_parked": "🟫",
     }.get(event.event, "⬜")
 
 
@@ -166,9 +174,13 @@ def _human_event_phase(event: RefinementFlowEvent) -> str:
         "change_request_implemented": "Implemented",
         "change_request_validated": "Validated",
         "change_request_done": "Done",
+        "change_request_parked": "Parked",
+        "change_request_rejected": "Rejected",
+        "change_request_promoted": "Promoted",
         "refinement_story_reviewed": "Review",
         "refinement_story_coherent": "Coherence",
         "refinement_story_closed": "Closed",
+        "refinement_story_parked": "Parked",
     }.get(event.event, "Updated")
 
 
@@ -207,9 +219,13 @@ def _event_body(event: RefinementFlowEvent) -> str:
         "change_request_implemented": "Implementation evidence was recorded for this Change Request.",
         "change_request_validated": "Validation evidence was recorded for this Change Request.",
         "change_request_done": "The Change Request was closed with a done note.",
+        "change_request_parked": "This Change Request was parked for a later revisit.",
+        "change_request_rejected": "This Change Request was rejected; the record was kept.",
+        "change_request_promoted": "This Change Request was promoted out of Refinement Work.",
         "refinement_story_reviewed": "The Refinement Story review was recorded.",
         "refinement_story_coherent": "The Refinement Story coherence check was recorded.",
         "refinement_story_closed": "The Refinement Story was closed.",
+        "refinement_story_parked": "This Refinement Story was parked for a later revisit.",
     }.get(event.event, "The Refinement Work state was updated.")
 
 
@@ -219,7 +235,9 @@ def render_refinement_story_progress_surface(
     change_requests: tuple[ChangeRequestRecord, ...],
     next_change_request: ChangeRequestRecord | None,
 ) -> str:
-    done_count = sum(1 for cr in change_requests if cr.status == "done")
+    resolved_count = sum(
+        1 for cr in change_requests if cr.status in TERMINAL_CHANGE_REQUEST_STATUSES
+    )
     total = len(change_requests)
     lines = [
         "Refinement Work",
@@ -229,15 +247,17 @@ def render_refinement_story_progress_surface(
         "│                                                        │",
         *_card_wrapped(story.title),
         *_card_wrapped(
-            f"{_progress_bar(change_requests, next_change_request)} {done_count}/{total} done"
+            f"{_progress_bar(change_requests, next_change_request)} {resolved_count}/{total} resolved"
         ),
         "│                                                        │",
-        _card_text("🟩 done   🟦 next   🟥 remaining"),
+        _card_text("🟩 resolved   🟦 next   🟥 remaining"),
         "│                                                        │",
     ]
     for cr in change_requests:
         lines.extend(
-            _card_wrapped(f"{_progress_icon(cr, next_change_request)} {format_cr_ref(cr)}")
+            _card_wrapped(
+                f"{_progress_icon(cr, next_change_request)} {format_cr_ref(cr)} [{cr.status}]"
+            )
         )
     if next_change_request is None:
         lines.extend(
@@ -276,15 +296,20 @@ def _progress_bar(
     change_requests: tuple[ChangeRequestRecord, ...],
     next_change_request: ChangeRequestRecord | None,
 ) -> str:
-    del next_change_request
-    return "".join("🟩" if cr.status == "done" else "🟥" for cr in change_requests) or "none"
+    return "".join(_progress_icon(cr, next_change_request) for cr in change_requests) or "none"
 
 
 def _progress_icon(
     change_request: ChangeRequestRecord,
     next_change_request: ChangeRequestRecord | None,
 ) -> str:
-    if change_request.status == "done":
+    # Terminal CRs (done/parked/rejected/promoted) are all resolved (QA-1,
+    # CV20.DS14): the progress surface must never render a terminal CR as
+    # "remaining" while simultaneously reporting no actionable CRs left. A
+    # uniform resolved mark is used here (rather than one mark per terminal
+    # status) to avoid a color collision with the "remaining" mark; the
+    # per-item "[status]" suffix carries the precise status instead.
+    if change_request.status in TERMINAL_CHANGE_REQUEST_STATUSES:
         return "🟩"
     if next_change_request is not None and change_request.id == next_change_request.id:
         return "🟦"
@@ -313,6 +338,14 @@ def _change_request_ribbon_stage(event: RefinementFlowEvent) -> str:
         "change_request_implemented": "implement",
         "change_request_validated": "validate",
         "change_request_done": "done_note",
+        # Terminal exits (CV20.DS14): park/reject/promote can fire from any
+        # non-terminal CR stage. There is no dedicated ribbon stage for a
+        # terminal exit, so map to the closest end-of-cycle stage rather than
+        # invent a new ribbon shape for a v1 (accepted minor imprecision for
+        # an early-stage exit).
+        "change_request_parked": "done_note",
+        "change_request_rejected": "done_note",
+        "change_request_promoted": "done_note",
     }.get(event.event, "confirm")
 
 
@@ -322,6 +355,7 @@ def _refinement_story_ribbon_stage(event: RefinementFlowEvent) -> str:
         "refinement_story_reviewed": "review",
         "refinement_story_coherent": "coherence",
         "refinement_story_closed": "close",
+        "refinement_story_parked": "close",
     }.get(event.event, "cr_cycle")
 
 
@@ -411,9 +445,24 @@ def _render_overview_change_requests(change_requests: tuple[ChangeRequestRecord,
     return lines
 
 
+def _defuse_surface_markers(text: str) -> str:
+    """Neutralize literal Ariad transport marker prefixes inside rendered text.
+
+    Free-text CR/RS fields (title, body, reason, notes, target) can contain
+    Navigator- or dogfooding-sourced text and are rendered verbatim inside a
+    card that is itself wrapped by ``wrap_ariad_surface``. A forged
+    ``<<<ARIAD:...>>>`` or ``<<<END:...>>>`` sequence inside that text could be
+    mistaken by a renderer scanning for the marker tokens for a real transport
+    boundary (security-engineer review, CV20.DS14). Break just the two prefixes
+    the transport protocol scans for so the text still reads naturally.
+    """
+    return text.replace("<<<ARIAD:", "<{ARIAD:").replace("<<<END:", "<{END:")
+
+
 def _card_text(text: str) -> str:
     width = 54
-    return f"│ {text[:width]:<{width}} │"
+    safe_text = _defuse_surface_markers(text)
+    return f"│ {safe_text[:width]:<{width}} │"
 
 
 def _card_wrapped(text: str) -> list[str]:

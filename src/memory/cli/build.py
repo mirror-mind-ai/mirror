@@ -102,9 +102,13 @@ from memory.builder.workbench import (
     discard_change_request,
     get_refinement_story_overview,
     mark_change_request_implemented,
+    park_change_request,
+    park_refinement_story,
     plan_change_request,
+    promote_change_request,
     pull_refinement_story,
     recommend_next_change_request,
+    reject_change_request,
     review_refinement_story,
     select_change_request,
     validate_change_request,
@@ -1748,6 +1752,9 @@ def cmd_change_request_flow(
     notes: str | None = None,
     plan: str | None = None,
     close: bool = False,
+    reason: str | None = None,
+    revisit_trigger: str | None = None,
+    target: str | None = None,
 ) -> None:
     mem = MemoryClient()
     resolved_journey = _resolve_workbench_journey(
@@ -1806,10 +1813,52 @@ def cmd_change_request_flow(
             )
         )
         _print_next_cr_recommendation(mem, event)
+    elif action == "park":
+        event = _print_refinement_event(
+            lambda: park_change_request(
+                mem.store,
+                journey=resolved_journey,
+                change_request_id=change_request_id,
+                reason=reason or "",
+                revisit_trigger=revisit_trigger or "",
+            )
+        )
+        _print_next_cr_recommendation(mem, event)
+    elif action == "reject":
+        event = _print_refinement_event(
+            lambda: reject_change_request(
+                mem.store,
+                journey=resolved_journey,
+                change_request_id=change_request_id,
+                reason=reason or "",
+            )
+        )
+        _print_next_cr_recommendation(mem, event)
+    elif action == "promote":
+        event = _print_refinement_event(
+            lambda: promote_change_request(
+                mem.store,
+                journey=resolved_journey,
+                change_request_id=change_request_id,
+                target=target or "",
+                notes=notes,
+            )
+        )
+        _print_next_cr_recommendation(mem, event)
+
+
+_CR_TERMINAL_EVENTS_WITH_RECOMMENDATION = frozenset(
+    {
+        "change_request_done",
+        "change_request_parked",
+        "change_request_rejected",
+        "change_request_promoted",
+    }
+)
 
 
 def _print_next_cr_recommendation(mem: MemoryClient, event: RefinementFlowEvent) -> None:
-    if event.event != "change_request_done" or event.change_request is None:
+    if event.event not in _CR_TERMINAL_EVENTS_WITH_RECOMMENDATION or event.change_request is None:
         return
     overview = get_refinement_story_overview(
         mem.store,
@@ -1837,13 +1886,16 @@ def cmd_refinement_story_flow(
     journey: str | None = None,
     session_id: str | None = None,
     refinement_story_id: str,
-    summary: str,
+    summary: str | None = None,
+    reason: str | None = None,
+    revisit_trigger: str | None = None,
 ) -> None:
     mem = MemoryClient()
     resolved_journey = _resolve_workbench_journey(
         mem, journey=journey, session_id=session_id, action=f"{action} refinement story"
     )
     if action == "review":
+        assert summary is not None  # --summary is required by the review subparser
         _print_refinement_event(
             lambda: review_refinement_story(
                 mem.store,
@@ -1853,6 +1905,7 @@ def cmd_refinement_story_flow(
             )
         )
     elif action == "coherence":
+        assert summary is not None  # --summary is required by the coherence subparser
         _print_refinement_event(
             lambda: coherence_refinement_story(
                 mem.store,
@@ -1862,12 +1915,23 @@ def cmd_refinement_story_flow(
             )
         )
     elif action == "close":
+        assert summary is not None  # --summary is required by the close subparser
         _print_refinement_event(
             lambda: close_refinement_story(
                 mem.store,
                 journey=resolved_journey,
                 refinement_story_id=refinement_story_id,
                 summary=summary,
+            )
+        )
+    elif action == "park":
+        _print_refinement_event(
+            lambda: park_refinement_story(
+                mem.store,
+                journey=resolved_journey,
+                refinement_story_id=refinement_story_id,
+                reason=reason or "",
+                revisit_trigger=revisit_trigger or "",
             )
         )
 
@@ -2522,6 +2586,33 @@ def main(argv: list[str] | None = None) -> None:
     p_cr_done.add_argument("--session-id", default=None, help="Runtime session id")
     p_cr_done.add_argument("--change-request-id", required=True, help="Change Request id")
     p_cr_done.add_argument("--notes", required=True, help="Done notes")
+    p_cr_park = change_request_sub.add_parser(
+        "park", help="Park a Change Request as a deliberate, revisitable defer"
+    )
+    p_cr_park.add_argument("--journey", default=None, help="Journey slug")
+    p_cr_park.add_argument("--session-id", default=None, help="Runtime session id")
+    p_cr_park.add_argument("--change-request-id", required=True, help="Change Request id")
+    p_cr_park.add_argument("--reason", required=True, help="Why this Change Request is deferred")
+    p_cr_park.add_argument(
+        "--revisit-trigger", required=True, help="What should cause this to be revisited"
+    )
+    p_cr_reject = change_request_sub.add_parser(
+        "reject", help="Reject a Change Request, keeping the record with a reason"
+    )
+    p_cr_reject.add_argument("--journey", default=None, help="Journey slug")
+    p_cr_reject.add_argument("--session-id", default=None, help="Runtime session id")
+    p_cr_reject.add_argument("--change-request-id", required=True, help="Change Request id")
+    p_cr_reject.add_argument("--reason", required=True, help="Why this Change Request is rejected")
+    p_cr_promote = change_request_sub.add_parser(
+        "promote", help="Promote a Change Request out of Refinement Work to a Delivery target"
+    )
+    p_cr_promote.add_argument("--journey", default=None, help="Journey slug")
+    p_cr_promote.add_argument("--session-id", default=None, help="Runtime session id")
+    p_cr_promote.add_argument("--change-request-id", required=True, help="Change Request id")
+    p_cr_promote.add_argument(
+        "--target", required=True, help="Delivery target this Change Request is promoted to"
+    )
+    p_cr_promote.add_argument("--notes", default=None, help="Optional promotion notes")
 
     for action_name in ("review", "coherence", "close"):
         p_rs_flow = refinement_story_sub.add_parser(
@@ -2531,6 +2622,16 @@ def main(argv: list[str] | None = None) -> None:
         p_rs_flow.add_argument("--session-id", default=None, help="Runtime session id")
         p_rs_flow.add_argument("--refinement-story-id", required=True, help="Refinement Story id")
         p_rs_flow.add_argument("--summary", required=True, help="Summary")
+    p_rs_park = refinement_story_sub.add_parser(
+        "park", help="Park a Refinement Story as a deliberate, revisitable defer"
+    )
+    p_rs_park.add_argument("--journey", default=None, help="Journey slug")
+    p_rs_park.add_argument("--session-id", default=None, help="Runtime session id")
+    p_rs_park.add_argument("--refinement-story-id", required=True, help="Refinement Story id")
+    p_rs_park.add_argument("--reason", required=True, help="Why this Refinement Story is deferred")
+    p_rs_park.add_argument(
+        "--revisit-trigger", required=True, help="What should cause this to be revisited"
+    )
 
     p_prepare = sub.add_parser(
         "prepare-item",
@@ -2730,6 +2831,15 @@ def main(argv: list[str] | None = None) -> None:
                 refinement_story_id=args.refinement_story_id,
                 summary=args.summary,
             )
+        elif args.refinement_story_action == "park":
+            cmd_refinement_story_flow(
+                args.refinement_story_action,
+                journey=args.journey,
+                session_id=args.session_id,
+                refinement_story_id=args.refinement_story_id,
+                reason=args.reason,
+                revisit_trigger=args.revisit_trigger,
+            )
     elif args.command == "change-request":
         if args.change_request_action == "capture":
             cmd_change_request_capture(
@@ -2762,6 +2872,9 @@ def main(argv: list[str] | None = None) -> None:
             "mark-implemented",
             "validate",
             "done",
+            "park",
+            "reject",
+            "promote",
         }:
             cmd_change_request_flow(
                 args.change_request_action,
@@ -2773,6 +2886,9 @@ def main(argv: list[str] | None = None) -> None:
                 notes=getattr(args, "notes", None),
                 plan=getattr(args, "plan", None),
                 close=getattr(args, "close", False),
+                reason=getattr(args, "reason", None),
+                revisit_trigger=getattr(args, "revisit_trigger", None),
+                target=getattr(args, "target", None),
             )
     elif args.command == "prepare-item":
         cmd_prepare_item(args.method, journey=args.journey, session_id=args.session_id)

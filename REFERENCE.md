@@ -292,12 +292,27 @@ uv run python -m memory build change-request plan --journey <slug> --change-requ
 uv run python -m memory build change-request mark-implemented --journey <slug> --change-request-id <cr-id> --evidence "<evidence>"
 uv run python -m memory build change-request validate --journey <slug> --change-request-id <cr-id> --evidence "<evidence>"
 uv run python -m memory build change-request done --journey <slug> --change-request-id <cr-id> --notes "<done note>"
+uv run python -m memory build change-request park --journey <slug> --change-request-id <cr-id> --reason "<why deferred>" --revisit-trigger "<what reopens it>"
+uv run python -m memory build change-request reject --journey <slug> --change-request-id <cr-id> --reason "<decided no>"
+uv run python -m memory build change-request promote --journey <slug> --change-request-id <cr-id> --target "<delivery target>" [--notes "<note>"]
 uv run python -m memory build refinement-story review --journey <slug> --refinement-story-id <rs-id> --summary "<review>"
 uv run python -m memory build refinement-story coherence --journey <slug> --refinement-story-id <rs-id> --summary "<coherence>"
 uv run python -m memory build refinement-story close --journey <slug> --refinement-story-id <rs-id> --summary "<close summary>"
+uv run python -m memory build refinement-story park --journey <slug> --refinement-story-id <rs-id> --reason "<why deferred>" --revisit-trigger "<what reopens it>"
 ```
 
 These commands render Ariad Workbench surfaces such as `CHANGE_REQUEST_CAPTURED`, `REFINEMENT_STORY_OVERVIEW`, `REFINEMENT_STORY_PULLED`, and `REFINEMENT_FLOW_EVENT`. Composition commands capture or organize Refinement Stories and Change Requests only. Pulling an RS selects active Refinement Work only. CR/RS flow commands update runtime state and evidence only; they do not mutate Delivery cursor state, implement files, commit, push, or release. Review and Coherence do not mutate files directly.
+
+`done`, `park`, `reject`, and `promote` are the four CR terminal verbs (a fifth,
+`discard`, deletes an accidental capture instead of reaching a terminal state).
+`park` requires both `--reason` and `--revisit-trigger`; `reject` requires
+`--reason` and keeps the record (contrast `discard`, which deletes it);
+`promote` requires `--target` and records a pointer only — it does not create
+or mutate a roadmap item. All four are legal from any non-terminal CR status
+and clear the runtime cursor only when the affected CR was the active one. An
+RS whose Change Requests are all terminal (including parked/rejected/promoted)
+can proceed through review, coherence, and close. `refinement-story park`
+mirrors the CR-level verb at the story level.
 
 ### Clone role
 

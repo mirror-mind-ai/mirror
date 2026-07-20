@@ -3,6 +3,15 @@
 import pytest
 
 from memory.builder.delivery_cursor import get_delivery_cursor, set_delivery_cursor
+from memory.storage.builder_workbench import (
+    CHANGE_REQUEST_STATUSES,
+    TERMINAL_CHANGE_REQUEST_STATUSES,
+)
+
+
+def test_terminal_change_request_statuses_is_the_closed_subset_of_all_statuses():
+    assert TERMINAL_CHANGE_REQUEST_STATUSES == frozenset({"done", "parked", "rejected", "promoted"})
+    assert TERMINAL_CHANGE_REQUEST_STATUSES <= CHANGE_REQUEST_STATUSES
 
 
 def test_create_and_list_refinement_stories_by_journey(store):

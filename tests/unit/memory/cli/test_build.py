@@ -2033,9 +2033,9 @@ def test_change_request_flow_commands_update_state_and_render_surfaces(mocker, t
     assert out.count("<<<ARIAD:REFINEMENT_FLOW_EVENT>>>") == 6
     assert "<<<ARIAD:REFINEMENT_STORY_PROGRESS>>>" in out
     assert "RS001 PROGRESS" in out
-    assert "🟩🟥 1/2 done" in out
-    assert "🟩 CR001: Validate CR flow" in out
-    assert "🟦 CR002: Next CR flow" in out
+    assert "🟩🟦 1/2 resolved" in out
+    assert "🟩 CR001: Validate CR flow [done]" in out
+    assert "🟦 CR002: Next CR flow [captured]" in out
     assert "Next CR recommendation: CR002 — Next CR flow [captured]" in out
     assert "Await Navigator confirmation before selecting it." in out
     assert mem.store.get_change_request(cr.id).status == "done"
@@ -2081,6 +2081,208 @@ def test_refinement_story_flow_commands_review_coherence_close(mocker, tmp_path,
     assert "current RS phase" not in out
     assert mem.store.get_refinement_story(story.id).status == "closed"
     assert mem.store.get_refinement_cursor("sandbox-pet-store").active_refinement_story_id is None
+
+
+def test_change_request_flow_park_reject_promote_commands_update_state_and_render_surfaces(
+    mocker, tmp_path, capsys
+):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    story = mem.store.create_refinement_story(journey="sandbox-pet-store", title="RS flow")
+    park_cr = mem.store.create_change_request(
+        journey="sandbox-pet-store", refinement_story_id=story.id, title="Park CR", body="Body."
+    )
+    reject_cr = mem.store.create_change_request(
+        journey="sandbox-pet-store", refinement_story_id=story.id, title="Reject CR", body="Body."
+    )
+    promote_cr = mem.store.create_change_request(
+        journey="sandbox-pet-store", refinement_story_id=story.id, title="Promote CR", body="Body."
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_change_request_flow(
+        "park",
+        journey="sandbox-pet-store",
+        change_request_id=park_cr.id,
+        reason="Deferred to build 2",
+        revisit_trigger="When the API ships",
+    )
+    build.cmd_change_request_flow(
+        "reject", journey="sandbox-pet-store", change_request_id=reject_cr.id, reason="Duplicate"
+    )
+    build.cmd_change_request_flow(
+        "promote", journey="sandbox-pet-store", change_request_id=promote_cr.id, target="DS-99"
+    )
+
+    out = capsys.readouterr().out
+    assert out.count("<<<ARIAD:REFINEMENT_FLOW_EVENT>>>") == 3
+    assert "🟫 CR001 PARKED" in out
+    assert "🟥 CR002 REJECTED" in out
+    assert "🔷 CR003 PROMOTED" in out
+    assert mem.store.get_change_request(park_cr.id).status == "parked"
+    assert mem.store.get_change_request(reject_cr.id).status == "rejected"
+    assert mem.store.get_change_request(promote_cr.id).status == "promoted"
+
+
+def test_refinement_story_park_command_parks_active_story(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    story = mem.store.create_refinement_story(journey="sandbox-pet-store", title="RS flow")
+    mem.store.update_refinement_story_status(story.id, "active")
+    mem.store.set_refinement_cursor(
+        journey="sandbox-pet-store",
+        active_refinement_story_id=story.id,
+        active_change_request_id=None,
+        last_refinement_event="refinement_story_pulled",
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_refinement_story_flow(
+        "park",
+        journey="sandbox-pet-store",
+        refinement_story_id=story.id,
+        reason="Not now",
+        revisit_trigger="Next planning cycle",
+    )
+
+    out = capsys.readouterr().out
+    assert "🟫 RS001 PARKED" in out
+    assert mem.store.get_refinement_story(story.id).status == "parked"
+    assert mem.store.get_refinement_cursor("sandbox-pet-store").active_refinement_story_id is None
+
+
+def test_change_request_park_reject_promote_argparse_wiring(mocker, tmp_path, capsys):
+    """Drive the real argparse path (main()), not just the cmd_* function.
+
+    This is new subparser/dispatch wiring for CV20.DS14; unlike the pre-existing
+    six CR verbs (which this repo tests only at the cmd_* layer), the new
+    verbs get this extra check because the wiring itself is new and unverified.
+    """
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    story = mem.store.create_refinement_story(journey="sandbox-pet-store", title="RS flow")
+    cr = mem.store.create_change_request(
+        journey="sandbox-pet-store", refinement_story_id=story.id, title="Park CR", body="Body."
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.main(
+        [
+            "change-request",
+            "park",
+            "--journey",
+            "sandbox-pet-store",
+            "--change-request-id",
+            cr.id,
+            "--reason",
+            "Deferred to build 2",
+            "--revisit-trigger",
+            "When the API ships",
+        ]
+    )
+
+    out = capsys.readouterr().out
+    assert "🟫 CR001 PARKED" in out
+    assert mem.store.get_change_request(cr.id).status == "parked"
+
+
+def test_refinement_story_park_argparse_wiring(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    story = mem.store.create_refinement_story(journey="sandbox-pet-store", title="RS flow")
+    mem.store.update_refinement_story_status(story.id, "active")
+    mem.store.set_refinement_cursor(
+        journey="sandbox-pet-store",
+        active_refinement_story_id=story.id,
+        active_change_request_id=None,
+        last_refinement_event="refinement_story_pulled",
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.main(
+        [
+            "refinement-story",
+            "park",
+            "--journey",
+            "sandbox-pet-store",
+            "--refinement-story-id",
+            story.id,
+            "--reason",
+            "Not now",
+            "--revisit-trigger",
+            "Next planning cycle",
+        ]
+    )
+
+    out = capsys.readouterr().out
+    assert "🟫 RS001 PARKED" in out
+    assert mem.store.get_refinement_story(story.id).status == "parked"
+
+
+def test_change_request_park_missing_required_arg_exits_with_usage_error(capsys):
+    with pytest.raises(SystemExit) as exc_info:
+        build.main(
+            [
+                "change-request",
+                "park",
+                "--journey",
+                "sandbox-pet-store",
+                "--change-request-id",
+                "cr-1",
+                "--reason",
+                "Deferred",
+                # --revisit-trigger deliberately omitted
+            ]
+        )
+
+    assert exc_info.value.code == 2
+    err = capsys.readouterr().err
+    assert "--revisit-trigger" in err
+
+
+def test_change_request_park_on_terminal_cr_exits_cleanly_without_traceback(
+    mocker, tmp_path, capsys
+):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    story = mem.store.create_refinement_story(journey="sandbox-pet-store", title="RS flow")
+    cr = mem.store.create_change_request(
+        journey="sandbox-pet-store", refinement_story_id=story.id, title="Done CR", body="Body."
+    )
+    mem.store.update_change_request_status(cr.id, "done", completed_at="2026-07-20T00:00:00Z")
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    with pytest.raises(SystemExit) as exc_info:
+        build.main(
+            [
+                "change-request",
+                "park",
+                "--journey",
+                "sandbox-pet-store",
+                "--change-request-id",
+                cr.id,
+                "--reason",
+                "Deferred",
+                "--revisit-trigger",
+                "Later",
+            ]
+        )
+
+    assert exc_info.value.code == 1
+    err = capsys.readouterr().err
+    assert "Error:" in err
+    assert "already terminal" in err
+    assert "Traceback" not in err
 
 
 def test_refinement_story_close_rejects_unfinished_cr(mocker, tmp_path, capsys):

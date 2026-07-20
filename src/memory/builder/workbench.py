@@ -5,7 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from memory.models import _now
-from memory.storage.builder_workbench import ChangeRequestRecord, RefinementStoryRecord
+from memory.storage.builder_workbench import (
+    TERMINAL_CHANGE_REQUEST_STATUSES,
+    ChangeRequestRecord,
+    RefinementStoryRecord,
+)
 from memory.storage.store import Store
 
 
@@ -283,6 +287,107 @@ def complete_change_request(
     return _flow_event(journey, "change_request_done", story, updated, cr.status, notes)
 
 
+def park_change_request(
+    store: Store,
+    *,
+    journey: str,
+    change_request_id: str,
+    reason: str,
+    revisit_trigger: str,
+) -> RefinementFlowEvent:
+    """Defer a Change Request as parked, keeping the record with a revisit trigger."""
+    story, cr = _require_terminable_cr(store, journey, change_request_id, action="park")
+    normalized_reason = _require_text(reason, "reason")
+    normalized_trigger = _require_text(revisit_trigger, "revisit_trigger")
+    detail = _terminal_detail(
+        f"Parked: {normalized_reason}\nRevisit trigger: {normalized_trigger}",
+        cr.outcome_notes,
+    )
+    updated = store.update_change_request_status(cr.id, "parked", outcome_notes=detail)
+    _clear_active_cr_if_current(
+        store, journey=journey, change_request_id=cr.id, event="change_request_parked"
+    )
+    return _flow_event(journey, "change_request_parked", story, updated, cr.status, detail)
+
+
+def reject_change_request(
+    store: Store, *, journey: str, change_request_id: str, reason: str
+) -> RefinementFlowEvent:
+    """Decide against a Change Request, keeping the record with a rejection reason.
+
+    Contrast with ``discard_change_request``: discard deletes an accidental
+    capture; reject is a deliberate no that keeps the record auditable.
+    """
+    story, cr = _require_terminable_cr(store, journey, change_request_id, action="reject")
+    normalized_reason = _require_text(reason, "reason")
+    detail = _terminal_detail(f"Rejected: {normalized_reason}", cr.outcome_notes)
+    updated = store.update_change_request_status(cr.id, "rejected", outcome_notes=detail)
+    _clear_active_cr_if_current(
+        store, journey=journey, change_request_id=cr.id, event="change_request_rejected"
+    )
+    return _flow_event(journey, "change_request_rejected", story, updated, cr.status, detail)
+
+
+def promote_change_request(
+    store: Store,
+    *,
+    journey: str,
+    change_request_id: str,
+    target: str,
+    notes: str | None = None,
+) -> RefinementFlowEvent:
+    """Promote a Change Request out of Refinement Work to a Delivery target.
+
+    Minimal by design: records the target and terminal state only. Does not
+    create or mutate a roadmap item — Ariad is not an autonomous project manager.
+    """
+    story, cr = _require_terminable_cr(store, journey, change_request_id, action="promote")
+    normalized_target = _require_text(target, "target")
+    body = f"Promoted to: {normalized_target}"
+    normalized_notes = notes.strip() if notes else ""
+    if normalized_notes:
+        body += f"\nNotes: {normalized_notes}"
+    detail = _terminal_detail(body, cr.outcome_notes)
+    updated = store.update_change_request_status(cr.id, "promoted", outcome_notes=detail)
+    _clear_active_cr_if_current(
+        store, journey=journey, change_request_id=cr.id, event="change_request_promoted"
+    )
+    return _flow_event(journey, "change_request_promoted", story, updated, cr.status, detail)
+
+
+def park_refinement_story(
+    store: Store,
+    *,
+    journey: str,
+    refinement_story_id: str,
+    reason: str,
+    revisit_trigger: str,
+) -> RefinementFlowEvent:
+    """Defer the active Refinement Story as parked, without requiring closable CRs.
+
+    Symmetric with the CR-level park: an RS can be deliberately punted as a
+    whole ("not now") without forcing each attached CR to reach a terminal
+    state first.
+    """
+    overview = get_refinement_story_overview(
+        store, journey=journey, refinement_story_id=refinement_story_id
+    )
+    _require_active_refinement_story(store, journey, overview.story.id, "park")
+    normalized_reason = _require_text(reason, "reason")
+    normalized_trigger = _require_text(revisit_trigger, "revisit_trigger")
+    detail = f"Parked: {normalized_reason}\nRevisit trigger: {normalized_trigger}"
+    updated_story = store.update_refinement_story_status(overview.story.id, "parked")
+    store.set_refinement_cursor(
+        journey=journey,
+        active_refinement_story_id=None,
+        active_change_request_id=None,
+        last_refinement_event="refinement_story_parked",
+    )
+    return _flow_event(
+        journey, "refinement_story_parked", updated_story, None, overview.story.status, detail
+    )
+
+
 def review_refinement_story(
     store: Store, *, journey: str, refinement_story_id: str, summary: str
 ) -> RefinementFlowEvent:
@@ -358,9 +463,7 @@ def recommend_next_change_request(
         refinement_story_id=refinement_story_id,
     )
     candidates = [
-        cr
-        for cr in overview.change_requests
-        if cr.status not in {"done", "parked", "rejected", "promoted"}
+        cr for cr in overview.change_requests if cr.status not in TERMINAL_CHANGE_REQUEST_STATUSES
     ]
     if not candidates:
         return None
@@ -437,7 +540,7 @@ def _require_active_refinement_story(
 
 def _require_closable_change_requests(change_requests: tuple[ChangeRequestRecord, ...]) -> None:
     unfinished = tuple(
-        cr for cr in change_requests if cr.status not in {"done", "parked", "rejected", "promoted"}
+        cr for cr in change_requests if cr.status not in TERMINAL_CHANGE_REQUEST_STATUSES
     )
     if unfinished:
         summary = ", ".join(f"{cr.id} ({cr.status})" for cr in unfinished)
@@ -481,6 +584,72 @@ def _require_confirmed_cr(store: Store, journey: str, change_request_id: str) ->
         raise ValueError("confirmed Change Request is required to mark implemented")
 
 
+def _require_terminable_cr(
+    store: Store, journey: str, change_request_id: str, *, action: str
+) -> tuple[RefinementStoryRecord, ChangeRequestRecord]:
+    """Resolve a CR eligible for a terminal-state verb (CV20.DS14).
+
+    Unlike ``_require_active_story_and_cr``, this does NOT require the CR to be
+    the active one, nor its Refinement Story to be the active Refinement Story
+    (N2): park/reject/promote are decision exits that commonly apply to a CR
+    that is not currently in flight (the CR023 shape). The CR must still be
+    assigned to some Refinement Story in the same journey — an unassigned CR
+    uses ``discard`` instead — and must not already be terminal.
+    """
+    cr = store.get_change_request(change_request_id)
+    if cr is None:
+        raise ValueError("change_request_id does not exist")
+    if cr.journey != journey:
+        raise ValueError("change_request_id belongs to a different journey")
+    if cr.refinement_story_id is None:
+        raise ValueError(f"cannot {action} an unassigned Change Request; use discard instead")
+    story = store.get_refinement_story(cr.refinement_story_id)
+    if story is None or story.journey != journey:
+        raise ValueError("change_request_id belongs to a different journey")
+    if cr.status in TERMINAL_CHANGE_REQUEST_STATUSES:
+        raise ValueError(
+            f"cannot {action} from status '{cr.status}'; Change Request is already terminal"
+        )
+    return story, cr
+
+
+def _clear_active_cr_if_current(
+    store: Store, *, journey: str, change_request_id: str, event: str
+) -> None:
+    """Clear the cursor's active CR iff it is the one being terminated.
+
+    Leaves the cursor entirely untouched otherwise — including when a
+    different Refinement Story's CR is active (the cross-RS shape).
+    """
+    cursor = store.get_refinement_cursor(journey)
+    if cursor is not None and cursor.active_change_request_id == change_request_id:
+        store.set_refinement_cursor(
+            journey=journey,
+            active_refinement_story_id=cursor.active_refinement_story_id,
+            active_change_request_id=None,
+            last_refinement_event=event,
+        )
+
+
+def _require_text(value: str, field: str) -> str:
+    normalized = value.strip() if value else ""
+    if not normalized:
+        raise ValueError(f"{field} is required")
+    return normalized
+
+
+def _terminal_detail(new_note: str, existing_notes: str | None) -> str:
+    """Compose a terminal outcome note without discarding prior lifecycle notes.
+
+    ``update_change_request_status`` overwrites ``outcome_notes`` on write, so a
+    terminal verb applied to, e.g., a ``validated`` CR would otherwise clobber
+    its validation evidence. Prepending preserves it (database-architect review).
+    """
+    if existing_notes:
+        return f"{new_note}\nPrior note: {existing_notes}"
+    return new_note
+
+
 def _implementation_detail(*, plan: str | None, evidence: str) -> str:
     normalized_plan = plan.strip() if plan else ""
     normalized_evidence = evidence.strip()
@@ -519,7 +688,9 @@ def _flow_event(
         previous_status=previous_status,
         new_status=cr.status if cr is not None else story.status,
         detail=detail,
-        active_change_request_id=cr.id if cr is not None and cr.status != "done" else None,
+        active_change_request_id=(
+            cr.id if cr is not None and cr.status not in TERMINAL_CHANGE_REQUEST_STATUSES else None
+        ),
     )
 
 
