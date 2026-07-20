@@ -15,6 +15,34 @@ const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 const ARG_SECRET_PATTERN =
   /^(?:--)?(?:api[-_]?key|openrouter[-_]?api[-_]?key|token|secret)(?:=|$)/i;
 
+// Model pins (AI-06, CV9.E2.S12): a deprecated pinned model would fail every
+// extraction/embedding call, and those paths fail soft -- so the pins must be
+// env-overridable to repoint a deployed instance without a release.
+export const DEFAULT_EXTRACTION_MODEL = "google/gemini-2.5-flash-lite";
+export const DEFAULT_EMBEDDING_MODEL = "openai/text-embedding-3-small";
+
+export interface ModelPinOptions {
+  env?: Record<string, string | undefined>;
+}
+
+/**
+ * Mirrors Python's `EXTRACTION_MODEL = os.getenv("MEMORY_EXTRACTION_MODEL", ...)`.
+ * Every extraction-family LLM call (extract, task-extract, curate, summary)
+ * uses this single pin -- Python has no per-role model, so TS does not invent one.
+ *
+ * Uses `??`, not `||`: matches `os.getenv(name, default)` precisely -- only
+ * absence triggers the default, an empty-string override is a real value.
+ */
+export function resolveExtractionModel(options: ModelPinOptions = {}): string {
+  const env = options.env ?? process.env;
+  return env.MEMORY_EXTRACTION_MODEL ?? DEFAULT_EXTRACTION_MODEL;
+}
+
+// EMBEDDING_MODEL has no resolver function: EmbeddingProvider.embed(text) has
+// no model parameter to wire this into today (see CR039 plan). Captured as a
+// value only -- an unconsumed function would be dead code; a documented
+// default is not.
+
 export class ProviderConfigError extends Error {
   constructor(message: string) {
     super(message);

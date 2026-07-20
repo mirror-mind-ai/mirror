@@ -5,6 +5,7 @@ import test from "node:test";
 
 import { runConversationExtraction } from "../../src/conversation/extraction.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
+import { DEFAULT_EXTRACTION_MODEL } from "../../src/providers/config.ts";
 import { ReplayEmbeddingProvider } from "../../src/providers/embedding.ts";
 import type { LlmProvider } from "../../src/providers/llm.ts";
 import { ReplayLlmProvider } from "../../src/providers/llm.ts";
@@ -251,6 +252,35 @@ test("runConversationExtraction records extraction_status: llm_failed and still 
     // (mirrors Python not setting meta["extracted"] on the exception path).
     assert.deepEqual(metadataOf(db, "c1"), { kept: true, extraction_status: "llm_failed" });
     assert.equal(db.prepare("SELECT COUNT(*) AS count FROM memories").get()?.count, 0);
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("runConversationExtraction requests the resolved extraction model pin for the summary call (AI-06)", async () => {
+  const { db, path } = await makeDb("status-model-pin.db");
+  try {
+    insertConversation(db, { id: "c1", journey: "cv22" });
+    for (let i = 1; i <= 4; i += 1)
+      insertMessage(db, "c1", i % 2 ? "user" : "assistant", `m${i}`, i);
+    const llm = new ReplayLlmProvider({
+      kind: "llm",
+      responses: { extraction: "[]", task_extraction: "[]", summary: "Summary" },
+    });
+
+    await runConversationExtraction(db, "c1", {
+      llm,
+      embeddings: new ReplayEmbeddingProvider({
+        kind: "embedding",
+        response: { embedding: [1, 0] },
+      }),
+      now: fixedNow,
+      id: idSequence([]),
+    });
+
+    const summaryCall = llm.calls.find((call) => call.role === "summary");
+    assert.equal(summaryCall?.model, DEFAULT_EXTRACTION_MODEL);
   } finally {
     db.close();
     await rm(path, { force: true });

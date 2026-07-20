@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { resolveProviderConfig } from "../../src/providers/config.ts";
+import {
+  DEFAULT_EMBEDDING_MODEL,
+  DEFAULT_EXTRACTION_MODEL,
+  resolveExtractionModel,
+  resolveProviderConfig,
+} from "../../src/providers/config.ts";
 
 test("resolveProviderConfig reads API keys from env", () => {
   const config = resolveProviderConfig("openrouter", {
@@ -38,4 +43,28 @@ test("resolveProviderConfig fails with a redacted error when the key is missing"
     () => resolveProviderConfig("openrouter", { env: {} }),
     /OPENROUTER_API_KEY is not configured/,
   );
+});
+
+test("resolveExtractionModel returns the default when no override is set (AI-06)", () => {
+  assert.equal(resolveExtractionModel({ env: {} }), DEFAULT_EXTRACTION_MODEL);
+  assert.equal(DEFAULT_EXTRACTION_MODEL, "google/gemini-2.5-flash-lite");
+});
+
+test("resolveExtractionModel honors a MEMORY_EXTRACTION_MODEL override (AI-06)", () => {
+  assert.equal(
+    resolveExtractionModel({ env: { MEMORY_EXTRACTION_MODEL: "vendor/custom-model" } }),
+    "vendor/custom-model",
+  );
+});
+
+test("resolveExtractionModel honors an empty-string override as-is, matching Python's os.getenv(name, default) (AI-06)", () => {
+  // os.getenv only substitutes the default on ABSENCE, not falsiness -- an
+  // empty-string override is a real (if unusual) value, not "unset".
+  assert.equal(resolveExtractionModel({ env: { MEMORY_EXTRACTION_MODEL: "" } }), "");
+});
+
+test("DEFAULT_EMBEDDING_MODEL captures Python's embedding pin default (AI-06, capture-only)", () => {
+  // No resolver function: EmbeddingProvider.embed(text) has no model parameter
+  // to wire this into today. See CR039 plan for the excluded reachability probe.
+  assert.equal(DEFAULT_EMBEDDING_MODEL, "openai/text-embedding-3-small");
 });

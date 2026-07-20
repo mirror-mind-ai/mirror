@@ -1,3 +1,4 @@
+import { resolveExtractionModel } from "../providers/config.ts";
 import type { LlmProvider } from "../providers/llm.ts";
 import {
   fenceTranscript,
@@ -99,6 +100,7 @@ export async function extractMemoriesWithStatus(
   const response = await provider.complete({
     role: "extraction",
     prompt: fenceTranscript(formatTranscript(messages, options.userName ?? "User")),
+    model: resolveExtractionModel(),
     temperature: 0.3,
   });
   const data = parseJsonResponse(response.content);
@@ -134,6 +136,7 @@ export async function extractTasks(
   const response = await provider.complete({
     role: "task_extraction",
     prompt: fenceTranscript(formatTranscript(messages, options.userName ?? "User")),
+    model: resolveExtractionModel(),
     temperature: 0.3,
   });
   const data = parseJsonResponse(response.content);
@@ -159,6 +162,7 @@ export async function curateAgainstExisting(
     const response = await provider.complete({
       role: "curation",
       prompt: `${formatCandidates(candidates)}\n${formatExisting(existing)}`,
+      model: resolveExtractionModel(),
       temperature: 0.2,
     });
     const data = parseJsonResponse(response.content);

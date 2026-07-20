@@ -10,6 +10,7 @@ import {
   naiveSummary,
 } from "../../src/extraction/conversation.ts";
 import { parseJsonResponse } from "../../src/extraction/json.ts";
+import { DEFAULT_EXTRACTION_MODEL } from "../../src/providers/config.ts";
 import { ReplayLlmProvider } from "../../src/providers/llm.ts";
 
 test("parseJsonResponse mirrors Python raw/fenced/invalid behavior", () => {
@@ -121,6 +122,39 @@ test("curateAgainstExisting skips LLM without existing and fails open on malform
     ]),
     candidates,
   );
+});
+
+test("extractMemories requests the resolved extraction model pin (AI-06)", async () => {
+  const provider = new ReplayLlmProvider({ kind: "llm", responses: { extraction: "[]" } });
+  await extractMemories(provider, [{ role: "user", content: "hi" }]);
+  assert.equal(provider.calls[0].model, DEFAULT_EXTRACTION_MODEL);
+});
+
+test("extractTasks requests the resolved extraction model pin (AI-06)", async () => {
+  const provider = new ReplayLlmProvider({ kind: "llm", responses: { task_extraction: "[]" } });
+  await extractTasks(provider, [{ role: "user", content: "hi" }]);
+  assert.equal(provider.calls[0].model, DEFAULT_EXTRACTION_MODEL);
+});
+
+test("curateAgainstExisting requests the resolved extraction model pin (AI-06)", async () => {
+  const provider = new ReplayLlmProvider({ kind: "llm", responses: { curation: "[]" } });
+  await curateAgainstExisting(
+    provider,
+    [
+      {
+        title: "Keep",
+        content: "content",
+        context: null,
+        memory_type: "insight",
+        layer: "ego",
+        tags: [],
+        journey: null,
+        persona: null,
+      },
+    ],
+    [{ title: "Old", content: "old", memory_type: "insight", layer: "ego" }],
+  );
+  assert.equal(provider.calls[0].model, DEFAULT_EXTRACTION_MODEL);
 });
 
 test("extractMemories fences the transcript as data in the request (AI-16)", async () => {

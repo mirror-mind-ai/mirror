@@ -11,6 +11,7 @@ import {
   formatTranscript,
   naiveSummary,
 } from "../extraction/conversation.ts";
+import { resolveExtractionModel } from "../providers/config.ts";
 import type { EmbeddingProvider } from "../providers/embedding.ts";
 import type { LlmProvider } from "../providers/llm.ts";
 import { newId, nowIso } from "../util/pyGenerators.ts";
@@ -190,6 +191,7 @@ async function replayedSummary(
     const response = await llm.complete({
       role: "summary",
       prompt: formatTranscript(messages, userName),
+      model: resolveExtractionModel(),
       temperature: 0.3,
     });
     return response.content.trim();
