@@ -1,4 +1,10 @@
 import type { LlmProvider } from "../providers/llm.ts";
+import {
+  fenceTranscript,
+  MAX_MEMORIES_PER_CONVERSATION,
+  MAX_TASKS_PER_CONVERSATION,
+  sanitizeExtracted,
+} from "./fencing.ts";
 import { parseJsonResponse } from "./json.ts";
 
 export interface ExtractionMessage {
@@ -60,7 +66,7 @@ export async function extractMemories(
   if (messages.length === 0) return [];
   const response = await provider.complete({
     role: "extraction",
-    prompt: formatTranscript(messages, options.userName ?? "User"),
+    prompt: fenceTranscript(formatTranscript(messages, options.userName ?? "User")),
     temperature: 0.3,
   });
   const data = parseJsonResponse(response.content);
@@ -70,7 +76,7 @@ export async function extractMemories(
     const memory = toExtractedMemory(item, options);
     if (memory) memories.push(memory);
   }
-  return memories;
+  return sanitizeExtracted(memories, MAX_MEMORIES_PER_CONVERSATION).kept;
 }
 
 export async function extractTasks(
@@ -81,7 +87,7 @@ export async function extractTasks(
   if (messages.length === 0) return [];
   const response = await provider.complete({
     role: "task_extraction",
-    prompt: formatTranscript(messages, options.userName ?? "User"),
+    prompt: fenceTranscript(formatTranscript(messages, options.userName ?? "User")),
     temperature: 0.3,
   });
   const data = parseJsonResponse(response.content);
@@ -91,7 +97,9 @@ export async function extractTasks(
     const task = toExtractedTask(item, options.journey ?? null);
     if (task) tasks.push(task);
   }
-  return tasks;
+  return tasks.length > MAX_TASKS_PER_CONVERSATION
+    ? tasks.slice(0, MAX_TASKS_PER_CONVERSATION)
+    : tasks;
 }
 
 export async function curateAgainstExisting(
@@ -114,7 +122,7 @@ export async function curateAgainstExisting(
       const memory = toExtractedMemory(item, {});
       if (memory) curated.push(memory);
     }
-    return curated;
+    return sanitizeExtracted(curated, MAX_MEMORIES_PER_CONVERSATION).kept;
   } catch {
     return [...candidates];
   }

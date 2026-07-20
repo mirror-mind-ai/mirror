@@ -122,6 +122,101 @@ test("curateAgainstExisting skips LLM without existing and fails open on malform
   );
 });
 
+test("extractMemories fences the transcript as data in the request (AI-16)", async () => {
+  const provider = new ReplayLlmProvider({ kind: "llm", responses: { extraction: "[]" } });
+  await extractMemories(provider, [{ role: "user", content: "hi" }]);
+  assert.equal(provider.calls.length, 1);
+  assert.match(provider.calls[0].prompt, /^<transcript>\n/);
+  assert.match(provider.calls[0].prompt, /\n<\/transcript>$/);
+});
+
+test("extractMemories drops an item with an invalid layer (CR041 / AI-15)", async () => {
+  const provider = new ReplayLlmProvider({
+    kind: "llm",
+    responses: {
+      extraction: JSON.stringify([
+        { title: "ok", content: "c", memory_type: "insight", layer: "ego", tags: [] },
+        { title: "bad", content: "c", memory_type: "insight", layer: "banana", tags: [] },
+      ]),
+    },
+  });
+  const memories = await extractMemories(provider, [{ role: "user", content: "x" }]);
+  assert.deepEqual(
+    memories.map((m) => m.title),
+    ["ok"],
+  );
+});
+
+test("extractMemories caps at 8 memories per conversation (CR041 / AI-15)", async () => {
+  const provider = new ReplayLlmProvider({
+    kind: "llm",
+    responses: {
+      extraction: JSON.stringify(
+        Array.from({ length: 20 }, (_, i) => ({
+          title: `m${i}`,
+          content: "c",
+          memory_type: "insight",
+          layer: "ego",
+          tags: [],
+        })),
+      ),
+    },
+  });
+  const memories = await extractMemories(provider, [{ role: "user", content: "x" }]);
+  assert.equal(memories.length, 8);
+});
+
+test("extractTasks fences the transcript as data in the request (AI-16)", async () => {
+  const provider = new ReplayLlmProvider({ kind: "llm", responses: { task_extraction: "[]" } });
+  await extractTasks(provider, [{ role: "user", content: "hi" }]);
+  assert.match(provider.calls[0].prompt, /^<transcript>\n/);
+  assert.match(provider.calls[0].prompt, /\n<\/transcript>$/);
+});
+
+test("extractTasks caps at 5 tasks per conversation (CR041 / AI-15)", async () => {
+  const provider = new ReplayLlmProvider({
+    kind: "llm",
+    responses: {
+      task_extraction: JSON.stringify(
+        Array.from({ length: 12 }, (_, i) => ({ title: `task ${i}` })),
+      ),
+    },
+  });
+  const tasks = await extractTasks(provider, [{ role: "user", content: "x" }]);
+  assert.equal(tasks.length, 5);
+});
+
+test("curateAgainstExisting drops a curated item with an invalid layer (CR041 / AI-15)", async () => {
+  const candidates = [
+    {
+      title: "Keep",
+      content: "content",
+      context: null,
+      memory_type: "insight",
+      layer: "ego",
+      tags: [],
+      journey: null,
+      persona: null,
+    },
+  ];
+  const provider = new ReplayLlmProvider({
+    kind: "llm",
+    responses: {
+      curation: JSON.stringify([
+        { title: "ok", content: "c", memory_type: "insight", layer: "ego" },
+        { title: "bad", content: "c", memory_type: "insight", layer: "banana" },
+      ]),
+    },
+  });
+  const curated = await curateAgainstExisting(provider, candidates, [
+    { title: "Old", content: "old", memory_type: "insight", layer: "ego" },
+  ]);
+  assert.deepEqual(
+    curated.map((m) => m.title),
+    ["ok"],
+  );
+});
+
 test("naiveSummary matches Python chunk and total truncation", () => {
   const summary = naiveSummary([
     { role: "system", content: "ignored" },
