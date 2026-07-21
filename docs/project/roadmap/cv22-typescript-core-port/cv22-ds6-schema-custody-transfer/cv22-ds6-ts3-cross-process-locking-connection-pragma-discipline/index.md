@@ -2,7 +2,7 @@
 
 # CV22.DS6.TS3 — Cross-Process Locking & Connection Pragma Discipline
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 **Type:** Technical Story
 
 ---
@@ -55,11 +55,13 @@ And out-of-scope sibling roadmap items remain untouched
   (`runMigrations`) behind a zero-dependency cross-process lock.
 - `journal_mode=WAL` ownership in Python's pragma ordering.
 - Owner-only permissions extended to WAL sidecars and the lock file.
-- `uv` added to the `ts` CI job so the Python-oracle and concurrency proofs
-  run on the primary job.
-- Front-door flip of the DS2 Python-bootstrap-delegation stopgap, gated on
-  the concurrency proof (A4) being green on CI; deferred to a follow-up
-  otherwise.
+- Python-oracle and concurrency proofs run on the primary `ts` CI job (CR017
+  had already added `uv` there; confirmed still true, stale comment in
+  `firstRun.test.ts` corrected).
+- Front-door flip of the DS2 Python-bootstrap-delegation stopgap: **deferred**
+  even though its CI gate (concurrency proof green on real GitHub Actions,
+  run 29837561016) is met — kept as a separately-scoped follow-up rather than
+  riding in on this story. See [Review](review.md) for the debt record.
 
 ## Out Of Scope
 
@@ -83,3 +85,6 @@ script. See [Plan](plan.md) and [Test Guide](test-guide.md) for full detail.
 
 - [Plan](plan.md)
 - [Test Guide](test-guide.md)
+- [Validation](validation.md)
+- [Debt Review](review.md)
+- [Done](done.md)

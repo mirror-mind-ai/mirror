@@ -83,7 +83,7 @@ schema decisions.
 |------|-------|------|---------|--------|
 | [CV22.DS6.TS1](cv22-ds6-ts1-schema-bootstrap-ddl-ownership-in-ts/index.md) | Schema Bootstrap & DDL Ownership in TS | Technical Story | The fresh-database DDL (rewritten in English per CV0) lives in TS behind the driver seam, proven structurally identical (incl. CHECK constraints and partial-index predicates) to a real fresh Python database via a committed cross-language snapshot; the front-door delegation flip is deferred to TS2/TS3 (needs `_migrations` seeding + locking/pragmas first) | ✅ Done |
 | [CV22.DS6.TS2](cv22-ds6-ts2-migration-engine-migrations-bookkeeping-in-ts/index.md) | Migration Engine & `_migrations` Bookkeeping in TS | Technical Story | The migration runner and `_migrations` ledger are ported; `KNOWN_MIGRATION_IDS` becomes the enforced manifest; forward migration over **real legacy DB copies** (a cascading fixture generator, 8 checkpoints) yields the same end schema, ledger rows, and row-level values as Python | ✅ Done† |
-| CV22.DS6.TS3 | Cross-Process Locking & Connection Pragma Discipline | Technical Story | `fcntl`-equivalent bootstrap/migration locking and WAL/busy-timeout/FK pragma discipline are owned by the TS connection module; concurrent-bootstrap safety and pragma presence are proven | 🟡 Planned |
+| [CV22.DS6.TS3](cv22-ds6-ts3-cross-process-locking-connection-pragma-discipline/index.md) | Cross-Process Locking & Connection Pragma Discipline | Technical Story | `fcntl`-equivalent bootstrap/migration locking and WAL/busy-timeout/FK pragma discipline are owned by the TS connection module (`ts/src/db/bootstrap.ts`, `bootstrapLock.ts`); concurrent-bootstrap safety proven with 8 real child processes racing the same fresh path, and pragma presence (WAL/busy_timeout/foreign_keys) proven against the Python oracle in CI | ✅ Done‡ |
 | CV22.DS6.US1 | `identity.metadata` Canonicalization | User Story | Retire the `pyJson.ts` byte-mimicry once TS owns schema: choose a canonical serialization with an explicit one-time normalization or read-tolerant policy (per CR023) — the first schema decision gated on custody | 🟡 Planned |
 | CV22.DS6.US2 | `parent_journey` First-Class Column | User Story | Graduate `parent_journey` from JSON metadata to an indexed column with real referential integrity — a genuine schema migration that exercises the new TS migration engine end-to-end | 🟡 Planned |
 
@@ -100,6 +100,17 @@ itself is marked Done** — DS6's own Done Condition below requires
 compatibility proven over real legacy database copies at multiple historical
 migration states, which is not yet true for `016`. See
 [CV22.DS6.TS2's Review](cv22-ds6-ts2-migration-engine-migrations-bookkeeping-in-ts/review.md)
+for the full debt record.
+
+‡ **Carried debt from TS3 (deferred, tracked — not silently absorbed):** the
+DS2 "delegate to Python to bootstrap a missing database" front-door stopgap
+(`routing.ts` + `firstRun.test.ts`) was deliberately not flipped in TS3, even
+though its CI gate (the real cross-process concurrency proof, green on
+GitHub Actions) is now met — flipping runtime routing was kept as a
+separately-scoped follow-up rather than riding in on the lock/pragma
+capability. **Revisit before DS6 itself is marked Done** — its Done Condition
+requires the DS2 bootstrap delegation to Python to be removed. See
+[CV22.DS6.TS3's Review](cv22-ds6-ts3-cross-process-locking-connection-pragma-discipline/review.md)
 for the full debt record.
 
 ---
