@@ -106,7 +106,7 @@ delivery-level scope until pulled.
 | [CV22.DS3](cv22-ds3-pi-ts-front-door/index.md) | Pi TS Front Door | A TS front door on Pi that wraps the frozen Python engine and routes ported read commands to the TS core; dogfooded daily; runtimes unaffected | ✅ Done |
 | [CV22.DS4](cv22-ds4-deterministic-writes/index.md) | Deterministic Writes | Port write commands (journey/identity CRUD, `log_access`) with parity proven on DB copies; backup-gated; schema-compatible; CLI-write routing on the TS front door (identity + journey) | ✅ Done |
 | [CV22.DS5](cv22-ds5-external-api-commands/index.md) | External-API Commands | Port extraction, embeddings/search, and consult behind replay-safe provider boundaries; route validated external command surfaces through the TS front door while preserving Python fallback for unsafe/unconfigured paths | ✅ Done |
-| [CV22.DS6](cv22-ds6-schema-custody-transfer/index.md) | Schema Custody Transfer | Move all database creation, migration, and discipline from Python to TS — bootstrap DDL (rewritten in English per CV0), migration engine and `_migrations` bookkeeping, cross-process bootstrap locking, connection pragma discipline — proven over real legacy databases; plus the two schema decisions gated on custody (`identity.metadata` canonicalization, `parent_journey` first-class column) | 🟡 Planned |
+| [CV22.DS6](cv22-ds6-schema-custody-transfer/index.md) | Schema Custody Transfer | Move all database creation, migration, and discipline from Python to TS — bootstrap DDL (rewritten in English per CV0), migration engine and `_migrations` bookkeeping, cross-process bootstrap locking, connection pragma discipline — proven over real legacy databases; plus the two schema decisions gated on custody (`identity.metadata` canonicalization, `parent_journey` first-class column) | 🟡 In Progress — TS1 done (schema DDL), TS2 done (migration engine, migration-016 legacy coverage deferred); TS3/US1/US2 pending |
 | CV22.DS7 | Command Burn-Down & Re-homed Feature Work | Port the remaining command surface to TS — the Builder/Ariad tree (re-homed CV20/CV21 in-flight work), Soul, Explorer, mirror-mode orchestration, remaining identity/journey reads and writes, and the extraction lifecycle — until the deterministic Python command surface is empty | 🟡 Planned |
 | CV22.DS8 | Live-Provider Cutover | Implement the `live` mode of the TS `LlmTransport` (chat + embeddings) with per-role timeouts, bounded retries, error taxonomy, and metadata-only logging (AI-18); route real external calls through TS; validated by live smoke contracts, not golden parity; multi-persona Plan review before implementation | 🟡 Planned |
 | CV22.DS9 | TS MCP Server | Threat model first (RS005: localhost binding, per-tool permission scoping, tightest gate on identity-mutating tools; AI-19: per-tool rate/budget guards against denial-of-wallet), then port `python -m memory mcp` to TS | 🟡 Planned |
@@ -199,7 +199,9 @@ Risk-first, mirroring the decision spine:
    access-count read strategy (single `GROUP BY` with a parity probe — see
    [Decisions](../../decisions.md), *ports semantics, not query plans*) and
    the DS5 secrets rider above.
-6. **DS6 — schema custody transfer**: the deletion gate. Everything that
+6. **DS6 — schema custody transfer** (in progress — TS1/TS2 done, TS3/US1/US2
+   pending, migration-016 legacy coverage deferred to before DS6's own Done):
+   the deletion gate. Everything that
    creates, migrates, and disciplines the database lives only in Python today
    (schema DDL, migration engine and `_migrations` bookkeeping, `fcntl`
    bootstrap locking, WAL/busy-timeout/FK pragmas in
