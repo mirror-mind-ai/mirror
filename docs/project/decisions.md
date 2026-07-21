@@ -11,6 +11,59 @@ resolved.
 
 ## Completed Decisions
 
+### CV22.DS6 splits into a risk-ordered retirement chain (DS6–DS10)
+
+**Date:** 2026-07-23 · **Origin:** CV22 journey planning, after the DS5 handoff
+
+The former CV22 epic `E6` — *Convergence & Python Retirement* — carried the
+entire remaining port in one Delivery Story: schema custody, the whole unported
+command surface (Builder/Ariad, Soul, Explorer, mirror-mode, extraction), live
+external-provider transport, the MCP server, Python deletion, the package
+rename, and npm distribution. Read against the front-door routing table, that is
+essentially *all of CV22 that is left*, spanning several distinct risk profiles
+(irreversible data-layer work, real-money live calls, a security threat model).
+Expanding it as one DS would produce an incoherent 20-plus-story package, so it
+is divided — the collaboration strategy already anticipated dividing DS6 "after
+the DS5 handoff clarifies the remaining convergence work."
+
+Decided:
+
+1. **Split, risk-first, into five Delivery Stories.**
+   - **DS6 — Schema Custody Transfer** (the deletion gate): bootstrap DDL,
+     migration engine + `_migrations`, cross-process locking, pragma discipline,
+     proven over real legacy databases; carries the CR023 `identity.metadata`
+     canonicalization and the `parent_journey` first-class-column decisions.
+   - **DS7 — Command Burn-Down & Re-homed Feature Work**: the remaining command
+     surface (re-homed CV20/CV21 in-flight work included).
+   - **DS8 — Live-Provider Cutover**: the `live` mode of the TS `LlmTransport`
+     (AI-18).
+   - **DS9 — TS MCP Server**: threat model first (RS005 scoping, AI-19
+     denial-of-wallet), then port.
+   - **DS10 — Python Retirement & npm Distribution**: zero-command verification,
+     core deletion, `memory → mirror` rename decision, npm publish.
+
+2. **Live-provider cutover stays in CV22 scope (option A), not deferred.** DS5
+   ported search/consult/extraction only behind *replay* provider boundaries; a
+   real production run still makes the live OpenAI/OpenRouter/Gemini call through
+   Python. Since CV22's done condition is a *deleted* Python core, the live call
+   must move to TS — otherwise a thin Python provider shim survives forever and
+   forfeits the single-language convergence the strangler exists to reach. The
+   alternative (amend the done condition to accept a permanent shim) was
+   considered and rejected. DS8 therefore exists as a discrete, late,
+   risk-managed story: it spends real money (AI-19), carries real secrets, and
+   is validated by live smoke contracts rather than golden parity, so it runs
+   through the multi-persona Plan review before implementation.
+
+3. **Ownership follows the baton strategy.** Schema custody (DS6) and package
+   mechanics lean to Vinícius (mechanical seams, fixtures, record/replay); MCP
+   convergence (DS9) and Python-retirement semantics lean to Alisson. Not
+   fine-grained sliced — hand off at coherent plateaus.
+
+The `memory → mirror` package rename stays open and gated to DS10; it is a
+decision, not a given. DS6 is authored as a full package
+([CV22.DS6 — Schema Custody Transfer](roadmap/cv22-typescript-core-port/cv22-ds6-schema-custody-transfer/index.md));
+DS7–DS10 stay as delivery-level scope until pulled.
+
 ### 1.0 intelligence-flag posture: reception on, two-pass and summarize off
 
 **Date:** 2026-07-17

@@ -118,19 +118,26 @@ Handoff statement to Vinícius:
 
 > DS5 is closed at the replay-safe external-API plateau. The TS core can exercise external-provider-backed command families without live credentials in CI, and the front door routes only validated DS5 surfaces under explicit gates while preserving Python fallback everywhere else. Please treat this as replay/copy-safe parity, not live-provider cutover. The next work should either verify/push the DS5 closure and then move toward DS6 convergence/schema custody, or explicitly plan a live-provider cutover story with the new multi-persona Plan review protocol before implementation.
 
-### Later baton: CV22.DS6
+### Later batons: CV22.DS6–DS10 (division made)
 
-DS6 should be divided after DS5 handoff and CI verification clarify the remaining convergence work.
+The remaining convergence work has now been divided, risk-first, into five
+Delivery Stories — see
+[Decisions — CV22.DS6 splits into a risk-ordered retirement chain](../../decisions.md):
+**DS6** Schema Custody Transfer, **DS7** Command Burn-Down & Re-homed Feature
+Work, **DS8** Live-Provider Cutover, **DS9** TS MCP Server, **DS10** Python
+Retirement & npm Distribution. Live-provider cutover stays in scope (option A)
+so the Python core can be fully deleted rather than leaving a permanent shim.
 
-One DS6 deliverable is already named and must not be lost in the division:
-**schema custody transfer** (RS003/CR019). Everything that creates, migrates,
-and disciplines the database lives only in Python (schema DDL, migration
-engine and `_migrations` bookkeeping, cross-process bootstrap locking, WAL and
-pragma discipline in `src/memory/db/connection.py`). TS must own all of it,
-proven over real legacy databases, before the Python core can be deleted.
-Recorded plan inputs for the same horizon: the DS5 access-count read strategy
-and the DS5/DS6 security riders in the CV22 index; the schema-state guard
-(`ts/src/db/schemaState.ts`) already holds the seam closed during the
+The deletion gate is **DS6 — schema custody transfer** (RS003/CR019), now
+authored as a full package
+([CV22.DS6](cv22-ds6-schema-custody-transfer/index.md)). Everything that
+creates, migrates, and disciplines the database lives only in Python (schema
+DDL, migration engine and `_migrations` bookkeeping, cross-process bootstrap
+locking, WAL and pragma discipline in `src/memory/db/connection.py`). TS must
+own all of it, proven over real legacy databases, before the Python core can be
+deleted. Recorded plan inputs for the same horizon: the DS5 access-count read
+strategy and the DS5/DS8/DS9 security riders in the CV22 index; the schema-state
+guard (`ts/src/db/schemaState.ts`) already holds the seam closed during the
 transition and its `KNOWN_MIGRATION_IDS` snapshot becomes the handover manifest.
 
 Likely ownership pattern:

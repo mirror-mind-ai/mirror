@@ -90,11 +90,14 @@ the write commands (DS4), and behavior at larger scale (the ranker is a full sca
 
 ## Delivery Stories
 
-CV22 is governed by [Ariad](../ariad-adoption.md); its former epics are now
-Delivery Stories (`DS1`–`DS6`, aligned one-to-one with the former `E1`–`E6`).
+CV22 is governed by [Ariad](../ariad-adoption.md); its former epics became
+Delivery Stories (`DS1`–`DS5` aligned one-to-one with the former `E1`–`E5`).
+The former `E6` — *Convergence & Python Retirement* — proved too large for a
+single Delivery Story and is split, risk-first, into `DS6`–`DS10` (see
+[Decisions — CV22.DS6 splits into a risk-ordered retirement chain](../../decisions.md)).
 Each Delivery Story expands into User/Technical Stories on pull — only the active
-or completed expanded DS packages are linked here; DS4–DS6 stay as delivery-level
-scope until pulled.
+or completed expanded DS packages are linked here; DS7–DS10 stay as
+delivery-level scope until pulled.
 
 | Code | Delivery Story | Done condition | Status |
 |------|----------------|----------------|--------|
@@ -103,7 +106,11 @@ scope until pulled.
 | [CV22.DS3](cv22-ds3-pi-ts-front-door/index.md) | Pi TS Front Door | A TS front door on Pi that wraps the frozen Python engine and routes ported read commands to the TS core; dogfooded daily; runtimes unaffected | ✅ Done |
 | [CV22.DS4](cv22-ds4-deterministic-writes/index.md) | Deterministic Writes | Port write commands (journey/identity CRUD, `log_access`) with parity proven on DB copies; backup-gated; schema-compatible; CLI-write routing on the TS front door (identity + journey) | ✅ Done |
 | [CV22.DS5](cv22-ds5-external-api-commands/index.md) | External-API Commands | Port extraction, embeddings/search, and consult behind replay-safe provider boundaries; route validated external command surfaces through the TS front door while preserving Python fallback for unsafe/unconfigured paths | ✅ Done |
-| CV22.DS6 | Convergence & Python Retirement | TS MCP server; re-home unfinished CV20 Ariad / CV21 MCP feature work to TS; **schema custody transfer** (bootstrap DDL — rewritten in English per CV0 — migration engine and `_migrations` bookkeeping, cross-process bootstrap locking, connection pragma discipline, proven over real legacy databases); burn down to a deletable Python core; reconsider the `memory → mirror` package rename; npm distribution | 🟡 Planned |
+| [CV22.DS6](cv22-ds6-schema-custody-transfer/index.md) | Schema Custody Transfer | Move all database creation, migration, and discipline from Python to TS — bootstrap DDL (rewritten in English per CV0), migration engine and `_migrations` bookkeeping, cross-process bootstrap locking, connection pragma discipline — proven over real legacy databases; plus the two schema decisions gated on custody (`identity.metadata` canonicalization, `parent_journey` first-class column) | 🟡 Planned |
+| CV22.DS7 | Command Burn-Down & Re-homed Feature Work | Port the remaining command surface to TS — the Builder/Ariad tree (re-homed CV20/CV21 in-flight work), Soul, Explorer, mirror-mode orchestration, remaining identity/journey reads and writes, and the extraction lifecycle — until the deterministic Python command surface is empty | 🟡 Planned |
+| CV22.DS8 | Live-Provider Cutover | Implement the `live` mode of the TS `LlmTransport` (chat + embeddings) with per-role timeouts, bounded retries, error taxonomy, and metadata-only logging (AI-18); route real external calls through TS; validated by live smoke contracts, not golden parity; multi-persona Plan review before implementation | 🟡 Planned |
+| CV22.DS9 | TS MCP Server | Threat model first (RS005: localhost binding, per-tool permission scoping, tightest gate on identity-mutating tools; AI-19: per-tool rate/budget guards against denial-of-wallet), then port `python -m memory mcp` to TS | 🟡 Planned |
+| CV22.DS10 | Python Retirement & npm Distribution | Verify zero remaining Python commands, delete the Python core, resolve the `memory → mirror` package rename, and ship npm distribution (zero-runtime-deps advertised; SHA-pin CI once release credentials enter) | 🟡 Planned |
 
 ---
 
@@ -123,7 +130,7 @@ checkpoint can claim these requirements were unknown:
   and shell history leak), never logged, redacted from error messages; DS5
   record/replay fixtures must be scrubbed of authorization headers before they
   are committed.
-- **DS6 MCP server:** the plan must include a threat model before
+- **DS9 MCP server:** the plan must include a threat model before
   implementation — transport and binding (localhost-only by default),
   authentication story, per-tool permission scoping (read tools vs write tools
   vs identity-mutating tools), and abuse/rate considerations. Identity-mutating
@@ -134,10 +141,10 @@ checkpoint can claim these requirements were unknown:
 
 Recorded by the ai-engineer audit (the model-in-the-loop lens). Its live
 Python-core reliability findings were re-homed to CV9 (stabilization on `main`);
-these two are the genuinely-CV22 slice — DS5/DS6 plan inputs, kept here so no
+these two are the genuinely-CV22 slice — DS5/DS8/DS9 plan inputs, kept here so no
 future plan checkpoint can claim they were unknown:
 
-- **DS5 LLM transport seam (AI-18):** the ported external-API path needs one TS
+- **DS5/DS8 LLM transport seam (AI-18):** the ported external-API path needs one TS
   `LlmTransport` (chat + embeddings) with three modes — `live`, `record`,
   `replay` — and, designed in as the contract rather than patched later:
   explicit per-role timeouts and bounded retries (the CV9 Python values are
@@ -149,7 +156,7 @@ future plan checkpoint can claim they were unknown:
   (dimension, finite values, self-similarity ≈ 1.0). Fixtures scrubbed of auth
   headers **and** of transcript/identity content (live-database-equivalent
   sensitivity). Embedding writes assert dimension and record provenance.
-- **DS6 MCP denial-of-wallet (AI-19):** the DS6 MCP threat model must include
+- **DS9 MCP denial-of-wallet (AI-19):** the DS9 MCP threat model must include
   the wallet. `search_memories` triggers a paid embedding call per invocation
   and extraction-class tools cost more, so an agent loop stuck on a tool is a
   denial-of-wallet vector against the user's own OpenRouter balance. Per-tool
@@ -187,19 +194,33 @@ Risk-first, mirroring the decision spine:
    the command burn-down.
 4. **DS4 — writes** (done): backup-gated, copy-validated parity plus CLI-write
    front-door routing (identity + journey).
-5. **DS5 — external-API commands** (next): isolate non-determinism at the
-   boundary. Plan inputs already recorded: the access-count read strategy
-   (single `GROUP BY` with a parity probe — see
+5. **DS5 — external-API commands** (done): isolate non-determinism at the
+   boundary behind replay-safe provider seams. Plan inputs recorded: the
+   access-count read strategy (single `GROUP BY` with a parity probe — see
    [Decisions](../../decisions.md), *ports semantics, not query plans*) and
    the DS5 secrets rider above.
-6. **DS6 — convergence & retirement**: TS MCP server, re-homed feature work,
-   **schema custody transfer** — everything that creates, migrates, and
-   disciplines the database lives only in Python today (schema DDL, migration
-   engine, `fcntl` bootstrap locking, WAL/busy-timeout/FK pragmas in
-   `src/memory/db/connection.py`) and dies with it; TS must own all of it,
-   with compatibility proven over real legacy databases, **before** the
-   Python core is deleted — then deletion and npm distribution. The MCP
-   threat-model rider above is a DS6 plan input.
+6. **DS6 — schema custody transfer**: the deletion gate. Everything that
+   creates, migrates, and disciplines the database lives only in Python today
+   (schema DDL, migration engine and `_migrations` bookkeeping, `fcntl`
+   bootstrap locking, WAL/busy-timeout/FK pragmas in
+   `src/memory/db/connection.py`); TS must own all of it, with compatibility
+   proven over real legacy databases, **before** the Python core can be
+   deleted. Carries the two schema decisions gated on custody
+   (`identity.metadata` canonicalization, `parent_journey` first-class column).
+7. **DS7 — command burn-down & re-homed feature work**: port the remaining
+   command surface — the Builder/Ariad tree (re-homed CV20/CV21 in-flight
+   work), Soul, Explorer, mirror-mode orchestration, remaining identity/journey
+   reads and writes, and the extraction lifecycle — until the deterministic
+   Python command surface is empty.
+8. **DS8 — live-provider cutover**: implement the `live` mode of the TS
+   `LlmTransport` (AI-18) so real external calls leave Python; validated by
+   live smoke contracts, not golden parity, and run through the multi-persona
+   Plan review because it spends real money and carries real secrets.
+9. **DS9 — TS MCP server**: threat model first (RS005 scoping rider, AI-19
+   denial-of-wallet rider), then port `python -m memory mcp` to TS.
+10. **DS10 — Python retirement & npm distribution**: verify zero remaining
+    Python commands, delete the core, resolve the `memory → mirror` rename, and
+    ship npm distribution. The MCP threat-model rider is a DS9 plan input.
 
 Part-time, no deadline — a background burn. The transition state (TS front door
 over a frozen Python engine) is durable and must stay comfortable to live in; no

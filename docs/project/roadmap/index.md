@@ -113,7 +113,10 @@ alignment. The approach is a **database-seam strangler**, never a big-bang
 rewrite: a TS front door over a shared `memory.db`, with the Python core
 dissolving one observable command at a time, governed by a rule that new feature
 work lands in TS (Python froze to maintenance-only at the CV21.E2.S2 baseline).
-CV22 is governed by Ariad; its former epics are now Delivery Stories (DS1–DS6).
+CV22 is governed by Ariad; its former epics became Delivery Stories (DS1–DS5),
+with the final convergence epic now split risk-first into DS6–DS10 (schema
+custody → command burn-down → live-provider cutover → MCP server → Python
+retirement & npm).
 DS1 validated hybrid-ranker parity between TS and Python over the same SQLite
 file; DS2 completed read-only deterministic parity for `search`, `detect-persona`,
 journeys, and memory listing; DS3 closed the Pi-facing TS front door transition
