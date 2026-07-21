@@ -43,6 +43,20 @@ export function resolveExtractionModel(options: ModelPinOptions = {}): string {
 // value only -- an unconsumed function would be dead code; a documented
 // default is not.
 
+// Observability (AI-09, CV9.E2.S13): mirrors Python's MEMORY_LOG_LLM_CALLS
+// resolution exactly -- off | metadata | full, default metadata (never a
+// silent full -- bodies are opt-in only). Legacy "1" maps to "full" for
+// back-compat with Python's original boolean-flag meaning.
+export type LogLlmCallsMode = "off" | "metadata" | "full";
+
+export function resolveLogLlmCallsMode(options: ModelPinOptions = {}): LogLlmCallsMode {
+  const env = options.env ?? process.env;
+  const raw = (env.MEMORY_LOG_LLM_CALLS ?? "").trim().toLowerCase();
+  if (raw === "" || raw === "metadata") return "metadata";
+  if (raw === "1" || raw === "full") return "full";
+  return "off";
+}
+
 export class ProviderConfigError extends Error {
   constructor(message: string) {
     super(message);

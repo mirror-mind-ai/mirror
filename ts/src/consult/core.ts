@@ -1,3 +1,5 @@
+import type { WritableDatabase } from "../db/database.ts";
+import { logLlmCall } from "../observability/llmCalls.ts";
 import type { CreditProvider } from "../providers/credits.ts";
 import type { LlmProvider, LlmRequest } from "../providers/llm.ts";
 import type { ConsultAskCommand, ConsultCreditsCommand, ConsultParseResult } from "./args.ts";
@@ -22,6 +24,10 @@ export interface RunConsultOptions {
   llm: LlmProvider;
   credits: CreditProvider;
   loadContext: ConsultContextLoader;
+  /** Optional: when provided, `ask` logs to the llm_calls ledger with the
+   * real fetched cost (AI-09). Omitted by existing/credits-only callers with
+   * no behavior change -- logging is simply skipped. */
+  db?: WritableDatabase;
 }
 
 export async function runConsult(
@@ -58,6 +64,20 @@ export async function runConsultAsk(
     ? await options.credits.fetchGenerationCost(response.generationId)
     : null;
   const credits = await options.credits.getCredits();
+  if (options.db) {
+    // Consult joins the ledger with its real fetched cost (AI-09) -- never the
+    // static per-token estimate, which has no entry for consult's models anyway.
+    logLlmCall(options.db, {
+      role: "consult",
+      model: response.model ?? command.modelId,
+      prompt: request.prompt,
+      response: response.content,
+      promptTokens: response.promptTokens,
+      completionTokens: response.completionTokens,
+      latencyMs: response.latencyMs,
+      costUsd: cost,
+    });
+  }
   return renderConsultAsk(command.modelId, response, credits, cost);
 }
 

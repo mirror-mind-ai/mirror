@@ -213,6 +213,13 @@ function isConsult(argv: readonly string[]): boolean {
   return argv[0] === "consult";
 }
 
+/** `consult credits` never logs to llm_calls (Python doesn't either, AI-09) --
+ * so it skips the live-write db-open entirely, matching its current
+ * read-only-external-API shape. */
+function isConsultCredits(argv: readonly string[]): boolean {
+  return argv[1] === "credits";
+}
+
 /**
  * Route `journey set-path <slug> <path>` to the TS core. Normalizes the path like
  * Python (`Path.expanduser().resolve()`), writes through the live-write seam after a
@@ -256,6 +263,45 @@ function resolveLogPath(argv: readonly string[]): string | null {
   }
 }
 
+/**
+ * `consult <model> <question>` logs to llm_calls on a best-effort basis
+ * (AI-09). Unlike `runMemorySearch`/`runIdentityWrite`/`runJourneyWrite`,
+ * consult's established contract does NOT require a database to exist --
+ * it is fundamentally an external-API command, and logging is an added,
+ * optional side effect. If a db cannot be resolved, opened, backed up, or
+ * schema-checked for any reason, consult must still run; it just logs
+ * nothing -- the same fail-soft principle `logLlmCall` applies to the write
+ * itself, extended to db resolution.
+ */
+async function runConsultAskWithDb(argv: readonly string[]): Promise<number> {
+  const db = tryOpenDbForConsultLogging(argv);
+  try {
+    process.stdout.write(await runConsultRoute(db, argv.slice(1)));
+    return 0;
+  } finally {
+    db?.close();
+  }
+}
+
+function tryOpenDbForConsultLogging(argv: readonly string[]): WritableDatabase | null {
+  let db: WritableDatabase | null = null;
+  try {
+    // Uses resolveDbPath directly, NOT resolveDbPathForCli -- that wrapper
+    // prints a user-facing error on an unconfigured mirror home, which is
+    // correct for commands that require a db but wrong here: consult without
+    // a configured home must stay completely silent about logging, exactly
+    // as it behaved before this CR.
+    const dbPath = resolveDbPath(argv.slice(1));
+    if (!existsSync(dbPath)) return null;
+    db = openDatabaseForWrite(dbPath, ensureBackup(dbPath));
+    assertSchemaState(db);
+    return db;
+  } catch {
+    db?.close();
+    return null;
+  }
+}
+
 async function runMemorySearch(argv: readonly string[]): Promise<number> {
   const dbPath = resolveDbPathForCli(argv.slice(1));
   if (dbPath === null) return 2;
@@ -282,8 +328,11 @@ async function dispatch(argv: readonly string[], engine: FrontDoorEngine): Promi
   if (isJourneyWrite(argv)) return runJourneyWrite(argv);
   if (isMemorySearch(argv)) return runMemorySearch(argv);
   if (isConsult(argv)) {
-    process.stdout.write(await runConsultRoute(argv.slice(1)));
-    return 0;
+    if (isConsultCredits(argv)) {
+      process.stdout.write(await runConsultRoute(null, argv.slice(1)));
+      return 0;
+    }
+    return runConsultAskWithDb(argv);
   }
   return runTs(argv);
 }

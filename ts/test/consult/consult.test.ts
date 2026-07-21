@@ -1,12 +1,33 @@
 import assert from "node:assert/strict";
+import { mkdir, rm } from "node:fs/promises";
+import { join } from "node:path";
 import test from "node:test";
 
 import { ConsultArgError, parseConsultArgs } from "../../src/consult/args.ts";
 import { buildConsultLlmRequest, runConsult, SYSTEM_PREAMBLE } from "../../src/consult/core.ts";
 import { resolveConsultModel } from "../../src/consult/modelCatalog.ts";
 import { renderConsultAsk, renderCost, renderCredits } from "../../src/consult/render.ts";
+import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
 import { ReplayCreditProvider } from "../../src/providers/credits.ts";
 import { ReplayLlmProvider } from "../../src/providers/llm.ts";
+
+const TMP_DIR = join(process.cwd(), "tmp", "test-consult");
+
+async function makeDb(name: string): Promise<{ db: WritableDatabase; path: string }> {
+  await mkdir(TMP_DIR, { recursive: true });
+  const path = join(TMP_DIR, name);
+  await rm(path, { force: true });
+  const db = openDatabaseCopyForWrite(path);
+  db.exec(`
+    CREATE TABLE llm_calls (
+      id TEXT PRIMARY KEY, role TEXT NOT NULL, model TEXT NOT NULL,
+      prompt TEXT NOT NULL, response TEXT NOT NULL,
+      prompt_tokens INTEGER, completion_tokens INTEGER, latency_ms INTEGER,
+      cost_usd REAL, conversation_id TEXT, session_id TEXT, called_at TEXT NOT NULL
+    );
+  `);
+  return { db, path };
+}
 
 test("resolveConsultModel mirrors Python family/tier semantics", () => {
   assert.equal(resolveConsultModel("anthropic/claude-3"), "anthropic/claude-3");
@@ -145,4 +166,90 @@ test("runConsult uses replayed LLM, cost, credits, and context seams", async () 
   assert.match(output, /\[prompt: 7\]/);
   assert.match(output, /Call cost: \$0.001000 \(R\$ 0.0057\)/);
   assert.equal(llm.calls[0]?.model, "google/gemini-2.5-flash-lite");
+});
+
+test("runConsult logs consult's real fetched cost to the ledger when a db is provided (AI-09)", async () => {
+  const { db, path } = await makeDb("logs-cost.db");
+  try {
+    const llm = new ReplayLlmProvider({
+      kind: "llm",
+      responses: {
+        consult: {
+          model: "x-ai/grok-test",
+          content: "synthetic answer",
+          generationId: "gen-1",
+          promptTokens: 7,
+          completionTokens: 3,
+        },
+      },
+    });
+    const credits = new ReplayCreditProvider({
+      kind: "credits",
+      credits: { totalCredits: 10, totalUsage: 8, balance: 2 },
+      generationCosts: { "gen-1": 0.0123 },
+    });
+
+    await runConsult(parseConsultArgs(["gemini", "hello"]), {
+      llm,
+      credits,
+      loadContext: () => "context",
+      db,
+    });
+
+    const rows = db.prepare("SELECT * FROM llm_calls").all() as Record<string, unknown>[];
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0]?.role, "consult");
+    assert.equal(rows[0]?.model, "x-ai/grok-test");
+    assert.equal(rows[0]?.cost_usd, 0.0123); // the real fetched cost, not a static estimate
+    assert.equal(rows[0]?.prompt_tokens, 7);
+    assert.equal(rows[0]?.completion_tokens, 3);
+    // Default metadata mode: bodies withheld even though a db was provided.
+    assert.equal(rows[0]?.prompt, "");
+    assert.equal(rows[0]?.response, "");
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("runConsult does not log when no db is provided (existing callers unaffected, AI-09)", async () => {
+  const llm = new ReplayLlmProvider({
+    kind: "llm",
+    responses: { consult: { model: "m", content: "a", generationId: "gen-1" } },
+  });
+  const credits = new ReplayCreditProvider({
+    kind: "credits",
+    credits: { totalCredits: 1, totalUsage: 0, balance: 1 },
+    generationCosts: { "gen-1": 0.01 },
+  });
+
+  // No db in options -- must behave exactly as before, no throw, no logging attempt.
+  const output = await runConsult(parseConsultArgs(["gemini", "hi"]), {
+    llm,
+    credits,
+    loadContext: () => "",
+  });
+  assert.match(output, /synthetic|a/);
+});
+
+test("runConsult credits does not write to the ledger (Python does not log credits either, AI-09)", async () => {
+  const { db, path } = await makeDb("credits-no-log.db");
+  try {
+    const credits = new ReplayCreditProvider({
+      kind: "credits",
+      credits: { totalCredits: 10, totalUsage: 4, balance: 6 },
+    });
+
+    await runConsult(parseConsultArgs(["credits"]), {
+      llm: new ReplayLlmProvider({ kind: "llm", responses: {} }),
+      credits,
+      loadContext: () => "",
+      db,
+    });
+
+    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM llm_calls").get()?.n, 0);
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
 });

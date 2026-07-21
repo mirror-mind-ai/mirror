@@ -5,6 +5,7 @@ import {
   DEFAULT_EMBEDDING_MODEL,
   DEFAULT_EXTRACTION_MODEL,
   resolveExtractionModel,
+  resolveLogLlmCallsMode,
   resolveProviderConfig,
 } from "../../src/providers/config.ts";
 
@@ -67,4 +68,19 @@ test("DEFAULT_EMBEDDING_MODEL captures Python's embedding pin default (AI-06, ca
   // No resolver function: EmbeddingProvider.embed(text) has no model parameter
   // to wire this into today. See CR039 plan for the excluded reachability probe.
   assert.equal(DEFAULT_EMBEDDING_MODEL, "openai/text-embedding-3-small");
+});
+
+test("resolveLogLlmCallsMode defaults to metadata, matching Python's off|metadata|full (AI-09)", () => {
+  assert.equal(resolveLogLlmCallsMode({ env: {} }), "metadata");
+  assert.equal(resolveLogLlmCallsMode({ env: { MEMORY_LOG_LLM_CALLS: "metadata" } }), "metadata");
+});
+
+test("resolveLogLlmCallsMode maps legacy '1' to full, matching Python's back-compat (AI-09)", () => {
+  assert.equal(resolveLogLlmCallsMode({ env: { MEMORY_LOG_LLM_CALLS: "1" } }), "full");
+  assert.equal(resolveLogLlmCallsMode({ env: { MEMORY_LOG_LLM_CALLS: "full" } }), "full");
+});
+
+test("resolveLogLlmCallsMode requires an explicit opt-in for full -- never a silent default (AI-09)", () => {
+  assert.notEqual(resolveLogLlmCallsMode({ env: {} }), "full");
+  assert.equal(resolveLogLlmCallsMode({ env: { MEMORY_LOG_LLM_CALLS: "anything-else" } }), "off");
 });
