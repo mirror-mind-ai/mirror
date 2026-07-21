@@ -14,5 +14,16 @@
     "rules": {
       "preset": "recommended"
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["src/db/schemaInventorySnapshot.ts"],
+      "javascript": {
+        "formatter": {
+          "quoteProperties": "preserve",
+          "trailingCommas": "none"
+        }
+      }
+    }
+  ]
 }
