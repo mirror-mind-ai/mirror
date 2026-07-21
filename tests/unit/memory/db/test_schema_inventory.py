@@ -41,8 +41,7 @@ class TestNormalizeSql:
         # that no hand-written DDL naturally produces. This must normalize
         # identically to a cleanly formatted equivalent.
         assert (
-            normalize_sql("CREATE TABLE t (a TEXT , b TEXT )")
-            == "CREATE TABLE t (a TEXT, b TEXT)"
+            normalize_sql("CREATE TABLE t (a TEXT , b TEXT )") == "CREATE TABLE t (a TEXT, b TEXT)"
         )
 
     def test_none_passthrough(self):

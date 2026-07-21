@@ -105,16 +105,13 @@ def normalize_sql(sql: str | None) -> str | None:
 
 def _virtual_table_names(conn: sqlite3.Connection) -> set[str]:
     rows = conn.execute(
-        "SELECT name FROM sqlite_master WHERE type = 'table' "
-        "AND sql LIKE 'CREATE VIRTUAL TABLE%'"
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND sql LIKE 'CREATE VIRTUAL TABLE%'"
     ).fetchall()
     return {row[0] for row in rows}
 
 
 def _is_fts_shadow_table(name: str, virtual_tables: set[str]) -> bool:
-    return any(
-        name == f"{vt}{suffix}" for vt in virtual_tables for suffix in _FTS_SHADOW_SUFFIXES
-    )
+    return any(name == f"{vt}{suffix}" for vt in virtual_tables for suffix in _FTS_SHADOW_SUFFIXES)
 
 
 def _table_inventory(conn: sqlite3.Connection, name: str, sql: str | None) -> dict:
