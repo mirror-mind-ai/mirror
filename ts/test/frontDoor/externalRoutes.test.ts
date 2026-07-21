@@ -67,7 +67,14 @@ test("front door runs memories --search through TS replay route and keeps logs m
   const dir = await freshDir("search");
   const dbPath = join(dir, "search-copy.db");
   const embeddingPath = join(dir, "embedding.json");
-  await writeJson(embeddingPath, { kind: "embedding", response: { embedding: [1, 0, 0] } });
+  // generateEmbeddingSafely (CR043) validates response length against
+  // EMBEDDING_DIMENSIONS=1536 -- a realistic-length fixture is required so
+  // this test exercises normal (non-degraded) search, not a silent degrade
+  // that happens to satisfy the same assertions via the FTS-only fallback.
+  await writeJson(embeddingPath, {
+    kind: "embedding",
+    response: { embedding: Array(1536).fill(0.1) },
+  });
   const db = makeSearchDb(dbPath);
   try {
     insertMemory(db, {
@@ -100,6 +107,7 @@ test("front door runs memories --search through TS replay route and keeps logs m
   assert.equal(result.status, 0);
   assert.match(result.stdout, /🔍 Search: "mirror builder" \(1 results\)/);
   assert.match(result.stdout, /Hit Memory/);
+  assert.doesNotMatch(result.stdout, /Degraded/); // proves this ran normal, not degraded, search
   const dbAfter = openDatabaseCopyForWrite(dbPath);
   try {
     assert.equal(

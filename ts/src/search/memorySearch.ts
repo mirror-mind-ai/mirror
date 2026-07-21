@@ -1,7 +1,13 @@
 import type { SqlValue, WritableDatabase } from "../db/database.ts";
 import { optionalNumber, optionalString, requireString } from "../db/rowDecode.ts";
 import { logAccess } from "../memory/reinforcement.ts";
-import type { EmbeddingProvider } from "../providers/embedding.ts";
+import { logLlmCall } from "../observability/llmCalls.ts";
+import { resolveEmbeddingModel } from "../providers/config.ts";
+import {
+  type EmbeddingAttemptInfo,
+  type EmbeddingProvider,
+  generateEmbeddingSafely,
+} from "../providers/embedding.ts";
 import { nowIso } from "../util/pyGenerators.ts";
 import {
   type RankableMemory,
@@ -22,6 +28,10 @@ export interface FreshSearchOptions extends FreshSearchFilters {
   frozenNowMs?: number;
   now?: string;
   provider: EmbeddingProvider;
+  /** Test-injectable override for generateEmbeddingSafely's retry backoff
+   * (real timers by default) -- avoids paying real backoff wait time in tests
+   * that exercise the transient-retry path. */
+  embeddingRetrySleep?: (ms: number) => Promise<void>;
 }
 
 export interface FreshSearchResult extends RankedMemory {}
@@ -69,7 +79,15 @@ export async function searchMemoriesWithStatus(
   let queryEmbedding: readonly number[] = [];
   let degraded = false;
   try {
-    queryEmbedding = await options.provider.embed(options.query);
+    // generateEmbeddingSafely (CR043) retries a transient empty response up to
+    // its default budget before giving up -- matching Python's search, which
+    // calls the same generate_embedding used everywhere else, not a bespoke
+    // single-shot attempt. Any exhausted/permanent/provider-exception failure
+    // still maps to degraded=true here, preserving CR037's contract exactly.
+    queryEmbedding = await generateEmbeddingSafely(options.provider, options.query, {
+      onAttempt: logQueryEmbeddingAttempt(db),
+      sleep: options.embeddingRetrySleep,
+    });
   } catch {
     degraded = true;
   }
@@ -210,6 +228,21 @@ export function ftsQuery(query: string): string {
     .map((word) => word.replaceAll('"', ""))
     .filter((word) => word.length > 0);
   return words.map((word) => `"${word}"`).join(" ");
+}
+
+/** Wires generateEmbeddingSafely's onAttempt hook to the llm_calls ledger
+ * (AI-09/D-003), reusing CR040's fail-soft logLlmCall unchanged. The query
+ * text is not stored (not tied to a conversation), so no conversationId. */
+function logQueryEmbeddingAttempt(db: WritableDatabase): (info: EmbeddingAttemptInfo) => void {
+  return (info) => {
+    logLlmCall(db, {
+      role: "embedding",
+      model: resolveEmbeddingModel(),
+      prompt: info.text,
+      response: "",
+      latencyMs: info.latencyMs,
+    });
+  };
 }
 
 function toMemoryRow(row: Record<string, unknown>): MemoryRow {

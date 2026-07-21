@@ -38,10 +38,18 @@ export function resolveExtractionModel(options: ModelPinOptions = {}): string {
   return env.MEMORY_EXTRACTION_MODEL ?? DEFAULT_EXTRACTION_MODEL;
 }
 
-// EMBEDDING_MODEL has no resolver function: EmbeddingProvider.embed(text) has
-// no model parameter to wire this into today (see CR039 plan). Captured as a
-// value only -- an unconsumed function would be dead code; a documented
-// default is not.
+/**
+ * Mirrors Python's `EMBEDDING_MODEL = os.getenv("MEMORY_EMBEDDING_MODEL", ...)`.
+ * CR039 deliberately shipped no resolver here -- EmbeddingProvider.embed(text)
+ * had no model parameter to wire it into, and an unconsumed function would
+ * have been dead code. CR043 gives it a real consumer: embedding provenance
+ * (recording which model produced a stored vector) needs the *configured*
+ * embedding pin, not the extraction pin -- a different constant entirely.
+ */
+export function resolveEmbeddingModel(options: ModelPinOptions = {}): string {
+  const env = options.env ?? process.env;
+  return env.MEMORY_EMBEDDING_MODEL ?? DEFAULT_EMBEDDING_MODEL;
+}
 
 // Observability (AI-09, CV9.E2.S13): mirrors Python's MEMORY_LOG_LLM_CALLS
 // resolution exactly -- off | metadata | full, default metadata (never a

@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   DEFAULT_EMBEDDING_MODEL,
   DEFAULT_EXTRACTION_MODEL,
+  resolveEmbeddingModel,
   resolveExtractionModel,
   resolveLogLlmCallsMode,
   resolveProviderConfig,
@@ -83,4 +84,16 @@ test("resolveLogLlmCallsMode maps legacy '1' to full, matching Python's back-com
 test("resolveLogLlmCallsMode requires an explicit opt-in for full -- never a silent default (AI-09)", () => {
   assert.notEqual(resolveLogLlmCallsMode({ env: {} }), "full");
   assert.equal(resolveLogLlmCallsMode({ env: { MEMORY_LOG_LLM_CALLS: "anything-else" } }), "off");
+});
+
+test("resolveEmbeddingModel returns the default when no override is set, distinct from the extraction model (CR043)", () => {
+  assert.equal(resolveEmbeddingModel({ env: {} }), DEFAULT_EMBEDDING_MODEL);
+  assert.notEqual(resolveEmbeddingModel({ env: {} }), resolveExtractionModel({ env: {} }));
+});
+
+test("resolveEmbeddingModel honors a MEMORY_EMBEDDING_MODEL override (CR043)", () => {
+  assert.equal(
+    resolveEmbeddingModel({ env: { MEMORY_EMBEDDING_MODEL: "vendor/custom-embedding" } }),
+    "vendor/custom-embedding",
+  );
 });

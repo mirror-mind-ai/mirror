@@ -11,8 +11,14 @@ import {
   formatTranscript,
   naiveSummary,
 } from "../extraction/conversation.ts";
-import { resolveExtractionModel } from "../providers/config.ts";
-import type { EmbeddingProvider } from "../providers/embedding.ts";
+import { logLlmCall } from "../observability/llmCalls.ts";
+import { resolveEmbeddingModel, resolveExtractionModel } from "../providers/config.ts";
+import {
+  addEmbeddingProvenance,
+  type EmbeddingAttemptInfo,
+  type EmbeddingProvider,
+  generateEmbeddingSafely,
+} from "../providers/embedding.ts";
 import type { LlmProvider } from "../providers/llm.ts";
 import { newId, nowIso } from "../util/pyGenerators.ts";
 
@@ -98,7 +104,13 @@ export async function runConversationExtraction(
       : await replayedSummary(options.llm, messages, userName);
   const finalSummary = summaryText || naiveSummary(messages);
   if (finalSummary) {
-    const summaryEmbedding = await options.embeddings.embed(finalSummary);
+    // Logged to the ledger (AI-09/D-003), but NOT provenance-stamped:
+    // conversation_embeddings has no metadata column, matching Python's own
+    // narrower scope (add_embedding_provenance is called from
+    // add_memory/add_attachment only, never from the summary path).
+    const summaryEmbedding = await generateEmbeddingSafely(options.embeddings, finalSummary, {
+      onAttempt: logEmbeddingAttempt(db, conversationId),
+    });
     db.prepare(
       `INSERT INTO conversation_embeddings (conversation_id, summary_embedding) VALUES (?, ?) ` +
         `ON CONFLICT(conversation_id) DO UPDATE SET summary_embedding = excluded.summary_embedding`,
@@ -113,7 +125,9 @@ export async function runConversationExtraction(
   for (const memory of extractedMemories) {
     const memoryId = id();
     const embeddingText = `${memory.title}. ${memory.content}${memory.context ? ` Context: ${memory.context}` : ""}`;
-    const embedding = await options.embeddings.embed(embeddingText);
+    const embedding = await generateEmbeddingSafely(options.embeddings, embeddingText, {
+      onAttempt: logEmbeddingAttempt(db, conversationId),
+    });
     insertMemory(db, memoryId, conversationId, memory, floatsToBytes(embedding), now());
     memoryIds.push(memoryId);
   }
@@ -231,6 +245,26 @@ function resolveUserName(db: WritableDatabase): string {
   return match?.[1] ?? "User";
 }
 
+/** Wires generateEmbeddingSafely's onAttempt hook to the llm_calls ledger
+ * (AI-09/D-003), reusing CR040's fail-soft logLlmCall unchanged -- "a vector
+ * is not text", so response is always empty; the input text itself gets the
+ * same metadata-mode body-withholding logLlmCall already applies to consult. */
+function logEmbeddingAttempt(
+  db: WritableDatabase,
+  conversationId: string,
+): (info: EmbeddingAttemptInfo) => void {
+  return (info) => {
+    logLlmCall(db, {
+      role: "embedding",
+      model: resolveEmbeddingModel(),
+      prompt: info.text,
+      response: "",
+      latencyMs: info.latencyMs,
+      conversationId,
+    });
+  };
+}
+
 function insertMemory(
   db: WritableDatabase,
   id: string,
@@ -253,7 +287,7 @@ function insertMemory(
     createdAt,
     1.0,
     embedding,
-    null,
+    addEmbeddingProvenance(null),
     0,
     "observed",
   ];

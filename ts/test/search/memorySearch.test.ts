@@ -23,7 +23,31 @@ class FailingEmbeddingProvider implements EmbeddingProvider {
   }
 }
 
+/** Proves the CR043 retry-before-degrade correction: a well-formed but empty
+ * response is TRANSIENT (unlike FailingEmbeddingProvider's exception, which
+ * is terminal in both old and new code) and must be retried before search
+ * gives up and degrades. */
+class EmptyThenSucceedsEmbeddingProvider implements EmbeddingProvider {
+  calls = 0;
+  private readonly emptyCount: number;
+  private readonly vector: readonly number[];
+  constructor(emptyCount: number, vector: readonly number[]) {
+    this.emptyCount = emptyCount;
+    this.vector = vector;
+  }
+  async embed(): Promise<readonly number[]> {
+    this.calls += 1;
+    return this.calls <= this.emptyCount ? [] : this.vector;
+  }
+}
+
 const TMP_DIR = join(process.cwd(), "tmp", "test-memory-search");
+// generateEmbeddingSafely (CR043) validates response length against
+// EMBEDDING_DIMENSIONS=1536 -- query-embedding replay fixtures must be
+// realistic length now, not the toy [1,0,0] vectors pre-CR043 tests used.
+// Stored MEMORY embeddings (insertMemory's `embedding` param) are unaffected
+// -- they're decoded from BLOB storage, never dimension-validated.
+const VALID_EMBEDDING = Array(1536).fill(0.1);
 
 test("ftsQuery mirrors Python safe quoting", () => {
   assert.equal(ftsQuery('mirror "builder" ariad'), '"mirror" "builder" "ariad"');
@@ -119,7 +143,7 @@ test("searchMemories ranks with replayed embedding and logs returned access only
 
     const provider = new ReplayEmbeddingProvider({
       kind: "embedding",
-      response: { embedding: [1, 0, 0] },
+      response: { embedding: VALID_EMBEDDING },
     });
     const longQuery = `${"mirror ".repeat(60)}builder`;
 
@@ -230,13 +254,76 @@ test("searchMemoriesWithStatus reports degraded: false when the embedding succee
 
     const provider = new ReplayEmbeddingProvider({
       kind: "embedding",
-      response: { embedding: [1, 0, 0] },
+      response: { embedding: VALID_EMBEDDING },
     });
 
     const outcome = await searchMemoriesWithStatus(db, { query: "builder", limit: 5, provider });
 
     assert.equal(outcome.degraded, false);
     assert.ok(outcome.results.length >= 1);
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("searchMemoriesWithStatus retries a transient empty response before degrading (CR043 correction: Python retries via generate_embedding before search gives up)", async () => {
+  const { db, path } = await makeDb("retry-before-degrade.db");
+  try {
+    insertMemory(db, {
+      id: "semantic-hit",
+      content: "mirror builder ariad",
+      embedding: [1, 0, 0],
+      createdAt: "2026-01-03T00:00:00Z",
+    });
+    rebuildFts(db);
+
+    // Empty twice (transient), succeeds on the 3rd call -- within the default
+    // 3-attempt budget. A provider EXCEPTION (FailingEmbeddingProvider) is
+    // terminal and stays single-attempt in both old and new code; only this
+    // well-formed-but-empty case is where retry-before-degrade applies.
+    const provider = new EmptyThenSucceedsEmbeddingProvider(2, VALID_EMBEDDING);
+
+    const outcome = await searchMemoriesWithStatus(db, {
+      query: "builder",
+      limit: 5,
+      provider,
+      embeddingRetrySleep: async () => {}, // fast test, no real backoff wait
+    });
+
+    assert.equal(provider.calls, 3);
+    assert.equal(outcome.degraded, false); // eventually succeeded -- not degraded
+    assert.ok(outcome.results.length >= 1);
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("searchMemoriesWithStatus logs the query embedding call to the ledger (AI-09/D-003)", async () => {
+  const { db, path } = await makeDb("embedding-ledger.db");
+  try {
+    insertMemory(db, {
+      id: "semantic-hit",
+      content: "mirror builder ariad",
+      embedding: [1, 0, 0],
+      createdAt: "2026-01-03T00:00:00Z",
+    });
+    rebuildFts(db);
+
+    const provider = new ReplayEmbeddingProvider({
+      kind: "embedding",
+      response: { embedding: VALID_EMBEDDING },
+    });
+    await searchMemoriesWithStatus(db, { query: "builder", limit: 5, provider });
+
+    const rows = db
+      .prepare("SELECT role, prompt_tokens, cost_usd FROM llm_calls WHERE role = 'embedding'")
+      .all() as { role: string; prompt_tokens: number | null; cost_usd: number | null }[];
+    assert.equal(rows.length, 1);
+    // Honest limitation: no usage data from EmbeddingProvider -- unpriced, not fabricated.
+    assert.equal(rows[0]?.prompt_tokens, null);
+    assert.equal(rows[0]?.cost_usd, null);
   } finally {
     db.close();
     await rm(path, { force: true });
@@ -321,6 +408,12 @@ async function makeDb(name: string): Promise<{ db: WritableDatabase; path: strin
       content,
       content='memories',
       content_rowid='rowid'
+    );
+    CREATE TABLE llm_calls (
+      id TEXT PRIMARY KEY, role TEXT NOT NULL, model TEXT NOT NULL,
+      prompt TEXT NOT NULL, response TEXT NOT NULL,
+      prompt_tokens INTEGER, completion_tokens INTEGER, latency_ms INTEGER,
+      cost_usd REAL, conversation_id TEXT, session_id TEXT, called_at TEXT NOT NULL
     );
   `);
   return { db, path };

@@ -27,6 +27,10 @@ function metadataOf(db: WritableDatabase, conversationId: string): Record<string
 }
 
 const TMP_DIR = join(process.cwd(), "tmp", "test-conversation-extraction");
+// generateEmbeddingSafely (CR043) validates response length against
+// EMBEDDING_DIMENSIONS=1536 -- replay-provider fixtures must be realistic
+// length, not the toy [1,0]/[1,0,0] vectors pre-CR043 tests used.
+const VALID_EMBEDDING = Array(1536).fill(0.1);
 
 test("runConversationExtraction enforces journey and message-count guards", async () => {
   const { db, path } = await makeDb("guards.db");
@@ -142,7 +146,7 @@ test("runConversationExtraction records extraction_status: no_signal when the LL
       llm,
       embeddings: new ReplayEmbeddingProvider({
         kind: "embedding",
-        response: { embedding: [1, 0] },
+        response: { embedding: VALID_EMBEDDING },
       }),
       now: fixedNow,
       id: idSequence([]),
@@ -175,7 +179,7 @@ test("runConversationExtraction records extraction_status: parse_failed for a no
       llm,
       embeddings: new ReplayEmbeddingProvider({
         kind: "embedding",
-        response: { embedding: [1, 0] },
+        response: { embedding: VALID_EMBEDDING },
       }),
       now: fixedNow,
       id: idSequence([]),
@@ -211,7 +215,7 @@ test("runConversationExtraction records extraction_dropped only when sanitize ac
       llm,
       embeddings: new ReplayEmbeddingProvider({
         kind: "embedding",
-        response: { embedding: [1, 0] },
+        response: { embedding: VALID_EMBEDDING },
       }),
       now: fixedNow,
       id: idSequence(["m1"]),
@@ -241,7 +245,7 @@ test("runConversationExtraction records extraction_status: llm_failed and still 
         llm: new FailingLlmProvider(),
         embeddings: new ReplayEmbeddingProvider({
           kind: "embedding",
-          response: { embedding: [1, 0] },
+          response: { embedding: VALID_EMBEDDING },
         }),
         now: fixedNow,
       }),
@@ -273,7 +277,7 @@ test("runConversationExtraction requests the resolved extraction model pin for t
       llm,
       embeddings: new ReplayEmbeddingProvider({
         kind: "embedding",
-        response: { embedding: [1, 0] },
+        response: { embedding: VALID_EMBEDDING },
       }),
       now: fixedNow,
       id: idSequence([]),
@@ -281,6 +285,80 @@ test("runConversationExtraction requests the resolved extraction model pin for t
 
     const summaryCall = llm.calls.find((call) => call.role === "summary");
     assert.equal(summaryCall?.model, DEFAULT_EXTRACTION_MODEL);
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("runConversationExtraction stamps embedding provenance on each stored memory, but not on the summary (CR043)", async () => {
+  const { db, path } = await makeDb("provenance.db");
+  try {
+    insertConversation(db, { id: "c1", journey: "cv22" });
+    for (let i = 1; i <= 4; i += 1)
+      insertMessage(db, "c1", i % 2 ? "user" : "assistant", `m${i}`, i);
+    insertTask(db, { id: "existing-task", title: "Existing", journey: "cv22" });
+
+    await runConversationExtraction(db, "c1", {
+      ...providers(),
+      now: fixedNow,
+      id: idSequence(["t1", "m1", "m2"]),
+    });
+
+    const memories = db.prepare("SELECT id, metadata FROM memories ORDER BY id").all() as {
+      id: string;
+      metadata: string;
+    }[];
+    assert.equal(memories.length, 2);
+    for (const memory of memories) {
+      const metadata = JSON.parse(memory.metadata) as Record<string, unknown>;
+      assert.equal(typeof metadata.embedding_model, "string");
+      assert.equal(metadata.embedding_dimensions, 1536);
+    }
+    // conversation_embeddings has no metadata column at all -- provenance has
+    // nowhere to go for the summary, matching Python's own narrower scope
+    // (add_embedding_provenance is called from add_memory/add_attachment only).
+    const columns = db.prepare("PRAGMA table_info(conversation_embeddings)").all() as {
+      name: string;
+    }[];
+    assert.ok(!columns.some((c) => c.name === "metadata"));
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("runConversationExtraction logs embedding calls to the ledger for the summary and each memory (CR043)", async () => {
+  const { db, path } = await makeDb("embedding-ledger.db");
+  try {
+    insertConversation(db, { id: "c1", journey: "cv22" });
+    for (let i = 1; i <= 4; i += 1)
+      insertMessage(db, "c1", i % 2 ? "user" : "assistant", `m${i}`, i);
+    insertTask(db, { id: "existing-task", title: "Existing", journey: "cv22" });
+
+    await runConversationExtraction(db, "c1", {
+      ...providers(),
+      now: fixedNow,
+      id: idSequence(["t1", "m1", "m2"]),
+    });
+
+    const rows = db
+      .prepare(
+        "SELECT role, model, prompt_tokens, cost_usd FROM llm_calls WHERE role = 'embedding'",
+      )
+      .all() as {
+      role: string;
+      prompt_tokens: number | null;
+      cost_usd: number | null;
+    }[];
+    // 1 summary embedding + 2 memory embeddings = 3 rows.
+    assert.equal(rows.length, 3);
+    for (const row of rows) {
+      // Honest limitation: EmbeddingProvider.embed() carries no usage data, so
+      // every row is unpriced -- not a fabricated cost.
+      assert.equal(row.prompt_tokens, null);
+      assert.equal(row.cost_usd, null);
+    }
   } finally {
     db.close();
     await rm(path, { force: true });
@@ -310,7 +388,7 @@ test("two-pass curation can filter replayed candidate memories", async () => {
       llm,
       embeddings: new ReplayEmbeddingProvider({
         kind: "embedding",
-        response: { embedding: [1, 0] },
+        response: { embedding: VALID_EMBEDDING },
       }),
       twoPass: true,
       curationExisting: [
@@ -348,7 +426,7 @@ test("task extraction failure does not block memory extraction", async () => {
       llm,
       embeddings: new ReplayEmbeddingProvider({
         kind: "embedding",
-        response: { embedding: [1, 0] },
+        response: { embedding: VALID_EMBEDDING },
       }),
       now: fixedNow,
       id: idSequence(["m1"]),
@@ -391,7 +469,7 @@ function providers() {
     }),
     embeddings: new ReplayEmbeddingProvider({
       kind: "embedding",
-      response: { embedding: [1, 0, 0] },
+      response: { embedding: VALID_EMBEDDING },
     }),
   };
 }
@@ -472,6 +550,12 @@ async function makeDb(name: string): Promise<{ db: WritableDatabase; path: strin
       updated_at TEXT NOT NULL,
       metadata TEXT,
       UNIQUE(layer, key)
+    );
+    CREATE TABLE llm_calls (
+      id TEXT PRIMARY KEY, role TEXT NOT NULL, model TEXT NOT NULL,
+      prompt TEXT NOT NULL, response TEXT NOT NULL,
+      prompt_tokens INTEGER, completion_tokens INTEGER, latency_ms INTEGER,
+      cost_usd REAL, conversation_id TEXT, session_id TEXT, called_at TEXT NOT NULL
     );
   `);
   return { db, path };
