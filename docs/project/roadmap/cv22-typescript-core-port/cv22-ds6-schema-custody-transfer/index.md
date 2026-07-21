@@ -82,7 +82,7 @@ schema decisions.
 | Code | Story | Type | Outcome | Status |
 |------|-------|------|---------|--------|
 | [CV22.DS6.TS1](cv22-ds6-ts1-schema-bootstrap-ddl-ownership-in-ts/index.md) | Schema Bootstrap & DDL Ownership in TS | Technical Story | The fresh-database DDL (rewritten in English per CV0) lives in TS behind the driver seam, proven structurally identical (incl. CHECK constraints and partial-index predicates) to a real fresh Python database via a committed cross-language snapshot; the front-door delegation flip is deferred to TS2/TS3 (needs `_migrations` seeding + locking/pragmas first) | ✅ Done |
-| CV22.DS6.TS2 | Migration Engine & `_migrations` Bookkeeping in TS | Technical Story | The migration runner and `_migrations` ledger are ported; `KNOWN_MIGRATION_IDS` becomes the enforced manifest; forward migration over **real legacy DB copies** yields the same end schema and ledger rows as Python | 🟡 Planned |
+| [CV22.DS6.TS2](cv22-ds6-ts2-migration-engine-migrations-bookkeeping-in-ts/index.md) | Migration Engine & `_migrations` Bookkeeping in TS | Technical Story | The migration runner and `_migrations` ledger are ported; `KNOWN_MIGRATION_IDS` becomes the enforced manifest; forward migration over **real legacy DB copies** (a cascading fixture generator, 8 checkpoints) yields the same end schema, ledger rows, and row-level values as Python | ✅ Done† |
 | CV22.DS6.TS3 | Cross-Process Locking & Connection Pragma Discipline | Technical Story | `fcntl`-equivalent bootstrap/migration locking and WAL/busy-timeout/FK pragma discipline are owned by the TS connection module; concurrent-bootstrap safety and pragma presence are proven | 🟡 Planned |
 | CV22.DS6.US1 | `identity.metadata` Canonicalization | User Story | Retire the `pyJson.ts` byte-mimicry once TS owns schema: choose a canonical serialization with an explicit one-time normalization or read-tolerant policy (per CR023) — the first schema decision gated on custody | 🟡 Planned |
 | CV22.DS6.US2 | `parent_journey` First-Class Column | User Story | Graduate `parent_journey` from JSON metadata to an indexed column with real referential integrity — a genuine schema migration that exercises the new TS migration engine end-to-end | 🟡 Planned |
@@ -91,6 +91,16 @@ Suggested sequence: **TS1** (fresh bootstrap) → **TS2** (forward migration ove
 real legacy copies) → **TS3** (locking + pragmas that guard both) → **US1** /
 **US2** (the two custody-gated schema decisions, which also serve as the first
 real proof that the TS migration engine can author new schema).
+
+† **Carried debt from TS2 (deferred, tracked — not silently absorbed):**
+migration `016` (`builder_workbench_display_codes`) has no legacy-transition
+fixture; only its fresh-DB (already-modern-shape) behavior is proven, not the
+real `ADD COLUMN`/backfill-against-`NULL`-rows logic. **Revisit before DS6
+itself is marked Done** — DS6's own Done Condition below requires
+compatibility proven over real legacy database copies at multiple historical
+migration states, which is not yet true for `016`. See
+[CV22.DS6.TS2's Review](cv22-ds6-ts2-migration-engine-migrations-bookkeeping-in-ts/review.md)
+for the full debt record.
 
 ---
 
