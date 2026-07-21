@@ -113,6 +113,25 @@ function writableHandle(driver: DatabaseSync): WritableDatabase {
 }
 
 /**
+ * Open (creating if absent) a database file for the bootstrap authority
+ * (CV22.DS6.TS3). Unlike `openDatabaseCopyForWrite`/`openDatabaseForWrite`,
+ * this is permitted against the real `memory.db` path — bootstrap's whole
+ * purpose is to create/migrate the live file when TS, not Python, owns
+ * custody. Safety here comes from the caller: `bootstrap.ts` always wraps
+ * this open in the cross-process bootstrap lock, and every statement run
+ * against the result (`runMigrations`, `createSchema`) is idempotent, so a
+ * lock-protected re-open is always a safe no-op, never a destructive write.
+ */
+export function openDatabaseForBootstrap(
+  path: string,
+  options: OpenOptions = {},
+): WritableDatabase {
+  const driver = new DatabaseSync(path);
+  applyConnectionPragmas(driver, options);
+  return writableHandle(driver);
+}
+
+/**
  * Open a SQLite file for writing — permitted ONLY for a copy. `assertCopyTarget`
  * runs first and throws before the driver touches the file if the path is a live
  * `memory.db` or is not under a `tmp/` directory. This is how DS4 mutates state

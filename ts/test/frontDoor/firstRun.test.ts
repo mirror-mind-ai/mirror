@@ -9,7 +9,9 @@ const CLI = "src/frontDoor/cli.ts";
 
 // First-run contract (CR015): a TS-routed command against a *missing* database
 // must self-heal by delegating to Python, which bootstraps schema+migrations.
-// Spawns real uv/python; skips on the Node-only ts CI job until CR017 adds uv.
+// Spawns real uv/python; CR017 added uv to the `ts` CI job, so this runs for
+// real there. The skip guard remains for any local/CI environment without uv
+// on PATH.
 function uvAvailable(): boolean {
   const probe = spawnSync("uv", ["--version"], { stdio: "ignore" });
   return !probe.error && probe.status === 0;
