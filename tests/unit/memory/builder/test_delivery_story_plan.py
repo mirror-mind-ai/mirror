@@ -149,3 +149,118 @@ def test_render_delivery_story_plan_report_lists_child_work_packages(tmp_path):
     assert "Flow unit" not in rendered
     assert "Navigator gate" not in rendered
     assert "Review the plan artifact, then approve or revise." in rendered
+
+
+def test_plan_delivery_story_materializes_full_package_when_absent(tmp_path):
+    _client, store = _store(tmp_path)
+    artifact = tmp_path / "cv20-ds5" / "plan.md"
+    set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS5",
+        active_item_title="Delivery Story Level Lifecycle",
+        active_item_level="delivery_story",
+        navigator_flow_unit="delivery_story",
+    )
+
+    report = plan_delivery_story_checkpoint(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        objective="Approve aggregate DS plan.",
+        child_work_items=("CV20.DS5.US1", "CV20.DS5.TS1"),
+        plan_artifact_path=artifact,
+    )
+
+    index_path = artifact.parent / "index.md"
+    test_guide_path = artifact.parent / "test-guide.md"
+    assert artifact.exists()
+    assert index_path.exists()
+    assert test_guide_path.exists()
+    index_text = index_path.read_text(encoding="utf-8")
+    assert "# CV20.DS5 \u2014 Delivery Story Level Lifecycle" in index_text
+    assert "- CV20.DS5.US1" in index_text
+    assert "- CV20.DS5.TS1" in index_text
+    test_guide_text = test_guide_path.read_text(encoding="utf-8")
+    assert "# Test Guide \u2014 CV20.DS5" in test_guide_text
+    assert "Pending implementation and validation." in test_guide_text
+    statuses = {(artifact.kind, artifact.status) for artifact in report.materialized_artifacts}
+    assert ("story index", "created") in statuses
+    assert ("plan", "created") in statuses
+    assert ("test guide", "created") in statuses
+
+
+def test_plan_delivery_story_preserves_existing_package_artifacts(tmp_path):
+    _client, store = _store(tmp_path)
+    artifact = tmp_path / "cv20-ds5" / "plan.md"
+    artifact.parent.mkdir(parents=True)
+    index_path = artifact.parent / "index.md"
+    test_guide_path = artifact.parent / "test-guide.md"
+    index_text = "# Hand-authored DS index\n\nConsolidated Team Position.\n"
+    test_guide_text = "# Hand-authored test guide\n"
+    index_path.write_text(index_text, encoding="utf-8")
+    test_guide_path.write_text(test_guide_text, encoding="utf-8")
+    set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS5",
+        active_item_level="delivery_story",
+        navigator_flow_unit="delivery_story",
+    )
+
+    report = plan_delivery_story_checkpoint(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        objective="Approve aggregate DS plan.",
+        child_work_items=("CV20.DS5.US1",),
+        plan_artifact_path=artifact,
+    )
+
+    assert index_path.read_text(encoding="utf-8") == index_text
+    assert test_guide_path.read_text(encoding="utf-8") == test_guide_text
+    assert artifact.exists()
+    statuses = {(artifact.kind, artifact.status) for artifact in report.materialized_artifacts}
+    assert ("story index", "existing") in statuses
+    assert ("plan", "created") in statuses
+    assert ("test guide", "existing") in statuses
+
+
+def test_approve_delivery_story_plan_updates_plan_and_preserves_package(tmp_path):
+    _client, store = _store(tmp_path)
+    artifact = tmp_path / "cv20-ds5" / "plan.md"
+    set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS5",
+        active_item_title="Delivery Story Level Lifecycle",
+        active_item_level="delivery_story",
+        navigator_flow_unit="delivery_story",
+    )
+    plan_delivery_story_checkpoint(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        objective="Approve aggregate DS plan.",
+        child_work_items=("CV20.DS5.US1",),
+        plan_artifact_path=artifact,
+    )
+    index_bytes = (artifact.parent / "index.md").read_bytes()
+    test_guide_bytes = (artifact.parent / "test-guide.md").read_bytes()
+
+    report = approve_delivery_story_plan(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        plan_artifact_path=artifact,
+    )
+
+    assert (artifact.parent / "index.md").read_bytes() == index_bytes
+    assert (artifact.parent / "test-guide.md").read_bytes() == test_guide_bytes
+    statuses = {(artifact.kind, artifact.status) for artifact in report.materialized_artifacts}
+    assert ("story index", "existing") in statuses
+    assert ("plan", "updated") in statuses
+    assert ("test guide", "existing") in statuses

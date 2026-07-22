@@ -927,7 +927,6 @@ def cmd_plan_delivery_story(
         cursor = get_delivery_cursor(mem.store, resolved_journey)
         project_path = mem.journeys.get_project_path(resolved_journey)
         plan_artifact_path = _checkpoint_artifact_path(project_path, cursor, "plan.md")
-        artifact_existence = _artifact_existence(plan_artifact_path)
         report = plan_delivery_story_checkpoint(
             mem.store,
             journey=resolved_journey,
@@ -942,7 +941,7 @@ def cmd_plan_delivery_story(
     print(render_delivery_story_plan_report(report))
     _print_artifacts_materialized(
         context=f"Delivery Story Plan — {report.cursor.active_item or 'active item'}",
-        artifacts=_plan_package_artifacts(plan_artifact_path, artifact_existence),
+        artifacts=report.materialized_artifacts,
         project_path=project_path,
         boundary="Plan artifacts were materialized. Implementation remains blocked until approval.",
     )
@@ -967,7 +966,6 @@ def cmd_approve_delivery_story_plan(
         cursor = get_delivery_cursor(mem.store, resolved_journey)
         project_path = mem.journeys.get_project_path(resolved_journey)
         plan_artifact_path = _checkpoint_artifact_path(project_path, cursor, "plan.md")
-        artifact_existence = _artifact_existence(plan_artifact_path)
         report = approve_delivery_story_plan(
             mem.store,
             journey=resolved_journey,
@@ -980,7 +978,7 @@ def cmd_approve_delivery_story_plan(
     print(render_delivery_story_plan_report(report))
     _print_artifacts_materialized(
         context=f"Delivery Story Plan Approval — {report.cursor.active_item or 'active item'}",
-        artifacts=_plan_package_artifacts(plan_artifact_path, artifact_existence),
+        artifacts=report.materialized_artifacts,
         project_path=project_path,
         boundary="Plan approval artifacts were materialized. Implementation may proceed under the approved plan.",
     )
