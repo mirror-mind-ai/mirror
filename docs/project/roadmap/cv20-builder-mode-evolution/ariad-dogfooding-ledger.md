@@ -30,11 +30,11 @@ migration (that journey's Chapter 7). Sequence exercised: `build adopt` →
 | ID | Severity | Area | Likely CV20 owner | Status |
 |----|----------|------|-------------------|--------|
 | AF-001 | Major | Expand ignores authored candidate-story table | CV20.DS5 (child expansion) | ✅ Fixed (CV20.DS13) |
-| AF-002 | Major | Surface reports a file it did not write | CV20.DS4.TS3 (deterministic surfaces) | Open |
-| AF-003 | Major | DS plan template thinner than `plan_contract` | CV20.DS5 (DS plan artifact) | Open |
+| AF-002 | Major | Surface reports a file it did not write | CV20.DS4.TS3 (deterministic surfaces) | ✅ Fixed |
+| AF-003 | Major | DS plan template thinner than `plan_contract` | CV20.DS5 (DS plan artifact) | ✅ Fixed |
 | AF-004 | Minor | Scope-confirmation checkpoint collapses into plan | CV20.DS5 + cadence | Open |
 | AF-005 | Minor | Self-nested roadmap tree; child == parent | CV20.DS5 (expansion) | ✅ Fixed (CV20.DS13) |
-| AF-006 | Minor | Approve reports "updated story index" but file is unchanged | CV20.DS4.TS3 (deterministic surfaces) | Open |
+| AF-006 | Minor | Approve reports "updated story index" but file is unchanged | CV20.DS4.TS3 (deterministic surfaces) | ✅ Fixed |
 | AF-007 | Minor | Next-pull recommendation points at a legacy/archived item, ignoring the active chapter sequence | CV20.DS4/DS5 (roadmap awareness) | ✅ Fixed (CV20.DS13) |
 
 ## What Worked (calibration)
@@ -87,7 +87,15 @@ delivery moment from data rather than making the agent re-derive it.
 
 ## AF-002 — `ARTIFACTS_MATERIALIZED` reports a file that was not written
 
-**Severity:** Major (surface trust) **Status:** Open **Likely owner:** CV20.DS4.TS3 (deterministic surface delivery)
+**Severity:** Major (surface trust) **Status:** ✅ Fixed (mirror journey) **Likely owner:** CV20.DS4.TS3 (deterministic surface delivery)
+
+**Resolution.** The DS-plan writer now materializes the full Delivery Story
+package — `plan.md` is upserted on every call, and `index.md` + `test-guide.md`
+are scaffolded when absent. The `ARTIFACTS_MATERIALIZED` surface is driven from
+the writer's real return manifest instead of a re-derived template guess, so
+`test-guide.md` is genuinely created and every path named in the surface exists
+on disk. Regression tests lock the writer footprint and the surface↔disk
+correspondence for both `plan-delivery-story` and `approve-delivery-story-plan`.
 
 **Context.** After `plan-delivery-story` for DS-31.
 
@@ -121,7 +129,32 @@ quietly corrodes trust in every other surface.
 
 ## AF-003 — DS plan template is thinner than the method's own `plan_contract`
 
-**Severity:** Major **Status:** Open **Likely owner:** CV20.DS5 (DS plan artifact) / template set
+**Severity:** Major **Status:** ✅ Fixed (mirror journey) **Likely owner:** CV20.DS5 (DS plan artifact) / template set
+
+**Resolution (template scaffold).** The DS `plan.md` now scaffolds a headed
+placeholder section for every `plan_contract.required_outputs` entry — Scope,
+Non-Goals, Acceptance Behavior, Validation Route, and Implementation Contract —
+each with one-line `Pending —` guidance. A contract-drift test asserts the
+template covers every declared required output, so template and contract cannot
+silently diverge (the runtime's declared contract stays the single source of
+truth).
+
+**Resolution (durable across approval).** The authored plan is now durable. The
+Navigator chose the team's pure-preserve design: mutable state (`**Status:**`,
+Approval Gate, Boundary) was removed from the `plan.md` template entirely — the
+Builder delivery cursor and the `DELIVERY_STORY_PLAN_CHECKPOINT` surface remain
+the single source of truth for approval state — and `approve-delivery-story-plan`
+now preserves `plan.md` (insert-if-absent) instead of regenerating it. Authored
+contract sections survive approval byte-for-byte; a regression test locks it.
+
+**Enhancement (delivered).** `approve-delivery-story-plan` now checks section
+completeness: it detects required sections whose scaffold placeholder is still
+present and lists them under "Sections still pending" in the approved
+`DELIVERY_STORY_PLAN_CHECKPOINT` surface. Non-blocking by design — Ariad
+checkpoints inform, and the Navigator retains authority to approve a plan with
+thin sections. Detection is exact-placeholder substring matching (no markdown
+parser), and the section definitions are a single shared source used by both the
+renderer and the detector, so they cannot drift.
 
 **Context.** `plan-delivery-story` materialized `plan.md`.
 
@@ -220,7 +253,17 @@ indistinguishable.
 
 ## AF-006 — `approve-delivery-story-plan` reports an update that did not happen
 
-**Severity:** Minor (surface trust) **Status:** Open **Likely owner:** CV20.DS4.TS3 (deterministic surface delivery) — same family as AF-002
+**Severity:** Minor (surface trust) **Status:** ✅ Fixed (mirror journey) **Likely owner:** CV20.DS4.TS3 (deterministic surface delivery) — same family as AF-002
+
+**Resolution.** `index.md` and `test-guide.md` are now insert-if-absent
+(no-clobber): a pre-existing file is reported as `existing` (↻), never a false
+`updated`, so the observed "updated story index" line for an unchanged file is
+gone. Reuses the established Expand-flow `existing_artifact` vocabulary rather
+than inventing a new status. Residual (separate enhancement): `plan.md` is still
+labeled `updated` by prior existence rather than a byte-level content diff — but
+`plan.md` is genuinely rewritten (slimmed) on approval, so the label is
+truthful; a content-diff "unchanged when identical bytes" refinement across all
+artifacts remains future work.
 
 **Context.** `build approve-delivery-story-plan` for DS-31.
 

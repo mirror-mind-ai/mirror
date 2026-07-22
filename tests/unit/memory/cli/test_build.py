@@ -349,11 +349,15 @@ def test_build_plan_delivery_story_records_aggregate_checkpoint(mocker, tmp_path
     assert "Flow unit" not in out
     assert "Navigator gate" not in out
     assert package.joinpath("plan.md").exists()
+    assert package.joinpath("test-guide.md").exists()
+    assert package.joinpath("index.md").read_text(encoding="utf-8") == "# CV20.DS5"
     assert "│ plan artifact                                          │" not in out
     assert "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>" in out
     assert "index.md" in out
     assert "plan.md" in out
     assert "test-guide.md" in out
+    assert "existing story index" in out
+    assert "created test guide" in out
 
 
 def test_build_approve_delivery_story_plan_records_approval(mocker, tmp_path, capsys):

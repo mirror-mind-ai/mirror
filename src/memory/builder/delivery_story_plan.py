@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
+from memory.builder.artifact_surfaces import (
+    MaterializedArtifact,
+    existing_artifact,
+    materialized_artifact,
+)
 from memory.builder.delivery_cursor import (
     BuilderDeliveryCursor,
     get_delivery_cursor,
@@ -26,6 +31,8 @@ class DeliveryStoryPlanReport:
     status: str
     cursor: BuilderDeliveryCursor
     plan_artifact_path: Path | None = None
+    materialized_artifacts: tuple[MaterializedArtifact, ...] = ()
+    unfilled_sections: tuple[str, ...] = ()
 
 
 def plan_delivery_story_checkpoint(
@@ -83,8 +90,8 @@ def plan_delivery_story_checkpoint(
         cursor=updated,
         plan_artifact_path=plan_artifact_path,
     )
-    _write_plan_artifact(report)
-    return report
+    materialized = _write_delivery_story_package(report)
+    return replace(report, materialized_artifacts=materialized)
 
 
 def approve_delivery_story_plan(
@@ -136,8 +143,9 @@ def approve_delivery_story_plan(
         cursor=updated,
         plan_artifact_path=plan_artifact_path,
     )
-    _write_plan_artifact(report)
-    return report
+    materialized = _write_delivery_story_package(report)
+    unfilled = _unfilled_plan_sections_for(plan_artifact_path)
+    return replace(report, materialized_artifacts=materialized, unfilled_sections=unfilled)
 
 
 def render_delivery_story_plan_report(report: DeliveryStoryPlanReport) -> str:
@@ -207,13 +215,22 @@ def _plan_title(report: DeliveryStoryPlanReport) -> str:
 
 def _plan_body(report: DeliveryStoryPlanReport) -> list[str]:
     if report.status == "approved":
-        return [
+        approved = [
             _card_text("What was approved?"),
             *_card_wrapped(_active_delivery(report)),
             "│                                                        │",
             _card_text("Approved work packages"),
             *_card_prefixed(report.child_work_items, "-"),
         ]
+        if report.unfilled_sections:
+            approved.extend(
+                [
+                    "│                                                        │",
+                    _card_text("Sections still pending"),
+                    *_card_prefixed(report.unfilled_sections, "-"),
+                ]
+            )
+        return approved
     return [
         _card_text("What is being planned?"),
         *_card_wrapped(_active_delivery(report)),
@@ -244,12 +261,6 @@ def _next_movement(report: DeliveryStoryPlanReport) -> str:
     if report.status == "approved":
         return "Begin implementation under the approved plan."
     return "Review the plan artifact, then approve or revise."
-
-
-def _boundary(report: DeliveryStoryPlanReport) -> str:
-    if report.status == "approved":
-        return "DS-level Plan is approved; child work may proceed under the aggregate contract."
-    return "Implementation remains blocked until the DS-level Plan is approved."
 
 
 def _card_text(text: str) -> str:
@@ -296,23 +307,106 @@ def _wrap_plain_text(text: str, *, width: int) -> list[str]:
     return lines or ["none"]
 
 
-def _write_plan_artifact(report: DeliveryStoryPlanReport) -> None:
-    if report.plan_artifact_path is None:
-        return
-    report.plan_artifact_path.parent.mkdir(parents=True, exist_ok=True)
-    report.plan_artifact_path.write_text(_render_plan_artifact(report), encoding="utf-8")
+def _write_delivery_story_package(
+    report: DeliveryStoryPlanReport,
+) -> tuple[MaterializedArtifact, ...]:
+    """Materialize the Delivery Story package and report the real disk action.
+
+    ``plan.md`` is upserted on every call. ``index.md`` and ``test-guide.md`` are
+    scaffolded only when absent, so hand-authored or Expand-generated content is
+    never overwritten. The returned manifest reflects the actual action taken for
+    each artifact so the ARTIFACTS_MATERIALIZED surface always matches disk.
+    """
+    plan_path = report.plan_artifact_path
+    if plan_path is None:
+        return ()
+    parent = plan_path.parent
+    parent.mkdir(parents=True, exist_ok=True)
+    index_path = parent / "index.md"
+    test_guide_path = parent / "test-guide.md"
+
+    plan_existed = plan_path.exists()
+    index_existed = index_path.exists()
+    test_guide_existed = test_guide_path.exists()
+
+    if report.status == "approved":
+        # Approval blesses the authored plan without rewriting it; the Builder
+        # delivery cursor owns approval state, so plan.md is preserved when it
+        # already exists (created only as a fallback when absent).
+        if not plan_existed:
+            plan_path.write_text(_render_plan_artifact(report), encoding="utf-8")
+        plan_artifact = _package_artifact("plan", plan_path, existed_before=plan_existed)
+    else:
+        plan_path.write_text(_render_plan_artifact(report), encoding="utf-8")
+        plan_artifact = materialized_artifact("plan", plan_path, existed_before=plan_existed)
+
+    if not index_existed:
+        index_path.write_text(_render_index_artifact(report), encoding="utf-8")
+    if not test_guide_existed:
+        test_guide_path.write_text(_render_test_guide_artifact(report), encoding="utf-8")
+
+    return (
+        _package_artifact("story index", index_path, existed_before=index_existed),
+        plan_artifact,
+        _package_artifact("test guide", test_guide_path, existed_before=test_guide_existed),
+    )
+
+
+def _package_artifact(kind: str, path: Path, *, existed_before: bool) -> MaterializedArtifact:
+    """Report an insert-if-absent artifact as preserved (existing) or created."""
+    if existed_before:
+        return existing_artifact(kind, path)
+    return MaterializedArtifact(kind, path, "created")
+
+
+_PLAN_CONTRACT_SECTIONS: tuple[tuple[str, str], ...] = (
+    ("Scope", "name what this Delivery Story delivers across its child work packages."),
+    ("Non-Goals", "name what is explicitly out of scope for this Delivery Story."),
+    (
+        "Acceptance Behavior",
+        "describe the aggregate observable outcome, using Given/When/Then when practical.",
+    ),
+    (
+        "Validation Route",
+        "describe how the aggregate delivery is validated, including whether E2E is required.",
+    ),
+    (
+        "Implementation Contract",
+        "record the constraints for child work: TDD for behavior changes, changes scoped to "
+        "this Delivery Story's children, and no silent scope absorption.",
+    ),
+)
+
+
+def _placeholder_line(guidance: str) -> str:
+    return f"Pending — {guidance}"
+
+
+def _plan_contract_section(header: str, guidance: str) -> str:
+    return f"## {header}\n\n{_placeholder_line(guidance)}"
+
+
+def _unfilled_plan_sections(plan_text: str) -> tuple[str, ...]:
+    return tuple(
+        header
+        for header, guidance in _PLAN_CONTRACT_SECTIONS
+        if _placeholder_line(guidance) in plan_text
+    )
+
+
+def _unfilled_plan_sections_for(plan_path: Path | None) -> tuple[str, ...]:
+    if plan_path is None or not plan_path.exists():
+        return ()
+    return _unfilled_plan_sections(plan_path.read_text(encoding="utf-8"))
 
 
 def _render_plan_artifact(report: DeliveryStoryPlanReport) -> str:
     child_items = "\n".join(f"- {item}" for item in report.child_work_items) or "- none"
-    approval_gate = (
-        "none"
-        if report.status == "approved"
-        else "checkpoint: after_delivery_story_plan; pending: navigator_delivery_story_plan_approval"
+    contract_sections = "\n\n".join(
+        _plan_contract_section(header, guidance) for header, guidance in _PLAN_CONTRACT_SECTIONS
     )
     return f"""# Delivery Story Plan — {report.delivery_story}
 
-**Status:** {report.status}
 **Journey:** {report.journey}
 **Method:** {report.method}
 **Navigator Flow Unit:** {FLOW_UNIT_DELIVERY_STORY}
@@ -329,13 +423,68 @@ def _render_plan_artifact(report: DeliveryStoryPlanReport) -> str:
 
 {child_items}
 
-## Approval Gate
+{contract_sections}
 
-{approval_gate}
+---
 
-## Boundary
+_Approval and lifecycle state are tracked by the Builder runtime, not duplicated in this plan._
+"""
 
-{_boundary(report)}
+
+def _render_index_artifact(report: DeliveryStoryPlanReport) -> str:
+    title = report.delivery_story_title or report.delivery_story
+    children = "\n".join(f"- {item}" for item in report.child_work_items) or "- none"
+    return f"""[< Parent](../index.md)
+
+# {report.delivery_story} \u2014 {title}
+
+**Status:** \U0001f7e1 Planned
+**Type:** Delivery Story
+
+---
+
+## Outcome
+
+{report.objective}
+
+## Child Work Packages
+
+{children}
+
+## Done Condition
+
+The Delivery Story is done when its child work packages produce a coherent delivery outcome.
+
+---
+
+## Artifacts
+
+- [Plan](plan.md)
+- [Test Guide](test-guide.md)
+"""
+
+
+def _render_test_guide_artifact(report: DeliveryStoryPlanReport) -> str:
+    children = "\n".join(f"- {item}" for item in report.child_work_items) or "- none"
+    return f"""[< Story](index.md)
+
+# Test Guide \u2014 {report.delivery_story}
+
+## Aggregate Validation
+
+Pending aggregate Delivery Story validation across child work packages.
+
+## Child Work Packages
+
+{children}
+
+## Navigator Validation
+
+Provide the Navigator-visible route with expected observation, pass condition, and fail condition before the Delivery Story can pass aggregate Validation.
+
+## Validation Evidence
+
+Pending implementation and validation.
 """
 
 
