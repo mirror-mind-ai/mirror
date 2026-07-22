@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from memory import MemoryClient
@@ -5,6 +7,7 @@ from memory.builder.ariad_method import get_ariad_method
 from memory.builder.delivery_cursor import get_delivery_cursor, set_delivery_cursor
 from memory.builder.lifecycle import (
     BuilderLifecycleItem,
+    _story_folder_name,
     assert_implementation_allowed,
     expand_delivery_story,
     plan_lifecycle_item,
@@ -540,3 +543,70 @@ def test_pull_preserves_children_when_repulling_same_item(tmp_path):
     )
 
     assert report.cursor.child_work_items == ("DS-35.US-1",)
+
+
+def test_story_folder_name_appends_slugified_title():
+    assert (
+        _story_folder_name("DS-35.US-1", "Port the application step flow")
+        == "ds-35-us-1-port-the-application-step-flow"
+    )
+
+
+def test_story_folder_name_drops_trailing_hyphen_for_empty_slug():
+    # All-punctuation title slugifies to empty; the folder must not end in a hyphen.
+    assert _story_folder_name("DS-35.TS-1", "!!! ???") == "ds-35-ts-1"
+
+
+def test_story_folder_name_caps_long_titles_within_filesystem_limit():
+    folder = _story_folder_name("DS-35.TS-1", "decide hosting " * 60)
+    assert len(folder.encode()) <= 255
+    slug = folder[len("ds-35-ts-1-") :]
+    assert len(slug) <= 80
+
+
+_LONG_TITLE = "decide hosting and managed postgres and secrets and headers " * 12
+
+_LONG_CHILD_DS_INDEX = f"""# DS-35 — Application & Admin Parity
+
+**Status:** 🟡 Planned
+
+## Candidate Stories
+
+| Code | Story | Type | Status |
+|------|-------|------|--------|
+| DS-35.TS-1 | {_LONG_TITLE} | Technical Story | 🟡 Planned |
+
+## Done Condition
+Done.
+"""
+
+
+def test_expand_handles_paragraph_length_child_titles(tmp_path):
+    # A paragraph-length candidate "Story" cell must not crash expand on mkdir.
+    _client, store = _store(tmp_path)
+    project = tmp_path / "project"
+    _write_ds_index(project, _LONG_CHILD_DS_INDEX)
+    _seed_ds_cursor(store)
+
+    report = expand_delivery_story(
+        store, journey="uncle-vinny", method="ariad", project_path=project
+    )
+
+    assert report.cursor.child_work_items == ("DS-35.TS-1",)
+    for path in report.materialized_paths:
+        assert all(len(part.encode()) <= 255 for part in path.parts)
+
+
+def test_existing_roadmap_components_stay_filesystem_safe():
+    # Guards the regression class: the runtime must never persist a roadmap
+    # directory component near the filesystem NAME_MAX (255) limit.
+    repo_root = Path(__file__).resolve().parents[4]
+    roadmap = repo_root / "docs" / "project" / "roadmap"
+    if not roadmap.is_dir():
+        pytest.skip("roadmap docs not present in this checkout")
+    offenders = [
+        directory.name
+        for directory in roadmap.rglob("*")
+        if directory.is_dir() and len(directory.name.encode()) > 120
+    ]
+    assert offenders == [], f"roadmap components exceed safe length: {offenders}"

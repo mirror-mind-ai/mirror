@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import re
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -132,6 +131,7 @@ from memory.services.operating_mode import (
 )
 from memory.skills.mirror import _persist_global_sticky_defaults
 from memory.surfaces.mode_transition import render_builder_mode_transition
+from memory.utils import kebab_slug
 
 
 def _print_builder_banner(slug: str, project_path: str | None = None) -> None:
@@ -1280,7 +1280,7 @@ def _canonical_package_path(project_path: str | None, cursor: object) -> Path | 
     for index, code_part in enumerate(code_parts):
         accumulated.append(code_part)
         code_prefix = "-".join(accumulated)
-        title_slug = _slugify(title_parts[index]) if index < len(title_parts) else ""
+        title_slug = kebab_slug(title_parts[index]) if index < len(title_parts) else ""
         folder = f"{code_prefix}-{title_slug}" if title_slug else code_prefix
         roadmap_path = roadmap_path / folder
     return roadmap_path
@@ -1307,11 +1307,6 @@ def _roadmap_title_parts(project_root: Path, active_code: str) -> tuple[str, ...
         if candidate.code == active_code:
             return tuple(part.strip() for part in candidate.title.split("/") if part.strip())
     return ()
-
-
-def _slugify(text: str) -> str:
-    slug = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
-    return re.sub(r"-+", "-", slug)
 
 
 def cmd_approve_plan(

@@ -29,6 +29,8 @@ Dropped   no longer relevant or replaced by another item
 | D-009 | `asserted_in_own_voice`'s `DISTANCING_MARKERS` list misses common reported-speech verbs | eval measurement | low | Paid | CV9.E2.S29 (AI-25) → CV9.E2.S30 | Paid by CV9.E2.S30 narrator-frame marker widening |
 | D-010 | `asserted_in_own_voice` matches markers anywhere in the text, not proximate to the sentinel | security / design | low | Carried | CV9.E2.S30 (security-engineer adversarial review) | Before another `DISTANCING_MARKERS` widening, or before treating any `asserted_in_own_voice` result as more than a smoke-test signal |
 | D-011 | Extraction sniffs the user's first name from identity prose with a brittle bilingual regex | design | low | Carried | AI Engineering Audit AI-21 (team review) | Replace with a structured `user/identity` name field, or the next time the identity template wording or `_extract_and_persist` is touched |
+| D-012 | Roadmap folder derivation does not sanitize the candidate-table *code* cell for path separators | security / design | low | Carried | mirror slugify consolidation (security-engineer review) | Before candidate tables accept less-trusted / LLM-authored code cells, or the next time `_story_folder_name` / `_artifact_directory` / `_canonical_package_path` is touched |
+| D-013 | `transcript_export.slugify` remains a separate capped-kebab sibling of the consolidated `kebab_slug` | design | low | Carried | mirror slugify consolidation | The next time transcript-export slug behavior is touched, or a third kebab-slug caller appears |
 
 ## D-001 — Metadata lifecycle policy and evidence filtering live inside ConversationService
 
@@ -468,3 +470,78 @@ field (a dedicated key, or a `display_name` on the identity row) rather than
 parsed from prose — removing the language coupling and the silent `"User"`
 fallback. The bilingual regex is deleted once the structured field is the
 source of truth.
+
+## D-012 — Roadmap folder derivation does not sanitize the candidate-table code cell for path separators
+
+**Kind:** security / design
+**Severity:** low
+**Status:** Carried
+**Source:** mirror slugify consolidation (security-engineer review)
+
+### Carrying reason
+
+The slugify consolidation routed every folder *title* through
+`memory.utils.kebab_slug`, which collapses `[^a-z0-9]+` to `-` and therefore
+neutralizes `/`, `..`, control characters, and null bytes in the title. The
+work-item **code** segment is not slugified. `_story_folder_name`,
+`_artifact_directory` (lifecycle) and `_canonical_package_path` (build) build
+the folder name from `code.lower().replace(".", "-")` (plus `replace("_", "-")`),
+which leaves path separators intact:
+
+```python
+"../../x".lower().replace(".", "-")  # -> "--/--/x"  (the "/" survives)
+```
+
+`child.code` comes straight from the Delivery Story candidate table
+(`_parse_candidate_stories` → `_strip_markdown_link(cells["code"])`), so a
+crafted code cell can inject `/` and traverse outside the roadmap tree when the
+package is materialized. Today the candidate table is Navigator-authored local
+content, so the practical severity is low — but the same tables are increasingly
+LLM-generated, and the crash-class fix explicitly hardened the title vector
+while leaving the code vector open. Recorded so the asymmetry is a conscious
+choice, not an oversight.
+
+### Revisit trigger
+
+Before candidate tables accept less-trusted or LLM-authored code cells, or the
+next time `_story_folder_name` / `_artifact_directory` / `_canonical_package_path`
+is touched.
+
+### Closure condition
+
+The code segment passes through a code-safe sanitizer (allow only `[a-z0-9.-]`,
+reject or strip `/` and `..`) before it is used in folder derivation,
+consistently across the lifecycle producers and the build locator, with a test
+that a `../`-bearing code cell cannot escape the roadmap directory.
+
+## D-013 — `transcript_export.slugify` remains a separate capped-kebab sibling of the consolidated `kebab_slug`
+
+**Kind:** design (duplication)
+**Severity:** low
+**Status:** Carried
+**Source:** mirror slugify consolidation
+
+### Carrying reason
+
+The consolidation unified the four kebab-identifier `_slugify` copies
+(`lifecycle`, `build`, `explorer_handoff`, `journey`) into one
+`memory.utils.kebab_slug`. `cli/transcript_export.slugify` is a fifth
+kebab-style slugger that was intentionally left out: it is public, named
+`slugify`, caps at 50, truncates on a word boundary (`rsplit("-", 1)[0]`), and
+carries a domain fallback (`"conversation"`). Folding it in would have changed a
+named public function's semantics inside a bugfix, so it stays separate for now.
+(`docs_lint.slugify` is deliberately different — it reproduces GitHub's heading
+anchor algorithm, preserving underscores and never collapsing hyphens — and is
+**not** debt.)
+
+### Revisit trigger
+
+The next time transcript-export slug behavior is touched, or a third
+kebab-slug caller appears and makes the duplication a pattern.
+
+### Closure condition
+
+Either `transcript_export` is expressed in terms of `kebab_slug` (e.g.
+`kebab_slug(text, max_length=50) or "conversation"`, with word-boundary
+truncation added to `kebab_slug` if still desired), or a short comment marks it
+as an intentionally distinct slugger with the reason.
