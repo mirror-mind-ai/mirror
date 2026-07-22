@@ -13,6 +13,8 @@ from memory.builder.delivery_cursor import (
 )
 from memory.builder.lifecycle_ribbon import render_lifecycle_ribbon
 from memory.builder.method_definition import ContractDefinition, MethodDefinition
+from memory.builder.roadmap_grammar import HEADING_RE as _HEADING_RE
+from memory.builder.roadmap_grammar import is_legacy_path as _is_legacy_path
 from memory.builder.roadmap_grammar import strip_markdown_link as _strip_markdown_link
 from memory.builder.surface_protocol import wrap_ariad_surface
 from memory.storage.store import Store
@@ -1820,6 +1822,16 @@ def _plan_next_action(report: BuilderPlanReport) -> str:
 
 
 def _artifact_directory(project_path: Path, code: str, title: str) -> Path:
+    # Prefer the existing hand-authored roadmap folder, resolved by heading code
+    # the same way pull inspection scans the tree. Real roadmaps use hand-chosen
+    # slugs (``cv3-build-de-producao``) that no title derivation can reproduce;
+    # deriving one anyway materialized a parallel ``cv3-<title>/cv3-ds22`` tree
+    # with boilerplate children instead of expanding the real Delivery Story.
+    existing = _resolve_existing_item_directory(project_path, code)
+    if existing is not None:
+        return existing
+    # Fallback (genuinely new item, not yet on disk): derive nested folders from
+    # the code plus per-level ``/``-separated title slugs.
     parts = code.lower().replace("_", "-").split(".")
     titles = tuple(part.strip() for part in title.split("/") if part.strip())
     path = project_path / "docs" / "project" / "roadmap"
@@ -1830,6 +1842,30 @@ def _artifact_directory(project_path: Path, code: str, title: str) -> Path:
         title_slug = kebab_slug(titles[index]) if index < len(titles) else ""
         path = path / (f"{prefix}-{title_slug}" if title_slug else prefix)
     return path
+
+
+def _resolve_existing_item_directory(project_path: Path, code: str) -> Path | None:
+    """Return the directory of the roadmap ``index.md`` whose heading code equals
+    ``code`` (case-insensitive), or ``None`` when no such item exists yet.
+
+    Scans ``docs/project/roadmap`` like the pull inspector so Expand/materialize
+    stay aligned with the on-disk roadmap tree instead of a title-derived slug.
+    """
+    roadmap_root = project_path / "docs" / "project" / "roadmap"
+    if not roadmap_root.is_dir():
+        return None
+    target = code.strip().upper()
+    for index_path in sorted(roadmap_root.rglob("index.md")):
+        if _is_legacy_path(index_path, roadmap_root):
+            continue
+        try:
+            content = index_path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        heading = _HEADING_RE.search(content)
+        if heading and heading.group("code").strip().upper() == target:
+            return index_path.parent
+    return None
 
 
 def _story_folder_name(code: str, title: str) -> str:

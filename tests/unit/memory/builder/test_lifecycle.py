@@ -486,6 +486,64 @@ def test_expand_materializes_technical_story_package_with_type(tmp_path):
     assert "**Type:** Technical Story" in ts_index.read_text(encoding="utf-8")
 
 
+def test_expand_resolves_existing_nested_roadmap_folder(tmp_path):
+    # Regression: Expand must land on the existing hand-authored roadmap folder
+    # (resolved by heading code), not a slug derived from the title. Real roadmaps
+    # nest a Delivery Story under a CV folder whose slug ("cv3-build-de-producao")
+    # is NOT derivable from the CV/DS title — deriving it produced a parallel
+    # "cv3-manage-100-funcional/cv3-ds22" tree with a boilerplate US1.
+    _client, store = _store(tmp_path)
+    project = tmp_path / "project"
+    ds_index = (
+        project
+        / "docs"
+        / "project"
+        / "roadmap"
+        / "cv3-build-de-producao"
+        / "cv3-ds22-manage-100-funcional"
+        / "index.md"
+    )
+    ds_index.parent.mkdir(parents=True, exist_ok=True)
+    ds_index.write_text(
+        """# CV3.DS22 — Manage 100% funcional (frente prioritária, D46)
+
+**Status:** 🟢 Active
+
+## Candidate Stories
+
+| Code | Story | Type | Outcome | Status |
+|------|-------|------|---------|--------|
+| CV3.DS22.TS1 | Tripla de IDs da conta | Technical Story | public_id explícito | 🟡 Planned |
+
+## Done Condition
+
+Done.
+""",
+        encoding="utf-8",
+    )
+    set_delivery_cursor(
+        store,
+        journey="uncle-vinny",
+        method="ariad",
+        active_item="CV3.DS22",
+        active_item_title="Manage 100% funcional",
+        active_item_level="delivery_story",
+    )
+
+    report = expand_delivery_story(
+        store, journey="uncle-vinny", method="ariad", project_path=project
+    )
+
+    # Child materialized UNDER the real nested folder, by its real code.
+    assert (ds_index.parent / "cv3-ds22-ts1-tripla-de-ids-da-conta" / "index.md").exists()
+    # No stray title-derived tree.
+    assert not (project / "docs" / "project" / "roadmap" / "cv3-manage-100-funcional").exists()
+    # Every materialized path stays under the resolved DS directory.
+    for path in report.materialized_paths:
+        assert "cv3-build-de-producao" in str(path)
+    assert report.recommended_story == "CV3.DS22.TS1"
+
+
 # --- CV20.DS13 — pull clears stale delivery-cursor state on item change ---
 
 
