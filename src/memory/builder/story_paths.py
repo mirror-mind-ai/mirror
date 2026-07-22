@@ -51,9 +51,24 @@ def title_leaf(title: str) -> str:
     return title.split("/")[-1].strip()
 
 
+def _sanitize_code_segment(code: str) -> str:
+    """Filesystem-safe rendering of a work-item code for folder derivation.
+
+    Dots are the code's own level separator (``CV2.DS1``), so they convert to
+    hyphens first, preserving the existing folder-naming convention for
+    well-formed codes unchanged. Everything else routes through
+    ``kebab_slug`` -- the same sanitizer already applied to titles -- so an
+    unsanitized ``/`` or ``..`` surviving in a candidate-table code cell
+    (Navigator- or LLM-authored, unlike a folder-name title) can no longer
+    create unintended nested directories within the roadmap tree (closes
+    D-012).
+    """
+    return kebab_slug(code.replace(".", "-"))
+
+
 def story_folder_name(code: str, title: str) -> str:
     """Canonical folder name for a story: ``<code>-<title-slug>``."""
-    code_part = code.lower().replace(".", "-")
+    code_part = _sanitize_code_segment(code)
     slug = kebab_slug(title)
     return f"{code_part}-{slug}" if slug else code_part
 
@@ -128,7 +143,7 @@ def _parent_code(code: str) -> str | None:
 
 
 def _bare_code_segment(code: str) -> str:
-    return code.lower().replace("_", "-").replace(".", "-")
+    return _sanitize_code_segment(code)
 
 
 def _snapshot_title(project_path: Path, code: str) -> str | None:

@@ -52,17 +52,25 @@ its replacement's code — fixed following the existing `cv13-e1-docs-browser`
 "Historical note" precedent) and a `HEADING_RE` gap that silently dropped
 lowercase sub-story codes like `CV21.E2.S1b` (shared with `pull_candidates.py`,
 now fixed). D-012's revisit trigger fired (all three named functions were
-touched); updated, not closed — flagged for a separate decision. Authoring
+touched); flagged first, then **closed** at the Navigator's explicit
+instruction, in the same session — new private `_sanitize_code_segment`
+converts dots to hyphens (the code's own level separator, unchanged for every
+well-formed code) then routes through `kebab_slug`, the same sanitizer
+titles already used, so an unsanitized `/` or `..` surviving in a
+Navigator-/LLM-authored candidate-table code cell can no longer create
+unintended nested directories when Expand materializes a child. Authoring
 guidance for the canonical `| Code | Story | Type | Outcome | Status |`
 candidate-table grammar was added to the DS index template and the mm-build
 skill.
 
-Validation: TDD throughout, red-first at every step, including two bugs caught
-by manual smoke-testing rather than trusting green unit tests alone (a
-hand-typed Ariad surface border 5 characters short of the established card
-width; a `Path.relative_to` crash on a non-pre-resolved `repo_root` in the new
-CI check, reproduced portably and regression-tested). Full repo test suite
-green across all three commits, `ruff check` clean, doc-link + roadmap-heading
+Validation: TDD throughout, red-first at every step, including three bugs
+caught by manual smoke-testing or explicit reproduction rather than trusting
+green unit tests alone (a hand-typed Ariad surface border 5 characters short
+of the established card width; a `Path.relative_to` crash on a
+non-pre-resolved `repo_root` in the new CI check, reproduced portably and
+regression-tested; D-012 itself, confirmed red-before-green by reverting the
+sanitizer and re-running the new adversarial-code tests). Full repo test suite
+green across all five commits, `ruff check` clean, doc-link + roadmap-heading
 checks clean, dogfooded against this repo's real roadmap. Maintenance patch on
 `main`; no Ariad CR filed, no method adoption for the `mirror` journey.
 Port-branch cleanup (`mirror-ts-core`, CV22.DS7's authored candidate table and

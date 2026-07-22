@@ -824,6 +824,47 @@ def test_expand_blocks_on_ambiguous_duplicate_heading(tmp_path):
         expand_delivery_story(store, journey="uncle-vinny", method="ariad", project_path=project)
 
 
+def test_expand_sanitizes_a_path_bearing_candidate_code_cell(tmp_path):
+    # D-012 closure: the candidate-table CODE cell is Navigator- or
+    # LLM-authored content, unlike the title (already routed through
+    # kebab_slug). An unsanitized "/" or ".." in this cell must not create
+    # unintended nested directories or escape the roadmap tree when Expand
+    # materializes the child package.
+    _client, store = _store(tmp_path)
+    project = tmp_path / "project"
+    roadmap_root = (project / "docs" / "project" / "roadmap").resolve()
+    _write_ds_index(
+        project,
+        """# DS-35 — Application & Admin Parity
+
+**Status:** 🟡 Planned
+
+## Candidate Stories
+
+| Code | Story | Type | Status |
+|------|-------|------|--------|
+| ../../../etc/DS-35.US-1 | Port the application step flow | User Story | 🟡 Planned |
+
+## Done Condition
+
+Done.
+""",
+    )
+    _seed_ds_cursor(store)
+
+    report = expand_delivery_story(
+        store, journey="uncle-vinny", method="ariad", project_path=project
+    )
+
+    for path in report.materialized_paths:
+        assert path.resolve().is_relative_to(roadmap_root)
+    child_index = next(p for p in report.materialized_paths if p != report.materialized_paths[0])
+    assert (
+        len(child_index.parent.relative_to(roadmap_root / "ds-35-application-admin-parity").parts)
+        == 1
+    )
+
+
 def test_existing_roadmap_components_stay_filesystem_safe():
     # Guards the regression class: the runtime must never persist a roadmap
     # directory component near the filesystem NAME_MAX (255) limit.

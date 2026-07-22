@@ -15,6 +15,24 @@ class TestStoryFolderName:
     def test_drops_trailing_hyphen_for_empty_slug(self):
         assert story_folder_name("DS-35.TS-1", "!!! ???") == "ds-35-ts-1"
 
+    def test_sanitizes_a_slash_bearing_code_into_a_single_flat_segment(self):
+        # D-012: the code comes straight from a candidate-table cell
+        # (Navigator- or LLM-authored), unlike the title, which was already
+        # routed through kebab_slug. A bare "/" must not create an
+        # unintended nested directory when the folder is derived.
+        assert story_folder_name("CV2/DS1", "Command Burn-Down") == "cv2-ds1-command-burn-down"
+
+    def test_sanitizes_a_traversal_bearing_code(self):
+        assert story_folder_name("../../etc/passwd", "Title") == "etc-passwd-title"
+
+    def test_still_reads_a_real_dotted_code_unchanged(self):
+        # Regression: dots are the code's own level separator and must keep
+        # mapping to hyphens exactly as before this hardening -- not get
+        # swept up as "unsafe" alongside slashes.
+        assert story_folder_name("CV21.E2.S1b", "Claude skill parity") == (
+            "cv21-e2-s1b-claude-skill-parity"
+        )
+
 
 class TestTitleLeaf:
     def test_returns_leaf_segment_of_a_chain_title(self):
@@ -113,6 +131,18 @@ class TestCreateStoryDirectory:
         target = create_story_directory(tmp_path, "DS-1", "../../../etc/passwd" + "x" * 200)
 
         assert target.resolve().is_relative_to(roadmap_root)
+
+    def test_stays_within_roadmap_root_for_an_adversarial_code(self, tmp_path):
+        # D-012 closure: unlike the title, the code was NOT previously
+        # sanitized (it comes from a candidate-table cell, not a Navigator
+        # free-text field). A bare "/" must not create unintended nested
+        # directories, and ".." must not escape the roadmap root.
+        roadmap_root = (tmp_path / "docs" / "project" / "roadmap").resolve()
+
+        target = create_story_directory(tmp_path, "../../../etc/passwd", "Title")
+
+        assert target.resolve().is_relative_to(roadmap_root)
+        assert len(target.resolve().relative_to(roadmap_root).parts) == 1
 
 
 class TestFindDuplicateRoadmapHeadings:

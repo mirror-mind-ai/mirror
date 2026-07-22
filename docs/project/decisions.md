@@ -77,13 +77,15 @@ Maintenance patch on `main`; no Ariad CR filed, no method adoption for the
 candidate table and the divergent tree already created there) is separate,
 deferred work — out of scope for this workspace.
 
-**Flagged, not addressed here:** touching `_story_folder_name` /
+**D-012 closed in the same patch.** Touching `_story_folder_name` /
 `_artifact_directory` / `_canonical_package_path` fired
 [D-012](debt.md#d-012--roadmap-folder-derivation-does-not-sanitize-the-candidate-table-code-cell-for-path-separators)'s
-explicit revisit trigger (the candidate-table *code* cell still isn't
-sanitized for path separators, unlike the title). The debt entry is updated to
-point at the new location; closing it was judged out of scope for this patch
-and left for an explicit decision.
+explicit revisit trigger (the candidate-table *code* cell wasn't sanitized for
+path separators, unlike the title). Flagged first, not silently bundled in;
+the Navigator then elected to close it rather than carry it forward again. New
+private `story_paths._sanitize_code_segment` converts dots to hyphens (the
+code's own level separator, unchanged for every well-formed code) then routes
+through `kebab_slug`, closing the asymmetry the debt recorded.
 
 ### 1.0 intelligence-flag posture: reception on, two-pass and summarize off
 

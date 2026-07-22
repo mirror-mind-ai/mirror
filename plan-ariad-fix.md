@@ -1,8 +1,8 @@
 # Plan — Ariad Expand Scaffolder Path-Divergence Fix
 
 **Status:** P1 (core fix), P2 (fail-loud on ambiguity/unparseable), P3 (CI duplicate-heading guard), and P4
-(authoring contract + decisions/debt/worklog documentation) all implemented and green. Pre-flight fixes
-applied. Fix complete; one distinct, separate follow-up flagged (D-012 revisit trigger fired, not closed).
+(authoring contract + decisions/debt/worklog documentation) all implemented and green. D-012 (the follow-up
+P4 discovered) closed in a fifth commit. Fix fully complete.
 **Companion:** `handoff-ariad-fix.MD` (original analysis). This plan supersedes the handoff's phasing
 where they differ (notably: the correct resolver already exists; the fix is a DRY consolidation).
 **Tracking:** maintenance patch on `main` in this `mirror-dev` workspace. No Ariad CR / no method adoption.
@@ -274,9 +274,11 @@ One pre-existing test (`test_build_pull_delivery_story_prepares_and_expands`) re
   - `docs/project/debt.md` **D-012** ("Roadmap folder derivation does not sanitize the candidate-table code
     cell for path separators"): its explicit revisit trigger ("next time `_story_folder_name` /
     `_artifact_directory` / `_canonical_package_path` is touched") fired — all three were touched in P1.
-    **Updated, not closed:** noted the new location (`story_paths.story_folder_name`), that the same
-    asymmetry persists (title sanitized via `kebab_slug`, code is not), and that the new
-    `is_relative_to(roadmap_root)` escape guard is a related but distinct defense (catches an actual escape,
+    Flagged first (not silently bundled in), then **closed in a follow-up commit** at the Navigator's
+    explicit instruction — see "D-012 closure" below. Originally: noted the new location
+    (`story_paths.story_folder_name`), that the same asymmetry persisted (title sanitized via `kebab_slug`,
+    code was not), and that the `is_relative_to(roadmap_root)` escape guard is a related but distinct defense
+    (catches an actual escape,
     doesn't sanitize the code segment itself). Left `Status: Carried` — closing it was judged out of scope
     for this patch and is flagged below as a separate decision point, not bundled in silently.
   - `docs/process/worklog.md`: added a milestone entry per the "a meaningful milestone is completed"
@@ -343,7 +345,7 @@ All existing single-segment Expand tests remain green (common-path regression sa
 
 | What | Location |
 |---|---|
-| **New shared resolver module** | `src/memory/builder/story_paths.py` — `resolve_story_directory`, `create_story_directory`, `story_folder_name`, `title_leaf`, `find_duplicate_roadmap_headings`, `StoryPackageAmbiguityError` |
+| **New shared resolver module** | `src/memory/builder/story_paths.py` — `resolve_story_directory`, `create_story_directory`, `story_folder_name`, `title_leaf`, `find_duplicate_roadmap_headings`, `_sanitize_code_segment` (D-012 closure), `StoryPackageAmbiguityError` |
 | Expand wiring (was: defective derivation) | `src/memory/builder/lifecycle.py:426` `expand_delivery_story` — `_artifact_directory` deleted |
 | Fabricated-US1 fallback (unchanged, still gated by `_parse_candidate_stories`) | `lifecycle.py` empty-children branch |
 | Candidate-table parser + required header | `lifecycle.py` `_parse_candidate_stories` (header check `{code,story,type,status}`) |
@@ -370,14 +372,21 @@ All existing single-segment Expand tests remain green (common-path regression sa
 - Any `mirror-ts-core` branch/journey work and `oracle-baseline.json` registration (Builder tree not yet
   ported; revisit when CV22.DS7 is ported).
 
-## Open follow-up (discovered during P4, not resolved here)
+## D-012 closure (follow-up commit, Navigator-authorized)
 
 - **[D-012](docs/project/debt.md#d-012--roadmap-folder-derivation-does-not-sanitize-the-candidate-table-code-cell-for-path-separators)
-  revisit trigger fired.** The candidate-table *code* cell is still not sanitized for path separators
-  (`code.lower().replace(".", "-")` leaves `/` intact), unlike the title (routed through `kebab_slug`).
-  `_story_folder_name`/`_artifact_directory`/`_canonical_package_path` — the trigger's named functions — were
-  all touched by this patch (moved/deleted/refactored). Debt entry updated with the new location and current
-  state; **not closed**. Closing it would mean adding a code-safe sanitizer for the `code` segment
-  (`_parse_candidate_stories` → `_strip_markdown_link(cells["code"])` → `story_folder_name`), consistent with
-  D-012's own closure condition. Explicit Navigator decision needed before touching this: fix now as a small
-  follow-up patch, or leave `Carried` for its next natural trigger.
+  closed.** New private `story_paths._sanitize_code_segment(code)`: dots → hyphens first (the code's own
+  level separator; every well-formed code, e.g. `CV2.DS1`/`CV21.E2.S1b`, unchanged from before), then routed
+  through `kebab_slug` — the same sanitizer titles already used, closing the asymmetry rather than narrowing
+  it. Both folder-derivation call sites use it: `story_folder_name` (the item's own folder) and
+  `_bare_code_segment` (the not-yet-materialized-parent fallback in `create_story_directory`).
+- TDD, red-before-green confirmed by reverting and re-running: `test_story_paths.py` (slash-bearing code,
+  traversal-bearing code, and a regression proving a real dotted code like `CV21.E2.S1b` stays unchanged;
+  an adversarial code stays within the roadmap root as a single flat segment — the companion to P1's
+  existing adversarial-*title* test) + one end-to-end `test_lifecycle.py` test
+  (`test_expand_sanitizes_a_path_bearing_candidate_code_cell`, a `../../../etc/DS-35.US-1`-style candidate-
+  table code cell through the real `expand_delivery_story` pipeline — D-012's own prescribed closure
+  scenario).
+- `debt.md`: D-012 `Status: Carried → Paid`, summary table + detailed entry both updated. `decisions.md`:
+  the existing entry's "flagged, not addressed" paragraph updated to record the closure, not left stale.
+- Full repo test suite green, ruff clean, doc-link checker clean.
