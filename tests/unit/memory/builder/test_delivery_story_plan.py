@@ -368,3 +368,78 @@ def test_approve_delivery_story_plan_creates_plan_when_absent(tmp_path):
     assert artifact.exists()
     statuses = {(item.kind, item.status) for item in report.materialized_artifacts}
     assert ("plan", "created") in statuses
+
+
+def test_approve_delivery_story_plan_flags_unfilled_sections(tmp_path):
+    _client, store = _store(tmp_path)
+    artifact = tmp_path / "cv20-ds5" / "plan.md"
+    set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS5",
+        active_item_title="Delivery Story Level Lifecycle",
+        active_item_level="delivery_story",
+        navigator_flow_unit="delivery_story",
+    )
+    plan_delivery_story_checkpoint(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        objective="Approve aggregate DS plan.",
+        child_work_items=("CV20.DS5.US1",),
+        plan_artifact_path=artifact,
+    )
+
+    report = approve_delivery_story_plan(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        plan_artifact_path=artifact,
+    )
+
+    assert set(report.unfilled_sections) == {
+        "Scope",
+        "Non-Goals",
+        "Acceptance Behavior",
+        "Validation Route",
+        "Implementation Contract",
+    }
+    rendered = render_delivery_story_plan_report(report)
+    assert "Sections still pending" in rendered
+    assert "Scope" in rendered
+
+
+def test_approve_delivery_story_plan_no_warning_when_sections_authored(tmp_path):
+    _client, store = _store(tmp_path)
+    artifact = tmp_path / "cv20-ds5" / "plan.md"
+    set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS5",
+        active_item_title="Delivery Story Level Lifecycle",
+        active_item_level="delivery_story",
+        navigator_flow_unit="delivery_story",
+    )
+    plan_delivery_story_checkpoint(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        objective="Approve aggregate DS plan.",
+        child_work_items=("CV20.DS5.US1",),
+        plan_artifact_path=artifact,
+    )
+    # The driver authors every section, breaking the scaffold placeholders.
+    filled = artifact.read_text(encoding="utf-8").replace("Pending \u2014 ", "Decided: ")
+    artifact.write_text(filled, encoding="utf-8")
+
+    report = approve_delivery_story_plan(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        plan_artifact_path=artifact,
+    )
+
+    assert report.unfilled_sections == ()
+    assert "Sections still pending" not in render_delivery_story_plan_report(report)

@@ -32,6 +32,7 @@ class DeliveryStoryPlanReport:
     cursor: BuilderDeliveryCursor
     plan_artifact_path: Path | None = None
     materialized_artifacts: tuple[MaterializedArtifact, ...] = ()
+    unfilled_sections: tuple[str, ...] = ()
 
 
 def plan_delivery_story_checkpoint(
@@ -143,7 +144,8 @@ def approve_delivery_story_plan(
         plan_artifact_path=plan_artifact_path,
     )
     materialized = _write_delivery_story_package(report)
-    return replace(report, materialized_artifacts=materialized)
+    unfilled = _unfilled_plan_sections_for(plan_artifact_path)
+    return replace(report, materialized_artifacts=materialized, unfilled_sections=unfilled)
 
 
 def render_delivery_story_plan_report(report: DeliveryStoryPlanReport) -> str:
@@ -213,13 +215,22 @@ def _plan_title(report: DeliveryStoryPlanReport) -> str:
 
 def _plan_body(report: DeliveryStoryPlanReport) -> list[str]:
     if report.status == "approved":
-        return [
+        approved = [
             _card_text("What was approved?"),
             *_card_wrapped(_active_delivery(report)),
             "│                                                        │",
             _card_text("Approved work packages"),
             *_card_prefixed(report.child_work_items, "-"),
         ]
+        if report.unfilled_sections:
+            approved.extend(
+                [
+                    "│                                                        │",
+                    _card_text("Sections still pending"),
+                    *_card_prefixed(report.unfilled_sections, "-"),
+                ]
+            )
+        return approved
     return [
         _card_text("What is being planned?"),
         *_card_wrapped(_active_delivery(report)),
@@ -348,8 +359,52 @@ def _package_artifact(kind: str, path: Path, *, existed_before: bool) -> Materia
     return MaterializedArtifact(kind, path, "created")
 
 
+_PLAN_CONTRACT_SECTIONS: tuple[tuple[str, str], ...] = (
+    ("Scope", "name what this Delivery Story delivers across its child work packages."),
+    ("Non-Goals", "name what is explicitly out of scope for this Delivery Story."),
+    (
+        "Acceptance Behavior",
+        "describe the aggregate observable outcome, using Given/When/Then when practical.",
+    ),
+    (
+        "Validation Route",
+        "describe how the aggregate delivery is validated, including whether E2E is required.",
+    ),
+    (
+        "Implementation Contract",
+        "record the constraints for child work: TDD for behavior changes, changes scoped to "
+        "this Delivery Story's children, and no silent scope absorption.",
+    ),
+)
+
+
+def _placeholder_line(guidance: str) -> str:
+    return f"Pending — {guidance}"
+
+
+def _plan_contract_section(header: str, guidance: str) -> str:
+    return f"## {header}\n\n{_placeholder_line(guidance)}"
+
+
+def _unfilled_plan_sections(plan_text: str) -> tuple[str, ...]:
+    return tuple(
+        header
+        for header, guidance in _PLAN_CONTRACT_SECTIONS
+        if _placeholder_line(guidance) in plan_text
+    )
+
+
+def _unfilled_plan_sections_for(plan_path: Path | None) -> tuple[str, ...]:
+    if plan_path is None or not plan_path.exists():
+        return ()
+    return _unfilled_plan_sections(plan_path.read_text(encoding="utf-8"))
+
+
 def _render_plan_artifact(report: DeliveryStoryPlanReport) -> str:
     child_items = "\n".join(f"- {item}" for item in report.child_work_items) or "- none"
+    contract_sections = "\n\n".join(
+        _plan_contract_section(header, guidance) for header, guidance in _PLAN_CONTRACT_SECTIONS
+    )
     return f"""# Delivery Story Plan — {report.delivery_story}
 
 **Journey:** {report.journey}
@@ -368,25 +423,7 @@ def _render_plan_artifact(report: DeliveryStoryPlanReport) -> str:
 
 {child_items}
 
-## Scope
-
-Pending \u2014 name what this Delivery Story delivers across its child work packages.
-
-## Non-Goals
-
-Pending \u2014 name what is explicitly out of scope for this Delivery Story.
-
-## Acceptance Behavior
-
-Pending \u2014 describe the aggregate observable outcome, using Given/When/Then when practical.
-
-## Validation Route
-
-Pending \u2014 describe how the aggregate delivery is validated, including whether E2E is required.
-
-## Implementation Contract
-
-Pending \u2014 record the constraints for child work: TDD for behavior changes, changes scoped to this Delivery Story's children, and no silent scope absorption.
+{contract_sections}
 
 ---
 

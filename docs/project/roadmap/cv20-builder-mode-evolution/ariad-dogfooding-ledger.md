@@ -147,10 +147,14 @@ the single source of truth for approval state — and `approve-delivery-story-pl
 now preserves `plan.md` (insert-if-absent) instead of regenerating it. Authored
 contract sections survive approval byte-for-byte; a regression test locks it.
 
-**Optional enhancement (not blocking).** Approve could additionally validate that
-the required sections are non-empty (warn or soft-block on unfilled `Pending`)
-before recording approval. Distinct mechanism; tracked as a future increment, not
-a defect.
+**Enhancement (delivered).** `approve-delivery-story-plan` now checks section
+completeness: it detects required sections whose scaffold placeholder is still
+present and lists them under "Sections still pending" in the approved
+`DELIVERY_STORY_PLAN_CHECKPOINT` surface. Non-blocking by design — Ariad
+checkpoints inform, and the Navigator retains authority to approve a plan with
+thin sections. Detection is exact-placeholder substring matching (no markdown
+parser), and the section definitions are a single shared source used by both the
+renderer and the detector, so they cannot drift.
 
 **Context.** `plan-delivery-story` materialized `plan.md`.
 
