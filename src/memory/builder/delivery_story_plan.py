@@ -370,6 +370,26 @@ def _render_plan_artifact(report: DeliveryStoryPlanReport) -> str:
 
 {child_items}
 
+## Scope
+
+Pending \u2014 name what this Delivery Story delivers across its child work packages.
+
+## Non-Goals
+
+Pending \u2014 name what is explicitly out of scope for this Delivery Story.
+
+## Acceptance Behavior
+
+Pending \u2014 describe the aggregate observable outcome, using Given/When/Then when practical.
+
+## Validation Route
+
+Pending \u2014 describe how the aggregate delivery is validated, including whether E2E is required.
+
+## Implementation Contract
+
+Pending \u2014 record the constraints for child work: TDD for behavior changes, changes scoped to this Delivery Story's children, and no silent scope absorption.
+
 ## Approval Gate
 
 {approval_gate}

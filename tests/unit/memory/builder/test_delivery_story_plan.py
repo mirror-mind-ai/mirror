@@ -1,6 +1,9 @@
+import re
+
 import pytest
 
 from memory import MemoryClient
+from memory.builder.ariad_method import get_ariad_method
 from memory.builder.delivery_cursor import get_delivery_cursor, set_delivery_cursor
 from memory.builder.delivery_story_plan import (
     approve_delivery_story_plan,
@@ -8,6 +11,10 @@ from memory.builder.delivery_story_plan import (
     render_delivery_story_plan_report,
 )
 from memory.config import default_db_path_for_home
+
+
+def _normalize(text: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", text.lower())
 
 
 def _store(tmp_path):
@@ -264,3 +271,38 @@ def test_approve_delivery_story_plan_updates_plan_and_preserves_package(tmp_path
     assert ("story index", "existing") in statuses
     assert ("plan", "updated") in statuses
     assert ("test guide", "existing") in statuses
+
+
+def test_delivery_story_plan_artifact_scaffolds_plan_contract_outputs(tmp_path):
+    _client, store = _store(tmp_path)
+    artifact = tmp_path / "cv20-ds5" / "plan.md"
+    set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS5",
+        active_item_title="Delivery Story Level Lifecycle",
+        active_item_level="delivery_story",
+        navigator_flow_unit="delivery_story",
+    )
+    plan_delivery_story_checkpoint(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        objective="Approve aggregate DS plan.",
+        child_work_items=("CV20.DS5.US1", "CV20.DS5.TS1"),
+        plan_artifact_path=artifact,
+    )
+
+    plan_text = artifact.read_text(encoding="utf-8")
+    plan_contract = next(
+        contract for contract in get_ariad_method().contracts if contract.id == "plan_contract"
+    )
+    headers = {_normalize(line[3:]) for line in plan_text.splitlines() if line.startswith("## ")}
+    for required_output in plan_contract.required_outputs:
+        assert _normalize(required_output) in headers, required_output
+    assert "## Scope" in plan_text
+    assert "## Non-Goals" in plan_text
+    assert "## Acceptance Behavior" in plan_text
+    assert "## Validation Route" in plan_text
+    assert "## Implementation Contract" in plan_text
