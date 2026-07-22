@@ -19,6 +19,7 @@
 
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
+import { basename } from "node:path";
 import { pathToFileURL } from "node:url";
 import { bootstrapDatabaseIfMissing } from "../db/bootstrap.ts";
 import {
@@ -26,6 +27,7 @@ import {
   openDatabaseReadOnly,
   type WritableDatabase,
 } from "../db/database.ts";
+import { ensureMigratedOnOpen } from "../db/migrateOnOpen.ts";
 import { assertSchemaState, SchemaStateError } from "../db/schemaState.ts";
 import { JourneyNotFoundError } from "../journey/journeyWrite.ts";
 import { expandHome } from "../util/paths.ts";
@@ -104,6 +106,29 @@ function fallbackPython(argv: readonly string[]): number {
   return typeof result.status === "number" ? result.status : 1;
 }
 
+/**
+ * Prepare a database for TS serving: bootstrap it if the file is absent (TS4),
+ * then apply any pending TS-authored forward migration Python cannot (US3
+ * migrate-on-open). The steady state is a cheap no-op; a one-time migration is
+ * recorded as a redacted `migrate_on_open` event (migration ids + backup file
+ * name, never content). Shared by every TS serving path so read and write opens
+ * get the same activation before the serving connection is opened.
+ */
+function ensureDatabaseReady(dbPath: string, command: string | null): void {
+  bootstrapDatabaseIfMissing(dbPath);
+  const migration = ensureMigratedOnOpen(dbPath);
+  if (migration.migrated) {
+    logFrontDoor(frontDoorLogPath(dbPath), {
+      command,
+      route: "ts",
+      exitCode: 0,
+      detail: `migrate_on_open applied=${migration.appliedIds.join(",")} backup=${
+        migration.backupPath ? basename(migration.backupPath) : "none"
+      }`,
+    });
+  }
+}
+
 /** Serve a ported read command from the TS core, bootstrapping a missing DB via the TS core first. */
 function runTs(argv: readonly string[]): number {
   const command = argv[0];
@@ -115,7 +140,7 @@ function runTs(argv: readonly string[]): number {
   // schema, and migrations under the cross-process lock — then serve read-only
   // from the fresh file. (This replaces the DS3 stopgap that delegated a
   // missing DB to Python; see docs/project/decisions.md.)
-  bootstrapDatabaseIfMissing(dbPath);
+  ensureDatabaseReady(dbPath, command ?? null);
   const db = openDatabaseReadOnly(dbPath);
   try {
     assertSchemaState(db);
@@ -154,9 +179,10 @@ function readStdinContent(): string {
 function withLiveWriteDb(argv: readonly string[], write: (db: WritableDatabase) => number): number {
   const dbPath = resolveDbPathForCli(argv.slice(2));
   if (dbPath === null) return 2;
-  // Missing DB => unbootstrapped install; TS bootstraps it (CV22.DS6.TS4), then
-  // the backup-gated live-write seam opens the now-existing file.
-  bootstrapDatabaseIfMissing(dbPath);
+  // Missing DB => unbootstrapped install; TS bootstraps it (CV22.DS6.TS4) and
+  // applies any pending TS-authored migration (US3), then the backup-gated
+  // live-write seam opens the now-current file.
+  ensureDatabaseReady(dbPath, argv[0] ?? null);
   const db = openDatabaseForWrite(dbPath, ensureBackup(dbPath));
   try {
     assertSchemaState(db);
@@ -309,9 +335,10 @@ export function tryOpenDbForConsultLogging(argv: readonly string[]): WritableDat
 async function runMemorySearch(argv: readonly string[]): Promise<number> {
   const dbPath = resolveDbPathForCli(argv.slice(1));
   if (dbPath === null) return 2;
-  // Missing DB => unbootstrapped install; TS bootstraps it (CV22.DS6.TS4) before
-  // the backup-gated search read/log path opens it.
-  bootstrapDatabaseIfMissing(dbPath);
+  // Missing DB => unbootstrapped install; TS bootstraps it (CV22.DS6.TS4) and
+  // applies any pending TS-authored migration (US3) before the backup-gated
+  // search read/log path opens it.
+  ensureDatabaseReady(dbPath, argv[0] ?? null);
   const db = openDatabaseForWrite(dbPath, ensureBackup(dbPath));
   try {
     assertSchemaState(db);
