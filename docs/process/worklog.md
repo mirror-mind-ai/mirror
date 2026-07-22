@@ -12,6 +12,65 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-07-23 — Ariad Expand path-divergence fix (CR048 second occurrence, CV22.DS7)
+
+Fixed a recurring defect class: Ariad Expand *derived* a Delivery Story's doc
+folder from code+title arithmetic (`_artifact_directory`) instead of resolving
+the real, already-authored package on disk. Since the delivery cursor only
+ever carries a story's leaf title, the derivation misaligned every level for
+dotted codes, producing a divergent duplicate tree and orphaning the authored
+package — second occurrence of the CR048 defect (first: DS6.TS5,
+hand-relocated; second: CV22.DS7, discovered on the `mirror-ts-core` branch
+while pulling CV22.DS7). Full analysis and phased plan in `handoff-ariad-fix.MD`
+/ `plan-ariad-fix.md`; decision recorded in
+[Decisions](../project/decisions.md#ariad-expand-resolves-story-packages-by-heading-never-by-path-derivation).
+
+New `src/memory/builder/story_paths.py` gives Expand and the CLI's
+Plan/checkpoint path lookup one shared, heading-based resolver
+(`resolve_story_directory`, unconditional, always tried first — the actual
+fix) instead of two divergent implementations; `_artifact_directory`,
+`_find_existing_package_path`, and the CLI's own latent, equally fragile
+`_roadmap_title_parts` chain-derivation are deleted. Creating a genuinely new
+package (nothing exists yet, so nothing can diverge) degrades gracefully
+through three tiers — an existing parent package, else the root roadmap
+snapshot's own CV title, else a bare code segment — never title-chain
+arithmetic across code levels, a mid-implementation design revision confirmed
+against real pre-existing test evidence. Fail-loud is reserved for genuine
+ambiguity: Expand now refuses to fabricate a generic story when a *resolved*
+package's candidate table can't be parsed (`ExpandBlockedError`) or two
+packages claim the same code (`StoryPackageAmbiguityError`), rendering a
+first-class `<<<ARIAD:EXPAND_BLOCKED>>>` surface instead. A new CI guard
+(`find_duplicate_roadmap_headings` / `check_roadmap_duplicate_headings`, wired
+into the existing `scripts/check_doc_links.py`, no new workflow) statically
+enforces "one code -> one package" — would have caught both DS6.TS5 and
+CV22.DS7 before Expand ever ran.
+
+Pre-flight verification against this repo's own real roadmap (259 packages)
+found and fixed two pre-existing bugs the fix's invariants depend on: a live
+duplicate heading (`CV20.DS4.US2`, a dropped story never retitled away from
+its replacement's code — fixed following the existing `cv13-e1-docs-browser`
+"Historical note" precedent) and a `HEADING_RE` gap that silently dropped
+lowercase sub-story codes like `CV21.E2.S1b` (shared with `pull_candidates.py`,
+now fixed). D-012's revisit trigger fired (all three named functions were
+touched); updated, not closed — flagged for a separate decision. Authoring
+guidance for the canonical `| Code | Story | Type | Outcome | Status |`
+candidate-table grammar was added to the DS index template and the mm-build
+skill.
+
+Validation: TDD throughout, red-first at every step, including two bugs caught
+by manual smoke-testing rather than trusting green unit tests alone (a
+hand-typed Ariad surface border 5 characters short of the established card
+width; a `Path.relative_to` crash on a non-pre-resolved `repo_root` in the new
+CI check, reproduced portably and regression-tested). Full repo test suite
+green across all three commits, `ruff check` clean, doc-link + roadmap-heading
+checks clean, dogfooded against this repo's real roadmap. Maintenance patch on
+`main`; no Ariad CR filed, no method adoption for the `mirror` journey.
+Port-branch cleanup (`mirror-ts-core`, CV22.DS7's authored candidate table and
+its divergent tree) is separate, deferred work. Noted, not fixed (confirmed
+flaky by repeat isolated + full-suite runs, unrelated to this patch):
+`tests/benchmark/test_search_scale.py::test_search_latency_at_10k_memories`
+intermittently raises `sqlite3.IntegrityError` under full-suite load.
+
 ### 2026-07-23 — Released v0.31.0 — Stabilization & Robustness (CV9.E2 epic milestone)
 
 Promoted `v0.31.0` to the stable channel: a MINOR release delivering the bulk of the **CV9.E2 Stabilization & Robustness** epic (56 commits since v0.30.2, 34 of them CV9.E2 story commits) plus the AI Engineering Audit's P0 tier and most P1/P2 findings. Themes: the memory pipeline now fails safely and observably (extraction failure isolation/quarantine, idempotency, lexical-only search degradation, explicit call timeouts), untrusted transcript content is fenced across all five model-in-the-loop surfaces (extraction, scene, shadow, consolidation, title/tags/summary) with an identity-write allowlist, cost/observability is metadata-default with one cost authority, and an `eval --all` runner is wired as a release gate with a model-upgrade playbook. Also included: the 1.0 intelligence-flag posture decision (AI-20), Ariad Delivery-Story-grammar roadmap support (CV20.DS13), and env-aware/guarded extension install.

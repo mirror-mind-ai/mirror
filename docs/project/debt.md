@@ -514,6 +514,22 @@ reject or strip `/` and `..`) before it is used in folder derivation,
 consistently across the lifecycle producers and the build locator, with a test
 that a `../`-bearing code cell cannot escape the roadmap directory.
 
+### Update — 2026-07-23
+
+Revisit trigger fired: the Ariad Expand path-divergence fix
+(`handoff-ariad-fix.MD` / `plan-ariad-fix.md`, see
+[Decisions](decisions.md#ariad-expand-resolves-story-packages-by-heading-never-by-path-derivation))
+touched all three named functions. `_artifact_directory` and
+`_canonical_package_path`'s `_find_existing_package_path` fallback are deleted;
+`_story_folder_name` moved to `memory.builder.story_paths.story_folder_name`,
+same `code.lower().replace(".", "-")` pattern, same asymmetry (title routes
+through `kebab_slug`, code does not). The new `create_story_directory` gained
+an `is_relative_to(roadmap_root)` escape guard, but that is a related, distinct
+defense (catches an actual escape at the final resolved path) -- it does not
+sanitize the code segment itself, so an unsanitized `/` in a code cell can
+still create unintended nested directories within the roadmap tree. Closure
+was judged out of scope for that patch; carried forward unchanged.
+
 ## D-013 — `transcript_export.slugify` remains a separate capped-kebab sibling of the consolidated `kebab_slug`
 
 **Kind:** design (duplication)

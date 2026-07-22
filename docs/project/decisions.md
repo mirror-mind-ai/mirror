@@ -11,6 +11,80 @@ resolved.
 
 ## Completed Decisions
 
+### Ariad Expand resolves story packages by heading, never by path derivation
+
+**Date:** 2026-07-23
+**Reference:** journey `mirror`, `handoff-ariad-fix.MD` / `plan-ariad-fix.md`
+**Participants:** Vinícius Teles
+
+Ariad Expand derived a Delivery Story's doc folder from code+title arithmetic
+(`_artifact_directory`) instead of resolving the real, already-authored package
+on disk. Since the delivery cursor only ever carries a story's *leaf* title,
+the derivation misaligned every level for dotted codes: the leaf title landed
+on the CV level, the DS level degraded to a bare code, producing a divergent
+duplicate tree and orphaning the authored package. Second occurrence of the
+CR048 defect (first: DS6.TS5, hand-relocated; second: CV22.DS7, on the
+`mirror-ts-core` branch) — a recurring class, not a one-off, so it needed a
+code fix rather than another hand-relocate.
+
+Decided:
+
+1. **Resolve, don't derive.** A package *is* its heading code
+   (`# <code> — <title>`), never a folder-naming convention or arithmetic on
+   code+title — an authored package can live under any folder name a human
+   chose. New `src/memory/builder/story_paths.py` gives Ariad Expand
+   (`lifecycle.py`) and the CLI's Plan/checkpoint path lookup (`cli/build.py`)
+   one shared, heading-based resolver instead of two divergent
+   implementations. `_artifact_directory`, `_find_existing_package_path`, and
+   `_roadmap_title_parts` (the CLI's own latent, equally title-chain-fragile
+   copy) are deleted.
+2. **Creating a brand-new package never fails loud — only resolving an
+   existing one does.** If nothing is authored yet for a code, a new path
+   cannot diverge from anything; naming its parent coordinate degrades
+   gracefully (an existing parent package, else the root roadmap snapshot's
+   own CV title, else a bare code segment) and never uses title-chain
+   arithmetic across code levels — abandoned entirely, since the cursor never
+   reliably carries a full ancestor-title chain. This was a mid-implementation
+   revision after real, pre-existing tests showed the original
+   fail-loud-on-any-unresolved-parent design conflated divergence prevention
+   (a correctness concern) with parent-naming quality (a cosmetic one).
+3. **Fail loud is reserved for genuine ambiguity: a resolved package that
+   can't be trusted.** When Expand resolves an authored package but its
+   `## Candidate Stories` table doesn't parse (`ExpandBlockedError`), or two
+   packages claim the same code (`StoryPackageAmbiguityError`), Expand refuses
+   to fabricate a generic story over real, unparseable authored content — it
+   renders a first-class `<<<ARIAD:EXPAND_BLOCKED>>>` surface and writes
+   nothing, closing the secondary defect that let CV22.DS7 recur even after
+   CV20.DS13's header-driven parser existed.
+4. **Two independent layers keep "one code → one package" true.** Runtime:
+   `resolve_story_directory` raises on ambiguity at resolution time. Static:
+   `find_duplicate_roadmap_headings` / `check_roadmap_duplicate_headings`,
+   wired into the existing `scripts/check_doc_links.py` (no new CI workflow —
+   `docs.yml` already covers it), fails the build on any two
+   `docs/project/roadmap/**/index.md` files sharing a heading code. This would
+   have caught both DS6.TS5 and CV22.DS7 before Expand ever ran.
+5. **`HEADING_RE` accepts a lowercase sub-story suffix letter.** A
+   pre-existing gap (uppercase-only code character class silently dropped
+   codes like `CV21.E2.S1b`), shared with `pull_candidates.py` and inherited
+   by the new resolver, found during pre-flight verification and fixed
+   alongside a live duplicate-heading violation already present in this
+   repo's own roadmap (`CV20.DS4.US2` — a dropped story whose heading was
+   never retitled away from its replacement's code; fixed by following the
+   existing `cv13-e1-docs-browser` "Historical note" precedent).
+
+Maintenance patch on `main`; no Ariad CR filed, no method adoption for the
+`mirror` journey. Port-branch cleanup (`mirror-ts-core`, CV22.DS7's authored
+candidate table and the divergent tree already created there) is separate,
+deferred work — out of scope for this workspace.
+
+**Flagged, not addressed here:** touching `_story_folder_name` /
+`_artifact_directory` / `_canonical_package_path` fired
+[D-012](debt.md#d-012--roadmap-folder-derivation-does-not-sanitize-the-candidate-table-code-cell-for-path-separators)'s
+explicit revisit trigger (the candidate-table *code* cell still isn't
+sanitized for path separators, unlike the title). The debt entry is updated to
+point at the new location; closing it was judged out of scope for this patch
+and left for an explicit decision.
+
 ### 1.0 intelligence-flag posture: reception on, two-pass and summarize off
 
 **Date:** 2026-07-17

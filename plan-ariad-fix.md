@@ -1,7 +1,8 @@
 # Plan — Ariad Expand Scaffolder Path-Divergence Fix
 
-**Status:** P1 (core fix), P2 (fail-loud on ambiguity/unparseable), and P3 (CI duplicate-heading guard)
-implemented and green. Pre-flight fixes applied. P4 pending.
+**Status:** P1 (core fix), P2 (fail-loud on ambiguity/unparseable), P3 (CI duplicate-heading guard), and P4
+(authoring contract + decisions/debt/worklog documentation) all implemented and green. Pre-flight fixes
+applied. Fix complete; one distinct, separate follow-up flagged (D-012 revisit trigger fired, not closed).
 **Companion:** `handoff-ariad-fix.MD` (original analysis). This plan supersedes the handoff's phasing
 where they differ (notably: the correct resolver already exists; the fix is a DRY consolidation).
 **Tracking:** maintenance patch on `main` in this `mirror-dev` workspace. No Ariad CR / no method adoption.
@@ -256,10 +257,32 @@ One pre-existing test (`test_build_pull_delivery_story_prepares_and_expands`) re
   `sqlite3.IntegrityError: UNIQUE constraint failed: memories.id` under full-suite load — out of scope for
   this patch, flagging for separate attention.
 
-### P4 — Authoring contract + template + skill guidance
-- Document the canonical candidate-table grammar `| Code | Story | Type | Outcome | Status |` (header must
-  contain code/story/type/status) in the DS index template under `docs/project/roadmap/templates/…` and in
-  mm-build authoring guidance, so hand-authored DS packages are Expand-compatible by construction.
+### P4 — Authoring contract + template + skill guidance — ✅ done
+- Documented the canonical candidate-table grammar (`| Code | Story | Type | Status |`, or the 5-column
+  `| Code | Story | Type | Outcome | Status |` variant — header-driven, case-insensitive, any order, extra
+  columns fine) directly in `docs/project/roadmap/templates/delivery-story-index.md`'s `## Candidate Stories`
+  section, and as a new "Delivery Story Candidate Table Authoring Contract" section in
+  `.pi/skills/mm-build/SKILL.md`, including how to respond to a rendered `EXPAND_BLOCKED` surface (return it
+  verbatim, then help fix the table/duplicate heading — never hand-edit materialized children as a
+  workaround).
+- **Discovered scope beyond the literal P4 ask, addressed per existing project convention ("keep docs
+  updated when code changes"), not silently expanded or silently skipped:**
+  - `docs/project/decisions.md`: this fix (P1–P3) is a direct, substantial design decision — added a full
+    entry ("Ariad Expand resolves story packages by heading, never by path derivation"), matching the exact
+    style of its direct predecessor ("Builder reads roadmaps in two grammars, additively", CV20.DS13, which
+    introduced the header-driven candidate-table parser this fix builds on).
+  - `docs/project/debt.md` **D-012** ("Roadmap folder derivation does not sanitize the candidate-table code
+    cell for path separators"): its explicit revisit trigger ("next time `_story_folder_name` /
+    `_artifact_directory` / `_canonical_package_path` is touched") fired — all three were touched in P1.
+    **Updated, not closed:** noted the new location (`story_paths.story_folder_name`), that the same
+    asymmetry persists (title sanitized via `kebab_slug`, code is not), and that the new
+    `is_relative_to(roadmap_root)` escape guard is a related but distinct defense (catches an actual escape,
+    doesn't sanitize the code segment itself). Left `Status: Carried` — closing it was judged out of scope
+    for this patch and is flagged below as a separate decision point, not bundled in silently.
+  - `docs/process/worklog.md`: added a milestone entry per the "a meaningful milestone is completed"
+    convention, covering P1–P4 as one cohesive unit.
+- Re-verified: doc-link + anchor checker clean (including the new `decisions.md` cross-reference from
+  `debt.md`), full suite green, ruff clean.
 
 ### Security cross-cut — ✅ done
 - `is_relative_to(roadmap_root)` enforced in `create_story_directory` (reuses the `_target_path` precedent).
@@ -346,3 +369,15 @@ All existing single-segment Expand tests remain green (common-path regression sa
   `cv22-typescript-core-port/cv22-ds7-command-burn-down/index.md`.
 - Any `mirror-ts-core` branch/journey work and `oracle-baseline.json` registration (Builder tree not yet
   ported; revisit when CV22.DS7 is ported).
+
+## Open follow-up (discovered during P4, not resolved here)
+
+- **[D-012](docs/project/debt.md#d-012--roadmap-folder-derivation-does-not-sanitize-the-candidate-table-code-cell-for-path-separators)
+  revisit trigger fired.** The candidate-table *code* cell is still not sanitized for path separators
+  (`code.lower().replace(".", "-")` leaves `/` intact), unlike the title (routed through `kebab_slug`).
+  `_story_folder_name`/`_artifact_directory`/`_canonical_package_path` — the trigger's named functions — were
+  all touched by this patch (moved/deleted/refactored). Debt entry updated with the new location and current
+  state; **not closed**. Closing it would mean adding a code-safe sanitizer for the `code` segment
+  (`_parse_candidate_stories` → `_strip_markdown_link(cells["code"])` → `story_folder_name`), consistent with
+  D-012's own closure condition. Explicit Navigator decision needed before touching this: fix now as a small
+  follow-up patch, or leave `Carried` for its next natural trigger.
