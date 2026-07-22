@@ -655,6 +655,108 @@ def test_expand_handles_paragraph_length_child_titles(tmp_path):
         assert all(len(part.encode()) <= 255 for part in path.parts)
 
 
+# --- Ariad Expand path-divergence fix: resolve authored packages by heading ---
+# (handoff-ariad-fix.MD / plan-ariad-fix.md -- CR048 second occurrence: DS6.TS5, CV22.DS7)
+
+
+def test_expand_resolves_authored_dotted_code_package_reusing_it(tmp_path):
+    # Direct reproduction of the CV22.DS7 defect: a dotted code (CV.DS) whose
+    # cursor stores only the LEAF title, with the authored package already
+    # nested under its real parent CV folder at canonical paths. Expand must
+    # RESOLVE and reuse this package -- not derive a divergent path from
+    # code+leaf-title arithmetic (which used to land the leaf title on the
+    # CV level and degrade the DS level to a bare code).
+    _client, store = _store(tmp_path)
+    project = tmp_path / "project"
+    roadmap_root = project / "docs" / "project" / "roadmap"
+
+    cv_dir = roadmap_root / "cv2-typescript-core-port"
+    cv_dir.mkdir(parents=True)
+    (cv_dir / "index.md").write_text(
+        "# CV2 — TypeScript Core Port\n\n**Status:** In Progress\n", encoding="utf-8"
+    )
+
+    ds_dir = cv_dir / "cv2-ds1-command-burn-down"
+    ds_dir.mkdir(parents=True)
+    ds_index = ds_dir / "index.md"
+    ds_index.write_text(
+        """# CV2.DS1 — Command Burn-Down
+
+**Status:** 🟡 Planned
+
+## Candidate Stories
+
+| Code | Story | Type | Outcome | Status |
+|------|-------|------|---------|--------|
+| CV2.DS1.US1 | Port the command runner | User Story | Observable flow | 🟡 Planned |
+
+## Done Condition
+
+Done.
+""",
+        encoding="utf-8",
+    )
+    _seed_ds_cursor(store, active_item="CV2.DS1", title="Command Burn-Down")
+
+    report = expand_delivery_story(
+        store, journey="uncle-vinny", method="ariad", project_path=project
+    )
+
+    assert report.cursor.child_work_items == ("CV2.DS1.US1",)
+    assert report.recommended_story == "CV2.DS1.US1"
+    # Reused the authored package -- the real child materializes under it.
+    assert (ds_dir / "cv2-ds1-us1-port-the-command-runner" / "index.md").exists()
+    # No divergent tree: the leaf title never creates a new top-level folder,
+    # and the roadmap root gains no new sibling to the real CV folder.
+    assert sorted(p.name for p in roadmap_root.iterdir()) == ["cv2-typescript-core-port"]
+
+
+def test_expand_resolves_by_heading_content_not_by_folder_name(tmp_path):
+    # Locked design decision: resolve by HEADING (content), not folder name.
+    # Prove it with folders that do NOT follow the `_story_folder_name`
+    # convention -- resolution must still find the package via its
+    # `# CODE — TITLE` heading, matching how pull-candidates already resolves.
+    _client, store = _store(tmp_path)
+    project = tmp_path / "project"
+    roadmap_root = project / "docs" / "project" / "roadmap"
+
+    cv_dir = roadmap_root / "legacy-cv3-folder"
+    cv_dir.mkdir(parents=True)
+    (cv_dir / "index.md").write_text(
+        "# CV3 — Some CV Title\n\n**Status:** In Progress\n", encoding="utf-8"
+    )
+
+    ds_dir = cv_dir / "old-ds-folder-name"
+    ds_dir.mkdir(parents=True)
+    ds_index = ds_dir / "index.md"
+    ds_index.write_text(
+        """# CV3.DS1 — Some Delivery Story
+
+**Status:** 🟡 Planned
+
+## Candidate Stories
+
+| Code | Story | Type | Outcome | Status |
+|------|-------|------|---------|--------|
+| CV3.DS1.US1 | Do the thing | User Story | Observable flow | 🟡 Planned |
+
+## Done Condition
+
+Done.
+""",
+        encoding="utf-8",
+    )
+    _seed_ds_cursor(store, active_item="CV3.DS1", title="Some Delivery Story")
+
+    report = expand_delivery_story(
+        store, journey="uncle-vinny", method="ariad", project_path=project
+    )
+
+    assert report.cursor.child_work_items == ("CV3.DS1.US1",)
+    assert (ds_dir / "cv3-ds1-us1-do-the-thing" / "index.md").exists()
+    assert sorted(p.name for p in roadmap_root.iterdir()) == ["legacy-cv3-folder"]
+
+
 def test_existing_roadmap_components_stay_filesystem_safe():
     # Guards the regression class: the runtime must never persist a roadmap
     # directory component near the filesystem NAME_MAX (255) limit.

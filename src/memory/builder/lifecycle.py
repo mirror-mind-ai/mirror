@@ -13,9 +13,10 @@ from memory.builder.delivery_cursor import (
 )
 from memory.builder.lifecycle_ribbon import render_lifecycle_ribbon
 from memory.builder.method_definition import ContractDefinition, MethodDefinition
-from memory.builder.roadmap_grammar import HEADING_RE as _HEADING_RE
-from memory.builder.roadmap_grammar import is_legacy_path as _is_legacy_path
 from memory.builder.roadmap_grammar import strip_markdown_link as _strip_markdown_link
+from memory.builder.story_paths import create_story_directory, resolve_story_directory
+from memory.builder.story_paths import story_folder_name as _story_folder_name
+from memory.builder.story_paths import title_leaf as _title_leaf
 from memory.builder.surface_protocol import wrap_ariad_surface
 from memory.storage.store import Store
 from memory.utils import kebab_slug
@@ -423,7 +424,9 @@ def expand_delivery_story(
     if not existing.active_item:
         raise ValueError("active item is required before expand")
     title = existing.active_item_title or existing.active_item
-    ds_dir = _artifact_directory(project_path, existing.active_item, title)
+    ds_dir = resolve_story_directory(project_path, existing.active_item) or create_story_directory(
+        project_path, existing.active_item, title
+    )
     ds_index = ds_dir / "index.md"
     ds_exists = ds_index.exists()
     children = _parse_candidate_stories(ds_index.read_text(encoding="utf-8")) if ds_exists else []
@@ -1821,59 +1824,6 @@ def _plan_next_action(report: BuilderPlanReport) -> str:
     return "Navigator approves the Plan or requests changes."
 
 
-def _artifact_directory(project_path: Path, code: str, title: str) -> Path:
-    # Prefer the existing hand-authored roadmap folder, resolved by heading code
-    # the same way pull inspection scans the tree. Real roadmaps use hand-chosen
-    # slugs (``cv3-build-de-producao``) that no title derivation can reproduce;
-    # deriving one anyway materialized a parallel ``cv3-<title>/cv3-ds22`` tree
-    # with boilerplate children instead of expanding the real Delivery Story.
-    existing = _resolve_existing_item_directory(project_path, code)
-    if existing is not None:
-        return existing
-    # Fallback (genuinely new item, not yet on disk): derive nested folders from
-    # the code plus per-level ``/``-separated title slugs.
-    parts = code.lower().replace("_", "-").split(".")
-    titles = tuple(part.strip() for part in title.split("/") if part.strip())
-    path = project_path / "docs" / "project" / "roadmap"
-    accumulated: list[str] = []
-    for index, part in enumerate(parts):
-        accumulated.append(part)
-        prefix = "-".join(accumulated)
-        title_slug = kebab_slug(titles[index]) if index < len(titles) else ""
-        path = path / (f"{prefix}-{title_slug}" if title_slug else prefix)
-    return path
-
-
-def _resolve_existing_item_directory(project_path: Path, code: str) -> Path | None:
-    """Return the directory of the roadmap ``index.md`` whose heading code equals
-    ``code`` (case-insensitive), or ``None`` when no such item exists yet.
-
-    Scans ``docs/project/roadmap`` like the pull inspector so Expand/materialize
-    stay aligned with the on-disk roadmap tree instead of a title-derived slug.
-    """
-    roadmap_root = project_path / "docs" / "project" / "roadmap"
-    if not roadmap_root.is_dir():
-        return None
-    target = code.strip().upper()
-    for index_path in sorted(roadmap_root.rglob("index.md")):
-        if _is_legacy_path(index_path, roadmap_root):
-            continue
-        try:
-            content = index_path.read_text(encoding="utf-8")
-        except OSError:
-            continue
-        heading = _HEADING_RE.search(content)
-        if heading and heading.group("code").strip().upper() == target:
-            return index_path.parent
-    return None
-
-
-def _story_folder_name(code: str, title: str) -> str:
-    code_part = code.lower().replace(".", "-")
-    slug = kebab_slug(title)
-    return f"{code_part}-{slug}" if slug else code_part
-
-
 def _user_story_statement(title: str) -> str:
     return f"As a user,\nI want to {title},\nSo that I can receive the value of this story."
 
@@ -2200,10 +2150,6 @@ def _wrap_plain_text(text: str, *, width: int) -> list[str]:
     if current:
         lines.append(current)
     return lines or ["none"]
-
-
-def _title_leaf(title: str) -> str:
-    return title.split("/")[-1].strip()
 
 
 def _cv_title(title: str) -> str:

@@ -318,7 +318,9 @@ def test_build_plan_delivery_story_records_aggregate_checkpoint(mocker, tmp_path
         / "docs/project/roadmap/cv20-builder-mode-evolution/cv20-ds5-delivery-story-level-lifecycle"
     )
     package.mkdir(parents=True)
-    (package / "index.md").write_text("# CV20.DS5", encoding="utf-8")
+    (package / "index.md").write_text(
+        "# CV20.DS5 — Delivery Story Level Lifecycle", encoding="utf-8"
+    )
     mem.journeys.set_project_path("sandbox-pet-store", str(project))
     set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
     set_delivery_cursor(
@@ -350,7 +352,10 @@ def test_build_plan_delivery_story_records_aggregate_checkpoint(mocker, tmp_path
     assert "Navigator gate" not in out
     assert package.joinpath("plan.md").exists()
     assert package.joinpath("test-guide.md").exists()
-    assert package.joinpath("index.md").read_text(encoding="utf-8") == "# CV20.DS5"
+    assert (
+        package.joinpath("index.md").read_text(encoding="utf-8")
+        == "# CV20.DS5 — Delivery Story Level Lifecycle"
+    )
     assert "│ plan artifact                                          │" not in out
     assert "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>" in out
     assert "index.md" in out
@@ -512,7 +517,9 @@ def test_plan_artifact_path_prefers_existing_canonical_package(tmp_path):
         / "docs/project/roadmap/cv20-builder-mode-evolution/cv20-ds5-delivery-story-level-lifecycle/cv20-ds5-ts3-lifecycle-checkpoint-artifact-materialization"
     )
     canonical.mkdir(parents=True)
-    (canonical / "index.md").write_text("# CV20.DS5.TS3", encoding="utf-8")
+    (canonical / "index.md").write_text(
+        "# CV20.DS5.TS3 — Lifecycle Checkpoint Artifact Materialization", encoding="utf-8"
+    )
     cursor = type("Cursor", (), {"active_item": "CV20.DS5.TS3"})()
 
     assert build._plan_artifact_path(str(project), cursor) == canonical / "plan.md"
@@ -525,7 +532,9 @@ def test_checkpoint_artifact_path_prefers_existing_delivery_story_package(tmp_pa
         / "docs/project/roadmap/cv2-checkout-flow/cv2-ds1-checkout-entry-and-address-capture"
     )
     canonical.mkdir(parents=True)
-    (canonical / "index.md").write_text("# CV2.DS1", encoding="utf-8")
+    (canonical / "index.md").write_text(
+        "# CV2.DS1 — Checkout Entry And Address Capture", encoding="utf-8"
+    )
     cursor = type("Cursor", (), {"active_item": "CV2.DS1"})()
 
     assert build._checkpoint_artifact_path(str(project), cursor, "validation.md") == (
@@ -1573,6 +1582,17 @@ def test_build_pull_delivery_story_prepares_and_expands(mocker, tmp_path, capsys
     mirror_home = tmp_path / ".mirror" / "pati"
     db_path = default_db_path_for_home(mirror_home)
     project_path = tmp_path / "project"
+    roadmap = project_path / "docs/project/roadmap/index.md"
+    roadmap.parent.mkdir(parents=True)
+    roadmap.write_text(
+        """# Roadmap
+
+| Code | Capability Value | Status |
+|------|------------------|--------|
+| CV2 | Checkout Flow | In Progress |
+""",
+        encoding="utf-8",
+    )
     mem = MemoryClient(env="test", db_path=db_path)
     mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
     mem.journeys.set_project_path("sandbox-pet-store", str(project_path))
@@ -1584,7 +1604,7 @@ def test_build_pull_delivery_story_prepares_and_expands(mocker, tmp_path, capsys
         "ariad",
         journey="sandbox-pet-store",
         item_code="CV2.DS1",
-        item_title="Checkout Flow / Checkout entry and address capture",
+        item_title="Checkout entry and address capture",
         item_level="delivery_story",
         why_now="next candidate capability",
     )

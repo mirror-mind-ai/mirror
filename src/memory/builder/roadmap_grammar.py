@@ -12,10 +12,11 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-# Heading codes may contain hyphens (``DS-35``), dots (``CV2.DS1``), and dotted
-# hyphenated child codes (``DS-35.US-1``). Hyphens are safe for CV codes, which
-# never contain one.
-HEADING_RE = re.compile(r"^#\s+(?P<code>[A-Z0-9.\-]+)\s+[—-]\s+(?P<title>.+?)\s*$", re.MULTILINE)
+# Heading codes may contain hyphens (``DS-35``), dots (``CV2.DS1``), dotted
+# hyphenated child codes (``DS-35.US-1``), and a lowercase sub-story suffix
+# letter for split stories (``CV21.E2.S1b``). Hyphens are safe for CV codes,
+# which never contain one.
+HEADING_RE = re.compile(r"^#\s+(?P<code>[A-Za-z0-9.\-]+)\s+[—-]\s+(?P<title>.+?)\s*$", re.MULTILINE)
 STATUS_RE = re.compile(r"\*\*Status:\*\*\s*(?P<status>.+?)\s*$", re.MULTILINE)
 _MARKDOWN_LINK_RE = re.compile(r"\[(?P<label>[^\]]+)\]\([^)]*\)")
 

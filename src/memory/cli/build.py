@@ -84,6 +84,7 @@ from memory.builder.pull_candidates import (
 from memory.builder.resume_state import read_builder_resume_state
 from memory.builder.resume_surface import render_builder_resume_surface
 from memory.builder.roadmap_position import resolve_roadmap_position
+from memory.builder.story_paths import create_story_directory, resolve_story_directory
 from memory.builder.surface_protocol import wrap_ariad_surface
 from memory.builder.template_generation import (
     prepare_method_templates,
@@ -131,7 +132,6 @@ from memory.services.operating_mode import (
 )
 from memory.skills.mirror import _persist_global_sticky_defaults
 from memory.surfaces.mode_transition import render_builder_mode_transition
-from memory.utils import kebab_slug
 
 
 def _print_builder_banner(slug: str, project_path: str | None = None) -> None:
@@ -1266,45 +1266,11 @@ def _canonical_package_path(project_path: str | None, cursor: object) -> Path | 
         return None
     project_root = Path(project_path)
     active_code = str(active_item)
-    existing = _find_existing_package_path(project_root, active_code)
-    if existing is not None:
-        return existing
-    title_parts = _roadmap_title_parts(project_root, active_code)
-    code_parts = active_code.lower().replace("_", "-").split(".")
-    if not code_parts:
-        return None
-    roadmap_path = project_root / "docs" / "project" / "roadmap"
-    accumulated: list[str] = []
-    for index, code_part in enumerate(code_parts):
-        accumulated.append(code_part)
-        code_prefix = "-".join(accumulated)
-        title_slug = kebab_slug(title_parts[index]) if index < len(title_parts) else ""
-        folder = f"{code_prefix}-{title_slug}" if title_slug else code_prefix
-        roadmap_path = roadmap_path / folder
-    return roadmap_path
-
-
-def _find_existing_package_path(project_root: Path, active_code: str) -> Path | None:
-    roadmap_root = project_root / "docs" / "project" / "roadmap"
-    if not roadmap_root.is_dir():
-        return None
-    prefix = active_code.lower().replace("_", "-").replace(".", "-")
-    matches = sorted(
-        path
-        for path in roadmap_root.rglob("index.md")
-        if path.parent.name == prefix or path.parent.name.startswith(f"{prefix}-")
-    )
-    if not matches:
-        return None
-    return min((path.parent for path in matches), key=lambda path: len(path.parts))
-
-
-def _roadmap_title_parts(project_root: Path, active_code: str) -> tuple[str, ...]:
-    candidates = inspect_pull_candidates(project_root, journey="", method="ariad").candidates
-    for candidate in candidates:
-        if candidate.code == active_code:
-            return tuple(part.strip() for part in candidate.title.split("/") if part.strip())
-    return ()
+    resolved = resolve_story_directory(project_root, active_code)
+    if resolved is not None:
+        return resolved
+    leaf_title = getattr(cursor, "active_item_title", None) or active_code
+    return create_story_directory(project_root, active_code, leaf_title)
 
 
 def cmd_approve_plan(
