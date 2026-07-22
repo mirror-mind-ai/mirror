@@ -12,7 +12,13 @@ import { diffTsInventoryAgainstSnapshot } from "../../src/db/schemaTsDivergence.
 
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "migrations");
 
-const STEMS = ["001", "002", "003", "004", "005", "008", "009", "chain-multi-hop"];
+const STEMS = ["001", "002", "003", "004", "005", "008", "009", "016", "chain-multi-hop"];
+
+/** One journey's backfilled display code, as the oracle produced it. */
+interface DisplayCode {
+  journey: string;
+  display_code: string;
+}
 
 interface ExpectedFixture extends SchemaInventory {
   applied_migration_ids: string[];
@@ -23,6 +29,10 @@ interface ExpectedFixture extends SchemaInventory {
   attachment_legacy_row: Record<string, unknown> | null;
   task_legacy_row: Record<string, unknown> | null;
   memories_fts_findable_legacy_row_count: number;
+  // CV22.DS6.TS5 — present only for the 016 legacy fixture: the display codes
+  // migration 016's real ADD-COLUMN + backfill-against-NULL branches produced.
+  builder_refinement_story_codes?: DisplayCode[];
+  builder_change_request_codes?: DisplayCode[];
 }
 
 function loadFixture(stem: string): { seedSql: string; expected: ExpectedFixture } {
@@ -117,6 +127,40 @@ for (const stem of STEMS) {
         singleRow(db, "SELECT journey, title, status FROM tasks WHERE id = 'task-legacy-1'"),
         expected.task_legacy_row,
       );
+
+      // Builder-workbench display_code backfill (CV22.DS6.TS5). The point of the
+      // 016 fixture: grade the codes migration 016's real ADD-COLUMN +
+      // backfill-against-NULL branches produced, by value, against the Python
+      // oracle — not merely that the column/index exist. Non-vacuous: the
+      // fixture must actually carry codes.
+      if (expected.builder_refinement_story_codes) {
+        assert.ok(
+          expected.builder_refinement_story_codes.length > 0,
+          `fixture ${stem}: expected non-empty RS display codes`,
+        );
+        const rsCodes = db
+          .prepare("SELECT journey, display_code FROM builder_refinement_stories ORDER BY id")
+          .all()
+          .map((row) => ({
+            journey: row.journey as string,
+            display_code: row.display_code as string,
+          }));
+        assert.deepEqual(rsCodes, expected.builder_refinement_story_codes);
+      }
+      if (expected.builder_change_request_codes) {
+        assert.ok(
+          expected.builder_change_request_codes.length > 0,
+          `fixture ${stem}: expected non-empty CR display codes`,
+        );
+        const crCodes = db
+          .prepare("SELECT journey, display_code FROM builder_change_requests ORDER BY id")
+          .all()
+          .map((row) => ({
+            journey: row.journey as string,
+            display_code: row.display_code as string,
+          }));
+        assert.deepEqual(crCodes, expected.builder_change_request_codes);
+      }
 
       // Functional FTS assertion (ai-engineer condition) — a pre-existing row
       // is actually findable after migration, not merely that the virtual

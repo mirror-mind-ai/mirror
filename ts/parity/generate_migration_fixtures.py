@@ -122,6 +122,88 @@ POST_MIGRATION_INSERTS: dict[str, str] = {
     """,
 }
 
+# --- CV22.DS6.TS5: the hand-authored migration-016 legacy fixture ---
+#
+# The cascade cannot reach 016's real ADD-COLUMN + backfill branches (current 015
+# inlines display_code NOT NULL). This seed reconstructs a database created by an
+# OLDER 015 — derived authoritatively from migration 016's OWN operations: 016
+# ADDs display_code and creates the two ux_..._display_code indexes, so old-015 is
+# current 015 minus exactly those. All timestamps are frozen so this fixture is
+# byte-reproducible (unlike the wall-clock cascade seeds).
+#
+# Provenance note: git history folds 015+016 into one squashed commit, so the
+# old-015 shape is derived from 016's diff, not read from history. If 015/016
+# shipped together this exercises a defensive/never-on-fresh branch — the fixture
+# is a regression guard for it, not proof of a live migration path.
+FROZEN_MIGRATION_TS = "2026-01-01T00:00:00.000000Z"
+
+OLD_015_BUILDER_WORKBENCH_SQL = """
+    CREATE TABLE IF NOT EXISTS builder_refinement_stories (
+        id TEXT PRIMARY KEY,
+        journey TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT,
+        status TEXT NOT NULL DEFAULT 'draft',
+        position INTEGER NOT NULL DEFAULT 0,
+        source TEXT NOT NULL DEFAULT 'manual',
+        provenance TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        pulled_at TEXT,
+        closed_at TEXT,
+        CHECK(status IN ('draft', 'open', 'active', 'closed', 'parked'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_builder_refinement_stories_journey_status
+        ON builder_refinement_stories(journey, status, position, updated_at);
+
+    CREATE TABLE IF NOT EXISTS builder_change_requests (
+        id TEXT PRIMARY KEY,
+        journey TEXT NOT NULL,
+        refinement_story_id TEXT REFERENCES builder_refinement_stories(id),
+        title TEXT NOT NULL,
+        body TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'captured',
+        position INTEGER NOT NULL DEFAULT 0,
+        source TEXT NOT NULL DEFAULT 'manual',
+        provenance TEXT,
+        outcome_notes TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        completed_at TEXT,
+        CHECK(status IN (
+            'captured', 'planned', 'active', 'implemented', 'validated',
+            'done', 'parked', 'rejected', 'promoted'
+        ))
+    );
+    CREATE INDEX IF NOT EXISTS idx_builder_change_requests_story_status
+        ON builder_change_requests(journey, refinement_story_id, status, position, updated_at);
+    CREATE INDEX IF NOT EXISTS idx_builder_change_requests_journey_status
+        ON builder_change_requests(journey, status, updated_at);
+
+    CREATE TABLE IF NOT EXISTS builder_refinement_cursors (
+        journey TEXT PRIMARY KEY,
+        active_refinement_story_id TEXT REFERENCES builder_refinement_stories(id),
+        active_change_request_id TEXT REFERENCES builder_change_requests(id),
+        last_refinement_event TEXT,
+        updated_at TEXT NOT NULL
+    );
+"""
+
+# Two journeys with NULL display_code, exercising per-journey code reset and the
+# migration's ORDER BY (RS: position; CR: created_at). Expected backfill:
+#   alpha: rs-alpha-1->RS001, rs-alpha-2->RS002; beta: rs-beta-1->RS001
+#   alpha: cr-alpha-1->CR001, cr-alpha-2->CR002; beta: cr-beta-1->CR001
+BUILDER_WORKBENCH_LEGACY_ROWS = """
+    INSERT INTO builder_refinement_stories (id, journey, title, position, created_at, updated_at) VALUES
+        ('rs-alpha-1', 'alpha-journey', 'Alpha refinement one', 0, '2026-01-02T00:00:00Z', '2026-01-02T00:00:00Z'),
+        ('rs-alpha-2', 'alpha-journey', 'Alpha refinement two', 1, '2026-01-02T00:00:01Z', '2026-01-02T00:00:01Z'),
+        ('rs-beta-1', 'beta-journey', 'Beta refinement one', 0, '2026-01-02T00:00:02Z', '2026-01-02T00:00:02Z');
+    INSERT INTO builder_change_requests (id, journey, refinement_story_id, title, body, position, created_at, updated_at) VALUES
+        ('cr-alpha-1', 'alpha-journey', 'rs-alpha-1', 'Alpha change one', 'Body a1', 0, '2026-01-03T00:00:00Z', '2026-01-03T00:00:00Z'),
+        ('cr-alpha-2', 'alpha-journey', 'rs-alpha-1', 'Alpha change two', 'Body a2', 1, '2026-01-03T00:00:01Z', '2026-01-03T00:00:01Z'),
+        ('cr-beta-1', 'beta-journey', 'rs-beta-1', 'Beta change one', 'Body b1', 0, '2026-01-03T00:00:02Z', '2026-01-03T00:00:02Z');
+"""
+
 # Checkpoints committed as "pre-state" fixtures: captured immediately BEFORE
 # the named migration runs (i.e., after exactly the preceding migrations have
 # been applied). 016 is a known, documented gap — see module docstring.
@@ -197,6 +279,16 @@ def _row_dict(row: sqlite3.Row | None) -> dict | None:
     return dict(row) if row is not None else None
 
 
+def _display_codes(conn: sqlite3.Connection, table: str) -> list[dict]:
+    """The (journey, display_code) pairs a table carries, ordered by id. Empty
+    when the table has no rows (every non-016 fixture)."""
+    try:
+        rows = conn.execute(f"SELECT journey, display_code FROM {table} ORDER BY id").fetchall()
+    except sqlite3.OperationalError:
+        return []
+    return [{"journey": row["journey"], "display_code": row["display_code"]} for row in rows]
+
+
 def _capture_expected(seed_sql: str) -> dict:
     """Run the REAL Python engine forward to completion from this seed;
     capture the schema inventory, the full applied-id set, and row-level facts
@@ -238,8 +330,10 @@ def _capture_expected(seed_sql: str) -> dict:
         row["rowid"]
         for row in conn.execute("SELECT rowid FROM memories_fts WHERE memories_fts MATCH 'legacy'")
     ]
+    rs_codes = _display_codes(conn, "builder_refinement_stories")
+    cr_codes = _display_codes(conn, "builder_change_requests")
     conn.close()
-    return {
+    expected = {
         "tables": inventory["tables"],
         "indexes": inventory["indexes"],
         "triggers": inventory["triggers"],
@@ -252,6 +346,13 @@ def _capture_expected(seed_sql: str) -> dict:
         "task_legacy_row": task_row,
         "memories_fts_findable_legacy_row_count": len(fts_hits),
     }
+    # Present only when the builder-workbench tables actually carry rows (the 016
+    # legacy fixture) — so every other fixture's expected JSON is unchanged.
+    if rs_codes:
+        expected["builder_refinement_story_codes"] = rs_codes
+    if cr_codes:
+        expected["builder_change_request_codes"] = cr_codes
+    return expected
 
 
 def _write_fixture(stem: str, seed_sql: str) -> None:
@@ -260,6 +361,51 @@ def _write_fixture(stem: str, seed_sql: str) -> None:
     (FIXTURES_DIR / f"migration-{stem}-expected.json").write_text(
         json.dumps(expected, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
+
+
+def _write_016_fixture() -> None:
+    """Hand-authored migration-016 legacy fixture (CV22.DS6.TS5).
+
+    Runs genesis -> 001..014 for real, then installs the OLD-015 builder-workbench
+    shape (no display_code / no ux indexes, derived from migration 016's own
+    operations), marks 015 applied, and seeds NULL-display_code RS/CR rows across
+    two journeys. Running the real engine forward from this seed makes 016's
+    ADD-COLUMN + backfill branches genuinely execute; `_capture_expected` records
+    the backfilled codes for the TS parity test to grade.
+    """
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys=ON")
+    conn.executescript(GENESIS_SQL)
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS _migrations (id TEXT PRIMARY KEY, applied_at TEXT NOT NULL)"
+    )
+    conn.commit()
+
+    for migration_id, apply in MIGRATIONS:
+        if migration_id == "015_create_builder_workbench":
+            break
+        apply(conn)
+        conn.execute(
+            "INSERT OR IGNORE INTO _migrations (id, applied_at) VALUES (?, ?)",
+            (migration_id, FROZEN_MIGRATION_TS),
+        )
+        conn.commit()
+        if migration_id in POST_MIGRATION_INSERTS:
+            conn.executescript(POST_MIGRATION_INSERTS[migration_id])
+            conn.commit()
+
+    conn.executescript(OLD_015_BUILDER_WORKBENCH_SQL)
+    conn.execute(
+        "INSERT OR IGNORE INTO _migrations (id, applied_at) VALUES (?, ?)",
+        ("015_create_builder_workbench", FROZEN_MIGRATION_TS),
+    )
+    conn.executescript(BUILDER_WORKBENCH_LEGACY_ROWS)
+    conn.commit()
+
+    seed_sql = _dump_sql(conn)
+    conn.close()
+    _write_fixture("016", seed_sql)
 
 
 def generate() -> None:
@@ -298,5 +444,12 @@ def generate() -> None:
 
 
 if __name__ == "__main__":
-    generate()
-    print(f"Generated fixtures under {FIXTURES_DIR}")
+    import sys
+
+    if "--only-016" in sys.argv:
+        _write_016_fixture()
+        print(f"Generated migration-016 fixture under {FIXTURES_DIR}")
+    else:
+        generate()
+        _write_016_fixture()
+        print(f"Generated fixtures under {FIXTURES_DIR}")
