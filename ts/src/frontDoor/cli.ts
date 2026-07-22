@@ -20,6 +20,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
+import { bootstrapDatabaseIfMissing } from "../db/bootstrap.ts";
 import {
   openDatabaseForWrite,
   openDatabaseReadOnly,
@@ -103,17 +104,18 @@ function fallbackPython(argv: readonly string[]): number {
   return typeof result.status === "number" ? result.status : 1;
 }
 
-/** Serve a ported read command from the TS core, or self-heal a missing DB via Python. */
+/** Serve a ported read command from the TS core, bootstrapping a missing DB via the TS core first. */
 function runTs(argv: readonly string[]): number {
   const command = argv[0];
   const args = argv.slice(1);
   const dbPath = resolveDbPathForCli(args);
   if (dbPath === null) return 2;
-  // First-run contract: a missing database means an unbootstrapped install.
-  // Delegate to Python, which creates the directory, schema, and migrations and
-  // answers — the same self-heal a new user got before the DS3 cutover (see
-  // docs/project/decisions.md). TS only serves an existing database.
-  if (!existsSync(dbPath)) return fallbackPython(argv);
+  // First-run contract (CV22.DS6.TS4): a missing database means an
+  // unbootstrapped install. TS now owns bootstrap — create the directory,
+  // schema, and migrations under the cross-process lock — then serve read-only
+  // from the fresh file. (This replaces the DS3 stopgap that delegated a
+  // missing DB to Python; see docs/project/decisions.md.)
+  bootstrapDatabaseIfMissing(dbPath);
   const db = openDatabaseReadOnly(dbPath);
   try {
     assertSchemaState(db);
@@ -143,16 +145,18 @@ function readStdinContent(): string {
 
 /**
  * Shared skeleton for the sanctioned live-write commands: resolve the DB (exit 2
- * on config failure), self-heal a missing DB via Python, open the backup-gated
- * live-write seam, assert schema state, run `write`, and always close. Schema
+ * on config failure), bootstrap a missing DB via the TS core, open the
+ * backup-gated live-write seam, assert schema state, run `write`, and always
+ * close. Schema
  * drift maps to exit 2; every other error propagates for the caller's own
  * handling. Callers do their argument pre-validation before invoking this.
  */
 function withLiveWriteDb(argv: readonly string[], write: (db: WritableDatabase) => number): number {
   const dbPath = resolveDbPathForCli(argv.slice(2));
   if (dbPath === null) return 2;
-  // Missing DB => unbootstrapped install; let Python bootstrap and write.
-  if (!existsSync(dbPath)) return fallbackPython(argv);
+  // Missing DB => unbootstrapped install; TS bootstraps it (CV22.DS6.TS4), then
+  // the backup-gated live-write seam opens the now-existing file.
+  bootstrapDatabaseIfMissing(dbPath);
   const db = openDatabaseForWrite(dbPath, ensureBackup(dbPath));
   try {
     assertSchemaState(db);
@@ -283,7 +287,7 @@ async function runConsultAskWithDb(argv: readonly string[]): Promise<number> {
   }
 }
 
-function tryOpenDbForConsultLogging(argv: readonly string[]): WritableDatabase | null {
+export function tryOpenDbForConsultLogging(argv: readonly string[]): WritableDatabase | null {
   let db: WritableDatabase | null = null;
   try {
     // Uses resolveDbPath directly, NOT resolveDbPathForCli -- that wrapper
@@ -305,7 +309,9 @@ function tryOpenDbForConsultLogging(argv: readonly string[]): WritableDatabase |
 async function runMemorySearch(argv: readonly string[]): Promise<number> {
   const dbPath = resolveDbPathForCli(argv.slice(1));
   if (dbPath === null) return 2;
-  if (!existsSync(dbPath)) return fallbackPython(argv);
+  // Missing DB => unbootstrapped install; TS bootstraps it (CV22.DS6.TS4) before
+  // the backup-gated search read/log path opens it.
+  bootstrapDatabaseIfMissing(dbPath);
   const db = openDatabaseForWrite(dbPath, ensureBackup(dbPath));
   try {
     assertSchemaState(db);

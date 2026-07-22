@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { bootstrapDatabase } from "../../src/db/bootstrap.ts";
+import { bootstrapDatabase, bootstrapDatabaseIfMissing } from "../../src/db/bootstrap.ts";
 import { KNOWN_MIGRATION_IDS } from "../../src/db/schemaState.ts";
 
 function tmpDbPath(): { dbPath: string; cleanup: () => void } {
@@ -51,6 +51,58 @@ test("bootstrap creates the parent directory owner-only when it did not exist", 
     const mode = statSync(join(ws.dbPath, "..")).mode & 0o777;
     if (process.platform !== "win32") {
       assert.equal(mode, 0o700);
+    }
+  } finally {
+    ws.cleanup();
+  }
+});
+
+// TS4 — first-run seam: bootstrap only when the file is absent.
+test("bootstrapDatabaseIfMissing creates a current-schema DB when the file is absent", () => {
+  const ws = tmpDbPath();
+  try {
+    assert.ok(!existsSync(ws.dbPath), "precondition: database absent");
+    bootstrapDatabaseIfMissing(ws.dbPath);
+    assert.ok(existsSync(ws.dbPath), "the helper should have created the database");
+    // No dangling handle or lock: a follow-up bootstrap and cleanup both work.
+    assert.ok(!existsSync(`${ws.dbPath}.bootstrap.lock`), "no bootstrap lock left behind");
+    const db = bootstrapDatabase(ws.dbPath);
+    try {
+      const ledger = (db.prepare("SELECT id FROM _migrations").all() as { id: string }[])
+        .map((row) => row.id)
+        .sort();
+      assert.deepEqual(ledger, [...KNOWN_MIGRATION_IDS].sort());
+    } finally {
+      db.close();
+    }
+  } finally {
+    ws.cleanup();
+  }
+});
+
+test("bootstrapDatabaseIfMissing is a no-op when the database already exists", () => {
+  const ws = tmpDbPath();
+  try {
+    const first = bootstrapDatabase(ws.dbPath);
+    const before = (
+      first.prepare("SELECT id FROM _migrations ORDER BY id").all() as {
+        id: string;
+      }[]
+    ).map((row) => row.id);
+    first.close();
+
+    bootstrapDatabaseIfMissing(ws.dbPath);
+
+    const reopened = bootstrapDatabase(ws.dbPath);
+    try {
+      const after = (
+        reopened.prepare("SELECT id FROM _migrations ORDER BY id").all() as {
+          id: string;
+        }[]
+      ).map((row) => row.id);
+      assert.deepEqual(after, before);
+    } finally {
+      reopened.close();
     }
   } finally {
     ws.cleanup();

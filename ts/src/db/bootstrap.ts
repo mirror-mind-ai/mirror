@@ -87,3 +87,22 @@ export function bootstrapDatabase(
   chmodOwnerOnly(dbPath);
   return db;
 }
+
+/**
+ * Ensure a bootstrapped database exists at `dbPath` (CV22.DS6.TS4). When the
+ * file is absent, create and migrate it through {@link bootstrapDatabase} under
+ * the cross-process lock, then close the connection so the caller can reopen in
+ * the exact mode it needs — read-only serving, or the backup-gated live-write
+ * seam. When the file already exists this is a cheap `existsSync` no-op, so the
+ * per-command hot path never pays for a lock acquire.
+ *
+ * This is the front door's first-run seam: it replaces the DS2/DS3 stopgap that
+ * delegated a missing database to Python to bootstrap. Concurrency-safe by
+ * construction — the underlying bootstrap is lock-guarded and idempotent, so
+ * even if the file appears between the check here and the call, the work is a
+ * safe no-op rather than a double-apply.
+ */
+export function bootstrapDatabaseIfMissing(dbPath: string, options: BootstrapOptions = {}): void {
+  if (existsSync(dbPath)) return;
+  bootstrapDatabase(dbPath, options).close();
+}

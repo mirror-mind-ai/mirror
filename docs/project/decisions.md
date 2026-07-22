@@ -211,6 +211,14 @@ preserves onboarding exactly, and keeps schema bootstrap single-sourced in Pytho
 until the DS6 custody transfer. TS serves only an existing database;
 configuration failures (no home resolvable) still fail loudly with exit 2.
 
+**Resolved by CV22.DS6.TS4 (2026-07-23):** the front door now bootstraps a
+missing database through the TS core (`bootstrapDatabaseIfMissing` →
+`bootstrapDatabase`) under the cross-process lock, for read and backup-gated
+write routes alike, removing this Python delegation. First run is single-language
+and schema bootstrap is TS-owned. The `tryOpenDbForConsultLogging` fail-soft
+path is the one deliberate exception — an external-API command must not create a
+database as a logging side effect. Configuration failures still fail with exit 2.
+
 ### identity.metadata contract: Python json.dumps bytes during CV22; canonicalize at DS6
 
 **Date:** 2026-07-14 · **Origin:** RS003 database audit, CR023
