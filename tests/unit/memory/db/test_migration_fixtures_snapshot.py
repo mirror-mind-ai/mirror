@@ -39,9 +39,14 @@ def _load_generator():
 
 _generator = _load_generator()
 CHECKPOINTS = _generator.CHECKPOINTS
+HAND_AUTHORED_CHECKPOINTS = _generator.HAND_AUTHORED_CHECKPOINTS
 _capture_expected = _generator._capture_expected
 
-_STEMS = [migration_id.split("_", 1)[0] for migration_id in CHECKPOINTS] + ["chain-multi-hop"]
+_STEMS = (
+    [migration_id.split("_", 1)[0] for migration_id in CHECKPOINTS]
+    + list(HAND_AUTHORED_CHECKPOINTS)
+    + ["chain-multi-hop"]
+)
 
 _REGENERATE_HINT = (
     "ts/test/fixtures/migrations/ has drifted from a live run of Python's real "
