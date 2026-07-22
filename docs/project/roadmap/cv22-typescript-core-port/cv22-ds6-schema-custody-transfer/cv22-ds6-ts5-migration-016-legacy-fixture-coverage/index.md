@@ -3,10 +3,6 @@
 **Status:** ✅ Done
 **Type:** Technical Story
 
-> **Path note:** this package sits under `roadmap/cv22/cv22-ds6/` rather than the sibling
-> convention `roadmap/cv22-typescript-core-port/cv22-ds6-schema-custody-transfer/` because of
-> the known **CR048** Ariad-scaffolder path divergence. Normalization is CR048's job.
-
 ---
 
 ## Outcome
@@ -28,12 +24,12 @@ so the cascade generator never produces NULL rows for `016` to backfill.
 
 ## Out Of Scope
 
-- Migration `015`/`016` engine changes; the other eight fixtures; the CR048 path fix;
-  marking CV22.DS6 Done (a separate closure step after this lands).
+- Migration `015`/`016` engine changes; the other eight fixtures; marking CV22.DS6
+  Done (a separate closure step after this lands).
 
 ## Depends On
 
-- [CV22.DS6.TS2](../../cv22-typescript-core-port/cv22-ds6-schema-custody-transfer/cv22-ds6-ts2-migration-engine-migrations-bookkeeping-in-ts/index.md)
+- [CV22.DS6.TS2](../cv22-ds6-ts2-migration-engine-migrations-bookkeeping-in-ts/index.md)
   — the migration engine, cascade fixtures, and the deferred `016` debt this story closes.
 
 ---

@@ -14,7 +14,7 @@ Mark CV22.DS6.TS5 Done. This closes the last carried DS6 blocker (the TS2 migrat
 
 ## Next Recommendation
 
-Navigator confirms CV22.DS6 closure (collapse to Done), then pull CV22.DS7 (command burn-down; also owns the deferred dual-write + column-authority flip). Note the CR048 scaffolder path divergence: TS5's package sits under roadmap/cv22/cv22-ds6/.
+Navigator confirms CV22.DS6 closure (collapse to Done), then pull CV22.DS7 (command burn-down; also owns the deferred dual-write + column-authority flip). (The CR048 scaffolder path divergence was corrected in-session: this package was relocated from roadmap/cv22/cv22-ds6/ to the sibling convention under cv22-typescript-core-port/cv22-ds6-schema-custody-transfer/.)
 
 ## Missing Done
 

@@ -1,9 +1,5 @@
 # Plan — CV22.DS6.TS5 — Migration-016 Legacy Fixture Coverage
 
-> Package path reflects the known **CR048** Ariad-scaffolder path divergence (siblings
-> live under `cv22-typescript-core-port/cv22-ds6-schema-custody-transfer/`); normalization
-> is CR048's job, not this story's.
-
 ## Objective
 
 Prove migration `016`'s real **ADD-COLUMN-if-missing + backfill-against-NULL-rows**
@@ -49,7 +45,6 @@ against a DB created by an **older `015`** (before `display_code` existed there)
 
 - Changing migration `015`/`016` engine code (this is coverage, not a behavior change).
 - Touching the other eight cascade fixtures.
-- Normalizing the CR048 scaffolder path.
 - Marking CV22.DS6 Done (separate closure step after this lands).
 
 ## Acceptance Behavior

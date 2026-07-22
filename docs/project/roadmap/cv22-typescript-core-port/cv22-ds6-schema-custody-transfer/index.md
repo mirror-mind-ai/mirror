@@ -3,7 +3,7 @@
 # CV22.DS6 — Schema Custody Transfer
 
 **Delivery Story:** Move all database creation, migration, and discipline from the Python core to the TypeScript core over the shared seam — bootstrap DDL, the migration engine and `_migrations` bookkeeping, cross-process bootstrap locking, and connection pragma discipline — with compatibility proven over **real legacy databases**, so the Python core can eventually be deleted without any user's `memory.db` breaking.
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 **Type:** Delivery Story
 **Depends on:** [CV22.DS2 TS Foundation & Read-Only Command Parity](../cv22-ds2-ts-foundation-read-only-parity/index.md) (done) for the `node:sqlite` driver seam and `schemaState.ts`; [CV22.DS4 Deterministic Writes](../cv22-ds4-deterministic-writes/index.md) (done) for the backup-gated live-write discipline; the [database-seam strangler decision](../../../decisions.md) and the RS003 database audit (CR019 schema custody, CR023 `identity.metadata` contract).
 
@@ -88,7 +88,7 @@ schema decisions.
 | [CV22.DS6.US1](cv22-ds6-us1-identity-metadata-canonicalization/index.md) | `identity.metadata` Canonicalization | User Story | Retired the `pyJson.ts` byte-mimicry: journey metadata now serialized as canonical `JSON.stringify` with a read-tolerant policy (no data migration — old rows converge on next write, US2 mops up residuals); write-parity grades this column semantically (per CR023) | ✅ Done |
 | [CV22.DS6.US2](cv22-ds6-us2-parent-journey-first-class-column/index.md) | `parent_journey` First-Class Column (Schema-Authorship Core) | User Story | TS authors its first new forward migration (`017`): indexed `identity.parent_journey` + JSON backfill; the three TS==Python guards are renegotiated to **TS ⊇ Python** via one enumerated divergence, and the schema-state guard tolerates a DB missing only TS-authored migrations. Runtime read/write still uses JSON | ✅ Done§ |
 | [CV22.DS6.US3](cv22-ds6-us3-journey-hierarchy-activation/index.md) | Journey Hierarchy Activation & Migrate-on-Open | User Story | Activates the US2 column: **migrate-on-open** so existing DBs receive TS-authored migrations Python cannot apply (backup-gated, under the lock; concurrency + crash-safety proven), **JSON-first dual-read** (column is a non-authoritative shadow, D1), and `_validate_parent_journey` ported with golden parity. Atomic dual-write deferred to DS7 (Navigator decision). Split from US2 — the runtime-seam half | ✅ Done |
-| [CV22.DS6.TS5](../../cv22/cv22-ds6/cv22-ds6-ts5/index.md) | Migration-016 Legacy Fixture Coverage | Technical Story | Closes the carried TS2 debt (†): a hand-authored pre-`016` legacy fixture (old-`015` shape derived from `016`'s own operations, NULL-`display_code` rows across two journeys) makes `016`'s real ADD-COLUMN + per-journey backfill genuinely execute, graded by value (RS###/CR###) against the Python oracle. Package under `roadmap/cv22/` per the CR048 scaffolder path divergence | ✅ Done |
+| [CV22.DS6.TS5](cv22-ds6-ts5-migration-016-legacy-fixture-coverage/index.md) | Migration-016 Legacy Fixture Coverage | Technical Story | Closes the carried TS2 debt (†): a hand-authored pre-`016` legacy fixture (old-`015` shape derived from `016`'s own operations, NULL-`display_code` rows across two journeys) makes `016`'s real ADD-COLUMN + per-journey backfill genuinely execute, graded by value (RS###/CR###) against the Python oracle | ✅ Done |
 
 Suggested sequence: **TS1** (fresh bootstrap) → **TS2** (forward migration over
 real legacy copies) → **TS3** (locking + pragmas that guard both) → **TS4**
@@ -103,10 +103,10 @@ schema.
 schema-authorship core; *activating* the column at runtime needs a
 migrate-on-open mechanism for existing databases (a high-blast-radius seam
 change), moved to **CV22.DS6.US3** (now ✅ Done). The carried TS2 migration-`016` fixture
-debt (†) is also now resolved by **CV22.DS6.TS5**, so DS6 has **no remaining
-blockers** and is ready for its own closure.
+debt (†) is also now resolved by **CV22.DS6.TS5**, so all children (TS1–TS5,
+US1–US3) are done and **DS6 is now ✅ Done**.
 
-† **Carried debt from TS2 — RESOLVED by [CV22.DS6.TS5](../../cv22/cv22-ds6/cv22-ds6-ts5/index.md):**
+† **Carried debt from TS2 — RESOLVED by [CV22.DS6.TS5](cv22-ds6-ts5-migration-016-legacy-fixture-coverage/index.md):**
 migration `016` (`builder_workbench_display_codes`) had no legacy-transition
 fixture; only its fresh-DB (already-modern-shape) behavior was proven, not the
 real `ADD COLUMN`/backfill-against-`NULL`-rows logic. TS5 hand-authored a pre-`016`
