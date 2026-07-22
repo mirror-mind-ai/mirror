@@ -1,0 +1,73 @@
+{
+  "cases": [
+    {
+      "error": null,
+      "journey": "solo",
+      "outcome": "ok",
+      "parent_journey": ""
+    },
+    {
+      "error": "parent_journey cannot be the journey itself",
+      "journey": "solo",
+      "outcome": "error",
+      "parent_journey": "solo"
+    },
+    {
+      "error": "Parent journey 'ghost' not found",
+      "journey": "solo",
+      "outcome": "error",
+      "parent_journey": "ghost"
+    },
+    {
+      "error": "Only one hierarchy level is supported",
+      "journey": "solo",
+      "outcome": "error",
+      "parent_journey": "mid-level"
+    },
+    {
+      "error": "Journeys with child journeys cannot also have a parent",
+      "journey": "parent-with-child",
+      "outcome": "error",
+      "parent_journey": "root"
+    },
+    {
+      "error": null,
+      "journey": "new-journey",
+      "outcome": "ok",
+      "parent_journey": "root"
+    },
+    {
+      "error": null,
+      "journey": "new-journey",
+      "outcome": "ok",
+      "parent_journey": "parent-with-child"
+    }
+  ],
+  "journey_rows": [
+    {
+      "content": "# Grandparent\n**Status:** active",
+      "key": "grandparent",
+      "metadata": null
+    },
+    {
+      "content": "# Mid Level\n**Status:** active",
+      "key": "mid-level",
+      "metadata": "{\"parent_journey\": \"grandparent\"}"
+    },
+    {
+      "content": "# Only Child\n**Status:** active",
+      "key": "only-child",
+      "metadata": "{\"parent_journey\": \"parent-with-child\"}"
+    },
+    {
+      "content": "# Parent With Child\n**Status:** active",
+      "key": "parent-with-child",
+      "metadata": null
+    },
+    {
+      "content": "# Root\n**Status:** active",
+      "key": "root",
+      "metadata": null
+    }
+  ]
+}

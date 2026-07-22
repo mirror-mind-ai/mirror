@@ -7,11 +7,17 @@
 // with a stable, deterministic comparator. Reading the rows out of the SQLite
 // seam belongs to the caller, keeping this the pure decision core.
 
+import { resolveParentJourney } from "./parentJourney.ts";
+
 /** One `journey`-layer identity row, as read from the DB. */
 export interface JourneyIdentityRow {
   key: string;
   content: string;
   metadata?: string | null;
+  /** The first-class parent column (US2). Non-authoritative in US3 (decision
+   * D1): the resolver reads JSON-first, so this is carried but ignored for the
+   * effective parent until DS7 flips authority to the column. */
+  parent_journey?: string | null;
 }
 
 /** A journey option DTO with hierarchy metadata, mirroring the Python output. */
@@ -20,20 +26,6 @@ export interface JourneyOption {
   name: string;
   status: string;
   parent_journey: string;
-}
-
-/** Parse the parent journey out of an identity row's JSON metadata, or "". */
-function parentJourney(metadata: string | null | undefined): string {
-  if (!metadata) return "";
-  let payload: unknown;
-  try {
-    payload = JSON.parse(metadata);
-  } catch {
-    return "";
-  }
-  if (payload === null || typeof payload !== "object") return "";
-  const parent = (payload as Record<string, unknown>).parent_journey;
-  return typeof parent === "string" ? parent : "";
 }
 
 /** Build the option DTO for a single journey row (name/status/parent extraction). */
@@ -50,7 +42,7 @@ function toOption(row: JourneyIdentityRow): JourneyOption {
     id: row.key,
     name: firstLine || row.key,
     status,
-    parent_journey: parentJourney(row.metadata),
+    parent_journey: resolveParentJourney(row),
   };
 }
 
