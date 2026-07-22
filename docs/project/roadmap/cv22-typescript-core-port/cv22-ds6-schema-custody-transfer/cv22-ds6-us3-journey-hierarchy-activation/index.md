@@ -2,7 +2,7 @@
 
 # CV22.DS6.US3 — Journey Hierarchy Activation & Migrate-on-Open
 
-**Status:** 🟡 In Progress
+**Status:** ✅ Done
 **Type:** User Story
 
 ---
