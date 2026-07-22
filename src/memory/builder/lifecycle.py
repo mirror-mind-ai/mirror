@@ -406,6 +406,14 @@ def render_plan_approval(cursor: BuilderDeliveryCursor) -> str:
     return wrap_ariad_surface("plan_approved", body + "\n")
 
 
+class ExpandBlockedError(ValueError):
+    """Expand resolved an authored package but cannot safely materialize children from it.
+
+    Raised instead of silently fabricating a generic story -- fabricating on top of real,
+    unparseable authored content is exactly the secondary defect that let CV22.DS7 recur.
+    """
+
+
 def expand_delivery_story(
     store: Store,
     *,
@@ -430,6 +438,12 @@ def expand_delivery_story(
     ds_index = ds_dir / "index.md"
     ds_exists = ds_index.exists()
     children = _parse_candidate_stories(ds_index.read_text(encoding="utf-8")) if ds_exists else []
+    if ds_exists and not children:
+        raise ExpandBlockedError(
+            f"authored package at {ds_dir} has no canonical candidate-stories table "
+            "(a Markdown table header must include Code, Story, Type, and Status columns); "
+            "refusing to fabricate a generic story"
+        )
 
     materialized_paths: list[Path] = [ds_index]
     materialized_artifacts: list[MaterializedArtifact] = []
@@ -593,6 +607,38 @@ def _first_pending_child(children: list[_CandidateChild]) -> _CandidateChild:
         if "Done" not in child.status and "done" not in child.status:
             return child
     return children[0]
+
+
+def render_expand_blocked(active_item: str, reason: str) -> str:
+    body = "\n".join(
+        [
+            "Delivery",
+            render_lifecycle_ribbon("expand"),
+            "",
+            "╭────────────────────────────────────────────────────────╮",
+            "│        🧭◆  EXPAND BLOCKED                             │",
+            "│                                                        │",
+            _card_text("delivery story"),
+            _card_text(f"🟦[{active_item}]"),
+            "│                                                        │",
+            _card_text("why blocked"),
+            *_card_wrapped(reason),
+            "│                                                        │",
+            _card_text("required Navigator action"),
+            *_card_wrapped(
+                "Add a canonical candidate-stories table (Markdown table header including "
+                "Code, Story, Type, and Status columns) to the resolved package's index.md, "
+                "or resolve the duplicate heading, then Expand again."
+            ),
+            "│                                                        │",
+            _card_text("boundary"),
+            *_card_wrapped(
+                "No files were materialized. Expand refuses to fabricate a generic story."
+            ),
+            "╰────────────────────────────────────────────────────────╯",
+        ]
+    )
+    return wrap_ariad_surface("expand_blocked", body + "\n")
 
 
 def render_expand_report(report: BuilderExpandReport) -> str:

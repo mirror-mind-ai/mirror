@@ -44,6 +44,7 @@ from memory.builder.home_surface import (
 )
 from memory.builder.lifecycle import (
     BuilderLifecycleItem,
+    ExpandBlockedError,
     approve_plan_checkpoint,
     assert_implementation_allowed,
     coherence_lifecycle_item,
@@ -55,6 +56,7 @@ from memory.builder.lifecycle import (
     render_coherence_checkpoint,
     render_delivery_story_ready_report,
     render_done_checkpoint,
+    render_expand_blocked,
     render_implementation_guard_allowed,
     render_implementation_guard_blocked,
     render_plan_approval,
@@ -84,7 +86,11 @@ from memory.builder.pull_candidates import (
 from memory.builder.resume_state import read_builder_resume_state
 from memory.builder.resume_surface import render_builder_resume_surface
 from memory.builder.roadmap_position import resolve_roadmap_position
-from memory.builder.story_paths import create_story_directory, resolve_story_directory
+from memory.builder.story_paths import (
+    StoryPackageAmbiguityError,
+    create_story_directory,
+    resolve_story_directory,
+)
 from memory.builder.surface_protocol import wrap_ariad_surface
 from memory.builder.template_generation import (
     prepare_method_templates,
@@ -610,12 +616,16 @@ def cmd_pull_item(
         if not project_path:
             print("Error: Delivery Story expansion requires project_path.", file=sys.stderr)
             sys.exit(1)
-        expand_report = expand_delivery_story(
-            mem.store,
-            journey=resolved_journey,
-            method=method,
-            project_path=Path(project_path),
-        )
+        try:
+            expand_report = expand_delivery_story(
+                mem.store,
+                journey=resolved_journey,
+                method=method,
+                project_path=Path(project_path),
+            )
+        except (ExpandBlockedError, StoryPackageAmbiguityError) as exc:
+            print(render_expand_blocked(item_code, str(exc)))
+            sys.exit(1)
         print(
             render_delivery_story_ready_report(
                 pull=report,

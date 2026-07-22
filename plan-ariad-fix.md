@@ -1,6 +1,7 @@
 # Plan — Ariad Expand Scaffolder Path-Divergence Fix
 
-**Status:** P1 (core fix) implemented and green. Pre-flight fixes applied. P2–P4 pending.
+**Status:** P1 (core fix) and P2 (fail-loud on ambiguity/unparseable) implemented and green. Pre-flight
+fixes applied. P3–P4 pending.
 **Companion:** `handoff-ariad-fix.MD` (original analysis). This plan supersedes the handoff's phasing
 where they differ (notably: the correct resolver already exists; the fix is a DRY consolidation).
 **Tracking:** maintenance patch on `main` in this `mirror-dev` workspace. No Ariad CR / no method adoption.
@@ -200,12 +201,27 @@ One pre-existing test (`test_build_pull_delivery_story_prepares_and_expands`) re
 - **Result:** full repo test suite green (all packages), `ruff check` clean, doc-link checker clean,
   duplicate-heading re-scan clean.
 
-### P2 — Fail loud on ambiguity / unparseable
-- Expand resolves a package but `_parse_candidate_stories == []` → emit a first-class wrapped Ariad surface
-  `<<<ARIAD:EXPAND_BLOCKED>>>` (resolved path, why unconsumable, required Navigator action), write nothing,
-  stop. No "recommended story" field on the blocked path.
-- Duplicate heading → resolver raises `StoryPackageAmbiguityError`.
-- TDD: QA test 3.
+### P2 — Fail loud on ambiguity / unparseable — ✅ done
+- Added `ExpandBlockedError(ValueError)` in `lifecycle.py`. `expand_delivery_story` now raises it when a
+  package is resolved (`ds_exists`) but `_parse_candidate_stories` returns no children — the resolved path is
+  named in the message; nothing is written (no fabricated skeleton). The pre-existing "fresh creation, nothing
+  authored yet" fabricate-a-skeleton path is unchanged (`not ds_exists`).
+- Added `render_expand_blocked(active_item, reason)`, a `wrap_ariad_surface("expand_blocked", ...)` surface
+  matching the visual grammar of the other lifecycle cards (ribbon, box, `_card_text`/`_card_wrapped`).
+  Visually verified against `render_implementation_guard_blocked`/`render_expand_report` line widths after an
+  initial hand-typed border came out short (53 vs the required 58 chars) — fixed by extracting and reusing
+  the exact verified border string programmatically rather than retyping box-drawing characters by hand.
+- Wired in `cli/build.py`'s `cmd_pull_item`: the `expand_delivery_story` call is wrapped in
+  `try/except (ExpandBlockedError, StoryPackageAmbiguityError)`, rendering `render_expand_blocked` and
+  `sys.exit(1)` — the same catch-and-render-then-exit pattern already established for
+  `assert_implementation_allowed`/`render_implementation_guard_blocked`. Ambiguity
+  (`StoryPackageAmbiguityError`, already raised unconditionally by `resolve_story_directory` since P1)
+  required no new raise site — it now simply gets caught and rendered instead of propagating as a raw
+  traceback.
+- TDD: 2 new lifecycle-level tests (unparseable-table on a resolved package; ambiguous duplicate heading) +
+  2 new CLI-level tests (same two conditions through the real `cmd_pull_item` entry point, asserting
+  `EXPAND_BLOCKED` renders and `DELIVERY_STORY_READY`/`ARTIFACTS_MATERIALIZED` do not). All written red-first.
+- **Result:** full repo test suite green, `ruff check` clean, doc-link checker clean.
 
 ### P3 — CI guardrail (kill the class)
 - Extend `src/memory/docs_lint.py`: reject any two `docs/**/index.md` sharing a `# <code> —` heading.
@@ -235,11 +251,16 @@ One pre-existing test (`test_build_pull_delivery_story_prepares_and_expands`) re
    pre-existing `test_build_plan_item_renders_checkpoint_and_updates_cursor` (legacy bullet grammar) and
    `test_build_pull_delivery_story_prepares_and_expands` (table grammar) — no dedicated new test written for
    this case, since real pre-existing coverage already exercises it end to end through the CLI.
-3. ⏳ **Unparseable-table:** pending — P2.
+3. ✅ **Unparseable-table:** implemented as `test_expand_blocks_on_unparseable_candidate_table_for_resolved_package`
+   (lifecycle) and `test_build_pull_delivery_story_blocks_on_unparseable_candidate_table` (CLI, real entry
+   point). Also added an ambiguity counterpart (`_blocks_on_ambiguous_duplicate_heading`, both levels), one
+   test beyond the original matrix item, since P2 groups both conditions under one fail-loud path.
 4. ⏳ **Path-escape:** the `is_relative_to(roadmap_root)` guard is implemented in `create_story_directory`;
    no dedicated adversarial-title test written yet — pending.
 5. ⏳ **Duplicate-heading guard (CI):** pending — P3. Manual pre-flight scan already confirmed the invariant
-   holds against this repo's real roadmap today.
+   holds against this repo's real roadmap today. Note: `resolve_story_directory`'s own runtime
+   `StoryPackageAmbiguityError` (P1/P2) already enforces "exactly one" at resolution time — P3 adds the
+   static, pre-runtime CI guard on top.
 6. ✅ **Lifecycle consistency:** `cli._canonical_package_path` and `expand_delivery_story` now share the exact
    same `resolve_story_directory`/`create_story_directory` — provable by construction (one resolver, one
    creator, both call sites), and exercised indirectly by the full CLI + builder test suite.

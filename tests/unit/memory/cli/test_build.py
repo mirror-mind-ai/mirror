@@ -1646,6 +1646,94 @@ def test_build_pull_delivery_story_prepares_and_expands(mocker, tmp_path, capsys
     ).exists()
 
 
+def test_build_pull_delivery_story_blocks_on_unparseable_candidate_table(mocker, tmp_path, capsys):
+    # Reproduces the CV22.DS7 secondary defect through the real CLI entry point:
+    # an authored DS package with a non-canonical candidate table must block
+    # Expand with a rendered EXPAND_BLOCKED surface, not silently fabricate a
+    # generic story and print DELIVERY_STORY_READY as if nothing were wrong.
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    project_path = tmp_path / "project"
+    ds_dir = (
+        project_path
+        / "docs/project/roadmap/cv2-checkout-flow/cv2-ds1-checkout-entry-and-address-capture"
+    )
+    ds_dir.mkdir(parents=True)
+    (ds_dir / "index.md").write_text(
+        """# CV2.DS1 — Checkout entry and address capture
+
+**Status:** 🟡 Planned
+
+## Candidate Stories
+
+| Family | Scope | Type | Risk |
+|--------|-------|------|------|
+| Checkout | Address capture | User Story | Medium |
+
+## Done Condition
+
+Done.
+""",
+        encoding="utf-8",
+    )
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    mem.journeys.set_project_path("sandbox-pet-store", str(project_path))
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(mem.store, journey="sandbox-pet-store", method="ariad")
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    with pytest.raises(SystemExit) as exc:
+        build.cmd_pull_item(
+            "ariad",
+            journey="sandbox-pet-store",
+            item_code="CV2.DS1",
+            item_title="Checkout entry and address capture",
+            item_level="delivery_story",
+            why_now="next candidate capability",
+        )
+
+    assert exc.value.code == 1
+    out = capsys.readouterr().out
+    assert "<<<ARIAD:EXPAND_BLOCKED>>>" in out
+    assert "canonical candidate-stories table" in out
+    assert "<<<ARIAD:DELIVERY_STORY_READY>>>" not in out
+    assert "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>" not in out
+
+
+def test_build_pull_delivery_story_blocks_on_ambiguous_duplicate_heading(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    project_path = tmp_path / "project"
+    for suffix in ("a", "b"):
+        dupe_dir = project_path / f"docs/project/roadmap/cv9-ds1-duplicate-{suffix}"
+        dupe_dir.mkdir(parents=True)
+        (dupe_dir / "index.md").write_text(
+            "# CV9.DS1 — Duplicate Story\n\n**Status:** 🟡 Planned\n", encoding="utf-8"
+        )
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    mem.journeys.set_project_path("sandbox-pet-store", str(project_path))
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(mem.store, journey="sandbox-pet-store", method="ariad")
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    with pytest.raises(SystemExit) as exc:
+        build.cmd_pull_item(
+            "ariad",
+            journey="sandbox-pet-store",
+            item_code="CV9.DS1",
+            item_title="Duplicate Story",
+            item_level="delivery_story",
+            why_now="next candidate capability",
+        )
+
+    assert exc.value.code == 1
+    out = capsys.readouterr().out
+    assert "<<<ARIAD:EXPAND_BLOCKED>>>" in out
+    assert "roadmap packages claim code" in out
+
+
 def test_build_pull_item_updates_cursor(mocker, tmp_path, capsys):
     mirror_home = tmp_path / ".mirror" / "pati"
     db_path = default_db_path_for_home(mirror_home)

@@ -7,6 +7,7 @@ from memory.builder.ariad_method import get_ariad_method
 from memory.builder.delivery_cursor import get_delivery_cursor, set_delivery_cursor
 from memory.builder.lifecycle import (
     BuilderLifecycleItem,
+    ExpandBlockedError,
     _story_folder_name,
     assert_implementation_allowed,
     expand_delivery_story,
@@ -18,6 +19,7 @@ from memory.builder.lifecycle import (
     render_pull_report,
     validate_lifecycle_item,
 )
+from memory.builder.story_paths import StoryPackageAmbiguityError
 from memory.config import default_db_path_for_home
 
 
@@ -755,6 +757,71 @@ Done.
     assert report.cursor.child_work_items == ("CV3.DS1.US1",)
     assert (ds_dir / "cv3-ds1-us1-do-the-thing" / "index.md").exists()
     assert sorted(p.name for p in roadmap_root.iterdir()) == ["legacy-cv3-folder"]
+
+
+# --- Ariad Expand P2: fail loud instead of fabricating on ambiguity/unparseable ---
+
+
+def test_expand_blocks_on_unparseable_candidate_table_for_resolved_package(tmp_path):
+    # Reproduces the CV22.DS7 secondary defect: an authored, RESOLVED package
+    # whose candidate table doesn't match the canonical grammar (it used
+    # `| Family | Scope | Type | Risk |` instead of `| Code | Story | Type |
+    # Outcome | Status |`). Expand must refuse and fail loud -- not silently
+    # fabricate a generic "US1" story that ignores real authored content.
+    _client, store = _store(tmp_path)
+    project = tmp_path / "project"
+    roadmap_root = project / "docs" / "project" / "roadmap"
+    cv_dir = roadmap_root / "cv22-typescript-core-port"
+    cv_dir.mkdir(parents=True)
+    (cv_dir / "index.md").write_text(
+        "# CV22 — TypeScript Core Port\n\n**Status:** In Progress\n", encoding="utf-8"
+    )
+    ds_dir = cv_dir / "cv22-ds7-command-burn-down"
+    ds_dir.mkdir(parents=True)
+    ds_index = ds_dir / "index.md"
+    non_canonical = """# CV22.DS7 — Command Burn-Down
+
+**Status:** 🟡 Planned
+
+## Candidate Stories
+
+| Family | Scope | Type | Risk |
+|--------|-------|------|------|
+| Command surface | Burn down legacy commands | Technical Story | High |
+
+## Done Condition
+
+Done.
+"""
+    ds_index.write_text(non_canonical, encoding="utf-8")
+    _seed_ds_cursor(store, active_item="CV22.DS7", title="Command Burn-Down")
+
+    with pytest.raises(ExpandBlockedError, match="canonical candidate-stories table"):
+        expand_delivery_story(store, journey="uncle-vinny", method="ariad", project_path=project)
+
+    # Refuses to fabricate: the resolved package is untouched, no child folder
+    # was created anywhere under it.
+    assert list(ds_dir.iterdir()) == [ds_index]
+    assert ds_index.read_text(encoding="utf-8") == non_canonical
+
+
+def test_expand_blocks_on_ambiguous_duplicate_heading(tmp_path):
+    # Two packages claim the same code -- the roadmap-integrity invariant
+    # ("one code -> one package") is violated. Expand must fail loud rather
+    # than silently pick one (which is exactly how CR048-class bugs recur).
+    _client, store = _store(tmp_path)
+    project = tmp_path / "project"
+    roadmap_root = project / "docs" / "project" / "roadmap"
+    for suffix in ("a", "b"):
+        dupe_dir = roadmap_root / f"cv9-ds1-duplicate-{suffix}"
+        dupe_dir.mkdir(parents=True)
+        (dupe_dir / "index.md").write_text(
+            "# CV9.DS1 — Duplicate Story\n\n**Status:** 🟡 Planned\n", encoding="utf-8"
+        )
+    _seed_ds_cursor(store, active_item="CV9.DS1", title="Duplicate Story")
+
+    with pytest.raises(StoryPackageAmbiguityError):
+        expand_delivery_story(store, journey="uncle-vinny", method="ariad", project_path=project)
 
 
 def test_existing_roadmap_components_stay_filesystem_safe():
