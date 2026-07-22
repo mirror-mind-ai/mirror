@@ -235,7 +235,7 @@ def test_plan_delivery_story_preserves_existing_package_artifacts(tmp_path):
     assert ("test guide", "existing") in statuses
 
 
-def test_approve_delivery_story_plan_updates_plan_and_preserves_package(tmp_path):
+def test_approve_delivery_story_plan_preserves_authored_plan(tmp_path):
     _client, store = _store(tmp_path)
     artifact = tmp_path / "cv20-ds5" / "plan.md"
     set_delivery_cursor(
@@ -255,6 +255,12 @@ def test_approve_delivery_story_plan_updates_plan_and_preserves_package(tmp_path
         child_work_items=("CV20.DS5.US1",),
         plan_artifact_path=artifact,
     )
+    # The driver authors real content into a scaffolded contract section.
+    authored = artifact.read_text(encoding="utf-8").replace(
+        "Pending \u2014 name what this Delivery Story delivers across its child work packages.",
+        "Ship the aggregate checkout flow across CV20.DS5.US1.",
+    )
+    artifact.write_text(authored, encoding="utf-8")
     index_bytes = (artifact.parent / "index.md").read_bytes()
     test_guide_bytes = (artifact.parent / "test-guide.md").read_bytes()
 
@@ -265,11 +271,12 @@ def test_approve_delivery_story_plan_updates_plan_and_preserves_package(tmp_path
         plan_artifact_path=artifact,
     )
 
+    assert artifact.read_text(encoding="utf-8") == authored
     assert (artifact.parent / "index.md").read_bytes() == index_bytes
     assert (artifact.parent / "test-guide.md").read_bytes() == test_guide_bytes
-    statuses = {(artifact.kind, artifact.status) for artifact in report.materialized_artifacts}
+    statuses = {(item.kind, item.status) for item in report.materialized_artifacts}
     assert ("story index", "existing") in statuses
-    assert ("plan", "updated") in statuses
+    assert ("plan", "existing") in statuses
     assert ("test guide", "existing") in statuses
 
 
@@ -306,3 +313,58 @@ def test_delivery_story_plan_artifact_scaffolds_plan_contract_outputs(tmp_path):
     assert "## Acceptance Behavior" in plan_text
     assert "## Validation Route" in plan_text
     assert "## Implementation Contract" in plan_text
+
+
+def test_delivery_story_plan_artifact_omits_mutable_status(tmp_path):
+    _client, store = _store(tmp_path)
+    artifact = tmp_path / "cv20-ds5" / "plan.md"
+    set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS5",
+        active_item_title="Delivery Story Level Lifecycle",
+        active_item_level="delivery_story",
+        navigator_flow_unit="delivery_story",
+    )
+    plan_delivery_story_checkpoint(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        objective="Approve aggregate DS plan.",
+        child_work_items=("CV20.DS5.US1",),
+        plan_artifact_path=artifact,
+    )
+
+    plan_text = artifact.read_text(encoding="utf-8")
+    assert "**Status:**" not in plan_text
+    assert "## Approval Gate" not in plan_text
+    assert "## Boundary" not in plan_text
+
+
+def test_approve_delivery_story_plan_creates_plan_when_absent(tmp_path):
+    _client, store = _store(tmp_path)
+    artifact = tmp_path / "cv20-ds5" / "plan.md"
+    set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS5",
+        active_item_level="delivery_story",
+        navigator_flow_unit="delivery_story",
+        child_work_items=("CV20.DS5.US1",),
+        active_checkpoint="after_delivery_story_plan",
+        pending_confirmation="navigator_delivery_story_plan_approval",
+        aggregate_checkpoint_status=("plan:pending",),
+    )
+
+    report = approve_delivery_story_plan(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        plan_artifact_path=artifact,
+    )
+
+    assert artifact.exists()
+    statuses = {(item.kind, item.status) for item in report.materialized_artifacts}
+    assert ("plan", "created") in statuses

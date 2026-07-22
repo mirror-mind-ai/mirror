@@ -252,12 +252,6 @@ def _next_movement(report: DeliveryStoryPlanReport) -> str:
     return "Review the plan artifact, then approve or revise."
 
 
-def _boundary(report: DeliveryStoryPlanReport) -> str:
-    if report.status == "approved":
-        return "DS-level Plan is approved; child work may proceed under the aggregate contract."
-    return "Implementation remains blocked until the DS-level Plan is approved."
-
-
 def _card_text(text: str) -> str:
     width = 54
     return f"│ {text[:width]:<{width}} │"
@@ -324,7 +318,17 @@ def _write_delivery_story_package(
     index_existed = index_path.exists()
     test_guide_existed = test_guide_path.exists()
 
-    plan_path.write_text(_render_plan_artifact(report), encoding="utf-8")
+    if report.status == "approved":
+        # Approval blesses the authored plan without rewriting it; the Builder
+        # delivery cursor owns approval state, so plan.md is preserved when it
+        # already exists (created only as a fallback when absent).
+        if not plan_existed:
+            plan_path.write_text(_render_plan_artifact(report), encoding="utf-8")
+        plan_artifact = _package_artifact("plan", plan_path, existed_before=plan_existed)
+    else:
+        plan_path.write_text(_render_plan_artifact(report), encoding="utf-8")
+        plan_artifact = materialized_artifact("plan", plan_path, existed_before=plan_existed)
+
     if not index_existed:
         index_path.write_text(_render_index_artifact(report), encoding="utf-8")
     if not test_guide_existed:
@@ -332,7 +336,7 @@ def _write_delivery_story_package(
 
     return (
         _package_artifact("story index", index_path, existed_before=index_existed),
-        materialized_artifact("plan", plan_path, existed_before=plan_existed),
+        plan_artifact,
         _package_artifact("test guide", test_guide_path, existed_before=test_guide_existed),
     )
 
@@ -346,14 +350,8 @@ def _package_artifact(kind: str, path: Path, *, existed_before: bool) -> Materia
 
 def _render_plan_artifact(report: DeliveryStoryPlanReport) -> str:
     child_items = "\n".join(f"- {item}" for item in report.child_work_items) or "- none"
-    approval_gate = (
-        "none"
-        if report.status == "approved"
-        else "checkpoint: after_delivery_story_plan; pending: navigator_delivery_story_plan_approval"
-    )
     return f"""# Delivery Story Plan — {report.delivery_story}
 
-**Status:** {report.status}
 **Journey:** {report.journey}
 **Method:** {report.method}
 **Navigator Flow Unit:** {FLOW_UNIT_DELIVERY_STORY}
@@ -390,13 +388,9 @@ Pending \u2014 describe how the aggregate delivery is validated, including wheth
 
 Pending \u2014 record the constraints for child work: TDD for behavior changes, changes scoped to this Delivery Story's children, and no silent scope absorption.
 
-## Approval Gate
+---
 
-{approval_gate}
-
-## Boundary
-
-{_boundary(report)}
+_Approval and lifecycle state are tracked by the Builder runtime, not duplicated in this plan._
 """
 
 

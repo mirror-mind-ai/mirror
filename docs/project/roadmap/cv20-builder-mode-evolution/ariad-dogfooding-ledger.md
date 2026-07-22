@@ -31,7 +31,7 @@ migration (that journey's Chapter 7). Sequence exercised: `build adopt` →
 |----|----------|------|-------------------|--------|
 | AF-001 | Major | Expand ignores authored candidate-story table | CV20.DS5 (child expansion) | ✅ Fixed (CV20.DS13) |
 | AF-002 | Major | Surface reports a file it did not write | CV20.DS4.TS3 (deterministic surfaces) | ✅ Fixed |
-| AF-003 | Major | DS plan template thinner than `plan_contract` | CV20.DS5 (DS plan artifact) | ◐ Partial |
+| AF-003 | Major | DS plan template thinner than `plan_contract` | CV20.DS5 (DS plan artifact) | ✅ Fixed |
 | AF-004 | Minor | Scope-confirmation checkpoint collapses into plan | CV20.DS5 + cadence | Open |
 | AF-005 | Minor | Self-nested roadmap tree; child == parent | CV20.DS5 (expansion) | ✅ Fixed (CV20.DS13) |
 | AF-006 | Minor | Approve reports "updated story index" but file is unchanged | CV20.DS4.TS3 (deterministic surfaces) | ✅ Fixed |
@@ -129,7 +129,7 @@ quietly corrodes trust in every other surface.
 
 ## AF-003 — DS plan template is thinner than the method's own `plan_contract`
 
-**Severity:** Major **Status:** ◐ Partially fixed (mirror journey) **Likely owner:** CV20.DS5 (DS plan artifact) / template set
+**Severity:** Major **Status:** ✅ Fixed (mirror journey) **Likely owner:** CV20.DS5 (DS plan artifact) / template set
 
 **Resolution (template scaffold).** The DS `plan.md` now scaffolds a headed
 placeholder section for every `plan_contract.required_outputs` entry — Scope,
@@ -139,13 +139,18 @@ template covers every declared required output, so template and contract cannot
 silently diverge (the runtime's declared contract stays the single source of
 truth).
 
-**Residual (open).** Two coupled follow-ups remain: (a) `approve-delivery-story-plan`
-still regenerates `plan.md` from the report, so authored contract sections are
-not preserved on approval — the scaffold is fillable but not yet durable across
-approve; and (b) approve does not yet validate that the required sections are
-non-empty before recording approval. Both hinge on one design decision — whether
-approve should preserve the authored plan body, do a surgical status-only update,
-or keep regenerating — which is a Navigator-level call, not a silent change.
+**Resolution (durable across approval).** The authored plan is now durable. The
+Navigator chose the team's pure-preserve design: mutable state (`**Status:**`,
+Approval Gate, Boundary) was removed from the `plan.md` template entirely — the
+Builder delivery cursor and the `DELIVERY_STORY_PLAN_CHECKPOINT` surface remain
+the single source of truth for approval state — and `approve-delivery-story-plan`
+now preserves `plan.md` (insert-if-absent) instead of regenerating it. Authored
+contract sections survive approval byte-for-byte; a regression test locks it.
+
+**Optional enhancement (not blocking).** Approve could additionally validate that
+the required sections are non-empty (warn or soft-block on unfilled `Pending`)
+before recording approval. Distinct mechanism; tracked as a future increment, not
+a defect.
 
 **Context.** `plan-delivery-story` materialized `plan.md`.
 
