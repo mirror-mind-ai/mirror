@@ -167,6 +167,29 @@ future plan checkpoint can claim they were unknown:
 Full audit and the CV9 backlog live at `docs/project/ai-engineering-audit.md`
 (on `main`).
 
+## Maintenance-Sync Riders
+
+Recorded when a `main` maintenance fix is merged into the port branch, so the
+obligation it creates for a not-yet-pulled Delivery Story is not rediscovered the
+hard way:
+
+- **DS7 slug parity (`kebab_slug`), from the v0.31.2 merge (`1c4e55a`):** the
+  Builder fix consolidated four drifted Python `_slugify` copies into a single
+  `memory.utils.kebab_slug` — strip accents → kebab → **hard 80-char cap**, with
+  an empty result yielding the bare code folder (never a trailing-hyphen name) —
+  to stop an `OSError: File name too long` crash in `build pull-item` on
+  paragraph-length Story titles. That logic is **pure Python today**: no TS
+  counterpart exists, and every slug-generating command (`build` lifecycle,
+  explorer handoff) is Python fallback, so nothing is stale now and the
+  oracle-drift tripwire correctly does not track it. When **DS7** ports the
+  Builder/Ariad tree, the TS port **must** replicate this contract from one
+  shared function used by *both* the path writer and the path locator — the
+  original bug was writer/locator drift — and then register
+  `src/memory/utils.py:kebab_slug` in `ts/parity/oracle-baseline.json` with a
+  golden fixture. Related carried debt: **D-012** (candidate-table *code* cell
+  still unsanitized) and **D-013** (`transcript_export.slugify` is a separate
+  capped-kebab sibling), both in [`debt.md`](../../debt.md).
+
 ## Non-Goals
 
 - **No big-bang rewrite.** The Python core is never replaced wholesale; it
