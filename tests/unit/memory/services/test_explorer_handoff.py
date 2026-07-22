@@ -124,3 +124,24 @@ def test_write_builder_handoff_artifacts_avoids_existing_directory(tmp_path):
     )
 
     assert handoff.artifact_dir.endswith("build-explorer-persistence-2")
+
+
+def test_write_builder_handoff_artifacts_caps_long_title_folder(tmp_path):
+    # A paragraph-length handoff title must not crash mkdir on the es_id folder.
+    story = ExplorerStory(journey="explorer-mode")
+    long_title = "decide hosting and managed postgres and secrets and headers " * 15
+
+    handoff = write_builder_handoff_artifacts(tmp_path, story, title=long_title)
+
+    base = Path(handoff.artifact_dir)
+    assert base.is_dir()
+    assert len(base.name.encode()) <= 80
+
+
+def test_write_builder_handoff_artifacts_falls_back_for_empty_slug(tmp_path):
+    # An all-punctuation title slugifies to empty; keep the 'exploration' fallback.
+    story = ExplorerStory(journey="explorer-mode")
+
+    handoff = write_builder_handoff_artifacts(tmp_path, story, title="!!! ??? ...")
+
+    assert Path(handoff.artifact_dir).name == "exploration"

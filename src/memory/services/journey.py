@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 from memory.models import Identity
 from memory.storage.store import Store
-from memory.utils import strip_accents
+from memory.utils import kebab_slug, strip_accents
 
 if TYPE_CHECKING:
     from memory.services.identity import IdentityService
@@ -31,13 +31,6 @@ def _metadata_dict(raw: str | None) -> dict:
     except (json.JSONDecodeError, TypeError):
         return {}
     return payload if isinstance(payload, dict) else {}
-
-
-def _slugify(value: str) -> str:
-    normalized = strip_accents(value).lower()
-    normalized = re.sub(r"[^a-z0-9]+", "-", normalized).strip("-")
-    normalized = re.sub(r"-+", "-", normalized)
-    return normalized[:80].strip("-")
 
 
 def _validate_slug(slug: str) -> str:
@@ -74,7 +67,7 @@ class JourneyService:
         if not isinstance(description, str) or len(description.strip()) < 20:
             raise ValueError("description must be at least 20 characters")
         clean_name = (name or "").strip() or self._infer_name(description)
-        clean_slug = _validate_slug(slug) if slug else _validate_slug(_slugify(clean_name))
+        clean_slug = _validate_slug(slug) if slug else _validate_slug(kebab_slug(clean_name))
         clean_status = self._validate_status(status)
         clean_stage = (stage or "").strip() or "Starting"
         clean_focus = (current_focus or "").strip() or "Clarify the next concrete movement."

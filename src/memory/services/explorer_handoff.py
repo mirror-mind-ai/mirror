@@ -11,6 +11,7 @@ from memory.services.explorer_story import (
     ExplorerSourceConversation,
     ExplorerStory,
 )
+from memory.utils import kebab_slug
 
 
 @dataclass(frozen=True)
@@ -39,7 +40,7 @@ def write_builder_handoff_artifacts(
 ) -> ExplorerBuilderHandoff:
     """Write Explorer handoff docs under a project's exploration folder."""
     project_path = project_path.expanduser()
-    es_id = _slugify(title or story.current_exploratory_story or story.journey)
+    es_id = kebab_slug(title or story.current_exploratory_story or story.journey) or "exploration"
     base = project_path / "docs" / "project" / "explorations" / es_id
     suffix = 2
     while base.exists():
@@ -431,11 +432,6 @@ def _render_experiment(story: ExplorerStory) -> str:
         lines.append("")
         lines.append(proposal.description)
     return "\n".join(lines)
-
-
-def _slugify(value: str) -> str:
-    slug = re.sub(r"[^a-zA-Z0-9]+", "-", value.strip().lower()).strip("-")
-    return slug or "exploration"
 
 
 def source_conversations_from_story(

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -17,6 +16,7 @@ from memory.builder.method_definition import ContractDefinition, MethodDefinitio
 from memory.builder.roadmap_grammar import strip_markdown_link as _strip_markdown_link
 from memory.builder.surface_protocol import wrap_ariad_surface
 from memory.storage.store import Store
+from memory.utils import kebab_slug
 
 _ALLOWED_PULL_LEVELS = ("delivery_story", "user_story", "technical_story")
 
@@ -1398,9 +1398,9 @@ def _materialized_summary(report: BuilderExpandReport) -> tuple[str, ...]:
         return ("none",)
     summaries: list[str] = []
     for path in report.materialized_paths:
-        if path.parent.name == _slugify(report.delivery_story.lower()):
+        if path.parent.name == kebab_slug(report.delivery_story.lower()):
             summaries.append("DS package")
-        elif path.parent.name.endswith(_slugify(report.recommended_story.split(".")[-1].lower())):
+        elif path.parent.name.endswith(kebab_slug(report.recommended_story.split(".")[-1].lower())):
             summaries.append(f"{report.recommended_story.split('.')[-1]} package")
         elif report.delivery_story.lower().replace(".", "-") in str(path):
             summaries.append("DS package")
@@ -1827,18 +1827,15 @@ def _artifact_directory(project_path: Path, code: str, title: str) -> Path:
     for index, part in enumerate(parts):
         accumulated.append(part)
         prefix = "-".join(accumulated)
-        title_slug = _slugify(titles[index]) if index < len(titles) else ""
+        title_slug = kebab_slug(titles[index]) if index < len(titles) else ""
         path = path / (f"{prefix}-{title_slug}" if title_slug else prefix)
     return path
 
 
 def _story_folder_name(code: str, title: str) -> str:
-    return f"{code.lower().replace('.', '-')}-{_slugify(title)}"
-
-
-def _slugify(text: str) -> str:
-    slug = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
-    return re.sub(r"-+", "-", slug)
+    code_part = code.lower().replace(".", "-")
+    slug = kebab_slug(title)
+    return f"{code_part}-{slug}" if slug else code_part
 
 
 def _user_story_statement(title: str) -> str:
