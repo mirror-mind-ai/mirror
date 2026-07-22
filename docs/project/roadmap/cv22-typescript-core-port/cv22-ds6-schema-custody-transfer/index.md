@@ -134,7 +134,11 @@ for the original debt record.
 
 ## Done Condition
 
-- Database **creation, migration, `_migrations` bookkeeping, cross-process
+> ✅ **Met — CV22.DS6 is Done.** Every criterion below is satisfied across the
+> eight completed children (TS1–TS5, US1–US3); migration `016`'s legacy coverage
+> — the last gap — closed in TS5.
+
+- ✅ Database **creation, migration, `_migrations` bookkeeping, cross-process
   locking, and pragma discipline** are answered by the TS core; the DS2
   new-database-bootstrap delegation to Python is removed.
 - Compatibility is proven over **real legacy database copies** at multiple

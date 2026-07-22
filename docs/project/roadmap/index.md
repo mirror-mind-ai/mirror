@@ -126,12 +126,14 @@ routing for `identity set` and `journey set-path`. DS5 closed the replay-safe
 external-API plateau: provider record/replay + secrets substrate, fresh embedding
 search, extraction orchestration, consult core, and gated front-door routing for
 validated external command surfaces. DS6 (Schema Custody Transfer, the deletion
-gate) has 2 of 5 children done: DS6.TS1 ported the fresh-database schema DDL with
-structural parity proven against a committed Python snapshot; DS6.TS2 ported the
-migration engine with parity proven over real legacy-transition fixtures (a
-cascading generator, 8 checkpoints), carrying one deferred, tracked gap
-(migration `016`'s legacy-transition coverage) to close before DS6 itself can be
-marked Done. The strategy is recorded in
+gate) is **done**: all eight children (TS1–TS5, US1–US3) moved schema-bootstrap
+DDL, the migration engine and `_migrations` bookkeeping, cross-process locking,
+and pragma discipline to the TS core, canonicalized `identity.metadata`, and made
+`parent_journey` a first-class column with runtime migrate-on-open activation —
+with compatibility proven over real legacy database copies at multiple historical
+migration states, including migration `016`'s real ADD-COLUMN + backfill (the last
+gap, closed in TS5). The Python core can now be retired without breaking any
+`memory.db`, subject to the DS7+ command burn-down. The strategy is recorded in
 [Decisions](../decisions.md). See the [CV22 index](cv22-typescript-core-port/index.md).
 
 ## CV11 — Localization

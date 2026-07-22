@@ -26,7 +26,7 @@ still uses the JSON metadata.
 > foundational well beyond this column. By Navigator decision that activation +
 > adoption is split into **[CV22.DS6.US3](../cv22-ds6-us3-journey-hierarchy-activation/index.md)**.
 > This story delivers the proven schema-authorship core. See
-> [Decisions](../../../decisions.md).
+> [Decisions](../../../../decisions.md).
 
 ## Acceptance Behavior (delivered)
 
