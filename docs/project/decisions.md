@@ -60,9 +60,10 @@ Decided:
    fine-grained sliced — hand off at coherent plateaus.
 
 The `memory → mirror` package rename stays open and gated to DS10; it is a
-decision, not a given. DS6 is authored as a full package
-([CV22.DS6 — Schema Custody Transfer](roadmap/cv22-typescript-core-port/cv22-ds6-schema-custody-transfer/index.md));
-DS7–DS10 stay as delivery-level scope until pulled.
+decision, not a given. DS6 and DS7 are authored as full packages
+([CV22.DS6 — Schema Custody Transfer](roadmap/cv22-typescript-core-port/cv22-ds6-schema-custody-transfer/index.md),
+[CV22.DS7 — Command Burn-Down & Re-homed Feature Work](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/index.md));
+DS8–DS10 stay as delivery-level scope until pulled.
 
 ### 1.0 intelligence-flag posture: reception on, two-pass and summarize off
 
