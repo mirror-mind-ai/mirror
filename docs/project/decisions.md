@@ -253,7 +253,42 @@ mops up residuals. `ts/src/util/pyJson.ts` is deleted. The write-parity harness
 now grades journey metadata **semantically** (parse → stable stringify) instead
 of byte-for-byte, so cross-language value divergence is still caught while the
 intended dialect change is tolerated. Item 2 (`parent_journey` as a first-class
-indexed column) remains CV22.DS6.US2.
+indexed column) is CV22.DS6.US2 (authorship core) + CV22.DS6.US3 (activation) —
+see the split decision below.
+
+### CV22.DS6.US2 splits: schema authorship now, runtime activation as US3 (TS ⊇ Python)
+
+**Date:** 2026-07-23 · **Origin:** CV22.DS6.US2 implementation
+
+US2 (`parent_journey` first-class column) was planned as a single story:
+add the column, author the migration, and adopt it (dual-read/write + integrity).
+Implementation surfaced that it is really two concerns of very different risk.
+
+1. **Schema authorship (delivered as US2 core).** TS authors its first *new
+   forward* migration `017` (indexed `identity.parent_journey` + JSON backfill).
+   This is the first time the TS schema **exceeds** Python's, which breaks the
+   three guards that enforced "TS == Python": the migration-id contract
+   (`test_ts_schema_contract.py`), the structural inventory (`schema.test.ts` +
+   the Navigator parity script), and the legacy-fixture end-state
+   (`migrationFixtures.test.ts`). Decided (Navigator: **Approach 1**): keep Python
+   untouched and renegotiate all three to **TS ⊇ Python** through one enumerated
+   divergence set (`schemaTsDivergence.ts`) — the guards still fail on any
+   *unlisted* drift, in either direction. `assertSchemaState` is softened so a
+   database missing only TS-authored migrations is *served* (Python cannot apply
+   them; the read path does not yet need them) rather than refused.
+
+2. **Runtime activation (split to CV22.DS6.US3).** Actually *applying* `017` to an
+   existing database, and reading/writing the column, requires a
+   **migrate-on-open** mechanism (the front door does not migrate existing
+   databases; TS4 only bootstraps missing ones). That is a high-blast-radius
+   runtime-seam change, foundational well beyond this column, so it is its own
+   story. Until US3, `parent_journey` stays sourced from JSON at runtime and the
+   column is dormant except on freshly TS-bootstrapped databases.
+
+Rationale: land the proven, reviewable schema-authorship plateau without rushing
+a runtime-seam change, and give migrate-on-open the explicit decision it warrants.
+CV22.DS6 cannot be marked Done until US3 (and the carried TS2 migration-016
+fixture debt) close.
 
 ### CV22 ports semantics, not query plans — first application: DS5 access counts
 

@@ -22,11 +22,21 @@ def _ts_known_migration_ids() -> list[str]:
 
 
 def test_ts_known_migrations_match_python_migrations() -> None:
+    # CV22.DS6.US2 renegotiated this seam from "TS == Python" to "TS ⊇ Python":
+    # TS now owns schema custody and may author forward migrations Python lacks
+    # (the first is 017_journey_parent_column). The invariant is that the Python
+    # migration list remains an exact PREFIX of the TS snapshot — Python may not
+    # drift or reorder, and every Python migration must still be recognized by
+    # the TS front door, but TS may extend beyond Python.
     python_ids = [migration_id for migration_id, _ in MIGRATIONS]
     ts_ids = _ts_known_migration_ids()
-    assert ts_ids == python_ids, (
-        "ts/src/db/schemaState.ts KNOWN_MIGRATION_IDS has drifted from "
-        "memory.db.migrations MIGRATIONS. Update the TS snapshot in the same "
-        "commit that adds or renames a Python migration — the TS front door "
-        "refuses databases whose migration state it does not recognize."
+    assert ts_ids[: len(python_ids)] == python_ids, (
+        "ts/src/db/schemaState.ts KNOWN_MIGRATION_IDS no longer starts with the "
+        "memory.db.migrations MIGRATIONS list. Python migrations must remain an "
+        "exact prefix of the TS snapshot: update the TS snapshot in the same "
+        "commit that adds or renames a Python migration. TS-only forward "
+        "migrations (TS ⊇ Python) are appended after the shared prefix."
+    )
+    assert len(ts_ids) >= len(python_ids), (
+        "TS KNOWN_MIGRATION_IDS dropped below the Python MIGRATIONS set."
     )

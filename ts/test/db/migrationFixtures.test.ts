@@ -7,6 +7,8 @@ import { fileURLToPath } from "node:url";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
 import { runMigrations } from "../../src/db/migrations.ts";
 import { buildSchemaInventory, type SchemaInventory } from "../../src/db/schemaInventory.ts";
+import { TS_AUTHORED_MIGRATION_IDS } from "../../src/db/schemaState.ts";
+import { diffTsInventoryAgainstSnapshot } from "../../src/db/schemaTsDivergence.ts";
 
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "migrations");
 
@@ -56,28 +58,28 @@ for (const stem of STEMS) {
       db.exec(seedSql);
       runMigrations(db);
 
-      // Schema shape — via the same buildSchemaInventory contract TS1 proved.
+      // Schema shape — via the same buildSchemaInventory contract TS1 proved,
+      // through the enumerated TS ⊇ Python divergence (CV22.DS6.US2): TS's engine
+      // now authors migration 017, so a fixture whose seed has an `identity`
+      // table ends with the parent_journey column + index beyond Python's
+      // captured end-state.
       const inventory = buildSchemaInventory(db);
-      for (const kind of ["tables", "indexes", "triggers"] as const) {
-        assert.deepEqual(
-          Object.keys(inventory[kind]).sort(),
-          Object.keys(expected[kind]).sort(),
-          `fixture ${stem}: ${kind} name set differs from Python's real end-state`,
-        );
-        for (const name of Object.keys(expected[kind])) {
-          assert.deepEqual(
-            inventory[kind][name],
-            expected[kind][name],
-            `fixture ${stem}: ${kind}[${JSON.stringify(name)}] differs from Python's real end-state`,
-          );
-        }
-      }
+      const problems = diffTsInventoryAgainstSnapshot(inventory, expected);
+      assert.deepEqual(
+        problems,
+        [],
+        `fixture ${stem}: schema differs from Python's end-state beyond the enumerated TS-only additions:\n${problems.join("\n")}`,
+      );
 
       // _migrations ledger.
       const appliedIds = (db.prepare("SELECT id FROM _migrations").all() as { id: string }[])
         .map((row) => row.id)
         .sort();
-      assert.deepEqual(appliedIds, [...expected.applied_migration_ids].sort());
+      // TS runs its own forward migrations (017+) beyond Python's captured end-state.
+      assert.deepEqual(
+        appliedIds,
+        [...expected.applied_migration_ids, ...TS_AUTHORED_MIGRATION_IDS].sort(),
+      );
 
       // Row-level values — the migrations that move data, not just shape.
       const identityLayers = (

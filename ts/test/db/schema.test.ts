@@ -8,6 +8,7 @@ import { assertFtsIntegrity } from "../../src/db/ftsIntegrity.ts";
 import { createSchema } from "../../src/db/schema.ts";
 import { buildSchemaInventory, type SchemaInventory } from "../../src/db/schemaInventory.ts";
 import { SCHEMA_INVENTORY_SNAPSHOT } from "../../src/db/schemaInventorySnapshot.ts";
+import { diffTsInventoryAgainstSnapshot } from "../../src/db/schemaTsDivergence.ts";
 
 function freshDb(): { db: WritableDatabase; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), "mirror-core-schema-"));
@@ -19,27 +20,18 @@ function freshDb(): { db: WritableDatabase; cleanup: () => void } {
 }
 
 /**
- * Symmetric, pinpointed comparison against the committed Python snapshot:
- * name-set equality first (fast, clear top-level signal), then each object
- * individually (a failure names exactly which table/index/trigger diverged),
- * then a belt-and-suspenders full comparison.
+ * Compare a TS-created inventory to the committed Python snapshot through the
+ * enumerated TS ⊇ Python divergence (CV22.DS6.US2): the snapshot plus exactly
+ * the `identity.parent_journey` column and its index, nothing else. Any
+ * unlisted drift, in either direction, is a failure.
  */
 function assertMatchesSnapshot(actual: SchemaInventory, expected: SchemaInventory): void {
-  for (const kind of ["tables", "indexes", "triggers"] as const) {
-    assert.deepEqual(
-      Object.keys(actual[kind]).sort(),
-      Object.keys(expected[kind]).sort(),
-      `${kind}: name set differs from the committed Python snapshot`,
-    );
-    for (const name of Object.keys(expected[kind])) {
-      assert.deepEqual(
-        actual[kind][name],
-        expected[kind][name],
-        `${kind}[${JSON.stringify(name)}] has drifted from the committed Python snapshot`,
-      );
-    }
-  }
-  assert.deepEqual(actual, expected);
+  const problems = diffTsInventoryAgainstSnapshot(actual, expected);
+  assert.deepEqual(
+    problems,
+    [],
+    `schema diverged from the Python snapshot beyond the enumerated TS-only additions:\n${problems.join("\n")}`,
+  );
 }
 
 // --- Structural parity against the committed Python oracle ---

@@ -86,13 +86,21 @@ schema decisions.
 | [CV22.DS6.TS3](cv22-ds6-ts3-cross-process-locking-connection-pragma-discipline/index.md) | Cross-Process Locking & Connection Pragma Discipline | Technical Story | `fcntl`-equivalent bootstrap/migration locking and WAL/busy-timeout/FK pragma discipline are owned by the TS connection module (`ts/src/db/bootstrap.ts`, `bootstrapLock.ts`); concurrent-bootstrap safety proven with 8 real child processes racing the same fresh path, and pragma presence (WAL/busy_timeout/foreign_keys) proven against the Python oracle in CI | ✅ Done‡ |
 | [CV22.DS6.TS4](cv22-ds6-ts4-front-door-bootstrap-flip/index.md) | Front-Door Bootstrap Flip — TS Owns First-Run Database Creation | Technical Story | The DS2/DS3 "delegate a missing database to Python" front-door stopgap is removed; a missing `memory.db` is bootstrapped through the TS core (`bootstrapDatabaseIfMissing` → `bootstrapDatabase`) under the cross-process lock, proven hermetically (first-run self-heal with `uv` unreachable) for both read and write routes | ✅ Done |
 | [CV22.DS6.US1](cv22-ds6-us1-identity-metadata-canonicalization/index.md) | `identity.metadata` Canonicalization | User Story | Retired the `pyJson.ts` byte-mimicry: journey metadata now serialized as canonical `JSON.stringify` with a read-tolerant policy (no data migration — old rows converge on next write, US2 mops up residuals); write-parity grades this column semantically (per CR023) | ✅ Done |
-| CV22.DS6.US2 | `parent_journey` First-Class Column | User Story | Graduate `parent_journey` from JSON metadata to an indexed column with real referential integrity — a genuine schema migration that exercises the new TS migration engine end-to-end | 🟡 Planned |
+| [CV22.DS6.US2](cv22-ds6-us2-parent-journey-first-class-column/index.md) | `parent_journey` First-Class Column (Schema-Authorship Core) | User Story | TS authors its first new forward migration (`017`): indexed `identity.parent_journey` + JSON backfill; the three TS==Python guards are renegotiated to **TS ⊇ Python** via one enumerated divergence, and the schema-state guard tolerates a DB missing only TS-authored migrations. Runtime read/write still uses JSON | ✅ Done§ |
+| [CV22.DS6.US3](cv22-ds6-us3-journey-hierarchy-activation/index.md) | Journey Hierarchy Activation & Migrate-on-Open | User Story | Activate the US2 column: **migrate-on-open** so existing DBs receive TS-authored migrations (Python cannot), then dual-write/dual-read the column and port `_validate_parent_journey`. Split from US2 — the runtime-seam half | 🟡 Planned |
 
 Suggested sequence: **TS1** (fresh bootstrap) → **TS2** (forward migration over
 real legacy copies) → **TS3** (locking + pragmas that guard both) → **TS4**
-(flip the front door to TS-owned first-run bootstrap) → **US1** / **US2** (the
-two custody-gated schema decisions, which also serve as the first real proof
-that the TS migration engine can author new schema).
+(flip the front door to TS-owned first-run bootstrap) → **US1** (metadata
+canonicalization) → **US2** (schema-authorship core: first TS-authored forward
+migration + TS ⊇ Python contracts) → **US3** (activation: migrate-on-open + column
+adoption) — US1/US2 are the first real proof that the TS engine can author new
+schema.
+
+§ **Split from US2 (see [Decisions](../../../decisions.md)):** US2 delivered the
+schema-authorship core; *activating* the column at runtime needs a
+migrate-on-open mechanism for existing databases (a high-blast-radius seam
+change), moved to **CV22.DS6.US3**. DS6 cannot be marked Done until US3 closes.
 
 † **Carried debt from TS2 (deferred, tracked — not silently absorbed):**
 migration `016` (`builder_workbench_display_codes`) has no legacy-transition

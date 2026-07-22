@@ -203,8 +203,10 @@ CREATE TABLE IF NOT EXISTS identity (
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     metadata TEXT,
+    parent_journey TEXT,             -- journey hierarchy, first-class (CV22.DS6.US2); mirrored in metadata JSON during the transition
     UNIQUE(layer, key)
 );
+CREATE INDEX IF NOT EXISTS idx_identity_parent_journey ON identity(parent_journey) WHERE parent_journey IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS identity_integrations (
     id TEXT PRIMARY KEY,

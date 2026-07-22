@@ -476,6 +476,44 @@ function migrateBuilderWorkbenchDisplayCodes(db: WritableDatabase): void {
   `);
 }
 
+/**
+ * 017 (CV22.DS6.US2) — the first *new forward* migration authored by the TS
+ * engine, graduating journey hierarchy from JSON metadata to a first-class
+ * `identity.parent_journey` column. Guarded on table existence: `identity` is
+ * created by `createSchema`, which runs AFTER migrations on a fresh database, so
+ * on a fresh DB this is a no-op (createSchema adds the column + index) and only a
+ * genuinely older, already-existing `identity` table is altered and backfilled
+ * here. Idempotent: the column guard, the `parent_journey IS NULL` backfill
+ * filter, and `CREATE INDEX IF NOT EXISTS` all no-op on re-run. The value stays
+ * mirrored in metadata JSON (dual-source) so the still-present Python surfaces
+ * keep reading it until DS7/DS10.
+ */
+function migrateJourneyParentColumn(db: WritableDatabase): void {
+  if (!tableExists(db, "identity")) return;
+  addColumnIfMissing(db, "identity", "parent_journey", "TEXT");
+  const rows = db
+    .prepare(
+      "SELECT id, metadata FROM identity WHERE layer = 'journey' " +
+        "AND parent_journey IS NULL AND metadata IS NOT NULL",
+    )
+    .all() as { id: string; metadata: string }[];
+  for (const row of rows) {
+    let parent: unknown;
+    try {
+      parent = (JSON.parse(row.metadata) as Record<string, unknown>).parent_journey;
+    } catch {
+      continue;
+    }
+    if (typeof parent === "string" && parent) {
+      db.prepare("UPDATE identity SET parent_journey = ? WHERE id = ?").run(parent, row.id);
+    }
+  }
+  db.exec(
+    "CREATE INDEX IF NOT EXISTS idx_identity_parent_journey " +
+      "ON identity(parent_journey) WHERE parent_journey IS NOT NULL",
+  );
+}
+
 export type MigrationApply = (db: WritableDatabase) => void;
 
 export const MIGRATIONS: readonly (readonly [string, MigrationApply])[] = [
@@ -495,6 +533,7 @@ export const MIGRATIONS: readonly (readonly [string, MigrationApply])[] = [
   ["014_create_identity_integrations", migrateCreateIdentityIntegrations],
   ["015_create_builder_workbench", migrateCreateBuilderWorkbench],
   ["016_builder_workbench_display_codes", migrateBuilderWorkbenchDisplayCodes],
+  ["017_journey_parent_column", migrateJourneyParentColumn],
 ];
 
 /**

@@ -7,17 +7,30 @@
 // migration set this TS core was built against, converting silent schema drift
 // into an explicit, actionable error.
 //
-// `KNOWN_MIGRATION_IDS` is a committed snapshot of Python's `MIGRATIONS` ids.
-// A Python-side test (`tests/unit/test_ts_schema_contract.py`) compares the two
-// lists, so a new Python migration cannot land without updating this snapshot
-// in the same commit — CI holds the seam closed from both directions.
+// `KNOWN_MIGRATION_IDS` is the TS-authoritative migration set. It carries every
+// Python `MIGRATIONS` id (as a prefix) plus any migration TS now authors on its
+// own — from CV22.DS6.US2 onward TS schema custody means TS ⊇ Python. The
+// Python-side test (`tests/unit/test_ts_schema_contract.py`) asserts the Python
+// list is a prefix of this one, so a new Python migration still cannot land
+// without extending this list, while TS may add forward migrations Python lacks.
 
 import type { Database } from "./database.ts";
 
 /** Raised when the database's migration state does not match this TS build. */
 export class SchemaStateError extends Error {}
 
-/** The Python core migration ids this TS core was built against. */
+/**
+ * Migrations TS authored with no Python counterpart (TS ⊇ Python, CV22.DS6.US2).
+ * A database missing ONLY these is still served — the read/write path does not
+ * yet depend on them, and they will be applied to existing databases by the TS
+ * migrate-on-open path (a CV22.DS6 follow-up). A database missing any *Python*
+ * migration is still refused, because Python remains able to apply those.
+ */
+export const TS_AUTHORED_MIGRATION_IDS: ReadonlySet<string> = new Set([
+  "017_journey_parent_column",
+]);
+
+/** The migration ids this TS core was built against (Python prefix + TS-authored). */
 export const KNOWN_MIGRATION_IDS: readonly string[] = [
   "001_project_to_travessia",
   "002_create_attachments",
@@ -35,6 +48,8 @@ export const KNOWN_MIGRATION_IDS: readonly string[] = [
   "014_create_identity_integrations",
   "015_create_builder_workbench",
   "016_builder_workbench_display_codes",
+  // TS-authored, no Python counterpart (CV22.DS6.US2 — first TS ⊋ Python migration).
+  "017_journey_parent_column",
 ];
 
 /**
@@ -56,10 +71,17 @@ export function assertSchemaState(db: Database): void {
     );
   }
   const applied = new Set(rows.map((row) => row.id));
-  const missing = KNOWN_MIGRATION_IDS.filter((id) => !applied.has(id));
-  if (missing.length > 0) {
+  // Only *Python* migrations are required to serve: Python can apply those, and
+  // the runtime read/write path depends on them. A database missing only
+  // TS-authored migrations (TS ⊇ Python) is tolerated — Python cannot apply them
+  // and the current read path does not need them; the migrate-on-open follow-up
+  // will apply them to existing databases.
+  const missingRequired = KNOWN_MIGRATION_IDS.filter(
+    (id) => !applied.has(id) && !TS_AUTHORED_MIGRATION_IDS.has(id),
+  );
+  if (missingRequired.length > 0) {
     throw new SchemaStateError(
-      `database schema is older than this TS core (pending migrations: ${missing.join(", ")}). ` +
+      `database schema is older than this TS core (pending migrations: ${missingRequired.join(", ")}). ` +
         "Run any Python `uv run python -m memory` command once to migrate, then retry.",
     );
   }

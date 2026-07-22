@@ -13,39 +13,12 @@
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { isDeepStrictEqual } from "node:util";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "../src/db/database.ts";
 import { assertFtsIntegrity, FtsIntegrityError } from "../src/db/ftsIntegrity.ts";
 import { createSchema } from "../src/db/schema.ts";
-import { buildSchemaInventory, type SchemaInventory } from "../src/db/schemaInventory.ts";
+import { buildSchemaInventory } from "../src/db/schemaInventory.ts";
 import { SCHEMA_INVENTORY_SNAPSHOT } from "../src/db/schemaInventorySnapshot.ts";
-
-interface StructuralDiff {
-  kind: "tables" | "indexes" | "triggers";
-  onlyInActual: string[];
-  onlyInExpected: string[];
-  differing: string[];
-}
-
-function diffInventory(actual: SchemaInventory, expected: SchemaInventory): StructuralDiff[] {
-  const diffs: StructuralDiff[] = [];
-  for (const kind of ["tables", "indexes", "triggers"] as const) {
-    const actualNames = new Set(Object.keys(actual[kind]));
-    const expectedNames = new Set(Object.keys(expected[kind]));
-    const onlyInActual = [...actualNames].filter((name) => !expectedNames.has(name)).sort();
-    const onlyInExpected = [...expectedNames].filter((name) => !actualNames.has(name)).sort();
-    // Deep-equality, not JSON.stringify: the TS-constructed objects and the
-    // Python-generated (alphabetically key-sorted) snapshot insert object
-    // keys in different orders, which JSON.stringify treats as unequal even
-    // when the values are structurally identical.
-    const differing = [...expectedNames]
-      .filter((name) => actualNames.has(name))
-      .filter((name) => !isDeepStrictEqual(actual[kind][name], expected[kind][name]))
-      .sort();
-    diffs.push({ kind, onlyInActual, onlyInExpected, differing });
-  }
-  return diffs;
-}
+import { diffTsInventoryAgainstSnapshot } from "../src/db/schemaTsDivergence.ts";
 
 function runFtsProbe(db: WritableDatabase): { ok: boolean; detail: string } {
   try {
@@ -90,19 +63,19 @@ function main(): number {
       createSchema(db);
       const inventory = buildSchemaInventory(db);
 
-      const diffs = diffInventory(inventory, SCHEMA_INVENTORY_SNAPSHOT);
-      const structuralOk = diffs.every(
-        (d) => d.onlyInActual.length === 0 && d.onlyInExpected.length === 0 && d.differing.length === 0,
-      );
+      const problems = diffTsInventoryAgainstSnapshot(inventory, SCHEMA_INVENTORY_SNAPSHOT);
+      const structuralOk = problems.length === 0;
 
-      process.stdout.write("== schema inventory (TS-created vs committed Python snapshot) ==\n");
-      for (const d of diffs) {
-        const total = Object.keys(SCHEMA_INVENTORY_SNAPSHOT[d.kind]).length;
-        const clean = d.onlyInActual.length === 0 && d.onlyInExpected.length === 0 && d.differing.length === 0;
-        process.stdout.write(`  ${d.kind}: ${total} expected, ${clean ? "match" : "MISMATCH"}\n`);
-        for (const name of d.onlyInActual) process.stdout.write(`    + only in TS-created: ${name}\n`);
-        for (const name of d.onlyInExpected) process.stdout.write(`    - only in Python snapshot: ${name}\n`);
-        for (const name of d.differing) process.stdout.write(`    ~ differs: ${name}\n`);
+      process.stdout.write(
+        "== schema inventory (TS-created vs Python snapshot + enumerated TS-only additions) ==\n",
+      );
+      if (structuralOk) {
+        process.stdout.write(
+          "  match (TS \u2287 Python: identity.parent_journey column + idx_identity_parent_journey)\n",
+        );
+      } else {
+        process.stdout.write("  MISMATCH\n");
+        for (const problem of problems) process.stdout.write(`    ~ ${problem}\n`);
       }
 
       process.stdout.write("== FTS functional probe (accented content) ==\n");

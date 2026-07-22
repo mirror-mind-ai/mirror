@@ -50,7 +50,9 @@ test("assertSchemaState refuses a database with no _migrations table", () => {
 test("assertSchemaState names pending migrations when the DB is older than the TS core", () => {
   const ws = tmpDb();
   try {
-    seedMigrations(ws.db, KNOWN_MIGRATION_IDS.slice(0, -1));
+    // Drop the last Python migration (016) and the TS-only 017: only the Python
+    // one is *required*, so the guard refuses and names it.
+    seedMigrations(ws.db, KNOWN_MIGRATION_IDS.slice(0, -2));
     assert.throws(
       () => assertSchemaState(ws.db),
       /older than this TS core.*016_builder_workbench_display_codes/,
@@ -61,11 +63,24 @@ test("assertSchemaState names pending migrations when the DB is older than the T
   }
 });
 
+test("assertSchemaState tolerates a DB missing only TS-authored migrations (TS ⊇ Python)", () => {
+  const ws = tmpDb();
+  try {
+    // Every Python migration applied, only the TS-authored 017 absent — Python
+    // cannot apply it and the read path does not need it, so the DB is served.
+    seedMigrations(ws.db, KNOWN_MIGRATION_IDS.slice(0, -1));
+    assert.doesNotThrow(() => assertSchemaState(ws.db));
+  } finally {
+    ws.db.close();
+    ws.cleanup();
+  }
+});
+
 test("assertSchemaState names unknown migrations when the DB is newer than the TS core", () => {
   const ws = tmpDb();
   try {
-    seedMigrations(ws.db, [...KNOWN_MIGRATION_IDS, "017_from_the_future"]);
-    assert.throws(() => assertSchemaState(ws.db), /newer than this TS core.*017_from_the_future/);
+    seedMigrations(ws.db, [...KNOWN_MIGRATION_IDS, "018_from_the_future"]);
+    assert.throws(() => assertSchemaState(ws.db), /newer than this TS core.*018_from_the_future/);
   } finally {
     ws.db.close();
     ws.cleanup();
