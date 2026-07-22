@@ -244,6 +244,17 @@ transition. At DS6, alongside the schema custody transfer:
 Until then, `pyJson.ts` stays byte-faithful and any new metadata writer must
 state which dialect it reproduces.
 
+**Item 1 resolved by CV22.DS6.US1 (2026-07-23):** chose plain `JSON.stringify` as
+the canonical form with the **read-tolerant** policy (no data-rewrite migration).
+Deciding fact from grounding: every journey-metadata reader already `JSON.parse`s,
+so the on-disk byte form is semantically invisible — old rows keep working and
+converge to canonical on their next write, and US2's `parent_journey` migration
+mops up residuals. `ts/src/util/pyJson.ts` is deleted. The write-parity harness
+now grades journey metadata **semantically** (parse → stable stringify) instead
+of byte-for-byte, so cross-language value divergence is still caught while the
+intended dialect change is tolerated. Item 2 (`parent_journey` as a first-class
+indexed column) remains CV22.DS6.US2.
+
 ### CV22 ports semantics, not query plans — first application: DS5 access counts
 
 **Date:** 2026-07-14 · **Origin:** RS003 database audit, CR020

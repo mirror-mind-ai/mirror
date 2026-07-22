@@ -1,11 +1,13 @@
 // TS journey writes — the write path of create_journey and set_project_path.
 //
-// A journey is an identity row (layer "journey"). create_journey composes
-// metadata from its fields and serializes it with Python's json.dumps
-// (sort_keys=True, ensure_ascii=False); set_project_path re-serializes the
-// mutated metadata with json.dumps defaults. The project_path is normalized by
-// the Python service against the real filesystem (Path.resolve), so for parity we
-// take it pre-normalized (injected) — the same way id and now are injected.
+// A journey is an identity row (layer "journey"). Its metadata is serialized in
+// the canonical JSON form (plain JSON.stringify) chosen in CV22.DS6.US1, which
+// retired the transition-only Python json.dumps byte-mimicry (pyJson.ts) once TS
+// owned schema custody. Existing rows written in the old Python dialects still
+// read back fine — every reader JSON.parses — and converge to the canonical form
+// on their next write. The project_path is normalized by the caller against the
+// real filesystem (Path.resolve equivalent), so we take it pre-normalized
+// (injected) — the same way id and now are injected.
 
 import type { WritableDatabase } from "../db/database.ts";
 import {
@@ -13,7 +15,6 @@ import {
   updateIdentityMetadata,
   upsertIdentity,
 } from "../identity/identityStore.ts";
-import { pyJsonDumps } from "../util/pyJson.ts";
 
 export const JOURNEY_LAYER = "journey";
 
@@ -42,10 +43,10 @@ export interface CreateJourneyInput extends JourneyFields {
 }
 
 /**
- * Select the non-empty metadata fields in the Python order, mirroring
- * _metadata_from_fields (trim; keep only non-empty). Key order here does not
- * affect create_journey (it serializes with sort_keys) but does matter when the
- * dict is later re-serialized without sort_keys.
+ * Select the non-empty metadata fields in a fixed order (trim; keep only
+ * non-empty), mirroring Python's _metadata_from_fields. The fixed order makes
+ * the canonical JSON.stringify output deterministic and gives set_project_path a
+ * stable key order to update in place.
  */
 export function journeyMetadata(fields: JourneyFields): Record<string, string> {
   const ordered: [string, string | null | undefined][] = [
@@ -72,10 +73,7 @@ export function createJourney(
   nowIso: string,
 ): void {
   const metadata = journeyMetadata(input);
-  const metadataJson =
-    Object.keys(metadata).length > 0
-      ? pyJsonDumps(metadata, { sortKeys: true, ensureAscii: false })
-      : null;
+  const metadataJson = Object.keys(metadata).length > 0 ? JSON.stringify(metadata) : null;
   const row: IdentityRow = {
     id: input.id,
     layer: JOURNEY_LAYER,
@@ -89,8 +87,8 @@ export function createJourney(
 
 /**
  * Port of set_project_path's write: read the journey metadata, set project_path
- * (already normalized), re-serialize with json.dumps defaults, update. Preserves
- * the existing key order and updates project_path in place when present.
+ * (already normalized), re-serialize in the canonical JSON form, update.
+ * Preserves the existing key order and updates project_path in place when present.
  */
 export function setProjectPath(
   db: WritableDatabase,
@@ -109,5 +107,5 @@ export function setProjectPath(
       ? (JSON.parse(row.metadata) as Record<string, unknown>)
       : {};
   const meta: Record<string, unknown> = { ...existing, project_path: normalizedProjectPath };
-  updateIdentityMetadata(db, JOURNEY_LAYER, slug, pyJsonDumps(meta), nowIso);
+  updateIdentityMetadata(db, JOURNEY_LAYER, slug, JSON.stringify(meta), nowIso);
 }

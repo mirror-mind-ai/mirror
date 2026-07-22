@@ -195,6 +195,37 @@ function buildWriteProbe(fixture: WriteProbeFixture): WriteProbe {
   }
 }
 
+/** Deterministic JSON with recursively sorted object keys. */
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
+  const record = value as Record<string, unknown>;
+  const entries = Object.keys(record)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${stableStringify(record[key])}`);
+  return `{${entries.join(",")}}`;
+}
+
+/**
+ * Canonicalize the JSON `metadata` cell of each row (parse, then stable
+ * key-sorted re-stringify) so write parity grades the *value*, not the
+ * serialization dialect. CV22.DS6.US1 made TS write journey metadata as canonical
+ * JSON.stringify, which no longer matches Python's json.dumps bytes; a value
+ * difference still fails (different parsed content), a mere dialect difference
+ * does not. Null or non-JSON metadata is left untouched.
+ */
+function canonicalizeMetadataCells(rows: readonly MutatedRow[]): MutatedRow[] {
+  return rows.map((row) => {
+    const meta = row.cells.metadata;
+    if (typeof meta !== "string") return row;
+    try {
+      return { ...row, cells: { ...row.cells, metadata: stableStringify(JSON.parse(meta)) } };
+    } catch {
+      return row;
+    }
+  });
+}
+
 /**
  * Replay each probe on a fresh copy of the seed through the TS core and grade it
  * against the Python-oracle state carried in the fixture.
@@ -213,7 +244,12 @@ export function verifyWriteFixture(
       // Grade the FTS side-effect of the write, not just the declared columns:
       // a memories mutation fires the memories_fts triggers (no-op if absent).
       assertFtsIntegrity(db);
-      return evaluateWriteProbe(probe.label, probe.python_state, tsState, options);
+      return evaluateWriteProbe(
+        probe.label,
+        canonicalizeMetadataCells(probe.python_state),
+        canonicalizeMetadataCells(tsState),
+        options,
+      );
     } finally {
       db.close();
     }

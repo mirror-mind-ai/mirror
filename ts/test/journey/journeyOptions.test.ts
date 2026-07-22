@@ -29,6 +29,21 @@ test("groupJourneysByParent splits roots and children and treats orphan parents 
   assert.equal(childrenByParent.get("missing"), undefined);
 });
 
+test("listJourneyOptions reads parent_journey from both the old Python dialect and the new canonical form", () => {
+  // read-tolerance: the old json.dumps byte-dialect (sorted keys, spaced) and
+  // the new canonical JSON.stringify form must parse to the same parent.
+  const oldDialect = '{"parent_journey": "root", "project_path": "/p"}';
+  const canonical = '{"project_path":"/p","parent_journey":"root"}';
+  const rows: JourneyIdentityRow[] = [
+    { key: "root", content: "# Root" },
+    { key: "a", content: "# A", metadata: oldDialect },
+    { key: "b", content: "# B", metadata: canonical },
+  ];
+  const byId = new Map(listJourneyOptions(rows).map((option) => [option.id, option]));
+  assert.equal(byId.get("a")?.parent_journey, "root");
+  assert.equal(byId.get("b")?.parent_journey, "root");
+});
+
 interface JourneysGolden {
   journey_rows: JourneyIdentityRow[];
   expected: JourneyOption[];

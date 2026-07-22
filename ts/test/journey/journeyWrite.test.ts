@@ -55,7 +55,7 @@ test("journeyMetadata keeps only non-empty trimmed fields", () => {
   });
 });
 
-test("createJourney inserts an identity row with sorted, non-ASCII metadata JSON", () => {
+test("createJourney inserts an identity row with canonical (JSON.stringify) metadata", () => {
   const { dbPath, cleanup } = tempCopy();
   const db = openDatabaseCopyForWrite(dbPath);
   try {
@@ -80,8 +80,9 @@ test("createJourney inserts an identity row with sorted, non-ASCII metadata JSON
         version: "1.0.0",
         created_at: NOW,
         updated_at: NOW,
-        // sort_keys => color before icon; ensure_ascii=False => raw 🚀
-        metadata: '{"color": "blue", "icon": "🚀"}',
+        // CV22.DS6.US1 canonical JSON.stringify: insertion order (icon, color),
+        // raw UTF-8, no spaces — no longer the Python json.dumps byte-dialect.
+        metadata: '{"icon":"🚀","color":"blue"}',
       },
     );
   } finally {
@@ -106,12 +107,12 @@ test("createJourney stores null metadata when no fields are set", () => {
   }
 });
 
-test("setProjectPath updates project_path in place and re-serializes with defaults", () => {
+test("setProjectPath updates project_path in place and re-serializes canonically", () => {
   const { dbPath, cleanup } = tempCopy();
   const db = openDatabaseCopyForWrite(dbPath);
   try {
     seedIdentity(db);
-    // create_journey stores sorted JSON: {"icon": "star", "project_path": "/old"}
+    // create stores canonical JSON in insertion order: {"project_path":"/old","icon":"star"}
     createJourney(
       db,
       { id: "j-1", slug: "demo", content: "# Demo", projectPath: "/old", icon: "star" },
@@ -120,8 +121,29 @@ test("setProjectPath updates project_path in place and re-serializes with defaul
     setProjectPath(db, "demo", "/new/resolved", LATER);
     assert.deepEqual(
       db.prepare("SELECT metadata, updated_at FROM identity WHERE key = ?").get("demo"),
-      { metadata: '{"icon": "star", "project_path": "/new/resolved"}', updated_at: LATER },
+      { metadata: '{"project_path":"/new/resolved","icon":"star"}', updated_at: LATER },
     );
+  } finally {
+    db.close();
+    cleanup();
+  }
+});
+
+test("create -> set-path round-trips through canonical JSON with values intact", () => {
+  const { dbPath, cleanup } = tempCopy();
+  const db = openDatabaseCopyForWrite(dbPath);
+  try {
+    seedIdentity(db);
+    createJourney(
+      db,
+      { id: "j-1", slug: "demo", content: "# Demo", projectPath: "/old", parentJourney: "root" },
+      NOW,
+    );
+    setProjectPath(db, "demo", "/new", LATER);
+    const meta = db.prepare("SELECT metadata FROM identity WHERE key = ?").get("demo")
+      ?.metadata as string;
+    // parent_journey survives the round-trip (US2 will graduate it to a column).
+    assert.deepEqual(JSON.parse(meta), { project_path: "/new", parent_journey: "root" });
   } finally {
     db.close();
     cleanup();

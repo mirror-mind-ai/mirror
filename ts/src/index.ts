@@ -196,5 +196,3 @@ export {
 export { expandHome, normalizeProjectPath } from "./util/paths.ts";
 export { newId, nowIso, toMicrosecondIso } from "./util/pyGenerators.ts";
 // --- Python-compatibility utilities ---
-export type { PyJsonDumpsOptions } from "./util/pyJson.ts";
-export { pyJsonDumps } from "./util/pyJson.ts";
