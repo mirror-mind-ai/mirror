@@ -36,21 +36,39 @@ real DB copy, not only on fixtures.
 
 ## Navigator Validation Route
 
-1. Generate a demo DB and roll it back to pre-`017` state (harness helper):
-   `uv run python ts/parity/generate_demo_memory_db.py --out tmp/parity/demo-memory.db`
-   (then the harness strips `017` from `_migrations` + drops the column to simulate legacy).
-2. Run a read command through the TS front door against the copy (e.g. `journeys`).
+A one-command E2E smoke, `ts/parity/migrate_on_open_smoke.ts`, automates the route
+on a copied real/demo database (never the live file; work dir owner-only, removed
+on pass; redacted evidence only):
 
-- **Expected observation:** a backup file appears in the owner-only backup dir (`0600`);
-  the front-door log shows one `migrate_on_open` event naming `017` and the backup path;
-  `journeys` output ordering is byte-identical to the pre-migration run.
-- **Pass condition:** backup created + `_migrations` contains `017` + column populated from
-  JSON + `journeys` output unchanged + second run performs no backup/migration.
-- **Fail condition:** any ordering change; a backup on an already-migrated open; a second
-  backup on re-open; journey/identity content appearing in the log; the column diverging
-  from JSON after a Python parent write (expected under D1 — JSON-first read must still be
-  correct, proving the column is a non-authoritative shadow).
+```
+uv run python ts/parity/generate_demo_memory_db.py --out tmp/parity/demo-memory.db
+node ts/parity/migrate_on_open_smoke.ts --source-db tmp/parity/demo-memory.db
+```
+
+The demo DB is Python-generated, so it is already a genuine pre-017 legacy
+database (Python cannot create the column) — the exact real-world upgrade state.
+The smoke copies it, runs the REAL TS front door (`journeys`) against the copy,
+and prints redacted PASS/FAIL lines.
+
+- **Expected observation:** `017` applied on open, `parent_journey` created and
+  backfilled from JSON (column count equals the JSON-parent count), a
+  pre-migration backup taken, journeys still served, and a `migrate_on_open`
+  event naming `017` in the front-door log. Ends with `RESULT: PASS`.
+- **Pass condition:** `RESULT: PASS` (exit 0) — every check green.
+- **Fail condition:** any check FAIL (exit 1; work dir retained) — e.g. a backfill
+  count mismatch, a backup on an already-migrated re-open, or journey/identity
+  content appearing in the log.
 
 ## Validation Evidence
 
-Pending implementation and validation.
+Hermetic + integration (TS suite, 349+ green): migrate-on-open unit (A1/A2/A5),
+front-door integration (A1/A2 via subprocess), 8-process concurrency + crash
+safety (A6), `_validate_parent_journey` golden parity (A4), JSON-first resolver
+shadow semantics (A3), journeys golden regression unchanged.
+
+E2E smoke against a Python-generated demo DB (`migrate_on_open_smoke.ts`):
+`RESULT: PASS` — 017 applied, column created and backfilled from JSON (2/2),
+pre-migration backup taken, journeys served, `migrate_on_open` logged naming 017.
+
+Deferred (Navigator decision): atomic dual-write → DS7. Pending: the formal Ariad
+Validation checkpoint.

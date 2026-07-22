@@ -42,8 +42,6 @@ tolerance into activation is a high-blast-radius runtime-seam change.
 - **Migrate-on-open:** when the front door opens a database missing TS-authored
   migrations (and no Python migration is pending), run them backup-gated, under
   the bootstrap lock, before serving.
-- **Dual-write** `parent_journey` (column + JSON, atomically) on the TS-owned
-  write path.
 - **JSON-first dual-read** in `journeyOptions` + caller; the column is a shadow.
 - Port `_validate_parent_journey` to TS (parent-exists, no-self, single-level
   nesting, no-parent-if-has-children).
@@ -51,7 +49,9 @@ tolerance into activation is a high-blast-radius runtime-seam change.
 ## Out Of Scope
 
 - Dropping `parent_journey` from JSON, hard FK, Python reader re-homing,
-  column-authoritative reads, the full `journey update` port — DS7/DS10.
+  column-authoritative reads, **atomic dual-write of the column**, the full
+  `journey update` port — DS7/DS10 (dual-write deferred by Navigator decision; see
+  [plan.md](plan.md)).
 - Migration-016 legacy fixture coverage — carried DS6-Done debt, independent of US3.
 
 ## Depends On

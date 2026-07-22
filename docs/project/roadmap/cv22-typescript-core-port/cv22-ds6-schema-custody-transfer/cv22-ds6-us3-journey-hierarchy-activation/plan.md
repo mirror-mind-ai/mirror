@@ -56,10 +56,13 @@ post-upgrade open. No user-visible change in command output.
 2. **Dual-read** — the SQL that fetches `journey` identity rows also selects the
    `parent_journey` column; a single **JSON-first resolver** produces the effective
    parent. `listJourneyOptions` stays a pure function over rows (no DB access pushed in).
-3. **Dual-write** — where TS owns the write (`createJourney`), write column + JSON
-   **atomically** in one `withTransaction`. The parent *update* path stays on Python
-   (out of scope), so the column is maintained only by create + the migrate backfill;
-   JSON remains the source of truth.
+3. **Dual-write — DEFERRED to DS7 (Navigator decision during implementation).**
+   Atomically writing the column alongside JSON on `createJourney` was descoped:
+   under D1 the column is non-authoritative, so a stale/absent column on a new row
+   is invisible to reads; `createJourney` is not a live front-door route
+   (create/update stay Python fallback); and existing rows are already covered by
+   the migrate-on-open backfill. It becomes real when DS7 makes the column
+   authoritative and ports the create/update route to TS. See Debt to Record.
 4. **Port `_validate_parent_journey`** — a pure `validateParentJourney` over an injected
    lookup/list seam, enforcing the four rules, reading parent info through the **same**
    JSON-first resolver used by dual-read (so validation and listing never disagree).
@@ -123,6 +126,11 @@ A6  Two processes opening the same stale DB concurrently do not double-apply or 
 ## Debt to Record (not build in US3)
 
 - **Column not authoritative for reads** (JSON-first shadow) — promote in DS7.
+- **Dual-write deferred to DS7** (Navigator decision): new TS-created-with-parent
+  rows do not maintain the shadow column until DS7 ports the create/update route
+  and makes the column authoritative. Non-behavioral under D1 (reads are
+  JSON-first); existing rows are covered by the migrate-on-open backfill. Revisit
+  trigger: DS7 column-authority flip + create/update route port.
 - **Single-level-nesting invariant is application-enforced only** — no DB `CHECK`/self-FK
   yet; the column makes one possible in DS7/DS10.
 
