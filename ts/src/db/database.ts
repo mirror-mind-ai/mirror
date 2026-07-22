@@ -192,8 +192,18 @@ export function openDatabaseForWrite(
  * for the same reason). The target must not exist; callers remove any
  * previous snapshot first.
  */
-export function snapshotDatabaseTo(sourcePath: string, targetPath: string): void {
+export function snapshotDatabaseTo(
+  sourcePath: string,
+  targetPath: string,
+  options: OpenOptions = {},
+): void {
   const driver = new DatabaseSync(sourcePath, { readOnly: true });
+  // Every other seam connection waits on lock contention rather than failing
+  // instantly; the snapshot read must too. Without this, a `VACUUM INTO` that
+  // races a concurrent writer (e.g. migrate-on-open backing up under multi-process
+  // contention) raises SQLITE_BUSY ("database is locked") immediately instead of
+  // waiting for the writer to finish.
+  applyConnectionPragmas(driver, options);
   try {
     driver.prepare("VACUUM INTO ?").run(targetPath);
   } finally {
