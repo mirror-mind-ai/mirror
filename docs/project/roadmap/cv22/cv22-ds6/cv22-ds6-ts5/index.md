@@ -1,6 +1,6 @@
 # CV22.DS6.TS5 — Migration-016 Legacy Fixture Coverage
 
-**Status:** 🟡 In Progress
+**Status:** ✅ Done
 **Type:** Technical Story
 
 > **Path note:** this package sits under `roadmap/cv22/cv22-ds6/` rather than the sibling
