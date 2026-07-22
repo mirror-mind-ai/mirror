@@ -1,7 +1,7 @@
 # Plan — Ariad Expand Scaffolder Path-Divergence Fix
 
-**Status:** P1 (core fix) and P2 (fail-loud on ambiguity/unparseable) implemented and green. Pre-flight
-fixes applied. P3–P4 pending.
+**Status:** P1 (core fix), P2 (fail-loud on ambiguity/unparseable), and P3 (CI duplicate-heading guard)
+implemented and green. Pre-flight fixes applied. P4 pending.
 **Companion:** `handoff-ariad-fix.MD` (original analysis). This plan supersedes the handoff's phasing
 where they differ (notably: the correct resolver already exists; the fix is a DRY consolidation).
 **Tracking:** maintenance patch on `main` in this `mirror-dev` workspace. No Ariad CR / no method adoption.
@@ -223,20 +223,48 @@ One pre-existing test (`test_build_pull_delivery_story_prepares_and_expands`) re
   `EXPAND_BLOCKED` renders and `DELIVERY_STORY_READY`/`ARTIFACTS_MATERIALIZED` do not). All written red-first.
 - **Result:** full repo test suite green, `ruff check` clean, doc-link checker clean.
 
-### P3 — CI guardrail (kill the class)
-- Extend `src/memory/docs_lint.py`: reject any two `docs/**/index.md` sharing a `# <code> —` heading.
-- Add self-tests to `tests/unit/memory/test_docs_lint.py`; runs via the existing `.github/workflows/docs.yml`.
-  No new workflow.
-- TDD: QA test 5.
+### P3 — CI guardrail (kill the class) — ✅ done
+- Refactored `story_paths.py`: extracted the shared scan primitive `_group_roadmap_headings` (used
+  internally by `resolve_story_directory` since P1) and added public `find_duplicate_roadmap_headings
+  (project_path) -> dict[str, tuple[Path, ...]]` — every code claimed by more than one `index.md` heading,
+  whole-tree. Closed a real gap while here: `story_paths.py` had zero direct unit tests since P1 (only
+  indirect coverage via `test_lifecycle.py`'s Expand tests); added
+  `tests/unit/memory/builder/test_story_paths.py` with full direct coverage, including the still-pending
+  path-escape test from the original matrix (item #4 — now done).
+- Extended `docs_lint.py`: new `DuplicateRoadmapHeading` dataclass + `check_roadmap_duplicate_headings
+  (repo_root)`, wrapping `find_duplicate_roadmap_headings` for deterministic, sorted, repo-relative CI
+  output. Self-tested in `test_docs_lint.py` (`TestCheckRoadmapDuplicateHeadings`), matching the file's
+  established "checker is a test artifact and must self-test" convention.
+- Wired into the existing `scripts/check_doc_links.py` (no new workflow — `docs.yml` already triggers on
+  `docs/**`, `scripts/check_doc_links.py`, and `src/memory/docs_lint.py`; `story_paths.py` changes are also
+  covered by `tests.yml`, which runs on everything except pure `docs/**`-only edits). The script now runs
+  both checks and reports either/both.
+- **Caught a real bug via manual smoke-testing, not by trusting green unit tests alone:**
+  `check_roadmap_duplicate_headings` crashed (`ValueError` from `Path.relative_to`) when given a
+  non-pre-resolved `repo_root` (reproduced first via a macOS `/var` vs `/private/var` symlink, then
+  confirmed with a portable `tmp_path / "unrelated" / ".."` case that doesn't depend on OS-specific symlink
+  behavior) — `find_duplicate_roadmap_headings` returns already-resolved directories internally, so an
+  unresolved `repo_root` broke the comparison. `scripts/check_doc_links.py` always passes an already-resolved
+  root today, so this wasn't reachable in the current CI wiring, but the function itself was fragile. Fixed
+  by resolving `repo_root` before the comparison; added a permanent regression test
+  (`test_handles_a_repo_root_that_is_not_pre_resolved`), confirmed red-before-green by temporarily reverting
+  the fix and re-running.
+- Dogfooded against this repo's own real roadmap (259 packages): clean, as expected post-pre-flight.
+- **Result:** full repo test suite green, `ruff check` clean, doc-link checker clean (both checks). Noted,
+  not fixed (unrelated, pre-existing, confirmed flaky by re-run in isolation and in the full suite twice):
+  `tests/benchmark/test_search_scale.py::test_search_latency_at_10k_memories` intermittently raises a
+  `sqlite3.IntegrityError: UNIQUE constraint failed: memories.id` under full-suite load — out of scope for
+  this patch, flagging for separate attention.
 
 ### P4 — Authoring contract + template + skill guidance
 - Document the canonical candidate-table grammar `| Code | Story | Type | Outcome | Status |` (header must
   contain code/story/type/status) in the DS index template under `docs/project/roadmap/templates/…` and in
   mm-build authoring guidance, so hand-authored DS packages are Expand-compatible by construction.
 
-### Security cross-cut
-- `is_relative_to(roadmap_root)` on both resolved and created dirs (reuse the `_target_path` precedent).
-- `kebab_slug` stays the only slugger for path components. TDD: QA test 4.
+### Security cross-cut — ✅ done
+- `is_relative_to(roadmap_root)` enforced in `create_story_directory` (reuses the `_target_path` precedent).
+  `kebab_slug` stays the only slugger for path components. TDD:
+  `test_stays_within_roadmap_root_for_an_adversarial_title` in `test_story_paths.py`.
 
 ---
 
@@ -255,12 +283,13 @@ One pre-existing test (`test_build_pull_delivery_story_prepares_and_expands`) re
    (lifecycle) and `test_build_pull_delivery_story_blocks_on_unparseable_candidate_table` (CLI, real entry
    point). Also added an ambiguity counterpart (`_blocks_on_ambiguous_duplicate_heading`, both levels), one
    test beyond the original matrix item, since P2 groups both conditions under one fail-loud path.
-4. ⏳ **Path-escape:** the `is_relative_to(roadmap_root)` guard is implemented in `create_story_directory`;
-   no dedicated adversarial-title test written yet — pending.
-5. ⏳ **Duplicate-heading guard (CI):** pending — P3. Manual pre-flight scan already confirmed the invariant
-   holds against this repo's real roadmap today. Note: `resolve_story_directory`'s own runtime
-   `StoryPackageAmbiguityError` (P1/P2) already enforces "exactly one" at resolution time — P3 adds the
-   static, pre-runtime CI guard on top.
+4. ✅ **Path-escape:** `test_stays_within_roadmap_root_for_an_adversarial_title` in `test_story_paths.py`
+   (`../../../etc/passwd` + a 200-char overlong segment; asserts `is_relative_to(roadmap_root)`).
+5. ✅ **Duplicate-heading guard (CI):** `find_duplicate_roadmap_headings` (story_paths.py) +
+   `check_roadmap_duplicate_headings` (docs_lint.py), wired into `scripts/check_doc_links.py`, self-tested,
+   dogfooded clean against this repo's real 259-package roadmap. `resolve_story_directory`'s runtime
+   `StoryPackageAmbiguityError` (P1/P2) enforces "exactly one" at resolution time; P3 adds the static,
+   pre-runtime CI guard on top -- two independent layers, per the devops-engineer persona note.
 6. ✅ **Lifecycle consistency:** `cli._canonical_package_path` and `expand_delivery_story` now share the exact
    same `resolve_story_directory`/`create_story_directory` — provable by construction (one resolver, one
    creator, both call sites), and exercised indirectly by the full CLI + builder test suite.
@@ -291,7 +320,7 @@ All existing single-segment Expand tests remain green (common-path regression sa
 
 | What | Location |
 |---|---|
-| **New shared resolver module** | `src/memory/builder/story_paths.py` — `resolve_story_directory`, `create_story_directory`, `story_folder_name`, `title_leaf`, `StoryPackageAmbiguityError` |
+| **New shared resolver module** | `src/memory/builder/story_paths.py` — `resolve_story_directory`, `create_story_directory`, `story_folder_name`, `title_leaf`, `find_duplicate_roadmap_headings`, `StoryPackageAmbiguityError` |
 | Expand wiring (was: defective derivation) | `src/memory/builder/lifecycle.py:426` `expand_delivery_story` — `_artifact_directory` deleted |
 | Fabricated-US1 fallback (unchanged, still gated by `_parse_candidate_stories`) | `lifecycle.py` empty-children branch |
 | Candidate-table parser + required header | `lifecycle.py` `_parse_candidate_stories` (header check `{code,story,type,status}`) |
@@ -302,7 +331,8 @@ All existing single-segment Expand tests remain green (common-path regression sa
 | Path-escape guard | `story_paths.create_story_directory` (`is_relative_to`), precedent in `builder/template_generation.py` `_target_path` |
 | Cursor read/write (code-keyed) | `builder/delivery_cursor.py` `get/set_delivery_cursor` (`child_work_items`) |
 | Slugger invariant | `memory/utils.py:12` `kebab_slug` |
-| CI hook + self-test (P3, pending) | `src/memory/docs_lint.py`; `tests/unit/memory/test_docs_lint.py`; `.github/workflows/docs.yml` |
+| CI hook + self-test (P3, done) | `src/memory/docs_lint.py` `DuplicateRoadmapHeading`/`check_roadmap_duplicate_headings`; `scripts/check_doc_links.py`; `tests/unit/memory/test_docs_lint.py`; `.github/workflows/docs.yml` (unchanged, already triggers) |
+| Direct unit tests for `story_paths.py` (new, closed a P1 gap) | `tests/unit/memory/builder/test_story_paths.py` |
 | Pre-flight fix: retitled historical file | `docs/project/roadmap/cv20-builder-mode-evolution/cv20-ds4-story-lifecycle-runtime/cv20-ds4-us2-plan-checkpoint-gate/index.md` |
 | New/updated Expand tests | `tests/unit/memory/builder/test_lifecycle.py` (2 new, after `test_expand_handles_paragraph_length_child_titles`) |
 | Updated CLI test fixtures | `tests/unit/memory/cli/test_build.py` (4 fixtures: 3 bare-heading, 1 chain-title → realistic snapshot) |

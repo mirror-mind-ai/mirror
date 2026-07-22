@@ -63,23 +63,14 @@ def resolve_story_directory(project_path: Path, code: str) -> Path | None:
     heading code equals ``code`` exactly, or ``None`` if no package claims it.
 
     Raises ``StoryPackageAmbiguityError`` if more than one package does -- the
-    roadmap-integrity CI guard (duplicate-heading check) exists precisely to
-    catch this before it ever reaches runtime resolution.
+    roadmap-integrity CI guard (duplicate-heading check, see
+    ``find_duplicate_roadmap_headings`` and ``docs_lint.py``) exists precisely
+    to catch this before it ever reaches runtime resolution.
     """
     roadmap_root = (project_path / "docs" / "project" / "roadmap").resolve()
     if not roadmap_root.is_dir():
         return None
-    matches: list[Path] = []
-    for index_path in sorted(roadmap_root.rglob("index.md")):
-        if is_legacy_path(index_path, roadmap_root):
-            continue
-        try:
-            content = index_path.read_text(encoding="utf-8")
-        except OSError:
-            continue
-        heading = HEADING_RE.search(content)
-        if heading and heading.group("code").strip() == code:
-            matches.append(index_path.parent)
+    matches = _group_roadmap_headings(roadmap_root).get(code, [])
     if not matches:
         return None
     if len(matches) > 1:
@@ -88,6 +79,45 @@ def resolve_story_directory(project_path: Path, code: str) -> Path | None:
             + ", ".join(str(path) for path in matches)
         )
     return matches[0]
+
+
+def _group_roadmap_headings(roadmap_root: Path) -> dict[str, list[Path]]:
+    """Group every non-legacy ``docs/**/index.md`` file under a code by its
+    own heading (``# <code> — <title>``). Shared scan used by both
+    ``resolve_story_directory`` (single-code lookup) and
+    ``find_duplicate_roadmap_headings`` (whole-tree duplicate detection) so
+    the two can never drift apart.
+    """
+    by_code: dict[str, list[Path]] = {}
+    for index_path in sorted(roadmap_root.rglob("index.md")):
+        if is_legacy_path(index_path, roadmap_root):
+            continue
+        try:
+            content = index_path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        heading = HEADING_RE.search(content)
+        if heading:
+            by_code.setdefault(heading.group("code").strip(), []).append(index_path.parent)
+    return by_code
+
+
+def find_duplicate_roadmap_headings(project_path: Path) -> dict[str, tuple[Path, ...]]:
+    """Return every code claimed by more than one ``docs/project/roadmap/**/index.md``
+    heading, mapped to its claiming directories.
+
+    This is the CI-facing, whole-tree counterpart to ``resolve_story_directory``'s
+    per-code ambiguity guard -- the static check (see ``docs_lint.py``) that keeps
+    the "one code -> one package" invariant from ever silently breaking again
+    (the class of defect first seen as CR048 / DS6.TS5, recurring as CV22.DS7).
+    Returns an empty dict when the roadmap root does not exist or every code is
+    unique.
+    """
+    roadmap_root = (project_path / "docs" / "project" / "roadmap").resolve()
+    if not roadmap_root.is_dir():
+        return {}
+    grouped = _group_roadmap_headings(roadmap_root)
+    return {code: tuple(paths) for code, paths in grouped.items() if len(paths) > 1}
 
 
 def _parent_code(code: str) -> str | None:
