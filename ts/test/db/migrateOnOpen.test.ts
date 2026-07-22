@@ -8,6 +8,7 @@ import { bootstrapDatabase } from "../../src/db/bootstrap.ts";
 import { openDatabaseForBootstrap } from "../../src/db/database.ts";
 import { ensureMigratedOnOpen, migrationBackupPathFor } from "../../src/db/migrateOnOpen.ts";
 import { createJourney } from "../../src/journey/journeyWrite.ts";
+import { regressToPre017 } from "../helpers/legacyDb.ts";
 
 const NOW = "2026-01-01T00:00:00Z";
 
@@ -17,20 +18,6 @@ function tmpDbPath(): { dbPath: string; cleanup: () => void } {
     dbPath: join(dir, "memory.db"),
     cleanup: () => rmSync(dir, { recursive: true, force: true }),
   };
-}
-
-/** Roll a current DB back to a pre-017 legacy state: drop the column + its index
- * and remove 017 from the ledger, so only the TS-authored tail is pending —
- * exactly the state US2 left tolerable and this story must activate. */
-function regressToPre017(dbPath: string): void {
-  const db = openDatabaseForBootstrap(dbPath);
-  try {
-    db.exec("DROP INDEX IF EXISTS idx_identity_parent_journey");
-    db.exec("ALTER TABLE identity DROP COLUMN parent_journey");
-    db.prepare("DELETE FROM _migrations WHERE id = ?").run("017_journey_parent_column");
-  } finally {
-    db.close();
-  }
 }
 
 function deleteMigrationRow(dbPath: string, id: string): void {
