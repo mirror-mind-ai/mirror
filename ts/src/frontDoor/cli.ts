@@ -38,7 +38,8 @@ import { IdentityRootExistsError, initUserHome, TemplatesNotFoundError } from ".
 import { JOURNEY_PATH_LAYER } from "../journey/journeyStatus.ts";
 import { JourneyNotFoundError } from "../journey/journeyWrite.ts";
 import { runSeed } from "../seed/seed.ts";
-import { listTasks } from "../tasks/taskStore.ts";
+import { getTasksForWeek, listTasks } from "../tasks/taskStore.ts";
+import { computeWeekRange } from "../tasks/weekView.ts";
 import { expandHome } from "../util/paths.ts";
 import { newId, nowIso } from "../util/pyGenerators.ts";
 import { hasOption, optionValue, stripOptionWithValue } from "./args.ts";
@@ -70,6 +71,7 @@ import {
   renderTasksList,
   renderTasksStatusChange,
 } from "./render/tasks.ts";
+import { renderWeekView } from "./render/week.ts";
 import { type FrontDoorEngine, routeMemoryCommand } from "./routing.ts";
 import { runMemorySearchRoute } from "./searchRoute.ts";
 import { resolveSeedPaths } from "./seedPaths.ts";
@@ -189,6 +191,7 @@ function runTs(argv: readonly string[]): number {
     else if (command === "conversations") return runConversationsRead(db, args);
     else if (command === "journey") return runJourneyStatusRead(db, args);
     else if (command === "tasks") return runTasksRead(db, args);
+    else if (command === "week") return runWeekRead(db, args);
     else throw new Error(`Unsupported TS route: ${command}`);
     return 0;
   } catch (error) {
@@ -343,6 +346,20 @@ function runTasksRead(db: Database, args: readonly string[]): number {
   const filters = all ? { journey } : status ? { journey, status } : { journey, openOnly: true };
   const tasks = listTasks(db, filters);
   process.stdout.write(renderTasksList(tasks, { all, status }));
+  return 0;
+}
+
+/**
+ * Serve `week view` (and the bare `week` default, DS7.US2 slice 3b). `plan`/
+ * `save` never reach here (Python fallback). `now` is the real current time
+ * in production; tests inject a frozen instant by calling `renderWeekView`
+ * directly rather than through this CLI entry point.
+ */
+function runWeekRead(db: Database, _args: readonly string[]): number {
+  const now = new Date();
+  const range = computeWeekRange(now);
+  const tasks = getTasksForWeek(db, range.start, range.end);
+  process.stdout.write(renderWeekView(tasks, now));
   return 0;
 }
 

@@ -63,6 +63,10 @@ ORACLE_PATHS: tuple[str, ...] = (
     "src/memory/cli/tasks_cmd.py",
     "src/memory/storage/tasks.py",
     "src/memory/services/tasks.py",
+    # DS7.US2 slice 3b: week view (cmd_view's non-printing logic + rendering).
+    # `cmd_plan`/`cmd_save` in the same file are LLM-gated and reassigned to
+    # US5, tracked here anyway at file granularity like every other entry.
+    "src/memory/cli/week.py",
 )
 
 BASELINE_RELPATH = "ts/parity/oracle-baseline.json"
