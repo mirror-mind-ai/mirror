@@ -19,7 +19,7 @@
 
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { basename } from "node:path";
+import { basename, dirname } from "node:path";
 import { pathToFileURL } from "node:url";
 import { bootstrapDatabaseIfMissing } from "../db/bootstrap.ts";
 import {
@@ -34,6 +34,7 @@ import { allDescriptors, descriptorsByLayer } from "../descriptor/descriptorRead
 import { listJourneysForListCommand } from "../identity/journeyListing.ts";
 import { listPersonas } from "../identity/personaListing.ts";
 import { setIdentity } from "../identity/setIdentity.ts";
+import { IdentityRootExistsError, initUserHome, TemplatesNotFoundError } from "../init/init.ts";
 import { JOURNEY_PATH_LAYER } from "../journey/journeyStatus.ts";
 import { JourneyNotFoundError } from "../journey/journeyWrite.ts";
 import { expandHome } from "../util/paths.ts";
@@ -397,6 +398,49 @@ function isConsult(argv: readonly string[]): boolean {
   return argv[0] === "consult";
 }
 
+function isInit(argv: readonly string[]): boolean {
+  return argv[0] === "init";
+}
+
+/**
+ * Serve `init <user>` (DS7.US1 Slice B). Filesystem-only — no database is
+ * opened. Python's argparse defines only the `user` positional (no
+ * --mirror-home/--db-path), so none are stripped here.
+ *
+ * Deliberate divergence: an already-populated identity root or a missing
+ * templates root are uncaught exceptions in Python (a raw traceback, exit 1) --
+ * not a designed message. This preserves the contract (exit 1, a stderr
+ * message naming the failure) without fabricating a fake traceback.
+ */
+function runInit(argv: readonly string[]): number {
+  const user = argv[1];
+  if (!user) {
+    console.error("Usage: init <user>");
+    return 2;
+  }
+  try {
+    const identityRoot = initUserHome(user);
+    const mirrorHome = dirname(identityRoot);
+    const prints = [
+      `Created user home: ${mirrorHome}`,
+      `Identity ready at: ${identityRoot}`,
+      "\nNext steps:",
+      `  1. Add to your .env: MIRROR_HOME=${mirrorHome}`,
+      "  2. Run: uv run python -m memory seed",
+      "\nYour identity is ready to use. Deepen it over time with:",
+      "  uv run python -m memory identity edit user identity",
+    ];
+    process.stdout.write(prints.map((line) => `${line}\n`).join(""));
+    return 0;
+  } catch (error) {
+    if (error instanceof IdentityRootExistsError || error instanceof TemplatesNotFoundError) {
+      console.error(error.message);
+      return 1;
+    }
+    throw error;
+  }
+}
+
 /** `consult credits` never logs to llm_calls (Python doesn't either, AI-09) --
  * so it skips the live-write db-open entirely, matching its current
  * read-only-external-API shape. */
@@ -539,6 +583,7 @@ async function runMemorySearch(argv: readonly string[]): Promise<number> {
 
 async function dispatch(argv: readonly string[], engine: FrontDoorEngine): Promise<number> {
   if (engine === "python") return fallbackPython(argv);
+  if (isInit(argv)) return runInit(argv);
   if (isIdentityWrite(argv)) return runIdentityWrite(argv);
   if (isJourneyWrite(argv)) return runJourneyWrite(argv);
   if (isJourneyUpdateWrite(argv)) return runJourneyUpdateWrite(argv);

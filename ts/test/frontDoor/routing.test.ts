@@ -76,6 +76,14 @@ test("routes `identity set/list/get` to TS but keeps the interactive `edit` on P
   assert.equal(routeMemoryCommand(["identity", "edit", "ego", "behavior"]).engine, "python");
 });
 
+test("routes `init` to TS", () => {
+  assert.deepEqual(routeMemoryCommand(["init", "someuser"]), {
+    command: "init",
+    engine: "ts",
+    reason: "DS7.US1 Slice B init (filesystem bootstrap) ported to TS",
+  });
+});
+
 test("routes `recall` to TS", () => {
   assert.deepEqual(routeMemoryCommand(["recall", "abc1234"]), {
     command: "recall",

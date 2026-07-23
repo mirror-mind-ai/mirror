@@ -105,6 +105,14 @@ export function routeMemoryCommand(
     };
   }
 
+  if (command === "init") {
+    return {
+      command,
+      engine: "ts",
+      reason: "DS7.US1 Slice B init (filesystem bootstrap) ported to TS",
+    };
+  }
+
   if (command === "recall") {
     return { command, engine: "ts", reason: "DS7.US1 recall read ported to TS" };
   }
