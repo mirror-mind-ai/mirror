@@ -84,6 +84,14 @@ test("routes `init` to TS", () => {
   });
 });
 
+test("routes `seed` to TS", () => {
+  assert.deepEqual(routeMemoryCommand(["seed", "--force"]), {
+    command: "seed",
+    engine: "ts",
+    reason: "DS7.US1 Slice B seed write ported to TS",
+  });
+});
+
 test("routes `recall` to TS", () => {
   assert.deepEqual(routeMemoryCommand(["recall", "abc1234"]), {
     command: "recall",

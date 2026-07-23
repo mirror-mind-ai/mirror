@@ -53,3 +53,17 @@ export function getIdentityMetadata(db: Database, layer: string, key: string): s
   if (row === undefined) return null;
   return optionalString(row, "metadata");
 }
+
+/**
+ * Whether an identity row exists for (layer, key) — an existence check
+ * independent of content truthiness. Needed because Python's `existing and not
+ * force` checks object truthiness (an `Identity` row is always truthy, even
+ * with empty content); reusing `getIdentityContent(...)` for this would
+ * misread an existing-but-empty-content row as absent.
+ */
+export function identityRowExists(db: Database, layer: string, key: string): boolean {
+  return (
+    db.prepare("SELECT 1 FROM identity WHERE layer = ? AND key = ? LIMIT 1").get(layer, key) !==
+    undefined
+  );
+}

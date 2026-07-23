@@ -37,6 +37,7 @@ import { setIdentity } from "../identity/setIdentity.ts";
 import { IdentityRootExistsError, initUserHome, TemplatesNotFoundError } from "../init/init.ts";
 import { JOURNEY_PATH_LAYER } from "../journey/journeyStatus.ts";
 import { JourneyNotFoundError } from "../journey/journeyWrite.ts";
+import { runSeed } from "../seed/seed.ts";
 import { expandHome } from "../util/paths.ts";
 import { newId, nowIso } from "../util/pyGenerators.ts";
 import { hasOption, optionValue, stripOptionWithValue } from "./args.ts";
@@ -64,6 +65,7 @@ import { renderMemories } from "./render/memories.ts";
 import { ConversationNotFoundError, renderRecall } from "./render/recall.ts";
 import { type FrontDoorEngine, routeMemoryCommand } from "./routing.ts";
 import { runMemorySearchRoute } from "./searchRoute.ts";
+import { resolveSeedPaths } from "./seedPaths.ts";
 
 /**
  * Resolve the database path for a CLI invocation, mapping a configuration
@@ -441,6 +443,67 @@ function runInit(argv: readonly string[]): number {
   }
 }
 
+function isSeed(argv: readonly string[]): boolean {
+  return argv[0] === "seed";
+}
+
+/**
+ * Serve `seed [--env E] [--mirror-home PATH] [--force]` (DS7.US1 Slice B).
+ * Uses its own resolution (seedPaths.ts) rather than the shared
+ * withLiveWriteDb skeleton: `seed`'s Python source resolves the database path
+ * differently from every other command (see seedPaths.ts's module comment for
+ * the verified, surprising divergence), though the actual backup-gated
+ * write-open below is the same sanctioned seam every other write uses.
+ */
+function runSeedCommand(argv: readonly string[]): number {
+  const args = argv.slice(1);
+  const force = hasOption(args, "--force");
+  const envFlag = optionValue(args, "--env");
+  const ambientEnv = process.env.MEMORY_ENV || "production";
+  const headerPrints = [`Seeding identity into [${envFlag || ambientEnv}]...\n`];
+  if (force) {
+    headerPrints.push("  (--force: existing entries will be overwritten from YAML files)\n");
+  }
+  process.stdout.write(headerPrints.map((line) => `${line}\n`).join(""));
+
+  let paths: ReturnType<typeof resolveSeedPaths>;
+  try {
+    paths = resolveSeedPaths(args);
+  } catch (error) {
+    if (error instanceof MirrorHomeNotConfiguredError) {
+      console.error(`Mirror TS front door: ${error.message}`);
+      return 2;
+    }
+    throw error;
+  }
+
+  ensureDatabaseReady(paths.dbPath, "seed");
+  const db = openDatabaseForWrite(paths.dbPath, ensureBackup(paths.dbPath));
+  try {
+    assertSchemaState(db);
+    const prints = [`Mirror home: ${paths.mirrorHome}`, `Identity root: ${paths.identityRoot}`];
+    const result = runSeed(db, paths.identityRoot, { force });
+    prints.push(...result.lines);
+    prints.push(
+      `\nResult: ${result.created} created, ${result.updated} updated, ${result.skipped} skipped`,
+    );
+    if (result.errors.length > 0) {
+      prints.push(`Errors: ${result.errors.length}`);
+      for (const err of result.errors) prints.push(`  - ${err}`);
+    }
+    process.stdout.write(prints.map((line) => `${line}\n`).join(""));
+    return result.errors.length > 0 ? 1 : 0;
+  } catch (error) {
+    if (error instanceof SchemaStateError) {
+      console.error(`Mirror TS front door: ${error.message}`);
+      return 2;
+    }
+    throw error;
+  } finally {
+    db.close();
+  }
+}
+
 /** `consult credits` never logs to llm_calls (Python doesn't either, AI-09) --
  * so it skips the live-write db-open entirely, matching its current
  * read-only-external-API shape. */
@@ -584,6 +647,7 @@ async function runMemorySearch(argv: readonly string[]): Promise<number> {
 async function dispatch(argv: readonly string[], engine: FrontDoorEngine): Promise<number> {
   if (engine === "python") return fallbackPython(argv);
   if (isInit(argv)) return runInit(argv);
+  if (isSeed(argv)) return runSeedCommand(argv);
   if (isIdentityWrite(argv)) return runIdentityWrite(argv);
   if (isJourneyWrite(argv)) return runJourneyWrite(argv);
   if (isJourneyUpdateWrite(argv)) return runJourneyUpdateWrite(argv);

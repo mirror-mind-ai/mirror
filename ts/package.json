@@ -17,5 +17,8 @@
     "@biomejs/biome": "^2.2.0",
     "@types/node": "^24.0.0",
     "typescript": "^5.8.0"
+  },
+  "dependencies": {
+    "yaml": "^2.9.0"
   }
 }

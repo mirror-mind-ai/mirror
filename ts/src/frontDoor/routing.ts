@@ -113,6 +113,10 @@ export function routeMemoryCommand(
     };
   }
 
+  if (command === "seed") {
+    return { command, engine: "ts", reason: "DS7.US1 Slice B seed write ported to TS" };
+  }
+
   if (command === "recall") {
     return { command, engine: "ts", reason: "DS7.US1 recall read ported to TS" };
   }
