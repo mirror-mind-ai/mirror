@@ -165,6 +165,47 @@ test("inspect persona on a missing entry prints to stdout and exits 1", () => {
   });
 });
 
+test("recall render output matches the golden (full history, persona+journey, no summary)", () => {
+  withFixture((dbPath) => {
+    buildRenderFixture(dbPath);
+    assertGolden("recall-full", render(dbPath, ["recall", "conv-aaaa1111"]));
+  });
+});
+
+test("recall render output matches the golden (prefix match, untitled, summary, no persona/journey)", () => {
+  withFixture((dbPath) => {
+    buildRenderFixture(dbPath);
+    assertGolden("recall-untitled-summary", render(dbPath, ["recall", "conv-bbbb"]));
+  });
+});
+
+test("recall render output matches the golden (no messages)", () => {
+  withFixture((dbPath) => {
+    buildRenderFixture(dbPath);
+    assertGolden("recall-no-messages", render(dbPath, ["recall", "conv-cccc3333"]));
+  });
+});
+
+test("recall render output matches the golden (--limit 1, tail message only)", () => {
+  withFixture((dbPath) => {
+    buildRenderFixture(dbPath);
+    assertGolden("recall-limit-1", render(dbPath, ["recall", "conv-aaaa1111", "--limit", "1"]));
+  });
+});
+
+test("recall on a missing conversation exits 1 with a stderr message, no stdout", () => {
+  withFixture((dbPath) => {
+    buildRenderFixture(dbPath);
+    const result = spawnSync(process.execPath, [CLI, "recall", "zzz-missing"], {
+      encoding: "utf8",
+      env: { ...process.env, NODE_OPTIONS: "--no-warnings", DB_PATH: dbPath },
+    });
+    assert.equal(result.status, 1);
+    assert.equal(result.stdout, "");
+    assert.equal(result.stderr.trim(), "Conversation 'zzz-missing' not found.");
+  });
+});
+
 /** A schema-valid database with no journeys or memories (empty-state edges). */
 function buildEmptyFixture(dbPath: string): void {
   const db = openDatabaseCopyForWrite(dbPath);

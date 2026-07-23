@@ -56,6 +56,7 @@ import { PersonaNotFoundError, renderInspectPersona } from "./render/inspectPers
 import { renderJourneys } from "./render/journeys.ts";
 import { renderListJourneys, renderListPersonas } from "./render/list.ts";
 import { renderMemories } from "./render/memories.ts";
+import { ConversationNotFoundError, renderRecall } from "./render/recall.ts";
 import { type FrontDoorEngine, routeMemoryCommand } from "./routing.ts";
 import { runMemorySearchRoute } from "./searchRoute.ts";
 
@@ -164,6 +165,7 @@ function runTs(argv: readonly string[]): number {
     else if (command === "descriptor") return runDescriptorRead(db, args);
     else if (command === "list") return runListRead(db, args);
     else if (command === "inspect") return runInspectRead(db, args);
+    else if (command === "recall") return runRecallRead(db, args);
     else throw new Error(`Unsupported TS route: ${command}`);
     return 0;
   } catch (error) {
@@ -247,6 +249,31 @@ function runInspectRead(db: Database, args: readonly string[]): number {
     if (error instanceof PersonaNotFoundError) {
       // Matches Python: this goes to STDOUT, not stderr.
       process.stdout.write(`${error.message}\n`);
+      return 1;
+    }
+    throw error;
+  }
+}
+
+/** Serve `recall <conv_id> [--limit N]` (DS7.US1). */
+function runRecallRead(db: Database, args: readonly string[]): number {
+  const limitRaw = optionValue(args, "--limit");
+  const limit = limitRaw !== null ? Number(limitRaw) : 50;
+  const positionals = stripOptionWithValue(
+    stripOptionWithValue(stripOptionWithValue(args, "--limit"), "--mirror-home"),
+    "--db-path",
+  );
+  const convId = positionals[0];
+  if (!convId) {
+    console.error("Usage: recall <conv_id> [--limit N]");
+    return 2;
+  }
+  try {
+    process.stdout.write(renderRecall(db, convId, limit));
+    return 0;
+  } catch (error) {
+    if (error instanceof ConversationNotFoundError) {
+      console.error(error.message);
       return 1;
     }
     throw error;

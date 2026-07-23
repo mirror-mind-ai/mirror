@@ -93,6 +93,10 @@ export function routeMemoryCommand(
     };
   }
 
+  if (command === "recall") {
+    return { command, engine: "ts", reason: "DS7.US1 recall read ported to TS" };
+  }
+
   if (command === "inspect") {
     // `persona` (DS7.US1) is a deterministic identity read. `extension` and
     // `runtime-catalog` share the extension-catalog machinery (like `list

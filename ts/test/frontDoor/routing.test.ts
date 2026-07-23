@@ -76,6 +76,15 @@ test("routes `identity set/list/get` to TS but keeps the interactive `edit` on P
   assert.equal(routeMemoryCommand(["identity", "edit", "ego", "behavior"]).engine, "python");
 });
 
+test("routes `recall` to TS", () => {
+  assert.deepEqual(routeMemoryCommand(["recall", "abc1234"]), {
+    command: "recall",
+    engine: "ts",
+    reason: "DS7.US1 recall read ported to TS",
+  });
+  assert.equal(routeMemoryCommand(["recall", "abc1234", "--limit", "5"]).engine, "ts");
+});
+
 test("routes `inspect persona` to TS but keeps other inspect targets on Python", () => {
   assert.deepEqual(routeMemoryCommand(["inspect", "persona", "engineer"]), {
     command: "inspect",

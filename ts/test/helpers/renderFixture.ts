@@ -7,6 +7,11 @@
 // golden generator and the test so both build the identical fixture.
 
 import { openDatabaseCopyForWrite } from "../../src/db/database.ts";
+import {
+  createConversationTables,
+  insertConversation,
+  insertMessage,
+} from "./conversationSchema.ts";
 import { createIdentityTable, seedKnownMigrations } from "./identitySchema.ts";
 
 const LONG_CONTENT =
@@ -73,6 +78,49 @@ export function buildRenderFixture(dbPath: string): void {
   // Orphaned: no matching identity row, so it must be excluded from the
   // identity-driven "all layers" listing but still visible under --layer.
   descriptor.run("persona", "ghost-persona", "A descriptor with no identity row.");
+
+  createConversationTables(db);
+  insertConversation(db, {
+    id: "conv-aaaa1111",
+    startedAt: "2026-07-02T09:00:00.000000Z",
+    title: "Fixture conversation one",
+    persona: "engineer",
+    journey: "demo",
+  });
+  insertMessage(db, {
+    id: "msg-1",
+    conversationId: "conv-aaaa1111",
+    role: "user",
+    content: "Fixture user message.",
+    createdAt: "2026-07-02T09:01:00.000000Z",
+  });
+  insertMessage(db, {
+    id: "msg-2",
+    conversationId: "conv-aaaa1111",
+    role: "assistant",
+    content: "Fixture assistant reply.",
+    createdAt: "2026-07-02T09:02:00.000000Z",
+  });
+  insertConversation(db, {
+    id: "conv-bbbb2222",
+    startedAt: "2026-07-01T09:00:00.000000Z",
+    title: null,
+    summary: "A fixture summary for the untitled conversation.",
+  });
+  insertMessage(db, {
+    id: "msg-3",
+    conversationId: "conv-bbbb2222",
+    role: "user",
+    content: "Solo fixture message.",
+    createdAt: "2026-07-01T09:01:00.000000Z",
+  });
+  insertConversation(db, {
+    id: "conv-cccc3333",
+    startedAt: "2026-07-03T09:00:00.000000Z",
+    title: "Fixture conversation three",
+    persona: "therapist",
+    journey: "demo-child",
+  });
 
   const memory = db.prepare(
     "INSERT INTO memories (id, memory_type, layer, title, content, journey, persona, tags, " +
