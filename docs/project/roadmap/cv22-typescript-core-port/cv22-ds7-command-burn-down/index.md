@@ -148,17 +148,24 @@ highest-churn `transport=verbatim` Builder/Ariad tree last (or in tight lockstep
 with a frozen oracle snapshot), so the moving target is ported against the most
 stable possible oracle.
 
-| Family | Scope | Type | Risk |
-|--------|-------|------|------|
-| Remaining identity/journey reads & writes | `identity list/get`, `journey status/update`, `seed`, `init`, `descriptor`, `list`, `inspect`, `conversations`, `recall`; carries the DS6.US3 atomic `parent_journey` dual-write and the `kebab_slug` port | User/Technical | Low–Med |
-| Content & planning writes | `journal`, `tasks`, `week` | User Story | Low |
-| Memory cultivation | `consolidate`, `shadow` — identity-layer writes behind the allowlist + ported injection fences | User Story | Med (security) |
-| mirror-mode orchestration | `mirror`, `mode` — the Mirror turn behind the replay transport | User Story | Med |
-| Extraction lifecycle | `conversation-logger` + extraction pipeline; deterministic DB writes behind replay, live embedding is the DS8 seam | User/Technical | High (writes) |
-| Soul Mode | `soul` full surface — `transport=verbatim` rendering + `soul apply` identity-writes | User Story | Med–High |
-| Explorer Mode | `explore` exploratory-story surfaces | User Story | Med |
-| Builder/Ariad tree | `build` full Delivery + Refinement lifecycle; re-homes in-flight CV20/CV21 work; `transport=verbatim` | User/Technical (multiple) | Highest (churn) |
-| Ops/utility tail | `backup`, `repair-encoding`, `extensions`, `ext`, `welcome`, `migrate-legacy`, `transcript-export`, `inspect llm-calls` | Technical | Low–Med |
+The table uses the canonical `| Code | Story | Type | Outcome | Status |`
+candidate-story grammar so Ariad Expand can resolve and reuse this authored
+package. Row order is the risk-first sequence: US1 (low-churn deterministic tail)
+first, the security-sensitive cultivation/extraction writes in the middle behind
+the replay seam, the highest-churn `transport=verbatim` Builder/Ariad tree (US8)
+last, and the ops tail (TS1) to reach zero.
+
+| Code | Story | Type | Outcome | Status |
+|------|-------|------|---------|--------|
+| CV22.DS7.US1 | Remaining identity/journey reads & writes | User Story | `identity list/get`, `journey status/update`, `seed`, `init`, `descriptor`, `list`, `inspect`, `conversations`, `recall` answered by TS; carries the DS6.US3 atomic `parent_journey` dual-write and the `kebab_slug` writer/locator port (low–med risk) | 🟡 Planned |
+| CV22.DS7.US2 | Content & planning writes | User Story | `journal`, `tasks`, `week` writes answered by TS with parity proven on copies (low risk) | 🟡 Planned |
+| CV22.DS7.US3 | Memory cultivation | User Story | `consolidate` and `shadow` answered by TS with the identity-write allowlist and injection fences ported at parity (med risk — security) | 🟡 Planned |
+| CV22.DS7.US4 | mirror-mode orchestration | User Story | `mirror` and `mode` (the Mirror turn) answered by TS behind the replay `LlmTransport` (med risk) | 🟡 Planned |
+| CV22.DS7.US5 | Extraction lifecycle | User Story | `conversation-logger` + extraction pipeline answered by TS — deterministic writes on copies, live embedding deferred to the DS8 seam (high risk — writes) | 🟡 Planned |
+| CV22.DS7.US6 | Soul Mode | User Story | `soul` full surface answered by TS with `transport=verbatim` rendering parity and the `soul apply` identity-write gate (med–high risk) | 🟡 Planned |
+| CV22.DS7.US7 | Explorer Mode | User Story | `explore` exploratory-story surfaces answered by TS (med risk) | 🟡 Planned |
+| CV22.DS7.US8 | Builder/Ariad tree | User Story | `build` full Delivery + Refinement lifecycle answered by TS, re-homing in-flight CV20/CV21 work; largest, highest-churn, `transport=verbatim` surface (highest risk — churn) | 🟡 Planned |
+| CV22.DS7.TS1 | Ops/utility tail | Technical Story | `backup`, `repair-encoding`, `extensions`, `ext`, `welcome`, `migrate-legacy`, `transcript-export`, `inspect llm-calls` answered by TS to reach zero deterministic Python commands (low–med risk) | 🟡 Planned |
 
 `identity edit` (spawns `$EDITOR`) and other interactive seams are called out for
 an explicit port-or-keep decision at plan time rather than a silent port.
