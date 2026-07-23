@@ -174,7 +174,7 @@ export function applyShadowApply(
 // --- consolidate apply: merge (Slice B -- needs a fresh embedding) -----------
 
 export type MergeOutcome =
-  | { kind: "merged"; mergedMemoryId: string; sourceMemoryIds: string[] }
+  | { kind: "merged"; mergedMemoryId: string; mergedTitle: string; sourceMemoryIds: string[] }
   | { kind: "source_not_found" };
 
 export interface ApplyMergeOptions {
@@ -232,5 +232,10 @@ export async function applyMerge(
     updateMemoryReadinessState(db, memoryId, "integrated");
   }
   updateConsolidationStatus(db, consolidation.id, "accepted", resultContent, options.nowIso);
-  return { kind: "merged", mergedMemoryId: options.id, sourceMemoryIds: sourceIds };
+  return {
+    kind: "merged",
+    mergedMemoryId: options.id,
+    mergedTitle: `[merged] ${first.title}`,
+    sourceMemoryIds: sourceIds,
+  };
 }

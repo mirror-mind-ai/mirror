@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { consolidateScan, shadowScan } from "../../src/cultivation/scan.ts";
+import { consolidateScan, createdProposals, shadowScan } from "../../src/cultivation/scan.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
 import { embeddingToBytes } from "../../src/db/decode.ts";
 import { upsertIdentity } from "../../src/identity/identityStore.ts";
@@ -69,12 +69,17 @@ test("consolidateScan clusters embedded memories, proposes, and stores one Conso
     });
 
     assert.equal(result.memoriesScanned, 2);
-    assert.equal(result.clusters.length, 1);
-    assert.equal(result.proposalsCreated.length, 1);
+    assert.equal(result.results.length, 1);
+    const created = createdProposals(result);
+    assert.equal(created.length, 1);
     // The read is `ORDER BY created_at DESC` (matching Python), so m2 (later)
     // sorts first and becomes the cluster seed; m1 joins it.
-    assert.deepEqual(result.proposalsCreated[0]?.source_memory_ids, JSON.stringify(["m2", "m1"]));
-    assert.equal(result.proposalsCreated[0]?.status, "pending");
+    assert.deepEqual(created[0]?.source_memory_ids, JSON.stringify(["m2", "m1"]));
+    assert.equal(created[0]?.status, "pending");
+    assert.deepEqual(
+      result.results[0]?.cluster.map((m) => m.id),
+      ["m2", "m1"],
+    );
 
     const stored = db.prepare("SELECT COUNT(*) AS n FROM consolidations").get();
     assert.equal(stored?.n, 1);
@@ -93,7 +98,7 @@ test("consolidateScan returns early with no provider call when there are no embe
       id: seedIds("unused"),
       nowIso: () => NOW,
     });
-    assert.deepEqual(result, { memoriesScanned: 0, clusters: [], proposalsCreated: [] });
+    assert.deepEqual(result, { memoriesScanned: 0, results: [] });
     assert.equal(provider.calls.length, 0);
   } finally {
     db.close();
@@ -142,8 +147,8 @@ test("consolidateScan caps proposals at `limit`, proposing for only the first N 
     // Mirrors Python's own order: `clusters = clusters[:limit]` runs BEFORE
     // proposing, so the reported cluster list is already capped -- only one
     // cluster is exposed and only one proposal call is made.
-    assert.equal(result.clusters.length, 1);
-    assert.equal(result.proposalsCreated.length, 1);
+    assert.equal(result.results.length, 1);
+    assert.equal(createdProposals(result).length, 1);
     assert.equal(provider.calls.length, 1);
   } finally {
     db.close();
@@ -177,8 +182,9 @@ test("consolidateScan skips a cluster whose proposal is invalid (disallowed acti
       id: seedIds("unused"),
       nowIso: () => NOW,
     });
-    assert.equal(result.clusters.length, 1);
-    assert.equal(result.proposalsCreated.length, 0);
+    assert.equal(result.results.length, 1);
+    assert.equal(result.results[0]?.proposal, null);
+    assert.equal(createdProposals(result).length, 0);
     assert.equal(db.prepare("SELECT COUNT(*) AS n FROM consolidations").get()?.n, 0);
   } finally {
     db.close();

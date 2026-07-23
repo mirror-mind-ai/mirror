@@ -216,6 +216,94 @@ test("routes `journey set-path`/`update`/status reads all to TS", () => {
   assert.equal(routeMemoryCommand(["journeys"]).engine, "ts");
 });
 
+test("routes `consolidate list`/`reject` to TS unconditionally, gates `apply`/`scan` on the DS7.US3 replay config", () => {
+  assert.deepEqual(routeMemoryCommand(["consolidate", "list"]), {
+    command: "consolidate",
+    engine: "ts",
+    reason: "DS7.US3 consolidate list/reject ported to TS",
+  });
+  assert.equal(routeMemoryCommand(["consolidate", "reject", "abc"]).engine, "ts");
+
+  assert.deepEqual(routeMemoryCommand(["consolidate", "apply", "abc"]), {
+    command: "consolidate",
+    engine: "python",
+    reason: "consolidate apply needs DS7.US3 replay/live config for TS route (merge embedding)",
+  });
+  assert.deepEqual(
+    routeMemoryCommand(["consolidate", "apply", "abc"], {
+      MIRROR_TS_EXTERNAL_ROUTES: "1",
+      MIRROR_TS_CULTIVATION_EMBEDDING_REPLAY: "/tmp/embedding.json",
+    }),
+    {
+      command: "consolidate",
+      engine: "ts",
+      reason:
+        "DS7.US3 consolidate apply routed to TS under replay-safe config (merge needs embedding)",
+    },
+  );
+  // The external-routes gate alone (no fixture path) is not enough.
+  assert.equal(
+    routeMemoryCommand(["consolidate", "apply", "abc"], { MIRROR_TS_EXTERNAL_ROUTES: "1" }).engine,
+    "python",
+  );
+
+  assert.deepEqual(routeMemoryCommand(["consolidate", "scan"]), {
+    command: "consolidate",
+    engine: "python",
+    reason: "consolidate scan needs DS7.US3 replay/live config for TS route",
+  });
+  assert.deepEqual(
+    routeMemoryCommand(["consolidate", "scan"], {
+      MIRROR_TS_EXTERNAL_ROUTES: "1",
+      MIRROR_TS_CULTIVATION_LLM_REPLAY: "/tmp/llm.json",
+    }),
+    {
+      command: "consolidate",
+      engine: "ts",
+      reason: "DS7.US3 consolidate scan routed to TS under replay-safe config",
+    },
+  );
+
+  assert.deepEqual(routeMemoryCommand(["consolidate", "unknown-sub"]), {
+    command: "consolidate",
+    engine: "python",
+    reason: "command not ported to TS",
+  });
+});
+
+test("routes `shadow list`/`show`/`reject`/`apply` to TS unconditionally, gates `scan` on the DS7.US3 replay config", () => {
+  for (const sub of ["list", "show", "reject", "apply"]) {
+    assert.deepEqual(routeMemoryCommand(["shadow", sub, "abc"]), {
+      command: "shadow",
+      engine: "ts",
+      reason: "DS7.US3 shadow list/show/reject/apply ported to TS",
+    });
+  }
+
+  assert.deepEqual(routeMemoryCommand(["shadow", "scan"]), {
+    command: "shadow",
+    engine: "python",
+    reason: "shadow scan needs DS7.US3 replay/live config for TS route",
+  });
+  assert.deepEqual(
+    routeMemoryCommand(["shadow", "scan"], {
+      MIRROR_TS_EXTERNAL_ROUTES: "1",
+      MIRROR_TS_CULTIVATION_LLM_REPLAY: "/tmp/llm.json",
+    }),
+    {
+      command: "shadow",
+      engine: "ts",
+      reason: "DS7.US3 shadow scan routed to TS under replay-safe config",
+    },
+  );
+
+  assert.deepEqual(routeMemoryCommand(["shadow", "unknown-sub"]), {
+    command: "shadow",
+    engine: "python",
+    reason: "command not ported to TS",
+  });
+});
+
 test("uses Python fallback when no command is present", () => {
   assert.deepEqual(routeMemoryCommand([]), {
     command: null,

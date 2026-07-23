@@ -11,7 +11,7 @@ import { test } from "node:test";
 
 import { applyIdentityUpdate, applyShadowCandidate } from "../../src/cultivation/applyActions.ts";
 import { getConsolidation, listConsolidations } from "../../src/cultivation/consolidationStore.ts";
-import { consolidateScan, shadowScan } from "../../src/cultivation/scan.ts";
+import { consolidateScan, createdProposals, shadowScan } from "../../src/cultivation/scan.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
 import { embeddingToBytes } from "../../src/db/decode.ts";
 import { getIdentityContent, listAllIdentity } from "../../src/identity/identityRead.ts";
@@ -71,7 +71,7 @@ test("adversarial-proposal containment: a poisoned proposal is stored pending at
       id: () => "poisoned-1",
       nowIso: () => NOW,
     });
-    assert.equal(scanResult.proposalsCreated.length, 1);
+    assert.equal(createdProposals(scanResult).length, 1);
     const stored = getConsolidation(db, "poisoned-1");
     assert.equal(stored?.status, "pending");
     assert.equal(stored?.target_layer, "persona");

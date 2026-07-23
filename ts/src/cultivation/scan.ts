@@ -34,10 +34,22 @@ export interface ConsolidateScanOptions {
   nowIso: () => string;
 }
 
+/** One attempted cluster's outcome, in scan order -- `proposal: null` is
+ * Python's "LLM returned no valid proposal for cluster of N memories" branch. */
+export interface ConsolidateScanClusterOutcome {
+  cluster: CultivationMemoryWithEmbedding[];
+  proposal: ConsolidationRow | null;
+}
+
 export interface ConsolidateScanResult {
   memoriesScanned: number;
-  clusters: CultivationMemoryWithEmbedding[][];
-  proposalsCreated: ConsolidationRow[];
+  /** Capped at `limit` (Python slices `clusters[:limit]` BEFORE proposing), in order. */
+  results: ConsolidateScanClusterOutcome[];
+}
+
+/** Convenience projection: only the clusters that actually produced a stored proposal. */
+export function createdProposals(result: ConsolidateScanResult): ConsolidationRow[] {
+  return result.results.flatMap((r) => (r.proposal ? [r.proposal] : []));
 }
 
 /**
@@ -45,9 +57,9 @@ export interface ConsolidateScanResult {
  * embedded memories (filtered), cluster them, cap at `limit`, propose one
  * Consolidation per cluster, and persist every non-null proposal. A cluster
  * whose proposal comes back `null` (LLM failure, unparsable JSON, disallowed
- * action, or empty content) is silently skipped -- exactly like Python's
- * "LLM returned no valid proposal" branch, which does not store anything for
- * that cluster and moves on.
+ * action, or empty content) is reported as `proposal: null` -- exactly like
+ * Python's "LLM returned no valid proposal" branch, which does not store
+ * anything for that cluster and moves on, but still renders a line for it.
  */
 export async function consolidateScan(
   db: WritableDatabase,
@@ -58,23 +70,26 @@ export async function consolidateScan(
     layer: options.layer,
   });
   if (memories.length === 0) {
-    return { memoriesScanned: 0, clusters: [], proposalsCreated: [] };
+    return { memoriesScanned: 0, results: [] };
   }
 
   const allClusters = clusterMemories(memories, options.threshold ?? DEFAULT_CLUSTER_THRESHOLD);
   const clusters = allClusters.slice(0, options.limit ?? DEFAULT_CONSOLIDATE_SCAN_LIMIT);
 
-  const proposalsCreated: ConsolidationRow[] = [];
+  const results: ConsolidateScanClusterOutcome[] = [];
   for (const cluster of clusters) {
     const proposal = await proposeConsolidation(options.provider, cluster, {
       id: options.id(),
       nowIso: options.nowIso(),
     });
-    if (proposal === null) continue;
-    proposalsCreated.push(createConsolidation(db, proposal));
+    if (proposal === null) {
+      results.push({ cluster, proposal: null });
+      continue;
+    }
+    results.push({ cluster, proposal: createConsolidation(db, proposal) });
   }
 
-  return { memoriesScanned: memories.length, clusters, proposalsCreated };
+  return { memoriesScanned: memories.length, results };
 }
 
 export interface ShadowScanOptions {

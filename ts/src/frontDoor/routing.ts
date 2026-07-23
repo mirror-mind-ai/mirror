@@ -25,6 +25,8 @@ export interface RouteEnvironment {
   MIRROR_TS_SEARCH_EMBEDDING_REPLAY?: string;
   MIRROR_TS_CONSULT_LLM_REPLAY?: string;
   MIRROR_TS_CREDITS_REPLAY?: string;
+  MIRROR_TS_CULTIVATION_LLM_REPLAY?: string;
+  MIRROR_TS_CULTIVATION_EMBEDDING_REPLAY?: string;
 }
 
 function externalRoutesEnabled(env: RouteEnvironment): boolean {
@@ -213,6 +215,77 @@ export function routeMemoryCommand(
       engine: "python",
       reason: "week plan/save are LLM-gated and reassigned to US5, not ported here",
     };
+  }
+
+  if (command === "consolidate") {
+    // `list`/`reject` are deterministic reads/writes -- always TS (DS7.US3).
+    // `apply` is gated as a WHOLE on the embedding replay config: its action
+    // is read from the DB, not argv, so the routing decision (made before any
+    // DB is opened) cannot special-case identity_update/shadow_candidate --
+    // the entire command routes together, same principle as `scan`.
+    const sub = argv[1];
+    if (sub === "list" || sub === "reject") {
+      return { command, engine: "ts", reason: "DS7.US3 consolidate list/reject ported to TS" };
+    }
+    if (sub === "apply") {
+      if (externalRoutesEnabled(env) && env.MIRROR_TS_CULTIVATION_EMBEDDING_REPLAY) {
+        return {
+          command,
+          engine: "ts",
+          reason:
+            "DS7.US3 consolidate apply routed to TS under replay-safe config (merge needs embedding)",
+        };
+      }
+      return {
+        command,
+        engine: "python",
+        reason: "consolidate apply needs DS7.US3 replay/live config for TS route (merge embedding)",
+      };
+    }
+    if (sub === "scan") {
+      if (externalRoutesEnabled(env) && env.MIRROR_TS_CULTIVATION_LLM_REPLAY) {
+        return {
+          command,
+          engine: "ts",
+          reason: "DS7.US3 consolidate scan routed to TS under replay-safe config",
+        };
+      }
+      return {
+        command,
+        engine: "python",
+        reason: "consolidate scan needs DS7.US3 replay/live config for TS route",
+      };
+    }
+    return { command, engine: "python", reason: "command not ported to TS" };
+  }
+
+  if (command === "shadow") {
+    // `list`/`show`/`reject`/`apply` are all deterministic -- `apply`'s write
+    // is a hardcoded-layer identity append, no LLM/embedding call, unlike
+    // consolidate's `apply` (which may need to embed a merge).
+    const sub = argv[1];
+    if (sub === "list" || sub === "show" || sub === "reject" || sub === "apply") {
+      return {
+        command,
+        engine: "ts",
+        reason: "DS7.US3 shadow list/show/reject/apply ported to TS",
+      };
+    }
+    if (sub === "scan") {
+      if (externalRoutesEnabled(env) && env.MIRROR_TS_CULTIVATION_LLM_REPLAY) {
+        return {
+          command,
+          engine: "ts",
+          reason: "DS7.US3 shadow scan routed to TS under replay-safe config",
+        };
+      }
+      return {
+        command,
+        engine: "python",
+        reason: "shadow scan needs DS7.US3 replay/live config for TS route",
+      };
+    }
+    return { command, engine: "python", reason: "command not ported to TS" };
   }
 
   if (command === "journey") {

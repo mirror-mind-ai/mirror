@@ -334,6 +334,7 @@ test("applyMerge creates a merged memory titled/layered/journeyed from the FIRST
     assert.deepEqual(outcome, {
       kind: "merged",
       mergedMemoryId: "merged-id",
+      mergedTitle: "[merged] Original insight",
       sourceMemoryIds: ["m1", "m2"],
     });
 

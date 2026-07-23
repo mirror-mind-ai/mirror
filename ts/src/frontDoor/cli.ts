@@ -21,6 +21,14 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { basename, dirname } from "node:path";
 import { pathToFileURL } from "node:url";
+import { DEFAULT_CLUSTER_THRESHOLD } from "../cultivation/cluster.ts";
+import { listConsolidations } from "../cultivation/consolidationStore.ts";
+import {
+  consolidateScan,
+  DEFAULT_CONSOLIDATE_SCAN_LIMIT,
+  DEFAULT_SHADOW_SCAN_LIMIT,
+  shadowScan,
+} from "../cultivation/scan.ts";
 import { bootstrapDatabaseIfMissing } from "../db/bootstrap.ts";
 import {
   type Database,
@@ -31,12 +39,15 @@ import {
 import { ensureMigratedOnOpen } from "../db/migrateOnOpen.ts";
 import { assertSchemaState, SchemaStateError } from "../db/schemaState.ts";
 import { allDescriptors, descriptorsByLayer } from "../descriptor/descriptorRead.ts";
+import { listIdentityByLayer } from "../identity/identityRead.ts";
 import { listJourneysForListCommand } from "../identity/journeyListing.ts";
 import { listPersonas } from "../identity/personaListing.ts";
 import { setIdentity } from "../identity/setIdentity.ts";
 import { IdentityRootExistsError, initUserHome, TemplatesNotFoundError } from "../init/init.ts";
 import { JOURNEY_PATH_LAYER } from "../journey/journeyStatus.ts";
 import { JourneyNotFoundError } from "../journey/journeyWrite.ts";
+import { loadReplayEmbeddingProvider } from "../providers/embedding.ts";
+import { loadReplayLlmProvider } from "../providers/llm.ts";
 import { runSeed } from "../seed/seed.ts";
 import { getTasksForWeek, listTasks } from "../tasks/taskStore.ts";
 import { computeWeekRange } from "../tasks/weekView.ts";
@@ -44,12 +55,23 @@ import { expandHome } from "../util/paths.ts";
 import { newId, nowIso } from "../util/pyGenerators.ts";
 import { hasOption, optionValue, stripOptionWithValue } from "./args.ts";
 import { runConsultRoute } from "./consultRoute.ts";
+import {
+  runConsolidateApply as runConsolidateApplyRoute,
+  runReject,
+  runShadowApply as runShadowApplyRoute,
+} from "./cultivationRoute.ts";
 import { MirrorHomeNotConfiguredError, resolveDbPath } from "./dbPath.ts";
 import { frontDoorLogPath, logFrontDoor } from "./frontDoorLog.ts";
 import { applyIdentitySet } from "./identityWrite.ts";
 import { applyJourneySetPath } from "./journeyWriteRoute.ts";
 import { ensureBackup } from "./liveBackup.ts";
 import { nodeVersionError } from "./nodeSupport.ts";
+import {
+  renderConsolidateApply,
+  renderConsolidateList,
+  renderConsolidateReject,
+  renderConsolidateScan,
+} from "./render/consolidate.ts";
 import { renderConversationsListing } from "./render/conversations.ts";
 import { renderDescriptorList } from "./render/descriptor.ts";
 import { renderDetectPersona } from "./render/detectPersona.ts";
@@ -65,6 +87,13 @@ import { renderJourneys } from "./render/journeys.ts";
 import { renderListJourneys, renderListPersonas } from "./render/list.ts";
 import { renderMemories } from "./render/memories.ts";
 import { ConversationNotFoundError, renderRecall } from "./render/recall.ts";
+import {
+  renderShadowApply,
+  renderShadowList,
+  renderShadowReject,
+  renderShadowScan,
+  renderShadowShow,
+} from "./render/shadow.ts";
 import {
   renderTasksAdd,
   renderTasksDelete,
@@ -204,6 +233,8 @@ function runTs(argv: readonly string[]): number {
     else if (command === "journey") return runJourneyStatusRead(db, args);
     else if (command === "tasks") return runTasksRead(db, args);
     else if (command === "week") return runWeekRead(db, args);
+    else if (command === "consolidate") return runConsolidateRead(db, args);
+    else if (command === "shadow") return runShadowRead(db, args);
     else throw new Error(`Unsupported TS route: ${command}`);
     return 0;
   } catch (error) {
@@ -375,6 +406,33 @@ function runWeekRead(db: Database, _args: readonly string[]): number {
   return 0;
 }
 
+/** Serve `consolidate list` (CV22.DS7.US3). `args` excludes the `consolidate` token itself. */
+function runConsolidateRead(db: Database, args: readonly string[]): number {
+  const status = optionValue(args, "--status");
+  const limitRaw = optionValue(args, "--limit");
+  const limit = limitRaw !== null ? Number(limitRaw) : 20;
+  process.stdout.write(renderConsolidateList(listConsolidations(db, { status, limit }), status));
+  return 0;
+}
+
+/** Serve `shadow list` / `shadow show` (CV22.DS7.US3). `args` excludes the `shadow` token itself. */
+function runShadowRead(db: Database, args: readonly string[]): number {
+  if (args[0] === "show") {
+    process.stdout.write(renderShadowShow(listIdentityByLayer(db, "shadow")));
+    return 0;
+  }
+  // args[0] === "list" (the only other route.ts-allowed read subcommand).
+  const status = optionValue(args, "--status");
+  const limitRaw = optionValue(args, "--limit");
+  const limit = limitRaw !== null ? Number(limitRaw) : 20;
+  // Port of Python's own over-fetch-then-filter: list_consolidations(limit*5),
+  // then keep only shadow_observation rows, THEN cap at limit.
+  const pool = listConsolidations(db, { status, limit: limit * 5 });
+  const items = pool.filter((c) => c.action === "shadow_observation").slice(0, limit);
+  process.stdout.write(renderShadowList(items, status));
+  return 0;
+}
+
 function readStdinContent(): string {
   try {
     return readFileSync(0, "utf8");
@@ -411,6 +469,42 @@ function withLiveWriteDb(argv: readonly string[], write: (db: WritableDatabase) 
   } finally {
     db.close();
   }
+}
+
+/**
+ * Async counterpart to `withLiveWriteDb`, for the CV22.DS7.US3 replay-gated
+ * cultivation writes (`consolidate apply`/`scan`, `shadow scan`) whose `write`
+ * callback must `await` a replay LLM/embedding provider call. Same skeleton,
+ * schema-drift handling, and always-close guarantee.
+ */
+async function withLiveWriteDbAsync(
+  argv: readonly string[],
+  write: (db: WritableDatabase) => Promise<number>,
+): Promise<number> {
+  const dbPath = resolveDbPathForCli(argv.slice(2));
+  if (dbPath === null) return 2;
+  ensureDatabaseReady(dbPath, argv[0] ?? null);
+  const db = openDatabaseForWrite(dbPath, ensureBackup(dbPath));
+  try {
+    assertSchemaState(db);
+    return await write(db);
+  } catch (error) {
+    if (error instanceof SchemaStateError) {
+      console.error(`Mirror TS front door: ${error.message}`);
+      return 2;
+    }
+    throw error;
+  } finally {
+    db.close();
+  }
+}
+
+/** Write `rendered.text` to the correct stream and return its exit code -- the
+ * shared endpoint for every `RenderedCommand`-shaped cultivation outcome. */
+function writeRendered(rendered: { text: string; stderr: boolean; exitCode: number }): number {
+  if (rendered.stderr) process.stderr.write(rendered.text);
+  else process.stdout.write(rendered.text);
+  return rendered.exitCode;
 }
 
 function isIdentityWrite(argv: readonly string[]): boolean {
@@ -816,6 +910,177 @@ function runTasksWrite(argv: readonly string[]): number {
   return runTasksStatusChangeWrite(argv);
 }
 
+// --- consolidate / shadow writes (CV22.DS7.US3) ------------------------------
+
+/** Route `consolidate reject <proposal_id>` to the TS core. */
+function runConsolidateRejectWrite(argv: readonly string[]): number {
+  const args = argv.slice(2);
+  const proposalId = stripOptionWithValue(
+    stripOptionWithValue(args, "--db-path"),
+    "--mirror-home",
+  )[0];
+  if (!proposalId) {
+    console.error("Usage: consolidate reject <proposal_id>");
+    return 2;
+  }
+  return withLiveWriteDb(argv, (db) =>
+    writeRendered(renderConsolidateReject(runReject(db, proposalId, nowIso()))),
+  );
+}
+
+/** Route `shadow reject <proposal_id>` to the TS core. */
+function runShadowRejectWrite(argv: readonly string[]): number {
+  const args = argv.slice(2);
+  const proposalId = stripOptionWithValue(
+    stripOptionWithValue(args, "--db-path"),
+    "--mirror-home",
+  )[0];
+  if (!proposalId) {
+    console.error("Usage: shadow reject <proposal_id>");
+    return 2;
+  }
+  return withLiveWriteDb(argv, (db) =>
+    writeRendered(renderShadowReject(runReject(db, proposalId, nowIso()))),
+  );
+}
+
+/** Route `shadow apply <proposal_id> [--content "..."]` to the TS core. Deterministic --
+ * no replay gate needed (the write is a hardcoded-layer identity append). */
+function runShadowApplyWrite(argv: readonly string[]): number {
+  const args = argv.slice(2);
+  const positionals = stripOptionWithValue(
+    stripOptionWithValue(stripOptionWithValue(args, "--content"), "--db-path"),
+    "--mirror-home",
+  );
+  const proposalId = positionals[0];
+  if (!proposalId) {
+    console.error('Usage: shadow apply <proposal_id> [--content "..."]');
+    return 2;
+  }
+  const overrideContent = optionValue(args, "--content");
+  return withLiveWriteDb(argv, (db) => {
+    const outcome = runShadowApplyRoute(db, proposalId, overrideContent, {
+      id: newId(),
+      nowIso: nowIso(),
+    });
+    return writeRendered(renderShadowApply(outcome));
+  });
+}
+
+/**
+ * Route `consolidate apply <proposal_id> [--content "..."]` to the TS core.
+ * The whole command is gated on `MIRROR_TS_CULTIVATION_EMBEDDING_REPLAY`
+ * (routing.ts already refuses to route here otherwise) because the action is
+ * read from the DB, not argv -- a `merge` proposal needs the replay embedding
+ * provider even though `identity_update`/`shadow_candidate` do not.
+ */
+async function runConsolidateApplyWrite(argv: readonly string[]): Promise<number> {
+  const args = argv.slice(2);
+  const positionals = stripOptionWithValue(
+    stripOptionWithValue(stripOptionWithValue(args, "--content"), "--db-path"),
+    "--mirror-home",
+  );
+  const proposalId = positionals[0];
+  if (!proposalId) {
+    console.error('Usage: consolidate apply <proposal_id> [--content "..."]');
+    return 2;
+  }
+  const overrideContent = optionValue(args, "--content");
+  const replayPath = process.env.MIRROR_TS_CULTIVATION_EMBEDDING_REPLAY;
+  if (!replayPath) {
+    // routing.ts already gates on this; reachable only via direct misuse.
+    throw new Error(
+      "MIRROR_TS_CULTIVATION_EMBEDDING_REPLAY is required for TS consolidate apply route",
+    );
+  }
+  const embeddingProvider = await loadReplayEmbeddingProvider(replayPath);
+  return withLiveWriteDbAsync(argv, async (db) => {
+    const outcome = await runConsolidateApplyRoute(
+      db,
+      proposalId,
+      overrideContent,
+      { identityId: newId(), mergeMemoryId: newId(), nowIso: nowIso() },
+      embeddingProvider,
+    );
+    return writeRendered(renderConsolidateApply(outcome));
+  });
+}
+
+/**
+ * Route `consolidate scan [--journey J] [--layer L] [--limit N] [--threshold F]`
+ * to the TS core, gated on `MIRROR_TS_CULTIVATION_LLM_REPLAY` (routing.ts).
+ */
+async function runConsolidateScanWrite(argv: readonly string[]): Promise<number> {
+  const args = argv.slice(2);
+  const journey = optionValue(args, "--journey");
+  const layer = optionValue(args, "--layer");
+  const limitRaw = optionValue(args, "--limit");
+  const limit = limitRaw !== null ? Number(limitRaw) : DEFAULT_CONSOLIDATE_SCAN_LIMIT;
+  const thresholdRaw = optionValue(args, "--threshold");
+  const threshold = thresholdRaw !== null ? Number(thresholdRaw) : DEFAULT_CLUSTER_THRESHOLD;
+  const replayPath = process.env.MIRROR_TS_CULTIVATION_LLM_REPLAY;
+  if (!replayPath) {
+    throw new Error("MIRROR_TS_CULTIVATION_LLM_REPLAY is required for TS consolidate scan route");
+  }
+  const provider = await loadReplayLlmProvider(replayPath);
+  return withLiveWriteDbAsync(argv, async (db) => {
+    const result = await consolidateScan(db, {
+      journey,
+      layer,
+      limit,
+      threshold,
+      provider,
+      id: newId,
+      nowIso,
+    });
+    process.stdout.write(renderConsolidateScan(result, threshold));
+    return 0;
+  });
+}
+
+/** Route `shadow scan [--limit N]` to the TS core, gated on `MIRROR_TS_CULTIVATION_LLM_REPLAY`. */
+async function runShadowScanWrite(argv: readonly string[]): Promise<number> {
+  const args = argv.slice(2);
+  const limitRaw = optionValue(args, "--limit");
+  const limit = limitRaw !== null ? Number(limitRaw) : DEFAULT_SHADOW_SCAN_LIMIT;
+  const replayPath = process.env.MIRROR_TS_CULTIVATION_LLM_REPLAY;
+  if (!replayPath) {
+    throw new Error("MIRROR_TS_CULTIVATION_LLM_REPLAY is required for TS shadow scan route");
+  }
+  const provider = await loadReplayLlmProvider(replayPath);
+  return withLiveWriteDbAsync(argv, async (db) => {
+    const result = await shadowScan(db, { limit, provider, id: newId, nowIso });
+    process.stdout.write(renderShadowScan(result));
+    return 0;
+  });
+}
+
+function isConsolidateSubcommandWrite(argv: readonly string[]): boolean {
+  return (
+    argv[0] === "consolidate" && (argv[1] === "reject" || argv[1] === "apply" || argv[1] === "scan")
+  );
+}
+
+function isShadowSubcommandWrite(argv: readonly string[]): boolean {
+  return (
+    argv[0] === "shadow" && (argv[1] === "reject" || argv[1] === "apply" || argv[1] === "scan")
+  );
+}
+
+/** Dispatch a `consolidate reject|apply|scan` write to its sub-handler. */
+function runConsolidateWrite(argv: readonly string[]): number | Promise<number> {
+  if (argv[1] === "reject") return runConsolidateRejectWrite(argv);
+  if (argv[1] === "apply") return runConsolidateApplyWrite(argv);
+  return runConsolidateScanWrite(argv); // "scan"
+}
+
+/** Dispatch a `shadow reject|apply|scan` write to its sub-handler. */
+function runShadowWrite(argv: readonly string[]): number | Promise<number> {
+  if (argv[1] === "reject") return runShadowRejectWrite(argv);
+  if (argv[1] === "apply") return runShadowApplyWrite(argv);
+  return runShadowScanWrite(argv); // "scan"
+}
+
 /** Best-effort log path from the same resolver; null when unconfigured. */
 function resolveLogPath(argv: readonly string[]): string | null {
   try {
@@ -895,6 +1160,8 @@ async function dispatch(argv: readonly string[], engine: FrontDoorEngine): Promi
   if (isJourneyWrite(argv)) return runJourneyWrite(argv);
   if (isJourneyUpdateWrite(argv)) return runJourneyUpdateWrite(argv);
   if (isTasksSubcommandWrite(argv)) return runTasksWrite(argv);
+  if (isConsolidateSubcommandWrite(argv)) return runConsolidateWrite(argv);
+  if (isShadowSubcommandWrite(argv)) return runShadowWrite(argv);
   if (isMemorySearch(argv)) return runMemorySearch(argv);
   if (isConsult(argv)) {
     if (isConsultCredits(argv)) {
