@@ -14,6 +14,14 @@ Deliberately network-free and deterministic: it never checks external
 is flaky and rate-limited, and is a non-goal (see the "Testing" section of
 docs/process/engineering-principles.md).
 
+Also checks a second, unrelated invariant that happens to share this CI job:
+``docs/project/roadmap/**/index.md`` heading uniqueness. Two roadmap packages
+must never claim the same ``# <code> — title`` heading code -- that is the
+static, pre-runtime guard for the "one code -> one package" invariant Ariad's
+Expand depends on (``memory.builder.story_paths.resolve_story_directory``),
+closing the class of defect first seen as CR048 (DS6.TS5) and recurring as
+CV22.DS7 (see ``handoff-ariad-fix.MD`` / ``plan-ariad-fix.md``).
+
 Used by ``scripts/check_doc_links.py`` (CLI) and the ``docs`` CI workflow.
 """
 
@@ -23,6 +31,8 @@ import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
+
+from memory.builder.story_paths import find_duplicate_roadmap_headings
 
 _LINK_RE = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 _HEADING_RE = re.compile(r"^#{1,6}\s+(.+?)\s*$", re.MULTILINE)
@@ -45,6 +55,14 @@ class BrokenLink:
     line: int
     target: str
     reason: str
+
+
+@dataclass(frozen=True)
+class DuplicateRoadmapHeading:
+    """Two or more roadmap ``index.md`` files whose heading claims the same code."""
+
+    code: str
+    paths: tuple[str, ...]
 
 
 def slugify(heading: str) -> str:
@@ -157,3 +175,26 @@ def check_repo(repo_root: Path) -> list[BrokenLink]:
     for md_file in _iter_markdown_files(repo_root):
         problems.extend(check_file(md_file, repo_root))
     return problems
+
+
+def check_roadmap_duplicate_headings(repo_root: Path) -> list[DuplicateRoadmapHeading]:
+    """Check ``docs/project/roadmap`` for two ``index.md`` files sharing a heading code.
+
+    Deterministic, sorted order (by code, then by path) for stable CI output.
+    Returns an empty list when the roadmap directory does not exist or every
+    code is unique. Resolves ``repo_root`` before computing relative paths --
+    ``find_duplicate_roadmap_headings`` returns already-resolved directories
+    internally, so an unresolved ``repo_root`` (e.g. containing a symlink,
+    ``..``, or a relative path) would otherwise fail ``Path.relative_to``.
+    """
+    resolved_root = repo_root.resolve()
+    duplicates = find_duplicate_roadmap_headings(repo_root)
+    return [
+        DuplicateRoadmapHeading(
+            code=code,
+            paths=tuple(
+                sorted(str((path / "index.md").relative_to(resolved_root)) for path in paths)
+            ),
+        )
+        for code, paths in sorted(duplicates.items())
+    ]

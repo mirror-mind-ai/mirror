@@ -1,11 +1,13 @@
-"""Self-test for the docs link/anchor checker.
+"""Self-test for the docs link/anchor checker and the roadmap heading guard.
 
 Each case here reproduces a failure mode the checker actually caught (or
 missed, before being fixed) during the repo-wide docs link audit -- this is
 the "checker is a test artifact and must self-test" guard from the
 engineering principles doc: without it, this tool rots exactly like
 `evals/routing.py` did (D-005 -- fixtures drifting silently out of sync
-with reality).
+with reality). ``TestCheckRoadmapDuplicateHeadings`` applies the same
+self-test discipline to the roadmap duplicate-heading CI guard added for the
+Ariad Expand path-divergence fix (handoff-ariad-fix.MD / plan-ariad-fix.md).
 """
 
 from __future__ import annotations
@@ -15,6 +17,7 @@ from pathlib import Path
 from memory.docs_lint import (
     check_file,
     check_repo,
+    check_roadmap_duplicate_headings,
     compute_anchors,
     slugify,
     strip_fenced_code,
@@ -158,3 +161,67 @@ class TestCheckRepo:
         (tmp_path / "b.md").write_text("# B\n")
 
         assert check_repo(tmp_path) == []
+
+
+class TestCheckRoadmapDuplicateHeadings:
+    # This is the CI guard for the class of defect fixed by
+    # memory.builder.story_paths.resolve_story_directory's "one code -> one
+    # package" invariant -- first seen as CR048 (DS6.TS5), recurring as
+    # CV22.DS7. See handoff-ariad-fix.MD / plan-ariad-fix.md.
+
+    def test_clean_roadmap_has_no_duplicates(self, tmp_path: Path) -> None:
+        package = tmp_path / "docs/project/roadmap/cv2-ds1"
+        package.mkdir(parents=True)
+        (package / "index.md").write_text("# CV2.DS1 — Title\n")
+
+        assert check_roadmap_duplicate_headings(tmp_path) == []
+
+    def test_flags_two_packages_claiming_the_same_code(self, tmp_path: Path) -> None:
+        for suffix in ("a", "b"):
+            package = tmp_path / f"docs/project/roadmap/cv2-ds1-{suffix}"
+            package.mkdir(parents=True)
+            (package / "index.md").write_text("# CV2.DS1 — Duplicate\n")
+
+        problems = check_roadmap_duplicate_headings(tmp_path)
+
+        assert len(problems) == 1
+        assert problems[0].code == "CV2.DS1"
+        assert problems[0].paths == (
+            "docs/project/roadmap/cv2-ds1-a/index.md",
+            "docs/project/roadmap/cv2-ds1-b/index.md",
+        )
+
+    def test_reports_no_roadmap_directory_as_clean(self, tmp_path: Path) -> None:
+        assert check_roadmap_duplicate_headings(tmp_path) == []
+
+    def test_ignores_legacy_archive_packages(self, tmp_path: Path) -> None:
+        live = tmp_path / "docs/project/roadmap/cv2-ds1"
+        live.mkdir(parents=True)
+        (live / "index.md").write_text("# CV2.DS1 — Live\n")
+        legacy = tmp_path / "docs/project/roadmap/legacy/cv2-ds1"
+        legacy.mkdir(parents=True)
+        (legacy / "index.md").write_text("# CV2.DS1 — Archived\n")
+
+        assert check_roadmap_duplicate_headings(tmp_path) == []
+
+    def test_handles_a_repo_root_that_is_not_pre_resolved(self, tmp_path: Path) -> None:
+        # find_duplicate_roadmap_headings returns already-resolved directories
+        # internally; a non-normalized repo_root (containing a trailing "..",
+        # or -- on macOS -- a /var vs /private/var symlink) must not crash
+        # Path.relative_to. Real bug caught via manual smoke-testing: green
+        # unit tests alone missed it because pytest's tmp_path happened to
+        # already be pre-resolved on this system.
+        for suffix in ("a", "b"):
+            package = tmp_path / f"docs/project/roadmap/cv2-ds1-{suffix}"
+            package.mkdir(parents=True)
+            (package / "index.md").write_text("# CV2.DS1 — Duplicate\n")
+        non_normalized_root = tmp_path / "unrelated" / ".."
+
+        problems = check_roadmap_duplicate_headings(non_normalized_root)
+
+        assert len(problems) == 1
+        assert problems[0].code == "CV2.DS1"
+        assert problems[0].paths == (
+            "docs/project/roadmap/cv2-ds1-a/index.md",
+            "docs/project/roadmap/cv2-ds1-b/index.md",
+        )

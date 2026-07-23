@@ -29,7 +29,7 @@ Dropped   no longer relevant or replaced by another item
 | D-009 | `asserted_in_own_voice`'s `DISTANCING_MARKERS` list misses common reported-speech verbs | eval measurement | low | Paid | CV9.E2.S29 (AI-25) → CV9.E2.S30 | Paid by CV9.E2.S30 narrator-frame marker widening |
 | D-010 | `asserted_in_own_voice` matches markers anywhere in the text, not proximate to the sentinel | security / design | low | Carried | CV9.E2.S30 (security-engineer adversarial review) | Before another `DISTANCING_MARKERS` widening, or before treating any `asserted_in_own_voice` result as more than a smoke-test signal |
 | D-011 | Extraction sniffs the user's first name from identity prose with a brittle bilingual regex | design | low | Carried | AI Engineering Audit AI-21 (team review) | Replace with a structured `user/identity` name field, or the next time the identity template wording or `_extract_and_persist` is touched |
-| D-012 | Roadmap folder derivation does not sanitize the candidate-table *code* cell for path separators | security / design | low | Carried | mirror slugify consolidation (security-engineer review) | Before candidate tables accept less-trusted / LLM-authored code cells, or the next time `_story_folder_name` / `_artifact_directory` / `_canonical_package_path` is touched |
+| D-012 | Roadmap folder derivation does not sanitize the candidate-table *code* cell for path separators | security / design | low | Paid | mirror slugify consolidation (security-engineer review); closed by the Ariad Expand path-divergence fix | Closed — see entry |
 | D-013 | `transcript_export.slugify` remains a separate capped-kebab sibling of the consolidated `kebab_slug` | design | low | Carried | mirror slugify consolidation | The next time transcript-export slug behavior is touched, or a third kebab-slug caller appears |
 
 ## D-001 — Metadata lifecycle policy and evidence filtering live inside ConversationService
@@ -475,7 +475,7 @@ source of truth.
 
 **Kind:** security / design
 **Severity:** low
-**Status:** Carried
+**Status:** Paid
 **Source:** mirror slugify consolidation (security-engineer review)
 
 ### Carrying reason
@@ -513,6 +513,36 @@ The code segment passes through a code-safe sanitizer (allow only `[a-z0-9.-]`,
 reject or strip `/` and `..`) before it is used in folder derivation,
 consistently across the lifecycle producers and the build locator, with a test
 that a `../`-bearing code cell cannot escape the roadmap directory.
+
+### Closed — 2026-07-23
+
+Revisit trigger fired (the Ariad Expand path-divergence fix touched all three
+named functions: `_artifact_directory` and `_canonical_package_path`'s
+`_find_existing_package_path` fallback deleted, `_story_folder_name` moved to
+`memory.builder.story_paths.story_folder_name`) and the Navigator elected to
+close it in the same patch rather than carry it forward again.
+
+New private `story_paths._sanitize_code_segment(code)`: converts dots to
+hyphens first (the code's own level separator, e.g. `CV2.DS1` still reads
+`cv2-ds1`, unchanged for every well-formed code observed in this repo), then
+routes the result through `kebab_slug` — the same sanitizer already applied to
+titles, so the asymmetry this debt recorded is closed, not just narrowed.
+`story_folder_name` and `_bare_code_segment` (the not-yet-materialized-parent
+fallback in `create_story_directory`) both call it, so every folder-derivation
+site the closure condition names is covered. `"../../etc/passwd"` now sanitizes
+to a single flat `etc-passwd` segment (previously `-/--/--/.../etc/passwd`
+inside the roadmap tree — no escape even before this fix, since dots already
+neutralized `..`, but a real, unintended multi-level nesting from a bare `/`).
+
+TDD, red-before-green (confirmed by reverting and re-running): direct unit
+tests in `test_story_paths.py` (slash-bearing and traversal-bearing codes
+sanitize correctly; a real dotted code like `CV21.E2.S1b` is unchanged; an
+adversarial code stays within the roadmap root as a single flat segment) and
+an end-to-end test in `test_lifecycle.py` (`expand_delivery_story` with a
+`../../../etc/DS-35.US-1`-style candidate-table code cell materializes the
+child as one flat, contained segment) — the exact scenario this debt's
+closure condition named. Full repo test suite green, ruff clean, doc-link
+checker clean.
 
 ## D-013 — `transcript_export.slugify` remains a separate capped-kebab sibling of the consolidated `kebab_slug`
 

@@ -440,7 +440,7 @@ wheels = [
 
 [[package]]
 name = "mirror"
-version = "0.31.3"
+version = "0.31.5"
 source = { editable = "." }
 dependencies = [
     { name = "certifi" },

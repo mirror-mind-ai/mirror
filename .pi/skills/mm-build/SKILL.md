@@ -538,6 +538,39 @@ report visibly. Prepare may update the runtime cursor last delivery event, but
 must not create a Plan, approve a checkpoint, start implementation, change story
 status, commit, push, or release.
 
+## Delivery Story Candidate Table Authoring Contract
+
+Expand resolves an already-authored Delivery Story package by its `index.md`
+heading code, never by folder name or arithmetic on code and title -- an
+authored package can live under any folder a human chose. Once resolved,
+Expand reads its `## Candidate Stories` table, header-driven. The header must
+include these four column names (case-insensitive, any order, extra columns
+such as `Outcome` or `Risk` are fine):
+
+```text
+| Code | Story | Type | Status |
+```
+
+or the 5-column generated variant:
+
+```text
+| Code | Story | Type | Outcome | Status |
+```
+
+When authoring or reviewing a Delivery Story `index.md` by hand, use this exact
+grammar (see `docs/project/roadmap/templates/delivery-story-index.md`). If the
+Navigator proposes a different shape (for example `| Family | Scope | Type |
+Risk |`), flag the mismatch before Pull/Expand runs so the table is
+Expand-compatible by construction.
+
+If Expand renders `<<<ARIAD:EXPAND_BLOCKED>>>` (the resolved package's table
+does not parse, or two packages claim the same code), return the surface
+verbatim per the transport protocol, then explain what to fix: correct the
+table header to the canonical grammar, or resolve the duplicate heading. Do not
+hand-edit the package's materialized children to work around a blocked Expand,
+and do not re-run Pull/Expand until the Navigator has fixed the authored
+content.
+
 ## Delivery Story Navigator Flow
 
 When the active Ariad work is a Delivery Story or the Navigator refers to the

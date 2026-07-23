@@ -1,6 +1,6 @@
 [< CV20.DS4](../index.md)
 
-# CV20.DS4.US2 — Plan Checkpoint Gate
+# Historical note — Plan Checkpoint Gate
 
 **Status:** Dropped; replaced by CV20.DS4.US2 Plan Package And Granularity Gate
 **Type:** User Story

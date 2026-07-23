@@ -14,6 +14,9 @@ from memory.builder.delivery_cursor import (
 from memory.builder.lifecycle_ribbon import render_lifecycle_ribbon
 from memory.builder.method_definition import ContractDefinition, MethodDefinition
 from memory.builder.roadmap_grammar import strip_markdown_link as _strip_markdown_link
+from memory.builder.story_paths import create_story_directory, resolve_story_directory
+from memory.builder.story_paths import story_folder_name as _story_folder_name
+from memory.builder.story_paths import title_leaf as _title_leaf
 from memory.builder.surface_protocol import wrap_ariad_surface
 from memory.storage.store import Store
 from memory.utils import kebab_slug
@@ -403,6 +406,14 @@ def render_plan_approval(cursor: BuilderDeliveryCursor) -> str:
     return wrap_ariad_surface("plan_approved", body + "\n")
 
 
+class ExpandBlockedError(ValueError):
+    """Expand resolved an authored package but cannot safely materialize children from it.
+
+    Raised instead of silently fabricating a generic story -- fabricating on top of real,
+    unparseable authored content is exactly the secondary defect that let CV22.DS7 recur.
+    """
+
+
 def expand_delivery_story(
     store: Store,
     *,
@@ -421,10 +432,18 @@ def expand_delivery_story(
     if not existing.active_item:
         raise ValueError("active item is required before expand")
     title = existing.active_item_title or existing.active_item
-    ds_dir = _artifact_directory(project_path, existing.active_item, title)
+    ds_dir = resolve_story_directory(project_path, existing.active_item) or create_story_directory(
+        project_path, existing.active_item, title
+    )
     ds_index = ds_dir / "index.md"
     ds_exists = ds_index.exists()
     children = _parse_candidate_stories(ds_index.read_text(encoding="utf-8")) if ds_exists else []
+    if ds_exists and not children:
+        raise ExpandBlockedError(
+            f"authored package at {ds_dir} has no canonical candidate-stories table "
+            "(a Markdown table header must include Code, Story, Type, and Status columns); "
+            "refusing to fabricate a generic story"
+        )
 
     materialized_paths: list[Path] = [ds_index]
     materialized_artifacts: list[MaterializedArtifact] = []
@@ -588,6 +607,38 @@ def _first_pending_child(children: list[_CandidateChild]) -> _CandidateChild:
         if "Done" not in child.status and "done" not in child.status:
             return child
     return children[0]
+
+
+def render_expand_blocked(active_item: str, reason: str) -> str:
+    body = "\n".join(
+        [
+            "Delivery",
+            render_lifecycle_ribbon("expand"),
+            "",
+            "╭────────────────────────────────────────────────────────╮",
+            "│        🧭◆  EXPAND BLOCKED                             │",
+            "│                                                        │",
+            _card_text("delivery story"),
+            _card_text(f"🟦[{active_item}]"),
+            "│                                                        │",
+            _card_text("why blocked"),
+            *_card_wrapped(reason),
+            "│                                                        │",
+            _card_text("required Navigator action"),
+            *_card_wrapped(
+                "Add a canonical candidate-stories table (Markdown table header including "
+                "Code, Story, Type, and Status columns) to the resolved package's index.md, "
+                "or resolve the duplicate heading, then Expand again."
+            ),
+            "│                                                        │",
+            _card_text("boundary"),
+            *_card_wrapped(
+                "No files were materialized. Expand refuses to fabricate a generic story."
+            ),
+            "╰────────────────────────────────────────────────────────╯",
+        ]
+    )
+    return wrap_ariad_surface("expand_blocked", body + "\n")
 
 
 def render_expand_report(report: BuilderExpandReport) -> str:
@@ -1819,25 +1870,6 @@ def _plan_next_action(report: BuilderPlanReport) -> str:
     return "Navigator approves the Plan or requests changes."
 
 
-def _artifact_directory(project_path: Path, code: str, title: str) -> Path:
-    parts = code.lower().replace("_", "-").split(".")
-    titles = tuple(part.strip() for part in title.split("/") if part.strip())
-    path = project_path / "docs" / "project" / "roadmap"
-    accumulated: list[str] = []
-    for index, part in enumerate(parts):
-        accumulated.append(part)
-        prefix = "-".join(accumulated)
-        title_slug = kebab_slug(titles[index]) if index < len(titles) else ""
-        path = path / (f"{prefix}-{title_slug}" if title_slug else prefix)
-    return path
-
-
-def _story_folder_name(code: str, title: str) -> str:
-    code_part = code.lower().replace(".", "-")
-    slug = kebab_slug(title)
-    return f"{code_part}-{slug}" if slug else code_part
-
-
 def _user_story_statement(title: str) -> str:
     return f"As a user,\nI want to {title},\nSo that I can receive the value of this story."
 
@@ -2164,10 +2196,6 @@ def _wrap_plain_text(text: str, *, width: int) -> list[str]:
     if current:
         lines.append(current)
     return lines or ["none"]
-
-
-def _title_leaf(title: str) -> str:
-    return title.split("/")[-1].strip()
 
 
 def _cv_title(title: str) -> str:

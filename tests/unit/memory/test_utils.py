@@ -104,10 +104,13 @@ class TestKebabSlug:
 class TestSlugConsolidation:
     def test_all_kebab_sluggers_share_one_implementation(self):
         import memory.builder.lifecycle as lifecycle_mod
-        import memory.cli.build as build_mod
+        import memory.builder.story_paths as story_paths_mod
         import memory.services.explorer_handoff as explorer_handoff_mod
         import memory.services.journey as journey_mod
 
-        for mod in (lifecycle_mod, build_mod, explorer_handoff_mod, journey_mod):
+        # memory.cli.build delegates path construction entirely to
+        # memory.builder.story_paths (the Ariad Expand path-divergence fix's
+        # shared resolver) and no longer imports kebab_slug directly.
+        for mod in (lifecycle_mod, story_paths_mod, explorer_handoff_mod, journey_mod):
             assert mod.kebab_slug is kebab_slug, f"{mod.__name__} must use the shared kebab_slug"
             assert not hasattr(mod, "_slugify"), f"{mod.__name__} still defines a local _slugify"
