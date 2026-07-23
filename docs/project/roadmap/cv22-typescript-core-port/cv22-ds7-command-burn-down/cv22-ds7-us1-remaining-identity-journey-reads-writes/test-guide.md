@@ -120,4 +120,36 @@ printed output:
   — a genuinely surprising, verified-not-assumed path-resolution divergence
   documented in `seedPaths.ts`.
 
-**Slice C (kebab_slug + parent_journey atomic dual-write riders) — not yet started.**
+**Slice C (riders) — complete.** Both riders landed as separate,
+independently-committed units:
+
+- `kebab_slug`/`strip_accents` — the first TS port of `src/memory/utils.py`
+  (no prior TS slugifier existed). Registered as a tracked oracle
+  (`oracle_drift.ORACLE_PATHS`, baseline regenerated via `--update`).
+  Validated against a 19-case golden generated from the real Python oracle
+  (`ts/parity/generate_slug_golden.py`) covering multi-script accents,
+  empty-result, non-Latin script, and several 80-char cap boundary shapes
+  (including a case engineered so the cut lands exactly on a hyphen) — all
+  byte-identical, including the Unicode NFD/combining-mark equivalence
+  between Python's `unicodedata` and V8's `\p{Mn}` property escape (verified,
+  not assumed).
+- `parent_journey` atomic dual-write — `createJourney` now writes the JSON
+  metadata and the `identity.parent_journey` column in one `withTransaction`;
+  `resolveParentJourney` flipped to column-first with a JSON fallback.
+  Grounding found a real wiring gap (the shared `identityRows()` reader never
+  selected the column, which would have made the flip a no-op for the
+  already-shipped `journeys` command) and fixed it. No Python oracle exists
+  for the column itself (`TS ⊇ Python`), so validation is TS-internal: a
+  rollback test (a simulated pre-migration schema makes the second statement
+  fail; the first statement's INSERT does not survive either), the flip's
+  precedence tested directly, and a focused end-to-end test proving the write
+  and the read genuinely agree through a real DB round-trip. A known, bounded
+  limitation (the web-server-only `update_metadata_fields` path can still
+  stale a previously-synced column) is recorded in `docs/project/decisions.md`,
+  not silently absorbed.
+
+**CV22.DS7.US1 — all three slices (A: 7 reads, B: 3 writes, C: 2 riders) are
+now implemented and validated.** ~15 commits, `tsc --noEmit` clean, `biome
+check` clean, 487/487 TS tests passing. This is the natural Implementation ->
+Validation boundary: the approved Plan's full scope is built; Navigator-facing
+Validation (dogfooding, acceptance) has not yet run.
