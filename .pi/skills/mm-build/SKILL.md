@@ -160,7 +160,7 @@ docs scaffold unless the user explicitly asks for one.
 If the journey does not yet have an associated project:
 
 ```bash
-NODE_OPTIONS=--no-warnings node ts/src/frontDoor/cli.ts journey set-path <slug> /path/to/project
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts journey set-path <slug> /path/to/project
 ```
 
 ## 7. Finalize Session

@@ -9,7 +9,7 @@ user-invocable: true
 When receiving `/mm-seed`: answered by the TS core (CV22.DS7.US1).
 
 ```bash
-NODE_OPTIONS=--no-warnings node ts/src/frontDoor/cli.ts seed --env production
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts seed --env production
 ```
 
 Use after changing user-home identity YAML files to synchronize the database.

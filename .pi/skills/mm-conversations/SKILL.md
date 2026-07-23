@@ -10,7 +10,7 @@ When receiving `/mm-conversations [--limit N] [--journey SLUG] [--persona NAME]`
 listing is answered by the TS core (CV22.DS7.US1).
 
 ```bash
-NODE_OPTIONS=--no-warnings node ts/src/frontDoor/cli.ts conversations [args]
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts conversations [args]
 ```
 
 Present the output to the user without modification.
