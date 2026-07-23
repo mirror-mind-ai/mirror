@@ -11,6 +11,7 @@
     "src/memory/services/identity.py": "926f0a3f747e3363dc94190d4dca62ae7bc4a71e",
     "src/memory/storage/memories.py": "ac69aa8adc47faddd4743f4a477ffe942daf6ac4",
     "src/memory/models.py": "6f282df413cc085e8447f6a40c77dbc4aeb9f39e",
+    "src/memory/utils.py": "e8f64360540d425abbbca68839fac9fbc63b5c27",
     "src/memory/db/connection.py": "bba2793a2c91331d0fc51d5f25ea0477223ad79a",
     "src/memory/db/migrations.py": "0a09c38e12890dea88fc329d72d7d9129eb492be",
     "src/memory/storage/store.py": "22f18f775e180a9a3a856b33b016f5bba8010054"

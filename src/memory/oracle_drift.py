@@ -46,6 +46,8 @@ ORACLE_PATHS: tuple[str, ...] = (
     "src/memory/services/identity.py",
     "src/memory/storage/memories.py",
     "src/memory/models.py",
+    # DS7.US1 carried rider: kebab_slug/strip_accents (ts/src/util/slug.ts)
+    "src/memory/utils.py",
     # DS6 schema-custody surface (closes the migration-body hole the
     # KNOWN_MIGRATION_IDS id-list contract cannot see)
     "src/memory/db/connection.py",
