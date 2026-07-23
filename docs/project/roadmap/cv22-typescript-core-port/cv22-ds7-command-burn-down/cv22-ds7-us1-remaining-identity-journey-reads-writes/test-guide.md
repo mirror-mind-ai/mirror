@@ -55,4 +55,41 @@ Expected observation, pass condition, fail condition (to be exercised at Validat
 
 ## Validation Evidence
 
-Pending implementation and validation.
+**Slice A (deterministic reads) — complete.** All seven read families landed as
+separate, independently-committed units, each with committed synthetic goldens
+(CI-gated) and a live cross-check against the real Python oracle on a scratch
+database (not committed) before being trusted:
+
+- `identity list`/`identity get` — byte-identical incl. `--layer` filter and a
+  not-found (exit 1, stderr) case.
+- `descriptor list` — byte-identical for both the identity-driven "all layers"
+  path and the direct `--layer` scan, including the orphaned-descriptor
+  exclusion/inclusion divergence between the two paths.
+- `list personas`/`list journeys` — byte-identical incl. `--verbose` and the
+  120-char truncation + Portuguese-before-English heading precedence in the
+  journey description extractor (a distinct implementation from the already-
+  ported `journeys` command's extractor — see journey/journeyListing.ts).
+- `inspect persona` — byte-identical for found and not-found (the not-found
+  message goes to stdout, not stderr — a real, verified Python divergence from
+  `identity get`, ported faithfully).
+- `recall` — byte-identical incl. `--limit 0` (a verified Python slicing quirk:
+  `-0 == 0`, so `--limit 0` returns the WHOLE history, not zero messages) and a
+  not-found case.
+- `conversations` (plain listing) — byte-identical incl. `--journey`/`--persona`
+  filters; the ES-001 metadata-lifecycle/backfill flags correctly stay on
+  Python fallback (not exercised by this story).
+- `journey status` — byte-identical incl. a real external `sync_file` on disk,
+  a broken `sync_file` path falling back to the DB `journey_path` row, a
+  nonexistent journey slug (renders an empty-history block, not an error), and
+  the verified `journey status` positional-parsing quirk (bare "status" with no
+  following token becomes the literal slug "status", not "show every
+  journey").
+
+Grounding corrected the original candidate-table disposition twice during
+implementation (both narrowings within already-stated Non-Goals, not scope
+expansions): `inspect extension`/`inspect runtime-catalog` turned out to share
+the extension-catalog machinery with `list extensions`/`all` and moved to the
+TS1 ops-tail bucket; `list personas`/`list journeys` were split from `list
+extensions`/`all` at the subcommand level.
+
+**Slices B (writes) and C (riders) — not yet started.**
