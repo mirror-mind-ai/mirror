@@ -52,6 +52,7 @@ import {
   renderIdentityGet,
   renderIdentityList,
 } from "./render/identity.ts";
+import { PersonaNotFoundError, renderInspectPersona } from "./render/inspectPersona.ts";
 import { renderJourneys } from "./render/journeys.ts";
 import { renderListJourneys, renderListPersonas } from "./render/list.ts";
 import { renderMemories } from "./render/memories.ts";
@@ -162,6 +163,7 @@ function runTs(argv: readonly string[]): number {
     else if (command === "identity") return runIdentityRead(db, args);
     else if (command === "descriptor") return runDescriptorRead(db, args);
     else if (command === "list") return runListRead(db, args);
+    else if (command === "inspect") return runInspectRead(db, args);
     else throw new Error(`Unsupported TS route: ${command}`);
     return 0;
   } catch (error) {
@@ -225,6 +227,30 @@ function runListRead(db: Database, args: readonly string[]): number {
   }
   process.stdout.write(renderListJourneys(listJourneysForListCommand(db)));
   return 0;
+}
+
+/** Serve `inspect persona <id>` (DS7.US1). Other inspect targets never reach here. */
+function runInspectRead(db: Database, args: readonly string[]): number {
+  const rest = stripOptionWithValue(
+    stripOptionWithValue(args.slice(1), "--mirror-home"),
+    "--extensions-root",
+  );
+  const personaId = rest[0];
+  if (!personaId) {
+    console.error("Usage: inspect persona <id>");
+    return 2;
+  }
+  try {
+    process.stdout.write(renderInspectPersona(db, personaId));
+    return 0;
+  } catch (error) {
+    if (error instanceof PersonaNotFoundError) {
+      // Matches Python: this goes to STDOUT, not stderr.
+      process.stdout.write(`${error.message}\n`);
+      return 1;
+    }
+    throw error;
+  }
 }
 
 function readStdinContent(): string {

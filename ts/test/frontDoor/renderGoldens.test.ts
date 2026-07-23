@@ -145,6 +145,26 @@ test("list journeys render output matches the golden", () => {
   });
 });
 
+test("inspect persona render output matches the golden", () => {
+  withFixture((dbPath) => {
+    buildRenderFixture(dbPath);
+    assertGolden("inspect-persona", render(dbPath, ["inspect", "persona", "engineer"]));
+  });
+});
+
+test("inspect persona on a missing entry prints to stdout and exits 1", () => {
+  withFixture((dbPath) => {
+    buildRenderFixture(dbPath);
+    const result = spawnSync(process.execPath, [CLI, "inspect", "persona", "ghost"], {
+      encoding: "utf8",
+      env: { ...process.env, NODE_OPTIONS: "--no-warnings", DB_PATH: dbPath },
+    });
+    assert.equal(result.status, 1);
+    assert.equal(result.stdout, "persona/ghost not found\n");
+    assert.equal(result.stderr, "");
+  });
+});
+
 /** A schema-valid database with no journeys or memories (empty-state edges). */
 function buildEmptyFixture(dbPath: string): void {
   const db = openDatabaseCopyForWrite(dbPath);

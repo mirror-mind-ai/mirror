@@ -93,6 +93,21 @@ export function routeMemoryCommand(
     };
   }
 
+  if (command === "inspect") {
+    // `persona` (DS7.US1) is a deterministic identity read. `extension` and
+    // `runtime-catalog` share the extension-catalog machinery (like `list
+    // extensions`), and `llm-calls`/`embedding-provenance` are ops-tail
+    // introspection -- all bound to CV22.DS7.TS1, not this story.
+    if (argv[1] === "persona") {
+      return { command, engine: "ts", reason: "DS7.US1 inspect persona read ported to TS" };
+    }
+    return {
+      command,
+      engine: "python",
+      reason: "inspect extension/runtime-catalog/llm-calls/embedding-provenance not ported to TS",
+    };
+  }
+
   if (command === "list") {
     // `personas`/`journeys` (DS7.US1) are deterministic identity reads.
     // `extensions`/`all` (and no target => "all") touch the extension catalog

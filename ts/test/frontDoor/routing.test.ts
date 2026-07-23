@@ -76,6 +76,18 @@ test("routes `identity set/list/get` to TS but keeps the interactive `edit` on P
   assert.equal(routeMemoryCommand(["identity", "edit", "ego", "behavior"]).engine, "python");
 });
 
+test("routes `inspect persona` to TS but keeps other inspect targets on Python", () => {
+  assert.deepEqual(routeMemoryCommand(["inspect", "persona", "engineer"]), {
+    command: "inspect",
+    engine: "ts",
+    reason: "DS7.US1 inspect persona read ported to TS",
+  });
+  assert.equal(routeMemoryCommand(["inspect", "extension", "ext-google-ads"]).engine, "python");
+  assert.equal(routeMemoryCommand(["inspect", "runtime-catalog", "pi"]).engine, "python");
+  assert.equal(routeMemoryCommand(["inspect", "llm-calls"]).engine, "python");
+  assert.equal(routeMemoryCommand(["inspect", "embedding-provenance"]).engine, "python");
+});
+
 test("routes `list personas/journeys` to TS but keeps `list extensions/all` on Python", () => {
   assert.deepEqual(routeMemoryCommand(["list", "personas"]), {
     command: "list",
