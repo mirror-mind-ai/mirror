@@ -223,6 +223,41 @@ test("conversations listing render output matches the golden (--journey filter)"
   });
 });
 
+test("journey status render output matches the golden (named journey, DB journey_path fallback)", () => {
+  withFixture((dbPath) => {
+    buildRenderFixture(dbPath);
+    assertGolden("journey-status-demo", render(dbPath, ["journey", "status", "demo"]));
+  });
+});
+
+test("journey status render output matches the golden (child journey, no journey_path row)", () => {
+  withFixture((dbPath) => {
+    buildRenderFixture(dbPath);
+    assertGolden("journey-status-demo-child", render(dbPath, ["journey", "status", "demo-child"]));
+  });
+});
+
+test("journey status render output matches the golden (bare slug, no 'status' keyword)", () => {
+  withFixture((dbPath) => {
+    buildRenderFixture(dbPath);
+    assertGolden("journey-status-demo", render(dbPath, ["journey", "demo"]));
+  });
+});
+
+test("journey status render output matches the golden (bare command, every journey)", () => {
+  withFixture((dbPath) => {
+    buildRenderFixture(dbPath);
+    assertGolden("journey-status-all", render(dbPath, ["journey"]));
+  });
+});
+
+test("journey status quirk: bare 'status' with nothing after it looks up a journey literally named 'status'", () => {
+  withFixture((dbPath) => {
+    buildRenderFixture(dbPath);
+    assertGolden("journey-status-bare-status-quirk", render(dbPath, ["journey", "status"]));
+  });
+});
+
 /** A schema-valid database with no journeys or memories (empty-state edges). */
 function buildEmptyFixture(dbPath: string): void {
   const db = openDatabaseCopyForWrite(dbPath);

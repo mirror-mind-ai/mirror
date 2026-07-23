@@ -54,6 +54,7 @@ import {
   renderIdentityList,
 } from "./render/identity.ts";
 import { PersonaNotFoundError, renderInspectPersona } from "./render/inspectPersona.ts";
+import { renderJourneyStatus, resolveJourneyStatusSlug } from "./render/journeyStatus.ts";
 import { renderJourneys } from "./render/journeys.ts";
 import { renderListJourneys, renderListPersonas } from "./render/list.ts";
 import { renderMemories } from "./render/memories.ts";
@@ -168,6 +169,7 @@ function runTs(argv: readonly string[]): number {
     else if (command === "inspect") return runInspectRead(db, args);
     else if (command === "recall") return runRecallRead(db, args);
     else if (command === "conversations") return runConversationsRead(db, args);
+    else if (command === "journey") return runJourneyStatusRead(db, args);
     else throw new Error(`Unsupported TS route: ${command}`);
     return 0;
   } catch (error) {
@@ -292,6 +294,17 @@ function runConversationsRead(db: Database, args: readonly string[]): number {
       persona: optionValue(args, "--persona"),
     }),
   );
+  return 0;
+}
+
+/**
+ * Serve `journey` status reads (DS7.US1): `journey`, `journey <slug>`,
+ * `journey status`, `journey status <slug>`. `journey set-path`/`update` never
+ * reach here (routed elsewhere / Python fallback).
+ */
+function runJourneyStatusRead(db: Database, args: readonly string[]): number {
+  const remaining = stripOptionWithValue(stripOptionWithValue(args, "--mirror-home"), "--db-path");
+  process.stdout.write(renderJourneyStatus(db, resolveJourneyStatusSlug(remaining)));
   return 0;
 }
 

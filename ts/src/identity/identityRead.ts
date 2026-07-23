@@ -3,7 +3,7 @@
 // lives in identityStore.ts / setIdentity.ts).
 
 import type { Database } from "../db/database.ts";
-import { requireString } from "../db/rowDecode.ts";
+import { optionalString, requireString } from "../db/rowDecode.ts";
 
 /** The projection `identity list` needs: layer, key, and content for the preview. */
 export interface IdentityListRow {
@@ -43,4 +43,13 @@ export function getIdentityContent(db: Database, layer: string, key: string): st
     .get(layer, key);
   if (row === undefined) return null;
   return requireString(row, "content");
+}
+
+/** Raw metadata column for one (layer, key): null when the row or its metadata is absent. */
+export function getIdentityMetadata(db: Database, layer: string, key: string): string | null {
+  const row = db
+    .prepare("SELECT metadata FROM identity WHERE layer = ? AND key = ?")
+    .get(layer, key);
+  if (row === undefined) return null;
+  return optionalString(row, "metadata");
 }
