@@ -1,4 +1,5 @@
-import type { SqlValue, WritableDatabase } from "../db/database.ts";
+import type { WritableDatabase } from "../db/database.ts";
+import { embeddingToBytes } from "../db/decode.ts";
 import { optionalString, requireString } from "../db/rowDecode.ts";
 import {
   curateAgainstExisting,
@@ -11,6 +12,7 @@ import {
   formatTranscript,
   naiveSummary,
 } from "../extraction/conversation.ts";
+import { createMemoryRow } from "../memory/memoryWrite.ts";
 import { logLlmCall } from "../observability/llmCalls.ts";
 import { resolveEmbeddingModel, resolveExtractionModel } from "../providers/config.ts";
 import {
@@ -114,7 +116,7 @@ export async function runConversationExtraction(
     db.prepare(
       `INSERT INTO conversation_embeddings (conversation_id, summary_embedding) VALUES (?, ?) ` +
         `ON CONFLICT(conversation_id) DO UPDATE SET summary_embedding = excluded.summary_embedding`,
-    ).run(conversationId, floatsToBytes(summaryEmbedding));
+    ).run(conversationId, embeddingToBytes(summaryEmbedding));
     db.prepare("UPDATE conversations SET summary = ? WHERE id = ?").run(
       finalSummary.slice(0, 1000),
       conversationId,
@@ -128,7 +130,7 @@ export async function runConversationExtraction(
     const embedding = await generateEmbeddingSafely(options.embeddings, embeddingText, {
       onAttempt: logEmbeddingAttempt(db, conversationId),
     });
-    insertMemory(db, memoryId, conversationId, memory, floatsToBytes(embedding), now());
+    insertMemory(db, memoryId, conversationId, memory, embeddingToBytes(embedding), now());
     memoryIds.push(memoryId);
   }
 
@@ -273,29 +275,21 @@ function insertMemory(
   embedding: Uint8Array,
   createdAt: string,
 ): void {
-  const params: SqlValue[] = [
+  createMemoryRow(db, {
     id,
     conversationId,
-    memory.memory_type,
-    memory.layer,
-    memory.title,
-    memory.content,
-    memory.context,
-    memory.journey,
-    memory.persona,
-    memory.tags.length > 0 ? JSON.stringify(memory.tags) : null,
+    memoryType: memory.memory_type,
+    layer: memory.layer,
+    title: memory.title,
+    content: memory.content,
+    context: memory.context,
+    journey: memory.journey,
+    persona: memory.persona,
+    tags: memory.tags.length > 0 ? JSON.stringify(memory.tags) : null,
     createdAt,
-    1.0,
     embedding,
-    addEmbeddingProvenance(null),
-    0,
-    "observed",
-  ];
-  db.prepare(
-    `INSERT INTO memories ` +
-      `(id, conversation_id, memory_type, layer, title, content, context, journey, persona, tags, created_at, relevance_score, embedding, metadata, use_count, readiness_state) ` +
-      `VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  ).run(...params);
+    metadata: addEmbeddingProvenance(null),
+  });
 }
 
 function metadataDict(value: string | null): Record<string, unknown> {
@@ -308,12 +302,4 @@ function metadataDict(value: string | null): Record<string, unknown> {
   } catch {
     return {};
   }
-}
-
-function floatsToBytes(values: readonly number[]): Uint8Array {
-  const buffer = Buffer.alloc(values.length * 4);
-  values.forEach((value, index) => {
-    buffer.writeFloatLE(value, index * 4);
-  });
-  return buffer;
 }

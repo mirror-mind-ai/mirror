@@ -1,6 +1,13 @@
 import { loadReplayFixture } from "./replay.ts";
 
-export type LlmRole = "extraction" | "task_extraction" | "summary" | "curation" | "consult";
+export type LlmRole =
+  | "extraction"
+  | "task_extraction"
+  | "summary"
+  | "curation"
+  | "consult"
+  | "consolidation"
+  | "shadow_scan";
 
 export interface LlmRequest {
   role: LlmRole;
@@ -76,7 +83,9 @@ function isLlmRole(value: string): value is LlmRole {
     value === "task_extraction" ||
     value === "summary" ||
     value === "curation" ||
-    value === "consult"
+    value === "consult" ||
+    value === "consolidation" ||
+    value === "shadow_scan"
   );
 }
 

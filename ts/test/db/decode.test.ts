@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { blobToFloat32, parseUtcMs } from "../../src/db/decode.ts";
+import { blobToFloat32, embeddingToBytes, parseUtcMs } from "../../src/db/decode.ts";
 
 // Known little-endian IEEE-754 float32 encodings, hardcoded (not produced via
 // Float32Array) so this is an independent check of the decode, not a round-trip.
@@ -31,6 +31,15 @@ test("blobToFloat32 handles a non-4-aligned byteOffset (base64/Buffer decode cas
   assert.equal(misaligned.byteOffset, 1);
   const decoded = blobToFloat32(misaligned);
   assert.deepEqual(Array.from(decoded), [1.0, 0.0, 0.5, -2.5]);
+});
+
+test("embeddingToBytes is the exact round-trip inverse of blobToFloat32", () => {
+  const values = [1.0, 0.0, 0.5, -2.5];
+  assert.deepEqual(Array.from(blobToFloat32(embeddingToBytes(values))), values);
+});
+
+test("embeddingToBytes encodes to the same known little-endian bytes blobToFloat32 decodes", () => {
+  assert.deepEqual(Array.from(embeddingToBytes([1.0, 0.0, 0.5, -2.5])), KNOWN_BYTES);
 });
 
 test("parseUtcMs treats a naive string as UTC (matches _parse_datetime_utc)", () => {

@@ -6,6 +6,7 @@ import { test } from "node:test";
 
 import {
   applyIdentityUpdate,
+  applyMerge,
   applyShadowApply,
   applyShadowCandidate,
   rejectConsolidation,
@@ -18,6 +19,7 @@ import {
 import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
 import { getIdentityContent, listAllIdentity } from "../../src/identity/identityRead.ts";
 import { upsertIdentity } from "../../src/identity/identityStore.ts";
+import { ReplayEmbeddingProvider } from "../../src/providers/embedding.ts";
 import {
   createConsolidationsTable,
   createMemoriesTable,
@@ -26,6 +28,7 @@ import {
 import { createIdentityTable } from "../helpers/identitySchema.ts";
 
 const NOW = "2026-06-23T12:00:00.123000Z";
+const VALID_EMBEDDING = Array(1536).fill(0.2);
 
 function tempDb(): { db: WritableDatabase; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), "mirror-core-apply-actions-"));
@@ -286,6 +289,107 @@ test("applyShadowApply defaults target_key to 'profile' when absent", () => {
     const outcome = applyShadowApply(db, consolidation, "content", { id: "x", nowIso: NOW });
     assert.equal(outcome.targetKey, "profile");
     assert.equal(getIdentityContent(db, "shadow", "profile"), "content");
+  } finally {
+    db.close();
+    cleanup();
+  }
+});
+
+// --- applyMerge (Slice B) -----------------------------------------------------
+
+test("applyMerge creates a merged memory titled/layered/journeyed from the FIRST source, marks originals integrated, and accepts", async () => {
+  const { db, cleanup } = tempDb();
+  try {
+    insertMemory(db, {
+      id: "m1",
+      createdAt: "2026-01-01T00:00:00.000000Z",
+      memoryType: "insight",
+      layer: "self",
+      title: "Original insight",
+      journey: "journey-a",
+      readinessState: "observed",
+    });
+    insertMemory(db, {
+      id: "m2",
+      createdAt: "2026-01-01T00:00:00.000000Z",
+      readinessState: "observed",
+    });
+    const consolidation = seedConsolidation(db, {
+      action: "merge",
+      target_layer: null,
+      target_key: null,
+      source_memory_ids: JSON.stringify(["m1", "m2"]),
+    });
+    const provider = new ReplayEmbeddingProvider({
+      kind: "embedding",
+      response: { embedding: VALID_EMBEDDING },
+    });
+
+    const outcome = await applyMerge(db, consolidation, "A distilled, sharper memory.", {
+      embeddingProvider: provider,
+      id: "merged-id",
+      nowIso: NOW,
+    });
+
+    assert.deepEqual(outcome, {
+      kind: "merged",
+      mergedMemoryId: "merged-id",
+      sourceMemoryIds: ["m1", "m2"],
+    });
+
+    const merged = db.prepare("SELECT * FROM memories WHERE id = ?").get("merged-id");
+    assert.equal(merged?.title, "[merged] Original insight");
+    assert.equal(merged?.memory_type, "insight");
+    assert.equal(merged?.layer, "self");
+    assert.equal(merged?.journey, "journey-a");
+    assert.equal(merged?.content, "A distilled, sharper memory.");
+    assert.equal(merged?.context, "Merged from: m1, m2");
+    assert.equal(merged?.relevance_score, 1.0);
+    assert.ok(merged?.embedding instanceof Uint8Array);
+    assert.ok(JSON.parse(merged?.metadata as string).embedding_model);
+
+    const sourceRows = db
+      .prepare("SELECT id, readiness_state FROM memories WHERE id IN ('m1','m2') ORDER BY id")
+      .all();
+    assert.deepEqual(
+      sourceRows.map((r) => [r.id, r.readiness_state]),
+      [
+        ["m1", "integrated"],
+        ["m2", "integrated"],
+      ],
+    );
+    // The merged memory itself must stay 'observed' -- only sources transition.
+    assert.equal(merged?.readiness_state, "observed");
+
+    assert.equal(getConsolidation(db, "c1")?.status, "accepted");
+    assert.equal(getConsolidation(db, "c1")?.result, "A distilled, sharper memory.");
+  } finally {
+    db.close();
+    cleanup();
+  }
+});
+
+test("applyMerge reports source_not_found and writes nothing when the first source memory is missing", async () => {
+  const { db, cleanup } = tempDb();
+  try {
+    const consolidation = seedConsolidation(db, {
+      action: "merge",
+      source_memory_ids: JSON.stringify(["missing-id"]),
+    });
+    const provider = new ReplayEmbeddingProvider({
+      kind: "embedding",
+      response: { embedding: VALID_EMBEDDING },
+    });
+
+    const outcome = await applyMerge(db, consolidation, "content", {
+      embeddingProvider: provider,
+      id: "would-be-id",
+      nowIso: NOW,
+    });
+
+    assert.deepEqual(outcome, { kind: "source_not_found" });
+    assert.equal(db.prepare("SELECT COUNT(*) AS n FROM memories").get()?.n, 0);
+    assert.equal(getConsolidation(db, "c1")?.status, "pending");
   } finally {
     db.close();
     cleanup();

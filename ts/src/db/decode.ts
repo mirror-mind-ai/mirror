@@ -31,6 +31,22 @@ export function blobToFloat32(bytes: Uint8Array): Float32Array {
 }
 
 /**
+ * Encode a vector as a little-endian IEEE-754 float32 BLOB -- the counterpart
+ * to `blobToFloat32` and a byte-for-byte match of Python's
+ * `embedding_to_bytes` (`np.float32(...).tobytes()`). Shared by every writer
+ * that stores a freshly generated embedding (conversation extraction,
+ * cultivation's `merge` action), so the encode step has exactly one
+ * implementation, matching `blobToFloat32`'s single decode implementation.
+ */
+export function embeddingToBytes(values: readonly number[]): Uint8Array {
+  const buffer = Buffer.alloc(values.length * 4);
+  values.forEach((value, index) => {
+    buffer.writeFloatLE(value, index * 4);
+  });
+  return buffer;
+}
+
+/**
  * Parse a stored ISO timestamp into epoch milliseconds (UTC), or `null`.
  *
  * Mirrors `memory.intelligence.search._parse_datetime_utc`: naive strings are
