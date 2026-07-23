@@ -23,6 +23,7 @@ import { basename } from "node:path";
 import { pathToFileURL } from "node:url";
 import { bootstrapDatabaseIfMissing } from "../db/bootstrap.ts";
 import {
+  type Database,
   openDatabaseForWrite,
   openDatabaseReadOnly,
   type WritableDatabase,
@@ -41,6 +42,12 @@ import { applyJourneySetPath } from "./journeyWriteRoute.ts";
 import { ensureBackup } from "./liveBackup.ts";
 import { nodeVersionError } from "./nodeSupport.ts";
 import { renderDetectPersona } from "./render/detectPersona.ts";
+import {
+  IdentityEntryNotFoundError,
+  identityListRows,
+  renderIdentityGet,
+  renderIdentityList,
+} from "./render/identity.ts";
 import { renderJourneys } from "./render/journeys.ts";
 import { renderMemories } from "./render/memories.ts";
 import { type FrontDoorEngine, routeMemoryCommand } from "./routing.ts";
@@ -147,6 +154,7 @@ function runTs(argv: readonly string[]): number {
     if (command === "detect-persona") process.stdout.write(renderDetectPersona(db, args));
     else if (command === "journeys") process.stdout.write(renderJourneys(db));
     else if (command === "memories") process.stdout.write(renderMemories(db, args));
+    else if (command === "identity") return runIdentityRead(db, args);
     else throw new Error(`Unsupported TS route: ${command}`);
     return 0;
   } catch (error) {
@@ -157,6 +165,40 @@ function runTs(argv: readonly string[]): number {
     throw error;
   } finally {
     db.close();
+  }
+}
+
+/**
+ * Serve `identity list` / `identity get` (DS7.US1). `args` excludes the
+ * `identity` token itself, e.g. `["list", "--layer", "ego"]` or
+ * `["get", "ego", "behavior"]`. `identity set` and `identity edit` never reach
+ * here — routed elsewhere (write seam) or to Python (interactive) respectively.
+ */
+function runIdentityRead(db: Database, args: readonly string[]): number {
+  const sub = args[0];
+  const rest = stripOptionWithValue(
+    stripOptionWithValue(args.slice(1), "--mirror-home"),
+    "--db-path",
+  );
+  if (sub === "list") {
+    process.stdout.write(renderIdentityList(identityListRows(db, optionValue(args, "--layer"))));
+    return 0;
+  }
+  // sub === "get" (the only other route.ts-allowed subcommand).
+  const [layer, key] = rest;
+  if (!layer || !key) {
+    console.error("Usage: identity get <layer> <key>");
+    return 2;
+  }
+  try {
+    process.stdout.write(renderIdentityGet(db, layer, key));
+    return 0;
+  } catch (error) {
+    if (error instanceof IdentityEntryNotFoundError) {
+      console.error(error.message);
+      return 1;
+    }
+    throw error;
   }
 }
 

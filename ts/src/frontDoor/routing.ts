@@ -78,12 +78,19 @@ export function routeMemoryCommand(
   }
 
   if (command === "identity") {
-    // Only the non-interactive deterministic write `identity set` is ported.
-    // `identity edit` spawns $EDITOR and identity reads stay on Python for now.
+    // `set` (DS4) and `list`/`get` (DS7.US1) are ported. `identity edit` spawns
+    // $EDITOR — an interactive seam that stays on Python by design, not oversight.
     if (argv[1] === "set") {
       return { command, engine: "ts", reason: "DS4 identity set write ported to TS" };
     }
-    return { command, engine: "python", reason: "identity edit/read not ported to TS" };
+    if (argv[1] === "list" || argv[1] === "get") {
+      return { command, engine: "ts", reason: "DS7.US1 identity list/get read ported to TS" };
+    }
+    return {
+      command,
+      engine: "python",
+      reason: "identity edit (interactive $EDITOR) not ported to TS",
+    };
   }
 
   if (command === "journey") {

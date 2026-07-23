@@ -60,15 +60,20 @@ test("keeps unported commands on Python fallback", () => {
   assert.equal(routeMemoryCommand(["conversation-logger", "extract-pending"]).engine, "python");
 });
 
-test("routes `identity set` writes to TS but keeps edit/reads and journey writes on Python", () => {
+test("routes `identity set/list/get` to TS but keeps the interactive `edit` on Python", () => {
   assert.deepEqual(routeMemoryCommand(["identity", "set", "ego", "behavior", "--content", "x"]), {
     command: "identity",
     engine: "ts",
     reason: "DS4 identity set write ported to TS",
   });
+  assert.deepEqual(routeMemoryCommand(["identity", "list"]), {
+    command: "identity",
+    engine: "ts",
+    reason: "DS7.US1 identity list/get read ported to TS",
+  });
+  assert.equal(routeMemoryCommand(["identity", "list", "--layer", "ego"]).engine, "ts");
+  assert.equal(routeMemoryCommand(["identity", "get", "ego", "behavior"]).engine, "ts");
   assert.equal(routeMemoryCommand(["identity", "edit", "ego", "behavior"]).engine, "python");
-  assert.equal(routeMemoryCommand(["identity", "get", "ego", "behavior"]).engine, "python");
-  assert.equal(routeMemoryCommand(["identity", "list"]).engine, "python");
 });
 
 test("routes `journey set-path` writes to TS but keeps other journey commands on Python", () => {

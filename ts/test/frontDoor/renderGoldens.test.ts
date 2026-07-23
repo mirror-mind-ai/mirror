@@ -67,6 +67,46 @@ test("detect-persona render output matches the golden", () => {
   });
 });
 
+test("identity list render output matches the golden (all layers)", () => {
+  withFixture((dbPath) => {
+    buildRenderFixture(dbPath);
+    assertGolden("identity-list", render(dbPath, ["identity", "list"]));
+  });
+});
+
+test("identity list --layer render output matches the golden (one layer)", () => {
+  withFixture((dbPath) => {
+    buildRenderFixture(dbPath);
+    assertGolden(
+      "identity-list-persona",
+      render(dbPath, ["identity", "list", "--layer", "persona"]),
+    );
+  });
+});
+
+test("identity get render output matches the golden", () => {
+  withFixture((dbPath) => {
+    buildRenderFixture(dbPath);
+    assertGolden(
+      "identity-get-persona-engineer",
+      render(dbPath, ["identity", "get", "persona", "engineer"]),
+    );
+  });
+});
+
+test("identity get on a missing entry exits 1 with a stderr message, no stdout", () => {
+  withFixture((dbPath) => {
+    buildRenderFixture(dbPath);
+    const result = spawnSync(process.execPath, [CLI, "identity", "get", "persona", "ghost"], {
+      encoding: "utf8",
+      env: { ...process.env, NODE_OPTIONS: "--no-warnings", DB_PATH: dbPath },
+    });
+    assert.equal(result.status, 1);
+    assert.equal(result.stdout, "");
+    assert.equal(result.stderr.trim(), "No identity entry found for persona/ghost");
+  });
+});
+
 /** A schema-valid database with no journeys or memories (empty-state edges). */
 function buildEmptyFixture(dbPath: string): void {
   const db = openDatabaseCopyForWrite(dbPath);

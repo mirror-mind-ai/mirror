@@ -1,0 +1,11 @@
+
+[journey]
+  demo                    # Demo Journey **Status:** active A short demo journey description.
+  demo-child              # Child Journey **Status:** paused Child journey description.
+
+[journey_path]
+  demo                    **Current stage:** E2 — Foundation
+
+[persona]
+  engineer                # Engineer
+  therapist               # Therapist
