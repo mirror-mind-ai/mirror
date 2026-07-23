@@ -149,7 +149,19 @@ independently-committed units:
   not silently absorbed.
 
 **CV22.DS7.US1 — all three slices (A: 7 reads, B: 3 writes, C: 2 riders) are
-now implemented and validated.** ~15 commits, `tsc --noEmit` clean, `biome
-check` clean, 487/487 TS tests passing. This is the natural Implementation ->
-Validation boundary: the approved Plan's full scope is built; Navigator-facing
-Validation (dogfooding, acceptance) has not yet run.
+now implemented and validated.** ~18 commits, `tsc --noEmit` clean, `biome
+check` clean, oracle-drift clean, 487/487 TS tests passing.
+
+**Navigator validation — accepted.** Vinícius ran the front door directly in
+his terminal against his real identity (`~/.mirror-minds/vinicius-ts`), not a
+fixture: `identity list`, `identity list --layer`, `identity get`, `journey`
+(bare and by slug), `conversations`, `recall`, and `seed --env production`
+(skip mode). One real gotcha surfaced and was fixed as part of this
+validation: `uv run` auto-loads `.env` for the Python CLI, but plain `node`
+does not, so `MIRROR_USER` from `.env` never reached the front door and the
+first attempt failed with "Mirror home is not configured." Fixed with Node's
+native `--env-file=.env` flag, baked into every front-door invocation across
+all 8 Pi skills that call it (not just this story's 5 — also the CV22.DS3/DS4
+ones, for consistency). After the fix, every command ran cleanly against real
+data and matched the Python-era output Vinícius expected. His verdict: "It all
+worked well. Validated."
