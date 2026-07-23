@@ -92,4 +92,32 @@ the extension-catalog machinery with `list extensions`/`all` and moved to the
 TS1 ops-tail bucket; `list personas`/`list journeys` were split from `list
 extensions`/`all` at the subcommand level.
 
-**Slices B (writes) and C (riders) — not yet started.**
+**Slice B (deterministic writes) — complete.** All three writes landed as
+separate, independently-committed units, validated on database copies/scratch
+mirror-homes only — never live — with resulting DB state compared, not just
+printed output:
+
+- `journey update` — a thin wrapper reusing the already-ported `setIdentity`;
+  verified stdout/stderr/exit AND the resulting `identity` row are
+  byte-identical between a Python-copy and a TS-copy of the same source DB.
+- `init` — filesystem-only bootstrap; verified with a real HOME override
+  (never Vinícius's real home): printed output, the full copied file list, and
+  `diff -r` byte-for-byte content across every file are identical. The
+  already-existing-and-non-empty-destination error is Python's *uncaught*
+  exception (a raw traceback with this machine's paths) — a deliberate,
+  flagged divergence preserves the contract (exit 1, a stderr message) rather
+  than fabricate a fake traceback.
+- `seed` — the largest unit: added the `yaml` package (zero transitive deps,
+  safe `parse()`) as a real new dependency, named explicitly. Verified on the
+  **real repository templates** (`templates/identity/`, copied into isolated
+  scratch mirror-homes): identical stdout (incl. a real "empty content" error
+  neither side special-cased), identical row count and byte-identical
+  content/version, and semantically-identical metadata (parsed structure, not
+  raw bytes — canonical `JSON.stringify` per the already-decided DS6
+  identity.metadata contract) across all 19 seeded rows, for both the initial
+  create run and a `--force` re-run. Also verified live that `seed
+  --mirror-home X --env test` still writes `memory.db`, not `memory_test.db`
+  — a genuinely surprising, verified-not-assumed path-resolution divergence
+  documented in `seedPaths.ts`.
+
+**Slice C (kebab_slug + parent_journey atomic dual-write riders) — not yet started.**
