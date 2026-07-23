@@ -93,6 +93,15 @@ export function routeMemoryCommand(
     };
   }
 
+  if (command === "descriptor") {
+    // `list` (DS7.US1) is a deterministic read; `generate` calls the LLM
+    // (generate_descriptor) and stays on Python as the DS7↔DS8 live seam.
+    if (argv[1] === "list") {
+      return { command, engine: "ts", reason: "DS7.US1 descriptor list read ported to TS" };
+    }
+    return { command, engine: "python", reason: "descriptor generate (LLM) not ported to TS" };
+  }
+
   if (command === "journey") {
     // Only `journey set-path` is ported; `update`/`status`/reads stay on Python.
     if (argv[1] === "set-path") {

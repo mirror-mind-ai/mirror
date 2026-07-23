@@ -107,6 +107,23 @@ test("identity get on a missing entry exits 1 with a stderr message, no stdout",
   });
 });
 
+test("descriptor list (all layers) render output matches the golden, excluding the orphan", () => {
+  withFixture((dbPath) => {
+    buildRenderFixture(dbPath);
+    assertGolden("descriptor-list", render(dbPath, ["descriptor", "list"]));
+  });
+});
+
+test("descriptor list --layer render output matches the golden, including the orphan", () => {
+  withFixture((dbPath) => {
+    buildRenderFixture(dbPath);
+    assertGolden(
+      "descriptor-list-persona",
+      render(dbPath, ["descriptor", "list", "--layer", "persona"]),
+    );
+  });
+});
+
 /** A schema-valid database with no journeys or memories (empty-state edges). */
 function buildEmptyFixture(dbPath: string): void {
   const db = openDatabaseCopyForWrite(dbPath);

@@ -60,6 +60,20 @@ export function buildRenderFixture(dbPath: string): void {
     '{"routing_keywords": ["feeling", "tension"]}',
   );
 
+  db.exec(
+    "CREATE TABLE identity_descriptors (layer TEXT NOT NULL, key TEXT NOT NULL, " +
+      "descriptor TEXT NOT NULL, generated_at TEXT NOT NULL, PRIMARY KEY (layer, key))",
+  );
+  const descriptor = db.prepare(
+    "INSERT INTO identity_descriptors (layer, key, descriptor, generated_at) VALUES (?, ?, ?, 't')",
+  );
+  descriptor.run("persona", "engineer", "Routes engineering and code-quality questions.");
+  descriptor.run("persona", "therapist", "Routes emotional and relational questions.");
+  descriptor.run("journey", "demo", "The demo journey used for parity fixtures.");
+  // Orphaned: no matching identity row, so it must be excluded from the
+  // identity-driven "all layers" listing but still visible under --layer.
+  descriptor.run("persona", "ghost-persona", "A descriptor with no identity row.");
+
   const memory = db.prepare(
     "INSERT INTO memories (id, memory_type, layer, title, content, journey, persona, tags, " +
       "created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",

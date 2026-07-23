@@ -30,6 +30,7 @@ import {
 } from "../db/database.ts";
 import { ensureMigratedOnOpen } from "../db/migrateOnOpen.ts";
 import { assertSchemaState, SchemaStateError } from "../db/schemaState.ts";
+import { allDescriptors, descriptorsByLayer } from "../descriptor/descriptorRead.ts";
 import { JourneyNotFoundError } from "../journey/journeyWrite.ts";
 import { expandHome } from "../util/paths.ts";
 import { newId, nowIso } from "../util/pyGenerators.ts";
@@ -41,6 +42,7 @@ import { applyIdentitySet } from "./identityWrite.ts";
 import { applyJourneySetPath } from "./journeyWriteRoute.ts";
 import { ensureBackup } from "./liveBackup.ts";
 import { nodeVersionError } from "./nodeSupport.ts";
+import { renderDescriptorList } from "./render/descriptor.ts";
 import { renderDetectPersona } from "./render/detectPersona.ts";
 import {
   IdentityEntryNotFoundError,
@@ -155,6 +157,7 @@ function runTs(argv: readonly string[]): number {
     else if (command === "journeys") process.stdout.write(renderJourneys(db));
     else if (command === "memories") process.stdout.write(renderMemories(db, args));
     else if (command === "identity") return runIdentityRead(db, args);
+    else if (command === "descriptor") return runDescriptorRead(db, args);
     else throw new Error(`Unsupported TS route: ${command}`);
     return 0;
   } catch (error) {
@@ -200,6 +203,14 @@ function runIdentityRead(db: Database, args: readonly string[]): number {
     }
     throw error;
   }
+}
+
+/** Serve `descriptor list` (DS7.US1). `descriptor generate` never reaches here. */
+function runDescriptorRead(db: Database, args: readonly string[]): number {
+  const layer = optionValue(args, "--layer");
+  const rows = layer ? descriptorsByLayer(db, layer) : allDescriptors(db);
+  process.stdout.write(renderDescriptorList(rows));
+  return 0;
 }
 
 function readStdinContent(): string {
