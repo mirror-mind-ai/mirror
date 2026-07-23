@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
+import { openDatabaseCopyForWrite } from "../../src/db/database.ts";
 import {
+  evaluateCultivationProbes,
   evaluateJourneyProbes,
   evaluatePersonaProbes,
   orderedIdsHash,
@@ -8,6 +13,7 @@ import {
   renderRedactedReport,
   toProbeResult,
 } from "../../src/parity/realDbCopyParity.ts";
+import { createConsolidationsTable, createMemoriesTable } from "../helpers/cultivationSchema.ts";
 
 test("orderedIdsHash is stable and order-sensitive", () => {
   assert.equal(orderedIdsHash(["a", "b"]), orderedIdsHash(["a", "b"]));
@@ -135,4 +141,142 @@ test("evaluateJourneyProbes flags a divergent oracle order, redacted", () => {
   assert.equal(result.match, false);
   const report = renderRedactedReport([result]);
   assert.doesNotMatch(report, /wrong/);
+});
+
+function tempCultivationDb() {
+  const dir = mkdtempSync(join(tmpdir(), "mirror-core-cultivation-parity-"));
+  const tmp = join(dir, "tmp");
+  mkdirSync(tmp);
+  const db = openDatabaseCopyForWrite(join(tmp, "copy.db"));
+  createMemoriesTable(db);
+  createConsolidationsTable(db);
+  return { db, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
+}
+
+test("evaluateCultivationProbes: cluster probe replays clusterMemories and grades cluster+member order together", () => {
+  const { db, cleanup } = tempCultivationDb();
+  try {
+    const fixture: RealDbCopyFixture = {
+      ...personaFixture,
+      cultivation_cluster_probe: {
+        label: "cultivation_cluster_order",
+        threshold: 0.75,
+        memories: [
+          {
+            id: "m1",
+            memory_type: "insight",
+            layer: "ego",
+            title: "T1",
+            content: "C1",
+            context: null,
+            journey: null,
+            created_at: "2026-01-01T00:00:00.000000Z",
+            readiness_state: "observed",
+            embedding_b64: Buffer.from(new Float32Array([1, 0, 0, 0]).buffer).toString("base64"),
+          },
+          {
+            id: "m2",
+            memory_type: "insight",
+            layer: "ego",
+            title: "T2",
+            content: "C2",
+            context: null,
+            journey: null,
+            created_at: "2026-01-02T00:00:00.000000Z",
+            readiness_state: "observed",
+            embedding_b64: Buffer.from(new Float32Array([0.95, 0.05, 0, 0]).buffer).toString(
+              "base64",
+            ),
+          },
+        ],
+        expected_clusters: [["m1", "m2"]],
+      },
+    };
+    const results = evaluateCultivationProbes(fixture, db);
+    assert.equal(results.length, 1);
+    assert.equal(results[0]?.label, "cultivation_cluster_order");
+    assert.equal(results[0]?.match, true);
+  } finally {
+    db.close();
+    cleanup();
+  }
+});
+
+test("evaluateCultivationProbes: cluster probe flags a divergent oracle order", () => {
+  const { db, cleanup } = tempCultivationDb();
+  try {
+    const fixture: RealDbCopyFixture = {
+      ...personaFixture,
+      cultivation_cluster_probe: {
+        label: "cultivation_cluster_order",
+        threshold: 0.75,
+        memories: [
+          {
+            id: "m1",
+            memory_type: "insight",
+            layer: "ego",
+            title: "T1",
+            content: "C1",
+            context: null,
+            journey: null,
+            created_at: "2026-01-01T00:00:00.000000Z",
+            readiness_state: "observed",
+            embedding_b64: Buffer.from(new Float32Array([1, 0, 0, 0]).buffer).toString("base64"),
+          },
+        ],
+        expected_clusters: [["m1", "m2"]],
+      },
+    };
+    const [result] = evaluateCultivationProbes(fixture, db);
+    assert.equal(result?.match, false);
+  } finally {
+    db.close();
+    cleanup();
+  }
+});
+
+test("evaluateCultivationProbes: consolidation-listing probes replay listConsolidations over the copied DB", () => {
+  const { db, cleanup } = tempCultivationDb();
+  try {
+    db.prepare(
+      "INSERT INTO consolidations (id, action, proposal, source_memory_ids, status, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+    ).run("c1", "identity_update", "p", "[]", "pending", "2026-01-02T00:00:00.000000Z");
+    db.prepare(
+      "INSERT INTO consolidations (id, action, proposal, source_memory_ids, status, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+    ).run("c2", "merge", "p", "[]", "accepted", "2026-01-01T00:00:00.000000Z");
+
+    const fixture: RealDbCopyFixture = {
+      ...personaFixture,
+      cultivation_consolidation_probes: [
+        {
+          label: "cultivation_consolidation_list_all",
+          status: null,
+          limit: 50,
+          expected_order: ["c1", "c2"],
+        },
+        {
+          label: "cultivation_consolidation_list_by_status",
+          status: "pending",
+          limit: 50,
+          expected_order: ["c1"],
+        },
+      ],
+    };
+    const results = evaluateCultivationProbes(fixture, db);
+    assert.equal(results.length, 2);
+    assert.ok(results.every((result) => result.match));
+  } finally {
+    db.close();
+    cleanup();
+  }
+});
+
+test("evaluateCultivationProbes returns [] on a fixture with neither cultivation probe present", () => {
+  const { db, cleanup } = tempCultivationDb();
+  try {
+    assert.deepEqual(evaluateCultivationProbes(personaFixture, db), []);
+  } finally {
+    db.close();
+    cleanup();
+  }
 });

@@ -1,4 +1,9 @@
 import { createHash } from "node:crypto";
+import { clusterMemories } from "../cultivation/cluster.ts";
+import {
+  type CultivationMemoryWithEmbedding,
+  listConsolidations,
+} from "../cultivation/consolidationStore.ts";
 import type { Database } from "../db/database.ts";
 import { type JourneyIdentityRow, listJourneyOptions } from "../journey/journeyOptions.ts";
 import { countMemoriesByType, listRecentMemorySummaries } from "../memory/listing.ts";
@@ -73,6 +78,26 @@ export interface RealDbCopyFixture {
   tasks_probes?: TasksProbe[];
   /** `week view`'s current-range probe (CV22.DS7.US2), replayed over `copied_db_path`. */
   week_probes?: WeekProbe[];
+  /** `cluster_memories` ordering probe (CV22.DS7.US3) -- carries its own memory pool, no DB round-trip. */
+  cultivation_cluster_probe?: CultivationClusterProbe;
+  /** `consolidate`/`shadow list` ordering probes (CV22.DS7.US3), replayed over `copied_db_path`. */
+  cultivation_consolidation_probes?: CultivationConsolidationProbe[];
+}
+
+/** The cluster-ordering probe: the full embedded-memory pool plus the oracle's ordered clusters. */
+export interface CultivationClusterProbe {
+  label: string;
+  threshold: number;
+  memories: CultivationMemoryWithEmbedding[];
+  expected_clusters: string[][];
+}
+
+/** A consolidation-listing probe: the filter inputs and the ordered ids the oracle returned. */
+export interface CultivationConsolidationProbe {
+  label: string;
+  status: string | null;
+  limit: number;
+  expected_order: string[];
 }
 
 /** A `tasks list` probe: the filters applied and the ordered ids the oracle returned. */
@@ -236,6 +261,38 @@ export function evaluateWeekProbes(
     );
     return toProbeResult(probe.label, probe.expected_order, actualOrder, options);
   });
+}
+
+/**
+ * Replay the cultivation cluster/listing probes (CV22.DS7.US3): the cluster
+ * probe carries its own memory pool (no DB read, matching the search probe's
+ * `_memory_entry` precedent), grading the ordered-cluster-membership shape by
+ * flattening each cluster into a comma-joined "id" so the existing flat
+ * `orderedIdsMatch`/hash machinery grades BOTH cluster order and
+ * within-cluster member order without inventing a second comparison metric.
+ * The consolidation-listing probes replay `listConsolidations` over
+ * `copied_db_path`, the same seam `evaluateTasksProbes` already reads.
+ */
+export function evaluateCultivationProbes(
+  fixture: RealDbCopyFixture,
+  db: Database,
+  options: { includeSensitiveDebug?: boolean } = {},
+): ProbeParityResult[] {
+  const results: ProbeParityResult[] = [];
+  const clusterProbe = fixture.cultivation_cluster_probe;
+  if (clusterProbe) {
+    const clusters = clusterMemories(clusterProbe.memories, clusterProbe.threshold);
+    const actualOrder = clusters.map((cluster) => cluster.map((memory) => memory.id).join(","));
+    const expectedOrder = clusterProbe.expected_clusters.map((ids) => ids.join(","));
+    results.push(toProbeResult(clusterProbe.label, expectedOrder, actualOrder, options));
+  }
+  for (const probe of fixture.cultivation_consolidation_probes ?? []) {
+    const actualOrder = listConsolidations(db, { status: probe.status, limit: probe.limit }).map(
+      (consolidation) => consolidation.id,
+    );
+    results.push(toProbeResult(probe.label, probe.expected_order, actualOrder, options));
+  }
+  return results;
 }
 
 export function evaluatePersonaProbes(

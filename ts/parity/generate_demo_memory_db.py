@@ -17,7 +17,7 @@ import numpy as np
 
 from memory.db.connection import get_connection
 from memory.intelligence.embeddings import embedding_to_bytes
-from memory.models import Memory, Task
+from memory.models import Consolidation, Memory, Task
 from memory.services.attachment import AttachmentService
 from memory.services.identity import IdentityService
 from memory.storage.store import Store
@@ -112,6 +112,7 @@ DEMO_MEMORIES = (
     ),
 )
 
+
 # Synthetic persona routing rows for the portable `detect-persona` parity route.
 DEMO_PERSONAS = (
     ("demo-code-reviewer", ["code", "pull request", "refactor", "bug"]),
@@ -126,6 +127,47 @@ DEMO_JOURNEYS = (
     ("demo-root-done", "# Demo Root Done\n**Status:** completed", None),
     ("demo-child-beta", "# Demo Child Beta\n**Status:** active", "demo-root-active"),
     ("demo-child-alpha", "# Demo Child Alpha\n**Status:** paused", "demo-root-active"),
+)
+
+
+# Synthetic consolidation proposals (CV22.DS7.US3) for the portable
+# `consolidate list`/`shadow list` real-DB-copy cluster/listing probes.
+# `source_memory_ids` references real DEMO_MEMORIES ids so a Navigator running
+# the harness by hand sees a coherent, inspectable fixture.
+DEMO_CONSOLIDATIONS = (
+    dict(
+        id="demo-consolidation-pending",
+        action="identity_update",
+        proposal="A synthetic surfaced pattern about search parity, pending review.",
+        source_memory_ids=json.dumps(["demo-search-1", "demo-builder-1"]),
+        target_layer="ego",
+        target_key="behavior",
+        rationale="seen across two synthetic memories",
+        status="pending",
+        created_at="2026-06-23T09:00:00Z",
+    ),
+    dict(
+        id="demo-consolidation-accepted",
+        action="shadow_candidate",
+        proposal="A synthetic shadow-candidate observation, already accepted.",
+        source_memory_ids=json.dumps(["demo-runtime-1"]),
+        target_layer=None,
+        target_key=None,
+        rationale="a synthetic recurring pattern",
+        status="accepted",
+        created_at="2026-06-22T09:00:00Z",
+    ),
+    dict(
+        id="demo-consolidation-rejected",
+        action="merge",
+        proposal="A synthetic merge proposal, rejected by the demo Navigator.",
+        source_memory_ids=json.dumps(["demo-journey-1"]),
+        target_layer=None,
+        target_key=None,
+        rationale=None,
+        status="rejected",
+        created_at="2026-06-21T09:00:00Z",
+    ),
 )
 
 
@@ -260,6 +302,8 @@ def generate_demo_db(path: Path) -> None:
         )
     for fields in _demo_tasks():
         store.create_task(Task(**fields))
+    for fields in DEMO_CONSOLIDATIONS:
+        store.create_consolidation(Consolidation(**fields))
     conn.close()
 
 

@@ -1,5 +1,6 @@
 import { openDatabaseReadOnly } from "../src/db/database.ts";
 import {
+  evaluateCultivationProbes,
   evaluateJourneyProbes,
   evaluateListingProbes,
   evaluatePersonaProbes,
@@ -24,6 +25,7 @@ const journeyResults = evaluateJourneyProbes(fixture, { includeSensitiveDebug })
 let listingResults: ProbeParityResult[] = [];
 let tasksResults: ProbeParityResult[] = [];
 let weekResults: ProbeParityResult[] = [];
+let cultivationResults: ProbeParityResult[] = [];
 if (fixture.copied_db_path) {
   const db = openDatabaseReadOnly(fixture.copied_db_path);
   try {
@@ -35,6 +37,9 @@ if (fixture.copied_db_path) {
     }
     if (fixture.week_probes?.length) {
       weekResults = evaluateWeekProbes(fixture, db, { includeSensitiveDebug });
+    }
+    if (fixture.cultivation_cluster_probe || fixture.cultivation_consolidation_probes?.length) {
+      cultivationResults = evaluateCultivationProbes(fixture, db, { includeSensitiveDebug });
     }
   } finally {
     db.close();
@@ -63,6 +68,10 @@ if (weekResults.length > 0) {
   process.stdout.write("== week ==\n");
   process.stdout.write(renderRedactedReport(weekResults));
 }
+if (cultivationResults.length > 0) {
+  process.stdout.write("== cultivation ==\n");
+  process.stdout.write(renderRedactedReport(cultivationResults));
+}
 
 const allResults = [
   ...searchResults,
@@ -71,6 +80,7 @@ const allResults = [
   ...listingResults,
   ...tasksResults,
   ...weekResults,
+  ...cultivationResults,
 ];
 if (includeSensitiveDebug) {
   process.stdout.write("\nSENSITIVE DEBUG OUTPUT ENABLED\n");

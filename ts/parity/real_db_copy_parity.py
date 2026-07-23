@@ -23,6 +23,7 @@ import numpy as np
 
 import memory.intelligence.search as search_mod
 from memory.db.connection import get_connection
+from memory.intelligence.consolidate import DEFAULT_CLUSTER_THRESHOLD, cluster_memories
 from memory.intelligence.embeddings import bytes_to_embedding
 from memory.intelligence.search import MemorySearch, _parse_datetime_utc
 from memory.services.attachment import AttachmentService
@@ -263,6 +264,70 @@ def _tasks_probes(store: Store) -> list[dict]:
     return probes
 
 
+def _cultivation_cluster_probe(store: Store) -> dict:
+    """Cluster ordering probe (CV22.DS7.US3): replay `cluster_memories` on the
+    SAME embedded-memory pool the TS `consolidate scan` read model would fetch
+    (`get_all_memories_with_embeddings`, no filters), and record the ordered
+    cluster membership the oracle produced. The full memory projection travels
+    in the fixture (mirroring the search probe's `_memory_entry` precedent) so
+    TS can replay `clusterMemories` directly, without a DB round-trip.
+    """
+    all_memories = [m for m in store.get_all_memories_with_embeddings() if m.embedding is not None]
+    clusters = cluster_memories(all_memories, threshold=DEFAULT_CLUSTER_THRESHOLD)
+    memories_payload = [
+        {
+            "id": mem.id,
+            "memory_type": mem.memory_type,
+            "layer": mem.layer,
+            "title": mem.title,
+            "content": mem.content,
+            "context": mem.context,
+            "journey": mem.journey,
+            "created_at": mem.created_at,
+            "readiness_state": mem.readiness_state,
+            "embedding_b64": base64.b64encode(mem.embedding).decode("ascii"),
+        }
+        for mem in all_memories
+    ]
+    return {
+        "label": "cultivation_cluster_order",
+        "threshold": DEFAULT_CLUSTER_THRESHOLD,
+        "memories": memories_payload,
+        "expected_clusters": [[mem.id for mem in cluster] for cluster in clusters],
+    }
+
+
+def _cultivation_consolidation_probes(store: Store) -> list[dict]:
+    """Consolidation-listing ordering probes (CV22.DS7.US3): replay
+    `list_consolidations` at the copied DB's real `consolidations` table,
+    with and without a status filter, mirroring `_listing_probes`'
+    filter/order convention. TS replays `listConsolidations` over
+    `copied_db_path` -- the same seam `evaluateTasksProbes` already reads.
+    """
+    probes = [
+        {
+            "label": "cultivation_consolidation_list_all",
+            "status": None,
+            "limit": 50,
+            "expected_order": [c.id for c in store.list_consolidations(status=None, limit=50)],
+        }
+    ]
+    all_items = store.list_consolidations(limit=200)
+    first_status = next((c.status for c in all_items), None)
+    if first_status:
+        probes.append(
+            {
+                "label": "cultivation_consolidation_list_by_status",
+                "status": first_status,
+                "limit": 50,
+                "expected_order": [
+                    c.id for c in store.list_consolidations(status=first_status, limit=50)
+                ],
+            }
+        )
+    return probes
+
+
 def _week_probe(store: Store) -> dict:
     """`week view`'s read-model probe: the ordered task ids for the REAL
     current Monday..Sunday week (not frozen -- the demo DB's task dates are
@@ -332,6 +397,8 @@ def _build_fixture(*, source_db: Path, work_dir: Path, limit: int) -> Path:
         )
         tasks_probes = _tasks_probes(store)
         week_probes = [_week_probe(store)]
+        cultivation_cluster_probe = _cultivation_cluster_probe(store)
+        cultivation_consolidation_probes = _cultivation_consolidation_probes(store)
     finally:
         search_mod.datetime = original_datetime
         search_mod.generate_embedding = original_generate_embedding
@@ -358,6 +425,8 @@ def _build_fixture(*, source_db: Path, work_dir: Path, limit: int) -> Path:
         "count_by_type_expected": count_by_type_expected,
         "tasks_probes": tasks_probes,
         "week_probes": week_probes,
+        "cultivation_cluster_probe": cultivation_cluster_probe,
+        "cultivation_consolidation_probes": cultivation_consolidation_probes,
     }
     fixture_path.write_text(json.dumps(fixture), encoding="utf-8")
     return fixture_path
