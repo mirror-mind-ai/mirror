@@ -14,6 +14,10 @@
     "src/memory/utils.py": "e8f64360540d425abbbca68839fac9fbc63b5c27",
     "src/memory/db/connection.py": "bba2793a2c91331d0fc51d5f25ea0477223ad79a",
     "src/memory/db/migrations.py": "0a09c38e12890dea88fc329d72d7d9129eb492be",
-    "src/memory/storage/store.py": "22f18f775e180a9a3a856b33b016f5bba8010054"
+    "src/memory/storage/store.py": "22f18f775e180a9a3a856b33b016f5bba8010054",
+    "src/memory/cli/tasks.py": "a624ec1cde4b58ec59f673adbe44606a1b22e1d1",
+    "src/memory/cli/tasks_cmd.py": "134788a6e6413321fbad9faf61853450ff4e5ce2",
+    "src/memory/storage/tasks.py": "61a483eb1ece79e33e181bc7a7862ac6d991268f",
+    "src/memory/services/tasks.py": "a22ece8fad13641efe40bf228cee9498c485fb27"
   }
 }

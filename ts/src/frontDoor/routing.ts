@@ -174,6 +174,42 @@ export function routeMemoryCommand(
     return { command, engine: "python", reason: "descriptor generate (LLM) not ported to TS" };
   }
 
+  if (command === "tasks") {
+    // `list` (and the bare `tasks` default, incl. a leading flag with no
+    // subcommand token) is a read; `add/done/doing/block/delete` are the
+    // deterministic writes ported in DS7.US2 slice 3a. `import`/`sync`/
+    // `sync-config` also depend on the journey sync-file/project-path
+    // metadata subsystem and are not yet ported (slice 3c) -- Python fallback.
+    const sub = argv[1]?.startsWith("--") ? undefined : argv[1];
+    if (sub === undefined || sub === "list") {
+      return { command, engine: "ts", reason: "DS7.US2 tasks list read ported to TS" };
+    }
+    if (sub === "add" || sub === "done" || sub === "doing" || sub === "block" || sub === "delete") {
+      return { command, engine: "ts", reason: "DS7.US2 tasks write ported to TS" };
+    }
+    return {
+      command,
+      engine: "python",
+      reason: "tasks import/sync/sync-config not yet ported to TS (DS7.US2 slice 3c)",
+    };
+  }
+
+  if (command === "week") {
+    // `view` (and the bare `week` default) is a deterministic read ported
+    // here. `plan`/`save` are LLM/embedding-gated and reassigned to US5 (see
+    // the plan's scope correction) -- they stay on Python fallback, not as an
+    // oversight but as a permanent seam boundary.
+    const sub = argv[1];
+    if (sub === undefined || sub === "view") {
+      return { command, engine: "ts", reason: "DS7.US2 week view read ported to TS" };
+    }
+    return {
+      command,
+      engine: "python",
+      reason: "week plan/save are LLM-gated and reassigned to US5, not ported here",
+    };
+  }
+
   if (command === "journey") {
     // `set-path` (DS4), `update` (DS7.US1 Slice B), and the status read
     // (DS7.US1 Slice A) are all ported. Everything besides `set-path`/

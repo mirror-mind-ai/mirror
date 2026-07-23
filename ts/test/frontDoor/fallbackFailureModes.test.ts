@@ -7,8 +7,10 @@ import { test } from "node:test";
 
 const CLI = "src/frontDoor/cli.ts";
 
-// `tasks` is not a TS route, so it always takes the Python fallback.
-const UNPORTED = ["tasks"];
+// `journal` is not a TS route (LLM/embedding-gated, reassigned to US5), so it
+// always takes the Python fallback. `tasks` no longer qualifies as of
+// CV22.DS7.US2 slice 3a -- its bare/`list` form now routes to TS.
+const UNPORTED = ["journal", "placeholder text for the fallback failure-mode probe"];
 
 test("fallback prints actionable guidance when uv is not on PATH (was: silent exit 1)", () => {
   const result = spawnSync(process.execPath, [CLI, ...UNPORTED], {

@@ -76,6 +76,44 @@ test("routes `identity set/list/get` to TS but keeps the interactive `edit` on P
   assert.equal(routeMemoryCommand(["identity", "edit", "ego", "behavior"]).engine, "python");
 });
 
+test("routes `tasks` list/default to TS but keeps import/sync/sync-config on Python", () => {
+  assert.deepEqual(routeMemoryCommand(["tasks"]), {
+    command: "tasks",
+    engine: "ts",
+    reason: "DS7.US2 tasks list read ported to TS",
+  });
+  assert.equal(routeMemoryCommand(["tasks", "list"]).engine, "ts");
+  assert.equal(routeMemoryCommand(["tasks", "--journey", "cv22"]).engine, "ts");
+  for (const sub of ["import", "sync", "sync-config"]) {
+    assert.equal(
+      routeMemoryCommand(["tasks", sub]).engine,
+      "python",
+      `tasks ${sub} should stay on Python until slice 3c`,
+    );
+  }
+});
+
+test("routes `tasks add/done/doing/block/delete` writes to TS", () => {
+  for (const sub of ["add", "done", "doing", "block", "delete"]) {
+    assert.deepEqual(routeMemoryCommand(["tasks", sub, "t-1"]), {
+      command: "tasks",
+      engine: "ts",
+      reason: "DS7.US2 tasks write ported to TS",
+    });
+  }
+});
+
+test("routes `week` view/default to TS but keeps plan/save on Python (LLM-gated, reassigned to US5)", () => {
+  assert.deepEqual(routeMemoryCommand(["week"]), {
+    command: "week",
+    engine: "ts",
+    reason: "DS7.US2 week view read ported to TS",
+  });
+  assert.equal(routeMemoryCommand(["week", "view"]).engine, "ts");
+  assert.equal(routeMemoryCommand(["week", "plan", "text"]).engine, "python");
+  assert.equal(routeMemoryCommand(["week", "save"]).engine, "python");
+});
+
 test("routes `init` to TS", () => {
   assert.deepEqual(routeMemoryCommand(["init", "someuser"]), {
     command: "init",

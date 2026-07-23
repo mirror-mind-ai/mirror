@@ -53,6 +53,16 @@ ORACLE_PATHS: tuple[str, ...] = (
     "src/memory/db/connection.py",
     "src/memory/db/migrations.py",
     "src/memory/storage/store.py",
+    # DS7.US2 content & planning writes: the tasks tree (add/list/done/doing/
+    # block/delete ported; import/sync/sync-config pending in slice 3c) and the
+    # shared journey-path markdown parser. journal/week plan/save are NOT
+    # ported (LLM/embedding-gated, reassigned to US5) despite living in
+    # services/tasks.py and cli/tasks_cmd.py -- tracked at file granularity like
+    # every other entry here.
+    "src/memory/cli/tasks.py",
+    "src/memory/cli/tasks_cmd.py",
+    "src/memory/storage/tasks.py",
+    "src/memory/services/tasks.py",
 )
 
 BASELINE_RELPATH = "ts/parity/oracle-baseline.json"

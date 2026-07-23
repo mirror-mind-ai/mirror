@@ -38,6 +38,7 @@ import { IdentityRootExistsError, initUserHome, TemplatesNotFoundError } from ".
 import { JOURNEY_PATH_LAYER } from "../journey/journeyStatus.ts";
 import { JourneyNotFoundError } from "../journey/journeyWrite.ts";
 import { runSeed } from "../seed/seed.ts";
+import { listTasks } from "../tasks/taskStore.ts";
 import { expandHome } from "../util/paths.ts";
 import { newId, nowIso } from "../util/pyGenerators.ts";
 import { hasOption, optionValue, stripOptionWithValue } from "./args.ts";
@@ -63,9 +64,21 @@ import { renderJourneys } from "./render/journeys.ts";
 import { renderListJourneys, renderListPersonas } from "./render/list.ts";
 import { renderMemories } from "./render/memories.ts";
 import { ConversationNotFoundError, renderRecall } from "./render/recall.ts";
+import {
+  renderTasksAdd,
+  renderTasksDelete,
+  renderTasksList,
+  renderTasksStatusChange,
+} from "./render/tasks.ts";
 import { type FrontDoorEngine, routeMemoryCommand } from "./routing.ts";
 import { runMemorySearchRoute } from "./searchRoute.ts";
 import { resolveSeedPaths } from "./seedPaths.ts";
+import {
+  applyTasksAdd,
+  applyTasksDelete,
+  applyTasksStatusChange,
+  type TaskStatusTarget,
+} from "./tasksWriteRoute.ts";
 
 /**
  * Resolve the database path for a CLI invocation, mapping a configuration
@@ -175,6 +188,7 @@ function runTs(argv: readonly string[]): number {
     else if (command === "recall") return runRecallRead(db, args);
     else if (command === "conversations") return runConversationsRead(db, args);
     else if (command === "journey") return runJourneyStatusRead(db, args);
+    else if (command === "tasks") return runTasksRead(db, args);
     else throw new Error(`Unsupported TS route: ${command}`);
     return 0;
   } catch (error) {
@@ -310,6 +324,25 @@ function runConversationsRead(db: Database, args: readonly string[]): number {
 function runJourneyStatusRead(db: Database, args: readonly string[]): number {
   const remaining = stripOptionWithValue(stripOptionWithValue(args, "--mirror-home"), "--db-path");
   process.stdout.write(renderJourneyStatus(db, resolveJourneyStatusSlug(remaining)));
+  return 0;
+}
+
+/**
+ * Serve `tasks list` (and the bare `tasks`/`tasks --journey ...` default,
+ * DS7.US2 slice 3a). `args` excludes the `tasks` token itself. Flags are
+ * scanned across the whole slice (the existing recall/conversations
+ * convention) rather than requiring them after a `list` token -- Python's own
+ * argparse subparser quirk (a flag given only BEFORE the subcommand can be
+ * overwritten back to the subparser's default) is a narrow, unreproduced edge
+ * case; the common "flag after/around the subcommand" usage matches exactly.
+ */
+function runTasksRead(db: Database, args: readonly string[]): number {
+  const journey = optionValue(args, "--journey");
+  const status = optionValue(args, "--status");
+  const all = hasOption(args, "--all");
+  const filters = all ? { journey } : status ? { journey, status } : { journey, openOnly: true };
+  const tasks = listTasks(db, filters);
+  process.stdout.write(renderTasksList(tasks, { all, status }));
   return 0;
 }
 
@@ -573,6 +606,105 @@ function runJourneyUpdateWrite(argv: readonly string[]): number {
   });
 }
 
+function isTasksSubcommandWrite(argv: readonly string[]): boolean {
+  return (
+    argv[0] === "tasks" &&
+    (argv[1] === "add" ||
+      argv[1] === "done" ||
+      argv[1] === "doing" ||
+      argv[1] === "block" ||
+      argv[1] === "delete")
+  );
+}
+
+/**
+ * Route `tasks add <title> [--journey J] [--due D] [--stage S]` to the TS core
+ * (DS7.US2 slice 3a). Python's `title` positional accepts exactly one argv
+ * token (no `nargs`); extra unrecognized positionals are an argparse error in
+ * Python, not reproduced here beyond a generic usage message.
+ */
+function runTasksAddWrite(argv: readonly string[]): number {
+  const args = argv.slice(2);
+  const journey = optionValue(args, "--journey");
+  const due = optionValue(args, "--due");
+  const stage = optionValue(args, "--stage");
+  const title = stripOptionWithValue(
+    stripOptionWithValue(
+      stripOptionWithValue(
+        stripOptionWithValue(stripOptionWithValue(args, "--journey"), "--due"),
+        "--stage",
+      ),
+      "--db-path",
+    ),
+    "--mirror-home",
+  )[0];
+  if (!title) {
+    console.error("Usage: tasks add <title> [--journey J] [--due D] [--stage S]");
+    return 2;
+  }
+  return withLiveWriteDb(argv, (db) => {
+    const task = applyTasksAdd(db, { title, journey, due, stage }, newId(), nowIso());
+    process.stdout.write(renderTasksAdd(task));
+    return 0;
+  });
+}
+
+/**
+ * Route `tasks done|doing|block <task_id>` to the TS core (DS7.US2 slice 3a).
+ * Matches Python's `cmd_status_change`: business-logic outcomes (ambiguous,
+ * not found) print to STDOUT and exit 0 -- Python never calls `sys.exit()` in
+ * this command, so no branch here maps to a nonzero exit code either.
+ */
+function runTasksStatusChangeWrite(argv: readonly string[]): number {
+  // argv[1] is "done" | "doing" | "block" here (isTasksSubcommandWrite already
+  // narrowed it); only "block" needs translating to the Task model's status.
+  const newStatus: TaskStatusTarget =
+    argv[1] === "block" ? "blocked" : (argv[1] as TaskStatusTarget);
+  const args = argv.slice(2);
+  const idOrPrefix = stripOptionWithValue(
+    stripOptionWithValue(args, "--db-path"),
+    "--mirror-home",
+  )[0];
+  if (!idOrPrefix) {
+    console.error(`Usage: tasks ${argv[1]} <task_id>`);
+    return 2;
+  }
+  return withLiveWriteDb(argv, (db) => {
+    const outcome = applyTasksStatusChange(db, idOrPrefix, newStatus, nowIso());
+    process.stdout.write(renderTasksStatusChange(outcome));
+    return 0;
+  });
+}
+
+/**
+ * Route `tasks delete <task_id>` to the TS core (DS7.US2 slice 3a). Matches
+ * Python's `cmd_delete`: business-logic "not found" prints to STDOUT and exits
+ * 0, same as status-change.
+ */
+function runTasksDeleteWrite(argv: readonly string[]): number {
+  const args = argv.slice(2);
+  const idOrPrefix = stripOptionWithValue(
+    stripOptionWithValue(args, "--db-path"),
+    "--mirror-home",
+  )[0];
+  if (!idOrPrefix) {
+    console.error("Usage: tasks delete <task_id>");
+    return 2;
+  }
+  return withLiveWriteDb(argv, (db) => {
+    const outcome = applyTasksDelete(db, idOrPrefix);
+    process.stdout.write(renderTasksDelete(outcome));
+    return 0;
+  });
+}
+
+/** Dispatch a `tasks add|done|doing|block|delete` write to its sub-handler. */
+function runTasksWrite(argv: readonly string[]): number {
+  if (argv[1] === "add") return runTasksAddWrite(argv);
+  if (argv[1] === "delete") return runTasksDeleteWrite(argv);
+  return runTasksStatusChangeWrite(argv);
+}
+
 /** Best-effort log path from the same resolver; null when unconfigured. */
 function resolveLogPath(argv: readonly string[]): string | null {
   try {
@@ -651,6 +783,7 @@ async function dispatch(argv: readonly string[], engine: FrontDoorEngine): Promi
   if (isIdentityWrite(argv)) return runIdentityWrite(argv);
   if (isJourneyWrite(argv)) return runJourneyWrite(argv);
   if (isJourneyUpdateWrite(argv)) return runJourneyUpdateWrite(argv);
+  if (isTasksSubcommandWrite(argv)) return runTasksWrite(argv);
   if (isMemorySearch(argv)) return runMemorySearch(argv);
   if (isConsult(argv)) {
     if (isConsultCredits(argv)) {
