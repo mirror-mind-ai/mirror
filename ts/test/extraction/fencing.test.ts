@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { fenceTranscript, sanitizeExtracted } from "../../src/extraction/fencing.ts";
+import {
+  fenceTranscript,
+  fenceUntrusted,
+  sanitizeExtracted,
+} from "../../src/extraction/fencing.ts";
 
 interface TestMem {
   layer: string;
@@ -14,6 +18,18 @@ function mem(overrides: Partial<TestMem> = {}): TestMem {
 
 test("fenceTranscript wraps body in <transcript> tags, matching Python byte-for-byte", () => {
   assert.equal(fenceTranscript("hello"), "<transcript>\nhello\n</transcript>");
+});
+
+test("fenceUntrusted wraps body in the given tag, matching Python's fence_untrusted byte-for-byte", () => {
+  assert.equal(fenceUntrusted("cluster", "hello"), "<cluster>\nhello\n</cluster>");
+  assert.equal(
+    fenceUntrusted("shadow_memories", "a\nb"),
+    "<shadow_memories>\na\nb\n</shadow_memories>",
+  );
+});
+
+test("fenceTranscript is fenceUntrusted('transcript', body) -- one fence primitive, not two", () => {
+  assert.equal(fenceTranscript("x"), fenceUntrusted("transcript", "x"));
 });
 
 test("sanitizeExtracted drops an invalid layer and counts it", () => {

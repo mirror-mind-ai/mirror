@@ -17,13 +17,32 @@
  * planned).
  */
 
+/**
+ * Wrap untrusted, user-derived content in an XML-style data fence (CV22.DS7.US3).
+ *
+ * Byte-for-byte port of Python's `fence_untrusted(tag, body)`
+ * (`intelligence/prompts.py`) -- the shared delimiter convention across
+ * extraction (`<transcript>`), scene (`<scene_data>`), and cultivation
+ * (`<cluster>`, `<shadow_memories>`). Each fenced block is paired with an
+ * "## Untrusted input" instruction in the surrounding prompt telling the
+ * model to treat the content as data, not instructions (AI-16/AI-22/AI-23).
+ * Ported now as the deterministic half of cultivation's fence boundary; the
+ * live prompt-level resistance proof is deferred to DS8 (the replay provider
+ * ignores the prompt), same as `fenceTranscript` below.
+ */
+export function fenceUntrusted(tag: string, body: string): string {
+  return `<${tag}>\n${body}\n</${tag}>`;
+}
+
 /** Wrap transcript text so the model reads it as fenced, untrusted data (AI-16).
  *
  * Byte-for-byte identical to Python's `_fence_transcript` -- the delimiter
- * shape a live template would eventually be tuned against.
+ * shape a live template would eventually be tuned against. Now a thin call
+ * through the shared `fenceUntrusted` primitive (CV22.DS7.US3), one fence
+ * shape instead of two.
  */
 export function fenceTranscript(body: string): string {
-  return `<transcript>\n${body}\n</transcript>`;
+  return fenceUntrusted("transcript", body);
 }
 
 // Extraction boundary caps (AI-15) -- hard limits on what one conversation may

@@ -72,6 +72,15 @@ ORACLE_PATHS: tuple[str, ...] = (
     # journey-service surface not yet ported; tracked at file granularity like
     # every other entry, so drift anywhere in it is at least visible.
     "src/memory/services/journey.py",
+    # DS7.US3 memory cultivation: consolidation persistence, cluster_memories,
+    # and the deterministic apply/reject/list/show CLI surface. propose_*
+    # (LLM orchestration, Slice B) is tracked here too at file granularity even
+    # though scan/merge are not yet ported behind the replay gate.
+    "src/memory/storage/consolidations.py",
+    "src/memory/intelligence/consolidate.py",
+    "src/memory/intelligence/shadow.py",
+    "src/memory/cli/consolidate_cmd.py",
+    "src/memory/cli/shadow_cmd.py",
 )
 
 BASELINE_RELPATH = "ts/parity/oracle-baseline.json"

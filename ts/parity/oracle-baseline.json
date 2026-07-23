@@ -20,6 +20,11 @@
     "src/memory/storage/tasks.py": "61a483eb1ece79e33e181bc7a7862ac6d991268f",
     "src/memory/services/tasks.py": "a22ece8fad13641efe40bf228cee9498c485fb27",
     "src/memory/cli/week.py": "36a1145a007d3cff16bd460bb76cf2e6a2d6a72d",
-    "src/memory/services/journey.py": "fa775862bed3557ccd3c8a372fcf817ddfd7fc18"
+    "src/memory/services/journey.py": "fa775862bed3557ccd3c8a372fcf817ddfd7fc18",
+    "src/memory/storage/consolidations.py": "051935e939c8dfac90afb4ebcd9f5de001f9ebfb",
+    "src/memory/intelligence/consolidate.py": "0606945883ac0d9866ad4baeb5f186d20e08210e",
+    "src/memory/intelligence/shadow.py": "343180b8fe21ccd080cb9f0bc45d6fccdae26588",
+    "src/memory/cli/consolidate_cmd.py": "d3c33ec4f1dc5b71131efc3e6c9e36da3cbc8639",
+    "src/memory/cli/shadow_cmd.py": "4eb935f9886c1ca2283dd066aebd6ae3bdf51103"
   }
 }
