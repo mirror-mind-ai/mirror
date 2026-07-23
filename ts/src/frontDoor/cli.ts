@@ -31,10 +31,12 @@ import {
 import { ensureMigratedOnOpen } from "../db/migrateOnOpen.ts";
 import { assertSchemaState, SchemaStateError } from "../db/schemaState.ts";
 import { allDescriptors, descriptorsByLayer } from "../descriptor/descriptorRead.ts";
+import { listJourneysForListCommand } from "../identity/journeyListing.ts";
+import { listPersonas } from "../identity/personaListing.ts";
 import { JourneyNotFoundError } from "../journey/journeyWrite.ts";
 import { expandHome } from "../util/paths.ts";
 import { newId, nowIso } from "../util/pyGenerators.ts";
-import { optionValue, stripOptionWithValue } from "./args.ts";
+import { hasOption, optionValue, stripOptionWithValue } from "./args.ts";
 import { runConsultRoute } from "./consultRoute.ts";
 import { MirrorHomeNotConfiguredError, resolveDbPath } from "./dbPath.ts";
 import { frontDoorLogPath, logFrontDoor } from "./frontDoorLog.ts";
@@ -51,6 +53,7 @@ import {
   renderIdentityList,
 } from "./render/identity.ts";
 import { renderJourneys } from "./render/journeys.ts";
+import { renderListJourneys, renderListPersonas } from "./render/list.ts";
 import { renderMemories } from "./render/memories.ts";
 import { type FrontDoorEngine, routeMemoryCommand } from "./routing.ts";
 import { runMemorySearchRoute } from "./searchRoute.ts";
@@ -158,6 +161,7 @@ function runTs(argv: readonly string[]): number {
     else if (command === "memories") process.stdout.write(renderMemories(db, args));
     else if (command === "identity") return runIdentityRead(db, args);
     else if (command === "descriptor") return runDescriptorRead(db, args);
+    else if (command === "list") return runListRead(db, args);
     else throw new Error(`Unsupported TS route: ${command}`);
     return 0;
   } catch (error) {
@@ -210,6 +214,16 @@ function runDescriptorRead(db: Database, args: readonly string[]): number {
   const layer = optionValue(args, "--layer");
   const rows = layer ? descriptorsByLayer(db, layer) : allDescriptors(db);
   process.stdout.write(renderDescriptorList(rows));
+  return 0;
+}
+
+/** Serve `list personas` / `list journeys` (DS7.US1). `extensions`/`all` never reach here. */
+function runListRead(db: Database, args: readonly string[]): number {
+  if (args[0] === "personas") {
+    process.stdout.write(renderListPersonas(listPersonas(db), hasOption(args, "--verbose")));
+    return 0;
+  }
+  process.stdout.write(renderListJourneys(listJourneysForListCommand(db)));
   return 0;
 }
 

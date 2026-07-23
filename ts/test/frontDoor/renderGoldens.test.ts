@@ -124,6 +124,27 @@ test("descriptor list --layer render output matches the golden, including the or
   });
 });
 
+test("list personas render output matches the golden", () => {
+  withFixture((dbPath) => {
+    buildRenderFixture(dbPath);
+    assertGolden("list-personas", render(dbPath, ["list", "personas"]));
+  });
+});
+
+test("list personas --verbose render output matches the golden", () => {
+  withFixture((dbPath) => {
+    buildRenderFixture(dbPath);
+    assertGolden("list-personas-verbose", render(dbPath, ["list", "personas", "--verbose"]));
+  });
+});
+
+test("list journeys render output matches the golden", () => {
+  withFixture((dbPath) => {
+    buildRenderFixture(dbPath);
+    assertGolden("list-journeys", render(dbPath, ["list", "journeys"]));
+  });
+});
+
 /** A schema-valid database with no journeys or memories (empty-state edges). */
 function buildEmptyFixture(dbPath: string): void {
   const db = openDatabaseCopyForWrite(dbPath);

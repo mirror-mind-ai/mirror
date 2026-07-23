@@ -76,6 +76,23 @@ test("routes `identity set/list/get` to TS but keeps the interactive `edit` on P
   assert.equal(routeMemoryCommand(["identity", "edit", "ego", "behavior"]).engine, "python");
 });
 
+test("routes `list personas/journeys` to TS but keeps `list extensions/all` on Python", () => {
+  assert.deepEqual(routeMemoryCommand(["list", "personas"]), {
+    command: "list",
+    engine: "ts",
+    reason: "DS7.US1 list personas read ported to TS",
+  });
+  assert.deepEqual(routeMemoryCommand(["list", "journeys"]), {
+    command: "list",
+    engine: "ts",
+    reason: "DS7.US1 list journeys read ported to TS",
+  });
+  assert.equal(routeMemoryCommand(["list", "personas", "--verbose"]).engine, "ts");
+  assert.equal(routeMemoryCommand(["list", "extensions"]).engine, "python");
+  assert.equal(routeMemoryCommand(["list", "all"]).engine, "python");
+  assert.equal(routeMemoryCommand(["list"]).engine, "python");
+});
+
 test("routes `descriptor list` to TS but keeps `descriptor generate` (LLM) on Python", () => {
   assert.deepEqual(routeMemoryCommand(["descriptor", "list"]), {
     command: "descriptor",

@@ -93,6 +93,23 @@ export function routeMemoryCommand(
     };
   }
 
+  if (command === "list") {
+    // `personas`/`journeys` (DS7.US1) are deterministic identity reads.
+    // `extensions`/`all` (and no target => "all") touch the extension catalog
+    // and stay on Python, bound to CV22.DS7.TS1.
+    if (argv[1] === "personas") {
+      return { command, engine: "ts", reason: "DS7.US1 list personas read ported to TS" };
+    }
+    if (argv[1] === "journeys") {
+      return { command, engine: "ts", reason: "DS7.US1 list journeys read ported to TS" };
+    }
+    return {
+      command,
+      engine: "python",
+      reason: "list extensions/all (extension catalog) not ported to TS",
+    };
+  }
+
   if (command === "descriptor") {
     // `list` (DS7.US1) is a deterministic read; `generate` calls the LLM
     // (generate_descriptor) and stays on Python as the DS7↔DS8 live seam.
