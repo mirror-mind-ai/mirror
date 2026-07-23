@@ -8,6 +8,18 @@ export interface RouteDecision {
 
 const TS_READ_COMMANDS = new Set(["detect-persona", "journeys"]);
 
+// The Conversation Metadata Lifecycle (ES-001) preview/apply flags on
+// `conversations` are stateful writes, a separate slice from DS7.US1's plain
+// listing port -- any of them forces the Python fallback.
+const CONVERSATIONS_LIFECYCLE_FLAGS = [
+  "--metadata-lifecycle-dry-run",
+  "--metadata-lifecycle-apply",
+  "--metadata-lifecycle-demo",
+  "--metadata-lifecycle-preview-at-message",
+  "--metadata-backfill-preview",
+  "--metadata-backfill-apply",
+];
+
 export interface RouteEnvironment {
   MIRROR_TS_EXTERNAL_ROUTES?: string;
   MIRROR_TS_SEARCH_EMBEDDING_REPLAY?: string;
@@ -95,6 +107,18 @@ export function routeMemoryCommand(
 
   if (command === "recall") {
     return { command, engine: "ts", reason: "DS7.US1 recall read ported to TS" };
+  }
+
+  if (command === "conversations") {
+    // Only the plain listing (ConversationService.list_recent) is ported.
+    if (CONVERSATIONS_LIFECYCLE_FLAGS.some((flag) => argv.includes(flag))) {
+      return {
+        command,
+        engine: "python",
+        reason: "conversations metadata-lifecycle/backfill writes not ported to TS",
+      };
+    }
+    return { command, engine: "ts", reason: "DS7.US1 conversations listing read ported to TS" };
   }
 
   if (command === "inspect") {

@@ -44,6 +44,7 @@ import { applyIdentitySet } from "./identityWrite.ts";
 import { applyJourneySetPath } from "./journeyWriteRoute.ts";
 import { ensureBackup } from "./liveBackup.ts";
 import { nodeVersionError } from "./nodeSupport.ts";
+import { renderConversationsListing } from "./render/conversations.ts";
 import { renderDescriptorList } from "./render/descriptor.ts";
 import { renderDetectPersona } from "./render/detectPersona.ts";
 import {
@@ -166,6 +167,7 @@ function runTs(argv: readonly string[]): number {
     else if (command === "list") return runListRead(db, args);
     else if (command === "inspect") return runInspectRead(db, args);
     else if (command === "recall") return runRecallRead(db, args);
+    else if (command === "conversations") return runConversationsRead(db, args);
     else throw new Error(`Unsupported TS route: ${command}`);
     return 0;
   } catch (error) {
@@ -278,6 +280,19 @@ function runRecallRead(db: Database, args: readonly string[]): number {
     }
     throw error;
   }
+}
+
+/** Serve `conversations` (plain listing only; DS7.US1). */
+function runConversationsRead(db: Database, args: readonly string[]): number {
+  const limitRaw = optionValue(args, "--limit");
+  process.stdout.write(
+    renderConversationsListing(db, {
+      limit: limitRaw !== null ? Number(limitRaw) : 20,
+      journey: optionValue(args, "--journey"),
+      persona: optionValue(args, "--persona"),
+    }),
+  );
+  return 0;
 }
 
 function readStdinContent(): string {

@@ -85,6 +85,28 @@ test("routes `recall` to TS", () => {
   assert.equal(routeMemoryCommand(["recall", "abc1234", "--limit", "5"]).engine, "ts");
 });
 
+test("routes `conversations` listing to TS but keeps metadata-lifecycle/backfill flags on Python", () => {
+  assert.deepEqual(routeMemoryCommand(["conversations"]), {
+    command: "conversations",
+    engine: "ts",
+    reason: "DS7.US1 conversations listing read ported to TS",
+  });
+  assert.equal(
+    routeMemoryCommand(["conversations", "--journey", "demo", "--limit", "5"]).engine,
+    "ts",
+  );
+  for (const flag of [
+    "--metadata-lifecycle-dry-run",
+    "--metadata-lifecycle-apply",
+    "--metadata-lifecycle-demo",
+    "--metadata-lifecycle-preview-at-message",
+    "--metadata-backfill-preview",
+    "--metadata-backfill-apply",
+  ]) {
+    assert.equal(routeMemoryCommand(["conversations", flag]).engine, "python");
+  }
+});
+
 test("routes `inspect persona` to TS but keeps other inspect targets on Python", () => {
   assert.deepEqual(routeMemoryCommand(["inspect", "persona", "engineer"]), {
     command: "inspect",

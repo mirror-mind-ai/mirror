@@ -1,0 +1,9 @@
+**2026-07-03** | `conv-ccc` [demo-child] ◇ therapist (0 msgs)
+  Fixture conversation three
+
+**2026-07-02** | `conv-aaa` [demo] ◇ engineer (2 msgs)
+  Fixture conversation one
+
+**2026-07-01** | `conv-bbb` (1 msgs)
+  (untitled)
+

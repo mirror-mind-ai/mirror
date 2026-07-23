@@ -206,6 +206,23 @@ test("recall on a missing conversation exits 1 with a stderr message, no stdout"
   });
 });
 
+test("conversations listing render output matches the golden (all)", () => {
+  withFixture((dbPath) => {
+    buildRenderFixture(dbPath);
+    assertGolden("conversations-all", render(dbPath, ["conversations"]));
+  });
+});
+
+test("conversations listing render output matches the golden (--journey filter)", () => {
+  withFixture((dbPath) => {
+    buildRenderFixture(dbPath);
+    assertGolden(
+      "conversations-journey-demo",
+      render(dbPath, ["conversations", "--journey", "demo"]),
+    );
+  });
+});
+
 /** A schema-valid database with no journeys or memories (empty-state edges). */
 function buildEmptyFixture(dbPath: string): void {
   const db = openDatabaseCopyForWrite(dbPath);
