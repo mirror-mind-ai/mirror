@@ -3,7 +3,7 @@
 # CV22.DS7 — Command Burn-Down & Re-homed Feature Work
 
 **Delivery Story:** Port the remaining **deterministic** command surface from the Python core to the TypeScript core — the Builder/Ariad tree (re-homing CV20/CV21 in-flight work), Soul, Explorer, mirror-mode orchestration, memory cultivation, the extraction lifecycle, remaining identity/journey reads and writes, and the content/ops tail — behind the DS5 replay-safe `LlmTransport` seam and the DS6 TS-owned database, until the deterministic Python command surface is empty and only the live-provider transport (DS8) and the MCP server (DS9) remain as separate, later cutovers.
-**Status:** 🟡 Planned — authored as a full package ahead of pull (same convention as DS6); child stories are created on pull/expand.
+**Status:** 🟢 In Progress — US1 (remaining identity/journey reads & writes), US2 (content & planning writes), and US3 (memory cultivation) are done; US4–US8 and TS1 remain, authored as a full package ahead of pull (same convention as DS6), pulled/expanded one at a time in the risk-first sequence below.
 **Type:** Delivery Story
 **Depends on:** [CV22.DS3 Pi TS Front Door](../cv22-ds3-pi-ts-front-door/index.md) (done) for the routing table this story flips entries in; [CV22.DS4 Deterministic Writes](../cv22-ds4-deterministic-writes/index.md) (done) for backup-gated, copy-validated write discipline; [CV22.DS5 External-API Commands](../cv22-ds5-external-api-commands/index.md) (done) for the replay-safe `LlmTransport` provider boundary that orchestration ports behind; [CV22.DS6 Schema Custody Transfer](../cv22-ds6-schema-custody-transfer/index.md) (done) so every write/migration a ported command needs is answered by the TS-owned database.
 
@@ -157,9 +157,9 @@ last, and the ops tail (TS1) to reach zero.
 
 | Code | Story | Type | Outcome | Status |
 |------|-------|------|---------|--------|
-| CV22.DS7.US1 | Remaining identity/journey reads & writes | User Story | `identity list/get`, `journey status/update`, `seed`, `init`, `descriptor`, `list`, `inspect`, `conversations`, `recall` answered by TS; carries the DS6.US3 atomic `parent_journey` dual-write and the `kebab_slug` writer/locator port (low–med risk) | 🟡 Planned |
-| CV22.DS7.US2 | Content & planning writes | User Story | `journal`, `tasks`, `week` writes answered by TS with parity proven on copies (low risk) | 🟡 Planned |
-| CV22.DS7.US3 | Memory cultivation | User Story | `consolidate` and `shadow` answered by TS with the identity-write allowlist and injection fences ported at parity (med risk — security) | 🟡 Planned |
+| [CV22.DS7.US1](cv22-ds7-us1-remaining-identity-journey-reads-writes/index.md) | Remaining identity/journey reads & writes | User Story | `identity list/get`, `journey status/update`, `seed`, `init`, `descriptor`, `list`, `inspect`, `conversations`, `recall` answered by TS; carries the DS6.US3 atomic `parent_journey` dual-write and the `kebab_slug` writer/locator port (low–med risk) | ✅ Done |
+| [CV22.DS7.US2](cv22-ds7-us2-content-planning-writes/index.md) | Content & planning writes | User Story | `journal`, `tasks`, `week` writes answered by TS with parity proven on copies (low risk) | ✅ Done |
+| [CV22.DS7.US3](cv22-ds7-us3-memory-cultivation/index.md) | Memory cultivation | User Story | `consolidate` and `shadow` answered by TS with the identity-write allowlist and injection fences ported at parity (med risk — security) | ✅ Done |
 | CV22.DS7.US4 | mirror-mode orchestration | User Story | `mirror` and `mode` (the Mirror turn) answered by TS behind the replay `LlmTransport` (med risk) | 🟡 Planned |
 | CV22.DS7.US5 | Extraction lifecycle | User Story | `conversation-logger` + extraction pipeline answered by TS — deterministic writes on copies, live embedding deferred to the DS8 seam (high risk — writes) | 🟡 Planned |
 | CV22.DS7.US6 | Soul Mode | User Story | `soul` full surface answered by TS with `transport=verbatim` rendering parity and the `soul apply` identity-write gate (med–high risk) | 🟡 Planned |

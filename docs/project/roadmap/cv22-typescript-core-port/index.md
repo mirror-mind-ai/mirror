@@ -107,7 +107,7 @@ stay as delivery-level scope until pulled.
 | [CV22.DS4](cv22-ds4-deterministic-writes/index.md) | Deterministic Writes | Port write commands (journey/identity CRUD, `log_access`) with parity proven on DB copies; backup-gated; schema-compatible; CLI-write routing on the TS front door (identity + journey) | ✅ Done |
 | [CV22.DS5](cv22-ds5-external-api-commands/index.md) | External-API Commands | Port extraction, embeddings/search, and consult behind replay-safe provider boundaries; route validated external command surfaces through the TS front door while preserving Python fallback for unsafe/unconfigured paths | ✅ Done |
 | [CV22.DS6](cv22-ds6-schema-custody-transfer/index.md) | Schema Custody Transfer | Move all database creation, migration, and discipline from Python to TS — bootstrap DDL (rewritten in English per CV0), migration engine and `_migrations` bookkeeping, cross-process bootstrap locking, connection pragma discipline — proven over real legacy databases; plus the two schema decisions gated on custody (`identity.metadata` canonicalization, `parent_journey` first-class column) | ✅ Done — all children complete (TS1–TS5, US1–US3); TS owns bootstrap/migration/locking/pragmas, proven over real legacy copies including migration-016's real ADD-COLUMN + backfill; the deletion gate is cleared |
-| [CV22.DS7](cv22-ds7-command-burn-down/index.md) | Command Burn-Down & Re-homed Feature Work | Port the remaining command surface to TS — the Builder/Ariad tree (re-homed CV20/CV21 in-flight work), Soul, Explorer, mirror-mode orchestration, remaining identity/journey reads and writes, and the extraction lifecycle — until the deterministic Python command surface is empty | 🟡 Planned — authored as a full package (DS-level Plan review recorded) |
+| [CV22.DS7](cv22-ds7-command-burn-down/index.md) | Command Burn-Down & Re-homed Feature Work | Port the remaining command surface to TS — the Builder/Ariad tree (re-homed CV20/CV21 in-flight work), Soul, Explorer, mirror-mode orchestration, remaining identity/journey reads and writes, and the extraction lifecycle — until the deterministic Python command surface is empty | 🟢 In Progress — US1 (identity/journey reads & writes), US2 (content & planning writes), and US3 (memory cultivation) done; US4–US8 and TS1 remain |
 | CV22.DS8 | Live-Provider Cutover | Implement the `live` mode of the TS `LlmTransport` (chat + embeddings) with per-role timeouts, bounded retries, error taxonomy, and metadata-only logging (AI-18); route real external calls through TS; validated by live smoke contracts, not golden parity; multi-persona Plan review before implementation | 🟡 Planned |
 | CV22.DS9 | TS MCP Server | Threat model first (RS005: localhost binding, per-tool permission scoping, tightest gate on identity-mutating tools; AI-19: per-tool rate/budget guards against denial-of-wallet), then port `python -m memory mcp` to TS | 🟡 Planned |
 | CV22.DS10 | Python Retirement & npm Distribution | Verify zero remaining Python commands, delete the Python core, resolve the `memory → mirror` package rename, and ship npm distribution (zero-runtime-deps advertised; SHA-pin CI once release credentials enter) | 🟡 Planned |
@@ -232,11 +232,14 @@ Risk-first, mirroring the decision spine:
    `parent_journey` first-class column). The Python core can now be retired,
    subject to the DS7+ command burn-down.
 
-7. **DS7 — command burn-down & re-homed feature work**: port the remaining
-   command surface — the Builder/Ariad tree (re-homed CV20/CV21 in-flight
-   work), Soul, Explorer, mirror-mode orchestration, remaining identity/journey
-   reads and writes, and the extraction lifecycle — until the deterministic
-   Python command surface is empty.
+7. **DS7 — command burn-down & re-homed feature work** (in progress): port the
+   remaining command surface — the Builder/Ariad tree (re-homed CV20/CV21
+   in-flight work), Soul, Explorer, mirror-mode orchestration, remaining
+   identity/journey reads and writes, and the extraction lifecycle — until the
+   deterministic Python command surface is empty. US1 (identity/journey reads
+   and writes), US2 (content & planning writes), and US3 (memory cultivation,
+   the identity-write allowlist and injection fences ported at parity) are
+   done; US4 (mirror-mode orchestration) is next in the risk-first sequence.
 8. **DS8 — live-provider cutover**: implement the `live` mode of the TS
    `LlmTransport` (AI-18) so real external calls leave Python; validated by
    live smoke contracts, not golden parity, and run through the multi-persona
