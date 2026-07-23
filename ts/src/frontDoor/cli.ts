@@ -71,10 +71,22 @@ import {
   renderTasksList,
   renderTasksStatusChange,
 } from "./render/tasks.ts";
+import {
+  renderTasksImport,
+  renderTasksSyncConfig,
+  renderTasksSyncNoJourneysConfigured,
+  renderTasksSyncOutcome,
+} from "./render/tasksImportSync.ts";
 import { renderWeekView } from "./render/week.ts";
 import { type FrontDoorEngine, routeMemoryCommand } from "./routing.ts";
 import { runMemorySearchRoute } from "./searchRoute.ts";
 import { resolveSeedPaths } from "./seedPaths.ts";
+import {
+  applyTasksImport,
+  applyTasksSyncConfig,
+  applyTasksSyncForJourney,
+  resolveSyncJourneys,
+} from "./tasksImportSyncRoute.ts";
 import {
   applyTasksAdd,
   applyTasksDelete,
@@ -630,7 +642,10 @@ function isTasksSubcommandWrite(argv: readonly string[]): boolean {
       argv[1] === "done" ||
       argv[1] === "doing" ||
       argv[1] === "block" ||
-      argv[1] === "delete")
+      argv[1] === "delete" ||
+      argv[1] === "import" ||
+      argv[1] === "sync" ||
+      argv[1] === "sync-config")
   );
 }
 
@@ -715,10 +730,89 @@ function runTasksDeleteWrite(argv: readonly string[]): number {
   });
 }
 
-/** Dispatch a `tasks add|done|doing|block|delete` write to its sub-handler. */
+/**
+ * Route `tasks import [journey]` to the TS core (DS7.US2 slice 3c). The
+ * `journey` positional is optional in Python (`nargs="?"`); when absent, every
+ * known journey is attempted.
+ */
+function runTasksImportWrite(argv: readonly string[]): number {
+  const args = argv.slice(2);
+  const journey =
+    stripOptionWithValue(stripOptionWithValue(args, "--db-path"), "--mirror-home")[0] ?? null;
+  return withLiveWriteDb(argv, (db) => {
+    const results = applyTasksImport(db, journey);
+    process.stdout.write(renderTasksImport(results));
+    return 0;
+  });
+}
+
+/**
+ * Route `tasks sync [journey]` to the TS core (DS7.US2 slice 3c). Matches
+ * Python's `cmd_sync`: per-journey errors (no sync file, sync file missing on
+ * disk, or any other failure) print `❌ {journey}: {message}` and move on to
+ * the next journey rather than aborting the whole command; exit is always 0
+ * (no `sys.exit()` anywhere in `cmd_sync`).
+ */
+function runTasksSyncWrite(argv: readonly string[]): number {
+  const args = argv.slice(2);
+  const journey =
+    stripOptionWithValue(stripOptionWithValue(args, "--db-path"), "--mirror-home")[0] ?? null;
+  return withLiveWriteDb(argv, (db) => {
+    const journeys = resolveSyncJourneys(db, journey);
+    if (journeys.length === 0) {
+      process.stdout.write(renderTasksSyncNoJourneysConfigured());
+      return 0;
+    }
+    const lines: string[] = [];
+    for (const j of journeys) {
+      lines.push(renderTasksSyncOutcome(applyTasksSyncForJourney(db, j)));
+    }
+    process.stdout.write(lines.join(""));
+    return 0;
+  });
+}
+
+/**
+ * Route `tasks sync-config <journey> <file_path>` to the TS core (DS7.US2
+ * slice 3c). Matches Python's `cmd_sync_config`: an unknown journey is an
+ * uncaught `ValueError` in Python (no try/except around `set_sync_file`); this
+ * maps it to a clear stderr message and exit 1 instead of fabricating a fake
+ * traceback (the same DS7.US1 `init` precedent).
+ */
+function runTasksSyncConfigWrite(argv: readonly string[]): number {
+  const args = argv.slice(2);
+  const positionals = stripOptionWithValue(
+    stripOptionWithValue(args, "--db-path"),
+    "--mirror-home",
+  );
+  const journey = positionals[0];
+  const filePath = positionals[1];
+  if (!journey || !filePath) {
+    console.error("Usage: tasks sync-config <journey> <file_path>");
+    return 2;
+  }
+  return withLiveWriteDb(argv, (db) => {
+    try {
+      const outcome = applyTasksSyncConfig(db, journey, filePath, nowIso());
+      process.stdout.write(renderTasksSyncConfig(outcome));
+      return 0;
+    } catch (error) {
+      if (error instanceof JourneyNotFoundError) {
+        console.error(`Error: journey '${journey}' not found.`);
+        return 1;
+      }
+      throw error;
+    }
+  });
+}
+
+/** Dispatch a `tasks add|done|doing|block|delete|import|sync|sync-config` write to its sub-handler. */
 function runTasksWrite(argv: readonly string[]): number {
   if (argv[1] === "add") return runTasksAddWrite(argv);
   if (argv[1] === "delete") return runTasksDeleteWrite(argv);
+  if (argv[1] === "import") return runTasksImportWrite(argv);
+  if (argv[1] === "sync-config") return runTasksSyncConfigWrite(argv);
+  if (argv[1] === "sync") return runTasksSyncWrite(argv);
   return runTasksStatusChangeWrite(argv);
 }
 

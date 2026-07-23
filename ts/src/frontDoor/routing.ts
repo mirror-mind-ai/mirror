@@ -177,21 +177,26 @@ export function routeMemoryCommand(
   if (command === "tasks") {
     // `list` (and the bare `tasks` default, incl. a leading flag with no
     // subcommand token) is a read; `add/done/doing/block/delete` are the
-    // deterministic writes ported in DS7.US2 slice 3a. `import`/`sync`/
-    // `sync-config` also depend on the journey sync-file/project-path
-    // metadata subsystem and are not yet ported (slice 3c) -- Python fallback.
+    // deterministic writes ported in DS7.US2 slice 3a; `import/sync/
+    // sync-config` (which also touch the journey sync-file/project-path
+    // metadata subsystem) are ported in slice 3c.
     const sub = argv[1]?.startsWith("--") ? undefined : argv[1];
     if (sub === undefined || sub === "list") {
       return { command, engine: "ts", reason: "DS7.US2 tasks list read ported to TS" };
     }
-    if (sub === "add" || sub === "done" || sub === "doing" || sub === "block" || sub === "delete") {
+    if (
+      sub === "add" ||
+      sub === "done" ||
+      sub === "doing" ||
+      sub === "block" ||
+      sub === "delete" ||
+      sub === "import" ||
+      sub === "sync" ||
+      sub === "sync-config"
+    ) {
       return { command, engine: "ts", reason: "DS7.US2 tasks write ported to TS" };
     }
-    return {
-      command,
-      engine: "python",
-      reason: "tasks import/sync/sync-config not yet ported to TS (DS7.US2 slice 3c)",
-    };
+    return { command, engine: "python", reason: "command not ported to TS" };
   }
 
   if (command === "week") {

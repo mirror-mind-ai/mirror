@@ -19,6 +19,7 @@
     "src/memory/cli/tasks_cmd.py": "134788a6e6413321fbad9faf61853450ff4e5ce2",
     "src/memory/storage/tasks.py": "61a483eb1ece79e33e181bc7a7862ac6d991268f",
     "src/memory/services/tasks.py": "a22ece8fad13641efe40bf228cee9498c485fb27",
-    "src/memory/cli/week.py": "36a1145a007d3cff16bd460bb76cf2e6a2d6a72d"
+    "src/memory/cli/week.py": "36a1145a007d3cff16bd460bb76cf2e6a2d6a72d",
+    "src/memory/services/journey.py": "fa775862bed3557ccd3c8a372fcf817ddfd7fc18"
   }
 }

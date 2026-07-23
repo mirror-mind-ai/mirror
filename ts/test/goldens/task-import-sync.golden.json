@@ -1,0 +1,107 @@
+{
+  "scenarios": [
+    {
+      "created": [
+        {
+          "journey": "alpha",
+          "source": "journey_path",
+          "stage": "Início",
+          "status": "todo",
+          "title": "New Task"
+        }
+      ],
+      "journey_arg": "alpha",
+      "name": "import_db_backed_with_dedup"
+    },
+    {
+      "created": [
+        {
+          "journey": "gamma",
+          "source": "journey_path",
+          "stage": "Etapa 1",
+          "status": "todo",
+          "title": "From External File"
+        }
+      ],
+      "journey_arg": "gamma",
+      "name": "import_sync_file_wins_over_db"
+    },
+    {
+      "journey_arg": null,
+      "journey_order": [
+        "alpha",
+        "zed"
+      ],
+      "name": "import_all_journeys",
+      "per_journey_created": {
+        "alpha": [
+          {
+            "journey": "alpha",
+            "source": "journey_path",
+            "stage": "Etapa 1",
+            "status": "todo",
+            "title": "Alpha Task"
+          }
+        ],
+        "zed": [
+          {
+            "journey": "zed",
+            "source": "journey_path",
+            "stage": "Etapa 1",
+            "status": "todo",
+            "title": "Zed Task"
+          }
+        ]
+      }
+    },
+    {
+      "final_tasks_by_title": [
+        {
+          "journey": "delta",
+          "source": "manual",
+          "stage": null,
+          "status": "done",
+          "title": "Already Done Already"
+        },
+        {
+          "journey": "delta",
+          "source": "manual",
+          "stage": null,
+          "status": "done",
+          "title": "Already Have This"
+        },
+        {
+          "journey": "delta",
+          "source": "sync",
+          "stage": "Sprint",
+          "status": "todo",
+          "title": "Both New And Done"
+        },
+        {
+          "journey": "delta",
+          "source": "sync",
+          "stage": "Sprint",
+          "status": "todo",
+          "title": "Brand New Task"
+        }
+      ],
+      "journey_arg": "delta",
+      "name": "sync_reconciliation",
+      "result": {
+        "completed": 1,
+        "created": 2,
+        "unchanged": 2
+      }
+    },
+    {
+      "error_message": "No sync file configured for 'epsilon'. Use: mm:tasks sync-config epsilon /path/to/file",
+      "journey_arg": "epsilon",
+      "name": "sync_no_file_configured_raises"
+    },
+    {
+      "error_message": "File not found: /var/folders/5k/q6bjkgn95gzd_qss7_5flyzw0000gp/T/tmphc2oqbik/does-not-exist.md",
+      "journey_arg": "zeta",
+      "name": "sync_file_missing_on_disk_raises"
+    }
+  ]
+}

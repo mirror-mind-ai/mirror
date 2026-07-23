@@ -67,6 +67,11 @@ ORACLE_PATHS: tuple[str, ...] = (
     # `cmd_plan`/`cmd_save` in the same file are LLM-gated and reassigned to
     # US5, tracked here anyway at file granularity like every other entry.
     "src/memory/cli/week.py",
+    # DS7.US2 slice 3c: get_sync_file/set_sync_file/get_journey_path (tasks
+    # import/sync's journey-metadata subsystem). This file has much broader
+    # journey-service surface not yet ported; tracked at file granularity like
+    # every other entry, so drift anywhere in it is at least visible.
+    "src/memory/services/journey.py",
 )
 
 BASELINE_RELPATH = "ts/parity/oracle-baseline.json"

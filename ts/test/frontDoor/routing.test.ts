@@ -76,7 +76,7 @@ test("routes `identity set/list/get` to TS but keeps the interactive `edit` on P
   assert.equal(routeMemoryCommand(["identity", "edit", "ego", "behavior"]).engine, "python");
 });
 
-test("routes `tasks` list/default to TS but keeps import/sync/sync-config on Python", () => {
+test("routes `tasks` list/default to TS", () => {
   assert.deepEqual(routeMemoryCommand(["tasks"]), {
     command: "tasks",
     engine: "ts",
@@ -84,17 +84,10 @@ test("routes `tasks` list/default to TS but keeps import/sync/sync-config on Pyt
   });
   assert.equal(routeMemoryCommand(["tasks", "list"]).engine, "ts");
   assert.equal(routeMemoryCommand(["tasks", "--journey", "cv22"]).engine, "ts");
-  for (const sub of ["import", "sync", "sync-config"]) {
-    assert.equal(
-      routeMemoryCommand(["tasks", sub]).engine,
-      "python",
-      `tasks ${sub} should stay on Python until slice 3c`,
-    );
-  }
 });
 
-test("routes `tasks add/done/doing/block/delete` writes to TS", () => {
-  for (const sub of ["add", "done", "doing", "block", "delete"]) {
+test("routes every `tasks` write subcommand (add/done/doing/block/delete/import/sync/sync-config) to TS", () => {
+  for (const sub of ["add", "done", "doing", "block", "delete", "import", "sync", "sync-config"]) {
     assert.deepEqual(routeMemoryCommand(["tasks", sub, "t-1"]), {
       command: "tasks",
       engine: "ts",
