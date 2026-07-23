@@ -106,4 +106,56 @@ log; any write touching a non-copied database during proof.
 
 ## Validation Evidence
 
-Pending implementation and validation.
+Implemented across four commits on `mirror-ts-core`:
+
+- `a698989` — Slice A: allowlist (`applyConsolidationIdentityUpdate`), `cluster.ts`
+  (golden-graded against the Python oracle via `generate_cluster_golden.py`),
+  `consolidationStore.ts`, deterministic `applyActions.ts` (identity_update,
+  shadow_candidate, reject, shadow apply).
+- `519f9b8` — Slice B: `propose.ts` (formatting helpers verified byte-for-byte
+  against a live Python interpreter), `scan.ts` (consolidate/shadow scan
+  orchestration), `applyMerge`, plus the adversarial-containment and
+  cross-command lifecycle integration tests (`lifecycle.test.ts`).
+- `dd26688` — front-door wiring: `routing.ts` gates, `cultivationRoute.ts`,
+  `render/consolidate.ts` + `render/shadow.ts` (several of the trickiest
+  byte-exact shapes spot-checked directly against a live Python interpreter,
+  not just reasoned from source), `cli.ts` read/write dispatch, and 15
+  CLI-level tests spawning the real front door end-to-end.
+- `16e5244` — the real-DB-copy `cultivation` probe family (cluster ordering +
+  consolidation listing), wired into `real_db_copy_verify.ts`.
+
+**Automated (CI):** all unit/golden/replay-fixture tests pass (801 TS tests
+total at the last commit, typecheck and lint clean); the oracle-drift checker
+passes with the five new entries (`storage/consolidations.py`,
+`intelligence/{consolidate,shadow}.py`, `cli/{consolidate,shadow}_cmd.py`).
+
+**Real-DB-copy (redacted):** ran end-to-end against a freshly generated demo
+DB (`generate_demo_memory_db.py`, now seeded with `DEMO_CONSOLIDATIONS`) —
+both the `cultivation_cluster_order` probe (2 real clusters, member order
+included) and both `cultivation_consolidation_list_*` probes passed at full
+byte-parity (matching `python_order_hash`/`ts_order_hash`), confirmed with
+`--debug-sensitive-output` that the underlying ordered ids also matched
+exactly. `overall_match: true`, harness exit code 0.
+
+**E2E / Navigator-validation-shaped evidence:** the 15 `cultivationCli.test.ts`
+tests spawn the actual front door (not just unit-level route functions) and
+cover the full command list in the Navigator Validation section above,
+including: `consolidate list` (empty + populated), `consolidate reject`
+(not-found + success), `consolidate apply` for `identity_update` (allowed +
+refused, verified against the live Python oracle's identical allowlist
+message), `consolidate apply` for `merge` under the replay gate, `shadow
+show`/`shadow apply` (including the wrong-action refusal), `consolidate scan`
+and `shadow scan` under the replay gate, backup-gating (a non-empty pre-write
+backup file is produced), and redaction (the front-door log never contains
+proposal content, rationale, or identity content).
+
+**Fail-condition checks exercised:** the identity-write allowlist refusal
+writes nothing (asserted at both the unit level and the live CLI level); a
+missing replay-gate env var routes the whole command to Python (asserted via
+the front-door log's routing decision, since Python's own allowlist message is
+byte-identical to the port); no live provider call occurs anywhere in the
+suite (only `Replay*Provider` fixtures are used).
+
+**Not yet run:** a hand-run Navigator validation session against a real
+copied `memory.db` (as opposed to the demo DB) — recommended before closing
+the Ariad Validation checkpoint with Navigator acceptance.
