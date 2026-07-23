@@ -4,6 +4,8 @@ import {
   evaluateListingProbes,
   evaluatePersonaProbes,
   evaluateSearchProbes,
+  evaluateTasksProbes,
+  evaluateWeekProbes,
   type ProbeParityResult,
   type RealDbCopyFixture,
   renderRedactedReport,
@@ -20,10 +22,20 @@ const personaResults = evaluatePersonaProbes(fixture, { includeSensitiveDebug })
 const journeyResults = evaluateJourneyProbes(fixture, { includeSensitiveDebug });
 
 let listingResults: ProbeParityResult[] = [];
-if ((fixture.listing_probes?.length || fixture.count_by_type_expected) && fixture.copied_db_path) {
+let tasksResults: ProbeParityResult[] = [];
+let weekResults: ProbeParityResult[] = [];
+if (fixture.copied_db_path) {
   const db = openDatabaseReadOnly(fixture.copied_db_path);
   try {
-    listingResults = evaluateListingProbes(fixture, db, { includeSensitiveDebug });
+    if (fixture.listing_probes?.length || fixture.count_by_type_expected) {
+      listingResults = evaluateListingProbes(fixture, db, { includeSensitiveDebug });
+    }
+    if (fixture.tasks_probes?.length) {
+      tasksResults = evaluateTasksProbes(fixture, db, { includeSensitiveDebug });
+    }
+    if (fixture.week_probes?.length) {
+      weekResults = evaluateWeekProbes(fixture, db, { includeSensitiveDebug });
+    }
   } finally {
     db.close();
   }
@@ -43,8 +55,23 @@ if (listingResults.length > 0) {
   process.stdout.write("== memory-listing ==\n");
   process.stdout.write(renderRedactedReport(listingResults));
 }
+if (tasksResults.length > 0) {
+  process.stdout.write("== tasks ==\n");
+  process.stdout.write(renderRedactedReport(tasksResults));
+}
+if (weekResults.length > 0) {
+  process.stdout.write("== week ==\n");
+  process.stdout.write(renderRedactedReport(weekResults));
+}
 
-const allResults = [...searchResults, ...personaResults, ...journeyResults, ...listingResults];
+const allResults = [
+  ...searchResults,
+  ...personaResults,
+  ...journeyResults,
+  ...listingResults,
+  ...tasksResults,
+  ...weekResults,
+];
 if (includeSensitiveDebug) {
   process.stdout.write("\nSENSITIVE DEBUG OUTPUT ENABLED\n");
   for (const result of allResults as ProbeParityResult[]) {

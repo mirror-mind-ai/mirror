@@ -10,13 +10,14 @@ from __future__ import annotations
 
 import argparse
 import json
+from datetime import date, timedelta
 from pathlib import Path
 
 import numpy as np
 
 from memory.db.connection import get_connection
 from memory.intelligence.embeddings import embedding_to_bytes
-from memory.models import Memory
+from memory.models import Memory, Task
 from memory.services.attachment import AttachmentService
 from memory.services.identity import IdentityService
 from memory.storage.store import Store
@@ -128,6 +129,75 @@ DEMO_JOURNEYS = (
 )
 
 
+def _demo_tasks() -> list[dict]:
+    """Synthetic tasks (CV22.DS7.US2) for the portable `tasks list`/`week view`
+    routes. Dates are computed RELATIVE to the current real week (not fixed
+    historical dates, unlike DEMO_MEMORIES) so the week-view probe -- which
+    reads the real current Monday..Sunday range, not a frozen one -- has
+    tasks to find whenever the demo DB is generated and the harness is run
+    shortly after (the documented, expected two-step workflow). Journey,
+    status, and due/scheduled variety mirror DEMO_MEMORIES' filter-probe
+    diversity intent.
+    """
+    today = date.today()
+    monday = today - timedelta(days=today.weekday())
+
+    def iso(offset_days: int) -> str:
+        return (monday + timedelta(days=offset_days)).isoformat()
+
+    return [
+        dict(
+            id="demo-task-mon",
+            journey="demo-root-active",
+            title="Demo Task Monday",
+            status="todo",
+            due_date=iso(0),
+            stage="Setup",
+            source="manual",
+        ),
+        dict(
+            id="demo-task-wed-scheduled",
+            journey="demo-root-active",
+            title="Demo Task Wednesday Scheduled",
+            status="doing",
+            scheduled_at=f"{iso(2)}T14:00",
+            source="manual",
+        ),
+        dict(
+            id="demo-task-thu-done",
+            journey="demo-child-beta",
+            title="Demo Task Thursday Done",
+            status="done",
+            due_date=iso(3),
+            source="manual",
+        ),
+        dict(
+            id="demo-task-fri-blocked",
+            journey=None,
+            title="Demo Task Friday Blocked",
+            status="blocked",
+            due_date=iso(4),
+            source="manual",
+        ),
+        dict(
+            id="demo-task-next-week",
+            journey="demo-root-active",
+            title="Demo Task Next Week",
+            status="todo",
+            due_date=iso(7),
+            source="manual",
+        ),
+        dict(
+            id="demo-task-last-week-done",
+            journey="demo-child-beta",
+            title="Demo Task Last Week Done",
+            status="done",
+            due_date=iso(-6),
+            source="manual",
+        ),
+    ]
+
+
 def generate_demo_db(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     for candidate in (path, path.with_suffix(path.suffix + "-wal"), path.with_suffix(path.suffix + "-shm")):
@@ -188,6 +258,8 @@ def generate_demo_db(path: Path) -> None:
             content=content,
             metadata=json.dumps({"parent_journey": parent}) if parent else None,
         )
+    for fields in _demo_tasks():
+        store.create_task(Task(**fields))
     conn.close()
 
 

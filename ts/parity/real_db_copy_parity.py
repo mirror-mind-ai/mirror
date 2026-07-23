@@ -16,7 +16,7 @@ import os
 import shutil
 import sqlite3
 import subprocess
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import numpy as np
@@ -216,6 +216,72 @@ def _listing_probes(store: Store, limit: int) -> list[dict]:
     return probes
 
 
+def _tasks_probes(store: Store) -> list[dict]:
+    """`tasks list` filter/order probes over the copied DB, direct-Store calls
+    (matching `_listing_probes`' convention -- not through TaskService), so the
+    probe is graded against the exact query the TS read model replays.
+    """
+    probes = [
+        {
+            "label": "tasks_open_only",
+            "open_only": True,
+            "journey": None,
+            "status": None,
+            "expected_order": [t.id for t in store.get_open_tasks()],
+        },
+        {
+            "label": "tasks_all",
+            "open_only": False,
+            "journey": None,
+            "status": None,
+            "expected_order": [t.id for t in store.get_all_tasks()],
+        },
+    ]
+    all_tasks = store.get_all_tasks()
+    first_journey = next((t.journey for t in all_tasks if t.journey), None)
+    if first_journey:
+        probes.append(
+            {
+                "label": "tasks_by_journey",
+                "open_only": False,
+                "journey": first_journey,
+                "status": None,
+                "expected_order": [t.id for t in store.get_tasks_by_journey(first_journey)],
+            }
+        )
+    first_status = next((t.status for t in all_tasks), None)
+    if first_status:
+        probes.append(
+            {
+                "label": "tasks_by_status",
+                "open_only": False,
+                "journey": None,
+                "status": first_status,
+                "expected_order": [t.id for t in store.get_tasks_by_status(first_status)],
+            }
+        )
+    return probes
+
+
+def _week_probe(store: Store) -> dict:
+    """`week view`'s read-model probe: the ordered task ids for the REAL
+    current Monday..Sunday week (not frozen -- the demo DB's task dates are
+    generated relative to 'today' for exactly this reason; see
+    generate_demo_memory_db.py's `_demo_tasks`).
+    """
+    now = datetime.now()
+    today = now.date()
+    start = today - timedelta(days=today.weekday())
+    end = start + timedelta(days=6)
+    tasks = store.get_tasks_for_week(start.isoformat(), end.isoformat())
+    return {
+        "label": "week_current_range",
+        "start_date": start.isoformat(),
+        "end_date": end.isoformat(),
+        "expected_order": [t.id for t in tasks],
+    }
+
+
 def _build_fixture(*, source_db: Path, work_dir: Path, limit: int) -> Path:
     copied_db = work_dir / "memory.real-db-copy-parity.db"
     fixture_path = work_dir / "real-db-copy-fixture.json"
@@ -264,6 +330,8 @@ def _build_fixture(*, source_db: Path, work_dir: Path, limit: int) -> Path:
         count_by_type_expected = sorted(
             f"{memory_type}={count}" for memory_type, count in store.count_memories_by_type()
         )
+        tasks_probes = _tasks_probes(store)
+        week_probes = [_week_probe(store)]
     finally:
         search_mod.datetime = original_datetime
         search_mod.generate_embedding = original_generate_embedding
@@ -288,6 +356,8 @@ def _build_fixture(*, source_db: Path, work_dir: Path, limit: int) -> Path:
         "copied_db_path": str(copied_db.resolve()),
         "listing_probes": listing_probes,
         "count_by_type_expected": count_by_type_expected,
+        "tasks_probes": tasks_probes,
+        "week_probes": week_probes,
     }
     fixture_path.write_text(json.dumps(fixture), encoding="utf-8")
     return fixture_path

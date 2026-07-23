@@ -9,6 +9,7 @@ import {
   rankMemories,
   type SearchWeights,
 } from "../search/ranker.ts";
+import { getTasksForWeek, listTasks } from "../tasks/taskStore.ts";
 import { orderedIdsMatch } from "./golden.ts";
 
 export interface RealDbCopyProbe {
@@ -68,6 +69,27 @@ export interface RealDbCopyFixture {
   listing_probes?: ListingProbe[];
   /** Sorted `type=count` tokens for the `count_by_type` cross-check. */
   count_by_type_expected?: string[];
+  /** `tasks list` filter/order probes (CV22.DS7.US2), replayed over `copied_db_path`. */
+  tasks_probes?: TasksProbe[];
+  /** `week view`'s current-range probe (CV22.DS7.US2), replayed over `copied_db_path`. */
+  week_probes?: WeekProbe[];
+}
+
+/** A `tasks list` probe: the filters applied and the ordered ids the oracle returned. */
+export interface TasksProbe {
+  label: string;
+  open_only: boolean;
+  journey: string | null;
+  status: string | null;
+  expected_order: string[];
+}
+
+/** `week view`'s probe: the real current week's range and the ordered ids the oracle returned. */
+export interface WeekProbe {
+  label: string;
+  start_date: string;
+  end_date: string;
+  expected_order: string[];
 }
 
 export interface ProbeParityResult {
@@ -170,6 +192,50 @@ export function evaluateListingProbes(
     );
   }
   return results;
+}
+
+/**
+ * Replay `tasks list`'s filter/order logic against the copied DB through the
+ * seam. Field names match the Python side's emitted JSON exactly
+ * (`open_only`/`journey`/`status`), the same flat-field convention
+ * `ListingProbe` already uses. A nested `filters: {...}` bag was tried first;
+ * a snake_case/camelCase mismatch inside it silently defaulted every field via
+ * `??`, so the harness reported PASS-shaped structure while actually replaying
+ * the wrong query -- flat, Python-matching field names close that gap by
+ * construction (there is no default to silently fall back to).
+ */
+export function evaluateTasksProbes(
+  fixture: RealDbCopyFixture,
+  db: Database,
+  options: { includeSensitiveDebug?: boolean } = {},
+): ProbeParityResult[] {
+  return (fixture.tasks_probes ?? []).map((probe) => {
+    const actualOrder = listTasks(db, {
+      openOnly: probe.open_only,
+      journey: probe.journey,
+      status: probe.status,
+    }).map((task) => task.id);
+    return toProbeResult(probe.label, probe.expected_order, actualOrder, options);
+  });
+}
+
+/**
+ * Replay `week view`'s underlying `getTasksForWeek` read against the copied
+ * DB for the SAME real current-week range the Python oracle computed --
+ * `generate_demo_memory_db.py`'s demo tasks use dates relative to "today" for
+ * exactly this reason (a static historical date would drift out of range).
+ */
+export function evaluateWeekProbes(
+  fixture: RealDbCopyFixture,
+  db: Database,
+  options: { includeSensitiveDebug?: boolean } = {},
+): ProbeParityResult[] {
+  return (fixture.week_probes ?? []).map((probe) => {
+    const actualOrder = getTasksForWeek(db, probe.start_date, probe.end_date).map(
+      (task) => task.id,
+    );
+    return toProbeResult(probe.label, probe.expected_order, actualOrder, options);
+  });
 }
 
 export function evaluatePersonaProbes(
