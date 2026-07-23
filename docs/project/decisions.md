@@ -11,6 +11,49 @@ resolved.
 
 ## Completed Decisions
 
+### CV22.DS6.US3 `parent_journey` dual-write activated as a DS7.US1 rider
+
+**Date:** 2026-07-23 · **Origin:** CV22.DS7.US1 Slice C implementation
+
+CV22.DS6.US3 authored the `identity.parent_journey` column and deferred its
+activation (atomic dual-write, column-first read) to DS7 because of its
+high-blast-radius runtime-seam impact. DS7.US1 carried it as a rider and
+activated it:
+
+- `journey/journeyWrite.ts`'s `createJourney` — the only currently-ported live
+  write that can set `parent_journey` — now writes the JSON metadata and the
+  column in one `withTransaction` (the same idiom `reinforcement.ts`'s
+  `logAccess` already established for a two-statement atomic write). A
+  rollback test proves a mid-transaction failure leaves neither side updated:
+  a simulated pre-migration schema (identity without the column) makes the
+  second statement fail, and the row from the first statement's INSERT does
+  not survive either.
+- `journey/parentJourney.ts`'s `resolveParentJourney` — the single call site
+  DS6.US3 reserved for this — now reads the column first, falling back to the
+  JSON metadata when the column is null/empty. The JSON fallback stays load-
+  bearing, not vestigial: no CLI/MCP-ported path can create a journey yet, so
+  every journey in a real database today was created by Python, which has no
+  such column at all (`TS ⊇ Python`) and always leaves it null.
+- Grounding surfaced a real gap that would have made the flip a no-op for the
+  already-shipped `journeys` command: `render/identityRows.ts`'s shared reader
+  never selected `parent_journey` at all, so every row reaching
+  `resolveParentJourney` through that path had `parent_journey: undefined`
+  regardless of the flip. Fixed by extending the `SELECT` (additive; the only
+  other consumer, `detect-persona`, ignores the extra column) and wiring it
+  through `render/journeys.ts`.
+
+**Known, accepted limitation.** Python's `JourneyService.update_metadata_fields`
+can still change a journey's `parent_journey` in the JSON without touching the
+column — but that method is reachable only from the web server
+(`src/memory/web/server.py`), which is outside this migration's CLI/MCP scope
+(the CV22 Done condition is stated in terms of "every CLI/MCP command").
+A row whose column was once populated and is later changed only through that
+path would read as stale (non-null column, outdated value) until that path is
+ported or the column is re-synced on read. A null/absent column always falls
+through to the JSON, so this limitation cannot silently drop a parent — only a
+previously-synced value can go stale. Recorded here rather than silently
+accepted or scope-crept into a web-server port.
+
 ### CV22.DS6 splits into a risk-ordered retirement chain (DS6–DS10)
 
 **Date:** 2026-07-23 · **Origin:** CV22 journey planning, after the DS5 handoff

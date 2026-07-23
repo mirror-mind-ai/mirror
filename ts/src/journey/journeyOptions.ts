@@ -14,9 +14,9 @@ export interface JourneyIdentityRow {
   key: string;
   content: string;
   metadata?: string | null;
-  /** The first-class parent column (US2). Non-authoritative in US3 (decision
-   * D1): the resolver reads JSON-first, so this is carried but ignored for the
-   * effective parent until DS7 flips authority to the column. */
+  /** The first-class parent column (US2). Authoritative when non-empty as of
+   * the DS7.US1 rider (resolveParentJourney reads it column-first); the JSON
+   * in `metadata` remains the fallback for rows the column hasn't reached. */
   parent_journey?: string | null;
 }
 

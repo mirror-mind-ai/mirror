@@ -8,6 +8,7 @@ import { renderDetectPersona } from "../../src/frontDoor/render/detectPersona.ts
 import { renderJourney } from "../../src/frontDoor/render/journeys.ts";
 import { renderMemoryRow, tagsText } from "../../src/frontDoor/render/memories.ts";
 import type { MemorySummary } from "../../src/memory/listing.ts";
+import { createIdentityTable } from "../helpers/identitySchema.ts";
 
 test("tagsText handles arrays, non-arrays, malformed JSON, and null", () => {
   assert.equal(tagsText('["a", "b"]'), "a, b");
@@ -67,13 +68,10 @@ function personaDb(): { db: WritableDatabase; cleanup: () => void } {
   const tmpDir = join(dir, "tmp");
   mkdirSync(tmpDir);
   const db = openDatabaseCopyForWrite(join(tmpDir, "copy.db"));
-  db.exec(
-    "CREATE TABLE identity (id TEXT PRIMARY KEY, layer TEXT NOT NULL, key TEXT NOT NULL, " +
-      "content TEXT NOT NULL, version TEXT, created_at TEXT, updated_at TEXT, metadata TEXT, " +
-      "UNIQUE(layer, key))",
-  );
+  createIdentityTable(db);
   db.prepare(
-    "INSERT INTO identity (id, layer, key, content, metadata) VALUES (?, 'persona', ?, '#', ?)",
+    "INSERT INTO identity (id, layer, key, content, created_at, updated_at, metadata) " +
+      "VALUES (?, 'persona', ?, '#', 't', 't', ?)",
   ).run("p1", "engineer", '{"routing_keywords": ["code", "refactor"]}');
   return { db, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
 }

@@ -7,11 +7,16 @@
 import type { WritableDatabase } from "../../src/db/database.ts";
 import { KNOWN_MIGRATION_IDS } from "../../src/db/schemaState.ts";
 
-/** The production shape of the `identity` table (matches src/memory schema). */
+/**
+ * The production shape of the `identity` table. Matches the TS-authored schema
+ * (ts/src/db/schema.ts), which is `TS ⊇ Python` as of CV22.DS6.US2: it includes
+ * `parent_journey`, a first-class column Python's own schema does not have
+ * (see docs/project/decisions.md, schemaTsDivergence.ts).
+ */
 export const IDENTITY_DDL =
   "CREATE TABLE identity (id TEXT PRIMARY KEY, layer TEXT NOT NULL, key TEXT NOT NULL, " +
   "content TEXT NOT NULL, version TEXT DEFAULT '1.0.0', created_at TEXT NOT NULL, " +
-  "updated_at TEXT NOT NULL, metadata TEXT, UNIQUE(layer, key))";
+  "updated_at TEXT NOT NULL, metadata TEXT, parent_journey TEXT, UNIQUE(layer, key))";
 
 /** Create the `identity` table on a writable test database. */
 export function createIdentityTable(db: WritableDatabase): void {

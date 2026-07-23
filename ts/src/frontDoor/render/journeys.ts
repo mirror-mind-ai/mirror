@@ -42,6 +42,7 @@ export function journeyRows(db: Database): JourneyDisplayRow[] {
     key: requireString(row, "key"),
     content: optionalString(row, "content") ?? "",
     metadata: optionalString(row, "metadata"),
+    parent_journey: optionalString(row, "parent_journey"),
   }));
   return listJourneyOptions(identityForOptions).map((option) => {
     const desc = (journeyContent.get(option.id) ?? "")

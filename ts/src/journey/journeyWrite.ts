@@ -9,7 +9,7 @@
 // real filesystem (Path.resolve equivalent), so we take it pre-normalized
 // (injected) — the same way id and now are injected.
 
-import type { WritableDatabase } from "../db/database.ts";
+import { type WritableDatabase, withTransaction } from "../db/database.ts";
 import {
   type IdentityRow,
   updateIdentityMetadata,
@@ -66,7 +66,24 @@ export function journeyMetadata(fields: JourneyFields): Record<string, string> {
   return metadata;
 }
 
-/** Port of create_journey's write: compose metadata, serialize, upsert identity. */
+/**
+ * Port of create_journey's write: compose metadata, serialize, upsert identity,
+ * and atomically mirror `parent_journey` into the first-class column in the
+ * SAME transaction (CV22.DS6.US3 rider, activated here). Both statements
+ * commit or roll back together — a failure between them must never leave the
+ * JSON and the column disagreeing (see reinforcement.ts's `logAccess` for the
+ * same `withTransaction` idiom applied to a different two-statement write).
+ *
+ * This is the only currently-ported live write that can SET `parent_journey`
+ * (no `journey set-path`/`update` write in this port touches it). Python's
+ * `JourneyService.update_metadata_fields` can still change it and does not
+ * know the column exists — that path is reachable only from the web server
+ * (src/memory/web/server.py), which is outside this migration's CLI/MCP
+ * scope. `resolveParentJourney` (parentJourney.ts) falls back to the JSON when
+ * the column is null specifically to tolerate that gap; a column left stale
+ * (non-null but outdated) by that unported path is a known, accepted
+ * limitation until it is ported or the column is re-synced on read.
+ */
 export function createJourney(
   db: WritableDatabase,
   input: CreateJourneyInput,
@@ -74,6 +91,7 @@ export function createJourney(
 ): void {
   const metadata = journeyMetadata(input);
   const metadataJson = Object.keys(metadata).length > 0 ? JSON.stringify(metadata) : null;
+  const parentJourney = metadata.parent_journey ?? null;
   const row: IdentityRow = {
     id: input.id,
     layer: JOURNEY_LAYER,
@@ -82,7 +100,14 @@ export function createJourney(
     version: "1.0.0",
     metadata: metadataJson,
   };
-  upsertIdentity(db, row, nowIso);
+  withTransaction(db, () => {
+    upsertIdentity(db, row, nowIso);
+    db.prepare("UPDATE identity SET parent_journey = ? WHERE layer = ? AND key = ?").run(
+      parentJourney,
+      JOURNEY_LAYER,
+      input.slug,
+    );
+  });
 }
 
 /**
