@@ -6,10 +6,10 @@ user-invocable: true
 
 # Recall
 
-When receiving `/mm-recall <conversation_id> [--limit N]`:
+When receiving `/mm-recall <conversation_id> [--limit N]`: answered by the TS core (CV22.DS7.US1).
 
 ```bash
-uv run python -m memory recall <conversation_id> [--limit N]
+NODE_OPTIONS=--no-warnings node ts/src/frontDoor/cli.ts recall <conversation_id> [--limit N]
 ```
 
 The conversation ID can be a prefix (first 8 characters).

@@ -24,15 +24,15 @@ Use these commands to inspect and edit identity directly — no YAML files neede
 
 ### list
 
-List all identity entries currently stored in the database.
+List all identity entries currently stored in the database. Answered by the TS core (CV22.DS7.US1).
 
 ```bash
-uv run python -m memory identity list [--layer LAYER] [--mirror-home PATH]
+NODE_OPTIONS=--no-warnings node ts/src/frontDoor/cli.ts identity list [--layer LAYER] [--mirror-home PATH]
 ```
 
 **Examples:**
-- `uv run python -m memory identity list` — all entries
-- `uv run python -m memory identity list --layer ego` — only ego layer
+- `NODE_OPTIONS=--no-warnings node ts/src/frontDoor/cli.ts identity list` — all entries
+- `NODE_OPTIONS=--no-warnings node ts/src/frontDoor/cli.ts identity list --layer ego` — only ego layer
 
 Layers: `self`, `ego`, `user`, `organization`, `persona`, `journey`, `journey_path`
 
@@ -40,16 +40,16 @@ Layers: `self`, `ego`, `user`, `organization`, `persona`, `journey`, `journey_pa
 
 ### get
 
-Print the full content of one identity entry.
+Print the full content of one identity entry. Answered by the TS core (CV22.DS7.US1).
 
 ```bash
-uv run python -m memory identity get <layer> <key> [--mirror-home PATH]
+NODE_OPTIONS=--no-warnings node ts/src/frontDoor/cli.ts identity get <layer> <key> [--mirror-home PATH]
 ```
 
 **Examples:**
-- `uv run python -m memory identity get ego behavior`
-- `uv run python -m memory identity get self soul`
-- `uv run python -m memory identity get persona engineer`
+- `NODE_OPTIONS=--no-warnings node ts/src/frontDoor/cli.ts identity get ego behavior`
+- `NODE_OPTIONS=--no-warnings node ts/src/frontDoor/cli.ts identity get self soul`
+- `NODE_OPTIONS=--no-warnings node ts/src/frontDoor/cli.ts identity get persona engineer`
 
 ---
 
