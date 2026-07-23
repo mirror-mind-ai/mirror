@@ -27,7 +27,12 @@ function scratchMirrorHome(): { home: string; cleanup: () => void } {
 test("front door `seed --mirror-home` creates core identity + personas, reports the summary, exits 0", () => {
   const { home, cleanup } = scratchMirrorHome();
   try {
-    const result = spawnFrontDoor(["seed", "--mirror-home", home]);
+    // --env pinned explicitly: --mirror-home already forces the db path to
+    // <home>/memory.db regardless of --env (verified oracle behavior), so this
+    // only fixes the printed "Seeding identity into [...]" text, making the
+    // assertion independent of the ambient MEMORY_ENV (CI sets it to "test";
+    // a bare local shell typically has it unset, defaulting to "production").
+    const result = spawnFrontDoor(["seed", "--mirror-home", home, "--env", "production"]);
     assert.equal(result.status, 0);
     assert.match(result.stdout, /Seeding identity into \[production\]\.\.\./);
     assert.match(result.stdout, /Mirror home: /);
