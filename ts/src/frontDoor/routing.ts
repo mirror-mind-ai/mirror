@@ -163,16 +163,16 @@ export function routeMemoryCommand(
   }
 
   if (command === "journey") {
-    // `set-path` (DS4, write) and now the status read (DS7.US1) are ported.
-    // `update` (a write) is not yet ported. Everything else -- `status
-    // [slug]`, a bare slug, or no argument at all -- is a status read in the
-    // real Python dispatch (see render/journeyStatus.ts's slug-resolution
-    // quirk), so it all routes to the same TS status handler.
+    // `set-path` (DS4), `update` (DS7.US1 Slice B), and the status read
+    // (DS7.US1 Slice A) are all ported. Everything besides `set-path`/
+    // `update` -- `status [slug]`, a bare slug, or no argument at all -- is a
+    // status read in the real Python dispatch (see render/journeyStatus.ts's
+    // slug-resolution quirk), so it all routes to the same TS status handler.
     if (argv[1] === "set-path") {
       return { command, engine: "ts", reason: "DS4 journey set-path write ported to TS" };
     }
     if (argv[1] === "update") {
-      return { command, engine: "python", reason: "journey update write not yet ported to TS" };
+      return { command, engine: "ts", reason: "DS7.US1 Slice B journey update write ported to TS" };
     }
     return { command, engine: "ts", reason: "DS7.US1 journey status read ported to TS" };
   }

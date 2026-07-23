@@ -9,7 +9,8 @@ import { getIdentityContent, getIdentityMetadata } from "../identity/identityRea
 import { expandHome } from "../util/paths.ts";
 
 const JOURNEY_LAYER = "journey";
-const JOURNEY_PATH_LAYER = "journey_path";
+/** The `journey_path` identity layer, also the write target of `journey update`. */
+export const JOURNEY_PATH_LAYER = "journey_path";
 
 export interface JourneyStatusMemoryRow {
   created_at: string;

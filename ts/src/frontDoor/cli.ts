@@ -33,6 +33,8 @@ import { assertSchemaState, SchemaStateError } from "../db/schemaState.ts";
 import { allDescriptors, descriptorsByLayer } from "../descriptor/descriptorRead.ts";
 import { listJourneysForListCommand } from "../identity/journeyListing.ts";
 import { listPersonas } from "../identity/personaListing.ts";
+import { setIdentity } from "../identity/setIdentity.ts";
+import { JOURNEY_PATH_LAYER } from "../journey/journeyStatus.ts";
 import { JourneyNotFoundError } from "../journey/journeyWrite.ts";
 import { expandHome } from "../util/paths.ts";
 import { newId, nowIso } from "../util/pyGenerators.ts";
@@ -383,6 +385,10 @@ function isJourneyWrite(argv: readonly string[]): boolean {
   return argv[0] === "journey" && argv[1] === "set-path";
 }
 
+function isJourneyUpdateWrite(argv: readonly string[]): boolean {
+  return argv[0] === "journey" && argv[1] === "update";
+}
+
 function isMemorySearch(argv: readonly string[]): boolean {
   return argv[0] === "memories" && argv.includes("--search");
 }
@@ -429,6 +435,34 @@ function runJourneyWrite(argv: readonly string[]): number {
       }
       throw error;
     }
+  });
+}
+
+/**
+ * Route `journey update <slug> <content|-stdin>` to the TS core (DS7.US1 Slice B).
+ * A thin wrapper over the already-ported `setIdentity`: Python's own
+ * `set_journey_path` is the SAME upsert-identity primitive with a fixed
+ * `journey_path` layer, no created/updated verb distinction (always prints
+ * "updated", matching Python exactly), and no check that the journey slug
+ * itself exists.
+ */
+function runJourneyUpdateWrite(argv: readonly string[]): number {
+  const args = argv.slice(2);
+  const positionals = stripOptionWithValue(
+    stripOptionWithValue(args, "--db-path"),
+    "--mirror-home",
+  );
+  const slug = positionals[0];
+  let content = positionals[1];
+  if (!slug || content === undefined) {
+    console.error("Usage: journey update <slug> <content|-stdin>");
+    return 2;
+  }
+  if (content === "-") content = readStdinContent();
+  return withLiveWriteDb(argv, (db) => {
+    setIdentity(db, { id: newId(), layer: JOURNEY_PATH_LAYER, key: slug, content }, nowIso());
+    console.error(`Journey path '${slug}' updated.`);
+    return 0;
   });
 }
 
@@ -507,6 +541,7 @@ async function dispatch(argv: readonly string[], engine: FrontDoorEngine): Promi
   if (engine === "python") return fallbackPython(argv);
   if (isIdentityWrite(argv)) return runIdentityWrite(argv);
   if (isJourneyWrite(argv)) return runJourneyWrite(argv);
+  if (isJourneyUpdateWrite(argv)) return runJourneyUpdateWrite(argv);
   if (isMemorySearch(argv)) return runMemorySearch(argv);
   if (isConsult(argv)) {
     if (isConsultCredits(argv)) {

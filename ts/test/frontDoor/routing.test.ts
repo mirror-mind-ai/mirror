@@ -147,7 +147,7 @@ test("routes `descriptor list` to TS but keeps `descriptor generate` (LLM) on Py
   assert.equal(routeMemoryCommand(["descriptor"]).engine, "python");
 });
 
-test("routes `journey set-path`/status reads to TS but keeps `journey update` on Python", () => {
+test("routes `journey set-path`/`update`/status reads all to TS", () => {
   assert.deepEqual(routeMemoryCommand(["journey", "set-path", "demo", "/x"]), {
     command: "journey",
     engine: "ts",
@@ -155,8 +155,8 @@ test("routes `journey set-path`/status reads to TS but keeps `journey update` on
   });
   assert.deepEqual(routeMemoryCommand(["journey", "update", "demo", "text"]), {
     command: "journey",
-    engine: "python",
-    reason: "journey update write not yet ported to TS",
+    engine: "ts",
+    reason: "DS7.US1 Slice B journey update write ported to TS",
   });
   assert.deepEqual(routeMemoryCommand(["journey", "status", "demo"]), {
     command: "journey",
