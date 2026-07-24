@@ -5,8 +5,8 @@
 // a merged memory, so the primitive moved here, one level below both callers,
 // and extraction now calls through it unchanged).
 
-import type { Database, SqlValue, WritableDatabase } from "../db/database.ts";
-import { optionalString, requireString } from "../db/rowDecode.ts";
+import type { Database, SqlValue, WritableDatabase } from "#db/database.ts";
+import { optionalString, requireString } from "#db/rowDecode.ts";
 
 /** Every writable column of a `memories` row except `last_accessed_at`
  * (never set on insert -- it starts NULL, same as Python's `Memory` default). */

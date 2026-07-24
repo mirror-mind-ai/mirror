@@ -3,7 +3,7 @@
 // drift from the production DDL (`ts/src/db/schema.ts`), following the CR009
 // convention `identitySchema.ts`/`tasksSchema.ts` established.
 
-import type { WritableDatabase } from "../../src/db/database.ts";
+import type { WritableDatabase } from "#db/database.ts";
 
 export const MEMORIES_DDL =
   "CREATE TABLE memories (id TEXT PRIMARY KEY, conversation_id TEXT, memory_type TEXT NOT NULL, " +

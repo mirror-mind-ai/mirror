@@ -4,19 +4,19 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
-import { upsertIdentity } from "../../src/identity/identityStore.ts";
-import { JOURNEY_PATH_LAYER } from "../../src/journey/journeyStatus.ts";
-import { JOURNEY_LAYER } from "../../src/journey/journeySyncFile.ts";
+import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
+import { upsertIdentity } from "#identity/identityStore.ts";
+import { JOURNEY_PATH_LAYER } from "#journey/journeyStatus.ts";
+import { JOURNEY_LAYER } from "#journey/journeySyncFile.ts";
 import {
   importTasksFromJourneyPath,
   NoSyncFileConfiguredError,
   SyncFileNotFoundError,
   syncTasksFromFile,
-} from "../../src/tasks/taskImportSync.ts";
-import { createTask, getTasksByJourney, type Task } from "../../src/tasks/taskStore.ts";
-import { createIdentityTable } from "../helpers/identitySchema.ts";
-import { createTasksTable } from "../helpers/tasksSchema.ts";
+} from "#tasks/taskImportSync.ts";
+import { createTask, getTasksByJourney, type Task } from "#tasks/taskStore.ts";
+import { createIdentityTable } from "#helpers/identitySchema.ts";
+import { createTasksTable } from "#helpers/tasksSchema.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const GOLDEN_PATH = join(HERE, "..", "goldens", "task-import-sync.golden.json");

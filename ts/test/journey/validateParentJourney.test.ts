@@ -4,12 +4,12 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { resolveParentJourney } from "../../src/journey/parentJourney.ts";
+import { resolveParentJourney } from "#journey/parentJourney.ts";
 import {
   type JourneyParentRow,
   ParentJourneyValidationError,
   validateParentJourney,
-} from "../../src/journey/validateParentJourney.ts";
+} from "#journey/validateParentJourney.ts";
 
 interface GoldenRow {
   key: string;

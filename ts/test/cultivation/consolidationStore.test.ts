@@ -14,13 +14,13 @@ import {
   resolveProposalByIdOrPrefix,
   updateConsolidationStatus,
   updateMemoryReadinessState,
-} from "../../src/cultivation/consolidationStore.ts";
-import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
+} from "#cultivation/consolidationStore.ts";
+import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import {
   createConsolidationsTable,
   createMemoriesTable,
   insertMemory,
-} from "../helpers/cultivationSchema.ts";
+} from "#helpers/cultivationSchema.ts";
 
 function tempDb(): { db: WritableDatabase; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), "mirror-core-consolidation-store-"));

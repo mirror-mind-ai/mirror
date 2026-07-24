@@ -10,7 +10,7 @@ import {
   IdentityRootExistsError,
   initUserHome,
   TemplatesNotFoundError,
-} from "../../src/init/init.ts";
+} from "#init/init.ts";
 
 function tempDir(prefix: string): { dir: string; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), prefix));

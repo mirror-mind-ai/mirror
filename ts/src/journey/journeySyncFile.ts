@@ -10,10 +10,10 @@
 // the ordered `journeyMetadata` composer).
 
 import { readFileSync } from "node:fs";
-import type { Database, WritableDatabase } from "../db/database.ts";
-import { getIdentityContent, getIdentityMetadata } from "../identity/identityRead.ts";
-import { updateIdentityMetadata } from "../identity/identityStore.ts";
-import { expandHome } from "../util/paths.ts";
+import type { Database, WritableDatabase } from "#db/database.ts";
+import { getIdentityContent, getIdentityMetadata } from "#identity/identityRead.ts";
+import { updateIdentityMetadata } from "#identity/identityStore.ts";
+import { expandHome } from "#util/paths.ts";
 import { JOURNEY_PATH_LAYER } from "./journeyStatus.ts";
 import { JourneyNotFoundError } from "./journeyWrite.ts";
 

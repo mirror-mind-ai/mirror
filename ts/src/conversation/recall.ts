@@ -2,8 +2,8 @@
 // and Store.get_messages, plus Python's `messages[-limit:]` tail-slice
 // semantics (memory.cli.recall).
 
-import type { Database } from "../db/database.ts";
-import { optionalString, requireString } from "../db/rowDecode.ts";
+import type { Database } from "#db/database.ts";
+import { optionalString, requireString } from "#db/rowDecode.ts";
 
 export interface RecallConversationRow {
   id: string;

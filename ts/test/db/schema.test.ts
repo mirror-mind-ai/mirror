@@ -3,12 +3,12 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
-import { assertFtsIntegrity } from "../../src/db/ftsIntegrity.ts";
-import { createSchema } from "../../src/db/schema.ts";
-import { buildSchemaInventory, type SchemaInventory } from "../../src/db/schemaInventory.ts";
-import { SCHEMA_INVENTORY_SNAPSHOT } from "../../src/db/schemaInventorySnapshot.ts";
-import { diffTsInventoryAgainstSnapshot } from "../../src/db/schemaTsDivergence.ts";
+import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
+import { assertFtsIntegrity } from "#db/ftsIntegrity.ts";
+import { createSchema } from "#db/schema.ts";
+import { buildSchemaInventory, type SchemaInventory } from "#db/schemaInventory.ts";
+import { SCHEMA_INVENTORY_SNAPSHOT } from "#db/schemaInventorySnapshot.ts";
+import { diffTsInventoryAgainstSnapshot } from "#db/schemaTsDivergence.ts";
 
 function freshDb(): { db: WritableDatabase; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), "mirror-core-schema-"));

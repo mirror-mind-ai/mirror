@@ -1,14 +1,14 @@
 // `journeys` rendering: read journey options, enrich with stage/description,
 // format the roots-then-children hierarchy. Extracted from cli.ts (CR002).
 
-import type { Database } from "../../db/database.ts";
-import { optionalString, requireString } from "../../db/rowDecode.ts";
+import type { Database } from "#db/database.ts";
+import { optionalString, requireString } from "#db/rowDecode.ts";
 import {
   groupJourneysByParent,
   type JourneyIdentityRow,
   type JourneyOption,
   listJourneyOptions,
-} from "../../journey/journeyOptions.ts";
+} from "#journey/journeyOptions.ts";
 import { identityRows } from "./identityRows.ts";
 
 /** A journey option enriched with the display-only stage and description. */

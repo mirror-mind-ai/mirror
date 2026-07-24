@@ -9,10 +9,10 @@
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { WritableDatabase } from "../db/database.ts";
-import { identityRowExists } from "../identity/identityRead.ts";
-import { setIdentity } from "../identity/setIdentity.ts";
-import { newId, nowIso } from "../util/pyGenerators.ts";
+import type { WritableDatabase } from "#db/database.ts";
+import { identityRowExists } from "#identity/identityRead.ts";
+import { setIdentity } from "#identity/setIdentity.ts";
+import { newId, nowIso } from "#util/pyGenerators.ts";
 import {
   loadJourneyContent,
   loadPersonaContent,

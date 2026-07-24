@@ -2,13 +2,13 @@
 // memory.cli.identity_cmd.cmd_list / cmd_get (read-only subcommands; `set` is
 // US4/identityWrite.ts and `edit` stays on Python — it spawns `$EDITOR`).
 
-import type { Database } from "../../db/database.ts";
+import type { Database } from "#db/database.ts";
 import {
   getIdentityContent,
   type IdentityListRow,
   listAllIdentity,
   listIdentityByLayer,
-} from "../../identity/identityRead.ts";
+} from "#identity/identityRead.ts";
 
 /** Raised when `identity get` finds no row for (layer, key) — mirrors Python's exit 1. */
 export class IdentityEntryNotFoundError extends Error {

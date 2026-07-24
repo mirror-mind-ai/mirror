@@ -5,13 +5,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { sha256File } from "../../src/db/backupGate.ts";
-import { bootstrapDatabase } from "../../src/db/bootstrap.ts";
-import { openDatabaseReadOnly } from "../../src/db/database.ts";
-import { ensureMigratedOnOpen, migrationBackupPathFor } from "../../src/db/migrateOnOpen.ts";
-import { restoreFromBackup } from "../../src/frontDoor/liveBackup.ts";
-import { createJourney } from "../../src/journey/journeyWrite.ts";
-import { regressToPre017 } from "../helpers/legacyDb.ts";
+import { sha256File } from "#db/backupGate.ts";
+import { bootstrapDatabase } from "#db/bootstrap.ts";
+import { openDatabaseReadOnly } from "#db/database.ts";
+import { ensureMigratedOnOpen, migrationBackupPathFor } from "#db/migrateOnOpen.ts";
+import { restoreFromBackup } from "#frontDoor/liveBackup.ts";
+import { createJourney } from "#journey/journeyWrite.ts";
+import { regressToPre017 } from "#helpers/legacyDb.ts";
 
 const NOW = "2026-01-01T00:00:00Z";
 const WORKER = join(import.meta.dirname, "migrateOnOpenConcurrencyWorker.ts");

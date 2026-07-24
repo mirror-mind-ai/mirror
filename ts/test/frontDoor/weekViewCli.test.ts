@@ -3,10 +3,10 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { openDatabaseCopyForWrite } from "../../src/db/database.ts";
-import { spawnFrontDoor } from "../helpers/frontDoor.ts";
-import { createIdentityTable, seedKnownMigrations } from "../helpers/identitySchema.ts";
-import { createTasksTable } from "../helpers/tasksSchema.ts";
+import { openDatabaseCopyForWrite } from "#db/database.ts";
+import { spawnFrontDoor } from "#helpers/frontDoor.ts";
+import { createIdentityTable, seedKnownMigrations } from "#helpers/identitySchema.ts";
+import { createTasksTable } from "#helpers/tasksSchema.ts";
 
 // Full front-door plumbing smoke test (routing -> DB open -> dispatch ->
 // render). Exact-content parity against the Python oracle, across every

@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { assertCopyTarget, CopyOnlyGuardError } from "../../src/db/copyGuard.ts";
+import { assertCopyTarget, CopyOnlyGuardError } from "#db/copyGuard.ts";
 
 test("assertCopyTarget refuses a live memory.db and paths outside tmp/", () => {
   assert.throws(() => assertCopyTarget("/home/x/.mirror/memory.db"), CopyOnlyGuardError);

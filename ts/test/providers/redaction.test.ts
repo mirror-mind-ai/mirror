@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { assertFixtureSafe, redactJson, redactString } from "../../src/providers/redaction.ts";
+import { assertFixtureSafe, redactJson, redactString } from "#providers/redaction.ts";
 
 test("redactString replaces configured secrets and bearer tokens", () => {
   const input = "Authorization: Bearer sk-live-secret and key sk-live-secret";

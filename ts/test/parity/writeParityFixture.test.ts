@@ -3,13 +3,13 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { BackupGateError, sha256File } from "../../src/db/backupGate.ts";
-import { openDatabaseCopyForWrite } from "../../src/db/database.ts";
+import { BackupGateError, sha256File } from "#db/backupGate.ts";
+import { openDatabaseCopyForWrite } from "#db/database.ts";
 import {
   verifyWriteFixture,
   type WriteParityFixture,
-} from "../../src/parity/writeParityFixture.ts";
-import { createIdentityTable } from "../helpers/identitySchema.ts";
+} from "#parity/writeParityFixture.ts";
+import { createIdentityTable } from "#helpers/identitySchema.ts";
 
 const NOW_ISO = "2026-06-23T12:00:00.123456Z";
 const CONTEXT = "retrieval";

@@ -5,7 +5,7 @@ import {
   type MutatedRow,
   renderRedactedWriteReport,
   stateHash,
-} from "../../src/parity/writeParity.ts";
+} from "#parity/writeParity.ts";
 
 const pythonRows: MutatedRow[] = [
   { id: "m1", cells: { last_accessed_at: "2026-06-23T12:00:00", use_count: 3 } },

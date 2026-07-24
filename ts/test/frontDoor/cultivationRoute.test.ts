@@ -8,22 +8,22 @@ import {
   type ConsolidationRow,
   createConsolidation,
   getConsolidation,
-} from "../../src/cultivation/consolidationStore.ts";
-import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
+} from "#cultivation/consolidationStore.ts";
+import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import {
   resolveProposalForReview,
   runConsolidateApply,
   runReject,
   runShadowApply,
-} from "../../src/frontDoor/cultivationRoute.ts";
-import { getIdentityContent } from "../../src/identity/identityRead.ts";
-import { ReplayEmbeddingProvider } from "../../src/providers/embedding.ts";
+} from "#frontDoor/cultivationRoute.ts";
+import { getIdentityContent } from "#identity/identityRead.ts";
+import { ReplayEmbeddingProvider } from "#providers/embedding.ts";
 import {
   createConsolidationsTable,
   createMemoriesTable,
   insertMemory,
-} from "../helpers/cultivationSchema.ts";
-import { createIdentityTable } from "../helpers/identitySchema.ts";
+} from "#helpers/cultivationSchema.ts";
+import { createIdentityTable } from "#helpers/identitySchema.ts";
 
 const NOW = "2026-06-23T12:00:00.123000Z";
 const VALID_EMBEDDING = Array(1536).fill(0.3);

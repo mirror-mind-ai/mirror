@@ -4,11 +4,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { bootstrapDatabase } from "../../src/db/bootstrap.ts";
-import { openDatabaseForBootstrap } from "../../src/db/database.ts";
-import { ensureMigratedOnOpen, migrationBackupPathFor } from "../../src/db/migrateOnOpen.ts";
-import { createJourney } from "../../src/journey/journeyWrite.ts";
-import { regressToPre017 } from "../helpers/legacyDb.ts";
+import { bootstrapDatabase } from "#db/bootstrap.ts";
+import { openDatabaseForBootstrap } from "#db/database.ts";
+import { ensureMigratedOnOpen, migrationBackupPathFor } from "#db/migrateOnOpen.ts";
+import { createJourney } from "#journey/journeyWrite.ts";
+import { regressToPre017 } from "#helpers/legacyDb.ts";
 
 const NOW = "2026-01-01T00:00:00Z";
 

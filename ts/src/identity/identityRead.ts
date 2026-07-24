@@ -2,8 +2,8 @@
 // get_identity_by_layer, and get_identity (read side only; the write side
 // lives in identityStore.ts / setIdentity.ts).
 
-import type { Database } from "../db/database.ts";
-import { optionalString, requireString } from "../db/rowDecode.ts";
+import type { Database } from "#db/database.ts";
+import { optionalString, requireString } from "#db/rowDecode.ts";
 
 /** The projection `identity list` needs: layer, key, and content for the preview. */
 export interface IdentityListRow {

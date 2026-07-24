@@ -3,8 +3,8 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { openDatabaseReadOnly } from "../../src/db/database.ts";
-import { spawnFrontDoor } from "../helpers/frontDoor.ts";
+import { openDatabaseReadOnly } from "#db/database.ts";
+import { spawnFrontDoor } from "#helpers/frontDoor.ts";
 
 function scratchMirrorHome(): { home: string; cleanup: () => void } {
   const home = mkdtempSync(join(tmpdir(), "mirror-core-seedcli-"));

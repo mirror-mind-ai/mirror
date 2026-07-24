@@ -5,9 +5,9 @@
 // exact output including its blank-line quirks (`print(f"...\n")` followed by
 // `print()`'s own newline -- see `tasks.ts`'s module doc for the same idiom).
 
-import type { ConsolidationRow, CultivationMemory } from "../../cultivation/consolidationStore.ts";
-import type { ConsolidateScanResult } from "../../cultivation/scan.ts";
-import type { ConsolidateApplyOutcome, RejectOutcome } from "../cultivationRoute.ts";
+import type { ConsolidationRow, CultivationMemory } from "#cultivation/consolidationStore.ts";
+import type { ConsolidateScanResult } from "#cultivation/scan.ts";
+import type { ConsolidateApplyOutcome, RejectOutcome } from "#frontDoor/cultivationRoute.ts";
 import { renderAlreadyReviewed, renderProposalNotFound } from "./cultivationShared.ts";
 
 const ACTION_ICON: Record<string, string> = {

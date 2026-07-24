@@ -9,9 +9,9 @@
  * none of consult's models are in Python's 2-entry price table either.
  */
 
-import type { WritableDatabase } from "../db/database.ts";
-import { type LogLlmCallsMode, resolveLogLlmCallsMode } from "../providers/config.ts";
-import { newId, nowIso } from "../util/pyGenerators.ts";
+import type { WritableDatabase } from "#db/database.ts";
+import { type LogLlmCallsMode, resolveLogLlmCallsMode } from "#providers/config.ts";
+import { newId, nowIso } from "#util/pyGenerators.ts";
 
 export interface LogLlmCallInput {
   role: string;

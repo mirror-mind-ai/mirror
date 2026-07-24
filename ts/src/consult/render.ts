@@ -1,4 +1,4 @@
-import type { LlmResponse } from "../providers/llm.ts";
+import type { LlmResponse } from "#providers/llm.ts";
 
 export const USD_TO_BRL = 5.7;
 export const BALANCE_BAR_WIDTH = 20;

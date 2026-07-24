@@ -3,13 +3,13 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
-import { ConversationNotFoundError, renderRecall } from "../../src/frontDoor/render/recall.ts";
+import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
+import { ConversationNotFoundError, renderRecall } from "#frontDoor/render/recall.ts";
 import {
   createConversationTables,
   insertConversation,
   insertMessage,
-} from "../helpers/conversationSchema.ts";
+} from "#helpers/conversationSchema.ts";
 
 function tempDb(): { db: WritableDatabase; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), "mirror-core-recallrender-"));

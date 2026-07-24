@@ -7,7 +7,7 @@
 // a parity run can freeze the clock and match the Python oracle byte-for-byte;
 // the two statements in log_access share the one `nowIso`, as in Python.
 
-import { type WritableDatabase, withTransaction } from "../db/database.ts";
+import { type WritableDatabase, withTransaction } from "#db/database.ts";
 
 /**
  * Record a retrieval: append to memory_access_log and cache last_accessed_at.

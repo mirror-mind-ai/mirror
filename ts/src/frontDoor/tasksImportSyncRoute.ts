@@ -3,16 +3,16 @@
 // mirroring `memory.cli.tasks_cmd`'s `cmd_import`/`cmd_sync`/`cmd_sync_config`.
 
 import { existsSync } from "node:fs";
-import type { Database, WritableDatabase } from "../db/database.ts";
-import { listIdentityByLayer } from "../identity/identityRead.ts";
-import { getSyncFile, JOURNEY_LAYER, setSyncFile } from "../journey/journeySyncFile.ts";
+import type { Database, WritableDatabase } from "#db/database.ts";
+import { listIdentityByLayer } from "#identity/identityRead.ts";
+import { getSyncFile, JOURNEY_LAYER, setSyncFile } from "#journey/journeySyncFile.ts";
 import {
   importTasksFromJourneyPath,
   type SyncResult,
   syncTasksFromFile,
-} from "../tasks/taskImportSync.ts";
-import type { Task } from "../tasks/taskStore.ts";
-import { normalizeProjectPath } from "../util/paths.ts";
+} from "#tasks/taskImportSync.ts";
+import type { Task } from "#tasks/taskStore.ts";
+import { normalizeProjectPath } from "#util/paths.ts";
 
 /** Journeys to operate on for `tasks import [journey]`: the explicit one, or every known journey (key order). */
 export function resolveImportJourneys(db: Database, explicitJourney: string | null): string[] {

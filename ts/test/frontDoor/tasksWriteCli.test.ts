@@ -3,10 +3,10 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { openDatabaseCopyForWrite, openDatabaseReadOnly } from "../../src/db/database.ts";
-import { spawnFrontDoor } from "../helpers/frontDoor.ts";
-import { createIdentityTable, seedKnownMigrations } from "../helpers/identitySchema.ts";
-import { createTasksTable } from "../helpers/tasksSchema.ts";
+import { openDatabaseCopyForWrite, openDatabaseReadOnly } from "#db/database.ts";
+import { spawnFrontDoor } from "#helpers/frontDoor.ts";
+import { createIdentityTable, seedKnownMigrations } from "#helpers/identitySchema.ts";
+import { createTasksTable } from "#helpers/tasksSchema.ts";
 
 function taskDbCopy(): { tmpDir: string; dbPath: string; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), "mirror-core-taskscli-"));

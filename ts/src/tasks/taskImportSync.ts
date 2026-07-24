@@ -10,10 +10,10 @@
 // tasks in a single invocation.
 
 import { readFileSync } from "node:fs";
-import type { WritableDatabase } from "../db/database.ts";
-import { getJourneyPath, getSyncFile } from "../journey/journeySyncFile.ts";
-import { expandHome } from "../util/paths.ts";
-import { newId, nowIso } from "../util/pyGenerators.ts";
+import type { WritableDatabase } from "#db/database.ts";
+import { getJourneyPath, getSyncFile } from "#journey/journeySyncFile.ts";
+import { expandHome } from "#util/paths.ts";
+import { newId, nowIso } from "#util/pyGenerators.ts";
 import { parseDoneTasks, parseJourneyPathTasks } from "./journeyPathParse.ts";
 import {
   completeTask,

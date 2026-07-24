@@ -4,11 +4,11 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
-import { renderWeekView } from "../../src/frontDoor/render/week.ts";
-import { createTask, getTasksForWeek, type Task } from "../../src/tasks/taskStore.ts";
-import { computeWeekRange } from "../../src/tasks/weekView.ts";
-import { createTasksTable } from "../helpers/tasksSchema.ts";
+import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
+import { renderWeekView } from "#frontDoor/render/week.ts";
+import { createTask, getTasksForWeek, type Task } from "#tasks/taskStore.ts";
+import { computeWeekRange } from "#tasks/weekView.ts";
+import { createTasksTable } from "#helpers/tasksSchema.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const GOLDEN_PATH = join(HERE, "..", "goldens", "week-view.golden.json");

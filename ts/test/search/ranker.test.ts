@@ -5,7 +5,7 @@ import {
   rankMemories,
   recencyScore,
   reinforcementScore,
-} from "../../src/search/ranker.ts";
+} from "#search/ranker.ts";
 
 const frozenNowMs = Date.parse("2026-06-23T12:00:00Z");
 

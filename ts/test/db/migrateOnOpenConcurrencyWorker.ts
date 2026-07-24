@@ -5,7 +5,7 @@
 // racing process applied the migration. Standalone (not in-process) because the
 // point is proving safety across real OS processes and their bootstrap locks.
 
-import { ensureMigratedOnOpen } from "../../src/db/migrateOnOpen.ts";
+import { ensureMigratedOnOpen } from "#db/migrateOnOpen.ts";
 
 const dbPath = process.argv[2];
 if (!dbPath) {

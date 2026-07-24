@@ -6,8 +6,8 @@
 import {
   type ListRecentConversationsFilters,
   listRecentConversationSummaries,
-} from "../../conversation/listing.ts";
-import type { Database } from "../../db/database.ts";
+} from "#conversation/listing.ts";
+import type { Database } from "#db/database.ts";
 
 /** Render the `conversations` plain listing. */
 export function renderConversationsListing(

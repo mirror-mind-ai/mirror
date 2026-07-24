@@ -3,10 +3,10 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
-import { applyIdentitySet } from "../../src/frontDoor/identityWrite.ts";
-import { upsertIdentity } from "../../src/identity/identityStore.ts";
-import { createIdentityTable } from "../helpers/identitySchema.ts";
+import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
+import { applyIdentitySet } from "#frontDoor/identityWrite.ts";
+import { upsertIdentity } from "#identity/identityStore.ts";
+import { createIdentityTable } from "#helpers/identitySchema.ts";
 
 const NOW = "2026-06-23T12:00:00.123000Z";
 const LATER = "2026-06-24T09:30:00.500000Z";

@@ -3,10 +3,10 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { openDatabaseCopyForWrite, openDatabaseReadOnly } from "../../src/db/database.ts";
-import { createJourney } from "../../src/journey/journeyWrite.ts";
-import { spawnFrontDoor } from "../helpers/frontDoor.ts";
-import { createIdentityTable, seedKnownMigrations } from "../helpers/identitySchema.ts";
+import { openDatabaseCopyForWrite, openDatabaseReadOnly } from "#db/database.ts";
+import { createJourney } from "#journey/journeyWrite.ts";
+import { spawnFrontDoor } from "#helpers/frontDoor.ts";
+import { createIdentityTable, seedKnownMigrations } from "#helpers/identitySchema.ts";
 
 function journeyDbCopy(): { tmpDir: string; dbPath: string; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), "mirror-core-jwcli-"));

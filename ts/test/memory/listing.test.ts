@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import type { Database, PreparedQuery, Row, SqlValue } from "../../src/db/database.ts";
+import type { Database, PreparedQuery, Row, SqlValue } from "#db/database.ts";
 import {
   buildListRecentQuery,
   countMemoriesByType,
   listRecentMemorySummaries,
-} from "../../src/memory/listing.ts";
+} from "#memory/listing.ts";
 
 // A minimal in-memory Database stub. It captures the SQL/params the read model
 // issues and returns canned rows, so the query builder and row mapper are tested

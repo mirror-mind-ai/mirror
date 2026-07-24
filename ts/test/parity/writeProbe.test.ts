@@ -3,9 +3,9 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { openDatabaseCopyForWrite } from "../../src/db/database.ts";
-import { evaluateWriteProbe } from "../../src/parity/writeParity.ts";
-import { applyWriteProbe, type WriteProbe } from "../../src/parity/writeProbe.ts";
+import { openDatabaseCopyForWrite } from "#db/database.ts";
+import { evaluateWriteProbe } from "#parity/writeParity.ts";
+import { applyWriteProbe, type WriteProbe } from "#parity/writeProbe.ts";
 
 const FROZEN_NOW_MS = Date.UTC(2026, 5, 23, 12, 0, 0);
 const ISO = new Date(FROZEN_NOW_MS).toISOString();

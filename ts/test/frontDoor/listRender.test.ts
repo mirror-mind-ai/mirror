@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { renderListJourneys, renderListPersonas } from "../../src/frontDoor/render/list.ts";
+import { renderListJourneys, renderListPersonas } from "#frontDoor/render/list.ts";
 
 test("renderListPersonas reports (none) for an empty list", () => {
   assert.equal(renderListPersonas([], false), "=== PERSONAS ===\n  (none)\n");

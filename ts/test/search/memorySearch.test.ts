@@ -3,16 +3,16 @@ import { mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import test from "node:test";
 
-import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
-import type { EmbeddingProvider } from "../../src/providers/embedding.ts";
-import { ReplayEmbeddingProvider } from "../../src/providers/embedding.ts";
+import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
+import type { EmbeddingProvider } from "#providers/embedding.ts";
+import { ReplayEmbeddingProvider } from "#providers/embedding.ts";
 import {
   accessCountsByMemoryId,
   ftsLexicalScores,
   ftsQuery,
   searchMemories,
   searchMemoriesWithStatus,
-} from "../../src/search/memorySearch.ts";
+} from "#search/memorySearch.ts";
 
 /** Mirrors Python's `mocker.patch(..., side_effect=RuntimeError(...))` -- a
  * provider that always fails, so degraded-mode is exercised deterministically

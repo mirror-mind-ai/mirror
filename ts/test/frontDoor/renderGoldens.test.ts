@@ -4,9 +4,9 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { openDatabaseCopyForWrite } from "../../src/db/database.ts";
-import { createIdentityTable, seedKnownMigrations } from "../helpers/identitySchema.ts";
-import { buildRenderFixture } from "../helpers/renderFixture.ts";
+import { openDatabaseCopyForWrite } from "#db/database.ts";
+import { createIdentityTable, seedKnownMigrations } from "#helpers/identitySchema.ts";
+import { buildRenderFixture } from "#helpers/renderFixture.ts";
 
 const CLI = "src/frontDoor/cli.ts";
 const GOLDEN_DIR = "test/goldens/render";

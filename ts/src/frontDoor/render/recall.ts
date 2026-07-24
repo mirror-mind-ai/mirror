@@ -4,8 +4,8 @@ import {
   findConversationByIdPrefix,
   getMessagesForConversation,
   pythonTailSliceStart,
-} from "../../conversation/recall.ts";
-import type { Database } from "../../db/database.ts";
+} from "#conversation/recall.ts";
+import type { Database } from "#db/database.ts";
 
 /** Raised when no conversation matches the id prefix. Python prints this to stderr, exit 1. */
 export class ConversationNotFoundError extends Error {

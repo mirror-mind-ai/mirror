@@ -7,8 +7,8 @@
 // `identity set` is routed here; `identity edit` is interactive ($EDITOR) and
 // stays on Python.
 
-import type { WritableDatabase } from "../db/database.ts";
-import { setIdentity } from "../identity/setIdentity.ts";
+import type { WritableDatabase } from "#db/database.ts";
+import { setIdentity } from "#identity/setIdentity.ts";
 
 export interface IdentitySetOutcome {
   action: "created" | "updated";

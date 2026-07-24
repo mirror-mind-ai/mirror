@@ -4,7 +4,7 @@
 // pending. This is the exact state US2 left tolerable; centralizing it keeps the
 // migrate-on-open unit and concurrency tests from drifting apart.
 
-import { openDatabaseForBootstrap } from "../../src/db/database.ts";
+import { openDatabaseForBootstrap } from "#db/database.ts";
 
 const TS_AUTHORED_017 = "017_journey_parent_column";
 

@@ -4,13 +4,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { openDatabaseCopyForWrite, openDatabaseReadOnly } from "../../src/db/database.ts";
-import { migrationBackupPathFor } from "../../src/db/migrateOnOpen.ts";
-import { KNOWN_MIGRATION_IDS } from "../../src/db/schemaState.ts";
-import { frontDoorLogPath } from "../../src/frontDoor/frontDoorLog.ts";
-import { createJourney } from "../../src/journey/journeyWrite.ts";
-import { spawnFrontDoor } from "../helpers/frontDoor.ts";
-import { createIdentityTable } from "../helpers/identitySchema.ts";
+import { openDatabaseCopyForWrite, openDatabaseReadOnly } from "#db/database.ts";
+import { migrationBackupPathFor } from "#db/migrateOnOpen.ts";
+import { KNOWN_MIGRATION_IDS } from "#db/schemaState.ts";
+import { frontDoorLogPath } from "#frontDoor/frontDoorLog.ts";
+import { createJourney } from "#journey/journeyWrite.ts";
+import { spawnFrontDoor } from "#helpers/frontDoor.ts";
+import { createIdentityTable } from "#helpers/identitySchema.ts";
 
 const NOW = "2026-06-23T12:00:00.000000Z";
 

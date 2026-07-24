@@ -7,7 +7,7 @@ import {
   detectPersona,
   normalizeRoutingText,
   type PersonaRoutingRow,
-} from "../../src/persona/detectPersona.ts";
+} from "#persona/detectPersona.ts";
 
 interface PersonaGolden {
   meta: { threshold: number };

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { formatSearchResults, type SearchMemoryRow } from "../../src/frontDoor/searchRoute.ts";
+import { formatSearchResults, type SearchMemoryRow } from "#frontDoor/searchRoute.ts";
 
 const DEGRADED_NOTE =
   "⚠ Degraded: lexical-only search (embedding unavailable — offline or no API key).";

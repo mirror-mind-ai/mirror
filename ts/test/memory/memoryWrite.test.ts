@@ -4,9 +4,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
-import { createMemoryRow, getMemorySourceForMerge } from "../../src/memory/memoryWrite.ts";
-import { createMemoriesTable, insertMemory } from "../helpers/cultivationSchema.ts";
+import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
+import { createMemoryRow, getMemorySourceForMerge } from "#memory/memoryWrite.ts";
+import { createMemoriesTable, insertMemory } from "#helpers/cultivationSchema.ts";
 
 function tempDb(): { db: WritableDatabase; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), "mirror-core-memory-write-"));

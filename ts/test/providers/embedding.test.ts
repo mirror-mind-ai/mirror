@@ -9,7 +9,7 @@ import {
   type EmbeddingProvider,
   embeddingProvenance,
   generateEmbeddingSafely,
-} from "../../src/providers/embedding.ts";
+} from "#providers/embedding.ts";
 
 const noSleep = async () => {};
 const VALID = Array(EMBEDDING_DIMENSIONS).fill(0.1);

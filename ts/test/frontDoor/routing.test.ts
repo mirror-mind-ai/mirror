@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { routeMemoryCommand } from "../../src/frontDoor/routing.ts";
+import { routeMemoryCommand } from "#frontDoor/routing.ts";
 
 test("routes DS2 read commands to TS", () => {
   assert.deepEqual(routeMemoryCommand(["detect-persona", "builder"]), {

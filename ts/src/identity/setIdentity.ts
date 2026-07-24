@@ -8,8 +8,8 @@
 // runs match the Python oracle (Python builds an Identity() with a random UUID id
 // and stamps a microsecond now inside upsert_identity).
 
-import type { WritableDatabase } from "../db/database.ts";
-import { optionalString } from "../db/rowDecode.ts";
+import type { WritableDatabase } from "#db/database.ts";
+import { optionalString } from "#db/rowDecode.ts";
 import { type IdentityRow, upsertIdentity } from "./identityStore.ts";
 
 /** Inputs to set_identity. `version` defaults to "1.0.0"; a null/absent metadata inherits. */

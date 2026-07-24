@@ -1,5 +1,5 @@
-import { resolveExtractionModel } from "../providers/config.ts";
-import type { LlmProvider } from "../providers/llm.ts";
+import { resolveExtractionModel } from "#providers/config.ts";
+import type { LlmProvider } from "#providers/llm.ts";
 import {
   fenceTranscript,
   MAX_MEMORIES_PER_CONVERSATION,

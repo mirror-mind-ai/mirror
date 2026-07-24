@@ -9,7 +9,7 @@ import {
   clusterMemories,
   DEFAULT_CLUSTER_THRESHOLD,
   MAX_CLUSTER_SIZE,
-} from "../../src/cultivation/cluster.ts";
+} from "#cultivation/cluster.ts";
 
 const HERE = fileURLToPath(new URL(".", import.meta.url));
 const GOLDEN_PATH = join(HERE, "..", "goldens", "cluster.golden.json");

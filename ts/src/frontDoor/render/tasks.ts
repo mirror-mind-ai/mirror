@@ -4,8 +4,8 @@
 // module decides HOW it is printed), matching Python's exact output including
 // its blank-line quirks (`print(f"...\n")` followed by `print()`'s own newline).
 
-import type { Task } from "../../tasks/taskStore.ts";
-import type { DeleteOutcome, StatusChangeOutcome } from "../tasksWriteRoute.ts";
+import type { Task } from "#tasks/taskStore.ts";
+import type { DeleteOutcome, StatusChangeOutcome } from "#frontDoor/tasksWriteRoute.ts";
 
 const STATUS_ICONS: Record<string, string> = {
   todo: "○",

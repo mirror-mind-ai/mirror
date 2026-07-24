@@ -3,13 +3,13 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
+import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import {
   renderJourneyStatus,
   resolveJourneyStatusSlug,
-} from "../../src/frontDoor/render/journeyStatus.ts";
-import { createConversationTables } from "../helpers/conversationSchema.ts";
-import { createIdentityTable } from "../helpers/identitySchema.ts";
+} from "#frontDoor/render/journeyStatus.ts";
+import { createConversationTables } from "#helpers/conversationSchema.ts";
+import { createIdentityTable } from "#helpers/identitySchema.ts";
 
 test("resolveJourneyStatusSlug: 'status <slug>' (2+ tokens) uses the slug", () => {
   assert.equal(resolveJourneyStatusSlug(["status", "demo"]), "demo");

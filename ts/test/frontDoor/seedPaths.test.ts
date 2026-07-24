@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { MirrorHomeNotConfiguredError, resolveSeedPaths } from "../../src/frontDoor/seedPaths.ts";
+import { MirrorHomeNotConfiguredError, resolveSeedPaths } from "#frontDoor/seedPaths.ts";
 
 const io = { home: "/Users/probe", exists: () => false };
 

@@ -8,14 +8,14 @@
 // hash-verified backup is required first.
 
 import { copyFileSync } from "node:fs";
-import { type BackupRecord, requireBackup } from "../db/backupGate.ts";
-import { assertCopyTarget } from "../db/copyGuard.ts";
-import { openDatabaseCopyForWrite } from "../db/database.ts";
-import { assertFtsIntegrity } from "../db/ftsIntegrity.ts";
-import { updateIdentityMetadata } from "../identity/identityStore.ts";
-import { setIdentity } from "../identity/setIdentity.ts";
-import { createJourney, setProjectPath } from "../journey/journeyWrite.ts";
-import { logAccess, logUse } from "../memory/reinforcement.ts";
+import { type BackupRecord, requireBackup } from "#db/backupGate.ts";
+import { assertCopyTarget } from "#db/copyGuard.ts";
+import { openDatabaseCopyForWrite } from "#db/database.ts";
+import { assertFtsIntegrity } from "#db/ftsIntegrity.ts";
+import { updateIdentityMetadata } from "#identity/identityStore.ts";
+import { setIdentity } from "#identity/setIdentity.ts";
+import { createJourney, setProjectPath } from "#journey/journeyWrite.ts";
+import { logAccess, logUse } from "#memory/reinforcement.ts";
 import { evaluateWriteProbe, type MutatedRow, type WriteProbeParityResult } from "./writeParity.ts";
 import { applyWriteProbe, type WriteProbe } from "./writeProbe.ts";
 

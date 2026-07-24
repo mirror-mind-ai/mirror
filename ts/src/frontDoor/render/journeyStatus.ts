@@ -1,13 +1,13 @@
 // `journey status` rendering — the port of memory.cli.journey.cmd_status and
 // main()'s positional-argument dispatch quirk.
 
-import type { Database } from "../../db/database.ts";
+import type { Database } from "#db/database.ts";
 import {
   allJourneyKeys,
   getJourneyStatusEntries,
   type JourneyStatusEntry,
   type ReadTextFile,
-} from "../../journey/journeyStatus.ts";
+} from "#journey/journeyStatus.ts";
 
 /**
  * Port of the slug-resolution branch in `journey.main()`. This reproduces a

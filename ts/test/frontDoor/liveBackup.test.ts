@@ -3,9 +3,9 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { sha256File } from "../../src/db/backupGate.ts";
-import { openDatabaseCopyForWrite, openDatabaseReadOnly } from "../../src/db/database.ts";
-import { backupPathFor, ensureBackup, restoreFromBackup } from "../../src/frontDoor/liveBackup.ts";
+import { sha256File } from "#db/backupGate.ts";
+import { openDatabaseCopyForWrite, openDatabaseReadOnly } from "#db/database.ts";
+import { backupPathFor, ensureBackup, restoreFromBackup } from "#frontDoor/liveBackup.ts";
 
 function walDb(): { dbPath: string; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), "mirror-core-livebackup-"));

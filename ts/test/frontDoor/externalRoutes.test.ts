@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import test from "node:test";
-import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
-import { KNOWN_MIGRATION_IDS } from "../../src/db/schemaState.ts";
-import { spawnFrontDoor } from "../helpers/frontDoor.ts";
+import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
+import { KNOWN_MIGRATION_IDS } from "#db/schemaState.ts";
+import { spawnFrontDoor } from "#helpers/frontDoor.ts";
 
 const TMP_DIR = join(process.cwd(), "tmp", "test-frontdoor-external");
 

@@ -5,7 +5,7 @@ import {
   loadPersonaContent,
   loadYamlContent,
   YamlFileNotFoundError,
-} from "../../src/seed/seedYaml.ts";
+} from "#seed/seedYaml.ts";
 
 function fakeReader(content: string): (path: string) => string {
   return () => content;

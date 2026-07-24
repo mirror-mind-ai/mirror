@@ -11,8 +11,8 @@
 // description at 120 chars, not 150. Porting it as its own function keeps the
 // two Python call sites' independent behavior independently reproduced.
 
-import type { Database } from "../db/database.ts";
-import { optionalString, requireString } from "../db/rowDecode.ts";
+import type { Database } from "#db/database.ts";
+import { optionalString, requireString } from "#db/rowDecode.ts";
 
 export interface JourneyListRow {
   key: string;

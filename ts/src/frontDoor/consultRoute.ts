@@ -1,8 +1,8 @@
-import { parseConsultArgs } from "../consult/args.ts";
-import { runConsult } from "../consult/core.ts";
-import type { WritableDatabase } from "../db/database.ts";
-import { loadReplayCreditProvider } from "../providers/credits.ts";
-import { loadReplayLlmProvider } from "../providers/llm.ts";
+import { parseConsultArgs } from "#consult/args.ts";
+import { runConsult } from "#consult/core.ts";
+import type { WritableDatabase } from "#db/database.ts";
+import { loadReplayCreditProvider } from "#providers/credits.ts";
+import { loadReplayLlmProvider } from "#providers/llm.ts";
 
 /**
  * `db` is optional (AI-09): when provided, `consult ask` logs to the

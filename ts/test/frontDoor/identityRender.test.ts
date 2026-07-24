@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import type { Database } from "../../src/db/database.ts";
+import type { Database } from "#db/database.ts";
 import {
   IdentityEntryNotFoundError,
   renderIdentityGet,
   renderIdentityList,
-} from "../../src/frontDoor/render/identity.ts";
+} from "#frontDoor/render/identity.ts";
 
 test("renderIdentityList reports no entries", () => {
   assert.equal(renderIdentityList([]), "No identity entries found.\n");

@@ -6,7 +6,7 @@
 // `detect-persona` is byte-stable and can be frozen as a golden. Shared by the
 // golden generator and the test so both build the identical fixture.
 
-import { openDatabaseCopyForWrite } from "../../src/db/database.ts";
+import { openDatabaseCopyForWrite } from "#db/database.ts";
 import {
   createConversationTables,
   insertConversation,

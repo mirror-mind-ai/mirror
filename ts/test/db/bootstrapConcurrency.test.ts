@@ -5,8 +5,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { openDatabaseReadOnly } from "../../src/db/database.ts";
-import { KNOWN_MIGRATION_IDS } from "../../src/db/schemaState.ts";
+import { openDatabaseReadOnly } from "#db/database.ts";
+import { KNOWN_MIGRATION_IDS } from "#db/schemaState.ts";
 
 const WORKER = join(import.meta.dirname, "bootstrapConcurrencyWorker.ts");
 const CONCURRENT_PROCESSES = 8;

@@ -11,7 +11,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { acquireBootstrapLock, BootstrapLockTimeoutError } from "../../src/db/bootstrapLock.ts";
+import { acquireBootstrapLock, BootstrapLockTimeoutError } from "#db/bootstrapLock.ts";
 
 function tmpDbPath(): { dbPath: string; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), "mirror-core-lock-"));

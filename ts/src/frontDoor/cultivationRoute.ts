@@ -9,14 +9,14 @@ import {
   applyShadowApply,
   applyShadowCandidate,
   rejectConsolidation,
-} from "../cultivation/applyActions.ts";
+} from "#cultivation/applyActions.ts";
 import {
   type ConsolidationRow,
   resolveProposalByIdOrPrefix,
   updateConsolidationStatus,
-} from "../cultivation/consolidationStore.ts";
-import type { WritableDatabase } from "../db/database.ts";
-import type { EmbeddingProvider } from "../providers/embedding.ts";
+} from "#cultivation/consolidationStore.ts";
+import type { WritableDatabase } from "#db/database.ts";
+import type { EmbeddingProvider } from "#providers/embedding.ts";
 
 // --- Shared resolution (both families) ---------------------------------------
 

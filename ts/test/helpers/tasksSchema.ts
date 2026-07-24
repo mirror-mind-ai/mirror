@@ -2,7 +2,7 @@
 // same single-source rationale as `identitySchema.ts` (CR009): copy-pasting DDL
 // across test files invites drift unrelated to the code under test.
 
-import type { WritableDatabase } from "../../src/db/database.ts";
+import type { WritableDatabase } from "#db/database.ts";
 
 /** Matches the TS-authored schema (`ts/src/db/schema.ts`), itself proven
  * structurally identical to Python's real bootstrapped `tasks` table

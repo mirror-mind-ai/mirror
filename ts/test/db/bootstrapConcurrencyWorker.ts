@@ -5,7 +5,7 @@
 // point is proving safety across real OS processes, not `Promise.all` within
 // one.
 
-import { bootstrapDatabase } from "../../src/db/bootstrap.ts";
+import { bootstrapDatabase } from "#db/bootstrap.ts";
 
 const dbPath = process.argv[2];
 if (!dbPath) {

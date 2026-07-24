@@ -29,7 +29,7 @@
 // it wins over everything, as documented in dbPath.ts.
 
 import { join } from "node:path";
-import { expandHome } from "../util/paths.ts";
+import { expandHome } from "#util/paths.ts";
 import { optionValue } from "./args.ts";
 import {
   type DbPathEnv,

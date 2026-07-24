@@ -4,7 +4,7 @@
 // match the Python oracle (Python generates a random UUID id and a microsecond
 // now).
 
-import type { WritableDatabase } from "../db/database.ts";
+import type { WritableDatabase } from "#db/database.ts";
 
 /** The writable columns of an identity row (version is TEXT, e.g. "1.0.0"). */
 export interface IdentityRow {

@@ -6,13 +6,13 @@ import { test } from "node:test";
 import {
   buildListRecentConversationsQuery,
   listRecentConversationSummaries,
-} from "../../src/conversation/listing.ts";
-import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
+} from "#conversation/listing.ts";
+import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import {
   createConversationTables,
   insertConversation,
   insertMessage,
-} from "../helpers/conversationSchema.ts";
+} from "#helpers/conversationSchema.ts";
 
 function tempDb(): { db: WritableDatabase; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), "mirror-core-convlisting-"));

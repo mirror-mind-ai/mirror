@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { renderDescriptorList } from "../../src/frontDoor/render/descriptor.ts";
+import { renderDescriptorList } from "#frontDoor/render/descriptor.ts";
 
 test("renderDescriptorList reports no descriptors stored", () => {
   assert.equal(renderDescriptorList([]), "No descriptors stored.\n");

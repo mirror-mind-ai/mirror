@@ -7,6 +7,30 @@
   "engines": {
     "node": ">=24"
   },
+  "imports": {
+    "#consult/*": "./src/consult/*",
+    "#conversation/*": "./src/conversation/*",
+    "#cultivation/*": "./src/cultivation/*",
+    "#db/*": "./src/db/*",
+    "#descriptor/*": "./src/descriptor/*",
+    "#extraction/*": "./src/extraction/*",
+    "#frontDoor/*": "./src/frontDoor/*",
+    "#identity/*": "./src/identity/*",
+    "#init/*": "./src/init/*",
+    "#journey/*": "./src/journey/*",
+    "#memory/*": "./src/memory/*",
+    "#observability/*": "./src/observability/*",
+    "#parity/*": "./src/parity/*",
+    "#persona/*": "./src/persona/*",
+    "#providers/*": "./src/providers/*",
+    "#search/*": "./src/search/*",
+    "#seed/*": "./src/seed/*",
+    "#tasks/*": "./src/tasks/*",
+    "#util/*": "./src/util/*",
+    "#fixtures/*": "./test/fixtures/*",
+    "#goldens/*": "./test/goldens/*",
+    "#helpers/*": "./test/helpers/*"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "node --test \"test/**/*.test.ts\"",

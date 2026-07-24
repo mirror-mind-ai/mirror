@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { openDatabaseCopyForWrite } from "../../src/db/database.ts";
+import { openDatabaseCopyForWrite } from "#db/database.ts";
 import {
   evaluateCultivationProbes,
   evaluateJourneyProbes,
@@ -12,8 +12,8 @@ import {
   type RealDbCopyFixture,
   renderRedactedReport,
   toProbeResult,
-} from "../../src/parity/realDbCopyParity.ts";
-import { createConsolidationsTable, createMemoriesTable } from "../helpers/cultivationSchema.ts";
+} from "#parity/realDbCopyParity.ts";
+import { createConsolidationsTable, createMemoriesTable } from "#helpers/cultivationSchema.ts";
 
 test("orderedIdsHash is stable and order-sensitive", () => {
   assert.equal(orderedIdsHash(["a", "b"]), orderedIdsHash(["a", "b"]));

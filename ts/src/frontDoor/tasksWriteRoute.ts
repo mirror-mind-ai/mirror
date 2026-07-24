@@ -8,7 +8,7 @@
 // sync-file/project-path metadata subsystem) and `week plan`/`save` (LLM-gated,
 // reassigned to US5) are NOT here -- see the plan's slice breakdown.
 
-import type { WritableDatabase } from "../db/database.ts";
+import type { WritableDatabase } from "#db/database.ts";
 import {
   completeTask,
   createTask,
@@ -16,7 +16,7 @@ import {
   resolveTaskByIdOrPrefix,
   type Task,
   updateTaskStatus,
-} from "../tasks/taskStore.ts";
+} from "#tasks/taskStore.ts";
 
 /** Fields accepted by `tasks add`, mirroring the Python CLI's flags. */
 export interface AddTaskParams {

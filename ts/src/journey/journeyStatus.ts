@@ -3,10 +3,10 @@
 // (get_memories_by_journey, get_recent_conversations_by_journey).
 
 import { readFileSync } from "node:fs";
-import type { Database } from "../db/database.ts";
-import { optionalString, requireString } from "../db/rowDecode.ts";
-import { getIdentityContent, getIdentityMetadata } from "../identity/identityRead.ts";
-import { expandHome } from "../util/paths.ts";
+import type { Database } from "#db/database.ts";
+import { optionalString, requireString } from "#db/rowDecode.ts";
+import { getIdentityContent, getIdentityMetadata } from "#identity/identityRead.ts";
+import { expandHome } from "#util/paths.ts";
 
 const JOURNEY_LAYER = "journey";
 /** The `journey_path` identity layer, also the write target of `journey update`. */

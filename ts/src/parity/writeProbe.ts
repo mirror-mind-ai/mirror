@@ -13,7 +13,7 @@
 // different tables never collide. Integer columns are normalized (safe bigint ->
 // number) so a TS snapshot and a Python-oracle JSON fixture hash identically.
 
-import type { WritableDatabase } from "../db/database.ts";
+import type { WritableDatabase } from "#db/database.ts";
 import type { MutatedRow, WriteCell } from "./writeParity.ts";
 
 /** One table's contribution to a probe's snapshot. */

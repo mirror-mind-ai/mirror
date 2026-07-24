@@ -4,9 +4,9 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { openDatabaseCopyForWrite } from "../../src/db/database.ts";
-import { frontDoorLogPath, logFrontDoor } from "../../src/frontDoor/frontDoorLog.ts";
-import { createIdentityTable, seedKnownMigrations } from "../helpers/identitySchema.ts";
+import { openDatabaseCopyForWrite } from "#db/database.ts";
+import { frontDoorLogPath, logFrontDoor } from "#frontDoor/frontDoorLog.ts";
+import { createIdentityTable, seedKnownMigrations } from "#helpers/identitySchema.ts";
 
 const CLI = "src/frontDoor/cli.ts";
 

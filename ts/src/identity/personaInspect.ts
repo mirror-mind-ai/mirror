@@ -3,8 +3,8 @@
 // `llm-calls`/`embedding-provenance` share the extension catalog / ops-tail
 // machinery and stay on Python, bound to CV22.DS7.TS1.
 
-import type { Database } from "../db/database.ts";
-import { optionalString, requireString } from "../db/rowDecode.ts";
+import type { Database } from "#db/database.ts";
+import { optionalString, requireString } from "#db/rowDecode.ts";
 
 export interface PersonaInspectRow {
   version: string;

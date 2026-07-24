@@ -1,14 +1,14 @@
 // `memories` rendering: read recent summaries, format rows and the
 // count-by-type header. Extracted from cli.ts (CR002).
 
-import type { Database } from "../../db/database.ts";
+import type { Database } from "#db/database.ts";
 import {
   countMemoriesByType,
   type ListRecentFilters,
   listRecentMemorySummaries,
   type MemorySummary,
-} from "../../memory/listing.ts";
-import { hasOption, optionValue } from "../args.ts";
+} from "#memory/listing.ts";
+import { hasOption, optionValue } from "#frontDoor/args.ts";
 import { ICONS } from "./icons.ts";
 
 /** Format a JSON tags string into a comma-joined list, or "" when absent/malformed. */

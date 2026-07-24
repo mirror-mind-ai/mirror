@@ -3,14 +3,14 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
+import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import {
   applyTasksAdd,
   applyTasksDelete,
   applyTasksStatusChange,
-} from "../../src/frontDoor/tasksWriteRoute.ts";
-import { createTask, getTaskById } from "../../src/tasks/taskStore.ts";
-import { createTasksTable } from "../helpers/tasksSchema.ts";
+} from "#frontDoor/tasksWriteRoute.ts";
+import { createTask, getTaskById } from "#tasks/taskStore.ts";
+import { createTasksTable } from "#helpers/tasksSchema.ts";
 
 const NOW = "2026-04-01T10:00:00.000000Z";
 const LATER = "2026-04-02T11:00:00.000000Z";

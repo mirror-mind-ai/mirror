@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { MINIMUM_NODE_MAJOR, nodeVersionError } from "../../src/frontDoor/nodeSupport.ts";
+import { MINIMUM_NODE_MAJOR, nodeVersionError } from "#frontDoor/nodeSupport.ts";
 
 test("nodeVersionError flags a Node major below the supported floor", () => {
   const message = nodeVersionError("20.11.0");

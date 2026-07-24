@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { blobToFloat32, embeddingToBytes, parseUtcMs } from "../../src/db/decode.ts";
+import { blobToFloat32, embeddingToBytes, parseUtcMs } from "#db/decode.ts";
 
 // Known little-endian IEEE-754 float32 encodings, hardcoded (not produced via
 // Float32Array) so this is an independent check of the decode, not a round-trip.

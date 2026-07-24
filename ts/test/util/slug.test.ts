@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { kebabSlug, stripAccents } from "../../src/util/slug.ts";
+import { kebabSlug, stripAccents } from "#util/slug.ts";
 
 interface GoldenCase {
   input: string;

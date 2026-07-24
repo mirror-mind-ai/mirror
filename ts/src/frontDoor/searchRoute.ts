@@ -1,8 +1,8 @@
-import type { WritableDatabase } from "../db/database.ts";
-import { requireString } from "../db/rowDecode.ts";
-import { loadReplayEmbeddingProvider } from "../providers/embedding.ts";
-import type { FreshSearchResult } from "../search/memorySearch.ts";
-import { searchMemoriesWithStatus } from "../search/memorySearch.ts";
+import type { WritableDatabase } from "#db/database.ts";
+import { requireString } from "#db/rowDecode.ts";
+import { loadReplayEmbeddingProvider } from "#providers/embedding.ts";
+import type { FreshSearchResult } from "#search/memorySearch.ts";
+import { searchMemoriesWithStatus } from "#search/memorySearch.ts";
 import { optionValue } from "./args.ts";
 import { ICONS } from "./render/icons.ts";
 import { tagsText } from "./render/memories.ts";

@@ -2,8 +2,8 @@
 // branches of memory.cli.inspect.cmd_list. `list extensions`/`list all` touch the
 // extension catalog and stay on Python (bound to CV22.DS7.TS1).
 
-import type { JourneyListRow } from "../../identity/journeyListing.ts";
-import type { PersonaListRow } from "../../identity/personaListing.ts";
+import type { JourneyListRow } from "#identity/journeyListing.ts";
+import type { PersonaListRow } from "#identity/personaListing.ts";
 
 /** Render `list personas` (and the personas branch of `--verbose`). */
 export function renderListPersonas(rows: PersonaListRow[], verbose: boolean): string {

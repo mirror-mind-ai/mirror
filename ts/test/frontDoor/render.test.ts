@@ -3,12 +3,12 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
-import { renderDetectPersona } from "../../src/frontDoor/render/detectPersona.ts";
-import { renderJourney } from "../../src/frontDoor/render/journeys.ts";
-import { renderMemoryRow, tagsText } from "../../src/frontDoor/render/memories.ts";
-import type { MemorySummary } from "../../src/memory/listing.ts";
-import { createIdentityTable } from "../helpers/identitySchema.ts";
+import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
+import { renderDetectPersona } from "#frontDoor/render/detectPersona.ts";
+import { renderJourney } from "#frontDoor/render/journeys.ts";
+import { renderMemoryRow, tagsText } from "#frontDoor/render/memories.ts";
+import type { MemorySummary } from "#memory/listing.ts";
+import { createIdentityTable } from "#helpers/identitySchema.ts";
 
 test("tagsText handles arrays, non-arrays, malformed JSON, and null", () => {
   assert.equal(tagsText('["a", "b"]'), "a, b");

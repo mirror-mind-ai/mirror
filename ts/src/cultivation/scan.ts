@@ -3,9 +3,9 @@
 // Ports `cli/consolidate_cmd.py:cmd_scan` and `cli/shadow_cmd.py:cmd_scan`'s
 // non-printing logic -- rendering is the front door's concern.
 
-import type { WritableDatabase } from "../db/database.ts";
-import { listIdentityByLayer } from "../identity/identityRead.ts";
-import type { LlmProvider } from "../providers/llm.ts";
+import type { WritableDatabase } from "#db/database.ts";
+import { listIdentityByLayer } from "#identity/identityRead.ts";
+import type { LlmProvider } from "#providers/llm.ts";
 import { clusterMemories, DEFAULT_CLUSTER_THRESHOLD } from "./cluster.ts";
 import {
   type ConsolidationRow,

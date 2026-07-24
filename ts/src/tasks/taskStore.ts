@@ -18,8 +18,8 @@
 // render the ambiguous case — so the asymmetry lives in presentation, where
 // Python's own asymmetry actually lives, not baked into the resolver's logic.
 
-import type { Database, SqlValue, WritableDatabase } from "../db/database.ts";
-import { optionalString, requireString } from "../db/rowDecode.ts";
+import type { Database, SqlValue, WritableDatabase } from "#db/database.ts";
+import { optionalString, requireString } from "#db/rowDecode.ts";
 
 /** A task row, mirroring the Python `Task` model exactly. */
 export interface Task {

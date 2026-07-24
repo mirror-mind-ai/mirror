@@ -4,7 +4,7 @@
 // (each CLI module inlines the same two checks independently), so they are
 // ported once here instead of copy-pasted into `consolidate.ts`/`shadow.ts`.
 
-import type { ConsolidationRow } from "../../cultivation/consolidationStore.ts";
+import type { ConsolidationRow } from "#cultivation/consolidationStore.ts";
 
 /** Port of `f"Error: proposal '{proposal_id}' not found."` (stderr, exit 1). */
 export function renderProposalNotFound(proposalId: string): string {

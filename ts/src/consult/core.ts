@@ -1,7 +1,7 @@
-import type { WritableDatabase } from "../db/database.ts";
-import { logLlmCall } from "../observability/llmCalls.ts";
-import type { CreditProvider } from "../providers/credits.ts";
-import type { LlmProvider, LlmRequest } from "../providers/llm.ts";
+import type { WritableDatabase } from "#db/database.ts";
+import { logLlmCall } from "#observability/llmCalls.ts";
+import type { CreditProvider } from "#providers/credits.ts";
+import type { LlmProvider, LlmRequest } from "#providers/llm.ts";
 import type { ConsultAskCommand, ConsultCreditsCommand, ConsultParseResult } from "./args.ts";
 import { renderConsultAsk, renderCredits } from "./render.ts";
 

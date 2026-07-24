@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { loadReplayFixture } from "../../src/providers/replay.ts";
+import { loadReplayFixture } from "#providers/replay.ts";
 
 test("loadReplayFixture returns deterministic scrubbed fixture data without network", async () => {
   const dir = await mkdtemp(join(tmpdir(), "mirror-provider-replay-"));

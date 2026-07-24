@@ -1,7 +1,7 @@
 // `descriptor list` rendering — the port of memory.cli.descriptor._cmd_list's
 // print loop. `descriptor generate` is LLM-backed and stays on Python.
 
-import type { DescriptorRow } from "../../descriptor/descriptorRead.ts";
+import type { DescriptorRow } from "#descriptor/descriptorRead.ts";
 
 /**
  * Render `descriptor list`. Each row is three Python `print()` calls

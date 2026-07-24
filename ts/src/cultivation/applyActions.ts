@@ -14,18 +14,18 @@
 // the HARDCODED constant `layer: "shadow"`; only the *key* is model-influenced,
 // and the port must never let the proposal drive the layer.
 
-import type { WritableDatabase } from "../db/database.ts";
-import { embeddingToBytes } from "../db/decode.ts";
-import { applyConsolidationIdentityUpdate } from "../identity/applyConsolidationIdentityUpdate.ts";
-import { getIdentityContent } from "../identity/identityRead.ts";
-import { upsertIdentity } from "../identity/identityStore.ts";
-import { createMemoryRow, getMemorySourceForMerge } from "../memory/memoryWrite.ts";
+import type { WritableDatabase } from "#db/database.ts";
+import { embeddingToBytes } from "#db/decode.ts";
+import { applyConsolidationIdentityUpdate } from "#identity/applyConsolidationIdentityUpdate.ts";
+import { getIdentityContent } from "#identity/identityRead.ts";
+import { upsertIdentity } from "#identity/identityStore.ts";
+import { createMemoryRow, getMemorySourceForMerge } from "#memory/memoryWrite.ts";
 import {
   addEmbeddingProvenance,
   type EmbeddingAttemptInfo,
   type EmbeddingProvider,
   generateEmbeddingSafely,
-} from "../providers/embedding.ts";
+} from "#providers/embedding.ts";
 import {
   type ConsolidationRow,
   updateConsolidationStatus,

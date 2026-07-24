@@ -5,7 +5,7 @@ import {
   fenceTranscript,
   fenceUntrusted,
   sanitizeExtracted,
-} from "../../src/extraction/fencing.ts";
+} from "#extraction/fencing.ts";
 
 interface TestMem {
   layer: string;

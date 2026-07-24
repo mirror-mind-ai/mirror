@@ -5,14 +5,14 @@
 // blank-line quirk (same `print(f"...\n")` + `print()` pattern as
 // `render/tasks.ts`'s list header).
 
-import type { Task } from "../../tasks/taskStore.ts";
+import type { Task } from "#tasks/taskStore.ts";
 import {
   addIsoDays,
   computeWeekRange,
   filterVisibleTasks,
   groupTasksByDay,
   toIsoDate,
-} from "../../tasks/weekView.ts";
+} from "#tasks/weekView.ts";
 
 const WEEKDAYS_FULL = [
   "Monday",

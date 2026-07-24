@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import type { ConsolidationRow } from "../../src/cultivation/consolidationStore.ts";
-import type { ShadowScanResult } from "../../src/cultivation/scan.ts";
-import type { ShadowApplyRouteOutcome } from "../../src/frontDoor/cultivationRoute.ts";
+import type { ConsolidationRow } from "#cultivation/consolidationStore.ts";
+import type { ShadowScanResult } from "#cultivation/scan.ts";
+import type { ShadowApplyRouteOutcome } from "#frontDoor/cultivationRoute.ts";
 import {
   renderShadowApply,
   renderShadowList,
@@ -11,7 +11,7 @@ import {
   renderShadowRejected,
   renderShadowScan,
   renderShadowShow,
-} from "../../src/frontDoor/render/shadow.ts";
+} from "#frontDoor/render/shadow.ts";
 
 function row(overrides: Partial<ConsolidationRow> = {}): ConsolidationRow {
   return {

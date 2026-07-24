@@ -15,10 +15,10 @@
 // the same data; the live prompt-level guard text is DS8, per the extraction
 // precedent recorded in `fencing.ts`.
 
-import { fenceUntrusted } from "../extraction/fencing.ts";
-import { parseJsonResponse } from "../extraction/json.ts";
-import { resolveExtractionModel } from "../providers/config.ts";
-import type { LlmProvider } from "../providers/llm.ts";
+import { fenceUntrusted } from "#extraction/fencing.ts";
+import { parseJsonResponse } from "#extraction/json.ts";
+import { resolveExtractionModel } from "#providers/config.ts";
+import type { LlmProvider } from "#providers/llm.ts";
 import type { ConsolidationRow, CultivationMemory } from "./consolidationStore.ts";
 
 /** Mirrors Python's action allowlist check in `propose_consolidation`. */

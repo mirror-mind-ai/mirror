@@ -8,10 +8,10 @@ import {
   extractTasks,
   formatTranscript,
   naiveSummary,
-} from "../../src/extraction/conversation.ts";
-import { parseJsonResponse } from "../../src/extraction/json.ts";
-import { DEFAULT_EXTRACTION_MODEL } from "../../src/providers/config.ts";
-import { ReplayLlmProvider } from "../../src/providers/llm.ts";
+} from "#extraction/conversation.ts";
+import { parseJsonResponse } from "#extraction/json.ts";
+import { DEFAULT_EXTRACTION_MODEL } from "#providers/config.ts";
+import { ReplayLlmProvider } from "#providers/llm.ts";
 
 test("parseJsonResponse mirrors Python raw/fenced/invalid behavior", () => {
   assert.deepEqual(parseJsonResponse('[{"title":"A"}]'), [{ title: "A" }]);

@@ -3,20 +3,20 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
+import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import {
   applyTasksImport,
   applyTasksSyncConfig,
   applyTasksSyncForJourney,
   resolveImportJourneys,
   resolveSyncJourneys,
-} from "../../src/frontDoor/tasksImportSyncRoute.ts";
-import { upsertIdentity } from "../../src/identity/identityStore.ts";
-import { JOURNEY_PATH_LAYER } from "../../src/journey/journeyStatus.ts";
-import { JOURNEY_LAYER } from "../../src/journey/journeySyncFile.ts";
-import { JourneyNotFoundError } from "../../src/journey/journeyWrite.ts";
-import { createIdentityTable } from "../helpers/identitySchema.ts";
-import { createTasksTable } from "../helpers/tasksSchema.ts";
+} from "#frontDoor/tasksImportSyncRoute.ts";
+import { upsertIdentity } from "#identity/identityStore.ts";
+import { JOURNEY_PATH_LAYER } from "#journey/journeyStatus.ts";
+import { JOURNEY_LAYER } from "#journey/journeySyncFile.ts";
+import { JourneyNotFoundError } from "#journey/journeyWrite.ts";
+import { createIdentityTable } from "#helpers/identitySchema.ts";
+import { createTasksTable } from "#helpers/tasksSchema.ts";
 
 function tempWorkspace(): { dir: string; dbPath: string; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), "mirror-core-import-sync-route-"));

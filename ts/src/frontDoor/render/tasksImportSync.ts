@@ -5,7 +5,7 @@ import type {
   ImportJourneyResult,
   SyncConfigOutcome,
   SyncJourneyOutcome,
-} from "../tasksImportSyncRoute.ts";
+} from "#frontDoor/tasksImportSyncRoute.ts";
 
 /**
  * Render `tasks import`. The total line's leading blank line reproduces

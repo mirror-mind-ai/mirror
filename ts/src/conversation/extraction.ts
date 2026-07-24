@@ -1,6 +1,6 @@
-import type { WritableDatabase } from "../db/database.ts";
-import { embeddingToBytes } from "../db/decode.ts";
-import { optionalString, requireString } from "../db/rowDecode.ts";
+import type { WritableDatabase } from "#db/database.ts";
+import { embeddingToBytes } from "#db/decode.ts";
+import { optionalString, requireString } from "#db/rowDecode.ts";
 import {
   curateAgainstExisting,
   type ExistingMemoryForCuration,
@@ -11,18 +11,18 @@ import {
   extractTasks,
   formatTranscript,
   naiveSummary,
-} from "../extraction/conversation.ts";
-import { createMemoryRow } from "../memory/memoryWrite.ts";
-import { logLlmCall } from "../observability/llmCalls.ts";
-import { resolveEmbeddingModel, resolveExtractionModel } from "../providers/config.ts";
+} from "#extraction/conversation.ts";
+import { createMemoryRow } from "#memory/memoryWrite.ts";
+import { logLlmCall } from "#observability/llmCalls.ts";
+import { resolveEmbeddingModel, resolveExtractionModel } from "#providers/config.ts";
 import {
   addEmbeddingProvenance,
   type EmbeddingAttemptInfo,
   type EmbeddingProvider,
   generateEmbeddingSafely,
-} from "../providers/embedding.ts";
-import type { LlmProvider } from "../providers/llm.ts";
-import { newId, nowIso } from "../util/pyGenerators.ts";
+} from "#providers/embedding.ts";
+import type { LlmProvider } from "#providers/llm.ts";
+import { newId, nowIso } from "#util/pyGenerators.ts";
 
 export interface ConversationExtractionOptions {
   llm: LlmProvider;

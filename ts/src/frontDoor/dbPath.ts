@@ -22,7 +22,7 @@
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, join } from "node:path";
-import { expandHome } from "../util/paths.ts";
+import { expandHome } from "#util/paths.ts";
 import { optionValue } from "./args.ts";
 
 /** Raised when no database location can be resolved — maps to CLI exit 2. */

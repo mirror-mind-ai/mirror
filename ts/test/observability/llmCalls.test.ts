@@ -3,8 +3,8 @@ import { mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import test from "node:test";
 
-import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
-import { getLlmCallSummary, logLlmCall } from "../../src/observability/llmCalls.ts";
+import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
+import { getLlmCallSummary, logLlmCall } from "#observability/llmCalls.ts";
 
 const TMP_DIR = join(process.cwd(), "tmp", "test-llm-calls");
 const IDENTITY_BEARING_PROMPT = JSON.stringify([

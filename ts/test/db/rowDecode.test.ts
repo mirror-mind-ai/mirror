@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { optionalNumber, optionalString, requireString } from "../../src/db/rowDecode.ts";
+import { optionalNumber, optionalString, requireString } from "#db/rowDecode.ts";
 
 test("requireString returns strings and throws (naming the column) on anything else", () => {
   assert.equal(requireString({ id: "abc" }, "id"), "abc");

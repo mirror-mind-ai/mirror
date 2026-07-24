@@ -9,12 +9,12 @@
 // real filesystem (Path.resolve equivalent), so we take it pre-normalized
 // (injected) — the same way id and now are injected.
 
-import { type WritableDatabase, withTransaction } from "../db/database.ts";
+import { type WritableDatabase, withTransaction } from "#db/database.ts";
 import {
   type IdentityRow,
   updateIdentityMetadata,
   upsertIdentity,
-} from "../identity/identityStore.ts";
+} from "#identity/identityStore.ts";
 
 export const JOURNEY_LAYER = "journey";
 

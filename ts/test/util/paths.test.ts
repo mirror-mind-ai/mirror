@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync } from "node:
 import { homedir, tmpdir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 import { test } from "node:test";
-import { expandHome, normalizeProjectPath } from "../../src/util/paths.ts";
+import { expandHome, normalizeProjectPath } from "#util/paths.ts";
 
 test("expandHome expands a leading ~ to the home directory", () => {
   assert.equal(expandHome("~/projects"), join(homedir(), "projects"));

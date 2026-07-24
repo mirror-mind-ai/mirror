@@ -4,7 +4,7 @@
 // today; this is the single source for new DS7.US1 tests (recall, conversations
 // listing, journey status) so the schema can't drift between call sites.
 
-import type { WritableDatabase } from "../../src/db/database.ts";
+import type { WritableDatabase } from "#db/database.ts";
 
 export const CONVERSATIONS_DDL =
   "CREATE TABLE conversations (id TEXT PRIMARY KEY, title TEXT, started_at TEXT NOT NULL, " +

@@ -6,7 +6,7 @@ import {
   MirrorHomeNotConfiguredError,
   resolveDbPath,
   resolveMirrorHome,
-} from "../../src/frontDoor/dbPath.ts";
+} from "#frontDoor/dbPath.ts";
 
 const HOME = "/home/u";
 const noFs = { home: HOME, exists: () => false, warn: () => {} };

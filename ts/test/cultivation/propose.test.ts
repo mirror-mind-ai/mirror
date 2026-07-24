@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import type { CultivationMemory } from "../../src/cultivation/consolidationStore.ts";
+import type { CultivationMemory } from "#cultivation/consolidationStore.ts";
 import {
   formatCluster,
   formatShadowMemories,
@@ -9,9 +9,9 @@ import {
   proposeConsolidation,
   proposeShadowObservations,
   type ShadowStructureEntry,
-} from "../../src/cultivation/propose.ts";
-import type { LlmProvider, LlmRequest, LlmResponse } from "../../src/providers/llm.ts";
-import { ReplayLlmProvider } from "../../src/providers/llm.ts";
+} from "#cultivation/propose.ts";
+import type { LlmProvider, LlmRequest, LlmResponse } from "#providers/llm.ts";
+import { ReplayLlmProvider } from "#providers/llm.ts";
 
 function mem(overrides: Partial<CultivationMemory> = {}): CultivationMemory {
   return {

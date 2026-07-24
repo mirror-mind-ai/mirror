@@ -8,7 +8,7 @@ import {
   openDatabaseReadOnly,
   type WritableDatabase,
   withTransaction,
-} from "../../src/db/database.ts";
+} from "#db/database.ts";
 
 function tmpCopyPath(): { dbPath: string; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), "mirror-core-discipline-"));

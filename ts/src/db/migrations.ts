@@ -17,7 +17,7 @@
 // one — migrations before it stay applied and recorded, so a retry resumes
 // from exactly that point (see `migrationsWithTransaction`/`runMigrations`).
 
-import { nowIso } from "../util/pyGenerators.ts";
+import { nowIso } from "#util/pyGenerators.ts";
 import { type WritableDatabase, withTransaction } from "./database.ts";
 
 function tableColumns(db: WritableDatabase, table: string): Set<string> {

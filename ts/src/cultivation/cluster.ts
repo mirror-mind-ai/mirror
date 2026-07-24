@@ -9,8 +9,8 @@
 // (first match wins). Memories with no embedding or in a terminal readiness
 // state are skipped up front; singleton groups (clusters of one) are dropped.
 
-import { blobToFloat32 } from "../db/decode.ts";
-import { cosineSimilarity } from "../search/ranker.ts";
+import { blobToFloat32 } from "#db/decode.ts";
+import { cosineSimilarity } from "#search/ranker.ts";
 import type { CultivationMemory } from "./consolidationStore.ts";
 
 /** Mirrors Python's `DEFAULT_CLUSTER_THRESHOLD`. */

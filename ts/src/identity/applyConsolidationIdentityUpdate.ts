@@ -16,7 +16,7 @@
 // new content is appended after a blank line, never replaces existing content
 // outright -- the same shape as Python's `f"{existing.content.rstrip()}\n\n{content}"`.
 
-import type { WritableDatabase } from "../db/database.ts";
+import type { WritableDatabase } from "#db/database.ts";
 import { getIdentityContent } from "./identityRead.ts";
 import { type IdentityRow, upsertIdentity } from "./identityStore.ts";
 

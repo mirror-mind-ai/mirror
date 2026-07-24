@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { BackupGateError, requireBackup, sha256File } from "../../src/db/backupGate.ts";
+import { BackupGateError, requireBackup, sha256File } from "#db/backupGate.ts";
 
 function tempFile(contents: string): { path: string; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), "mirror-core-backup-"));

@@ -4,11 +4,11 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
-import { runMigrations } from "../../src/db/migrations.ts";
-import { buildSchemaInventory, type SchemaInventory } from "../../src/db/schemaInventory.ts";
-import { TS_AUTHORED_MIGRATION_IDS } from "../../src/db/schemaState.ts";
-import { diffTsInventoryAgainstSnapshot } from "../../src/db/schemaTsDivergence.ts";
+import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
+import { runMigrations } from "#db/migrations.ts";
+import { buildSchemaInventory, type SchemaInventory } from "#db/schemaInventory.ts";
+import { TS_AUTHORED_MIGRATION_IDS } from "#db/schemaState.ts";
+import { diffTsInventoryAgainstSnapshot } from "#db/schemaTsDivergence.ts";
 
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "migrations");
 

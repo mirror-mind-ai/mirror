@@ -15,8 +15,8 @@
 
 import { chmodSync, copyFileSync, mkdirSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { type BackupRecord, requireBackup, sha256File } from "../db/backupGate.ts";
-import { snapshotDatabaseTo } from "../db/database.ts";
+import { type BackupRecord, requireBackup, sha256File } from "#db/backupGate.ts";
+import { snapshotDatabaseTo } from "#db/database.ts";
 
 const BACKUP_DIR_NAME = "backups";
 const BACKUP_FILE_NAME = "frontdoor-pre-write-backup.db";

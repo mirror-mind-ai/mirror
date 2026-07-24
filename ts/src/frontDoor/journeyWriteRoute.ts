@@ -5,9 +5,9 @@
 // US2 setProjectPath over the US4 live-write seam. setProjectPath throws when the
 // journey does not exist; the cli wrapper maps that to Python's not-found output.
 
-import type { WritableDatabase } from "../db/database.ts";
-import { setProjectPath } from "../journey/journeyWrite.ts";
-import { normalizeProjectPath } from "../util/paths.ts";
+import type { WritableDatabase } from "#db/database.ts";
+import { setProjectPath } from "#journey/journeyWrite.ts";
+import { normalizeProjectPath } from "#util/paths.ts";
 
 /**
  * Apply `journey set-path`: normalize `rawPath` (expanduser + resolve, matching

@@ -3,8 +3,8 @@ import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { BackupGateError, type BackupRecord, sha256File } from "../../src/db/backupGate.ts";
-import { openDatabaseCopyForWrite, openDatabaseForWrite } from "../../src/db/database.ts";
+import { BackupGateError, type BackupRecord, sha256File } from "#db/backupGate.ts";
+import { openDatabaseCopyForWrite, openDatabaseForWrite } from "#db/database.ts";
 
 function workspace(): { tmpDir: string; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), "mirror-core-livewrite-"));

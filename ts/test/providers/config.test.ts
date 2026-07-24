@@ -8,7 +8,7 @@ import {
   resolveExtractionModel,
   resolveLogLlmCallsMode,
   resolveProviderConfig,
-} from "../../src/providers/config.ts";
+} from "#providers/config.ts";
 
 test("resolveProviderConfig reads API keys from env", () => {
   const config = resolveProviderConfig("openrouter", {

@@ -8,7 +8,7 @@ import {
   type JourneyIdentityRow,
   type JourneyOption,
   listJourneyOptions,
-} from "../../src/journey/journeyOptions.ts";
+} from "#journey/journeyOptions.ts";
 
 test("groupJourneysByParent splits roots and children and treats orphan parents as roots", () => {
   const items = [

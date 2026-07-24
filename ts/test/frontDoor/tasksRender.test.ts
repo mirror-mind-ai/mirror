@@ -5,8 +5,8 @@ import {
   renderTasksDelete,
   renderTasksList,
   renderTasksStatusChange,
-} from "../../src/frontDoor/render/tasks.ts";
-import type { Task } from "../../src/tasks/taskStore.ts";
+} from "#frontDoor/render/tasks.ts";
+import type { Task } from "#tasks/taskStore.ts";
 
 function task(overrides: Partial<Task> = {}): Task {
   return {

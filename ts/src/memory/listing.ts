@@ -7,8 +7,8 @@
 // mapper, not a re-implementation of SQLite's sort. The `--search` listing path
 // is out of scope here: it reuses the US1 hybrid ranker.
 
-import type { Database, SqlValue } from "../db/database.ts";
-import { optionalString, requireString } from "../db/rowDecode.ts";
+import type { Database, SqlValue } from "#db/database.ts";
+import { optionalString, requireString } from "#db/rowDecode.ts";
 
 /** The listing projection, mirroring the Python `MemorySummary` DTO. */
 export interface MemorySummary {

@@ -7,8 +7,8 @@
 // Query-builder + row-mapper, ordering pushed down to SQLite, per the same
 // database-seam philosophy as memory/listing.ts.
 
-import type { Database, SqlValue } from "../db/database.ts";
-import { optionalString, requireString } from "../db/rowDecode.ts";
+import type { Database, SqlValue } from "#db/database.ts";
+import { optionalString, requireString } from "#db/rowDecode.ts";
 
 export interface ConversationSummary {
   id: string;

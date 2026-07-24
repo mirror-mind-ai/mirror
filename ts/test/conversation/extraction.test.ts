@@ -3,12 +3,12 @@ import { mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import test from "node:test";
 
-import { runConversationExtraction } from "../../src/conversation/extraction.ts";
-import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
-import { DEFAULT_EXTRACTION_MODEL } from "../../src/providers/config.ts";
-import { ReplayEmbeddingProvider } from "../../src/providers/embedding.ts";
-import type { LlmProvider } from "../../src/providers/llm.ts";
-import { ReplayLlmProvider } from "../../src/providers/llm.ts";
+import { runConversationExtraction } from "#conversation/extraction.ts";
+import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
+import { DEFAULT_EXTRACTION_MODEL } from "#providers/config.ts";
+import { ReplayEmbeddingProvider } from "#providers/embedding.ts";
+import type { LlmProvider } from "#providers/llm.ts";
+import { ReplayLlmProvider } from "#providers/llm.ts";
 
 /** Mirrors the FailingEmbeddingProvider pattern from CR037, applied to
  * LlmProvider -- deterministic proof of the llm_failed path without a live

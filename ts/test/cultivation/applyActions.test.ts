@@ -10,22 +10,22 @@ import {
   applyShadowApply,
   applyShadowCandidate,
   rejectConsolidation,
-} from "../../src/cultivation/applyActions.ts";
+} from "#cultivation/applyActions.ts";
 import {
   type ConsolidationRow,
   createConsolidation,
   getConsolidation,
-} from "../../src/cultivation/consolidationStore.ts";
-import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
-import { getIdentityContent, listAllIdentity } from "../../src/identity/identityRead.ts";
-import { upsertIdentity } from "../../src/identity/identityStore.ts";
-import { ReplayEmbeddingProvider } from "../../src/providers/embedding.ts";
+} from "#cultivation/consolidationStore.ts";
+import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
+import { getIdentityContent, listAllIdentity } from "#identity/identityRead.ts";
+import { upsertIdentity } from "#identity/identityStore.ts";
+import { ReplayEmbeddingProvider } from "#providers/embedding.ts";
 import {
   createConsolidationsTable,
   createMemoriesTable,
   insertMemory,
-} from "../helpers/cultivationSchema.ts";
-import { createIdentityTable } from "../helpers/identitySchema.ts";
+} from "#helpers/cultivationSchema.ts";
+import { createIdentityTable } from "#helpers/identitySchema.ts";
 
 const NOW = "2026-06-23T12:00:00.123000Z";
 const VALID_EMBEDDING = Array(1536).fill(0.2);

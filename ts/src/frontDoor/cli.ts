@@ -21,38 +21,38 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { basename, dirname } from "node:path";
 import { pathToFileURL } from "node:url";
-import { DEFAULT_CLUSTER_THRESHOLD } from "../cultivation/cluster.ts";
-import { listConsolidations } from "../cultivation/consolidationStore.ts";
+import { DEFAULT_CLUSTER_THRESHOLD } from "#cultivation/cluster.ts";
+import { listConsolidations } from "#cultivation/consolidationStore.ts";
 import {
   consolidateScan,
   DEFAULT_CONSOLIDATE_SCAN_LIMIT,
   DEFAULT_SHADOW_SCAN_LIMIT,
   shadowScan,
-} from "../cultivation/scan.ts";
-import { bootstrapDatabaseIfMissing } from "../db/bootstrap.ts";
+} from "#cultivation/scan.ts";
+import { bootstrapDatabaseIfMissing } from "#db/bootstrap.ts";
 import {
   type Database,
   openDatabaseForWrite,
   openDatabaseReadOnly,
   type WritableDatabase,
-} from "../db/database.ts";
-import { ensureMigratedOnOpen } from "../db/migrateOnOpen.ts";
-import { assertSchemaState, SchemaStateError } from "../db/schemaState.ts";
-import { allDescriptors, descriptorsByLayer } from "../descriptor/descriptorRead.ts";
-import { listIdentityByLayer } from "../identity/identityRead.ts";
-import { listJourneysForListCommand } from "../identity/journeyListing.ts";
-import { listPersonas } from "../identity/personaListing.ts";
-import { setIdentity } from "../identity/setIdentity.ts";
-import { IdentityRootExistsError, initUserHome, TemplatesNotFoundError } from "../init/init.ts";
-import { JOURNEY_PATH_LAYER } from "../journey/journeyStatus.ts";
-import { JourneyNotFoundError } from "../journey/journeyWrite.ts";
-import { loadReplayEmbeddingProvider } from "../providers/embedding.ts";
-import { loadReplayLlmProvider } from "../providers/llm.ts";
-import { runSeed } from "../seed/seed.ts";
-import { getTasksForWeek, listTasks } from "../tasks/taskStore.ts";
-import { computeWeekRange } from "../tasks/weekView.ts";
-import { expandHome } from "../util/paths.ts";
-import { newId, nowIso } from "../util/pyGenerators.ts";
+} from "#db/database.ts";
+import { ensureMigratedOnOpen } from "#db/migrateOnOpen.ts";
+import { assertSchemaState, SchemaStateError } from "#db/schemaState.ts";
+import { allDescriptors, descriptorsByLayer } from "#descriptor/descriptorRead.ts";
+import { listIdentityByLayer } from "#identity/identityRead.ts";
+import { listJourneysForListCommand } from "#identity/journeyListing.ts";
+import { listPersonas } from "#identity/personaListing.ts";
+import { setIdentity } from "#identity/setIdentity.ts";
+import { IdentityRootExistsError, initUserHome, TemplatesNotFoundError } from "#init/init.ts";
+import { JOURNEY_PATH_LAYER } from "#journey/journeyStatus.ts";
+import { JourneyNotFoundError } from "#journey/journeyWrite.ts";
+import { loadReplayEmbeddingProvider } from "#providers/embedding.ts";
+import { loadReplayLlmProvider } from "#providers/llm.ts";
+import { runSeed } from "#seed/seed.ts";
+import { getTasksForWeek, listTasks } from "#tasks/taskStore.ts";
+import { computeWeekRange } from "#tasks/weekView.ts";
+import { expandHome } from "#util/paths.ts";
+import { newId, nowIso } from "#util/pyGenerators.ts";
 import { hasOption, optionValue, stripOptionWithValue } from "./args.ts";
 import { runConsultRoute } from "./consultRoute.ts";
 import {

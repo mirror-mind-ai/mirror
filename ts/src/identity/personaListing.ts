@@ -3,8 +3,8 @@
 // `routingRows`: same JSON shape, different call site/output (this one also
 // needs `version`).
 
-import type { Database } from "../db/database.ts";
-import { optionalString, requireString } from "../db/rowDecode.ts";
+import type { Database } from "#db/database.ts";
+import { optionalString, requireString } from "#db/rowDecode.ts";
 
 export interface PersonaListRow {
   key: string;

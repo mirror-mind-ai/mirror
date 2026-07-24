@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import type { Task } from "../../src/tasks/taskStore.ts";
+import type { Task } from "#tasks/taskStore.ts";
 import {
   addIsoDays,
   computeWeekRange,
@@ -8,7 +8,7 @@ import {
   formatIsoDate,
   groupTasksByDay,
   toIsoDate,
-} from "../../src/tasks/weekView.ts";
+} from "#tasks/weekView.ts";
 
 function task(overrides: Partial<Task> = {}): Task {
   return {

@@ -9,19 +9,19 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { applyIdentityUpdate, applyShadowCandidate } from "../../src/cultivation/applyActions.ts";
-import { getConsolidation, listConsolidations } from "../../src/cultivation/consolidationStore.ts";
-import { consolidateScan, createdProposals, shadowScan } from "../../src/cultivation/scan.ts";
-import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
-import { embeddingToBytes } from "../../src/db/decode.ts";
-import { getIdentityContent, listAllIdentity } from "../../src/identity/identityRead.ts";
-import { ReplayLlmProvider } from "../../src/providers/llm.ts";
+import { applyIdentityUpdate, applyShadowCandidate } from "#cultivation/applyActions.ts";
+import { getConsolidation, listConsolidations } from "#cultivation/consolidationStore.ts";
+import { consolidateScan, createdProposals, shadowScan } from "#cultivation/scan.ts";
+import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
+import { embeddingToBytes } from "#db/decode.ts";
+import { getIdentityContent, listAllIdentity } from "#identity/identityRead.ts";
+import { ReplayLlmProvider } from "#providers/llm.ts";
 import {
   createConsolidationsTable,
   createMemoriesTable,
   insertMemory,
-} from "../helpers/cultivationSchema.ts";
-import { createIdentityTable } from "../helpers/identitySchema.ts";
+} from "#helpers/cultivationSchema.ts";
+import { createIdentityTable } from "#helpers/identitySchema.ts";
 
 const NOW = "2026-06-23T12:00:00.123000Z";
 

@@ -8,8 +8,8 @@
 // (used by `shadow scan`). The `consolidations` table and `memories.readiness_state`
 // column already exist in the TS-authored schema (DS6) -- no new migration here.
 
-import type { Database, SqlValue, WritableDatabase } from "../db/database.ts";
-import { optionalString, requireString } from "../db/rowDecode.ts";
+import type { Database, SqlValue, WritableDatabase } from "#db/database.ts";
+import { optionalString, requireString } from "#db/rowDecode.ts";
 
 /** A consolidation row, mirroring the Python `Consolidation` model exactly. */
 export interface ConsolidationRow {

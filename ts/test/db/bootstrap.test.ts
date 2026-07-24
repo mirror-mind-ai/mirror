@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { bootstrapDatabase, bootstrapDatabaseIfMissing } from "../../src/db/bootstrap.ts";
-import { KNOWN_MIGRATION_IDS } from "../../src/db/schemaState.ts";
+import { bootstrapDatabase, bootstrapDatabaseIfMissing } from "#db/bootstrap.ts";
+import { KNOWN_MIGRATION_IDS } from "#db/schemaState.ts";
 
 function tmpDbPath(): { dbPath: string; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), "mirror-core-bootstrap-"));

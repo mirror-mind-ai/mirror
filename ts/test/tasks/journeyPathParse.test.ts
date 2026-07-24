@@ -7,7 +7,7 @@ import {
   type ParsedTask,
   parseDoneTasks,
   parseJourneyPathTasks,
-} from "../../src/tasks/journeyPathParse.ts";
+} from "#tasks/journeyPathParse.ts";
 
 interface GoldenCase {
   name: string;

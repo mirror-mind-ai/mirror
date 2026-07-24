@@ -7,13 +7,13 @@ import {
   findConversationByIdPrefix,
   getMessagesForConversation,
   pythonTailSliceStart,
-} from "../../src/conversation/recall.ts";
-import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
+} from "#conversation/recall.ts";
+import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import {
   createConversationTables,
   insertConversation,
   insertMessage,
-} from "../helpers/conversationSchema.ts";
+} from "#helpers/conversationSchema.ts";
 
 function tempDb(): { db: WritableDatabase; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), "mirror-core-recall-"));

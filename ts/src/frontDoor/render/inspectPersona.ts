@@ -1,7 +1,7 @@
 // `inspect persona <id>` rendering — the port of memory.cli.inspect._inspect_persona.
 
-import type { Database } from "../../db/database.ts";
-import { getPersonaInspect } from "../../identity/personaInspect.ts";
+import type { Database } from "#db/database.ts";
+import { getPersonaInspect } from "#identity/personaInspect.ts";
 
 /** Raised when no persona identity row exists for the id. Python prints this to
  * STDOUT (not stderr) before exit(1) — a deliberate divergence from `identity get`. */

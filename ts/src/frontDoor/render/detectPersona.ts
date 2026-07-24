@@ -1,10 +1,10 @@
 // `detect-persona` rendering: read persona routing rows, score the query,
 // format the matches. Extracted from cli.ts (CR002).
 
-import type { Database } from "../../db/database.ts";
-import { requireString } from "../../db/rowDecode.ts";
-import { detectPersona, type PersonaRoutingRow } from "../../persona/detectPersona.ts";
-import { stripOptionWithValue } from "../args.ts";
+import type { Database } from "#db/database.ts";
+import { requireString } from "#db/rowDecode.ts";
+import { detectPersona, type PersonaRoutingRow } from "#persona/detectPersona.ts";
+import { stripOptionWithValue } from "#frontDoor/args.ts";
 import { identityRows } from "./identityRows.ts";
 
 /** Parse each persona row's `routing_keywords` out of its identity metadata. */

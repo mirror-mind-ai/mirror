@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { test } from "node:test";
-import { CopyOnlyGuardError } from "../../src/db/copyGuard.ts";
-import { openDatabaseCopyForWrite, openDatabaseReadOnly } from "../../src/db/database.ts";
+import { CopyOnlyGuardError } from "#db/copyGuard.ts";
+import { openDatabaseCopyForWrite, openDatabaseReadOnly } from "#db/database.ts";
 
 function seedTempDb(): { path: string; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), "mirror-core-db-"));

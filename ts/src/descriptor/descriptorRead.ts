@@ -3,8 +3,8 @@
 // memory.cli.descriptor._cmd_list (`generate`, which calls the LLM, stays on
 // Python; see routing.ts).
 
-import type { Database } from "../db/database.ts";
-import { requireString } from "../db/rowDecode.ts";
+import type { Database } from "#db/database.ts";
+import { requireString } from "#db/rowDecode.ts";
 
 export interface DescriptorRow {
   layer: string;

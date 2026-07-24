@@ -3,8 +3,8 @@ import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
-import { assertFtsIntegrity, FtsIntegrityError } from "../../src/db/ftsIntegrity.ts";
+import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
+import { assertFtsIntegrity, FtsIntegrityError } from "#db/ftsIntegrity.ts";
 
 function ftsDb(): { db: WritableDatabase; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), "mirror-core-fts-"));

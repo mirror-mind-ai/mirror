@@ -4,8 +4,8 @@
 // test files; drift between the copies would produce failures unrelated to the
 // code under test. These are the single source.
 
-import type { WritableDatabase } from "../../src/db/database.ts";
-import { KNOWN_MIGRATION_IDS } from "../../src/db/schemaState.ts";
+import type { WritableDatabase } from "#db/database.ts";
+import { KNOWN_MIGRATION_IDS } from "#db/schemaState.ts";
 
 /**
  * The production shape of the `identity` table. Matches the TS-authored schema

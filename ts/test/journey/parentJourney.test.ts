@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { resolveParentJourney } from "../../src/journey/parentJourney.ts";
+import { resolveParentJourney } from "#journey/parentJourney.ts";
 
 test("reads the parent from JSON metadata when the column is absent", () => {
   assert.equal(

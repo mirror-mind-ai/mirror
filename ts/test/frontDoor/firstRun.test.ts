@@ -3,10 +3,10 @@ import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { openDatabaseReadOnly } from "../../src/db/database.ts";
-import { KNOWN_MIGRATION_IDS } from "../../src/db/schemaState.ts";
-import { tryOpenDbForConsultLogging } from "../../src/frontDoor/cli.ts";
-import { spawnFrontDoor } from "../helpers/frontDoor.ts";
+import { openDatabaseReadOnly } from "#db/database.ts";
+import { KNOWN_MIGRATION_IDS } from "#db/schemaState.ts";
+import { tryOpenDbForConsultLogging } from "#frontDoor/cli.ts";
+import { spawnFrontDoor } from "#helpers/frontDoor.ts";
 
 // First-run contract (CV22.DS6.TS4): a front-door command against a *missing*
 // database bootstraps it through the TS core (bootstrapDatabase), not by

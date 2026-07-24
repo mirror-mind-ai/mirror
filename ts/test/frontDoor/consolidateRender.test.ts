@@ -4,16 +4,16 @@ import { test } from "node:test";
 import type {
   ConsolidationRow,
   CultivationMemoryWithEmbedding,
-} from "../../src/cultivation/consolidationStore.ts";
-import type { ConsolidateScanResult } from "../../src/cultivation/scan.ts";
-import type { ConsolidateApplyOutcome } from "../../src/frontDoor/cultivationRoute.ts";
+} from "#cultivation/consolidationStore.ts";
+import type { ConsolidateScanResult } from "#cultivation/scan.ts";
+import type { ConsolidateApplyOutcome } from "#frontDoor/cultivationRoute.ts";
 import {
   renderConsolidateApply,
   renderConsolidateList,
   renderConsolidateReject,
   renderConsolidateRejected,
   renderConsolidateScan,
-} from "../../src/frontDoor/render/consolidate.ts";
+} from "#frontDoor/render/consolidate.ts";
 
 function row(overrides: Partial<ConsolidationRow> = {}): ConsolidationRow {
   return {

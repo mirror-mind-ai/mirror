@@ -3,13 +3,13 @@ import { mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import test from "node:test";
 
-import { ConsultArgError, parseConsultArgs } from "../../src/consult/args.ts";
-import { buildConsultLlmRequest, runConsult, SYSTEM_PREAMBLE } from "../../src/consult/core.ts";
-import { resolveConsultModel } from "../../src/consult/modelCatalog.ts";
-import { renderConsultAsk, renderCost, renderCredits } from "../../src/consult/render.ts";
-import { openDatabaseCopyForWrite, type WritableDatabase } from "../../src/db/database.ts";
-import { ReplayCreditProvider } from "../../src/providers/credits.ts";
-import { ReplayLlmProvider } from "../../src/providers/llm.ts";
+import { ConsultArgError, parseConsultArgs } from "#consult/args.ts";
+import { buildConsultLlmRequest, runConsult, SYSTEM_PREAMBLE } from "#consult/core.ts";
+import { resolveConsultModel } from "#consult/modelCatalog.ts";
+import { renderConsultAsk, renderCost, renderCredits } from "#consult/render.ts";
+import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
+import { ReplayCreditProvider } from "#providers/credits.ts";
+import { ReplayLlmProvider } from "#providers/llm.ts";
 
 const TMP_DIR = join(process.cwd(), "tmp", "test-consult");
 

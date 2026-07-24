@@ -5,8 +5,8 @@ import {
   renderTasksSyncConfig,
   renderTasksSyncNoJourneysConfigured,
   renderTasksSyncOutcome,
-} from "../../src/frontDoor/render/tasksImportSync.ts";
-import type { Task } from "../../src/tasks/taskStore.ts";
+} from "#frontDoor/render/tasksImportSync.ts";
+import type { Task } from "#tasks/taskStore.ts";
 
 function task(overrides: Partial<Task> = {}): Task {
   return {

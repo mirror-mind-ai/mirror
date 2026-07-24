@@ -2,9 +2,9 @@
 // `cli/shadow_cmd.py`'s print statements. See `consolidate.ts`'s module doc
 // for the shared rendering philosophy and blank-line idiom.
 
-import type { ConsolidationRow } from "../../cultivation/consolidationStore.ts";
-import type { ShadowScanResult } from "../../cultivation/scan.ts";
-import type { RejectOutcome, ShadowApplyRouteOutcome } from "../cultivationRoute.ts";
+import type { ConsolidationRow } from "#cultivation/consolidationStore.ts";
+import type { ShadowScanResult } from "#cultivation/scan.ts";
+import type { RejectOutcome, ShadowApplyRouteOutcome } from "#frontDoor/cultivationRoute.ts";
 import type { RenderedCommand } from "./consolidate.ts";
 import { renderAlreadyReviewed, renderProposalNotFound } from "./cultivationShared.ts";
 
