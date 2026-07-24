@@ -4,10 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
-import {
-  renderJourneyStatus,
-  resolveJourneyStatusSlug,
-} from "#frontDoor/render/journeyStatus.ts";
+import { renderJourneyStatus, resolveJourneyStatusSlug } from "#frontDoor/render/journeyStatus.ts";
 import { createConversationTables } from "#helpers/conversationSchema.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
 

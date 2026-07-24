@@ -7,14 +7,14 @@ import { test } from "node:test";
 import { consolidateScan, createdProposals, shadowScan } from "#cultivation/scan.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import { embeddingToBytes } from "#db/decode.ts";
-import { upsertIdentity } from "#identity/identityStore.ts";
-import { ReplayLlmProvider } from "#providers/llm.ts";
 import {
   createConsolidationsTable,
   createMemoriesTable,
   insertMemory,
 } from "#helpers/cultivationSchema.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
+import { upsertIdentity } from "#identity/identityStore.ts";
+import { ReplayLlmProvider } from "#providers/llm.ts";
 
 const NOW = "2026-06-23T12:00:00.123000Z";
 

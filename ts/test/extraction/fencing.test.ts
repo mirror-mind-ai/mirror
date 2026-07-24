@@ -1,11 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  fenceTranscript,
-  fenceUntrusted,
-  sanitizeExtracted,
-} from "#extraction/fencing.ts";
+import { fenceTranscript, fenceUntrusted, sanitizeExtracted } from "#extraction/fencing.ts";
 
 interface TestMem {
   layer: string;

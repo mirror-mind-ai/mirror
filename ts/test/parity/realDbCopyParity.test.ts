@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { openDatabaseCopyForWrite } from "#db/database.ts";
+import { createConsolidationsTable, createMemoriesTable } from "#helpers/cultivationSchema.ts";
 import {
   evaluateCultivationProbes,
   evaluateJourneyProbes,
@@ -13,7 +14,6 @@ import {
   renderRedactedReport,
   toProbeResult,
 } from "#parity/realDbCopyParity.ts";
-import { createConsolidationsTable, createMemoriesTable } from "#helpers/cultivationSchema.ts";
 
 test("orderedIdsHash is stable and order-sensitive", () => {
   assert.equal(orderedIdsHash(["a", "b"]), orderedIdsHash(["a", "b"]));

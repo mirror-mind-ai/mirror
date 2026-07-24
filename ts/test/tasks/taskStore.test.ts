@@ -5,6 +5,7 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
+import { createTasksTable } from "#helpers/tasksSchema.ts";
 import {
   completeTask,
   createTask,
@@ -21,7 +22,6 @@ import {
   type Task,
   updateTaskStatus,
 } from "#tasks/taskStore.ts";
-import { createTasksTable } from "#helpers/tasksSchema.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const GOLDEN_PATH = join(HERE, "..", "goldens", "task-store.golden.json");

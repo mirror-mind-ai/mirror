@@ -6,9 +6,9 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import { renderWeekView } from "#frontDoor/render/week.ts";
+import { createTasksTable } from "#helpers/tasksSchema.ts";
 import { createTask, getTasksForWeek, type Task } from "#tasks/taskStore.ts";
 import { computeWeekRange } from "#tasks/weekView.ts";
-import { createTasksTable } from "#helpers/tasksSchema.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const GOLDEN_PATH = join(HERE, "..", "goldens", "week-view.golden.json");

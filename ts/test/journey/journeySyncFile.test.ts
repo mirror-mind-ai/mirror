@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
+import { createIdentityTable } from "#helpers/identitySchema.ts";
 import { upsertIdentity } from "#identity/identityStore.ts";
 import { JOURNEY_PATH_LAYER } from "#journey/journeyStatus.ts";
 import {
@@ -13,7 +14,6 @@ import {
   setSyncFile,
 } from "#journey/journeySyncFile.ts";
 import { JourneyNotFoundError } from "#journey/journeyWrite.ts";
-import { createIdentityTable } from "#helpers/identitySchema.ts";
 
 function tempWorkspace(): { dir: string; dbPath: string; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), "mirror-core-journeysyncfile-"));

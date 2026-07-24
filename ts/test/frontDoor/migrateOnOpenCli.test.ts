@@ -8,9 +8,9 @@ import { openDatabaseCopyForWrite, openDatabaseReadOnly } from "#db/database.ts"
 import { migrationBackupPathFor } from "#db/migrateOnOpen.ts";
 import { KNOWN_MIGRATION_IDS } from "#db/schemaState.ts";
 import { frontDoorLogPath } from "#frontDoor/frontDoorLog.ts";
-import { createJourney } from "#journey/journeyWrite.ts";
 import { spawnFrontDoor } from "#helpers/frontDoor.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
+import { createJourney } from "#journey/journeyWrite.ts";
 
 const NOW = "2026-06-23T12:00:00.000000Z";
 

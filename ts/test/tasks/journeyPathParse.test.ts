@@ -3,11 +3,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import {
-  type ParsedTask,
-  parseDoneTasks,
-  parseJourneyPathTasks,
-} from "#tasks/journeyPathParse.ts";
+import { type ParsedTask, parseDoneTasks, parseJourneyPathTasks } from "#tasks/journeyPathParse.ts";
 
 interface GoldenCase {
   name: string;

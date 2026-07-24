@@ -11,12 +11,12 @@ import {
   resolveImportJourneys,
   resolveSyncJourneys,
 } from "#frontDoor/tasksImportSyncRoute.ts";
+import { createIdentityTable } from "#helpers/identitySchema.ts";
+import { createTasksTable } from "#helpers/tasksSchema.ts";
 import { upsertIdentity } from "#identity/identityStore.ts";
 import { JOURNEY_PATH_LAYER } from "#journey/journeyStatus.ts";
 import { JOURNEY_LAYER } from "#journey/journeySyncFile.ts";
 import { JourneyNotFoundError } from "#journey/journeyWrite.ts";
-import { createIdentityTable } from "#helpers/identitySchema.ts";
-import { createTasksTable } from "#helpers/tasksSchema.ts";
 
 function tempWorkspace(): { dir: string; dbPath: string; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), "mirror-core-import-sync-route-"));

@@ -5,8 +5,8 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import { applyJourneySetPath } from "#frontDoor/journeyWriteRoute.ts";
-import { createJourney } from "#journey/journeyWrite.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
+import { createJourney } from "#journey/journeyWrite.ts";
 
 const NOW = "2026-06-23T12:00:00.123000Z";
 const LATER = "2026-06-24T00:00:00.000000Z";

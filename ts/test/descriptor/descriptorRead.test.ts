@@ -5,8 +5,8 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import { allDescriptors, descriptorsByLayer } from "#descriptor/descriptorRead.ts";
-import { upsertIdentity } from "#identity/identityStore.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
+import { upsertIdentity } from "#identity/identityStore.ts";
 
 const NOW = "2026-06-23T12:00:00.123000Z";
 

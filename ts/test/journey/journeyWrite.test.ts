@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
+import { createIdentityTable } from "#helpers/identitySchema.ts";
 import { listJourneyOptions } from "#journey/journeyOptions.ts";
 import {
   createJourney,
@@ -12,7 +13,6 @@ import {
   setProjectPath,
 } from "#journey/journeyWrite.ts";
 import { resolveParentJourney } from "#journey/parentJourney.ts";
-import { createIdentityTable } from "#helpers/identitySchema.ts";
 
 const NOW = "2026-06-23T12:00:00.123456Z";
 const LATER = "2026-06-24T09:30:00.500000Z";

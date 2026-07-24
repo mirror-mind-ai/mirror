@@ -5,8 +5,8 @@ import { join } from "node:path";
 import { test } from "node:test";
 
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
-import { createMemoryRow, getMemorySourceForMerge } from "#memory/memoryWrite.ts";
 import { createMemoriesTable, insertMemory } from "#helpers/cultivationSchema.ts";
+import { createMemoryRow, getMemorySourceForMerge } from "#memory/memoryWrite.ts";
 
 function tempDb(): { db: WritableDatabase; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), "mirror-core-memory-write-"));

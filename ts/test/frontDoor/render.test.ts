@@ -7,8 +7,8 @@ import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts
 import { renderDetectPersona } from "#frontDoor/render/detectPersona.ts";
 import { renderJourney } from "#frontDoor/render/journeys.ts";
 import { renderMemoryRow, tagsText } from "#frontDoor/render/memories.ts";
-import type { MemorySummary } from "#memory/listing.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
+import type { MemorySummary } from "#memory/listing.ts";
 
 test("tagsText handles arrays, non-arrays, malformed JSON, and null", () => {
   assert.equal(tagsText('["a", "b"]'), "a, b");

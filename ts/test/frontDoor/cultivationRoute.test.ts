@@ -16,14 +16,14 @@ import {
   runReject,
   runShadowApply,
 } from "#frontDoor/cultivationRoute.ts";
-import { getIdentityContent } from "#identity/identityRead.ts";
-import { ReplayEmbeddingProvider } from "#providers/embedding.ts";
 import {
   createConsolidationsTable,
   createMemoriesTable,
   insertMemory,
 } from "#helpers/cultivationSchema.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
+import { getIdentityContent } from "#identity/identityRead.ts";
+import { ReplayEmbeddingProvider } from "#providers/embedding.ts";
 
 const NOW = "2026-06-23T12:00:00.123000Z";
 const VALID_EMBEDDING = Array(1536).fill(0.3);

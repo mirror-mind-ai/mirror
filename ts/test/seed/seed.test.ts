@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
-import { runSeed } from "#seed/seed.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
+import { runSeed } from "#seed/seed.ts";
 
 function tempDb(): { db: WritableDatabase; cleanup: () => void } {
   const dir = mkdtempSync(join(tmpdir(), "mirror-core-seed-"));

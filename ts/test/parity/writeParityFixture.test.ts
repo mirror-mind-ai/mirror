@@ -5,11 +5,8 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { BackupGateError, sha256File } from "#db/backupGate.ts";
 import { openDatabaseCopyForWrite } from "#db/database.ts";
-import {
-  verifyWriteFixture,
-  type WriteParityFixture,
-} from "#parity/writeParityFixture.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
+import { verifyWriteFixture, type WriteParityFixture } from "#parity/writeParityFixture.ts";
 
 const NOW_ISO = "2026-06-23T12:00:00.123456Z";
 const CONTEXT = "retrieval";

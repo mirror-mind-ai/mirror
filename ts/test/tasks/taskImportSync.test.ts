@@ -5,6 +5,8 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
+import { createIdentityTable } from "#helpers/identitySchema.ts";
+import { createTasksTable } from "#helpers/tasksSchema.ts";
 import { upsertIdentity } from "#identity/identityStore.ts";
 import { JOURNEY_PATH_LAYER } from "#journey/journeyStatus.ts";
 import { JOURNEY_LAYER } from "#journey/journeySyncFile.ts";
@@ -15,8 +17,6 @@ import {
   syncTasksFromFile,
 } from "#tasks/taskImportSync.ts";
 import { createTask, getTasksByJourney, type Task } from "#tasks/taskStore.ts";
-import { createIdentityTable } from "#helpers/identitySchema.ts";
-import { createTasksTable } from "#helpers/tasksSchema.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const GOLDEN_PATH = join(HERE, "..", "goldens", "task-import-sync.golden.json");

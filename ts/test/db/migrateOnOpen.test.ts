@@ -7,8 +7,8 @@ import { test } from "node:test";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import { openDatabaseForBootstrap } from "#db/database.ts";
 import { ensureMigratedOnOpen, migrationBackupPathFor } from "#db/migrateOnOpen.ts";
-import { createJourney } from "#journey/journeyWrite.ts";
 import { regressToPre017 } from "#helpers/legacyDb.ts";
+import { createJourney } from "#journey/journeyWrite.ts";
 
 const NOW = "2026-01-01T00:00:00Z";
 

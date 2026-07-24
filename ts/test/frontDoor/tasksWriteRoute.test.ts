@@ -9,8 +9,8 @@ import {
   applyTasksDelete,
   applyTasksStatusChange,
 } from "#frontDoor/tasksWriteRoute.ts";
-import { createTask, getTaskById } from "#tasks/taskStore.ts";
 import { createTasksTable } from "#helpers/tasksSchema.ts";
+import { createTask, getTaskById } from "#tasks/taskStore.ts";
 
 const NOW = "2026-04-01T10:00:00.000000Z";
 const LATER = "2026-04-02T11:00:00.000000Z";
