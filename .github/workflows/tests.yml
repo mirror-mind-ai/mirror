@@ -112,6 +112,12 @@ jobs:
         env:
           MEMORY_ENV: test
 
+      # CR051 — this script was silently drifted from the CI-enforced
+      # migrationFixtures.test.ts it duplicates; now wired into CI so that
+      # can't happen unnoticed again.
+      - name: Migration fixture structural parity (Navigator script)
+        run: node parity/migration_structural_parity.ts
+
   parity:
     # Realism proof: behavioral parity against a real-shaped database, not only
     # synthetic-golden determinism. Needs both runtimes (Python oracle + TS core).
