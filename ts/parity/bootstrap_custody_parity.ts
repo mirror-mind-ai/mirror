@@ -35,32 +35,13 @@ import { isDeepStrictEqual } from "node:util";
 
 import { bootstrapDatabase } from "../src/db/bootstrap.ts";
 import { openDatabaseReadOnly, type WritableDatabase } from "../src/db/database.ts";
-import { buildSchemaInventory, type SchemaInventory } from "../src/db/schemaInventory.ts";
+import { buildSchemaInventory } from "../src/db/schemaInventory.ts";
 import { SCHEMA_INVENTORY_SNAPSHOT } from "../src/db/schemaInventorySnapshot.ts";
 import { KNOWN_MIGRATION_IDS } from "../src/db/schemaState.ts";
+import { diffTsInventoryAgainstSnapshot } from "../src/db/schemaTsDivergence.ts";
 
 const WORKER = join(dirname(fileURLToPath(import.meta.url)), "..", "test", "db", "bootstrapConcurrencyWorker.ts");
 const CONCURRENT_PROCESSES = 8;
-
-function diffTableCounts(actual: SchemaInventory, expected: SchemaInventory): string[] {
-  const problems: string[] = [];
-  for (const kind of ["tables", "indexes", "triggers"] as const) {
-    const actualNames = new Set(Object.keys(actual[kind]));
-    const expectedNames = new Set(Object.keys(expected[kind]));
-    if (actualNames.size !== expectedNames.size) {
-      problems.push(`${kind}: expected ${expectedNames.size}, got ${actualNames.size}`);
-      continue;
-    }
-    for (const name of expectedNames) {
-      if (!actualNames.has(name)) {
-        problems.push(`${kind}: missing ${name}`);
-      } else if (!isDeepStrictEqual(actual[kind][name], expected[kind][name])) {
-        problems.push(`${kind}: ${name} differs structurally`);
-      }
-    }
-  }
-  return problems;
-}
 
 function checkPragmas(db: WritableDatabase): string[] {
   const problems: string[] = [];
@@ -93,8 +74,11 @@ async function main(): Promise<number> {
     const dbPath = join(dir, "fresh.db");
     const first = bootstrapDatabase(dbPath);
     const pragmaProblems = checkPragmas(first);
+    // Schema shape — via the same enumerated TS ⊇ Python divergence contract
+    // (CV22.DS6.US2, schemaTsDivergence.ts) TS1's schema_structural_parity.ts
+    // already uses against this identical snapshot.
     const inventory = buildSchemaInventory(first);
-    const structuralProblems = diffTableCounts(inventory, SCHEMA_INVENTORY_SNAPSHOT);
+    const structuralProblems = diffTsInventoryAgainstSnapshot(inventory, SCHEMA_INVENTORY_SNAPSHOT);
     const firstMigrationIds = (first.prepare("SELECT id FROM _migrations ORDER BY id").all() as {
       id: string;
     }[]).map((row) => row.id);

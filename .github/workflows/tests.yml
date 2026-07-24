@@ -118,6 +118,11 @@ jobs:
       - name: Migration fixture structural parity (Navigator script)
         run: node parity/migration_structural_parity.ts
 
+      # CR052 — same drift risk as CR051's sibling; includes a real 8-process
+      # concurrency race, so expect more wall-clock time than the fixture check.
+      - name: Bootstrap custody parity (Navigator script)
+        run: node parity/bootstrap_custody_parity.ts
+
   parity:
     # Realism proof: behavioral parity against a real-shaped database, not only
     # synthetic-golden determinism. Needs both runtimes (Python oracle + TS core).
