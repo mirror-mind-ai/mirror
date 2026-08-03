@@ -172,13 +172,18 @@ export default function (pi: ExtensionAPI) {
 		try {
 			mkdirSync(MIRROR_DIR, { recursive: true });
 			logFd = openSync(LOG_FILE, "a");
+			const detachFromPi = process.platform !== "win32";
 			const child = spawn("uv", ["run", "python", ...args], {
 				cwd: process.cwd(),
 				stdio: ["ignore", logFd, logFd],
-				detached: true,
+				// On Windows, detached child processes can allocate a visible console
+				// even when the process is fire-and-forget. Keep POSIX fully detached,
+				// but on Windows rely on unref() plus windowsHide to avoid popups.
+				detached: detachFromPi,
+				windowsHide: true,
 			});
 			child.unref();
-			log("INFO", `${label} started in detached background process ${child.pid ?? "(unknown pid)"}`);
+			log("INFO", `${label} started in ${detachFromPi ? "detached " : ""}background process ${child.pid ?? "(unknown pid)"}`);
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : String(err);
 			log("ERROR", `${label} failed: ${message.slice(0, 500)}`);
