@@ -40,7 +40,7 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 8 | [CR012](rs003-revisable-refinement-lifecycle/cr012-supersede-change-request.md) | RS003 | Close a Change Request superseded by another | captured | — | — |
 | 9 | [CR013](rs003-revisable-refinement-lifecycle/cr013-amend-story-and-request-text.md) | RS003 | Amend Refinement Story and Change Request text during refinement | captured | — | — |
 | 10 | [CR014](rs004-identity-resolution-fidelity/cr014-resolve-owner-name-from-one-authority.md) | RS004 | Resolve the owner's name from one authority | captured | — | — |
-| 11 | [CR015](rs005-durable-refinement-publication/cr015-amend-protocol-for-durable-publication.md) | RS005 | Amend the protocol for durable publication | in_progress | @viniciusteles | `refinement/rs005-durable-publication` |
+| 11 | [CR015](rs005-durable-refinement-publication/cr015-amend-protocol-for-durable-publication.md) | RS005 | Amend the protocol for durable publication | in_progress | @viniciusteles | [PR #38](https://github.com/mirror-mind-ai/mirror/pull/38) |
 | 12 | [CR016](rs005-durable-refinement-publication/cr016-surface-refinement-divergence-at-session-boundaries.md) | RS005 | Surface refinement-tree divergence at session boundaries | captured | — | — |
 | — | [CR007](rs002-collaborative-refinement-work/cr007-collaborative-capture-and-handoff-protocol.md) | RS002 | Define the collaborative capture and handoff protocol | done | @alissonvale | `refinement/rs002-collaborative-workbench` |
 | — | [CR006](rs002-collaborative-refinement-work/cr006-record-active-driver-and-delivery-link.md) | RS002 | Record the active Driver and delivery link | done | @alissonvale | `refinement/rs002-collaborative-workbench` |
