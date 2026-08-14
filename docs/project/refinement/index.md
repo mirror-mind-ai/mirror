@@ -82,6 +82,8 @@ The full contributor route is the
 ## Artifact Convention
 
 - IDs are stable, project-wide `RSNNN` and `CRNNN` identifiers.
+- IDs are allocated at publication, never while drafting. A draft carries a slug; the
+  number, the canonical row, and the push to origin happen as one act.
 - IDs do not encode a journey, database, person, absolute path, or runtime display code.
 - Existing database display codes are not imported and do not define these IDs.
 - Each RS owns one directory and one `index.md`.
