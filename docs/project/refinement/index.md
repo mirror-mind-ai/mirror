@@ -22,6 +22,7 @@ executes work.
 | 2 | [RS002](rs002-collaborative-refinement-work/index.md) | Collaborative Refinement Work | closed |
 | 3 | [RS003](rs003-revisable-refinement-lifecycle/index.md) | Revisable Refinement Lifecycle | proposed |
 | 4 | [RS004](rs004-identity-resolution-fidelity/index.md) | Identity Resolution Fidelity | proposed |
+| 5 | [RS005](rs005-durable-refinement-publication/index.md) | Durable Refinement Publication | active |
 
 ## Change Requests
 
@@ -39,6 +40,8 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 8 | [CR012](rs003-revisable-refinement-lifecycle/cr012-supersede-change-request.md) | RS003 | Close a Change Request superseded by another | captured | — | — |
 | 9 | [CR013](rs003-revisable-refinement-lifecycle/cr013-amend-story-and-request-text.md) | RS003 | Amend Refinement Story and Change Request text during refinement | captured | — | — |
 | 10 | [CR014](rs004-identity-resolution-fidelity/cr014-resolve-owner-name-from-one-authority.md) | RS004 | Resolve the owner's name from one authority | captured | — | — |
+| 11 | [CR015](rs005-durable-refinement-publication/cr015-amend-protocol-for-durable-publication.md) | RS005 | Amend the protocol for durable publication | in_progress | @viniciusteles | `refinement/rs005-durable-publication` |
+| 12 | [CR016](rs005-durable-refinement-publication/cr016-surface-refinement-divergence-at-session-boundaries.md) | RS005 | Surface refinement-tree divergence at session boundaries | captured | — | — |
 | — | [CR007](rs002-collaborative-refinement-work/cr007-collaborative-capture-and-handoff-protocol.md) | RS002 | Define the collaborative capture and handoff protocol | done | @alissonvale | `refinement/rs002-collaborative-workbench` |
 | — | [CR006](rs002-collaborative-refinement-work/cr006-record-active-driver-and-delivery-link.md) | RS002 | Record the active Driver and delivery link | done | @alissonvale | `refinement/rs002-collaborative-workbench` |
 | — | [CR005](rs002-collaborative-refinement-work/cr005-present-canonical-workbench-clearly.md) | RS002 | Present the canonical Workbench clearly | done | @alissonvale | `refinement/rs002-collaborative-workbench` |
