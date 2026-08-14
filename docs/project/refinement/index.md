@@ -20,6 +20,7 @@ executes work.
 |------:|----|-------|--------|
 | 1 | [RS001](rs001-ariad-runtime-trust/index.md) | Ariad Runtime Trust | active |
 | 2 | [RS002](rs002-collaborative-refinement-work/index.md) | Collaborative Refinement Work | closed |
+| 3 | [RS003](rs003-revisable-refinement-lifecycle/index.md) | Revisable Refinement Lifecycle | proposed |
 
 ## Change Requests
 
@@ -30,6 +31,10 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 1 | [CR001](rs001-ariad-runtime-trust/cr001-scope-confirmation-checkpoint.md) | RS001 | Make scope confirmation an honest checkpoint | planned | — | — |
 | 2 | [CR002](rs001-ariad-runtime-trust/cr002-cursor-sync-roadmap-selection.md) | RS001 | Refuse ambiguous roadmap selection during cursor sync | captured | — | — |
 | 3 | [CR004](rs001-ariad-runtime-trust/cr004-preserve-authored-story-index.md) | RS001 | Preserve authored story index during Plan materialization | captured | — | — |
+| 4 | [CR008](rs003-revisable-refinement-lifecycle/cr008-replan-with-plan-history.md) | RS003 | Re-plan a reviewed Change Request without destroying plan history | captured | — | — |
+| 5 | [CR009](rs003-revisable-refinement-lifecycle/cr009-resume-stranded-change-request.md) | RS003 | Resume a stranded Change Request | captured | — | — |
+| 6 | [CR010](rs003-revisable-refinement-lifecycle/cr010-supersede-change-request.md) | RS003 | Close a Change Request superseded by another | captured | — | — |
+| 7 | [CR011](rs003-revisable-refinement-lifecycle/cr011-amend-story-and-request-text.md) | RS003 | Amend Refinement Story and Change Request text during refinement | captured | — | — |
 | — | [CR007](rs002-collaborative-refinement-work/cr007-collaborative-capture-and-handoff-protocol.md) | RS002 | Define the collaborative capture and handoff protocol | done | @alissonvale | `refinement/rs002-collaborative-workbench` |
 | — | [CR006](rs002-collaborative-refinement-work/cr006-record-active-driver-and-delivery-link.md) | RS002 | Record the active Driver and delivery link | done | @alissonvale | `refinement/rs002-collaborative-workbench` |
 | — | [CR005](rs002-collaborative-refinement-work/cr005-present-canonical-workbench-clearly.md) | RS002 | Present the canonical Workbench clearly | done | @alissonvale | `refinement/rs002-collaborative-workbench` |
