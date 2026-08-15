@@ -23,6 +23,9 @@ workflow.
   the root index.
 - Never encode people, journeys, databases, local paths, conversations, or runtime IDs
   inside `RSNNN` or `CRNNN` identity.
+- Clones whose role is production are read-only for refinement authoring. Draft, edit,
+  and commit refinement documents only in a development clone: production working trees
+  are deployment artifacts, and runtime machinery may reset them at any time.
 
 ## Status Meanings
 
@@ -57,23 +60,32 @@ report the practical defect. Never fall back to SQLite.
 
 ## 2. Capture Refinement Work
 
-Capture records work; it never selects or starts it.
+Capture records work; it never selects or starts it. Drafting and claiming an
+identifier are two different acts.
 
 1. Require a concrete title, problem, and expected behavior.
 2. Require an explicit existing RS target or explicit authority to create a new RS. The
    current layout has no unassigned CR directory; do not invent placement.
-3. Allocate the next unused project-wide numeric ID by inspecting the complete canonical
-   index. Preserve three-digit formatting (`CR008`, `RS003`).
-4. Create one evolving CR document inside the target RS directory with at least:
-   `Problem`, `Expected Behavior`, `Impact`, `Plan Or Decision`, `Evidence`, and
-   `Outcome`.
-5. Add one canonical row with `captured`, Driver `—`, and Delivery `—`.
+3. **Draft numberless.** A capture-in-progress carries a slug
+   (`replan-with-plan-history.md`), not an ID: no `CRNNN` or `RSNNN` in the filename,
+   heading, or prose. Cross-reference sibling drafts with relative links — they survive
+   later numbering unchanged. A draft may live in a working tree or on a branch for as
+   long as it needs; it cannot collide with anything, because it claims nothing.
+4. **Allocating an ID is publication.** In one act, in one session: inspect the
+   complete canonical index, take the next unused number (three-digit formatting),
+   rename the draft, add the canonical row (`captured`, Driver `—`, Delivery `—`),
+   and push to origin — a branch with an open pull request is a visible claim. An
+   allocated ID that exists only in a local working tree is not a state this process
+   has.
+5. The CR document keeps the required sections: `Problem`, `Expected Behavior`,
+   `Impact`, `Plan Or Decision`, `Evidence`, and `Outcome`.
 6. Preserve `Current Focus` exactly.
 
-If another branch chose the same ID, ordinary Git conflict resolution decides the
-survivor. Never silently overwrite, merge narratives, or renumber another contributor's
-work. Re-read the merged index and allocate a new ID only after the conflict's meaning
-is explicitly resolved.
+If two open claims take the same ID, ordinary Git conflict resolution decides the
+survivor at merge; the other renumbers after the conflict's meaning is explicitly
+resolved. Never silently overwrite, merge narratives, or renumber another
+contributor's work. Publication-time allocation shrinks the collision window from
+days to minutes — without locks, reservation, or a second authority.
 
 ## 3. Select And Plan
 
@@ -159,6 +171,19 @@ Use this compact shape in the pull request or collaboration thread:
 
 The handoff reports canonical facts and evidence; it does not grant merge, publication,
 or release authority.
+
+## 9. End The Session Clean
+
+A session that touched the refinement tree ends in one of exactly two states:
+
+- **published** — the tree is clean and origin has the work; or
+- **named** — the divergence is stated to the Navigator in the handoff: which files,
+  which state (modified, committed-but-unpushed), and who picks it up.
+
+Silent divergence is the one failure this protocol cannot survive. An unpublished
+claim collides later; an unpublished draft strands; uncommitted work in the wrong
+clone simply evaporates. Naming the state costs one sentence — the alternative cost
+is unbounded, and it was paid three ways in one week before this rule existed.
 
 ## Concurrency And Recovery
 
