@@ -1,49 +1,125 @@
 {
   "expected": [
     {
+      "depth": 0,
       "id": "alpha-root-active",
+      "lineage": [
+        "alpha-root-active"
+      ],
       "name": "Alpha Root Active",
       "parent_journey": "",
       "status": "active"
     },
     {
+      "depth": 1,
       "id": "child-active",
+      "lineage": [
+        "alpha-root-active",
+        "child-active"
+      ],
       "name": "Child Active",
       "parent_journey": "alpha-root-active",
       "status": "active"
     },
     {
+      "depth": 2,
+      "id": "grandchild-active",
+      "lineage": [
+        "alpha-root-active",
+        "child-active",
+        "grandchild-active"
+      ],
+      "name": "Grandchild Active",
+      "parent_journey": "child-active",
+      "status": "active"
+    },
+    {
+      "depth": 3,
+      "id": "great-grandchild-active",
+      "lineage": [
+        "alpha-root-active",
+        "child-active",
+        "grandchild-active",
+        "great-grandchild-active"
+      ],
+      "name": "Great Grandchild Active",
+      "parent_journey": "grandchild-active",
+      "status": "active"
+    },
+    {
+      "depth": 1,
       "id": "child-paused",
+      "lineage": [
+        "alpha-root-active",
+        "child-paused"
+      ],
       "name": "Child Paused",
       "parent_journey": "alpha-root-active",
       "status": "paused"
     },
     {
+      "depth": 0,
       "id": "orphan-child",
+      "lineage": [
+        "orphan-child"
+      ],
       "name": "Orphan Child",
       "parent_journey": "missing-parent",
       "status": "active"
     },
     {
+      "depth": 0,
       "id": "zed-root-active",
+      "lineage": [
+        "zed-root-active"
+      ],
       "name": "Zed Root Active",
       "parent_journey": "",
       "status": "active"
     },
     {
+      "depth": 0,
       "id": "beta-root-done",
+      "lineage": [
+        "beta-root-done"
+      ],
       "name": "Beta Root Done",
       "parent_journey": "",
       "status": "completed"
+    },
+    {
+      "depth": 0,
+      "id": "loop-a",
+      "lineage": [
+        "loop-a"
+      ],
+      "name": "Loop A",
+      "parent_journey": "loop-b",
+      "status": "active"
+    },
+    {
+      "depth": 1,
+      "id": "loop-b",
+      "lineage": [
+        "loop-a",
+        "loop-b"
+      ],
+      "name": "Loop B",
+      "parent_journey": "loop-a",
+      "status": "active"
     }
   ],
   "expected_order": [
     "alpha-root-active",
     "child-active",
+    "grandchild-active",
+    "great-grandchild-active",
     "child-paused",
     "orphan-child",
     "zed-root-active",
-    "beta-root-done"
+    "beta-root-done",
+    "loop-a",
+    "loop-b"
   ],
   "journey_rows": [
     {
@@ -65,6 +141,26 @@
       "content": "# Child Paused\n**Status:** paused",
       "key": "child-paused",
       "metadata": "{\"parent_journey\": \"alpha-root-active\"}"
+    },
+    {
+      "content": "# Grandchild Active\n**Status:** active",
+      "key": "grandchild-active",
+      "metadata": "{\"parent_journey\": \"child-active\"}"
+    },
+    {
+      "content": "# Great Grandchild Active\n**Status:** active",
+      "key": "great-grandchild-active",
+      "metadata": "{\"parent_journey\": \"grandchild-active\"}"
+    },
+    {
+      "content": "# Loop A\n**Status:** active",
+      "key": "loop-a",
+      "metadata": "{\"parent_journey\": \"loop-b\"}"
+    },
+    {
+      "content": "# Loop B\n**Status:** active",
+      "key": "loop-b",
+      "metadata": "{\"parent_journey\": \"loop-a\"}"
     },
     {
       "content": "# Orphan Child\n**Status:** active",

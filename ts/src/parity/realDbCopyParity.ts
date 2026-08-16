@@ -35,10 +35,10 @@ export interface PersonaProbe {
   expected_order: string[];
 }
 
-/** A journey-listing probe: the ordered journey ids the Python oracle returned. */
+/** A journey-listing probe: redacted structural signatures from the Python oracle. */
 export interface JourneyProbe {
   label: string;
-  expected_order: string[];
+  expected_projection: string[];
 }
 
 /** A memory-listing probe: filter inputs and the ordered ids the oracle returned. */
@@ -182,9 +182,11 @@ export function evaluateJourneyProbes(
   options: { includeSensitiveDebug?: boolean } = {},
 ): ProbeParityResult[] {
   const rows = fixture.journey_rows ?? [];
-  const actualOrder = listJourneyOptions(rows).map((option) => option.id);
+  const actualProjection = listJourneyOptions(rows).map((option) =>
+    JSON.stringify([option.id, option.depth, option.lineage]),
+  );
   return (fixture.journey_probes ?? []).map((probe) =>
-    toProbeResult(probe.label, probe.expected_order, actualOrder, options),
+    toProbeResult(probe.label, probe.expected_projection, actualProjection, options),
   );
 }
 

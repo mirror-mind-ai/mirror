@@ -127,6 +127,11 @@ DEMO_JOURNEYS = (
     ("demo-root-done", "# Demo Root Done\n**Status:** completed", None),
     ("demo-child-beta", "# Demo Child Beta\n**Status:** active", "demo-root-active"),
     ("demo-child-alpha", "# Demo Child Alpha\n**Status:** paused", "demo-root-active"),
+    ("demo-grandchild", "# Demo Grandchild\n**Status:** active", "demo-child-beta"),
+    ("demo-great-grandchild", "# Demo Great Grandchild\n**Status:** active", "demo-grandchild"),
+    ("demo-orphan", "# Demo Orphan\n**Status:** active", "missing-parent"),
+    ("demo-loop-a", "# Demo Loop A\n**Status:** active", "demo-loop-b"),
+    ("demo-loop-b", "# Demo Loop B\n**Status:** active", "demo-loop-a"),
 )
 
 

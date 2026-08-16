@@ -65,8 +65,11 @@ The Slice C column-first rider is superseded by
 Atomic metadata/column dual-write remains valid, but metadata is semantic authority
 while the unported Python Workspace/web writer can move or unparent a journey. The
 column remains a derived projection; disagreement is drift to diagnose, not read
-fallback. Recursive read/render and arbitrary-depth validation remain explicit
-CR051/CR052 parity obligations rather than being hidden inside this completed slice.
+fallback. [CR051](../../../../refinement/rs008-v0319-recursive-journey-parity/cr051-restore-recursive-journey-read-and-render-parity.md)
+advances the routed `journeys` read and renderer to arbitrary-depth `v0.31.9` parity,
+including `depth`, `lineage`, bounded malformed cycles, and column-zero Markdown
+connectors. Parent movement and arbitrary-depth write validation remain the separate
+CR052 obligation rather than being hidden inside this completed slice.
 
 ## Artifacts
 

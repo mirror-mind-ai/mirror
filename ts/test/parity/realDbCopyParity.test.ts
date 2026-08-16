@@ -112,7 +112,7 @@ test("toProbeResult redacts by default and exposes orders only under debug", () 
   assert.deepEqual(debug.actualOrder, ["b", "a"]);
 });
 
-test("evaluateJourneyProbes replays the pure listing logic against the oracle order", () => {
+test("evaluateJourneyProbes replays order, depth, and lineage against the oracle", () => {
   const fixture: RealDbCopyFixture = {
     ...personaFixture,
     journey_rows: [
@@ -122,20 +122,35 @@ test("evaluateJourneyProbes replays the pure listing logic against the oracle or
         content: "# Child\n**Status:** active",
         metadata: JSON.stringify({ parent_journey: "root" }),
       },
+      {
+        key: "grandchild",
+        content: "# Grandchild\n**Status:** active",
+        metadata: JSON.stringify({ parent_journey: "child" }),
+      },
       { key: "done", content: "# Done\n**Status:** completed" },
     ],
-    journey_probes: [{ label: "journeys_all", expected_order: ["root", "child", "done"] }],
+    journey_probes: [
+      {
+        label: "journeys_all",
+        expected_projection: [
+          '["root",0,["root"]]',
+          '["child",1,["root","child"]]',
+          '["grandchild",2,["root","child","grandchild"]]',
+          '["done",0,["done"]]',
+        ],
+      },
+    ],
   };
   const [result] = evaluateJourneyProbes(fixture);
   assert.equal(result.label, "journeys_all");
   assert.equal(result.match, true);
 });
 
-test("evaluateJourneyProbes flags a divergent oracle order, redacted", () => {
+test("evaluateJourneyProbes flags a divergent structural projection, redacted", () => {
   const fixture: RealDbCopyFixture = {
     ...personaFixture,
     journey_rows: [{ key: "a", content: "# A\n**Status:** active" }],
-    journey_probes: [{ label: "journeys_all", expected_order: ["wrong"] }],
+    journey_probes: [{ label: "journeys_all", expected_projection: ["wrong"] }],
   };
   const [result] = evaluateJourneyProbes(fixture);
   assert.equal(result.match, false);

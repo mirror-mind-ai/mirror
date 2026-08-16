@@ -117,6 +117,67 @@ test("children are grouped under their root and sorted the same way", () => {
   );
 });
 
+test("all descendants are ordered depth-first with depth and complete lineage", () => {
+  const rows: JourneyIdentityRow[] = [
+    { key: "z-parent", content: "# Z Parent\n**Status:** active" },
+    { key: "a-parent", content: "# A Parent\n**Status:** active" },
+    {
+      key: "child",
+      content: "# Child\n**Status:** active",
+      metadata: JSON.stringify({ parent_journey: "z-parent" }),
+    },
+    {
+      key: "grandchild",
+      content: "# Grandchild\n**Status:** active",
+      metadata: JSON.stringify({ parent_journey: "child" }),
+    },
+    {
+      key: "great-grandchild",
+      content: "# Great Grandchild\n**Status:** active",
+      metadata: JSON.stringify({ parent_journey: "grandchild" }),
+    },
+  ];
+
+  const options = listJourneyOptions(rows);
+
+  assert.deepEqual(
+    options.map((option) => option.id),
+    ["a-parent", "z-parent", "child", "grandchild", "great-grandchild"],
+  );
+  assert.deepEqual(
+    options.map((option) => option.depth),
+    [0, 0, 1, 2, 3],
+  );
+  assert.deepEqual(options[4].lineage, ["z-parent", "child", "grandchild", "great-grandchild"]);
+});
+
+test("a malformed rootless cycle stays bounded and every item remains visible once", () => {
+  const rows: JourneyIdentityRow[] = [
+    {
+      key: "loop-a",
+      content: "# Loop A\n**Status:** active",
+      metadata: JSON.stringify({ parent_journey: "loop-b" }),
+    },
+    {
+      key: "loop-b",
+      content: "# Loop B\n**Status:** active",
+      metadata: JSON.stringify({ parent_journey: "loop-a" }),
+    },
+  ];
+
+  const options = listJourneyOptions(rows);
+
+  assert.deepEqual(
+    options.map((option) => option.id),
+    ["loop-a", "loop-b"],
+  );
+  assert.deepEqual(
+    options.map((option) => option.depth),
+    [0, 1],
+  );
+  assert.deepEqual(options[1].lineage, ["loop-a", "loop-b"]);
+});
+
 test("a child whose parent is absent is treated as a root", () => {
   const rows: JourneyIdentityRow[] = [
     {
@@ -128,6 +189,8 @@ test("a child whose parent is absent is treated as a root", () => {
   const options = listJourneyOptions(rows);
   assert.equal(options.length, 1);
   assert.equal(options[0].parent_journey, "missing");
+  assert.equal(options[0].depth, 0);
+  assert.deepEqual(options[0].lineage, ["orphan"]);
 });
 
 test("malformed metadata yields an empty parent without throwing", () => {

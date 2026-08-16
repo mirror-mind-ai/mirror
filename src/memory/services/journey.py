@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from memory.models import Identity
 from memory.storage.store import Store
@@ -290,9 +290,9 @@ class JourneyService:
         semantic_matches.sort(key=lambda x: x[1], reverse=True)
         return semantic_matches
 
-    def list_journey_options(self) -> list[dict[str, str]]:
-        """Return all journeys as option DTOs with hierarchy metadata."""
-        options: list[dict[str, str]] = []
+    def list_journey_options(self) -> list[dict[str, Any]]:
+        """Return all journeys in bounded depth-first hierarchy order."""
+        options: list[dict[str, Any]] = []
         for identity in self._get_journey_identities():
             content = identity.content or ""
             first_line = content.split("\n")[0].strip().lstrip("# ").strip()
@@ -310,10 +310,10 @@ class JourneyService:
             )
         return self._sort_journey_options(options)
 
-    def _sort_journey_options(self, options: list[dict[str, str]]) -> list[dict[str, str]]:
+    def _sort_journey_options(self, options: list[dict[str, Any]]) -> list[dict[str, Any]]:
         by_id = {option["id"]: option for option in options}
-        children: dict[str, list[dict[str, str]]] = {}
-        roots: list[dict[str, str]] = []
+        children: dict[str, list[dict[str, Any]]] = {}
+        roots: list[dict[str, Any]] = []
         for option in options:
             parent = option.get("parent_journey") or ""
             if parent and parent in by_id:
@@ -321,13 +321,30 @@ class JourneyService:
             else:
                 roots.append(option)
 
-        def sort_key(item: dict[str, str]) -> tuple[bool, str]:
-            return (item.get("status") != "active", item.get("name", "").lower())
+        def sort_key(item: dict[str, Any]) -> tuple[bool, str]:
+            return (item.get("status") != "active", str(item.get("name", "")).lower())
 
-        ordered: list[dict[str, str]] = []
+        ordered: list[dict[str, Any]] = []
+        visited: set[str] = set()
+
+        def append_branch(item: dict[str, Any], lineage: list[str]) -> None:
+            item_id = str(item["id"])
+            if item_id in visited:
+                return
+            visited.add(item_id)
+            current_lineage = [*lineage, item_id]
+            ordered.append({**item, "depth": len(lineage), "lineage": current_lineage})
+            for child in sorted(children.get(item_id, []), key=sort_key):
+                append_branch(child, current_lineage)
+
         for root in sorted(roots, key=sort_key):
-            ordered.append(root)
-            ordered.extend(sorted(children.get(root["id"], []), key=sort_key))
+            append_branch(root, [])
+
+        # Corrupt legacy cycles have no root. Keep every node visible and ensure
+        # reads remain bounded; write-side validation refuses to extend them.
+        for unvisited in sorted(options, key=sort_key):
+            if unvisited["id"] not in visited:
+                append_branch(unvisited, [])
         return ordered
 
     def get_project_path(self, journey: str) -> str | None:

@@ -231,6 +231,57 @@ Child journey with enough content for creation.
         assert [item["id"] for item in result] == ["a-parent", "z-parent", "child"]
         assert result[2]["parent_journey"] == "z-parent"
 
+    def test_list_journey_options_orders_all_descendants_depth_first(
+        self, journey_service, identity_service
+    ):
+        identity_service.set_identity("journey", "z-parent", "# Z Parent\n**Status:** active")
+        identity_service.set_identity("journey", "a-parent", "# A Parent\n**Status:** active")
+        identity_service.set_identity(
+            "journey",
+            "child",
+            "# Child\n**Status:** active",
+            metadata='{"parent_journey": "z-parent"}',
+        )
+        identity_service.set_identity(
+            "journey",
+            "grandchild",
+            "# Grandchild\n**Status:** active",
+            metadata='{"parent_journey": "child"}',
+        )
+
+        result = journey_service.list_journey_options()
+
+        assert [item["id"] for item in result] == [
+            "a-parent",
+            "z-parent",
+            "child",
+            "grandchild",
+        ]
+        assert [item["depth"] for item in result] == [0, 0, 1, 2]
+        assert result[3]["lineage"] == ["z-parent", "child", "grandchild"]
+
+    def test_list_journey_options_keeps_malformed_cycle_bounded_and_visible(
+        self, journey_service, identity_service
+    ):
+        identity_service.set_identity(
+            "journey",
+            "loop-a",
+            "# Loop A\n**Status:** active",
+            metadata='{"parent_journey": "loop-b"}',
+        )
+        identity_service.set_identity(
+            "journey",
+            "loop-b",
+            "# Loop B\n**Status:** active",
+            metadata='{"parent_journey": "loop-a"}',
+        )
+
+        result = journey_service.list_journey_options()
+
+        assert [item["id"] for item in result] == ["loop-a", "loop-b"]
+        assert [item["depth"] for item in result] == [0, 1]
+        assert result[1]["lineage"] == ["loop-a", "loop-b"]
+
 
 class TestJourneyServiceDetectJourney:
     def test_text_match_on_id_returns_high_score(self, journey_service, identity_service):

@@ -3,8 +3,8 @@
 // A faithful TypeScript port of Python `JourneyService.list_journey_options` +
 // `_sort_journey_options` (`src/memory/services/journey.py`). The logic is pure
 // over the `journey` identity rows: it derives each journey's display name,
-// status, and parent from row content/metadata, then orders roots-then-children
-// with a stable, deterministic comparator. Reading the rows out of the SQLite
+// status, and parent from row content/metadata, then orders every descendant in
+// bounded depth-first order. Reading the rows out of the SQLite
 // seam belongs to the caller, keeping this the pure decision core.
 
 import { resolveParentJourney } from "./parentJourney.ts";
@@ -25,10 +25,14 @@ export interface JourneyOption {
   name: string;
   status: string;
   parent_journey: string;
+  depth: number;
+  lineage: string[];
 }
 
-/** Build the option DTO for a single journey row (name/status/parent extraction). */
-function toOption(row: JourneyIdentityRow): JourneyOption {
+type UnorderedJourneyOption = Omit<JourneyOption, "depth" | "lineage">;
+
+/** Build the unordered option fields for a single journey row. */
+function toOption(row: JourneyIdentityRow): UnorderedJourneyOption {
   const content = row.content || "";
   // Python: content.split("\n")[0].strip().lstrip("# ").strip()
   const firstLine = (content.split("\n")[0] ?? "")
@@ -54,8 +58,8 @@ export interface JourneyHierarchy<T> {
 /**
  * Split items into roots and children by `parent_journey`, preserving input
  * order within each group. An item whose parent is empty or absent from the set
- * is a root. Shared by the journey sort and the journey renderer so the
- * roots-then-children bucketing lives in exactly one place.
+ * is a root. The depth-first sorter consumes this index; renderers consume the
+ * resulting ordered projection and must not reconstruct a shallower hierarchy.
  */
 export function groupJourneysByParent<T extends { id: string; parent_journey: string }>(
   items: readonly T[],
@@ -77,17 +81,18 @@ export function groupJourneysByParent<T extends { id: string; parent_journey: st
 }
 
 /**
- * Order options roots-then-children, mirroring `_sort_journey_options`.
+ * Order every option in bounded depth-first hierarchy order, mirroring the
+ * released Python `_sort_journey_options` oracle.
  *
- * Roots (no parent, or a parent absent from the set) are sorted by
- * `(status !== "active", name.toLowerCase())`; each root is immediately followed
- * by its children sorted the same way. `Array.prototype.sort` is stable, so ties
- * preserve the incoming `ORDER BY key` order, matching Python's stable `sorted`.
+ * Roots (no parent, or a parent absent from the set) and every sibling set are
+ * sorted by `(status !== "active", name.toLowerCase())`. A visited set makes
+ * malformed legacy cycles bounded; a final sorted pass starts each rootless
+ * component so corrupt rows remain visible exactly once.
  */
-function sortJourneyOptions(options: JourneyOption[]): JourneyOption[] {
+function sortJourneyOptions(options: UnorderedJourneyOption[]): JourneyOption[] {
   const { roots, childrenByParent } = groupJourneysByParent(options);
 
-  const compare = (a: JourneyOption, b: JourneyOption): number => {
+  const compare = (a: UnorderedJourneyOption, b: UnorderedJourneyOption): number => {
     const aInactive = a.status !== "active" ? 1 : 0;
     const bInactive = b.status !== "active" ? 1 : 0;
     if (aInactive !== bInactive) return aInactive - bInactive;
@@ -97,9 +102,21 @@ function sortJourneyOptions(options: JourneyOption[]): JourneyOption[] {
   };
 
   const ordered: JourneyOption[] = [];
-  for (const root of [...roots].sort(compare)) {
-    ordered.push(root);
-    ordered.push(...[...(childrenByParent.get(root.id) ?? [])].sort(compare));
+  const visited = new Set<string>();
+
+  const appendBranch = (item: UnorderedJourneyOption, lineage: string[]): void => {
+    if (visited.has(item.id)) return;
+    visited.add(item.id);
+    const currentLineage = [...lineage, item.id];
+    ordered.push({ ...item, depth: lineage.length, lineage: currentLineage });
+    for (const child of [...(childrenByParent.get(item.id) ?? [])].sort(compare)) {
+      appendBranch(child, currentLineage);
+    }
+  };
+
+  for (const root of [...roots].sort(compare)) appendBranch(root, []);
+  for (const unvisited of [...options].sort(compare)) {
+    if (!visited.has(unvisited.id)) appendBranch(unvisited, []);
   }
   return ordered;
 }

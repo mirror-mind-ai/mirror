@@ -2,6 +2,6 @@
   Stage: E2 — Foundation
   A short demo journey description.
 
-  └─ ⏸ **demo-child** (paused)
-       Stage: —
-       Child journey description.
+│  └─ ⏸ **demo-child** (paused)
+│    Stage: —
+│    Child journey description.

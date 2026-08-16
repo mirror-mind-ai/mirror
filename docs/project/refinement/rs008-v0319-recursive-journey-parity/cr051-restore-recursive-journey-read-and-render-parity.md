@@ -102,8 +102,63 @@ A read-only probe against the pre-refresh implementation returned only `root` an
 `ts/src/frontDoor/render/journeys.ts` still use roots-then-immediate-children logic and
 expose no `depth` or `lineage`.
 
+### Implementation evidence
+
+- TDD first reproduced four TS failures: omitted descendants, invisible rootless cycles,
+  missing orphan depth/lineage, and the old leading-space renderer. Two focused Python
+  tests independently reproduced the stale compatibility oracle.
+- The Python compatibility copy now advances only `list_journey_options` and
+  `_sort_journey_options` to the released bounded depth-first read behavior. Its tracked
+  oracle hash was deliberately refreshed after TS parity passed; parent writes,
+  validation, removal, Workspace, and web code remain unchanged.
+- `JourneyOption` now carries `depth` and complete `lineage`. The TS sorter indexes
+  children once, recursively visits sorted roots, bounds traversal with a visited set,
+  and starts any remaining malformed component as a synthetic root so every row remains
+  visible exactly once.
+- The renderer consumes the ordered projection directly instead of reconstructing a
+  two-level tree. Every non-root line starts with one or more column-zero `│` connectors.
+- The synthetic Python golden now contains ten rows covering four levels, status/name
+  ordering, an unknown parent, and a rootless cycle. A dedicated front-door render
+  golden covers the same deep and malformed shapes.
+- Copied-database parity now hashes structural signatures containing ID, depth, and
+  lineage rather than testing ordered IDs alone. The portable demo database includes
+  four levels, an orphan, and a cycle.
+- DS2.US3 and DS7.US1 record the `v0.31.9` recursive-read amendment and preserve CR052
+  as the separate parent-movement/validation obligation.
+
+### Validation evidence
+
+- Focused TS red/green route: `17/17` journey/render tests passed after implementation.
+- Focused Python journey service: `46/46` passed after implementation.
+- Full TS suite: `805` passed.
+- Full Python 3.12 suite: `2459` passed.
+- TypeScript typecheck, Biome, Ruff lint/format, documentation links/headings, and
+  `git diff --check`: passed.
+- Golden regeneration: deterministic; rerunning all four CI generators produced no
+  additional diff.
+- Oracle-drift check: clean after the deliberate `journey.py` baseline advance.
+- Schema structural parity and FTS probe: passed.
+- Migration fixture parity: all nine probes passed (`001`, `002`, `003`, `004`, `005`,
+  `008`, `009`, `016`, and multi-hop chain).
+- Portable copied-database parity: all probe families passed; the journeys structural
+  projection matched across nine synthetic deep/malformed rows and temporary artifacts
+  were removed.
+- Isolated front-door smoke rendered `root → area → business → product`, an orphan, and
+  a rootless cycle exactly once each; the depth-three product used
+  `│  │  │  └─`, and no line began with four spaces.
+
+## Review
+
+The implementation keeps one pure hierarchy projection as the shared truth. The
+renderer no longer owns structural traversal, and the parity harness grades the DTO
+shape it claims to protect. No new persistence mechanism, migration, repair path,
+watcher, fallback, or synchronization service was introduced.
+
+No corrective debt action is required for CR051. Parent mutation/validation, removal,
+and Workspace/web hierarchy remain visible as CR052–CR054 rather than hidden debt.
+
 ## Outcome
 
-In progress. The Navigator approved the seven-slice implementation and acceptance
-checkpoint, assigned Driver `@alissonvale`, selected Delivery `mirror-ts-core`, and
-authorized implementation. Assignment publication remains a separate commit/push gate.
+Implemented and locally validated. Canonical status remains `in_progress` pending the
+implementation commit/push gate, integrated CI, and explicit Navigator acceptance of
+the recursive CLI behavior.

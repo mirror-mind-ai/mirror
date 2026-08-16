@@ -149,7 +149,15 @@ def _journey_probes(store: Store) -> tuple[list[dict], list[dict]]:
     ]
     journeys = JourneyService(store, IdentityService(store, AttachmentService(store)))
     options = journeys.list_journey_options()
-    probes = [{"label": "journeys_all", "expected_order": [option["id"] for option in options]}]
+    projection = [
+        json.dumps(
+            [option["id"], option["depth"], option["lineage"]],
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
+        for option in options
+    ]
+    probes = [{"label": "journeys_all", "expected_projection": projection}]
     return rows, probes
 
 

@@ -53,6 +53,63 @@ test("journeys render output matches the golden", () => {
   });
 });
 
+function buildDeepJourneyFixture(dbPath: string): void {
+  const db = openDatabaseCopyForWrite(dbPath);
+  createIdentityTable(db);
+  seedKnownMigrations(db);
+  const insert = db.prepare(
+    "INSERT INTO identity (id, layer, key, content, version, created_at, updated_at, metadata) " +
+      "VALUES (?, 'journey', ?, ?, '1.0.0', 't', 't', ?)",
+  );
+  insert.run("j1", "root", "# Root\n**Status:** active\nRoot description.", null);
+  insert.run(
+    "j2",
+    "area",
+    "# Area\n**Status:** active\nArea description.",
+    JSON.stringify({ parent_journey: "root" }),
+  );
+  insert.run(
+    "j3",
+    "business",
+    "# Business\n**Status:** active\nBusiness description.",
+    JSON.stringify({ parent_journey: "area" }),
+  );
+  insert.run(
+    "j4",
+    "product",
+    "# Product\n**Status:** active\nProduct description.",
+    JSON.stringify({ parent_journey: "business" }),
+  );
+  insert.run(
+    "j5",
+    "orphan",
+    "# Orphan\n**Status:** paused",
+    JSON.stringify({ parent_journey: "missing" }),
+  );
+  insert.run(
+    "j6",
+    "loop-a",
+    "# Loop A\n**Status:** active",
+    JSON.stringify({ parent_journey: "loop-b" }),
+  );
+  insert.run(
+    "j7",
+    "loop-b",
+    "# Loop B\n**Status:** active",
+    JSON.stringify({ parent_journey: "loop-a" }),
+  );
+  db.close();
+}
+
+test("deep and malformed journeys render with Markdown-safe connectors", () => {
+  withFixture((dbPath) => {
+    buildDeepJourneyFixture(dbPath);
+    const output = render(dbPath, ["journeys"]);
+    assertGolden("journeys-deep", output);
+    assert.ok(output.split("\n").every((line) => !line.startsWith("    ")));
+  });
+});
+
 test("memories render output matches the golden", () => {
   withFixture((dbPath) => {
     buildRenderFixture(dbPath);

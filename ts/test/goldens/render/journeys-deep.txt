@@ -1,0 +1,24 @@
+🚧 **root** (active)
+  Stage: —
+  Root description.
+
+│  └─ 🚧 **area** (active)
+│    Stage: —
+│    Area description.
+
+│  │  └─ 🚧 **business** (active)
+│  │    Stage: —
+│  │    Business description.
+
+│  │  │  └─ 🚧 **product** (active)
+│  │  │    Stage: —
+│  │  │    Product description.
+
+⏸ **orphan** (paused)
+  Stage: —
+
+🚧 **loop-a** (active)
+  Stage: —
+
+│  └─ 🚧 **loop-b** (active)
+│    Stage: —

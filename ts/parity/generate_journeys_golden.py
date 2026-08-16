@@ -11,8 +11,9 @@ every ordering branch:
 
   - two roots with different statuses (active sorts before non-active),
   - roots at the same status ordered by lowercased name,
-  - children grouped under their root and sorted the same way,
+  - arbitrary-depth descendants grouped depth-first under their root,
   - an orphan whose declared parent is absent (treated as a root),
+  - a malformed rootless cycle kept bounded and visible,
   - name derived from a `#`-prefixed first line, status from `**Status:**`.
 
 Run:  uv run python ts/parity/generate_journeys_golden.py
@@ -40,7 +41,15 @@ SEED_JOURNEYS: tuple[tuple[str, str, str | None], ...] = (
     ("beta-root-done", "# Beta Root Done\n**Status:** completed", None),
     ("child-paused", "# Child Paused\n**Status:** paused", "alpha-root-active"),
     ("child-active", "# Child Active\n**Status:** active", "alpha-root-active"),
+    ("grandchild-active", "# Grandchild Active\n**Status:** active", "child-active"),
+    (
+        "great-grandchild-active",
+        "# Great Grandchild Active\n**Status:** active",
+        "grandchild-active",
+    ),
     ("orphan-child", "# Orphan Child\n**Status:** active", "missing-parent"),
+    ("loop-a", "# Loop A\n**Status:** active", "loop-b"),
+    ("loop-b", "# Loop B\n**Status:** active", "loop-a"),
 )
 
 

@@ -1,10 +1,9 @@
 // `journeys` rendering: read journey options, enrich with stage/description,
-// format the roots-then-children hierarchy. Extracted from cli.ts (CR002).
+// format the bounded depth-first hierarchy. Extracted from cli.ts (CR002).
 
 import type { Database } from "#db/database.ts";
 import { optionalString, requireString } from "#db/rowDecode.ts";
 import {
-  groupJourneysByParent,
   type JourneyIdentityRow,
   type JourneyOption,
   listJourneyOptions,
@@ -57,11 +56,12 @@ export function journeyRows(db: Database): JourneyDisplayRow[] {
   });
 }
 
-/** Format one journey (root or child) into display lines. */
-export function renderJourney(row: JourneyDisplayRow, child = false): string[] {
+/** Format one journey at its projected depth into display lines. */
+export function renderJourney(row: JourneyDisplayRow): string[] {
   const icon = STATUS_ICONS[row.status] ?? "•";
-  const prefix = child ? "  └─ " : "";
-  const detailIndent = child ? "       " : "  ";
+  const connector = "│  ".repeat(row.depth);
+  const prefix = row.depth > 0 ? `${connector}└─ ` : "";
+  const detailIndent = row.depth > 0 ? `${connector}  ` : "  ";
   const lines = [
     `${prefix}${icon} **${row.id}** (${row.status})`,
     `${detailIndent}Stage: ${row.stage}`,
@@ -71,16 +71,9 @@ export function renderJourney(row: JourneyDisplayRow, child = false): string[] {
   return lines;
 }
 
-/** Render the full `journeys` listing, roots each immediately followed by children. */
+/** Render the full bounded depth-first `journeys` listing. */
 export function renderJourneys(db: Database): string {
   const rows = journeyRows(db);
   if (rows.length === 0) return "No journeys found.\n";
-  const { roots, childrenByParent } = groupJourneysByParent(rows);
-  const lines: string[] = [];
-  for (const row of roots) {
-    lines.push(...renderJourney(row));
-    for (const child of childrenByParent.get(row.id) ?? [])
-      lines.push(...renderJourney(child, true));
-  }
-  return lines.join("\n");
+  return rows.flatMap((row) => renderJourney(row)).join("\n");
 }

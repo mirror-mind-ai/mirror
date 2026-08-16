@@ -75,6 +75,21 @@ And the query builder and mapper are unit-tested without a real database
 
 ---
 
+## v0.31.9 Recursive Read Amendment
+
+[RS008 / CR051](../../../../refinement/rs008-v0319-recursive-journey-parity/cr051-restore-recursive-journey-read-and-render-parity.md)
+advances the completed journey slice from its original two-level oracle to the released
+`v0.31.9` contract. Journey options now include `depth` and complete `lineage`, traverse
+arbitrary-depth descendants in deterministic depth-first order, retain unknown-parent
+rows as roots, and keep rootless malformed cycles bounded and visible exactly once.
+
+The branch's Python `JourneyService` changes only as the compatibility oracle required
+by the deterministic generator; TS remains authority for the routed `journeys` entry
+point. The synthetic golden now covers deep trees, an orphan, and a cycle. The portable
+copied-database probe compares redacted structural projections (ID, depth, lineage),
+not ordered IDs alone. No memory-listing behavior, schema, route, or write authority
+changes in this amendment.
+
 ## Artifacts
 
 - [Plan](plan.md)

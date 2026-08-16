@@ -18,29 +18,48 @@ test("tagsText handles arrays, non-arrays, malformed JSON, and null", () => {
   assert.equal(tagsText(null), "");
 });
 
-test("renderJourney formats root and child rows with the right icon and indent", () => {
+test("renderJourney formats every depth with column-zero connectors", () => {
   const root = renderJourney({
     id: "demo",
     name: "Demo",
     status: "active",
     parent_journey: "",
+    depth: 0,
+    lineage: ["demo"],
     stage: "E2",
     description: "desc",
-  });
+  } as Parameters<typeof renderJourney>[0]);
   assert.deepEqual(root, ["🚧 **demo** (active)", "  Stage: E2", "  desc", ""]);
 
-  const child = renderJourney(
-    {
-      id: "kid",
-      name: "Kid",
-      status: "paused",
-      parent_journey: "demo",
-      stage: "—",
-      description: "",
-    },
-    true,
-  );
-  assert.deepEqual(child, ["  └─ ⏸ **kid** (paused)", "       Stage: —", ""]);
+  const child = renderJourney({
+    id: "kid",
+    name: "Kid",
+    status: "paused",
+    parent_journey: "demo",
+    depth: 1,
+    lineage: ["demo", "kid"],
+    stage: "—",
+    description: "",
+  } as Parameters<typeof renderJourney>[0]);
+  assert.deepEqual(child, ["│  └─ ⏸ **kid** (paused)", "│    Stage: —", ""]);
+
+  const grandchild = renderJourney({
+    id: "deep",
+    name: "Deep",
+    status: "active",
+    parent_journey: "kid",
+    depth: 2,
+    lineage: ["demo", "kid", "deep"],
+    stage: "E3",
+    description: "deep description",
+  } as Parameters<typeof renderJourney>[0]);
+  assert.deepEqual(grandchild, [
+    "│  │  └─ 🚧 **deep** (active)",
+    "│  │    Stage: E3",
+    "│  │    deep description",
+    "",
+  ]);
+  assert.ok(grandchild.every((line) => !line.startsWith("    ")));
 });
 
 test("renderMemoryRow truncates content at 200 chars and omits absent fields", () => {
