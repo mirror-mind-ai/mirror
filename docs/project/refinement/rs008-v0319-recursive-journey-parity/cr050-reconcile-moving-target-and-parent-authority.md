@@ -217,6 +217,10 @@ No SQLite Workbench state was inspected while capturing or implementing this CR.
 - Portable mixed-writer front-door smoke: a metadata-only move appeared under
   `new-root` despite stale column `old-root`; removing the metadata parent rendered the
   journey as a root rather than resurrecting `old-root`.
+- Implementation commit: `03437e1b65273d116ad3baf7bdd5817dc4dca816`.
+- Integrated [Docs CI](https://github.com/mirror-mind-ai/mirror/actions/runs/31976324550)
+  and [Tests CI](https://github.com/mirror-mind-ai/mirror/actions/runs/31976324552)
+  passed, including Python 3.10/3.12, TS Linux/macOS, and parity jobs.
 
 The local macOS Python 3.10.6 full run exposed two pre-existing SQLite-version-specific
 failures (`WAL` sidecar recovery and direct FTS shadow-table corruption) plus one
@@ -240,6 +244,7 @@ scope is already visible as CR051–CR054, not hidden implementation debt.
 
 ## Outcome
 
-Implemented and locally validated. Canonical status remains `in_progress` pending the
-commit/push gate, integrated CI, and explicit Navigator validation of the mixed-writer
-behavior.
+Done. The Navigator accepted the mixed-writer contract after implementation, portable
+smoke validation, commit/push, and green integrated CI. Metadata is the sole semantic
+parent authority while Python parent writers remain; migration `017`'s column remains a
+derived projection without fallback semantics. CR051–CR054 remain open and unselected.
