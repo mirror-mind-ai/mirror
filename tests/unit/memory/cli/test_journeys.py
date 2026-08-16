@@ -66,6 +66,27 @@ def test_journeys_renders_arbitrary_depth_under_parent(tmp_path, capsys):
     assert captured.out.index("workspace") < captured.out.index("journey-map")
 
 
+def test_journeys_shows_last_interaction_date(tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "mirror-poc", JOURNEY_CONTENT)
+    mem.set_identity("journey", "idle-journey", JOURNEY_CONTENT.replace("Mirror POC", "Idle"))
+
+    conv = mem.start_conversation("test", journey="mirror-poc")
+    msg = mem.add_message(conv.id, "user", "ping")
+
+    from memory.cli.journeys import main
+
+    main(["--mirror-home", str(mirror_home)])
+
+    captured = capsys.readouterr()
+    expected_date = msg.created_at[:10]
+    assert f"Last: {expected_date}" in captured.out
+    # journey without any interaction shows a placeholder
+    assert "Last: \u2014" in captured.out
+
+
 def test_journeys_explicit_mirror_home_overrides_environment_selection(mocker, tmp_path, capsys):
     env_home = tmp_path / ".mirror" / "testuser"
     env_db_path = default_db_path_for_home(env_home)
