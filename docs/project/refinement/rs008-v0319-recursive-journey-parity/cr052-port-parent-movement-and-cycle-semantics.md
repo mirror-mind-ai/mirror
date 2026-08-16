@@ -47,4 +47,5 @@ walking.
 
 ## Outcome
 
-Captured. No implementation, assignment, schema, or focus changed.
+Focused for inspection. Canonical status remains `captured`; no plan, assignment,
+implementation, schema change, commit, or push is authorized by opening the CR.

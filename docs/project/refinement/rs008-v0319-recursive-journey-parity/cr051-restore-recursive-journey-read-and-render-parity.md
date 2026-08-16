@@ -146,6 +146,11 @@ expose no `depth` or `lineage`.
 - Isolated front-door smoke rendered `root → area → business → product`, an orphan, and
   a rootless cycle exactly once each; the depth-three product used
   `│  │  │  └─`, and no line began with four spaces.
+- Implementation commit: `b9a2397a79d5957df332b4866d3c45d81bfba693`.
+- Integrated [Docs CI](https://github.com/mirror-mind-ai/mirror/actions/runs/31978526759)
+  and [Tests CI](https://github.com/mirror-mind-ai/mirror/actions/runs/31978526753)
+  passed, including Python 3.10/3.12, TS Linux/macOS, deterministic goldens,
+  oracle-drift, and portable copied-database parity.
 
 ## Review
 
@@ -159,6 +164,6 @@ and Workspace/web hierarchy remain visible as CR052–CR054 rather than hidden d
 
 ## Outcome
 
-Implemented and locally validated. Canonical status remains `in_progress` pending the
-implementation commit/push gate, integrated CI, and explicit Navigator acceptance of
-the recursive CLI behavior.
+Done. The Navigator accepted the recursive CLI contract after implementation,
+commit/push, isolated smoke validation, and green integrated CI. The canonical focus
+moves to CR052; CR053–CR054 remain open and unselected.
