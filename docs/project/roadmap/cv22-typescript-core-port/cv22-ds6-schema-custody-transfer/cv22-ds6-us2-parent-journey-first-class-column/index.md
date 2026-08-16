@@ -78,6 +78,16 @@ typecheck + lint clean. See [Plan](plan.md) and [Test Guide](test-guide.md).
 
 ---
 
+## v0.31.9 Mixed-Engine Amendment
+
+[RS008 / CR050](../../../../refinement/rs008-v0319-recursive-journey-parity/cr050-reconcile-moving-target-and-parent-authority.md)
+keeps migration `017` append-only but clarifies its runtime meaning. Python
+`v0.31.9` shipped arbitrary-depth parentage through metadata with no Python schema
+migration and still owns an unported Workspace/web parent writer. During that mixed
+interval, metadata is the sole semantic authority; the first-class column is a derived
+projection and disagreement is drift to diagnose. A future authority flip requires all
+parent writers to transfer and a separate decision.
+
 ## Artifacts
 
 - [Plan](plan.md)

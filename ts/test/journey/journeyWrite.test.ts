@@ -238,6 +238,38 @@ test("end to end: createJourney's write and resolveParentJourney's read genuinel
   }
 });
 
+test("a Python-style metadata move and unparent override the stale TS projection", () => {
+  const { dbPath, cleanup } = tempCopy();
+  const db = openDatabaseCopyForWrite(dbPath);
+  try {
+    seedIdentity(db);
+    createJourney(
+      db,
+      { id: "j-child", slug: "child", content: "# Child", parentJourney: "old-root" },
+      NOW,
+    );
+
+    // Simulate JourneyService.update_metadata_fields: Python writes metadata
+    // only because its schema does not know migration 017's projection column.
+    db.prepare("UPDATE identity SET metadata = ? WHERE layer = 'journey' AND key = 'child'").run(
+      JSON.stringify({ parent_journey: "new-root" }),
+    );
+    let row = db.prepare("SELECT metadata, parent_journey FROM identity WHERE key = 'child'").get();
+    assert.equal(row?.parent_journey, "old-root", "the fixture must carry a stale projection");
+    assert.equal(resolveParentJourney(row ?? {}), "new-root");
+
+    db.prepare("UPDATE identity SET metadata = ? WHERE layer = 'journey' AND key = 'child'").run(
+      JSON.stringify({}),
+    );
+    row = db.prepare("SELECT metadata, parent_journey FROM identity WHERE key = 'child'").get();
+    assert.equal(row?.parent_journey, "old-root");
+    assert.equal(resolveParentJourney(row ?? {}), "", "unparenting must not resurrect old-root");
+  } finally {
+    db.close();
+    cleanup();
+  }
+});
+
 test("createJourney rolls back the WHOLE write when the column statement fails mid-transaction", () => {
   const { dbPath, cleanup } = tempCopy();
   const db = openDatabaseCopyForWrite(dbPath);

@@ -11,6 +11,47 @@ resolved.
 
 ## Completed Decisions
 
+### Moving-target strangler keeps journey metadata authoritative during mixed-engine operation
+
+**Date:** 2026-08-14
+**Reference:** [RS008 / CR050](refinement/rs008-v0319-recursive-journey-parity/cr050-reconcile-moving-target-and-parent-authority.md), [CV22 TypeScript Core Port](roadmap/cv22-typescript-core-port/index.md)
+**Participants:** Alisson Vale
+
+The strict Python feature freeze kept the migration target stable, but the port is a
+long-running background effort and `v0.31.9` legitimately evolved journey behavior
+while Python still owned the Workspace/web parent writer. Freezing the product for the
+migration is not sustainable; hiding that movement behind branch-local green tests is
+not convergence either.
+
+Decided:
+
+1. **Authority transfers by entry point.** Python remains product authority for an
+   unported command or API entry point and may evolve there. Every change creates named
+   TS parity scope. After transfer, new behavior for that entry point lands in TS and
+   Python becomes compatibility-only.
+2. **The target moves visibly.** Goldens and parity probes must absorb all behavior
+   accumulated by the current authority before TS claims parity. Product work does not
+   require simultaneous dual implementation merely because CV22 is active.
+3. **Journey metadata is mixed-engine semantic authority.** Python `v0.31.9` and every
+   supported TS writer store `parent_journey` in identity metadata. While any Python
+   parent writer remains, TS resolves parentage from metadata only, including the
+   absence of the key as an explicit root.
+4. **Migration `017` remains a projection.** The TS-authored
+   `identity.parent_journey` column stays as a derived/indexable projection and TS
+   parent writes update it atomically with metadata. Column/metadata disagreement is
+   drift to diagnose, not fallback semantics or an automatic repair trigger.
+5. **Column authority requires a later decision.** It may transfer only after every
+   parent writer and affected Workspace/web entry point runs through TS and separate
+   evidence proves no mixed writer can leave the projection stale.
+6. **Schema discipline remains strict.** Migration `017` stays append-only and must
+   remain compatible with Python `v0.31.9`; this decision adds no Python migration and
+   no automatic row rewrite.
+
+This supersedes the global Python-freeze clause of the 2026-06-23 strangler decision
+and the column-first read portion of the 2026-07-23 DS7.US1 rider. Atomic TS dual-write,
+the database seam, backup gates, copy-only write parity, and command-by-command
+retirement remain in force.
+
 ### CV22.DS6.US3 `parent_journey` dual-write activated as a DS7.US1 rider
 
 **Date:** 2026-07-23 · **Origin:** CV22.DS7.US1 Slice C implementation

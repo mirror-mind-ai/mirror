@@ -14,9 +14,8 @@ export interface JourneyIdentityRow {
   key: string;
   content: string;
   metadata?: string | null;
-  /** The first-class parent column (US2). Authoritative when non-empty as of
-   * the DS7.US1 rider (resolveParentJourney reads it column-first); the JSON
-   * in `metadata` remains the fallback for rows the column hasn't reached. */
+  /** Migration 017's derived parent projection. Metadata remains semantic
+   * authority while Python and TS can both write parentage (CR050). */
   parent_journey?: string | null;
 }
 

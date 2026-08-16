@@ -58,6 +58,16 @@ writes — `journey update`, `seed`, `init`, backup-gated), Slice C (riders —
 
 ---
 
+## v0.31.9 Authority Amendment
+
+The Slice C column-first rider is superseded by
+[RS008 / CR050](../../../../refinement/rs008-v0319-recursive-journey-parity/cr050-reconcile-moving-target-and-parent-authority.md).
+Atomic metadata/column dual-write remains valid, but metadata is semantic authority
+while the unported Python Workspace/web writer can move or unparent a journey. The
+column remains a derived projection; disagreement is drift to diagnose, not read
+fallback. Recursive read/render and arbitrary-depth validation remain explicit
+CR051/CR052 parity obligations rather than being hidden inside this completed slice.
+
 ## Artifacts
 
 - [Plan](plan.md)

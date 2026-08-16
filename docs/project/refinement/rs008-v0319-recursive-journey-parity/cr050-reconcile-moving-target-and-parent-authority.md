@@ -47,14 +47,15 @@ Approved by the Navigator. Implementation remains a separate authorization gate.
 2. Keep migration `017_journey_parent_column` because it has already been authored and
    exercised on the migration branch, but classify the column as a derived/indexable
    projection during mixed-engine operation, not as the sole semantic authority.
-3. Resolve effective parent **metadata-first while any Python parent writer remains**.
-   Every current Python path writes metadata; TS parent-capable writes already write
-   metadata and the column atomically. Metadata-first therefore observes both engines,
-   while column-first can return a stale value after the released Python web path moves
-   a journey.
-4. Use the first-class column only as fallback when metadata has no usable
-   `parent_journey`, preserving migrated or column-only rows without overriding a newer
-   metadata value.
+3. Resolve effective parent from **metadata only while any Python parent writer
+   remains**. Every supported Python path writes metadata; TS parent-capable writes
+   already write metadata and the column atomically. Metadata-only therefore observes
+   both engines, while any column fallback can resurrect a stale parent after the
+   released Python web path removes `parent_journey` from metadata.
+4. Keep the first-class column as a derived/indexable projection only. A column value
+   without matching metadata is drift to diagnose, never silent semantic fallback.
+   Migration `017` backfills without removing JSON, and supported TS writers dual-write,
+   so no supported path requires a column-only semantic row.
 5. Require every TS parent mutation to dual-write metadata and the column in one
    transaction. Non-parent metadata writes must preserve both representations and must
    not silently resynchronize a known conflict.
@@ -72,9 +73,10 @@ Approved by the Navigator. Implementation remains a separate authorization gate.
    DS7.US1 narratives so they distinguish semantic metadata authority from the
    derived first-class projection during the mixed-engine interval. Record that
    `v0.31.9` required no Python schema migration.
-3. **Change the shared resolver.** Make `resolveParentJourney` metadata-first with
-   column fallback and ensure journey listing, validation, status, selectors, and all
-   other TS readers use that single resolver.
+3. **Change the shared resolver.** Make `resolveParentJourney` metadata-only during
+   mixed-engine operation and ensure journey listing, validation, status, selectors,
+   and all other TS readers use that single resolver. Column/metadata disagreement is
+   exposed by diagnostics or parity evidence rather than repaired during a read.
 4. **Inventory writers.** Characterize every Python and TS path that can create or move
    a parent relation, including the Python Workspace/web metadata update and TS create
    or future move routes. Document which engine currently owns each entry point.
@@ -105,8 +107,10 @@ Approved by the Navigator. Implementation remains a separate authorization gate.
   reader/writer and its transfer state.
 - With metadata parent `new-parent` and stale column `old-parent`, every TS journey read
   and validator resolves `new-parent` during mixed-engine operation.
-- With no usable metadata parent and a populated column, TS preserves the column value
-  as compatibility fallback.
+- With metadata that omits `parent_journey` and a stale populated column, TS resolves
+  the journey as a root; it never resurrects the column value.
+- With absent, malformed, or non-object metadata and a populated column, TS matches the
+  tolerant Python reader and resolves no parent rather than inventing column authority.
 - TS parent writes update metadata and column atomically; injected mid-write failure
   leaves neither side partially changed.
 - Python can open and operate on a database carrying migration `017` without requiring
@@ -118,8 +122,8 @@ Approved by the Navigator. Implementation remains a separate authorization gate.
 
 ### Validation route
 
-1. Focused TS unit tests for resolver precedence, malformed metadata, column fallback,
-   stale conflict, and atomic rollback.
+1. Focused TS unit tests for metadata precedence, parent removal, malformed metadata,
+   stale column conflicts, and atomic rollback.
 2. Existing TS typecheck, Biome, and full `node:test` suite.
 3. Python journey and schema compatibility tests through `uv run`, with no Python
    behavior redesign inside this CR.
@@ -146,6 +150,14 @@ Stop and return to the Navigator if the implementation requires removing an appl
 migration, changing the released Python schema, choosing a different parent authority,
 automatically rewriting conflicting user rows, or broadening into CR051–CR054.
 
+### Approved amendment
+
+During TDD, the Navigator approved strengthening the transition rule from
+metadata-first-with-column-fallback to **metadata-only semantic authority**. Python
+unparenting removes the metadata key but cannot clear migration `017`'s column; fallback
+would therefore resurrect an old parent. The column remains a projection until every
+parent writer transfers and a later explicit decision changes authority.
+
 ## Evidence
 
 - `docs/project/roadmap/cv22-typescript-core-port/index.md` still says Python is frozen.
@@ -153,8 +165,81 @@ automatically rewriting conflicting user rows, or broadening into CR051–CR054.
 - `ts/src/journey/journeyOptions.ts` documents column-first authority.
 - `v0.31.9` shipped arbitrary-depth parentage without a schema migration.
 
-No SQLite Workbench state was inspected while capturing this CR.
+### Parent authority map
+
+| Entry point or component | Engine | Current role | Parent representation | Transfer state |
+|--------------------------|--------|--------------|-----------------------|----------------|
+| `JourneyService.create_journey` | Python | Creates journeys for Python/web routes | metadata | Python authority where still routed |
+| `JourneyService.update_metadata_fields` | Python | Moves or unparents journeys from Workspace/web | metadata; removal deletes the key | Python authority, unported |
+| `JourneyService.list_journey_options` and validator | Python | Released `v0.31.9` read/decision oracle | metadata | Oracle for CR051/CR052 |
+| migration `017_journey_parent_column` | TS | Backfills/indexes parent projection | column derived from metadata | Applied; not semantic authority |
+| `createJourney` | TS | Ported parent-capable writer | atomic metadata + column | TS authority only where routed |
+| `setProjectPath` and non-parent TS metadata writes | TS | Preserve unrelated journey metadata | metadata; parent projection untouched | Ported, no parent mutation |
+| `resolveParentJourney` consumers | TS | Journey listing read seam; future parent validators must share it | metadata only under CR050 | Transition rule implemented; recursive validation remains CR052 |
+| Workspace/web hierarchy API | Python + JS | Released navigation and parent mutation surface | Python metadata read/write | Explicitly unported; CR054 owns transfer |
+
+No supported writer produces a legitimate column-only parent. A mismatch means a stale
+projection or external/manual drift and must not silently change tree semantics.
+
+No SQLite Workbench state was inspected while capturing or implementing this CR.
+
+### Implementation evidence
+
+- `resolveParentJourney` now reads semantic parentage from metadata only. Migration
+  `017`'s column remains present and observable but cannot override a move or unparent
+  performed by Python.
+- TS `createJourney` continues to dual-write metadata and the projection atomically;
+  the existing injected mid-write failure test still proves complete rollback.
+- TDD first reproduced three stale-column failures: divergent metadata, valid metadata
+  with the parent key removed, and column-only/malformed states. All pass after the
+  resolver change.
+- An integration regression test performs a Python-style metadata-only move and
+  unparent against a row whose TS column remains stale; both reads follow metadata.
+- CV22 roadmap, project decisions, engineering principles, DS6.US2/US3, and DS7.US1
+  now record the moving-target rule and mixed-engine representation contract.
+- The authority map above names current readers, writers, representations, and transfer
+  state. CR051–CR054 remain separate open obligations.
+
+### Validation evidence
+
+- Focused TS journey tests: `17` passed before the full run.
+- Full TS suite: `802` passed.
+- TypeScript typecheck and Biome: passed.
+- Focused Python journey/schema suite: `51` passed.
+- Full Python 3.12 suite: `2457` passed.
+- Ruff lint and format: passed.
+- Schema structural parity: passed, including the one enumerated TS-only column/index.
+- Migration fixture parity: all nine probes passed (`001`, `002`, `003`, `004`, `005`,
+  `008`, `009`, `016`, and multi-hop chain).
+- Oracle-drift check: clean.
+- Documentation links, anchors, roadmap heading uniqueness, and `git diff --check`:
+  passed.
+- Portable mixed-writer front-door smoke: a metadata-only move appeared under
+  `new-root` despite stale column `old-root`; removing the metadata parent rendered the
+  journey as a root rather than resurrecting `old-root`.
+
+The local macOS Python 3.10.6 full run exposed two pre-existing SQLite-version-specific
+failures (`WAL` sidecar recovery and direct FTS shadow-table corruption) plus one
+transient operations timeout that passed immediately in isolation. No changed CR050
+file participates in those tests. The supported Python 3.12 local suite is fully green;
+CI remains responsible for the Linux 3.10 matrix.
+
+Repository-wide mypy retains its pre-existing baseline of 109 errors in 26 Python
+files. CR050 changes no Python source; TS typecheck is green.
+
+## Review
+
+The implementation is proportional: one shared resolver changed, existing atomic
+writers remained intact, and active policy documents were reconciled without removing
+migration `017`, adding a schema migration, repairing user rows, or absorbing recursive
+hierarchy work from CR051–CR054. No new runtime subsystem, fallback, watcher, or
+synchronization mechanism was introduced.
+
+No corrective debt action is required for CR050. The intentionally deferred product
+scope is already visible as CR051–CR054, not hidden implementation debt.
 
 ## Outcome
 
-Captured. No policy, schema, routing, code, assignment, or focus changed.
+Implemented and locally validated. Canonical status remains `in_progress` pending the
+commit/push gate, integrated CI, and explicit Navigator validation of the mixed-writer
+behavior.

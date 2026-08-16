@@ -23,13 +23,13 @@ CV22 is the roadmap structure derived from that spine after the parity spike
 validated the approach.
 
 The spine, in one breath: a **TS front door over a shared database**, with the
-Python core dissolving one observable **command** at a time, governed by a rule
-that **new feature work lands in TS** (Python freezes to maintenance-only as of
-the [last Python baseline commit](../../../process/worklog.md), CV21.E2.S2). The
-**database is the seam** — two cores, one `memory.db`, one schema and FTS5 config,
-no in-process language bridge. The hard part was never the language; it is the
-**convergence discipline** that keeps two cores from both growing while one is
-supposed to be dying.
+Python core dissolving one observable **command** at a time. Python remains the
+product authority for each unported entry point and may evolve there; every such
+change creates explicit TS parity scope. Once an entry point transfers, new behavior
+lands in TS and Python becomes compatibility-only for that surface. The **database is
+the seam** — two cores, one `memory.db`, one schema and FTS5 config, no in-process
+language bridge. The hard part was never the language; it is the **convergence
+discipline** that makes a moving target visible and prevents permanent dual authority.
 
 ---
 
@@ -76,9 +76,10 @@ the write commands (DS4), and behavior at larger scale (the ranker is a full sca
   observable as `command + args → stdout`. Progress is a visible burn-down:
   *commands-on-TS / total*. Done when the Python core has zero commands and is
   deleted.
-- **Front door — Pi.** The first TS surface wraps the frozen Python engine and is
-  strangled command-by-command behind it, dogfooded daily in the runtime both
-  authors use.
+- **Front door — Pi.** The first TS surface wraps Python for unported entry points
+  and routes transferred commands to TS, dogfooded daily in the runtime both authors
+  use. Routing records authority; it does not imply that every Python surface froze
+  simultaneously.
 - **Parity oracle — the Python test suite.** Converted into a language-agnostic
   golden-data corpus (frozen `now` + frozen embeddings) that the TS core must
   satisfy.
@@ -103,7 +104,7 @@ stay as delivery-level scope until pulled.
 |------|----------------|----------------|--------|
 | [CV22.DS1](cv22-ds1-hybrid-search-parity-spike/index.md) | Hybrid-Search Parity Spike | A TS reimplementation of the hybrid ranker, reading the same SQLite file, reproduces Python's ordered results on synthetic data and on a real-DB snapshot; near-tie risk quantified | ✅ Done |
 | [CV22.DS2](cv22-ds2-ts-foundation-read-only-parity/index.md) | TS Foundation & Read-Only Command Parity | Stand up the TS core (`node:sqlite`, BLOB/embedding read, frozen-`now` golden contract); reach ordered/behavioral parity for read-only deterministic commands (`search`, `detect-persona`, journeys, memory listing) on real-DB copies | ✅ Done |
-| [CV22.DS3](cv22-ds3-pi-ts-front-door/index.md) | Pi TS Front Door | A TS front door on Pi that wraps the frozen Python engine and routes ported read commands to the TS core; dogfooded daily; runtimes unaffected | ✅ Done |
+| [CV22.DS3](cv22-ds3-pi-ts-front-door/index.md) | Pi TS Front Door | A TS front door on Pi that wraps unported Python entry points and routes transferred reads to the TS core; dogfooded daily; runtimes unaffected | ✅ Done |
 | [CV22.DS4](cv22-ds4-deterministic-writes/index.md) | Deterministic Writes | Port write commands (journey/identity CRUD, `log_access`) with parity proven on DB copies; backup-gated; schema-compatible; CLI-write routing on the TS front door (identity + journey) | ✅ Done |
 | [CV22.DS5](cv22-ds5-external-api-commands/index.md) | External-API Commands | Port extraction, embeddings/search, and consult behind replay-safe provider boundaries; route validated external command surfaces through the TS front door while preserving Python fallback for unsafe/unconfigured paths | ✅ Done |
 | [CV22.DS6](cv22-ds6-schema-custody-transfer/index.md) | Schema Custody Transfer | Move all database creation, migration, and discipline from Python to TS — bootstrap DDL (rewritten in English per CV0), migration engine and `_migrations` bookkeeping, cross-process bootstrap locking, connection pragma discipline — proven over real legacy databases; plus the two schema decisions gated on custody (`identity.metadata` canonicalization, `parent_journey` first-class column) | ✅ Done — all children complete (TS1–TS5, US1–US3); TS owns bootstrap/migration/locking/pragmas, proven over real legacy copies including migration-016's real ADD-COLUMN + backfill; the deletion gate is cleared |
@@ -194,8 +195,10 @@ hard way:
 
 - **No big-bang rewrite.** The Python core is never replaced wholesale; it
   dissolves command by command behind a stable contract.
-- **No new Python features.** Python is maintenance-only from the last baseline
-  forward; new feature work lands in TS.
+- **No untracked dual evolution.** Python may evolve where it still owns an entry
+  point, but each behavior change creates named TS parity scope. After authority
+  transfers, new behavior for that entry point lands in TS and Python is
+  compatibility-only.
 - **No behavior change.** This is parity, not improvement. The ranker, extraction,
   and memory semantics are reproduced, not redesigned. Improvements are separate,
   later work.
@@ -251,8 +254,9 @@ Risk-first, mirroring the decision spine:
     ship npm distribution. The MCP threat-model rider is a DS9 plan input.
 
 Part-time, no deadline — a background burn. The transition state (TS front door
-over a frozen Python engine) is durable and must stay comfortable to live in; no
-throwaway intermediate states.
+over a still-evolving Python product at explicitly unported boundaries) is durable and
+must stay comfortable to live in; no throwaway intermediate states. Capability-level
+parity obligations make migration drift visible rather than blocking product evolution.
 
 ---
 

@@ -67,6 +67,16 @@ by the real-legacy-DB-copy harness plus a Navigator E2E smoke.
 
 ---
 
+## v0.31.9 Mixed-Engine Amendment
+
+The original JSON-authoritative activation is reinstated and strengthened by
+[RS008 / CR050](../../../../refinement/rs008-v0319-recursive-journey-parity/cr050-reconcile-moving-target-and-parent-authority.md):
+metadata is the sole semantic authority while Python can still write parentage. The
+column is not a fallback, because Python unparenting removes the metadata key but cannot
+clear migration `017`'s projection; fallback would resurrect stale structure. Atomic
+TS dual-write remains required, and any later column-authority flip is a separate
+post-transfer decision.
+
 ## Artifacts
 
 - [Plan](plan.md)

@@ -4,8 +4,9 @@
 // decision core. Enforces the four hierarchy rules in Python's exact order and
 // with Python's exact messages, so the front door and any future write route
 // reject an invalid parent identically to the Python oracle. Parent information
-// is read JSON-first (decision D1) via `resolveParentJourney`, the same resolver
-// the listing sort uses, so validation and listing can never disagree.
+// is read from mixed-engine-authoritative metadata (CR050) via
+// `resolveParentJourney`, the same resolver the listing sort uses, so validation
+// and listing can never disagree.
 
 /** Raised when a proposed parent_journey violates a hierarchy rule. */
 export class ParentJourneyValidationError extends Error {}

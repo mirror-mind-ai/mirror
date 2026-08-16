@@ -146,12 +146,13 @@ write capability lands, eventually writing — the **same** `memory.db` file,
 proven at read parity over real data
 ([CV22.DS1](../project/roadmap/cv22-typescript-core-port/cv22-ds1-hybrid-search-parity-spike/index.md):
 480 memories, 1536-dim embeddings, hybrid-ranker parity within a margin far
-past the near-tie risk). New feature work lands in TS; the Python core is
-frozen to maintenance at the
-[CV21.E2.S2](../project/roadmap/cv21-runtime-expansion-ii/cv21-e2-mirror-plugin-mcp-foundation/cv21-e2-s2-mirror-mcp-server/index.md)
-baseline. Schema, migrations, and the connection-pragma contract have **one
-owner** — see [§6](#6-data--persistence). The database is not an
-implementation detail of one core; it is the contract between both.
+past the near-tie risk). Python remains product authority for each unported
+entry point and may evolve there; every behavior change becomes explicit TS
+parity scope. Once an entry point transfers, new behavior lands in TS and
+Python becomes compatibility-only for it. Schema, migrations, and the
+connection-pragma contract have **one authority at a time** — see
+[§6](#6-data--persistence). The database is not an implementation detail of
+one core; it is the contract between both.
 
 **Never chain on a freshly constructed `MemoryClient`.** `get_connection()`
 opens a new connection per call, and `MemoryClient.__del__` closes it (the
@@ -352,29 +353,22 @@ YAML edit into the database. Runtime directories hold local operational state
 (logs, backups). Never let a cache or a generated artifact become the only
 copy of a fact.
 
-**Schema authority is singular.** Migrations live in one place —
-[`src/memory/db/migrations.py`](../../src/memory/db/migrations.py) — and that
-remains true as the [`ts/`](../../ts/README.md) package takes on more feature
-work. The TS core reads and writes the shared schema; it does not grow a
-second migration path. A schema change is a cross-core event: it needs parity
-evidence over the same file, in the spirit of
-[CV22.DS1's](../project/roadmap/cv22-typescript-core-port/cv22-ds1-hybrid-search-parity-spike/index.md)
-validation, before it ships.
+**Schema authority is singular even during transfer.** CV22.DS6 transferred
+bootstrap and migration custody to the TS engine under
+[`ts/src/db/`](../../ts/src/db/), while Python remains a compatibility reader
+and runtime authority for explicitly unported entry points. A schema change is
+still a strict cross-core event: it needs migration rehearsal, structural
+parity evidence over the same file, and proof that the Python compatibility
+path tolerates the resulting database. TS-authored migration `017` adds the
+derived `identity.parent_journey` projection; it does not replace metadata as
+the mixed-engine semantic authority while Python can still write parentage.
 
-**The connection-pragma contract has one owner today, and must be replicated
-exactly when the second writer arrives.** Every connection Python opens gets
-`PRAGMA busy_timeout=30000`, `PRAGMA foreign_keys=ON`, and an opportunistic
-switch to `PRAGMA journal_mode=WAL`
-([`src/memory/db/connection.py`](../../src/memory/db/connection.py)). The TS
-core's [`ts/src/db/database.ts`](../../ts/src/db/database.ts) is read-only
-today — [CV22's](../project/roadmap/cv22-typescript-core-port/index.md)
-read-only parity foundation — so it does not yet need to set write-time
-pragmas. The principle for when that changes: replicating this
-exact contract is mandatory the moment the TS core gains write capability,
-not reinventing it. A divergent pragma contract is exactly the kind of
-silent divergence
+**The connection-pragma contract is shared, not reinvented per core.** Every
+Python and TS writable connection carries the same busy-timeout,
+foreign-key, and WAL discipline established during schema-custody transfer.
+A divergent pragma contract is exactly the kind of silent divergence
 [TD-001](../project/roadmap/technical-debt-ledger.md#deferred-debt-requirements)
-warns about — treat it as a cross-core change from day one.
+warns about — treat any future change as cross-core from day one.
 
 **Claimed invariants are enforced ones.** Because `foreign_keys=ON` is set
 on every connection, `FOREIGN KEY` constraints in the schema are real

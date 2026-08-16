@@ -76,13 +76,11 @@ export function journeyMetadata(fields: JourneyFields): Record<string, string> {
  *
  * This is the only currently-ported live write that can SET `parent_journey`
  * (no `journey set-path`/`update` write in this port touches it). Python's
- * `JourneyService.update_metadata_fields` can still change it and does not
- * know the column exists — that path is reachable only from the web server
- * (src/memory/web/server.py), which is outside this migration's CLI/MCP
- * scope. `resolveParentJourney` (parentJourney.ts) falls back to the JSON when
- * the column is null specifically to tolerate that gap; a column left stale
- * (non-null but outdated) by that unported path is a known, accepted
- * limitation until it is ported or the column is re-synced on read.
+ * `JourneyService.update_metadata_fields` can still change or remove it and
+ * does not know the column exists — that path remains live through the Python
+ * Workspace/web backend. CR050 therefore keeps metadata as mixed-engine
+ * semantic authority and treats this atomic column write as projection
+ * maintenance, not as a reason to prefer the column during reads.
  */
 export function createJourney(
   db: WritableDatabase,

@@ -4,9 +4,9 @@ import type { Database, Row } from "#db/database.ts";
 
 /**
  * All identity rows for a layer, ordered by key (as the Python oracle reads
- * them). Includes `parent_journey` (the first-class column, CV22.DS6.US2/US3)
- * — additive for every layer other than "journey", where it feeds
- * `resolveParentJourney`'s column-first resolution.
+ * them). Includes migration 017's `parent_journey` projection so parity and
+ * drift diagnostics can observe it; mixed-engine semantic reads still resolve
+ * journey parentage from metadata (CR050).
  */
 export function identityRows(db: Database, layer: string): Row[] {
   return db

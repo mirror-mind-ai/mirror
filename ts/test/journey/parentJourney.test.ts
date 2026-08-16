@@ -21,24 +21,20 @@ test("old Python dialect and canonical JSON resolve identically (column absent)"
   );
 });
 
-// CV22.DS6.US3 rider (activated in DS7.US1): the column is now authoritative.
-// journeyWrite.ts's createJourney is the one live write that sets it, and it
-// does so atomically alongside the JSON in the same transaction, so for every
-// row written through that path the two never actually disagree. These tests
-// still prove the PRECEDENCE directly (a contrived disagreement), because that
-// is what protects rows a column write hasn't reached from ever silently
-// preferring a stale value over a present one, and vice versa.
-test("column is authoritative: a non-empty column wins over a diverging JSON value", () => {
+// CR050: Python v0.31.9 remains authoritative for the unported Workspace/web
+// parent writer. It updates metadata but cannot update TS migration 017's
+// column, so metadata must win during mixed-engine operation.
+test("metadata is authoritative when a populated column is stale", () => {
   assert.equal(
     resolveParentJourney({
-      parent_journey: "column-value",
-      metadata: JSON.stringify({ parent_journey: "json-value" }),
+      parent_journey: "old-column-value",
+      metadata: JSON.stringify({ parent_journey: "new-metadata-value" }),
     }),
-    "column-value",
+    "new-metadata-value",
   );
 });
 
-test("a null/absent/empty column falls back to the JSON value", () => {
+test("metadata parent is stable regardless of the projection column", () => {
   assert.equal(
     resolveParentJourney({
       parent_journey: null,
@@ -59,24 +55,23 @@ test("a null/absent/empty column falls back to the JSON value", () => {
   );
 });
 
-test("a non-empty column with no JSON parent (or malformed JSON) still resolves to the column", () => {
+test("a stale column cannot resurrect a parent removed from valid metadata", () => {
   assert.equal(
-    resolveParentJourney({ parent_journey: "column-value", metadata: null }),
-    "column-value",
-  );
-  assert.equal(resolveParentJourney({ parent_journey: "column-value" }), "column-value");
-  assert.equal(
-    resolveParentJourney({ parent_journey: "column-value", metadata: JSON.stringify({}) }),
-    "column-value",
-  );
-  assert.equal(
-    resolveParentJourney({ parent_journey: "column-value", metadata: "{not json" }),
-    "column-value",
+    resolveParentJourney({
+      parent_journey: "old-parent",
+      metadata: JSON.stringify({ project_path: "/still-here" }),
+    }),
+    "",
   );
 });
 
-test("malformed or non-object metadata yields empty without throwing, when the column is absent", () => {
-  assert.equal(resolveParentJourney({ metadata: "{not json" }), "");
+test("column-only, malformed, and non-object states match Python's tolerant no-parent read", () => {
+  assert.equal(resolveParentJourney({ parent_journey: "column-value", metadata: null }), "");
+  assert.equal(resolveParentJourney({ parent_journey: "column-value" }), "");
+  assert.equal(
+    resolveParentJourney({ parent_journey: "column-value", metadata: JSON.stringify({}) }),
+    "",
+  );
+  assert.equal(resolveParentJourney({ parent_journey: "column-value", metadata: "{not json" }), "");
   assert.equal(resolveParentJourney({ metadata: "[1,2,3]" }), "");
-  assert.equal(resolveParentJourney({ metadata: undefined }), "");
 });
