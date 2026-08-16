@@ -9,8 +9,8 @@ index, this index wins.
 
 ## Current Focus
 
-- Refinement Story: none
-- Change Request: none
+- Refinement Story: RS008
+- Change Request: CR050
 
 Selecting a focus is an explicit project decision. Reading or creating this Workbench
 never selects or executes work.
@@ -19,7 +19,7 @@ never selects or executes work.
 
 | Order | ID | Story | Status |
 |------:|----|-------|--------|
-| 1 | [RS008](rs008-v0319-recursive-journey-parity/index.md) | v0.31.9 Recursive Journey Parity | proposed |
+| 1 | [RS008](rs008-v0319-recursive-journey-parity/index.md) | v0.31.9 Recursive Journey Parity | active |
 
 ## Change Requests
 
@@ -27,7 +27,7 @@ Open work is ordered intentionally. Terminal history follows open work.
 
 | Order | ID | RS | Change | Status | Driver | Delivery |
 |------:|----|----|--------|--------|--------|----------|
-| 1 | [CR050](rs008-v0319-recursive-journey-parity/cr050-reconcile-moving-target-and-parent-authority.md) | RS008 | Reconcile moving-target policy and parent authority | captured | — | — |
+| 1 | [CR050](rs008-v0319-recursive-journey-parity/cr050-reconcile-moving-target-and-parent-authority.md) | RS008 | Reconcile moving-target policy and parent authority | planned | — | — |
 | 2 | [CR051](rs008-v0319-recursive-journey-parity/cr051-restore-recursive-journey-read-and-render-parity.md) | RS008 | Restore recursive journey read and CLI rendering parity | captured | — | — |
 | 3 | [CR052](rs008-v0319-recursive-journey-parity/cr052-port-parent-movement-and-cycle-semantics.md) | RS008 | Port parent movement and cycle semantics | captured | — | — |
 | 4 | [CR053](rs008-v0319-recursive-journey-parity/cr053-port-conservative-transactional-journey-removal.md) | RS008 | Port conservative transactional journey removal | captured | — | — |
