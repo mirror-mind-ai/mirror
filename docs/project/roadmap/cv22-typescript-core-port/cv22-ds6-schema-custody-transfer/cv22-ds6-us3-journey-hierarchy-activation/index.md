@@ -77,6 +77,20 @@ clear migration `017`'s projection; fallback would resurrect stale structure. At
 TS dual-write remains required, and any later column-authority flip is a separate
 post-transfer decision.
 
+## v0.31.9 Movement And Cycle Amendment
+
+[RS008 / CR052](../../../../refinement/rs008-v0319-recursive-journey-parity/cr052-port-parent-movement-and-cycle-semantics.md)
+supersedes US3's original single-level validator. The TS decision core now accepts
+arbitrary-depth attachment and movement of nodes with descendants, walks the complete
+metadata-authoritative ancestry, and rejects self-parenting, missing proposed parents,
+indirect cycles, and already-cyclic ancestry with the released messages.
+
+`createJourney` now validates any proposed parent inside its immediate transaction, and
+the exported `setParentJourney` core seam moves or unparents an existing journey while
+preserving every other identity and metadata field. Metadata and migration `017`'s
+derived projection update atomically; rollback prevents partial divergence. This does
+not add a CLI command or transfer the Python Workspace/web adapter — that remains CR054.
+
 ## Artifacts
 
 - [Plan](plan.md)

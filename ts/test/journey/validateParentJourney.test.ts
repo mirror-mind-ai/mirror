@@ -69,9 +69,13 @@ test("TS validateParentJourney reproduces the Python oracle outcomes and message
 // Focused unit assertions documenting each rule independently of the golden.
 const RULE_ROWS: JourneyParentRow[] = [
   { key: "root", parentJourney: "" },
-  { key: "has-parent", parentJourney: "root" },
+  { key: "nested", parentJourney: "root" },
+  { key: "deep", parentJourney: "nested" },
   { key: "has-child", parentJourney: "" },
   { key: "the-child", parentJourney: "has-child" },
+  { key: "loop-a", parentJourney: "loop-b" },
+  { key: "loop-b", parentJourney: "loop-a" },
+  { key: "orphan-parent", parentJourney: "missing-ancestor" },
 ];
 
 test("empty parent is a no-op", () => {
@@ -93,16 +97,28 @@ test("the parent must exist", () => {
   );
 });
 
-test("nesting is limited to one level", () => {
+test("arbitrary-depth nesting is accepted", () => {
+  assert.doesNotThrow(() => validateParentJourney("x", "deep", RULE_ROWS));
+});
+
+test("a journey with children can move beneath another branch", () => {
+  assert.doesNotThrow(() => validateParentJourney("has-child", "deep", RULE_ROWS));
+});
+
+test("an indirect cycle back to the moved journey is rejected", () => {
   assert.throws(
-    () => validateParentJourney("x", "has-parent", RULE_ROWS),
-    /Only one hierarchy level is supported/,
+    () => validateParentJourney("root", "deep", RULE_ROWS),
+    /parent_journey would create a cycle/,
   );
 });
 
-test("a journey with children cannot also gain a parent", () => {
+test("an already-cyclic proposed ancestry is rejected", () => {
   assert.throws(
-    () => validateParentJourney("has-child", "root", RULE_ROWS),
-    /cannot also have a parent/,
+    () => validateParentJourney("x", "loop-a", RULE_ROWS),
+    /Parent lineage contains an existing cycle/,
   );
+});
+
+test("a missing legacy ancestor ends the walk without hiding the known parent", () => {
+  assert.doesNotThrow(() => validateParentJourney("x", "orphan-parent", RULE_ROWS));
 });

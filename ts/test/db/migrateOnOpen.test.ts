@@ -68,6 +68,7 @@ test("migrate-on-open applies pending TS-authored 017 to a legacy DB, backs it u
   const ws = tmpDbPath();
   try {
     const db = bootstrapDatabase(ws.dbPath);
+    createJourney(db, { id: "id-parent", slug: "parent", content: "# Parent" }, NOW);
     createJourney(
       db,
       {

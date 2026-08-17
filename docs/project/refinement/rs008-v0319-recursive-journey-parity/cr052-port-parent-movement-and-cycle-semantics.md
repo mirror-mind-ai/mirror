@@ -114,8 +114,64 @@ creation, filesystem movement, or production-database reconciliation belongs to 
 single-level nesting. `v0.31.9` replaced those Python checks with complete ancestry
 walking.
 
+### Implementation evidence
+
+- TDD first reproduced five TS validator failures and four Python compatibility failures:
+  nested parents and subtree moves were refused, while indirect cycles, existing cycles,
+  and missing legacy ancestors produced the obsolete one-level result.
+- The Python compatibility copy advances only `_validate_parent_journey` to the released
+  ancestry walk. The real Python generator now grades nine cases across arbitrary depth,
+  subtree movement, self/missing parents, indirect and existing cycles, and a missing
+  legacy ancestor. The tracked `journey.py` oracle hash was deliberately refreshed only
+  after focused TS parity passed.
+- The TS validator indexes metadata-authoritative parent rows once and walks the full
+  proposed lineage. It preserves released error order/messages and removes both
+  superseded one-level checks.
+- `setParentJourney` is an exported core seam, not a command route. Within one
+  `BEGIN IMMEDIATE` transaction it reads the graph, validates, preserves metadata
+  siblings, writes or removes the parent key, and converges migration `017`'s projection.
+- `createJourney` now validates every non-empty parent through the same graph and within
+  its existing atomic transaction. Both parent writers preserve Python's trim and
+  500-character boundary.
+- Database-copy tests prove a populated subtree move preserves identity, content,
+  version, creation time, project path, sync file, icon/color, child rows, memories,
+  tasks, conversations, and filesystem content. Unparenting preserves metadata siblings
+  and clears a stale projection. Cycle failures leave every row byte-for-byte unchanged.
+- Injected projection failure proves complete metadata rollback. Malformed, array, and
+  null metadata converge through Python's tolerant empty-object semantics.
+- DS6.US3, DS7.US1, and the CV22 journey narrative now distinguish the TS core seam from
+  the still Python-owned Workspace/web adapter under CR054.
+
+### Validation evidence
+
+- Focused TS validator/write suite: `31/31` passed.
+- Focused Python journey service: `48/48` passed.
+- Full TS suite: `818` passed.
+- Full Python 3.12 suite: `2461` passed.
+- TypeScript typecheck, Biome, Ruff lint/format, documentation links/headings, and
+  `git diff --check`: passed.
+- Python validation golden: nine cases (`5` accepted, `4` rejected) and exact TS parity.
+- Golden regeneration: deterministic across all four CI generators.
+- Oracle-drift check: clean after the deliberate `journey.py` baseline advance.
+- Schema structural parity and FTS probe: passed.
+- Migration fixture parity: all nine probes passed (`001`, `002`, `003`, `004`, `005`,
+  `008`, `009`, `016`, and multi-hop chain).
+- Portable copied-database smoke: moved `demo-child-beta` with its deep subtree beneath
+  `demo-child-alpha`, preserved descendant/task state, refused a cycle with zero writes,
+  then unparented and cleared the projection; temporary artifacts were removed.
+
+## Review
+
+The implementation keeps validation pure and movement local to one identity row. A
+single transaction closes the validation/write race, while CR050's resolver prevents a
+stale column from entering ancestry decisions. No adapter, command, schema, repair,
+reparent cascade, inheritance rule, or filesystem operation was introduced.
+
+No corrective debt action is required for CR052. Removal and Workspace/web transfer
+remain explicit CR053–CR054 work rather than hidden implementation debt.
+
 ## Outcome
 
-In progress. The Navigator approved the eight-slice implementation and acceptance
-checkpoint, assigned Driver `@alissonvale`, selected Delivery `mirror-ts-core`, and
-authorized implementation. Assignment publication remains a separate commit/push gate.
+Implemented and locally validated. Canonical status remains `in_progress` pending the
+implementation commit/push gate, integrated CI, and explicit Navigator acceptance of
+the movement/cycle behavior.

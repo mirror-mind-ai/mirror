@@ -87,6 +87,18 @@ the write commands (DS4), and behavior at larger scale (the ranker is a full sca
   contract; existing user databases must keep working. Changes require explicit
   migration discipline.
 
+### v0.31.9 journey contract absorption
+
+[RS008](../../refinement/rs008-v0319-recursive-journey-parity/index.md) makes the
+released recursive journey contract explicit inside the strangler. CR050 establishes
+metadata as mixed-engine semantic parent authority while migration `017`'s column
+remains a derived projection. CR051 restores arbitrary-depth read/render parity. CR052
+adds complete-ancestry validation and an atomic, meaning-preserving TS parent-movement
+core seam without claiming Workspace/web routing. Conservative removal and adapter
+ownership remain CR053–CR054. This sequence demonstrates the moving-target rule:
+released Python behavior becomes named TS parity work instead of silently freezing or
+drifting.
+
 ---
 
 ## Delivery Stories

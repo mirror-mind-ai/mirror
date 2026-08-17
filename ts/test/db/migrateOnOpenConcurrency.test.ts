@@ -22,6 +22,7 @@ const CONCURRENT_PROCESSES = 8;
 function buildLegacyDb(dir: string): string {
   const dbPath = join(dir, "memory.db");
   const db = bootstrapDatabase(dbPath);
+  createJourney(db, { id: "j-parent", slug: "parent", content: "# Parent" }, NOW);
   createJourney(
     db,
     {

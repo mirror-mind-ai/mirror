@@ -1,8 +1,8 @@
 // Port of `JourneyService._validate_parent_journey` (src/memory/services/journey.py).
 //
 // Pure over resolved journey rows — the DB seam supplies them, keeping this the
-// decision core. Enforces the four hierarchy rules in Python's exact order and
-// with Python's exact messages, so the front door and any future write route
+// decision core. Walks complete ancestry in Python's exact order and with
+// Python's exact messages, so the front door and every parent write route
 // reject an invalid parent identically to the Python oracle. Parent information
 // is read from mixed-engine-authoritative metadata (CR050) via
 // `resolveParentJourney`, the same resolver the listing sort uses, so validation
@@ -11,7 +11,7 @@
 /** Raised when a proposed parent_journey violates a hierarchy rule. */
 export class ParentJourneyValidationError extends Error {}
 
-/** One journey with its resolved (JSON-first) parent; "" when it has none. */
+/** One journey with its CR050 metadata-authoritative parent; "" when it has none. */
 export interface JourneyParentRow {
   key: string;
   parentJourney: string;
@@ -19,11 +19,11 @@ export interface JourneyParentRow {
 
 /**
  * Validate a proposed `parentJourney` for `journey` against all known journey
- * rows. No-op when the parent is empty. Otherwise enforces, in order:
- *   1. a journey cannot be its own parent;
- *   2. the parent must exist;
- *   3. the parent must not itself have a parent (single-level nesting);
- *   4. a journey that already has children cannot also gain a parent.
+ * rows. No-op when the parent is empty. Otherwise enforce the released
+ * arbitrary-depth boundary: the proposed parent must exist, its full ancestry
+ * must not reach the journey being moved, and that ancestry must not already
+ * contain a cycle. A missing legacy ancestor safely ends the walk, matching
+ * Python's tolerant read behavior.
  */
 export function validateParentJourney(
   journey: string | null,
@@ -34,16 +34,22 @@ export function validateParentJourney(
   if (journey && parentJourney === journey) {
     throw new ParentJourneyValidationError("parent_journey cannot be the journey itself");
   }
-  const parent = rows.find((row) => row.key === parentJourney);
-  if (!parent) {
+  const byKey = new Map(rows.map((row) => [row.key, row]));
+  let current = byKey.get(parentJourney);
+  if (!current) {
     throw new ParentJourneyValidationError(`Parent journey '${parentJourney}' not found`);
   }
-  if (parent.parentJourney) {
-    throw new ParentJourneyValidationError("Only one hierarchy level is supported");
-  }
-  if (journey && rows.some((row) => row.key !== journey && row.parentJourney === journey)) {
-    throw new ParentJourneyValidationError(
-      "Journeys with child journeys cannot also have a parent",
-    );
+
+  const visited = new Set<string>();
+  while (current) {
+    if (journey && current.key === journey) {
+      throw new ParentJourneyValidationError("parent_journey would create a cycle");
+    }
+    if (visited.has(current.key)) {
+      throw new ParentJourneyValidationError("Parent lineage contains an existing cycle");
+    }
+    visited.add(current.key);
+    if (!current.parentJourney) return;
+    current = byKey.get(current.parentJourney);
   }
 }

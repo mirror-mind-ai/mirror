@@ -564,20 +564,19 @@ class JourneyService:
         parent = self._get_journey_identity(parent_journey)
         if not parent:
             raise ValueError(f"Parent journey '{parent_journey}' not found")
-        parent_meta = _metadata_dict(parent.metadata)
-        if parent_meta.get("parent_journey"):
-            raise ValueError("Only one hierarchy level is supported")
-        if journey and self._journey_has_children(journey):
-            raise ValueError("Journeys with child journeys cannot also have a parent")
 
-    def _journey_has_children(self, journey: str) -> bool:
-        for identity in self._get_journey_identities():
-            if identity.key == journey:
-                continue
-            metadata = _metadata_dict(identity.metadata)
-            if metadata.get("parent_journey") == journey:
-                return True
-        return False
+        current: Identity | None = parent
+        visited: set[str] = set()
+        while current is not None:
+            if journey and current.key == journey:
+                raise ValueError("parent_journey would create a cycle")
+            if current.key in visited:
+                raise ValueError("Parent lineage contains an existing cycle")
+            visited.add(current.key)
+            ancestor = _metadata_dict(current.metadata).get("parent_journey")
+            if not isinstance(ancestor, str) or not ancestor:
+                return
+            current = self._get_journey_identity(ancestor)
 
     def _get_journey_identities(self) -> list[Identity]:
         return self.store.get_identity_by_layer(JOURNEY_LAYER)

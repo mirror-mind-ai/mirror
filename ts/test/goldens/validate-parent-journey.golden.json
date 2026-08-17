@@ -19,22 +19,34 @@
       "parent_journey": "ghost"
     },
     {
-      "error": "Only one hierarchy level is supported",
+      "error": null,
       "journey": "solo",
-      "outcome": "error",
-      "parent_journey": "mid-level"
-    },
-    {
-      "error": "Journeys with child journeys cannot also have a parent",
-      "journey": "parent-with-child",
-      "outcome": "error",
-      "parent_journey": "root"
+      "outcome": "ok",
+      "parent_journey": "deep-level"
     },
     {
       "error": null,
-      "journey": "new-journey",
+      "journey": "parent-with-child",
       "outcome": "ok",
-      "parent_journey": "root"
+      "parent_journey": "deep-level"
+    },
+    {
+      "error": "parent_journey would create a cycle",
+      "journey": "grandparent",
+      "outcome": "error",
+      "parent_journey": "deep-level"
+    },
+    {
+      "error": "Parent lineage contains an existing cycle",
+      "journey": "solo",
+      "outcome": "error",
+      "parent_journey": "loop-a"
+    },
+    {
+      "error": null,
+      "journey": "solo",
+      "outcome": "ok",
+      "parent_journey": "orphan-parent"
     },
     {
       "error": null,
@@ -45,9 +57,24 @@
   ],
   "journey_rows": [
     {
+      "content": "# Deep Level\n**Status:** active",
+      "key": "deep-level",
+      "metadata": "{\"parent_journey\": \"mid-level\"}"
+    },
+    {
       "content": "# Grandparent\n**Status:** active",
       "key": "grandparent",
       "metadata": null
+    },
+    {
+      "content": "# Loop A\n**Status:** active",
+      "key": "loop-a",
+      "metadata": "{\"parent_journey\": \"loop-b\"}"
+    },
+    {
+      "content": "# Loop B\n**Status:** active",
+      "key": "loop-b",
+      "metadata": "{\"parent_journey\": \"loop-a\"}"
     },
     {
       "content": "# Mid Level\n**Status:** active",
@@ -58,6 +85,11 @@
       "content": "# Only Child\n**Status:** active",
       "key": "only-child",
       "metadata": "{\"parent_journey\": \"parent-with-child\"}"
+    },
+    {
+      "content": "# Orphan Parent\n**Status:** active",
+      "key": "orphan-parent",
+      "metadata": "{\"parent_journey\": \"missing-ancestor\"}"
     },
     {
       "content": "# Parent With Child\n**Status:** active",

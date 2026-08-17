@@ -6,16 +6,18 @@ temporary database with fully synthetic `journey` rows, then drives the REAL
 branch, recording each outcome (ok, or the exact ValueError message) so the
 TypeScript port can be graded against Python without re-deriving the answer.
 
-Validation is pure over the journey rows (parent existence, the parent's own
-parent, and whether the journey already has children), so nothing needs freezing.
+Validation is pure over the metadata-authoritative journey graph, so nothing
+needs freezing.
 
 Branches exercised:
   - empty parent -> ok (no-op);
   - parent equals the journey -> "cannot be the journey itself";
-  - parent absent -> "Parent journey '...' not found";
-  - parent already has a parent -> "Only one hierarchy level is supported";
-  - the journey already has children -> "cannot also have a parent";
-  - a plain valid attach, and a valid attach to an existing parent-of-others.
+  - proposed parent absent -> "Parent journey '...' not found";
+  - arbitrary-depth attach -> ok;
+  - moving a journey that already has children -> ok;
+  - indirect cycle -> "parent_journey would create a cycle";
+  - already-cyclic ancestry -> "Parent lineage contains an existing cycle";
+  - missing legacy ancestor ends the walk safely.
 
 Run:  uv run python ts/parity/generate_validate_parent_journey_golden.py
 """
@@ -42,17 +44,23 @@ SEED_JOURNEYS: tuple[tuple[str, str, str | None], ...] = (
     ("only-child", "# Only Child\n**Status:** active", "parent-with-child"),
     ("grandparent", "# Grandparent\n**Status:** active", None),
     ("mid-level", "# Mid Level\n**Status:** active", "grandparent"),
+    ("deep-level", "# Deep Level\n**Status:** active", "mid-level"),
+    ("loop-a", "# Loop A\n**Status:** active", "loop-b"),
+    ("loop-b", "# Loop B\n**Status:** active", "loop-a"),
+    ("orphan-parent", "# Orphan Parent\n**Status:** active", "missing-ancestor"),
 )
 
 # journey, proposed parent_journey
 CASES: tuple[tuple[str, str], ...] = (
-    ("solo", ""),                          # empty -> ok
-    ("solo", "solo"),                      # self -> error
-    ("solo", "ghost"),                     # missing parent -> error
-    ("solo", "mid-level"),                 # parent has a parent -> error
-    ("parent-with-child", "root"),         # journey has children -> error
-    ("new-journey", "root"),               # valid attach to a childless root
-    ("new-journey", "parent-with-child"),  # valid attach to an existing parent-of-others
+    ("solo", ""),  # empty -> ok
+    ("solo", "solo"),  # self -> error
+    ("solo", "ghost"),  # missing proposed parent -> error
+    ("solo", "deep-level"),  # arbitrary-depth attach -> ok
+    ("parent-with-child", "deep-level"),  # moving a subtree -> ok
+    ("grandparent", "deep-level"),  # indirect cycle -> error
+    ("solo", "loop-a"),  # already-cyclic ancestry -> error
+    ("solo", "orphan-parent"),  # missing legacy ancestor -> ok
+    ("new-journey", "parent-with-child"),  # valid sibling attach
 )
 
 

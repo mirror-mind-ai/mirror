@@ -68,8 +68,10 @@ column remains a derived projection; disagreement is drift to diagnose, not read
 fallback. [CR051](../../../../refinement/rs008-v0319-recursive-journey-parity/cr051-restore-recursive-journey-read-and-render-parity.md)
 advances the routed `journeys` read and renderer to arbitrary-depth `v0.31.9` parity,
 including `depth`, `lineage`, bounded malformed cycles, and column-zero Markdown
-connectors. Parent movement and arbitrary-depth write validation remain the separate
-CR052 obligation rather than being hidden inside this completed slice.
+connectors. [CR052](../../../../refinement/rs008-v0319-recursive-journey-parity/cr052-port-parent-movement-and-cycle-semantics.md)
+adds the separate arbitrary-depth validator and atomic `setParentJourney` core seam,
+including meaning-preserving subtree movement and cycle refusal. No new command route is
+claimed: Workspace/web adapter authority remains the explicit CR054 obligation.
 
 ## Artifacts
 

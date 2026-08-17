@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
@@ -10,6 +10,7 @@ import {
   createJourney,
   JourneyNotFoundError,
   journeyMetadata,
+  setParentJourney,
   setProjectPath,
 } from "#journey/journeyWrite.ts";
 import { resolveParentJourney } from "#journey/parentJourney.ts";
@@ -136,6 +137,7 @@ test("create -> set-path round-trips through canonical JSON with values intact",
   const db = openDatabaseCopyForWrite(dbPath);
   try {
     seedIdentity(db);
+    createJourney(db, { id: "j-root", slug: "root", content: "# Root" }, NOW);
     createJourney(
       db,
       { id: "j-1", slug: "demo", content: "# Demo", projectPath: "/old", parentJourney: "root" },
@@ -168,6 +170,7 @@ test("createJourney atomically sets the parent_journey column alongside the JSON
   const db = openDatabaseCopyForWrite(dbPath);
   try {
     seedIdentity(db);
+    createJourney(db, { id: "j-root", slug: "root", content: "# Root" }, NOW);
     createJourney(db, { id: "j-1", slug: "child", content: "# Child", parentJourney: "root" }, NOW);
     const row = db
       .prepare("SELECT metadata, parent_journey FROM identity WHERE key = ?")
@@ -243,6 +246,8 @@ test("a Python-style metadata move and unparent override the stale TS projection
   const db = openDatabaseCopyForWrite(dbPath);
   try {
     seedIdentity(db);
+    createJourney(db, { id: "j-old", slug: "old-root", content: "# Old Root" }, NOW);
+    createJourney(db, { id: "j-new", slug: "new-root", content: "# New Root" }, NOW);
     createJourney(
       db,
       { id: "j-child", slug: "child", content: "# Child", parentJourney: "old-root" },
@@ -270,6 +275,338 @@ test("a Python-style metadata move and unparent override the stale TS projection
   }
 });
 
+test("createJourney rejects an unknown parent before inserting anything", () => {
+  const { dbPath, cleanup } = tempCopy();
+  const db = openDatabaseCopyForWrite(dbPath);
+  try {
+    seedIdentity(db);
+    assert.throws(
+      () =>
+        createJourney(
+          db,
+          { id: "j-child", slug: "child", content: "# Child", parentJourney: "missing" },
+          NOW,
+        ),
+      /Parent journey 'missing' not found/,
+    );
+    assert.equal(db.prepare("SELECT COUNT(*) AS c FROM identity").get()?.c, 0);
+  } finally {
+    db.close();
+    cleanup();
+  }
+});
+
+test("createJourney accepts a parent at arbitrary depth", () => {
+  const { dbPath, cleanup } = tempCopy();
+  const db = openDatabaseCopyForWrite(dbPath);
+  try {
+    seedIdentity(db);
+    createJourney(db, { id: "j-root", slug: "root", content: "# Root" }, NOW);
+    createJourney(
+      db,
+      { id: "j-area", slug: "area", content: "# Area", parentJourney: "root" },
+      NOW,
+    );
+    createJourney(
+      db,
+      { id: "j-business", slug: "business", content: "# Business", parentJourney: "area" },
+      NOW,
+    );
+    createJourney(
+      db,
+      { id: "j-product", slug: "product", content: "# Product", parentJourney: "business" },
+      NOW,
+    );
+    const row = db
+      .prepare("SELECT metadata, parent_journey FROM identity WHERE key = 'product'")
+      .get();
+    assert.equal(resolveParentJourney(row ?? {}), "business");
+    assert.equal(row?.parent_journey, "business");
+  } finally {
+    db.close();
+    cleanup();
+  }
+});
+
+test("setParentJourney moves a populated subtree without changing its meaning", () => {
+  const { dbPath, cleanup } = tempCopy();
+  const db = openDatabaseCopyForWrite(dbPath);
+  try {
+    seedIdentity(db);
+    createJourney(db, { id: "j-old", slug: "old-root", content: "# Old Root" }, NOW);
+    createJourney(db, { id: "j-new", slug: "new-root", content: "# New Root" }, NOW);
+    const projectPath = join(dirname(dbPath), "stable-project");
+    mkdirSync(projectPath);
+    const projectFile = join(projectPath, "KEEP.txt");
+    writeFileSync(projectFile, "filesystem stays put\n");
+    createJourney(
+      db,
+      {
+        id: "j-subtree",
+        slug: "subtree",
+        content: "# Subtree\n**Status:** active",
+        projectPath,
+        syncFile: "/stable/JOURNEY.md",
+        icon: "tree",
+        color: "green",
+        parentJourney: "old-root",
+      },
+      NOW,
+    );
+    createJourney(
+      db,
+      { id: "j-child", slug: "child", content: "# Child", parentJourney: "subtree" },
+      NOW,
+    );
+    db.exec("CREATE TABLE memories (id TEXT PRIMARY KEY, journey TEXT, content TEXT)");
+    db.exec("CREATE TABLE tasks (id TEXT PRIMARY KEY, journey TEXT, title TEXT)");
+    db.exec("CREATE TABLE conversations (id TEXT PRIMARY KEY, journey TEXT, title TEXT)");
+    db.prepare("INSERT INTO memories VALUES ('m1', 'subtree', 'stable memory')").run();
+    db.prepare("INSERT INTO tasks VALUES ('t1', 'subtree', 'stable task')").run();
+    db.prepare("INSERT INTO conversations VALUES ('c1', 'subtree', 'stable conversation')").run();
+    const beforeSubtree = db.prepare("SELECT * FROM identity WHERE key = 'subtree'").get();
+    const beforeChild = db.prepare("SELECT * FROM identity WHERE key = 'child'").get();
+    const beforeAssociated = {
+      memories: db.prepare("SELECT * FROM memories").all(),
+      tasks: db.prepare("SELECT * FROM tasks").all(),
+      conversations: db.prepare("SELECT * FROM conversations").all(),
+    };
+
+    setParentJourney(db, "subtree", "new-root", LATER);
+
+    const afterSubtree = db.prepare("SELECT * FROM identity WHERE key = 'subtree'").get();
+    const afterChild = db.prepare("SELECT * FROM identity WHERE key = 'child'").get();
+    assert.deepEqual(
+      {
+        ...afterSubtree,
+        metadata: beforeSubtree?.metadata,
+        parent_journey: beforeSubtree?.parent_journey,
+        updated_at: beforeSubtree?.updated_at,
+      },
+      beforeSubtree,
+    );
+    assert.deepEqual(JSON.parse(afterSubtree?.metadata as string), {
+      project_path: projectPath,
+      sync_file: "/stable/JOURNEY.md",
+      icon: "tree",
+      color: "green",
+      parent_journey: "new-root",
+    });
+    assert.equal(afterSubtree?.parent_journey, "new-root");
+    assert.equal(afterSubtree?.updated_at, LATER);
+    assert.deepEqual(afterChild, beforeChild);
+    assert.deepEqual(
+      {
+        memories: db.prepare("SELECT * FROM memories").all(),
+        tasks: db.prepare("SELECT * FROM tasks").all(),
+        conversations: db.prepare("SELECT * FROM conversations").all(),
+      },
+      beforeAssociated,
+    );
+    assert.equal(readFileSync(projectFile, "utf8"), "filesystem stays put\n");
+  } finally {
+    db.close();
+    cleanup();
+  }
+});
+
+test("setParentJourney unparents and converges a stale projection while preserving metadata siblings", () => {
+  const { dbPath, cleanup } = tempCopy();
+  const db = openDatabaseCopyForWrite(dbPath);
+  try {
+    seedIdentity(db);
+    createJourney(db, { id: "j-old", slug: "old-root", content: "# Old Root" }, NOW);
+    createJourney(db, { id: "j-new", slug: "new-root", content: "# New Root" }, NOW);
+    createJourney(
+      db,
+      {
+        id: "j-child",
+        slug: "child",
+        content: "# Child",
+        projectPath: "/stable",
+        icon: "star",
+        parentJourney: "old-root",
+      },
+      NOW,
+    );
+    db.prepare("UPDATE identity SET metadata = ? WHERE key = 'child'").run(
+      JSON.stringify({ project_path: "/stable", icon: "star", parent_journey: "new-root" }),
+    );
+
+    setParentJourney(db, "child", null, LATER);
+
+    const row = db
+      .prepare("SELECT metadata, parent_journey, updated_at FROM identity WHERE key = 'child'")
+      .get();
+    assert.deepEqual(JSON.parse(row?.metadata as string), {
+      project_path: "/stable",
+      icon: "star",
+    });
+    assert.equal(row?.parent_journey, null);
+    assert.equal(row?.updated_at, LATER);
+  } finally {
+    db.close();
+    cleanup();
+  }
+});
+
+test("setParentJourney rejects cycles and leaves every row byte-for-byte unchanged", () => {
+  const { dbPath, cleanup } = tempCopy();
+  const db = openDatabaseCopyForWrite(dbPath);
+  try {
+    seedIdentity(db);
+    createJourney(db, { id: "j-root", slug: "root", content: "# Root" }, NOW);
+    createJourney(
+      db,
+      { id: "j-child", slug: "child", content: "# Child", parentJourney: "root" },
+      NOW,
+    );
+    createJourney(
+      db,
+      { id: "j-deep", slug: "deep", content: "# Deep", parentJourney: "child" },
+      NOW,
+    );
+    const before = db.prepare("SELECT * FROM identity ORDER BY key").all();
+
+    assert.throws(
+      () => setParentJourney(db, "root", "deep", LATER),
+      /parent_journey would create a cycle/,
+    );
+
+    assert.deepEqual(db.prepare("SELECT * FROM identity ORDER BY key").all(), before);
+  } finally {
+    db.close();
+    cleanup();
+  }
+});
+
+test("setParentJourney treats malformed and non-object metadata as Python's empty object", () => {
+  const { dbPath, cleanup } = tempCopy();
+  const db = openDatabaseCopyForWrite(dbPath);
+  try {
+    seedIdentity(db);
+    createJourney(db, { id: "j-root", slug: "root", content: "# Root" }, NOW);
+    createJourney(db, { id: "j-child", slug: "child", content: "# Child" }, NOW);
+    for (const invalidMetadata of ["{malformed", "[]", "null"]) {
+      db.prepare("UPDATE identity SET metadata = ? WHERE key = 'child'").run(invalidMetadata);
+
+      setParentJourney(db, "child", "root", LATER);
+
+      const row = db
+        .prepare("SELECT metadata, parent_journey FROM identity WHERE key = 'child'")
+        .get();
+      assert.deepEqual(JSON.parse(row?.metadata as string), { parent_journey: "root" });
+      assert.equal(row?.parent_journey, "root");
+    }
+  } finally {
+    db.close();
+    cleanup();
+  }
+});
+
+test("setParentJourney rejects an already-cyclic ancestry without mutation", () => {
+  const { dbPath, cleanup } = tempCopy();
+  const db = openDatabaseCopyForWrite(dbPath);
+  try {
+    seedIdentity(db);
+    createJourney(db, { id: "j-child", slug: "child", content: "# Child" }, NOW);
+    db.prepare(
+      "INSERT INTO identity (id, layer, key, content, version, created_at, updated_at, metadata) " +
+        "VALUES (?, 'journey', ?, ?, '1.0.0', ?, ?, ?)",
+    ).run("j-loop-a", "loop-a", "# Loop A", NOW, NOW, JSON.stringify({ parent_journey: "loop-b" }));
+    db.prepare(
+      "INSERT INTO identity (id, layer, key, content, version, created_at, updated_at, metadata) " +
+        "VALUES (?, 'journey', ?, ?, '1.0.0', ?, ?, ?)",
+    ).run("j-loop-b", "loop-b", "# Loop B", NOW, NOW, JSON.stringify({ parent_journey: "loop-a" }));
+    const before = db.prepare("SELECT * FROM identity ORDER BY key").all();
+
+    assert.throws(
+      () => setParentJourney(db, "child", "loop-a", LATER),
+      /Parent lineage contains an existing cycle/,
+    );
+    assert.deepEqual(db.prepare("SELECT * FROM identity ORDER BY key").all(), before);
+  } finally {
+    db.close();
+    cleanup();
+  }
+});
+
+test("parent writers reject a parent longer than Python's 500-character limit", () => {
+  const { dbPath, cleanup } = tempCopy();
+  const db = openDatabaseCopyForWrite(dbPath);
+  try {
+    seedIdentity(db);
+    createJourney(db, { id: "j-child", slug: "child", content: "# Child" }, NOW);
+    const before = db.prepare("SELECT * FROM identity ORDER BY key").all();
+    const oversized = "p".repeat(501);
+    assert.throws(
+      () => setParentJourney(db, "child", oversized, LATER),
+      /parent_journey must be at most 500 characters/,
+    );
+    assert.throws(
+      () =>
+        createJourney(
+          db,
+          { id: "j-other", slug: "other", content: "# Other", parentJourney: oversized },
+          LATER,
+        ),
+      /parent_journey must be at most 500 characters/,
+    );
+    assert.deepEqual(db.prepare("SELECT * FROM identity ORDER BY key").all(), before);
+  } finally {
+    db.close();
+    cleanup();
+  }
+});
+
+test("setParentJourney throws for a missing journey without mutation", () => {
+  const { dbPath, cleanup } = tempCopy();
+  const db = openDatabaseCopyForWrite(dbPath);
+  try {
+    seedIdentity(db);
+    createJourney(db, { id: "j-root", slug: "root", content: "# Root" }, NOW);
+    const before = db.prepare("SELECT * FROM identity ORDER BY key").all();
+    assert.throws(() => setParentJourney(db, "missing", "root", LATER), JourneyNotFoundError);
+    assert.deepEqual(db.prepare("SELECT * FROM identity ORDER BY key").all(), before);
+  } finally {
+    db.close();
+    cleanup();
+  }
+});
+
+test("setParentJourney rolls metadata back when projection maintenance fails", () => {
+  const { dbPath, cleanup } = tempCopy();
+  const db = openDatabaseCopyForWrite(dbPath);
+  try {
+    seedIdentity(db);
+    createJourney(db, { id: "j-old", slug: "old-root", content: "# Old Root" }, NOW);
+    createJourney(db, { id: "j-new", slug: "new-root", content: "# New Root" }, NOW);
+    createJourney(
+      db,
+      {
+        id: "j-child",
+        slug: "child",
+        content: "# Child",
+        icon: "stable",
+        parentJourney: "old-root",
+      },
+      NOW,
+    );
+    const before = db.prepare("SELECT * FROM identity WHERE key = 'child'").get();
+    db.exec(
+      "CREATE TRIGGER fail_parent_projection BEFORE UPDATE OF parent_journey ON identity " +
+        "BEGIN SELECT RAISE(ABORT, 'projection failed'); END",
+    );
+
+    assert.throws(() => setParentJourney(db, "child", "new-root", LATER), /projection failed/);
+
+    assert.deepEqual(db.prepare("SELECT * FROM identity WHERE key = 'child'").get(), before);
+  } finally {
+    db.close();
+    cleanup();
+  }
+});
+
 test("createJourney rolls back the WHOLE write when the column statement fails mid-transaction", () => {
   const { dbPath, cleanup } = tempCopy();
   const db = openDatabaseCopyForWrite(dbPath);
@@ -284,6 +621,10 @@ test("createJourney rolls back the WHOLE write when the column statement fails m
         "content TEXT NOT NULL, version TEXT DEFAULT '1.0.0', created_at TEXT NOT NULL, " +
         "updated_at TEXT NOT NULL, metadata TEXT, UNIQUE(layer, key))",
     );
+    db.prepare(
+      "INSERT INTO identity (id, layer, key, content, version, created_at, updated_at, metadata) " +
+        "VALUES ('j-root', 'journey', 'root', '# Root', '1.0.0', ?, ?, NULL)",
+    ).run(NOW, NOW);
     assert.throws(() =>
       createJourney(db, { id: "j-1", slug: "demo", content: "# Demo", parentJourney: "root" }, NOW),
     );

@@ -102,6 +102,7 @@ export {
   JOURNEY_LAYER,
   JourneyNotFoundError,
   journeyMetadata,
+  setParentJourney,
   setProjectPath,
 } from "./journey/journeyWrite.ts";
 // --- Memory (listing + reinforcement writes) ---

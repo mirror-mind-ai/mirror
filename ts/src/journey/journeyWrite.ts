@@ -15,6 +15,8 @@ import {
   updateIdentityMetadata,
   upsertIdentity,
 } from "#identity/identityStore.ts";
+import { resolveParentJourney } from "#journey/parentJourney.ts";
+import { type JourneyParentRow, validateParentJourney } from "#journey/validateParentJourney.ts";
 
 export const JOURNEY_LAYER = "journey";
 
@@ -42,6 +44,38 @@ export interface CreateJourneyInput extends JourneyFields {
   content: string;
 }
 
+/** Read the complete parent graph through CR050's metadata-only resolver. */
+function journeyParentRows(db: WritableDatabase): JourneyParentRow[] {
+  return db
+    .prepare("SELECT key, metadata FROM identity WHERE layer = ? ORDER BY key")
+    .all(JOURNEY_LAYER)
+    .map((row) => ({
+      key: typeof row.key === "string" ? row.key : "",
+      parentJourney: resolveParentJourney({
+        metadata: typeof row.metadata === "string" ? row.metadata : null,
+      }),
+    }));
+}
+
+/** Python's tolerant metadata-object boundary for parent updates. */
+function metadataObject(raw: unknown): Record<string, unknown> {
+  if (typeof raw !== "string" || raw.length === 0) return {};
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)
+      ? { ...(parsed as Record<string, unknown>) }
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function normalizeParentJourney(value: string | null | undefined): string {
+  const clean = (value ?? "").trim();
+  if (clean.length > 500) throw new Error("parent_journey must be at most 500 characters");
+  return clean;
+}
+
 /**
  * Select the non-empty metadata fields in a fixed order (trim; keep only
  * non-empty), mirroring Python's _metadata_from_fields. The fixed order makes
@@ -58,7 +92,7 @@ export function journeyMetadata(fields: JourneyFields): Record<string, string> {
   ];
   const metadata: Record<string, string> = {};
   for (const [key, value] of ordered) {
-    const clean = (value ?? "").trim();
+    const clean = key === "parent_journey" ? normalizeParentJourney(value) : (value ?? "").trim();
     if (clean) {
       metadata[key] = clean;
     }
@@ -74,13 +108,11 @@ export function journeyMetadata(fields: JourneyFields): Record<string, string> {
  * JSON and the column disagreeing (see reinforcement.ts's `logAccess` for the
  * same `withTransaction` idiom applied to a different two-statement write).
  *
- * This is the only currently-ported live write that can SET `parent_journey`
- * (no `journey set-path`/`update` write in this port touches it). Python's
- * `JourneyService.update_metadata_fields` can still change or remove it and
- * does not know the column exists — that path remains live through the Python
- * Workspace/web backend. CR050 therefore keeps metadata as mixed-engine
- * semantic authority and treats this atomic column write as projection
- * maintenance, not as a reason to prefer the column during reads.
+ * `setParentJourney` below is the dedicated move seam. Python's
+ * `JourneyService.update_metadata_fields` can still change or remove a parent
+ * and does not know the column exists — that path remains live through the
+ * Python Workspace/web backend. CR050 therefore keeps metadata as mixed-engine
+ * semantic authority and treats column writes as projection maintenance.
  */
 export function createJourney(
   db: WritableDatabase,
@@ -99,11 +131,48 @@ export function createJourney(
     metadata: metadataJson,
   };
   withTransaction(db, () => {
+    if (parentJourney) {
+      validateParentJourney(input.slug, parentJourney, journeyParentRows(db));
+    }
     upsertIdentity(db, row, nowIso);
     db.prepare("UPDATE identity SET parent_journey = ? WHERE layer = ? AND key = ?").run(
       parentJourney,
       JOURNEY_LAYER,
       input.slug,
+    );
+  });
+}
+
+/**
+ * Move an existing journey, or make it a root, without changing any other
+ * identity field. Graph read, full-ancestry validation, metadata update, and
+ * migration 017 projection maintenance share one immediate transaction so a
+ * concurrent writer cannot invalidate the checked ancestry before commit.
+ */
+export function setParentJourney(
+  db: WritableDatabase,
+  slug: string,
+  parentJourney: string | null,
+  nowIso: string,
+): void {
+  const cleanParent = normalizeParentJourney(parentJourney);
+  withTransaction(db, () => {
+    const row = db
+      .prepare("SELECT metadata FROM identity WHERE layer = ? AND key = ?")
+      .get(JOURNEY_LAYER, slug);
+    if (row === undefined) throw new JourneyNotFoundError(slug);
+
+    const parentRows = journeyParentRows(db);
+    validateParentJourney(slug, cleanParent || null, parentRows);
+
+    const metadata = metadataObject(row.metadata);
+    if (cleanParent) metadata.parent_journey = cleanParent;
+    else delete metadata.parent_journey;
+    updateIdentityMetadata(db, JOURNEY_LAYER, slug, JSON.stringify(metadata), nowIso);
+    db.prepare("UPDATE identity SET parent_journey = ? WHERE layer = ? AND key = ?").run(
+      cleanParent || null,
+      JOURNEY_LAYER,
+      slug,
     );
   });
 }
