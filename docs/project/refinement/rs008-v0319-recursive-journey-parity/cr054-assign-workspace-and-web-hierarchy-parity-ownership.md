@@ -134,7 +134,7 @@ ownership gap rather than an implementation defect in CR050–CR053.
 
 ## Outcome
 
-Planned. CR054 is the canonical focus but remains unassigned. The proposed ownership is
-CV22.DS7.US9 for hierarchy projection/adapters/evidence and CV22.DS10 for final web
-runtime convergence. Planning does not authorize roadmap mutation, implementation,
-commit, push, Python retirement, or RS008 closure.
+In progress. The Navigator assigned Driver `@alissonvale`, selected Delivery
+`mirror-ts-core`, and authorized the ownership-only roadmap implementation. Assignment
+publication remains a separate commit/push gate. No Workspace/web code port, Python
+retirement, or RS008 closure is authorized.
