@@ -73,3 +73,23 @@ CR050 → CR051 → CR052 → CR053
 
 This sequence is advisory narrative. Canonical order and focus remain in the root
 Workbench, and selecting or planning any CR requires an explicit decision.
+
+## Closure
+
+RS008 is closed after all five Change Requests reached `done`:
+
+- CR050 reconciled the moving-target policy and established metadata as semantic parent
+  authority while retaining migration `017` as a derived projection.
+- CR051 restored deterministic arbitrary-depth reads and CLI rendering, including
+  bounded orphan and rootless-cycle visibility.
+- CR052 ported transactional parent creation/movement, complete ancestry validation,
+  cycle refusal, and meaning-preserving dual projection updates.
+- CR053 ported conservative transactional removal with a closed association inventory
+  and empty-leaf-only semantics.
+- CR054 assigned the remaining released Workspace/web hierarchy contract to
+  CV22.DS7.US9 and blocked Python retirement behind CV22.DS10's web convergence gate.
+
+The RS outcome is therefore satisfied: CV22 has an explicit, reviewable absorption route
+for the complete `v0.31.9` journey contract. Closing RS008 does not pull or implement
+DS7.US9 or DS10, retire Python, change a browser route, or create a new release. Those
+remain future independently authorized CV22 work.

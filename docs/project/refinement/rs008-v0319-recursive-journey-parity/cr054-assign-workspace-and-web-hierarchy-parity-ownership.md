@@ -184,7 +184,7 @@ planning remains deferred until pull.
 
 ## Outcome
 
-Implemented and locally validated as an ownership-only roadmap change. Canonical status
-remains `in_progress` pending the implementation commit/push gate, integrated Docs CI,
-and explicit Navigator acceptance. No Workspace/web code port, Python retirement, or
-RS008 closure was performed.
+Accepted by the Navigator and completed as an ownership-only roadmap change.
+Implementation commit `98d8131` passed Docs CI run `32056389258`; the canonical
+Workbench records CR054 as `done`. No Workspace/web code port, Python retirement, or
+future US9/DS10 execution was included.

@@ -9,8 +9,8 @@ index, this index wins.
 
 ## Current Focus
 
-- Refinement Story: RS008
-- Change Request: CR054
+- Refinement Story: —
+- Change Request: —
 
 Selecting a focus is an explicit project decision. Reading or creating this Workbench
 never selects or executes work.
@@ -19,7 +19,7 @@ never selects or executes work.
 
 | Order | ID | Story | Status |
 |------:|----|-------|--------|
-| 1 | [RS008](rs008-v0319-recursive-journey-parity/index.md) | v0.31.9 Recursive Journey Parity | active |
+| 1 | [RS008](rs008-v0319-recursive-journey-parity/index.md) | v0.31.9 Recursive Journey Parity | closed |
 
 ## Change Requests
 
@@ -27,7 +27,7 @@ Open work is ordered intentionally. Terminal history follows open work.
 
 | Order | ID | RS | Change | Status | Driver | Delivery |
 |------:|----|----|--------|--------|--------|----------|
-| 1 | [CR054](rs008-v0319-recursive-journey-parity/cr054-assign-workspace-and-web-hierarchy-parity-ownership.md) | RS008 | Assign Workspace and web hierarchy parity ownership | in_progress | @alissonvale | `mirror-ts-core` |
+| — | [CR054](rs008-v0319-recursive-journey-parity/cr054-assign-workspace-and-web-hierarchy-parity-ownership.md) | RS008 | Assign Workspace and web hierarchy parity ownership | done | @alissonvale | `mirror-ts-core` |
 | — | [CR053](rs008-v0319-recursive-journey-parity/cr053-port-conservative-transactional-journey-removal.md) | RS008 | Port conservative transactional journey removal | done | @alissonvale | `mirror-ts-core` |
 | — | [CR052](rs008-v0319-recursive-journey-parity/cr052-port-parent-movement-and-cycle-semantics.md) | RS008 | Port parent movement and cycle semantics | done | @alissonvale | `mirror-ts-core` |
 | — | [CR051](rs008-v0319-recursive-journey-parity/cr051-restore-recursive-journey-read-and-render-parity.md) | RS008 | Restore recursive journey read and CLI rendering parity | done | @alissonvale | `mirror-ts-core` |
