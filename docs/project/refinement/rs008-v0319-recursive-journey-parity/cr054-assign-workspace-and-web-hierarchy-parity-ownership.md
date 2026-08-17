@@ -132,9 +132,59 @@ commands/modes/ops, while DS10's current deletion gate checks for zero Python co
 neither names the Python web process or these JSON/browser contracts. This confirms an
 ownership gap rather than an implementation defect in CR050–CR053.
 
+### Implementation evidence
+
+- Authored `CV22.DS7.US9 — Workspace And Web Hierarchy Parity` as the bounded
+  non-command retirement rider. Its stable owner matrix assigns every hierarchy
+  producer, endpoint, adapter, JavaScript consumer, oracle, evidence package, and
+  convergence gate.
+- US9 explicitly reuses DS7.US1/CR051's recursive `JourneyOption` primitive and CR052's
+  parent creation/movement seams. It forbids a second hierarchy algorithm and keeps
+  migration `017` as a derived projection.
+- The US9 contract names exact semantics for Workspace `journeys`, recursive
+  `journeyMap`, root-to-selected `locationPath`, immediate `nearbyJourneys`, selector
+  `depth`/`lineage`, malformed-state visibility, parent/create adapters, selected Scene
+  scope, and the existing JavaScript renderers.
+- Non-inheritance is now executable future acceptance: ancestors receive distinct
+  conversations, memories, tasks, attachments, status, and synthesis signals, while the
+  selected deep journey must expose only its own records.
+- DS7's framing, inventory, validation, seam boundaries, candidate table, done condition,
+  and non-goals now include US9 without altering the numerical command denominator.
+- Authored a bounded `CV22.DS10 — Python Retirement And npm Distribution` convergence
+  gate. It names only CR054's required web-process, endpoint-inventory, static-asset, and
+  Python-deletion boundary; general DS10 planning remains deferred until that story is
+  pulled. DS10 consumes rather than redefines US9 hierarchy semantics.
+- CV22's strangler mechanics, journey-absorption narrative, Delivery Story table,
+  sequencing, and done condition now prevent a zero command count from hiding continued
+  Python ownership of the released Workspace/web surface.
+- No Python/TS Workspace implementation, HTTP route, JavaScript behavior, schema,
+  production data, package, or release state changed.
+
+### Validation evidence
+
+- A mechanical matrix check confirms `11/11` hierarchy contracts have a non-empty
+  implementation owner, oracle/evidence requirement, and convergence gate.
+- DS7 links US9 from its canonical candidate table and requires it independently of the
+  command count.
+- CV22 links the authored DS10 package, and DS10 blocks deletion on US9 plus a complete
+  endpoint/process/asset inventory.
+- Documentation links, anchors, heading codes, and `git diff --check` pass.
+
+## Review
+
+The ownership split is intentionally asymmetric: US9 makes released hierarchy meaning
+portable and testable; DS10 later changes the executable server/package authority. This
+prevents both a premature all-web rewrite in DS7 and a semantics rediscovery during
+irreversible Python deletion.
+
+No corrective debt action is required for CR054. The missing implementation and browser
+evidence are now explicit planned work under US9, not hidden migration debt. General web
+endpoint transfer remains visibly gated under DS10, while broader DS10 distribution
+planning remains deferred until pull.
+
 ## Outcome
 
-In progress. The Navigator assigned Driver `@alissonvale`, selected Delivery
-`mirror-ts-core`, and authorized the ownership-only roadmap implementation. Assignment
-publication remains a separate commit/push gate. No Workspace/web code port, Python
-retirement, or RS008 closure is authorized.
+Implemented and locally validated as an ownership-only roadmap change. Canonical status
+remains `in_progress` pending the implementation commit/push gate, integrated Docs CI,
+and explicit Navigator acceptance. No Workspace/web code port, Python retirement, or
+RS008 closure was performed.
