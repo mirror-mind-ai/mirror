@@ -172,6 +172,8 @@ remain explicit CR053–CR054 work rather than hidden implementation debt.
 
 ## Outcome
 
-Implemented and locally validated. Canonical status remains `in_progress` pending the
-implementation commit/push gate, integrated CI, and explicit Navigator acceptance of
-the movement/cycle behavior.
+Done. The implementation was published in
+`6b1d1fd33f2e8f93a08be3d436be711936e14429`; Docs CI run `32022928896` and Tests CI
+run `32022928932` passed. The Navigator explicitly accepted the movement and cycle
+behavior after integrated validation. CR053 is now the canonical focus; removal remains
+separate work and is not authorized by this closure.
