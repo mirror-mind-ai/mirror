@@ -116,6 +116,6 @@ walking.
 
 ## Outcome
 
-Planned. The Navigator approved the eight-slice implementation and acceptance
-checkpoint. No Driver or Delivery is assigned, and implementation remains a separate
-explicit authorization gate.
+In progress. The Navigator approved the eight-slice implementation and acceptance
+checkpoint, assigned Driver `@alissonvale`, selected Delivery `mirror-ts-core`, and
+authorized implementation. Assignment publication remains a separate commit/push gate.
