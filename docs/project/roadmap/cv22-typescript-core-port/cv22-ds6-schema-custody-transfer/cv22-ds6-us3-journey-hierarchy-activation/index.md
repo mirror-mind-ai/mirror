@@ -91,6 +91,19 @@ preserving every other identity and metadata field. Metadata and migration `017`
 derived projection update atomically; rollback prevents partial divergence. This does
 not add a CLI command or transfer the Python Workspace/web adapter — that remains CR054.
 
+## v0.31.9 Conservative Removal Amendment
+
+[RS008 / CR053](../../../../refinement/rs008-v0319-recursive-journey-parity/cr053-port-conservative-transactional-journey-removal.md)
+adds an exported TS domain seam that removes only an existing empty leaf. Journey
+existence, the complete released association inventory, and the single identity delete
+share one `BEGIN IMMEDIATE` transaction. Child detection remains metadata-authoritative;
+migration `017`'s derived column cannot permit or prevent removal when it disagrees.
+
+Removal refuses every durable journey association with the released messages, rolls
+back on domain or database failure, and never cascades, reparents, changes schema, or
+touches filesystem content. This is core parity only: no CLI or Workspace/web removal
+surface is claimed.
+
 ## Artifacts
 
 - [Plan](plan.md)

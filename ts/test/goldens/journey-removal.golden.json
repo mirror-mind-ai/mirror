@@ -1,0 +1,153 @@
+{
+  "cases": [
+    {
+      "associations": [],
+      "error": "Journey 'missing' not found",
+      "exists_after": false,
+      "expected_counts": {
+        "attachments": 0,
+        "change_requests": 0,
+        "child_journeys": 0,
+        "conversations": 0,
+        "explorer_stories": 0,
+        "journey_paths": 0,
+        "memories": 0,
+        "refinement_cursors": 0,
+        "refinement_stories": 0,
+        "runtime_sessions": 0,
+        "tasks": 0
+      },
+      "journey": "missing",
+      "journeys": [],
+      "name": "missing",
+      "outcome": "error",
+      "removed": false
+    },
+    {
+      "associations": [],
+      "error": "Journey 'parent' has child journeys; move or remove them first",
+      "exists_after": true,
+      "expected_counts": {
+        "attachments": 0,
+        "change_requests": 0,
+        "child_journeys": 1,
+        "conversations": 0,
+        "explorer_stories": 0,
+        "journey_paths": 0,
+        "memories": 0,
+        "refinement_cursors": 0,
+        "refinement_stories": 0,
+        "runtime_sessions": 0,
+        "tasks": 0
+      },
+      "journey": "parent",
+      "journeys": [
+        {
+          "key": "parent",
+          "parent_journey": null
+        },
+        {
+          "key": "child",
+          "parent_journey": "parent"
+        }
+      ],
+      "name": "child_blocked",
+      "outcome": "error",
+      "removed": false
+    },
+    {
+      "associations": [
+        "tasks"
+      ],
+      "error": "Journey 'leaf' has associated records: tasks=1",
+      "exists_after": true,
+      "expected_counts": {
+        "attachments": 0,
+        "change_requests": 0,
+        "child_journeys": 0,
+        "conversations": 0,
+        "explorer_stories": 0,
+        "journey_paths": 0,
+        "memories": 0,
+        "refinement_cursors": 0,
+        "refinement_stories": 0,
+        "runtime_sessions": 0,
+        "tasks": 1
+      },
+      "journey": "leaf",
+      "journeys": [
+        {
+          "key": "leaf",
+          "parent_journey": null
+        }
+      ],
+      "name": "task_blocked",
+      "outcome": "error",
+      "removed": false
+    },
+    {
+      "associations": [
+        "attachments",
+        "journey_paths",
+        "tasks"
+      ],
+      "error": "Journey 'leaf' has associated records: journey_paths=1, tasks=1, attachments=1",
+      "exists_after": true,
+      "expected_counts": {
+        "attachments": 1,
+        "change_requests": 0,
+        "child_journeys": 0,
+        "conversations": 0,
+        "explorer_stories": 0,
+        "journey_paths": 1,
+        "memories": 0,
+        "refinement_cursors": 0,
+        "refinement_stories": 0,
+        "runtime_sessions": 0,
+        "tasks": 1
+      },
+      "journey": "leaf",
+      "journeys": [
+        {
+          "key": "leaf",
+          "parent_journey": null
+        }
+      ],
+      "name": "multi_association_order",
+      "outcome": "error",
+      "removed": false
+    },
+    {
+      "associations": [],
+      "error": null,
+      "exists_after": false,
+      "expected_counts": {
+        "attachments": 0,
+        "change_requests": 0,
+        "child_journeys": 0,
+        "conversations": 0,
+        "explorer_stories": 0,
+        "journey_paths": 0,
+        "memories": 0,
+        "refinement_cursors": 0,
+        "refinement_stories": 0,
+        "runtime_sessions": 0,
+        "tasks": 0
+      },
+      "journey": "leaf",
+      "journeys": [
+        {
+          "key": "leaf",
+          "parent_journey": null
+        },
+        {
+          "key": "other",
+          "parent_journey": null
+        }
+      ],
+      "name": "empty_leaf_removed",
+      "outcome": "ok",
+      "removed": true
+    }
+  ]
+}

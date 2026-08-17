@@ -130,9 +130,68 @@ derived parent projection, so CR053 requires no schema change. Existing multi-pr
 migration tests provide the process/connection pattern for deterministic lock
 contention evidence.
 
+### Implementation evidence
+
+- TDD first reproduced the missing TS removal module and four missing Python
+  compatibility behaviors before either implementation existed.
+- The branch compatibility copy now carries only the released removal service and
+  identity-store inventory needed by this parity slice. A real-Python five-case golden
+  records exact missing/child/association errors, deterministic multi-association order,
+  all eleven counts, successful removal, and the postcondition. Oracle drift now tracks
+  both `journey.py` and `storage/identity.py`.
+- `JourneyAssociationCounts` is a closed eleven-field contract backed by fixed SQL
+  literals. Child detection reads valid JSON metadata and never migration `017`'s
+  projection; tests cover metadata/column disagreement plus malformed and non-object
+  metadata.
+- Exported `removeJourney` performs existence, inventory, refusal ordering, and one
+  identity deletion inside the existing immediate transaction. Typed errors retain the
+  slug, complete counts when available, and released Python messages. No route or
+  generic deletion API was added.
+- Parameterized database-copy tests independently seed every association category and
+  prove complete table snapshots are unchanged after refusal. An aborting delete
+  trigger proves database failure rolls back. Empty-leaf success removes exactly one
+  identity and preserves unrelated journeys and external sentinel files.
+- A separate-process contention test acquires the write lock, inserts a task, and commits
+  while removal waits; removal then observes `tasks=1` and refuses without mutation.
+- A portable Python-created database smoke refused a populated parent, refused a
+  task-associated leaf, removed only `demo-child-alpha`, preserved the parent and task,
+  and removed all temporary artifacts. The removal seam itself works without relying on
+  migration `017`'s column.
+- DS6.US3, DS7.US1, and the CV22 authority narrative now record core removal parity while
+  leaving public Workspace/web ownership to CR054.
+
+### Validation evidence
+
+- Focused TS removal/parity suite: `21/21` passed.
+- Focused Python removal oracle: `4/4` passed on Python 3.12 and Python 3.10.
+- Full TS suite: `839` passed.
+- Full Python 3.12 suite: `2465` passed.
+- The local Python 3.10 full run reached two unrelated SQLite-runtime failures. Both
+  failures reproduce unchanged at kickoff commit `92bfb23`; all CR053-focused Python
+  3.10 tests pass. Integrated CI remains the authoritative Python 3.10 gate.
+- TypeScript typecheck, Biome, Ruff, schema/FTS structural parity, and all nine migration
+  fixture probes passed.
+- All CI golden generators, including the new removal oracle, regenerate
+  deterministically. Oracle drift is clean after the deliberate two-file baseline
+  advance.
+- Copied-database smoke, multiprocess lock contention, documentation checks, and
+  `git diff --check` passed.
+
+## Review
+
+The implementation preserves the released conservative boundary: it can delete only
+one demonstrably empty journey identity, and every ambiguous or populated state fails
+closed. Transaction scope is narrower than a generic data-deletion framework and broad
+enough to close the check/delete gap. Metadata authority remains consistent with
+CR050–CR052.
+
+No corrective debt action is required for CR053. Foreign keys, writer-wide prevention
+of associations created after removal commits, public routing, and Workspace/web
+ownership remain conscious exclusions rather than hidden implementation debt.
+
 ## Outcome
 
-In progress. The Navigator assigned Driver `@alissonvale`, selected Delivery
-`mirror-ts-core`, and authorized implementation of the approved nine-slice plan.
-Assignment publication remains a separate commit/push gate. No public removal route or
-production-data mutation is authorized.
+Implemented and locally validated. Canonical status remains `in_progress` pending the
+implementation commit/push gate, integrated CI (including Python 3.10), and explicit
+Navigator acceptance of the conservative removal behavior. No public removal route or
+production-data mutation was introduced.

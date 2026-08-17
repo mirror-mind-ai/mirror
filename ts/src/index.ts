@@ -96,6 +96,12 @@ export type {
   JourneyOption,
 } from "./journey/journeyOptions.ts";
 export { groupJourneysByParent, listJourneyOptions } from "./journey/journeyOptions.ts";
+export type { JourneyAssociationCounts } from "./journey/journeyRemoval.ts";
+export {
+  countJourneyAssociations,
+  JourneyRemovalError,
+  removeJourney,
+} from "./journey/journeyRemoval.ts";
 export type { CreateJourneyInput, JourneyFields } from "./journey/journeyWrite.ts";
 export {
   createJourney,

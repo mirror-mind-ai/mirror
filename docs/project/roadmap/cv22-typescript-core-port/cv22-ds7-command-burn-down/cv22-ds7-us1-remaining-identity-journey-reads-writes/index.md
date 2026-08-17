@@ -70,8 +70,12 @@ advances the routed `journeys` read and renderer to arbitrary-depth `v0.31.9` pa
 including `depth`, `lineage`, bounded malformed cycles, and column-zero Markdown
 connectors. [CR052](../../../../refinement/rs008-v0319-recursive-journey-parity/cr052-port-parent-movement-and-cycle-semantics.md)
 adds the separate arbitrary-depth validator and atomic `setParentJourney` core seam,
-including meaning-preserving subtree movement and cycle refusal. No new command route is
-claimed: Workspace/web adapter authority remains the explicit CR054 obligation.
+including meaning-preserving subtree movement and cycle refusal.
+[CR053](../../../../refinement/rs008-v0319-recursive-journey-parity/cr053-port-conservative-transactional-journey-removal.md)
+adds conservative `removeJourney` core parity: only an existing empty leaf can be
+deleted, after the metadata-authoritative child check and all eleven association counts
+pass inside one immediate transaction. No new command route is claimed: Workspace/web
+adapter authority remains the explicit CR054 obligation.
 
 ## Artifacts
 

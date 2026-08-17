@@ -72,6 +72,8 @@ ORACLE_PATHS: tuple[str, ...] = (
     # journey-service surface not yet ported; tracked at file granularity like
     # every other entry, so drift anywhere in it is at least visible.
     "src/memory/services/journey.py",
+    # RS008 CR053: conservative journey association inventory and atomic removal.
+    "src/memory/storage/identity.py",
     # DS7.US3 memory cultivation: consolidation persistence, cluster_memories,
     # and the deterministic apply/reject/list/show CLI surface. propose_*
     # (LLM orchestration, Slice B) is tracked here too at file granularity even

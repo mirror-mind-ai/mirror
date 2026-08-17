@@ -94,8 +94,10 @@ released recursive journey contract explicit inside the strangler. CR050 establi
 metadata as mixed-engine semantic parent authority while migration `017`'s column
 remains a derived projection. CR051 restores arbitrary-depth read/render parity. CR052
 adds complete-ancestry validation and an atomic, meaning-preserving TS parent-movement
-core seam without claiming Workspace/web routing. Conservative removal and adapter
-ownership remain CR053–CR054. This sequence demonstrates the moving-target rule:
+core seam without claiming Workspace/web routing. CR053 adds a transactional TS domain
+seam that removes only an empty leaf after metadata-authoritative child detection and a
+closed eleven-category association inventory. Workspace/web adapter ownership remains
+CR054. This sequence demonstrates the moving-target rule:
 released Python behavior becomes named TS parity work instead of silently freezing or
 drifting.
 

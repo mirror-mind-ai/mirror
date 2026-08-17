@@ -347,6 +347,24 @@ class JourneyService:
                 append_branch(unvisited, [])
         return ordered
 
+    def remove_journey(self, journey: str) -> bool:
+        """Remove an empty leaf journey without cascading associated records."""
+        if not self._get_journey_identity(journey):
+            raise ValueError(f"Journey '{journey}' not found")
+        removed, associations = self.store.delete_unassociated_journey(journey)
+        child_count = associations.get("child_journeys", 0)
+        if child_count:
+            raise ValueError(f"Journey '{journey}' has child journeys; move or remove them first")
+        populated = {
+            name: count
+            for name, count in associations.items()
+            if name != "child_journeys" and count
+        }
+        if populated:
+            details = ", ".join(f"{name}={count}" for name, count in populated.items())
+            raise ValueError(f"Journey '{journey}' has associated records: {details}")
+        return removed
+
     def get_project_path(self, journey: str) -> str | None:
         """Return the project path configured for a journey."""
         ident = self._get_journey_identity(journey)

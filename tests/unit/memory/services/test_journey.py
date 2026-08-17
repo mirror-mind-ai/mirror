@@ -324,6 +324,48 @@ Child journey with enough content for creation.
         assert result[1]["lineage"] == ["loop-a", "loop-b"]
 
 
+class TestJourneyServiceRemoval:
+    def test_refuses_removal_while_children_exist(self, journey_service, identity_service):
+        identity_service.set_identity("journey", "parent", "# Parent\n**Status:** active")
+        identity_service.set_identity(
+            "journey",
+            "child",
+            "# Child\n**Status:** active",
+            metadata='{"parent_journey": "parent"}',
+        )
+
+        with pytest.raises(ValueError, match="has child journeys"):
+            journey_service.remove_journey("parent")
+
+        assert journey_service._get_journey_identity("parent") is not None
+
+    def test_refuses_removal_while_associated_records_exist(
+        self, journey_service, identity_service, task_service
+    ):
+        identity_service.set_identity("journey", "leaf", "# Leaf\n**Status:** active")
+        task_service.add_task(title="Keep this work", journey="leaf")
+
+        with pytest.raises(ValueError, match=r"associated records.*tasks=1"):
+            journey_service.remove_journey("leaf")
+
+        assert journey_service._get_journey_identity("leaf") is not None
+
+    def test_removes_empty_leaf_without_touching_other_journeys(
+        self, journey_service, identity_service
+    ):
+        identity_service.set_identity("journey", "leaf", "# Leaf\n**Status:** active")
+        identity_service.set_identity("journey", "other", "# Other\n**Status:** active")
+
+        assert journey_service.remove_journey("leaf") is True
+
+        assert journey_service._get_journey_identity("leaf") is None
+        assert journey_service._get_journey_identity("other") is not None
+
+    def test_rejects_unknown_journey_removal(self, journey_service):
+        with pytest.raises(ValueError, match="Journey 'missing' not found"):
+            journey_service.remove_journey("missing")
+
+
 class TestJourneyServiceDetectJourney:
     def test_text_match_on_id_returns_high_score(self, journey_service, identity_service):
         identity_service.set_identity("journey", "reflexo", "# O Reflexo\n**Status:** active")

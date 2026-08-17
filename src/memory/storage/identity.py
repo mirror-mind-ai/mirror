@@ -79,6 +79,46 @@ class IdentityStore(ConnectionBacked):
         self.conn.commit()
         return cursor.rowcount > 0
 
+    def count_journey_associations(self, journey: str) -> dict[str, int]:
+        """Count records that would be orphaned by removing a journey identity."""
+        queries = {
+            "child_journeys": """SELECT COUNT(*) FROM identity
+                WHERE layer = 'journey'
+                  AND CASE WHEN json_valid(metadata)
+                           THEN json_extract(metadata, '$.parent_journey') END = ?""",
+            "journey_paths": "SELECT COUNT(*) FROM identity WHERE layer = 'journey_path' AND key = ?",
+            "conversations": "SELECT COUNT(*) FROM conversations WHERE journey = ?",
+            "memories": "SELECT COUNT(*) FROM memories WHERE journey = ?",
+            "tasks": "SELECT COUNT(*) FROM tasks WHERE journey = ?",
+            "attachments": "SELECT COUNT(*) FROM attachments WHERE journey_id = ?",
+            "runtime_sessions": "SELECT COUNT(*) FROM runtime_sessions WHERE journey = ?",
+            "explorer_stories": "SELECT COUNT(*) FROM exploratory_stories WHERE journey = ?",
+            "refinement_stories": "SELECT COUNT(*) FROM builder_refinement_stories WHERE journey = ?",
+            "change_requests": "SELECT COUNT(*) FROM builder_change_requests WHERE journey = ?",
+            "refinement_cursors": "SELECT COUNT(*) FROM builder_refinement_cursors WHERE journey = ?",
+        }
+        return {
+            name: int(self.conn.execute(query, (journey,)).fetchone()[0])
+            for name, query in queries.items()
+        }
+
+    def delete_unassociated_journey(self, journey: str) -> tuple[bool, dict[str, int]]:
+        """Atomically remove a journey only when no records refer to it."""
+        self.conn.execute("BEGIN IMMEDIATE")
+        try:
+            associations = self.count_journey_associations(journey)
+            if any(associations.values()):
+                self.conn.rollback()
+                return False, associations
+            cursor = self.conn.execute(
+                "DELETE FROM identity WHERE layer = 'journey' AND key = ?", (journey,)
+            )
+            self.conn.commit()
+            return cursor.rowcount > 0, associations
+        except Exception:
+            self.conn.rollback()
+            raise
+
     # --- Identity integrations ---
 
     def add_identity_integration(self, integration: IdentityIntegration) -> IdentityIntegration:
