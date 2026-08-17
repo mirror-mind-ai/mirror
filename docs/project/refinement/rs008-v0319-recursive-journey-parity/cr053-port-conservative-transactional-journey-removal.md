@@ -132,5 +132,7 @@ contention evidence.
 
 ## Outcome
 
-Planned. CR053 is the canonical focus but remains unassigned. Planning does not authorize
-implementation, commit, push, a public removal route, or any production-data mutation.
+In progress. The Navigator assigned Driver `@alissonvale`, selected Delivery
+`mirror-ts-core`, and authorized implementation of the approved nine-slice plan.
+Assignment publication remains a separate commit/push gate. No public removal route or
+production-data mutation is authorized.
