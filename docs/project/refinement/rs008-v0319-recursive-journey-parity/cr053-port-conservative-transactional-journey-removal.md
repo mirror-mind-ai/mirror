@@ -191,7 +191,9 @@ ownership remain conscious exclusions rather than hidden implementation debt.
 
 ## Outcome
 
-Implemented and locally validated. Canonical status remains `in_progress` pending the
-implementation commit/push gate, integrated CI (including Python 3.10), and explicit
-Navigator acceptance of the conservative removal behavior. No public removal route or
-production-data mutation was introduced.
+Done. The implementation was published in
+`f36436cbf9c4acbe11c533f85907b5f99016c130`; Docs CI run `32037807931` and Tests CI
+run `32037808114` passed, including Python 3.10/3.12, TS macOS/Ubuntu, and copied-DB
+parity. The Navigator explicitly accepted the conservative removal behavior and
+authorized closure. CR054 is now the canonical focus; Workspace/web ownership remains
+separate work and is not authorized by this closure.
