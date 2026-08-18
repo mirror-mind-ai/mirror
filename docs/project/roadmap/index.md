@@ -228,6 +228,23 @@ Add new items at the top. Each entry should name the problem (not just the
 solution), point at evidence or source, and sketch the rough shape of the
 work.
 
+### Journeys remember their subject, but not their agreed way of working
+
+**Source:** [Journey Working Agreements exploration](../explorations/journey-working-agreements/index.md)
+**Surfaced:** 2026-08-17
+**Status:** Deferred until the relevant TypeScript migration seams mature
+
+Journeys currently preserve identity, history, project association, memories, and
+attachments, but cannot declare task-specific working profiles that coordinate persona,
+mode-compatible guidance, and required or optional references. A detailed exploration
+proposes versioned Journey Context Contracts with explainable resolution and
+confirmation-only durable learning. Implementation is deliberately deferred rather than
+absorbed into CV22 parity work. Reconsider it when CV22.DS7.US4 has established a stable
+TS Mirror Mode seam, DS8's live provider is complete or sufficiently concrete, TS schema
+authority remains settled, and the Navigator makes the capability current. The frozen
+source package, product synthesis, provisional future delivery sequence, and re-entry
+checklist are preserved with the exploration; no CV23 or implementation story is active.
+
 ### Change Request verb selection has no automated eval
 
 **Source:** CV20.DS14 (park/reject/promote) / ai-engineer review
