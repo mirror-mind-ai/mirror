@@ -82,6 +82,71 @@ def _validate_command_name(runtime: str, command_name: str) -> None:
         raise ExtensionValidationError(f"runtime '{runtime}' command_name must start with 'ext-'")
 
 
+def _validate_context_providers(
+    data: dict[str, Any], extension_dir: Path, manifest_path: Path
+) -> None:
+    providers = data.get("mirror_context_providers")
+    if providers is None:
+        return
+    if not isinstance(providers, list):
+        raise ExtensionValidationError(
+            f"mirror_context_providers must be a list in {manifest_path}"
+        )
+    seen: set[str] = set()
+    root = extension_dir.resolve()
+    for provider in providers:
+        if not isinstance(provider, dict):
+            raise ExtensionValidationError(
+                f"mirror_context_providers entries must be objects in {manifest_path}"
+            )
+        capability_id = provider.get("id")
+        if not isinstance(capability_id, str) or not _RUNTIME_NAME_RE.fullmatch(capability_id):
+            raise ExtensionValidationError(
+                f"invalid mirror context capability id {capability_id!r} in {manifest_path}"
+            )
+        if capability_id in seen:
+            raise ExtensionValidationError(
+                f"duplicate mirror context capability id {capability_id!r} in {manifest_path}"
+            )
+        seen.add(capability_id)
+        runtime = provider.get("provider_runtime")
+        if runtime is None:
+            continue
+        if not isinstance(runtime, dict) or runtime.get("protocol") != "mirror-context-v1":
+            raise ExtensionValidationError(
+                f"provider_runtime for {capability_id!r} must use mirror-context-v1 "
+                f"in {manifest_path}"
+            )
+        command = runtime.get("command")
+        if (
+            not isinstance(command, list)
+            or not command
+            or any(not isinstance(part, str) or not part for part in command)
+        ):
+            raise ExtensionValidationError(
+                f"provider_runtime.command for {capability_id!r} must be a non-empty argv list "
+                f"in {manifest_path}"
+            )
+        for index, argument in enumerate(command):
+            path_like = (
+                Path(argument).is_absolute()
+                or "/" in argument
+                or "\\" in argument
+                or (index > 0 and Path(argument).suffix.lower() in {".js", ".mjs", ".cjs", ".py"})
+            )
+            if not path_like:
+                continue
+            candidate = (root / argument).resolve()
+            if Path(argument).is_absolute() or not candidate.is_relative_to(root):
+                raise ExtensionValidationError(
+                    f"provider_runtime.command path escapes extension root in {manifest_path}"
+                )
+            if not candidate.exists():
+                raise ExtensionValidationError(
+                    f"provider_runtime.command path not found: {candidate}"
+                )
+
+
 def _filesystem_skill_dir_name(command_name: str) -> str:
     """Map runtime command names to cross-platform directory names.
 
@@ -228,6 +293,8 @@ def load_extension_manifest(extension_dir: Path) -> dict:
             validated_runtime["skill_path"] = str(skill_path)
 
         validated_runtimes[runtime_name] = validated_runtime
+
+    _validate_context_providers(data, extension_dir, manifest_path)
 
     validated = dict(data)
     validated["root"] = str(extension_dir)

@@ -56,7 +56,8 @@ When the mirror loads a `command-skill` extension, it offers a stable API:
 - embedding generation (`text-embedding-3-small`),
 - LLM access through the project's router,
 - a way to register CLI subcommands,
-- a way to register Mirror Mode context providers bound to a persona,
+- a language-neutral `mirror-context-v1` process contract for Mirror Mode context providers
+  (plus a deprecated Python registration adapter only until CV22.DS10),
 - a SQL migration runner with checksum tracking.
 
 See the [API Reference](api-reference.md) for the full contract.
@@ -82,8 +83,10 @@ The target mirror home is resolved from `MIRROR_HOME` or `MIRROR_USER`
 in the active `.env` (or shell environment). Pass `--mirror-home <path>`
 explicitly when working against a non-default home, otherwise omit it.
 
-Installation copies the source tree, runs the extension's SQL migrations,
-imports `extension.py`, and calls its `register(api)` entrypoint.
+Installation copies the source tree, validates context provider runtime descriptors, runs
+the extension's SQL migrations, imports `extension.py`, and calls its `register(api)`
+entrypoint for Python CLI/legacy compatibility. Mirror Mode itself dispatches declared
+`mirror-context-v1` providers through the TS core.
 
 ## Reading order
 

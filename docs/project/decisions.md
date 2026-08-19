@@ -11,6 +11,34 @@ resolved.
 
 ## Completed Decisions
 
+### Extension context converges through a language-neutral process protocol and finite Python host
+
+**Date:** 2026-08-19
+**Reference:** [CV22.DS7.TS2](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-ts2-extension-context-provider-runtime-convergence/index.md)
+**Participants:** Alisson Vale
+
+Current Mirror context providers are arbitrary Python functions registered through
+`ExtensionAPI`. Silently dropping them would break user context; keeping the whole
+`mirror load` route or a generic Python bridge would prevent CV22 convergence.
+
+Decided:
+
+1. **TS owns the complete Mirror route.** Binding selection, stable ordering, context
+   composition, failure isolation, and rendering no longer fall back as one Python command.
+2. **Providers use `mirror-context-v1`.** A manifest capability may declare a no-shell argv
+   process that receives one versioned JSON request and returns text/null as one JSON result.
+   The protocol is language-neutral and keeps extension runtime choice outside the core.
+3. **Installed extensions remain trusted code.** Process isolation adds timeout/output
+   bounds and payload-free diagnostics, but does not pretend to sandbox code that already
+   had raw SQLite access through `ExtensionAPI.db`.
+4. **Legacy compatibility is finite.** Python-only capabilities run through a narrow host
+   that invokes one named provider. The host does not select bindings or run Mirror Mode.
+5. **DS10 is the deletion gate.** The compatibility host is deprecated at introduction and
+   must be removed before Python retirement/npm publication. Unmigrated providers receive
+   explicit migration failure rather than silent omission.
+6. **DS8 stays separate.** Any provider behavior that requires the live core LLM/embedding
+   cutover stops for DS8 ownership rather than expanding this protocol into dual authority.
+
 ### Moving-target strangler keeps journey metadata authoritative during mixed-engine operation
 
 **Date:** 2026-08-14

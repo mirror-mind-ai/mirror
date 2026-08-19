@@ -1,0 +1,63 @@
+{
+  "cases": [
+    {
+      "name": "persona",
+      "persona_id": "engineer",
+      "journey_id": null,
+      "sections": [
+        {
+          "extensionId": "hello",
+          "capabilityId": "greeting",
+          "bindingKind": "persona",
+          "bindingTarget": "engineer",
+          "text": "Latest ping: oracle ping"
+        }
+      ],
+      "rendered": "=== extension/hello/greeting ===\nLatest ping: oracle ping"
+    },
+    {
+      "name": "journey",
+      "persona_id": null,
+      "journey_id": "mirror-ts-core",
+      "sections": [
+        {
+          "extensionId": "hello",
+          "capabilityId": "greeting",
+          "bindingKind": "journey",
+          "bindingTarget": "mirror-ts-core",
+          "text": "Latest ping: oracle ping"
+        }
+      ],
+      "rendered": "=== extension/hello/greeting ===\nLatest ping: oracle ping"
+    },
+    {
+      "name": "both",
+      "persona_id": "engineer",
+      "journey_id": "mirror-ts-core",
+      "sections": [
+        {
+          "extensionId": "hello",
+          "capabilityId": "greeting",
+          "bindingKind": "journey",
+          "bindingTarget": "mirror-ts-core",
+          "text": "Latest ping: oracle ping"
+        },
+        {
+          "extensionId": "hello",
+          "capabilityId": "greeting",
+          "bindingKind": "persona",
+          "bindingTarget": "engineer",
+          "text": "Latest ping: oracle ping"
+        }
+      ],
+      "rendered": "=== extension/hello/greeting ===\nLatest ping: oracle ping\n\n=== extension/hello/greeting ===\nLatest ping: oracle ping"
+    },
+    {
+      "name": "mismatch",
+      "persona_id": "other",
+      "journey_id": "other",
+      "sections": [],
+      "rendered": ""
+    }
+  ]
+}

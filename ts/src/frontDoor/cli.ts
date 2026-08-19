@@ -46,7 +46,6 @@ import { setIdentity } from "#identity/setIdentity.ts";
 import { IdentityRootExistsError, initUserHome, TemplatesNotFoundError } from "#init/init.ts";
 import { JOURNEY_PATH_LAYER } from "#journey/journeyStatus.ts";
 import { JourneyNotFoundError } from "#journey/journeyWrite.ts";
-import { extensionBindingsCouldContribute } from "#mirror/orchestration.ts";
 import { loadReplayEmbeddingProvider } from "#providers/embedding.ts";
 import { loadReplayLlmProvider } from "#providers/llm.ts";
 import { runSeed } from "#seed/seed.ts";
@@ -117,7 +116,7 @@ import {
   renderTasksSyncOutcome,
 } from "./render/tasksImportSync.ts";
 import { renderWeekView } from "./render/week.ts";
-import { type FrontDoorEngine, type RouteDecision, routeMemoryCommand } from "./routing.ts";
+import { type FrontDoorEngine, routeMemoryCommand } from "./routing.ts";
 import { runMemorySearchRoute } from "./searchRoute.ts";
 import { resolveSeedPaths } from "./seedPaths.ts";
 import {
@@ -1127,48 +1126,6 @@ function runModeWrite(argv: readonly string[]): Promise<number> {
   return withMirrorWriteDb(argv, (db) => runModeWriteRoute(db, argv));
 }
 
-export function applyMirrorExtensionFallback(
-  argv: readonly string[],
-  decision: RouteDecision,
-): RouteDecision {
-  if (decision.engine !== "ts" || argv[0] !== "mirror" || argv[1] !== "load") return decision;
-  let dbPath: string;
-  try {
-    dbPath = resolveDbPath(argv.slice(1));
-  } catch {
-    return decision;
-  }
-  if (!existsSync(dbPath)) return decision;
-  let db: Database | null = null;
-  try {
-    db = openDatabaseReadOnly(dbPath);
-    assertSchemaState(db);
-    const args = argv.slice(2);
-    if (
-      extensionBindingsCouldContribute(db, {
-        persona: optionValue(args, "--persona"),
-        journey: optionValue(args, "--journey"),
-        query: optionValue(args, "--query"),
-      })
-    ) {
-      return {
-        command: "mirror",
-        engine: "python",
-        reason: "DS7.US4 matching extension context binding preserved on Python until DS7.TS2",
-      };
-    }
-    return decision;
-  } catch {
-    return {
-      command: "mirror",
-      engine: "python",
-      reason: "DS7.US4 extension context preflight failed closed to Python until DS7.TS2",
-    };
-  } finally {
-    db?.close();
-  }
-}
-
 /** Best-effort log path from the same resolver; null when unconfigured. */
 function resolveLogPath(argv: readonly string[]): string | null {
   try {
@@ -1269,7 +1226,7 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
     console.error(nodeError);
     return 1;
   }
-  const decision = applyMirrorExtensionFallback(argv, routeMemoryCommand(argv));
+  const decision = routeMemoryCommand(argv);
   const logPath = resolveLogPath(argv);
   try {
     const exitCode = await dispatch(argv, decision.engine);
@@ -1277,9 +1234,7 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
       command: decision.command,
       route: decision.engine,
       exitCode,
-      detail: decision.reason.includes("extension context")
-        ? "extension_context_python_fallback"
-        : undefined,
+      detail: undefined,
     });
     return exitCode;
   } catch (error) {

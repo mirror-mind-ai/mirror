@@ -62,6 +62,20 @@ test("context preserves Python section order and selected-journey isolation", as
   db.close();
 });
 
+test("extension context is appended after every core and attachment section", async () => {
+  const db = fixture();
+  const context = await loadMirrorContext(db, {
+    persona: "engineer",
+    journey: "child",
+    extensionContext: "=== extension/hello/greeting ===\nLatest ping",
+  });
+  assert.match(
+    context,
+    /=== journey\/child ===[\s\S]*=== extension\/hello\/greeting ===\nLatest ping$/,
+  );
+  db.close();
+});
+
 test("identity and shadow layers are conservatively omitted", async () => {
   const db = fixture();
   const context = await loadMirrorContext(db, { touchesIdentity: false, touchesShadow: false });

@@ -1,4 +1,9 @@
 import type { Database, WritableDatabase } from "#db/database.ts";
+import {
+  type CollectExtensionContextOptions,
+  collectExtensionContext,
+  type ExtensionContextDiagnostic,
+} from "#extensions/contextRuntime.ts";
 import { activateOperatingMode } from "#mode/operatingMode.ts";
 import { logLlmCall } from "#observability/llmCalls.ts";
 import type { EmbeddingProvider } from "#providers/embedding.ts";
@@ -32,6 +37,13 @@ export interface MirrorLoadInput {
   receptionEnabled: boolean;
   llmProvider?: LlmProvider;
   embeddingProvider?: EmbeddingProvider;
+  databasePath?: string;
+  mirrorHome?: string;
+  user?: string;
+  extensionRuntime?: Pick<
+    CollectExtensionContextOptions,
+    "timeoutMs" | "maxOutputBytes" | "legacyCommand" | "legacyCwd" | "environment"
+  >;
   newId: () => string;
   nowIso: () => string;
 }
@@ -40,6 +52,7 @@ export interface RenderedMirrorLoad {
   stdout: string;
   stderr: string;
   resolved: ResolvedMirrorDefaults;
+  extensionDiagnostics: ExtensionContextDiagnostic[];
 }
 
 export async function runMirrorLoad(
@@ -64,6 +77,18 @@ export async function runMirrorLoad(
         { id: input.newId, now: input.nowIso },
       ),
   });
+  const extensionContext =
+    input.databasePath && input.mirrorHome
+      ? collectExtensionContext(db, {
+          mirrorHome: input.mirrorHome,
+          databasePath: input.databasePath,
+          personaId: resolved.persona,
+          journeyId: resolved.journey,
+          user: input.user ?? "",
+          query: input.query,
+          ...input.extensionRuntime,
+        })
+      : { rendered: "", diagnostics: [] };
   const context = await loadMirrorContext(db, {
     persona: resolved.persona,
     journey: resolved.journey,
@@ -72,6 +97,7 @@ export async function runMirrorLoad(
     touchesIdentity: resolved.touchesIdentity,
     touchesShadow: resolved.touchesShadow,
     embeddingProvider: input.embeddingProvider,
+    extensionContext: extensionContext.rendered,
   });
   persistStickyDefaults(db, resolved.persona, resolved.journey, input.nowIso());
   activateOperatingMode(db, { mode: "Mirror Mode", journey: resolved.journey }, input.nowIso());
@@ -110,6 +136,7 @@ export async function runMirrorLoad(
     stdout: `${transition}\n${context}\n`,
     stderr: `${detected ? renderJourneyDetected(detected) : ""}${renderMirrorBanner(resolved.persona)}`,
     resolved,
+    extensionDiagnostics: extensionContext.diagnostics,
   };
 }
 
@@ -179,27 +206,6 @@ export function titleFromSummary(summary: string): string {
     title = `${space >= 0 ? prefix.slice(0, space) : prefix}...`;
   }
   return title;
-}
-
-export function extensionBindingsCouldContribute(
-  db: Database,
-  input: { persona?: string | null; journey?: string | null; query?: string | null },
-): boolean {
-  const personaKnown = input.persona !== null && input.persona !== undefined;
-  const journeyKnown = input.journey !== null && input.journey !== undefined;
-  if (input.query || !personaKnown || !journeyKnown) {
-    return db.prepare("SELECT 1 FROM _ext_bindings LIMIT 1").get() !== undefined;
-  }
-  const targets: [string, string][] = [
-    ["persona", input.persona as string],
-    ["journey", input.journey as string],
-  ];
-  return targets.some(
-    ([kind, id]) =>
-      db
-        .prepare("SELECT 1 FROM _ext_bindings WHERE target_kind = ? AND target_id = ? LIMIT 1")
-        .get(kind, id) !== undefined,
-  );
 }
 
 function persistStickyDefaults(

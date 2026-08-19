@@ -67,6 +67,20 @@ export { blobToFloat32, parseUtcMs } from "./db/decode.ts";
 export { assertFtsIntegrity, FtsIntegrityError } from "./db/ftsIntegrity.ts";
 export { optionalNumber, optionalString, requireString } from "./db/rowDecode.ts";
 export { assertSchemaState, KNOWN_MIGRATION_IDS, SchemaStateError } from "./db/schemaState.ts";
+// --- Extension context provider runtime (DS7.TS2) ---
+export type {
+  CollectExtensionContextOptions,
+  CollectedExtensionContext,
+  ExtensionContextDiagnostic,
+  ExtensionContextRequest,
+  ExtensionContextSection,
+} from "./extensions/contextRuntime.ts";
+export {
+  collectExtensionContext,
+  MIRROR_CONTEXT_PROTOCOL,
+  renderExtensionSections,
+  selectExtensionBindings,
+} from "./extensions/contextRuntime.ts";
 export type {
   ExistingMemoryForCuration,
   ExtractedMemory,
@@ -129,7 +143,6 @@ export { detectJourney, resolveMirrorDefaults } from "./mirror/defaultResolution
 export type { MirrorLoadInput, RenderedMirrorLoad } from "./mirror/orchestration.ts";
 export {
   deactivateMirrorState,
-  extensionBindingsCouldContribute,
   listActiveMirrorJourneys,
   logMirrorResponse,
   runMirrorLoad,

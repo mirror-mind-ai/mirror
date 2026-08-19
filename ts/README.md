@@ -64,16 +64,19 @@ git diff --exit-code ts/test/goldens/
 The TS ranker that reproduces `expected_order` from the corpus lands in DS2.US1;
 this harness proves the load/decode/compare mechanism is correct and stable.
 
-Mirror Mode adds two additional synthetic, production-refusing generators:
+Mirror Mode adds production-refusing generators for core orchestration and extension context:
 
 ```bash
 uv run python ts/parity/generate_mirror_mode_golden.py
 uv run python ts/parity/generate_mirror_state_golden.py
+uv run python ts/parity/generate_extension_context_golden.py
 ```
 
 The first freezes exact context/render behavior. The second runs Python state transitions
 only after asserting that the opened database is beneath its temporary directory, then
-normalizes generated ids and timestamps. Both are CI determinism gates.
+normalizes generated ids and timestamps. The third freezes extension binding order,
+request targets, and rendered sections under the same verified-temporary-DB rule. All are
+CI determinism gates.
 
 ## Mirror Mode orchestration (CV22.DS7.US4)
 
@@ -90,10 +93,14 @@ node ts/src/frontDoor/cli.ts mirror load --query "..."
 ```
 
 If `MEMORY_RECEPTION=0`, the LLM replay is not required, but query attachment/journey
-search still requires the embedding replay. When an installed extension context binding
-could contribute, the complete `mirror load` command deliberately remains on Python so no
-provider output is lost. [CV22.DS7.TS2](../docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-ts2-extension-context-provider-runtime-convergence/index.md)
-owns removal of that bounded fallback; it is not hidden from the DS7 burn-down.
+search still requires the embedding replay.
+
+CV22.DS7.TS2 keeps matching extension bindings on the TS route. Capabilities declare a
+no-shell `mirror-context-v1` process command; TS owns selection, ordering, bounded
+execution, and rendering. Existing Python-only providers run through the explicitly
+temporary `memory.extensions.compat_host`, which invokes one provider rather than the
+complete Mirror command. CV22.DS10 must remove that host before Python retirement/npm
+publication. See [CV22.DS7.TS2](../docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-ts2-extension-context-provider-runtime-convergence/index.md).
 
 ## Layout
 

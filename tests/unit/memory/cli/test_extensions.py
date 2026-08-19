@@ -93,6 +93,76 @@ def test_load_command_skill_manifest(tmp_path):
     assert manifest["table_prefix"] == "ext_xdigest_"
 
 
+def test_load_command_skill_accepts_mirror_context_v1_provider_runtime(tmp_path):
+    ext_dir = tmp_path / "extensions" / "xdigest"
+    _write(ext_dir / "extension.py", "def register(api):\n    pass\n")
+    _write(ext_dir / "provider.mjs", "// fixture\n")
+    _write(
+        ext_dir / "skill.yaml",
+        """
+        id: xdigest
+        name: X Digest
+        category: extension
+        kind: command-skill
+        summary: Generate digest reports
+        entrypoint:
+          module: extension
+        runtimes:
+          pi:
+            command_name: ext-xdigest
+        mirror_context_providers:
+          - id: digest_context
+            description: Current digest
+            provider_runtime:
+              protocol: mirror-context-v1
+              command: [node, provider.mjs]
+        """,
+    )
+
+    manifest = load_extension_manifest(ext_dir)
+
+    runtime = manifest["mirror_context_providers"][0]["provider_runtime"]
+    assert runtime == {"protocol": "mirror-context-v1", "command": ["node", "provider.mjs"]}
+
+
+@pytest.mark.parametrize(
+    "runtime, message",
+    [
+        ("{protocol: wrong, command: [node, provider.mjs]}", "mirror-context-v1"),
+        ("{protocol: mirror-context-v1, command: node}", "argv list"),
+        ("{protocol: mirror-context-v1, command: [node, ../escape.mjs]}", "escapes"),
+    ],
+)
+def test_load_command_skill_rejects_invalid_context_provider_runtime(tmp_path, runtime, message):
+    ext_dir = tmp_path / "extensions" / "xdigest"
+    _write(ext_dir / "extension.py", "def register(api):\n    pass\n")
+    _write(ext_dir / "provider.mjs", "// fixture\n")
+    _write(
+        ext_dir / "skill.yaml",
+        f"""
+        id: xdigest
+        name: X Digest
+        category: extension
+        kind: command-skill
+        summary: Generate digest reports
+        entrypoint:
+          module: extension
+        runtimes:
+          pi:
+            command_name: ext-xdigest
+        mirror_context_providers:
+          - id: digest_context
+            description: Current digest
+            provider_runtime: {runtime}
+        """,
+    )
+
+    from memory.cli.extensions import ExtensionValidationError
+
+    with pytest.raises(ExtensionValidationError, match=message):
+        load_extension_manifest(ext_dir)
+
+
 def test_load_command_skill_rejects_missing_module(tmp_path):
     ext_dir = tmp_path / "extensions" / "xdigest"
     _write(

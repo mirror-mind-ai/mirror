@@ -7,7 +7,6 @@ import { createIdentityTable } from "#helpers/identitySchema.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
 import {
   deactivateMirrorState,
-  extensionBindingsCouldContribute,
   listActiveMirrorJourneys,
   logMirrorResponse,
   runMirrorLoad,
@@ -191,16 +190,6 @@ test("journeys render only active entries", () => {
     listActiveMirrorJourneys(db),
     "- **mirror-ts-core** — Mirror TS Core: TS migration\n",
   );
-  db.close();
-});
-
-test("matching extension bindings force a conservative fallback", () => {
-  const db = fixture();
-  db.prepare("INSERT INTO _ext_bindings VALUES ('ext', 'ctx', 'journey', 'mirror-ts-core')").run();
-  assert.equal(extensionBindingsCouldContribute(db, { journey: "mirror-ts-core" }), true);
-  assert.equal(extensionBindingsCouldContribute(db, { journey: "other" }), true);
-  assert.equal(extensionBindingsCouldContribute(db, { persona: "other", journey: "other" }), false);
-  assert.equal(extensionBindingsCouldContribute(db, { query: "route me" }), true);
   db.close();
 });
 

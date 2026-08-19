@@ -13,6 +13,7 @@ export interface MirrorContextOptions {
   touchesIdentity?: boolean;
   touchesShadow?: boolean;
   embeddingProvider?: EmbeddingProvider;
+  extensionContext?: string;
 }
 
 interface AttachmentRow {
@@ -90,6 +91,7 @@ export async function loadMirrorContext(
       parts.push(attachmentParts.join("\n"));
     }
   }
+  if (options.extensionContext) parts.push(options.extensionContext);
   return parts.join("\n\n");
 }
 

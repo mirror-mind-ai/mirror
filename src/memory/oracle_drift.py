@@ -96,6 +96,12 @@ ORACLE_PATHS: tuple[str, ...] = (
     "src/memory/hooks/mirror_state.py",
     "src/memory/surfaces/mode_transition.py",
     "src/memory/services/attachment.py",
+    # DS7.TS2 extension context provider convergence: manifest/load API,
+    # binding selection, request shape, ordering, rendering, and fail-soft behavior.
+    "src/memory/extensions/context.py",
+    "src/memory/extensions/api.py",
+    "src/memory/extensions/loader.py",
+    "src/memory/cli/extensions.py",
 )
 
 BASELINE_RELPATH = "ts/parity/oracle-baseline.json"

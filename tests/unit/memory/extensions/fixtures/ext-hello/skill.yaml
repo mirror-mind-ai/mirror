@@ -20,3 +20,6 @@ mirror_context_providers:
   - id: greeting
     description: "Latest ping injected as a greeting."
     suggested_personas: []
+    provider_runtime:
+      protocol: mirror-context-v1
+      command: [node, provider.mjs]

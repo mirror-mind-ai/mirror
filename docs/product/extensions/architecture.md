@@ -52,17 +52,19 @@ Declares the extension's identity, kind, runtime command names, and (for
 `command-skill`) the capabilities it exposes. Pure data, no behavior. Schema is
 defined in [`api-reference.md`](api-reference.md).
 
-### 2. Code layer — `extension.py`
+### 2. Code layer — `extension.py` and process providers
 
-A single entrypoint with one required function:
+CLI handlers retain a Python entrypoint with one required function:
 
 ```python
 def register(api: ExtensionAPI) -> None: ...
 ```
 
-`register` is called once per process, on load. The extension uses the API to
-declare CLI subcommands and Mirror Mode context providers. No CLI subcommand
-runs during `register` — that function is for declarations only.
+`register` is called once per Python CLI process. Mirror Mode context capabilities should
+also declare a language-neutral `mirror-context-v1` command in the manifest. The TS core
+invokes that command directly; Python registration remains a temporary compatibility path
+until CV22.DS10. No CLI subcommand runs during `register` — that function is for
+declarations only.
 
 ### 3. Schema layer — `migrations/*.sql`
 
@@ -83,8 +85,9 @@ auto-load extensions. Loading happens only when an extension surface is
 invoked:
 
 - `python -m memory ext <id> <subcommand>` — loads that one extension.
-- Mirror Mode prompt assembly — loads all extensions that have registered
-  context providers for the active persona.
+- Mirror Mode prompt assembly — the TS core resolves bound manifest capabilities and runs
+  their declared process providers; capabilities not yet migrated use the finite Python
+  compatibility host.
 - `python -m memory extensions install <id>` — loads the extension being
   installed, after migrations.
 
@@ -102,8 +105,10 @@ Concretely, loading runs these steps in order:
    prelude.
 5. **Register.** Call `register(api)`. The extension declares subcommands and
    context providers.
-6. **Dispatch.** The caller (CLI or Mirror Mode) uses the registry to invoke
-   the relevant handler.
+6. **Dispatch.** Python CLI callers use the registry. Mirror Mode instead validates the
+   declared `mirror-context-v1` process and invokes it in stable binding order. During the
+   deprecation window only, the compatibility host uses the Python registry for an
+   unmigrated named capability.
 
 During `extensions install`, the source tree is copied with a fixed
 ignore list (`.git`, `__pycache__`, `.venv`, `.pytest_cache`,
@@ -139,16 +144,16 @@ extension A cannot be reached through extension B's namespace.
 When the mirror builds the prompt for a Mirror Mode turn, it now performs an
 extra step after resolving the active persona:
 
-1. Look up `_ext_bindings WHERE target_kind='persona' AND target_id=<persona>`.
-2. For each binding, find the corresponding extension and capability.
-3. Load that extension (if not already loaded).
-4. Call the registered context provider with a `ContextRequest`
-   (`persona_id`, `journey_id`, `user`, `query`).
-5. Append the returned string (if any) to the prompt under a clearly labelled
-   section: `=== extension/<id>/<capability> ===`.
+1. Look up persona and selected-journey bindings in stable order.
+2. For each binding, validate the installed manifest capability.
+3. Invoke its no-shell `mirror-context-v1` process with the existing `ContextRequest`
+   fields in JSON (or the finite compatibility host for a Python-only provider).
+4. Validate the bounded JSON result and append non-empty text under
+   `=== extension/<id>/<capability> ===`.
 
-The integration point in code is `IdentityService.load_mirror_context` (or a
-helper called from there). Provider failures are caught and logged.
+The authoritative integration point is the TS Mirror orchestration. Provider failures are
+caught and reported without raw request/stdout/stderr payload. Ancestor and descendant
+journeys never widen selected-journey bindings.
 
 ### Storage — shared SQLite, scoped writes
 

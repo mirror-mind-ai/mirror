@@ -23,7 +23,9 @@ We need a way for:
 ### Capabilities (declared by the extension)
 
 A **capability** is a named hook the extension offers. It is declared in the
-manifest and registered at runtime through `api.register_mirror_context`.
+manifest and implemented through its `mirror-context-v1` `provider_runtime`. During the
+bounded CV22 migration window, an existing Python implementation registered through
+`api.register_mirror_context` is invoked by the deprecated compatibility host.
 
 A capability is *not* a CLI subcommand. CLI subcommands are always reachable
 directly (`python -m memory ext <id> <subcommand>`). Capabilities are
@@ -36,6 +38,9 @@ mirror_context_providers:
   - id: financial_summary
     description: "Live financial summary: balances by liquidity, monthly cash flow, runway."
     suggested_personas: [treasurer, cfo, founder]
+    provider_runtime:
+      protocol: mirror-context-v1
+      command: [node, context/financial-summary.mjs]
 ```
 
 `suggested_personas` is a hint, never a binding. The mirror does not act on it
@@ -72,13 +77,15 @@ several personas at once.
 ### Dispatch (executed by the mirror)
 
 When the mirror assembles a Mirror Mode prompt and the active persona is `P`,
-it queries `_ext_bindings WHERE target_kind='persona' AND target_id=P`. For
-each match, it loads the corresponding extension (if not loaded), looks up
-the capability in the context registry, and calls the provider function with
-a `ContextRequest`.
+it queries `_ext_bindings WHERE target_kind='persona' AND target_id=P`. For each match, the TS core resolves the installed manifest and invokes the declared
+`mirror-context-v1` provider command with the existing `ContextRequest` fields in a
+versioned JSON request. Providers run in stable binding order in bounded, no-shell
+processes.
 
-The provider returns either a string (appended to the prompt) or `None`
-(skipped silently). Exceptions are caught, logged, and ignored.
+The provider returns either text (appended to the prompt) or `null` (skipped silently).
+Missing, malformed, timed-out, or failing providers are isolated. A capability without a
+process descriptor uses the temporary Python compatibility host until CV22.DS10; the
+complete `mirror load` command does not fall back to Python.
 
 ## Three target kinds
 
@@ -144,9 +151,9 @@ load_mirror_context(persona="treasurer", journey="eudaimon", query=...)
    │     │        OR (target_kind='journey'  AND target_id='eudaimon')
    │     │
    │     ├─ for each (ext_id, capability_id):
-   │     │     ├─ load extension (if needed)
-   │     │     ├─ provider = context_registry[(ext_id, capability_id)]
-   │     │     ├─ text = safely_call(provider, ContextRequest(...))
+   │     │     ├─ load and validate installed manifest
+   │     │     ├─ invoke mirror-context-v1 command (or finite legacy host)
+   │     │     ├─ validate {protocol, text} under timeout/output bounds
    │     │     └─ if text: append "=== extension/<id>/<cap> ===\n<text>"
    │
    ▼

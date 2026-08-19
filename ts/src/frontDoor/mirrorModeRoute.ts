@@ -90,8 +90,12 @@ export async function runMirrorWriteRoute(
   const llmReplay = env.MIRROR_TS_MIRROR_LLM_REPLAY;
   const embeddingReplay = env.MIRROR_TS_MIRROR_EMBEDDING_REPLAY;
   const receptionEnabled = env.MEMORY_RECEPTION !== "0";
+  const mirrorHome = dirname(dbPath);
   const rendered = await runMirrorLoad(db, {
-    identity: basename(dirname(dbPath)),
+    identity: basename(mirrorHome),
+    databasePath: dbPath,
+    mirrorHome,
+    user: basename(mirrorHome),
     persona: optionValue(args, "--persona"),
     journey: optionValue(args, "--journey"),
     query,
@@ -109,6 +113,9 @@ export async function runMirrorWriteRoute(
   });
   process.stdout.write(rendered.stdout);
   process.stderr.write(rendered.stderr);
+  for (const diagnostic of rendered.extensionDiagnostics) {
+    process.stderr.write(`warning: extension context ${diagnostic.kind}; continuing.\n`);
+  }
   return 0;
 }
 

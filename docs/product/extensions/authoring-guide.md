@@ -127,6 +127,9 @@ mirror_context_providers:
   - id: greeting
     description: "A short greeting injected when the bound persona is active."
     suggested_personas: []
+    provider_runtime:
+      protocol: mirror-context-v1
+      command: [node, provider.mjs]
 ```
 
 ### 3. Write the initial migration
@@ -185,6 +188,36 @@ def _provide_greeting(api: ExtensionAPI, ctx) -> str | None:
         return None
     return f"Latest ping: {row['message']}"
 ```
+
+The Python provider keeps older cores compatible during the CV22 migration. Add the
+TS-owned process provider declared by `provider_runtime`:
+
+```javascript
+// provider.mjs
+import { DatabaseSync } from "node:sqlite";
+
+let input = "";
+for await (const chunk of process.stdin) input += chunk;
+const request = JSON.parse(input);
+const db = new DatabaseSync(request.database_path, { readOnly: true });
+try {
+  const row = db.prepare(
+    "SELECT message FROM ext_hello_pings ORDER BY id DESC LIMIT 1"
+  ).get();
+  process.stdout.write(JSON.stringify({
+    protocol: "mirror-context-v1",
+    text: row ? `Latest ping: ${row.message}` : null,
+  }));
+} finally {
+  db.close();
+}
+```
+
+The provider command runs without a shell from the installed extension root. It receives
+sensitive context on stdin, so never echo the request or provider result into logs. Keep
+stdout reserved for the single protocol JSON object. Failures are isolated by the core.
+Capabilities that omit `provider_runtime` use a deprecated Python compatibility host only
+until CV22.DS10; migrate before that cutoff.
 
 #### Importing your own helpers
 

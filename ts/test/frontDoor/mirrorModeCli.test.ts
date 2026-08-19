@@ -5,8 +5,6 @@ import { join } from "node:path";
 import test from "node:test";
 import { bootstrapDatabaseIfMissing } from "#db/bootstrap.ts";
 import { openDatabaseCopyForWrite, openDatabaseReadOnly } from "#db/database.ts";
-import { applyMirrorExtensionFallback } from "#frontDoor/cli.ts";
-import { routeMemoryCommand } from "#frontDoor/routing.ts";
 import { spawnFrontDoor } from "#helpers/frontDoor.ts";
 
 function mirrorDbCopy(): { dbPath: string; cleanup: () => void } {
@@ -177,20 +175,96 @@ test("front door mirror load query uses scrubbed reception and embedding replay 
   }
 });
 
-test("matching extension context bindings turn the provisional TS route into the named Python fallback", () => {
+test("matching native and legacy extension providers stay on the TS mirror route", () => {
   const ws = mirrorDbCopy();
   try {
+    const mirrorHome = join(ws.dbPath, "..");
+    const extensions = join(mirrorHome, "extensions");
+    const native = join(extensions, "native");
+    const legacy = join(extensions, "legacy");
+    const broken = join(extensions, "broken");
+    mkdirSync(native, { recursive: true });
+    mkdirSync(legacy, { recursive: true });
+    mkdirSync(broken, { recursive: true });
+    writeFileSync(
+      join(native, "skill.yaml"),
+      "id: native\nname: Native\ncategory: extension\nkind: command-skill\nsummary: fixture\n" +
+        "entrypoint:\n  module: extension\nruntimes:\n  pi:\n    command_name: ext-native\n" +
+        "mirror_context_providers:\n  - id: context\n    description: fixture\n" +
+        "    provider_runtime:\n      protocol: mirror-context-v1\n      command: [node, provider.mjs]\n",
+    );
+    writeFileSync(join(native, "extension.py"), "def register(api):\n    pass\n");
+    writeFileSync(
+      join(native, "provider.mjs"),
+      'process.stdout.write(JSON.stringify({protocol:"mirror-context-v1",text:"native private context"}));\n',
+    );
+    writeFileSync(
+      join(broken, "skill.yaml"),
+      "id: broken\nname: Broken\ncategory: extension\nkind: command-skill\nsummary: fixture\n" +
+        "entrypoint:\n  module: extension\nruntimes:\n  pi:\n    command_name: ext-broken\n" +
+        "mirror_context_providers:\n  - id: context\n    description: fixture\n" +
+        "    provider_runtime:\n      protocol: mirror-context-v1\n      command: [node, provider.mjs]\n",
+    );
+    writeFileSync(join(broken, "extension.py"), "def register(api):\n    pass\n");
+    writeFileSync(
+      join(broken, "provider.mjs"),
+      'process.stderr.write("private provider stderr"); process.stdout.write("not-json");\n',
+    );
+    writeFileSync(
+      join(legacy, "skill.yaml"),
+      "id: legacy\nname: Legacy\ncategory: extension\nkind: command-skill\nsummary: fixture\n" +
+        "entrypoint:\n  module: extension\nruntimes:\n  pi:\n    command_name: ext-legacy\n" +
+        "mirror_context_providers:\n  - id: context\n    description: fixture\n",
+    );
+    writeFileSync(
+      join(legacy, "extension.py"),
+      "def register(api):\n    api.register_mirror_context('context', _provide)\n" +
+        "def _provide(api, request):\n" +
+        "    api.execute(\"INSERT INTO ext_legacy_calls (value) VALUES ('called')\")\n" +
+        "    api.commit()\n" +
+        "    return 'legacy private context'\n",
+    );
     const db = openDatabaseCopyForWrite(ws.dbPath);
+    db.exec("CREATE TABLE ext_legacy_calls (value TEXT NOT NULL)");
     db.prepare(
-      "INSERT INTO _ext_bindings (extension_id,capability_id,target_kind,target_id,created_at) VALUES ('ext','context','journey','mirror-ts-core','t')",
-    ).run();
+      "INSERT INTO _ext_bindings (extension_id,capability_id,target_kind,target_id,created_at) VALUES (?, 'context', 'journey', 'mirror-ts-core', 't')",
+    ).run("native");
+    db.prepare(
+      "INSERT INTO _ext_bindings (extension_id,capability_id,target_kind,target_id,created_at) VALUES (?, 'context', 'journey', 'mirror-ts-core', 't')",
+    ).run("broken");
+    db.prepare(
+      "INSERT INTO _ext_bindings (extension_id,capability_id,target_kind,target_id,created_at) VALUES (?, 'context', 'journey', 'ancestor-journey', 't')",
+    ).run("native");
+    db.prepare(
+      "INSERT INTO _ext_bindings (extension_id,capability_id,target_kind,target_id,created_at) VALUES (?, 'context', 'journey', 'mirror-ts-core', 't')",
+    ).run("legacy");
     db.close();
-    const argv = ["mirror", "load", "--journey", "mirror-ts-core", "--db-path", ws.dbPath];
-    assert.deepEqual(applyMirrorExtensionFallback(argv, routeMemoryCommand(argv)), {
-      command: "mirror",
-      engine: "python",
-      reason: "DS7.US4 matching extension context binding preserved on Python until DS7.TS2",
-    });
+
+    const load = spawnFrontDoor([
+      "mirror",
+      "load",
+      "--journey",
+      "mirror-ts-core",
+      "--db-path",
+      ws.dbPath,
+    ]);
+    assert.equal(load.status, 0, load.stderr);
+    assert.match(
+      load.stdout,
+      /=== extension\/legacy\/context ===\nlegacy private context\n\n=== extension\/native\/context ===\nnative private context/,
+    );
+    assert.equal([...load.stdout.matchAll(/=== extension\/native\/context ===/g)].length, 1);
+    assert.match(load.stderr, /warning: extension context invalid_output; continuing/);
+    assert.doesNotMatch(load.stderr, /private provider stderr/);
+    const log = readFileSync(join(mirrorHome, "front-door.log"), "utf8");
+    assert.match(log, /\tmirror\tts\texit=0/);
+    assert.doesNotMatch(
+      log,
+      /legacy private|native private|private provider stderr|mirror-ts-core/,
+    );
+    const after = openDatabaseReadOnly(ws.dbPath);
+    assert.equal(after.prepare("SELECT COUNT(*) AS count FROM ext_legacy_calls").get()?.count, 1);
+    after.close();
   } finally {
     ws.cleanup();
   }

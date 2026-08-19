@@ -14,6 +14,7 @@
     "#db/*": "./src/db/*",
     "#descriptor/*": "./src/descriptor/*",
     "#extraction/*": "./src/extraction/*",
+    "#extensions/*": "./src/extensions/*",
     "#frontDoor/*": "./src/frontDoor/*",
     "#identity/*": "./src/identity/*",
     "#init/*": "./src/init/*",

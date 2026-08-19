@@ -42,6 +42,9 @@ mirror_context_providers:
   - id: <capability_id>             # lowercase, dash-separated, unique within extension
     description: <one-line description>
     suggested_personas: [<persona_id>, ...]  # hint only, never auto-binds
+    provider_runtime:               # TS-owned Mirror context provider
+      protocol: mirror-context-v1
+      command: [node, context/<capability_id>.mjs]
 
 # Optional: declared CLI subcommands (informational; the runtime source of
 # truth is what extension.py registers via api.register_cli)
@@ -61,6 +64,9 @@ cli:
 - Each `runtimes.<name>.command_name` follows the runtime's convention
   (`ext:<...>` for Claude, `ext-<...>` for Pi).
 - Each `mirror_context_providers[].id` is unique within the extension.
+- `provider_runtime.protocol`, when present, is exactly `mirror-context-v1`.
+- `provider_runtime.command` is a non-empty argv array. It is never interpreted by a shell;
+  path-like arguments must remain inside the installed extension root.
 
 Manifests that fail validation are rejected at install time and at every
 subsequent load.
@@ -201,6 +207,56 @@ class ContextRequest:
 
 Providers may use any combination of these fields. They should never assume
 all are populated; in particular, `query` and `journey_id` may be `None`.
+
+## TypeScript provider runtime — `mirror-context-v1`
+
+The TS core owns Mirror context binding selection and invokes each declared provider command
+in deterministic binding order. The command runs with the installed extension root as CWD,
+receives one JSON request on stdin, and must return one JSON object on stdout.
+
+Request fields preserve `ContextRequest` and add runtime coordinates:
+
+```json
+{
+  "protocol": "mirror-context-v1",
+  "extension_id": "hello",
+  "capability_id": "greeting",
+  "extension_root": "/installed/extensions/hello",
+  "table_prefix": "ext_hello_",
+  "database_path": "/mirror/memory.db",
+  "persona_id": "engineer",
+  "journey_id": "mirror-ts-core",
+  "user": "user",
+  "query": null,
+  "binding_kind": "journey",
+  "binding_target": "mirror-ts-core"
+}
+```
+
+Success response:
+
+```json
+{"protocol":"mirror-context-v1","text":"context to inject"}
+```
+
+Use `"text": null` to skip. Raw stdout must contain only this JSON result; write extension
+diagnostics to stderr. The core never forwards raw provider stdout/stderr into operational
+logs. Execution is no-shell, bounded to 60 seconds and 1 MiB of stdout per binding, and
+sequential in stable binding order. Missing, malformed, timed-out, or failing providers are
+skipped so Mirror Mode can continue.
+
+The installed extension is trusted executable code, as `extension.py` already is. A process
+provider may open `database_path`; extension authors remain responsible for the documented
+table-prefix boundary. Prefer read-only context providers and short deterministic work.
+
+### Python provider migration window
+
+A capability without `provider_runtime` currently runs through the temporary CV22 legacy
+host. The complete `mirror load` command still stays in TS; the host invokes only that named
+Python provider. This compatibility host is deprecated and must be removed by CV22.DS10.
+Authors should add a `mirror-context-v1` command before that cutoff. After removal, an
+unmigrated capability will produce explicit migration diagnostics rather than being silently
+omitted.
 
 ## Errors
 

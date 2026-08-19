@@ -28,6 +28,9 @@ mirror_context_providers:
   - id: <capability_id>
     description: <one-line description of what this capability returns>
     suggested_personas: []   # informational only; never auto-binds
+    provider_runtime:
+      protocol: mirror-context-v1
+      command: [node, context-provider.mjs]
 
 # Optional: declared CLI subcommands. Informational; runtime truth is what
 # extension.py registers via api.register_cli.

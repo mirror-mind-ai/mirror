@@ -12,6 +12,14 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-08-18 — CV22.DS7.TS2 Extension Context Provider Runtime Convergence completed
+
+Removed US4's binding-triggered whole-command Python fallback without silently dropping installed extension context. TypeScript now owns binding selection, stable persona/selected-journey ordering, exact section rendering, and fail-soft dispatch through the language-neutral `mirror-context-v1` stdin/stdout JSON contract. Provider commands use argv spawning without a shell, deterministic sequential execution, 60-second and 1 MiB bounds, strict protocol validation, path confinement, and payload-free diagnostics. Native providers can read and commit through their own explicitly selected SQLite connection; selected journeys remain isolated from ancestors, descendants, and unrelated roots.
+
+Existing Python-only providers remain functional through a deliberately narrow compatibility host that invokes exactly one named capability and owns no binding selection, Mirror composition, rendering, or complete command route. The host and every legacy launch branch are mandatory DS10 deletion gates before Python retirement/npm publication; live LLM/embedding behavior remains DS8-owned. Extension authoring/reference docs, templates, decisions, oracle drift, deterministic goldens, CI regeneration, and synthetic disposable fixtures were updated. No production/development database or private extension was used as a fixture.
+
+Validation passed with 875 TS tests, 2473 non-live Python tests, 7 extension-focused tests, 4 disposable-home front-door E2E tests, typecheck, lint, Ruff, docs, oracle drift, deterministic golden regeneration, migration/bootstrap custody checks, and portable real-database-copy parity. Navigator accepted validation. Debt Review deferred only the finite compatibility host to its mandatory DS10 deletion gate. **DS7 progress moved from 4/11 to 5/11 (+1 story).**
+
 ### 2026-08-18 — CV22.DS7.US4 Mirror Mode Orchestration completed
 
 Transferred the extension-free core `mirror load|deactivate|log|journeys` and `mode activate|deactivate|status` command families to TypeScript with Python-compatible default precedence, reception parsing, selected-journey isolation, context ordering, attachment scoring, runtime/sticky state, conversation effects, titles, transition rendering, output channels, and exit semantics. Replay-backed reception and embeddings are served by TS; live provider calls remain DS8-owned. Matching or indeterminate installed Python extension context bindings fail closed to the complete Python command path rather than silently losing context. The explicit fallback is carried by CV22.DS7.TS2, which must remove it through a finite TS-owned compatibility contract before DS7 completes.
