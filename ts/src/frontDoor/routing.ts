@@ -27,6 +27,9 @@ export interface RouteEnvironment {
   MIRROR_TS_CREDITS_REPLAY?: string;
   MIRROR_TS_CULTIVATION_LLM_REPLAY?: string;
   MIRROR_TS_CULTIVATION_EMBEDDING_REPLAY?: string;
+  MIRROR_TS_MIRROR_LLM_REPLAY?: string;
+  MIRROR_TS_MIRROR_EMBEDDING_REPLAY?: string;
+  MEMORY_RECEPTION?: string;
 }
 
 function externalRoutesEnabled(env: RouteEnvironment): boolean {
@@ -286,6 +289,48 @@ export function routeMemoryCommand(
       };
     }
     return { command, engine: "python", reason: "command not ported to TS" };
+  }
+
+  if (command === "mirror") {
+    const sub = argv[1];
+    if (sub === "load") {
+      const hasQuery = argv.includes("--query");
+      if (!hasQuery) {
+        return { command, engine: "ts", reason: "DS7.US4 deterministic mirror load ported to TS" };
+      }
+      if (!externalRoutesEnabled(env) || !env.MIRROR_TS_MIRROR_EMBEDDING_REPLAY) {
+        return {
+          command,
+          engine: "python",
+          reason: "mirror load query needs DS7.US4 replay embedding config for TS route",
+        };
+      }
+      if (env.MEMORY_RECEPTION !== "0" && !env.MIRROR_TS_MIRROR_LLM_REPLAY) {
+        return {
+          command,
+          engine: "python",
+          reason: "mirror load reception needs DS7.US4 replay LLM config for TS route",
+        };
+      }
+      return {
+        command,
+        engine: "ts",
+        reason: "DS7.US4 mirror load routed to TS under replay-safe config",
+      };
+    }
+    if (sub === "deactivate" || sub === "log" || sub === "journeys") {
+      return { command, engine: "ts", reason: `DS7.US4 mirror ${sub} ported to TS` };
+    }
+    return { command, engine: "python", reason: "mirror subcommand not ported to TS" };
+  }
+
+  if (command === "mode") {
+    const sub = argv.find(
+      (value, index) => index > 0 && ["activate", "deactivate", "status"].includes(value),
+    );
+    return sub
+      ? { command, engine: "ts", reason: "DS7.US4 operating mode lifecycle ported to TS" }
+      : { command, engine: "python", reason: "mode subcommand not ported to TS" };
   }
 
   if (command === "journey") {

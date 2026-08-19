@@ -3,7 +3,7 @@
 # CV22.DS7 — Command Burn-Down & Re-homed Feature Work
 
 **Delivery Story:** Port the remaining **deterministic** command surface from the Python core to the TypeScript core — the Builder/Ariad tree (re-homing CV20/CV21 in-flight work), Soul, Explorer, mirror-mode orchestration, memory cultivation, the extraction lifecycle, remaining identity/journey reads and writes, and the content/ops tail — behind the DS5 replay-safe `LlmTransport` seam and the DS6 TS-owned database. Carry the bounded non-command Workspace/web hierarchy retirement rider so zero commands cannot conceal a live Python browser contract. DS8, DS9, and DS10 own the later live-provider, MCP, and final runtime/package cutovers.
-**Status:** 🟢 In Progress — US1 (remaining identity/journey reads & writes), US2 (content & planning writes), and US3 (memory cultivation) are done; US4–US9 and TS1 remain, authored as a full package ahead of pull (same convention as DS6), pulled/expanded one at a time in the risk-first sequence below.
+**Status:** 🟢 In Progress — US1–US4 are done (**4/11**); US5–US9 and TS1–TS2 remain. TS2 was added during US4 after grounding exposed Python-only extension context providers; it owns removal of US4's bounded explicit fallback before DS7 can complete.
 **Type:** Delivery Story
 **Depends on:** [CV22.DS3 Pi TS Front Door](../cv22-ds3-pi-ts-front-door/index.md) (done) for the routing table this story flips entries in; [CV22.DS4 Deterministic Writes](../cv22-ds4-deterministic-writes/index.md) (done) for backup-gated, copy-validated write discipline; [CV22.DS5 External-API Commands](../cv22-ds5-external-api-commands/index.md) (done) for the replay-safe `LlmTransport` provider boundary that orchestration ports behind; [CV22.DS6 Schema Custody Transfer](../cv22-ds6-schema-custody-transfer/index.md) (done) so every write/migration a ported command needs is answered by the TS-owned database.
 **Retirement rider dependency:** [RS008](../../../refinement/rs008-v0319-recursive-journey-parity/index.md) CR050–CR053 provide metadata authority, recursive reads, safe movement, and conservative removal; CR054 assigns their Workspace/web convergence owner.
@@ -73,7 +73,14 @@ into the families that will become child stories:
   allowlist and prompt-injection fences (security-critical).
 - **mirror-mode orchestration** — `mirror load|deactivate|log|journeys`,
   `mode activate|deactivate|status`. The Mirror-mode turn (reception routing →
-  answer → record) behind the replay transport.
+  answer → record) behind the replay transport. US4 transfers the extension-free
+  core path and preserves an explicit Python fallback whenever a matching installed
+  extension context binding could contribute.
+- **Extension context provider runtime convergence** — replace the Python-only
+  dynamic extension provider loader with a TS-owned compatibility contract so the
+  bounded US4 fallback can be removed without dropping installed extension context
+  or creating a permanent TS↔Python bridge. This is DS7.TS2 and remains part of the
+  deterministic command burn-down.
 - **Extraction lifecycle** — `conversation-logger` and the extraction pipeline
   it drives (memory + embedding inserts, idempotency, fences). The largest write
   orchestration; its live embedding call is the DS8 seam.
@@ -171,15 +178,18 @@ candidate-story grammar so Ariad Expand can resolve and reuse this authored
 package. Row order is the risk-first command sequence: US1 (low-churn deterministic
 tail) first, the security-sensitive cultivation/extraction writes in the middle behind
 the replay seam, the highest-churn `transport=verbatim` Builder/Ariad tree (US8) last,
-and the ops tail (TS1) to reach zero. US9 is a separately visible non-command retirement
-rider and may land whenever its US1/CR051 and CR052 dependencies are stable.
+and the ops tail (TS1) to reach zero. TS2 is placed immediately after US4 because it owns
+US4's explicit extension-binding fallback and must close before the `mirror load` command
+can count as fully burned down. US9 is a separately visible non-command retirement rider
+and may land whenever its US1/CR051 and CR052 dependencies are stable.
 
 | Code | Story | Type | Outcome | Status |
 |------|-------|------|---------|--------|
 | [CV22.DS7.US1](cv22-ds7-us1-remaining-identity-journey-reads-writes/index.md) | Remaining identity/journey reads & writes | User Story | `identity list/get`, `journey status/update`, `seed`, `init`, `descriptor`, `list`, `inspect`, `conversations`, `recall` answered by TS; carries the DS6.US3 atomic `parent_journey` dual-write and the `kebab_slug` writer/locator port (low–med risk) | ✅ Done |
 | [CV22.DS7.US2](cv22-ds7-us2-content-planning-writes/index.md) | Content & planning writes | User Story | `journal`, `tasks`, `week` writes answered by TS with parity proven on copies (low risk) | ✅ Done |
 | [CV22.DS7.US3](cv22-ds7-us3-memory-cultivation/index.md) | Memory cultivation | User Story | `consolidate` and `shadow` answered by TS with the identity-write allowlist and injection fences ported at parity (med risk — security) | ✅ Done |
-| CV22.DS7.US4 | mirror-mode orchestration | User Story | `mirror` and `mode` (the Mirror turn) answered by TS behind the replay `LlmTransport` (med risk) | 🟡 Planned |
+| [CV22.DS7.US4](cv22-ds7-us4-mirror-mode-orchestration/index.md) | mirror-mode orchestration | User Story | Core `mirror` and `mode` paths answered by TS behind replay; matching installed extension context bindings trigger an explicit Python fallback owned by TS2 (med risk) | ✅ Done |
+| [CV22.DS7.TS2](cv22-ds7-ts2-extension-context-provider-runtime-convergence/index.md) | Extension context provider runtime convergence | Technical Story | Replace US4's bounded Python-only extension-provider fallback with a TS-owned compatibility contract; no silent context loss and no permanent language bridge (high risk — extension compatibility) | 🟡 Planned |
 | CV22.DS7.US5 | Extraction lifecycle | User Story | `conversation-logger` + extraction pipeline answered by TS — deterministic writes on copies, live embedding deferred to the DS8 seam (high risk — writes) | 🟡 Planned |
 | CV22.DS7.US6 | Soul Mode | User Story | `soul` full surface answered by TS with `transport=verbatim` rendering parity and the `soul apply` identity-write gate (med–high risk) | 🟡 Planned |
 | CV22.DS7.US7 | Explorer Mode | User Story | `explore` exploratory-story surfaces answered by TS (med risk) | 🟡 Planned |
@@ -303,10 +313,10 @@ CV22.DS7 is done when:
   hold at parity; `oracle-baseline.json` covers every ported oracle.
 - The DS6.US3 atomic `parent_journey` dual-write and the `kebab_slug` contract are
   landed and registered.
-- The burn-down ledger reads zero remaining deterministic Python commands, and
-  DS7.US9's non-command Workspace/web hierarchy owner matrix and evidence are complete —
-  clearing the way for DS8 (live cutover), DS9 (MCP), and DS10 (runtime convergence,
-  deletion, and npm).
+- The burn-down ledger reads zero remaining deterministic Python commands, including
+  removal of US4's matching-extension fallback through TS2, and DS7.US9's non-command
+  Workspace/web hierarchy owner matrix and evidence are complete — clearing the way for
+  DS8 (live cutover), DS9 (MCP), and DS10 (runtime convergence, deletion, and npm).
 
 ---
 

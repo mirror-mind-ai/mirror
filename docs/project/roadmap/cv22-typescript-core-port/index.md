@@ -130,7 +130,7 @@ CR054 proved that zero commands alone cannot safely authorize Python deletion.
 | [CV22.DS4](cv22-ds4-deterministic-writes/index.md) | Deterministic Writes | Port write commands (journey/identity CRUD, `log_access`) with parity proven on DB copies; backup-gated; schema-compatible; CLI-write routing on the TS front door (identity + journey) | ✅ Done |
 | [CV22.DS5](cv22-ds5-external-api-commands/index.md) | External-API Commands | Port extraction, embeddings/search, and consult behind replay-safe provider boundaries; route validated external command surfaces through the TS front door while preserving Python fallback for unsafe/unconfigured paths | ✅ Done |
 | [CV22.DS6](cv22-ds6-schema-custody-transfer/index.md) | Schema Custody Transfer | Move all database creation, migration, and discipline from Python to TS — bootstrap DDL (rewritten in English per CV0), migration engine and `_migrations` bookkeeping, cross-process bootstrap locking, connection pragma discipline — proven over real legacy databases; plus the two schema decisions gated on custody (`identity.metadata` canonicalization, `parent_journey` first-class column) | ✅ Done — all children complete (TS1–TS5, US1–US3); TS owns bootstrap/migration/locking/pragmas, proven over real legacy copies including migration-016's real ADD-COLUMN + backfill; the deletion gate is cleared |
-| [CV22.DS7](cv22-ds7-command-burn-down/index.md) | Command Burn-Down & Re-homed Feature Work | Port the remaining command surface to TS — the Builder/Ariad tree (re-homed CV20/CV21 in-flight work), Soul, Explorer, mirror-mode orchestration, remaining identity/journey reads and writes, and the extraction lifecycle — until the deterministic Python command surface is empty; complete the non-command Workspace/web hierarchy retirement rider | 🟢 In Progress — US1 (identity/journey reads & writes), US2 (content & planning writes), and US3 (memory cultivation) done; US4–US9 and TS1 remain |
+| [CV22.DS7](cv22-ds7-command-burn-down/index.md) | Command Burn-Down & Re-homed Feature Work | Port the remaining command surface to TS — the Builder/Ariad tree (re-homed CV20/CV21 in-flight work), Soul, Explorer, mirror-mode orchestration, remaining identity/journey reads and writes, and the extraction lifecycle — until the deterministic Python command surface is empty; complete the non-command Workspace/web hierarchy retirement rider | 🟢 In Progress — US1–US4 done (**4/11**); US5–US9 and TS1–TS2 remain; TS2 owns removal of US4's bounded extension-context fallback |
 | CV22.DS8 | Live-Provider Cutover | Implement the `live` mode of the TS `LlmTransport` (chat + embeddings) with per-role timeouts, bounded retries, error taxonomy, and metadata-only logging (AI-18); route real external calls through TS; validated by live smoke contracts, not golden parity; multi-persona Plan review before implementation | 🟡 Planned |
 | CV22.DS9 | TS MCP Server | Threat model first (RS005: localhost binding, per-tool permission scoping, tightest gate on identity-mutating tools; AI-19: per-tool rate/budget guards against denial-of-wallet), then port `python -m memory mcp` to TS | 🟡 Planned |
 | [CV22.DS10](cv22-ds10-python-retirement-npm-distribution/index.md) | Python Retirement & npm Distribution | After zero commands, converge the complete Python web process/endpoint inventory and packaged assets; only then may deletion, rename, and npm distribution be planned under separate gates | 🟡 Planned — CR054 web convergence gate authored; DS10 not pulled |
@@ -265,8 +265,12 @@ Risk-first, mirroring the decision spine:
    deterministic Python command surface is empty. US1 (identity/journey reads
    and writes), US2 (content & planning writes), and US3 (memory cultivation,
    the identity-write allowlist and injection fences ported at parity) are
-   done; US4 (mirror-mode orchestration) is next in the command risk sequence.
-   US9 is the separately visible non-command Workspace/web hierarchy rider required
+   done; US4 (mirror-mode orchestration) is also done, moving DS7 from **3/11 to
+   4/11**. Its approved Plan exposed a Python-only installed-extension context provider
+   seam: US4 transferred the core path with an explicit matching-binding fallback, while
+   DS7.TS2 owns eliminating that fallback without silent context loss or a permanent
+   language bridge. US9 is the separately
+   visible non-command Workspace/web hierarchy rider required
    before DS7 can finish.
 8. **DS8 — live-provider cutover**: implement the `live` mode of the TS
    `LlmTransport` (AI-18) so real external calls leave Python; validated by

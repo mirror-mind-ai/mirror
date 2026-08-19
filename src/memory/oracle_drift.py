@@ -83,6 +83,19 @@ ORACLE_PATHS: tuple[str, ...] = (
     "src/memory/intelligence/shadow.py",
     "src/memory/cli/consolidate_cmd.py",
     "src/memory/cli/shadow_cmd.py",
+    # DS7.US4 Mirror Mode orchestration: command surfaces, operating/session
+    # state, reception, attachment context, conversation binding/logging, and
+    # deterministic transition rendering. services/identity.py, services/journey.py,
+    # models.py, and intelligence/prompts.py are already tracked above.
+    "src/memory/skills/mirror.py",
+    "src/memory/cli/mode.py",
+    "src/memory/services/operating_mode.py",
+    "src/memory/services/runtime_session.py",
+    "src/memory/intelligence/reception.py",
+    "src/memory/cli/conversation_logger.py",
+    "src/memory/hooks/mirror_state.py",
+    "src/memory/surfaces/mode_transition.py",
+    "src/memory/services/attachment.py",
 )
 
 BASELINE_RELPATH = "ts/parity/oracle-baseline.json"

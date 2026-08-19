@@ -6,6 +6,7 @@ export type LlmRole =
   | "summary"
   | "curation"
   | "consult"
+  | "reception"
   | "consolidation"
   | "shadow_scan";
 
@@ -84,6 +85,7 @@ function isLlmRole(value: string): value is LlmRole {
     value === "summary" ||
     value === "curation" ||
     value === "consult" ||
+    value === "reception" ||
     value === "consolidation" ||
     value === "shadow_scan"
   );

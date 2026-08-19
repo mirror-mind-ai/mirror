@@ -119,6 +119,37 @@ export {
   listRecentMemorySummaries,
 } from "./memory/listing.ts";
 export { logAccess, logUse } from "./memory/reinforcement.ts";
+export type { MirrorContextOptions } from "./mirror/context.ts";
+export { loadMirrorContext, relevantAttachments } from "./mirror/context.ts";
+export type {
+  ResolvedMirrorDefaults,
+  ResolveMirrorDefaultsInput,
+} from "./mirror/defaultResolution.ts";
+export { detectJourney, resolveMirrorDefaults } from "./mirror/defaultResolution.ts";
+export type { MirrorLoadInput, RenderedMirrorLoad } from "./mirror/orchestration.ts";
+export {
+  deactivateMirrorState,
+  extensionBindingsCouldContribute,
+  listActiveMirrorJourneys,
+  logMirrorResponse,
+  runMirrorLoad,
+  titleFromSummary,
+} from "./mirror/orchestration.ts";
+export type {
+  ReceptionJourney,
+  ReceptionPersona,
+  ReceptionResult,
+} from "./mirror/reception.ts";
+export { EMPTY_RECEPTION_RESULT, RECEPTION_PROMPT, runReception } from "./mirror/reception.ts";
+// --- Mirror Mode and operating-mode orchestration (DS7.US4) ---
+export type { OperatingModeState } from "./mode/operatingMode.ts";
+export {
+  activateOperatingMode,
+  deactivateOperatingMode,
+  getActiveOperatingMode,
+  renderModeActivation,
+  renderModeStatus,
+} from "./mode/operatingMode.ts";
 // --- Parity harness (read + grading) ---
 export { orderedIdsMatch } from "./parity/golden.ts";
 export type {

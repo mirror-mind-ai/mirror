@@ -19,6 +19,8 @@
     "#init/*": "./src/init/*",
     "#journey/*": "./src/journey/*",
     "#memory/*": "./src/memory/*",
+    "#mirror/*": "./src/mirror/*",
+    "#mode/*": "./src/mode/*",
     "#observability/*": "./src/observability/*",
     "#parity/*": "./src/parity/*",
     "#persona/*": "./src/persona/*",

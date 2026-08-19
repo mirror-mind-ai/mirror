@@ -52,6 +52,8 @@ jobs:
           uv run python ts/parity/generate_journeys_golden.py
           uv run python ts/parity/generate_validate_parent_journey_golden.py
           uv run python ts/parity/generate_journey_removal_golden.py
+          uv run python ts/parity/generate_mirror_mode_golden.py
+          uv run python ts/parity/generate_mirror_state_golden.py
           git diff --exit-code ts/test/goldens/
         env:
           MEMORY_ENV: test

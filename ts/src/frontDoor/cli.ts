@@ -46,6 +46,7 @@ import { setIdentity } from "#identity/setIdentity.ts";
 import { IdentityRootExistsError, initUserHome, TemplatesNotFoundError } from "#init/init.ts";
 import { JOURNEY_PATH_LAYER } from "#journey/journeyStatus.ts";
 import { JourneyNotFoundError } from "#journey/journeyWrite.ts";
+import { extensionBindingsCouldContribute } from "#mirror/orchestration.ts";
 import { loadReplayEmbeddingProvider } from "#providers/embedding.ts";
 import { loadReplayLlmProvider } from "#providers/llm.ts";
 import { runSeed } from "#seed/seed.ts";
@@ -65,6 +66,15 @@ import { frontDoorLogPath, logFrontDoor } from "./frontDoorLog.ts";
 import { applyIdentitySet } from "./identityWrite.ts";
 import { applyJourneySetPath } from "./journeyWriteRoute.ts";
 import { ensureBackup } from "./liveBackup.ts";
+import {
+  isMirrorWrite,
+  isModeWrite,
+  mirrorDeactivateMissingSession,
+  runMirrorRead,
+  runMirrorWriteRoute,
+  runModeRead,
+  runModeWriteRoute,
+} from "./mirrorModeRoute.ts";
 import { nodeVersionError } from "./nodeSupport.ts";
 import {
   renderConsolidateApply,
@@ -107,7 +117,7 @@ import {
   renderTasksSyncOutcome,
 } from "./render/tasksImportSync.ts";
 import { renderWeekView } from "./render/week.ts";
-import { type FrontDoorEngine, routeMemoryCommand } from "./routing.ts";
+import { type FrontDoorEngine, type RouteDecision, routeMemoryCommand } from "./routing.ts";
 import { runMemorySearchRoute } from "./searchRoute.ts";
 import { resolveSeedPaths } from "./seedPaths.ts";
 import {
@@ -235,6 +245,8 @@ function runTs(argv: readonly string[]): number {
     else if (command === "week") return runWeekRead(db, args);
     else if (command === "consolidate") return runConsolidateRead(db, args);
     else if (command === "shadow") return runShadowRead(db, args);
+    else if (command === "mirror") return runMirrorRead(db, args);
+    else if (command === "mode") return runModeRead(db, args);
     else throw new Error(`Unsupported TS route: ${command}`);
     return 0;
   } catch (error) {
@@ -1081,6 +1093,82 @@ function runShadowWrite(argv: readonly string[]): number | Promise<number> {
   return runShadowScanWrite(argv); // "scan"
 }
 
+async function withMirrorWriteDb(
+  argv: readonly string[],
+  write: (db: WritableDatabase, dbPath: string) => Promise<number> | number,
+): Promise<number> {
+  const dbPath = resolveDbPathForCli(argv.slice(1));
+  if (dbPath === null) return 2;
+  ensureDatabaseReady(dbPath, argv[0] ?? null);
+  const db = openDatabaseForWrite(dbPath, ensureBackup(dbPath));
+  try {
+    assertSchemaState(db);
+    return await write(db, dbPath);
+  } catch (error) {
+    if (error instanceof SchemaStateError) {
+      console.error(`Mirror TS front door: ${error.message}`);
+      return 2;
+    }
+    throw error;
+  } finally {
+    db.close();
+  }
+}
+
+function runMirrorWrite(argv: readonly string[]): Promise<number> | number {
+  if (mirrorDeactivateMissingSession(argv)) {
+    console.error("warning: mirror deactivate invoked without --session-id; no state change.");
+    return 0;
+  }
+  return withMirrorWriteDb(argv, (db, dbPath) => runMirrorWriteRoute(db, dbPath, argv));
+}
+
+function runModeWrite(argv: readonly string[]): Promise<number> {
+  return withMirrorWriteDb(argv, (db) => runModeWriteRoute(db, argv));
+}
+
+export function applyMirrorExtensionFallback(
+  argv: readonly string[],
+  decision: RouteDecision,
+): RouteDecision {
+  if (decision.engine !== "ts" || argv[0] !== "mirror" || argv[1] !== "load") return decision;
+  let dbPath: string;
+  try {
+    dbPath = resolveDbPath(argv.slice(1));
+  } catch {
+    return decision;
+  }
+  if (!existsSync(dbPath)) return decision;
+  let db: Database | null = null;
+  try {
+    db = openDatabaseReadOnly(dbPath);
+    assertSchemaState(db);
+    const args = argv.slice(2);
+    if (
+      extensionBindingsCouldContribute(db, {
+        persona: optionValue(args, "--persona"),
+        journey: optionValue(args, "--journey"),
+        query: optionValue(args, "--query"),
+      })
+    ) {
+      return {
+        command: "mirror",
+        engine: "python",
+        reason: "DS7.US4 matching extension context binding preserved on Python until DS7.TS2",
+      };
+    }
+    return decision;
+  } catch {
+    return {
+      command: "mirror",
+      engine: "python",
+      reason: "DS7.US4 extension context preflight failed closed to Python until DS7.TS2",
+    };
+  } finally {
+    db?.close();
+  }
+}
+
 /** Best-effort log path from the same resolver; null when unconfigured. */
 function resolveLogPath(argv: readonly string[]): string | null {
   try {
@@ -1162,6 +1250,8 @@ async function dispatch(argv: readonly string[], engine: FrontDoorEngine): Promi
   if (isTasksSubcommandWrite(argv)) return runTasksWrite(argv);
   if (isConsolidateSubcommandWrite(argv)) return runConsolidateWrite(argv);
   if (isShadowSubcommandWrite(argv)) return runShadowWrite(argv);
+  if (isMirrorWrite(argv)) return runMirrorWrite(argv);
+  if (isModeWrite(argv)) return runModeWrite(argv);
   if (isMemorySearch(argv)) return runMemorySearch(argv);
   if (isConsult(argv)) {
     if (isConsultCredits(argv)) {
@@ -1179,11 +1269,18 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
     console.error(nodeError);
     return 1;
   }
-  const decision = routeMemoryCommand(argv);
+  const decision = applyMirrorExtensionFallback(argv, routeMemoryCommand(argv));
   const logPath = resolveLogPath(argv);
   try {
     const exitCode = await dispatch(argv, decision.engine);
-    logFrontDoor(logPath, { command: decision.command, route: decision.engine, exitCode });
+    logFrontDoor(logPath, {
+      command: decision.command,
+      route: decision.engine,
+      exitCode,
+      detail: decision.reason.includes("extension context")
+        ? "extension_context_python_fallback"
+        : undefined,
+    });
     return exitCode;
   } catch (error) {
     // Metadata-only: the error's name/category, never argument values.

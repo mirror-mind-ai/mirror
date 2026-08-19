@@ -304,6 +304,37 @@ test("routes `shadow list`/`show`/`reject`/`apply` to TS unconditionally, gates 
   });
 });
 
+test("routes Mirror Mode core commands to TS and gates query orchestration on replay", () => {
+  for (const argv of [
+    ["mirror", "load"],
+    ["mirror", "deactivate"],
+    ["mirror", "log", "summary"],
+    ["mirror", "journeys"],
+    ["mode", "activate", "Builder Mode"],
+    ["mode", "deactivate"],
+    ["mode", "status"],
+  ]) {
+    assert.equal(routeMemoryCommand(argv).engine, "ts");
+  }
+  assert.equal(routeMemoryCommand(["mirror", "load", "--query", "hello"]).engine, "python");
+  assert.equal(
+    routeMemoryCommand(["mirror", "load", "--query", "hello"], {
+      MIRROR_TS_EXTERNAL_ROUTES: "1",
+      MIRROR_TS_MIRROR_EMBEDDING_REPLAY: "/tmp/embedding.json",
+      MIRROR_TS_MIRROR_LLM_REPLAY: "/tmp/llm.json",
+    }).engine,
+    "ts",
+  );
+  assert.equal(
+    routeMemoryCommand(["mirror", "load", "--query", "hello"], {
+      MIRROR_TS_EXTERNAL_ROUTES: "1",
+      MIRROR_TS_MIRROR_EMBEDDING_REPLAY: "/tmp/embedding.json",
+      MEMORY_RECEPTION: "0",
+    }).engine,
+    "ts",
+  );
+});
+
 test("uses Python fallback when no command is present", () => {
   assert.deepEqual(routeMemoryCommand([]), {
     command: null,

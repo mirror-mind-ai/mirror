@@ -1,0 +1,92 @@
+{
+  "active_journeys": [
+    {
+      "description": "Parent context",
+      "id": "parent",
+      "metadata": {},
+      "name": "Parent",
+      "status": "active"
+    },
+    {
+      "description": "Selected context",
+      "id": "selected",
+      "metadata": {},
+      "name": "Selected",
+      "status": "active"
+    }
+  ],
+  "context": "=== ⛔ HARD CONSTRAINTS ===\nNever invent\n\n=== self/soul ===\nSoul\n\n=== ego/behavior ===\nBehavior\n\n=== user/identity ===\nUser\n\n=== ego/identity ===\nEgo\n\n=== persona/engineer ===\nEngineer\n\n=== knowledge/a ===\nKnowledge A\n\n=== journey/selected ===\n# Selected\n**Status:** active\n\n## Description\nSelected context\n\n## End\n\n=== shadow/profile ===\n[Confirmed shadow patterns — grounded in evidence across multiple conversations]\n\nShadow pattern",
+  "identities": [
+    {
+      "content": "Never invent",
+      "key": "constraints",
+      "layer": "ego"
+    },
+    {
+      "content": "Soul",
+      "key": "soul",
+      "layer": "self"
+    },
+    {
+      "content": "Behavior",
+      "key": "behavior",
+      "layer": "ego"
+    },
+    {
+      "content": "User",
+      "key": "identity",
+      "layer": "user"
+    },
+    {
+      "content": "Ego",
+      "key": "identity",
+      "layer": "ego"
+    },
+    {
+      "content": "Engineer",
+      "key": "engineer",
+      "layer": "persona"
+    },
+    {
+      "content": "Writer",
+      "key": "writer",
+      "layer": "persona"
+    },
+    {
+      "content": "Knowledge A",
+      "key": "a",
+      "layer": "knowledge"
+    },
+    {
+      "content": "# Parent\n**Status:** active\n\n## Description\nParent context\n\n## End",
+      "key": "parent",
+      "layer": "journey"
+    },
+    {
+      "content": "# Selected\n**Status:** active\n\n## Description\nSelected context\n\n## End",
+      "key": "selected",
+      "layer": "journey"
+    },
+    {
+      "content": "# Child\n**Status:** planned\n\n## Description\nChild context\n\n## End",
+      "key": "child",
+      "layer": "journey"
+    },
+    {
+      "content": "Shadow pattern",
+      "key": "one",
+      "layer": "shadow"
+    }
+  ],
+  "titles": [
+    {
+      "expected": "First sentence",
+      "summary": "First sentence. More detail."
+    },
+    {
+      "expected": "word word word word word word word word word word word word...",
+      "summary": "word word word word word word word word word word word word word word word word word word word word . ignored"
+    }
+  ],
+  "transition": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        ◌  MIRROR MODE ACTIVE                           │\n│                                                        │\n│  identity                                              │\n│  mirror-dev                                            │\n│                                                        │\n│  active journey                                        │\n│  selected                                              │\n│                                                        │\n│  what this mode is                                     │\n│  Identity lens. Mirror reflects from memory, values,   │\n│  journeys, tensions, and personas.                     │\n│                                                        │\n│  persona routing                                       │\n│  when the topic asks: engineer, writer                 │\n│                                                        │\n│  available lenses                                      │\n│  ◌ Mirror Mode · ■ Builder Mode · △ Explorer Mode · ☾  │\n│  Soul Mode                                             │\n╰────────────────────────────────────────────────────────╯"
+}

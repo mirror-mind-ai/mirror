@@ -1,0 +1,62 @@
+{
+  "conversations": [
+    {
+      "ended_at": null,
+      "id": "<conversation-1>",
+      "interface": "pi",
+      "journey": "mirror-ts-core",
+      "persona": "engineer",
+      "title": "First sentence"
+    }
+  ],
+  "messages": [
+    {
+      "content": "First sentence. More detail.",
+      "conversation_id": "<conversation-1>",
+      "metadata": null,
+      "role": "assistant",
+      "token_count": null
+    }
+  ],
+  "sessions": [
+    {
+      "active": 1,
+      "closed_at": null,
+      "conversation_id": null,
+      "hook_injected": 0,
+      "interface": null,
+      "journey": null,
+      "metadata": {
+        "active_journey": "mirror-ts-core",
+        "active_mode": "Mirror Mode"
+      },
+      "mirror_active": 0,
+      "persona": null,
+      "session_id": "__global_operating_mode__"
+    },
+    {
+      "active": 0,
+      "closed_at": null,
+      "conversation_id": null,
+      "hook_injected": 1,
+      "interface": "global_defaults",
+      "journey": "mirror-ts-core",
+      "metadata": null,
+      "mirror_active": 0,
+      "persona": "engineer",
+      "session_id": "__global_sticky_defaults__"
+    },
+    {
+      "active": 1,
+      "closed_at": null,
+      "conversation_id": "<conversation-1>",
+      "hook_injected": 1,
+      "interface": "pi",
+      "journey": "mirror-ts-core",
+      "metadata": null,
+      "mirror_active": 0,
+      "persona": "engineer",
+      "session_id": "state-session"
+    }
+  ]
+}
