@@ -210,6 +210,30 @@ Findings absorbed above; summary:
   readiness checklist with a copy-paste-runnable test guide before first flip.
   Verdict: approve-with-amendments.
 
+## Debt observations (for this story's Debt Review)
+
+Recorded as found, not acted on — each is parity-preserving today.
+
+1. **Integer-valued float metadata diverges** (slice B). `1.0` serializes as
+   `1.0` in Python and `1` in TS; `JSON.parse` collapses the distinction before
+   either core sees it. Metadata bytes take part in the idempotency comparison,
+   so this must be resolved **before `conversations append` flips**.
+2. **One corrupt metadata row fails the whole extraction scan** (slice C).
+   SQLite's `json_extract` raises `malformed JSON` rather than returning NULL,
+   so a single conversation with unparseable metadata makes
+   `get_unextracted_conversations` — and therefore the entire maintenance run —
+   raise for every conversation. Both cores behave identically, so the port is
+   at parity; the fragility is the product's, and predates CV22.
+3. **`upsertRuntimeSession` encodes the inverse convention of Python's store**
+   (slice A). TS uses undefined=preserve/null=clear; Python uses None=preserve
+   for five fields and an `_UNSET` sentinel for two. Call sites translate
+   correctly today, but a shared wrapper encoding Python's convention directly
+   would remove the footgun.
+4. **Subcommand inheritance in the routing table** (slice B). `conversations
+   append` inherited DS7.US1's listing route and silently discarded messages.
+   Fixed for this case, but the same shape may exist in other claimed families
+   — an audit is worth its own CR.
+
 ## Resolved decision — `conversations append` timestamps were version-dependent (2026-09-02)
 
 **Navigator chose option 3: fix Python first, then port at parity** — the same
