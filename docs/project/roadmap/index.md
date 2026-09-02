@@ -137,7 +137,9 @@ gap, closed in TS5). The Python core can now be retired without breaking any
 `memory.db`, subject to the DS7+ command burn-down. On 2026-08-19 main recorded an intentional pause of the
 migration: Python resumed sole product authority for new work, with CV22 and its
 evidence preserved for an explicit restart that must reconcile against behavior
-accumulated during the pause. The strategy and pause are recorded in
+accumulated during the pause. Both restart conditions were met on 2026-09-02 —
+the reconciliation merge landed with green CI and an explicit restart decision —
+and CV22 is active again. The strategy, pause, and restart are recorded in
 [Decisions](../decisions.md). See the [CV22 index](cv22-typescript-core-port/index.md).
 
 ## CV23 — Journey Projection Contract

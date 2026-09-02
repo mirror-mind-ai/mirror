@@ -2,15 +2,19 @@
 
 # CV22 — TypeScript Core Port (Database-Seam Strangler)
 
-**Status:** ⏸️ Paused — migration interrupted on 2026-08-19; branch and evidence preserved
+**Status:** 🟢 Active — restarted 2026-09-02 after pause-window reconciliation; DS7 command burn-down in progress (5/11)
 **Goal:** Port Mirror Mind's Python core (`src/memory/`) to TypeScript through a database-seam strangler — never a big-bang rewrite — so the system converges on one language across core and runtimes, distributes through npm, widens the contributor pool, and aligns with the MCP/plugin ecosystem, all without losing the accumulated correctness of the ranker, extraction, and memory pipeline.
 
 ---
 
-> **Pause notice:** CV22 is not an active delivery stream. Python is again the
-> sole product authority for new Mirror capabilities. Existing TypeScript work,
-> parity evidence, and the paused branch remain preserved for a future explicit
-> restart; no automatic dual implementation is required while the CV is paused.
+> **Restart notice:** CV22 was paused on 2026-08-19 (Python resumed sole
+> product authority) and restarted on 2026-09-02 after the pause-window
+> reconciliation merge — see [Decisions](../../decisions.md). The moving-target
+> strangler policies are back in force: Python remains authority for unported
+> entry points, and behavior accumulated there becomes named TS parity scope.
+> Pause-window backlog (WAL read-only fallback, `journey_projections` +
+> Extension API 1.1, `journey_admin`) receives explicit owners at the next DS7
+> planning pull.
 
 ## What This Is
 

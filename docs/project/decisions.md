@@ -11,6 +11,46 @@ resolved.
 
 ## Completed Decisions
 
+### CV22 restarts after reconciliation of the pause-window Python behavior
+
+**Date:** 2026-09-02
+**Reference:** [CV22 TypeScript Core Port](roadmap/cv22-typescript-core-port/index.md), [Worklog — main merge reconciliation](../process/worklog.md)
+**Participants:** Vinícius Manhães Teles
+
+The 2026-08-19 pause decision made restart conditional on two things: a new
+explicit Navigator decision, and a reconciliation plan against all Python
+behavior accumulated during the pause. The reconciliation was executed on
+2026-09-02: `main` was merged through v0.31.14 (`1b8f164`), the oracle-drift
+tripwire was answered oracle by oracle, the one behavioral delta in a ported
+surface (`identity_integrations` in the journey-removal inventory) was ported
+with regenerated goldens, the `journey_mutation_receipts` schema change was
+carried into TS custody in the same commit, and the full validation ladder —
+both suites, structural parity, custody parity, deterministic golden
+regeneration, redacted real-DB-copy parity, green CI — passed.
+
+Decided:
+
+1. **CV22 resumes as an active delivery stream** on the `mirror-ts-core`
+   branch, continuing the DS7 command burn-down from its 5/11 state.
+2. **The moving-target strangler policies resume in force** — the 2026-08-13
+   policy and its 2026-08-14 metadata-authority refinement. Python remains
+   product authority for unported entry points and may evolve there; each
+   change creates named TS parity scope; there is no global Python freeze.
+3. **Pause-window behavior is named restart backlog, not ambient debt:** the
+   D-016 WAL read-only fallback (`db/connection.py`), the CV23
+   `journey_projections` subsystem with its Extension API 1.1 façade, and the
+   v0.31.12 `journey_admin` service/storage surface. Each gets an explicit
+   owner at the next DS7 planning pull; none is silently absorbed.
+4. **The conservative-schema clause survives the pause:** restarting does not
+   authorize unnecessary migrations or incompatible database changes.
+5. **Coordination before US5:** the pause preserved uncommitted US5 work on
+   Alisson's side. Restart does not appropriate it — before US5 is pulled, its
+   work state is confirmed with him, or a non-overlapping story is pulled
+   instead.
+
+This supersedes the operational effect of the 2026-08-19 pause decision. The
+pause record itself, and the evidence it preserved, remain historical fact.
+
 ### Conditional Plan authority is flow-aware, exact, and single-use
 
 **Date:** 2026-08-26
