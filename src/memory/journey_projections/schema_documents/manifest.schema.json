@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mirror.local/contracts/journey-projections/v1/manifest.schema.json",
+  "title": "Mirror Journey Projection Manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contractVersion", "schemaVersion", "journeyId", "updatedAt", "projections"],
+  "properties": {
+    "contractVersion": { "const": "1.0" },
+    "schemaVersion": { "const": "1" },
+    "journeyId": { "$ref": "envelope.schema.json#/$defs/identifier" },
+    "updatedAt": { "$ref": "envelope.schema.json#/$defs/utcTimestamp" },
+    "projections": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{1,127}:[A-Za-z0-9][A-Za-z0-9._-]{1,127}$" },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["namespace", "projection", "snapshotId", "path", "sourceRevision"],
+        "properties": {
+          "namespace": { "$ref": "envelope.schema.json#/$defs/identifier" },
+          "projection": { "$ref": "envelope.schema.json#/$defs/identifier" },
+          "snapshotId": { "$ref": "envelope.schema.json#/$defs/identifier" },
+          "path": { "$ref": "envelope.schema.json#/$defs/relativePath" },
+          "sourceRevision": { "type": "string", "pattern": "^sha256:[A-Za-z0-9._-]+$" }
+        }
+      }
+    }
+  }
+}

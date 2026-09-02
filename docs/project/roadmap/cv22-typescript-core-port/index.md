@@ -2,10 +2,15 @@
 
 # CV22 — TypeScript Core Port (Database-Seam Strangler)
 
-**Status:** 🟢 In Progress
+**Status:** ⏸️ Paused — migration interrupted on 2026-08-19; branch and evidence preserved
 **Goal:** Port Mirror Mind's Python core (`src/memory/`) to TypeScript through a database-seam strangler — never a big-bang rewrite — so the system converges on one language across core and runtimes, distributes through npm, widens the contributor pool, and aligns with the MCP/plugin ecosystem, all without losing the accumulated correctness of the ranker, extraction, and memory pipeline.
 
 ---
+
+> **Pause notice:** CV22 is not an active delivery stream. Python is again the
+> sole product authority for new Mirror capabilities. Existing TypeScript work,
+> parity evidence, and the paused branch remain preserved for a future explicit
+> restart; no automatic dual implementation is required while the CV is paused.
 
 ## What This Is
 
@@ -101,7 +106,8 @@ remains a derived projection. CR051 restores arbitrary-depth read/render parity.
 adds complete-ancestry validation and an atomic, meaning-preserving TS parent-movement
 core seam without claiming Workspace/web routing. CR053 adds a transactional TS domain
 seam that removes only an empty leaf after metadata-authoritative child detection and a
-closed eleven-category association inventory. CR054 assigns the Workspace hierarchy
+closed association inventory (now twelve categories after absorbing main's
+`identity_integrations`). CR054 assigns the Workspace hierarchy
 projection, deterministic web adapters, selected-scope evidence, and JavaScript
 compatibility to CV22.DS7.US9; CV22.DS10 owns final web-process and package convergence.
 This sequence demonstrates the moving-target rule:

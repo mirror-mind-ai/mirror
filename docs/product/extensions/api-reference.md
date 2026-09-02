@@ -178,6 +178,11 @@ class ExtensionAPI:
     """capability_id must be declared in skill.yaml under
     mirror_context_providers."""
 
+    # --- Journey projections (Extension API 1.1+) ---
+
+    journey_projections: ExtensionJourneyProjections
+    """Namespace-bound projection publication and inspection."""
+
     # --- Migrations ---
 
     def run_migrations(self, migrations_dir: Path) -> int: ...
@@ -207,6 +212,44 @@ class ContextRequest:
 
 Providers may use any combination of these fields. They should never assume
 all are populated; in particular, `query` and `journey_id` may be `None`.
+
+## Journey projections
+
+Extension API `1.1` adds a stable façade for versioned Journey read models:
+
+```python
+publication = api.journey_projections.publish(
+    journey_id="my-journey",
+    projection_id="tactical",
+    document=document,
+    schema=optional_json_schema,
+)
+
+inspection = api.journey_projections.inspect(
+    journey_id="my-journey",
+    projection_id="tactical",
+)
+```
+
+`document` is a complete `mirror.journey-projections@1.0` extension envelope.
+The optional schema is JSON Schema 2020-12 and validates that complete document
+offline in addition to the built-in extension schema.
+
+The façade is permanently bound to `api.extension_id`:
+
+- the document's `namespace` and `producer.id` must equal the bound extension;
+- `producer.kind` must be `extension`;
+- the document Journey and projection must equal the explicit call arguments;
+- `ariad` is reserved for Mirror Core;
+- inspection always uses the bound extension namespace;
+- callers provide a registered Journey ID, never a filesystem root.
+
+Both operations delegate to Mirror's shared per-Journey publication kernel.
+Publication is deterministic and linearizable; inspection returns a consistent
+current document/manifest-entry pair and never repairs or synthesizes. Stable
+results are `ProjectionPublication` and `ProjectionInspection`; contract
+failures are bounded `ProjectionError` values. The raw `db` escape hatch does
+not grant projection filesystem or namespace authority.
 
 ## TypeScript provider runtime — `mirror-context-v1`
 
@@ -275,9 +318,10 @@ subclasses and they will be treated uniformly.
 ## Versioning and stability
 
 The API is versioned as `extension_api_version` and exposed at
-`memory.extensions.api.VERSION`. Phase 1 ships `1.0`. Backward-incompatible
-changes increment the major version and trigger a deprecation cycle of at
-least one minor release.
+`memory.extensions.api.VERSION`. Version `1.1` adds the backward-compatible
+`journey_projections` façade; all `1.0` methods remain unchanged.
+Backward-incompatible changes increment the major version and trigger a
+deprecation cycle of at least one minor release.
 
 Extensions may declare a minimum version in `skill.yaml`:
 

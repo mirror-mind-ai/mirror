@@ -69,6 +69,25 @@ def test_get_active_runtime_session_ids_returns_newest_first_for_interface(store
     assert session_ids == ["sess-new", "sess-old"]
 
 
+def test_compare_and_swap_runtime_metadata_is_single_winner(store):
+    store.upsert_runtime_session("builder-cursor", metadata='{"status":"pending"}')
+
+    first = store.compare_and_swap_runtime_session_metadata(
+        "builder-cursor",
+        expected_metadata='{"status":"pending"}',
+        metadata='{"status":"consumed"}',
+    )
+    second = store.compare_and_swap_runtime_session_metadata(
+        "builder-cursor",
+        expected_metadata='{"status":"pending"}',
+        metadata='{"status":"consumed-again"}',
+    )
+
+    assert first is True
+    assert second is False
+    assert store.get_runtime_session("builder-cursor").metadata == '{"status":"consumed"}'
+
+
 def test_get_active_runtime_conversation_ids_returns_only_active_bound_conversations(store):
     conv_a = store.create_conversation(Conversation(interface="pi"))
     conv_b = store.create_conversation(Conversation(interface="pi"))

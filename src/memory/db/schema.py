@@ -172,6 +172,16 @@ CREATE TABLE IF NOT EXISTS identity (
     UNIQUE(layer, key)
 );
 
+CREATE TABLE IF NOT EXISTS journey_mutation_receipts (
+    request_id TEXT PRIMARY KEY,
+    request_digest TEXT NOT NULL,
+    source_version TEXT NOT NULL,
+    result_version TEXT NOT NULL,
+    operation TEXT NOT NULL,
+    journey_id TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS identity_integrations (
     id TEXT PRIMARY KEY,
     layer TEXT NOT NULL,

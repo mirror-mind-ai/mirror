@@ -17,6 +17,7 @@ import sqlite3
 import sys
 from collections.abc import Callable
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from memory.cli.extensions import (
     ExtensionValidationError,
@@ -24,6 +25,9 @@ from memory.cli.extensions import (
 )
 from memory.extensions.api import ExtensionAPI
 from memory.extensions.errors import ExtensionLoadError
+
+if TYPE_CHECKING:  # pragma: no cover
+    from memory.journey_projections.service import JourneyProjectionService
 
 # Cached, keyed by absolute path of the installed extension directory.
 # Loading the same extension twice in the same process reuses the API.
@@ -101,6 +105,7 @@ def load_extension(
     connection: sqlite3.Connection,
     embed_fn: Callable | None = None,
     llm_fn: Callable | None = None,
+    journey_projection_service: JourneyProjectionService | None = None,
     reload: bool = False,
 ) -> ExtensionAPI:
     """Validate, import, and register a command-skill extension.
@@ -147,6 +152,7 @@ def load_extension(
         connection=connection,
         embed_fn=embed_fn,
         llm_fn=llm_fn,
+        journey_projection_service=journey_projection_service,
     )
     try:
         register_fn(api)

@@ -30,11 +30,15 @@ def main() -> None:
             "MEMORY_DIR",
             "MEMORY_PROD_DIR",
             "MEMORY_ENV",
-            "MIRROR_USER",
         ):
             os.environ.pop(key, None)
         database_path = home / "memory.db"
         os.environ["MIRROR_HOME"] = str(home)
+        # Pin (not pop) MIRROR_USER: memory.config setdefaults popped vars back
+        # from a repo .env at import, and a re-injected user conflicts with the
+        # temporary MIRROR_HOME. Matching the home's basename keeps both
+        # coherent on any machine.
+        os.environ["MIRROR_USER"] = home.name
         os.environ["DB_PATH"] = str(database_path)
 
         from memory.db.connection import get_connection

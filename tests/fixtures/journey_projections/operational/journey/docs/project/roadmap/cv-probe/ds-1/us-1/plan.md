@@ -1,0 +1,3 @@
+# Plan
+
+Synthetic plan artifact.

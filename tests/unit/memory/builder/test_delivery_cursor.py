@@ -3,6 +3,7 @@ import pytest
 from memory import MemoryClient
 from memory.builder.delivery_cursor import (
     BuilderDeliveryCursor,
+    PlanPreauthorizationReceipt,
     clear_delivery_cursor,
     get_delivery_cursor,
     render_delivery_cursor_sync_report,
@@ -59,6 +60,89 @@ def test_set_and_get_delivery_story_lifecycle_state(tmp_path):
     assert cursor.child_work_items == ("CV20.DS5.US1", "CV20.DS5.TS1")
     assert cursor.aggregate_checkpoint_status == ("plan:pending", "validation:not_started")
     assert get_delivery_cursor(store, "sandbox-pet-store") == cursor
+
+
+def test_cursor_round_trips_and_preserves_plan_preauthorization(tmp_path):
+    _client, store = _store(tmp_path)
+    receipt = PlanPreauthorizationReceipt(
+        journey="sandbox-pet-store",
+        method="ariad",
+        cursor_generation=3,
+        active_item="CV20.DS5",
+        active_item_level="delivery_story",
+        flow_unit="delivery_story",
+        child_work_items=("CV20.DS5.US1",),
+        plan_contract_version="delivery_story_plan@1",
+        policy="exact_scope",
+        stop_boundary="navigator_validation",
+        scope_fingerprint="a" * 64,
+    )
+    first = set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS5",
+        active_item_level="delivery_story",
+        navigator_flow_unit="delivery_story",
+        cursor_generation=3,
+        plan_preauthorization=receipt,
+    )
+
+    second = set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS5",
+        active_item_level="delivery_story",
+        navigator_flow_unit="delivery_story",
+        last_delivery_event="prepare",
+    )
+
+    assert first.plan_preauthorization == receipt
+    assert second.cursor_generation == 3
+    assert second.plan_preauthorization == receipt
+    assert get_delivery_cursor(store, "sandbox-pet-store") == second
+
+
+def test_cursor_invalidates_pending_receipt_when_flow_changes(tmp_path):
+    _client, store = _store(tmp_path)
+    receipt = PlanPreauthorizationReceipt(
+        journey="sandbox-pet-store",
+        method="ariad",
+        cursor_generation=1,
+        active_item="CV20.DS5",
+        active_item_level="delivery_story",
+        flow_unit="delivery_story",
+        child_work_items=("CV20.DS5.US1",),
+        plan_contract_version="delivery_story_plan@1",
+        policy="exact_scope",
+        stop_boundary="navigator_validation",
+        scope_fingerprint="b" * 64,
+    )
+    set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS5",
+        active_item_level="delivery_story",
+        navigator_flow_unit="delivery_story",
+        child_work_items=("CV20.DS5.US1",),
+        cursor_generation=1,
+        plan_preauthorization=receipt,
+    )
+
+    changed = set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS5",
+        active_item_level="delivery_story",
+        navigator_flow_unit="story_by_story",
+        child_work_items=("CV20.DS5.US1",),
+    )
+
+    assert changed.plan_preauthorization.status == "invalidated"
+    assert changed.plan_preauthorization.reason == "flow_unit_changed"
 
 
 def test_set_delivery_cursor_is_idempotent(tmp_path):

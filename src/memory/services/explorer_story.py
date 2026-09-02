@@ -256,10 +256,14 @@ def set_explorer_source_conversations(
 def archive_explorer_story(store: Store, journey: str) -> ExplorerStory | None:
     """Archive the active durable Explorer Story for a journey."""
     normalized_journey = _normalize_journey(journey)
+    before = get_explorer_story(store, normalized_journey)
     record = store.archive_active_explorer_story_record(normalized_journey)
     if record:
         _clear_runtime_story(store, normalized_journey)
-        return _story_from_record(record)
+        archived = _story_from_record(record)
+        if _projected_story(before) != _projected_story(archived):
+            store.request_projection_refresh(normalized_journey)
+        return archived
     _clear_runtime_story(store, normalized_journey)
     return None
 
@@ -267,10 +271,14 @@ def archive_explorer_story(store: Store, journey: str) -> ExplorerStory | None:
 def mark_explorer_story_promoted(store: Store, journey: str) -> ExplorerStory | None:
     """Mark the active durable Explorer Story as promoted."""
     normalized_journey = _normalize_journey(journey)
+    before = get_explorer_story(store, normalized_journey)
     record = store.mark_active_explorer_story_promoted(normalized_journey)
     if record:
         _clear_runtime_story(store, normalized_journey)
-        return _story_from_record(record)
+        promoted = _story_from_record(record)
+        if _projected_story(before) != _projected_story(promoted):
+            store.request_projection_refresh(normalized_journey)
+        return promoted
     _clear_runtime_story(store, normalized_journey)
     return None
 
@@ -338,6 +346,7 @@ def render_explorer_story_context(story: ExplorerStory) -> str:
 
 
 def _store_story(store: Store, story: ExplorerStory) -> ExplorerStory:
+    before = get_explorer_story(store, story.journey)
     record = store.upsert_active_explorer_story_record(
         journey=story.journey,
         title=story.title or _derive_title(story),
@@ -353,7 +362,31 @@ def _store_story(store: Store, story: ExplorerStory) -> ExplorerStory:
     )
     persisted = _story_from_record(record)
     _store_runtime_story(store, persisted)
+    if _projected_story(before) != _projected_story(persisted):
+        store.request_projection_refresh(story.journey)
     return persisted
+
+
+def _projected_story(story: ExplorerStory | None) -> object:
+    if story is None:
+        return None
+    return (
+        story.id,
+        story.title,
+        story.status,
+        story.narrative_field_summary,
+        tuple(_attractor_to_dict(value).items() for value in story.attractors),
+        (
+            tuple(_experiment_to_dict(story.experiment_proposal).items())
+            if story.experiment_proposal is not None
+            else None
+        ),
+        (
+            tuple(_handoff_to_dict(story.builder_handoff).items())
+            if story.builder_handoff is not None
+            else None
+        ),
+    )
 
 
 def _store_runtime_story(store: Store, story: ExplorerStory) -> None:

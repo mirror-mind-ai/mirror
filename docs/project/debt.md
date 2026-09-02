@@ -31,6 +31,9 @@ Dropped   no longer relevant or replaced by another item
 | D-011 | Extraction sniffs the user's first name from identity prose with a brittle bilingual regex | design | low | Carried | AI Engineering Audit AI-21 (team review) | Replace with a structured `user/identity` name field, or the next time the identity template wording or `_extract_and_persist` is touched |
 | D-012 | Roadmap folder derivation does not sanitize the candidate-table *code* cell for path separators | security / design | low | Paid | mirror slugify consolidation (security-engineer review); closed by the Ariad Expand path-divergence fix | Closed — see entry |
 | D-013 | `transcript_export.slugify` remains a separate capped-kebab sibling of the consolidated `kebab_slug` | design | low | Carried | mirror slugify consolidation | The next time transcript-export slug behavior is touched, or a third kebab-slug caller appears |
+| D-014 | Runtime-diagnose web test polling budget is below observed command latency | testing | low | Carried | CV23.DS2 validation | Runtime-diagnose execution, web polling, or that test harness changes, or CI reproduces the failure |
+| D-015 | Production updater blocks on retired experimental migration rows | operations / data | medium | Paid | CV23.DS7 release installation → local repair 2026-08-25 | Paid by verified removal of empty retired schema and rows 017–019 |
+| D-016 | Read-only WAL recovery assumes SQLite fails eagerly during connect | reliability / testing | medium | Paid | CV9.E2.S31 Navigator Validation baseline comparison → runtime WAL fallback maintenance | Paid by the integrated eager schema-probe fallback |
 
 ## D-001 — Metadata lifecycle policy and evidence filtering live inside ConversationService
 
@@ -575,3 +578,124 @@ Either `transcript_export` is expressed in terms of `kebab_slug` (e.g.
 `kebab_slug(text, max_length=50) or "conversation"`, with word-boundary
 truncation added to `kebab_slug` if still desired), or a short comment marks it
 as an intentionally distinct slugger with the reason.
+
+## D-015 — Production updater blocks on retired experimental migration rows
+
+**Kind:** operations / data
+**Severity:** medium
+**Status:** Paid
+**Source:** CV23.DS7 release installation → local repair 2026-08-25
+
+### Original carrying reason
+
+The production database records migrations
+`017_project_refinement_projection`, `018_refinement_intent_recovery_indexes`,
+and `019_refinement_coherence_confirmations` from the abandoned Refinement
+Workbench experiment, while the released Core intentionally ends at migration
+016. Runtime diagnosis correctly refuses to classify or erase unknown rows. The
+v0.31.10 installation preserved a verified backup and the divergent production
+branch, then installed the exact stable tag without mutating database history.
+Deleting migration evidence during a release would be riskier than carrying the
+drift explicitly.
+
+### Impact
+
+`runtime status` reports attention needed and `runtime update` reports failure
+even when the installed checkout already matches stable. Version and capability
+discovery remain usable, and CV23 itself requires no migration, but the safe
+updater cannot provide a clean success signal until the retired experimental rows
+are reconciled.
+
+### Resolution
+
+Read-only inspection proved all six retired `project_refinement_*` tables and all
+bindings, intents, and confirmations were empty. A new production backup
+(`memory_20260825_214655.zip`, SHA-256
+`f183f84ad85c1c55a324858c3caa057a3f9557b3a3aeb26267d56050db0b69df`) was
+created and verified. The exact repair was rehearsed against a restored copy,
+which reached `16/16` and runtime `ready`, before production execution.
+
+The production repair ran under `BEGIN IMMEDIATE`, removed the nine retired
+triggers, six empty tables and migration rows 017–019, and verified that every
+retained table's row count was unchanged. Post-repair `quick_check` is `ok`,
+`foreign_key_check` has zero findings, no retired schema object remains,
+`runtime status` reports `current (16/16)`, and `runtime diagnose` reports zero
+findings. Bounded hash evidence is retained beside the verified backup as
+`d015-repair-20260825.json`.
+
+---
+
+## D-014 — Runtime-diagnose web operation test has a fixed polling budget below observed command latency
+
+**Kind:** testing (non-hermetic timing)
+**Severity:** low
+**Status:** Carried
+**Source:** CV23.DS2 full-suite validation
+
+### Carrying reason
+
+`tests/unit/memory/web/test_server.py::test_operations_run_api_executes_runtime_diagnose_through_controlled_command`
+waits at most two seconds (40 × 50 ms) for a real controlled `runtime diagnose`
+subprocess. In the local development environment that command consistently takes
+about 3.3 seconds, so the test reports a still-running operation despite the
+subprocess completing normally shortly afterward. CV23.DS2 does not touch the
+web operation or runtime-diagnose path; widening or replacing this timing contract
+inside the projection-kernel story would hide unrelated scope.
+
+### Revisit trigger
+
+The next change to runtime-diagnose command execution, web operation polling, or
+the controlled-command test harness; or a CI failure with this exact test.
+
+### Closure condition
+
+The test becomes deterministic: inject a bounded fake command runner/clock for
+unit coverage and keep real subprocess latency in an integration test, or wait on
+an explicit completion signal with a justified timeout that does not encode a
+machine-speed assumption.
+
+---
+
+## D-016 — Read-only WAL recovery assumes SQLite fails eagerly during connect
+
+**Kind:** reliability / testing
+**Severity:** medium
+**Status:** Paid
+**Source:** CV9.E2.S31 Navigator Validation baseline comparison → runtime WAL fallback maintenance
+
+### Carrying reason
+
+`memory.cli.runtime._connect_read_only()` expects a WAL database without sidecars
+to raise `unable to open database file` from `sqlite3.connect(..., mode=ro)`, then
+falls back to an existing-file `mode=rw` connection so SQLite can recreate the
+sidecars. With Python 3.10.6 and SQLite 3.51.0, read-only `connect()` returns
+lazily and the error appears only on the first schema query, after the recovery
+branch has already returned.
+
+A controlled comparison used the same Python executable, SQLite runtime,
+environment variables, TMPDIR, and pytest basetemp in the S31 checkout and a
+clean `origin/main` worktree. Both failed at
+`test_connect_read_only_recovers_wal_database_without_sidecars`; `runtime.py` and
+the test were byte-identical. The defect is therefore pre-existing and not S31
+debt. S31 received a validation-only waiver; the failure remains visible.
+
+### Resolution
+
+The `fix/runtime-wal-read-only-fallback` repair forces one minimal schema read
+after `mode=ro` opens, closes that connection on failure, and retries with
+existing-file-only `mode=rw` solely for the exact expected error. Missing
+databases and unrelated SQLite failures remain bounded. The repair is integrated
+into the S31 candidate branch, and D-016 no longer blocks the release candidate.
+
+### Revisit trigger
+
+Paid by the integrated eager schema-probe fallback before preparing the
+`v0.31.13` release candidate.
+
+### Closure condition
+
+The read-only path performs a harmless eager schema probe inside the guarded
+open, closes and falls back to `mode=rw` only for the expected WAL-sidecar error,
+never creates a missing database, and does not hide unrelated SQLite failures.
+The existing WAL recovery test and focused negative cases pass on the release
+Python/SQLite combination, followed by the complete non-live suite.

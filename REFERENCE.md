@@ -31,6 +31,7 @@ Codex uses the `$mm-` prefix. All runtimes call the same Python core.
 | `/mm-journal` | `$mm-journal` | `/mm:journal` | Records a personal journal entry | `[--journey J] "text"` |
 | `/mm-recall` | `$mm-recall` | `/mm:recall` | Loads a previous conversation into context | `<conversation_id> [--limit N]` |
 | `/mm-conversations` | `$mm-conversations` | `/mm:conversations` | Lists recent conversations | `--limit N`, `--journey J`, `--persona P` |
+| `python -m memory conversations append` | — | — | Atomically appends an explicit bounded user/assistant batch to one exact conversation | `--mirror-home PATH --format json`, JSON stdin |
 | `/mm-backup` | `$mm-backup` | `/mm:backup` | Backs up the memory database | no arguments |
 | `/mm-seed` | `$mm-seed` | `/mm:seed` | Seeds identity files from the active user home into the database | no arguments |
 | `/mm-mute` | `$mm-mute` | `/mm:mute` | Toggles conversation logging | no arguments |
@@ -44,8 +45,82 @@ Codex uses the `$mm-` prefix. All runtimes call the same Python core.
 | `/mm-help` | `$mm-help` | `/mm:help` | Lists available commands | no arguments |
 | `python -m memory runtime` | — | — | Inspects Mirror runtime status, version, drift, backups, release notes, release promotion readiness, plans updates, and executes safe updates | `status [--mirror-home PATH] [--channel stable|main]`, `version [--start PATH] [--channel stable|main]`, `diagnose [--mirror-home PATH]`, `backup [--mirror-home PATH]`, `backup --verify PATH`, `release-notes [latest|vX.Y.Z]`, `release-notes pending [--from vX.Y.Z] [--ref REF] [--no-fetch]`, `release-doctor --target vX.Y.Z [--stable REF]`, `release-promote --target vX.Y.Z [--stable BRANCH] [--remote REMOTE] [--dry-run] [--push]`, `update --dry-run [--mirror-home PATH] [--channel stable|main]`, `update --check [--channel stable|main]`, `update [--no-fetch] [--skip-migrations] [--mirror-home PATH] [--channel stable|main]`, `update --repair-updater [--no-fetch] [--mirror-home PATH] [--channel stable|main]` |
 | `python -m memory conversation-logger` | — | — | Runtime conversation logging and repair utilities | `discard-current [--interface pi] [--session-id ID]`, `repair-journeys [--limit N] [--apply]` |
+| `python -m memory journey-projection` | — | — | Discovers, rebuilds, and inspects Journey projections; isolated test mode also supports the immutable consumer probe | `capabilities`, `rebuild-operational --journey ID`, `inspect --journey ID --namespace ID --projection ID`, test-only `probe-prepare` and `probe-publish`; all accept `--mirror-home PATH --format json` |
 | `python -m memory web` | — | — | Runs the local Mirror Web Console — Identity and Workspace perspectives, conversation intelligence, bulk conversation maintenance (assign/delete), and allowlisted operation runs | `[--host 127.0.0.1] [--port 8765]` |
 | `ext-review-copy` | — | `ext:review-copy` | External multi-LLM copy review skill; install and expose it before use | skill-driven workflow |
+
+## Explicit Conversation Append
+
+```bash
+uv run python -m memory conversations append \
+  --mirror-home <home> --format json < payload.json
+```
+
+The request is a strict JSON object with `schemaVersion: "1.0.0"`, one complete
+`conversationId`, its exact `journeyId`, a bounded ASCII `sourceInterface`, and
+1–20 externally identified user/assistant messages. Each message supplies
+`id`, `role`, non-empty `content`, timezone-aware RFC 3339 `createdAt`, and an
+optional caller-owned metadata object. Message IDs match exactly
+`[A-Za-z0-9][A-Za-z0-9._:-]{0,127}`. The CLI reads at most 262,145 bytes for a
+262,144-byte payload limit; content is limited to 51,200 UTF-8 bytes per message
+and the complete persisted metadata envelope to 4,096 UTF-8 bytes.
+
+Mirror resolves only the complete conversation ID and checks exact Journey
+equality. It does not inspect or mutate runtime sessions, infer an active
+conversation, reopen an ended conversation, or run extraction and other semantic
+refreshes. One storage-owned `BEGIN IMMEDIATE` transaction classifies all IDs,
+rejects every conflict, inserts only missing rows, and commits once. Identical
+retries return `existing`; divergent or cross-conversation ID reuse rejects the
+whole batch.
+
+Success and expected failure are compact bounded JSON. Success receipts contain
+only conversation/Journey identity, counts, and validated message IDs with
+`inserted` or `existing` state. Failure reasons are
+`malformed_request`, `unsupported_schema_version`, `limit_exceeded`,
+`conversation_not_found`, `journey_mismatch`,
+`duplicate_request_message_id`, `idempotency_conflict`, and
+`persistence_failure`. Receipts never echo message content, caller metadata,
+private paths, environment values, or raw exceptions.
+
+## Journey Projection Contract
+
+```bash
+uv run python -m memory journey-projection capabilities \
+  --mirror-home <home> --format json
+```
+
+Capability discovery is database-free and returns the installed
+`mirror.journey-projections` contract version, Extension API version `1.1`, and
+all five v1 operations. Production consumers can run `rebuild-operational` and
+`inspect`; both resolve the Journey root from the selected home's registry. The
+`probe-prepare` and `probe-publish` routes are unavailable unless
+`MEMORY_ENV=test` and an isolated non-production home is proven. All output is
+structured JSON. Unknown operations, formats, unsafe paths, invalid schemas, and
+authority violations return nonzero bounded JSON without echoing private paths
+or payload content.
+
+Extension API `1.1` adds `api.journey_projections.publish(...)` and
+`api.journey_projections.inspect(...)`. Both are permanently bound to the
+installed extension's `extension_id`; extensions cannot select `ariad`, another
+extension namespace, or a filesystem root. See the [Extension API
+reference](docs/product/extensions/api-reference.md#journey-projections).
+
+Ariad Operational rebuilds are Core-owned. They compile the registered
+Journey's authored roadmap, explicit active work, public Exploratory Story
+handoff fields, canonical Refinement indexes, and allowlisted artifact paths
+into `ariad:operational`, then publish through the shared linearizable kernel.
+The compiler accepts no production root from consumers, invokes no model or
+network, copies no private narrative bodies, and fails closed on unsafe or
+ambiguous durable references. `rebuild-operational` returns the published
+document and identity; `inspect` returns the validated document plus its current
+manifest entry and never repairs divergence implicitly.
+
+Represented Ariad mutations now request Operational refresh only after durable
+source commit. Equal projected `sourceRevision` values are treated as unchanged;
+otherwise publication uses the shared kernel. Refresh failure is intentionally
+non-transactional with source truth: the source mutation stays committed and the
+latest bounded outcome remains available through the internal coordinator. No
+background retry, repair, model, network, or extra CLI output is introduced.
 
 ## Operating Mode Lifecycle
 
@@ -276,9 +351,59 @@ Failures print a recovery block with the backup path and previous commit when re
 
 If the full status gate crashes before update planning, `runtime update` automatically falls back to updater self-repair. The repair lane uses a minimal safety gate: clean git tree, configured upstream, optional fetch, optional database backup when the Mirror home and database are available, fast-forward only code update, and migrations skipped. It then asks the user to rerun `runtime update` with the repaired updater. The same lane can be invoked explicitly with `runtime update --repair-updater`. Older production clones whose updater is blocked before they receive the latest recovery behavior may need this explicit repair lane once.
 
-### Builder Workbench composition
+### Builder Refinement authority
 
-Ariad-adopted Builder journeys can compose Refinement Work without pulling it into active lifecycle execution:
+Builder selects Refinement behavior from one explicit project-relative path:
+
+```text
+docs/project/refinement/index.md
+```
+
+When the file exists, it is the sole shared authority for Refinement focus, ordering,
+and current RS/CR status. Builder reads that index and its linked project documents; it
+does not inspect, compare, synchronize, or mutate personal SQLite Workbench rows. Builder
+entry surfaces point to the canonical index rather than rendering SQLite state. An
+unreadable or ambiguous canonical document never causes a silent fallback to SQLite.
+
+When asked to inspect or show file-first Refinement Work, Builder renders a compact
+agent-composed `Refinement Workbench` view from those documents. The view names its
+canonical source, shows current focus, RS status, ordered open CRs, terminal history,
+the next safe action, and a read-only boundary; it also states that SQLite was not
+consulted. When the canonical index assigns a CR, the view also shows its human Driver
+and pull-request or branch Delivery reference; unassigned rows omit those details.
+This is an agent presentation contract, not a runtime Markdown parser or a deterministic
+Ariad surface. Builder preserves canonical ordering and status, reports invalid
+document structure instead of recovering from legacy state, and makes no mutation
+during inspection.
+
+Driver and Delivery are explicit project facts. Builder never infers them from the
+current checkout, latest committer, active journey, conversation, or SQLite. Projects
+may require both fields before `in_progress`, `blocked`, or `validated`; reassignment
+and stale-work disposition remain explicit Navigator decisions. Git and pull requests
+remain authoritative for diffs, collaboration, conflicts, and history.
+
+The project-owned
+[Collaborative Refinement Protocol](docs/project/refinement/rs002-collaborative-refinement-work/collaboration-protocol.md)
+defines the default contributor route: inspect, capture without changing focus, select,
+plan, assign and start, record implementation evidence, validate with the Navigator,
+review, reach a terminal state, and return a compact handoff. Capture allocates the next
+unused project-wide ID from the complete index and requires an explicit RS target under
+the current artifact layout. Git surfaces concurrent ID and semantic edits; Builder
+never silently renumbers, overwrites, merges narratives, or consults SQLite to resolve
+them. The protocol deliberately adds no ID service, lock, watcher, parser,
+synchronization layer, or custom Git command.
+
+Read-only requests remain read-only. During an already-authorized mutable operation,
+Builder may repair and report a structural defect without another confirmation only when
+the repair is deterministic, local, non-destructive, reversible, meaning-preserving, and
+contained in the original request. A repair that chooses status, priority, focus,
+identity, deletion, or conflict meaning stops with a concrete recommendation for the
+Navigator. This repair policy never authorizes a commit, push, publication, release,
+configuration change, or legacy data mutation.
+
+When the canonical index is absent, Ariad-adopted journeys retain the compatibility-only
+SQLite Workbench commands. They can compose Refinement Work without pulling it into
+active lifecycle execution:
 
 ```bash
 uv run python -m memory build refinement-story create --journey <slug> --title "<title>" [--description "<description>"]
@@ -287,6 +412,7 @@ uv run python -m memory build change-request attach --journey <slug> --change-re
 uv run python -m memory build refinement-story overview --journey <slug> --refinement-story-id <rs-id>
 uv run python -m memory build refinement-story pull --journey <slug> --refinement-story-id <rs-id>
 uv run python -m memory build change-request select --journey <slug> --change-request-id <cr-id>
+uv run python -m memory build change-request resume --journey <slug> --change-request-id <cr-id>
 uv run python -m memory build change-request confirm --journey <slug> --change-request-id <cr-id>
 uv run python -m memory build change-request plan --journey <slug> --change-request-id <cr-id> --summary "<plan>"
 uv run python -m memory build change-request mark-implemented --journey <slug> --change-request-id <cr-id> --evidence "<evidence>"
@@ -302,6 +428,13 @@ uv run python -m memory build refinement-story park --journey <slug> --refinemen
 ```
 
 These commands render Ariad Workbench surfaces such as `CHANGE_REQUEST_CAPTURED`, `REFINEMENT_STORY_OVERVIEW`, `REFINEMENT_STORY_PULLED`, and `REFINEMENT_FLOW_EVENT`. Composition commands capture or organize Refinement Stories and Change Requests only. Pulling an RS selects active Refinement Work only. CR/RS flow commands update runtime state and evidence only; they do not mutate Delivery cursor state, implement files, commit, push, or release. Review and Coherence do not mutate files directly.
+
+`resume` is a public, explicit recovery verb for a non-terminal Change Request
+inside the active Refinement Story that moved beyond capture but lost the active
+pointer. It preserves the CR status, evidence, timestamps, and RS link, then
+makes the CR active again so `implemented` can proceed to `validate` and
+`validated` can proceed to `done`. Use `select` for `captured` CRs. Terminal CRs
+(`done`, `parked`, `rejected`, and `promoted`) cannot be resumed.
 
 `done`, `park`, `reject`, and `promote` are the four CR terminal verbs (a fifth,
 `discard`, deletes an accidental capture instead of reaching a terminal state).

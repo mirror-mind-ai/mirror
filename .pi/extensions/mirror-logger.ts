@@ -175,7 +175,13 @@ export default function (pi: ExtensionAPI) {
 			const child = spawn("uv", ["run", "python", ...args], {
 				cwd: process.cwd(),
 				stdio: ["ignore", logFd, logFd],
-				detached: true,
+				// Windows: a detached console child materializes as a visible
+				// console (or a Windows Terminal tab, when WT is the default
+				// terminal, which does not honor CREATE_NO_WINDOW for detached
+				// sessions). Sharing Pi's console makes it truly invisible.
+				// POSIX keeps detached so the write survives Pi exiting.
+				detached: process.platform !== "win32",
+				windowsHide: true,
 			});
 			child.unref();
 			log("INFO", `${label} started in detached background process ${child.pid ?? "(unknown pid)"}`);

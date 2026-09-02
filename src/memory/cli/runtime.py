@@ -25,7 +25,7 @@ from memory.config import (
     LLM_TIMEOUT_EXTRACTION,
     LLM_TIMEOUT_RECEPTION,
     MEMORY_ENV,
-    default_db_path_for_home,
+    db_path_for_home,
     default_extensions_dir_for_home,
     resolve_mirror_home,
 )
@@ -850,20 +850,32 @@ def list_installed_extensions(mirror_home: Path | None) -> tuple[str, ...]:
 
 
 def _connect_read_only(db_path: Path) -> sqlite3.Connection:
-    uri = f"{db_path.resolve().as_uri()}?mode=ro"
+    resolved_uri = db_path.resolve().as_uri()
+    read_only_uri = f"{resolved_uri}?mode=ro"
     try:
-        return sqlite3.connect(uri, uri=True)
+        conn = sqlite3.connect(read_only_uri, uri=True)
     except sqlite3.OperationalError as exc:
-        if "unable to open database file" not in str(exc):
+        if str(exc) != "unable to open database file":
             raise
-        # SQLite databases in WAL mode can be readable only after SQLite has
-        # created or refreshed the sidecar files. A strict read-only URI can
-        # fail before that happens, which made runtime status report false
-        # migration drift and block updates. Open the existing database in
-        # read-write mode as a bounded recovery so SQLite can create sidecars;
-        # this must not create a missing database file.
-        rw_uri = f"{db_path.resolve().as_uri()}?mode=rw"
-        return sqlite3.connect(rw_uri, uri=True)
+    else:
+        try:
+            conn.execute("SELECT 1 FROM sqlite_master LIMIT 1").fetchone()
+        except sqlite3.Error as exc:
+            conn.close()
+            if not isinstance(exc, sqlite3.OperationalError) or str(exc) != (
+                "unable to open database file"
+            ):
+                raise
+        else:
+            return conn
+
+    # SQLite databases in WAL mode can be readable only after SQLite has
+    # created or refreshed the sidecar files. Opening mode=ro may succeed
+    # lazily and fail on the first schema access. Reopen the existing database
+    # in read-write mode so SQLite can recover its sidecars; mode=rw must not
+    # create a missing database file.
+    read_write_uri = f"{resolved_uri}?mode=rw"
+    return sqlite3.connect(read_write_uri, uri=True)
 
 
 def _table_exists(conn: sqlite3.Connection, table: str) -> bool:
@@ -1016,7 +1028,7 @@ def build_runtime_status(
     except ValueError as exc:
         mirror_home_error = str(exc)
 
-    db_path = default_db_path_for_home(mirror_home) if mirror_home else None
+    db_path = db_path_for_home(mirror_home) if mirror_home else None
     db_exists = db_path.exists() if db_path else None
 
     return RuntimeStatusReport(
@@ -1137,6 +1149,34 @@ def _split_upstream(upstream: str) -> tuple[str, str] | None:
     return remote, branch
 
 
+def _classify_update_status(
+    *, repository: Path, local_commit: str | None, remote_commit: str
+) -> str:
+    """Classify local HEAD against the authoritative remote commit.
+
+    Ancestry is asked of the local object database rather than of remote-tracking
+    refs, so the answer cannot silently age between fetches. When the remote
+    commit is not present locally at all, the clone provably lacks remote work and
+    that is reported as an available update rather than guessed at.
+    """
+    if local_commit and (remote_commit == local_commit or remote_commit.startswith(local_commit)):
+        return "up_to_date"
+    contains_remote, _out, _err = _run_git(
+        ["merge-base", "--is-ancestor", remote_commit, "HEAD"], cwd=repository
+    )
+    if contains_remote == 0:
+        return "local_ahead"
+    contained_by_remote, _out, _err = _run_git(
+        ["merge-base", "--is-ancestor", "HEAD", remote_commit], cwd=repository
+    )
+    if contained_by_remote == 0:
+        return "update_available"
+    remote_known, _out, _err = _run_git(
+        ["cat-file", "-e", f"{remote_commit}^{{commit}}"], cwd=repository
+    )
+    return "diverged" if remote_known == 0 else "update_available"
+
+
 def check_runtime_update_availability(
     start: Path | None = None, channel: str | None = None
 ) -> RuntimeUpdateAvailability:
@@ -1160,21 +1200,11 @@ def check_runtime_update_availability(
         return RuntimeUpdateAvailability(
             version, None, git.commit, None, "no_upstream", git_plan.note, update_channel
         )
-    if git_plan.ahead and git_plan.behind:
-        return RuntimeUpdateAvailability(
-            version, git_plan.upstream, git.commit, None, "diverged", git_plan.note, update_channel
-        )
-    if git_plan.ahead and not git_plan.behind:
-        return RuntimeUpdateAvailability(
-            version,
-            git_plan.upstream,
-            git.commit,
-            None,
-            "local_ahead",
-            git_plan.note,
-            update_channel,
-        )
-
+    # Deliberately no verdict from local refs alone. Remote-tracking refs are only
+    # as fresh as the last fetch, so "ahead" here can mean "ahead of where the
+    # channel stood two weeks ago". Returning early on that reading is how a clone
+    # two releases behind gets told it is ahead. The remote query below is the
+    # only authority.
     split = _split_upstream(git_plan.upstream)
     if split is None:
         return RuntimeUpdateAvailability(
@@ -1200,8 +1230,13 @@ def check_runtime_update_availability(
             remote_err or f"remote {remote} has no url",
             update_channel,
         )
+    # ls-remote talks to the network and must use the network budget. Under the
+    # 2s local budget it always timed out on SSH remotes, and the failure was
+    # invisible because the stale-ref path had already returned a verdict.
     code, output, ls_err = _run_git(
-        ["ls-remote", remote, f"refs/heads/{branch}"], cwd=git.repository
+        ["ls-remote", remote, f"refs/heads/{branch}"],
+        cwd=git.repository,
+        timeout=_GIT_NETWORK_TIMEOUT_SECONDS,
     )
     if code != 0 or not output:
         return RuntimeUpdateAvailability(
@@ -1227,11 +1262,9 @@ def check_runtime_update_availability(
     remote_commit = parts[0]
     local_full_code, local_full, _err = _run_git(["rev-parse", "HEAD"], cwd=git.repository)
     local_commit = local_full if local_full_code == 0 and local_full else git.commit
-    status = "up_to_date" if remote_commit.startswith(local_commit or "") else "update_available"
-    if local_commit and len(local_commit) < len(remote_commit):
-        status = "up_to_date" if remote_commit.startswith(local_commit) else "update_available"
-    elif local_commit:
-        status = "up_to_date" if remote_commit == local_commit else "update_available"
+    status = _classify_update_status(
+        repository=git.repository, local_commit=local_commit, remote_commit=remote_commit
+    )
     return RuntimeUpdateAvailability(
         version,
         git_plan.upstream,
@@ -2029,7 +2062,11 @@ def _attempt_database_bootstrap(mirror_home_arg: str | Path | None) -> tuple[boo
         mirror_home = (
             Path(mirror_home_arg).expanduser() if mirror_home_arg else resolve_mirror_home()
         )
-        client = MemoryClient(env="production", db_path=default_db_path_for_home(mirror_home))
+        # Deliberately not env="production": forcing that here created a decoy
+        # memory.db inside development homes, which the extension-health probe
+        # then read as an empty migration ledger and reported as pending drift.
+        # The gate manufactured its own blocker.
+        client = MemoryClient(db_path=db_path_for_home(mirror_home))
         client.close()
     except Exception as exc:
         return False, str(exc)
@@ -2056,7 +2093,7 @@ def _try_runtime_backup(
             (),
         )
 
-    db_path = default_db_path_for_home(mirror_home)
+    db_path = db_path_for_home(mirror_home)
     if not db_path.exists():
         return RuntimeUpdateStage("backup", "skip", "database not found"), None, None, ()
 
@@ -2428,7 +2465,7 @@ def run_runtime_update(
         )
     if backup_path is None:
         stages.append(RuntimeUpdateStage("backup", "fail", "database not found"))
-        recovery.append(f"Expected database at: {default_db_path_for_home(mirror_home)}")
+        recovery.append(f"Expected database at: {db_path_for_home(mirror_home)}")
         return RuntimeUpdateResult(
             tuple(stages),
             previous_commit,
@@ -2899,7 +2936,7 @@ def cmd_runtime(argv: list[str]) -> int:
             return 1
         backup_path = create_backup(silent=True, mirror_home=mirror_home)
         if backup_path is None:
-            sys.stderr.write(f"Database not found: {default_db_path_for_home(mirror_home)}\n")
+            sys.stderr.write(f"Database not found: {db_path_for_home(mirror_home)}\n")
             return 1
         verification = verify_backup_archive(backup_path)
         sys.stdout.write(

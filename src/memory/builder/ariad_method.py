@@ -424,8 +424,9 @@ ARIAD_METHOD = MethodDefinition(
         CadenceProfileDefinition(
             id="accelerated",
             label="Accelerated",
-            stop_policy="continue_through_soft_stops_stop_at_hard_gates",
+            stop_policy="continue_through_story_plan_to_navigator_validation",
             active=True,
+            plan_approval_policy="bounded_story_authority",
         ),
         CadenceProfileDefinition(
             id="autonomous",

@@ -3,8 +3,8 @@
 An extension's ``register(api)`` entrypoint receives a single ``ExtensionAPI``
 instance. Everything an extension is allowed to do — read and write its own
 tables, query core tables read-only, generate embeddings, call an LLM,
-register CLI subcommands, register Mirror Mode context providers — flows
-through this object.
+register CLI subcommands, register Mirror Mode context providers, publish
+namespace-bound Journey projections — flows through this object.
 
 The API enforces the table-prefix contract documented in
 ``docs/product/extensions/api-reference.md``:
@@ -31,6 +31,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from memory.extensions import version as _extension_api_version
 from memory.extensions.errors import ExtensionPermissionError
 from memory.extensions.migrations import (
     _extract_table_targets,
@@ -38,8 +39,12 @@ from memory.extensions.migrations import (
     table_prefix_for,
 )
 
+VERSION = _extension_api_version.VERSION
+
 if TYPE_CHECKING:  # pragma: no cover
     import numpy as np
+
+    from memory.journey_projections.service import JourneyProjectionService
 
 
 # Statements that mutate data. We forbid these in ``read`` and use them to
@@ -106,10 +111,26 @@ class ExtensionAPI:
         context_registry: dict[str, ContextProvider] | None = None,
         embed_fn: Callable[[str], np.ndarray] | None = None,
         llm_fn: Callable[..., str] | None = None,
+        journey_projection_service: JourneyProjectionService | None = None,
     ) -> None:
+        from memory.journey_projections.extension_api import (
+            ExtensionJourneyProjections,
+            registered_journey_root_resolver,
+        )
+        from memory.journey_projections.service import JourneyProjectionService
+
         self.extension_id = extension_id
         self.table_prefix = table_prefix_for(extension_id)
         self._db = connection
+        projection_service = (
+            journey_projection_service
+            if journey_projection_service is not None
+            else JourneyProjectionService(registered_journey_root_resolver(connection))
+        )
+        self.journey_projections = ExtensionJourneyProjections(
+            extension_id,
+            projection_service,
+        )
         self._cli_registry: dict[str, CLIHandler] = cli_registry if cli_registry is not None else {}
         self._context_registry: dict[str, ContextProvider] = (
             context_registry if context_registry is not None else {}

@@ -192,15 +192,37 @@ Child journey with enough content for creation.
         identity_service.set_identity("journey", "root", "# Root\n**Status:** active")
         identity_service.set_identity(
             "journey",
-            "parent",
-            "# Parent\n**Status:** active",
+            "area",
+            "# Area\n**Status:** active",
             metadata='{"parent_journey": "root"}',
         )
-        identity_service.set_identity("journey", "child", "# Child\n**Status:** active")
+        identity_service.set_identity(
+            "journey",
+            "business",
+            "# Business\n**Status:** active",
+            metadata='{"parent_journey": "area"}',
+        )
+        identity_service.set_identity("journey", "product", "# Product\n**Status:** active")
 
-        metadata = journey_service.update_metadata_fields("child", {"parent_journey": "parent"})
+        metadata = journey_service.update_metadata_fields("product", {"parent_journey": "business"})
 
-        assert metadata["parent_journey"] == "parent"
+        assert metadata["parent_journey"] == "business"
+
+    def test_accepts_parent_for_journey_that_already_has_children(
+        self, journey_service, identity_service
+    ):
+        identity_service.set_identity("journey", "root", "# Root\n**Status:** active")
+        identity_service.set_identity("journey", "parent", "# Parent\n**Status:** active")
+        identity_service.set_identity(
+            "journey",
+            "child",
+            "# Child\n**Status:** active",
+            metadata='{"parent_journey": "parent"}',
+        )
+
+        metadata = journey_service.update_metadata_fields("parent", {"parent_journey": "root"})
+
+        assert metadata["parent_journey"] == "root"
 
     def test_allows_moving_a_subtree(self, journey_service, identity_service):
         identity_service.set_identity("journey", "root", "# Root\n**Status:** active")
@@ -219,25 +241,45 @@ Child journey with enough content for creation.
         assert child is not None
         assert json.loads(child.metadata or "{}")["parent_journey"] == "parent"
 
-    def test_rejects_indirect_cycle(self, journey_service, identity_service):
-        identity_service.set_identity("journey", "root", "# Root\n**Status:** active")
+    def test_move_preserves_identity_and_project_path(self, journey_service, identity_service):
+        identity_service.set_identity("journey", "root-a", "# Root A\n**Status:** active")
+        identity_service.set_identity("journey", "root-b", "# Root B\n**Status:** active")
         identity_service.set_identity(
             "journey",
             "child",
             "# Child\n**Status:** active",
+            metadata='{"parent_journey": "root-a", "project_path": "/tmp/stable-child"}',
+        )
+        before = journey_service._get_journey_identity("child")
+
+        journey_service.update_metadata_fields("child", {"parent_journey": "root-b"})
+
+        after = journey_service._get_journey_identity("child")
+        assert after.id == before.id
+        assert journey_service.get_project_path("child") == "/tmp/stable-child"
+        assert json.loads(after.metadata)["parent_journey"] == "root-b"
+
+    def test_rejects_indirect_cycle(self, journey_service, identity_service):
+        identity_service.set_identity("journey", "root", "# Root\n**Status:** active")
+        identity_service.set_identity(
+            "journey",
+            "parent",
+            "# Parent\n**Status:** active",
             metadata='{"parent_journey": "root"}',
         )
         identity_service.set_identity(
             "journey",
-            "grandchild",
-            "# Grandchild\n**Status:** active",
-            metadata='{"parent_journey": "child"}',
+            "child",
+            "# Child\n**Status:** active",
+            metadata='{"parent_journey": "parent"}',
         )
 
-        with pytest.raises(ValueError, match="would create a cycle"):
-            journey_service.update_metadata_fields("root", {"parent_journey": "grandchild"})
+        with pytest.raises(ValueError, match="cycle"):
+            journey_service.update_metadata_fields("root", {"parent_journey": "child"})
 
-    def test_rejects_existing_cycle_in_parent_lineage(self, journey_service, identity_service):
+        assert journey_service._get_journey_identity("root").metadata is None
+
+    def test_rejects_parent_walk_through_malformed_cycle(self, journey_service, identity_service):
         identity_service.set_identity(
             "journey",
             "loop-a",
@@ -255,23 +297,6 @@ Child journey with enough content for creation.
         with pytest.raises(ValueError, match="existing cycle"):
             journey_service.update_metadata_fields("child", {"parent_journey": "loop-a"})
 
-    def test_list_journey_options_orders_children_under_parent(
-        self, journey_service, identity_service
-    ):
-        identity_service.set_identity("journey", "z-parent", "# Z Parent\n**Status:** active")
-        identity_service.set_identity("journey", "a-parent", "# A Parent\n**Status:** active")
-        identity_service.set_identity(
-            "journey",
-            "child",
-            "# Child\n**Status:** active",
-            metadata='{"parent_journey": "z-parent"}',
-        )
-
-        result = journey_service.list_journey_options()
-
-        assert [item["id"] for item in result] == ["a-parent", "z-parent", "child"]
-        assert result[2]["parent_journey"] == "z-parent"
-
     def test_list_journey_options_orders_all_descendants_depth_first(
         self, journey_service, identity_service
     ):
@@ -283,6 +308,7 @@ Child journey with enough content for creation.
             "# Child\n**Status:** active",
             metadata='{"parent_journey": "z-parent"}',
         )
+
         identity_service.set_identity(
             "journey",
             "grandchild",

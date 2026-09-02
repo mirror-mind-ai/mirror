@@ -151,6 +151,7 @@ def _event_header(event: RefinementFlowEvent) -> str:
 def _event_icon(event: RefinementFlowEvent) -> str:
     return {
         "change_request_selected": "🟪",
+        "change_request_resumed": "↩",
         "change_request_confirmed": "🧭",
         "change_request_planned": "🟦",
         "change_request_implemented": "🟧",
@@ -169,6 +170,7 @@ def _event_icon(event: RefinementFlowEvent) -> str:
 def _human_event_phase(event: RefinementFlowEvent) -> str:
     return {
         "change_request_selected": "Selected",
+        "change_request_resumed": "Resumed",
         "change_request_confirmed": "Confirmed",
         "change_request_planned": "Planned",
         "change_request_implemented": "Implemented",
@@ -214,6 +216,7 @@ def _event_body(event: RefinementFlowEvent) -> str:
         return event.detail
     return {
         "change_request_selected": "This Change Request entered the active CR cycle.",
+        "change_request_resumed": "This Change Request returned to the active CR cycle without changing status.",
         "change_request_confirmed": "The Change Request understanding was confirmed.",
         "change_request_planned": "The Change Request implementation route was planned.",
         "change_request_implemented": "Implementation evidence was recorded for this Change Request.",
@@ -333,6 +336,7 @@ def _event_lifecycle_ribbon(event: RefinementFlowEvent) -> str:
 def _change_request_ribbon_stage(event: RefinementFlowEvent) -> str:
     return {
         "change_request_selected": "confirm",
+        "change_request_resumed": _resumed_ribbon_stage(event),
         "change_request_confirmed": "confirm",
         "change_request_planned": "plan",
         "change_request_implemented": "implement",
@@ -347,6 +351,24 @@ def _change_request_ribbon_stage(event: RefinementFlowEvent) -> str:
         "change_request_rejected": "done_note",
         "change_request_promoted": "done_note",
     }.get(event.event, "confirm")
+
+
+def _resumed_ribbon_stage(event: RefinementFlowEvent) -> str:
+    return {
+        "active": "confirm",
+        "planned": "implement",
+        "implemented": "validate",
+        "validated": "done_note",
+    }.get(event.new_status or "", "confirm")
+
+
+def _resumed_next_move(event: RefinementFlowEvent) -> str:
+    return {
+        "active": "confirm this CR before planning it",
+        "planned": "implement this CR only with explicit Navigator authorization",
+        "implemented": "validate this CR with concrete evidence",
+        "validated": "record the done note for this CR",
+    }.get(event.new_status or "", "choose the next Refinement movement")
 
 
 def _refinement_story_ribbon_stage(event: RefinementFlowEvent) -> str:
@@ -368,6 +390,7 @@ def _phase_label(event: RefinementFlowEvent) -> str:
 def _current_phase(event: RefinementFlowEvent) -> str:
     return {
         "change_request_selected": "selected",
+        "change_request_resumed": event.new_status or "resumed",
         "change_request_confirmed": "confirmed",
         "change_request_planned": "planned",
         "change_request_implemented": "implemented evidence recorded",
@@ -382,6 +405,7 @@ def _current_phase(event: RefinementFlowEvent) -> str:
 def _next_conversational_move(event: RefinementFlowEvent) -> str:
     return {
         "change_request_selected": "confirm this CR before planning it",
+        "change_request_resumed": _resumed_next_move(event),
         "change_request_confirmed": "record a short plan for this CR",
         "change_request_planned": "implement this CR only with explicit Navigator authorization",
         "change_request_implemented": "validate this CR with concrete evidence",

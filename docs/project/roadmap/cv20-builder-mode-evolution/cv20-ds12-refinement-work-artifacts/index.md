@@ -1,24 +1,47 @@
 [< CV20](../index.md)
 
-# CV20.DS12 — Refinement Work Artifacts
+# CV20.DS12 — Document-First Refinement Workbench
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 
 ---
 
 ## Outcome
 
-Builder records Ariad Refinement Work as durable project artifacts, not only as database state and conversation surfaces.
+A project has one versioned Refinement index that states the canonical backlog and
+status of Refinement Stories and Change Requests, with predictable directories for the
+documents and evidence produced while that work proceeds.
 
-Refinement Stories and Change Requests keep their operational state in the Workbench database, but their meaningful phase outputs — scope confirmation, implementation plan, implementation evidence, validation evidence, done notes, RS review, RS coherence, and closure summary — are materialized into inspectable files in the project workspace.
+The Workbench is understandable by reading the repository. It does not require a local
+Mirror database, journey, conversation history, or custom handoff protocol to recover
+shared meaning.
 
 ---
 
 ## Why This Exists
 
-Dogfooding the Refinement CR cycle showed that the runtime captures state and evidence in SQLite, while Delivery Work already has a stronger artifact trail through story package files such as `plan.md`, `test-guide.md`, `review.md`, and `coherence.md`.
+Delivery Work already has a roadmap and story packages that make position, status,
+plans, evidence, and closure inspectable across sessions. Refinement needs the same
+durability without turning small changes into Delivery Stories.
 
-For small CRs, database state is enough to operate. For long-lived Refinement Stories, cross-session review, coherence checks, and future roadmap migration need durable artifacts that can be read, diffed, committed, reviewed, and referenced outside the database.
+The first DS12 experiment expanded this need into filesystem authority, SQLite
+projection, mutation recovery, Git coherence, and cross-clone handoff machinery. That
+implementation was archived without merge after proving disproportionate to the real
+workflow. The retained learning is recorded in the
+[experiment retrospective](experiment-retrospective.md).
+
+---
+
+## Product Premises
+
+- Project documents own canonical shared Refinement meaning.
+- Git owns history, collaboration, conflict handling, and recovery.
+- Journeys and runtime databases remain local context, never artifact identity.
+- The canonical index must be useful to humans and agents without database access.
+- Generated artifacts should be ordinary Markdown files with stable relative links.
+- Validation starts structural and small; automation grows only from observed failures.
+- Existing CV20.DS6 SQLite data is not removed implicitly. Migration or deprecation is
+  separate, explicit work after the document contract is proven.
 
 ---
 
@@ -26,24 +49,32 @@ For small CRs, database state is enough to operate. For long-lived Refinement St
 
 | Code | Story | Type | Outcome | Status |
 |------|-------|------|---------|--------|
-| CV20.DS12.TS1 | Define Refinement Artifact Layout | Technical Story | The project has a canonical path and file structure for RS/CR artifacts | 🟡 Planned |
-| CV20.DS12.TS2 | Materialize CR Phase Artifacts | Technical Story | CR scope, plan, implementation evidence, validation evidence, and done notes can be written to durable files | 🟡 Planned |
-| CV20.DS12.TS3 | Materialize RS Review And Coherence Artifacts | Technical Story | RS review, coherence, and close outputs are written as durable project artifacts | 🟡 Planned |
-| CV20.DS12.US1 | Show Artifact References In Refinement Surfaces | User Story | Navigator-facing Refinement surfaces show relevant artifact paths when artifacts are produced | 🟡 Planned |
-| CV20.DS12.TS4 | Preserve Database As Operational Cursor | Technical Story | Runtime state remains in SQLite while project artifacts provide reviewable history; the two stay coherent | 🟡 Planned |
+| [CV20.DS12.TS1](cv20-ds12-ts1-canonical-refinement-index-and-artifact-convention/index.md) | Canonical Refinement Index And Artifact Convention | Technical Story | A real file-only Workbench proves the canonical backlog, identity, status, and navigation contract | ✅ Done |
+| [CV20.DS12.US1](cv20-ds12-us1-dogfood-file-only-refinement/index.md) | Dogfood File-Only Refinement | User Story | Navigator selects and plans real Refinement work from the canonical files alone, exposing usability gaps before automation | ✅ Done |
+| [CV20.DS12.TS2](cv20-ds12-ts2-legacy-workbench-migration-boundary/index.md) | Define Legacy Workbench Migration Boundary | Technical Story | The project decides how the existing SQLite Workbench coexists with, transitions to, or retires behind canonical project files without migrating data yet | ✅ Done |
+| [CV20.DS12.US2](cv20-ds12-us2-route-builder-to-canonical-refinement-files/index.md) | Route Builder To Canonical Refinement Files | User Story | Builder uses the project index for Refinement requests when it exists and preserves legacy behavior for projects without one | ✅ Done |
+
+Later stories may add lightweight structural validation or execute an explicitly
+approved transition, but only after TS2 settles the legacy Workbench boundary. The
+archived experiment's TS/US decomposition is not reused.
 
 ---
 
-## Boundary
+## Non-Goals
 
-- This does not replace the Workbench database; SQLite remains the operational state store.
-- This does not require every tiny CR to become a roadmap Delivery Story.
-- This should not create noisy files for empty or purely transient events.
-- Artifact generation must be deterministic, diff-friendly, and safe to commit.
-- Artifact paths and required outputs should eventually be governed by the Ariad method DSL once Refinement DSL governance lands.
+- No SQLite projection of canonical Refinement documents.
+- No transactional cross-clone handoff or recipient readiness protocol.
+- No application-level reconstruction of Git ancestry, publication, or conflict logic.
+- No implicit commit, push, merge, publication, release, or repository configuration.
+- No automatic removal or migration of the CV20.DS6 runtime Workbench.
+- No claim that every transient event requires a durable file.
 
 ---
 
 ## Done Condition
 
-DS12 is done when Refinement Stories and Change Requests can produce durable, project-local artifacts for their meaningful phase outputs, those artifacts are referenced by runtime surfaces, and RS-level review/coherence can rely on files plus database state instead of conversation history alone.
+Satisfied. A fresh Pi session launched from the journey clone identified
+`docs/project/refinement/index.md` as canonical, reported RS001 and the exact CR backlog
+from files, and stated that no SQLite state was consulted. The Navigator accepted the
+result after the file-only workflow, legacy boundary, and absent-index compatibility had
+all been validated.

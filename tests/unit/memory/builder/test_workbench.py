@@ -22,6 +22,7 @@ from memory.builder.workbench import (
     pull_refinement_story,
     recommend_next_change_request,
     reject_change_request,
+    resume_change_request,
     review_refinement_story,
     select_change_request,
     validate_change_request,
@@ -242,6 +243,134 @@ def test_change_request_flow_transitions_in_order_and_clears_active_cr(store):
     assert cursor is not None
     assert cursor.active_change_request_id is None
     assert store.get_change_request(cr.id).outcome_notes == "Done"
+
+
+def test_change_request_resume_restores_stranded_implemented_cr_without_mutating_record(store):
+    story = create_refinement_story(store, journey="mirror", title="Builder lifecycle refinement")
+    cr_a = capture_change_request(
+        store,
+        journey="mirror",
+        title="First defect",
+        body="Implement first.",
+        refinement_story_id=story.id,
+    )
+    cr_b = capture_change_request(
+        store,
+        journey="mirror",
+        title="Second defect",
+        body="Finish second.",
+        refinement_story_id=story.id,
+    )
+    pull_refinement_story(store, journey="mirror", refinement_story_id=story.id)
+    select_change_request(store, journey="mirror", change_request_id=cr_a.id)
+    confirm_change_request(store, journey="mirror", change_request_id=cr_a.id)
+    implemented_a = mark_change_request_implemented(
+        store, journey="mirror", change_request_id=cr_a.id, evidence="Implemented A"
+    ).change_request
+    assert implemented_a is not None
+
+    select_change_request(store, journey="mirror", change_request_id=cr_b.id)
+    confirm_change_request(store, journey="mirror", change_request_id=cr_b.id)
+    mark_change_request_implemented(
+        store, journey="mirror", change_request_id=cr_b.id, evidence="Implemented B"
+    )
+    validate_change_request(store, journey="mirror", change_request_id=cr_b.id, evidence="Valid B")
+    complete_change_request(store, journey="mirror", change_request_id=cr_b.id, notes="Done B")
+
+    before_resume = store.get_change_request(cr_a.id)
+    resumed = resume_change_request(store, journey="mirror", change_request_id=cr_a.id)
+
+    assert resumed.event == "change_request_resumed"
+    assert resumed.previous_status == "implemented"
+    assert resumed.new_status == "implemented"
+    assert (
+        resumed.detail
+        == "This Change Request returned to the active CR cycle without changing status."
+    )
+    assert resumed.active_change_request_id == cr_a.id
+    after_resume = store.get_change_request(cr_a.id)
+    assert after_resume == before_resume
+    cursor = store.get_refinement_cursor("mirror")
+    assert cursor is not None
+    assert cursor.active_refinement_story_id == story.id
+    assert cursor.active_change_request_id == cr_a.id
+    assert cursor.last_refinement_event == "change_request_resumed"
+
+    validated = validate_change_request(
+        store, journey="mirror", change_request_id=cr_a.id, evidence="Valid A"
+    )
+    done = complete_change_request(
+        store, journey="mirror", change_request_id=cr_a.id, notes="Done A"
+    )
+
+    assert validated.new_status == "validated"
+    assert done.new_status == "done"
+
+
+def test_change_request_resume_restores_stranded_validated_cr_for_done_note(store):
+    story = create_refinement_story(store, journey="mirror", title="Builder lifecycle refinement")
+    cr = capture_change_request(
+        store,
+        journey="mirror",
+        title="Validated defect",
+        body="Already validated.",
+        refinement_story_id=story.id,
+    )
+    pull_refinement_story(store, journey="mirror", refinement_story_id=story.id)
+    select_change_request(store, journey="mirror", change_request_id=cr.id)
+    confirm_change_request(store, journey="mirror", change_request_id=cr.id)
+    mark_change_request_implemented(
+        store, journey="mirror", change_request_id=cr.id, evidence="Implemented"
+    )
+    validate_change_request(store, journey="mirror", change_request_id=cr.id, evidence="Valid")
+    store.set_refinement_cursor(
+        journey="mirror",
+        active_refinement_story_id=story.id,
+        active_change_request_id=None,
+        last_refinement_event="change_request_done",
+    )
+
+    resumed = resume_change_request(store, journey="mirror", change_request_id=cr.id)
+    done = complete_change_request(store, journey="mirror", change_request_id=cr.id, notes="Done")
+
+    assert resumed.new_status == "validated"
+    assert done.new_status == "done"
+
+
+def test_change_request_resume_rejects_terminal_cr(store):
+    story = create_refinement_story(store, journey="mirror", title="Builder lifecycle refinement")
+    cr = capture_change_request(
+        store,
+        journey="mirror",
+        title="Done defect",
+        body="Already done.",
+        refinement_story_id=story.id,
+    )
+    pull_refinement_story(store, journey="mirror", refinement_story_id=story.id)
+    store.update_change_request_status(cr.id, "done", completed_at="2026-08-30T00:00:00Z")
+
+    with pytest.raises(ValueError, match="already terminal"):
+        resume_change_request(store, journey="mirror", change_request_id=cr.id)
+
+    cursor = store.get_refinement_cursor("mirror")
+    assert cursor is not None
+    assert cursor.active_change_request_id is None
+    assert store.get_change_request(cr.id).status == "done"
+
+
+def test_change_request_resume_requires_active_refinement_story_authority(store):
+    story = create_refinement_story(store, journey="mirror", title="Builder lifecycle refinement")
+    cr = capture_change_request(
+        store,
+        journey="mirror",
+        title="Implemented defect",
+        body="Implemented.",
+        refinement_story_id=story.id,
+    )
+    store.update_change_request_status(cr.id, "implemented", outcome_notes="Evidence")
+
+    with pytest.raises(ValueError, match="active Refinement Story is required"):
+        resume_change_request(store, journey="mirror", change_request_id=cr.id)
 
 
 def test_change_request_can_implement_after_confirmation_without_separate_plan(store):

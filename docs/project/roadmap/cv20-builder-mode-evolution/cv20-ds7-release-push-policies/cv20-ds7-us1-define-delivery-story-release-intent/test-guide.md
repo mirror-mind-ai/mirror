@@ -62,4 +62,19 @@ Fail condition: Builder forces release planning or silently treats undecided as 
 
 ## Validation Evidence
 
-Pending implementation and validation.
+Implementation evidence prepared for Navigator validation:
+
+- cursor serialization distinguishes `planned`, `none`, `undecided`, and
+  `not_recorded`;
+- intent is bound to the Delivery Story ancestor, survives Pulls within that DS,
+  and clears when another DS is pulled;
+- `release-intent` records or inspects state without changing Plan approval or
+  authorizing another gate;
+- deterministic `RELEASE_INTENT` and Builder Resume surfaces show the explicit
+  non-authorizing boundary;
+- Pi routing requires explicit Navigator meaning and forbids inference from
+  cadence, version changes, completion, tags, or roadmap position;
+- focused model, lifecycle, resume, CLI/parser, cursor, Ruff, format, mypy, docs,
+  and diff checks are the required automated route.
+
+Navigator selected `planned` for `CV20.DS7`, observed the recorded and re-inspected non-authorizing surface, and accepted validation. Debt Review recorded `no_action`.

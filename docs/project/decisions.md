@@ -11,6 +11,117 @@ resolved.
 
 ## Completed Decisions
 
+### Conditional Plan authority is flow-aware, exact, and single-use
+
+**Date:** 2026-08-26
+**Reference:** [CV20.DS15 Driver-Owned Conditional Plan Authorization](roadmap/cv20-builder-mode-evolution/cv20-ds15-driver-owned-conditional-plan-authorization/index.md), [CV20.DS16 Story-Level Conditional Plan Preauthorization](roadmap/cv20-builder-mode-evolution/cv20-ds16-story-level-conditional-plan-preauthorization/index.md)
+**Participants:** Alisson Vale
+
+Ariad must preserve Plan completeness and structural approval while avoiding a
+redundant Navigator turn when the human naturally delegates Plan creation and
+execution or selects accelerated cadence. Delivery Story scope and
+implementable-story scope have different structural shapes, but they require one
+safety model.
+
+Decided:
+
+1. **Preauthorization carries authority; it does not remove structural approval.**
+   A receipt can satisfy the gate only after Plan materialization and immediate
+   structural revalidation. In stepwise/checkpoint this requires natural explicit
+   delegation; accelerated cadence records bounded story authority automatically.
+2. **The receipt schema is flow-aware.** `delivery_story` authority binds the
+   canonical exact child-code set. `story_by_story` authority binds one exact
+   User Story or Technical Story and carries no fabricated child scope.
+3. **Driver-owned completeness is mandatory.** Existing Plan packages remain
+   byte-preserved; conditional consumption requires complete Scope, Non-Goals,
+   Acceptance Behavior, Validation Route, and Implementation Contract sections.
+4. **Consumption is private, atomic, and single-use.** Bounded coordinates and a
+   canonical fingerprint enter cursor metadata; prompt text and Plan prose do
+   not. Receipt consumption and Plan approval share one compare-and-swap update,
+   and retries cannot start implementation twice.
+5. **Mismatch preserves ordinary approval.** Journey, method, item, level,
+   generation, flow, child scope where applicable, Plan contract, policy, stop,
+   completeness, cancellation, or malformed authority blocks conditional
+   approval with a bounded reason.
+6. **The fixed boundary is Navigator Validation.** Conditional authority cannot
+   approve Validation, Debt Review, Done/history, commit, push, tag, release,
+   deploy, purchase, or another irreversible action.
+7. **Natural delegation does not become semantic authority verification.** The
+   agent routes ordinary phrases such as “create the Plan and execute it without
+   asking me again”; Python Core still derives scope identity structurally and
+   deterministically. No model, persona, provider, network service, or prose
+   equivalence participates in receipt verification.
+8. **Cadence controls whether Plan stops through method data.**
+   `CadenceProfileDefinition.plan_approval_policy` declares
+   `navigator_approval` or `bounded_story_authority`; lifecycle code never grants
+   authority from a profile name. Ariad gives accelerated cadence bounded story
+   authority, while stepwise and checkpoint retain the ordinary Plan stop. The
+   complete matching Plan may proceed only to Navigator Validation.
+
+### TypeScript migration pauses and Python resumes sole product authority
+
+**Date:** 2026-08-19
+**Reference:** [CV22 TypeScript Core Port](roadmap/cv22-typescript-core-port/index.md), [CV23 Journey Projection Contract](roadmap/cv23-journey-projection-contract/index.md)
+**Participants:** Alisson Vale
+
+The database-seam strangler produced substantial parity infrastructure and
+command migrations, but the project is now intentionally interrupted before
+completion. Leaving the repository's authority rules in a mixed-engine posture
+would force every new capability to absorb an inactive migration's coordination
+cost and would make ownership ambiguous.
+
+Decided:
+
+1. **CV22 is paused, not erased.** Its branch, commits, tests, goldens, roadmap
+   artifacts, and uncommitted US5 work remain preserved for an explicit future
+   restart.
+2. **Python resumes sole product authority.** New capabilities, including the
+   Journey Projection Contract, are implemented once in `src/memory/`; no TS
+   parity obligation is created while CV22 remains paused.
+3. **The production schema remains conservative.** Pausing the migration does
+   not authorize unnecessary migrations or incompatible database changes.
+4. **Restart is explicit.** Resuming CV22 requires a new Navigator decision and
+   a reconciliation plan against all Python behavior accumulated during the
+   pause.
+
+This decision suspends the active strangler policy below without invalidating
+its historical evidence or architecture experiments.
+
+### Journey projections are a roadmap capability, not Refinement Work
+
+**Date:** 2026-08-19
+**Reference:** [CV23 Journey Projection Contract](roadmap/cv23-journey-projection-contract/index.md)
+**Participants:** Alisson Vale
+
+The consumer-owned `mirror.journey-projections@1.0` proposal introduces a new
+versioned CLI contract, filesystem publication kernel, Ariad compiler, lifecycle
+integration, Extension API capability, security boundary, and installed-runtime
+release gate. This is new product behavior rather than hardening of an existing
+Mirror surface.
+
+Decided:
+
+1. **CV23 owns delivery.** The contract is implemented as a Capability Value
+   with independently verifiable Delivery Stories, not hidden inside a
+   Refinement Story.
+2. **The acceptance kit remains consumer-owned.** Mirror does not edit it or
+   copy its probe into production code. Contract amendments return to the
+   consumer for explicit review.
+3. **Mirror depends only on the public contract.** No Nautilus implementation,
+   prompt, domain model, or repository module becomes a Mirror dependency.
+4. **Publication is linearizable per Journey.** All Core and extension
+   publishers for one Journey share inter-process exclusion. The manifest is
+   re-read under the lock and merged there, preventing stale-manifest lost
+   updates. Inspection observes a consistent manifest/document pair.
+5. **Snapshot identity is durable.** Internal immutable receipts bind each
+   snapshot ID to its canonical byte digest. Reuse for different bytes is
+   rejected; receipts also support bounded divergence diagnosis and explicit
+   recovery without becoming public mutation authority.
+6. **These mechanisms are internal v1 interpretation.** Linearizability,
+   exclusion, lost-update prevention, and immutable receipts strengthen the
+   specified public behavior; they do not alter the probe or add a Nautilus
+   dependency.
+
 ### Extension context converges through a language-neutral process protocol and finite Python host
 
 **Date:** 2026-08-19
@@ -79,6 +190,47 @@ This supersedes the global Python-freeze clause of the 2026-06-23 strangler deci
 and the column-first read portion of the 2026-07-23 DS7.US1 rider. Atomic TS dual-write,
 the database seam, backup gates, copy-only write parity, and command-by-command
 retirement remain in force.
+
+### TypeScript strangler tracks a moving Python product instead of freezing it
+
+**Date:** 2026-08-13
+**Reference:** [CV15.DS3 Recursive Journey Hierarchy](roadmap/cv15-cognitive-location/cv15-ds3-recursive-journey-hierarchy/index.md), [CV22 TypeScript Core Port](roadmap/cv22-typescript-core-port/index.md)
+**Participants:** Alisson Vale
+
+The original strangler policy froze the Python core to maintenance-only and
+required all new features to land in TypeScript. That policy reduced migration
+drift, but the migration is a long-running background effort and the TS core has
+not yet reached the journey domain. In practice, the freeze made product
+evolution wait months for migration sequencing. A migration strategy that
+protects convergence by stopping the product is not operationally sustainable.
+
+Decided:
+
+1. **Python remains the product authority until each command is strangled.** It
+   may receive product features while it is still the implementation serving
+   that capability.
+2. **The TypeScript target is explicitly moving.** New or changed Python
+   behavior creates a named TS parity obligation in the owning CV22 story; it
+   does not require simultaneous dual implementation.
+3. **Observable contracts contain drift.** Before a command is claimed as
+   ported, its goldens and parity checks must include all behavior accumulated in
+   Python up to that point.
+4. **Schema discipline remains strict.** The shared database is still the seam.
+   Schema and migration changes remain cross-core events requiring compatibility
+   analysis and parity evidence; avoiding unnecessary schema changes is still
+   preferred.
+5. **Authority transfers command by command.** Once a command is strangled and
+   TS becomes its runtime authority, new behavior for that command lands in TS.
+   Python then becomes compatibility-only for that command rather than a second
+   evolving implementation.
+6. **Parity debt must be visible, not ambient.** CV15.DS3 records recursive
+   journey read parity under CV22.E2.S5 and journey write/removal parity under
+   CV22.E4.
+
+This supersedes only the strict "no new Python features" clause of the 2026-06-23
+strangler decision. The database seam, risk-first sequencing, golden oracle,
+copy-based write validation, and command-by-command retirement strategy remain
+unchanged.
 
 ### CV22.DS6.US3 `parent_journey` dual-write activated as a DS7.US1 rider
 
@@ -1579,6 +1731,64 @@ This is worth doing, but not as opportunistic churn during CV4 feature work.
 Revisit it during a future CLI/tooling modernization pass. That pass may happen
 near other tooling discussions (for example `uv`), but the decisions should not
 be artificially coupled.
+
+---
+
+### Refinement returns to project documents as its canonical shared state
+
+**Date:** 2026-07-30
+**Reference:** [CV20.DS12](roadmap/cv20-builder-mode-evolution/cv20-ds12-refinement-work-artifacts/index.md), [experiment retrospective](roadmap/cv20-builder-mode-evolution/cv20-ds12-refinement-work-artifacts/experiment-retrospective.md)
+
+The first CV20.DS12 implementation was archived without merge. It converted a need for
+a canonical Refinement backlog and artifact trail into a distributed protocol spanning
+filesystem authority, SQLite projection, mutation recovery, Git topology, remote
+readiness, and cross-clone consumption. The design addressed possible failures but was
+disproportionate to the observed workflow and would have imposed excessive maintenance
+and adaptation cost.
+
+Decision: **project documents are the canonical shared state for Refinement Work.** One
+versioned index owns RS/CR backlog position and status; ordinary project directories own
+plans and evidence; Git owns history, collaboration, conflict resolution, and recovery.
+Journeys and databases may provide local runtime convenience but cannot compete with the
+project artifacts for shared meaning.
+
+No code, lifecycle completion record, or validation claim from the abandoned branch is
+carried into production. New automation requires evidence of recurring operational pain.
+The existing CV20.DS6 SQLite Workbench remains a separate compatibility and migration
+concern: it is neither endorsed as future authority nor removed implicitly by DS12.
+
+The global `mm-plan-review` technical panel was disabled with the experiment. It found
+valid risks but had no sufficient proportionality counterweight, allowing defensive
+completeness to dominate product relevance. Future review must evaluate necessity and
+maintenance cost before expanding scope.
+
+---
+
+### Project files supersede the SQLite Workbench as shared Refinement authority
+
+**Date:** 2026-07-30
+**Reference:** [CV20.DS12.TS2](roadmap/cv20-builder-mode-evolution/cv20-ds12-refinement-work-artifacts/cv20-ds12-ts2-legacy-workbench-migration-boundary/index.md), [legacy boundary](roadmap/cv20-builder-mode-evolution/cv20-ds12-refinement-work-artifacts/cv20-ds12-ts2-legacy-workbench-migration-boundary/legacy-workbench-boundary.md)
+
+CV20.DS6 shipped a journey-scoped SQLite Workbench with mutable RS/CR records, local
+cursors, commands, and Builder Home surfaces. DS12 subsequently established a
+project-local Refinement index whose purpose is durable shared meaning across sessions
+and collaborators. Treating both as equal authorities would create unresolved identity,
+status, focus, and ordering conflicts.
+
+Decision: **when `docs/project/refinement/index.md` exists, project files are the sole
+canonical shared Refinement authority.** The SQLite Workbench is preserved as
+compatibility-only local state. Existing rows are not implicitly assigned, imported,
+exported, reconciled, published, or deleted.
+
+Automatic migration is rejected because legacy identity is journey-scoped, carries no
+stable repository identity, uses different status vocabularies, and compresses narrative
+into structured fields. Matching display codes do not establish identity. Migrations
+`015`/`016` and their TypeScript schema recognition remain intact while supported
+databases depend on them.
+
+Legacy commands do not change in this decision. File-first routing, explicit export,
+deprecation, and physical removal are separate changes with their own evidence and
+approval gates. No future transition may dual-write files and SQLite as peer authorities.
 
 ---
 

@@ -1,6 +1,7 @@
 import pytest
 
 from memory.builder.method_definition import (
+    CadenceProfileDefinition,
     CheckpointDefinition,
     ContractDefinition,
     DslResolution,
@@ -241,6 +242,22 @@ def test_rejects_surface_route_without_surfaces() -> None:
     )
 
     with pytest.raises(MethodDefinitionError, match="at least one surface"):
+        validate_method_definition(definition)
+
+
+def test_rejects_unknown_cadence_plan_approval_policy() -> None:
+    definition = _valid_definition().replace(
+        cadence_profiles=(
+            CadenceProfileDefinition(
+                id="accelerated",
+                label="Accelerated",
+                stop_policy="continue",
+                plan_approval_policy="trust_me",
+            ),
+        )
+    )
+
+    with pytest.raises(MethodDefinitionError, match="plan approval policy"):
         validate_method_definition(definition)
 
 

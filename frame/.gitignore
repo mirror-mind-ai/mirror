@@ -1,0 +1,4 @@
+node_modules/
+out/
+smoke-*.log
+spike-pty.js

@@ -26,6 +26,27 @@ def test_load_extension_returns_api_with_populated_registries(db_conn, hello_fix
     assert api.table_prefix == "ext_hello_"
     assert set(api.cli_registry.keys()) == {"ping", "list"}
     assert set(api.context_registry.keys()) == {"greeting"}
+    assert api.journey_projections.extension_id == "hello"
+
+
+def test_loader_passes_projection_service_into_bound_facade(db_conn, hello_fixture_dir):
+    class StubProjectionService:
+        def inspect(self, journey_id, namespace, projection, *, domain):
+            return (journey_id, namespace, projection, domain)
+
+    api = load_extension(
+        hello_fixture_dir,
+        connection=db_conn,
+        journey_projection_service=StubProjectionService(),  # type: ignore[arg-type]
+        reload=True,
+    )
+
+    assert api.journey_projections.inspect("synthetic-journey", "tactical") == (
+        "synthetic-journey",
+        "hello",
+        "tactical",
+        "extension",
+    )
 
 
 def test_load_extension_is_idempotent_within_a_process(db_conn, hello_fixture_dir):

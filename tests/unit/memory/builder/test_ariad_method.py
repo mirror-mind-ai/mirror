@@ -42,7 +42,12 @@ def test_ariad_cadence_profiles_include_conservative_higher_autonomy() -> None:
     profiles = {profile.id: profile for profile in method.cadence_profiles}
 
     assert profiles["accelerated"].active is True
-    assert profiles["accelerated"].stop_policy == "continue_through_soft_stops_stop_at_hard_gates"
+    assert (
+        profiles["accelerated"].stop_policy == "continue_through_story_plan_to_navigator_validation"
+    )
+    assert profiles["accelerated"].plan_approval_policy == "bounded_story_authority"
+    assert profiles["stepwise"].plan_approval_policy == "navigator_approval"
+    assert profiles["checkpoint"].plan_approval_policy == "navigator_approval"
     assert profiles["autonomous"].active is True
     assert (
         profiles["autonomous"].stop_policy == "continue_until_hard_constraint_with_explicit_limits"

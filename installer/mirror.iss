@@ -9,10 +9,10 @@
 ;   1. bootstrap.ps1 installs prerequisites (Git, Node, uv, Pi) and clones/syncs
 ;      the 'stable' release branch into {app}\app (shallow clone, keeps .git so
 ;      'memory runtime update' fast-forwards in place without a reinstall).
-;   2. A final wizard page explains WHY Mirror needs a name + OpenRouter key and
-;      collects them.
-;   3. configure.ps1 writes .env, initializes identity, validates OpenRouter.
-;   4. A Desktop shortcut points at {app}\bin\mirror.cmd.
+;   2. The identity page is always skipped: the Frame owns first-run
+;      onboarding (name + OpenRouter key) — see frame/README.md.
+;   3. The primary shortcuts point at {app}\frame\MirrorFrame.exe; the
+;      Terminal route ({app}\bin\mirror.cmd) remains as recovery fallback.
 ;   Logs for future analysis are kept under {app}\logs\.
 ;
 ; Per-user install (PrivilegesRequired=lowest) so no admin elevation is needed.
@@ -25,7 +25,7 @@
 ; version). Bump installer/VERSION when the installer changes; build.ps1 passes
 ; it as AppVersion. This fallback is only used for a bare 'iscc mirror.iss'.
 #ifndef AppVersion
-  #define AppVersion "0.30.0"
+  #define AppVersion "0.31.0"
 #endif
 #ifndef RepoUrl
   #define RepoUrl "https://github.com/mirror-mind-ai/mirror.git"
@@ -108,17 +108,27 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Source: "lib\*";              DestDir: "{app}\bin\lib";              Flags: recursesubdirs ignoreversion
 Source: "launcher\mirror.cmd"; DestDir: "{app}\bin";                 Flags: ignoreversion
 Source: "bootstrap.ps1";      DestDir: "{app}\bin";                  Flags: ignoreversion
+; Homologated Pi version pin — single versioned source (installer/pi-version.txt);
+; bootstrap and the packaged Frame read this same installed copy.
+Source: "pi-version.txt";     DestDir: "{app}\bin";                  Flags: ignoreversion
 Source: "configure.ps1";      DestDir: "{app}\bin";                  Flags: ignoreversion
 Source: "install.ps1";        DestDir: "{app}\bin";                  Flags: ignoreversion
 Source: "health-check.ps1";   DestDir: "{app}\bin";                  Flags: ignoreversion
 Source: "assets\mirror.ico";  DestDir: "{app}\bin";                  Flags: ignoreversion skipifsourcedoesntexist
+; Desktop frame (ES-004): tabbed Pi sessions + guided onboarding; the primary
+; "Mirror Mind" shortcut targets it. REQUIRED source (fail-closed): the build
+; must run installer\build.ps1, which packages and verifies the payload before
+; compiling — a missing Frame aborts the build instead of shipping broken
+; shortcuts.
+Source: "..\frame\out\MirrorFrame-win32-x64\*"; DestDir: "{app}\frame"; Flags: recursesubdirs ignoreversion
 ; Wizard banner illustration, extracted to {tmp} and loaded by [Code].
 Source: "assets\wizard-banner.bmp"; Flags: dontcopy
 
 [Icons]
-Name: "{group}\{#AppName}";            Filename: "{app}\bin\mirror.cmd"; WorkingDir: "{app}\app"; IconFilename: "{app}\bin\mirror.ico"
+Name: "{group}\{#AppName}";            Filename: "{app}\frame\MirrorFrame.exe"; WorkingDir: "{app}\app"; IconFilename: "{app}\bin\mirror.ico"
+Name: "{group}\{#AppName} (Terminal)"; Filename: "{app}\bin\mirror.cmd"; WorkingDir: "{app}\app"; IconFilename: "{app}\bin\mirror.ico"
 Name: "{group}\{#AppName} Health Check"; Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -NoExit -File ""{app}\bin\health-check.ps1"" -InstallDir ""{app}"""; WorkingDir: "{app}\app"
-Name: "{userdesktop}\{#AppName}";      Filename: "{app}\bin\mirror.cmd"; WorkingDir: "{app}\app"; IconFilename: "{app}\bin\mirror.ico"; Tasks: desktopicon
+Name: "{userdesktop}\{#AppName}";      Filename: "{app}\frame\MirrorFrame.exe"; WorkingDir: "{app}\app"; IconFilename: "{app}\bin\mirror.ico"; Tasks: desktopicon
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}\app"
@@ -436,8 +446,10 @@ end;
 function ShouldSkipPage(PageID: Integer): Boolean;
 begin
   Result := False;
-  { If bootstrap failed, do not ask for identity - nothing to configure. }
-  if (PageID = IdPage.ID) and (not BootstrapOk) then
+  { The desktop frame now owns first-run onboarding (name + OpenRouter key),
+    so the installer's identity page is always skipped. The page and its
+    controls are kept so this stays a minimal, reversible diff. }
+  if PageID = IdPage.ID then
     Result := True;
 end;
 

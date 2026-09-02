@@ -69,6 +69,7 @@ class CadenceProfileDefinition:
     label: str
     stop_policy: str
     active: bool = True
+    plan_approval_policy: str = "navigator_approval"
 
     def replace(self, **changes: Any) -> CadenceProfileDefinition:
         return replace(self, **changes)
@@ -242,6 +243,14 @@ def _validate_cadence_profiles(profiles: tuple[CadenceProfileDefinition, ...]) -
         _require_non_empty(profile.id, "cadence profile id")
         _require_non_empty(profile.label, f"cadence profile {profile.id} label")
         _require_non_empty(profile.stop_policy, f"cadence profile {profile.id} stop policy")
+        if profile.plan_approval_policy not in {
+            "navigator_approval",
+            "bounded_story_authority",
+        }:
+            raise MethodDefinitionError(
+                f"cadence profile {profile.id} has unknown plan approval policy "
+                f"{profile.plan_approval_policy}"
+            )
 
 
 def _validate_checkpoints(

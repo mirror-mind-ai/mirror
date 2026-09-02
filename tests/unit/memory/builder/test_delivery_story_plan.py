@@ -6,7 +6,9 @@ from memory import MemoryClient
 from memory.builder.ariad_method import get_ariad_method
 from memory.builder.delivery_cursor import get_delivery_cursor, set_delivery_cursor
 from memory.builder.delivery_story_plan import (
+    PlanPreauthorizationMismatch,
     approve_delivery_story_plan,
+    cancel_delivery_story_plan_preauthorization,
     plan_delivery_story_checkpoint,
     render_delivery_story_plan_report,
 )
@@ -408,6 +410,285 @@ def test_approve_delivery_story_plan_flags_unfilled_sections(tmp_path):
     rendered = render_delivery_story_plan_report(report)
     assert "Sections still pending" in rendered
     assert "Scope" in rendered
+
+
+def test_plan_delivery_story_preserves_existing_driver_authored_plan(tmp_path):
+    _client, store = _store(tmp_path)
+    artifact = tmp_path / "cv20-ds5" / "plan.md"
+    artifact.parent.mkdir(parents=True)
+    authored = "# Driver Plan\n\n## Scope\n\nPreserve this exact plan.\n"
+    artifact.write_text(authored, encoding="utf-8")
+    set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS5",
+        active_item_level="delivery_story",
+        navigator_flow_unit="delivery_story",
+        child_work_items=("CV20.DS5.US1",),
+    )
+
+    report = plan_delivery_story_checkpoint(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        objective="Preserve the authored plan.",
+        plan_artifact_path=artifact,
+    )
+
+    assert artifact.read_text(encoding="utf-8") == authored
+    assert ("plan", "existing") in {
+        (item.kind, item.status) for item in report.materialized_artifacts
+    }
+
+
+def test_plan_preauthorization_binds_exact_structural_scope_without_payload(tmp_path):
+    _client, store = _store(tmp_path)
+    set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS5",
+        active_item_level="delivery_story",
+        navigator_flow_unit="delivery_story",
+        child_work_items=("CV20.DS5.TS1", "CV20.DS5.US1"),
+        cursor_generation=7,
+    )
+
+    report = plan_delivery_story_checkpoint(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        objective="Do not persist this objective as authority.",
+        child_work_items=("CV20.DS5.US1", "CV20.DS5.TS1"),
+        preauthorize=True,
+        stop_boundary="navigator_validation",
+    )
+
+    receipt = report.cursor.plan_preauthorization
+    assert receipt is not None
+    assert receipt.status == "pending"
+    assert receipt.cursor_generation == 7
+    assert receipt.child_work_items == ("CV20.DS5.TS1", "CV20.DS5.US1")
+    assert receipt.stop_boundary == "navigator_validation"
+    assert len(receipt.scope_fingerprint) == 64
+    serialized = get_delivery_cursor(store, "sandbox-pet-store").plan_preauthorization
+    assert serialized == receipt
+    assert "objective" not in repr(receipt).lower()
+    assert "Do not persist" not in repr(receipt)
+
+
+def test_preauthorized_approval_blocks_incomplete_plan_and_invalidates_receipt(tmp_path):
+    _client, store = _store(tmp_path)
+    artifact = tmp_path / "cv20-ds5" / "plan.md"
+    set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS5",
+        active_item_level="delivery_story",
+        navigator_flow_unit="delivery_story",
+        cursor_generation=1,
+    )
+    plan_delivery_story_checkpoint(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        objective="Plan aggregate delivery.",
+        child_work_items=("CV20.DS5.US1",),
+        plan_artifact_path=artifact,
+        preauthorize=True,
+    )
+
+    with pytest.raises(PlanPreauthorizationMismatch) as exc_info:
+        approve_delivery_story_plan(
+            store,
+            journey="sandbox-pet-store",
+            method="ariad",
+            plan_artifact_path=artifact,
+            use_preauthorization=True,
+        )
+
+    assert exc_info.value.reason == "plan_incomplete"
+    cursor = get_delivery_cursor(store, "sandbox-pet-store")
+    assert cursor.active_checkpoint == "after_delivery_story_plan"
+    assert cursor.pending_confirmation == "navigator_delivery_story_plan_approval"
+    assert cursor.plan_preauthorization.status == "invalidated"
+    assert cursor.plan_preauthorization.reason == "plan_incomplete"
+
+
+def test_preauthorized_approval_consumes_once_after_complete_exact_plan(tmp_path):
+    _client, store = _store(tmp_path)
+    artifact = tmp_path / "cv20-ds5" / "plan.md"
+    set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS5",
+        active_item_level="delivery_story",
+        navigator_flow_unit="delivery_story",
+        cursor_generation=2,
+    )
+    plan_delivery_story_checkpoint(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        objective="Plan aggregate delivery.",
+        child_work_items=("CV20.DS5.US1", "CV20.DS5.TS1"),
+        plan_artifact_path=artifact,
+        preauthorize=True,
+    )
+    artifact.write_text(
+        artifact.read_text(encoding="utf-8").replace("Pending — ", "Decided: "),
+        encoding="utf-8",
+    )
+
+    approved = approve_delivery_story_plan(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        plan_artifact_path=artifact,
+        use_preauthorization=True,
+    )
+    retried = approve_delivery_story_plan(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        plan_artifact_path=artifact,
+        use_preauthorization=True,
+    )
+
+    assert approved.status == "approved"
+    assert approved.implementation_started is True
+    assert approved.cursor.plan_preauthorization.status == "consumed"
+    assert retried.status == "already_approved"
+    assert retried.implementation_started is False
+    assert retried.materialized_artifacts == ()
+
+
+def test_preauthorized_approval_treats_child_order_as_presentational(tmp_path):
+    _client, store = _store(tmp_path)
+    artifact = tmp_path / "cv20-ds5" / "plan.md"
+    set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS5",
+        active_item_level="delivery_story",
+        navigator_flow_unit="delivery_story",
+        cursor_generation=2,
+    )
+    planned = plan_delivery_story_checkpoint(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        objective="Plan aggregate delivery.",
+        child_work_items=("CV20.DS5.US1", "CV20.DS5.TS1"),
+        plan_artifact_path=artifact,
+        preauthorize=True,
+    )
+    set_delivery_cursor(
+        store,
+        journey=planned.cursor.journey,
+        method=planned.cursor.method,
+        active_item=planned.cursor.active_item,
+        active_item_level=planned.cursor.active_item_level,
+        active_checkpoint=planned.cursor.active_checkpoint,
+        pending_confirmation=planned.cursor.pending_confirmation,
+        last_delivery_event=planned.cursor.last_delivery_event,
+        navigator_flow_unit=planned.cursor.navigator_flow_unit,
+        child_work_items=("CV20.DS5.TS1", "CV20.DS5.US1"),
+        aggregate_checkpoint_status=planned.cursor.aggregate_checkpoint_status,
+    )
+    artifact.write_text(
+        artifact.read_text(encoding="utf-8").replace("Pending — ", "Decided: "),
+        encoding="utf-8",
+    )
+
+    report = approve_delivery_story_plan(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        plan_artifact_path=artifact,
+        use_preauthorization=True,
+    )
+
+    assert report.status == "approved"
+
+
+def test_preauthorized_approval_reports_child_scope_change_without_payload(tmp_path):
+    _client, store = _store(tmp_path)
+    artifact = tmp_path / "cv20-ds5" / "plan.md"
+    set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS5",
+        active_item_level="delivery_story",
+        navigator_flow_unit="delivery_story",
+    )
+    planned = plan_delivery_story_checkpoint(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        objective="Private Plan objective.",
+        child_work_items=("CV20.DS5.US1",),
+        plan_artifact_path=artifact,
+        preauthorize=True,
+    )
+    set_delivery_cursor(
+        store,
+        journey=planned.cursor.journey,
+        method=planned.cursor.method,
+        active_item=planned.cursor.active_item,
+        active_item_level=planned.cursor.active_item_level,
+        active_checkpoint=planned.cursor.active_checkpoint,
+        pending_confirmation=planned.cursor.pending_confirmation,
+        last_delivery_event=planned.cursor.last_delivery_event,
+        navigator_flow_unit=planned.cursor.navigator_flow_unit,
+        child_work_items=("CV20.DS5.US1", "CV20.DS5.TS1"),
+        aggregate_checkpoint_status=planned.cursor.aggregate_checkpoint_status,
+    )
+
+    with pytest.raises(PlanPreauthorizationMismatch) as exc_info:
+        approve_delivery_story_plan(
+            store,
+            journey="sandbox-pet-store",
+            method="ariad",
+            plan_artifact_path=artifact,
+            use_preauthorization=True,
+        )
+
+    assert exc_info.value.reason == "child_scope_changed"
+    assert "Private Plan objective" not in str(exc_info.value)
+
+
+def test_navigator_can_cancel_pending_plan_preauthorization(tmp_path):
+    _client, store = _store(tmp_path)
+    set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS5",
+        active_item_level="delivery_story",
+        navigator_flow_unit="delivery_story",
+    )
+    plan_delivery_story_checkpoint(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        objective="Plan aggregate delivery.",
+        child_work_items=("CV20.DS5.US1",),
+        preauthorize=True,
+    )
+
+    cursor = cancel_delivery_story_plan_preauthorization(
+        store, journey="sandbox-pet-store", method="ariad"
+    )
+
+    assert cursor.plan_preauthorization.status == "invalidated"
+    assert cursor.plan_preauthorization.reason == "navigator_cancelled"
+    assert cursor.pending_confirmation == "navigator_delivery_story_plan_approval"
 
 
 def test_approve_delivery_story_plan_no_warning_when_sections_authored(tmp_path):

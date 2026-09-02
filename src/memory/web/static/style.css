@@ -1780,10 +1780,11 @@ input {
 
 .journey-menu-child-row {
   grid-column: 1 / -1;
+  margin-left: calc(var(--journey-depth, 0) * 12px);
 }
 
 .journey-menu-child {
-  padding-left: 18px;
+  padding-left: 8px;
 }
 
 .journey-menu-item:hover,
@@ -2241,6 +2242,13 @@ input {
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
+}
+
+.all-journey-children li > ul {
+  grid-column: 2 / -1;
+  margin: 4px 0 0;
+  padding-left: 12px;
+  border-left: 1px solid var(--border);
 }
 
 .journey-status-icon {

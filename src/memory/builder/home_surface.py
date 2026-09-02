@@ -19,7 +19,7 @@ from memory.storage.store import Store
 
 @dataclass(frozen=True)
 class RefinementFieldSnapshot:
-    """Read-only Builder Home snapshot of nascent Refinement state."""
+    """Read-only Builder Home snapshot of the applicable Refinement authority."""
 
     active_refinement_story: str | None
     active_change_request: str | None
@@ -30,6 +30,22 @@ class RefinementFieldSnapshot:
     refinement_story_count: int = 0
     change_request_count: int = 0
     unassigned_change_request_count: int = 0
+    canonical_index: str | None = None
+
+
+CANONICAL_REFINEMENT_INDEX = Path("docs/project/refinement/index.md")
+
+
+def find_canonical_refinement_index(project_path: Path | None) -> str | None:
+    """Return the explicit project-relative Refinement index when it exists."""
+    if project_path is None:
+        return None
+    root = project_path.expanduser().resolve()
+    return (
+        CANONICAL_REFINEMENT_INDEX.as_posix()
+        if (root / CANONICAL_REFINEMENT_INDEX).is_file()
+        else None
+    )
 
 
 def inspect_refinement_field(
@@ -38,7 +54,18 @@ def inspect_refinement_field(
     store: Store | None = None,
     journey: str | None = None,
 ) -> RefinementFieldSnapshot:
-    """Inspect current refinement field without requiring durable Workbench storage."""
+    """Inspect the applicable Refinement authority without mixing file and DB state."""
+    canonical_index = find_canonical_refinement_index(project_path)
+    if canonical_index is not None:
+        return RefinementFieldSnapshot(
+            active_refinement_story=None,
+            active_change_request=None,
+            storage_state="project files",
+            seed_change_requests=0,
+            seed_change_request_source=None,
+            next_move="inspect canonical Refinement index",
+            canonical_index=canonical_index,
+        )
     workbench = _safe_workbench_snapshot(store, journey)
     if project_path is None:
         return _refinement_snapshot(
@@ -130,14 +157,26 @@ def render_builder_home_surface(
         ),
         "│                                                        │",
         _card_text("🧰 Refinement field"),
-        *_card_wrapped(f"active RS: {refinement.active_refinement_story or 'none'}"),
-        *_card_wrapped(f"active CR: {refinement.active_change_request or 'none'}"),
-        _card_text(f"workbench storage: {refinement.storage_state}"),
-        _card_text(f"stored RSs: {refinement.refinement_story_count}"),
-        _card_text(f"stored CRs: {refinement.change_request_count}"),
-        _card_text(f"unassigned CRs: {refinement.unassigned_change_request_count}"),
-        _card_text(f"seed CRs: {refinement.seed_change_requests}"),
     ]
+    if refinement.canonical_index:
+        lines.extend(
+            [
+                _card_text("authority: project files"),
+                *_card_wrapped(f"index: {refinement.canonical_index}"),
+            ]
+        )
+    else:
+        lines.extend(
+            [
+                *_card_wrapped(f"active RS: {refinement.active_refinement_story or 'none'}"),
+                *_card_wrapped(f"active CR: {refinement.active_change_request or 'none'}"),
+                _card_text(f"workbench storage: {refinement.storage_state}"),
+                _card_text(f"stored RSs: {refinement.refinement_story_count}"),
+                _card_text(f"stored CRs: {refinement.change_request_count}"),
+                _card_text(f"unassigned CRs: {refinement.unassigned_change_request_count}"),
+                _card_text(f"seed CRs: {refinement.seed_change_requests}"),
+            ]
+        )
     if refinement.seed_change_request_source:
         lines.extend(_card_wrapped(f"seed source: {refinement.seed_change_request_source}"))
     lines.extend(
@@ -188,6 +227,11 @@ def _pull_candidate_lines(report: PullCandidatesReport) -> list[str]:
 
 
 def _refinement_orientation_lines(refinement: RefinementFieldSnapshot) -> list[str]:
+    if refinement.canonical_index:
+        return [
+            _card_text("authority: project files"),
+            *_card_wrapped(f"index: {refinement.canonical_index}"),
+        ]
     if refinement.active_refinement_story:
         lines = _card_wrapped(f"active RS: {refinement.active_refinement_story}")
         if refinement.active_change_request:
@@ -215,8 +259,12 @@ def _available_refinement_moves(
         f"pull {recommended.code}" if recommended else "pull recommended Delivery item",
         "inspect roadmap",
     ]
-    if refinement.seed_change_requests:
+    if refinement.canonical_index:
+        moves.append("inspect canonical Refinement index")
+    elif refinement.seed_change_requests:
         moves.append("review seed Change Requests")
+    if refinement.canonical_index:
+        return tuple(moves)
     if refinement.active_refinement_story:
         moves.append("continue active Refinement Story")
     elif refinement.storage_state == "implemented":

@@ -21,10 +21,15 @@ def main() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         home = Path(tmp) / "mirror-fixture"
         home.mkdir()
-        for key in ("MEMORY_DIR", "MEMORY_PROD_DIR", "MEMORY_ENV", "MIRROR_USER"):
+        for key in ("MEMORY_DIR", "MEMORY_PROD_DIR", "MEMORY_ENV"):
             os.environ.pop(key, None)
         fixture_db = home / "memory.db"
         os.environ["MIRROR_HOME"] = str(home)
+        # Pin (not pop) MIRROR_USER: memory.config setdefaults popped vars back
+        # from a repo .env at import, and a re-injected user conflicts with the
+        # temporary MIRROR_HOME. Matching the home's basename keeps both
+        # coherent on any machine.
+        os.environ["MIRROR_USER"] = home.name
         os.environ["DB_PATH"] = str(fixture_db)
         os.environ["MEMORY_RECEPTION"] = "0"
 

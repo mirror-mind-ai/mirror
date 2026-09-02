@@ -87,6 +87,7 @@ class IdentityStore(ConnectionBacked):
                   AND CASE WHEN json_valid(metadata)
                            THEN json_extract(metadata, '$.parent_journey') END = ?""",
             "journey_paths": "SELECT COUNT(*) FROM identity WHERE layer = 'journey_path' AND key = ?",
+            "identity_integrations": "SELECT COUNT(*) FROM identity_integrations WHERE layer = 'journey' AND key = ?",
             "conversations": "SELECT COUNT(*) FROM conversations WHERE journey = ?",
             "memories": "SELECT COUNT(*) FROM memories WHERE journey = ?",
             "tasks": "SELECT COUNT(*) FROM tasks WHERE journey = ?",

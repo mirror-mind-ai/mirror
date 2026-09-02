@@ -113,7 +113,16 @@ def resolve_mirror_home(
 
 
 def default_db_path_for_home(home: Path) -> Path:
-    return home / "memory.db"
+    """Deprecated alias for :func:`db_path_for_home`.
+
+    This used to hardcode ``memory.db`` while the rest of the runtime resolved
+    the database through ``MEMORY_ENV``. Two functions answering "where is the
+    database?" with different answers produced five separate defects, including
+    backups of an empty decoy and update gates blocked by phantom migration
+    drift. Delegating leaves exactly one rule; prefer ``db_path_for_home``
+    directly in new code.
+    """
+    return db_path_for_home(home)
 
 
 def default_backup_dir_for_home(home: Path) -> Path:

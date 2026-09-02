@@ -68,8 +68,9 @@ principle.
    cost has one authority. ([§7](#7-the-model-in-the-loop))
 6. **Untrusted content stays untrusted.** The transcript is data to analyze,
    never instructions to follow. ([§5](#5-privacy--trust-boundaries))
-7. **The database is the single source of truth — and now two cores share
-   one file.** Schema changes are cross-core events. ([§6](#6-data--persistence))
+7. **The database is the runtime source of truth.** The TypeScript migration is
+   paused; Python is the sole product authority, and schema changes remain
+   conservative. ([§6](#6-data--persistence))
 8. **Declare your failure posture.** Fail loud in the core; fail quiet only
    where declared, and never silently.
    ([§5](#5-privacy--trust-boundaries), [§8](#8-release-confidence))

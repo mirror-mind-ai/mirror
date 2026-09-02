@@ -4,6 +4,13 @@ from pathlib import Path
 
 from memory.db import get_connection
 from memory.intelligence.search import MemorySearch
+from memory.journey_projections.operational import AriadOperationalProjectionService
+from memory.journey_projections.refresh import (
+    ProjectionRefreshCoordinator,
+    active_work_from_cursor,
+    exploratory_stories_from_store,
+)
+from memory.journey_projections.service import JourneyProjectionService
 from memory.models import (
     Attachment,
     Conversation,
@@ -18,6 +25,7 @@ from memory.services.attachment import AttachmentService
 from memory.services.conversation import ConversationService
 from memory.services.identity import IdentityService
 from memory.services.journey import JourneyService
+from memory.services.journey_admin import JourneyAdminService
 from memory.services.memory import MemoryService
 from memory.services.operation_runs import OperationRunService
 from memory.services.runtime_session import RuntimeSessionService
@@ -56,6 +64,7 @@ class MemoryClient:
         self.attachments = AttachmentService(self.store)
         self.identity = IdentityService(self.store, self.attachments)
         self.journeys = JourneyService(self.store, self.identity)
+        self.journey_admin = JourneyAdminService(self.store)
         self.tasks = TaskService(self.store, self.journeys)
         self.memories = MemoryService(self.store, self.search_engine)
         self.conversations = ConversationService(self.store, self.memories, self.tasks)
@@ -67,6 +76,30 @@ class MemoryClient:
             tasks=self.tasks,
             attachments=self.attachments,
         )
+
+        # Projection refresh is wired last: source services commit first and
+        # request this optional callback without making projection availability
+        # mutation authority.
+        projection_service = JourneyProjectionService(self.journeys.get_project_path)
+        operational_projection = AriadOperationalProjectionService(projection_service)
+
+        def explorer_projection_reader(journey: str):
+            project_path = self.journeys.get_project_path(journey)
+            if not project_path:
+                return None
+            stories = exploratory_stories_from_store(
+                self.store,
+                journey,
+                Path(project_path),
+            )
+            return stories or None
+
+        self.projection_refresh = ProjectionRefreshCoordinator(
+            operational_projection,
+            active_work_reader=lambda journey: active_work_from_cursor(self.store, journey),
+            exploratory_stories_reader=explorer_projection_reader,
+        )
+        self.store.configure_projection_refresh(self.projection_refresh.request)
 
     @property
     def is_production(self) -> bool:

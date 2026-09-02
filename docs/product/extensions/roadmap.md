@@ -105,9 +105,9 @@ extensions.
 
 ## Stability and versioning
 
-- `ExtensionAPI` version is `1.0` in Phase 1.
-- Phase 2 may bump to `1.1` (additive).
-- Phase 3 may bump to `2.0` if it changes signatures. We aim to avoid this.
+- `ExtensionAPI` version was `1.0` in Phase 1.
+- Version `1.1` adds the backward-compatible Journey projection façade under CV23.
+- A future major version is required if signatures become incompatible. We aim to avoid this.
 - Deprecation cycles are at least one minor release with warnings before
   removal.
 

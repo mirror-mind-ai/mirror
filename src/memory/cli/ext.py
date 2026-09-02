@@ -294,6 +294,14 @@ def cmd_ext(args: list[str]) -> int:
     verb = rest[0]
     tail = rest[1:]
 
+    # Describe, never execute. These verbs used to ignore a trailing help flag and
+    # run anyway, so `ext <id> migrate --help` applied migrations. Asking a
+    # command what it does is the one moment a user is most certain that nothing
+    # will change.
+    if verb in _BUILTIN_VERBS and _HELP_FLAGS.intersection(tail):
+        _print_builtin_verb_help(extension_id, verb)
+        return 0
+
     if verb == "bind":
         return _handle_binding(
             mirror_home=mirror_home,
@@ -319,6 +327,28 @@ def cmd_ext(args: list[str]) -> int:
         subcommand=verb,
         rest=tail,
     )
+
+
+_BUILTIN_VERBS = ("bind", "unbind", "bindings", "migrate")
+_HELP_FLAGS = frozenset({"--help", "-h", "help"})
+
+_BUILTIN_VERB_HELP = {
+    "bind": (
+        "bind <capability> (--persona <id> | --journey <id> | --global)",
+        "Bind a capability to a persona, a journey, or every context.",
+    ),
+    "unbind": (
+        "unbind <capability> (--persona <id> | --journey <id> | --global)",
+        "Remove a capability binding.",
+    ),
+    "bindings": ("bindings", "List the extension's capability bindings."),
+    "migrate": ("migrate", "Apply the extension's pending database migrations."),
+}
+
+
+def _print_builtin_verb_help(extension_id: str, verb: str) -> None:
+    usage, description = _BUILTIN_VERB_HELP[verb]
+    print(f"Usage:\n  python -m memory ext {extension_id} {usage}\n\n{description}")
 
 
 def _handle_binding(

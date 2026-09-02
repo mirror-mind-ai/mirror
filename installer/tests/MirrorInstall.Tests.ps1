@@ -136,3 +136,77 @@ Describe 'Invoke-MirrorDownload' {
         Should -Invoke -ModuleName MirrorInstall Invoke-WebRequest -Times 1
     }
 }
+
+Describe 'Get-PiPinDecision (exact Pi pin convergence)' {
+    It 'equal version is ok'            { Get-PiPinDecision -InstalledVersion '0.83.0' -PinnedVersion '0.83.0' | Should -Be 'ok' }
+    It 'v-prefixed equal is ok'         { Get-PiPinDecision -InstalledVersion 'v0.83.0' -PinnedVersion '0.83.0' | Should -Be 'ok' }
+    It 'noisy CLI output equal is ok'   { Get-PiPinDecision -InstalledVersion 'pi 0.83.0 (win32)' -PinnedVersion '0.83.0' | Should -Be 'ok' }
+    It 'older install is mismatch'      { Get-PiPinDecision -InstalledVersion '0.82.1' -PinnedVersion '0.83.0' | Should -Be 'mismatch' }
+    It 'NEWER install is also mismatch' { Get-PiPinDecision -InstalledVersion '0.84.0' -PinnedVersion '0.83.0' | Should -Be 'mismatch' }
+    It 'absent install is missing'      { Get-PiPinDecision -InstalledVersion $null -PinnedVersion '0.83.0' | Should -Be 'missing' }
+    It 'unparseable output is missing'  { Get-PiPinDecision -InstalledVersion 'garbage' -PinnedVersion '0.83.0' | Should -Be 'missing' }
+    It 'invalid pin throws'             { { Get-PiPinDecision -InstalledVersion '0.83.0' -PinnedVersion 'latest' } | Should -Throw }
+    It 'partial pin throws'             { { Get-PiPinDecision -InstalledVersion '0.83.0' -PinnedVersion '0.83' } | Should -Throw }
+}
+
+Describe 'Invoke-PiConvergence (operational pin convergence, with fakes)' {
+    BeforeEach {
+        $script:installCalls = 0
+        $script:receivedSpec = $null
+        $script:installer = { param($PackageSpec) $script:installCalls++; $script:receivedSpec = $PackageSpec }
+        $script:installerThatFails = { param($PackageSpec) $script:installCalls++; throw 'npm exploded' }
+    }
+
+    It '1. absent -> installs the pin, verifies, and the callback receives the EXACT spec' {
+        $script:seq = @($null, '0.83.0'); $script:i = 0
+        $fake = { $v = $script:seq[$script:i]; $script:i++; $v }
+        $r = Invoke-PiConvergence -GetInstalled $fake -PinnedVersion '0.83.0' -InstallPinned $installer
+        $r.Action | Should -Be 'installed'; $script:installCalls | Should -Be 1
+        # Critério do review: o valor entregue ao instalador é inequívoco —
+        # construído de PackageName+pin, sem escopo dinâmico.
+        $script:receivedSpec | Should -Be '@earendil-works/pi-coding-agent@0.83.0'
+    }
+    It '2. older -> installs the pin' {
+        $script:seq = @('0.82.0', '0.83.0'); $script:i = 0
+        $fake = { $v = $script:seq[$script:i]; $script:i++; $v }
+        $r = Invoke-PiConvergence -GetInstalled $fake -PinnedVersion '0.83.0' -InstallPinned $installer
+        $r.Action | Should -Be 'installed'; $script:installCalls | Should -Be 1
+    }
+    It '3. newer -> downgrades to the pin' {
+        $script:seq = @('0.84.0', '0.83.0'); $script:i = 0
+        $fake = { $v = $script:seq[$script:i]; $script:i++; $v }
+        $r = Invoke-PiConvergence -GetInstalled $fake -PinnedVersion '0.83.0' -InstallPinned $installer
+        $r.Action | Should -Be 'installed'; $script:installCalls | Should -Be 1
+    }
+    It '4. equal -> does NOT run install' {
+        $r = Invoke-PiConvergence -GetInstalled { '0.83.0' } -PinnedVersion '0.83.0' -InstallPinned $installer
+        $r.Action | Should -Be 'none'; $script:installCalls | Should -Be 0
+    }
+    It '5. missing pin -> throws BEFORE install' {
+        { Invoke-PiConvergence -GetInstalled { '0.83.0' } -PinnedVersion '' -InstallPinned $installer } | Should -Throw
+        $script:installCalls | Should -Be 0
+    }
+    It '6. invalid pin -> throws BEFORE install' {
+        { Invoke-PiConvergence -GetInstalled { $null } -PinnedVersion 'latest' -InstallPinned $installer } | Should -Throw
+        $script:installCalls | Should -Be 0
+    }
+    It '7. npm fails -> explicit error' {
+        { Invoke-PiConvergence -GetInstalled { $null } -PinnedVersion '0.83.0' -InstallPinned $installerThatFails } | Should -Throw
+    }
+    It '8. still divergent after install -> explicit failure' {
+        { Invoke-PiConvergence -GetInstalled { '0.82.0' } -PinnedVersion '0.83.0' -InstallPinned $installer } | Should -Throw
+        $script:installCalls | Should -Be 1
+    }
+    It '9a. -DetectOnly missing -> no install, reports missing' {
+        $r = Invoke-PiConvergence -GetInstalled { $null } -PinnedVersion '0.83.0' -InstallPinned $installer -DetectOnly
+        $r.Action | Should -Be 'detect'; $r.Decision | Should -Be 'missing'; $script:installCalls | Should -Be 0
+    }
+    It '9b. -DetectOnly mismatch -> no install, reports mismatch' {
+        $r = Invoke-PiConvergence -GetInstalled { '0.84.0' } -PinnedVersion '0.83.0' -InstallPinned $installer -DetectOnly
+        $r.Action | Should -Be 'detect'; $r.Decision | Should -Be 'mismatch'; $script:installCalls | Should -Be 0
+    }
+    It '9c. -DetectOnly ok -> no install, action none' {
+        $r = Invoke-PiConvergence -GetInstalled { '0.83.0' } -PinnedVersion '0.83.0' -InstallPinned $installer -DetectOnly
+        $r.Action | Should -Be 'none'; $script:installCalls | Should -Be 0
+    }
+}

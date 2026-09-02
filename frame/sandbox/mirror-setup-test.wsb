@@ -1,0 +1,11 @@
+<Configuration>
+  <MappedFolders>
+    <MappedFolder>
+      <HostFolder>C:\VSCode\mirror-exe\dist</HostFolder>
+      <ReadOnly>true</ReadOnly>
+    </MappedFolder>
+  </MappedFolders>
+  <LogonCommand>
+    <Command>powershell.exe -NoProfile -Command "Copy-Item $env:USERPROFILE\Desktop\dist\MirrorMind-Setup-*.exe $env:USERPROFILE\Desktop\; Write-Host 'Instalador copiado para a Área de Trabalho — duplo clique nele para instalar.'"</Command>
+  </LogonCommand>
+</Configuration>

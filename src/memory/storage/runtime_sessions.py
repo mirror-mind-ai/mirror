@@ -148,6 +148,25 @@ class RuntimeSessionStore(ConnectionBacked):
         self.conn.commit()
         return record
 
+    def compare_and_swap_runtime_session_metadata(
+        self,
+        session_id: str,
+        *,
+        expected_metadata: str,
+        metadata: str,
+    ) -> bool:
+        """Replace metadata only when it still equals the caller's observed value."""
+        from memory.models import _now
+
+        cursor = self.conn.execute(
+            """UPDATE runtime_sessions
+               SET metadata = ?, updated_at = ?
+               WHERE session_id = ? AND active = 1 AND metadata = ?""",
+            (metadata, _now(), session_id, expected_metadata),
+        )
+        self.conn.commit()
+        return cursor.rowcount == 1
+
     def get_active_runtime_conversation_ids(self) -> set[str]:
         rows = self.conn.execute(
             "SELECT conversation_id FROM runtime_sessions WHERE active = 1 AND conversation_id IS NOT NULL"

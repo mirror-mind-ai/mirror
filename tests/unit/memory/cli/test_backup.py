@@ -3,7 +3,100 @@
 import zipfile
 from datetime import datetime, timedelta
 
+import pytest
+
 from memory.cli.backup import RETENTION_DAYS, backup, main, resolve_backup_dir
+
+
+class TestEnvironmentAwareSource:
+    """The archived file must be the database the runtime actually opens.
+
+    A mirror home holds one database per environment (``memory.db`` for
+    production, ``memory_dev.db`` for development). Hardcoding ``memory.db``
+    silently archives an unused decoy whenever ``MEMORY_ENV`` is not production,
+    which is a data-loss bug: the backup reports success while protecting
+    nothing.
+    """
+
+    def test_development_environment_backs_up_the_development_database(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("memory.config.MEMORY_ENV", "development")
+        home = tmp_path / "home"
+        home.mkdir()
+        (home / "memory.db").write_text("decoy - never opened in development")
+        (home / "memory_dev.db").write_text("real development data")
+
+        result = backup(silent=True, mirror_home=home)
+
+        assert result is not None
+        with zipfile.ZipFile(result) as zf:
+            assert zf.read("memory.db") == b"real development data"
+
+    def test_production_environment_still_backs_up_memory_db(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("memory.config.MEMORY_ENV", "production")
+        home = tmp_path / "home"
+        home.mkdir()
+        (home / "memory.db").write_text("real production data")
+
+        result = backup(silent=True, mirror_home=home)
+
+        assert result is not None
+        with zipfile.ZipFile(result) as zf:
+            assert zf.read("memory.db") == b"real production data"
+
+
+class TestAtomicArchiveCreation:
+    """A killed backup must leave no archive behind.
+
+    ``zipfile.ZipFile(path, "w")`` truncates the destination immediately but
+    keeps the payload buffered until ``close()``, so a process killed in between
+    would leave a 0-byte file indistinguishable from a real backup by name.
+
+    This guards a failure mode rather than repairing an observed one: the 0-byte
+    archives in Mirror backup directories are Dropbox online-only placeholders
+    whose contents live on the server, not truncated writes.
+    """
+
+    def test_interrupted_backup_leaves_no_archive(self, tmp_path, monkeypatch):
+        db_path = tmp_path / "memory.db"
+        db_path.write_text("db content")
+        backup_dir = tmp_path / "backups"
+
+        def killed_mid_write(self, filename, arcname=None, **kwargs):
+            raise KeyboardInterrupt("process killed during teardown")
+
+        monkeypatch.setattr(zipfile.ZipFile, "write", killed_mid_write)
+
+        with pytest.raises(KeyboardInterrupt):
+            backup(silent=True, db_path=db_path, db_backup_path=backup_dir)
+
+        assert list(backup_dir.glob("memory_*.zip")) == []
+
+    def test_interrupted_backup_leaves_no_temporary_file(self, tmp_path, monkeypatch):
+        db_path = tmp_path / "memory.db"
+        db_path.write_text("db content")
+        backup_dir = tmp_path / "backups"
+
+        def killed_mid_write(self, filename, arcname=None, **kwargs):
+            raise KeyboardInterrupt("process killed during teardown")
+
+        monkeypatch.setattr(zipfile.ZipFile, "write", killed_mid_write)
+
+        with pytest.raises(KeyboardInterrupt):
+            backup(silent=True, db_path=db_path, db_backup_path=backup_dir)
+
+        assert list(backup_dir.iterdir()) == []
+
+    def test_successful_backup_is_a_complete_readable_archive(self, tmp_path):
+        db_path = tmp_path / "memory.db"
+        db_path.write_text("db content")
+
+        result = backup(silent=True, db_path=db_path, db_backup_path=tmp_path / "backups")
+
+        assert result is not None
+        assert result.stat().st_size > 0
+        with zipfile.ZipFile(result) as zf:
+            assert zf.testzip() is None
+            assert zf.read("memory.db") == b"db content"
 
 
 class TestResolveBackupDir:

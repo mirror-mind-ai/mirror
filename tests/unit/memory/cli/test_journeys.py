@@ -27,7 +27,7 @@ def test_journeys_reads_from_explicit_mirror_home(tmp_path, capsys):
     assert "Scoped journey description." in captured.out
 
 
-def test_journeys_renders_children_under_parent(tmp_path, capsys):
+def test_journeys_renders_arbitrary_depth_under_parent(tmp_path, capsys):
     mirror_home = tmp_path / ".mirror" / "pati"
     db_path = default_db_path_for_home(mirror_home)
     mem = MemoryClient(env="test", db_path=db_path)
@@ -38,6 +38,18 @@ def test_journeys_renders_children_under_parent(tmp_path, capsys):
         JOURNEY_CONTENT.replace("Mirror POC", "Mirror Web Console"),
         metadata='{"parent_journey": "mirror-mind"}',
     )
+    mem.set_identity(
+        "journey",
+        "workspace",
+        JOURNEY_CONTENT.replace("Mirror POC", "Workspace"),
+        metadata='{"parent_journey": "mirror-web-console"}',
+    )
+    mem.set_identity(
+        "journey",
+        "journey-map",
+        JOURNEY_CONTENT.replace("Mirror POC", "Journey Map"),
+        metadata='{"parent_journey": "workspace"}',
+    )
 
     from memory.cli.journeys import main
 
@@ -45,8 +57,13 @@ def test_journeys_renders_children_under_parent(tmp_path, capsys):
 
     captured = capsys.readouterr()
     assert "🚧 **mirror-mind** (active)" in captured.out
-    assert "  └─ 🚧 **mirror-web-console** (active)" in captured.out
+    assert "│  └─ 🚧 **mirror-web-console** (active)" in captured.out
+    assert "│  │  └─ 🚧 **workspace** (active)" in captured.out
+    assert "│  │  │  └─ 🚧 **journey-map** (active)" in captured.out
+    assert not any(line.startswith("    ") for line in captured.out.splitlines())
     assert captured.out.index("mirror-mind") < captured.out.index("mirror-web-console")
+    assert captured.out.index("mirror-web-console") < captured.out.index("workspace")
+    assert captured.out.index("workspace") < captured.out.index("journey-map")
 
 
 def test_journeys_explicit_mirror_home_overrides_environment_selection(mocker, tmp_path, capsys):

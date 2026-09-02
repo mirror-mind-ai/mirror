@@ -63,7 +63,7 @@ def create_refinement_story(
     provenance: str | None = None,
 ) -> RefinementStoryRecord:
     """Create a durable Refinement Story without starting Refinement flow."""
-    return store.create_refinement_story(
+    story = store.create_refinement_story(
         journey=journey,
         title=title,
         description=description,
@@ -71,6 +71,8 @@ def create_refinement_story(
         source=source,
         provenance=provenance,
     )
+    store.request_projection_refresh(journey)
+    return story
 
 
 def capture_change_request(
@@ -85,7 +87,7 @@ def capture_change_request(
     provenance: str | None = None,
 ) -> ChangeRequestRecord:
     """Capture a durable Change Request without activating a CR cycle."""
-    return store.create_change_request(
+    change_request = store.create_change_request(
         journey=journey,
         title=title,
         body=body,
@@ -94,6 +96,8 @@ def capture_change_request(
         source=source,
         provenance=provenance,
     )
+    store.request_projection_refresh(journey)
+    return change_request
 
 
 def attach_change_request_to_story(
@@ -103,7 +107,9 @@ def attach_change_request_to_story(
     refinement_story_id: str,
 ) -> ChangeRequestRecord:
     """Associate an existing Change Request to a Refinement Story."""
-    return store.attach_change_request_to_story(change_request_id, refinement_story_id)
+    change_request = store.attach_change_request_to_story(change_request_id, refinement_story_id)
+    store.request_projection_refresh(change_request.journey)
+    return change_request
 
 
 def discard_change_request(
@@ -129,6 +135,7 @@ def discard_change_request(
         raise ValueError("active Change Request cannot be discarded")
     story = store.get_refinement_story(cr.refinement_story_id) if cr.refinement_story_id else None
     store.delete_change_request(cr.id)
+    store.request_projection_refresh(journey)
     return ChangeRequestDiscard(
         journey=journey,
         change_request=cr,
@@ -154,11 +161,13 @@ def pull_refinement_story(
         active_change_request_id=None,
         last_refinement_event="refinement_story_pulled",
     )
-    return get_refinement_story_overview(
+    result = get_refinement_story_overview(
         store,
         journey=journey,
         refinement_story_id=refinement_story_id,
     )
+    store.request_projection_refresh(journey)
+    return result
 
 
 def select_change_request(
@@ -174,7 +183,35 @@ def select_change_request(
         active_change_request_id=updated.id,
         last_refinement_event="change_request_selected",
     )
-    return _flow_event(journey, "change_request_selected", story, updated, cr.status, None)
+    return _flow_event(store, journey, "change_request_selected", story, updated, cr.status, None)
+
+
+def resume_change_request(
+    store: Store, *, journey: str, change_request_id: str
+) -> RefinementFlowEvent:
+    """Resume a non-terminal CR inside the active RS without changing its status."""
+    story, cr = _require_active_story_and_cr(store, journey, change_request_id)
+    if cr.status == "captured":
+        raise ValueError("cannot resume from status 'captured'; use select")
+    if cr.status in TERMINAL_CHANGE_REQUEST_STATUSES:
+        raise ValueError(
+            f"cannot resume from status '{cr.status}'; Change Request is already terminal"
+        )
+    store.set_refinement_cursor(
+        journey=journey,
+        active_refinement_story_id=story.id,
+        active_change_request_id=cr.id,
+        last_refinement_event="change_request_resumed",
+    )
+    return _flow_event(
+        store,
+        journey,
+        "change_request_resumed",
+        story,
+        cr,
+        cr.status,
+        "This Change Request returned to the active CR cycle without changing status.",
+    )
 
 
 def confirm_change_request(
@@ -189,7 +226,7 @@ def confirm_change_request(
         active_change_request_id=cr.id,
         last_refinement_event="change_request_confirmed",
     )
-    return _flow_event(journey, "change_request_confirmed", story, cr, cr.status, None)
+    return _flow_event(store, journey, "change_request_confirmed", story, cr, cr.status, None)
 
 
 def plan_change_request(
@@ -205,7 +242,7 @@ def plan_change_request(
         active_change_request_id=updated.id,
         last_refinement_event="change_request_planned",
     )
-    return _flow_event(journey, "change_request_planned", story, updated, cr.status, summary)
+    return _flow_event(store, journey, "change_request_planned", story, updated, cr.status, summary)
 
 
 def mark_change_request_implemented(
@@ -229,7 +266,9 @@ def mark_change_request_implemented(
         active_change_request_id=updated.id,
         last_refinement_event="change_request_implemented",
     )
-    return _flow_event(journey, "change_request_implemented", story, updated, cr.status, detail)
+    return _flow_event(
+        store, journey, "change_request_implemented", story, updated, cr.status, detail
+    )
 
 
 def validate_change_request(
@@ -258,7 +297,7 @@ def validate_change_request(
             active_change_request_id=None,
             last_refinement_event="change_request_done",
         )
-        return _flow_event(journey, "change_request_done", story, updated, cr.status, detail)
+        return _flow_event(store, journey, "change_request_done", story, updated, cr.status, detail)
     updated = store.update_change_request_status(cr.id, "validated", outcome_notes=evidence)
     store.set_refinement_cursor(
         journey=journey,
@@ -266,7 +305,9 @@ def validate_change_request(
         active_change_request_id=updated.id,
         last_refinement_event="change_request_validated",
     )
-    return _flow_event(journey, "change_request_validated", story, updated, cr.status, evidence)
+    return _flow_event(
+        store, journey, "change_request_validated", story, updated, cr.status, evidence
+    )
 
 
 def complete_change_request(
@@ -284,7 +325,7 @@ def complete_change_request(
         active_change_request_id=None,
         last_refinement_event="change_request_done",
     )
-    return _flow_event(journey, "change_request_done", story, updated, cr.status, notes)
+    return _flow_event(store, journey, "change_request_done", story, updated, cr.status, notes)
 
 
 def park_change_request(
@@ -307,7 +348,7 @@ def park_change_request(
     _clear_active_cr_if_current(
         store, journey=journey, change_request_id=cr.id, event="change_request_parked"
     )
-    return _flow_event(journey, "change_request_parked", story, updated, cr.status, detail)
+    return _flow_event(store, journey, "change_request_parked", story, updated, cr.status, detail)
 
 
 def reject_change_request(
@@ -325,7 +366,7 @@ def reject_change_request(
     _clear_active_cr_if_current(
         store, journey=journey, change_request_id=cr.id, event="change_request_rejected"
     )
-    return _flow_event(journey, "change_request_rejected", story, updated, cr.status, detail)
+    return _flow_event(store, journey, "change_request_rejected", story, updated, cr.status, detail)
 
 
 def promote_change_request(
@@ -352,7 +393,7 @@ def promote_change_request(
     _clear_active_cr_if_current(
         store, journey=journey, change_request_id=cr.id, event="change_request_promoted"
     )
-    return _flow_event(journey, "change_request_promoted", story, updated, cr.status, detail)
+    return _flow_event(store, journey, "change_request_promoted", story, updated, cr.status, detail)
 
 
 def park_refinement_story(
@@ -384,7 +425,13 @@ def park_refinement_story(
         last_refinement_event="refinement_story_parked",
     )
     return _flow_event(
-        journey, "refinement_story_parked", updated_story, None, overview.story.status, detail
+        store,
+        journey,
+        "refinement_story_parked",
+        updated_story,
+        None,
+        overview.story.status,
+        detail,
     )
 
 
@@ -403,7 +450,13 @@ def review_refinement_story(
         last_refinement_event="refinement_story_reviewed",
     )
     return _flow_event(
-        journey, "refinement_story_reviewed", overview.story, None, overview.story.status, summary
+        store,
+        journey,
+        "refinement_story_reviewed",
+        overview.story,
+        None,
+        overview.story.status,
+        summary,
     )
 
 
@@ -424,7 +477,13 @@ def coherence_refinement_story(
         last_refinement_event="refinement_story_coherent",
     )
     return _flow_event(
-        journey, "refinement_story_coherent", overview.story, None, overview.story.status, summary
+        store,
+        journey,
+        "refinement_story_coherent",
+        overview.story,
+        None,
+        overview.story.status,
+        summary,
     )
 
 
@@ -449,7 +508,13 @@ def close_refinement_story(
         last_refinement_event="refinement_story_closed",
     )
     return _flow_event(
-        journey, "refinement_story_closed", updated_story, None, overview.story.status, summary
+        store,
+        journey,
+        "refinement_story_closed",
+        updated_story,
+        None,
+        overview.story.status,
+        summary,
     )
 
 
@@ -673,6 +738,7 @@ def _require_status(actual: str, allowed: set[str], action: str) -> None:
 
 
 def _flow_event(
+    store: Store,
     journey: str,
     event: str,
     story: RefinementStoryRecord,
@@ -680,6 +746,7 @@ def _flow_event(
     previous_status: str | None,
     detail: str | None,
 ) -> RefinementFlowEvent:
+    store.request_projection_refresh(journey)
     return RefinementFlowEvent(
         journey=journey,
         event=event,

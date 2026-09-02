@@ -315,6 +315,176 @@ recommended candidate or inspect the roadmap further after the verbatim blocks.
 
 ## Compose Refinement Work
 
+### Choose the Refinement authority
+
+Before inspecting, capturing, selecting, continuing, or changing Refinement Work,
+check for this exact path beneath the trusted `project_path`:
+
+```text
+docs/project/refinement/index.md
+```
+
+If it exists, use the **file-first path** below. The root index is the sole
+authority for focus, ordering, and current RS/CR status; linked documents own
+narrative, plans, evidence, and outcomes. Read the project's own convention from
+the index before acting. Do not invoke SQLite Workbench commands, inspect legacy
+rows, compare the two stores, or fall back to SQLite when a file-first operation
+is unclear.
+
+If the path does not exist, use the **legacy SQLite path** below. File-first and
+legacy behavior are alternatives selected by the explicit path, never dual
+writers or competing authorities.
+
+### File-first path
+
+When the Navigator asks to inspect, show, or orient to Refinement Work, read the
+canonical index and the linked documents needed to explain the current focus.
+Render one compact, agent-composed `Refinement Workbench` view with these facts in
+this order:
+
+1. canonical project-relative index path;
+2. focused RS and CR, or explicit `none` values;
+3. every RS with its canonical status;
+4. open CRs in canonical order with ID, RS, title, status, and canonical Driver
+   and Delivery details when assigned;
+5. terminal CR history after open work, preserving canonical Driver and Delivery
+   provenance when present;
+6. the next safe action for the focused item, grounded in its canonical status
+   and linked plan; and
+7. a boundary stating that inspection selected, changed, and executed nothing.
+
+Use `▸` to distinguish focused items. Preserve index ordering exactly. Omit an
+empty section cleanly or label it `none`; do not invent content. The root index
+wins whenever linked narrative disagrees about focus or status. Name the source
+path visibly and state that SQLite was not consulted. A representative shape is:
+
+```text
+Refinement Workbench
+
+source
+<canonical project-relative index path>
+
+CURRENT FOCUS
+<focused RS or none>
+▸ <focused CR or none>
+
+REFINEMENT STORIES
+<RS rows in canonical order>
+
+OPEN CHANGE REQUESTS
+<non-terminal CR rows in canonical order>
+  Driver: <canonical human> · Delivery: <canonical PR or branch>  # only when assigned
+
+TERMINAL HISTORY
+<terminal CR rows after open work, or none>
+  Driver: <canonical human> · Delivery: <canonical PR or branch>  # only when present
+
+NEXT SAFE ACTION
+<one grounded next action>
+
+BOUNDARY
+Read-only inspection. No work was selected, changed, or executed.
+SQLite was not consulted.
+```
+
+This is a presentation contract for the agent reading project documents, not a
+runtime-generated deterministic Ariad surface. Do not wrap it in
+`<<<ARIAD:...>>>`, add a Markdown parser, or call legacy Workbench commands to
+produce it. If the canonical index is unreadable or structurally ambiguous,
+report the practical defect and stop instead of silently falling back to SQLite.
+Read-only intent stays read-only: recommend a concrete correction, but do not
+mutate files.
+
+Treat Driver and Delivery as canonical project facts, not runtime discoveries.
+Show them only when the index row provides values other than its documented empty
+marker. Never infer assignment from the current Git checkout, branch author,
+latest committer, active journey, conversation, or SQLite state. Follow the
+project's collaboration convention when changing status: if it requires Driver
+and Delivery before `in_progress`, `blocked`, or `validated`, stop for the missing
+Navigator decision rather than synthesizing either value. Reassignment and stale
+work disposition are semantic decisions and always remain explicit.
+
+#### Collaborative file-first lifecycle
+
+Read and follow any collaboration protocol linked by the canonical index. When no
+more specific project rule exists, use this route:
+
+- **Inspect before mutation.** Read the complete index and relevant linked
+  documents. Confirm focus, existing IDs, target RS, status, Driver, and Delivery.
+- **Capture without selecting.** Require a concrete title, problem, expected
+  behavior, and explicit RS target. If the layout has no unassigned CR location,
+  stop rather than inventing one. Allocate the next unused project-wide numeric
+  ID from the complete index, preserve three-digit formatting, create one evolving
+  CR document with `Problem`, `Expected Behavior`, `Impact`, `Plan Or Decision`,
+  `Evidence`, and `Outcome`, append a `captured`/unassigned row, and preserve
+  `Current Focus` exactly.
+- **Select explicitly.** Update only `Current Focus`. Selection changes no status
+  and authorizes neither planning nor implementation.
+- **Plan before implementation.** Record scope, affected files, acceptance,
+  validation, exclusions, and authority boundaries. Move `captured` to `planned`
+  only after Navigator approval.
+- **Assign before starting.** Before `in_progress`, obtain explicit human Driver
+  and branch/PR Delivery decisions, then update status and both fields atomically.
+  Replace a branch reference with the PR link after the PR opens.
+- **Evidence is not validation.** Record checks and isolated smoke evidence during
+  implementation, but require an explicit natural Navigator validation route and
+  acceptance before `validated`.
+- **Review before terminal closure.** Record proportionality/debt findings. `done`
+  requires accepted validation and resolved debt action. `blocked`, `parked`,
+  `rejected`, and `promoted` require narrative reasons; `parked` also requires a
+  revisit trigger and `promoted` a Delivery target. Move terminal CRs below open
+  work, preserve Driver/Delivery provenance, and clear focused CR state without
+  selecting the next item implicitly.
+- **Return a handoff.** Report RS/CR, canonical status, Driver, Delivery, changed
+  files, checks, Navigator validation, limitations, unresolved decisions, and the
+  requested next action. A handoff never grants merge, publication, or release.
+- **Let Git expose concurrency.** Refresh against the approved base before final
+  handoff. Never overwrite, silently renumber, merge narratives, delete another
+  contributor's work, or use SQLite to resolve ID/index/focus/status conflicts.
+  Stop for semantic conflict resolution.
+
+When the Navigator asks how to create, work on, or collaborate through
+Refinement Work, answer read-only and explain the complete contributor route. Do
+not stop the explanation at terminal status: include the return handoff and how
+ordinary Git conflicts protect concurrent ID, index, focus, status, assignment,
+and narrative edits. Name the linked project protocol as the durable authority.
+
+Status remains document vocabulary, not an application state machine. Do not add
+ID reservation, locks, watchers, heartbeats, stale-work automation, Markdown
+parsing, projection, synchronization, or custom Git commands without repeated
+operational evidence and separate Navigator approval.
+
+When the Navigator authorizes a mutable operation such as capture, select,
+continue, update, or implement, that request also authorizes structural repairs
+needed to complete it without a second confirmation only when every repair is:
+
+- necessary for the requested operation;
+- deterministic from existing project evidence;
+- local to the involved Refinement documents;
+- non-destructive and reversible through Git;
+- meaning-preserving; and
+- free of unrequested status, priority, focus, identity, SQLite, configuration,
+  commit, push, publication, or release decisions.
+
+After completing the operation, explain in Navigator-facing project language
+what defect was found, what was repaired, and what was left unchanged. Do not
+lead with internal Mirror terms such as projection, artifact mismatch, or
+runtime coherence.
+
+Stop only when repair would choose product meaning, delete content, resolve a
+concurrent conflict, or expand the original request. In that case, explain the
+practical consequence, recommend the smallest safe solution, name the files it
+would change, and ask for the missing decision. Never use legacy SQLite as a
+recovery path.
+
+Follow the canonical file's status vocabulary and ID convention. Do not invent
+missing narrative or an RS assignment. Do not treat journey-local UUIDs or
+legacy display codes as project artifact identity. Git owns history, conflicts,
+and recovery; ordinary file work must not create an application-level Git
+protocol.
+
+### Legacy SQLite path
+
 When the Navigator uses natural language such as "capture this as a CR", "create
 a CR", "register this refinement", "add this to the Workbench", or "this should
 be a refinement", treat it as Refinement Work capture rather than roadmap
@@ -324,7 +494,7 @@ missing title/body/RS target.
 
 When the Navigator asks to "create an RS", "compose a refinement story", "group
 these CRs", or "show me that refinement story", route to the Builder Workbench
-commands:
+commands only when the canonical project index is absent:
 
 ```bash
 uv run python -m memory build refinement-story create --journey <slug> --title "<title>" [--description "<description>"]
@@ -359,6 +529,7 @@ mark done a Change Request in active Refinement Work, route to:
 
 ```bash
 uv run python -m memory build change-request select --journey <slug> --change-request-id <cr-id>
+uv run python -m memory build change-request resume --journey <slug> --change-request-id <cr-id>
 uv run python -m memory build change-request confirm --journey <slug> --change-request-id <cr-id>
 uv run python -m memory build change-request plan --journey <slug> --change-request-id <cr-id> --summary "<plan>"
 uv run python -m memory build change-request mark-implemented --journey <slug> --change-request-id <cr-id> --evidence "<evidence>"
@@ -384,6 +555,13 @@ These are distinct verbs, not synonyms — do not substitute one for another:
 - `discard` — deletes an **accidental capture**; the only one of the four that
   removes the record. If in doubt between `reject` and `discard`, prefer
   `reject`: it preserves the decision instead of erasing it.
+
+Use `change-request resume` only when a non-terminal CR inside the active
+Refinement Story has moved beyond capture and lost the active pointer. It
+preserves status, evidence, timestamps, and RS link, then reactivates the CR so
+`implemented` can proceed to `validate` and `validated` can proceed to `done`.
+Use `select` for captured CRs. Terminal CRs (`done`, `parked`, `rejected`, and
+`promoted`) cannot be resumed.
 
 Render the `CHANGE_REQUEST_PARKED` / `_REJECTED` / `_PROMOTED` events as
 `REFINEMENT_FLOW_EVENT` surfaces verbatim, same as the other CR transitions. If
@@ -478,7 +656,7 @@ When the user asks to change testing/runtime cadence, use:
 uv run python -m memory build set-cadence --method ariad --profile <stepwise|checkpoint|accelerated|autonomous>
 ```
 
-Use `stepwise` for detailed dogfooding. Use `checkpoint` for normal Ariad cadence. Use `accelerated` only to continue through soft stops while still stopping at hard gates. Use `autonomous` only with explicit Navigator limits, for example:
+Use `stepwise` for detailed dogfooding: Plan stops for approval unless the Navigator naturally asks the Driver to create and execute the active story Plan without another approval turn. Use `checkpoint` for normal Ariad cadence. Use `accelerated` when the Navigator trusts the Driver to complete the active story Plan and continue directly into local implementation; the runtime automatically records bounded story Plan authority and still stops at Navigator Validation. Use `autonomous` only with explicit Navigator limits, for example:
 
 ```bash
 uv run python -m memory build set-cadence --method ariad \
@@ -488,7 +666,7 @@ uv run python -m memory build set-cadence --method ariad \
   --limit "stop on failing checks"
 ```
 
-Higher-autonomy cadence never grants permission to cross hard gates: Plan approval, Navigator validation acceptance, debt decisions, unsafe operations, scope changes, push/release, and Done/history boundaries remain explicit stops. In current Ariad, Pull is the Navigator signal to Prepare; pulling a Delivery Story also expands it into implementable User/Technical Stories and stops for confirmation of the recommended next story.
+Higher-autonomy cadence never grants permission to cross Navigator validation acceptance, debt decisions, unsafe operations, scope changes, push/release, or Done/history boundaries. For an active User Story or Technical Story in `story_by_story`, `accelerated` satisfies the Plan approval gate through a complete, structurally matching, single-use receipt instead of pausing for another Navigator turn; Plan completeness and mismatch checks still apply. In current Ariad, Pull is the Navigator signal to Prepare; pulling a Delivery Story also expands it into implementable User/Technical Stories and stops for confirmation of the recommended next story.
 
 When the user asks to continue under the active cadence, use:
 
@@ -571,6 +749,34 @@ hand-edit the package's materialized children to work around a blocked Expand,
 and do not re-run Pull/Expand until the Navigator has fixed the authored
 content.
 
+## Delivery Story Release Intent
+
+When the active Ariad item belongs to a Delivery Story and the Navigator
+explicitly says the DS is expected to create a release boundary, has no release
+intent, or remains undecided, record only that planning state:
+
+```bash
+uv run python -m memory build release-intent --method ariad \
+  --intent <planned|none|undecided>
+```
+
+If the Navigator names a specific journey, pass `--journey <slug>`. To inspect
+without changing state, omit `--intent`. Return the `RELEASE_INTENT` surface
+verbatim.
+
+Map only explicit meaning:
+
+- `planned` — the DS is expected to create a release boundary if completed
+  coherently;
+- `none` — the DS is explicitly not expected to create a release boundary;
+- `undecided` — the decision is intentionally unresolved and may be revisited.
+
+Do not infer intent from cadence, version changes, completed implementation,
+existing tags, roadmap position, or a previous DS. Release intent belongs to the
+Delivery Story ancestor and is not authorization to commit, push, create a tag,
+promote stable, publish a release, or mutate a remote system. Those remain
+separate gates.
+
 ## Delivery Story Navigator Flow
 
 When the active Ariad work is a Delivery Story or the Navigator refers to the
@@ -627,6 +833,56 @@ Return the `DELIVERY_STORY_PLAN_CHECKPOINT` surface verbatim. Interpret only
 after the block. Explain that the DS-level Plan is pending approval and that no
 implementation, validation, push, or release is authorized by planning alone.
 
+### Conditional Plan preauthorization
+
+Use conditional preauthorization only when the Navigator explicitly authorizes
+one active Delivery Story by exact child identity and names the fixed next hard
+stop at Navigator Validation. Vague continuation, cadence selection, “faça tudo”,
+“não me pergunte nada”, or generic autonomy language never creates authority.
+Delivery Story preauthorization applies only to `delivery_story` flow. Exact
+User Story and Technical Story preauthorization is handled separately under
+`story_by_story` flow below.
+
+For an explicit matching request, include:
+
+```bash
+uv run python -m memory build plan-delivery-story --method ariad \
+  --objective "<aggregate Delivery Story objective>" \
+  --child <every exact child code> \
+  --preauthorize-approval \
+  --stop-after navigator_validation
+```
+
+Return `DELIVERY_STORY_PLAN_CHECKPOINT`,
+`PLAN_PREAUTHORIZATION_RECORDED`, and artifact surfaces verbatim. The receipt is
+not approval: complete the Driver-owned `plan.md` first. Required sections must
+exist and contain no empty, `Pending`, TODO/TBD, or placeholder body. Never
+replace an existing non-empty Plan with the runtime scaffold.
+
+In the same assistant turn, after completing the Plan, consume the receipt with:
+
+```bash
+uv run python -m memory build approve-delivery-story-plan --method ariad \
+  --use-preauthorization
+```
+
+On exact match, return every approval/start surface, implement only local approved
+work, and stop at Navigator Validation. On `PLAN_PREAUTHORIZATION_MISMATCH`,
+return the bounded surface and stop at ordinary Plan approval. Never repair,
+expand, reinterpret, or recreate authority silently. Child order is
+presentational, but addition or removal is a mismatch.
+
+Cancel pending authority when the Navigator withdraws it:
+
+```bash
+uv run python -m memory build cancel-delivery-story-plan-preauthorization \
+  --method ariad
+```
+
+Cancellation preserves the ordinary Plan approval gate. Preauthorization never
+crosses validation acceptance, debt, Done/history, commit, push, release, deploy,
+purchase, or another irreversible boundary.
+
 If the Navigator asks to plan the Delivery Story before selecting
 `delivery_story` flow, first surface or request the flow-unit choice; do not
 silently use DS-level Plan from the default `story_by_story` flow.
@@ -675,7 +931,70 @@ as the implementable unit; they must expand first. Plan must not approve the
 checkpoint, start implementation, change implementation files for the pulled
 item, change story status, commit, push, or release.
 
-When the Navigator approves the Plan checkpoint, run:
+### Conditional story Plan preauthorization
+
+Use story-level conditional preauthorization for one active User Story or
+Technical Story in `story_by_story` flow through either of two routes:
+
+- **natural explicit delegation in any cadence** — the Navigator asks the Driver
+  to create the active story Plan and execute it without another Plan approval
+  turn, for example `crie o plano e execute sem que eu precise autorizar`,
+  `faça o plano e implemente com preautorização concedida`, or an equivalent
+  natural phrase;
+- **accelerated cadence** — `plan-item` automatically records bounded story Plan
+  authority, so the Driver completes the Plan and continues without a Plan stop.
+
+The Navigator does not need to recite story identity, sibling exclusions,
+fingerprint policy, mismatch behavior, or the Validation boundary. Ariad derives
+those safeguards from the active cursor and method: exact active item and level,
+`story_by_story` flow, current generation, no sibling scope, complete Plan,
+single use, bounded mismatch fallback, and stop at Navigator Validation.
+
+Vague continuation such as `continue`, an isolated `faça tudo`, or `não me
+pergunte nada` does not create stepwise story authority. Selecting `accelerated`
+is itself the explicit cadence decision that authorizes Plan continuation for
+active implementable stories. For natural explicit delegation, run:
+
+```bash
+uv run python -m memory build plan-item --method ariad \
+  --preauthorize-approval \
+  --stop-after navigator_validation
+```
+
+In `accelerated` cadence, run ordinary `plan-item` without the explicit flag; the
+runtime automatically records bounded story Plan authority and emits the same
+receipt surface. Do not pause for Navigator approval after either route.
+
+Return `PLAN_CHECKPOINT`, `PLAN_PREAUTHORIZATION_RECORDED`, and artifact surfaces
+verbatim. Preserve existing `index.md`, `plan.md`, and `test-guide.md` bytes. The
+receipt is not approval: the Driver-owned Plan must contain complete Scope,
+Non-Goals, Acceptance Behavior, Validation Route, and Implementation Contract
+sections before authority can be consumed.
+
+In the same assistant turn, after completing the exact story Plan, run:
+
+```bash
+uv run python -m memory build approve-plan --method ariad \
+  --use-preauthorization
+```
+
+On exact match, return every approval and `IMPLEMENTATION_STARTED` surface,
+implement only the active story locally, and stop at Navigator Validation. On
+`PLAN_PREAUTHORIZATION_MISMATCH`, return the bounded surface and stop at ordinary
+Plan approval; never repair, reinterpret, or recreate authority silently.
+
+Cancel pending story authority when the Navigator withdraws it:
+
+```bash
+uv run python -m memory build cancel-plan-preauthorization --method ariad
+```
+
+Cancellation preserves the ordinary Plan gate. Story authority is private,
+single-use, cursor-generation-bound, and cannot authorize a sibling story,
+Validation acceptance, Debt Review, Done/history, commit, push, release, deploy,
+purchase, or another irreversible action.
+
+When the Navigator approves an ordinary Plan checkpoint, run:
 
 ```bash
 uv run python -m memory build approve-plan --method ariad
@@ -717,17 +1036,25 @@ uv run python -m memory build review-delivery-story --method ariad \
 ```
 
 For DS-level Done requests after Debt Review and Navigator closure confirmation,
-run:
+first align authored project state: mark the resolved Delivery Story package,
+every known child package/candidate row, and every canonical roadmap table row
+for the DS as Done. Then run:
 
 ```bash
 uv run python -m memory build done-delivery-story --method ariad \
   --summary "<DS-level done/history summary>"
 ```
 
+The command runs an authored roadmap closure preflight before cursor or artifact
+mutation. If any DS package, known child package/candidate row, or canonical
+roadmap row remains non-Done, the runtime refuses Done before cursor or artifact mutation and names project-relative files to align. The agent owns semantic
+Markdown updates; Python verifies explicit status evidence and never invents
+project meaning.
+
 DS-level Coherence is not a separate lifecycle stage before Done. It is checked
-inside the Done stage after closure/status/roadmap/history materialization, so
-Done is responsible for ensuring docs, roadmap, cursor, artifacts, and next-pull
-readiness remain consistent after closure.
+inside Done only after the authored status preflight passes, so the final surface
+can truthfully state that docs, roadmap, cursor, artifacts, and next-pull readiness
+remain consistent after closure.
 
 If the user names a specific journey, pass `--journey <slug>`. Return every
 `DELIVERY_STORY_CLOSURE_CHECKPOINT` surface verbatim. Explain after the block
@@ -783,11 +1110,28 @@ checkpoint. `pay_now` must route through a future Refactor loop before Done.
 Do not advance to Done, commit, push, or release while the debt decision is
 unresolved.
 
+## Check Ariad Coherence
+
+After Debt Review is complete, verify Process, Project, and Product alignment:
+
+```bash
+uv run python -m memory build coherence-item --method ariad \
+  --process "<process alignment evidence>" \
+  --project "<project alignment evidence>" \
+  --product "<product alignment evidence>"
+```
+
+If the user names a specific journey, pass `--journey <slug>`. Render the
+`COHERENCE_CHECKPOINT` surface. If it reports `pending_coherence`, correct the
+missing evidence and rerun the same command. Reentry is valid only for the exact
+`navigator_coherence` / `last_delivery_event=coherence` state. It re-evaluates
+the evidence; it does not bypass Coherence. Unrelated pending confirmations stay
+blocked, and `done-item` never consumes `navigator_coherence`.
+
 ## Close Ariad Done
 
-After Debt Review is complete and the Navigator confirms there is nothing else
-to do in the story, render the Done checkpoint. Coherence is checked inside Done
-after closure materialization:
+After Coherence is complete and the Navigator confirms there is nothing else to
+do in the story, render the Done checkpoint:
 
 ```bash
 uv run python -m memory build done-item --method ariad \

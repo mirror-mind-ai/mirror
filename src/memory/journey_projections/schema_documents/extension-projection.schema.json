@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mirror.local/contracts/journey-projections/v1/extension-projection.schema.json",
+  "title": "Generic Extension Journey Projection v1",
+  "allOf": [
+    { "$ref": "envelope.schema.json" },
+    {
+      "type": "object",
+      "properties": {
+        "altitude": { "enum": ["tactical", "strategic"] },
+        "producer": {
+          "type": "object",
+          "properties": { "kind": { "const": "extension" } }
+        },
+        "sourceSnapshots": { "minItems": 1 }
+      }
+    }
+  ]
+}

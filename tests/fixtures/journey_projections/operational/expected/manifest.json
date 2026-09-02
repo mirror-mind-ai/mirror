@@ -1,0 +1,15 @@
+{
+  "contractVersion": "1.0",
+  "schemaVersion": "1",
+  "journeyId": "projection-probe-journey",
+  "updatedAt": "2030-01-01T00:00:00Z",
+  "projections": {
+    "ariad:operational": {
+      "namespace": "ariad",
+      "projection": "operational",
+      "snapshotId": "op-probe-0001",
+      "path": ".mirror/projections/ariad/operational.json",
+      "sourceRevision": "sha256:probe-operational-revision"
+    }
+  }
+}

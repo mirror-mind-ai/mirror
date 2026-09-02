@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from memory.config import DEFAULT_USER_HOMES_DIR, default_db_path_for_home
+from memory.config import DEFAULT_USER_HOMES_DIR, db_path_for_home
 from memory.web.preferences import WebPreferenceStore
 
 
@@ -80,7 +80,7 @@ class MirrorRegistry:
     def _is_candidate_mirror_home(self, path: Path) -> bool:
         if not path.is_dir() or path.name.startswith("."):
             return False
-        return default_db_path_for_home(path).exists()
+        return db_path_for_home(path).exists()
 
     def _summary(self, mirror_home: Path) -> MirrorSummary:
         profile = WebPreferenceStore(mirror_home).read().profile
@@ -88,7 +88,7 @@ class MirrorRegistry:
             name=mirror_home.name,
             path=str(mirror_home),
             is_current=self.mirror_home is not None and mirror_home == self.mirror_home,
-            database_exists=default_db_path_for_home(mirror_home).exists(),
+            database_exists=db_path_for_home(mirror_home).exists(),
             display_name=profile.display_name,
             avatar_symbol=profile.avatar_symbol,
         )

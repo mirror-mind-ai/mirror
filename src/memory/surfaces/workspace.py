@@ -157,22 +157,37 @@ class WorkspaceSurface:
     ) -> dict[str, Any]:
         journey_ids = {journey["id"] for journey in journeys}
         selected_id = selected_journey["id"] if selected_journey else None
-        map_items = [
-            self._scene_journey_item(
+        by_parent: dict[str, list[dict]] = {}
+        roots: list[dict] = []
+        for journey in journeys:
+            parent = journey.get("metadata", {}).get("parent_journey") or ""
+            if parent and parent in journey_ids:
+                by_parent.setdefault(parent, []).append(journey)
+            else:
+                roots.append(journey)
+
+        visited: set[str] = set()
+
+        def build_branch(journey: dict) -> dict[str, Any]:
+            item = self._scene_journey_item(
                 journey, conversations=conversations, memories=memories, tasks=tasks
             )
-            for journey in journeys
-            if not journey.get("metadata", {}).get("parent_journey")
-            or journey.get("metadata", {}).get("parent_journey") not in journey_ids
-        ]
-        for item in map_items:
+            journey_id = journey["id"]
+            if journey_id in visited:
+                return item
+            visited.add(journey_id)
             item["children"] = [
-                self._scene_journey_item(
-                    child, conversations=conversations, memories=memories, tasks=tasks
-                )
-                for child in journeys
-                if child.get("metadata", {}).get("parent_journey") == item["id"]
+                build_branch(child)
+                for child in by_parent.get(journey_id, [])
+                if child["id"] not in visited
             ]
+            return item
+
+        map_items = [build_branch(root) for root in roots]
+        # Keep malformed rootless cycles bounded and visible instead of hanging.
+        map_items.extend(
+            build_branch(journey) for journey in journeys if journey["id"] not in visited
+        )
         location_path = self._scene_location_path(selected_journey, journeys)
         nearby = self._scene_nearby(selected_journey, journeys) if selected_journey else []
         signals = self._scene_signals(
@@ -249,18 +264,17 @@ class WorkspaceSurface:
         if not selected_journey:
             return []
         by_id = {journey["id"]: journey for journey in journeys}
-        parent_id = selected_journey.get("metadata", {}).get("parent_journey") or ""
-        path = []
-        if parent_id in by_id:
-            parent = by_id[parent_id]
-            path.append({"id": parent["id"], "title": parent.get("name") or parent["id"]})
-        path.append(
-            {
-                "id": selected_journey["id"],
-                "title": selected_journey.get("name") or selected_journey["id"],
-            }
-        )
-        return path
+        reversed_path: list[dict[str, str]] = []
+        current: dict | None = selected_journey
+        visited: set[str] = set()
+        while current is not None and current["id"] not in visited:
+            visited.add(current["id"])
+            reversed_path.append(
+                {"id": current["id"], "title": current.get("name") or current["id"]}
+            )
+            parent_id = current.get("metadata", {}).get("parent_journey") or ""
+            current = by_id.get(parent_id)
+        return list(reversed(reversed_path))
 
     def _scene_nearby(
         self, selected_journey: dict | None, journeys: list[dict]
@@ -431,7 +445,7 @@ class WorkspaceSurface:
                 "key": "parentJourney",
                 "label": "Parent journey",
                 "value": metadata.get("parent_journey") or "Not configured",
-                "description": "Optional one-level parent journey for visual organization.",
+                "description": "Optional organizational parent in the journey tree.",
             },
         ]
         return WorkspaceSection(

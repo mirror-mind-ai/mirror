@@ -1,5 +1,8 @@
 """Tests for journey CLI behavior."""
 
+import io
+import json
+
 from memory import MemoryClient
 from memory.config import default_db_path_for_home
 
@@ -49,6 +52,42 @@ def test_journey_set_path_uses_journey_service(tmp_path, capsys):
     assert "project_path set" in captured.err
     assert captured.out.strip() == str(project_path.resolve())
     assert mem.journeys.get_project_path("mirror-poc") == str(project_path.resolve())
+
+
+def test_journey_admin_cli_round_trips_json_without_provider(tmp_path, capsys, monkeypatch):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    mem = MemoryClient(env="test", db_path=default_db_path_for_home(mirror_home))
+    mem.set_identity("journey", "mirror-poc", JOURNEY_CONTENT)
+
+    from memory.cli.journey import main
+
+    main(["export-registry", "--mirror-home", str(mirror_home)])
+    registry = json.loads(capsys.readouterr().out)
+    monkeypatch.setattr(
+        "sys.stdin",
+        io.StringIO(
+            json.dumps(
+                {
+                    "schemaVersion": "mirror.journey-mutation@1.0",
+                    "requestId": "cli-request-001",
+                    "expectedSourceVersion": registry["sourceVersion"],
+                    "operation": "create_journey",
+                    "payload": {
+                        "slug": "child-poc",
+                        "name": "Child POC",
+                        "description": "A sufficiently detailed child Journey description.",
+                        "parentId": "mirror-poc",
+                        "position": 0,
+                    },
+                }
+            )
+        ),
+    )
+    main(["mutate", "--mirror-home", str(mirror_home)])
+    result = json.loads(capsys.readouterr().out)
+
+    assert result["registry"]["roots"][0]["children"][0]["id"] == "child-poc"
+    assert result["receipt"]["operation"] == "create_journey"
 
 
 def test_journey_update_explicit_mirror_home_overrides_environment_selection(

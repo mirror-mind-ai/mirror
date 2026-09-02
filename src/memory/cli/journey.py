@@ -1,6 +1,7 @@
 """Journey CLI: inspect and update journey status."""
 
 import argparse
+import json
 import sys
 
 from memory import MemoryClient
@@ -63,6 +64,22 @@ def cmd_update(journey: str, content: str, *, mirror_home: str | None = None) ->
     print(f"Journey path '{journey}' updated.", file=sys.stderr)
 
 
+def cmd_export_registry(*, mirror_home: str | None = None) -> None:
+    mem = MemoryClient(db_path=db_path_from_mirror_home(mirror_home))
+    print(json.dumps(mem.journey_admin.export_registry(), ensure_ascii=False))
+
+
+def cmd_mutate(*, mirror_home: str | None = None) -> None:
+    mem = MemoryClient(db_path=db_path_from_mirror_home(mirror_home))
+    try:
+        request = json.load(sys.stdin)
+        result = mem.journey_admin.mutate(request)
+    except (ValueError, json.JSONDecodeError) as error:
+        print(json.dumps({"error": str(error)}), file=sys.stderr)
+        sys.exit(1)
+    print(json.dumps(result, ensure_ascii=False))
+
+
 def _parse_args(argv: list[str]) -> tuple[str | None, list[str]]:
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("--mirror-home", default=None)
@@ -74,7 +91,11 @@ def main(argv: list[str] | None = None) -> None:
     args = sys.argv[1:] if argv is None else argv
     mirror_home, remaining = _parse_args(args)
 
-    if remaining and remaining[0] == "update":
+    if remaining and remaining[0] == "export-registry":
+        cmd_export_registry(mirror_home=mirror_home)
+    elif remaining and remaining[0] == "mutate":
+        cmd_mutate(mirror_home=mirror_home)
+    elif remaining and remaining[0] == "update":
         if len(remaining) < 3:
             print("Usage: python -m memory journey update <slug> <content|-stdin>", file=sys.stderr)
             sys.exit(1)

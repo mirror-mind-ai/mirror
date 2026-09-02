@@ -59,7 +59,16 @@ def backup(
         default_db_path, default_db_backup_path = _default_paths()
 
     if db_path is None:
-        db_path = (mirror_home / "memory.db") if mirror_home is not None else default_db_path
+        if mirror_home is not None:
+            # One (mirror home, environment) pair resolves to exactly one database
+            # file. Hardcoding "memory.db" here archived an unused decoy whenever
+            # MEMORY_ENV was not production, reporting success while protecting
+            # nothing.
+            from memory.config import db_path_for_home
+
+            db_path = db_path_for_home(mirror_home)
+        else:
+            db_path = default_db_path
 
     if db_path is None:
         from memory.config import MIRROR_HOME_REQUIRED_HINT
@@ -98,13 +107,31 @@ def backup(
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_path = db_backup_path / f"memory_{timestamp}.zip"
 
-    with zipfile.ZipFile(backup_path, "w", zipfile.ZIP_DEFLATED) as zf:
-        zf.write(db_path, "memory.db")
-        # Include WAL and SHM sidecars when present for SQLite consistency.
-        for suffix in ("-wal", "-shm"):
-            wal = db_path.parent / f"{db_path.name}{suffix}"
-            if wal.exists():
-                zf.write(wal, f"memory.db{suffix}")
+    # Stage, then rename. zipfile truncates its destination on open but keeps the
+    # payload buffered until close(), so writing straight to backup_path would let
+    # a process killed mid-write leave a 0-byte file that looks like a valid
+    # backup. No such archive has been observed — the 0-byte files in Mirror
+    # backup directories are Dropbox online-only placeholders, not truncated
+    # writes. This is cheap insurance: a staged file that never gets renamed is
+    # unmistakably incomplete.
+    #
+    # The archive member is always "memory.db": the archive is a restore image of
+    # *the* database for this home, and the restore contract reads that name.
+    staging_path = db_backup_path / f"memory_{timestamp}.zip.partial"
+    try:
+        with zipfile.ZipFile(staging_path, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.write(db_path, "memory.db")
+            # Include WAL and SHM sidecars when present for SQLite consistency.
+            for suffix in ("-wal", "-shm"):
+                wal = db_path.parent / f"{db_path.name}{suffix}"
+                if wal.exists():
+                    zf.write(wal, f"memory.db{suffix}")
+        os.replace(staging_path, backup_path)
+    except BaseException:
+        # BaseException, not Exception: KeyboardInterrupt and SystemExit are the
+        # realistic teardown signals this guards against.
+        staging_path.unlink(missing_ok=True)
+        raise
 
     if not silent:
         size_kb = backup_path.stat().st_size / 1024
@@ -113,6 +140,13 @@ def backup(
     # Clean up old backups.
     cutoff = datetime.now() - timedelta(days=RETENTION_DAYS)
     removed = 0
+    # Sweep staging files stranded by an unclean kill, which by definition cannot
+    # clean up after itself.
+    for stranded in db_backup_path.glob("memory_*.zip.partial"):
+        try:
+            stranded.unlink()
+        except OSError:
+            continue
     for old in db_backup_path.glob("memory_*.zip"):
         if old == backup_path:
             continue

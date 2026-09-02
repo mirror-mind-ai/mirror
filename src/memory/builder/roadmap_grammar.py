@@ -18,7 +18,7 @@ from pathlib import Path
 # which never contain one.
 HEADING_RE = re.compile(r"^#\s+(?P<code>[A-Za-z0-9.\-]+)\s+[—-]\s+(?P<title>.+?)\s*$", re.MULTILINE)
 STATUS_RE = re.compile(r"\*\*Status:\*\*\s*(?P<status>.+?)\s*$", re.MULTILINE)
-_MARKDOWN_LINK_RE = re.compile(r"\[(?P<label>[^\]]+)\]\([^)]*\)")
+_MARKDOWN_LINK_RE = re.compile(r"\[(?P<label>[^\]]+)\]\((?P<target>[^)]*)\)")
 
 
 def is_legacy_path(path: Path, roadmap_root: Path) -> bool:
@@ -30,8 +30,15 @@ def is_legacy_path(path: Path, roadmap_root: Path) -> bool:
     return "legacy" in relative.parts
 
 
+def parse_markdown_link(value: str) -> tuple[str, str] | None:
+    """Return a full-cell Markdown link's label and target, when present."""
+    match = _MARKDOWN_LINK_RE.fullmatch(value.strip())
+    if match is None:
+        return None
+    return match.group("label"), match.group("target")
+
+
 def strip_markdown_link(value: str) -> str:
-    """Return the label of a ``[label](target)`` markdown link, or the raw value."""
-    stripped = value.strip()
-    match = _MARKDOWN_LINK_RE.fullmatch(stripped)
-    return match.group("label") if match else stripped
+    """Return the label of a ``[label](target)`` Markdown link, or raw value."""
+    parsed = parse_markdown_link(value)
+    return parsed[0] if parsed else value.strip()

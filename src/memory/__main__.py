@@ -62,6 +62,10 @@ Commands:
                        Usage: python -m memory journal [--journey SLUG] [--mirror-home PATH] <text>
   journey              Inspect or update a journey
                        Usage: python -m memory journey [status [SLUG]] | update <slug> <content> | set-path <slug> <path> [--mirror-home PATH]
+  journey-projection   Publish and inspect versioned Journey read models
+                       Usage: python -m memory journey-projection capabilities [--mirror-home PATH] --format json
+                              python -m memory journey-projection rebuild-operational --journey ID --mirror-home PATH --format json
+                              python -m memory journey-projection inspect --journey ID --namespace ID --projection ID --mirror-home PATH --format json
   build                Builder Mode DB context loader
                        Usage: python -m memory build load <slug>
   explore              Explorer Mode context loader
@@ -79,8 +83,9 @@ Commands:
                               python -m memory soul prompt self|wisdom|beauty
   memories             List memories with filters
                        Usage: python -m memory memories [--type T] [--layer L] [--journey J] [--search Q] [--mirror-home PATH]
-  conversations        List recent conversations
+  conversations        List conversations or append an explicit bounded message batch
                        Usage: python -m memory conversations [--limit N] [--journey J] [--persona P] [--mirror-home PATH]
+                              python -m memory conversations append --mirror-home PATH --format json < payload.json
   recall               Load messages from a previous conversation
                        Usage: python -m memory recall <conversation_id> [--limit N] [--mirror-home PATH]
   tasks                Task management
@@ -226,6 +231,11 @@ def _dispatch() -> None:
         from memory.cli.journey import main as _journey_main
 
         _journey_main()
+
+    elif command == "journey-projection":
+        from memory.cli.journey_projection import cmd_journey_projection
+
+        sys.exit(cmd_journey_projection(sys.argv[2:]))
 
     elif command == "memories":
         sys.argv = [sys.argv[0], *sys.argv[2:]]

@@ -82,6 +82,23 @@ def test_resume_state_with_active_item_recommends_prepare(tmp_path):
     )
 
 
+def test_resume_state_skips_legacy_refinement_snapshot_when_disabled(tmp_path, mocker):
+    _client, store = _store(tmp_path)
+    set_adopted_method(store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS12.US2",
+    )
+    get_snapshot = mocker.patch("memory.builder.resume_state.get_workbench_snapshot")
+
+    state = read_builder_resume_state(store, "sandbox-pet-store", include_refinement=False)
+
+    assert state.refinement is None
+    get_snapshot.assert_not_called()
+
+
 def test_resume_state_pending_confirmation_constrains_next_actions(tmp_path):
     _client, store = _store(tmp_path)
     set_adopted_method(store, "sandbox-pet-store", "ariad")

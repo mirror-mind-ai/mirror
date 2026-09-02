@@ -15,8 +15,21 @@ def find_templates_identity_root(start: Path | None = None) -> Path:
 
 
 def default_user_home(user: str, home: Path | None = None) -> Path:
+    """Return the default home for ``user``, honoring an existing legacy home.
+
+    Mirrors ``memory.config.resolve_mirror_home``: new installs live under
+    ``~/.mirror-minds/<user>``; if only the legacy ``~/.mirror/<user>`` exists,
+    keep using it so a re-run never splits an identity across two homes.
+    Previously this always returned the legacy path, so every fresh onboarding
+    immediately saw the "using legacy mirror home" migration warning about a
+    location init itself had just created.
+    """
     selected_home = Path(home).expanduser() if home is not None else Path.home()
-    return selected_home / ".mirror" / user
+    new_home = selected_home / ".mirror-minds" / user
+    legacy_home = selected_home / ".mirror" / user
+    if not new_home.exists() and legacy_home.exists():
+        return legacy_home
+    return new_home
 
 
 def _substitute_user_name(identity_root: Path, user: str) -> None:
@@ -51,7 +64,7 @@ def init_user_home(
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Initialize a user home from identity templates")
-    parser.add_argument("user", help="User name for ~/.mirror/<user>")
+    parser.add_argument("user", help="User name for ~/.mirror-minds/<user>")
     args = parser.parse_args(argv)
 
     identity_root = init_user_home(args.user)

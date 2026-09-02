@@ -23,6 +23,8 @@ pi_exports/
 docs/project/explorations/
 .mirror-clone-role
 .mirror-update-channel
+# Generated Journey read models, locks, and immutable local receipts.
+.mirror/projections/
 
 # Local recovery/backup notes and patches (Windows compat workflow)
 tmp/
@@ -30,3 +32,10 @@ tmp/
 # Windows installer build artifacts
 dist/
 *.exe
+
+# Stray Pi session exports. `pi --export` writes to the working directory when
+# given a bare filename, so an export run from the repo root lands here instead
+# of the journey's export folder. These are multi-MB conversation transcripts
+# that belong in the session archive, never in git history.
+pi-session-*.html
+pi-session-*.html.gz

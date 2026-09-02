@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mirror Mind — mockup funcional (Fusão A+C)</title>
+<meta name="description" content="Protótipo navegável do frame Windows do Mirror Mind: onboarding guiado, sessões em abas, setup com semáforos e glossário vivo de personas.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2314151b'/%3E%3Cpath d='M16 6 L26 16 L16 26 L6 16 Z' fill='none' stroke='%23b79cff' stroke-width='2.4'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app" id="app">
+  <!-- ===== Barra de título ===== -->
+  <div class="titlebar">
+    <span class="appid"><span class="glyph">◇</span> Mirror Mind <span class="badge">MOCKUP</span></span>
+    <button class="tb-reset" id="btn-reset" title="Reiniciar o mockup do zero">↺ reiniciar demo</button>
+    <div class="winbtns"><span>—</span><span>◻</span><span class="close">✕</span></div>
+  </div>
+
+  <!-- ===== Intro (overlay) ===== -->
+  <div class="intro" id="view-intro">
+    <div class="intro-card">
+      <div class="intro-glyph">◇</div>
+      <h1>Mirror Mind para Windows</h1>
+      <p class="lead">Este é um <b>mockup funcional</b> do futuro <code>mirror.exe</code> — o frame
+      desktop que une o <b>Pi</b> (conversa) e o <b>Mirror</b> (memória e identidade) numa única
+      experiência: instalar, entender e conversar.</p>
+      <div class="intro-actions">
+        <button class="btn primary" id="btn-first-run">Experimentar o 1º acesso</button>
+        <button class="btn" id="btn-skip">Pular para o app configurado</button>
+      </div>
+      <details class="intro-details">
+        <summary>O que é simulado neste mockup?</summary>
+        <ul>
+          <li><b>Simulado:</b> as respostas do agente (roteirizadas), a validação da chave, os logins e o update.</li>
+          <li><b>Real na arquitetura:</b> cada painel corresponde a comandos que já existem no Mirror
+          (<code>configure.ps1</code>, <code>health-check.ps1</code>, <code>memory identity</code>,
+          <code>detect-persona</code>, <code>runtime update</code>). O frame só orquestra — o core não muda.</li>
+          <li>O roteador de personas do “Experimente” usa a mesma lógica de keywords do
+          <code>detect-persona</code> real.</li>
+        </ul>
+      </details>
+    </div>
+  </div>
+
+  <!-- ===== Wizard (1º acesso) ===== -->
+  <div class="wizard hidden" id="view-wizard">
+    <div class="wiz-steps" id="wiz-steps"></div>
+    <div class="wiz-main" id="wiz-main"></div>
+  </div>
+
+  <!-- ===== Frame principal ===== -->
+  <div class="frame hidden" id="view-frame">
+    <div class="tabstrip" id="tabstrip"></div>
+    <div class="frame-body">
+      <!-- terminal -->
+      <div class="term-wrap" id="panel-terminal">
+        <div class="term" id="term-out" aria-live="polite"></div>
+        <form class="term-inputrow" id="term-form" autocomplete="off">
+          <span class="prompt-mark">&gt;</span>
+          <input class="term-input" id="term-input" placeholder="converse com o seu Mirror… (ou /help)" autofocus>
+        </form>
+      </div>
+      <!-- personas -->
+      <div class="panel hidden" id="panel-personas"></div>
+      <!-- setup -->
+      <div class="panel hidden" id="panel-setup"></div>
+    </div>
+    <div class="statusbar" id="statusbar"></div>
+  </div>
+
+  <!-- ===== Modal terminal (login simulado) ===== -->
+  <div class="modal hidden" id="modal">
+    <div class="modal-card">
+      <div class="modal-title" id="modal-title">pi /login</div>
+      <div class="modal-term" id="modal-term"></div>
+      <div class="modal-actions"><button class="btn" id="modal-close" disabled>fechar</button></div>
+    </div>
+  </div>
+</div>
+
+<section class="guide">
+  <h2>O que dá pra experimentar nele</h2>
+  <ul>
+    <li><b>1º acesso completo</b> — wizard de 6 passos: identidade → chave OpenRouter (com validação
+    simulada e a distinção <i>memória vs conversa</i> explicada) → conexão de assinatura (modal simulando
+    o <code>pi /login</code>) → tour de personas → primeira conversa real no terminal.</li>
+    <li><b>"Pular para o app configurado"</b> — pra quem quiser ver direto o dia-a-dia: abas de sessão
+    por jornada (cores!), terminal com conversa roteirizada onde <b>as personas ativam de verdade por
+    keyword</b> (digite "o deploy quebrou" → <code>◇ engineer</code>; "estou inseguro com o preço" →
+    <code>◇ strategist</code>; sem match → ego, sem assinatura) — a mesma lógica do
+    <code>detect-persona</code> real.</li>
+    <li><b>Comandos</b>: <code>/help</code>, <code>/mm-journeys</code>, <code>/model</code>,
+    <code>/mm-mirror</code> funcionam no terminal.</li>
+    <li><b>⚙ Setup com semáforos</b> — inclusive a regra R2 encenada: o botão "Atualizar Mirror" fica
+    desabilitado com sessões abertas; feche as abas e rode o update simulado (backup → fast-forward →
+    migrations → warm-up), mostrando o <b>"update sem reinstalar"</b> como experiência.</li>
+    <li><b>◇ Personas</b> — glossário de modos + 12 personas com o "Experimente" interativo.</li>
+    <li><b>↺ reiniciar demo</b> na barra de título reseta tudo (estado persiste em
+    <code>localStorage</code> entre visitas).</li>
+  </ul>
+</section>
+
+<footer class="pagefoot">
+  Mockup funcional — Experimento 1 da <b>ES-004 Windows Desktop Frame</b> · base Mirror stable v0.31.5 ·
+  nada aqui toca o core: o frame apenas orquestra comandos existentes.
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

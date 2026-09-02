@@ -87,7 +87,9 @@ Recorded in [Decisions — CV22 TypeScript core scaffolding](../../../decisions.
 - No schema or semantic change; FTS5/tokenizer behavior is inherited from the
   shared file.
 - No npm build/publish pipeline or package rename (CV22.DS6).
-- No new Python features — Python is maintenance-only from the CV21.E2.S2 baseline.
+- No product redesign inside parity stories. Python may evolve while it remains
+  authoritative for an unported command; parity stories absorb the current
+  observable contract before claiming that command as ported.
 
 ---
 

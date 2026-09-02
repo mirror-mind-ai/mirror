@@ -16,8 +16,7 @@ from memory.extensions.errors import (
     ExtensionPermissionError,
     ExtensionValidationError,
 )
-
-VERSION = "1.0"
+from memory.extensions.version import VERSION
 
 __all__ = [
     "VERSION",

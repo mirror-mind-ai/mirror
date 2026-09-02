@@ -76,6 +76,15 @@ const ASSOCIATIONS: readonly [AssociationName, (db: WritableDatabase) => void][]
         .run("jp-leaf", "journey_path", "leaf", "# Path", NOW, NOW),
   ],
   [
+    "identity_integrations",
+    (db) =>
+      db
+        .prepare(
+          "INSERT INTO identity_integrations (id, layer, key, content, source, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+        )
+        .run("ii-leaf", "journey", "leaf", "Keep", "soul_mode", NOW),
+  ],
+  [
     "conversations",
     (db) =>
       db
@@ -156,7 +165,7 @@ const ASSOCIATIONS: readonly [AssociationName, (db: WritableDatabase) => void][]
   ],
 ];
 
-test("countJourneyAssociations returns a closed eleven-category inventory", () => {
+test("countJourneyAssociations returns the closed association inventory", () => {
   const { db, cleanup } = tempDatabase();
   try {
     seedJourney(db);
@@ -166,6 +175,7 @@ test("countJourneyAssociations returns a closed eleven-category inventory", () =
     assert.deepEqual(countJourneyAssociations(db, "leaf"), {
       child_journeys: 1,
       journey_paths: 1,
+      identity_integrations: 1,
       conversations: 1,
       memories: 1,
       tasks: 1,
@@ -240,13 +250,19 @@ for (const [name, seedAssociation] of ASSOCIATIONS) {
   });
 }
 
+function seedAssociation(db: WritableDatabase, name: AssociationName): void {
+  const entry = ASSOCIATIONS.find(([candidate]) => candidate === name);
+  if (!entry) throw new Error(`no seeder registered for association '${name}'`);
+  entry[1](db);
+}
+
 test("associated-record details use the released deterministic order", () => {
   const { db, cleanup } = tempDatabase();
   try {
     seedJourney(db);
-    ASSOCIATIONS[4][1](db); // attachments
-    ASSOCIATIONS[0][1](db); // journey_paths
-    ASSOCIATIONS[3][1](db); // tasks
+    seedAssociation(db, "attachments");
+    seedAssociation(db, "journey_paths");
+    seedAssociation(db, "tasks");
     assert.throws(
       () => removeJourney(db, "leaf"),
       /associated records: journey_paths=1, tasks=1, attachments=1$/,

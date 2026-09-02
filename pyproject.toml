@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mirror"
-version = "0.31.5"
+version = "0.31.14"
 description = "Memory and identity system for Mirror Mind"
 requires-python = ">=3.10"
 dependencies = [
@@ -13,6 +13,8 @@ dependencies = [
     "pydantic>=2.0",
     "pyyaml>=6.0",
     "markdown>=3.6",
+    "jsonschema>=4.23",
+    "filelock>=3.16",
     "certifi>=2026.2.25",
 ]
 
@@ -35,7 +37,7 @@ memory-rehearse-migration = "memory.cli.migration_rehearsal:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-memory = ["web/static/*", "prompts/*.md"]
+memory = ["web/static/*", "prompts/*.md", "journey_projections/schema_documents/*.json"]
 
 # ---------------------------------------------------------------------------
 # pytest

@@ -619,8 +619,10 @@ def test_welcome_status_line_healthy_without_cache(tmp_path, capsys):
 
 
 def test_welcome_status_line_shows_development_environment(monkeypatch, tmp_path, capsys):
-    _mem(tmp_path, user="alisson-vale")
+    # Select the environment before seeding: a development runtime reads the
+    # development database, so that is the one the fixture must populate.
     monkeypatch.setattr("memory.config.MEMORY_ENV", "development")
+    _mem(tmp_path, user="alisson-vale")
 
     from memory.cli.welcome import main
 

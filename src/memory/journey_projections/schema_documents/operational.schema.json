@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mirror.local/contracts/journey-projections/v1/operational.schema.json",
+  "title": "Ariad Operational Projection v1",
+  "allOf": [
+    { "$ref": "envelope.schema.json" },
+    {
+      "type": "object",
+      "properties": {
+        "altitude": { "const": "operational" },
+        "namespace": { "const": "ariad" },
+        "projection": { "const": "operational" },
+        "producer": { "type": "object", "properties": { "kind": { "const": "ariad" } } },
+        "sourceSnapshots": { "maxItems": 0 },
+        "content": { "$ref": "#/$defs/operationalContent" }
+      }
+    }
+  ],
+  "$defs": {
+    "artifacts": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z][a-z0-9_-]{1,63}$" },
+      "additionalProperties": { "$ref": "envelope.schema.json#/$defs/relativePath" }
+    },
+    "roadmapNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "title", "status", "outcome", "path", "artifacts", "children"],
+      "properties": {
+        "id": { "$ref": "envelope.schema.json#/$defs/identifier" },
+        "type": { "enum": ["capability_value", "delivery_story", "user_story", "technical_story"] },
+        "title": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["planned", "in_progress", "blocked", "in_validation", "done"] },
+        "outcome": { "type": "string" },
+        "path": { "$ref": "envelope.schema.json#/$defs/relativePath" },
+        "artifacts": { "$ref": "#/$defs/artifacts" },
+        "children": { "type": "array", "items": { "$ref": "#/$defs/roadmapNode" } }
+      }
+    },
+    "activeWork": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["activeItem", "checkpoint", "pendingConfirmation", "status"],
+          "properties": {
+            "activeItem": { "$ref": "envelope.schema.json#/$defs/identifier" },
+            "checkpoint": { "type": ["string", "null"] },
+            "pendingConfirmation": { "type": ["string", "null"] },
+            "status": { "type": "string", "minLength": 1 }
+          }
+        }
+      ]
+    },
+    "attractor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "status", "description"],
+      "properties": {
+        "title": { "type": "string", "minLength": 1 },
+        "status": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" }
+      }
+    },
+    "experiment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "status", "description"],
+      "properties": {
+        "title": { "type": "string", "minLength": 1 },
+        "status": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" }
+      }
+    },
+    "exploratoryStory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "status", "summary", "path", "attractors", "experiments", "handoff"],
+      "properties": {
+        "id": { "$ref": "envelope.schema.json#/$defs/identifier" },
+        "title": { "type": "string", "minLength": 1 },
+        "status": { "type": "string", "minLength": 1 },
+        "summary": { "type": "string" },
+        "path": { "$ref": "envelope.schema.json#/$defs/relativePath" },
+        "attractors": { "type": "array", "items": { "$ref": "#/$defs/attractor" } },
+        "experiments": { "type": "array", "items": { "$ref": "#/$defs/experiment" } },
+        "handoff": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["status", "path"],
+              "properties": {
+                "status": { "type": "string", "minLength": 1 },
+                "path": { "$ref": "envelope.schema.json#/$defs/relativePath" }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "changeRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "status", "path"],
+      "properties": {
+        "id": { "$ref": "envelope.schema.json#/$defs/identifier" },
+        "title": { "type": "string", "minLength": 1 },
+        "status": { "type": "string", "minLength": 1 },
+        "path": { "$ref": "envelope.schema.json#/$defs/relativePath" }
+      }
+    },
+    "refinementStory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "status", "path", "changeRequests"],
+      "properties": {
+        "id": { "$ref": "envelope.schema.json#/$defs/identifier" },
+        "title": { "type": "string", "minLength": 1 },
+        "status": { "type": "string", "minLength": 1 },
+        "path": { "$ref": "envelope.schema.json#/$defs/relativePath" },
+        "changeRequests": { "type": "array", "items": { "$ref": "#/$defs/changeRequest" } }
+      }
+    },
+    "operationalContent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["roadmap", "activeWork", "exploratoryStories", "refinementStories"],
+      "properties": {
+        "roadmap": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["roots"],
+          "properties": { "roots": { "type": "array", "items": { "$ref": "#/$defs/roadmapNode" } } }
+        },
+        "activeWork": { "$ref": "#/$defs/activeWork" },
+        "exploratoryStories": { "type": "array", "items": { "$ref": "#/$defs/exploratoryStory" } },
+        "refinementStories": { "type": "array", "items": { "$ref": "#/$defs/refinementStory" } }
+      }
+    }
+  }
+}

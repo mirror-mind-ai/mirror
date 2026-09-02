@@ -10,6 +10,7 @@ import { type WritableDatabase, withTransaction } from "#db/database.ts";
 export interface JourneyAssociationCounts {
   child_journeys: number;
   journey_paths: number;
+  identity_integrations: number;
   conversations: number;
   memories: number;
   tasks: number;
@@ -62,6 +63,11 @@ export function countJourneyAssociations(
       "SELECT COUNT(*) AS count FROM identity WHERE layer = 'journey_path' AND key = ?",
       journey,
     ),
+    identity_integrations: count(
+      db,
+      "SELECT COUNT(*) AS count FROM identity_integrations WHERE layer = 'journey' AND key = ?",
+      journey,
+    ),
     conversations: count(
       db,
       "SELECT COUNT(*) AS count FROM conversations WHERE journey = ?",
@@ -104,6 +110,7 @@ export function countJourneyAssociations(
 
 const ASSOCIATED_RECORD_KEYS = [
   "journey_paths",
+  "identity_integrations",
   "conversations",
   "memories",
   "tasks",

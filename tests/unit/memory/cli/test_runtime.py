@@ -4,6 +4,8 @@ import sqlite3
 import zipfile
 from pathlib import Path
 
+import pytest
+
 from memory.cli.runtime import (
     BackupVerification,
     CloneRole,
@@ -24,6 +26,7 @@ from memory.cli.runtime import (
     RuntimeVersionReport,
     _connect_read_only,
     build_release_doctor_report,
+    build_runtime_status,
     build_runtime_update_dry_run,
     check_runtime_update_availability,
     cmd_runtime,
@@ -378,6 +381,68 @@ def test_connect_read_only_recovers_wal_database_without_sidecars(tmp_path):
     assert rows == [(MIGRATIONS[0][0],)]
 
 
+def test_connect_read_only_missing_database_is_never_created(tmp_path):
+    db_path = tmp_path / "missing.db"
+
+    with pytest.raises(sqlite3.OperationalError, match="unable to open database file"):
+        _connect_read_only(db_path)
+
+    assert not db_path.exists()
+
+
+def test_connect_read_only_falls_back_only_after_expected_lazy_wal_failure(mocker, tmp_path):
+    db_path = tmp_path / "memory.db"
+    read_only = mocker.Mock()
+    read_only.execute.side_effect = sqlite3.OperationalError("unable to open database file")
+    read_write = mocker.Mock()
+    connect = mocker.patch(
+        "memory.cli.runtime.sqlite3.connect", side_effect=(read_only, read_write)
+    )
+
+    recovered = _connect_read_only(db_path)
+
+    assert recovered is read_write
+    read_only.execute.assert_called_once_with("SELECT 1 FROM sqlite_master LIMIT 1")
+    read_only.close.assert_called_once_with()
+    base_uri = db_path.resolve().as_uri()
+    assert connect.call_args_list == [
+        mocker.call(f"{base_uri}?mode=ro", uri=True),
+        mocker.call(f"{base_uri}?mode=rw", uri=True),
+    ]
+
+
+def test_connect_read_only_propagates_unrelated_lazy_schema_error(mocker, tmp_path):
+    db_path = tmp_path / "memory.db"
+    read_only = mocker.Mock()
+    read_only.execute.side_effect = sqlite3.OperationalError("database is locked")
+    connect = mocker.patch("memory.cli.runtime.sqlite3.connect", return_value=read_only)
+
+    with pytest.raises(sqlite3.OperationalError, match="database is locked"):
+        _connect_read_only(db_path)
+
+    read_only.close.assert_called_once_with()
+    connect.assert_called_once_with(f"{db_path.resolve().as_uri()}?mode=ro", uri=True)
+
+
+def test_connect_read_only_normal_database_does_not_fall_back(monkeypatch, tmp_path):
+    db_path = tmp_path / "memory.db"
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("CREATE TABLE probe (id INTEGER PRIMARY KEY)")
+    real_connect = sqlite3.connect
+    calls = []
+
+    def tracked_connect(*args, **kwargs):
+        calls.append((args, kwargs))
+        return real_connect(*args, **kwargs)
+
+    monkeypatch.setattr("memory.cli.runtime.sqlite3.connect", tracked_connect)
+
+    with _connect_read_only(db_path) as read_only:
+        assert read_only.execute("SELECT count(*) FROM probe").fetchone() == (0,)
+
+    assert calls == [((f"{db_path.resolve().as_uri()}?mode=ro",), {"uri": True})]
+
+
 def test_inspect_extension_health_reports_database_table_error(monkeypatch, tmp_path):
     _write_command_extension(tmp_path)
     db_path = tmp_path / "memory.db"
@@ -535,7 +600,7 @@ def test_render_runtime_version():
 
 
 def test_check_runtime_update_availability_reports_up_to_date(monkeypatch):
-    def fake_run_git(args, *, cwd):
+    def fake_run_git(args, *, cwd, timeout=None):
         if args[0] == "rev-parse" and args[1] == "--show-toplevel":
             return 0, "/repo", ""
         if args == ["branch", "--show-current"]:
@@ -568,7 +633,7 @@ def test_check_runtime_update_availability_reports_up_to_date(monkeypatch):
 
 
 def test_check_runtime_update_availability_reports_update_available(monkeypatch):
-    def fake_run_git(args, *, cwd):
+    def fake_run_git(args, *, cwd, timeout=None):
         if args[0] == "rev-parse" and args[1] == "--show-toplevel":
             return 0, "/repo", ""
         if args == ["branch", "--show-current"]:
@@ -587,6 +652,10 @@ def test_check_runtime_update_availability_reports_update_available(monkeypatch)
             return 0, "https://example.test/repo.git", ""
         if args[:2] == ["ls-remote", "origin"]:
             return 0, "def5678901234567\trefs/heads/main", ""
+        if args[:2] == ["merge-base", "--is-ancestor"]:
+            return 1, "", ""
+        if args[0] == "cat-file":
+            return 128, "", ""
         if args == ["rev-parse", "HEAD"]:
             return 0, "abcdef1234567890", ""
         raise AssertionError(args)
@@ -598,6 +667,152 @@ def test_check_runtime_update_availability_reports_update_available(monkeypatch)
 
     assert report.status == "update_available"
     assert report.upstream == "origin/main"
+
+
+class TestRuntimeProbesTheActiveDatabase:
+    """Status, diagnosis and update must inspect the database the runtime opens.
+
+    A mirror home holds one database per environment. Probing the production
+    filename from a development runtime inspects a file nothing uses: extension
+    ledgers look empty, every command-skill extension is reported as having
+    pending migrations, and those false blockers refuse an update that is
+    perfectly safe.
+    """
+
+    def test_status_reports_the_environment_database(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("memory.config.MEMORY_ENV", "development")
+        home = tmp_path / "home"
+        home.mkdir()
+        (home / "memory_dev.db").write_text("development database")
+
+        report = build_runtime_status(mirror_home_arg=home)
+
+        assert report.db_path == home / "memory_dev.db"
+        assert report.db_exists is True
+
+    def test_bootstrap_does_not_create_a_production_database_in_a_dev_home(
+        self, tmp_path, monkeypatch
+    ):
+        from memory.cli.runtime import _attempt_database_bootstrap
+
+        monkeypatch.setattr("memory.config.MEMORY_ENV", "development")
+        home = tmp_path / "home"
+        home.mkdir()
+
+        ok, _detail = _attempt_database_bootstrap(home)
+
+        assert ok
+        assert (home / "memory_dev.db").exists()
+        assert not (home / "memory.db").exists(), (
+            "the update gate manufactured the decoy database it then trips over"
+        )
+
+
+class TestUpdateAvailabilityTrustsTheRemote:
+    """Availability must be derived from the remote, not from local refs.
+
+    Remote-tracking refs go stale the moment someone else pushes. Deciding
+    "local_ahead" from them means a clone that has not fetched for two weeks is
+    told it is ahead of a channel that has already moved past it — the exact
+    failure that hid v0.31.6 and v0.31.7 from a 0.31.5 checkout.
+    """
+
+    @staticmethod
+    def _fake_git(*, counts, remote_sha, head_sha, ancestry=None, ls_remote_ok=True, calls=None):
+        ancestry = ancestry or {}
+
+        def fake_run_git(args, *, cwd, timeout=None):
+            if calls is not None:
+                calls.append((tuple(args), timeout))
+            if args[0] == "rev-parse" and args[1] == "--show-toplevel":
+                return 0, "/repo", ""
+            if args == ["branch", "--show-current"]:
+                return 0, "main", ""
+            if args == ["rev-parse", "--short", "HEAD"]:
+                return 0, head_sha[:7], ""
+            if args == ["status", "--porcelain"]:
+                return 0, "", ""
+            if args[:2] == ["rev-parse", "--abbrev-ref"]:
+                return 0, "origin/stable", ""
+            if args == ["rev-parse", "--verify", "origin/stable"]:
+                return 0, "origin/stable", ""
+            if args[:2] == ["rev-list", "--left-right"]:
+                return 0, counts, ""
+            if args[:3] == ["config", "--get", "remote.origin.url"]:
+                return 0, "https://example.test/repo.git", ""
+            if args[:2] == ["ls-remote", "origin"]:
+                if not ls_remote_ok:
+                    return 1, "", "timed out after 2 seconds"
+                return 0, f"{remote_sha}\trefs/heads/stable", ""
+            if args == ["rev-parse", "HEAD"]:
+                return 0, head_sha, ""
+            if args[:2] == ["merge-base", "--is-ancestor"]:
+                return (0, "", "") if ancestry.get((args[2], args[3])) else (1, "", "")
+            if args[0] == "cat-file":
+                return (0, "", "") if ancestry.get("remote_known") else (128, "", "")
+            raise AssertionError(args)
+
+        return fake_run_git
+
+    def test_stale_refs_claiming_local_ahead_report_update_available(self, monkeypatch):
+        # Local refs say "1 ahead, 0 behind" because origin/stable is stale; the
+        # remote actually carries a commit this clone has never seen.
+        monkeypatch.setattr(
+            "memory.cli.runtime._run_git",
+            self._fake_git(counts="1 0", remote_sha="f" * 40, head_sha="a" * 40),
+        )
+        monkeypatch.setattr("memory.cli.runtime.package_version", lambda: "0.31.5")
+
+        report = check_runtime_update_availability(Path("/repo"), channel="stable")
+
+        assert report.status == "update_available"
+        assert report.remote_commit == "f" * 40
+
+    def test_genuinely_ahead_is_still_reported_as_local_ahead(self, monkeypatch):
+        # The remote commit is contained in local history: really ahead.
+        monkeypatch.setattr(
+            "memory.cli.runtime._run_git",
+            self._fake_git(
+                counts="1 0",
+                remote_sha="f" * 40,
+                head_sha="a" * 40,
+                ancestry={(("f" * 40), "HEAD"): True, "remote_known": True},
+            ),
+        )
+        monkeypatch.setattr("memory.cli.runtime.package_version", lambda: "0.31.5")
+
+        report = check_runtime_update_availability(Path("/repo"), channel="stable")
+
+        assert report.status == "local_ahead"
+
+    def test_failed_remote_query_reports_unknown_never_a_confident_verdict(self, monkeypatch):
+        monkeypatch.setattr(
+            "memory.cli.runtime._run_git",
+            self._fake_git(
+                counts="1 0", remote_sha="f" * 40, head_sha="a" * 40, ls_remote_ok=False
+            ),
+        )
+        monkeypatch.setattr("memory.cli.runtime.package_version", lambda: "0.31.5")
+
+        report = check_runtime_update_availability(Path("/repo"), channel="stable")
+
+        assert report.status == "unknown"
+
+    def test_remote_query_uses_the_network_timeout(self, monkeypatch):
+        from memory.cli.runtime import _GIT_NETWORK_TIMEOUT_SECONDS
+
+        calls: list[tuple[tuple[str, ...], float | None]] = []
+        monkeypatch.setattr(
+            "memory.cli.runtime._run_git",
+            self._fake_git(counts="0 0", remote_sha="a" * 40, head_sha="a" * 40, calls=calls),
+        )
+        monkeypatch.setattr("memory.cli.runtime.package_version", lambda: "0.31.5")
+
+        check_runtime_update_availability(Path("/repo"), channel="stable")
+
+        ls_remote = [(args, timeout) for args, timeout in calls if args[0] == "ls-remote"]
+        assert ls_remote, "ls-remote was never called"
+        assert ls_remote[0][1] == _GIT_NETWORK_TIMEOUT_SECONDS
 
 
 def test_render_runtime_update_availability():
@@ -1489,9 +1704,7 @@ def test_runtime_update_falls_back_to_repair_when_status_crashes(monkeypatch, tm
     monkeypatch.setattr("memory.cli.runtime._git_fetch", lambda remote, branch, cwd: (True, ""))
     backup_path = tmp_path / "backup.zip"
     monkeypatch.setattr("memory.cli.runtime.resolve_mirror_home", lambda: tmp_path)
-    monkeypatch.setattr(
-        "memory.cli.runtime.default_db_path_for_home", lambda home: tmp_path / "memory.db"
-    )
+    monkeypatch.setattr("memory.cli.runtime.db_path_for_home", lambda home: tmp_path / "memory.db")
     (tmp_path / "memory.db").write_text("db", encoding="utf-8")
     monkeypatch.setattr("memory.cli.runtime.create_backup", lambda silent, mirror_home: backup_path)
     monkeypatch.setattr(
@@ -1550,9 +1763,7 @@ def test_runtime_update_repair_allows_code_only_without_database(monkeypatch, tm
     )
     monkeypatch.setattr("memory.cli.runtime._git_fetch", lambda remote, branch, cwd: (True, ""))
     monkeypatch.setattr("memory.cli.runtime.resolve_mirror_home", lambda: tmp_path)
-    monkeypatch.setattr(
-        "memory.cli.runtime.default_db_path_for_home", lambda home: tmp_path / "missing.db"
-    )
+    monkeypatch.setattr("memory.cli.runtime.db_path_for_home", lambda home: tmp_path / "missing.db")
     monkeypatch.setattr("memory.cli.runtime._git_fast_forward", lambda upstream, cwd: (True, ""))
     monkeypatch.setattr(
         "memory.cli.runtime._run_git",

@@ -3,6 +3,7 @@
 import argparse
 import json
 import sqlite3
+import sys
 
 from memory import MemoryClient
 from memory.cli.common import db_path_from_mirror_home
@@ -10,6 +11,12 @@ from memory.db.schema import SCHEMA
 from memory.intelligence.search import MemorySearch
 from memory.services.attachment import AttachmentService
 from memory.services.conversation import ConversationService
+from memory.services.conversation_append import (
+    MAX_PAYLOAD_BYTES,
+    AppendRejected,
+    ConversationAppendService,
+    parse_append_request,
+)
 from memory.services.identity import IdentityService
 from memory.services.journey import JourneyService
 from memory.services.memory import MemoryService
@@ -18,6 +25,13 @@ from memory.storage.store import Store
 
 
 def main(argv: list[str] | None = None) -> None:
+    resolved_argv = list(sys.argv[1:] if argv is None else argv)
+    if resolved_argv and resolved_argv[0] == "append":
+        exit_status = _append_main(resolved_argv[1:])
+        if exit_status:
+            raise SystemExit(exit_status)
+        return
+
     parser = argparse.ArgumentParser(description="List recent conversations")
     parser.add_argument("--limit", type=int, default=20, help="Number of conversations")
     parser.add_argument("--journey", help="Filter by journey")
@@ -72,7 +86,7 @@ def main(argv: list[str] | None = None) -> None:
         default=None,
         help="Explicit tag value for metadata lifecycle apply; may be repeated",
     )
-    args = parser.parse_args(argv)
+    args = parser.parse_args(resolved_argv)
 
     if args.metadata_lifecycle_demo:
         report = _metadata_lifecycle_demo_report()
@@ -142,6 +156,39 @@ def main(argv: list[str] | None = None) -> None:
         )
         print(f"  {title}")
         print()
+
+
+def _append_main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(description="Append messages to one exact conversation")
+    parser.add_argument("--mirror-home", required=True)
+    parser.add_argument("--format", choices=("json",), required=True)
+    args = parser.parse_args(argv)
+
+    raw = sys.stdin.buffer.read(MAX_PAYLOAD_BYTES + 1)
+    if len(raw) > MAX_PAYLOAD_BYTES:
+        return _emit_append_rejection(AppendRejected("limit_exceeded"))
+    try:
+        payload = json.loads(raw.decode("utf-8"))
+        request = parse_append_request(payload)
+    except (UnicodeError, json.JSONDecodeError, RecursionError):
+        return _emit_append_rejection(AppendRejected("malformed_request"))
+    except AppendRejected as exc:
+        return _emit_append_rejection(exc)
+
+    try:
+        with MemoryClient(db_path=db_path_from_mirror_home(args.mirror_home)) as mem:
+            receipt = ConversationAppendService(mem.store).append_request(request)
+    except AppendRejected as exc:
+        return _emit_append_rejection(exc)
+    except Exception:
+        return _emit_append_rejection(AppendRejected("persistence_failure"))
+    print(json.dumps(receipt, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
+    return 0
+
+
+def _emit_append_rejection(error: AppendRejected) -> int:
+    print(json.dumps(error.receipt(), ensure_ascii=False, sort_keys=True, separators=(",", ":")))
+    return 2
 
 
 def _demo_conversation_service() -> tuple[ConversationService, Store]:

@@ -34,12 +34,12 @@ def _bootstrap_lock(db_path: Path) -> Iterator[None]:
 
     Two layers of locking:
     1. A per-path ``threading.Lock`` — serializes concurrent threads within
-       the same process. ``fcntl.flock`` is a process-level primitive and does
-       not block threads that share the same PID.
-    2. A sibling ``.bootstrap.lock`` file with ``fcntl.flock`` — serializes
-       concurrent processes on POSIX systems. Falls back to a no-op on
-       platforms without ``fcntl``; migrations are idempotent enough to
-       remain safe in that case.
+       the same process. The file locks below are process-level primitives and
+       do not block threads that share the same PID.
+    2. A sibling ``.bootstrap.lock`` file — serializes concurrent processes:
+       ``fcntl.flock`` on POSIX, ``msvcrt.locking`` on Windows. Only when
+       neither primitive exists does this degrade to a thread-only lock;
+       migrations are idempotent enough to remain safe in that case.
     """
     thread_lock = _get_thread_lock(db_path)
     lock_path = db_path.with_suffix(db_path.suffix + ".bootstrap.lock")
@@ -47,17 +47,47 @@ def _bootstrap_lock(db_path: Path) -> Iterator[None]:
     try:
         import fcntl  # POSIX only
     except ImportError:
+        fcntl = None
+
+    if fcntl is not None:
+        with thread_lock:
+            with open(lock_path, "w") as lock_file:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+                try:
+                    yield
+                finally:
+                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+        return
+
+    try:
+        import msvcrt  # Windows only
+    except ImportError:
         with thread_lock:
             yield
         return
 
     with thread_lock:
-        with open(lock_path, "w") as lock_file:
-            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        # "a" instead of "w": never truncate a file another process may be
+        # holding a byte-range lock on. The lock targets byte 0, which is
+        # allowed to lie beyond EOF on Windows.
+        with open(lock_path, "a") as lock_file:
+            lock_file.seek(0)
+            while True:
+                try:
+                    # LK_LOCK retries for ~10s and then raises; loop to match
+                    # the blocking semantics of flock(LOCK_EX).
+                    msvcrt.locking(lock_file.fileno(), msvcrt.LK_LOCK, 1)
+                    break
+                except OSError:
+                    continue
             try:
                 yield
             finally:
-                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+                lock_file.seek(0)
+                try:
+                    msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+                except OSError:
+                    pass
 
 
 def get_connection(db_path: Path | None = None) -> sqlite3.Connection:

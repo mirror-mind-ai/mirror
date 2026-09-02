@@ -402,7 +402,8 @@ class JourneyService:
             return None
         try:
             meta = json.loads(ident.metadata)
-            return meta.get("sync_file")
+            sync_file = meta.get("sync_file")
+            return sync_file if isinstance(sync_file, str) else None
         except (json.JSONDecodeError, TypeError):
             return None
 

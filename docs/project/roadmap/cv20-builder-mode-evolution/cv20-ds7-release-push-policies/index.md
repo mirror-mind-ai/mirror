@@ -18,7 +18,7 @@ Release intent belongs primarily to a Delivery Story or parent delivery boundary
 
 | Code | Story | Type | Outcome | Status |
 |------|-------|------|---------|--------|
-| [CV20.DS7.US1](cv20-ds7-us1-define-delivery-story-release-intent/index.md) | Define Delivery Story Release Intent | User Story | Builder can optionally record release intent at the Delivery Story level without authorizing release actions | 🟡 Planned |
+| [CV20.DS7.US1](cv20-ds7-us1-define-delivery-story-release-intent/index.md) | Define Delivery Story Release Intent | User Story | Builder can optionally record release intent at the Delivery Story level without authorizing release actions | ✅ Done |
 | CV20.DS7.US2 | Show Release Intent Progress | User Story | Builder shows release-boundary progress after child story Done events, including completed/remaining stories and blocked release actions | 🟡 Planned |
 | CV20.DS7.US3 | Decide Release At Delivery Collapse | User Story | Builder surfaces prepare/defer/no-release choices when a Delivery Story completes, including emergent release intent when none was planned | 🟡 Planned |
 | CV20.DS7.TS1 | Commit Push Release Policy Resolver | Technical Story | Runtime resolves effective commit, push, and release policies from method defaults, project settings, journey state, and overrides | 🟡 Planned |

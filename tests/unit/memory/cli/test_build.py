@@ -6,6 +6,7 @@ import pytest
 
 from memory import MemoryClient
 from memory.builder.delivery_cursor import get_delivery_cursor, set_delivery_cursor
+from memory.builder.delivery_story_plan import plan_delivery_story_checkpoint
 from memory.builder.method_adoption import set_adopted_method
 from memory.cli import build
 from memory.cli.runtime import CloneRole
@@ -198,6 +199,51 @@ def test_build_load_renders_resume_surface_when_adopted_journey_has_active_item(
     assert "ROADMAP SNAPSHOT" not in out
 
 
+def test_build_load_uses_canonical_refinement_authority_without_legacy_snapshot(
+    mocker, tmp_path, capsys
+):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    project_path = tmp_path / "project"
+    roadmap = project_path / "docs/project/roadmap/cv20/index.md"
+    roadmap.parent.mkdir(parents=True)
+    roadmap.write_text(
+        "# CV20 — Builder Mode Evolution\n\n**Status:** 🟢 Active\n",
+        encoding="utf-8",
+    )
+    refinement_index = project_path / "docs/project/refinement/index.md"
+    refinement_index.parent.mkdir(parents=True)
+    refinement_index.write_text("# Refinement Workbench\n", encoding="utf-8")
+    mem.journeys.set_project_path("sandbox-pet-store", str(project_path))
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS12.US2",
+        last_delivery_event="plan_approved",
+    )
+
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+    mocker.patch("memory.cli.build.switch_conversation")
+    mocker.patch("memory.cli.build._persist_global_sticky_defaults")
+    mocker.patch("memory.cli.build._is_mirror_mind_checkout", return_value=False)
+    mocker.patch.object(mem, "load_mirror_context", return_value="context")
+    mocker.patch.object(mem, "search", return_value=[])
+    legacy_snapshot = mocker.patch("memory.builder.resume_state.get_workbench_snapshot")
+
+    build.cmd_load("sandbox-pet-store")
+
+    out = capsys.readouterr().out
+    legacy_snapshot.assert_not_called()
+    assert "authority: project files" in out
+    assert "docs/project/refinement/index.md" in out
+    assert "workbench storage:" not in out
+    assert "last refinement event:" not in out
+
+
 def test_build_load_preserves_base_behavior_for_non_ariad_journey(mocker, tmp_path, capsys):
     mirror_home = tmp_path / ".mirror" / "pati"
     db_path = default_db_path_for_home(mirror_home)
@@ -243,6 +289,25 @@ def test_mm_build_skill_requires_marked_ariad_surfaces_to_render_verbatim():
     assert "Do not close an RS while any attached CR remains unfinished" in skill
     assert "capture this as a CR" in skill
     assert "pull that refinement story" in skill
+    assert "--preauthorize-approval" in skill
+    assert "--use-preauthorization" in skill
+    assert "--stop-after navigator_validation" in skill
+    assert "cancel-delivery-story-plan-preauthorization" in skill
+    assert "cancel-plan-preauthorization" in skill
+    assert "Conditional story Plan preauthorization" in skill
+    assert "one active User Story or" in skill
+    assert "Vague continuation" in skill
+    assert "crie o plano e execute sem que eu precise autorizar" in skill
+    assert "faça o plano e implemente com preautorização concedida" in skill
+    assert "accelerated" in skill
+    assert "automatically records bounded story Plan authority" in skill
+    assert "stop at Navigator Validation" in skill
+    assert "authored roadmap closure preflight" in skill
+    assert "runtime refuses Done before cursor or artifact mutation" in skill
+    assert "release-intent --method ariad" in skill
+    assert "<planned|none|undecided>" in skill
+    assert "Release intent belongs to the" in skill
+    assert "not authorization to commit, push" in skill
 
 
 def test_build_plan_item_renders_checkpoint_and_updates_cursor(mocker, tmp_path, capsys):
@@ -305,6 +370,22 @@ Candidate Delivery Stories:
     assert "# Plan — CV2.DS1" in plan_text
     assert "Checkout entry and address capture" in plan_text
     assert "E2E decision: required" in plan_text
+
+
+def test_plan_item_artifact_manifest_reports_preserved_package_as_existing(tmp_path):
+    plan_path = tmp_path / "story" / "plan.md"
+    plan_path.parent.mkdir(parents=True)
+    paths = (plan_path.parent / "index.md", plan_path, plan_path.parent / "test-guide.md")
+    for path in paths:
+        path.write_text("authored", encoding="utf-8")
+
+    artifacts = build._plan_package_artifacts(plan_path, dict.fromkeys(paths, True))
+
+    assert {(artifact.kind, artifact.status) for artifact in artifacts} == {
+        ("story index", "existing"),
+        ("plan", "existing"),
+        ("test guide", "existing"),
+    }
 
 
 def test_build_plan_delivery_story_records_aggregate_checkpoint(mocker, tmp_path, capsys):
@@ -405,6 +486,362 @@ def test_build_approve_delivery_story_plan_records_approval(mocker, tmp_path, ca
     assert "The approved Delivery Story Plan now authorizes" in out
     assert "Push, release, deploy, purchase" in out
     assert "Begin implementing the approved plan now." in out
+
+
+def test_build_plan_and_consume_conditional_preauthorization(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    project = tmp_path / "project"
+    package = project / "docs/project/roadmap/cv20/cv20-ds5"
+    package.mkdir(parents=True)
+    (package / "index.md").write_text(
+        "# CV20.DS5 — Delivery Story Level Lifecycle", encoding="utf-8"
+    )
+    mem.journeys.set_project_path("sandbox-pet-store", str(project))
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS5",
+        active_item_level="delivery_story",
+        navigator_flow_unit="delivery_story",
+        cursor_generation=3,
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.main(
+        [
+            "plan-delivery-story",
+            "--method",
+            "ariad",
+            "--journey",
+            "sandbox-pet-store",
+            "--objective",
+            "Aggregate exact scope.",
+            "--child",
+            "CV20.DS5.US1",
+            "--preauthorize-approval",
+            "--stop-after",
+            "navigator_validation",
+        ]
+    )
+    plan_path = package / "plan.md"
+    plan_path.write_text(
+        plan_path.read_text(encoding="utf-8").replace("Pending — ", "Decided: "),
+        encoding="utf-8",
+    )
+    build.main(
+        [
+            "approve-delivery-story-plan",
+            "--method",
+            "ariad",
+            "--journey",
+            "sandbox-pet-store",
+            "--use-preauthorization",
+        ]
+    )
+    build.main(
+        [
+            "approve-delivery-story-plan",
+            "--method",
+            "ariad",
+            "--journey",
+            "sandbox-pet-store",
+            "--use-preauthorization",
+        ]
+    )
+
+    out = capsys.readouterr().out
+    assert "<<<ARIAD:PLAN_PREAUTHORIZATION_RECORDED>>>" in out
+    assert "exact_scope" in out
+    assert "navigator_validation" in out
+    assert out.count("<<<ARIAD:IMPLEMENTATION_STARTED>>>") == 1
+    assert "No transition was repeated" in out
+    assert get_delivery_cursor(mem.store, "sandbox-pet-store").plan_preauthorization.status == (
+        "consumed"
+    )
+
+
+def test_build_plan_item_and_consume_story_preauthorization(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    project = tmp_path / "project"
+    package = project / "docs/project/roadmap/cv20/cv20-ds16-us1"
+    package.mkdir(parents=True)
+    (package / "index.md").write_text(
+        "# CV20.DS16.US1 — One-Turn Conditional Story Orchestration\n", encoding="utf-8"
+    )
+    (package / "plan.md").write_text(
+        """# Plan — CV20.DS16.US1
+
+## Scope
+
+- Deliver exact story authority.
+
+## Non-Goals
+
+- No sibling scope.
+
+## Acceptance Behavior
+
+Given authority\nWhen consumed\nThen implementation starts once.
+
+## Validation Route
+
+- Run focused and Navigator checks.
+
+## Implementation Contract
+
+- Use TDD and stop at Navigator Validation.
+""",
+        encoding="utf-8",
+    )
+    (package / "test-guide.md").write_text("# Test Guide\n", encoding="utf-8")
+    mem.journeys.set_project_path("sandbox-pet-store", str(project))
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS16.US1",
+        active_item_title="One-Turn Conditional Story Orchestration",
+        active_item_level="user_story",
+        last_delivery_event="prepare",
+        navigator_flow_unit="story_by_story",
+        cursor_generation=4,
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.main(
+        [
+            "plan-item",
+            "--method",
+            "ariad",
+            "--journey",
+            "sandbox-pet-store",
+            "--preauthorize-approval",
+            "--stop-after",
+            "navigator_validation",
+        ]
+    )
+    build.main(
+        [
+            "approve-plan",
+            "--method",
+            "ariad",
+            "--journey",
+            "sandbox-pet-store",
+            "--use-preauthorization",
+        ]
+    )
+    build.main(
+        [
+            "approve-plan",
+            "--method",
+            "ariad",
+            "--journey",
+            "sandbox-pet-store",
+            "--use-preauthorization",
+        ]
+    )
+
+    out = capsys.readouterr().out
+    assert "<<<ARIAD:PLAN_PREAUTHORIZATION_RECORDED>>>" in out
+    assert "CV20.DS16.US1" in out
+    assert out.count("<<<ARIAD:IMPLEMENTATION_STARTED>>>") == 1
+    assert "<<<ARIAD:PLAN_PREAUTHORIZATION_ALREADY_CONSUMED>>>" in out
+    assert "No approval or implementation start was repeated." in out
+    cursor = get_delivery_cursor(mem.store, "sandbox-pet-store")
+    assert cursor.last_delivery_event == "plan_approved"
+    assert cursor.plan_preauthorization.status == "consumed"
+
+
+def test_build_plan_item_accelerated_records_authority_without_explicit_flag(
+    mocker, tmp_path, capsys
+):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    project = tmp_path / "project"
+    package = project / "docs/project/roadmap/cv20/cv20-ds16-us1"
+    package.mkdir(parents=True)
+    (package / "index.md").write_text(
+        "# CV20.DS16.US1 — Natural story authorization\n", encoding="utf-8"
+    )
+    mem.journeys.set_project_path("sandbox-pet-store", str(project))
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS16.US1",
+        active_item_title="Natural story authorization",
+        active_item_level="user_story",
+        last_delivery_event="prepare",
+        cadence_profile="accelerated",
+        navigator_flow_unit="story_by_story",
+        cursor_generation=4,
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.main(
+        [
+            "plan-item",
+            "--method",
+            "ariad",
+            "--journey",
+            "sandbox-pet-store",
+        ]
+    )
+
+    out = capsys.readouterr().out
+    assert "<<<ARIAD:PLAN_PREAUTHORIZATION_RECORDED>>>" in out
+    assert "Driver completes Plan and consumes bounded authority." in out
+    assert "No additional Navigator approval turn is expected." in out
+    cursor = get_delivery_cursor(mem.store, "sandbox-pet-store")
+    assert cursor.plan_preauthorization is not None
+    assert cursor.plan_preauthorization.status == "pending"
+
+
+def test_build_conditional_approval_renders_bounded_incomplete_fallback(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    project = tmp_path / "project"
+    package = project / "docs/project/roadmap/cv20/cv20-ds5"
+    package.mkdir(parents=True)
+    (package / "index.md").write_text("# CV20.DS5 — DS", encoding="utf-8")
+    mem.journeys.set_project_path("sandbox-pet-store", str(project))
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS5",
+        active_item_level="delivery_story",
+        navigator_flow_unit="delivery_story",
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+    build.cmd_plan_delivery_story(
+        "ariad",
+        journey="sandbox-pet-store",
+        objective="Private objective must not leak in mismatch.",
+        child_work_items=("CV20.DS5.US1",),
+        preauthorize_approval=True,
+    )
+    capsys.readouterr()
+
+    build.cmd_approve_delivery_story_plan(
+        "ariad", journey="sandbox-pet-store", use_preauthorization=True
+    )
+
+    out = capsys.readouterr().out
+    assert "<<<ARIAD:PLAN_PREAUTHORIZATION_MISMATCH>>>" in out
+    assert "plan_incomplete" in out
+    assert "ordinary" in out
+    assert "Navigator" in out
+    assert "approval is available." in out
+    assert "Private objective" not in out
+    assert "IMPLEMENTATION_STARTED" not in out
+
+
+def test_build_cancel_plan_preauthorization_preserves_ordinary_gate(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS5",
+        active_item_level="delivery_story",
+        navigator_flow_unit="delivery_story",
+    )
+    plan_delivery_story_checkpoint(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        objective="Plan aggregate delivery.",
+        child_work_items=("CV20.DS5.US1",),
+        preauthorize=True,
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.main(
+        [
+            "cancel-delivery-story-plan-preauthorization",
+            "--method",
+            "ariad",
+            "--journey",
+            "sandbox-pet-store",
+        ]
+    )
+
+    out = capsys.readouterr().out
+    cursor = get_delivery_cursor(mem.store, "sandbox-pet-store")
+    assert "navigator_cancelled" in out
+    assert "IMPLEMENTATION_STARTED" not in out
+    assert cursor.pending_confirmation == "navigator_delivery_story_plan_approval"
+    assert cursor.plan_preauthorization.status == "invalidated"
+
+
+def test_build_release_intent_command_records_and_inspects_non_authorizing_state(
+    mocker, tmp_path, capsys
+):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV20.DS7.US1",
+        active_item_level="user_story",
+        last_delivery_event="plan_approved",
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.main(
+        [
+            "release-intent",
+            "--method",
+            "ariad",
+            "--journey",
+            "sandbox-pet-store",
+            "--intent",
+            "planned",
+        ]
+    )
+    build.main(
+        [
+            "release-intent",
+            "--method",
+            "ariad",
+            "--journey",
+            "sandbox-pet-store",
+        ]
+    )
+
+    out = capsys.readouterr().out
+    assert out.count("<<<ARIAD:RELEASE_INTENT>>>") == 2
+    assert "CV20.DS7" in out
+    assert "planned" in out
+    assert "does not authorize commit, push, tag" in out
+    assert "creation, stable promotion, release publication, or" in out
+    cursor = get_delivery_cursor(mem.store, "sandbox-pet-store")
+    assert cursor.release_intent == "planned"
+    assert cursor.last_delivery_event == "plan_approved"
 
 
 def test_build_set_flow_unit_records_delivery_story_choice(mocker, tmp_path, capsys):
@@ -726,6 +1163,134 @@ def test_build_coherence_item_completes_after_debt_review(mocker, tmp_path, caps
     assert "Coherence is complete" in out
 
 
+def test_build_coherence_item_reenters_pending_checkpoint_after_evidence_correction(
+    mocker, tmp_path, capsys
+):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV2.DS1.US1",
+        active_item_level="user_story",
+        last_delivery_event="review_complete",
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_coherence_item(
+        "ariad",
+        journey="sandbox-pet-store",
+        process_alignment="Lifecycle artifacts are complete.",
+        project_alignment=" ",
+        product_alignment="Navigator accepted behavior.",
+    )
+
+    pending = get_delivery_cursor(mem.store, "sandbox-pet-store")
+    assert pending is not None
+    assert pending.active_checkpoint == "coherence"
+    assert pending.pending_confirmation == "navigator_coherence"
+    assert pending.last_delivery_event == "coherence"
+    assert "pending_coherence" in capsys.readouterr().out
+
+    build.cmd_coherence_item(
+        "ariad",
+        journey="sandbox-pet-store",
+        process_alignment="Lifecycle artifacts are complete.",
+        project_alignment="Story package now reflects the validated change.",
+        product_alignment="Navigator accepted behavior.",
+    )
+
+    completed = get_delivery_cursor(mem.store, "sandbox-pet-store")
+    assert completed is not None
+    assert completed.active_checkpoint is None
+    assert completed.pending_confirmation is None
+    assert completed.last_delivery_event == "coherence_complete"
+    assert "coherent" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    ("pending_confirmation", "last_delivery_event"),
+    [
+        ("navigator_validation", "coherence"),
+        ("navigator_coherence", "review_complete"),
+    ],
+)
+def test_build_coherence_item_blocks_unrelated_or_inconsistent_pending_state(
+    mocker,
+    tmp_path,
+    capsys,
+    pending_confirmation,
+    last_delivery_event,
+):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    before = set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV2.DS1.US1",
+        active_item_level="user_story",
+        active_checkpoint="coherence",
+        pending_confirmation=pending_confirmation,
+        last_delivery_event=last_delivery_event,
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    with pytest.raises(SystemExit) as exc:
+        build.cmd_coherence_item(
+            "ariad",
+            journey="sandbox-pet-store",
+            process_alignment="Complete.",
+            project_alignment="Complete.",
+            product_alignment="Complete.",
+        )
+
+    assert exc.value.code == 1
+    assert "Coherence is blocked: pending confirmation" in capsys.readouterr().out
+    assert get_delivery_cursor(mem.store, "sandbox-pet-store") == before
+
+
+def test_build_done_item_blocks_pending_coherence_confirmation(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    before = set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV2.DS1.US1",
+        active_item_level="user_story",
+        active_checkpoint="coherence",
+        pending_confirmation="navigator_coherence",
+        last_delivery_event="coherence",
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    with pytest.raises(SystemExit) as exc:
+        build.cmd_done_item(
+            "ariad",
+            journey="sandbox-pet-store",
+            history_action="Record history.",
+            roadmap_update="Mark story Done.",
+            next_recommendation="Inspect next candidate.",
+        )
+
+    assert exc.value.code == 1
+    output = capsys.readouterr().out
+    assert "Done is blocked: pending confirmation" in output
+    assert "navigator_coherence" in output
+    assert get_delivery_cursor(mem.store, "sandbox-pet-store") == before
+
+
 def test_build_done_item_completes_after_coherence(mocker, tmp_path, capsys):
     mirror_home = tmp_path / ".mirror" / "pati"
     db_path = default_db_path_for_home(mirror_home)
@@ -770,10 +1335,30 @@ def test_build_done_delivery_story_renders_project_position_last(mocker, tmp_pat
     roadmap.write_text(
         """# Roadmap
 
-| Code | Capability Value | Status |
-|------|------------------|--------|
-| CV2 | Checkout Flow | In Progress |
+| Code | Delivery Story | Status |
+|------|----------------|--------|
+| CV2.DS1 | Checkout entry and address capture | Done |
 """,
+        encoding="utf-8",
+    )
+    ds_package = project_path / "docs/project/roadmap/cv2/cv2-ds1"
+    child_package = ds_package / "cv2-ds1-us1"
+    child_package.mkdir(parents=True)
+    (ds_package / "index.md").write_text(
+        """# CV2.DS1 — Checkout entry and address capture
+
+**Status:** ✅ Done
+
+## Candidate Stories
+
+| Code | Story | Type | Status |
+|------|-------|------|--------|
+| CV2.DS1.US1 | Address capture | User Story | Done |
+""",
+        encoding="utf-8",
+    )
+    (child_package / "index.md").write_text(
+        "# CV2.DS1.US1 — Address capture\n\n**Status:** ✅ Done\n",
         encoding="utf-8",
     )
     mem = MemoryClient(env="test", db_path=db_path)
@@ -809,6 +1394,80 @@ def test_build_done_delivery_story_renders_project_position_last(mocker, tmp_pat
     assert "<<<ARIAD:PROJECT_POSITION>>>" in out
     assert "What just moved?" in out
     assert out.rstrip().endswith("<<<END:PROJECT_POSITION>>>")
+
+
+def test_build_done_delivery_story_refuses_stale_authored_roadmap_without_mutation(
+    mocker, tmp_path, capsys
+):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    project_path = tmp_path / "project"
+    roadmap = project_path / "docs/project/roadmap/index.md"
+    ds_package = project_path / "docs/project/roadmap/cv2/cv2-ds1"
+    child_package = ds_package / "cv2-ds1-us1"
+    child_package.mkdir(parents=True)
+    roadmap.parent.mkdir(parents=True, exist_ok=True)
+    roadmap.write_text(
+        """# Roadmap
+
+| Code | Delivery Story | Status |
+|------|----------------|--------|
+| CV2.DS1 | Checkout entry and address capture | In Progress |
+""",
+        encoding="utf-8",
+    )
+    (ds_package / "index.md").write_text(
+        """# CV2.DS1 — Checkout entry and address capture
+
+**Status:** 🟠 In Progress
+
+## Candidate Stories
+
+| Code | Story | Type | Status |
+|------|-------|------|--------|
+| CV2.DS1.US1 | Address capture | User Story | In Progress |
+""",
+        encoding="utf-8",
+    )
+    (child_package / "index.md").write_text(
+        "# CV2.DS1.US1 — Address capture\n\n**Status:** 🟠 In Progress\n",
+        encoding="utf-8",
+    )
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    mem.journeys.set_project_path("sandbox-pet-store", str(project_path))
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV2.DS1",
+        active_item_title="Checkout entry and address capture",
+        active_item_level="delivery_story",
+        navigator_flow_unit="delivery_story",
+        child_work_items=("CV2.DS1.US1",),
+        aggregate_checkpoint_status=(
+            "plan:approved",
+            "validation:passed",
+            "debt_review:review:no_action",
+        ),
+    )
+    before = get_delivery_cursor(mem.store, "sandbox-pet-store")
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    with pytest.raises(SystemExit):
+        build.cmd_done_delivery_story(
+            "ariad",
+            journey="sandbox-pet-store",
+            summary="Must not close stale authored state.",
+        )
+
+    captured = capsys.readouterr()
+    assert "authored roadmap is not ready for Delivery Story Done" in captured.err
+    assert "docs/project/roadmap/cv2/cv2-ds1/index.md" in captured.err
+    assert "DELIVERY_STORY_CLOSURE_CHECKPOINT" not in captured.out
+    assert get_delivery_cursor(mem.store, "sandbox-pet-store") == before
+    assert not (ds_package / "done.md").exists()
 
 
 def test_build_coherence_item_requires_review_complete(mocker, tmp_path, capsys):
@@ -1136,6 +1795,7 @@ def test_build_inspect_method_renders_ariad_defaults(capsys):
     assert "Done registra e fecha" in out
     assert "after_plan" in out
     assert "blocks: implement" in out
+    assert "bounded_story_authority" in out
     assert "history.commit" in out
     assert "push" in out
     assert "release" in out
@@ -2265,6 +2925,97 @@ def test_refinement_story_park_command_parks_active_story(mocker, tmp_path, caps
     assert "🟫 RS001 PARKED" in out
     assert mem.store.get_refinement_story(story.id).status == "parked"
     assert mem.store.get_refinement_cursor("sandbox-pet-store").active_refinement_story_id is None
+
+
+def test_change_request_resume_argparse_wiring(mocker, tmp_path, capsys):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    story = mem.store.create_refinement_story(
+        journey="sandbox-pet-store", title="RS flow", status="active"
+    )
+    cr = mem.store.create_change_request(
+        journey="sandbox-pet-store",
+        refinement_story_id=story.id,
+        title="Resume CR",
+        body="Body.",
+    )
+    before_resume = mem.store.update_change_request_status(
+        cr.id, "implemented", outcome_notes="Implementation evidence"
+    )
+    mem.store.set_refinement_cursor(
+        journey="sandbox-pet-store",
+        active_refinement_story_id=story.id,
+        active_change_request_id=None,
+        last_refinement_event="change_request_done",
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.main(
+        [
+            "change-request",
+            "resume",
+            "--journey",
+            "sandbox-pet-store",
+            "--change-request-id",
+            cr.id,
+        ]
+    )
+
+    out = capsys.readouterr().out
+    assert "<<<ARIAD:REFINEMENT_FLOW_EVENT>>>" in out
+    assert "↩ CR001 RESUMED" in out
+    assert "without changing status" in out
+    assert mem.store.get_change_request(cr.id) == before_resume
+    cursor = mem.store.get_refinement_cursor("sandbox-pet-store")
+    assert cursor is not None
+    assert cursor.active_change_request_id == cr.id
+    assert cursor.last_refinement_event == "change_request_resumed"
+
+
+def test_change_request_resume_on_terminal_cr_exits_cleanly_without_traceback(
+    mocker, tmp_path, capsys
+):
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    story = mem.store.create_refinement_story(
+        journey="sandbox-pet-store", title="RS flow", status="active"
+    )
+    cr = mem.store.create_change_request(
+        journey="sandbox-pet-store",
+        refinement_story_id=story.id,
+        title="Done CR",
+        body="Body.",
+    )
+    mem.store.update_change_request_status(cr.id, "done", completed_at="2026-08-30T00:00:00Z")
+    mem.store.set_refinement_cursor(
+        journey="sandbox-pet-store",
+        active_refinement_story_id=story.id,
+        active_change_request_id=None,
+        last_refinement_event="change_request_done",
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    with pytest.raises(SystemExit) as exc_info:
+        build.main(
+            [
+                "change-request",
+                "resume",
+                "--journey",
+                "sandbox-pet-store",
+                "--change-request-id",
+                cr.id,
+            ]
+        )
+
+    assert exc_info.value.code == 1
+    err = capsys.readouterr().err
+    assert "Error:" in err
+    assert "already terminal" in err
+    assert "Traceback" not in err
 
 
 def test_change_request_park_reject_promote_argparse_wiring(mocker, tmp_path, capsys):

@@ -6,11 +6,15 @@ on:
     tags: ["v*"]
     paths:
       - "installer/**"
+      - "frame/**"
+      - "scripts/ci-nonascii-profile-smoke.ps1"
       - ".github/workflows/windows-installer.yml"
   pull_request:
     branches: [main]
     paths:
       - "installer/**"
+      - "frame/**"
+      - "scripts/ci-nonascii-profile-smoke.ps1"
       - ".github/workflows/windows-installer.yml"
 
 jobs:
@@ -49,20 +53,67 @@ jobs:
           $issues = Invoke-ScriptAnalyzer -Path installer -Recurse -Severity Error
           if ($issues) { $issues | Format-Table -AutoSize; throw "PSScriptAnalyzer found $($issues.Count) error(s)." }
 
+  # Cadeia canônica (uma só, sem duplicação):
+  #   npm ci → npm test → npm run sim
+  #   → installer/build.ps1  (package → verify UMA vez → ISCC)
+  #   → smoke Electron/ConPTY sobre o payload empacotado
+  #   → upload do instalador SOMENTE depois do smoke verde.
+  # O passo do instalador consome exatamente o payload verificado no mesmo
+  # workspace (frame/out/MirrorFrame-win32-x64) — sem transferência de artefatos.
   build-installer:
     runs-on: windows-latest
     needs: installer-scripts
     steps:
       - uses: actions/checkout@v6
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frame/package-lock.json
+
+      - name: Frame — install dependencies
+        shell: pwsh
+        working-directory: frame
+        run: npm ci
+
+      - name: Frame — unit tests
+        shell: pwsh
+        working-directory: frame
+        run: npm test
+
+      - name: Frame — session lifecycle simulator
+        shell: pwsh
+        working-directory: frame
+        run: npm run sim
+
       - name: Install Inno Setup
         shell: pwsh
         run: choco install innosetup --no-progress -y
 
-      - name: Compile installer
+      - name: Build installer (package → verify → ISCC)
         shell: pwsh
         run: pwsh -NoProfile -ExecutionPolicy Bypass -File installer/build.ps1
 
+      - name: Smoke Electron/ConPTY (packaged payload)
+        shell: pwsh
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File frame/scripts/smoke-electron.ps1
+
+      # Perfil Windows REAL com nome não-ASCII (usuário local criado no runner,
+      # perfil carregado de verdade, asserções dentro do processo daquele
+      # usuário). Consome o payload já verificado do mesmo workspace — sem
+      # segunda autoridade de packaging. Senha temporária nunca é logada;
+      # usuário/perfil/credencial são removidos em finally.
+      - name: Smoke — real non-ASCII USERPROFILE
+        shell: pwsh
+        run: >-
+          pwsh -NoProfile -ExecutionPolicy Bypass
+          -File scripts/ci-nonascii-profile-smoke.ps1
+          -RepoRoot "$env:GITHUB_WORKSPACE"
+          -FramePayload "$env:GITHUB_WORKSPACE\frame\out\MirrorFrame-win32-x64"
+
+      # Upload SOMENTE depois de TODOS os smokes verdes (ConPTY + não-ASCII).
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:

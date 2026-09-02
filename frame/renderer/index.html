@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:;">
+<title>Mirror Mind</title>
+<link rel="stylesheet" href="../node_modules/@xterm/xterm/css/xterm.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ===== Wizard (1º acesso — 6 passos, como no mockup) ===== -->
+<div class="wizard hidden" id="view-wizard">
+  <div class="wiz-steps" id="wiz-steps"></div>
+  <div class="wiz-main" id="wiz-main"></div>
+</div>
+
+<!-- ===== Frame principal ===== -->
+<div class="frame hidden" id="view-frame">
+  <div class="tabstrip" id="tabstrip"></div>
+  <div class="frame-body">
+    <div class="term-host" id="term-host"></div>
+    <div class="panel hidden" id="panel-setup"></div>
+    <div class="panel hidden" id="panel-personas"></div>
+    <div class="empty hidden" id="empty-state">
+      <div class="empty-inner">
+        <div class="wiz-glyph">◇</div>
+        <h2 id="empty-title">Preparando o Mirror…</h2>
+        <p id="empty-msg" class="lead"></p>
+        <div class="wiz-nav" style="justify-content:center">
+          <button class="btn primary hidden" id="btn-open-session">Abrir sessão ◇</button>
+          <button class="btn hidden" id="btn-goto-setup">Abrir o Setup ⚙</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="statusbar" id="statusbar"></div>
+</div>
+
+<script src="../node_modules/@xterm/xterm/lib/xterm.js"></script>
+<script src="../node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>
+<script src="../main/onboarding.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

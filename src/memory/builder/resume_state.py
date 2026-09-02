@@ -33,8 +33,13 @@ class BuilderResumeState:
     refinement: WorkbenchSnapshot | None = None
 
 
-def read_builder_resume_state(store: Store, journey: str) -> BuilderResumeState:
-    """Compose adopted method and delivery cursor state for Builder resume."""
+def read_builder_resume_state(
+    store: Store,
+    journey: str,
+    *,
+    include_refinement: bool = True,
+) -> BuilderResumeState:
+    """Compose Builder resume state, optionally excluding compatibility-only Refinement."""
     normalized_journey = _normalize_journey(journey)
     adopted_method = get_adopted_method(store, normalized_journey)
     if not adopted_method:
@@ -45,7 +50,9 @@ def read_builder_resume_state(store: Store, journey: str) -> BuilderResumeState:
             resumable=False,
             reason="adoption_required",
             allowed_next_actions=("adopt_method", "inspect_method"),
-            refinement=get_workbench_snapshot(store, normalized_journey),
+            refinement=(
+                get_workbench_snapshot(store, normalized_journey) if include_refinement else None
+            ),
         )
 
     cursor = get_delivery_cursor(store, normalized_journey)
@@ -57,10 +64,12 @@ def read_builder_resume_state(store: Store, journey: str) -> BuilderResumeState:
             resumable=False,
             reason="cursor_sync_required",
             allowed_next_actions=("sync_cursor", "inspect_method"),
-            refinement=get_workbench_snapshot(store, normalized_journey),
+            refinement=(
+                get_workbench_snapshot(store, normalized_journey) if include_refinement else None
+            ),
         )
 
-    refinement = get_workbench_snapshot(store, normalized_journey)
+    refinement = get_workbench_snapshot(store, normalized_journey) if include_refinement else None
     allowed_next_actions: tuple[str, ...]
     if cursor.pending_confirmation:
         allowed_next_actions = PENDING_CONFIRMATION_ACTIONS

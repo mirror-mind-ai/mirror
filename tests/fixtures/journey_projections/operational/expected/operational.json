@@ -1,0 +1,120 @@
+{
+  "contractVersion": "1.0",
+  "schemaVersion": "1",
+  "journeyId": "projection-probe-journey",
+  "altitude": "operational",
+  "namespace": "ariad",
+  "projection": "operational",
+  "snapshotId": "op-probe-0001",
+  "generatedAt": "2030-01-01T00:00:00Z",
+  "producer": {
+    "kind": "ariad",
+    "id": "ariad-operational-compiler",
+    "version": "1.0"
+  },
+  "sourceRevision": "sha256:probe-operational-revision",
+  "sourceSnapshots": [],
+  "content": {
+    "roadmap": {
+      "roots": [
+        {
+          "id": "CV-PROBE",
+          "type": "capability_value",
+          "title": "Publish a synthetic Journey reading",
+          "status": "in_progress",
+          "outcome": "Exercise a deterministic and private-data-free Journey projection.",
+          "path": "docs/project/roadmap/cv-probe/index.md",
+          "artifacts": {},
+          "children": [
+            {
+              "id": "CV-PROBE.DS-1",
+              "type": "delivery_story",
+              "title": "Projection contract fixture",
+              "status": "in_progress",
+              "outcome": "Represent one user story and one technical story.",
+              "path": "docs/project/roadmap/cv-probe/ds-1/index.md",
+              "artifacts": {},
+              "children": [
+                {
+                  "id": "CV-PROBE.DS-1.US-1",
+                  "type": "user_story",
+                  "title": "See the published structure",
+                  "status": "done",
+                  "outcome": "A synthetic consumer can see the published hierarchy.",
+                  "path": "docs/project/roadmap/cv-probe/ds-1/us-1/index.md",
+                  "artifacts": {
+                    "plan": "docs/project/roadmap/cv-probe/ds-1/us-1/plan.md",
+                    "validation": "docs/project/roadmap/cv-probe/ds-1/us-1/validation.md",
+                    "done": "docs/project/roadmap/cv-probe/ds-1/us-1/done.md"
+                  },
+                  "children": []
+                },
+                {
+                  "id": "CV-PROBE.DS-1.TS-1",
+                  "type": "technical_story",
+                  "title": "Validate the public contract",
+                  "status": "planned",
+                  "outcome": "A black-box probe can validate the public projection contract.",
+                  "path": "docs/project/roadmap/cv-probe/ds-1/ts-1/index.md",
+                  "artifacts": {
+                    "plan": "docs/project/roadmap/cv-probe/ds-1/ts-1/plan.md"
+                  },
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "activeWork": {
+      "activeItem": "CV-PROBE.DS-1.TS-1",
+      "checkpoint": "plan",
+      "pendingConfirmation": "navigator_approval",
+      "status": "pending_navigator_approval"
+    },
+    "exploratoryStories": [
+      {
+        "id": "explore-probe",
+        "title": "Projection shape",
+        "status": "active",
+        "summary": "Publish deterministic Journey structure for read-only consumers.",
+        "path": "docs/project/explorations/projection-shape/index.md",
+        "attractors": [
+          {
+            "title": "Published read model",
+            "status": "accepted",
+            "description": "Consumers receive structured state without mutation authority."
+          }
+        ],
+        "experiments": [
+          {
+            "title": "Black-box return probe",
+            "status": "proposed",
+            "description": "An unchanged consumer probe decides whether a released capability can be used."
+          }
+        ],
+        "handoff": {
+          "status": "completed",
+          "path": "docs/project/explorations/projection-shape/handoff-info.md"
+        }
+      }
+    ],
+    "refinementStories": [
+      {
+        "id": "RS-PROBE",
+        "title": "Preserve the last valid projection",
+        "status": "done",
+        "path": "docs/project/refinement/rs-probe/index.md",
+        "changeRequests": [
+          {
+            "id": "CR-PROBE",
+            "title": "Reject partial publication",
+            "status": "done",
+            "path": "docs/project/refinement/rs-probe/cr-probe/index.md"
+          }
+        ]
+      }
+    ]
+  }
+}

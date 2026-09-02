@@ -299,6 +299,12 @@ export const SCHEMA_INVENTORY_SNAPSHOT: SchemaInventory = {
       "table": "identity_integrations",
       "unique": 1
     },
+    "sqlite_autoindex_journey_mutation_receipts_1": {
+      "columns": ["request_id"],
+      "sql": null,
+      "table": "journey_mutation_receipts",
+      "unique": 1
+    },
     "sqlite_autoindex_llm_calls_1": {
       "columns": ["id"],
       "sql": null,
@@ -1297,6 +1303,62 @@ export const SCHEMA_INVENTORY_SNAPSHOT: SchemaInventory = {
       ],
       "sql":
         "CREATE TABLE identity_integrations ( id TEXT PRIMARY KEY, layer TEXT NOT NULL, key TEXT NOT NULL, content TEXT NOT NULL, source TEXT NOT NULL DEFAULT 'soul_mode', origin TEXT, conversation_id TEXT REFERENCES conversations(id), journal_id TEXT REFERENCES memories(id), created_at TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'active', metadata TEXT NOT NULL DEFAULT '{}')"
+    },
+    "journey_mutation_receipts": {
+      "columns": [
+        {
+          "dflt_value": null,
+          "name": "request_id",
+          "notnull": 0,
+          "pk": 1,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "request_digest",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "source_version",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "result_version",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "operation",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "journey_id",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        },
+        {
+          "dflt_value": null,
+          "name": "created_at",
+          "notnull": 1,
+          "pk": 0,
+          "type": "TEXT"
+        }
+      ],
+      "foreign_keys": [],
+      "sql":
+        "CREATE TABLE journey_mutation_receipts ( request_id TEXT PRIMARY KEY, request_digest TEXT NOT NULL, source_version TEXT NOT NULL, result_version TEXT NOT NULL, operation TEXT NOT NULL, journey_id TEXT NOT NULL, created_at TEXT NOT NULL)"
     },
     "llm_calls": {
       "columns": [

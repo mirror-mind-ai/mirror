@@ -38,7 +38,8 @@ folder and index. Stories that are non-trivial have a `plan.md` and a
 | [CV19](cv19-soul-mode-integration/index.md) | Soul Mode Integration | ✅ Done |
 | [CV20](cv20-builder-mode-evolution/index.md) | Builder Mode Evolution | 🟢 In Progress |
 | [CV21](cv21-runtime-expansion-ii/index.md) | Runtime Expansion II: Plugin & MCP Convergence | 🟢 In Progress |
-| [CV22](cv22-typescript-core-port/index.md) | TypeScript Core Port (Database-Seam Strangler) | 🟢 In Progress |
+| [CV22](cv22-typescript-core-port/index.md) | TypeScript Core Port (Database-Seam Strangler) | ⏸️ Paused |
+| [CV23](cv23-journey-projection-contract/index.md) | Journey Projection Contract | ✅ Done — v0.31.10 contract; v0.31.11 confinement hotfix accepted |
 
 ---
 
@@ -96,7 +97,7 @@ Done. CV19 turns Soul Mode from a ritual that can produce insight into a ritual 
 
 ## CV20 — Builder Mode Evolution
 
-In progress. CV20 evolves Builder Mode from a context-loading skill into a disciplined delivery environment governed by a declarative method DSL. Ariad is the inaugural method, with adoption, resume, Delivery lifecycle, Refinement Workbench, debt review, coherence, history, release, and push policies represented as method data rather than hard-coded agent habit. CV20.DS6 Refinement Workbench And Flow is complete; the next planned slice is CV20.DS7 Release And Push Policies. See the [CV20 index](cv20-builder-mode-evolution/index.md).
+In progress. CV20 evolves Builder Mode from a context-loading skill into a disciplined delivery environment governed by a declarative method DSL. Ariad is the inaugural method, with adoption, resume, Delivery lifecycle, Refinement Workbench, debt review, coherence, history, release, and push policies represented as method data rather than hard-coded agent habit. CV20.DS6 delivered the original local SQLite Workbench; CV20.DS12 has now delivered the document-first canonical Workbench after archiving its disproportionate implementation experiment without merge. See the [CV20 index](cv20-builder-mode-evolution/index.md).
 
 ## CV21 — Runtime Expansion II: Plugin & MCP Convergence
 
@@ -104,7 +105,7 @@ In progress. CV21 is the successor to CV8, driven by one force: the coding-agent
 
 ## CV22 — TypeScript Core Port (Database-Seam Strangler)
 
-In progress. CV22 is the successor to CV21: where CV21 packaged Mirror's runtime
+Paused on 2026-08-19. CV22 was the successor to CV21: where CV21 packaged Mirror's runtime
 surface once (plugin + MCP) and propagated it across runtimes, CV22 unifies the
 **core language underneath** by porting the Python core (`src/memory/`) to
 TypeScript. The motivation is convergence — npm distribution, one language across
@@ -133,8 +134,20 @@ and pragma discipline to the TS core, canonicalized `identity.metadata`, and mad
 with compatibility proven over real legacy database copies at multiple historical
 migration states, including migration `016`'s real ADD-COLUMN + backfill (the last
 gap, closed in TS5). The Python core can now be retired without breaking any
-`memory.db`, subject to the DS7+ command burn-down. The strategy is recorded in
+`memory.db`, subject to the DS7+ command burn-down. On 2026-08-19 main recorded an intentional pause of the
+migration: Python resumed sole product authority for new work, with CV22 and its
+evidence preserved for an explicit restart that must reconcile against behavior
+accumulated during the pause. The strategy and pause are recorded in
 [Decisions](../decisions.md). See the [CV22 index](cv22-typescript-core-port/index.md).
+
+## CV23 — Journey Projection Contract
+
+In progress. CV23 implements the consumer-owned `mirror.journey-projections@1.0`
+contract as a secure, deterministic Python Core capability. It gives local
+consumers and installed extensions versioned Journey read models, publishes the
+Ariad Operational projection without granting write-back authority, and closes
+only after the unchanged external probe passes against a centrally released and
+installed Mirror runtime. See the [CV23 index](cv23-journey-projection-contract/index.md).
 
 ## CV11 — Localization
 
@@ -211,11 +224,12 @@ the [CV8 index](cv8-runtime-expansion/index.md).
 
 ## CV15 — Cognitive Location
 
-Done. CV15 turns hierarchical journeys into a cognitive-location surface. It
-shipped in two releases: v0.20.0 added one-level journey hierarchy and
-hierarchical journey rendering across web and textual surfaces; v0.21.0 added
-Current Scene as the Workspace home with grounded persisted orientation over a
-bounded read model. See the [CV15 index](cv15-cognitive-location/index.md).
+Done. CV15 turned hierarchical journeys into a cognitive-location surface
+through v0.20.0's one-level hierarchy and v0.21.0's Current Scene. DS3 completed
+the structural evolution to arbitrary-depth organizational trees with recursive
+web/text rendering, complete lineage, cycle prevention, stable ids and paths,
+and no inherited context, packaged by [v0.31.9](../../releases/v0.31.9.md). See
+the [CV15 index](cv15-cognitive-location/index.md).
 
 ## Radar
 

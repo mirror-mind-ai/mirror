@@ -509,10 +509,93 @@ function Resolve-GitHubLatestAsset {
     }
 }
 
+function Get-PiPinDecision {
+    <#
+    .SYNOPSIS
+        Decide how an installed Pi relates to the homologated pin.
+    .DESCRIPTION
+        The Frame's /login automation is homologated against ONE exact Pi
+        version, so anything other than exact equality requires convergence:
+        'ok'       - installed version equals the pin exactly;
+        'missing'  - no Pi installed (or unparseable version output);
+        'mismatch' - installed but different (older OR newer than the pin).
+        An invalid pin throws: installing an unpinned Pi is never acceptable.
+    #>
+    [CmdletBinding()]
+    param(
+        [string]$InstalledVersion,
+        [Parameter(Mandatory)][string]$PinnedVersion
+    )
+    if ($PinnedVersion -notmatch '^\d+\.\d+\.\d+$') {
+        throw "Invalid pinned Pi version '$PinnedVersion' (expected MAJOR.MINOR.PATCH)."
+    }
+    $normalized = ConvertTo-VersionString $InstalledVersion
+    if (-not $normalized) { return 'missing' }
+    if ($normalized -eq $PinnedVersion) { return 'ok' }
+    return 'mismatch'
+}
+
+function Invoke-PiConvergence {
+    <#
+    .SYNOPSIS
+        Converge the installed Pi to the exact homologated pin.
+    .DESCRIPTION
+        The operational core of Ensure-Pi, with injectable callbacks so it is
+        testable without touching the real npm/global environment:
+          -GetInstalled : { returns the installed version string or $null }
+          -InstallPinned: { performs the pinned install; throws on failure }
+        Behavior:
+          - invalid/missing pin → throws BEFORE any install;
+          - equal to pin        → no install (Action 'none');
+          - absent/older/newer  → install then re-verify exact equality
+                                    (Action 'installed'); still divergent → throws;
+          - -DetectOnly         → never installs; reports missing/mismatch/ok
+                                    (Action 'detect').
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][scriptblock]$GetInstalled,
+        [Parameter(Mandatory)][AllowEmptyString()][string]$PinnedVersion,
+        [string]$PackageName = '@earendil-works/pi-coding-agent',
+        [scriptblock]$InstallPinned,
+        [switch]$DetectOnly
+    )
+    # Fail before install on a missing/invalid pin — never install an unpinned Pi.
+    if ($PinnedVersion -notmatch '^\d+\.\d+\.\d+$') {
+        throw "Invalid or missing pinned Pi version ('$PinnedVersion'); refusing to install."
+    }
+    # O spec exato instalável é construído AQUI e passado como ARGUMENTO ao
+    # callback — o instalador jamais depende de $script:/escopo dinâmico do
+    # caller para decidir o pacote.
+    $packageSpec = "$PackageName@$PinnedVersion"
+
+    $installed = & $GetInstalled
+    $decision = Get-PiPinDecision -InstalledVersion $installed -PinnedVersion $PinnedVersion
+
+    if ($decision -eq 'ok') {
+        return [pscustomobject]@{ Action = 'none'; Decision = 'ok'; Installed = $installed; Pinned = $PinnedVersion; PackageSpec = $packageSpec }
+    }
+    if ($DetectOnly) {
+        return [pscustomobject]@{ Action = 'detect'; Decision = $decision; Installed = $installed; Pinned = $PinnedVersion; PackageSpec = $packageSpec }
+    }
+    if (-not $InstallPinned) {
+        throw "InstallPinned action is required to converge Pi to the pin."
+    }
+
+    & $InstallPinned $packageSpec  # recebe o spec exato; throws propagam
+
+    $after = & $GetInstalled
+    if ((Get-PiPinDecision -InstalledVersion $after -PinnedVersion $PinnedVersion) -ne 'ok') {
+        throw "Pi still does not match the pin after install (installed: '$after', pinned: $PinnedVersion)."
+    }
+    return [pscustomobject]@{ Action = 'installed'; Decision = $decision; Installed = $after; Pinned = $PinnedVersion; PackageSpec = $packageSpec }
+}
+
 Export-ModuleMember -Function `
     Get-MirrorLogPath, Write-MirrorLog, `
     New-FriendlyError, Format-FriendlyError, `
     Test-CommandAvailable, ConvertTo-VersionString, Compare-MirrorVersion, `
     Get-CommandVersion, Test-MirrorDependency, Invoke-MirrorStep, `
     Set-MirrorTls, Get-MirrorDownloadTransport, Invoke-MirrorDownload, `
-    Resolve-GitHubLatestAsset, Write-MirrorEnvironmentBanner, Update-SessionPath
+    Resolve-GitHubLatestAsset, Write-MirrorEnvironmentBanner, Update-SessionPath, `
+    Get-PiPinDecision, Invoke-PiConvergence

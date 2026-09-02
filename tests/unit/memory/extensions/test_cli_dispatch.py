@@ -246,6 +246,28 @@ def test_bindings_empty(mirror_home, capsys):
 # --- Migrate --------------------------------------------------------------
 
 
+def test_migrate_help_prints_usage_without_running_migrations(mirror_home, capsys, monkeypatch):
+    # Uses the fixture home and the hello fixture extension: resolving the
+    # developer's own mirror home would pass locally and fail anywhere without
+    # a .env, which is exactly how this test first reached CI.
+    """A help flag must never execute a mutating verb.
+
+    ``ext <id> migrate --help`` ran the migration instead of describing it: the
+    trailing flag was dropped and the verb dispatched. Asking a command what it
+    does is the one moment a user is most certain nothing will change.
+    """
+
+    def fail_if_called(**kwargs):
+        raise AssertionError("migrate ran while the user only asked for help")
+
+    monkeypatch.setattr("memory.cli.ext._cmd_migrate", fail_if_called)
+
+    rc = _run(["hello", "migrate", "--help"], mirror_home)
+
+    assert rc == 0
+    assert "migrate" in capsys.readouterr().out
+
+
 def test_migrate_reapplies_pending_migrations(mirror_home, capsys):
     # The fixture set-up already ran migrations once, so a re-run is a
     # no-op (zero applied).

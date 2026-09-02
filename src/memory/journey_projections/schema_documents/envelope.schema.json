@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mirror.local/contracts/journey-projections/v1/envelope.schema.json",
+  "title": "Mirror Journey Projection Envelope v1",
+  "type": "object",
+  "required": [
+    "contractVersion",
+    "schemaVersion",
+    "journeyId",
+    "altitude",
+    "namespace",
+    "projection",
+    "snapshotId",
+    "generatedAt",
+    "producer",
+    "sourceRevision",
+    "sourceSnapshots",
+    "content"
+  ],
+  "properties": {
+    "contractVersion": { "const": "1.0" },
+    "schemaVersion": { "const": "1" },
+    "journeyId": { "$ref": "#/$defs/identifier" },
+    "altitude": { "enum": ["operational", "tactical", "strategic"] },
+    "namespace": { "$ref": "#/$defs/identifier" },
+    "projection": { "$ref": "#/$defs/identifier" },
+    "snapshotId": { "$ref": "#/$defs/identifier" },
+    "generatedAt": { "$ref": "#/$defs/utcTimestamp" },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "version"],
+      "properties": {
+        "kind": { "enum": ["ariad", "extension"] },
+        "id": { "$ref": "#/$defs/identifier" },
+        "version": { "type": "string", "minLength": 1, "maxLength": 64 }
+      }
+    },
+    "sourceRevision": { "type": "string", "pattern": "^sha256:[A-Za-z0-9._-]+$" },
+    "sourceSnapshots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["namespace", "projection", "snapshotId"],
+        "properties": {
+          "namespace": { "$ref": "#/$defs/identifier" },
+          "projection": { "$ref": "#/$defs/identifier" },
+          "snapshotId": { "$ref": "#/$defs/identifier" }
+        }
+      }
+    },
+    "content": { "type": "object" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{1,127}$"
+    },
+    "utcTimestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "not": {
+        "anyOf": [
+          { "pattern": "^/" },
+          { "pattern": "^[A-Za-z]:" },
+          { "pattern": "\\\\" },
+          { "pattern": "(^|/)\\.\\.(/|$)" }
+        ]
+      }
+    }
+  }
+}

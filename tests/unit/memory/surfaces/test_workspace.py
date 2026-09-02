@@ -228,6 +228,69 @@ def test_workspace_home_exposes_parent_journey_metadata_for_sidebar_grouping(
     assert child.metadata["parent_journey"] == "parent"
 
 
+def test_workspace_scene_renders_recursive_tree_and_full_lineage(
+    identity_service,
+    journey_service,
+    memory_service,
+    conversation_service,
+    task_service,
+) -> None:
+    identity_service.set_identity(
+        "journey", "root", "# Root\n**Status:** active\n\n## Description\nRoot."
+    )
+    identity_service.set_identity(
+        "journey",
+        "area",
+        "# Area\n**Status:** active\n\n## Description\nArea.",
+        metadata='{"parent_journey": "root"}',
+    )
+    identity_service.set_identity(
+        "journey",
+        "business",
+        "# Business\n**Status:** active\n\n## Description\nBusiness.",
+        metadata='{"parent_journey": "area"}',
+    )
+    identity_service.set_identity(
+        "journey",
+        "product",
+        "# Product\n**Status:** active\n\n## Description\nProduct.",
+        metadata='{"parent_journey": "business"}',
+    )
+    identity_service.set_identity(
+        "journey",
+        "sibling",
+        "# Sibling\n**Status:** active\n\n## Description\nSibling.",
+        metadata='{"parent_journey": "business"}',
+    )
+    identity_service.set_identity(
+        "journey",
+        "uncle",
+        "# Uncle\n**Status:** active\n\n## Description\nUncle.",
+        metadata='{"parent_journey": "area"}',
+    )
+    surfaces = SurfaceService(
+        identity=identity_service,
+        journeys=journey_service,
+        memories=memory_service,
+        conversations=conversation_service,
+        tasks=task_service,
+    )
+
+    home = surfaces.workspace_home(journey_id="product")
+
+    root = next(item for item in home.scene["journeyMap"] if item["id"] == "root")
+    assert root["children"][0]["id"] == "area"
+    business = next(item for item in root["children"][0]["children"] if item["id"] == "business")
+    assert {item["id"] for item in business["children"]} == {"product", "sibling"}
+    assert [item["id"] for item in home.scene["locationPath"]] == [
+        "root",
+        "area",
+        "business",
+        "product",
+    ]
+    assert [item["id"] for item in home.scene["nearbyJourneys"]] == ["sibling"]
+
+
 def test_workspace_home_can_select_requested_active_journey(
     identity_service,
     journey_service,

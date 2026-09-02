@@ -2,7 +2,12 @@
 
 from pathlib import Path
 
-from memory.cli.init import _substitute_user_name, find_templates_identity_root, init_user_home
+from memory.cli.init import (
+    _substitute_user_name,
+    default_user_home,
+    find_templates_identity_root,
+    init_user_home,
+)
 
 
 def _write_template(path: Path, content: str = "template") -> None:
@@ -121,6 +126,24 @@ def test_init_user_home_substitutes_user_name_in_templates(tmp_path):
     seeded_soul = (destination_root / "identity" / "self" / "soul.yaml").read_text(encoding="utf-8")
     assert "{{user_name}}" not in seeded_soul
     assert "alice" in seeded_soul
+
+
+def test_default_user_home_uses_current_layout_for_fresh_installs(tmp_path):
+    assert default_user_home("alice", home=tmp_path) == tmp_path / ".mirror-minds" / "alice"
+
+
+def test_default_user_home_keeps_existing_legacy_home(tmp_path):
+    legacy = tmp_path / ".mirror" / "alice"
+    legacy.mkdir(parents=True)
+
+    assert default_user_home("alice", home=tmp_path) == legacy
+
+
+def test_default_user_home_prefers_current_layout_when_both_exist(tmp_path):
+    (tmp_path / ".mirror" / "alice").mkdir(parents=True)
+    (tmp_path / ".mirror-minds" / "alice").mkdir(parents=True)
+
+    assert default_user_home("alice", home=tmp_path) == tmp_path / ".mirror-minds" / "alice"
 
 
 def test_find_templates_identity_root_finds_repo_templates(tmp_path):

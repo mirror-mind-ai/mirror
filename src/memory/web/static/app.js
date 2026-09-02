@@ -1060,7 +1060,7 @@ async function generateSceneSynthesis(panel) {
 
 function renderSceneJourneyMapItem(item) {
   const children = (item.children || []).map((child) => `
-    <li class="scene-map-child"><span>↳</span><strong>${escapeHtml(child.title || child.id)}</strong><small>${escapeHtml(child.horizon || '')}</small></li>
+    <li class="scene-map-child"><span>↳</span>${renderSceneJourneyMapItem(child)}</li>
   `).join('');
   return `
     <article class="scene-map-item">
@@ -1077,7 +1077,7 @@ function renderJourneyMenu(journeys, selectedId) {
   const includeCompleted = showCompletedJourneys || completedSelected;
   const visibleJourneys = includeCompleted ? journeys : (journeys || []).filter((journey) => journey.status !== 'completed');
   const renderItems = (items) => hierarchicalJourneyItems(items, selectedId).map(({ journey, depth, hasChildren, expanded }) => `
-    <div class="journey-menu-row ${depth ? 'journey-menu-child-row' : ''}">
+    <div class="journey-menu-row ${depth ? 'journey-menu-child-row' : ''}" style="--journey-depth: ${escapeHtml(Math.min(depth, 6))}">
       ${hasChildren ? `
         <button type="button" class="journey-expand-toggle" title="${expanded ? 'Collapse journey' : 'Expand journey'}" data-toggle-journey-parent="${escapeHtml(journey.id)}">
           ${expanded ? '▾' : '▸'}
@@ -1114,15 +1114,27 @@ function hierarchicalJourneyItems(journeys, selectedId = '') {
       roots.push(journey);
     }
   });
-  const selectedParent = (journeys || []).find((journey) => journey.id === selectedId)?.metadata?.parent_journey || '';
+  const selectedAncestors = new Set();
+  let current = byId.get(selectedId);
+  while (current) {
+    const parent = current.metadata?.parent_journey || current.parent_journey || '';
+    if (!parent || selectedAncestors.has(parent)) break;
+    selectedAncestors.add(parent);
+    current = byId.get(parent);
+  }
   const ordered = [];
-  roots.forEach((journey) => {
+  const visited = new Set();
+  const appendBranch = (journey, depth) => {
+    if (visited.has(journey.id)) return;
+    visited.add(journey.id);
     const childItems = children.get(journey.id) || [];
     const hasChildren = childItems.length > 0;
-    const expanded = expandedJourneyParents.has(journey.id) || selectedParent === journey.id;
-    ordered.push({ journey, depth: 0, hasChildren, expanded });
-    if (expanded) childItems.forEach((child) => ordered.push({ journey: child, depth: 1, hasChildren: false, expanded: false }));
-  });
+    const expanded = expandedJourneyParents.has(journey.id) || selectedAncestors.has(journey.id);
+    ordered.push({ journey, depth, hasChildren, expanded });
+    if (expanded) childItems.forEach((child) => appendBranch(child, depth + 1));
+  };
+  roots.forEach((journey) => appendBranch(journey, 0));
+  (journeys || []).forEach((journey) => appendBranch(journey, 0));
   return ordered;
 }
 
@@ -1310,11 +1322,7 @@ async function loadAllJourneys({ updateHistory = true } = {}) {
     window.history.pushState({ view: 'journeys' }, '', '#journeys');
   }
   const surface = await fetchJson('/api/surface/workspace');
-  const broadFields = hierarchicalJourneyItems(surface.journeys || [], '').map(({ journey, depth, hasChildren }) => {
-    if (depth) return '';
-    const children = (surface.journeys || []).filter((item) => item.metadata?.parent_journey === journey.id);
-    return renderAllJourneyCard(journey, children, hasChildren);
-  }).join('');
+  const broadFields = journeyTreeRoots(surface.journeys || []).map((journey) => renderAllJourneyCard(journey)).join('');
   const mainContent = `
     <section class="surface-intro surface-line workspace-hero compact-workspace-hero">
       <p class="eyebrow">Your Moment</p>
@@ -1329,12 +1337,42 @@ async function loadAllJourneys({ updateHistory = true } = {}) {
   window.scrollTo({ top: 0 });
 }
 
-function renderAllJourneyCard(journey, children) {
+function journeyTreeRoots(journeys) {
+  const byId = new Map((journeys || []).map((journey) => [journey.id, journey]));
+  const children = new Map();
+  const rootIds = [];
+  (journeys || []).forEach((journey) => {
+    const parent = journey.metadata?.parent_journey || journey.parent_journey || '';
+    if (parent && byId.has(parent)) {
+      if (!children.has(parent)) children.set(parent, []);
+      children.get(parent).push(journey.id);
+    } else rootIds.push(journey.id);
+  });
+  const visited = new Set();
+  const build = (id) => {
+    const journey = byId.get(id);
+    if (!journey || visited.has(id)) return null;
+    visited.add(id);
+    return { ...journey, children: (children.get(id) || []).map(build).filter(Boolean) };
+  };
+  const roots = rootIds.map(build).filter(Boolean);
+  // Corrupt rootless cycles remain bounded and visible.
+  (journeys || []).forEach((journey) => {
+    const root = build(journey.id);
+    if (root) roots.push(root);
+  });
+  return roots;
+}
+
+function renderAllJourneyBranch(journey) {
   const status = journey.status || 'unknown';
-  const childList = (children || []).map((child) => {
-    const childStatus = child.status || 'unknown';
-    return `<li><span class="journey-status-icon status-${escapeHtml(childStatus)}" title="${escapeHtml(childStatus)}">${escapeHtml(journeyStatusIcon(childStatus))}</span><span>${escapeHtml(child.title)}</span><small>${escapeHtml(childStatus)}</small></li>`;
-  }).join('');
+  const descendants = (journey.children || []).map(renderAllJourneyBranch).join('');
+  return `<li><span class="journey-status-icon status-${escapeHtml(status)}" title="${escapeHtml(status)}">${escapeHtml(journeyStatusIcon(status))}</span><span>${escapeHtml(journey.title)}</span><small>${escapeHtml(status)}</small>${descendants ? `<ul>${descendants}</ul>` : ''}</li>`;
+}
+
+function renderAllJourneyCard(journey) {
+  const status = journey.status || 'unknown';
+  const childList = (journey.children || []).map(renderAllJourneyBranch).join('');
   return `
     <article class="all-journey-card ${journey.status !== 'active' ? 'muted' : ''}">
       <div class="all-journey-head">
@@ -1498,7 +1536,8 @@ function renderJourneyParentSelect(journeys, journeyId, selected) {
       const value = journey.id || '';
       const label = journey.name || value;
       const status = journey.status && journey.status !== 'active' ? ` · ${journey.status}` : '';
-      const prefix = journey.parent_journey ? '↳ ' : '';
+      const lineage = (journey.lineage || []).slice(0, -1);
+      const prefix = lineage.length ? `${lineage.join(' › ')} › ` : '';
       return `<option value="${escapeHtml(value)}" ${value === safeSelected ? 'selected' : ''}>${escapeHtml(prefix + label)} (${escapeHtml(value)}${escapeHtml(status)})</option>`;
     })
     .join('');
@@ -1946,7 +1985,8 @@ function renderJourneySelectOptions(journeys, selected = '') {
     const value = journey.id || '';
     const label = journey.name || value;
     const status = journey.status && journey.status !== 'active' ? ` · ${journey.status}` : '';
-    const prefix = journey.parent_journey ? '↳ ' : '';
+    const lineage = (journey.lineage || []).slice(0, -1);
+    const prefix = lineage.length ? `${lineage.join(' › ')} › ` : '';
     return `<option value="${escapeHtml(value)}" ${value === selected ? 'selected' : ''}>${escapeHtml(prefix + label)} (${escapeHtml(value)}${escapeHtml(status)})</option>`;
   }).join('');
 }

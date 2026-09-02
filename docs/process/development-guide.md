@@ -187,7 +187,11 @@ Check:
 - Internal links introduced or edited.
 - Consistency between code, plan, and docs.
 
-If something is missing, return to the relevant lifecycle step.
+If something is missing, return to the relevant lifecycle step. When the runtime records
+`pending_confirmation=navigator_coherence` with `last_delivery_event=coherence`, correct the
+missing evidence and rerun `coherence-item`. This exact reentry re-evaluates the evidence and,
+when coherent, clears the checkpoint and pending confirmation before Done. Unrelated pending
+confirmations remain blocked, and Done never consumes `navigator_coherence`.
 
 ### 7. Status
 

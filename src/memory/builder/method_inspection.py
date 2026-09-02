@@ -206,7 +206,9 @@ def _render_cadence_profiles(method: MethodDefinition) -> list[str]:
     lines: list[str] = []
     for profile in method.cadence_profiles:
         status = "active" if profile.active else "future"
-        lines.append(f"- {profile.id}: {profile.stop_policy} ({status})")
+        lines.append(
+            f"- {profile.id}: {profile.stop_policy}; plan={profile.plan_approval_policy} ({status})"
+        )
     return lines
 
 

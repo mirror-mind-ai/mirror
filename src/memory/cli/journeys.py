@@ -7,7 +7,7 @@ from memory import MemoryClient
 from memory.cli.common import db_path_from_mirror_home
 
 
-def _journey_row(mem: MemoryClient, option: dict[str, str]) -> dict[str, str]:
+def _journey_row(mem: MemoryClient, option: dict) -> dict:
     name = option["id"]
     ident = mem.store.get_identity("journey", name)
     content = ident.content if ident else ""
@@ -32,14 +32,16 @@ def _journey_row(mem: MemoryClient, option: dict[str, str]) -> dict[str, str]:
         "stage": stage,
         "description": desc,
         "parent_journey": option.get("parent_journey") or "",
+        "depth": option.get("depth", 0),
     }
 
 
-def _print_journey(row: dict[str, str], *, child: bool = False) -> None:
+def _print_journey(row: dict) -> None:
     status = row["status"]
     icon = {"active": "🚧", "completed": "✅", "paused": "⏸"}.get(status, "•")
-    prefix = "  └─ " if child else ""
-    detail_indent = "       " if child else "  "
+    depth = int(row.get("depth", 0))
+    prefix = f"{'│  ' * depth}└─ " if depth else ""
+    detail_indent = f"{'│  ' * depth}  " if depth else "  "
     print(f"{prefix}{icon} **{row['id']}** ({status})")
     print(f"{detail_indent}Stage: {row['stage']}")
     if row["description"]:
@@ -64,20 +66,8 @@ def main(argv: list[str] | None = None) -> None:
         return
 
     rows = [_journey_row(mem, option) for option in options]
-    by_parent: dict[str, list[dict[str, str]]] = {}
-    roots: list[dict[str, str]] = []
-    known_ids = {row["id"] for row in rows}
     for row in rows:
-        parent = row.get("parent_journey") or ""
-        if parent and parent in known_ids:
-            by_parent.setdefault(parent, []).append(row)
-        else:
-            roots.append(row)
-
-    for row in roots:
         _print_journey(row)
-        for child in by_parent.get(row["id"], []):
-            _print_journey(child, child=True)
 
 
 if __name__ == "__main__":

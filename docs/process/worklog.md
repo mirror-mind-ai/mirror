@@ -12,6 +12,226 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-02 — main (v0.31.9–v0.31.14) merged into `mirror-ts-core` with oracle reconciliation
+
+Merged 112 commits of Python product evolution accumulated on `main` through v0.31.14 into the migration branch, honoring the moving-target rule: absorb accumulated authority behavior before any further parity claim. Ten conflicts resolved — two in code (union of both sides' journey hierarchy tests; main's superset `identity_integrations` association count), the rest docs (worklog/decisions merged newest-first preserving both mirrors' entries; the Refinement Workbench indexes unified into one canonical file carrying RS001–RS004 and RS008 with a Legacy Boundary explaining the numbering gap; CV22 docs keep the branch's living DS structure while absorbing main's recorded CV22 pause decision and status).
+
+Oracle reconciliation: the drift tripwire fired on six ported oracles. Regenerating all eight deterministic goldens from the merged Python produced exactly one behavioral delta — `count_journey_associations` gained `identity_integrations`, ported to `ts/src/journey/journeyRemoval.ts` as the twelfth closed-inventory category with seeder/name-based test coverage. Main's `journey_mutation_receipts` bootstrap table was ported to TS `schema.ts` and the schema-inventory snapshot regenerated (cross-core schema event honored in one commit). Two golden generators were hardened against repo `.env` re-injection of `MIRROR_USER` (pin-not-pop), exposed by v0.31.13's loud mirror-home resolution. Oracle baseline advanced in the same commit.
+
+Named, deferred TS parity scope from the merge (no TS counterpart claimed): the D-016 WAL read-only fallback in `db/connection.py`, the CV23 `journey_projections` subsystem + Extension API 1.1 façade, and the v0.31.12 `journey_admin` service/storage surface. Validation: full non-live Python suite green, 876 TS tests green, typecheck, CI-scoped Ruff lint/format, Biome, migration structural parity, bootstrap custody parity, deterministic golden regeneration, and redacted real-DB-copy parity on the portable demo database. Main's recorded CV22 pause decision (2026-08-19) is now visible on the branch; whether to restart or honor the pause is an explicit open Navigator decision.
+
+### 2026-08-30 — v0.31.14 release candidate prepared locally
+
+Prepared the `v0.31.14 — Change Request Resume` patch release boundary for
+CR011 in the file-first Refinement Workbench. The release adds the public Ariad
+Workbench `change-request resume` verb, preserving advanced non-terminal Change
+Request records while restoring only the active Refinement cursor so stranded
+`implemented` CRs can validate and stranded `validated` CRs can receive a Done
+note. Terminal CRs remain closed, `select` remains the captured-CR start verb,
+and no schema migration, model pin, or prompt changed.
+
+`pyproject.toml`, `uv.lock`, the Frame package, the Claude plugin manifest,
+release note, and release index are synchronized at `0.31.14`. CR011 is closed
+in the canonical Refinement Workbench with Navigator validation and no new debt.
+D-014 remains the known Carried baseline for the runtime-diagnose web polling
+budget, reproduced on the parent commit as well as this candidate; the one-off
+process-death lock failure was not reproduced in isolated HEAD or parent reruns
+and is not recorded as new debt without further evidence.
+
+Release-preparation gates: focused Workbench/CLI tests pass, the full non-live
+unit/integration suite reaches one known failure only (D-014), Ruff passes,
+format check passes, changed-source mypy passes, full `mypy src/memory` still
+reports the pre-existing D-006 baseline, documentation links/headings pass,
+`git diff --check` passes, and `runtime release-notes v0.31.14` renders the new
+note. Release doctor verifies version/note/index metadata and reports only the
+expected dirty pre-commit tree plus missing tag and stable-behind state. Push,
+PR, merge, tag, stable promotion, GitHub Release publication, and production
+runtime update remain separate unauthorized gates.
+
+### 2026-08-29 — v0.31.13 release candidate prepared locally
+
+Prepared the `v0.31.13 — Explicit Append and Lifecycle Recovery` release
+boundary for CV9.E2.S31 and its two blocking runtime maintenances. The
+release adds the generic atomic/idempotent `conversations append` contract with
+exact Journey ownership and no runtime-session routing or late-append semantic
+refresh; it also integrates bounded Ariad Coherence reentry and pays D-016's lazy
+SQLite WAL recovery defect. `pyproject.toml`, `uv.lock`, the Frame package, the
+Claude plugin manifest, release note, and release index are synchronized at
+`0.31.13`. D-006 remains the pre-existing mypy baseline. No model pin or prompt
+changed, so the model-behavior eval gate is not activated. The 2,639-test
+non-live suite, Ruff, formatting,
+release-note smokes, and diff checks pass; the candidate's mypy diagnostic
+multiset matches clean HEAD exactly. Release doctor passes version/note/index
+metadata and reports only the expected dirty pre-commit tree plus missing tag and
+stable-behind state. Push, tag, stable promotion, GitHub Release, and production
+update remain separate unauthorized gates.
+
+### 2026-08-29 — D-016 WAL read-only fallback maintenance integrated
+
+Implemented the D-016 repair after CV9.E2.S31 exposed SQLite's lazy read-only WAL
+failure. `_connect_read_only()` now forces a minimal schema read, falls back to
+existing-file-only `mode=rw` solely for the exact expected
+`unable to open database file` error, and preserves normal read-only behavior.
+Tests cover the original failing WAL case, missing-file non-creation, unrelated
+error propagation, exact fallback confinement, and the no-fallback normal path.
+The correction completed on `fix/runtime-wal-read-only-fallback` and is now
+integrated into the S31 candidate branch. D-016 is Paid and no longer blocks the
+`v0.31.13` release candidate; release preparation remains a separate gate.
+
+### 2026-08-29 — CV9.E2.S31 completed through Coherence
+
+Implemented the generic explicit conversation append boundary on a dedicated
+feature branch. A strict JSON service contract validates safe external message
+IDs, roles, timestamps, UTF-8 byte limits, metadata envelopes, and request shape
+before storage. One message-store-owned `BEGIN IMMEDIATE` transaction resolves
+only the complete conversation ID, verifies exact Journey equality, classifies
+idempotent retries, rejects cross-conversation or divergent ID reuse, inserts
+missing rows, and commits once. Ended conversations remain eligible without
+reopening or semantic refresh, runtime sessions remain outside the boundary, and
+message reads now have deterministic `created_at, id` ordering.
+
+TDD evidence moved from missing-module collection RED to the first focused
+GREEN, then Navigator Validation added a second RED: pathological metadata
+nesting leaked `RecursionError`, while unpaired Unicode surrogates in content or
+metadata leaked `UnicodeEncodeError`. A minimal parser/CLI containment boundary
+now maps those failures to bounded `malformed_request` before database access,
+without traceback or payload echo; 34 focused tests pass. The isolated CLI smoke
+covers initial append, complete retry, late append to an ended conversation,
+canonical provenance, atomic conflict rejection, unchanged runtime-session
+state, and bounded receipts. Ruff, format, diff checks, and scoped mypy pass.
+The complete non-live suite reaches 2,630 passes with one external-baseline
+runtime read-only/WAL recovery failure. A controlled same-Python/SQLite/TMPDIR
+comparison reproduces it identically in S31 and a clean `origin/main` worktree:
+SQLite 3.51 returns the read-only connection lazily and the first `SELECT` fails
+before the pre-existing connect-time recovery branch can run. Navigator
+Validation was accepted, Debt Review found no S31-created debt, and the authored
+roadmap/worklog gaps identified by Coherence were aligned. D-016 was recorded as
+Carried and blocked preparation of the `v0.31.13` release candidate at story
+closure; the integrated maintenance above subsequently paid it. No commit, push,
+version bump, release note, or release action was executed at that checkpoint.
+
+### 2026-08-29 — Ariad Coherence reentry maintenance
+
+Repaired an unreachable lifecycle state in which Coherence could produce
+`navigator_coherence` but could not run again after evidence correction. Reentry
+is now strictly limited to that pending confirmation paired with
+`last_delivery_event=coherence`; unrelated or inconsistent pending states remain
+blocked. Tests cover pending creation, corrected CLI reentry, checkpoint cleanup,
+`coherence_complete`, unrelated pending guards, and Done remaining unable to
+consume the confirmation. This maintenance was discovered during CV9.E2.S31 but
+is separate from that story's scope.
+
+### 2026-08-29 — v0.31.12 release candidate prepared
+
+Prepared `v0.31.12 — Bounded Authority and Journey Integrity` as the patch
+release boundary for the nine commits after v0.31.11. The release combines
+bounded natural/cadence-aware story Plan authority, preserved Driver-authored
+Plans, non-authorizing Delivery Story release intent, transactional model-free
+Journey administration, and truthful authored-roadmap preflight before Delivery
+Story Done.
+
+The release does not change model pins or `src/memory/intelligence/prompts.py`, so
+the model-behavior eval gate is not triggered. Promotion, stable publication,
+GitHub Release creation, and installed-runtime acceptance remain pending the
+release verification sequence.
+
+### 2026-08-29 — CR016 truthful Delivery Story Done coherence
+
+Closed the closure-coherence defect discovered during CV20.DS16 dogfood.
+`done-delivery-story` now runs a read-only authored-roadmap preflight before
+cursor or artifact mutation. It verifies explicit Done status on the resolved DS
+package, known child packages and candidate rows, and canonical roadmap table
+rows. Stale state fails with project-relative evidence; the agent remains
+responsible for semantic Markdown updates.
+
+Focused tests, the complete non-live unit/integration suite, scoped Ruff and
+mypy, documentation links, roadmap headings, and diff checks passed. Isolated
+`sandbox-pet-store` dogfood proved both bounded refusal without mutation and
+successful closure after status alignment. Navigator accepted validation and a
+no-action debt review. Commit, push, and release remain separate gates.
+
+### 2026-08-26 — CV20.DS16 natural and cadence-aware story Plan authority
+
+Closed CV20.DS16 after revising conditional story Plan authorization around the
+Navigator's actual intent. In stepwise/checkpoint, natural delegation such as
+`crie o plano e execute sem que eu precise autorizar` now authorizes one complete,
+exact active US/TS Plan without policy-shaped wording. Ariad derives scope,
+generation, level, mismatch fallback, single use, and the Navigator Validation
+stop from structural state. In accelerated cadence, method data declares
+`bounded_story_authority`, so a plain Plan request continues into local
+implementation without another approval turn; lifecycle code does not infer
+authority from the cadence profile name.
+
+Sandbox dogfood validated both routes end to end and exposed a false
+`plan_incomplete` classification where legitimate product vocabulary such as
+`Payment placeholder` was mistaken for scaffold text. The completeness check now
+recognizes actual placeholder markers without rejecting domain prose. Debt Review
+also removed the initial hard-coded accelerated check by adding declarative
+`CadenceProfileDefinition.plan_approval_policy` and exposing it through method
+inspection. The complete non-live unit/integration suite, Ruff, formatting,
+changed-module mypy, documentation links, roadmap headings, and diff checks passed.
+Navigator accepted validation; push and release remain separate gates.
+
+### 2026-08-26 — v0.31.11 installed Nautilus confinement acceptance
+
+Published `v0.31.11` at immutable commit `c9519c3` after green central Tests,
+Docs, and Windows packaging on `main` and green tagged Windows packaging. The
+stable production runtime updated from `v0.31.10` after verified backups and now
+reports migrations `16/16`, healthy installed extensions, and status `ready`.
+
+The installed public CLI rebuilt `nautilus-harness` without rewriting its valid
+parent-relative roadmap links. Operational snapshot
+`op-59d36a08c142494c88c12ecb5fcbf105` now represents current source revision
+`sha256:222aa1214a54c8059c7689daf21d6b98f128277a2462b79fd908ca49dc5d6c93`;
+inspection proves the manifest and stable document match across roots `CV-001`,
+`CV-002`, and `CV-003`. Bounded consumer evidence was returned for TD-001
+closure. Navigator accepted the installed validation on 2026-08-26; DS8 and
+CV23 are closed with no new debt. Consumer-owned ledger closure remains the
+Nautilus agent's next action using the returned evidence.
+
+### 2026-08-25 — Retired Refinement migration drift repaired (D-015)
+
+Repaired the local production database after CV23 release validation found three
+unknown migration rows from the abandoned Refinement Workbench experiment.
+Read-only inspection proved all six `project_refinement_*` tables were empty. A
+fresh verified backup was restored into a temporary home, the exact cleanup was
+rehearsed there, and the repaired copy reached Core migrations `16/16` with
+runtime status `ready` before production execution.
+
+The production transaction removed only the nine retired triggers, six empty
+tables, and migration rows 017–019. Every retained table's row count remained
+unchanged; SQLite quick and foreign-key checks passed; no retired schema object
+remains; and `runtime diagnose` now reports zero findings. Backup, database, and
+repair-script hashes are retained in local bounded evidence. D-015 is paid.
+
+### 2026-08-25 — Journey Projection Contract v1 (CV23)
+
+Implemented `mirror.journey-projections@1.0` as a Python-Core public contract for
+local consumers and installed extensions. Publication is confined to registered
+Journey roots and linearizable per Journey across processes; fresh manifest merge,
+atomic replacement, immutable receipts, rollback, and explicit divergence protect
+the last valid consumer state. Extension API `1.1` binds projection namespace and
+producer identity permanently to `extension_id`, reserving `ariad` for Core.
+
+A deterministic Ariad compiler now projects authored roadmap order, active
+Delivery state, public Explorer handoffs, canonical Refinement state, and confined
+artifact links without model or network calls. Represented lifecycle mutations
+request refresh only after durable source commit; projection failure never rolls
+source truth back. The complete CLI surface supports capability discovery,
+Operational rebuild, and inspection, with strictly isolated test-only preparation
+and extension publication routes.
+
+The unchanged consumer-owned probe passed all eight checks against synthetic
+state, including exact Operational fixture parity, last-valid preservation,
+path/namespace refusal, and atomic consistency. Acceptance-kit hashes and all 16
+self-tests remained unchanged. Packaged as
+[v0.31.10](../releases/v0.31.10.md). Central Tests, Docs, and Windows packaging
+were green at the release SHA; the production backup was verified; the stable
+runtime reported version `0.31.10`; and the unchanged installed probe opened the
+consumer-owned return gate. D-015 records pre-existing retired experimental
+migration rows that keep runtime diagnostics attention-needed without changing
+the released contract or its isolated acceptance.
+
 ### 2026-08-18 — CV22.DS7.TS2 Extension Context Provider Runtime Convergence completed
 
 Removed US4's binding-triggered whole-command Python fallback without silently dropping installed extension context. TypeScript now owns binding selection, stable persona/selected-journey ordering, exact section rendering, and fail-soft dispatch through the language-neutral `mirror-context-v1` stdin/stdout JSON contract. Provider commands use argv spawning without a shell, deterministic sequential execution, 60-second and 1 MiB bounds, strict protocol validation, path confinement, and payload-free diagnostics. Native providers can read and commit through their own explicitly selected SQLite connection; selected journeys remain isolated from ancestors, descendants, and unrelated roots.
@@ -27,6 +247,32 @@ Transferred the extension-free core `mirror load|deactivate|log|journeys` and `m
 Validation passed with 868 TS tests, 2465 non-live Python tests, a 64-test focused Python oracle suite, deterministic Python-generated context/render/state goldens, disposable-home front-door E2E, migration/bootstrap custody checks, portable real-database-copy parity, typecheck, lint, Ruff, oracle drift, and diff checks. Navigator accepted the E2E and incident-repair evidence. During initial state-golden authoring, an inherited `DB_PATH` caused synthetic fixture writes to the development database; work stopped immediately, a Navigator-authorized selective repair restored only the six touched durable rows and removed only the synthetic session/conversation/message, and a safety snapshot was retained. The generator now explicitly binds and verifies its temporary SQLite path before writing and refuses any path outside that temporary directory.
 
 Debt Review deferred only the visible extension-provider fallback to DS7.TS2; no permanent TS-to-Python bridge was introduced. **DS7 progress moved from 3/11 to 4/11 (+1 story).** Implementation remains uncommitted; commit and push retain separate Navigator gates.
+
+### 2026-08-13 — Recursive journey hierarchy and moving-target TS contract (CV15.DS3)
+
+Extended the existing organizational `parent_journey` relation from one level to
+arbitrary depth without changing the schema or introducing inherited context.
+Parent writes now walk the complete ancestor chain, reject direct/indirect cycles
+and malformed cyclic ancestry, and preserve identity plus `project_path` when a
+subtree moves. Journey removal is deliberately conservative and transactional:
+parents with children and leaves with any associated records are refused; only
+empty leaves can be removed, with no cascade or public removal UI.
+
+CLI, Workspace navigation, Current Scene, All Journeys, and journey selectors now
+render recursively. Focused Scene exposes complete lineage and immediate siblings
+while movement signals remain exact-journey data. Navigator homologation through
+normal Mirror conversation created a third-level journey under
+`mirror-mind-development → builder-mode-evolution`; it exposed Markdown treating
+deep leading-space indentation as a code block, so textual trees now use
+column-zero `│` connectors with regression coverage.
+
+The delivery also superseded CV22's strict Python feature freeze. Python may keep
+evolving while it remains authority for an unported command; each change creates
+explicit TS parity scope, and authority transfers command by command. Recursive
+journey reads are assigned to CV22.E2.S5 and writes/removal to CV22.E4. Validation:
+2,424 unit/integration tests, focused mypy, Ruff, formatting, JavaScript syntax,
+docs/link/heading checks, isolated CLI/web smoke, browser inspection, and
+Navigator homologation.
 
 ### 2026-07-23 — CV22.DS6 Schema Custody Transfer — Delivery Story closed
 

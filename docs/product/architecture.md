@@ -26,6 +26,7 @@ server; all data stays on the user's machine.
 src/memory/                  — Python package: all business logic
   cli/                       — CLI entry points (call services, no raw SQL)
   hooks/                     — Hook handlers (called by runtime lifecycle events)
+  journey_projections/       — Versioned Journey projection contracts, schemas, serialization, and publication
   intelligence/              — LLM-powered extraction, search, routing
   services/                  — Domain services (the implementation layer)
   storage/                   — Persistence components (raw SQL lives here)
@@ -89,6 +90,83 @@ Specification](specs/web-surface/index.md).
 The single documented exception: `RuntimeSessionService` still owns some
 transaction-boundary SQL pending a separate architecture decision.
 
+Ariad's Delivery cursor is the sole runtime owner of conditional Plan authority.
+Each Pull advances an active-item generation. A bounded single-use receipt may
+bind Journey, method, generation, active Delivery Story, flow unit, canonical
+child-code set, Plan contract version, exact-scope policy, and the fixed
+Navigator Validation stop. It stores no prompt or Plan body. Conditional
+approval revalidates those coordinates and Plan completeness, then consumes the
+receipt in the same cursor persistence update as approval. Mismatch invalidates
+the receipt and preserves ordinary approval; child order is presentational while
+set addition/removal is authoritative. No model, provider, persona, network
+service, or semantic prose comparison participates in verification.
+
+The same cursor carries optional Delivery Story release intent as bounded planning
+state. `planned`, `none`, and `undecided` remain distinct from an unrecorded
+state and are bound to the Delivery Story ancestor rather than one child story.
+Intent survives Pulls within that DS and clears when work moves to another DS.
+It never grants commit, push, tag, stable-promotion, publication, or remote
+mutation authority.
+
+Journey projections add a filesystem read-model boundary without changing this
+import direction. CLI, Ariad lifecycle, and the public Extension API call one
+Journey projection service; contract models/schema validation, deterministic
+serialization, Operational compilation, and publication storage remain separate
+owners. Production root authority always comes from the registered Journey, not
+a caller-supplied path. The subsystem invokes no model or network service.
+
+Projection publication is linearizable per Journey. Core and extension writers,
+as well as inspection, share one cross-process Journey lock; different Journeys
+remain independent. The manifest is re-read and merged only after lock
+acquisition, preventing stale-manifest lost updates. Internal create-once
+receipts bind each snapshot ID to its canonical byte digest, while the manifest
+remains the public current-state authority. Projection replacement precedes
+manifest replacement; controlled pre-manifest failures restore the old document,
+and interrupted/unrecoverable states surface explicit divergence without
+implicit repair.
+
+Extension API `1.1` exposes this owner through a bound
+`ExtensionJourneyProjections` façade. Its namespace and producer identity come
+from `ExtensionAPI.extension_id`, never caller parameters; `ariad` remains
+Core-only. A lazy resolver reads only the registered Journey `project_path` from
+the existing registry connection, and the façade delegates all validation,
+locking, receipts, publication, rollback, and inspection to the shared service.
+The extension's raw SQLite handle grants no projection path authority.
+
+The Ariad Operational compiler is a pure read-model compiler above that same
+service. It resolves authored roadmap links from their containing documents with
+shared Ariad grammar, then classifies safety by the canonical target beneath the
+registered Journey root. Parent-relative traversal is valid only while confined;
+absolute, URI-like, backslash-based, canonical-escape, and symlink-escape targets
+remain bounded failures. The compiler preserves authored hierarchy order, reads
+active work only from explicit durable state, and extracts only public
+exploration/refinement fields and allowlisted artifact references. Its `sourceRevision` hashes the canonical projected content, so
+excluded narrative bodies cannot perturb consumer identity. A registered-root
+rebuild validates the Operational schema and delegates publication to the DS2
+kernel; lifecycle-triggered refresh remains a separate coordinator concern.
+Malformed, cyclic, duplicate, or escaping durable references fail before
+publication and never trigger inference or implicit repair.
+
+Operational refresh is a post-commit observer, not mutation authority. A generic
+optional callback on `Store` is wired by `MemoryClient` to one
+`ProjectionRefreshCoordinator`. Delivery cursor writes compare only projected
+active-work fields; Explorer persistence compares only public story fields; and
+Refinement service operations request once after their complete logical commit.
+The coordinator compiles registered state, skips publication when the current
+`sourceRevision` already matches, and otherwise delegates to DS2. Compilation,
+inspection, or publication failure becomes bounded diagnostics and is never
+re-raised into the already-successful source mutation. Read-only operations and
+excluded Explorer evidence do not request refresh.
+
+The Journey Projection CLI is a transport over these owners. Production rebuild
+and inspection accept a Journey ID plus selected Mirror home, then resolve root
+authority from that home's registry. Consumer-probe preparation is a separate
+test-only adapter: it requires `MEMORY_ENV=test`, proves a non-production home,
+confines fixture and active state below `.journey-projection-probe`, verifies the
+isolated SQLite main path, and grants extension publication only through the
+fixed `projection-probe` identity. Fixed compiler identities live in that
+isolated control record and cannot be selected by production callers.
+
 ---
 
 ## 4. Identity Model
@@ -107,6 +185,28 @@ activation condition.
 | `journey` | Journey identity — what it is, its current stage, why it matters. | `identity` rows with `layer='journey'` |
 | `journey_path` | Living status document for a journey. Updated as things evolve. | `identity` rows with `layer='journey_path'` |
 
+Journeys may name another journey through `metadata.parent_journey`, forming an
+arbitrary-depth organizational tree. This relationship changes presentation and
+lineage only: context, documents, memories, conversations, tasks, status,
+routing, Builder state, and search remain scoped to the exact journey id.
+`project_path` is independent of tree position; moving a journey never moves or
+infers filesystem content. Parent assignment rejects cycles, and removing a
+journey is allowed only for an empty leaf with no associated records.
+
+Canonical desktop administration uses `mirror.journey-mutation@1.0`. The
+Mirror-owned Journey administration service validates create, move, sibling order, project-path and empty-leaf deletion
+operations against an exact registry `sourceVersion`.
+The focused storage boundary acquires an immediate SQLite transaction, rejects
+stale authority, commits Journey rows and a sanitized idempotency receipt once,
+and provides native read-back for the `0.2.0` registry projection. Deletion
+re-checks child Journeys and every database-backed Journey association inside
+the same immediate transaction; any protected record blocks the operation and
+nothing cascades. CLI is only a JSON transport; desktop harnesses never mutate Journey SQL directly. Registry
+publication remains post-commit: a failed consumer export keeps its prior local
+projection and retries the same receipt without compensating over newer Mirror
+state. These operations invoke no model, conversation or dedicated-thread
+lifecycle.
+
 **User-home YAML → database flow:**
 
 1. `memory init your-name` copies templates into `~/.mirror-minds/your-name/identity/`
@@ -122,6 +222,23 @@ activation condition.
 (The database is the source of truth; there is no authoritative static table.)
 
 ---
+
+### Explicit conversation append boundary
+
+External callers that already hold one complete conversation ID may append a
+bounded user/assistant batch through `memory conversations append`. Contract
+validation and canonicalization occur before storage; one message-store-owned
+`BEGIN IMMEDIATE` transaction then verifies the exact conversation and Journey,
+classifies globally unique message IDs, rejects all conflicts, inserts missing
+rows, and commits once. Caller IDs provide idempotency, canonical message
+metadata preserves provenance, and reads use `ORDER BY created_at, id`.
+
+This boundary is deliberately separate from runtime logging. It does not read or
+write `runtime_sessions`, infer an active conversation, reuse
+`conversation-logger`, change `ended_at`, or trigger extraction, titles,
+summaries, tags, embeddings, or semantic-memory refresh. A late append therefore
+extends transcript authority only; previously derived intelligence remains
+unchanged.
 
 ## 5. Memory Model
 
