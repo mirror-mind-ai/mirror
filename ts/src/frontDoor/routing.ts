@@ -29,8 +29,22 @@ export interface RouteEnvironment {
   MIRROR_TS_CULTIVATION_EMBEDDING_REPLAY?: string;
   MIRROR_TS_MIRROR_LLM_REPLAY?: string;
   MIRROR_TS_MIRROR_EMBEDDING_REPLAY?: string;
+  MIRROR_TS_CONVERSATION_LOGGER?: string;
   MEMORY_RECEPTION?: string;
 }
+
+// CV22.DS7.US5 slice A. Only these `conversation-logger` subcommands are
+// deterministic end to end; the rest reach Python's `end_conversation`, which
+// runs extraction and close-time metadata finalization through the LLM.
+const TS_CONVERSATION_LOGGER_SUBCOMMANDS = new Set([
+  "mute",
+  "unmute",
+  "status",
+  "log-user",
+  "log-assistant",
+  "user-prompt",
+  "discard-current",
+]);
 
 function externalRoutesEnabled(env: RouteEnvironment): boolean {
   return env.MIRROR_TS_EXTERNAL_ROUTES === "1";
@@ -322,6 +336,34 @@ export function routeMemoryCommand(
       return { command, engine: "ts", reason: `DS7.US4 mirror ${sub} ported to TS` };
     }
     return { command, engine: "python", reason: "mirror subcommand not ported to TS" };
+  }
+
+  if (command === "conversation-logger") {
+    // Gated until slice A's flip checklist is green (goldens, copy-probe,
+    // hook-inclusive E2E, regression pass, redaction, revertibility, ledger).
+    // Ungated, this is the highest-volume write path in the product, so the
+    // default stays Python and the flip is later a gate removal, not a
+    // rewrite. The gate is also the revertibility control.
+    if (env.MIRROR_TS_CONVERSATION_LOGGER !== "1") {
+      return {
+        command,
+        engine: "python",
+        reason: "DS7.US5 conversation-logger route not yet flipped",
+      };
+    }
+    const sub = argv[1];
+    if (sub && TS_CONVERSATION_LOGGER_SUBCOMMANDS.has(sub)) {
+      return {
+        command,
+        engine: "ts",
+        reason: `DS7.US5 conversation-logger ${sub} ported to TS`,
+      };
+    }
+    return {
+      command,
+      engine: "python",
+      reason: "conversation-logger subcommand crosses the LLM close tail or is unported",
+    };
   }
 
   if (command === "mode") {

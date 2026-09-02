@@ -43,24 +43,49 @@ Disposable home; replay transport; no live provider calls.
 > subcommands; (3) after any routing flip, re-run the front-door routing suite
 > and the smokes of the already-flipped families (US1–US4, TS2).
 
+Slice A (verified 2026-09-02, copy-paste runnable). The TS route is gated, so
+the smoke opts in explicitly with `MIRROR_TS_CONVERSATION_LOGGER=1`:
+
 ```bash
 export SMOKE_HOME=$(mktemp -d)/mirror-smoke && mkdir -p "$SMOKE_HOME"
-# 1. session lifecycle through the TS front door
-NODE_OPTIONS=--no-warnings node ts/src/frontDoor/cli.ts conversation-logger session-start --mirror-home "$SMOKE_HOME"
-NODE_OPTIONS=--no-warnings node ts/src/frontDoor/cli.ts conversation-logger log-user <session> "hello" --mirror-home "$SMOKE_HOME"
-NODE_OPTIONS=--no-warnings node ts/src/frontDoor/cli.ts conversation-logger session-end-pi <session> --mirror-home "$SMOKE_HOME"
-# 2. budgeted extraction under replay
-NODE_OPTIONS=--no-warnings node ts/src/frontDoor/cli.ts conversation-logger session-maintenance --mirror-home "$SMOKE_HOME"
-# 3. observable end-state
-uv run python -m memory memories --mirror-home "$SMOKE_HOME"
+ts() { MEMORY_ENV=test MIRROR_TS_CONVERSATION_LOGGER=1 NODE_OPTIONS=--no-warnings \
+  node ts/src/frontDoor/cli.ts "$@" --mirror-home "$SMOKE_HOME"; }
+
+ts conversation-logger status                       # -> ACTIVE
+echo '{"session_id":"smoke-1","prompt":"how does extraction work?"}' \
+  | ts conversation-logger user-prompt              # -> silent, exit 0
+echo '{"session_id":"smoke-1","prompt":"/mm-build x"}' \
+  | ts conversation-logger user-prompt              # -> silent; must NOT log
+ts conversation-logger mute                         # -> Conversation logging MUTED.
+ts conversation-logger status                       # -> MUTED
+
+sqlite3 "$SMOKE_HOME/memory_test.db" \
+  "SELECT role, content FROM messages; SELECT title, metadata FROM conversations;"
 ```
 
-- **Expected observation:** the logged conversation exists, ends, extracts under
-  replay into visible memories; maintenance report matches Python's string shape.
-- **Pass:** identical observable output vs the same sequence run through the
-  Python entry point on a copy of the same starting home.
+Python comparison run. **Export `MIRROR_HOME`** — the hooks ignore
+`--mirror-home` (see the plan's open decision), so relying on the flag alone
+writes outside the disposable home:
+
+```bash
+export PY_HOME=$(mktemp -d)/mirror-py && mkdir -p "$PY_HOME"
+py() { MEMORY_ENV=test MIRROR_HOME="$PY_HOME" MIRROR_USER="$(basename "$PY_HOME")" \
+  uv run python -m memory "$@" --mirror-home "$PY_HOME"; }
+# same five commands, then the same two SELECTs
+```
+
+- **Expected observation:** both runs produce `ACTIVE`, silence on both hook
+  calls, `Conversation logging MUTED.`, `MUTED`; one user message (the slash
+  command is never logged); conversation title `how does extraction work?`;
+  metadata exactly
+  `{"title_source": "first_user", "title_status": "provisional"}`.
+- **Pass:** stdout strings, row states, and metadata bytes identical.
+  *(Verified 2026-09-02: byte-identical on both sides.)*
 - **Fail:** any divergence in output strings, row states, ordering, budget
   accounting, or a fallback subcommand behaving differently than before.
+
+Later slices extend this with `session-start`, `session-end-pi`, and
+`session-maintenance` once the LLM close tails land behind replay.
 
 ## Redaction check (per newly-routed subcommand)
 
@@ -77,8 +102,18 @@ cd ts && node --test "test/frontDoor/**/*.test.ts" && cd ..
 
 ## Revertibility check
 
-Flip the slice's `routing.ts` entry back to Python fallback, rerun the E2E
-sequence: behavior must be identical with no data migration.
+Slice A's route is gated by `MIRROR_TS_CONVERSATION_LOGGER`, so reverting is
+unsetting it — no code change and no data migration:
+
+```bash
+# gate off: the same command must reach Python and behave identically
+MEMORY_ENV=test MIRROR_HOME="$SMOKE_HOME" NODE_OPTIONS=--no-warnings \
+  node ts/src/frontDoor/cli.ts conversation-logger status --mirror-home "$SMOKE_HOME"
+grep 'conversation-logger' "$SMOKE_HOME/front-door.log" | tail -2   # route column: python
+```
+
+Export `MIRROR_HOME` for any hook subcommand on the reverted path, for the
+reason above.
 
 ## Flip readiness checklist (all seven green before a subcommand flips)
 

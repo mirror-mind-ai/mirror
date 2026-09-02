@@ -342,3 +342,48 @@ test("uses Python fallback when no command is present", () => {
     reason: "no command",
   });
 });
+
+// --- CV22.DS7.US5 conversation-logger (gated, not yet flipped) ---
+
+test("conversation-logger falls back to Python by default (route not yet flipped)", () => {
+  for (const sub of ["mute", "status", "log-user", "user-prompt", "discard-current"]) {
+    const decision = routeMemoryCommand(["conversation-logger", sub], {});
+    assert.equal(decision.engine, "python");
+    assert.match(decision.reason, /not yet flipped/);
+  }
+});
+
+test("conversation-logger routes deterministic subcommands to TS under the gate", () => {
+  const env = { MIRROR_TS_CONVERSATION_LOGGER: "1" };
+  for (const sub of [
+    "mute",
+    "unmute",
+    "status",
+    "log-user",
+    "log-assistant",
+    "user-prompt",
+    "discard-current",
+  ]) {
+    assert.equal(
+      routeMemoryCommand(["conversation-logger", sub], env).engine,
+      "ts",
+      `${sub} should route to TS under the gate`,
+    );
+  }
+});
+
+test("conversation-logger keeps LLM-tail subcommands on Python even under the gate", () => {
+  const env = { MIRROR_TS_CONVERSATION_LOGGER: "1" };
+  for (const sub of [
+    "switch",
+    "session-end",
+    "session-end-pi",
+    "session-start",
+    "session-maintenance",
+    "diagnose-journeys",
+    "backfill-codex-session",
+  ]) {
+    const decision = routeMemoryCommand(["conversation-logger", sub], env);
+    assert.equal(decision.engine, "python", `${sub} must stay on Python in slice A`);
+  }
+});

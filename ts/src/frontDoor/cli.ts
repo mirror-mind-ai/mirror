@@ -56,6 +56,10 @@ import { newId, nowIso } from "#util/pyGenerators.ts";
 import { hasOption, optionValue, stripOptionWithValue } from "./args.ts";
 import { runConsultRoute } from "./consultRoute.ts";
 import {
+  isConversationLoggerCommand,
+  runConversationLoggerRoute,
+} from "./conversationLoggerRoute.ts";
+import {
   runConsolidateApply as runConsolidateApplyRoute,
   runReject,
   runShadowApply as runShadowApplyRoute,
@@ -1126,6 +1130,27 @@ function runModeWrite(argv: readonly string[]): Promise<number> {
   return withMirrorWriteDb(argv, (db) => runModeWriteRoute(db, argv));
 }
 
+/**
+ * CV22.DS7.US5. Routing only sends the deterministic subcommands here, but if
+ * the dispatcher reports one it does not own, fall back to Python instead of
+ * guessing — this is the product's primary write path.
+ */
+async function runConversationLoggerWrite(argv: readonly string[]): Promise<number> {
+  // `withMirrorWriteDb` is shared by every write route, so the not-handled
+  // signal rides a local flag rather than widening its return type for one
+  // caller.
+  let handled = true;
+  const exitCode = await withMirrorWriteDb(argv, (db, dbPath) => {
+    const result = runConversationLoggerRoute(db, dbPath, argv);
+    if (result === null) {
+      handled = false;
+      return 0;
+    }
+    return result;
+  });
+  return handled ? exitCode : fallbackPython(argv);
+}
+
 /** Best-effort log path from the same resolver; null when unconfigured. */
 function resolveLogPath(argv: readonly string[]): string | null {
   try {
@@ -1209,6 +1234,7 @@ async function dispatch(argv: readonly string[], engine: FrontDoorEngine): Promi
   if (isShadowSubcommandWrite(argv)) return runShadowWrite(argv);
   if (isMirrorWrite(argv)) return runMirrorWrite(argv);
   if (isModeWrite(argv)) return runModeWrite(argv);
+  if (isConversationLoggerCommand(argv)) return runConversationLoggerWrite(argv);
   if (isMemorySearch(argv)) return runMemorySearch(argv);
   if (isConsult(argv)) {
     if (isConsultCredits(argv)) {

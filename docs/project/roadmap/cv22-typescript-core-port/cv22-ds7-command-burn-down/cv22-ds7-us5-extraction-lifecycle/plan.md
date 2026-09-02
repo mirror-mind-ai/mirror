@@ -210,6 +210,40 @@ Findings absorbed above; summary:
   readiness checklist with a copy-paste-runnable test guide before first flip.
   Verdict: approve-with-amendments.
 
+## Open decision — hooks ignore `--mirror-home` in Python (found 2026-09-02)
+
+Python's `main()` extracts `--mirror-home`, but `hook_user_prompt()` and
+`hook_session_end()` take no arguments and never receive it: they call
+`is_muted()` and `log_user_message(session_id, prompt)` against the ambient
+module-level home. So `conversation-logger user-prompt --mirror-home X` accepts
+the option and writes somewhere else.
+
+Found by running the slice-A revertibility check, which wrote one session, one
+conversation, and one message into `~/.mirror-minds/vinicius-ts/memory_test.db`
+(the **test** database in the real home, never production). Work stopped, a
+snapshot was taken, exactly those three rows were removed, and the database
+returned to empty; nothing pre-existing was modified.
+
+The TS port currently threads `--mirror-home` through to the hooks, which is
+safer and hermetically testable but is a **behavior change**, and this story's
+non-goals forbid silent improvement. Options:
+
+1. **Match Python exactly** — hooks ignore `--mirror-home`. Strict parity;
+   preserves a defect that makes hermetic runs impossible and can write to an
+   unintended database.
+2. **Keep the TS behavior** — hooks honor `--mirror-home`. Safer and testable,
+   but a named divergence that must be recorded as an intentional deviation and
+   most likely fixed in Python too, so the two cores reconverge.
+3. **Fix Python first** (it still owns this entry point under the moving-target
+   rule), then port the fixed behavior at parity.
+
+Navigator decision required before the slice-A routing flip; this is a scope
+question, not a Driver call. Until it is decided the route stays gated.
+
+Validation-route correction from the same run: on the Python side the E2E must
+export `MIRROR_HOME` (module-level resolution honors it) rather than relying on
+`--mirror-home`, or the fallback writes outside the disposable home.
+
 ## Approval question
 
 Approve this six-slice plan (A→F, per-subcommand flips, E2E required,
