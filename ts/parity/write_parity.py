@@ -31,6 +31,13 @@ from memory.storage.store import Store
 DEFAULT_WORK_DIR = Path("tmp/parity/write")
 FROZEN_NOW = datetime(2026, 6, 23, 12, 0, 0, 123456, tzinfo=timezone.utc)
 JOURNEY_SLUG = "parity-journey"
+# Conversation-logger probe (CV22.DS7.US5). The logger is the product's
+# highest-volume write path, so its parity is proven on a real-DB copy, not
+# only on synthetic goldens.
+LOGGER_SESSION_ID = "write-parity-logger-session"
+LOGGER_INTERFACE = "pi"
+LOGGER_USER_TEXT = "Write-parity probe: the first user message sets the title"
+LOGGER_ASSISTANT_TEXT = "Write-parity probe: the assistant reply appends only"
 # Identity probe targets. INSERT is a fresh key; UPDATE / INHERIT / META-ONLY act on
 # rows the portable demo DB already seeds (see generate_demo_memory_db.py), so the
 # UPDATE paths prove created_at preservation against real pre-existing rows.
@@ -86,7 +93,9 @@ def _safe_copy_database(source: Path, destination: Path) -> None:
         src.backup(dst)
 
 
-def _reinforcement_probe(conn: sqlite3.Connection, store: Store, targets: int, context: str) -> dict:
+def _reinforcement_probe(
+    conn: sqlite3.Connection, store: Store, targets: int, context: str
+) -> dict:
     """Drive the real log_access/log_use and snapshot the two mutated tables."""
     original_datetime = memories_mod.datetime
     memories_mod.datetime = _FrozenDateTime
@@ -116,7 +125,10 @@ def _reinforcement_probe(conn: sqlite3.Connection, store: Store, targets: int, c
         state.append(
             {
                 "id": f"memories:{row['id']}",
-                "cells": {"last_accessed_at": row["last_accessed_at"], "use_count": row["use_count"]},
+                "cells": {
+                    "last_accessed_at": row["last_accessed_at"],
+                    "use_count": row["use_count"],
+                },
             }
         )
     for memory_id in target_ids:
@@ -154,7 +166,9 @@ def _journey_probe(conn: sqlite3.Connection, store: Store) -> dict:
     identity_mod.datetime = _FrozenDateTime
     models_mod.datetime = _FrozenDateTime
     try:
-        journeys.create_journey(slug=JOURNEY_SLUG, content=JOURNEY_CONTENT, icon="star", color="blue")
+        journeys.create_journey(
+            slug=JOURNEY_SLUG, content=JOURNEY_CONTENT, icon="star", color="blue"
+        )
         resolved = journeys.set_project_path(JOURNEY_SLUG, JOURNEY_PROJECT_PATH)
         row = conn.execute(
             "SELECT id, layer, key, content, version, created_at, updated_at, metadata "
@@ -193,6 +207,115 @@ def _journey_probe(conn: sqlite3.Connection, store: Store) -> dict:
                 },
             }
         ],
+    }
+
+
+def _conversation_logger_probe(python_copy: Path) -> dict:
+    """Drive the real log_user_message/log_assistant_message on the copy.
+
+    The logger builds its own client from a mirror home, so the factory is
+    redirected at the copy rather than reimplementing the call here — the
+    functions under test stay the released ones. No LLM path is reachable:
+    these two writes are deterministic (bind, title, append).
+    """
+    from memory.cli import conversation_logger as logger_mod
+    from memory.client import MemoryClient
+
+    original_models_dt = models_mod.datetime
+    models_mod.datetime = _FrozenDateTime
+    client = MemoryClient(db_path=python_copy)
+    original_factory = logger_mod._memory_client
+    logger_mod._memory_client = lambda mirror_home=None: client
+    try:
+        logger_mod.log_user_message(LOGGER_SESSION_ID, LOGGER_USER_TEXT, interface=LOGGER_INTERFACE)
+        logger_mod.log_assistant_message(
+            LOGGER_SESSION_ID, LOGGER_ASSISTANT_TEXT, interface=LOGGER_INTERFACE
+        )
+
+        conn = client.conn
+        conn.row_factory = sqlite3.Row
+        session_row = conn.execute(
+            "SELECT * FROM runtime_sessions WHERE session_id = ?", (LOGGER_SESSION_ID,)
+        ).fetchone()
+        conversation_id = session_row["conversation_id"]
+        conversation_row = conn.execute(
+            "SELECT * FROM conversations WHERE id = ?", (conversation_id,)
+        ).fetchone()
+        message_rows = conn.execute(
+            "SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at, rowid",
+            (conversation_id,),
+        ).fetchall()
+    finally:
+        logger_mod._memory_client = original_factory
+        models_mod.datetime = original_models_dt
+        client.close()
+
+    python_state = [
+        {
+            "id": f"conversations:{conversation_row['id']}",
+            "cells": {
+                "title": conversation_row["title"],
+                "started_at": conversation_row["started_at"],
+                "ended_at": conversation_row["ended_at"],
+                "interface": conversation_row["interface"],
+                "persona": conversation_row["persona"],
+                "journey": conversation_row["journey"],
+                "summary": conversation_row["summary"],
+                "tags": conversation_row["tags"],
+                "metadata": conversation_row["metadata"],
+            },
+        }
+    ]
+    for row in message_rows:
+        python_state.append(
+            {
+                "id": f"messages:{row['id']}",
+                "cells": {
+                    "conversation_id": row["conversation_id"],
+                    "role": row["role"],
+                    "content": row["content"],
+                    "created_at": row["created_at"],
+                    "token_count": row["token_count"],
+                    "metadata": row["metadata"],
+                },
+            }
+        )
+    python_state.append(
+        {
+            "id": f"runtime_sessions:{session_row['session_id']}",
+            "cells": {
+                "conversation_id": session_row["conversation_id"],
+                "interface": session_row["interface"],
+                "mirror_active": session_row["mirror_active"],
+                "persona": session_row["persona"],
+                "journey": session_row["journey"],
+                "hook_injected": session_row["hook_injected"],
+                "active": session_row["active"],
+                "started_at": session_row["started_at"],
+                "updated_at": session_row["updated_at"],
+                "closed_at": session_row["closed_at"],
+                "metadata": session_row["metadata"],
+            },
+        }
+    )
+
+    return {
+        "label": "conversation_logger_demo",
+        "probe_type": "conversation_logger",
+        "frozen_now_ms": int(FROZEN_NOW.timestamp() * 1000),
+        "now_iso": conversation_row["started_at"],
+        "target_ids": [],
+        "conversation_logger": {
+            "session_id": LOGGER_SESSION_ID,
+            "interface": LOGGER_INTERFACE,
+            "user_text": LOGGER_USER_TEXT,
+            "assistant_text": LOGGER_ASSISTANT_TEXT,
+            "conversation_id": conversation_id,
+            # TS generates ids from an injected factory, so replaying the
+            # oracle's exact ids makes the row states directly comparable.
+            "message_ids": [row["id"] for row in message_rows],
+        },
+        "python_state": python_state,
     }
 
 
@@ -314,7 +437,9 @@ def _identity_probe(conn: sqlite3.Connection, store: Store) -> dict:
     }
 
 
-def _build_fixture(*, source_db: Path, work_dir: Path, probe: str, targets: int, context: str) -> Path:
+def _build_fixture(
+    *, source_db: Path, work_dir: Path, probe: str, targets: int, context: str
+) -> Path:
     work_dir.mkdir(parents=True, exist_ok=True)
     seed_db = work_dir / "seed.db"
     python_copy = work_dir / "python-copy.db"
@@ -334,6 +459,8 @@ def _build_fixture(*, source_db: Path, work_dir: Path, probe: str, targets: int,
             probe_dict = _journey_probe(conn, store)
         elif probe == "identity":
             probe_dict = _identity_probe(conn, store)
+        elif probe == "conversation_logger":
+            probe_dict = _conversation_logger_probe(python_copy)
         else:
             raise ValueError(f"unknown probe: {probe}")
     finally:
@@ -355,7 +482,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--source-db", required=True, type=Path)
     parser.add_argument("--work-dir", default=DEFAULT_WORK_DIR, type=Path)
     parser.add_argument(
-        "--probe", default="reinforcement", choices=("reinforcement", "journey", "identity")
+        "--probe",
+        default="reinforcement",
+        choices=("reinforcement", "journey", "identity", "conversation_logger"),
     )
     parser.add_argument("--targets", default=3, type=int)
     parser.add_argument("--context", default="retrieval")

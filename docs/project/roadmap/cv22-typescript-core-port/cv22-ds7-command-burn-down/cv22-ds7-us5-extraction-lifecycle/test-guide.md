@@ -124,3 +124,23 @@ reason above.
 5. Redaction check green
 6. Revertibility exercised once
 7. Burn-down ledger updated
+
+## Real-DB-copy write parity (slice A)
+
+```bash
+mkdir -p tmp/parity
+MEMORY_ENV=test uv run python ts/parity/generate_demo_memory_db.py --out tmp/parity/demo-memory.db
+MEMORY_ENV=test uv run python ts/parity/write_parity.py \
+  --source-db tmp/parity/demo-memory.db --probe conversation_logger
+```
+
+Drives the real `log_user_message`/`log_assistant_message` on a copy, then
+replays them through the TS logger on a second copy from the same seed with the
+oracle's ids injected.
+
+- **Expected observation:** `mutated_row_count: 4` (one conversation, two
+  messages, one runtime session) and equal `python_state_hash` / `ts_state_hash`.
+- **Pass:** `match: true` and `overall_match: true`.
+  *(Verified 2026-09-02.)*
+- **Fail:** any hash divergence — inspect with `--debug-sensitive-output` only
+  on a disposable copy, never against a real database.

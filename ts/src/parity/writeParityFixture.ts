@@ -8,6 +8,7 @@
 // hash-verified backup is required first.
 
 import { copyFileSync } from "node:fs";
+import { logAssistantMessage, logUserMessage } from "#conversation/logger.ts";
 import { type BackupRecord, requireBackup } from "#db/backupGate.ts";
 import { assertCopyTarget } from "#db/copyGuard.ts";
 import { openDatabaseCopyForWrite } from "#db/database.ts";
@@ -68,7 +69,25 @@ interface WriteProbeBase {
 export type WriteProbeFixture =
   | (WriteProbeBase & { probe_type: "reinforcement"; access_context?: string | null })
   | (WriteProbeBase & { probe_type: "journey"; journey: JourneyProbeParams })
-  | (WriteProbeBase & { probe_type: "identity"; identity: IdentityProbeParams });
+  | (WriteProbeBase & { probe_type: "identity"; identity: IdentityProbeParams })
+  | (WriteProbeBase & {
+      probe_type: "conversation_logger";
+      conversation_logger: ConversationLoggerProbeParams;
+    });
+
+/**
+ * CV22.DS7.US5. The oracle's generated ids ride in the fixture because the TS
+ * logger takes an id factory: replaying them makes the two copies' row states
+ * directly comparable instead of differing only by uuid.
+ */
+export interface ConversationLoggerProbeParams {
+  session_id: string;
+  interface: string;
+  user_text: string;
+  assistant_text: string;
+  conversation_id: string;
+  message_ids: string[];
+}
 
 export interface WriteParityFixture {
   source_label?: string;
@@ -85,6 +104,39 @@ const IDENTITY_COLUMNS = [
   "version",
   "created_at",
   "updated_at",
+  "metadata",
+];
+
+const CONVERSATION_COLUMNS = [
+  "title",
+  "started_at",
+  "ended_at",
+  "interface",
+  "persona",
+  "journey",
+  "summary",
+  "tags",
+  "metadata",
+];
+const MESSAGE_COLUMNS = [
+  "conversation_id",
+  "role",
+  "content",
+  "created_at",
+  "token_count",
+  "metadata",
+];
+const RUNTIME_SESSION_COLUMNS = [
+  "conversation_id",
+  "interface",
+  "mirror_active",
+  "persona",
+  "journey",
+  "hook_injected",
+  "active",
+  "started_at",
+  "updated_at",
+  "closed_at",
   "metadata",
 ];
 
@@ -187,6 +239,68 @@ function buildWriteProbe(fixture: WriteProbeFixture): WriteProbe {
               );
             }
           }
+        },
+      };
+    }
+    case "conversation_logger": {
+      const params = fixture.conversation_logger;
+      return {
+        label: fixture.label,
+        snapshots: [
+          {
+            table: "conversations",
+            keyColumn: "id",
+            columns: CONVERSATION_COLUMNS,
+            selectorColumn: "id",
+            selectorValues: [params.conversation_id],
+          },
+          {
+            table: "messages",
+            keyColumn: "id",
+            columns: MESSAGE_COLUMNS,
+            selectorColumn: "conversation_id",
+            selectorValues: [params.conversation_id],
+          },
+          {
+            table: "runtime_sessions",
+            keyColumn: "session_id",
+            columns: RUNTIME_SESSION_COLUMNS,
+            selectorColumn: "session_id",
+            selectorValues: [params.session_id],
+          },
+        ],
+        apply(db) {
+          // Replay the oracle's ids in generation order: the conversation is
+          // created first, then one id per appended message.
+          const scriptedIds = [params.conversation_id, ...params.message_ids];
+          let cursor = 0;
+          const deps = {
+            newId: () => {
+              const id = scriptedIds[cursor];
+              cursor += 1;
+              if (id === undefined) {
+                throw new Error(
+                  "conversation-logger probe requested more ids than the oracle generated",
+                );
+              }
+              return id;
+            },
+            nowIso: () => fixture.now_iso,
+          };
+          logUserMessage(
+            db,
+            params.session_id,
+            params.user_text,
+            { interface: params.interface },
+            deps,
+          );
+          logAssistantMessage(
+            db,
+            params.session_id,
+            params.assistant_text,
+            { interface: params.interface },
+            deps,
+          );
         },
       };
     }

@@ -338,6 +338,8 @@ CV22.DS7 is done when:
 
 ## See also
 
+- [Burn-Down Ledger](burn-down-ledger.md) — the auditable denominator and
+  per-subcommand flip record (QA's blocking DS7 constraint)
 - [CV22 index](../index.md)
 - [CV22 Collaboration Strategy](../collaboration-strategy.md)
 - [Decisions — CV22.DS6 splits into a risk-ordered retirement chain (DS6–DS10)](../../../decisions.md)
