@@ -43,12 +43,13 @@ Disposable home; replay transport; no live provider calls.
 > subcommands; (3) after any routing flip, re-run the front-door routing suite
 > and the smokes of the already-flipped families (US1–US4, TS2).
 
-Slice A (verified 2026-09-02, copy-paste runnable). The TS route is gated, so
-the smoke opts in explicitly with `MIRROR_TS_CONVERSATION_LOGGER=1`:
+Slice A (verified 2026-09-02, copy-paste runnable). The route is flipped, so
+the smoke runs with no gate; `MIRROR_TS_CONVERSATION_LOGGER=0` is the revert
+control:
 
 ```bash
 export SMOKE_HOME=$(mktemp -d)/mirror-smoke && mkdir -p "$SMOKE_HOME"
-ts() { MEMORY_ENV=test MIRROR_TS_CONVERSATION_LOGGER=1 NODE_OPTIONS=--no-warnings \
+ts() { MEMORY_ENV=test NODE_OPTIONS=--no-warnings \
   node ts/src/frontDoor/cli.ts "$@" --mirror-home "$SMOKE_HOME"; }
 
 ts conversation-logger status                       # -> ACTIVE
@@ -102,12 +103,13 @@ cd ts && node --test "test/frontDoor/**/*.test.ts" && cd ..
 
 ## Revertibility check
 
-Slice A's route is gated by `MIRROR_TS_CONVERSATION_LOGGER`, so reverting is
-unsetting it — no code change and no data migration:
+Slice A is flipped, so reverting is setting `MIRROR_TS_CONVERSATION_LOGGER=0`
+— no code change and no data migration:
 
 ```bash
-# gate off: the same command must reach Python and behave identically
-MEMORY_ENV=test MIRROR_HOME="$SMOKE_HOME" NODE_OPTIONS=--no-warnings \
+# kill switch: the same command must reach Python and behave identically
+MEMORY_ENV=test MIRROR_TS_CONVERSATION_LOGGER=0 MIRROR_HOME="$SMOKE_HOME" \
+  NODE_OPTIONS=--no-warnings \
   node ts/src/frontDoor/cli.ts conversation-logger status --mirror-home "$SMOKE_HOME"
 grep 'conversation-logger' "$SMOKE_HOME/front-door.log" | tail -2   # route column: python
 ```

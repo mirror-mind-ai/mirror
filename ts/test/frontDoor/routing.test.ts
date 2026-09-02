@@ -345,16 +345,23 @@ test("uses Python fallback when no command is present", () => {
 
 // --- CV22.DS7.US5 conversation-logger (gated, not yet flipped) ---
 
-test("conversation-logger falls back to Python by default (route not yet flipped)", () => {
+test("conversation-logger routes its deterministic subcommands to TS by default", () => {
   for (const sub of ["mute", "status", "log-user", "user-prompt", "discard-current"]) {
-    const decision = routeMemoryCommand(["conversation-logger", sub], {});
-    assert.equal(decision.engine, "python");
-    assert.match(decision.reason, /not yet flipped/);
+    assert.equal(routeMemoryCommand(["conversation-logger", sub], {}).engine, "ts");
   }
 });
 
-test("conversation-logger routes deterministic subcommands to TS under the gate", () => {
-  const env = { MIRROR_TS_CONVERSATION_LOGGER: "1" };
+test("MIRROR_TS_CONVERSATION_LOGGER=0 reverts the whole family to Python", () => {
+  const env = { MIRROR_TS_CONVERSATION_LOGGER: "0" };
+  for (const sub of ["mute", "status", "log-user", "user-prompt", "discard-current"]) {
+    const decision = routeMemoryCommand(["conversation-logger", sub], env);
+    assert.equal(decision.engine, "python", `${sub} must revert to Python`);
+    assert.match(decision.reason, /disabled by MIRROR_TS_CONVERSATION_LOGGER=0/);
+  }
+});
+
+test("conversation-logger routes deterministic subcommands to TS", () => {
+  const env = {};
   for (const sub of [
     "mute",
     "unmute",
@@ -372,8 +379,8 @@ test("conversation-logger routes deterministic subcommands to TS under the gate"
   }
 });
 
-test("conversation-logger keeps LLM-tail subcommands on Python even under the gate", () => {
-  const env = { MIRROR_TS_CONVERSATION_LOGGER: "1" };
+test("conversation-logger keeps LLM-tail subcommands on Python after the flip", () => {
+  const env = {};
   for (const sub of [
     "switch",
     "session-end",

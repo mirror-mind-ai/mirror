@@ -339,16 +339,19 @@ export function routeMemoryCommand(
   }
 
   if (command === "conversation-logger") {
-    // Gated until slice A's flip checklist is green (goldens, copy-probe,
-    // hook-inclusive E2E, regression pass, redaction, revertibility, ledger).
-    // Ungated, this is the highest-volume write path in the product, so the
-    // default stays Python and the flip is later a gate removal, not a
-    // rewrite. The gate is also the revertibility control.
-    if (env.MIRROR_TS_CONVERSATION_LOGGER !== "1") {
+    // CV22.DS7.US5 slice A: flipped 2026-09-02 after the seven-point checklist
+    // went green (goldens, real-DB-copy write parity, hook-inclusive E2E,
+    // regression pass, redaction, revertibility, ledger).
+    //
+    // This is the product's highest-volume write path, so the gate was
+    // inverted rather than deleted: `MIRROR_TS_CONVERSATION_LOGGER=0` forces
+    // the whole family back to Python with no code change and no data
+    // migration, which is the revertibility the DS7 plan review requires.
+    if (env.MIRROR_TS_CONVERSATION_LOGGER === "0") {
       return {
         command,
         engine: "python",
-        reason: "DS7.US5 conversation-logger route not yet flipped",
+        reason: "conversation-logger TS route disabled by MIRROR_TS_CONVERSATION_LOGGER=0",
       };
     }
     const sub = argv[1];

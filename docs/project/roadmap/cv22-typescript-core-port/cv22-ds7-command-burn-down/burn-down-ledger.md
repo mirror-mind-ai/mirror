@@ -30,7 +30,7 @@ the three explicitly owned by later Delivery Stories: `mcp` (DS9), `web`
 | Memory cultivation | `consolidate`, `shadow` | 2/2 | DS7.US3 | ✅ done |
 | mirror-mode orchestration | `mirror`, `mode` | 2/2 | DS7.US4 | ✅ done |
 | Extension context runtime | (`ext`/`extensions` context path) | — | DS7.TS2 | ✅ done |
-| **Extraction lifecycle** | **`conversation-logger`** | **0/1** | **DS7.US5** | 🟡 **in progress — gated, not flipped** |
+| **Extraction lifecycle** | **`conversation-logger`** | **partial** | **DS7.US5** | 🟢 **slice A flipped; 7/15 subcommands on TS** |
 | Soul Mode | `soul` | 0/1 | DS7.US6 | 🟡 planned |
 | Explorer Mode | `explore` | 0/1 | DS7.US7 | 🟡 planned |
 | Builder/Ariad | `build` | 0/1 | DS7.US8 | 🟡 planned |
@@ -50,13 +50,13 @@ evidence.
 
 | Subcommand | TS ported | Routed to TS | Blocker |
 |------------|:---------:|:------------:|---------|
-| `mute` | ✅ | ⛔ gated | flip checklist |
-| `unmute` | ✅ | ⛔ gated | flip checklist |
-| `status` | ✅ | ⛔ gated | flip checklist |
-| `log-user` | ✅ | ⛔ gated | flip checklist |
-| `log-assistant` | ✅ | ⛔ gated | flip checklist |
-| `user-prompt` (hook) | ✅ | ⛔ gated | flip checklist |
-| `discard-current` | ✅ | ⛔ gated | flip checklist |
+| `mute` | ✅ | ✅ flipped | — |
+| `unmute` | ✅ | ✅ flipped | — |
+| `status` | ✅ | ✅ flipped | — |
+| `log-user` | ✅ | ✅ flipped | — |
+| `log-assistant` | ✅ | ✅ flipped | — |
+| `user-prompt` (hook) | ✅ | ✅ flipped | — |
+| `discard-current` | ✅ | ✅ flipped | — |
 | `switch` | skeleton only | ❌ | LLM close tail (slice C/D) |
 | `session-end-pi` | skeleton only | ❌ | LLM close tail (slice C/D) |
 | `session-end` (hook) | skeleton only | ❌ | LLM close tail (slice C/D) |
@@ -66,8 +66,12 @@ evidence.
 | `repair-journeys` | ❌ | ❌ | slice E (mutating repair) |
 | `backfill-codex-session` | ❌ | ❌ | slice E |
 
-**Ported: 7/15. Routed to TS: 0/15** — the route is behind
-`MIRROR_TS_CONVERSATION_LOGGER=1`, so production still reaches Python.
+**Ported: 7/15. Routed to TS: 7/15** — flipped 2026-09-02.
+
+**Revert control:** `MIRROR_TS_CONVERSATION_LOGGER=0` sends the whole family
+back to Python with no code change and no data migration. The gate was
+inverted rather than deleted precisely so this write path keeps an operational
+escape hatch.
 
 ### Slice A flip checklist
 
@@ -81,10 +85,13 @@ evidence.
 | 6 | Revertibility exercised | ✅ gate off reaches Python, no data migration |
 | 7 | Burn-down ledger updated | ✅ this entry |
 
-All seven are green. The flip itself — removing the
-`MIRROR_TS_CONVERSATION_LOGGER` gate — remains a separate Navigator decision,
-because it changes the engine answering the product's highest-volume write
-path.
+All seven were green before the flip, and re-verified after it: the E2E and the
+kill-switch route were both exercised with the gate absent and with
+`MIRROR_TS_CONVERSATION_LOGGER=0`, producing identical observable behavior on
+either engine.
+
+**Flipped 2026-09-02 on Navigator authorization.** The seven deterministic
+subcommands now answer from TS by default.
 
 ---
 
@@ -93,3 +100,4 @@ path.
 | Date | Change |
 |------|--------|
 | 2026-09-02 | Ledger created (DS7 QA constraint). `conversation-logger` slice A: 7/15 subcommands ported, 0 routed, checklist green, flip pending Navigator approval. |
+| 2026-09-02 | **Slice A flipped.** `conversation-logger` 7/15 subcommands routed to TS by default; `MIRROR_TS_CONVERSATION_LOGGER=0` retained as the revert control. First DS7.US5 burn-down movement. |
