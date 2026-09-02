@@ -212,12 +212,23 @@ def main() -> None:
         logger.log_user_message("sess-b", "discard me", interface="pi")
         mem = MemoryClient(db_path=fixture_db)
         conversation_id = mem.store.get_runtime_session("sess-b").conversation_id
-        mem.add_memory(
-            title="Extracted",
-            content="kept",
-            memory_type="note",
-            conversation_id=conversation_id,
+        # Insert the row directly: `add_memory` generates an embedding, which
+        # is a live provider call. This probe only needs a memory carrying the
+        # conversation FK to prove discard preserves it, and CI must never
+        # reach a provider.
+        mem.conn.execute(
+            "INSERT INTO memories (id, memory_type, title, content, journey, "
+            "conversation_id, created_at) VALUES (?, ?, ?, ?, NULL, ?, ?)",
+            (
+                "golden-memory-1",
+                "note",
+                "Extracted",
+                "kept",
+                conversation_id,
+                "2026-06-23T12:00:00.000000Z",
+            ),
         )
+        mem.conn.commit()
         mem.close()
         logger.discard_current_conversation(session_id="sess-b", interface="pi")
         mem = MemoryClient(db_path=fixture_db)
