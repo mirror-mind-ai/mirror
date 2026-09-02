@@ -191,3 +191,35 @@ test("discard-current reports the empty case with the released string", () => {
   ]);
   db.close();
 });
+
+// --- --mirror-home targeting (parity with the Python fix, CV22.DS7.US5) ---
+
+test("--mirror-home overrides the ambient home for the hook's mute gate", () => {
+  const { db, home } = fixture();
+  const explicitHome = mkdtempSync("/tmp/logger-cli-explicit-");
+  // Mute only the explicit home; the ambient one stays active.
+  runHandled(db, explicitHome, ["mute"]);
+
+  const result = runHandled(
+    db,
+    home,
+    ["user-prompt", "--mirror-home", explicitHome],
+    JSON.stringify({ session_id: "s1", prompt: "must not be logged" }),
+  );
+
+  assert.equal(result.exitCode, 0);
+  assert.equal(db.prepare("SELECT COUNT(*) AS c FROM messages").get()?.c, 0);
+  db.close();
+});
+
+test("status reads mute state from --mirror-home, not the ambient home", () => {
+  const { db, home } = fixture();
+  const explicitHome = mkdtempSync("/tmp/logger-cli-explicit-");
+  runHandled(db, explicitHome, ["mute"]);
+
+  assert.deepEqual(runHandled(db, home, ["status"]).stdout, ["ACTIVE"]);
+  assert.deepEqual(runHandled(db, home, ["status", "--mirror-home", explicitHome]).stdout, [
+    "MUTED",
+  ]);
+  db.close();
+});

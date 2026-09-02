@@ -31,7 +31,9 @@ def test_hook_session_end_always_backfills_when_transcript_exists(mocker, tmp_pa
     except SystemExit as exc:
         assert exc.code == 0
 
-    backfill.assert_called_once_with(str(transcript_path))
+    # The hook threads its mirror home through so --mirror-home is honored
+    # (CV22.DS7.US5); the runtime hooks pass None and keep ambient resolution.
+    backfill.assert_called_once_with(str(transcript_path), mirror_home=None)
 
 
 def test_hook_session_end_never_calls_export_transcript(mocker, tmp_path):

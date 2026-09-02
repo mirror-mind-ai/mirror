@@ -210,7 +210,30 @@ Findings absorbed above; summary:
   readiness checklist with a copy-paste-runnable test guide before first flip.
   Verdict: approve-with-amendments.
 
-## Open decision — hooks ignore `--mirror-home` in Python (found 2026-09-02)
+## Resolved decision — hooks ignore `--mirror-home` in Python (2026-09-02)
+
+**Navigator chose option 3: fix Python first, then port at parity.** Python
+still owns this entry point under the moving-target rule, so the defect was
+corrected in the authority rather than diverged around in the port.
+
+Landed: `hook_user_prompt` and `hook_session_end` now accept `mirror_home` and
+thread it into `is_muted`, `log_user_message`, `end_session`, and
+`backfill_assistant_messages`; `main()` passes the parsed value. Passing `None`
+preserves the ambient module-level resolution the runtime hooks rely on, so
+installed runtimes are unaffected. Three Python tests pin the new behavior
+(explicit home honored for writes, mute state read from the explicit home,
+session-end targeting), and one existing test that asserted the old positional
+call signature was updated deliberately.
+
+Because TS already honored `--mirror-home`, the port needed no behavior change
+— the two cores converged on Python's side. The oracle-drift tripwire fired on
+`conversation_logger.py` as designed; the goldens regenerated unchanged, TS
+gained two tests covering `--mirror-home` targeting, and the baseline was
+advanced in the same commit.
+
+The original finding is preserved below for provenance.
+
+### Original finding
 
 Python's `main()` extracts `--mirror-home`, but `hook_user_prompt()` and
 `hook_session_end()` take no arguments and never receive it: they call

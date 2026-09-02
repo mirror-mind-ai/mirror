@@ -744,22 +744,30 @@ def backfill_codex_session(
 # --- Hook entry points ---
 
 
-def hook_user_prompt():
-    """Entry point for the UserPromptSubmit hook. Reads JSON from stdin."""
+def hook_user_prompt(mirror_home: str | Path | None = None):
+    """Entry point for the UserPromptSubmit hook. Reads JSON from stdin.
+
+    ``mirror_home`` targets an explicit home so ``--mirror-home`` is honored
+    rather than silently ignored; passing ``None`` keeps the ambient
+    module-level resolution the runtime hooks rely on.
+    """
     try:
-        if is_muted():
+        if is_muted(mirror_home):
             sys.exit(0)
         data = json.load(sys.stdin)
         session_id = data.get("session_id", "")
         prompt = data.get("prompt", "")
         if session_id and prompt and not prompt.startswith("/"):
-            log_user_message(session_id, prompt)
+            log_user_message(session_id, prompt, mirror_home=mirror_home)
     except Exception:
         pass
     sys.exit(0)
 
 
-def backfill_assistant_messages(transcript_path: str) -> None:
+def backfill_assistant_messages(
+    transcript_path: str,
+    mirror_home: str | Path | None = None,
+) -> None:
     """Backfill assistant messages from a JSONL transcript.
 
     Called at session end to capture responses that were not explicitly recorded
@@ -779,7 +787,7 @@ def backfill_assistant_messages(transcript_path: str) -> None:
     start_time = min(timestamps)
     end_time = max(timestamps)
 
-    mem = MemoryClient()
+    mem = _memory_client(mirror_home)
     conversations = mem.store.get_conversations_in_range(start_time, end_time)
 
     for conv in conversations:
@@ -983,13 +991,18 @@ def _print_journey_association_findings(
         )
 
 
-def hook_session_end():
-    """Entry point for the SessionEnd hook. Reads JSON from stdin."""
+def hook_session_end(mirror_home: str | Path | None = None):
+    """Entry point for the SessionEnd hook. Reads JSON from stdin.
+
+    ``mirror_home`` targets an explicit home so ``--mirror-home`` is honored
+    rather than silently ignored; passing ``None`` keeps the ambient
+    module-level resolution the runtime hooks rely on.
+    """
     try:
         data = json.load(sys.stdin)
         session_id = data.get("session_id", "")
         if session_id:
-            end_session(session_id, extract=True)
+            end_session(session_id, extract=True, mirror_home=mirror_home)
 
         transcript_path = data.get("transcript_path", "")
         if not transcript_path:
@@ -1000,7 +1013,7 @@ def hook_session_end():
                     Path.home() / ".claude" / "projects" / project_hash / f"{session_id}.jsonl"
                 )
         if transcript_path and Path(transcript_path).exists():
-            backfill_assistant_messages(transcript_path)
+            backfill_assistant_messages(transcript_path, mirror_home=mirror_home)
     except Exception:
         pass
     sys.exit(0)
@@ -1029,9 +1042,9 @@ def main(argv: list[str] | None = None) -> None:
         sys.exit(1)
     cmd = args[0]
     if cmd == "user-prompt":
-        hook_user_prompt()
+        hook_user_prompt(mirror_home)
     elif cmd == "session-end":
-        hook_session_end()
+        hook_session_end(mirror_home)
     elif cmd == "mute":
         set_mute(True, mirror_home)
         print("Conversation logging MUTED.")

@@ -32,7 +32,7 @@
     "src/memory/services/operating_mode.py": "a09763c1f2ae09bc41fd7d0ac9bdfe2fa934b662",
     "src/memory/services/runtime_session.py": "1ba613a5b9f1bd87aee922777c4dab8e79eb807f",
     "src/memory/intelligence/reception.py": "1cf1ec18795b064c9166b94f75105f366caed3cb",
-    "src/memory/cli/conversation_logger.py": "e7cbb9fd70e28415fbec9f32a32d94f01ed2415a",
+    "src/memory/cli/conversation_logger.py": "4eef9e0a56113efaee9460451187b848f946f040",
     "src/memory/hooks/mirror_state.py": "6a2867c7155152643738abde643ebed8442c5bb4",
     "src/memory/surfaces/mode_transition.py": "3a77d4ac8c02b9a5a34f2a47ccbcee80e94ae3bc",
     "src/memory/services/attachment.py": "5c2b1c02133a70995cd3c7016eebb5eaef6ed285",
