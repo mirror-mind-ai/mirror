@@ -12,6 +12,18 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-02 — CV22 restarted; CV22.DS7.US5 Extraction Lifecycle (deterministic core) completed
+
+CV22 was restarted after the pause-window reconciliation merge, then DS7.US5 was pulled, planned under a three-persona review (ai-engineer, prompt-engineer, quality-assurance), implemented, validated, and closed.
+
+**Flipped to TypeScript:** seven `conversation-logger` subcommands — `mute`, `unmute`, `status`, `log-user`, `log-assistant`, `user-prompt`, `discard-current` — including the `user-prompt` hook that fires on every message. The gate was inverted rather than deleted, so `MIRROR_TS_CONVERSATION_LOGGER=0` reverts the whole family with no code change and no data migration. **Also ported, not routed:** the v0.31.13 `conversations append` boundary and the budgeted extraction driver, the latter with AI-05's spend bound and CV9.E2.S7's per-conversation isolation pinned as tests.
+
+**Three defects found by porting, two of them in the Python authority and fixed there under the moving-target rule.** The hook entries parsed `--mirror-home` but never received it, so a command told where to write wrote somewhere else — discovered when a revertibility check wrote into the real home's test database. `createdAt` normalization delegated to `datetime.fromisoformat`, whose accepted fractional widths change across supported Pythons, so the same external-shell request was accepted on 3.11+ and rejected on 3.10; proven red-before-green on 3.10 specifically, since a modern interpreter cannot catch it. The third was live on the branch: `conversations append` inherited DS7.US1's listing route, rendered a listing, exited 0, and silently discarded the caller's messages — verified end to end before the fix.
+
+**Validation** was run by the Navigator personally: identical stdout, row states, and metadata bytes on both engines, the slash-prefixed prompt logged by neither, `route=ts` then `route=python` under the kill switch, and no argument payloads in the front-door log. Debt Review deferred five findings with a revisit trigger; the float-metadata divergence (`1.0` vs `1`) is recorded as US10's blocker for the append flip, and the routing-inheritance audit was captured as **RS009/CR055** rather than left as an assertion.
+
+US5 was re-scoped mid-story on Navigator authorization: slices A–C form a provider-free plateau, while D–F all cross the LLM close tail, so the latter moved to the new **CV22.DS7.US10**. **DS7 progress 5/12 → 6/12** (denominator 11 → 12).
+
 ### 2026-09-02 — main (v0.31.9–v0.31.14) merged into `mirror-ts-core` with oracle reconciliation
 
 Merged 112 commits of Python product evolution accumulated on `main` through v0.31.14 into the migration branch, honoring the moving-target rule: absorb accumulated authority behavior before any further parity claim. Ten conflicts resolved — two in code (union of both sides' journey hierarchy tests; main's superset `identity_integrations` association count), the rest docs (worklog/decisions merged newest-first preserving both mirrors' entries; the Refinement Workbench indexes unified into one canonical file carrying RS001–RS004 and RS008 with a Legacy Boundary explaining the numbering gap; CV22 docs keep the branch's living DS structure while absorbing main's recorded CV22 pause decision and status).

@@ -2,7 +2,7 @@
 
 # CV22.DS7.US5 — Extraction lifecycle: deterministic core
 
-**Status:** 🔵 Implementation complete — pending Navigator validation
+**Status:** ✅ Done — validated 2026-09-02; debt deferred with revisit trigger
 **Type:** User Story
 **Plan:** [plan.md](plan.md) · **Validation:** [test-guide.md](test-guide.md)
 **Continues in:** [CV22.DS7.US10](../cv22-ds7-us10-extraction-lifecycle-session-composites/index.md)
