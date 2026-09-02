@@ -1,0 +1,398 @@
+{
+  "scenarios": [
+    {
+      "conversations": [
+        {
+          "ended": false,
+          "id": "<conversation-1>",
+          "interface": "pi",
+          "journey": null,
+          "metadata": {
+            "title_source": "first_user",
+            "title_status": "provisional"
+          },
+          "metadata_raw": "{\"title_source\": \"first_user\", \"title_status\": \"provisional\"}",
+          "persona": null,
+          "title": "hello world"
+        }
+      ],
+      "label": "user_message_creates_conversation_and_title",
+      "memories": [],
+      "messages": [
+        {
+          "content": "hello world\nmore detail",
+          "conversation_id": "<conversation-1>",
+          "metadata": null,
+          "role": "user",
+          "token_count": null
+        }
+      ],
+      "sessions": [
+        {
+          "active": 1,
+          "closed": false,
+          "conversation_id": "<conversation-1>",
+          "interface": "pi",
+          "journey": null,
+          "metadata": null,
+          "metadata_raw": null,
+          "persona": null,
+          "session_id": "sess-a"
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "ended": false,
+          "id": "<conversation-1>",
+          "interface": "pi",
+          "journey": null,
+          "metadata": {
+            "title_source": "first_user",
+            "title_status": "provisional"
+          },
+          "metadata_raw": "{\"title_source\": \"first_user\", \"title_status\": \"provisional\"}",
+          "persona": null,
+          "title": "hello world"
+        }
+      ],
+      "label": "second_user_message_keeps_title_and_appends",
+      "memories": [],
+      "messages": [
+        {
+          "content": "hello world\nmore detail",
+          "conversation_id": "<conversation-1>",
+          "metadata": null,
+          "role": "user",
+          "token_count": null
+        },
+        {
+          "content": "second message",
+          "conversation_id": "<conversation-1>",
+          "metadata": null,
+          "role": "user",
+          "token_count": null
+        },
+        {
+          "content": "assistant reply",
+          "conversation_id": "<conversation-1>",
+          "metadata": null,
+          "role": "assistant",
+          "token_count": null
+        }
+      ],
+      "sessions": [
+        {
+          "active": 1,
+          "closed": false,
+          "conversation_id": "<conversation-1>",
+          "interface": "pi",
+          "journey": null,
+          "metadata": null,
+          "metadata_raw": null,
+          "persona": null,
+          "session_id": "sess-a"
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "ended": true,
+          "id": "<conversation-1>",
+          "interface": "pi",
+          "journey": null,
+          "metadata": {
+            "title_source": "first_user",
+            "title_status": "provisional"
+          },
+          "metadata_raw": "{\"title_source\": \"first_user\", \"title_status\": \"provisional\"}",
+          "persona": null,
+          "title": "hello world"
+        },
+        {
+          "ended": false,
+          "id": "<conversation-2>",
+          "interface": "pi",
+          "journey": null,
+          "metadata": null,
+          "metadata_raw": null,
+          "persona": null,
+          "title": null
+        }
+      ],
+      "label": "switch_preserves_persona_and_rebinds",
+      "memories": [],
+      "messages": [
+        {
+          "content": "hello world\nmore detail",
+          "conversation_id": "<conversation-1>",
+          "metadata": null,
+          "role": "user",
+          "token_count": null
+        },
+        {
+          "content": "second message",
+          "conversation_id": "<conversation-1>",
+          "metadata": null,
+          "role": "user",
+          "token_count": null
+        },
+        {
+          "content": "assistant reply",
+          "conversation_id": "<conversation-1>",
+          "metadata": null,
+          "role": "assistant",
+          "token_count": null
+        }
+      ],
+      "sessions": [
+        {
+          "active": 1,
+          "closed": false,
+          "conversation_id": "<conversation-2>",
+          "interface": "pi",
+          "journey": "mirror-ts-core",
+          "metadata": null,
+          "metadata_raw": null,
+          "persona": "engineer",
+          "session_id": "sess-a"
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "ended": true,
+          "id": "<conversation-1>",
+          "interface": "pi",
+          "journey": null,
+          "metadata": {
+            "title_source": "first_user",
+            "title_status": "provisional"
+          },
+          "metadata_raw": "{\"title_source\": \"first_user\", \"title_status\": \"provisional\"}",
+          "persona": null,
+          "title": "hello world"
+        },
+        {
+          "ended": true,
+          "id": "<conversation-2>",
+          "interface": "pi",
+          "journey": null,
+          "metadata": null,
+          "metadata_raw": null,
+          "persona": null,
+          "title": null
+        }
+      ],
+      "label": "end_session_closes_conversation_and_session",
+      "memories": [],
+      "messages": [
+        {
+          "content": "hello world\nmore detail",
+          "conversation_id": "<conversation-1>",
+          "metadata": null,
+          "role": "user",
+          "token_count": null
+        },
+        {
+          "content": "second message",
+          "conversation_id": "<conversation-1>",
+          "metadata": null,
+          "role": "user",
+          "token_count": null
+        },
+        {
+          "content": "assistant reply",
+          "conversation_id": "<conversation-1>",
+          "metadata": null,
+          "role": "assistant",
+          "token_count": null
+        }
+      ],
+      "sessions": [
+        {
+          "active": 0,
+          "closed": true,
+          "conversation_id": "<conversation-2>",
+          "interface": "pi",
+          "journey": "mirror-ts-core",
+          "metadata": null,
+          "metadata_raw": null,
+          "persona": "engineer",
+          "session_id": "sess-a"
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "ended": true,
+          "id": "<conversation-1>",
+          "interface": "pi",
+          "journey": null,
+          "metadata": {
+            "title_source": "first_user",
+            "title_status": "provisional"
+          },
+          "metadata_raw": "{\"title_source\": \"first_user\", \"title_status\": \"provisional\"}",
+          "persona": null,
+          "title": "hello world"
+        },
+        {
+          "ended": true,
+          "id": "<conversation-2>",
+          "interface": "pi",
+          "journey": null,
+          "metadata": null,
+          "metadata_raw": null,
+          "persona": null,
+          "title": null
+        }
+      ],
+      "label": "discard_deletes_conversation_preserving_memories",
+      "memories": [
+        {
+          "conversation_id": null,
+          "id": "<memory-1>",
+          "title": "Extracted"
+        }
+      ],
+      "messages": [
+        {
+          "content": "hello world\nmore detail",
+          "conversation_id": "<conversation-1>",
+          "metadata": null,
+          "role": "user",
+          "token_count": null
+        },
+        {
+          "content": "second message",
+          "conversation_id": "<conversation-1>",
+          "metadata": null,
+          "role": "user",
+          "token_count": null
+        },
+        {
+          "content": "assistant reply",
+          "conversation_id": "<conversation-1>",
+          "metadata": null,
+          "role": "assistant",
+          "token_count": null
+        }
+      ],
+      "sessions": [
+        {
+          "active": 0,
+          "closed": true,
+          "conversation_id": "<conversation-2>",
+          "interface": "pi",
+          "journey": "mirror-ts-core",
+          "metadata": null,
+          "metadata_raw": null,
+          "persona": "engineer",
+          "session_id": "sess-a"
+        },
+        {
+          "active": 0,
+          "closed": false,
+          "conversation_id": null,
+          "interface": "pi",
+          "journey": null,
+          "metadata": {
+            "discard_current_conversation": true
+          },
+          "metadata_raw": "{\"discard_current_conversation\": true}",
+          "persona": null,
+          "session_id": "sess-b"
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "ended": true,
+          "id": "<conversation-1>",
+          "interface": "pi",
+          "journey": null,
+          "metadata": {
+            "title_source": "first_user",
+            "title_status": "provisional"
+          },
+          "metadata_raw": "{\"title_source\": \"first_user\", \"title_status\": \"provisional\"}",
+          "persona": null,
+          "title": "hello world"
+        },
+        {
+          "ended": true,
+          "id": "<conversation-2>",
+          "interface": "pi",
+          "journey": null,
+          "metadata": null,
+          "metadata_raw": null,
+          "persona": null,
+          "title": null
+        }
+      ],
+      "label": "assistant_noop_under_discard_marker",
+      "memories": [
+        {
+          "conversation_id": null,
+          "id": "<memory-1>",
+          "title": "Extracted"
+        }
+      ],
+      "messages": [
+        {
+          "content": "hello world\nmore detail",
+          "conversation_id": "<conversation-1>",
+          "metadata": null,
+          "role": "user",
+          "token_count": null
+        },
+        {
+          "content": "second message",
+          "conversation_id": "<conversation-1>",
+          "metadata": null,
+          "role": "user",
+          "token_count": null
+        },
+        {
+          "content": "assistant reply",
+          "conversation_id": "<conversation-1>",
+          "metadata": null,
+          "role": "assistant",
+          "token_count": null
+        }
+      ],
+      "sessions": [
+        {
+          "active": 0,
+          "closed": true,
+          "conversation_id": "<conversation-2>",
+          "interface": "pi",
+          "journey": "mirror-ts-core",
+          "metadata": null,
+          "metadata_raw": null,
+          "persona": "engineer",
+          "session_id": "sess-a"
+        },
+        {
+          "active": 0,
+          "closed": false,
+          "conversation_id": null,
+          "interface": "pi",
+          "journey": null,
+          "metadata": {
+            "discard_current_conversation": true
+          },
+          "metadata_raw": "{\"discard_current_conversation\": true}",
+          "persona": null,
+          "session_id": "sess-b"
+        }
+      ]
+    }
+  ]
+}

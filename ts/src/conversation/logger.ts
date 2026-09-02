@@ -418,6 +418,122 @@ export function discardCurrentConversation(
   return conversationId;
 }
 
+// --- Runtime hook entries -------------------------------------------------
+//
+// `hook_user_prompt` and `hook_session_end` are the hot path: they run on
+// every message and every session close. Python wraps both in
+// `except Exception: pass` and always exits 0, so a logging failure can never
+// take down the runtime. These ports return a described outcome instead of
+// exiting, keeping stdin/env at the CLI edge and the behavior testable; the
+// CLI maps every outcome to exit code 0.
+
+export type UserPromptHookOutcome =
+  | { action: "muted" }
+  | {
+      action: "skipped";
+      reason: "malformed_payload" | "missing_session" | "missing_prompt" | "slash_command";
+    }
+  | { action: "logged"; sessionId: string }
+  | { action: "failed"; error: string };
+
+export type SessionEndHookOutcome =
+  | { action: "skipped"; reason: "malformed_payload" | "missing_session" }
+  | { action: "ended"; sessionId: string; transcriptPath: string | null }
+  | { action: "failed"; error: string };
+
+function parsePayload(raw: string): Record<string, unknown> | null {
+  try {
+    const value: unknown = JSON.parse(raw);
+    if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
+    return value as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+function payloadString(payload: Record<string, unknown>, key: string): string {
+  const value = payload[key];
+  return typeof value === "string" ? value : "";
+}
+
+/** Python `hook_user_prompt`: mute gate, slash-command skip, never throw. */
+export function handleUserPromptHook(
+  db: WritableDatabase,
+  rawPayload: string,
+  options: { mirrorHome: string; interface?: string },
+  deps: LoggerDeps,
+): UserPromptHookOutcome {
+  try {
+    if (isMuted(options.mirrorHome)) return { action: "muted" };
+
+    const payload = parsePayload(rawPayload);
+    if (!payload) return { action: "skipped", reason: "malformed_payload" };
+
+    const sessionId = payloadString(payload, "session_id");
+    const prompt = payloadString(payload, "prompt");
+    if (!sessionId) return { action: "skipped", reason: "missing_session" };
+    if (!prompt) return { action: "skipped", reason: "missing_prompt" };
+    // Slash commands never enter conversation history.
+    if (prompt.startsWith("/")) return { action: "skipped", reason: "slash_command" };
+
+    logUserMessage(db, sessionId, prompt, { interface: options.interface ?? "claude_code" }, deps);
+    return { action: "logged", sessionId };
+  } catch (error) {
+    // Python swallows everything here; the runtime must survive a logging fault.
+    return { action: "failed", error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+/**
+ * Python `hook_session_end`. Resolves the transcript path but does not
+ * backfill: `backfill_assistant_messages` (and Python's session-less
+ * backfill-only path) is slice E scope, so this port reports the resolved
+ * path and leaves dispatch to that slice.
+ */
+export function handleSessionEndHook(
+  db: WritableDatabase,
+  rawPayload: string,
+  options: { mirrorHome: string; claudeProjectDir: string | null; homeDir: string },
+  deps: LoggerDeps,
+  hooks: CloseHooks = {},
+): SessionEndHookOutcome {
+  try {
+    const payload = parsePayload(rawPayload);
+    if (!payload) return { action: "skipped", reason: "malformed_payload" };
+
+    const sessionId = payloadString(payload, "session_id");
+    if (!sessionId) return { action: "skipped", reason: "missing_session" };
+
+    endSession(db, sessionId, { extract: true }, deps, hooks);
+    const transcriptPath = resolveTranscriptPath(
+      payloadString(payload, "transcript_path"),
+      sessionId,
+      options.claudeProjectDir,
+      options.homeDir,
+    );
+    return { action: "ended", sessionId, transcriptPath };
+  } catch (error) {
+    return { action: "failed", error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+/**
+ * Python's transcript fallback: an explicit payload path wins; otherwise
+ * derive `~/.claude/projects/<project-hash>/<session>.jsonl`, where the hash
+ * is the project dir with leading slashes stripped and `/` replaced by `-`.
+ */
+export function resolveTranscriptPath(
+  payloadPath: string,
+  sessionId: string,
+  claudeProjectDir: string | null,
+  homeDir: string,
+): string | null {
+  if (payloadPath) return payloadPath;
+  if (!claudeProjectDir) return null;
+  const projectHash = claudeProjectDir.replace(/^\/+/, "").replaceAll("/", "-");
+  return join(homeDir, ".claude", "projects", projectHash, `${sessionId}.jsonl`);
+}
+
 function muteFlagPath(mirrorHome: string): string {
   return join(expandHome(mirrorHome), "mute");
 }

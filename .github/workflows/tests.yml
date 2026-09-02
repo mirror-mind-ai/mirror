@@ -55,6 +55,7 @@ jobs:
           uv run python ts/parity/generate_mirror_mode_golden.py
           uv run python ts/parity/generate_mirror_state_golden.py
           uv run python ts/parity/generate_extension_context_golden.py
+          uv run python ts/parity/generate_conversation_logger_golden.py
           git diff --exit-code ts/test/goldens/
         env:
           MEMORY_ENV: test
