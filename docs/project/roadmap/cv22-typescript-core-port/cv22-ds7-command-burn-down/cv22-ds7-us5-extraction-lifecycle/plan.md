@@ -210,6 +210,56 @@ Findings absorbed above; summary:
   readiness checklist with a copy-paste-runnable test guide before first flip.
   Verdict: approve-with-amendments.
 
+## Open decision — `conversations append` timestamps are version-dependent (found 2026-09-02)
+
+Slice B is **blocked** on this: the TS port cannot be written faithfully until
+the intended behavior is chosen.
+
+`_normalize_timestamp` validates `createdAt` with
+`(?:\.\d+)?` — advertising RFC 3339's "any number of fractional digits" — and
+then calls `datetime.fromisoformat`, which on **Python 3.10 accepts only 3 or 6
+fractional digits**. The project supports `>=3.10` and CI tests 3.10 and 3.12,
+so the same request is accepted or rejected depending on which Python the
+user's Mirror runs:
+
+| `createdAt` | Python 3.10 | Python 3.11+ |
+|---|---|---|
+| `2026-09-02T12:00:00Z` | accepted | accepted |
+| `2026-09-02T12:00:00.5Z` | **`malformed_request`** | `.500000Z` |
+| `2026-09-02T12:00:00.12Z` | **`malformed_request`** | `.120000Z` |
+| `2026-09-02T12:00:00.123456Z` | accepted | accepted |
+| `2026-09-02T12:00:00.1234567Z` | **`malformed_request`** | truncated `.123456Z` |
+
+This matters more than an internal inconsistency would: `conversations append`
+is the **published contract for external shells** (CV9.E2.S31, v0.31.13). Its
+spec says "timezone-aware RFC 3339 input, normalized to UTC
+`YYYY-MM-DDTHH:mm:ss.ffffffZ`", and RFC 3339 permits any number of fractional
+digits. A third-party integration sending `.5Z` therefore works against one
+install and fails against another, with a bounded rejection that does not
+explain why. The documented example uses `.000Z` (three digits), which happens
+to work on both, so the gap is invisible in the docs' own sample.
+
+Options:
+
+1. **TS matches 3.10** (strictest): accept only 3 or 6 fractional digits.
+   Consistent everywhere, but rejects requests that currently succeed for most
+   users, and contradicts the spec's RFC 3339 claim.
+2. **TS matches 3.11+**: accept any digit count, truncate to microseconds.
+   Matches the spec and most installs, but diverges from 3.10 installs.
+3. **Fix Python first** (the CV22 precedent from the `--mirror-home` finding):
+   normalize the fraction explicitly instead of delegating to
+   `fromisoformat`'s version-dependent parser — pad/truncate to 6 digits — so
+   behavior is identical on every supported Python. Then port at parity.
+
+Driver recommendation: **option 3**, consistent with the previous decision and
+with the fact that Python still owns this entry point. It is also the only
+option that makes the published contract true on every supported runtime.
+
+Slice B's characterization tests are written and parked at
+`ts/test/conversation/append.test.ts.pending-decision` (they currently encode
+3.11+ behavior). They are excluded from the runner so the suite stays green;
+they get renamed back once the behavior is chosen.
+
 ## Resolved decision — hooks ignore `--mirror-home` in Python (2026-09-02)
 
 **Navigator chose option 3: fix Python first, then port at parity.** Python

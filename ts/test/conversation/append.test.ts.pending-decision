@@ -1,0 +1,282 @@
+// CV22.DS7.US5 slice B — the explicit conversation append boundary (v0.31.13).
+//
+// Characterizes `src/memory/services/conversation_append.py` and
+// `MessageStore.append_conversation_messages`. This boundary is a contract
+// with external shells: bounded public rejection reasons, canonical-JSON
+// metadata, atomic all-or-nothing batches, and idempotent replay keyed on the
+// caller's message ids.
+
+import assert from "node:assert/strict";
+import { mkdtempSync } from "node:fs";
+import { join } from "node:path";
+import test from "node:test";
+import {
+  APPEND_SCHEMA_VERSION,
+  AppendRejectedError,
+  appendConversationMessages,
+  canonicalJson,
+  parseAppendRequest,
+} from "#conversation/append.ts";
+import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
+import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+
+function fixture(): WritableDatabase {
+  const dir = mkdtempSync("/tmp/conversation-append-");
+  const db = openDatabaseCopyForWrite(join(dir, "copy.db"));
+  createRuntimeTables(db);
+  db.prepare(
+    "INSERT INTO conversations (id, started_at, interface, journey) VALUES (?, ?, ?, ?)",
+  ).run("conv-1", "2026-09-02T12:00:00.000000Z", "pi", "mirror-ts-core");
+  return db;
+}
+
+function validPayload(overrides: Record<string, unknown> = {}) {
+  return {
+    schemaVersion: "1.0.0",
+    conversationId: "conv-1",
+    journeyId: "mirror-ts-core",
+    sourceInterface: "external-shell",
+    messages: [
+      {
+        id: "msg-1",
+        role: "user",
+        content: "hello",
+        createdAt: "2026-09-02T12:00:00Z",
+      },
+    ],
+    ...overrides,
+  };
+}
+
+function rejectionReason(payload: unknown): string {
+  try {
+    parseAppendRequest(payload);
+  } catch (error) {
+    if (error instanceof AppendRejectedError) return error.reason;
+    throw error;
+  }
+  throw new Error("expected a rejection");
+}
+
+// --- canonical JSON ---
+
+test("canonicalJson sorts keys and uses Python's compact separators", () => {
+  assert.equal(canonicalJson({ b: 1, a: { d: 2, c: 3 } }), '{"a":{"c":3,"d":2},"b":1}');
+});
+
+test("canonicalJson keeps non-ASCII unescaped, like ensure_ascii=False", () => {
+  assert.equal(canonicalJson({ k: "ação" }), '{"k":"ação"}');
+});
+
+// --- envelope validation ---
+
+test("parseAppendRequest accepts a minimal valid request", () => {
+  const request = parseAppendRequest(validPayload());
+  assert.equal(request.conversationId, "conv-1");
+  assert.equal(request.messages.length, 1);
+  assert.equal(
+    request.messages[0]?.metadataJson,
+    '{"callerMetadata":{},"mirrorAppend":{"schemaVersion":"1.0.0","sourceInterface":"external-shell"}}',
+  );
+});
+
+test("parseAppendRequest requires the exact envelope key set", () => {
+  const extra = { ...validPayload(), unexpected: true };
+  assert.equal(rejectionReason(extra), "malformed_request");
+  const { journeyId, ...missing } = validPayload();
+  void journeyId;
+  assert.equal(rejectionReason(missing), "malformed_request");
+});
+
+test("parseAppendRequest separates an unsupported version from a malformed one", () => {
+  assert.equal(
+    rejectionReason(validPayload({ schemaVersion: "2.0.0" })),
+    "unsupported_schema_version",
+  );
+  // A non-string version is malformed, not merely unsupported.
+  assert.equal(rejectionReason(validPayload({ schemaVersion: 2 })), "malformed_request");
+});
+
+test("parseAppendRequest rejects a bad sourceInterface", () => {
+  assert.equal(rejectionReason(validPayload({ sourceInterface: "-leading-dash" })), "malformed_request");
+  assert.equal(rejectionReason(validPayload({ sourceInterface: "a".repeat(65) })), "malformed_request");
+  assert.equal(rejectionReason(validPayload({ sourceInterface: "" })), "malformed_request");
+});
+
+test("parseAppendRequest bounds the batch size", () => {
+  assert.equal(rejectionReason(validPayload({ messages: [] })), "limit_exceeded");
+  const many = Array.from({ length: 21 }, (_unused, index) => ({
+    id: `msg-${index}`,
+    role: "user",
+    content: "x",
+    createdAt: "2026-09-02T12:00:00Z",
+  }));
+  assert.equal(rejectionReason(validPayload({ messages: many })), "limit_exceeded");
+});
+
+test("parseAppendRequest rejects duplicate ids inside one request", () => {
+  const message = {
+    id: "dup",
+    role: "user",
+    content: "x",
+    createdAt: "2026-09-02T12:00:00Z",
+  };
+  assert.equal(
+    rejectionReason(validPayload({ messages: [message, { ...message }] })),
+    "duplicate_request_message_id",
+  );
+});
+
+// --- message validation ---
+
+test("parseAppendRequest validates message id, role, and content", () => {
+  const base = validPayload().messages[0] as Record<string, unknown>;
+  assert.equal(rejectionReason(validPayload({ messages: [{ ...base, id: "-bad" }] })), "malformed_request");
+  assert.equal(rejectionReason(validPayload({ messages: [{ ...base, role: "system" }] })), "malformed_request");
+  assert.equal(rejectionReason(validPayload({ messages: [{ ...base, content: "" }] })), "malformed_request");
+  assert.equal(
+    rejectionReason(validPayload({ messages: [{ ...base, extraKey: 1 }] })),
+    "malformed_request",
+  );
+});
+
+test("parseAppendRequest bounds content by UTF-8 bytes, not characters", () => {
+  const base = validPayload().messages[0] as Record<string, unknown>;
+  // 'é' is two bytes: 25_601 chars exceeds the 51_200-byte cap.
+  const content = "é".repeat(25_601);
+  assert.equal(rejectionReason(validPayload({ messages: [{ ...base, content }] })), "limit_exceeded");
+});
+
+test("parseAppendRequest rejects non-finite numbers in caller metadata", () => {
+  const base = validPayload().messages[0] as Record<string, unknown>;
+  assert.equal(
+    rejectionReason(validPayload({ messages: [{ ...base, metadata: { n: Number.NaN } }] })),
+    "malformed_request",
+  );
+  assert.equal(
+    rejectionReason(validPayload({ messages: [{ ...base, metadata: { n: Number.POSITIVE_INFINITY } }] })),
+    "malformed_request",
+  );
+});
+
+test("parseAppendRequest bounds the composed metadata document", () => {
+  const base = validPayload().messages[0] as Record<string, unknown>;
+  const metadata = { blob: "x".repeat(4_096) };
+  assert.equal(
+    rejectionReason(validPayload({ messages: [{ ...base, metadata }] })),
+    "limit_exceeded",
+  );
+});
+
+// --- timestamp normalization ---
+
+test("parseAppendRequest normalizes RFC3339 timestamps to UTC microseconds", () => {
+  const base = validPayload().messages[0] as Record<string, unknown>;
+  const parse = (createdAt: string) =>
+    parseAppendRequest(validPayload({ messages: [{ ...base, createdAt }] })).messages[0]?.createdAt;
+
+  assert.equal(parse("2026-09-02T12:00:00Z"), "2026-09-02T12:00:00.000000Z");
+  assert.equal(parse("2026-09-02T12:00:00.5Z"), "2026-09-02T12:00:00.500000Z");
+  assert.equal(parse("2026-09-02T14:00:00+02:00"), "2026-09-02T12:00:00.000000Z");
+});
+
+test("parseAppendRequest rejects timestamps without an offset", () => {
+  const base = validPayload().messages[0] as Record<string, unknown>;
+  assert.equal(
+    rejectionReason(validPayload({ messages: [{ ...base, createdAt: "2026-09-02T12:00:00" }] })),
+    "malformed_request",
+  );
+});
+
+// --- storage boundary ---
+
+test("appendConversationMessages inserts a batch and reports states", () => {
+  const db = fixture();
+  const receipt = appendConversationMessages(db, parseAppendRequest(validPayload()));
+
+  assert.deepEqual(receipt, {
+    schemaVersion: APPEND_SCHEMA_VERSION,
+    status: "accepted",
+    conversationId: "conv-1",
+    journeyId: "mirror-ts-core",
+    insertedCount: 1,
+    existingCount: 0,
+    messages: [{ id: "msg-1", state: "inserted" }],
+  });
+  const row = db.prepare("SELECT * FROM messages WHERE id = 'msg-1'").get();
+  assert.equal(row?.conversation_id, "conv-1");
+  assert.equal(row?.token_count, null);
+  db.close();
+});
+
+test("appendConversationMessages is idempotent for an identical replay", () => {
+  const db = fixture();
+  appendConversationMessages(db, parseAppendRequest(validPayload()));
+  const receipt = appendConversationMessages(db, parseAppendRequest(validPayload()));
+
+  assert.equal(receipt.insertedCount, 0);
+  assert.equal(receipt.existingCount, 1);
+  assert.deepEqual(receipt.messages, [{ id: "msg-1", state: "existing" }]);
+  assert.equal(db.prepare("SELECT COUNT(*) AS c FROM messages").get()?.c, 1);
+  db.close();
+});
+
+test("appendConversationMessages rejects a reused id with different content", () => {
+  const db = fixture();
+  appendConversationMessages(db, parseAppendRequest(validPayload()));
+
+  const conflicting = validPayload({
+    messages: [
+      { id: "msg-1", role: "user", content: "different", createdAt: "2026-09-02T12:00:00Z" },
+    ],
+  });
+  assert.throws(
+    () => appendConversationMessages(db, parseAppendRequest(conflicting)),
+    (error: unknown) =>
+      error instanceof AppendRejectedError && error.reason === "idempotency_conflict",
+  );
+  db.close();
+});
+
+test("appendConversationMessages refuses an unknown conversation and a journey mismatch", () => {
+  const db = fixture();
+  assert.throws(
+    () => appendConversationMessages(db, parseAppendRequest(validPayload({ conversationId: "nope" }))),
+    (error: unknown) =>
+      error instanceof AppendRejectedError && error.reason === "conversation_not_found",
+  );
+  assert.throws(
+    () => appendConversationMessages(db, parseAppendRequest(validPayload({ journeyId: "other" }))),
+    (error: unknown) => error instanceof AppendRejectedError && error.reason === "journey_mismatch",
+  );
+  assert.equal(db.prepare("SELECT COUNT(*) AS c FROM messages").get()?.c, 0);
+  db.close();
+});
+
+test("a batch is atomic: one conflicting message rolls back its whole batch", () => {
+  const db = fixture();
+  appendConversationMessages(db, parseAppendRequest(validPayload()));
+
+  const mixed = validPayload({
+    messages: [
+      { id: "msg-2", role: "user", content: "new one", createdAt: "2026-09-02T12:00:01Z" },
+      { id: "msg-1", role: "user", content: "conflicting", createdAt: "2026-09-02T12:00:00Z" },
+    ],
+  });
+  assert.throws(() => appendConversationMessages(db, parseAppendRequest(mixed)), AppendRejectedError);
+
+  // msg-2 must NOT have landed: the batch is all-or-nothing.
+  assert.equal(db.prepare("SELECT COUNT(*) AS c FROM messages").get()?.c, 1);
+  assert.equal(db.prepare("SELECT COUNT(*) AS c FROM messages WHERE id = 'msg-2'").get()?.c, 0);
+  db.close();
+});
+
+test("rejection receipts carry only the bounded public message", () => {
+  const error = new AppendRejectedError("journey_mismatch");
+  assert.deepEqual(error.receipt(), {
+    schemaVersion: APPEND_SCHEMA_VERSION,
+    status: "rejected",
+    reason: "journey_mismatch",
+    message: "Conversation belongs to a different journey.",
+  });
+});
