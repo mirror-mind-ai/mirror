@@ -394,3 +394,19 @@ test("conversation-logger keeps LLM-tail subcommands on Python after the flip", 
     assert.equal(decision.engine, "python", `${sub} must stay on Python in slice A`);
   }
 });
+
+// --- conversations append must not inherit DS7.US1's listing route ---
+
+test("conversations append falls back to Python instead of rendering a listing", () => {
+  // Regression: v0.31.13 added `append` under a command DS7.US1 had already
+  // claimed, so the request routed to TS, printed a listing, exited 0, and
+  // dropped the caller's messages.
+  const decision = routeMemoryCommand(["conversations", "append", "--format", "json"], {});
+  assert.equal(decision.engine, "python");
+  assert.match(decision.reason, /append boundary not yet routed/);
+});
+
+test("conversations listing still routes to TS", () => {
+  assert.equal(routeMemoryCommand(["conversations"], {}).engine, "ts");
+  assert.equal(routeMemoryCommand(["conversations", "--limit", "5"], {}).engine, "ts");
+});

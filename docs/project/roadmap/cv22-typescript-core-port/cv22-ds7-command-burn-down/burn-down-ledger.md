@@ -25,7 +25,7 @@ the three explicitly owned by later Delivery Stories: `mcp` (DS9), `web`
 | Read-only deterministic | `detect-persona`, `journeys`, `memories` (listing) | 3/3 | DS2 | ✅ done |
 | Deterministic writes | `identity set`, `journey set-path` | (subcommands) | DS4 | ✅ done |
 | External under replay | `memories --search`, `consult` | 1/1 (+`consult`) | DS5 | ✅ done |
-| Identity/journey reads & writes | `identity`, `journey`, `seed`, `init`, `descriptor`, `list`, `inspect`, `conversations`, `recall` | 9/9 | DS7.US1 | ✅ done |
+| Identity/journey reads & writes | `identity`, `journey`, `seed`, `init`, `descriptor`, `list`, `inspect`, `conversations`, `recall` | 9/9† | DS7.US1 | ✅ done |
 | Content & planning writes | `journal`, `tasks`, `week` | 3/3 | DS7.US2 | ✅ done |
 | Memory cultivation | `consolidate`, `shadow` | 2/2 | DS7.US3 | ✅ done |
 | mirror-mode orchestration | `mirror`, `mode` | 2/2 | DS7.US4 | ✅ done |
@@ -38,6 +38,12 @@ the three explicitly owned by later Delivery Stories: `mcp` (DS9), `web`
 
 Deferred to later Delivery Stories (excluded from the denominator): `mcp`
 (DS9), `web` (DS10), `eval` (DS8).
+
+† `conversations` counts as ported for its **listing read only**. Its `append`
+subcommand (v0.31.13) is Python-owned and tracked under DS7.US5 slice B. A
+family marked done can still grow subcommands on main — which is exactly how
+the 2026-09-02 routing defect happened — so "done" here means "the subcommands
+that existed when it was ported", not "every argv shape forever".
 
 ---
 
@@ -101,3 +107,5 @@ subcommands now answer from TS by default.
 |------|--------|
 | 2026-09-02 | Ledger created (DS7 QA constraint). `conversation-logger` slice A: 7/15 subcommands ported, 0 routed, checklist green, flip pending Navigator approval. |
 | 2026-09-02 | **Slice A flipped.** `conversation-logger` 7/15 subcommands routed to TS by default; `MIRROR_TS_CONVERSATION_LOGGER=0` retained as the revert control. First DS7.US5 burn-down movement. |
+| 2026-09-02 | **Routing defect fixed:** `conversations append` (v0.31.13) inherited DS7.US1's listing route, rendered a listing, exited 0, and silently discarded the caller's messages. Now pinned to Python until slice B wires its TS route. Subcommands of a claimed family must be allowlisted, never inherited. |
+| 2026-09-02 | Slice B: `conversations append` ported to TS (`ts/src/conversation/append.ts`) and oracle-registered; **not routed**. |

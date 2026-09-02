@@ -142,6 +142,19 @@ export function routeMemoryCommand(
 
   if (command === "conversations") {
     // Only the plain listing (ConversationService.list_recent) is ported.
+    //
+    // `append` (v0.31.13) arrived on main after DS7.US1 claimed this command,
+    // and the entry matched every argv shape: the append request routed to TS,
+    // rendered a listing, exited 0, and silently discarded the caller's
+    // messages. Subcommands of a claimed family must be allowlisted, never
+    // inherited.
+    if (argv[1] === "append") {
+      return {
+        command,
+        engine: "python",
+        reason: "conversations append boundary not yet routed to TS (DS7.US5 slice B)",
+      };
+    }
     if (CONVERSATIONS_LIFECYCLE_FLAGS.some((flag) => argv.includes(flag))) {
       return {
         command,

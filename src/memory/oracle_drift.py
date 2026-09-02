@@ -102,6 +102,11 @@ ORACLE_PATHS: tuple[str, ...] = (
     "src/memory/extensions/api.py",
     "src/memory/extensions/loader.py",
     "src/memory/cli/extensions.py",
+    # DS7.US5 slice B explicit conversation append: the published external-shell
+    # contract (validation, canonical metadata, RFC 3339 normalization) and the
+    # atomic/idempotent storage boundary it commits through.
+    "src/memory/services/conversation_append.py",
+    "src/memory/storage/messages.py",
 )
 
 BASELINE_RELPATH = "ts/parity/oracle-baseline.json"

@@ -98,8 +98,14 @@ test("parseAppendRequest separates an unsupported version from a malformed one",
 });
 
 test("parseAppendRequest rejects a bad sourceInterface", () => {
-  assert.equal(rejectionReason(validPayload({ sourceInterface: "-leading-dash" })), "malformed_request");
-  assert.equal(rejectionReason(validPayload({ sourceInterface: "a".repeat(65) })), "malformed_request");
+  assert.equal(
+    rejectionReason(validPayload({ sourceInterface: "-leading-dash" })),
+    "malformed_request",
+  );
+  assert.equal(
+    rejectionReason(validPayload({ sourceInterface: "a".repeat(65) })),
+    "malformed_request",
+  );
   assert.equal(rejectionReason(validPayload({ sourceInterface: "" })), "malformed_request");
 });
 
@@ -131,9 +137,18 @@ test("parseAppendRequest rejects duplicate ids inside one request", () => {
 
 test("parseAppendRequest validates message id, role, and content", () => {
   const base = validPayload().messages[0] as Record<string, unknown>;
-  assert.equal(rejectionReason(validPayload({ messages: [{ ...base, id: "-bad" }] })), "malformed_request");
-  assert.equal(rejectionReason(validPayload({ messages: [{ ...base, role: "system" }] })), "malformed_request");
-  assert.equal(rejectionReason(validPayload({ messages: [{ ...base, content: "" }] })), "malformed_request");
+  assert.equal(
+    rejectionReason(validPayload({ messages: [{ ...base, id: "-bad" }] })),
+    "malformed_request",
+  );
+  assert.equal(
+    rejectionReason(validPayload({ messages: [{ ...base, role: "system" }] })),
+    "malformed_request",
+  );
+  assert.equal(
+    rejectionReason(validPayload({ messages: [{ ...base, content: "" }] })),
+    "malformed_request",
+  );
   assert.equal(
     rejectionReason(validPayload({ messages: [{ ...base, extraKey: 1 }] })),
     "malformed_request",
@@ -144,7 +159,10 @@ test("parseAppendRequest bounds content by UTF-8 bytes, not characters", () => {
   const base = validPayload().messages[0] as Record<string, unknown>;
   // 'é' is two bytes: 25_601 chars exceeds the 51_200-byte cap.
   const content = "é".repeat(25_601);
-  assert.equal(rejectionReason(validPayload({ messages: [{ ...base, content }] })), "limit_exceeded");
+  assert.equal(
+    rejectionReason(validPayload({ messages: [{ ...base, content }] })),
+    "limit_exceeded",
+  );
 });
 
 test("parseAppendRequest rejects non-finite numbers in caller metadata", () => {
@@ -154,7 +172,9 @@ test("parseAppendRequest rejects non-finite numbers in caller metadata", () => {
     "malformed_request",
   );
   assert.equal(
-    rejectionReason(validPayload({ messages: [{ ...base, metadata: { n: Number.POSITIVE_INFINITY } }] })),
+    rejectionReason(
+      validPayload({ messages: [{ ...base, metadata: { n: Number.POSITIVE_INFINITY } }] }),
+    ),
     "malformed_request",
   );
 });
@@ -177,7 +197,37 @@ test("parseAppendRequest normalizes RFC3339 timestamps to UTC microseconds", () 
 
   assert.equal(parse("2026-09-02T12:00:00Z"), "2026-09-02T12:00:00.000000Z");
   assert.equal(parse("2026-09-02T12:00:00.5Z"), "2026-09-02T12:00:00.500000Z");
+  assert.equal(parse("2026-09-02T12:00:00.12Z"), "2026-09-02T12:00:00.120000Z");
+  assert.equal(parse("2026-09-02T12:00:00.123456Z"), "2026-09-02T12:00:00.123456Z");
   assert.equal(parse("2026-09-02T14:00:00+02:00"), "2026-09-02T12:00:00.000000Z");
+  assert.equal(parse("2026-09-02T14:00:00.25+02:00"), "2026-09-02T12:00:00.250000Z");
+});
+
+test("parseAppendRequest truncates sub-microsecond precision instead of rejecting", () => {
+  // Python delegated this to fromisoformat, which rejects these widths before
+  // 3.11; normalization is now explicit on both sides, so every RFC 3339
+  // fraction width behaves identically everywhere.
+  const base = validPayload().messages[0] as Record<string, unknown>;
+  const parse = (createdAt: string) =>
+    parseAppendRequest(validPayload({ messages: [{ ...base, createdAt }] })).messages[0]?.createdAt;
+
+  assert.equal(parse("2026-09-02T12:00:00.1234567Z"), "2026-09-02T12:00:00.123456Z");
+  assert.equal(parse("2026-09-02T12:00:00.999999999Z"), "2026-09-02T12:00:00.999999Z");
+});
+
+test("parseAppendRequest rejects malformed RFC3339 shapes", () => {
+  const base = validPayload().messages[0] as Record<string, unknown>;
+  for (const createdAt of [
+    "2026-09-02T12:00:00.Z", // empty fraction
+    "2026-09-02T12:00:00+0200", // offset without a colon
+    "2026-09-02 12:00:00Z", // space separator
+  ]) {
+    assert.equal(
+      rejectionReason(validPayload({ messages: [{ ...base, createdAt }] })),
+      "malformed_request",
+      `${createdAt} must be rejected`,
+    );
+  }
 });
 
 test("parseAppendRequest rejects timestamps without an offset", () => {
@@ -241,7 +291,8 @@ test("appendConversationMessages rejects a reused id with different content", ()
 test("appendConversationMessages refuses an unknown conversation and a journey mismatch", () => {
   const db = fixture();
   assert.throws(
-    () => appendConversationMessages(db, parseAppendRequest(validPayload({ conversationId: "nope" }))),
+    () =>
+      appendConversationMessages(db, parseAppendRequest(validPayload({ conversationId: "nope" }))),
     (error: unknown) =>
       error instanceof AppendRejectedError && error.reason === "conversation_not_found",
   );
@@ -263,7 +314,10 @@ test("a batch is atomic: one conflicting message rolls back its whole batch", ()
       { id: "msg-1", role: "user", content: "conflicting", createdAt: "2026-09-02T12:00:00Z" },
     ],
   });
-  assert.throws(() => appendConversationMessages(db, parseAppendRequest(mixed)), AppendRejectedError);
+  assert.throws(
+    () => appendConversationMessages(db, parseAppendRequest(mixed)),
+    AppendRejectedError,
+  );
 
   // msg-2 must NOT have landed: the batch is all-or-nothing.
   assert.equal(db.prepare("SELECT COUNT(*) AS c FROM messages").get()?.c, 1);

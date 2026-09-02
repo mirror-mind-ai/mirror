@@ -177,3 +177,52 @@ def test_receipt_contains_only_bounded_identifiers(store):
     assert "hello" not in encoded
     assert "callerMetadata" not in encoded
     assert receipt["messages"] == [{"id": "turn:2026-08-29T12:00:00.000Z", "state": "inserted"}]
+
+
+@pytest.mark.parametrize(
+    ("created_at", "expected"),
+    [
+        ("2026-08-29T12:00:00Z", "2026-08-29T12:00:00.000000Z"),
+        ("2026-08-29T12:00:00.5Z", "2026-08-29T12:00:00.500000Z"),
+        ("2026-08-29T12:00:00.12Z", "2026-08-29T12:00:00.120000Z"),
+        ("2026-08-29T12:00:00.000Z", "2026-08-29T12:00:00.000000Z"),
+        ("2026-08-29T12:00:00.123456Z", "2026-08-29T12:00:00.123456Z"),
+        # More precision than microseconds is truncated, not rejected.
+        ("2026-08-29T12:00:00.1234567Z", "2026-08-29T12:00:00.123456Z"),
+        ("2026-08-29T12:00:00.999999999Z", "2026-08-29T12:00:00.999999Z"),
+        ("2026-08-29T14:00:00.25+02:00", "2026-08-29T12:00:00.250000Z"),
+    ],
+)
+def test_normalizes_every_rfc3339_fraction_width(created_at, expected):
+    """Fractional seconds must not depend on the interpreter version.
+
+    `datetime.fromisoformat` accepts only 3 or 6 fractional digits before
+    Python 3.11, so delegating parsing to it made this published external-shell
+    contract accept a request on one supported runtime and reject it on
+    another. The regex advertises RFC 3339 (any number of digits), so every
+    width must normalize identically on every supported Python.
+    """
+    payload = _payload()
+    payload["messages"][0]["createdAt"] = created_at
+
+    request = parse_append_request(payload)
+
+    assert request.messages[0].created_at == expected
+
+
+@pytest.mark.parametrize(
+    "created_at",
+    [
+        "2026-08-29T12:00:00",  # no offset
+        "2026-08-29T12:00:00.Z",  # empty fraction
+        "2026-08-29T12:00:00+0200",  # offset without a colon
+        "2026-08-29 12:00:00Z",  # space separator
+    ],
+)
+def test_rejects_non_rfc3339_timestamps(created_at):
+    payload = _payload()
+    payload["messages"][0]["createdAt"] = created_at
+
+    with pytest.raises(AppendRejected) as exc:
+        parse_append_request(payload)
+    assert exc.value.reason == "malformed_request"

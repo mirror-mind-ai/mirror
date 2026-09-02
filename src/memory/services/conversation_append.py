@@ -21,9 +21,12 @@ MAX_METADATA_BYTES = 4_096
 MESSAGE_ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}\Z", re.ASCII)
 SOURCE_INTERFACE_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}\Z", re.ASCII)
 RFC3339_RE = re.compile(
-    r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})\Z",
+    r"(?P<civil>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})"
+    r"(?:\.(?P<fraction>\d+))?"
+    r"(?P<offset>Z|[+-]\d{2}:\d{2})\Z",
     re.ASCII,
 )
+MICROSECOND_DIGITS = 6
 
 PUBLIC_MESSAGES = {
     "malformed_request": "Request does not match the conversation append contract.",
@@ -186,15 +189,30 @@ def _required_string(value: object) -> str:
 
 
 def _normalize_timestamp(value: object) -> str:
-    if not isinstance(value, str) or not RFC3339_RE.fullmatch(value):
+    """Normalize RFC 3339 input to UTC microseconds on every supported Python.
+
+    The fractional second is padded/truncated here rather than handed to
+    ``datetime.fromisoformat``, which accepts only 3 or 6 fractional digits
+    before Python 3.11. Delegating made this published external-shell contract
+    interpreter-dependent: the same request was accepted on 3.11+ and rejected
+    as ``malformed_request`` on 3.10, which the project still supports. The
+    regex advertises RFC 3339's arbitrary precision, so every width is
+    normalized identically; precision finer than a microsecond is truncated,
+    never rejected.
+    """
+    if not isinstance(value, str):
         raise AppendRejected("malformed_request")
-    candidate = f"{value[:-1]}+00:00" if value.endswith("Z") else value
+    match = RFC3339_RE.fullmatch(value)
+    if match is None:
+        raise AppendRejected("malformed_request")
+
+    fraction = (match["fraction"] or "")[:MICROSECOND_DIGITS].ljust(MICROSECOND_DIGITS, "0")
+    offset = match["offset"]
+    candidate = f"{match['civil']}.{fraction}{'+00:00' if offset == 'Z' else offset}"
     try:
         parsed = datetime.fromisoformat(candidate)
     except ValueError as exc:
         raise AppendRejected("malformed_request") from exc
-    if parsed.tzinfo is None:
-        raise AppendRejected("malformed_request")
     return parsed.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
 

@@ -210,10 +210,33 @@ Findings absorbed above; summary:
   readiness checklist with a copy-paste-runnable test guide before first flip.
   Verdict: approve-with-amendments.
 
-## Open decision — `conversations append` timestamps are version-dependent (found 2026-09-02)
+## Resolved decision — `conversations append` timestamps were version-dependent (2026-09-02)
 
-Slice B is **blocked** on this: the TS port cannot be written faithfully until
-the intended behavior is chosen.
+**Navigator chose option 3: fix Python first, then port at parity** — the same
+route taken for the `--mirror-home` finding, and the only option that makes the
+published contract true on every supported runtime.
+
+Landed: `_normalize_timestamp` now pads/truncates the fractional second itself
+instead of delegating to `datetime.fromisoformat`, whose accepted widths change
+across supported Pythons. Every RFC 3339 fraction width normalizes identically
+on 3.10 and 3.14; precision finer than a microsecond truncates rather than
+rejects. Proven red-before-green **on 3.10 specifically**: without the fix,
+exactly the non-3/6-digit cases fail there while passing on 3.14 — the reason
+the defect survived its own test suite.
+
+The TS port then matched at parity, and both
+`services/conversation_append.py` and `storage/messages.py` are now registered
+oracles.
+
+**Known divergence, registered for Debt Review:** caller metadata containing an
+integer-valued float (`1.0`) serializes as `1.0` in Python and `1` in TS,
+because `JSON.parse` collapses the distinction before either core sees it.
+Non-integer floats agree. Metadata bytes participate in the idempotency
+comparison, so a batch written by one core and replayed through the other with
+such metadata would raise `idempotency_conflict`. Not reachable today (the TS
+route is not wired), but it must be resolved before `append` flips.
+
+### Original finding
 
 `_normalize_timestamp` validates `createdAt` with
 `(?:\.\d+)?` — advertising RFC 3339's "any number of fractional digits" — and
@@ -255,10 +278,8 @@ Driver recommendation: **option 3**, consistent with the previous decision and
 with the fact that Python still owns this entry point. It is also the only
 option that makes the published contract true on every supported runtime.
 
-Slice B's characterization tests are written and parked at
-`ts/test/conversation/append.test.ts.pending-decision` (they currently encode
-3.11+ behavior). They are excluded from the runner so the suite stays green;
-they get renamed back once the behavior is chosen.
+Slice B's characterization tests were parked during the decision and are now
+active at `ts/test/conversation/append.test.ts`.
 
 ## Resolved decision — hooks ignore `--mirror-home` in Python (2026-09-02)
 
