@@ -14,8 +14,11 @@ Run: uv run python ts/parity/generate_conversation_logger_golden.py
 
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import os
+import re
 import tempfile
 from pathlib import Path
 
@@ -108,6 +111,45 @@ def _snapshot(mem, label: str) -> dict:
     }
 
 
+def _run_cli(logger, argv: list[str]) -> dict:
+    """Invoke the real `conversation_logger.main` and capture its contract.
+
+    The strangler's unit is `command + args -> stdout`, so this records the
+    exact released strings and exit code rather than a paraphrase.
+    """
+    stdout, stderr = io.StringIO(), io.StringIO()
+    exit_code = 0
+    try:
+        with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            logger.main(argv)
+    except SystemExit as exc:  # main() exits on argument errors
+        exit_code = int(exc.code or 0)
+
+    def _lines(buffer: io.StringIO) -> list[str]:
+        # Conversation ids are random uuids; alias them so the golden is stable.
+        text = re.sub(r"(conversation: )[0-9a-f]{8}", r"\1<conversation-id>", buffer.getvalue())
+        return text.splitlines()
+
+    return {
+        "argv": argv,
+        "stdout": _lines(stdout),
+        "stderr": _lines(stderr),
+        "exit_code": exit_code,
+    }
+
+
+def _capture_cli_stdout(logger) -> list[dict]:
+    return [
+        _run_cli(logger, ["mute"]),
+        _run_cli(logger, ["status"]),
+        _run_cli(logger, ["unmute"]),
+        _run_cli(logger, ["status"]),
+        _run_cli(logger, ["discard-current", "--session-id", "sess-missing"]),
+        _run_cli(logger, ["status", "--mirror-home"]),
+        _run_cli(logger, []),
+    ]
+
+
 def main() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         home = Path(tmp) / "mirror-fixture"
@@ -188,8 +230,16 @@ def main() -> None:
         snapshots.append(_snapshot(mem, "assistant_noop_under_discard_marker"))
         mem.close()
 
+        cli_cases = _capture_cli_stdout(logger)
+
     OUT_PATH.write_text(
-        json.dumps({"scenarios": snapshots}, indent=2, ensure_ascii=False, sort_keys=True) + "\n",
+        json.dumps(
+            {"scenarios": snapshots, "cli": cli_cases},
+            indent=2,
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+        + "\n",
         encoding="utf-8",
     )
     print(f"wrote {OUT_PATH.relative_to(HERE.parent.parent)}")

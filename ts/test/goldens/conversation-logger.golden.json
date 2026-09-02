@@ -1,4 +1,75 @@
 {
+  "cli": [
+    {
+      "argv": [
+        "mute"
+      ],
+      "exit_code": 0,
+      "stderr": [],
+      "stdout": [
+        "Conversation logging MUTED."
+      ]
+    },
+    {
+      "argv": [
+        "status"
+      ],
+      "exit_code": 0,
+      "stderr": [],
+      "stdout": [
+        "MUTED"
+      ]
+    },
+    {
+      "argv": [
+        "unmute"
+      ],
+      "exit_code": 0,
+      "stderr": [],
+      "stdout": [
+        "Conversation logging ACTIVE."
+      ]
+    },
+    {
+      "argv": [
+        "status"
+      ],
+      "exit_code": 0,
+      "stderr": [],
+      "stdout": [
+        "ACTIVE"
+      ]
+    },
+    {
+      "argv": [
+        "discard-current",
+        "--session-id",
+        "sess-missing"
+      ],
+      "exit_code": 0,
+      "stderr": [],
+      "stdout": [
+        "No current conversation to discard."
+      ]
+    },
+    {
+      "argv": [
+        "status",
+        "--mirror-home"
+      ],
+      "exit_code": 1,
+      "stderr": [
+        "Error: --mirror-home requires a path"
+      ],
+      "stdout": []
+    },
+    {
+      "argv": [],
+      "exit_code": 1,
+      "stderr": [],
+      "stdout": []
+    }
+  ],
   "scenarios": [
     {
       "conversations": [

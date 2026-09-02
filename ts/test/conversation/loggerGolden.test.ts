@@ -17,6 +17,7 @@ import {
   logUserMessage,
   switchConversation,
 } from "#conversation/logger.ts";
+import { runConversationLoggerCommand } from "#conversation/loggerCli.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
 import { upsertRuntimeSession } from "#mirror/runtimeSession.ts";
@@ -31,6 +32,7 @@ interface Golden {
     messages: unknown[];
     memories: unknown[];
   }[];
+  cli: { argv: string[]; stdout: string[]; stderr: string[]; exit_code: number }[];
 }
 
 // Monotonic clock so started_at/created_at ordering matches the Python run,
@@ -177,6 +179,28 @@ test("TS conversation logger reproduces the Python golden across every scenario"
       actual[index],
       expected,
       `scenario '${expected.label}' diverged from the Python oracle`,
+    );
+  }
+  db.close();
+});
+
+test("TS CLI reproduces the Python stdout/stderr contract for handled subcommands", () => {
+  const golden = JSON.parse(readFileSync(GOLDEN_PATH, "utf-8")) as Golden;
+  const db = fixture();
+  const home = mkdtempSync("/tmp/logger-golden-cli-");
+
+  for (const expected of golden.cli) {
+    const result = runConversationLoggerCommand(db, expected.argv, { mirrorHome: home }, deps);
+    assert.equal(
+      result.handled,
+      true,
+      `argv ${JSON.stringify(expected.argv)} should be TS-handled in slice A`,
+    );
+    if (!result.handled) continue;
+    assert.deepEqual(
+      { stdout: result.stdout, stderr: result.stderr, exit_code: result.exitCode },
+      { stdout: expected.stdout, stderr: expected.stderr, exit_code: expected.exit_code },
+      `argv ${JSON.stringify(expected.argv)} diverged from the Python CLI contract`,
     );
   }
   db.close();
