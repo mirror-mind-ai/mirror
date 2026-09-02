@@ -30,7 +30,8 @@ the three explicitly owned by later Delivery Stories: `mcp` (DS9), `web`
 | Memory cultivation | `consolidate`, `shadow` | 2/2 | DS7.US3 | ✅ done |
 | mirror-mode orchestration | `mirror`, `mode` | 2/2 | DS7.US4 | ✅ done |
 | Extension context runtime | (`ext`/`extensions` context path) | — | DS7.TS2 | ✅ done |
-| **Extraction lifecycle** | **`conversation-logger`** | **partial** | **DS7.US5** | 🟢 **slice A flipped; 7/15 subcommands on TS** |
+| **Extraction lifecycle (deterministic core)** | **`conversation-logger`** | **partial** | **DS7.US5** | 🔵 **7/15 subcommands flipped; pending validation** |
+| Extraction lifecycle (composites & LLM tail) | `conversation-logger` remainder | 0/8 | DS7.US10 | 🟡 planned |
 | Soul Mode | `soul` | 0/1 | DS7.US6 | 🟡 planned |
 | Explorer Mode | `explore` | 0/1 | DS7.US7 | 🟡 planned |
 | Builder/Ariad | `build` | 0/1 | DS7.US8 | 🟡 planned |
@@ -109,3 +110,5 @@ subcommands now answer from TS by default.
 | 2026-09-02 | **Slice A flipped.** `conversation-logger` 7/15 subcommands routed to TS by default; `MIRROR_TS_CONVERSATION_LOGGER=0` retained as the revert control. First DS7.US5 burn-down movement. |
 | 2026-09-02 | **Routing defect fixed:** `conversations append` (v0.31.13) inherited DS7.US1's listing route, rendered a listing, exited 0, and silently discarded the caller's messages. Now pinned to Python until slice B wires its TS route. Subcommands of a claimed family must be allowlisted, never inherited. |
 | 2026-09-02 | Slice B: `conversations append` ported to TS (`ts/src/conversation/append.ts`) and oracle-registered; **not routed**. |
+| 2026-09-02 | Slice C: budgeted extraction driver ported with AI-05 spend-bound and CV9.E2.S7 isolation properties pinned; model call injected, not yet wired to the replay orchestration. |
+| 2026-09-02 | **US5 re-scoped** (Navigator-authorized) to slices A–C; slices D–F moved to the new **CV22.DS7.US10**. DS7 denominator 11 → 12 stories. |
