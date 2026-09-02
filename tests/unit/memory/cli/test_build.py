@@ -1560,6 +1560,115 @@ def test_build_review_item_completes_no_action_decision(mocker, tmp_path, capsys
     assert "✓ none" in out
 
 
+def test_build_review_item_answers_pending_debt_decision(mocker, tmp_path, capsys):
+    """Regression: --decision pending must not dead-lock Debt Review.
+
+    Recording a pending debt decision sets pending_confirmation=
+    navigator_debt_decision and last_delivery_event=review. The Navigator's
+    answer arrives as a second review-item call carrying the final decision —
+    the guard must allow exactly that re-entry, mirroring the
+    reentering_pending_coherence pattern. Found live on kia-backend
+    CV3.DS7.TS1 (2026-09-02), where every lifecycle verb was walled off.
+    """
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    project_path = tmp_path / "project"
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    mem.journeys.set_project_path("sandbox-pet-store", str(project_path))
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV2.DS1.US1",
+        active_item_level="user_story",
+        last_delivery_event="validation_passed",
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_review_item(
+        "ariad",
+        journey="sandbox-pet-store",
+        debt_findings=("Checkout address form duplicates cart rendering state.",),
+    )
+
+    build.cmd_review_item(
+        "ariad",
+        journey="sandbox-pet-store",
+        debt_findings=("Checkout address form duplicates cart rendering state.",),
+        debt_decision="no_action",
+    )
+
+    out = capsys.readouterr().out
+    cursor = get_delivery_cursor(mem.store, "sandbox-pet-store")
+    assert cursor is not None
+    assert cursor.pending_confirmation is None
+    assert cursor.active_checkpoint is None
+    assert cursor.last_delivery_event == "review_complete"
+    assert "<<<ARIAD:DEBT_REVIEW_CHECKPOINT>>>" in out
+
+
+def test_build_review_item_reentry_with_pending_decision_stays_pending(mocker, tmp_path, capsys):
+    """Re-entering pending Debt Review with decision=pending re-renders and keeps waiting."""
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV2.DS1.US1",
+        active_item_level="user_story",
+        last_delivery_event="validation_passed",
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    build.cmd_review_item(
+        "ariad",
+        journey="sandbox-pet-store",
+        debt_findings=("Finding one.",),
+    )
+    build.cmd_review_item(
+        "ariad",
+        journey="sandbox-pet-store",
+        debt_findings=("Finding one.",),
+    )
+
+    cursor = get_delivery_cursor(mem.store, "sandbox-pet-store")
+    assert cursor is not None
+    assert cursor.pending_confirmation == "navigator_debt_decision"
+    assert cursor.last_delivery_event == "review"
+
+
+def test_build_review_item_still_blocked_by_foreign_pending_confirmation(mocker, tmp_path, capsys):
+    """The re-entry allowance is exact: any other pending confirmation still blocks."""
+    mirror_home = tmp_path / ".mirror" / "pati"
+    db_path = default_db_path_for_home(mirror_home)
+    mem = MemoryClient(env="test", db_path=db_path)
+    mem.set_identity("journey", "sandbox-pet-store", JOURNEY_CONTENT)
+    set_adopted_method(mem.store, "sandbox-pet-store", "ariad")
+    set_delivery_cursor(
+        mem.store,
+        journey="sandbox-pet-store",
+        method="ariad",
+        active_item="CV2.DS1.US1",
+        active_item_level="user_story",
+        active_checkpoint="navigator_validation",
+        pending_confirmation="navigator_validation",
+        last_delivery_event="validate",
+    )
+    mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
+
+    with pytest.raises(SystemExit) as exc:
+        build.cmd_review_item("ariad", journey="sandbox-pet-store", debt_decision="no_action")
+
+    assert exc.value.code == 1
+    assert "Review is blocked" in capsys.readouterr().out
+
+
 def test_build_review_item_requires_validation_passed(mocker, tmp_path, capsys):
     mirror_home = tmp_path / ".mirror" / "pati"
     db_path = default_db_path_for_home(mirror_home)

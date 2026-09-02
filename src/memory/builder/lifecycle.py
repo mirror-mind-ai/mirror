@@ -986,11 +986,21 @@ def review_lifecycle_item(
         raise ValueError("delivery cursor is required before review")
     if not existing.active_item:
         raise ValueError("active item is required before review")
-    if existing.pending_confirmation:
+    # A pending debt decision is answered by re-entering Review with the final
+    # decision — the same exact-state re-entry Coherence allows
+    # (reentering_pending_coherence). Without this allowance, --decision pending
+    # dead-locks the lifecycle: every verb refuses while the confirmation it
+    # would resolve stays pending (found live on kia-backend CV3.DS7.TS1,
+    # 2026-09-02). Any other pending confirmation still blocks.
+    reentering_pending_debt_decision = (
+        existing.pending_confirmation == "navigator_debt_decision"
+        and existing.last_delivery_event == "review"
+    )
+    if existing.pending_confirmation and not reentering_pending_debt_decision:
         raise ValueError(
             f"Review is blocked: pending confirmation {existing.pending_confirmation}."
         )
-    if existing.last_delivery_event != "validation_passed":
+    if existing.last_delivery_event != "validation_passed" and not reentering_pending_debt_decision:
         raise ValueError("Debt Review requires passed Validation")
     normalized_decision = _normalize_validation_choice(
         debt_decision,
