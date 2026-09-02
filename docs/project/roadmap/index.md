@@ -38,7 +38,7 @@ folder and index. Stories that are non-trivial have a `plan.md` and a
 | [CV19](cv19-soul-mode-integration/index.md) | Soul Mode Integration | ✅ Done |
 | [CV20](cv20-builder-mode-evolution/index.md) | Builder Mode Evolution | 🟢 In Progress |
 | [CV21](cv21-runtime-expansion-ii/index.md) | Runtime Expansion II: Plugin & MCP Convergence | 🟢 In Progress |
-| [CV22](cv22-typescript-core-port/index.md) | TypeScript Core Port (Database-Seam Strangler) | ⏸️ Paused |
+| [CV22](cv22-typescript-core-port/index.md) | TypeScript Core Port (Database-Seam Strangler) | 🟢 In Progress — restarted 2026-09-02 |
 | [CV23](cv23-journey-projection-contract/index.md) | Journey Projection Contract | ✅ Done — v0.31.10 contract; v0.31.11 confinement hotfix accepted |
 
 ---
@@ -105,7 +105,9 @@ In progress. CV21 is the successor to CV8, driven by one force: the coding-agent
 
 ## CV22 — TypeScript Core Port (Database-Seam Strangler)
 
-Paused on 2026-08-19. CV22 was the successor to CV21: where CV21 packaged Mirror's runtime
+Paused on 2026-08-19; restarted on 2026-09-02 after the pause-window
+reconciliation merge (see [Decisions](../decisions.md)). CV22 was the successor
+to CV21: where CV21 packaged Mirror's runtime
 surface once (plugin + MCP) and propagated it across runtimes, CV22 unifies the
 **core language underneath** by porting the Python core (`src/memory/`) to
 TypeScript. The motivation is convergence — npm distribution, one language across
