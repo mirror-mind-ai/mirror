@@ -9,11 +9,10 @@ few tests that run against the real repo/entrypoint to prove the wired path.
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
-
-import json
 
 from memory.oracle_drift import (
     BASELINE_RELPATH,
