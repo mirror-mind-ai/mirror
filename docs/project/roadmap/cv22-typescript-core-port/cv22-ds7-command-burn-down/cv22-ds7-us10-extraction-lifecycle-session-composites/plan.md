@@ -61,7 +61,12 @@ pinned), and the DS5 orchestration `runConversationExtraction`
 
 ## Slices (risk-first; letters continue US5's lettering)
 
-- **C′ — Close tail under replay (the slice C remainder).**
+- **C′ — Close tail under replay (the slice C remainder).** ✅ Done
+  2026-09-03 (`e132b6b`, `fb49d6f`, `80d2a9e`, and the close-tail commit).
+  Scope grew by one Navigator-approved decision: TypeScript assembled no
+  prompt bytes at all, so the DS5 surfaces (`extraction`, `task_extraction`,
+  `curation`) were retrofitted with full assembly rather than leaving a live
+  DS8 provider to ship the model a bare transcript.
   Port the metadata lifecycle engine (profiles, per-field decisions, manual
   locks) and the title/tags/summary suggestion surfaces behind the replay
   transport. Port `end_conversation` semantics exactly: `ended_at` first,
@@ -227,6 +232,29 @@ Recorded as found, not acted on — parity-preserving today.
    with no cap on orphan count. Parity means porting the unbounded behavior;
    the port must not "fix" it silently. Named here as a DS8 planning input:
    a live maintenance run can multiply spend by orphan count.
+2. **The close tail pays for a summary it discards** (found while porting,
+   slice C′). `_suggest_tags` declares a `generated_summary` parameter and
+   never reads it. When the tags action is apply/regenerate, no summary was
+   generated, and the summary decision is `refine_candidate`, Python calls
+   `suggest_summary` a second time purely to pass the result into that unused
+   parameter. Reproduced in `close-tail.golden.json`
+   (`double_summary_when_generation_is_blank`): four calls, zero bytes
+   changed. Ported for parity; a one-line fix in Python would remove a real
+   per-close cost, but that is a behavior change and belongs to its own CR.
+3. **Re-closing a finalized conversation is not free** (slice C′). A generated
+   title plus six or more messages decides `refine_candidate`, which the
+   `close_time` profile regenerates, so closing an already-finalized
+   conversation costs three more calls. Relevant to `close_stale_orphans` and
+   to any future retry path; recorded as DS8 cost input.
+4. **Two stored-JSON byte divergences, fixed in slice C′ rather than
+   deferred.** `JSON.stringify` matches neither Python serialization: it omits
+   the `", "`/`": "` separators `json.dumps` always writes, and Mirror uses
+   both `ensure_ascii` settings depending on call site (conversation
+   metadata/tags raw, memory tags escaped). Three DS5 extraction sites were
+   writing divergent bytes into columns both cores read. Fixed with a second
+   helper and pinned against the oracle. Named here because the same class of
+   defect is what slice B′'s float-metadata decision addresses — stored JSON
+   bytes are a parity surface, not a formatting preference.
 
 ## Risks
 

@@ -18,8 +18,9 @@ uv run pytest tests/ -q --ignore=tests/live
 uv run python scripts/check_oracle_drift.py
 
 # Golden determinism — regeneration must be a no-op on a clean tree
-MEMORY_ENV=test uv run python ts/parity/generate_metadata_lifecycle_golden.py   # (lands in slice C′)
-MEMORY_ENV=test uv run python ts/parity/generate_prompt_assembly_golden.py      # extended to title/tags/summary (slice C′)
+MEMORY_ENV=test uv run python ts/parity/generate_metadata_lifecycle_golden.py   # landed (slice C′)
+MEMORY_ENV=test uv run python ts/parity/generate_prompt_assembly_golden.py      # landed (slice C′, all six surfaces)
+MEMORY_ENV=test uv run python ts/parity/generate_close_tail_golden.py           # landed (slice C′, call sequences)
 MEMORY_ENV=test uv run python ts/parity/generate_session_composite_golden.py    # (lands in slice D)
 MEMORY_ENV=test uv run python ts/parity/generate_journey_repair_golden.py       # (lands in slice E)
 git diff --exit-code ts/test/goldens/
@@ -45,14 +46,21 @@ presence: happy path, conditional double-summary branch,
 extraction-failure-then-finalize, and the idempotent re-run.
 
 ```bash
-cd ts && node --test test/conversation/closeTail*.test.ts && cd ..
+cd ts && node --test test/conversation/closeTail.test.ts && cd ..
 ```
 
-- **Pass:** each scenario's `llm_calls` roles match Python's exact order and
-  count; the second `session-maintenance` run on an already-processed home
-  records **zero** new ledger rows.
+- **Pass:** each scenario's surface sequence matches Python's exact order and
+  count. Landed 2026-09-03 with five scenarios, including the
+  `double_summary_when_generation_is_blank` branch (four calls, zero bytes
+  changed) and `rerun_over_finalized_conversation` (six calls — re-closing is
+  not free).
 - **Fail:** same end state with a different call count or order — that is a
   diverged call graph, not a pass.
+
+The **zero-call idempotent re-run** assertion belongs to slice D, not here: it
+is a `session-maintenance` property (`extract_pending` finds nothing eligible),
+not a close-tail property. The close tail legitimately regenerates on re-close,
+which `rerun_over_finalized_conversation` pins.
 
 ## Real-DB-copy write parity (redacted, portable)
 
