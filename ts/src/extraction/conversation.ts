@@ -8,6 +8,7 @@ import {
   sanitizeExtracted,
 } from "./fencing.ts";
 import { parseJsonResponse } from "./json.ts";
+import { CURATION_PROMPT, EXTRACTION_PROMPT, TASK_EXTRACTION_PROMPT } from "./prompts.ts";
 
 export interface ExtractionMessage {
   role: string;
@@ -99,7 +100,7 @@ export async function extractMemoriesWithStatus(
   if (messages.length === 0) return { memories: [], status: { status: "no_signal" } };
   const response = await provider.complete({
     role: "extraction",
-    prompt: fenceTranscript(formatTranscript(messages, options.userName ?? "User")),
+    prompt: buildExtractionPrompt(messages, options.userName ?? "User"),
     model: resolveExtractionModel(),
     temperature: 0.3,
   });
@@ -135,7 +136,7 @@ export async function extractTasks(
   if (messages.length === 0) return [];
   const response = await provider.complete({
     role: "task_extraction",
-    prompt: fenceTranscript(formatTranscript(messages, options.userName ?? "User")),
+    prompt: buildTaskExtractionPrompt(messages, options.userName ?? "User"),
     model: resolveExtractionModel(),
     temperature: 0.3,
   });
@@ -161,7 +162,7 @@ export async function curateAgainstExisting(
   try {
     const response = await provider.complete({
       role: "curation",
-      prompt: `${formatCandidates(candidates)}\n${formatExisting(existing)}`,
+      prompt: buildCurationPrompt(candidates, existing),
       model: resolveExtractionModel(),
       temperature: 0.2,
     });
@@ -213,22 +214,70 @@ function toExtractedTask(item: unknown, journey: string | null): ExtractedTask |
   };
 }
 
+/**
+ * Python's `_format_candidates`. Each candidate emits its header line, a
+ * `Content:` line, an optional `Context:` line, and a trailing blank entry, all
+ * joined with newlines -- so the block ends with a newline. The optional
+ * context line and that trailing newline are both part of the prompt bytes.
+ */
 function formatCandidates(candidates: readonly ExtractedMemory[]): string {
-  return candidates
-    .map(
-      (candidate, index) =>
-        `${index + 1}. **${candidate.title}** (${candidate.memory_type}/${candidate.layer})\n   Content: ${candidate.content}`,
-    )
-    .join("\n\n");
+  const lines: string[] = [];
+  candidates.forEach((candidate, index) => {
+    lines.push(
+      `${index + 1}. **${candidate.title}** (${candidate.memory_type}/${candidate.layer})`,
+    );
+    lines.push(`   Content: ${candidate.content}`);
+    if (candidate.context) lines.push(`   Context: ${candidate.context}`);
+    lines.push("");
+  });
+  return lines.join("\n");
 }
 
+/** Python's `_format_existing`: header line, truncated body, trailing blank. */
 function formatExisting(existing: readonly ExistingMemoryForCuration[]): string {
-  return existing
-    .map(
-      (memory) =>
-        `- **${memory.title}** (${memory.memory_type}/${memory.layer})\n  ${memory.content.slice(0, 200)}`,
-    )
-    .join("\n\n");
+  const lines: string[] = [];
+  for (const memory of existing) {
+    lines.push(`- **${memory.title}** (${memory.memory_type}/${memory.layer})`);
+    lines.push(`  ${memory.content.slice(0, 200)}`);
+    lines.push("");
+  }
+  return lines.join("\n");
+}
+
+/**
+ * Assemble the exact extraction prompt Python sends.
+ *
+ * Note the asymmetry with the close-tail surfaces: extraction and task
+ * extraction carry no post-fence reminder, while title/tags/summary do. That
+ * is Python's shape, reproduced rather than harmonized.
+ */
+export function buildExtractionPrompt(
+  messages: readonly ExtractionMessage[],
+  userName = "User",
+): string {
+  return EXTRACTION_PROMPT + fenceTranscript(formatTranscript(messages, userName));
+}
+
+/** Assemble the exact task-extraction prompt Python sends. */
+export function buildTaskExtractionPrompt(
+  messages: readonly ExtractionMessage[],
+  userName = "User",
+): string {
+  return TASK_EXTRACTION_PROMPT + fenceTranscript(formatTranscript(messages, userName));
+}
+
+/** Assemble the exact curation prompt Python sends, section headers included. */
+export function buildCurationPrompt(
+  candidates: readonly ExtractedMemory[],
+  existing: readonly ExistingMemoryForCuration[],
+): string {
+  return (
+    CURATION_PROMPT +
+    "## Candidate memories (from this conversation)\n\n" +
+    formatCandidates(candidates) +
+    "\n## Existing similar memories (already stored)\n\n" +
+    formatExisting(existing)
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

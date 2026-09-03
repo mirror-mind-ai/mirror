@@ -161,8 +161,14 @@ test("extractMemories fences the transcript as data in the request (AI-16)", asy
   const provider = new ReplayLlmProvider({ kind: "llm", responses: { extraction: "[]" } });
   await extractMemories(provider, [{ role: "user", content: "hi" }]);
   assert.equal(provider.calls.length, 1);
-  assert.match(provider.calls[0].prompt, /^<transcript>\n/);
-  assert.match(provider.calls[0].prompt, /\n<\/transcript>$/);
+  // Until CV22.DS7.US10 the request carried the fenced transcript ALONE, with
+  // no system prompt -- invisible under replay, but a live DS8 provider would
+  // have shipped the model a transcript with no instructions at all. The
+  // request now carries the fully assembled prompt, with the fence inside it.
+  const prompt = provider.calls[0].prompt;
+  assert.ok(prompt.startsWith("You are the memory system for Mirror Mind"));
+  assert.match(prompt, /\n<transcript>\n/);
+  assert.match(prompt, /\n<\/transcript>$/);
 });
 
 test("extractMemories drops an item with an invalid layer (CR041 / AI-15)", async () => {
@@ -204,8 +210,10 @@ test("extractMemories caps at 8 memories per conversation (CR041 / AI-15)", asyn
 test("extractTasks fences the transcript as data in the request (AI-16)", async () => {
   const provider = new ReplayLlmProvider({ kind: "llm", responses: { task_extraction: "[]" } });
   await extractTasks(provider, [{ role: "user", content: "hi" }]);
-  assert.match(provider.calls[0].prompt, /^<transcript>\n/);
-  assert.match(provider.calls[0].prompt, /\n<\/transcript>$/);
+  const prompt = provider.calls[0].prompt;
+  assert.ok(prompt.startsWith("You are the task management system for Mirror Mind"));
+  assert.match(prompt, /\n<transcript>\n/);
+  assert.match(prompt, /\n<\/transcript>$/);
 });
 
 test("extractTasks caps at 5 tasks per conversation (CR041 / AI-15)", async () => {
