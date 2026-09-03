@@ -310,6 +310,10 @@ class JourneyService:
             )
         return self._sort_journey_options(options)
 
+    def last_interactions(self) -> dict[str, str]:
+        """Return journey -> latest interaction timestamp (ISO string)."""
+        return self.store.get_last_interaction_by_journey()
+
     def _sort_journey_options(self, options: list[dict[str, Any]]) -> list[dict[str, Any]]:
         by_id = {option["id"]: option for option in options}
         children: dict[str, list[dict[str, Any]]] = {}

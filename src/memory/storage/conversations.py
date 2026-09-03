@@ -160,6 +160,31 @@ class ConversationStore(ConnectionBacked):
         self.conn.execute(f"UPDATE conversations SET {sets} WHERE id = ?", vals)
         self.conn.commit()
 
+    def get_last_interaction_by_journey(self) -> dict[str, str]:
+        """Return the latest interaction timestamp per journey.
+
+        The last interaction is the most recent among: message activity in the
+        journey's conversations, conversation start, and memory creation.
+        """
+        rows = self.conn.execute(
+            """SELECT journey, MAX(ts) AS last_ts FROM (
+                   SELECT c.journey AS journey, m.created_at AS ts
+                     FROM messages m
+                     JOIN conversations c ON c.id = m.conversation_id
+                    WHERE c.journey IS NOT NULL
+                   UNION ALL
+                   SELECT journey, started_at AS ts
+                     FROM conversations
+                    WHERE journey IS NOT NULL
+                   UNION ALL
+                   SELECT journey, created_at AS ts
+                     FROM memories
+                    WHERE journey IS NOT NULL
+               )
+               GROUP BY journey"""
+        ).fetchall()
+        return {r["journey"]: r["last_ts"] for r in rows if r["journey"] and r["last_ts"]}
+
     def get_recent_conversations_by_journey(
         self, journey: str, limit: int = 5
     ) -> list[Conversation]:
