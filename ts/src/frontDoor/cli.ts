@@ -21,6 +21,15 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { basename, dirname } from "node:path";
 import { pathToFileURL } from "node:url";
+import {
+  AppendRejectedError,
+  type AppendRejectionReason,
+  appendConversationMessages,
+  type ConversationAppendRequest,
+  canonicalJson,
+  MAX_PAYLOAD_BYTES,
+  parseAppendRequest,
+} from "#conversation/append.ts";
 import { DEFAULT_CLUSTER_THRESHOLD } from "#cultivation/cluster.ts";
 import { listConsolidations } from "#cultivation/consolidationStore.ts";
 import {
@@ -453,6 +462,64 @@ function readStdinContent(): string {
     return readFileSync(0, "utf8");
   } catch {
     return "";
+  }
+}
+
+/** `conversations append` (CV22.DS7.US10 slice B′). */
+function isConversationsAppend(argv: readonly string[]): boolean {
+  return argv[0] === "conversations" && argv[1] === "append";
+}
+
+/**
+ * Serve `conversations append`: the published external-shell write boundary.
+ *
+ * Mirrors Python's `_append_main` exactly, including its two exit codes — 0 with
+ * a success receipt, 2 with a bounded rejection receipt — because the contract
+ * is consumed by third-party shells that branch on them. Receipts are emitted
+ * as canonical JSON (sorted keys, tight separators) so the bytes match the
+ * oracle's.
+ *
+ * The stdin read is bounded before parsing: Python reads one byte past the
+ * limit and rejects `limit_exceeded` without ever decoding an oversized
+ * payload, so an attacker cannot force the parser to walk 100 MB of JSON.
+ */
+function runConversationsAppend(argv: readonly string[]): number {
+  const emitRejection = (reason: AppendRejectionReason): number => {
+    process.stdout.write(`${canonicalJson(new AppendRejectedError(reason).receipt())}\n`);
+    return 2;
+  };
+
+  const raw = readStdinBytes(MAX_PAYLOAD_BYTES + 1);
+  if (raw.byteLength > MAX_PAYLOAD_BYTES) return emitRejection("limit_exceeded");
+
+  let request: ConversationAppendRequest;
+  try {
+    request = parseAppendRequest(JSON.parse(raw.toString("utf8")));
+  } catch (error) {
+    if (error instanceof AppendRejectedError) return emitRejection(error.reason);
+    // Malformed UTF-8/JSON and recursion overflow are all `malformed_request`.
+    return emitRejection("malformed_request");
+  }
+
+  try {
+    return withLiveWriteDb(argv, (db) => {
+      const receipt = appendConversationMessages(db, request);
+      process.stdout.write(`${canonicalJson(receipt)}\n`);
+      return 0;
+    });
+  } catch (error) {
+    if (error instanceof AppendRejectedError) return emitRejection(error.reason);
+    return emitRejection("persistence_failure");
+  }
+}
+
+/** Read at most `limit` bytes from stdin, matching Python's bounded read. */
+function readStdinBytes(limit: number): Buffer {
+  try {
+    const buffer = readFileSync(0);
+    return buffer.byteLength > limit ? buffer.subarray(0, limit) : buffer;
+  } catch {
+    return Buffer.alloc(0);
   }
 }
 
@@ -1234,6 +1301,7 @@ async function dispatch(argv: readonly string[], engine: FrontDoorEngine): Promi
   if (isShadowSubcommandWrite(argv)) return runShadowWrite(argv);
   if (isMirrorWrite(argv)) return runMirrorWrite(argv);
   if (isModeWrite(argv)) return runModeWrite(argv);
+  if (isConversationsAppend(argv)) return runConversationsAppend(argv);
   if (isConversationLoggerCommand(argv)) return runConversationLoggerWrite(argv);
   if (isMemorySearch(argv)) return runMemorySearch(argv);
   if (isConsult(argv)) {

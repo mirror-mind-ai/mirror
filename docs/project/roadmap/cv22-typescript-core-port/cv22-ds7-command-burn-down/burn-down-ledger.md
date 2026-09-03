@@ -31,7 +31,7 @@ the three explicitly owned by later Delivery Stories: `mcp` (DS9), `web`
 | mirror-mode orchestration | `mirror`, `mode` | 2/2 | DS7.US4 | ✅ done |
 | Extension context runtime | (`ext`/`extensions` context path) | — | DS7.TS2 | ✅ done |
 | **Extraction lifecycle (deterministic core)** | **`conversation-logger`** | **partial** | **DS7.US5** | ✅ **done — 7/15 subcommands flipped** |
-| Extraction lifecycle (composites & LLM tail) | `conversation-logger` remainder | 0/8 | DS7.US10 | 🟡 planned |
+| Extraction lifecycle (composites & LLM tail) | `conversation-logger` remainder | 0/8 | DS7.US10 | 🔵 in progress — slices C′/B′ done |
 | Soul Mode | `soul` | 0/1 | DS7.US6 | 🟡 planned |
 | Explorer Mode | `explore` | 0/1 | DS7.US7 | 🟡 planned |
 | Builder/Ariad | `build` | 0/1 | DS7.US8 | 🟡 planned |
@@ -40,11 +40,12 @@ the three explicitly owned by later Delivery Stories: `mcp` (DS9), `web`
 Deferred to later Delivery Stories (excluded from the denominator): `mcp`
 (DS9), `web` (DS10), `eval` (DS8).
 
-† `conversations` counts as ported for its **listing read only**. Its `append`
-subcommand (v0.31.13) is Python-owned and tracked under DS7.US5 slice B. A
-family marked done can still grow subcommands on main — which is exactly how
-the 2026-09-02 routing defect happened — so "done" here means "the subcommands
-that existed when it was ported", not "every argv shape forever".
+† `conversations` covers its **listing read** (DS7.US1) and, since 2026-09-03,
+`append` (DS7.US10 slice B′). A family marked done can still grow subcommands on
+main — which is exactly how the 2026-09-02 routing defect happened — so "done"
+here means "the subcommands that existed when it was ported", not "every argv
+shape forever". `append` keeps its own explicit routing entry precisely so it
+can never again be answered by inheritance.
 
 ---
 
@@ -113,3 +114,5 @@ subcommands now answer from TS by default.
 | 2026-09-02 | Slice C: budgeted extraction driver ported with AI-05 spend-bound and CV9.E2.S7 isolation properties pinned; model call injected, not yet wired to the replay orchestration. |
 | 2026-09-02 | **US5 re-scoped** (Navigator-authorized) to slices A–C; slices D–F moved to the new **CV22.DS7.US10**. DS7 denominator 11 → 12 stories. |
 | 2026-09-02 | **CV22.DS7.US5 done.** Validation accepted by the Navigator; debt deferred with a revisit trigger; routing-inheritance audit captured as RS009/CR055. DS7 progress 5/12 → 6/12. |
+| 2026-09-03 | **US10 slice C′ done.** Close-time metadata lifecycle engine, the three close-tail LLM surfaces with byte-exact assembled prompts, the replay prompt-digest assertion, and the close tail itself, graded as ordered call sequences. Prompt assembly retrofitted onto the DS5 surfaces (Navigator decision): TS had been sending a bare transcript with no system prompt, invisible under replay and a live-cutover defect for DS8. |
+| 2026-09-03 | **US10 slice B′: `conversations append` flipped.** The US5 blocker is resolved — append idempotency is now value-semantics in both cores, so `1` and `1.0` are the same value and legacy rows replay instead of conflicting. Fixed in Python first, proven red-before-green on 3.10 and 3.12, contract text updated in the same commit. Seven-point checklist green, including a cross-core replay proof in both directions and legacy-byte tolerance. Revert control: `MIRROR_TS_CONVERSATION_APPEND=0`. |

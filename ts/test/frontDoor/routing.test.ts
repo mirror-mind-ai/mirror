@@ -397,13 +397,32 @@ test("conversation-logger keeps LLM-tail subcommands on Python after the flip", 
 
 // --- conversations append must not inherit DS7.US1's listing route ---
 
-test("conversations append falls back to Python instead of rendering a listing", () => {
+test("conversations append routes on its own entry, never by inheritance", () => {
   // Regression: v0.31.13 added `append` under a command DS7.US1 had already
   // claimed, so the request routed to TS, printed a listing, exited 0, and
-  // dropped the caller's messages.
+  // dropped the caller's messages. `append` now serves from TS (DS7.US10), but
+  // the guard that matters is unchanged -- it must resolve through its OWN
+  // entry, so it can never again be answered by the listing handler.
   const decision = routeMemoryCommand(["conversations", "append", "--format", "json"], {});
+  assert.equal(decision.engine, "ts");
+  assert.match(decision.reason, /append boundary ported to TS/);
+  assert.notEqual(decision.reason, routeMemoryCommand(["conversations"], {}).reason);
+});
+
+test("MIRROR_TS_CONVERSATION_APPEND=0 reverts append to Python", () => {
+  // The published external-shell write contract keeps an operational escape
+  // hatch: no code change, no data migration, no release.
+  const decision = routeMemoryCommand(
+    ["conversations", "append", "--format", "json"],
+    { MIRROR_TS_CONVERSATION_APPEND: "0" },
+  );
   assert.equal(decision.engine, "python");
-  assert.match(decision.reason, /append boundary not yet routed/);
+  assert.match(decision.reason, /MIRROR_TS_CONVERSATION_APPEND=0/);
+  // The gate is scoped: it must not drag the listing back with it.
+  assert.equal(
+    routeMemoryCommand(["conversations"], { MIRROR_TS_CONVERSATION_APPEND: "0" }).engine,
+    "ts",
+  );
 });
 
 test("conversations listing still routes to TS", () => {

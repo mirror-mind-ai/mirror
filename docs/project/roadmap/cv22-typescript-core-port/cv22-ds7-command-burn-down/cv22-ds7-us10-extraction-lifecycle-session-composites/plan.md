@@ -86,7 +86,10 @@ pinned), and the DS5 orchestration `runConversationExtraction`
   extraction-failure-then-finalize, and the idempotent re-run asserting
   **zero calls** — because end-state equality alone cannot expose a diverged
   call graph (2026-09-03 panel, blocking).
-- **B′ — Float-metadata resolution + `conversations append` flip.**
+- **B′ — Float-metadata resolution + `conversations append` flip.** ✅ Done
+  2026-09-03. Revert control: `MIRROR_TS_CONVERSATION_APPEND=0` (the flip
+  checklist required revertibility and `append` had no gate of its own; the
+  logger kill switch does not cover it).
   Resolve the integer-valued-float divergence (`1.0` Python vs `1` TS;
   metadata bytes participate in the idempotency comparison) via the resolved
   fix-Python-first route below. The Python fix follows the project's own

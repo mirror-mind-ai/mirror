@@ -30,6 +30,7 @@ export interface RouteEnvironment {
   MIRROR_TS_MIRROR_LLM_REPLAY?: string;
   MIRROR_TS_MIRROR_EMBEDDING_REPLAY?: string;
   MIRROR_TS_CONVERSATION_LOGGER?: string;
+  MIRROR_TS_CONVERSATION_APPEND?: string;
   MEMORY_RECEPTION?: string;
 }
 
@@ -141,18 +142,32 @@ export function routeMemoryCommand(
   }
 
   if (command === "conversations") {
-    // Only the plain listing (ConversationService.list_recent) is ported.
+    // The plain listing (DS7.US1) and `append` (DS7.US10) are ported; the
+    // metadata-lifecycle/backfill writes are not.
     //
     // `append` (v0.31.13) arrived on main after DS7.US1 claimed this command,
     // and the entry matched every argv shape: the append request routed to TS,
     // rendered a listing, exited 0, and silently discarded the caller's
     // messages. Subcommands of a claimed family must be allowlisted, never
-    // inherited.
+    // inherited -- which is why `append` gets its own explicit entry below
+    // even now that it points at TS.
     if (argv[1] === "append") {
+      // Same inverted-gate convention slice A gave the logger family: TS by
+      // default, with `MIRROR_TS_CONVERSATION_APPEND=0` forcing Python with no
+      // code change and no data migration. `append` is the published contract
+      // for third-party shells, so an operator hitting a defect in production
+      // needs a way back that does not require a release.
+      if (env.MIRROR_TS_CONVERSATION_APPEND === "0") {
+        return {
+          command,
+          engine: "python",
+          reason: "conversations append TS route disabled by MIRROR_TS_CONVERSATION_APPEND=0",
+        };
+      }
       return {
         command,
-        engine: "python",
-        reason: "conversations append boundary not yet routed to TS (DS7.US5 slice B)",
+        engine: "ts",
+        reason: "DS7.US10 conversations append boundary ported to TS",
       };
     }
     if (CONVERSATIONS_LIFECYCLE_FLAGS.some((flag) => argv.includes(flag))) {
