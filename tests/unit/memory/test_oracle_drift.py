@@ -13,8 +13,12 @@ import subprocess
 import sys
 from pathlib import Path
 
+import json
+
 from memory.oracle_drift import (
+    BASELINE_RELPATH,
     ORACLE_PATHS,
+    build_baseline_document,
     check,
     compute_blob_shas,
     evaluate,
@@ -80,6 +84,23 @@ def test_compute_blob_shas_matches_git_head_blob() -> None:
 def test_all_declared_oracles_exist_on_disk() -> None:
     for path in ORACLE_PATHS:
         assert (REPO_ROOT / path).is_file(), path
+
+
+def test_baseline_document_is_written_in_sorted_key_order() -> None:
+    # The manifest is a generated snapshot whose key order carries no meaning
+    # (``evaluate`` looks entries up by key), but an unstable order makes every
+    # ``--update`` produce a churn diff that can hide a real SHA change in the
+    # very tripwire meant to expose one. Sorting keeps the review signal.
+    oracles = build_baseline_document(REPO_ROOT)["oracles"]
+    assert list(oracles) == sorted(oracles)
+
+
+def test_committed_baseline_matches_the_writer_byte_for_byte() -> None:
+    # Guards the same hazard from the other side: the committed file must be
+    # exactly what the writer produces, so a regenerate is always a no-op diff.
+    document = build_baseline_document(REPO_ROOT)
+    expected = json.dumps(document, indent=2, ensure_ascii=False) + "\n"
+    assert (REPO_ROOT / BASELINE_RELPATH).read_text(encoding="utf-8") == expected
 
 
 def test_committed_baseline_has_no_drift() -> None:

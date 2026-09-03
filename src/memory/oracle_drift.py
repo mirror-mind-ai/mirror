@@ -107,6 +107,14 @@ ORACLE_PATHS: tuple[str, ...] = (
     # atomic/idempotent storage boundary it commits through.
     "src/memory/services/conversation_append.py",
     "src/memory/storage/messages.py",
+    # DS7.US10 slice C': the close-time metadata lifecycle. The decision engine
+    # is fully ported (ts/src/conversation/metadataLifecycle.ts); services/
+    # conversation.py is tracked at file granularity like every other entry
+    # because the port mirrors its `title_needs_improvement` predicate and the
+    # close tail (end_conversation -> finalize_metadata_on_close) is this
+    # story's target, even though most of that file is not ported yet.
+    "src/memory/services/metadata_lifecycle.py",
+    "src/memory/services/conversation.py",
 )
 
 BASELINE_RELPATH = "ts/parity/oracle-baseline.json"
@@ -187,7 +195,11 @@ def build_baseline_document(
     repo_root: Path, oracle_paths: tuple[str, ...] = ORACLE_PATHS
 ) -> dict[str, object]:
     shas = compute_blob_shas(oracle_paths, repo_root)
-    oracles = {path: shas[path] for path in oracle_paths if path in shas}
+    # Sorted, not declaration order: the manifest is a generated snapshot whose
+    # key order carries no meaning, and a stable order keeps every ``--update``
+    # diff limited to the SHAs that actually moved. ORACLE_PATHS above remains
+    # the reviewable, grouped-by-story source of truth for *what* is guarded.
+    oracles = {path: shas[path] for path in sorted(oracle_paths) if path in shas}
     return {"_semantics": GREEN_SEMANTICS, "oracles": oracles}
 
 

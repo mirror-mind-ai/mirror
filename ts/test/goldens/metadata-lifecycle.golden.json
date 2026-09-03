@@ -1,0 +1,4280 @@
+{
+  "meta": {
+    "metadata_lifecycle_version": 1,
+    "profiles": [
+      "active_runtime",
+      "backfill_force",
+      "backfill_safe",
+      "close_time",
+      "manual_safe"
+    ]
+  },
+  "profiles": {
+    "active_runtime": {
+      "force_regenerate": false,
+      "name": "active_runtime",
+      "preserve_manual": true,
+      "summary_apply_decisions": [],
+      "tags_apply_decisions": [],
+      "title_apply_decisions": [
+        "create"
+      ]
+    },
+    "backfill_force": {
+      "force_regenerate": true,
+      "name": "backfill_force",
+      "preserve_manual": true,
+      "summary_apply_decisions": [
+        "create",
+        "keep",
+        "refine_candidate"
+      ],
+      "tags_apply_decisions": [
+        "create",
+        "keep"
+      ],
+      "title_apply_decisions": [
+        "create",
+        "keep",
+        "refine_candidate",
+        "repair"
+      ]
+    },
+    "backfill_safe": {
+      "force_regenerate": false,
+      "name": "backfill_safe",
+      "preserve_manual": true,
+      "summary_apply_decisions": [
+        "create"
+      ],
+      "tags_apply_decisions": [
+        "create"
+      ],
+      "title_apply_decisions": [
+        "create",
+        "repair"
+      ]
+    },
+    "close_time": {
+      "force_regenerate": true,
+      "name": "close_time",
+      "preserve_manual": true,
+      "summary_apply_decisions": [
+        "create",
+        "keep",
+        "refine_candidate"
+      ],
+      "tags_apply_decisions": [
+        "create",
+        "keep"
+      ],
+      "title_apply_decisions": [
+        "create",
+        "keep",
+        "refine_candidate",
+        "repair"
+      ]
+    },
+    "manual_safe": {
+      "force_regenerate": false,
+      "name": "manual_safe",
+      "preserve_manual": true,
+      "summary_apply_decisions": [
+        "create"
+      ],
+      "tags_apply_decisions": [
+        "create"
+      ],
+      "title_apply_decisions": [
+        "create",
+        "repair"
+      ]
+    }
+  },
+  "scenarios": [
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "preserve_manual"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "preserve_manual"
+        },
+        "backfill_safe": {
+          "summary": "skip",
+          "tags": "apply",
+          "title": "preserve_manual"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "preserve_manual"
+        },
+        "manual_safe": {
+          "summary": "skip",
+          "tags": "apply",
+          "title": "preserve_manual"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": "{\"title_status\": \"manual\"}",
+        "summary": "A stored summary.",
+        "tags": null,
+        "title": "Manual title"
+      },
+      "label": "title_manual_locked_by_status",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": "A stored summary.",
+            "decision": "keep",
+            "provenance": "stored",
+            "readiness": "ready",
+            "reason": "summary already exists"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "Manual title",
+            "decision": "preserve",
+            "lock_state": "manual_locked",
+            "provenance": "manual",
+            "readiness": "locked",
+            "reason": "manual title lock is preserved"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "preserve_manual"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "preserve_manual"
+        },
+        "backfill_safe": {
+          "summary": "skip",
+          "tags": "apply",
+          "title": "preserve_manual"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "preserve_manual"
+        },
+        "manual_safe": {
+          "summary": "skip",
+          "tags": "apply",
+          "title": "preserve_manual"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": "{\"title_source\": \"manual\"}",
+        "summary": "A stored summary.",
+        "tags": null,
+        "title": "Manual title"
+      },
+      "label": "title_manual_locked_by_source",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": "A stored summary.",
+            "decision": "keep",
+            "provenance": "stored",
+            "readiness": "ready",
+            "reason": "summary already exists"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "Manual title",
+            "decision": "preserve",
+            "lock_state": "manual_locked",
+            "provenance": "manual",
+            "readiness": "locked",
+            "reason": "manual title lock is preserved"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "defer"
+        },
+        "backfill_force": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "defer"
+        },
+        "backfill_safe": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "defer"
+        },
+        "close_time": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "defer"
+        },
+        "manual_safe": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "defer"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": null,
+        "tags": null,
+        "title": "Some title"
+      },
+      "label": "title_defer_not_titleable_user_only",
+      "messages": [
+        {
+          "content": "Just me talking.",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": null,
+            "decision": "defer",
+            "provenance": null,
+            "readiness": "not_ready",
+            "reason": "summary needs more conversation substance"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "defer",
+            "provenance": null,
+            "readiness": "not_ready",
+            "reason": "tags need more conversation substance"
+          },
+          "title": {
+            "current_value": "Some title",
+            "decision": "defer",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "not_ready",
+            "reason": "conversation needs at least one user and one assistant message"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "defer"
+        },
+        "backfill_force": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "defer"
+        },
+        "backfill_safe": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "defer"
+        },
+        "close_time": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "defer"
+        },
+        "manual_safe": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "defer"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": null,
+        "tags": null,
+        "title": "Some title"
+      },
+      "label": "title_defer_blank_assistant",
+      "messages": [
+        {
+          "content": "Hello there.",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "   ",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": null,
+            "decision": "defer",
+            "provenance": null,
+            "readiness": "not_ready",
+            "reason": "summary needs more conversation substance"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "defer",
+            "provenance": null,
+            "readiness": "not_ready",
+            "reason": "tags need more conversation substance"
+          },
+          "title": {
+            "current_value": "Some title",
+            "decision": "defer",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "not_ready",
+            "reason": "conversation needs at least one user and one assistant message"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "apply"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "apply"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "apply"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": null,
+        "tags": null,
+        "title": null
+      },
+      "label": "title_create_missing",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for a summary"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": null,
+            "decision": "create",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has no title"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "apply"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "apply"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "apply"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": null,
+        "tags": null,
+        "title": "   "
+      },
+      "label": "title_create_whitespace_only",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for a summary"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": null,
+            "decision": "create",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has no title"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "apply"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "apply"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": "{\"title_status\": \"provisional\"}",
+        "summary": null,
+        "tags": null,
+        "title": "First user line"
+      },
+      "label": "title_repair_provisional",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for a summary"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "First user line",
+            "decision": "repair",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title is provisional or weak"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "apply"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "apply"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": null,
+        "tags": null,
+        "title": "Truncated thought..."
+      },
+      "label": "title_repair_ellipsis_suffix",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for a summary"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "Truncated thought...",
+            "decision": "repair",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title is provisional or weak"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "apply"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "apply"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": null,
+        "tags": null,
+        "title": "Truncated ... thought"
+      },
+      "label": "title_repair_ellipsis_inside",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for a summary"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "Truncated ... thought",
+            "decision": "repair",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title is provisional or weak"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "apply"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "apply"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": null,
+        "tags": null,
+        "title": "A title that is deliberately at least fifty-five characters long"
+      },
+      "label": "title_repair_too_long",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for a summary"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "A title that is deliberately at least fifty-five characters long",
+            "decision": "repair",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title is provisional or weak"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "apply"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "apply"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": null,
+        "tags": null,
+        "title": "<skill>mm-build</skill>"
+      },
+      "label": "title_repair_skill_prefix",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for a summary"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "<skill>mm-build</skill>",
+            "decision": "repair",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title is provisional or weak"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "review"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "skip",
+          "tags": "apply",
+          "title": "review"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "skip",
+          "tags": "apply",
+          "title": "review"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": "The conversation examined database seam strangler migration, oracle drift tripwires, replay transport fixtures, deterministic golden corpora, idempotency comparison semantics, quarantine counters and routing flips.",
+        "tags": null,
+        "title": "Database seam"
+      },
+      "label": "title_refine_evidence_medium_confidence",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": "The conversation examined database seam strangler migration, oracle drift tripwires, replay transport fixtures, deterministic golden corpora, idempotency comparison semantics, quarantine counters and routing flips.",
+            "decision": "keep",
+            "provenance": "stored",
+            "readiness": "ready",
+            "reason": "summary already exists"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "confidence": "medium",
+            "current_value": "Database seam",
+            "decision": "refine_candidate",
+            "evidence": {
+              "confidence": "medium",
+              "overlap_terms": [
+                "database",
+                "seam"
+              ],
+              "summary_specific_terms": [
+                "comparison",
+                "conversation",
+                "corpora",
+                "counters",
+                "deterministic",
+                "drift",
+                "examined",
+                "fixtures",
+                "flips",
+                "golden",
+                "idempotency",
+                "migration"
+              ],
+              "title_terms": [
+                "database",
+                "seam"
+              ]
+            },
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "later evidence is more specific than the current unlocked title"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "review"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "skip",
+          "tags": "apply",
+          "title": "review"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "skip",
+          "tags": "apply",
+          "title": "review"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": "The database seam included migration, replay fixtures, corpora, idempotency and counters.",
+        "tags": null,
+        "title": "Database seam"
+      },
+      "label": "title_refine_evidence_low_confidence",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": "The database seam included migration, replay fixtures, corpora, idempotency and counters.",
+            "decision": "keep",
+            "provenance": "stored",
+            "readiness": "ready",
+            "reason": "summary already exists"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "confidence": "low",
+            "current_value": "Database seam",
+            "decision": "refine_candidate",
+            "evidence": {
+              "confidence": "low",
+              "overlap_terms": [
+                "database",
+                "seam"
+              ],
+              "summary_specific_terms": [
+                "corpora",
+                "counters",
+                "fixtures",
+                "idempotency",
+                "included",
+                "migration",
+                "replay"
+              ],
+              "title_terms": [
+                "database",
+                "seam"
+              ]
+            },
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "later evidence is more specific than the current unlocked title"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "review"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "review"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "review"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": "{\"title_status\": \"generated\"}",
+        "summary": null,
+        "tags": null,
+        "title": "Port status"
+      },
+      "label": "title_refine_coherence_generated_six_messages",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        },
+        {
+          "content": "When does it flip?",
+          "created_at": "2026-09-03T12:00:04.000000Z",
+          "id": "msg-004",
+          "role": "user"
+        },
+        {
+          "content": "After parity is proven.",
+          "created_at": "2026-09-03T12:00:05.000000Z",
+          "id": "msg-005",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for a summary"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "confidence": "low",
+            "current_value": "Port status",
+            "decision": "refine_candidate",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough later context for coherence refinement"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "skip"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "skip"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": "{\"title_status\": \"generated\"}",
+        "summary": null,
+        "tags": null,
+        "title": "Port status"
+      },
+      "label": "title_keep_generated_under_six_messages",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for a summary"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "Port status",
+            "decision": "keep",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title appears usable"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "skip"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "skip"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": null,
+        "tags": null,
+        "title": "Port status"
+      },
+      "label": "title_keep_plain",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for a summary"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "Port status",
+            "decision": "keep",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title appears usable"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "review",
+          "tags": "skip",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "review",
+          "tags": "apply",
+          "title": "skip"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "review",
+          "tags": "apply",
+          "title": "skip"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word ",
+        "tags": null,
+        "title": "Port status"
+      },
+      "label": "summary_refine_too_long",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word ",
+            "decision": "refine_candidate",
+            "evidence": {
+              "quality_issues": [
+                "too_long"
+              ]
+            },
+            "provenance": "stored",
+            "readiness": "ready",
+            "reason": "stored summary needs editorial refinement"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "Port status",
+            "decision": "keep",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title appears usable"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "review",
+          "tags": "skip",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "review",
+          "tags": "apply",
+          "title": "skip"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "review",
+          "tags": "apply",
+          "title": "skip"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": "Intro line.\n- a bullet point here",
+        "tags": null,
+        "title": "Port status"
+      },
+      "label": "summary_refine_bullets_dash",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": "Intro line.\n- a bullet point here",
+            "decision": "refine_candidate",
+            "evidence": {
+              "quality_issues": [
+                "contains_bullets"
+              ]
+            },
+            "provenance": "stored",
+            "readiness": "ready",
+            "reason": "stored summary needs editorial refinement"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "Port status",
+            "decision": "keep",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title appears usable"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "review",
+          "tags": "skip",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "review",
+          "tags": "apply",
+          "title": "skip"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "review",
+          "tags": "apply",
+          "title": "skip"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": "Intro line.\n1. a numbered point",
+        "tags": null,
+        "title": "Port status"
+      },
+      "label": "summary_refine_bullets_numbered",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": "Intro line.\n1. a numbered point",
+            "decision": "refine_candidate",
+            "evidence": {
+              "quality_issues": [
+                "contains_bullets"
+              ]
+            },
+            "provenance": "stored",
+            "readiness": "ready",
+            "reason": "stored summary needs editorial refinement"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "Port status",
+            "decision": "keep",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title appears usable"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "review",
+          "tags": "skip",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "review",
+          "tags": "apply",
+          "title": "skip"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "review",
+          "tags": "apply",
+          "title": "skip"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": "A summary with **bold** emphasis.",
+        "tags": null,
+        "title": "Port status"
+      },
+      "label": "summary_refine_markdown",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": "A summary with **bold** emphasis.",
+            "decision": "refine_candidate",
+            "evidence": {
+              "quality_issues": [
+                "contains_markdown"
+              ]
+            },
+            "provenance": "stored",
+            "readiness": "ready",
+            "reason": "stored summary needs editorial refinement"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "Port status",
+            "decision": "keep",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title appears usable"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "review",
+          "tags": "skip",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "review",
+          "tags": "apply",
+          "title": "skip"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "review",
+          "tags": "apply",
+          "title": "skip"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": "Work happened in /Users/example/project today.",
+        "tags": null,
+        "title": "Port status"
+      },
+      "label": "summary_refine_paths",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": "Work happened in /Users/example/project today.",
+            "decision": "refine_candidate",
+            "evidence": {
+              "quality_issues": [
+                "contains_paths"
+              ]
+            },
+            "provenance": "stored",
+            "readiness": "ready",
+            "reason": "stored summary needs editorial refinement"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "Port status",
+            "decision": "keep",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title appears usable"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "review",
+          "tags": "skip",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "review",
+          "tags": "apply",
+          "title": "skip"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "review",
+          "tags": "apply",
+          "title": "skip"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": "user: asked a question. assistant: replied.",
+        "tags": null,
+        "title": "Port status"
+      },
+      "label": "summary_refine_transcript_shape",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": "user: asked a question. assistant: replied.",
+            "decision": "refine_candidate",
+            "evidence": {
+              "quality_issues": [
+                "looks_like_transcript"
+              ]
+            },
+            "provenance": "stored",
+            "readiness": "ready",
+            "reason": "stored summary needs editorial refinement"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "Port status",
+            "decision": "keep",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title appears usable"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "skip",
+          "tags": "apply",
+          "title": "skip"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "skip",
+          "tags": "apply",
+          "title": "skip"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": "A clean stored summary of the exchange.",
+        "tags": null,
+        "title": "Port status"
+      },
+      "label": "summary_keep_clean",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": "A clean stored summary of the exchange.",
+            "decision": "keep",
+            "provenance": "stored",
+            "readiness": "ready",
+            "reason": "summary already exists"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "Port status",
+            "decision": "keep",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title appears usable"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "skip"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "skip"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": null,
+        "tags": null,
+        "title": "Port status"
+      },
+      "label": "summary_create_enough_substance",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for a summary"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "Port status",
+            "decision": "keep",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title appears usable"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "skip"
+        },
+        "close_time": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "skip"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": null,
+        "tags": null,
+        "title": "Port status"
+      },
+      "label": "summary_defer_thin_conversation",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a DB seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": null,
+            "decision": "defer",
+            "provenance": null,
+            "readiness": "not_ready",
+            "reason": "summary needs more conversation substance"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "defer",
+            "provenance": null,
+            "readiness": "not_ready",
+            "reason": "tags need more conversation substance"
+          },
+          "title": {
+            "current_value": "Port status",
+            "decision": "keep",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title appears usable"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "apply",
+          "tags": "skip",
+          "title": "skip"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "apply",
+          "tags": "skip",
+          "title": "skip"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": null,
+        "tags": "[\"port\", \"parity\"]",
+        "title": "Port status"
+      },
+      "label": "tags_keep_stored",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for a summary"
+          },
+          "tags": {
+            "current_value": "[\"port\", \"parity\"]",
+            "decision": "keep",
+            "provenance": "stored",
+            "readiness": "ready",
+            "reason": "tags already exist"
+          },
+          "title": {
+            "current_value": "Port status",
+            "decision": "keep",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title appears usable"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "skip"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "skip"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": null,
+        "tags": "[]",
+        "title": "Port status"
+      },
+      "label": "tags_absent_empty_array_sentinel",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for a summary"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "Port status",
+            "decision": "keep",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title appears usable"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "skip"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "skip"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": null,
+        "tags": "null",
+        "title": "Port status"
+      },
+      "label": "tags_absent_null_sentinel",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for a summary"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "Port status",
+            "decision": "keep",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title appears usable"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "skip",
+          "tags": "apply",
+          "title": "skip"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "skip",
+          "tags": "apply",
+          "title": "skip"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": "A stored summary.",
+        "tags": null,
+        "title": "Port status"
+      },
+      "label": "tags_create_from_summary_on_thin_conversation",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a DB seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": "A stored summary.",
+            "decision": "keep",
+            "provenance": "stored",
+            "readiness": "ready",
+            "reason": "summary already exists"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "Port status",
+            "decision": "keep",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title appears usable"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "skip"
+        },
+        "close_time": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "skip"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": null,
+        "tags": null,
+        "title": "Port status"
+      },
+      "label": "tags_defer_thin_conversation",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a DB seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": null,
+            "decision": "defer",
+            "provenance": null,
+            "readiness": "not_ready",
+            "reason": "summary needs more conversation substance"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "defer",
+            "provenance": null,
+            "readiness": "not_ready",
+            "reason": "tags need more conversation substance"
+          },
+          "title": {
+            "current_value": "Port status",
+            "decision": "keep",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title appears usable"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "defer"
+        },
+        "backfill_force": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "defer"
+        },
+        "backfill_safe": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "defer"
+        },
+        "close_time": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "defer"
+        },
+        "manual_safe": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "defer"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": null,
+        "tags": null,
+        "title": null
+      },
+      "label": "all_fields_defer_minimal",
+      "messages": [
+        {
+          "content": "hi",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": null,
+            "decision": "defer",
+            "provenance": null,
+            "readiness": "not_ready",
+            "reason": "summary needs more conversation substance"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "defer",
+            "provenance": null,
+            "readiness": "not_ready",
+            "reason": "tags need more conversation substance"
+          },
+          "title": {
+            "current_value": null,
+            "decision": "defer",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "not_ready",
+            "reason": "conversation needs at least one user and one assistant message"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "skip"
+        },
+        "close_time": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "defer",
+          "tags": "defer",
+          "title": "skip"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": null,
+        "tags": null,
+        "title": "Port status"
+      },
+      "label": "summary_tags_boundary_three_substantive",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": null,
+            "decision": "defer",
+            "provenance": null,
+            "readiness": "not_ready",
+            "reason": "summary needs more conversation substance"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "defer",
+            "provenance": null,
+            "readiness": "not_ready",
+            "reason": "tags need more conversation substance"
+          },
+          "title": {
+            "current_value": "Port status",
+            "decision": "keep",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title appears usable"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "skip"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "skip"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": "{\"title_status\": \"generated\"}",
+        "summary": null,
+        "tags": null,
+        "title": "Port status"
+      },
+      "label": "title_coherence_boundary_five_messages",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        },
+        {
+          "content": "When does it flip?",
+          "created_at": "2026-09-03T12:00:04.000000Z",
+          "id": "msg-004",
+          "role": "user"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for a summary"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "Port status",
+            "decision": "keep",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title appears usable"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "skip"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "skip"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": null,
+        "tags": null,
+        "title": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      },
+      "label": "title_boundary_54_chars_keeps",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for a summary"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "decision": "keep",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title appears usable"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "apply"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "apply"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": null,
+        "tags": null,
+        "title": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      },
+      "label": "title_boundary_55_chars_repairs",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for a summary"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "decision": "repair",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title is provisional or weak"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "skip",
+          "tags": "apply",
+          "title": "skip"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "skip",
+          "tags": "apply",
+          "title": "skip"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "tags": null,
+        "title": "Port status"
+      },
+      "label": "summary_boundary_900_chars_keeps",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "decision": "keep",
+            "provenance": "stored",
+            "readiness": "ready",
+            "reason": "summary already exists"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "Port status",
+            "decision": "keep",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title appears usable"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "review",
+          "tags": "skip",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "review",
+          "tags": "apply",
+          "title": "skip"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "review",
+          "tags": "apply",
+          "title": "skip"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "tags": null,
+        "title": "Port status"
+      },
+      "label": "summary_boundary_901_chars_refines",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "decision": "refine_candidate",
+            "evidence": {
+              "quality_issues": [
+                "too_long"
+              ]
+            },
+            "provenance": "stored",
+            "readiness": "ready",
+            "reason": "stored summary needs editorial refinement"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "Port status",
+            "decision": "keep",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title appears usable"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "skip",
+          "tags": "apply",
+          "title": "skip"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "skip",
+          "tags": "apply",
+          "title": "skip"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": "Alpha delta echo golf hotel india juliet kilo lima mike oscar.",
+        "tags": null,
+        "title": "Alpha"
+      },
+      "label": "title_evidence_boundary_single_title_term",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": "Alpha delta echo golf hotel india juliet kilo lima mike oscar.",
+            "decision": "keep",
+            "provenance": "stored",
+            "readiness": "ready",
+            "reason": "summary already exists"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "Alpha",
+            "decision": "keep",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title appears usable"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "skip",
+          "tags": "apply",
+          "title": "skip"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "skip",
+          "tags": "apply",
+          "title": "skip"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": "Alpha Bravo delta echo golf hotel india.",
+        "tags": null,
+        "title": "Alpha Bravo"
+      },
+      "label": "title_evidence_boundary_seven_summary_terms",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": "Alpha Bravo delta echo golf hotel india.",
+            "decision": "keep",
+            "provenance": "stored",
+            "readiness": "ready",
+            "reason": "summary already exists"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "Alpha Bravo",
+            "decision": "keep",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title appears usable"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "skip",
+          "tags": "apply",
+          "title": "skip"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "skip",
+          "tags": "apply",
+          "title": "skip"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": "Alpha Bravo Charlie delta echo golf hotel india.",
+        "tags": null,
+        "title": "Alpha Bravo Charlie"
+      },
+      "label": "title_evidence_boundary_five_additional",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": "Alpha Bravo Charlie delta echo golf hotel india.",
+            "decision": "keep",
+            "provenance": "stored",
+            "readiness": "ready",
+            "reason": "summary already exists"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "Alpha Bravo Charlie",
+            "decision": "keep",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title appears usable"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "review"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "skip",
+          "tags": "apply",
+          "title": "review"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "skip",
+          "tags": "apply",
+          "title": "review"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": "Alpha Bravo Charlie delta echo golf hotel india juliet.",
+        "tags": null,
+        "title": "Alpha Bravo Charlie"
+      },
+      "label": "title_evidence_boundary_six_additional",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": "Alpha Bravo Charlie delta echo golf hotel india juliet.",
+            "decision": "keep",
+            "provenance": "stored",
+            "readiness": "ready",
+            "reason": "summary already exists"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "confidence": "low",
+            "current_value": "Alpha Bravo Charlie",
+            "decision": "refine_candidate",
+            "evidence": {
+              "confidence": "low",
+              "overlap_terms": [
+                "alpha",
+                "bravo",
+                "charlie"
+              ],
+              "summary_specific_terms": [
+                "delta",
+                "echo",
+                "golf",
+                "hotel",
+                "india",
+                "juliet"
+              ],
+              "title_terms": [
+                "alpha",
+                "bravo",
+                "charlie"
+              ]
+            },
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "later evidence is more specific than the current unlocked title"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "review"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "skip",
+          "tags": "apply",
+          "title": "review"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "skip",
+          "tags": "apply",
+          "title": "review"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": "Alpha Bravo delta echo golf hotel india juliet kilo lima mike.",
+        "tags": null,
+        "title": "Alpha Bravo"
+      },
+      "label": "title_evidence_boundary_nine_additional",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": "Alpha Bravo delta echo golf hotel india juliet kilo lima mike.",
+            "decision": "keep",
+            "provenance": "stored",
+            "readiness": "ready",
+            "reason": "summary already exists"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "confidence": "low",
+            "current_value": "Alpha Bravo",
+            "decision": "refine_candidate",
+            "evidence": {
+              "confidence": "low",
+              "overlap_terms": [
+                "alpha",
+                "bravo"
+              ],
+              "summary_specific_terms": [
+                "delta",
+                "echo",
+                "golf",
+                "hotel",
+                "india",
+                "juliet",
+                "kilo",
+                "lima",
+                "mike"
+              ],
+              "title_terms": [
+                "alpha",
+                "bravo"
+              ]
+            },
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "later evidence is more specific than the current unlocked title"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "review"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "skip",
+          "tags": "apply",
+          "title": "review"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "skip",
+          "tags": "apply",
+          "title": "review"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": null,
+        "summary": "Alpha Bravo delta echo golf hotel india juliet kilo lima mike oscar.",
+        "tags": null,
+        "title": "Alpha Bravo"
+      },
+      "label": "title_evidence_boundary_ten_additional",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": "Alpha Bravo delta echo golf hotel india juliet kilo lima mike oscar.",
+            "decision": "keep",
+            "provenance": "stored",
+            "readiness": "ready",
+            "reason": "summary already exists"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "confidence": "medium",
+            "current_value": "Alpha Bravo",
+            "decision": "refine_candidate",
+            "evidence": {
+              "confidence": "medium",
+              "overlap_terms": [
+                "alpha",
+                "bravo"
+              ],
+              "summary_specific_terms": [
+                "delta",
+                "echo",
+                "golf",
+                "hotel",
+                "india",
+                "juliet",
+                "kilo",
+                "lima",
+                "mike",
+                "oscar"
+              ],
+              "title_terms": [
+                "alpha",
+                "bravo"
+              ]
+            },
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "later evidence is more specific than the current unlocked title"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "actions_by_profile": {
+        "active_runtime": {
+          "summary": "skip",
+          "tags": "skip",
+          "title": "skip"
+        },
+        "backfill_force": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "backfill_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "apply"
+        },
+        "close_time": {
+          "summary": "regenerate",
+          "tags": "regenerate",
+          "title": "regenerate"
+        },
+        "manual_safe": {
+          "summary": "apply",
+          "tags": "apply",
+          "title": "apply"
+        }
+      },
+      "conversation": {
+        "id": "conv-fixture",
+        "metadata": "{\"title_status\": \"provisional\"}",
+        "summary": null,
+        "tags": null,
+        "title": "how does extraction work?"
+      },
+      "label": "close_time_typical_ended_conversation",
+      "messages": [
+        {
+          "content": "How does the port work?",
+          "created_at": "2026-09-03T12:00:00.000000Z",
+          "id": "msg-000",
+          "role": "user"
+        },
+        {
+          "content": "Through a database seam.",
+          "created_at": "2026-09-03T12:00:01.000000Z",
+          "id": "msg-001",
+          "role": "assistant"
+        },
+        {
+          "content": "And the oracle?",
+          "created_at": "2026-09-03T12:00:02.000000Z",
+          "id": "msg-002",
+          "role": "user"
+        },
+        {
+          "content": "Python stays the oracle.",
+          "created_at": "2026-09-03T12:00:03.000000Z",
+          "id": "msg-003",
+          "role": "assistant"
+        },
+        {
+          "content": "When does it flip?",
+          "created_at": "2026-09-03T12:00:04.000000Z",
+          "id": "msg-004",
+          "role": "user"
+        },
+        {
+          "content": "After parity is proven.",
+          "created_at": "2026-09-03T12:00:05.000000Z",
+          "id": "msg-005",
+          "role": "assistant"
+        }
+      ],
+      "report": {
+        "conversation_id": "conv-fixture",
+        "fields": {
+          "summary": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for a summary"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "how does extraction work?",
+            "decision": "repair",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "current title is provisional or weak"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    }
+  ]
+}
