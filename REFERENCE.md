@@ -73,6 +73,14 @@ rejects every conflict, inserts only missing rows, and commits once. Identical
 retries return `existing`; divergent or cross-conversation ID reuse rejects the
 whole batch.
 
+Idempotency compares caller metadata by **JSON value, not by stored bytes**.
+JSON has a single number type, so `1` and `1.0` are the same value and a retry
+carrying either is `existing` rather than `idempotency_conflict`. Booleans are
+never equal to numbers: `true` and `1` remain a conflict. A retry only
+classifies; it never rewrites the metadata already stored. Any other difference
+in role, content, timestamp, target conversation, or metadata value still
+rejects the whole batch.
+
 Success and expected failure are compact bounded JSON. Success receipts contain
 only conversation/Journey identity, counts, and validated message IDs with
 `inserted` or `existing` state. Failure reasons are

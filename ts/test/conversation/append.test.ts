@@ -334,3 +334,86 @@ test("rejection receipts carry only the bounded public message", () => {
     message: "Conversation belongs to a different journey.",
   });
 });
+
+// --- CV22.DS7.US10 slice B': value-semantics idempotency --------------------
+//
+// The append contract is "same JSON value", not "same bytes". Rows written
+// before Python's integer-valued-float canonicalization carry `1.0` where the
+// same request now canonicalizes to `1`; once this route is flipped, TS is the
+// core answering those replays and must classify them as `existing` rather
+// than rejecting a caller's valid retry.
+
+function metadataPayload(metadata: unknown) {
+  return validPayload({
+    messages: [
+      {
+        id: "msg-1",
+        role: "user",
+        content: "hello",
+        createdAt: "2026-09-02T12:00:00Z",
+        metadata,
+      },
+    ],
+  });
+}
+
+test("canonicalJson renders integer-valued floats like Python's collapsed form", () => {
+  assert.equal(canonicalJson({ n: 1.0 }), '{"n":1}');
+  assert.equal(canonicalJson({ n: -0.0 }), '{"n":0}');
+  assert.equal(canonicalJson({ n: 1e3 }), '{"n":1000}');
+  assert.equal(canonicalJson({ n: 2.5 }), '{"n":2.5}');
+  // At and above JavaScript's exponential threshold both cores use the
+  // exponential form; below it, both write full digits.
+  assert.equal(canonicalJson({ n: 1e20 }), '{"n":100000000000000000000}');
+  assert.equal(canonicalJson({ n: 1e21 }), '{"n":1e+21}');
+  assert.equal(canonicalJson({ n: 1e308 }), '{"n":1e+308}');
+  assert.equal(canonicalJson({ n: true }), '{"n":true}');
+});
+
+test("replaying a legacy float batch is idempotent, not a conflict", () => {
+  const db = fixture();
+  const payload = metadataPayload({ count: 1.0 });
+
+  const first = appendConversationMessages(db, parseAppendRequest(payload));
+  assert.equal(first.insertedCount, 1);
+
+  // Rewrite the row with the pre-fix bytes for exactly this request.
+  const stored = db.prepare("SELECT metadata FROM messages WHERE id = 'msg-1'").get() as Record<
+    string,
+    unknown
+  >;
+  const legacy = String(stored.metadata).replace('"count":1', '"count":1.0');
+  db.prepare("UPDATE messages SET metadata = ? WHERE id = 'msg-1'").run(legacy);
+
+  const replay = appendConversationMessages(db, parseAppendRequest(payload));
+  assert.equal(replay.status, "accepted");
+  assert.equal(replay.insertedCount, 0);
+  assert.equal(replay.existingCount, 1);
+
+  // Replay classifies; it never rewrites the stored bytes.
+  const after = db.prepare("SELECT metadata FROM messages WHERE id = 'msg-1'").get() as Record<
+    string,
+    unknown
+  >;
+  assert.match(String(after.metadata), /"count":1\.0/);
+  db.close();
+});
+
+test("value equivalence does not erase real metadata conflicts", () => {
+  const db = fixture();
+  appendConversationMessages(db, parseAppendRequest(metadataPayload({ count: 1.0 })));
+
+  for (const divergent of [{ count: 2 }, { count: true }, { count: "1" }, { count: 1.5 }]) {
+    // The rejection reason is a property; the message is the bounded public
+    // string, so assert on the reason rather than matching the message text.
+    let reason: string | null = null;
+    try {
+      appendConversationMessages(db, parseAppendRequest(metadataPayload(divergent)));
+    } catch (error) {
+      if (!(error instanceof AppendRejectedError)) throw error;
+      reason = error.reason;
+    }
+    assert.equal(reason, "idempotency_conflict", JSON.stringify(divergent));
+  }
+  db.close();
+});

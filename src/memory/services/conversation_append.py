@@ -74,10 +74,44 @@ class ConversationAppendRequest:
     messages: tuple[AppendMessage, ...]
 
 
+# JavaScript switches to exponential notation at 1e21; below it, `JSON.stringify`
+# writes full digits. Python's float repr switches at 1e16, so an integral float
+# is rendered as an integer only below the JavaScript threshold -- above it,
+# Python's float form already matches (`1e+21`), while the integer form would
+# write 309 digits for 1e308.
+JS_EXPONENTIAL_THRESHOLD = 1e21
+
+
+def _collapse_integer_valued_floats(value: Any) -> Any:
+    """Render integer-valued floats as integers, matching JSON's value model.
+
+    JSON has one number type. Python distinguishes `1` from `1.0` and writes
+    them differently; every JavaScript reader collapses both to the number 1
+    before any core sees them, so the two cores could never agree on the bytes
+    for the same request. Since metadata bytes take part in the idempotency
+    comparison, that made a batch written by one core and replayed through the
+    other a spurious conflict.
+
+    Booleans are excluded deliberately: `isinstance(True, int)` is true in
+    Python, and rendering `true` as `1` would change the caller's payload.
+    """
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, float):
+        if value.is_integer() and abs(value) < JS_EXPONENTIAL_THRESHOLD:
+            return int(value)
+        return value
+    if isinstance(value, list):
+        return [_collapse_integer_valued_floats(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _collapse_integer_valued_floats(item) for key, item in value.items()}
+    return value
+
+
 def canonical_json(value: Mapping[str, Any]) -> str:
     try:
         return json.dumps(
-            value,
+            _collapse_integer_valued_floats(value),
             ensure_ascii=False,
             sort_keys=True,
             separators=(",", ":"),

@@ -226,3 +226,53 @@ def test_rejects_non_rfc3339_timestamps(created_at):
     with pytest.raises(AppendRejected) as exc:
         parse_append_request(payload)
     assert exc.value.reason == "malformed_request"
+
+
+# --- CV22.DS7.US10 slice B': integer-valued float metadata -------------------
+#
+# The append contract's idempotency comparison uses the stored metadata bytes,
+# and Python's `json.dumps` writes an integer-valued float as `1.0` while every
+# JSON reader that lands the value in TypeScript sees the number 1. The two
+# cores could therefore never agree on the bytes for the same request, so a
+# batch written by one and replayed through the other raised a spurious
+# `idempotency_conflict`. Navigator decision 2026-09-03: fix Python first, so
+# the published contract is value-semantics ("same JSON value"), not
+# byte-semantics.
+
+
+def test_canonical_json_collapses_integer_valued_floats():
+    from memory.services.conversation_append import canonical_json
+
+    assert canonical_json({"n": 1.0}) == '{"n":1}'
+    assert canonical_json({"n": -0.0}) == '{"n":0}'
+    assert canonical_json({"n": 1e3}) == '{"n":1000}'
+    # Non-integer floats keep their value, and integers are untouched.
+    assert canonical_json({"n": 2.5}) == '{"n":2.5}'
+    assert canonical_json({"n": 1}) == '{"n":1}'
+
+
+def test_canonical_json_keeps_booleans_distinct_from_numbers():
+    from memory.services.conversation_append import canonical_json
+
+    # Python's `True == 1`, so a careless normalization would render booleans
+    # as numbers and silently change the caller's payload.
+    assert canonical_json({"n": True}) == '{"n":true}'
+    assert canonical_json({"n": False}) == '{"n":false}'
+
+
+def test_canonical_json_collapses_integer_valued_floats_when_nested():
+    from memory.services.conversation_append import canonical_json
+
+    assert canonical_json({"a": [1.0, 2.5, {"b": 3.0}]}) == '{"a":[1,2.5,{"b":3}]}'
+
+
+def test_parsed_metadata_matches_the_typescript_canonical_form():
+    payload = _payload()
+    payload["messages"][0]["metadata"] = {"count": 1.0, "ratio": 0.5, "flag": True}
+    message = parse_append_request(payload).messages[0]
+
+    assert message.metadata_json == (
+        '{"callerMetadata":{"count":1,"flag":true,"ratio":0.5},'
+        '"mirrorAppend":{"schemaVersion":"1.0.0",'
+        '"sourceInterface":"external-shell"}}'
+    )

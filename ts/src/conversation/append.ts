@@ -129,6 +129,58 @@ export function canonicalJson(value: unknown): string {
   throw new AppendRejectedError("malformed_request");
 }
 
+/**
+ * Idempotency comparison for stored message metadata (CV22.DS7.US10 slice B′).
+ *
+ * The contract is value-semantics ("same JSON value"), not byte-semantics.
+ * Bytes remain the fast path, but rows written before Python collapsed
+ * integer-valued floats carry `1.0` where the same request now canonicalizes
+ * to `1`. Rejecting those as `idempotency_conflict` would break replay for
+ * every caller that ever sent such a value, so equivalent JSON values compare
+ * equal while genuinely different ones still conflict.
+ *
+ * Mirrors `metadata_matches` in `src/memory/storage/messages.py`.
+ */
+export function metadataMatches(stored: unknown, incoming: unknown): boolean {
+  if (stored === incoming) return true;
+  if (typeof stored !== "string" || typeof incoming !== "string") return false;
+  try {
+    return jsonValueEqual(JSON.parse(stored), JSON.parse(incoming));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Compare decoded JSON values, keeping JSON's type classes distinct.
+ *
+ * Booleans are compared as booleans, never as numbers: Python's `True == 1`
+ * makes this a live hazard on the oracle side, and accepting `{"flag": 1}` as a
+ * replay of `{"flag": true}` would silently swallow a different payload.
+ */
+function jsonValueEqual(left: unknown, right: unknown): boolean {
+  if (typeof left === "boolean" || typeof right === "boolean") {
+    return typeof left === "boolean" && typeof right === "boolean" && left === right;
+  }
+  if (typeof left === "number" && typeof right === "number") return left === right;
+  if (Array.isArray(left) && Array.isArray(right)) {
+    return (
+      left.length === right.length &&
+      left.every((item, index) => jsonValueEqual(item, right[index]))
+    );
+  }
+  if (isRecord(left) && isRecord(right)) {
+    const leftKeys = Object.keys(left).sort();
+    const rightKeys = Object.keys(right).sort();
+    return (
+      leftKeys.length === rightKeys.length &&
+      leftKeys.every((key, index) => key === rightKeys[index]) &&
+      leftKeys.every((key) => jsonValueEqual(left[key], right[key]))
+    );
+  }
+  return left === right;
+}
+
 function isFiniteJson(value: unknown): boolean {
   if (value === null || typeof value === "string" || typeof value === "boolean") return true;
   if (typeof value === "number") return Number.isFinite(value);
@@ -333,7 +385,7 @@ export function appendConversationMessages(
         row.role !== message.role ||
         row.content !== message.content ||
         row.created_at !== message.createdAt ||
-        row.metadata !== message.metadataJson
+        !metadataMatches(row.metadata, message.metadataJson)
       ) {
         throw new AppendRejectedError("idempotency_conflict");
       }

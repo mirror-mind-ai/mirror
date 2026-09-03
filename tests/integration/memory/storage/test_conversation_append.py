@@ -179,3 +179,56 @@ def test_message_reads_use_created_at_then_id(store):
         "a-message",
         "z-message",
     ]
+
+
+# --- CV22.DS7.US10 slice B': legacy integer-valued float metadata ------------
+
+
+def _stored_metadata(store, message_id="message-1"):
+    row = store.conn.execute("SELECT metadata FROM messages WHERE id = ?", (message_id,)).fetchone()
+    return row["metadata"]
+
+
+def test_replaying_a_legacy_float_batch_is_idempotent_not_a_conflict(store):
+    """A batch stored before the canonicalization change must still replay.
+
+    Rows written by the old serializer carry `1.0`; the same request now
+    canonicalizes to `1`. A byte comparison would call that an
+    `idempotency_conflict` and reject a request that is, by value, identical --
+    breaking replay for every caller who ever sent an integer-valued float.
+    """
+    _conversation(store)
+    service = ConversationAppendService(store)
+    payload = _payload(_message("message-1"))
+    payload["messages"][0]["metadata"] = {"count": 1.0}
+    service.append(payload)
+
+    # Simulate the pre-fix stored bytes for exactly this request.
+    legacy = _stored_metadata(store).replace('"count":1', '"count":1.0')
+    store.conn.execute("UPDATE messages SET metadata = ? WHERE id = ?", (legacy, "message-1"))
+    store.conn.commit()
+    assert '"count":1.0' in _stored_metadata(store)
+
+    receipt = service.append(payload)
+
+    assert receipt["status"] == "accepted"
+    assert receipt["insertedCount"] == 0
+    assert receipt["existingCount"] == 1
+    # The legacy bytes are preserved: replay classifies, it never rewrites.
+    assert '"count":1.0' in _stored_metadata(store)
+
+
+def test_value_equivalence_does_not_erase_real_metadata_conflicts(store):
+    """Tolerating `1.0` vs `1` must not tolerate an actually different value."""
+    _conversation(store)
+    service = ConversationAppendService(store)
+    payload = _payload(_message("message-1"))
+    payload["messages"][0]["metadata"] = {"count": 1.0}
+    service.append(payload)
+
+    for divergent in ({"count": 2}, {"count": True}, {"count": "1"}, {"count": 1.5}):
+        conflicting = _payload(_message("message-1"))
+        conflicting["messages"][0]["metadata"] = divergent
+        with pytest.raises(AppendRejected) as exc:
+            service.append(conflicting)
+        assert exc.value.reason == "idempotency_conflict", divergent
