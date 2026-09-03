@@ -113,7 +113,7 @@ test("handleUserPromptHook skips empty session_id or prompt", () => {
   db.close();
 });
 
-test("handleUserPromptHook swallows malformed stdin instead of crashing the runtime", () => {
+test("handleUserPromptHook swallows malformed stdin instead of crashing the runtime", async () => {
   const { db, home } = fixture();
   const outcome = handleUserPromptHook(db, "{not json", { mirrorHome: home }, deps);
 
@@ -139,7 +139,7 @@ test("handleUserPromptHook swallows a database failure instead of crashing the r
 
 // --- hook_session_end ---
 
-test("handleSessionEndHook ends the session and runs the injected close tail", () => {
+test("handleSessionEndHook ends the session and runs the injected close tail", async () => {
   const { db, home } = fixture();
   handleUserPromptHook(
     db,
@@ -149,12 +149,19 @@ test("handleSessionEndHook ends the session and runs the injected close tail", (
   );
   const calls: string[] = [];
 
-  const outcome = handleSessionEndHook(
+  const outcome = await handleSessionEndHook(
     db,
     JSON.stringify({ session_id: "s1" }),
     { mirrorHome: home, claudeProjectDir: null, homeDir: home },
     deps,
-    { runExtraction: () => calls.push("extract"), finalizeMetadata: () => calls.push("finalize") },
+    {
+      runExtraction: () => {
+        calls.push("extract");
+      },
+      finalizeMetadata: () => {
+        calls.push("finalize");
+      },
+    },
   );
 
   assert.equal(outcome.action, "ended");
@@ -166,9 +173,9 @@ test("handleSessionEndHook ends the session and runs the injected close tail", (
   db.close();
 });
 
-test("handleSessionEndHook skips a payload without a session id", () => {
+test("handleSessionEndHook skips a payload without a session id", async () => {
   const { db, home } = fixture();
-  const outcome = handleSessionEndHook(
+  const outcome = await handleSessionEndHook(
     db,
     JSON.stringify({ transcript_path: "/tmp/x.jsonl" }),
     { mirrorHome: home, claudeProjectDir: null, homeDir: home },
@@ -178,9 +185,9 @@ test("handleSessionEndHook skips a payload without a session id", () => {
   db.close();
 });
 
-test("handleSessionEndHook swallows malformed stdin instead of crashing the runtime", () => {
+test("handleSessionEndHook swallows malformed stdin instead of crashing the runtime", async () => {
   const { db, home } = fixture();
-  const outcome = handleSessionEndHook(
+  const outcome = await handleSessionEndHook(
     db,
     "]]not json[[",
     { mirrorHome: home, claudeProjectDir: null, homeDir: home },

@@ -27,6 +27,32 @@ export function pythonJsonDumps(value: unknown): string {
   return JSON.stringify(value);
 }
 
+/**
+ * Serialize like Python's DEFAULT `json.dumps(value)` -- same `", "`/`": "`
+ * separators as above, but with `ensure_ascii=True`, so non-ASCII characters
+ * are escaped as `\uXXXX`.
+ *
+ * Mirror uses both variants, and which one applies is a per-call-site fact, not
+ * a preference: conversation `metadata`/`tags` are written with
+ * `ensure_ascii=False` (raw UTF-8), while memory `tags` go through
+ * `services/memory.py`'s plain `json.dumps(tags)` and are escaped. Storing
+ * `["café"]` where Python stored `["caf\u00e9"]` is a silent byte divergence in
+ * a column both cores read.
+ *
+ * JavaScript strings are UTF-16, so astral characters are already surrogate
+ * pairs and escaping each unit reproduces Python's surrogate-pair output.
+ */
+export function pythonJsonDumpsEnsureAscii(value: unknown): string {
+  return escapeNonAscii(pythonJsonDumps(value));
+}
+
+function escapeNonAscii(text: string): string {
+  return text.replace(/[\u0080-\uffff]/g, (character) => {
+    const code = character.charCodeAt(0).toString(16).padStart(4, "0");
+    return `\\u${code}`;
+  });
+}
+
 export function newId(): string {
   return randomUUID().replace(/-/g, "").slice(0, 8);
 }

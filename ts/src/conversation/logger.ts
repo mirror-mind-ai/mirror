@@ -36,8 +36,8 @@ export interface LoggerDeps {
  * implementations behind the replay transport.
  */
 export interface CloseHooks {
-  runExtraction?: (db: WritableDatabase, conversationId: string) => void;
-  finalizeMetadata?: (db: WritableDatabase, conversationId: string) => void;
+  runExtraction?: (db: WritableDatabase, conversationId: string) => Promise<void> | void;
+  finalizeMetadata?: (db: WritableDatabase, conversationId: string) => Promise<void> | void;
 }
 
 // PARITY NOTE for every call site below: Python's store upsert is asymmetric.
@@ -273,42 +273,50 @@ function startConversation(
   return id;
 }
 
-/** Python `ConversationService.end_conversation`: deterministic close + tails. */
-export function endConversation(
+/**
+ * Python `ConversationService.end_conversation`: deterministic close + tails.
+ *
+ * Async since CV22.DS7.US10 slice C′: both tails are genuinely asynchronous in
+ * TypeScript (they reach the LLM transport), and awaiting them here keeps ONE
+ * authority for the ordering contract — `ended_at` first, extraction second,
+ * finalization in a `finally`. Duplicating that contract in a second async
+ * close path would let the two drift on exactly the property that must not.
+ */
+export async function endConversation(
   db: WritableDatabase,
   conversationId: string,
   options: { extract: boolean },
   deps: LoggerDeps,
   hooks: CloseHooks = {},
-): void {
+): Promise<void> {
   db.prepare("UPDATE conversations SET ended_at = ? WHERE id = ?").run(
     deps.nowIso(),
     conversationId,
   );
   try {
-    if (options.extract) hooks.runExtraction?.(db, conversationId);
+    if (options.extract) await hooks.runExtraction?.(db, conversationId);
   } finally {
     // Python finalizes in a `finally`: the orphan is closed and non-manual
     // metadata finalized even when extraction fails.
-    hooks.finalizeMetadata?.(db, conversationId);
+    await hooks.finalizeMetadata?.(db, conversationId);
   }
 }
 
 /** Python `switch_conversation`: close the old conversation, bind a new one. */
-export function switchConversation(
+export async function switchConversation(
   db: WritableDatabase,
   sessionId: string | null,
   options: { persona?: string | null; journey?: string | null; envSessionId?: string | null },
   deps: LoggerDeps,
   hooks: CloseHooks = {},
-): string | null {
+): Promise<string | null> {
   const resolved = resolveRuntimeSessionId(db, sessionId, options.envSessionId ?? null);
   if (!resolved) return null;
 
   const runtimeSession = getRuntimeSession(db, resolved);
   const oldConversationId = runtimeSession?.conversationId ?? null;
   if (oldConversationId) {
-    endConversation(db, oldConversationId, { extract: true }, deps, hooks);
+    await endConversation(db, oldConversationId, { extract: true }, deps, hooks);
   }
 
   // Python truthiness: an empty interface also falls back to claude_code.
@@ -340,17 +348,17 @@ export function switchConversation(
 }
 
 /** Python `end_session`: close the bound conversation and deactivate. */
-export function endSession(
+export async function endSession(
   db: WritableDatabase,
   sessionId: string,
   options: { extract: boolean },
   deps: LoggerDeps,
   hooks: CloseHooks = {},
-): void {
+): Promise<void> {
   const runtimeSession = getRuntimeSession(db, sessionId);
   const conversationId = runtimeSession?.conversationId ?? null;
   if (!conversationId) return;
-  endConversation(db, conversationId, { extract: options.extract }, deps, hooks);
+  await endConversation(db, conversationId, { extract: options.extract }, deps, hooks);
   upsertRuntimeSession(db, sessionId, { active: false, closedAt: deps.nowIso() }, deps.nowIso());
 }
 
@@ -490,13 +498,13 @@ export function handleUserPromptHook(
  * backfill-only path) is slice E scope, so this port reports the resolved
  * path and leaves dispatch to that slice.
  */
-export function handleSessionEndHook(
+export async function handleSessionEndHook(
   db: WritableDatabase,
   rawPayload: string,
   options: { mirrorHome: string; claudeProjectDir: string | null; homeDir: string },
   deps: LoggerDeps,
   hooks: CloseHooks = {},
-): SessionEndHookOutcome {
+): Promise<SessionEndHookOutcome> {
   try {
     const payload = parsePayload(rawPayload);
     if (!payload) return { action: "skipped", reason: "malformed_payload" };
@@ -504,7 +512,7 @@ export function handleSessionEndHook(
     const sessionId = payloadString(payload, "session_id");
     if (!sessionId) return { action: "skipped", reason: "missing_session" };
 
-    endSession(db, sessionId, { extract: true }, deps, hooks);
+    await endSession(db, sessionId, { extract: true }, deps, hooks);
     const transcriptPath = resolveTranscriptPath(
       payloadString(payload, "transcript_path"),
       sessionId,

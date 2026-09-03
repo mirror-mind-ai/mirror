@@ -22,7 +22,7 @@ import {
   generateEmbeddingSafely,
 } from "#providers/embedding.ts";
 import type { LlmProvider } from "#providers/llm.ts";
-import { newId, nowIso } from "#util/pyGenerators.ts";
+import { newId, nowIso, pythonJsonDumps, pythonJsonDumpsEnsureAscii } from "#util/pyGenerators.ts";
 
 export interface ConversationExtractionOptions {
   llm: LlmProvider;
@@ -79,7 +79,9 @@ export async function runConversationExtraction(
     const failureMetadata = metadataDict(conv.metadata);
     failureMetadata.extraction_status = "llm_failed";
     db.prepare("UPDATE conversations SET metadata = ? WHERE id = ?").run(
-      JSON.stringify(failureMetadata),
+      // Python writes conversation metadata with `ensure_ascii=False`; the
+      // separators and raw UTF-8 are both part of the stored bytes.
+      pythonJsonDumps(failureMetadata),
       conversationId,
     );
     throw error;
@@ -144,7 +146,7 @@ export async function runConversationExtraction(
     metadata.extraction_dropped = extractionStatus.dropped;
   }
   db.prepare("UPDATE conversations SET metadata = ? WHERE id = ?").run(
-    JSON.stringify(metadata),
+    pythonJsonDumps(metadata),
     conversationId,
   );
 
@@ -285,7 +287,9 @@ function insertMemory(
     context: memory.context,
     journey: memory.journey,
     persona: memory.persona,
-    tags: memory.tags.length > 0 ? JSON.stringify(memory.tags) : null,
+    // Memory tags go through `services/memory.py`'s plain `json.dumps(tags)`,
+    // which keeps `ensure_ascii=True` -- unlike conversation tags above.
+    tags: memory.tags.length > 0 ? pythonJsonDumpsEnsureAscii(memory.tags) : null,
     createdAt,
     embedding,
     metadata: addEmbeddingProvenance(null),

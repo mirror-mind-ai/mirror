@@ -66,50 +66,60 @@ function conversation(db: WritableDatabase, id: string): Record<string, unknown>
 
 // --- end_conversation close seam ---
 
-test("endConversation writes ended_at deterministically and runs no tail by default", () => {
+test("endConversation writes ended_at deterministically and runs no tail by default", async () => {
   const db = fixture();
   logUserMessage(db, "s1", "hi", { interface: "pi" }, deps);
   const convId = String(session(db, "s1")?.conversation_id);
 
-  endConversation(db, convId, { extract: false }, laterDeps);
+  await endConversation(db, convId, { extract: false }, laterDeps);
 
   assert.equal(conversation(db, convId)?.ended_at, LATER);
   db.close();
 });
 
-test("endConversation runs the extraction tail only when extract is true", () => {
+test("endConversation runs the extraction tail only when extract is true", async () => {
   const db = fixture();
   logUserMessage(db, "s1", "hi", { interface: "pi" }, deps);
   const convId = String(session(db, "s1")?.conversation_id);
   const calls: string[] = [];
 
-  endConversation(db, convId, { extract: false }, laterDeps, {
-    runExtraction: () => calls.push("extract"),
-    finalizeMetadata: () => calls.push("finalize"),
+  await endConversation(db, convId, { extract: false }, laterDeps, {
+    runExtraction: () => {
+      calls.push("extract");
+    },
+    finalizeMetadata: () => {
+      calls.push("finalize");
+    },
   });
   assert.deepEqual(calls, ["finalize"]);
 
-  endConversation(db, convId, { extract: true }, laterDeps, {
-    runExtraction: () => calls.push("extract"),
-    finalizeMetadata: () => calls.push("finalize"),
+  await endConversation(db, convId, { extract: true }, laterDeps, {
+    runExtraction: () => {
+      calls.push("extract");
+    },
+    finalizeMetadata: () => {
+      calls.push("finalize");
+    },
   });
   assert.deepEqual(calls, ["finalize", "extract", "finalize"]);
   db.close();
 });
 
-test("endConversation finalizes metadata even when extraction throws (Python finally)", () => {
+test("endConversation finalizes metadata even when extraction throws (Python finally)", async () => {
   const db = fixture();
   logUserMessage(db, "s1", "hi", { interface: "pi" }, deps);
   const convId = String(session(db, "s1")?.conversation_id);
   const calls: string[] = [];
 
-  assert.throws(
+  await assert.rejects(
     () =>
       endConversation(db, convId, { extract: true }, laterDeps, {
         runExtraction: () => {
           throw new Error("provider outage");
         },
-        finalizeMetadata: () => calls.push("finalize"),
+        finalizeMetadata: () => {
+          calls.push("finalize");
+        },
       }),
     /provider outage/,
   );
@@ -121,18 +131,18 @@ test("endConversation finalizes metadata even when extraction throws (Python fin
 
 // --- switch_conversation ---
 
-test("switchConversation returns null when no session can be resolved", () => {
+test("switchConversation returns null when no session can be resolved", async () => {
   const db = fixture();
-  assert.equal(switchConversation(db, null, {}, deps), null);
+  assert.equal(await switchConversation(db, null, {}, deps), null);
   db.close();
 });
 
-test("switchConversation ends the old conversation and binds a fresh one", () => {
+test("switchConversation ends the old conversation and binds a fresh one", async () => {
   const db = fixture();
   logUserMessage(db, "s1", "first", { interface: "pi" }, deps);
   const oldId = String(session(db, "s1")?.conversation_id);
 
-  const newId = switchConversation(db, "s1", {}, laterDeps);
+  const newId = await switchConversation(db, "s1", {}, laterDeps);
 
   assert.ok(newId);
   assert.notEqual(newId, oldId);
@@ -146,7 +156,7 @@ test("switchConversation ends the old conversation and binds a fresh one", () =>
   db.close();
 });
 
-test("switchConversation PRESERVES session persona/journey when not passed", () => {
+test("switchConversation PRESERVES session persona/journey when not passed", async () => {
   // Python store upsert: persona=None / journey=None mean "preserve", not "clear".
   const db = fixture();
   logUserMessage(db, "s1", "first", { interface: "pi" }, deps);
@@ -156,7 +166,7 @@ test("switchConversation PRESERVES session persona/journey when not passed", () 
     "s1",
   );
 
-  switchConversation(db, "s1", {}, laterDeps);
+  await switchConversation(db, "s1", {}, laterDeps);
 
   const row = session(db, "s1");
   assert.equal(row?.persona, "engineer");
@@ -164,11 +174,16 @@ test("switchConversation PRESERVES session persona/journey when not passed", () 
   db.close();
 });
 
-test("switchConversation applies explicit persona/journey to session and new conversation", () => {
+test("switchConversation applies explicit persona/journey to session and new conversation", async () => {
   const db = fixture();
   logUserMessage(db, "s1", "first", { interface: "pi" }, deps);
 
-  const newId = switchConversation(db, "s1", { persona: "therapist", journey: "other" }, laterDeps);
+  const newId = await switchConversation(
+    db,
+    "s1",
+    { persona: "therapist", journey: "other" },
+    laterDeps,
+  );
 
   const row = session(db, "s1");
   assert.equal(row?.persona, "therapist");
@@ -178,13 +193,13 @@ test("switchConversation applies explicit persona/journey to session and new con
   db.close();
 });
 
-test("switchConversation defaults the interface to claude_code without a session interface", () => {
+test("switchConversation defaults the interface to claude_code without a session interface", async () => {
   const db = fixture();
   db.prepare(
     "INSERT INTO runtime_sessions (session_id, active, started_at, updated_at) VALUES (?, 1, ?, ?)",
   ).run("s1", NOW, NOW);
 
-  const newId = switchConversation(db, "s1", {}, laterDeps);
+  const newId = await switchConversation(db, "s1", {}, laterDeps);
 
   assert.equal(conversation(db, String(newId))?.interface, "claude_code");
   db.close();
@@ -192,25 +207,25 @@ test("switchConversation defaults the interface to claude_code without a session
 
 // --- end_session ---
 
-test("endSession is a no-op when the session has no bound conversation", () => {
+test("endSession is a no-op when the session has no bound conversation", async () => {
   const db = fixture();
   db.prepare(
     "INSERT INTO runtime_sessions (session_id, active, started_at, updated_at) VALUES (?, 1, ?, ?)",
   ).run("s1", NOW, NOW);
 
-  endSession(db, "s1", { extract: false }, laterDeps);
+  await endSession(db, "s1", { extract: false }, laterDeps);
 
   assert.equal(session(db, "s1")?.active, 1);
   assert.equal(session(db, "s1")?.closed_at, null);
   db.close();
 });
 
-test("endSession closes the conversation and deactivates the session", () => {
+test("endSession closes the conversation and deactivates the session", async () => {
   const db = fixture();
   logUserMessage(db, "s1", "hi", { interface: "pi" }, deps);
   const convId = String(session(db, "s1")?.conversation_id);
 
-  endSession(db, "s1", { extract: false }, laterDeps);
+  await endSession(db, "s1", { extract: false }, laterDeps);
 
   assert.equal(conversation(db, convId)?.ended_at, LATER);
   const row = session(db, "s1");

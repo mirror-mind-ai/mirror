@@ -140,7 +140,7 @@ function snapshot(db: WritableDatabase, label: string) {
   };
 }
 
-test("TS conversation logger reproduces the Python golden across every scenario", () => {
+test("TS conversation logger reproduces the Python golden across every scenario", async () => {
   const golden = JSON.parse(readFileSync(GOLDEN_PATH, "utf-8")) as Golden;
   const db = fixture();
   const actual: ReturnType<typeof snapshot>[] = [];
@@ -153,10 +153,10 @@ test("TS conversation logger reproduces the Python golden across every scenario"
   actual.push(snapshot(db, "second_user_message_keeps_title_and_appends"));
 
   upsertRuntimeSession(db, "sess-a", { persona: "engineer", journey: "mirror-ts-core" }, nowIso());
-  switchConversation(db, "sess-a", {}, deps);
+  await switchConversation(db, "sess-a", {}, deps);
   actual.push(snapshot(db, "switch_preserves_persona_and_rebinds"));
 
-  endSession(db, "sess-a", { extract: false }, deps);
+  await endSession(db, "sess-a", { extract: false }, deps);
   actual.push(snapshot(db, "end_session_closes_conversation_and_session"));
 
   logUserMessage(db, "sess-b", "discard me", { interface: "pi" }, deps);
