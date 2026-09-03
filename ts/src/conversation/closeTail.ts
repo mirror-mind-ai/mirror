@@ -22,6 +22,7 @@ import {
   dryRunMetadataLifecycle,
   type FieldReport,
   type MessageLike,
+  messagesAreTitleable,
   metadataExecutionProfile,
   metadataProfileAction,
   titleNeedsImprovement,
@@ -285,6 +286,49 @@ function applyForceGeneratedMetadataLifecycle(
     skipped,
     dry_run: input.dryRun,
   };
+}
+
+/**
+ * Python's `maybe_generate_title`: improve one title when it is safe to replace.
+ *
+ * Distinct from the close tail's finalization: this is the startup-maintenance
+ * path, it touches only the title, and it returns whether the title actually
+ * changed so `retitle_pending_conversations` can count real work. Provider
+ * failure leaves the conversation untouched, exactly as Python's bare `except`
+ * does.
+ */
+export async function maybeGenerateTitle(
+  db: WritableDatabase,
+  conversationId: string,
+  deps: CloseTailDeps & { source?: string },
+): Promise<boolean> {
+  const source = deps.source ?? "llm_auto";
+  const conversation = getConversationForTitleOperation(db, conversationId);
+  if (!titleNeedsImprovement(conversation)) return false;
+
+  const messages = getMessages(db, conversation.id);
+  if (!messagesAreTitleable(messages)) return false;
+
+  try {
+    const suggestion = await generateConversationTitle(deps.llm, messages, {
+      userName: deps.userName ?? "User",
+      onLlmCall: (response) => deps.onLlmCall?.("conversation_title", response, conversation.id),
+    });
+    if (!suggestion) return false;
+    const clean = cleanTitle(suggestion);
+    const metadata = titleMetadata(conversation, {
+      source,
+      status: "generated",
+      previousTitle: conversation.title,
+    });
+    updateConversation(db, conversation.id, {
+      title: clean,
+      metadata: pythonJsonDumps(metadata),
+    });
+    return clean !== conversation.title;
+  } catch {
+    return false;
+  }
 }
 
 /** Python's `finalize_metadata_on_close`. */

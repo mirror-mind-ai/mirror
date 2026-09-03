@@ -412,10 +412,9 @@ test("conversations append routes on its own entry, never by inheritance", () =>
 test("MIRROR_TS_CONVERSATION_APPEND=0 reverts append to Python", () => {
   // The published external-shell write contract keeps an operational escape
   // hatch: no code change, no data migration, no release.
-  const decision = routeMemoryCommand(
-    ["conversations", "append", "--format", "json"],
-    { MIRROR_TS_CONVERSATION_APPEND: "0" },
-  );
+  const decision = routeMemoryCommand(["conversations", "append", "--format", "json"], {
+    MIRROR_TS_CONVERSATION_APPEND: "0",
+  });
   assert.equal(decision.engine, "python");
   assert.match(decision.reason, /MIRROR_TS_CONVERSATION_APPEND=0/);
   // The gate is scoped: it must not drag the listing back with it.

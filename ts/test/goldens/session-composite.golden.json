@@ -1,0 +1,145 @@
+{
+  "meta": {
+    "note": "Reports are compared with timing values normalized, but only after the token matches the grammar above.",
+    "timing_grammar": "<label>: <count> (<seconds with one decimal>s)"
+  },
+  "scenarios": [
+    {
+      "label": "maintenance_empty_database",
+      "report_normalized": "Conversation maintenance complete.\nClosed stale conversations: 0 (<elapsed>s)\nBackfilled Pi sessions: 0 (<elapsed>s)\nRetitled pending conversations: 0 (<elapsed>s)\nExtracted pending conversations: 0 (<elapsed>s)",
+      "steps": [
+        {
+          "count": 0,
+          "label": "Closed stale conversations"
+        },
+        {
+          "count": 0,
+          "label": "Backfilled Pi sessions"
+        },
+        {
+          "count": 0,
+          "label": "Retitled pending conversations"
+        },
+        {
+          "count": 0,
+          "label": "Extracted pending conversations"
+        }
+      ]
+    },
+    {
+      "label": "maintenance_closes_and_extracts_stale_orphan",
+      "report_normalized": "Conversation maintenance complete.\nClosed stale conversations: 1 (<elapsed>s)\nBackfilled Pi sessions: 0 (<elapsed>s)\nRetitled pending conversations: 0 (<elapsed>s)\nExtracted pending conversations: 0 (<elapsed>s)",
+      "steps": [
+        {
+          "count": 1,
+          "label": "Closed stale conversations"
+        },
+        {
+          "count": 0,
+          "label": "Backfilled Pi sessions"
+        },
+        {
+          "count": 0,
+          "label": "Retitled pending conversations"
+        },
+        {
+          "count": 0,
+          "label": "Extracted pending conversations"
+        }
+      ]
+    },
+    {
+      "label": "maintenance_rerun_is_idempotent",
+      "report_normalized": "Conversation maintenance complete.\nClosed stale conversations: 0 (<elapsed>s)\nBackfilled Pi sessions: 0 (<elapsed>s)\nRetitled pending conversations: 0 (<elapsed>s)\nExtracted pending conversations: 0 (<elapsed>s)",
+      "steps": [
+        {
+          "count": 0,
+          "label": "Closed stale conversations"
+        },
+        {
+          "count": 0,
+          "label": "Backfilled Pi sessions"
+        },
+        {
+          "count": 0,
+          "label": "Retitled pending conversations"
+        },
+        {
+          "count": 0,
+          "label": "Extracted pending conversations"
+        }
+      ]
+    },
+    {
+      "label": "maintenance_retitles_pending_conversation",
+      "report_normalized": "Conversation maintenance complete.\nClosed stale conversations: 0 (<elapsed>s)\nBackfilled Pi sessions: 0 (<elapsed>s)\nRetitled pending conversations: 1 (<elapsed>s)\nExtracted pending conversations: 0 (<elapsed>s)",
+      "steps": [
+        {
+          "count": 0,
+          "label": "Closed stale conversations"
+        },
+        {
+          "count": 0,
+          "label": "Backfilled Pi sessions"
+        },
+        {
+          "count": 1,
+          "label": "Retitled pending conversations"
+        },
+        {
+          "count": 0,
+          "label": "Extracted pending conversations"
+        }
+      ]
+    },
+    {
+      "label": "maintenance_reports_quarantine_tail",
+      "report_normalized": "Conversation maintenance complete.\nClosed stale conversations: 0 (<elapsed>s)\nBackfilled Pi sessions: 0 (<elapsed>s)\nRetitled pending conversations: 0 (<elapsed>s)\nExtracted pending conversations: 0 (<elapsed>s)\n\u26a0 1 conversation(s) quarantined after repeated extraction failure",
+      "steps": [
+        {
+          "count": 0,
+          "label": "Closed stale conversations"
+        },
+        {
+          "count": 0,
+          "label": "Backfilled Pi sessions"
+        },
+        {
+          "count": 0,
+          "label": "Retitled pending conversations"
+        },
+        {
+          "count": 0,
+          "label": "Extracted pending conversations"
+        }
+      ]
+    },
+    {
+      "label": "session_start_full",
+      "report_normalized": "Conversation logging ACTIVE.\nConversation maintenance complete.\nClosed stale conversations: 0 (<elapsed>s)\nBackfilled Pi sessions: 0 (<elapsed>s)\nRetitled pending conversations: 0 (<elapsed>s)\nExtracted pending conversations: 0 (<elapsed>s)\n\u26a0 1 conversation(s) quarantined after repeated extraction failure",
+      "steps": [
+        {
+          "count": 0,
+          "label": "Closed stale conversations"
+        },
+        {
+          "count": 0,
+          "label": "Backfilled Pi sessions"
+        },
+        {
+          "count": 0,
+          "label": "Retitled pending conversations"
+        },
+        {
+          "count": 0,
+          "label": "Extracted pending conversations"
+        }
+      ]
+    },
+    {
+      "label": "session_start_fast",
+      "report_normalized": "Conversation logging ACTIVE. Maintenance deferred.",
+      "steps": []
+    }
+  ]
+}
