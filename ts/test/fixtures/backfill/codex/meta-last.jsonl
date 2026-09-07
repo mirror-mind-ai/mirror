@@ -1,0 +1,4 @@
+{"timestamp":"2026-05-05T09:00:01.000Z","type":"event_msg","payload":{"type":"agent_message","message":"the agent spoke first"}}
+{"timestamp":"2026-05-05T09:00:02.000Z","type":"event_msg","payload":{"type":"user_message","message":"and the meta arrives last"}}
+{"timestamp":"2026-05-05T09:00:00.000Z","type":"session_meta","payload":{"id":"codex-meta-first-ignored"}}
+{"timestamp":"2026-05-05T09:00:03.000Z","type":"session_meta","payload":{"id":"codex-meta-last-0005"}}

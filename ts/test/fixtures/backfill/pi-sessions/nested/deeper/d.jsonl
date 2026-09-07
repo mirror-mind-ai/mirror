@@ -1,0 +1,2 @@
+{"type":"message","message":{"role":"user","content":"nested directories are walked recursively","timestamp":"2026-04-19T07:00:00Z"}}
+{"type":"message","message":{"role":"assistant","content":"yes","timestamp":"2026-04-19T07:00:01Z"}}

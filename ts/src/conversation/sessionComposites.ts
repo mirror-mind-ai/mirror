@@ -40,8 +40,12 @@ export interface MaintenanceDeps {
   retitleConversation: (db: WritableDatabase, conversationId: string) => Promise<boolean> | boolean;
   /** The DS5 orchestration behind replay, as the driver already injects it. */
   runExtraction: (db: WritableDatabase, conversationId: string) => void;
-  /** Slice E supplies the real implementation; maintenance only needs a count. */
-  backfillPiSessions?: (db: WritableDatabase) => Promise<number> | number;
+  /**
+   * `backfillPiSessions` (slice E) bound to its resolved sessions directory.
+   * Injected rather than resolved here so the composite never reads the
+   * environment itself; the front door owns that resolution.
+   */
+  backfillPiSessions: (db: WritableDatabase) => Promise<number> | number;
   /** Monotonic seconds, injected so report timings are pinnable. */
   monotonic?: () => number;
   now?: () => string;
@@ -200,7 +204,7 @@ export async function sessionMaintenance(
         thresholdMinutes: STALE_ORPHAN_THRESHOLD_MINUTES,
       }),
     ),
-    await timedStep("Backfilled Pi sessions", monotonic, () => deps.backfillPiSessions?.(db) ?? 0),
+    await timedStep("Backfilled Pi sessions", monotonic, () => deps.backfillPiSessions(db)),
     await timedStep("Retitled pending conversations", monotonic, () =>
       retitlePendingConversations(db, { retitleConversation: deps.retitleConversation }),
     ),

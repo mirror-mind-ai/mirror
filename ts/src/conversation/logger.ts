@@ -12,6 +12,7 @@
 
 import { closeSync, existsSync, mkdirSync, openSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { backfillAssistantMessages } from "#conversation/transcriptBackfill.ts";
 import { type WritableDatabase, withTransaction } from "#db/database.ts";
 import {
   decodeMetadata,
@@ -22,6 +23,7 @@ import {
 } from "#mirror/runtimeSession.ts";
 import { expandHome } from "#util/paths.ts";
 import { pythonJsonDumps } from "#util/pyGenerators.ts";
+import { codePointLength, sliceCodePoints } from "#util/pythonText.ts";
 
 export interface LoggerDeps {
   newId: () => string;
@@ -53,11 +55,14 @@ export interface SessionConversationOptions {
   title?: string | null;
 }
 
-/** Python `_generate_title`: first line, hard 80 cap, word-boundary 60 cut. */
+/**
+ * Python `_generate_title`: first line, hard 80 cap, word-boundary 60 cut.
+ * Both cuts are by code point (Python slicing), so an emoji counts once.
+ */
 export function generateTitle(content: string): string {
-  const text = (content.trim().split("\n")[0] ?? "").slice(0, 80);
-  if (text.length <= 60) return text;
-  const cut = text.slice(0, 60);
+  const text = sliceCodePoints(content.trim().split("\n")[0] ?? "", 80);
+  if (codePointLength(text) <= 60) return text;
+  const cut = sliceCodePoints(text, 60);
   const boundary = cut.lastIndexOf(" ");
   return `${boundary === -1 ? cut : cut.slice(0, boundary)}...`;
 }
@@ -445,8 +450,9 @@ export type UserPromptHookOutcome =
   | { action: "failed"; error: string };
 
 export type SessionEndHookOutcome =
-  | { action: "skipped"; reason: "malformed_payload" | "missing_session" }
-  | { action: "ended"; sessionId: string; transcriptPath: string | null }
+  | { action: "skipped"; reason: "malformed_payload" | "nothing_to_do" }
+  | { action: "ended"; sessionId: string; transcriptPath: string | null; backfilled: boolean }
+  | { action: "backfilled"; transcriptPath: string }
   | { action: "failed"; error: string };
 
 function parsePayload(raw: string): Record<string, unknown> | null {
@@ -493,10 +499,13 @@ export function handleUserPromptHook(
 }
 
 /**
- * Python `hook_session_end`. Resolves the transcript path but does not
- * backfill: `backfill_assistant_messages` (and Python's session-less
- * backfill-only path) is slice E scope, so this port reports the resolved
- * path and leaves dispatch to that slice.
+ * Python `hook_session_end`: end the session when the payload names one, then
+ * backfill assistant turns from the transcript when it exists -- in that
+ * order, so the just-ended conversation's `ended_at` bounds the backfill.
+ *
+ * The two halves are independent: an empty `session_id` with a transcript
+ * still backfills (the session-less route, slice E), and a session without a
+ * transcript still ends. Everything is swallowed; the hook always exits 0.
  */
 export async function handleSessionEndHook(
   db: WritableDatabase,
@@ -510,16 +519,20 @@ export async function handleSessionEndHook(
     if (!payload) return { action: "skipped", reason: "malformed_payload" };
 
     const sessionId = payloadString(payload, "session_id");
-    if (!sessionId) return { action: "skipped", reason: "missing_session" };
+    if (sessionId) await endSession(db, sessionId, { extract: true }, deps, hooks);
 
-    await endSession(db, sessionId, { extract: true }, deps, hooks);
     const transcriptPath = resolveTranscriptPath(
       payloadString(payload, "transcript_path"),
       sessionId,
       options.claudeProjectDir,
       options.homeDir,
     );
-    return { action: "ended", sessionId, transcriptPath };
+    const backfilled = transcriptPath !== null && existsSync(transcriptPath);
+    if (backfilled) backfillAssistantMessages(db, transcriptPath, deps);
+
+    if (sessionId) return { action: "ended", sessionId, transcriptPath, backfilled };
+    if (backfilled) return { action: "backfilled", transcriptPath };
+    return { action: "skipped", reason: "nothing_to_do" };
   } catch (error) {
     return { action: "failed", error: error instanceof Error ? error.message : String(error) };
   }

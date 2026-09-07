@@ -115,6 +115,11 @@ ORACLE_PATHS: tuple[str, ...] = (
     # story's target, even though most of that file is not ported yet.
     "src/memory/services/metadata_lifecycle.py",
     "src/memory/services/conversation.py",
+    # DS7.US10 slice E: the transcript assistant backfill borrows `parse_jsonl`
+    # and `_assistant_text` from the export module
+    # (ts/src/conversation/transcriptBackfill.ts). Tracked at file granularity
+    # like every other entry although only those two helpers are ported.
+    "src/memory/cli/transcript_export.py",
 )
 
 BASELINE_RELPATH = "ts/parity/oracle-baseline.json"

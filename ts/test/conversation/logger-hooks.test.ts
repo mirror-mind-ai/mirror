@@ -13,10 +13,18 @@ import test from "node:test";
 import {
   handleSessionEndHook,
   handleUserPromptHook,
+  logUserMessage,
   resolveTranscriptPath,
   setMute,
 } from "#conversation/logger.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
+import {
+  backfillGolden,
+  frozenDeps,
+  seedTranscriptConversations,
+  snapshotState,
+  TRANSCRIPT_PATH,
+} from "#helpers/backfillFixture.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
 
 const NOW = "2026-09-02T12:00:00.000000Z";
@@ -173,15 +181,128 @@ test("handleSessionEndHook ends the session and runs the injected close tail", a
   db.close();
 });
 
-test("handleSessionEndHook skips a payload without a session id", async () => {
+test("handleSessionEndHook with no session and no readable transcript does nothing", async () => {
   const { db, home } = fixture();
   const outcome = await handleSessionEndHook(
     db,
-    JSON.stringify({ transcript_path: "/tmp/x.jsonl" }),
+    JSON.stringify({ transcript_path: join(home, "absent.jsonl") }),
     { mirrorHome: home, claudeProjectDir: null, homeDir: home },
     deps,
   );
-  assert.deepEqual(outcome, { action: "skipped", reason: "missing_session" });
+  assert.deepEqual(outcome, { action: "skipped", reason: "nothing_to_do" });
+  assert.equal(messageCount(db), 0);
+  db.close();
+});
+
+// Slice E: the four `hook_session_end` routes, replayed in the generator's
+// order on one database and graded against the oracle after each. The
+// session-less route is the one US5's port deliberately left out: an empty
+// session_id with a transcript still backfills.
+test("handleSessionEndHook routes match the Python oracle: session-less, no-op, no-op, ended-then-backfilled", async () => {
+  const { db, home } = fixture();
+  const frozen = frozenDeps();
+  const options = { mirrorHome: home, claudeProjectDir: null, homeDir: home };
+  seedTranscriptConversations(db);
+  const scenario = (label: string) => {
+    const found = backfillGolden.hook_session_end.find((s) => s.label === label);
+    assert.ok(found, `missing golden scenario ${label}`);
+    return found.state;
+  };
+
+  const sessionless = await handleSessionEndHook(
+    db,
+    JSON.stringify({ session_id: "", transcript_path: TRANSCRIPT_PATH }),
+    options,
+    frozen,
+  );
+  assert.deepEqual(sessionless, { action: "backfilled", transcriptPath: TRANSCRIPT_PATH });
+  assert.deepEqual(snapshotState(db), scenario("sessionless_backfill_only"));
+
+  assert.deepEqual(await handleSessionEndHook(db, "{}", options, frozen), {
+    action: "skipped",
+    reason: "nothing_to_do",
+  });
+  assert.deepEqual(snapshotState(db), scenario("empty_payload_is_noop"));
+
+  await handleSessionEndHook(
+    db,
+    JSON.stringify({ session_id: "", transcript_path: join(home, "missing-transcript.jsonl") }),
+    options,
+    frozen,
+  );
+  assert.deepEqual(snapshotState(db), scenario("missing_transcript_is_noop"));
+
+  // A live session opened at 10:05 with a user turn. Ending it first is what
+  // bounds the backfill to 10:05..now, so the late answers land in it.
+  logUserMessage(db, "sess-hook", "live session prompt", { interface: "claude_code" }, frozen);
+  db.prepare(
+    "UPDATE conversations SET started_at = ? WHERE id = " +
+      "(SELECT conversation_id FROM runtime_sessions WHERE session_id = 'sess-hook')",
+  ).run("2026-09-03T10:05:00.000000Z");
+  const ended = await handleSessionEndHook(
+    db,
+    JSON.stringify({ session_id: "sess-hook", transcript_path: TRANSCRIPT_PATH }),
+    options,
+    frozen,
+  );
+  assert.deepEqual(ended, {
+    action: "ended",
+    sessionId: "sess-hook",
+    transcriptPath: TRANSCRIPT_PATH,
+    backfilled: true,
+  });
+  assert.deepEqual(snapshotState(db), scenario("session_ended_then_backfilled"));
+  db.close();
+});
+
+test("handleSessionEndHook ends a session without a transcript and reports no backfill", async () => {
+  const { db, home } = fixture();
+  handleUserPromptHook(
+    db,
+    JSON.stringify({ session_id: "s2", prompt: "hello" }),
+    { mirrorHome: home },
+    deps,
+  );
+  const outcome = await handleSessionEndHook(
+    db,
+    JSON.stringify({ session_id: "s2" }),
+    { mirrorHome: home, claudeProjectDir: null, homeDir: home },
+    deps,
+  );
+  assert.deepEqual(outcome, {
+    action: "ended",
+    sessionId: "s2",
+    transcriptPath: null,
+    backfilled: false,
+  });
+  assert.equal(
+    db.prepare("SELECT active FROM runtime_sessions WHERE session_id = 's2'").get()?.active,
+    0,
+  );
+  db.close();
+});
+
+test("handleSessionEndHook swallows a transcript failure after the session already ended", async () => {
+  const { db, home } = fixture();
+  handleUserPromptHook(
+    db,
+    JSON.stringify({ session_id: "s3", prompt: "hello" }),
+    { mirrorHome: home },
+    deps,
+  );
+  // A directory "exists" for the existence check, and reading it raises --
+  // Python's IsADirectoryError inside the hook's except, after end_session.
+  const outcome = await handleSessionEndHook(
+    db,
+    JSON.stringify({ session_id: "s3", transcript_path: home }),
+    { mirrorHome: home, claudeProjectDir: null, homeDir: home },
+    deps,
+  );
+  assert.equal(outcome.action, "failed");
+  assert.equal(
+    db.prepare("SELECT active FROM runtime_sessions WHERE session_id = 's3'").get()?.active,
+    0,
+  );
   db.close();
 });
 

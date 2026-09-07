@@ -9,6 +9,7 @@
     "src/memory/cli/shadow_cmd.py": "4eb935f9886c1ca2283dd066aebd6ae3bdf51103",
     "src/memory/cli/tasks.py": "a624ec1cde4b58ec59f673adbe44606a1b22e1d1",
     "src/memory/cli/tasks_cmd.py": "134788a6e6413321fbad9faf61853450ff4e5ce2",
+    "src/memory/cli/transcript_export.py": "a473ef8c65765299443452e066d627cac6fb58b2",
     "src/memory/cli/week.py": "36a1145a007d3cff16bd460bb76cf2e6a2d6a72d",
     "src/memory/db/connection.py": "0b5b55f598d7f3aca2465d396747441d32084c2f",
     "src/memory/db/migrations.py": "0a09c38e12890dea88fc329d72d7d9129eb492be",

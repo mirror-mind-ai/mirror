@@ -1,0 +1,13 @@
+{"type":"summary","summary":"no timestamp on summaries","leafUuid":"x"}
+{"type":"user","timestamp":"2026-09-03T10:00:30.000Z","message":{"role":"user","content":"user entries are never backfilled"}}
+{"type":"assistant","timestamp":"2026-09-03T10:00:30.000Z","message":{"role":"assistant","content":[{"type":"text","text":"Window-start answer: reaches a conversation that ended at this exact instant."}]}}
+{"type":"user","timestamp":"2026-09-03T10:03:00.000Z","message":{"role":"user","content":[{"type":"text","text":"user text blocks must not be backfilled as assistant"}]}}
+{"type":"assistant","timestamp":"2026-09-03T10:02:00.000Z","message":{"role":"assistant","content":[{"type":"text","text":"  First answer, inside the closed window.  "},{"type":"tool_use","name":"read"},{"type":"text","text":"Second block of the same turn."}]}}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"no timestamp: skipped"}]}}
+{"type":"assistant","timestamp":"2026-09-03T10:04:00.000Z","message":{"role":"assistant","content":[{"type":"text","text":"   \n  "}]}}
+not json at all
+{"type":"assistant","timestamp":"2026-09-03T10:06:00.000Z","message":{"role":"assistant","content":"a bare string content yields no text blocks"}}
+{"type":"assistant","timestamp":"2026-09-03T10:05:00.000000Z","message":{"role":"assistant","content":[{"type":"text","text":"Boundary answer: exactly at the open conversation start."}]}}
+{"type":"assistant","timestamp":"2026-09-03T10:07:00.000Z","message":{"role":"assistant","content":[{"type":"text","text":"Shared answer: inside both the closed and the open window."}]}}
+{"type":"assistant","timestamp":"2026-09-03T10:20:00.000Z","message":{"role":"assistant","content":[{"type":"text","text":"Late answer: only the open conversation is still in range."}]}}
+{"type":"assistant","timestamp":"2026-09-03T13:00:00.000Z","message":{"role":"assistant","content":[{"type":"text","text":"Future answer: the window end is the transcript maximum, not the clock."}]}}

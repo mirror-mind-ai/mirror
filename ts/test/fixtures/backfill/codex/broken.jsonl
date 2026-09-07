@@ -1,0 +1,3 @@
+{"timestamp":"2026-05-04T09:00:00.000Z","type":"session_meta","payload":{"id":"codex-broken-0004"}}
+{"timestamp":"2026-05-04T09:00:01.000Z","type":"event_msg","payload":{"type":"user_message","message":"first line is fine"}}
+{"timestamp":"2026-05-04T09:00:02.000Z","type":"event_msg","payload":{"type":"agent_message","message":"unterminated
