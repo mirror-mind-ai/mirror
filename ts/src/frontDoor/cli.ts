@@ -1207,8 +1207,8 @@ async function runConversationLoggerWrite(argv: readonly string[]): Promise<numb
   // signal rides a local flag rather than widening its return type for one
   // caller.
   let handled = true;
-  const exitCode = await withMirrorWriteDb(argv, (db, dbPath) => {
-    const result = runConversationLoggerRoute(db, dbPath, argv);
+  const exitCode = await withMirrorWriteDb(argv, async (db, dbPath) => {
+    const result = await runConversationLoggerRoute(db, dbPath, argv);
     if (result === null) {
       handled = false;
       return 0;

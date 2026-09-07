@@ -39,8 +39,12 @@ import { pythonJsonDumps } from "#util/pyGenerators.ts";
 
 export interface CloseTailDeps {
   llm: LlmProvider;
-  /** Fires per successful LLM call, in call order — the ledger seam. */
-  onLlmCall?: (role: string, response: LlmResponse, conversationId: string) => void;
+  /**
+   * Fires per successful LLM call, in call order — the ledger seam. Receives
+   * the assembled prompt so a `full`-mode ledger can store it, as Python's
+   * `LLMResponse.prompt` does.
+   */
+  onLlmCall?: (role: string, response: LlmResponse, conversationId: string, prompt: string) => void;
   now?: () => string;
   userName?: string;
 }
@@ -312,7 +316,8 @@ export async function maybeGenerateTitle(
   try {
     const suggestion = await generateConversationTitle(deps.llm, messages, {
       userName: deps.userName ?? "User",
-      onLlmCall: (response) => deps.onLlmCall?.("conversation_title", response, conversation.id),
+      onLlmCall: (response, prompt) =>
+        deps.onLlmCall?.("conversation_title", response, conversation.id, prompt),
     });
     if (!suggestion) return false;
     const clean = cleanTitle(suggestion);
@@ -375,8 +380,8 @@ function buildSuggesters(
   deps: CloseTailDeps,
 ) {
   const userName = deps.userName ?? "User";
-  const record = (role: string) => (response: LlmResponse) =>
-    deps.onLlmCall?.(role, response, conversation.id);
+  const record = (role: string) => (response: LlmResponse, prompt: string) =>
+    deps.onLlmCall?.(role, response, conversation.id, prompt);
 
   return {
     async title(): Promise<string | null> {

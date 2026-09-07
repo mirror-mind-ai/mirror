@@ -51,7 +51,8 @@ const SUMMARY_REMINDER =
 
 export interface ConversationMetadataOptions {
   userName?: string;
-  onLlmCall?: (response: LlmResponse) => void;
+  /** Invoked once per successful call with the response and the assembled prompt. */
+  onLlmCall?: (response: LlmResponse, prompt: string) => void;
 }
 
 /** Assemble the exact title prompt Python sends. */
@@ -125,7 +126,7 @@ export async function generateConversationTitle(
   } catch {
     return "";
   }
-  options.onLlmCall?.(response);
+  options.onLlmCall?.(response, prompt);
   return cleanTitleSuggestion(response.content);
 }
 
@@ -147,7 +148,7 @@ export async function generateConversationTags(
   } catch {
     return [];
   }
-  options.onLlmCall?.(response);
+  options.onLlmCall?.(response, prompt);
 
   const data = parseJsonResponse(response.content);
   if (!Array.isArray(data)) return [];
@@ -200,6 +201,6 @@ export async function generateConversationSummary(
   } catch {
     return "";
   }
-  options.onLlmCall?.(response);
+  options.onLlmCall?.(response, prompt);
   return response.content.trim();
 }

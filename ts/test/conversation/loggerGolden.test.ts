@@ -18,6 +18,7 @@ import {
   switchConversation,
 } from "#conversation/logger.ts";
 import { runConversationLoggerCommand } from "#conversation/loggerCli.ts";
+import { createLoggerRuntime } from "#conversation/loggerRuntime.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
 import { upsertRuntimeSession } from "#mirror/runtimeSession.ts";
@@ -184,13 +185,14 @@ test("TS conversation logger reproduces the Python golden across every scenario"
   db.close();
 });
 
-test("TS CLI reproduces the Python stdout/stderr contract for handled subcommands", () => {
+test("TS CLI reproduces the Python stdout/stderr contract for handled subcommands", async () => {
   const golden = JSON.parse(readFileSync(GOLDEN_PATH, "utf-8")) as Golden;
   const db = fixture();
   const home = mkdtempSync("/tmp/logger-golden-cli-");
+  const runtime = createLoggerRuntime({ db, mirrorHome: home, homeDir: home, env: {}, deps });
 
   for (const expected of golden.cli) {
-    const result = runConversationLoggerCommand(db, expected.argv, { mirrorHome: home }, deps);
+    const result = await runConversationLoggerCommand(db, expected.argv, runtime);
     assert.equal(
       result.handled,
       true,

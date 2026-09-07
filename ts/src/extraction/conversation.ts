@@ -1,5 +1,5 @@
 import { resolveExtractionModel } from "#providers/config.ts";
-import type { LlmProvider } from "#providers/llm.ts";
+import type { LlmProvider, LlmResponse } from "#providers/llm.ts";
 import {
   fenceTranscript,
   MAX_MEMORIES_PER_CONVERSATION,
@@ -92,18 +92,32 @@ export interface ExtractMemoriesOutcome {
  * ever calling this, so the path is unreachable from the real orchestration
  * call site.
  */
+/**
+ * The ledger seam Python's `on_llm_call` parameter provides: invoked once per
+ * successful model call with the response and the assembled prompt, before
+ * the response is parsed. Never invoked when the call throws.
+ */
+export type OnLlmCall = (response: LlmResponse, prompt: string) => void;
+
 export async function extractMemoriesWithStatus(
   provider: LlmProvider,
   messages: readonly ExtractionMessage[],
-  options: { persona?: string | null; journey?: string | null; userName?: string } = {},
+  options: {
+    persona?: string | null;
+    journey?: string | null;
+    userName?: string;
+    onLlmCall?: OnLlmCall;
+  } = {},
 ): Promise<ExtractMemoriesOutcome> {
   if (messages.length === 0) return { memories: [], status: { status: "no_signal" } };
+  const prompt = buildExtractionPrompt(messages, options.userName ?? "User");
   const response = await provider.complete({
     role: "extraction",
-    prompt: buildExtractionPrompt(messages, options.userName ?? "User"),
+    prompt,
     model: resolveExtractionModel(),
     temperature: 0.3,
   });
+  options.onLlmCall?.(response, prompt);
   const data = parseJsonResponse(response.content);
   if (!Array.isArray(data)) {
     return { memories: [], status: { status: "parse_failed" } };
@@ -131,15 +145,17 @@ export async function extractMemories(
 export async function extractTasks(
   provider: LlmProvider,
   messages: readonly ExtractionMessage[],
-  options: { journey?: string | null; userName?: string } = {},
+  options: { journey?: string | null; userName?: string; onLlmCall?: OnLlmCall } = {},
 ): Promise<ExtractedTask[]> {
   if (messages.length === 0) return [];
+  const prompt = buildTaskExtractionPrompt(messages, options.userName ?? "User");
   const response = await provider.complete({
     role: "task_extraction",
-    prompt: buildTaskExtractionPrompt(messages, options.userName ?? "User"),
+    prompt,
     model: resolveExtractionModel(),
     temperature: 0.3,
   });
+  options.onLlmCall?.(response, prompt);
   const data = parseJsonResponse(response.content);
   if (!Array.isArray(data)) return [];
   const tasks: ExtractedTask[] = [];
@@ -156,16 +172,19 @@ export async function curateAgainstExisting(
   provider: LlmProvider,
   candidates: readonly ExtractedMemory[],
   existing: readonly ExistingMemoryForCuration[],
+  options: { onLlmCall?: OnLlmCall } = {},
 ): Promise<ExtractedMemory[]> {
   if (candidates.length === 0) return [];
   if (existing.length === 0) return [...candidates];
   try {
+    const prompt = buildCurationPrompt(candidates, existing);
     const response = await provider.complete({
       role: "curation",
-      prompt: buildCurationPrompt(candidates, existing),
+      prompt,
       model: resolveExtractionModel(),
       temperature: 0.2,
     });
+    options.onLlmCall?.(response, prompt);
     const data = parseJsonResponse(response.content);
     if (!Array.isArray(data)) return [...candidates];
     const curated: ExtractedMemory[] = [];

@@ -46,6 +46,8 @@ export interface MaintenanceDeps {
    * environment itself; the front door owns that resolution.
    */
   backfillPiSessions: (db: WritableDatabase) => Promise<number> | number;
+  /** Python's `MEMORY_MAINTENANCE_MAX_EXTRACTIONS` (AI-05); defaults to the released budget. */
+  extractionLimit?: number;
   /** Monotonic seconds, injected so report timings are pinnable. */
   monotonic?: () => number;
   now?: () => string;
@@ -209,7 +211,7 @@ export async function sessionMaintenance(
       retitlePendingConversations(db, { retitleConversation: deps.retitleConversation }),
     ),
     await timedStep("Extracted pending conversations", monotonic, () =>
-      extractPending(db, { runExtraction: deps.runExtraction }),
+      extractPending(db, { runExtraction: deps.runExtraction, limit: deps.extractionLimit }),
     ),
   ];
 

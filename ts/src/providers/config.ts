@@ -97,3 +97,44 @@ function rejectArgvSecrets(argv: readonly string[]): void {
     }
   }
 }
+
+// Extraction-pipeline switches (CV22.DS7.US10 slice F). Python reads each once
+// at import; the front door resolves them per invocation from the same names
+// so a session-end under TypeScript makes the same calls Python would.
+
+/** Python `SUMMARIZE_ENABLED = os.getenv("MEMORY_SUMMARIZE", "") == "1"`. */
+export function resolveSummarizeEnabled(options: ModelPinOptions = {}): boolean {
+  const env = options.env ?? process.env;
+  return env.MEMORY_SUMMARIZE === "1";
+}
+
+/** Python `TWO_PASS_ENABLED = os.getenv("MEMORY_TWO_PASS", "") == "1"`. */
+export function resolveTwoPassEnabled(options: ModelPinOptions = {}): boolean {
+  const env = options.env ?? process.env;
+  return env.MEMORY_TWO_PASS === "1";
+}
+
+/** Python `int(os.getenv("MEMORY_MAINTENANCE_MAX_EXTRACTIONS", "10"))` (AI-05). */
+export function resolveMaintenanceMaxExtractions(options: ModelPinOptions = {}): number {
+  const env = options.env ?? process.env;
+  return parsePythonInt(env.MEMORY_MAINTENANCE_MAX_EXTRACTIONS, 10);
+}
+
+/** Python `int(os.getenv("MEMORY_EXTRACTION_MAX_ATTEMPTS", "3"))` (CV9.E2.S7). */
+export function resolveExtractionMaxAttempts(options: ModelPinOptions = {}): number {
+  const env = options.env ?? process.env;
+  return parsePythonInt(env.MEMORY_EXTRACTION_MAX_ATTEMPTS, 3);
+}
+
+/**
+ * Python `int(os.getenv(name, default))`: absence yields the default; a
+ * present value that is not an integer makes Python's import fail, so the
+ * front door fails the same way rather than silently substituting.
+ */
+function parsePythonInt(raw: string | undefined, fallback: number): number {
+  if (raw === undefined) return fallback;
+  if (!/^\s*[+-]?\d+\s*$/.test(raw)) {
+    throw new Error(`invalid literal for int() with base 10: '${raw}'`);
+  }
+  return Number.parseInt(raw, 10);
+}

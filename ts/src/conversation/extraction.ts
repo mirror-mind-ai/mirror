@@ -12,6 +12,7 @@ import {
   extractTasks,
   formatTranscript,
   naiveSummary,
+  type OnLlmCall,
 } from "#extraction/conversation.ts";
 import { createMemoryRow } from "#memory/memoryWrite.ts";
 import { logLlmCall } from "#observability/llmCalls.ts";
@@ -33,6 +34,14 @@ export interface ConversationExtractionOptions {
   summarize?: boolean;
   twoPass?: boolean;
   curationExisting?: readonly ExistingMemoryForCuration[];
+  /**
+   * Model-call ledger (CV9.E2.S13/S14). Python's `_make_logger(role,
+   * conversation_id)` writes one `llm_calls` row per successful call in
+   * `extraction`, `curation`, `task_extraction`, and `summary`; the embedding
+   * rows were already logged. Off by default so the DS5 unit surface stays
+   * ledger-free; the front door turns it on.
+   */
+  ledger?: boolean;
 }
 
 export interface ConversationExtractionResult {
@@ -62,6 +71,7 @@ export async function runConversationExtraction(
   const now = options.now ?? nowIso;
   const id = options.id ?? newId;
   const userName = resolveUserName(db);
+  const ledger = options.ledger ? llmLedger(db, conversationId, { now, id }) : undefined;
 
   // A failure anywhere below propagates unmodified. Python records it -- the
   // `llm_failed` status, the attempt counter, and quarantine at the max --
@@ -72,6 +82,7 @@ export async function runConversationExtraction(
     persona: conv.persona,
     journey: conv.journey,
     userName,
+    onLlmCall: ledger?.("extraction"),
   });
   let extractedMemories: ExtractedMemory[] = outcome.memories;
   const extractionStatus: ExtractionStatus = outcome.status;
@@ -81,6 +92,7 @@ export async function runConversationExtraction(
       options.llm,
       extractedMemories,
       options.curationExisting ?? [],
+      { onLlmCall: ledger?.("curation") },
     );
   }
 
@@ -89,12 +101,13 @@ export async function runConversationExtraction(
     userName,
     now,
     id,
+    onLlmCall: ledger?.("task_extraction"),
   });
 
   const summaryText =
     options.summarize === false
       ? naiveSummary(messages)
-      : await replayedSummary(options.llm, messages, userName);
+      : await replayedSummary(options.llm, messages, userName, ledger?.("summary"));
   const finalSummary = summaryText || naiveSummary(messages);
   if (finalSummary) {
     // Logged to the ledger (AI-09/D-003), but NOT provenance-stamped:
@@ -146,12 +159,19 @@ async function persistExtractedTasks(
   db: WritableDatabase,
   llm: LlmProvider,
   messages: readonly ExtractionMessage[],
-  options: { journey: string; userName: string; now: () => string; id: () => string },
+  options: {
+    journey: string;
+    userName: string;
+    now: () => string;
+    id: () => string;
+    onLlmCall?: OnLlmCall;
+  },
 ): Promise<string[]> {
   try {
     const tasks = await extractTasks(llm, messages, {
       journey: options.journey,
       userName: options.userName,
+      onLlmCall: options.onLlmCall,
     });
     const inserted: string[] = [];
     for (const task of tasks) {
@@ -193,14 +213,17 @@ async function replayedSummary(
   llm: LlmProvider,
   messages: readonly ExtractionMessage[],
   userName: string,
+  onLlmCall?: OnLlmCall,
 ): Promise<string> {
   try {
+    const prompt = formatTranscript(messages, userName);
     const response = await llm.complete({
       role: "summary",
-      prompt: formatTranscript(messages, userName),
+      prompt,
       model: resolveExtractionModel(),
       temperature: 0.3,
     });
+    onLlmCall?.(response, prompt);
     return response.content.trim();
   } catch {
     return naiveSummary(messages);
@@ -236,6 +259,35 @@ function resolveUserName(db: WritableDatabase): string {
     /(?:You are talking to|Você está falando com) ([A-Z][a-zA-Záéíóúãõ]+)/,
   );
   return match?.[1] ?? "User";
+}
+
+/**
+ * Python's `_make_logger(role, conversation_id)` -> `build_llm_logger`: one
+ * `llm_calls` row per successful call. Cost is Python's `compute_cost`, which
+ * is unpriced (NULL) for any model outside its price table -- every replay
+ * fixture model, and the estimate itself is a DS8 live-cutover concern.
+ */
+function llmLedger(
+  db: WritableDatabase,
+  conversationId: string,
+  clock: { now: () => string; id: () => string },
+): (role: string) => OnLlmCall {
+  return (role) => (response, prompt) =>
+    logLlmCall(
+      db,
+      {
+        role,
+        model: response.model ?? resolveExtractionModel(),
+        prompt,
+        response: response.content,
+        promptTokens: response.promptTokens ?? null,
+        completionTokens: response.completionTokens ?? null,
+        latencyMs: response.latencyMs ?? null,
+        costUsd: null,
+        conversationId,
+      },
+      clock,
+    );
 }
 
 /** Wires generateEmbeddingSafely's onAttempt hook to the llm_calls ledger
