@@ -31,7 +31,7 @@ the three explicitly owned by later Delivery Stories: `mcp` (DS9), `web`
 | mirror-mode orchestration | `mirror`, `mode` | 2/2 | DS7.US4 | ✅ done |
 | Extension context runtime | (`ext`/`extensions` context path) | — | DS7.TS2 | ✅ done |
 | **Extraction lifecycle (deterministic core)** | **`conversation-logger`** | **partial** | **DS7.US5** | ✅ **done — 7/15 subcommands flipped** |
-| Extraction lifecycle (composites & LLM tail) | `conversation-logger` remainder | 0/8 | DS7.US10 | 🔵 in progress — slices C′/B′ done |
+| Extraction lifecycle (composites & LLM tail) | `conversation-logger` remainder | 8/8 | DS7.US10 | 🔵 in progress — all eight flipped; `--apply` route waits for TS1; Validation pending |
 | Soul Mode | `soul` | 0/1 | DS7.US6 | 🟡 planned |
 | Explorer Mode | `explore` | 0/1 | DS7.US7 | 🟡 planned |
 | Builder/Ariad | `build` | 0/1 | DS7.US8 | 🟡 planned |
@@ -68,16 +68,17 @@ evidence.
 | `switch` | ✅ | ✅ flipped (replay-gated) | — |
 | `session-end-pi` | ✅ | ✅ flipped (replay-gated) | — |
 | `session-end` (hook) | ✅ | ✅ flipped (replay-gated) | — |
-| `session-start` | ✅ | ❌ | US10 slice F, group 3 |
-| `session-maintenance` | ✅ | ❌ | US10 slice F, group 3 |
+| `session-start` | ✅ | ✅ flipped (`--fast` ungated; full run replay-gated) | — |
+| `session-maintenance` | ✅ | ✅ flipped (replay-gated) | — |
 | `diagnose-journeys` | ✅ | ✅ flipped | — |
 | `repair-journeys` | ✅ | ✅ flipped (dry run) | `--apply` stays on Python until DS7.TS1 ports `backup` |
 | `backfill-codex-session` | ✅ | ✅ flipped | — |
 
-**Ported: 15/15. Routed to TS: 13/15** — slice A flipped 2026-09-02; US10
-group 1 (`switch`, `session-end-pi`, `session-end`) and group 2
-(`diagnose-journeys`, `repair-journeys`, `backfill-codex-session`) flipped
-2026-09-07. `repair-journeys --apply` is the one bounded exception: Python
+**Ported: 15/15. Routed to TS: 15/15** — slice A flipped 2026-09-02; US10
+groups 1–3 flipped 2026-09-07 in the approved dependency order. The five
+subcommands that cross the close tail answer from TS only under the replay
+gate (unconfigured installs keep Python until DS8's live cutover), and
+`repair-journeys --apply` is the one bounded exception: Python
 gates the mutating repair behind the dated zip archive `backup` produces,
 and the front door's fixed-name pre-write snapshot is a weaker property, so
 the route waits for DS7.TS1 rather than trade safety for burn-down.
@@ -134,3 +135,4 @@ subcommands now answer from TS by default.
 | 2026-09-07 | **Slice D generator was not hermetic.** The first CI run of the extended determinism gate showed `session-composite.golden.json` regenerating differently on Linux: `close_stale_orphans` runs the real extraction pipeline, whose summary embedding went live through the developer's `OPENROUTER_API_KEY` and quarantined in CI without one. The committed golden was correct but had been produced with network access. Generator now pops the key before import and stubs the embedding; golden byte-identical under 3.10 and 3.12 with no key. |
 | 2026-09-07 | **US10 slice F, group 1 flipped: `switch`, `session-end-pi`, `session-end` route to TS under the replay gate.** Seven-point checklist: goldens green (1209 TS tests); the three new real-DB-copy write probes green (`close_tail`, `session_composites`, `journey_repair_apply` — plus the DS4 `journey` probe, found broken since DS6.US2 and repaired); the hook-inclusive lifecycle smoke green through the real front door (`ts/parity/conversation_lifecycle_smoke.ts`, 58 checks); read-side and write-side harnesses green over the already-flipped families; the front-door log carries no payloads and the ledger withholds bodies; `MIRROR_TS_CONVERSATION_LOGGER=0` exercised. `conversation-logger` 7/15 → 10/15. Every write probe and the smoke now run in the CI parity job. |
 | 2026-09-07 | **US10 slice F, group 2 flipped: `diagnose-journeys`, `repair-journeys` (dry run), `backfill-codex-session` route to TS.** Deterministic, so no gate beyond the family switch. Checklist: journey-repair and backfill goldens green; `journey_repair_apply` probe green on the demo copy (dry run and `--apply` before/after); lifecycle smoke green with the three routes now on TS and `--apply` verified to stay on Python; redaction and revert exercised. `conversation-logger` 10/15 → 13/15. |
+| 2026-09-07 | **US10 slice F, group 3 flipped: `session-start` and `session-maintenance` route to TS** (`--fast` ungated; the full run and maintenance under the replay gate). Checklist: session-composite golden green including the poison-pill accounting scenario; `session_composites` probe green on the demo copy (two orphans closed, one poisoned and carried over, one retitle, one extraction, fifteen ledger rows in order); lifecycle smoke green with every route now on TS and the maintenance re-run adding zero ledger rows; redaction and revert exercised. `conversation-logger` 13/15 → 15/15. The family's deterministic Python subcommands are at zero. |

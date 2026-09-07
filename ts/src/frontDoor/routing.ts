@@ -58,8 +58,15 @@ const TS_CONVERSATION_LOGGER_SUBCOMMANDS = new Set([
 // to TS only under the replay transport; an unconfigured install keeps the
 // Python fallback, which is the live-cutover boundary DS8 owns. Flipped in the
 // plan's dependency order: `switch`, `session-end-pi`, `session-end` first
-// (they need slice C' only).
-const TS_CONVERSATION_LOGGER_LLM_SUBCOMMANDS = new Set(["switch", "session-end-pi", "session-end"]);
+// (they need slice C' only), then `session-start` and `session-maintenance`
+// (they compose the close tail with slices D and E).
+const TS_CONVERSATION_LOGGER_LLM_SUBCOMMANDS = new Set([
+  "switch",
+  "session-end-pi",
+  "session-end",
+  "session-start",
+  "session-maintenance",
+]);
 
 /** Python's `main()`: strip `--mirror-home X` and `--session-id X`, then `args[0]`. */
 function conversationLoggerSubcommand(argv: readonly string[]): string | undefined {
@@ -430,6 +437,14 @@ export function routeMemoryCommand(
         command,
         engine: "ts",
         reason: `DS7.US5 conversation-logger ${sub} ported to TS`,
+      };
+    }
+    if (sub === "session-start" && argv.includes("--fast")) {
+      // Unmute and reorient only: no close tail, so no gate.
+      return {
+        command,
+        engine: "ts",
+        reason: "DS7.US10 conversation-logger session-start --fast ported to TS",
       };
     }
     if (sub && TS_CONVERSATION_LOGGER_LLM_SUBCOMMANDS.has(sub)) {

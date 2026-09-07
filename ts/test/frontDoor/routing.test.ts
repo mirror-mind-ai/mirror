@@ -387,8 +387,14 @@ const CONVERSATION_REPLAY_ENV = {
   MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY: "/tmp/embedding.json",
 };
 
-test("switch, session-end-pi, and session-end route to TS only under the replay transport", () => {
-  for (const sub of ["switch", "session-end-pi", "session-end"]) {
+test("the LLM-tail subcommands route to TS only under the replay transport", () => {
+  for (const sub of [
+    "switch",
+    "session-end-pi",
+    "session-end",
+    "session-start",
+    "session-maintenance",
+  ]) {
     const ts = routeMemoryCommand(["conversation-logger", sub], CONVERSATION_REPLAY_ENV);
     assert.equal(ts.engine, "ts", sub);
     assert.match(ts.reason, /DS7\.US10 .* replay-safe config/);
@@ -413,9 +419,31 @@ test("switch, session-end-pi, and session-end route to TS only under the replay 
 
 test("the family switch reverts the flipped LLM-tail subcommands too", () => {
   const env = { ...CONVERSATION_REPLAY_ENV, MIRROR_TS_CONVERSATION_LOGGER: "0" };
-  for (const sub of ["switch", "session-end-pi", "session-end"]) {
+  for (const sub of [
+    "switch",
+    "session-end-pi",
+    "session-end",
+    "session-start",
+    "session-maintenance",
+  ]) {
     assert.equal(routeMemoryCommand(["conversation-logger", sub], env).engine, "python", sub);
   }
+  assert.equal(
+    routeMemoryCommand(["conversation-logger", "session-start", "--fast"], env).engine,
+    "python",
+  );
+});
+
+test("session-start --fast routes to TS without the gate; full session-start needs it", () => {
+  assert.equal(
+    routeMemoryCommand(["conversation-logger", "session-start", "--fast"], {}).engine,
+    "ts",
+  );
+  assert.equal(routeMemoryCommand(["conversation-logger", "session-start"], {}).engine, "python");
+  assert.equal(
+    routeMemoryCommand(["conversation-logger", "session-start"], CONVERSATION_REPLAY_ENV).engine,
+    "ts",
+  );
 });
 
 test("the subcommand is found after --mirror-home and --session-id, as Python's main() strips them", () => {
@@ -462,11 +490,12 @@ test("repair-journeys --apply stays on Python until the backup port lands", () =
   }
 });
 
-test("the unflipped conversation-logger subcommands stay on Python", () => {
-  for (const sub of ["session-start", "session-maintenance"]) {
-    const decision = routeMemoryCommand(["conversation-logger", sub], CONVERSATION_REPLAY_ENV);
-    assert.equal(decision.engine, "python", `${sub} has not flipped yet`);
-  }
+test("an unknown conversation-logger subcommand stays on Python", () => {
+  const decision = routeMemoryCommand(
+    ["conversation-logger", "extract-pending"],
+    CONVERSATION_REPLAY_ENV,
+  );
+  assert.equal(decision.engine, "python");
 });
 
 // --- conversations append must not inherit DS7.US1's listing route ---

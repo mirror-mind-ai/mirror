@@ -164,7 +164,7 @@ const hook = (payload: Record<string, string>) => JSON.stringify(payload);
 // --- the lifecycle --------------------------------------------------------------
 
 // 1. Session start (fast): unmute, defer maintenance.
-const start = step("session-start --fast", ["conversation-logger", "session-start", "--fast"], "python");
+const start = step("session-start --fast", ["conversation-logger", "session-start", "--fast"], "ts");
 check(
   start.stdout.trim() === "Conversation logging ACTIVE. Maintenance deferred.",
   "session-start --fast prints the released banner",
@@ -247,9 +247,18 @@ check(
   "session-end deactivated the runtime session",
 );
 
-// 4. Maintenance, twice: the second run is idempotent and makes no model call.
+// 4. Full session start, then maintenance twice: the second run is idempotent
+// and makes no model call.
+const fullStart = step("session-start (full)", ["conversation-logger", "session-start"], "ts");
+check(
+  normalizeMaintenanceReport(fullStart.stdout.trim()).startsWith(
+    "Conversation logging ACTIVE.\nConversation maintenance complete.\nClosed stale conversations: 0 (<elapsed>s)",
+  ),
+  "full session-start prints the banner and the maintenance report",
+  fullStart.stdout,
+);
 const ledgerCount = () => Number(query("SELECT COUNT(*) AS c FROM llm_calls")[0]?.c ?? -1);
-const maintenance = step("session-maintenance", ["conversation-logger", "session-maintenance"], "python");
+const maintenance = step("session-maintenance", ["conversation-logger", "session-maintenance"], "ts");
 check(
   normalizeMaintenanceReport(maintenance.stdout.trim()).startsWith(
     "Conversation maintenance complete.\nClosed stale conversations: 0 (<elapsed>s)\nBackfilled Pi sessions: 0 (<elapsed>s)",
@@ -258,7 +267,7 @@ check(
   maintenance.stdout,
 );
 const ledgerAfterFirst = ledgerCount();
-step("session-maintenance (re-run)", ["conversation-logger", "session-maintenance"], "python");
+step("session-maintenance (re-run)", ["conversation-logger", "session-maintenance"], "ts");
 check(ledgerCount() === ledgerAfterFirst, "the maintenance re-run adds zero ledger rows");
 
 // 5. The session-less route: a transcript backfills an assistant-less conversation.
