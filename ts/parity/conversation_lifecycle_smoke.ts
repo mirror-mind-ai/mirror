@@ -17,7 +17,15 @@
 // Run from the repo root:  node ts/parity/conversation_lifecycle_smoke.ts
 
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { normalizeMaintenanceReport } from "../src/parity/maintenanceReport.ts";
@@ -147,6 +155,14 @@ function step(
     `front-door log says '${result.route}'`,
   );
   return result;
+}
+
+function readdirSyncSafe(dir: string): string[] {
+  try {
+    return readdirSync(dir);
+  } catch {
+    return [];
+  }
 }
 
 function query<T = Record<string, unknown>>(sql: string, ...params: (string | number)[]): T[] {
@@ -359,23 +375,143 @@ check(
   repair.stdout,
 );
 
-// The mutating repair keeps its Python route until the backup port lands.
-const applyRepair = step(
-  "repair-journeys --apply",
+// The mutating repair follows the backup gate (CV22.DS7.TS1): TS when the
+// dated zip backup is available from TS, Python otherwise. Until the flip the
+// gate defaults off, so the TS route is exercised with it turned on explicitly.
+const applyRepairPython = step(
+  "repair-journeys --apply (backup gate off)",
   ["conversation-logger", "repair-journeys", "--apply"],
   "python",
+  { env: { MIRROR_TS_BACKUP: "0" } },
+);
+check(
+  applyRepairPython.stdout.includes("Repaired: "),
+  "repair-journeys --apply reports through Python when the backup gate is off",
+  applyRepairPython.stdout,
+);
+const applyRepair = step(
+  "repair-journeys --apply (backup gate on)",
+  ["conversation-logger", "repair-journeys", "--apply"],
+  "ts",
+  { env: { MIRROR_TS_BACKUP: "1" } },
 );
 check(
   applyRepair.stdout.includes("Repaired: "),
-  "repair-journeys --apply reports through Python",
+  "repair-journeys --apply reports through TS under the backup gate",
   applyRepair.stdout,
+);
+
+// --- DB safety tools (CV22.DS7.TS1) -------------------------------------------
+
+// 10. backup: both real CLIs archive the same file into separate directories;
+// Python's zipfile must read the TS archive and see the same restore image.
+const backupTs = step("backup (TS)", ["backup", "--backup-dir", join(home, "backups-ts")], "ts", {
+  env: { MIRROR_TS_BACKUP: "1" },
+});
+const backupPy = step("backup (Python)", ["backup", "--backup-dir", join(home, "backups-py")], "python", {
+  env: { MIRROR_TS_BACKUP: "0" },
+});
+const normalizeBackupStdout = (text: string) =>
+  text
+    .replace(/memory_\d{8}_\d{6}\.zip/g, "memory_<stamp>.zip")
+    .replace(/\(\d+ KB\)/g, "(<KB> KB)")
+    .replace(/backups-(ts|py)/g, "backups-<engine>");
+check(
+  normalizeBackupStdout(backupTs.stdout) === normalizeBackupStdout(backupPy.stdout),
+  "backup prints the same lines from both engines (stamp and KB normalized)",
+  `${backupTs.stdout}---\n${backupPy.stdout}`,
+);
+const archiveCheck = spawnSync(
+  "uv",
+  [
+    "run",
+    "python",
+    "-c",
+    [
+      "import glob, json, sys, zipfile",
+      "def members(d):",
+      "    paths = sorted(glob.glob(d + '/memory_*.zip'))",
+      "    assert len(paths) == 1, paths",
+      "    with zipfile.ZipFile(paths[0]) as zf:",
+      "        assert zf.testzip() is None, 'testzip failed: ' + paths[0]",
+      "        return [(i.filename, i.file_size, i.CRC) for i in zf.infolist()]",
+      "ts, py = members(sys.argv[1]), members(sys.argv[2])",
+      "print(json.dumps({'ts': ts, 'py': py, 'same': ts == py}))",
+    ].join("\n"),
+    join(home, "backups-ts"),
+    join(home, "backups-py"),
+  ],
+  { encoding: "utf8", cwd: resolve(TS_ROOT, ".."), env: baseEnv },
+);
+const archiveReport = archiveCheck.status === 0 ? JSON.parse(archiveCheck.stdout.trim()) : null;
+check(
+  archiveReport !== null,
+  "Python's zipfile verifies both archives (testzip)",
+  archiveCheck.stderr,
+);
+check(
+  archiveReport?.same === true && archiveReport?.ts?.[0]?.[0] === "memory.db",
+  "the TS archive holds the same restore image as the Python one (member names, sizes, CRC-32)",
+  archiveCheck.stdout,
+);
+check(
+  !existsSync(join(home, "backups-ts")) ||
+    !readdirSyncSafe(join(home, "backups-ts")).some((name) => name.endsWith(".partial")),
+  "no .partial staging file survives the TS backup",
+);
+
+// 11. repair-encoding: a seeded mojibake row is reported identically by both
+// engines, repaired by TS (with the dated zip first), and then Python sees
+// nothing left to repair -- Python reading what TypeScript wrote.
+execute(
+  "INSERT INTO messages (id, conversation_id, role, content, created_at) VALUES (?, ?, 'user', ?, ?)",
+  "smoke-mojibake",
+  query<{ id: string }>("SELECT id FROM conversations LIMIT 1")[0]?.id ?? "smoke-conv",
+  "sess\u00c3\u00a3o com acentua\u00c3\u00a7\u00c3\u00a3o quebrada",
+  "2026-09-07T12:00:00.000000Z",
+);
+const dryTs = step("repair-encoding dry run (TS)", ["repair-encoding"], "ts", {
+  env: { MIRROR_TS_REPAIR_ENCODING: "1" },
+});
+const dryPy = step("repair-encoding dry run (Python)", ["repair-encoding"], "python", {
+  env: { MIRROR_TS_REPAIR_ENCODING: "0" },
+});
+check(
+  dryTs.stdout === dryPy.stdout && dryTs.stdout.includes("Repairable mojibake hits: 1"),
+  "repair-encoding dry run is byte-identical across engines and finds the seeded row",
+  `${dryTs.stdout}---\n${dryPy.stdout}`,
+);
+const applyEncoding = step("repair-encoding --apply (TS)", ["repair-encoding", "--apply"], "ts", {
+  env: { MIRROR_TS_REPAIR_ENCODING: "1" },
+});
+check(
+  /Backup created: memory_\d{8}_\d{6}\.zip/.test(applyEncoding.stdout) &&
+    applyEncoding.stdout.trim().endsWith("Applied repairs: 1"),
+  "repair-encoding --apply takes the dated zip first, then applies one repair",
+  applyEncoding.stdout,
+);
+check(
+  query<{ content: string }>("SELECT content FROM messages WHERE id = 'smoke-mojibake'")[0]?.content ===
+    "sess\u00e3o com acentua\u00e7\u00e3o quebrada",
+  "the seeded row is repaired in place",
+);
+const afterPy = step("repair-encoding dry run after apply (Python)", ["repair-encoding"], "python", {
+  env: { MIRROR_TS_REPAIR_ENCODING: "0" },
+});
+check(
+  afterPy.stdout.includes("Repairable mojibake hits: 0"),
+  "Python finds nothing left to repair after the TS apply",
+  afterPy.stdout,
 );
 
 // 8. Redaction: no payload text anywhere the front door writes.
 const frontDoorLog = readFileSync(join(home, "front-door.log"), "utf8");
 check(
-  !frontDoorLog.includes("question one") && !frontDoorLog.includes("answer one"),
-  "the front-door log carries names and routes only, never payloads",
+  !frontDoorLog.includes("question one") &&
+    !frontDoorLog.includes("answer one") &&
+    !frontDoorLog.includes("quebrada") &&
+    !frontDoorLog.includes("backups-ts"),
+  "the front-door log carries names and routes only, never payloads or paths",
 );
 
 // 9. Revertibility: the family switch sends the whole family back to Python.

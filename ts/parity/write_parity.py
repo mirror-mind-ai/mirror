@@ -20,6 +20,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import write_parity_lifecycle as lifecycle
+import write_parity_safety_tools as safety_tools
 
 import memory.models as models_mod
 import memory.storage.identity as identity_mod
@@ -74,6 +75,11 @@ class _FrozenDateTime(datetime):
     @classmethod
     def now(cls, tz=None):
         return FROZEN_NOW if tz else FROZEN_NOW.replace(tzinfo=None)
+
+
+# Operation probes: seed the shared start state, then grade an operation on it.
+SEEDERS = {**lifecycle.SEEDERS, **safety_tools.SEEDERS}
+PROBES = {**lifecycle.PROBES, **safety_tools.PROBES}
 
 
 def _sha256_file(path: Path) -> str:
@@ -454,7 +460,7 @@ def _build_fixture(
     # The lifecycle probes grade an OPERATION over seeded rows, so the seeds go
     # into the seed database itself: both copies start from the same state and
     # neither side re-creates it.
-    seeder = lifecycle.SEEDERS.get(probe)
+    seeder = SEEDERS.get(probe)
     if seeder is not None:
         seed_conn = get_connection(seed_db)
         seed_conn.row_factory = sqlite3.Row
@@ -469,9 +475,9 @@ def _build_fixture(
     conn.row_factory = sqlite3.Row
     store = Store(conn)
     try:
-        if probe in lifecycle.PROBES:
+        if probe in PROBES:
             conn.close()
-            probe_dict = lifecycle.PROBES[probe](python_copy, _FrozenDateTime, FROZEN_NOW_ISO)
+            probe_dict = PROBES[probe](python_copy, _FrozenDateTime, FROZEN_NOW_ISO)
             probe_dict["frozen_now_ms"] = int(FROZEN_NOW.timestamp() * 1000)
         elif probe == "reinforcement":
             probe_dict = _reinforcement_probe(conn, store, targets, context)
@@ -484,7 +490,7 @@ def _build_fixture(
         else:
             raise ValueError(f"unknown probe: {probe}")
     finally:
-        if probe not in lifecycle.PROBES:
+        if probe not in PROBES:
             conn.close()
 
     fixture = {
@@ -513,6 +519,7 @@ def main(argv: list[str] | None = None) -> int:
             "close_tail",
             "session_composites",
             "journey_repair_apply",
+            "repair_encoding",
         ),
     )
     parser.add_argument("--targets", default=3, type=int)

@@ -158,6 +158,38 @@ subcommands now answer from TS by default.
 
 ---
 
+## DB safety tools — per-command detail (DS7.TS1)
+
+`backup` and `repair-encoding` are ported and wired through the front door
+behind two independent gates, `MIRROR_TS_BACKUP` and
+`MIRROR_TS_REPAIR_ENCODING`, which default **off** until the flip. The backup
+gate also governs `conversation-logger repair-journeys --apply`, whose only TS
+dependency is the dated zip: reverting the backup reverts the repair with it.
+
+| Command | TS ported | Routed to TS | Blocker |
+|---------|:---------:|:------------:|---------|
+| `backup` | ✅ | ⏳ gate off (`MIRROR_TS_BACKUP=1` to opt in) | flip pending |
+| `repair-encoding` | ✅ | ⏳ gate off (`MIRROR_TS_REPAIR_ENCODING=1` to opt in) | flip pending |
+| `conversation-logger repair-journeys --apply` | ✅ (US10) | ⏳ follows the backup gate | flip pending |
+
+### Flip checklist (pre-flip state)
+
+| # | Check | Status |
+|---|-------|--------|
+| 1 | Goldens (`backup`, `repair-encoding`; determinism gate; 3.10 and 3.12) | ✅ |
+| 2 | Real-DB-copy probe | ✅ `write_parity.py --probe repair_encoding`: 7 hits across five tables, one transaction, clean row untouched; `journey_repair_apply` still green |
+| 3 | E2E smoke through the real front door | ✅ `conversation_lifecycle_smoke.ts` 87 checks: both engines' `backup` on the same file, Python's `zipfile` verifies both archives and reads the same restore image (names, sizes, CRC-32) from the TS one; `repair-encoding` dry run byte-identical across engines, TS apply, Python sees nothing left; `--apply` route on TS under the gate |
+| 4 | Regression pass over flipped families | ✅ TS suite 1241 green; write probes green |
+| 5 | Redaction check | ✅ `front-door.log` carries command and engine only — no path, no preview line, no payload |
+| 6 | Revertibility exercised | ✅ `MIRROR_TS_BACKUP=0` and `MIRROR_TS_REPAIR_ENCODING=0` reach Python with identical output; the family switch still wins for `--apply` |
+| 7 | Burn-down ledger updated | ✅ this entry |
+
+**Not yet done, on purpose:** the routes still default to Python. The flip
+(plateau 5) turns the defaults on, moves the Pi extension's session-shutdown
+`backup --silent` call into the front door, and switches the `mm-backup` skill.
+
+---
+
 ## History
 
 | Date | Change |
@@ -179,3 +211,4 @@ subcommands now answer from TS by default.
 | 2026-09-07 | **TS1 inventory reconciled** against `src/memory/__main__.py` dispatch and `routing.ts`. The DS7 index carried two stale lists (`conversation-logger` mute/switch — flipped in US5; `transcript-export` and `migration-rehearsal` — not top-level commands) and omitted `runtime` and `journey-projection`, which this ledger already counted. Index prose, candidate table, ledger, and the TS1 package now agree on the eight commands above plus the ‡ branch residuals. `runtime` flagged for an explicit port-or-DS10 decision (§); `memory-rehearse-migration` recorded as an out-of-denominator Python entry point needing an owner. US10 row status corrected to done. |
 | 2026-09-07 | **TS1 decisions recorded; denominator 32 → 30.** `runtime` splits by mutation: reads (`status|version|diagnose|latest|pending|release-notes`) port in TS1 slice 2 with `welcome`; the git-based update/release half is DS10's to redesign under npm, not ported. `migrate-legacy` retires unported in DS10 with a documented cutoff; `memory-rehearse-migration` retires unported in DS10, closing its 2026-04-17 open discussion. TS1 is 0/6 and sliced (1 `backup`+`repair-encoding`, 2 `welcome`+`runtime` reads, 3 extension catalog+`journey-projection`); slices 1–2 pull before US6. Nothing routed or deleted today. |
 | 2026-09-07 | **Ops tail split into three technical stories** so each slice is its own Ariad pull under the one-active-item rule: TS1 (`backup`, `repair-encoding`), TS3 (`welcome`, `runtime` reads), TS4 (extension catalog, `journey-projection`, US1-deferred branches). DS7 story denominator 12 → 14; command denominator unchanged at 30. TS1 pulled. |
+| 2026-09-07 | **TS1 plateaus 1–4 complete; nothing routed by default.** `repair-encoding` (text repair, scan, apply) and `backup` (dated zip via a ~120-line deterministic ZIP writer, staging + rename, retention) ported and graded by Python-generated goldens that pin the Unicode, whitespace, rounding, and retention-boundary divergence classes; both wired through the front door behind `MIRROR_TS_BACKUP` / `MIRROR_TS_REPAIR_ENCODING` (default off); `repair-journeys --apply` gets the zip through the logger runtime and prints the backup's lines before the findings, as Python does. Evidence: `repair_encoding` write probe on the demo copy, the lifecycle smoke extended to 87 checks with Python's `zipfile` reading the TS archive, both oracles in the drift tripwire, generators in the determinism gate. Found while planning and recorded in the TS1 plan: the Pi extension and Gemini hooks call Python directly and never enter the front door — flipped hook routes are reached by the smoke and by skills, not by live Pi sessions (RS009 CR at Debt Review). |

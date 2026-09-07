@@ -179,13 +179,15 @@ jobs:
         env:
           MEMORY_ENV: test
 
-      # Every write probe on the demo copy: the DS4/US5 deterministic writes and
-      # the US10 extraction lifecycle (both cores answered by the same stub).
+      # Every write probe on the demo copy: the DS4/US5 deterministic writes,
+      # the US10 extraction lifecycle (both cores answered by the same stub),
+      # and the TS1 mojibake repair over seeded rows.
       # Copy-only and redacted by design; no live database is ever involved.
       - name: Write parity on the demo copy (redacted, must pass)
         run: |
           for probe in reinforcement journey identity conversation_logger \
-                       close_tail session_composites journey_repair_apply; do
+                       close_tail session_composites journey_repair_apply \
+                       repair_encoding; do
             uv run python ts/parity/write_parity.py \
               --source-db tmp/parity/demo-memory.db --probe "$probe" \
               --work-dir "tmp/parity/write-$probe"
@@ -195,6 +197,8 @@ jobs:
 
       # The hook-inclusive lifecycle smoke through the real front door: hooks
       # over stdin, the close tail under the replay transport, unflipped
-      # subcommands through the real Python fallback (CV22.DS7.US10 slice F).
+      # subcommands through the real Python fallback (CV22.DS7.US10 slice F),
+      # and the TS1 DB safety tools cross-checked against Python on the same
+      # file (backup archives read by Python's zipfile; repair-encoding).
       - name: Conversation-logger lifecycle smoke (replay transport, must pass)
         run: node --no-warnings ts/parity/conversation_lifecycle_smoke.ts

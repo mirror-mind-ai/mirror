@@ -26,6 +26,7 @@ import {
   type SessionCompositesProbeParams,
   sessionCompositesProbe,
 } from "./lifecycleProbes.ts";
+import { type RepairEncodingProbeParams, repairEncodingProbe } from "./safetyToolsProbes.ts";
 import { evaluateWriteProbe, type MutatedRow, type WriteProbeParityResult } from "./writeParity.ts";
 import { applyWriteProbe, type WriteProbe } from "./writeProbe.ts";
 
@@ -93,6 +94,11 @@ export type WriteProbeFixture =
   | (WriteProbeBase & {
       probe_type: "journey_repair_apply";
       journey_repair_apply: JourneyRepairApplyProbeParams;
+    })
+  // CV22.DS7.TS1: the mojibake repair over a seeded real-DB copy.
+  | (WriteProbeBase & {
+      probe_type: "repair_encoding";
+      repair_encoding: RepairEncodingProbeParams;
     });
 
 /**
@@ -330,6 +336,8 @@ function buildWriteProbe(fixture: WriteProbeFixture): WriteProbe {
       return sessionCompositesProbe(fixture.label, fixture.now_iso, fixture.session_composites);
     case "journey_repair_apply":
       return journeyRepairApplyProbe(fixture.label, fixture.journey_repair_apply);
+    case "repair_encoding":
+      return repairEncodingProbe(fixture.label, fixture.repair_encoding);
     default:
       return assertNever(fixture);
   }
