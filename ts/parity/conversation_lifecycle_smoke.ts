@@ -17,7 +17,7 @@
 // Run from the repo root:  node ts/parity/conversation_lifecycle_smoke.ts
 
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { normalizeMaintenanceReport } from "../src/parity/maintenanceReport.ts";
@@ -93,7 +93,11 @@ const failures: string[] = [];
 const lines: string[] = [];
 function check(condition: boolean, description: string, detail = ""): void {
   lines.push(`${condition ? "PASS" : "FAIL"}  ${description}`);
-  if (!condition) failures.push(`${description}${detail ? `\n      ${detail}` : ""}`);
+  if (!condition) {
+    failures.push(`${description}${detail ? `\n      ${detail}` : ""}`);
+    // Surface immediately as well: a later step may throw before the report.
+    process.stderr.write(`FAIL  ${description}\n      ${detail.trim()}\n`);
+  }
 }
 
 function lastRoute(): string {
@@ -132,7 +136,11 @@ function step(
   options: { stdin?: string; env?: Record<string, string> } = {},
 ): StepResult {
   const result = run(args, options);
-  check(result.status === 0, `${label}: exit 0`, `exit=${result.status} stderr=${result.stderr}`);
+  check(
+    result.status === 0,
+    `${label}: exit 0`,
+    `exit=${result.status} stdout=${result.stdout.trim()} stderr=${result.stderr.trim()}`,
+  );
   check(
     result.route === expectedRoute,
     `${label}: routed to ${expectedRoute}`,
@@ -142,6 +150,10 @@ function step(
 }
 
 function query<T = Record<string, unknown>>(sql: string, ...params: (string | number)[]): T[] {
+  if (!existsSync(dbPath)) {
+    check(false, `database exists before querying: ${sql.slice(0, 40)}...`, dbPath);
+    return [];
+  }
   const db = new DatabaseSync(dbPath, { readOnly: true });
   try {
     return db.prepare(sql).all(...params) as T[];
@@ -151,6 +163,7 @@ function query<T = Record<string, unknown>>(sql: string, ...params: (string | nu
 }
 
 function execute(sql: string, ...params: (string | number)[]): void {
+  if (!existsSync(dbPath)) return;
   const db = new DatabaseSync(dbPath);
   try {
     db.prepare(sql).run(...params);
