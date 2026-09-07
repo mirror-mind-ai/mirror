@@ -296,7 +296,12 @@ end to end; fixture-level validation alone cannot carry a flip.
 
 ## Debt observations (for this story's Debt Review)
 
-Recorded as found, not acted on — parity-preserving today.
+Recorded as found, not acted on — parity-preserving today. **Debt Review
+2026-09-07: all deferred** (reason and revisit trigger in `review.md`).
+Entries 2 and 6 are captured as **CR057** and **CR056** under RS010 in the
+[Refinement Workbench](../../../../refinement/index.md), with the local
+web-server test as **CR058**; 1, 3, and 5 are DS8 planning inputs; 7 waits
+on DS7.TS1; 4 was fixed in-story.
 
 1. **`close_stale_orphans` is an unbounded spender** (2026-09-03 panel,
    ai-engineer). AI-05 bounds `extract_pending`, but each stale orphan runs

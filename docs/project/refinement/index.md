@@ -24,6 +24,7 @@ executes work.
 | 4 | [RS004](rs004-identity-resolution-fidelity/index.md) | Identity Resolution Fidelity | proposed |
 | 5 | [RS008](rs008-v0319-recursive-journey-parity/index.md) | v0.31.9 Recursive Journey Parity | closed |
 | 6 | [RS009](rs009-cv22-front-door-routing-correctness/index.md) | CV22 Front-Door Routing Correctness | proposed |
+| 7 | [RS010](rs010-cv22-oracle-and-port-hygiene/index.md) | CV22 Oracle And Port Hygiene | proposed |
 
 ## Change Requests
 
@@ -41,6 +42,9 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 9 | [CR013](rs003-revisable-refinement-lifecycle/cr013-amend-story-and-request-text.md) | RS003 | Amend Refinement Story and Change Request text during refinement | captured | — | — |
 | 10 | [CR014](rs004-identity-resolution-fidelity/cr014-resolve-owner-name-from-one-authority.md) | RS004 | Resolve the owner's name from one authority | captured | — | — |
 | 11 | [CR055](rs009-cv22-front-door-routing-correctness/cr055-audit-subcommand-inheritance-in-claimed-families.md) | RS009 | Audit subcommand inheritance across claimed command families | captured | — | — |
+| 12 | [CR056](rs010-cv22-oracle-and-port-hygiene/cr056-measure-title-length-by-code-point.md) | RS010 | Measure title length by code point in titleNeedsImprovement | captured | — | — |
+| 13 | [CR057](rs010-cv22-oracle-and-port-hygiene/cr057-stop-paying-for-the-discarded-summary-in-the-close-tail.md) | RS010 | Stop paying for the discarded summary in the close tail | captured | — | — |
+| 14 | [CR058](rs010-cv22-oracle-and-port-hygiene/cr058-wait-for-completion-in-the-runtime-diagnose-web-test.md) | RS010 | Wait for completion, not a wall-clock budget, in the runtime-diagnose web test | captured | — | — |
 | — | [CR011](rs003-revisable-refinement-lifecycle/cr011-resume-stranded-change-request.md) | RS003 | Resume a stranded Change Request | done | @alissonvale | `main` |
 | — | [CR016](rs001-ariad-runtime-trust/cr016-verify-authored-roadmap-before-ds-done.md) | RS001 | Verify authored roadmap state before Delivery Story Done | done | @alissonvale | `main` |
 | — | [CR015](rs001-ariad-runtime-trust/cr015-preserve-driver-authored-plan-before-approval.md) | RS001 | Preserve Driver-authored Plan before approval | promoted | — | `CV20.DS15` |
