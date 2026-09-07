@@ -88,95 +88,93 @@ which `rerun_over_finalized_conversation` pins.
 
 ## Real-DB-copy write parity (redacted, portable)
 
+The Python CLI has no replay transport — its close tail either goes live
+through a key or fails — so the only Python-vs-TS comparison on the same
+starting state for the LLM-crossing subcommands is in-process, with both
+cores answered by the same stub. That is what these probes are
+(`ts/parity/write_parity_lifecycle.py`); they also run in the CI parity job.
+
 ```bash
 mkdir -p tmp/parity
 MEMORY_ENV=test uv run python ts/parity/generate_demo_memory_db.py --out tmp/parity/demo-memory.db
 
-# Close tail end-state: extraction + close-time finalization (slice C′)
+# Close tail end-state: extraction + close-time finalization + ledger (slice F)
 MEMORY_ENV=test uv run python ts/parity/write_parity.py \
   --source-db tmp/parity/demo-memory.db --probe close_tail
 
-# Session composites end-state (slice D)
+# Session composites end-state + the report with timings normalized (slice F)
 MEMORY_ENV=test uv run python ts/parity/write_parity.py \
   --source-db tmp/parity/demo-memory.db --probe session_composites
 
-# repair-journeys --apply before/after (slice E) — mutating repair on copies
+# repair-journeys dry run then --apply, before/after (slice F)
 MEMORY_ENV=test uv run python ts/parity/write_parity.py \
   --source-db tmp/parity/demo-memory.db --probe journey_repair_apply
 ```
 
 - **Expected observation:** each probe reports equal `python_state_hash` /
-  `ts_state_hash`; the `journey_repair_apply` probe additionally asserts the
-  dry-run findings equal the pre-apply state and the post-apply state matches
-  Python's.
+  `ts_state_hash`. `close_tail` grades 17 rows (conversation, messages,
+  memory with its embedding digest, summary embedding, task, seven ledger
+  rows keyed by insertion order); `session_composites` grades 47 (five
+  conversations, their messages, the extracted memory and task, fifteen
+  ledger rows, the bound session, and `report:session_maintenance`);
+  `journey_repair_apply` grades the dry-run and applied findings, the
+  journey column before and after each, and the rendered stdout.
 - **Pass:** `match: true` per probe, `overall_match: true`.
 - **Fail:** any hash divergence — inspect with `--debug-sensitive-output` only
-  on a disposable copy.
+  on a disposable copy. Mutation-check: change `STUB_COMPLETION_TOKENS` or
+  `EMBEDDING_VALUE` in `ts/src/parity/lifecycleProbes.ts`; `close_tail` must
+  fail.
 
 ## E2E smoke — full lifecycle (required before any slice-F flip)
 
-Disposable home; replay transport; no live provider calls. Hook entries are
-driven through the runtime's env/stdin contract (hot path), per the US5 QA
-amendment.
+Landed as a runnable script, and it is what the flips were proven with. It
+drives every subcommand through the real front door — one process per
+command, hook payloads over stdin — on a disposable home whose replay
+fixtures it writes itself, and grades stdout, the route each command took
+(from the front-door log), the rows left behind, redaction, and the kill
+switch. Subcommands routed to Python run through the real fallback, so the
+Python side reads rows TypeScript wrote.
 
 ```bash
-export SMOKE_HOME=$(mktemp -d)/mirror-smoke && mkdir -p "$SMOKE_HOME"
-ts() { MEMORY_ENV=test NODE_OPTIONS=--no-warnings \
-  node ts/src/frontDoor/cli.ts "$@" --mirror-home "$SMOKE_HOME"; }
-
-# (lands in slice F; exact replay-gate env vars are fixed when C′ wires the gate)
-ts conversation-logger session-start --fast          # -> ACTIVE. Maintenance deferred.
-echo '{"session_id":"smoke-1","prompt":"question one"}' | ts conversation-logger user-prompt
-ts conversation-logger log-assistant smoke-1 "answer one"
-echo '{"session_id":"smoke-1","prompt":"question two"}' | ts conversation-logger user-prompt
-ts conversation-logger log-assistant smoke-1 "answer two"
-echo '{"session_id":"smoke-1"}' | ts conversation-logger session-end   # close tail under replay
-ts conversation-logger session-maintenance           # -> report, timings normalized
-ts conversation-logger session-maintenance           # -> idempotent re-run: zero new LLM calls
-
-sqlite3 "$SMOKE_HOME/memory_test.db" \
-  "SELECT role FROM messages ORDER BY created_at;
-   SELECT title, summary, metadata FROM conversations;
-   SELECT type, title FROM memories ORDER BY created_at;
-   SELECT role FROM llm_calls ORDER BY created_at;"
+node --no-warnings ts/parity/conversation_lifecycle_smoke.ts
 ```
 
-Python comparison run on the same starting state (export `MIRROR_HOME`; hook
-subcommands resolve the module-level home):
+- **Expected observation:** 64 `PASS` lines and `all checks passed`. Among
+  them: the four turns logged in order; after the `session-end` hook the
+  conversation carries the replayed title, tags, and summary, `extracted`
+  metadata with close-time provenance, one memory, one summary embedding,
+  and the ledger sequence `extraction, task_extraction, embedding, embedding,
+  conversation_title, conversation_summary, conversation_tags`; the ledger
+  withholds bodies; the maintenance re-run adds zero ledger rows; the
+  session-less `session-end` backfills an assistant turn without ending a
+  session; `switch` prints the new id and closes the previous conversation;
+  `session-end-pi` is silent; `repair-journeys --apply` routes to Python;
+  the front-door log carries no payload text; `MIRROR_TS_CONVERSATION_LOGGER=0`
+  routes `status` to Python.
+- **Fail:** any `FAIL` line; the script exits 1 and keeps the home for
+  inspection (`home:` is printed first).
+
+The manual sequence the earlier draft of this guide listed is what the
+script runs; the replay transport it needs is:
 
 ```bash
-export PY_HOME=$(mktemp -d)/mirror-py && mkdir -p "$PY_HOME"
-py() { MEMORY_ENV=test MIRROR_HOME="$PY_HOME" MIRROR_USER="$(basename "$PY_HOME")" \
-  uv run python -m memory "$@" --mirror-home "$PY_HOME"; }
-# same command sequence, then the same SELECTs
+MIRROR_TS_EXTERNAL_ROUTES=1
+MIRROR_TS_CONVERSATION_LLM_REPLAY=<path to a kind=llm fixture>
+MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY=<path to a kind=embedding fixture>
 ```
 
-- **Expected observation:** conversations, messages, memories, embeddings, and
-  LLM-call ledger rows identical on both sides in order and count; maintenance
-  report string-identical after timing normalization — the normalizer first
-  **validates** each timing token against the exact grammar ` (N.Ns)` (one
-  digit after the decimal, parentheses, trailing `s`) and only then replaces
-  the value, so grammar drift still fails; close-time metadata
-  (title/tags/summary provenance) byte-identical; the re-run adds zero ledger
-  rows.
-- **Pass:** all compared surfaces identical; extraction ran under replay (no
-  network); finalization present even for the failure-injection variant.
-- **Fail:** any divergence in row states, ordering, ledger roles, report
-  grammar or counts, or a fallback subcommand behaving differently.
-
-### Session-less backfill path (slice E — landed; routes in slice F)
-
-```bash
-echo '{"session_id":"","transcript_path":"'$SMOKE_HOME'/transcript.jsonl"}' \
-  | ts conversation-logger session-end
-# Expected: assistant backfill runs with no session; exit 0; silent.
-```
+Without all three, the five LLM-crossing subcommands (`switch`,
+`session-end-pi`, `session-end`, full `session-start`, `session-maintenance`)
+keep the Python fallback by design.
 
 ## Redaction check (per newly-routed subcommand)
 
+Run by the smoke; by hand, with `$SMOKE_HOME` set to the home it prints:
+
 ```bash
-grep -R "question one" "$SMOKE_HOME"/logs/ && echo "FAIL: payload logged" || echo "PASS: payloads redacted"
+grep -R "question one" "$SMOKE_HOME" --include=front-door.log && echo "FAIL: payload logged" || echo "PASS: payloads redacted"
 grep 'conversation-logger' "$SMOKE_HOME/front-door.log" | tail -5   # names + route only
+sqlite3 "$SMOKE_HOME/memory_test.db" "SELECT COUNT(*) FROM llm_calls WHERE prompt != '' OR response != ''"   # 0
 ```
 
 ## Regression pass (per flip)
@@ -188,11 +186,16 @@ cd ts && node --test "test/frontDoor/**/*.test.ts" && cd ..
 
 ## Revertibility check (per flip)
 
+Two controls, both exercised by the smoke and the routing tests:
+
 ```bash
-MEMORY_ENV=test MIRROR_TS_CONVERSATION_LOGGER=0 MIRROR_HOME="$SMOKE_HOME" \
-  NODE_OPTIONS=--no-warnings \
-  node ts/src/frontDoor/cli.ts conversation-logger session-maintenance --mirror-home "$SMOKE_HOME"
-grep 'conversation-logger' "$SMOKE_HOME/front-door.log" | tail -2   # route column: python
+# The family switch: everything back to Python, no code change.
+MEMORY_ENV=test MIRROR_TS_CONVERSATION_LOGGER=0 NODE_OPTIONS=--no-warnings \
+  node ts/src/frontDoor/cli.ts conversation-logger status --mirror-home "$SMOKE_HOME"
+grep 'conversation-logger' "$SMOKE_HOME/front-door.log" | tail -1   # route column: python
+
+# The replay gate: unsetting either fixture path sends only the five
+# LLM-crossing subcommands back to Python; the deterministic ten stay on TS.
 ```
 
 ## `conversations append` flip (slice B′)

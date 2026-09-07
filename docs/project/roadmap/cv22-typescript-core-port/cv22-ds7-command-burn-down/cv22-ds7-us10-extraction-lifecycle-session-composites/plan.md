@@ -129,7 +129,24 @@ pinned), and the DS5 orchestration `runConversationExtraction`
   every write), journey inference with its semantic path behind the replay
   gate if it touches embeddings, `backfill-pi-sessions`,
   `backfill-codex-session`, and the session-less `session-end` backfill path.
-- **F — Routing flips + E2E.**
+- **F — Routing flips + E2E.** ✅ Done 2026-09-07, in five plateaus:
+  the two seams the flips depended on (Python's `_run_extraction` failure
+  accounting ported to `extractionRun.ts`, and the driver made to await the
+  async orchestration — before this a rejected extraction escaped isolation
+  and counted as a success); the composition root (`loggerRuntime.ts`) and
+  the full fifteen-subcommand dispatch with Python's stdout contract; the
+  three real-DB-copy write probes (`close_tail`, `session_composites`,
+  `journey_repair_apply`, `ts/parity/write_parity_lifecycle.py`) that the
+  test guide named and that did not exist; the hook-inclusive lifecycle
+  smoke through the real front door (`ts/parity/conversation_lifecycle_smoke.ts`);
+  and the eight flips in the approved order, three commits, each with the
+  seven-point checklist. The DS5 pipeline never wrote `llm_calls` rows for
+  its own extraction, curation, task-extraction, and summary calls; it does
+  now, in Python's order, and the probes grade the ledger by insertion
+  order. Bounded exception, recorded in the ledger: `repair-journeys
+  --apply` stays on Python because Python gates it behind the dated zip
+  archive `backup` produces (DS7.TS1 scope) and the front door's fixed-name
+  pre-write snapshot is a weaker property for a mutating repair.
   Flip `switch`, `session-end-pi`, `session-end` (hook), `session-start`,
   `session-maintenance`, `diagnose-journeys`, `repair-journeys`, and
   `backfill-codex-session` — in explicit dependency order (2026-09-03 panel):
@@ -301,6 +318,20 @@ Recorded as found, not acted on — parity-preserving today.
    `close_time` profile regenerates, so closing an already-finalized
    conversation costs three more calls. Relevant to `close_stale_orphans` and
    to any future retry path; recorded as DS8 cost input.
+5. **The extraction ledger is unpriced under TypeScript** (slice F).
+   Python's `build_llm_logger` prices every row through `compute_cost`;
+   TypeScript deliberately never ported the price table (consult logs the
+   fetched generation cost), so the close-tail and extraction rows carry
+   `cost_usd = NULL`. Parity holds under replay because every fixture model
+   is unpriced in Python too, but a live run under DS8 would report spend
+   Python would have priced. Recorded as a DS8 input, not fixed here.
+6. **`titleNeedsImprovement` measures the title in UTF-16 units** (found
+   while fixing `generateTitle` in slice E). Python's `len(title) >= 55`
+   counts code points; a title with three or more astral characters near the
+   boundary decides differently. Sits under the slice-C′ goldens with no such
+   fixture. A CR candidate, not a silent edit.
+7. **Ported, deliberately not routed: `repair-journeys --apply`** — see
+   slice F. Closes when DS7.TS1 ports `backup`; one routing line.
 4. **Two stored-JSON byte divergences, fixed in slice C′ rather than
    deferred.** `JSON.stringify` matches neither Python serialization: it omits
    the `", "`/`": "` separators `json.dumps` always writes, and Mirror uses
@@ -354,6 +385,26 @@ Recorded as found, not acted on — parity-preserving today.
 - active checkpoint: `after_plan`
 - pending confirmation: `navigator_approval`
 - implementation remains blocked until Navigator approval.
+
+## Validation evidence (2026-09-07, for the Navigator's checkpoint)
+
+- **Automated:** 1215 TS tests, 2829 Python tests, oracle-drift clean, seven
+  goldens regeneration-stable on 3.10 and 3.12 in CI (gate extended this
+  story), every write probe and the lifecycle smoke green in the CI parity
+  job on Linux.
+- **Cross-core, same starting copy:** `close_tail` (17 rows: conversation,
+  messages, memory, embedding, task, seven ledger rows in order),
+  `session_composites` (47 rows: two orphans closed, one poisoned and carried
+  over with `attempts=2`, one retitle, one extraction, fifteen ledger rows,
+  the report with timings normalized), `journey_repair_apply` (dry-run and
+  applied findings, before/after journeys, rendered stdout).
+- **Navigator-visible route:** `node ts/parity/conversation_lifecycle_smoke.ts`
+  — 64 checks through the real front door on a disposable home.
+- **Found and fixed on the way (all pinned):** the async driver bug; the
+  missing failure accounting and its key order; the ledger rows the DS5
+  pipeline never wrote; the embedding ledger rows stamped from the wall
+  clock; `generateTitle` by code unit; the slice-D generator going live
+  through a developer key; the DS4 `journey` probe broken since DS6.US2.
 
 ## Persona plan review (2026-09-03)
 
