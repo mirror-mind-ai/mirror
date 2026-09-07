@@ -146,6 +146,39 @@ pinned), and the DS5 orchestration `runConversationExtraction`
    hook get-or-create under the composites is either proven on copies with
    the 8-process contention pattern or recorded as an accepted risk with
    rationale.
+4. **Hook-race disposition (resolves decision 3; Navigator, 2026-09-03, on
+   resume).** Reassessment decomposed "the race" into four interleavings; no
+   8-process harness is built.
+   - **(A) Concurrent live hooks, same session, get-or-create fork** — closed
+     by `BEGIN IMMEDIATE` + 30s busy timeout in both cores at identical
+     transaction granularity (`runtime_session.py:21`, `logger.ts:128`).
+     Accepted risk, mechanism-verified by code comparison; the harness would
+     re-prove SQLite semantics already proven on this seam by DS6.TS3. Named
+     bounded edge: the `is_new` title read sits before the transaction in
+     both cores; worst case is a duplicate provisional-title write with
+     identical input.
+   - **(B) Backfill import family vs live hooks** — `backfill_pi_sessions`
+     and `backfill_codex_session` run an unguarded multi-second
+     check→import→bind against the same `runtime_sessions` key the live
+     hooks write (Pi's live `session_id` is
+     the session file path — `mirror-logger.ts:383`), and the closing upsert
+     can overwrite a live binding with `active=0`/`closed_at`. **Fix Python
+     first, then port the fixed behavior in slice E** — same route as
+     decision 1: each import becomes one `BEGIN IMMEDIATE` transaction with
+     the binding re-checked inside, so import atomicity also removes the
+     crash-window duplicate-import path. The session-less
+     `hook_session_end` route was checked and excluded from this family:
+     `backfill_assistant_messages` writes no `runtime_sessions` key; its
+     check-then-append edge can at worst duplicate assistant messages on
+     concurrent session-ends — accepted at parity.
+   - **(C) `close_stale_orphans` vs live resume** — snapshot-then-act lost
+     update on lifecycle state; impact bounded by the re-close cost. Folded
+     into the existing debt-register entries (unbounded orphan spend,
+     re-close cost) at Debt Review; no separate record.
+   - **(D) Busy-timeout exhaustion under hook exception-swallowing** —
+     `hook_user_prompt` swallows all exceptions by design; a lock lost past
+     30s drops one message silently. Accepted parity behavior, noted here so
+     the swallow posture is a recorded decision rather than an accident.
 
 The `conversations append` flip is confirmed in-scope for US10.
 

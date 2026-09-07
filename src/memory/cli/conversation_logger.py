@@ -642,30 +642,20 @@ def backfill_pi_sessions(
             continue
         if len(messages) < 2:
             continue
-        from memory.models import Message as _Msg
-
-        conv = mem.start_conversation(interface="pi")
-        for m in messages:
-            mem.store.add_message(
-                _Msg(
-                    conversation_id=conv.id,
-                    role=m["role"],
-                    content=m["content"],
-                    created_at=m["created_at"],
-                )
-            )
+        conv = mem.runtime_sessions.import_closed_conversation(
+            session_id,
+            interface="pi",
+            messages=messages,
+            ended_at=messages[-1]["created_at"],
+        )
+        if conv is None:
+            # A concurrent writer (e.g. a live hook) bound this session while
+            # the import waited for the write lock — their binding wins.
+            continue
         first_user = next((m for m in messages if m["role"] == "user"), None)
         if first_user:
             title = first_user["content"].strip().split("\n")[0][:60]
             mem.conversations.set_provisional_title(conv.id, title)
-        mem.store.update_conversation(conv.id, ended_at=messages[-1]["created_at"])
-        mem.store.upsert_runtime_session(
-            session_id,
-            conversation_id=conv.id,
-            interface="pi",
-            active=False,
-            closed_at=messages[-1]["created_at"],
-        )
         count += 1
     return count
 
@@ -712,32 +702,22 @@ def backfill_codex_session(
     if mem.store.get_runtime_session(session_id):
         return 0
 
-    from memory.models import Message as _Msg
-
-    conv = mem.start_conversation(interface=interface)
-    for m in messages:
-        mem.store.add_message(
-            _Msg(
-                conversation_id=conv.id,
-                role=m["role"],
-                content=m["content"],
-                created_at=m["created_at"],
-            )
-        )
+    conv = mem.runtime_sessions.import_closed_conversation(
+        session_id,
+        interface=interface,
+        messages=messages,
+        ended_at=messages[-1]["created_at"],
+    )
+    if conv is None:
+        # A concurrent writer bound this session while the import waited for
+        # the write lock — their binding wins.
+        return 0
 
     first_user = next((m for m in messages if m["role"] == "user"), None)
     if first_user:
         title = _generate_title(first_user["content"])
         mem.store.update_conversation(conv.id, title=title)
 
-    mem.store.update_conversation(conv.id, ended_at=messages[-1]["created_at"])
-    mem.store.upsert_runtime_session(
-        session_id,
-        conversation_id=conv.id,
-        interface=interface,
-        active=False,
-        closed_at=messages[-1]["created_at"],
-    )
     return 1
 
 

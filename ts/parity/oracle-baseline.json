@@ -3,7 +3,7 @@
   "oracles": {
     "src/memory/cli/consolidate_cmd.py": "d3c33ec4f1dc5b71131efc3e6c9e36da3cbc8639",
     "src/memory/cli/consult.py": "88b51b3227b22b6a9126bc8e5b6fa7671f724f99",
-    "src/memory/cli/conversation_logger.py": "4eef9e0a56113efaee9460451187b848f946f040",
+    "src/memory/cli/conversation_logger.py": "5a9d5b6118c98b197020b3d006190a67a79b34b0",
     "src/memory/cli/extensions.py": "f3557b137eb2d1346fc958be1a9096342787579c",
     "src/memory/cli/mode.py": "1cd3129a3aa8076819b70b6e85a50564142296e7",
     "src/memory/cli/shadow_cmd.py": "4eb935f9886c1ca2283dd066aebd6ae3bdf51103",
@@ -33,7 +33,7 @@
     "src/memory/services/journey.py": "2b35fc62bab71c9c5c8d303cb3ce700c5e8bd3b1",
     "src/memory/services/metadata_lifecycle.py": "9e3a60aca53b182ef39e4bb03e41cc887dd1ea42",
     "src/memory/services/operating_mode.py": "a09763c1f2ae09bc41fd7d0ac9bdfe2fa934b662",
-    "src/memory/services/runtime_session.py": "1ba613a5b9f1bd87aee922777c4dab8e79eb807f",
+    "src/memory/services/runtime_session.py": "f418ace986165c5c4c3dff6706103d8e326e9cf0",
     "src/memory/services/tasks.py": "a22ece8fad13641efe40bf228cee9498c485fb27",
     "src/memory/skills/mirror.py": "6534498ca0615009b0cb22864f7d06e57f310ce3",
     "src/memory/storage/consolidations.py": "051935e939c8dfac90afb4ebcd9f5de001f9ebfb",

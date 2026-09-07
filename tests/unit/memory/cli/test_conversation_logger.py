@@ -485,16 +485,24 @@ class TestBackfillPiSessions:
         mocker.patch("memory.cli.conversation_logger._PI_SESSIONS_DIR", tmp_path / "sessions")
         mock_mem = MagicMock()
         mock_mem.store.get_runtime_session.return_value = None
-        mock_mem.start_conversation.return_value = MagicMock(id="new-conv-1")
+        mock_mem.runtime_sessions.import_closed_conversation.return_value = MagicMock(
+            id="new-conv-1"
+        )
         mocker.patch("memory.cli.conversation_logger._memory_client", return_value=mock_mem)
 
         from memory.cli.conversation_logger import backfill_pi_sessions
 
         count = backfill_pi_sessions()
         assert count == 1
-        mock_mem.start_conversation.assert_called_once_with(interface="pi")
+        import_call = mock_mem.runtime_sessions.import_closed_conversation.call_args
+        assert import_call.args[0] == str(session_file)
+        assert import_call.kwargs["interface"] == "pi"
+        assert import_call.kwargs["ended_at"] == "2026-04-17T10:00:01Z"
+        assert [(m["role"], m["content"]) for m in import_call.kwargs["messages"]] == [
+            ("user", "hello"),
+            ("assistant", "hi there"),
+        ]
         mock_mem.conversations.set_provisional_title.assert_called_once_with("new-conv-1", "hello")
-        mock_mem.store.upsert_runtime_session.assert_called_once()
 
     def test_skips_already_imported(self, mocker, tmp_path):
         pi_dir = tmp_path / "sessions" / "--project--"
@@ -536,3 +544,102 @@ class TestBackfillPiSessions:
         from memory.cli.conversation_logger import backfill_pi_sessions
 
         assert backfill_pi_sessions() == 0
+
+
+class TestBackfillImportRaceSafety:
+    """Resolved decision 4B: a binding won by a concurrent live hook during the
+    backfill scan must survive; the import must skip instead of clobbering it."""
+
+    @staticmethod
+    def _write_importable_session(pi_dir):
+        session_file = pi_dir / "race.jsonl"
+        session_file.write_text(
+            json.dumps(
+                {
+                    "type": "message",
+                    "message": {
+                        "role": "user",
+                        "content": "hello",
+                        "timestamp": "2026-04-17T10:00:00Z",
+                    },
+                }
+            )
+            + "\n"
+            + json.dumps(
+                {
+                    "type": "message",
+                    "message": {
+                        "role": "assistant",
+                        "content": [{"type": "text", "text": "hi there"}],
+                        "timestamp": "2026-04-17T10:00:01Z",
+                    },
+                }
+            )
+            + "\n"
+        )
+        return session_file
+
+    def test_backfill_does_not_clobber_binding_won_during_scan(self, mocker, tmp_path):
+        import sqlite3
+        import threading
+        import time
+
+        from memory.client import MemoryClient
+        from memory.models import _now
+
+        db_path = tmp_path / "memory.db"
+        mem = MemoryClient(env="test", db_path=db_path)
+        pi_dir = tmp_path / "sessions"
+        pi_dir.mkdir()
+        session_file = self._write_importable_session(pi_dir)
+        session_id = str(session_file)
+        mocker.patch("memory.cli.conversation_logger._memory_client", return_value=mem)
+
+        now = _now()
+        lock_held = threading.Event()
+
+        def live_hook():
+            conn2 = sqlite3.connect(db_path, timeout=30)
+            try:
+                conn2.execute("BEGIN IMMEDIATE")
+                lock_held.set()
+                # Hold the write lock long enough for the backfill to pass its
+                # pre-check and reach its first write while we still own the DB.
+                time.sleep(0.3)
+                conn2.execute(
+                    """INSERT INTO conversations
+                       (id, title, started_at, ended_at, interface, persona,
+                        journey, summary, tags, metadata)
+                       VALUES (?, NULL, ?, NULL, ?, NULL, NULL, NULL, NULL, NULL)""",
+                    ("conv-live", now, "pi"),
+                )
+                conn2.execute(
+                    """INSERT INTO runtime_sessions
+                       (session_id, conversation_id, interface, mirror_active,
+                        hook_injected, active, started_at, updated_at)
+                       VALUES (?, ?, ?, 0, 0, 1, ?, ?)""",
+                    (session_id, "conv-live", "pi", now, now),
+                )
+                conn2.commit()
+            finally:
+                conn2.close()
+
+        thread = threading.Thread(target=live_hook)
+        thread.start()
+        assert lock_held.wait(timeout=5)
+
+        from memory.cli.conversation_logger import backfill_pi_sessions
+
+        count = backfill_pi_sessions(sessions_dir=pi_dir)
+        thread.join(timeout=10)
+
+        session = mem.store.get_runtime_session(session_id)
+        assert session is not None
+        assert session.conversation_id == "conv-live"
+        assert session.active is True
+        assert session.closed_at is None
+        conv_ids = [
+            row["id"] for row in mem.store.conn.execute("SELECT id FROM conversations").fetchall()
+        ]
+        assert conv_ids == ["conv-live"]
+        assert count == 0
