@@ -39,7 +39,7 @@ documented cutoff, not ported). Working denominator: **30** (32 until the
 | Soul Mode | `soul` | 0/1 | DS7.US6 | 🟡 planned |
 | Explorer Mode | `explore` | 0/1 | DS7.US7 | 🟡 planned |
 | Builder/Ariad | `build` | 0/1 | DS7.US8 | 🟡 planned |
-| Ops/utility tail | `backup`, `repair-encoding`, `extensions`, `ext`, `welcome`, `journey-projection` (+ `runtime` reads§) | 0/6‡ | DS7.TS1 / TS3 / TS4 | 🟡 planned — TS1 `backup`+`repair-encoding`; TS3 `welcome`+`runtime` reads; TS4 extension catalog+`journey-projection` |
+| Ops/utility tail | `backup`, `repair-encoding`, `extensions`, `ext`, `welcome`, `journey-projection` (+ `runtime` reads§) | 2/6‡ | DS7.TS1 / TS3 / TS4 | 🔵 in progress — TS1 `backup`+`repair-encoding` ✅ flipped 2026-09-07; TS3 `welcome`+`runtime` reads; TS4 extension catalog+`journey-projection` |
 
 Deferred to later Delivery Stories (excluded from the denominator): `mcp`
 (DS9), `web` (DS10), `eval` (DS8), `runtime` (DS10, mutating half; reads are
@@ -111,17 +111,18 @@ evidence.
 | `session-start` | ✅ | ✅ flipped (`--fast` ungated; full run replay-gated) | — |
 | `session-maintenance` | ✅ | ✅ flipped (replay-gated) | — |
 | `diagnose-journeys` | ✅ | ✅ flipped | — |
-| `repair-journeys` | ✅ | ✅ flipped (dry run) | `--apply` stays on Python until DS7.TS1 ports `backup` |
+| `repair-journeys` | ✅ | ✅ flipped (dry run 2026-09-07; `--apply` 2026-09-07 with TS1's `backup`) | — |
 | `backfill-codex-session` | ✅ | ✅ flipped | — |
 
 **Ported: 15/15. Routed to TS: 15/15** — slice A flipped 2026-09-02; US10
 groups 1–3 flipped 2026-09-07 in the approved dependency order. The five
 subcommands that cross the close tail answer from TS only under the replay
-gate (unconfigured installs keep Python until DS8's live cutover), and
-`repair-journeys --apply` is the one bounded exception: Python
-gates the mutating repair behind the dated zip archive `backup` produces,
-and the front door's fixed-name pre-write snapshot is a weaker property, so
-the route waits for DS7.TS1 rather than trade safety for burn-down.
+gate (unconfigured installs keep Python until DS8's live cutover).
+`repair-journeys --apply` was the one bounded exception — Python gates the
+mutating repair behind the dated zip archive `backup` produces, and the front
+door's fixed-name pre-write snapshot is a weaker property — until DS7.TS1
+ported `backup` on 2026-09-07; it now follows `MIRROR_TS_BACKUP` and answers
+from TS with the dated zip taken first.
 
 **Replay gate (US10):** the subcommands that cross the LLM close tail route
 to TS only when `MIRROR_TS_EXTERNAL_ROUTES=1`,
@@ -162,17 +163,27 @@ subcommands now answer from TS by default.
 
 `backup` and `repair-encoding` are ported and wired through the front door
 behind two independent gates, `MIRROR_TS_BACKUP` and
-`MIRROR_TS_REPAIR_ENCODING`, which default **off** until the flip. The backup
-gate also governs `conversation-logger repair-journeys --apply`, whose only TS
-dependency is the dated zip: reverting the backup reverts the repair with it.
+`MIRROR_TS_REPAIR_ENCODING`, **flipped on 2026-09-07**: both default on, and
+`=0` is the per-command revert control with no code change and no data
+migration. The backup gate also governs `conversation-logger repair-journeys
+--apply`, whose only TS dependency is the dated zip: reverting the backup
+reverts the repair with it.
 
-| Command | TS ported | Routed to TS | Blocker |
-|---------|:---------:|:------------:|---------|
-| `backup` | ✅ | ⏳ gate off (`MIRROR_TS_BACKUP=1` to opt in) | flip pending |
-| `repair-encoding` | ✅ | ⏳ gate off (`MIRROR_TS_REPAIR_ENCODING=1` to opt in) | flip pending |
-| `conversation-logger repair-journeys --apply` | ✅ (US10) | ⏳ follows the backup gate | flip pending |
+| Command | TS ported | Routed to TS | Revert control |
+|---------|:---------:|:------------:|----------------|
+| `backup` | ✅ | ✅ flipped 2026-09-07 | `MIRROR_TS_BACKUP=0` |
+| `repair-encoding` | ✅ | ✅ flipped 2026-09-07 | `MIRROR_TS_REPAIR_ENCODING=0` |
+| `conversation-logger repair-journeys --apply` | ✅ (US10) | ✅ flipped 2026-09-07 | `MIRROR_TS_BACKUP=0` (or the family switch) |
 
-### Flip checklist (pre-flip state)
+**Runtime callers.** The Pi extension's session-shutdown `backup --silent`
+now enters the front door (`runFrontDoor` in `.pi/extensions/mirror-logger.ts`)
+and the `mm-backup` skill calls the front door; the Gemini hook's shutdown
+backup and every other extension/hook call still go to Python directly
+(RS009 CR). `runtime backup`, `repair-journeys --apply` on the Python side,
+and `web/operations.py` keep calling Python's `backup()` in-process, which is
+correct: Python is compatibility-only for this command now.
+
+### Flip checklist
 
 | # | Check | Status |
 |---|-------|--------|
@@ -184,9 +195,9 @@ dependency is the dated zip: reverting the backup reverts the repair with it.
 | 6 | Revertibility exercised | ✅ `MIRROR_TS_BACKUP=0` and `MIRROR_TS_REPAIR_ENCODING=0` reach Python with identical output; the family switch still wins for `--apply` |
 | 7 | Burn-down ledger updated | ✅ this entry |
 
-**Not yet done, on purpose:** the routes still default to Python. The flip
-(plateau 5) turns the defaults on, moves the Pi extension's session-shutdown
-`backup --silent` call into the front door, and switches the `mm-backup` skill.
+All seven were green before the flip and re-verified after it: the smoke now
+runs the TS steps with **no gate in the environment**, so it proves the
+default route, and the `=0` steps prove the revert.
 
 ---
 
@@ -212,3 +223,4 @@ dependency is the dated zip: reverting the backup reverts the repair with it.
 | 2026-09-07 | **TS1 decisions recorded; denominator 32 → 30.** `runtime` splits by mutation: reads (`status|version|diagnose|latest|pending|release-notes`) port in TS1 slice 2 with `welcome`; the git-based update/release half is DS10's to redesign under npm, not ported. `migrate-legacy` retires unported in DS10 with a documented cutoff; `memory-rehearse-migration` retires unported in DS10, closing its 2026-04-17 open discussion. TS1 is 0/6 and sliced (1 `backup`+`repair-encoding`, 2 `welcome`+`runtime` reads, 3 extension catalog+`journey-projection`); slices 1–2 pull before US6. Nothing routed or deleted today. |
 | 2026-09-07 | **Ops tail split into three technical stories** so each slice is its own Ariad pull under the one-active-item rule: TS1 (`backup`, `repair-encoding`), TS3 (`welcome`, `runtime` reads), TS4 (extension catalog, `journey-projection`, US1-deferred branches). DS7 story denominator 12 → 14; command denominator unchanged at 30. TS1 pulled. |
 | 2026-09-07 | **TS1 plateaus 1–4 complete; nothing routed by default.** `repair-encoding` (text repair, scan, apply) and `backup` (dated zip via a ~120-line deterministic ZIP writer, staging + rename, retention) ported and graded by Python-generated goldens that pin the Unicode, whitespace, rounding, and retention-boundary divergence classes; both wired through the front door behind `MIRROR_TS_BACKUP` / `MIRROR_TS_REPAIR_ENCODING` (default off); `repair-journeys --apply` gets the zip through the logger runtime and prints the backup's lines before the findings, as Python does. Evidence: `repair_encoding` write probe on the demo copy, the lifecycle smoke extended to 87 checks with Python's `zipfile` reading the TS archive, both oracles in the drift tripwire, generators in the determinism gate. Found while planning and recorded in the TS1 plan: the Pi extension and Gemini hooks call Python directly and never enter the front door — flipped hook routes are reached by the smoke and by skills, not by live Pi sessions (RS009 CR at Debt Review). |
+| 2026-09-07 | **TS1 flipped: `backup`, `repair-encoding`, and `repair-journeys --apply` route to TS by default.** `MIRROR_TS_BACKUP=0` / `MIRROR_TS_REPAIR_ENCODING=0` are the revert controls. The Pi extension's session-shutdown `backup --silent` and the `mm-backup` skill now enter the front door — the first hot-path extension call to do so; the smoke proves the defaults with no gate in its environment. Ops tail 0/6 → 2/6; the last recorded `conversation-logger` exception is closed. |

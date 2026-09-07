@@ -84,8 +84,10 @@ const baseEnv: Record<string, string> = {
   PI_SESSIONS_DIR: join(home, "absent-pi-sessions"),
   MIRROR_FRONTDOOR_PYTHON_TIMEOUT_MS: "120000",
 };
-// The kill switch must not be inherited from the developer's shell.
+// The kill switches must not be inherited from the developer's shell.
 delete baseEnv.MIRROR_TS_CONVERSATION_LOGGER;
+delete baseEnv.MIRROR_TS_BACKUP;
+delete baseEnv.MIRROR_TS_REPAIR_ENCODING;
 delete baseEnv.OPENROUTER_API_KEY;
 
 // --- harness ------------------------------------------------------------------
@@ -375,9 +377,9 @@ check(
   repair.stdout,
 );
 
-// The mutating repair follows the backup gate (CV22.DS7.TS1): TS when the
-// dated zip backup is available from TS, Python otherwise. Until the flip the
-// gate defaults off, so the TS route is exercised with it turned on explicitly.
+// The mutating repair follows the backup gate (CV22.DS7.TS1, flipped
+// 2026-09-07): TS by default, Python under MIRROR_TS_BACKUP=0. The TS steps
+// below run with NO gate in the environment, so the smoke proves the default.
 const applyRepairPython = step(
   "repair-journeys --apply (backup gate off)",
   ["conversation-logger", "repair-journeys", "--apply"],
@@ -390,14 +392,13 @@ check(
   applyRepairPython.stdout,
 );
 const applyRepair = step(
-  "repair-journeys --apply (backup gate on)",
+  "repair-journeys --apply (default route)",
   ["conversation-logger", "repair-journeys", "--apply"],
   "ts",
-  { env: { MIRROR_TS_BACKUP: "1" } },
 );
 check(
   applyRepair.stdout.includes("Repaired: "),
-  "repair-journeys --apply reports through TS under the backup gate",
+  "repair-journeys --apply reports through TS by default",
   applyRepair.stdout,
 );
 
@@ -405,9 +406,7 @@ check(
 
 // 10. backup: both real CLIs archive the same file into separate directories;
 // Python's zipfile must read the TS archive and see the same restore image.
-const backupTs = step("backup (TS)", ["backup", "--backup-dir", join(home, "backups-ts")], "ts", {
-  env: { MIRROR_TS_BACKUP: "1" },
-});
+const backupTs = step("backup (TS, default route)", ["backup", "--backup-dir", join(home, "backups-ts")], "ts");
 const backupPy = step("backup (Python)", ["backup", "--backup-dir", join(home, "backups-py")], "python", {
   env: { MIRROR_TS_BACKUP: "0" },
 });
@@ -470,9 +469,7 @@ execute(
   "sess\u00c3\u00a3o com acentua\u00c3\u00a7\u00c3\u00a3o quebrada",
   "2026-09-07T12:00:00.000000Z",
 );
-const dryTs = step("repair-encoding dry run (TS)", ["repair-encoding"], "ts", {
-  env: { MIRROR_TS_REPAIR_ENCODING: "1" },
-});
+const dryTs = step("repair-encoding dry run (TS, default route)", ["repair-encoding"], "ts");
 const dryPy = step("repair-encoding dry run (Python)", ["repair-encoding"], "python", {
   env: { MIRROR_TS_REPAIR_ENCODING: "0" },
 });
@@ -481,9 +478,7 @@ check(
   "repair-encoding dry run is byte-identical across engines and finds the seeded row",
   `${dryTs.stdout}---\n${dryPy.stdout}`,
 );
-const applyEncoding = step("repair-encoding --apply (TS)", ["repair-encoding", "--apply"], "ts", {
-  env: { MIRROR_TS_REPAIR_ENCODING: "1" },
-});
+const applyEncoding = step("repair-encoding --apply (TS, default route)", ["repair-encoding", "--apply"], "ts");
 check(
   /Backup created: memory_\d{8}_\d{6}\.zip/.test(applyEncoding.stdout) &&
     applyEncoding.stdout.trim().endsWith("Applied repairs: 1"),

@@ -221,6 +221,33 @@ export default function (pi: ExtensionAPI) {
 		}
 	}
 
+	/**
+	 * Run a Mirror command through the TypeScript front door
+	 * (`ts/src/frontDoor/cli.ts`), the same entry the skills use, so the
+	 * routing table decides which engine answers and the front-door log
+	 * records the route. Unported commands fall back to Python inside the
+	 * front door itself. Only the session-shutdown backup goes this way for
+	 * now (CV22.DS7.TS1); moving the remaining `runPy` calls is RS009 work.
+	 */
+	async function runFrontDoor(args: string[]): Promise<string> {
+		try {
+			const result = await pi.exec(
+				"node",
+				["--no-warnings", "--env-file-if-exists=.env", "ts/src/frontDoor/cli.ts", ...args],
+				{ timeout: 30_000 },
+			);
+			const stderr = (result?.stderr ?? "").trim();
+			if (stderr) {
+				log("WARN", `stderr from front door [${args.slice(0, 2).join(" ")}]: ${stderr.slice(0, 500)}`);
+			}
+			return (result?.stdout ?? "").trim();
+		} catch (err: unknown) {
+			const message = err instanceof Error ? err.message : String(err);
+			log("ERROR", `runFrontDoor failed [${args.slice(0, 2).join(" ")}]: ${message.slice(0, 500)}`);
+			return "";
+		}
+	}
+
 	/** Extract readable text from a content blocks array or plain string. */
 	function extractText(content: unknown): string {
 		if (typeof content === "string") return content;
@@ -463,6 +490,8 @@ export default function (pi: ExtensionAPI) {
 			log("INFO", `session closed: ${sessionId}`);
 		}
 
-		await runPy(["-m", "memory", "backup", "--silent"]);
+		// The dated zip backup answers from TypeScript (CV22.DS7.TS1); the front
+		// door's routing table -- and MIRROR_TS_BACKUP=0 -- decide the engine.
+		await runFrontDoor(["backup", "--silent"]);
 	});
 }

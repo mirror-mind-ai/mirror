@@ -39,12 +39,14 @@ export interface RouteEnvironment {
 }
 
 // CV22.DS7.TS1: the DB safety tools carry independent per-command gates.
-// Until the flip (plateau 5) they default OFF, so production still reaches
-// Python while the code, goldens, and probes ship; after the flip they default
-// ON and `=0` becomes the revert control. `MIRROR_TS_BACKUP` also governs
-// `conversation-logger repair-journeys --apply`, whose only TS dependency is
-// the dated zip backup: reverting the backup must revert the repair with it.
-const DB_SAFETY_TOOLS_DEFAULT_ON = false;
+// Flipped 2026-09-07 after the seven-point checklist went green (goldens,
+// real-DB-copy probe, both-engine smoke with Python's zipfile reading the TS
+// archive, regression pass, redaction, revertibility, ledger). They default
+// ON; `=0` is the revert control with no code change and no data migration.
+// `MIRROR_TS_BACKUP` also governs `conversation-logger repair-journeys
+// --apply`, whose only TS dependency is the dated zip backup: reverting the
+// backup must revert the repair with it.
+const DB_SAFETY_TOOLS_DEFAULT_ON = true;
 
 function gateEnabled(value: string | undefined): boolean {
   if (value === "0") return false;
@@ -455,7 +457,7 @@ export function routeMemoryCommand(
         return {
           command,
           engine: "python",
-          reason: "repair-journeys --apply follows the MIRROR_TS_BACKUP gate (DS7.TS1)",
+          reason: "repair-journeys --apply follows MIRROR_TS_BACKUP=0 back to Python (DS7.TS1)",
         };
       }
       return {
@@ -526,7 +528,11 @@ export function routeMemoryCommand(
 
   if (command === "backup") {
     if (!backupRouteEnabled(env)) {
-      return { command, engine: "python", reason: "backup TS route disabled by MIRROR_TS_BACKUP" };
+      return {
+        command,
+        engine: "python",
+        reason: "backup TS route disabled by MIRROR_TS_BACKUP=0",
+      };
     }
     return { command, engine: "ts", reason: "DS7.TS1 backup ported to TS" };
   }
@@ -536,7 +542,7 @@ export function routeMemoryCommand(
       return {
         command,
         engine: "python",
-        reason: "repair-encoding TS route disabled by MIRROR_TS_REPAIR_ENCODING",
+        reason: "repair-encoding TS route disabled by MIRROR_TS_REPAIR_ENCODING=0",
       };
     }
     return { command, engine: "ts", reason: "DS7.TS1 repair-encoding ported to TS" };
