@@ -478,16 +478,77 @@ test("diagnose-journeys, dry-run repair-journeys, and backfill-codex-session rou
   );
 });
 
-test("repair-journeys --apply stays on Python until the backup port lands", () => {
-  for (const argv of [
-    ["repair-journeys", "--apply"],
-    ["repair-journeys", "--limit", "2", "--apply"],
-    ["--mirror-home", "/home/x", "repair-journeys", "--apply"],
-  ]) {
+// CV22.DS7.TS1 plateau 3: the DB safety tools are wired but their gates
+// default OFF until the flip (plateau 5), so production still reaches Python.
+const APPLY_ARGVS = [
+  ["repair-journeys", "--apply"],
+  ["repair-journeys", "--limit", "2", "--apply"],
+  ["--mirror-home", "/home/x", "repair-journeys", "--apply"],
+];
+
+test("repair-journeys --apply stays on Python while the backup gate is off", () => {
+  for (const argv of APPLY_ARGVS) {
     const decision = routeMemoryCommand(["conversation-logger", ...argv], CONVERSATION_REPLAY_ENV);
     assert.equal(decision.engine, "python", argv.join(" "));
-    assert.match(decision.reason, /backup port \(DS7\.TS1\)/);
+    assert.match(decision.reason, /MIRROR_TS_BACKUP/);
   }
+});
+
+test("repair-journeys --apply routes to TS once the backup gate is on, and back with =0", () => {
+  for (const argv of APPLY_ARGVS) {
+    const on = routeMemoryCommand(["conversation-logger", ...argv], { MIRROR_TS_BACKUP: "1" });
+    assert.equal(on.engine, "ts", argv.join(" "));
+    assert.match(on.reason, /DS7\.TS1/);
+    const off = routeMemoryCommand(["conversation-logger", ...argv], { MIRROR_TS_BACKUP: "0" });
+    assert.equal(off.engine, "python", argv.join(" "));
+  }
+  // The family switch still wins: it is the whole-family escape hatch.
+  assert.equal(
+    routeMemoryCommand(["conversation-logger", "repair-journeys", "--apply"], {
+      MIRROR_TS_BACKUP: "1",
+      MIRROR_TS_CONVERSATION_LOGGER: "0",
+    }).engine,
+    "python",
+  );
+});
+
+test("backup routes to TS only under MIRROR_TS_BACKUP=1 until the flip; =0 is the revert control", () => {
+  for (const argv of [
+    ["backup"],
+    ["backup", "--silent"],
+    ["backup", "--mirror-home", "/home/x", "--backup-dir", "/x"],
+  ]) {
+    assert.equal(routeMemoryCommand(argv, {}).engine, "python", argv.join(" "));
+    assert.match(routeMemoryCommand(argv, {}).reason, /MIRROR_TS_BACKUP/);
+    const on = routeMemoryCommand(argv, { MIRROR_TS_BACKUP: "1" });
+    assert.deepEqual(on, {
+      command: "backup",
+      engine: "ts",
+      reason: "DS7.TS1 backup ported to TS",
+    });
+    assert.equal(routeMemoryCommand(argv, { MIRROR_TS_BACKUP: "0" }).engine, "python");
+  }
+});
+
+test("repair-encoding routes to TS only under MIRROR_TS_REPAIR_ENCODING=1 until the flip; =0 is the revert control", () => {
+  for (const argv of [
+    ["repair-encoding"],
+    ["repair-encoding", "--apply"],
+    ["repair-encoding", "--mirror-home", "/home/x", "--apply", "--no-backup", "--limit", "3"],
+  ]) {
+    assert.equal(routeMemoryCommand(argv, {}).engine, "python", argv.join(" "));
+    assert.match(routeMemoryCommand(argv, {}).reason, /MIRROR_TS_REPAIR_ENCODING/);
+    const on = routeMemoryCommand(argv, { MIRROR_TS_REPAIR_ENCODING: "1" });
+    assert.deepEqual(on, {
+      command: "repair-encoding",
+      engine: "ts",
+      reason: "DS7.TS1 repair-encoding ported to TS",
+    });
+    assert.equal(routeMemoryCommand(argv, { MIRROR_TS_REPAIR_ENCODING: "0" }).engine, "python");
+  }
+  // The gates are independent: the backup gate must not drag repair-encoding along.
+  assert.equal(routeMemoryCommand(["repair-encoding"], { MIRROR_TS_BACKUP: "1" }).engine, "python");
+  assert.equal(routeMemoryCommand(["backup"], { MIRROR_TS_REPAIR_ENCODING: "1" }).engine, "python");
 });
 
 test("an unknown conversation-logger subcommand stays on Python", () => {

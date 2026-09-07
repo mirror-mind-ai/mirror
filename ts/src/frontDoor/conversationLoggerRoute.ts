@@ -12,6 +12,7 @@
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname } from "node:path";
+import { createZipBackup } from "#backup/zipBackup.ts";
 import { runConversationLoggerCommand, STDIN_SUBCOMMANDS } from "#conversation/loggerCli.ts";
 import { createLoggerRuntime } from "#conversation/loggerRuntime.ts";
 import type { WritableDatabase } from "#db/database.ts";
@@ -55,6 +56,16 @@ export async function runConversationLoggerRoute(
     homeDir: homedir(),
     env: process.env,
     deps: { newId, nowIso },
+    // The dated zip Python's `repair-journeys --apply` gates on (DS7.TS1):
+    // non-silent, beside the database, `Mirror home:` line included.
+    backup: (stdout) =>
+      createZipBackup({
+        dbPath,
+        mirrorHome: dirname(dbPath),
+        backupDir: null,
+        silent: false,
+        stdout,
+      }),
   });
   const result = await runConversationLoggerCommand(db, args, runtime, {
     stdin: STDIN_SUBCOMMANDS.has(subcommand) ? readStdin() : undefined,

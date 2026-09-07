@@ -74,6 +74,7 @@ import {
   runShadowApply as runShadowApplyRoute,
 } from "./cultivationRoute.ts";
 import { MirrorHomeNotConfiguredError, resolveDbPath } from "./dbPath.ts";
+import { runBackupRoute, runRepairEncodingRoute } from "./dbSafetyToolsRoute.ts";
 import { frontDoorLogPath, logFrontDoor } from "./frontDoorLog.ts";
 import { applyIdentitySet } from "./identityWrite.ts";
 import { applyJourneySetPath } from "./journeyWriteRoute.ts";
@@ -534,10 +535,19 @@ function readStdinBytes(limit: number): Buffer {
 function withLiveWriteDb(argv: readonly string[], write: (db: WritableDatabase) => number): number {
   const dbPath = resolveDbPathForCli(argv.slice(2));
   if (dbPath === null) return 2;
+  return withLiveWriteDbAt(dbPath, argv[0] ?? null, write);
+}
+
+/** The live-write seam for an already-resolved database path. */
+function withLiveWriteDbAt(
+  dbPath: string,
+  command: string | null,
+  write: (db: WritableDatabase) => number,
+): number {
   // Missing DB => unbootstrapped install; TS bootstraps it (CV22.DS6.TS4) and
   // applies any pending TS-authored migration (US3), then the backup-gated
   // live-write seam opens the now-current file.
-  ensureDatabaseReady(dbPath, argv[0] ?? null);
+  ensureDatabaseReady(dbPath, command);
   const db = openDatabaseForWrite(dbPath, ensureBackup(dbPath));
   try {
     assertSchemaState(db);
@@ -1303,6 +1313,20 @@ async function dispatch(argv: readonly string[], engine: FrontDoorEngine): Promi
   if (isModeWrite(argv)) return runModeWrite(argv);
   if (isConversationsAppend(argv)) return runConversationsAppend(argv);
   if (isConversationLoggerCommand(argv)) return runConversationLoggerWrite(argv);
+  // CV22.DS7.TS1: the DB safety tools. `backup` never opens or bootstraps the
+  // database; `repair-encoding --apply` rides the live-write seam.
+  if (argv[0] === "backup") {
+    return runBackupRoute(argv, {
+      resolveDbPath: resolveDbPathForCli,
+      withLiveWriteDb: (dbPath, write) => withLiveWriteDbAt(dbPath, "backup", write),
+    });
+  }
+  if (argv[0] === "repair-encoding") {
+    return runRepairEncodingRoute(argv, {
+      resolveDbPath: resolveDbPathForCli,
+      withLiveWriteDb: (dbPath, write) => withLiveWriteDbAt(dbPath, "repair-encoding", write),
+    });
+  }
   if (isMemorySearch(argv)) return runMemorySearch(argv);
   if (isConsult(argv)) {
     if (isConsultCredits(argv)) {

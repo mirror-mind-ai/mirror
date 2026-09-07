@@ -33,7 +33,31 @@ export interface RouteEnvironment {
   MIRROR_TS_CONVERSATION_APPEND?: string;
   MIRROR_TS_CONVERSATION_LLM_REPLAY?: string;
   MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY?: string;
+  MIRROR_TS_BACKUP?: string;
+  MIRROR_TS_REPAIR_ENCODING?: string;
   MEMORY_RECEPTION?: string;
+}
+
+// CV22.DS7.TS1: the DB safety tools carry independent per-command gates.
+// Until the flip (plateau 5) they default OFF, so production still reaches
+// Python while the code, goldens, and probes ship; after the flip they default
+// ON and `=0` becomes the revert control. `MIRROR_TS_BACKUP` also governs
+// `conversation-logger repair-journeys --apply`, whose only TS dependency is
+// the dated zip backup: reverting the backup must revert the repair with it.
+const DB_SAFETY_TOOLS_DEFAULT_ON = false;
+
+function gateEnabled(value: string | undefined): boolean {
+  if (value === "0") return false;
+  if (value === "1") return true;
+  return DB_SAFETY_TOOLS_DEFAULT_ON;
+}
+
+function backupRouteEnabled(env: RouteEnvironment): boolean {
+  return gateEnabled(env.MIRROR_TS_BACKUP);
+}
+
+function repairEncodingRouteEnabled(env: RouteEnvironment): boolean {
+  return gateEnabled(env.MIRROR_TS_REPAIR_ENCODING);
 }
 
 // CV22.DS7.US5 slice A, extended by CV22.DS7.US10 slice F. These
@@ -423,13 +447,21 @@ export function routeMemoryCommand(
     }
     const sub = conversationLoggerSubcommand(argv);
     if (sub === "repair-journeys" && argv.includes("--apply")) {
-      // The mutating repair is gated in Python behind the zip backup that
-      // DS7.TS1's ops tail ports; the front door's fixed-name pre-write
-      // snapshot is a weaker safety property, so --apply stays on Python.
+      // The mutating repair is gated behind the dated zip backup (Python's
+      // `backup()`, ported by DS7.TS1); the front door's fixed-name pre-write
+      // snapshot is a weaker safety property, so this route follows the
+      // backup gate rather than the family switch alone.
+      if (!backupRouteEnabled(env)) {
+        return {
+          command,
+          engine: "python",
+          reason: "repair-journeys --apply follows the MIRROR_TS_BACKUP gate (DS7.TS1)",
+        };
+      }
       return {
         command,
-        engine: "python",
-        reason: "repair-journeys --apply waits for the backup port (DS7.TS1)",
+        engine: "ts",
+        reason: "DS7.TS1 conversation-logger repair-journeys --apply ported to TS",
       };
     }
     if (sub && TS_CONVERSATION_LOGGER_SUBCOMMANDS.has(sub)) {
@@ -490,6 +522,24 @@ export function routeMemoryCommand(
       return { command, engine: "ts", reason: "DS7.US1 Slice B journey update write ported to TS" };
     }
     return { command, engine: "ts", reason: "DS7.US1 journey status read ported to TS" };
+  }
+
+  if (command === "backup") {
+    if (!backupRouteEnabled(env)) {
+      return { command, engine: "python", reason: "backup TS route disabled by MIRROR_TS_BACKUP" };
+    }
+    return { command, engine: "ts", reason: "DS7.TS1 backup ported to TS" };
+  }
+
+  if (command === "repair-encoding") {
+    if (!repairEncodingRouteEnabled(env)) {
+      return {
+        command,
+        engine: "python",
+        reason: "repair-encoding TS route disabled by MIRROR_TS_REPAIR_ENCODING",
+      };
+    }
+    return { command, engine: "ts", reason: "DS7.TS1 repair-encoding ported to TS" };
   }
 
   return { command, engine: "python", reason: "command not ported to TS" };

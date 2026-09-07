@@ -12,8 +12,8 @@
 // replay-gated close hooks; when the transport is not configured they report
 // `{ handled: false }` so the caller falls back to Python -- defense in depth
 // behind the routing gate, which makes the same decision from the same
-// environment. `repair-journeys --apply` is likewise reported unhandled until
-// its backup dependency is ported (see the routing note).
+// environment. `repair-journeys --apply` needs the dated zip backup from the
+// runtime (CV22.DS7.TS1) and refuses, like Python, when it is not available.
 
 import { backfillCodexSession } from "#conversation/backfill.ts";
 import { diagnoseJourneyAssociations, renderJourneyFindings } from "#conversation/journeyRepair.ts";
@@ -228,11 +228,6 @@ export async function runConversationLoggerCommand(
       case "diagnose-journeys":
       case "repair-journeys": {
         const apply = command === "repair-journeys" && args.includes("--apply");
-        if (apply) {
-          // The mutating repair waits for the `backup` port (DS7.TS1); routing
-          // sends it to Python, and this guard keeps that true even if it did not.
-          return { handled: false };
-        }
         const limitOption = extractOption(args, "--limit");
         if (limitOption.error) {
           return { handled: true, stdout: [], stderr: [limitOption.error], exitCode: 1 };
@@ -252,9 +247,20 @@ export async function runConversationLoggerCommand(
           }
           limit = Number.parseInt(limitOption.value, 10);
         }
-        const findings = diagnoseJourneyAssociations(db, { limit, apply: false });
-        const lines = renderJourneyFindings(findings, false).replace(/\n$/, "").split("\n");
-        if (command === "repair-journeys") {
+        // Python prints backup()'s progress from inside the repair, BEFORE the
+        // findings; the lines are collected here so the order survives.
+        const backupLines: string[] = [];
+        const backup = runtime.backup;
+        const findings = diagnoseJourneyAssociations(db, {
+          limit,
+          apply,
+          ...(apply && backup ? { backup: () => backup((line) => backupLines.push(line)) } : {}),
+        });
+        const lines = [
+          ...backupLines,
+          ...renderJourneyFindings(findings, apply).replace(/\n$/, "").split("\n"),
+        ];
+        if (command === "repair-journeys" && !apply) {
           lines.push("Dry run only. Re-run with --apply to repair after reviewing candidates.");
         }
         return ok(lines);

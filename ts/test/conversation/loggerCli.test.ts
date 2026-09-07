@@ -4,8 +4,8 @@
 // output strings and exit codes of `conversation_logger.main()` for every
 // subcommand of the family, plus the fallback boundary: an LLM-tail subcommand
 // whose replay transport is not configured must report `handled: false` so
-// the front door falls back to Python, and so must `repair-journeys --apply`
-// until its backup dependency is ported.
+// the front door falls back to Python. `repair-journeys --apply` refuses, as
+// Python does, when no backup is available (CV22.DS7.TS1 wires the zip).
 
 import assert from "node:assert/strict";
 import { mkdtempSync, writeFileSync } from "node:fs";
@@ -175,12 +175,80 @@ test("LLM-tail subcommands fall back when the replay transport is unconfigured",
   f.db.close();
 });
 
-test("repair-journeys --apply is not handled by TS until the backup port lands", async () => {
+test("repair-journeys --apply with nothing to repair needs no backup and reports zero", async () => {
   const f = fixture();
-  assert.deepEqual(await run(f, ["repair-journeys", "--apply"]), { handled: false });
-  assert.deepEqual(await run(f, ["repair-journeys", "--limit", "2", "--apply"]), {
-    handled: false,
+  assert.deepEqual(await run(f, ["repair-journeys", "--apply"]), {
+    handled: true,
+    stdout: ["Repaired: 0"],
+    stderr: [],
+    exitCode: 0,
   });
+  f.db.close();
+});
+
+test("repair-journeys --apply refuses when the runtime has no backup, and prints the backup's lines first when it has one", async () => {
+  const f = fixture();
+  // A journeyless conversation whose first user message names a journey.
+  f.db
+    .prepare(
+      "INSERT INTO identity (id, layer, key, content, created_at, updated_at) VALUES (?, 'journey', ?, ?, ?, ?)",
+    )
+    .run(
+      "j-1",
+      "alpha-one",
+      "# Alpha One\n",
+      "2026-09-03T12:00:00.000000Z",
+      "2026-09-03T12:00:00.000000Z",
+    );
+  f.db
+    .prepare(
+      "INSERT INTO conversations (id, interface, journey, title, started_at) VALUES (?, 'pi', NULL, NULL, ?)",
+    )
+    .run("conv-a", "2026-09-03T10:00:00.000000Z");
+  f.db
+    .prepare(
+      "INSERT INTO messages (id, conversation_id, role, content, created_at) VALUES (?, ?, 'user', ?, ?)",
+    )
+    .run("conv-a-m00", "conv-a", "/mm-build alpha-one", "2026-09-03T10:00:01.000000Z");
+
+  // No backup wired (this fixture's runtime): the repair refuses, like Python
+  // when backup() returns None, and the row is untouched.
+  await assert.rejects(
+    run(f, ["repair-journeys", "--apply"]),
+    /Database backup failed; refusing to repair/,
+  );
+  assert.equal(
+    f.db.prepare("SELECT journey FROM conversations WHERE id = 'conv-a'").get()?.journey,
+    null,
+  );
+
+  // With a backup wired, its progress lines come before the findings.
+  const runtime = createLoggerRuntime({
+    db: f.db,
+    mirrorHome: f.home,
+    homeDir: f.home,
+    env: {},
+    deps,
+    backup: (stdout) => {
+      stdout("Backup created: memory_20260907_140305.zip (1 KB)");
+      return "/tmp/memory_20260907_140305.zip";
+    },
+  });
+  const result = await runConversationLoggerCommand(
+    f.db,
+    ["repair-journeys", "--apply"],
+    runtime,
+    {},
+  );
+  assert.equal(result.handled, true);
+  assert.deepEqual(result.handled && result.stdout.slice(0, 2), [
+    "Backup created: memory_20260907_140305.zip (1 KB)",
+    "Repaired: 1",
+  ]);
+  assert.equal(
+    f.db.prepare("SELECT journey FROM conversations WHERE id = 'conv-a'").get()?.journey,
+    "alpha-one",
+  );
   f.db.close();
 });
 

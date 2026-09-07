@@ -60,6 +60,13 @@ export interface LoggerRuntimeOptions {
   loadEmbeddings?: (path: string) => Promise<EmbeddingProvider>;
   /** Monotonic seconds for the maintenance report; defaults to `performance.now()`. */
   monotonic?: () => number;
+  /**
+   * The dated zip backup `repair-journeys --apply` gates on (CV22.DS7.TS1).
+   * Prints its progress through `stdout` and returns the archive path, or
+   * null on failure. Absent (tests, unwired callers) means the repair refuses,
+   * exactly as Python refuses when `backup()` returns None.
+   */
+  backup?: (stdout: (line: string) => void) => string | null;
 }
 
 export class LlmTailUnconfiguredError extends Error {
@@ -85,6 +92,8 @@ export interface LoggerRuntime {
   closeHooks(): Promise<CloseHooks>;
   /** The full maintenance wiring, including the real Pi backfill. */
   maintenanceDeps(): Promise<MaintenanceDeps>;
+  /** The dated zip backup for the mutating journey repair; see `LoggerRuntimeOptions.backup`. */
+  readonly backup: ((stdout: (line: string) => void) => string | null) | null;
 }
 
 export function createLoggerRuntime(options: LoggerRuntimeOptions): LoggerRuntime {
@@ -159,6 +168,7 @@ export function createLoggerRuntime(options: LoggerRuntimeOptions): LoggerRuntim
     environmentSessionId: env.MIRROR_SESSION_ID?.trim() || null,
     piSessionsDir,
     llmTailConfigured: Boolean(llmPath && embeddingPath),
+    backup: options.backup ?? null,
     closeHooks,
     async maintenanceDeps(): Promise<MaintenanceDeps> {
       const { llm } = await loadProviders();
