@@ -13,8 +13,12 @@ behind an opt-in gate is **not** burned down — the gate means production still
 reaches Python. Coverage is per subcommand/branch, not per top-level command.
 
 **Denominator.** The 35 top-level `python -m memory <command>` entries, minus
-the three explicitly owned by later Delivery Stories: `mcp` (DS9), `web`
-(DS10), and `eval` (DS8, live provider). Working denominator: **32**.
+the five explicitly owned by later Delivery Stories: `mcp` (DS9), `web`
+(DS10), `eval` (DS8, live provider), `runtime` (DS10 — its git-based
+update/release half is redesigned under npm, not ported; TS1 ports the read
+subcommands as branch coverage), and `migrate-legacy` (DS10 — retired with a
+documented cutoff, not ported). Working denominator: **30** (32 until the
+2026-09-07 decision; see History).
 
 ---
 
@@ -35,10 +39,11 @@ the three explicitly owned by later Delivery Stories: `mcp` (DS9), `web`
 | Soul Mode | `soul` | 0/1 | DS7.US6 | 🟡 planned |
 | Explorer Mode | `explore` | 0/1 | DS7.US7 | 🟡 planned |
 | Builder/Ariad | `build` | 0/1 | DS7.US8 | 🟡 planned |
-| Ops/utility tail | `backup`, `repair-encoding`, `extensions`, `ext`, `welcome`, `migrate-legacy`, `runtime`§, `journey-projection` | 0/8‡ | DS7.TS1 | 🟡 planned |
+| Ops/utility tail | `backup`, `repair-encoding`, `extensions`, `ext`, `welcome`, `journey-projection` (+ `runtime` reads§) | 0/6‡ | DS7.TS1 | 🟡 planned — sliced: 1 `backup`+`repair-encoding`; 2 `welcome`+`runtime` reads; 3 extension catalog+`journey-projection` |
 
 Deferred to later Delivery Stories (excluded from the denominator): `mcp`
-(DS9), `web` (DS10), `eval` (DS8).
+(DS9), `web` (DS10), `eval` (DS8), `runtime` (DS10, mutating half; reads are
+TS1 branch coverage), `migrate-legacy` (DS10 retirement with cutoff).
 
 † `conversations` covers its **listing read** (DS7.US1) and, since 2026-09-03,
 `append` (DS7.US10 slice B′). A family marked done can still grow subcommands on
@@ -55,20 +60,30 @@ deferred `list extensions|all` and
 counts are top-level commands; these branches are the per-branch remainder the
 rule above requires to stay visible.
 
-§ `runtime` is ≈3k lines
-(`status|version|latest|pending|diagnose|update|pull|backup|stable|release-doctor|release-notes|release-promote`)
-— the safe runtime updater and release-promotion machinery, closer to DS10's
-runtime/package cutover than to `repair-encoding`. It is counted in the 32
-denominator today; whether TS1 ports it or DS10 owns it is an explicit decision
-at TS1 plan time. If DS10 takes it, the denominator moves 32 → 31 here, not
-silently.
+§ `runtime` is split by mutation (decision 2026-09-07). TS1 ports the read
+subcommands `status|version|diagnose|latest|pending|release-notes` with
+`welcome`, which imports them; Python's `diagnose` already misreports the
+TS-owned schema (it flags the TS-authored `017_journey_parent_column` as
+`core_migration_unknown`), so this is a live fix as well as burn-down. The
+mutating subcommands `update|pull|stable|backup|release-doctor|release-promote`
+are the git-based update/release workflow that npm distribution redesigns; DS10
+owns them and they are not ported at parity. Because the ledger rule requires
+an ungated TS route for the whole command, `runtime` leaves the denominator and
+its reads are tracked here as branch coverage:
 
-Outside the denominator, still Python-only, owner needed before DS10 deletes
-Python: `memory-rehearse-migration` (`cli/migration_rehearsal.py`, a
-`pyproject.toml` console script; open discussion in `decisions.md` since
-2026-04-17). `transcript-export` is **not** a command: `cli/transcript_export.py`
-has no CLI entry, its only live consumer (the transcript backfill's
-`parse_jsonl`/`_assistant_text`) was ported in US10, and
+| `runtime` subcommand | Owner | TS ported | Routed to TS |
+|----------------------|-------|:---------:|:------------:|
+| `status`, `version`, `diagnose`, `latest`, `pending`, `release-notes` | TS1 slice 2 | — | — |
+| `update`, `pull`, `stable`, `backup`, `release-doctor`, `release-promote` | DS10 (redesign under npm) | n/a | Python until DS10 |
+
+Outside the denominator and retiring unported in DS10:
+`memory-rehearse-migration` (`cli/migration_rehearsal.py`, a `pyproject.toml`
+console script that rehearses the Python migration engine DS6 already retired
+from custody; the 2026-04-17 open discussion is closed) and `migrate-legacy`
+(Portuguese-era `travessia` → `journey` conversion; cutoff: such databases must
+be migrated with a pre-DS10 release). `transcript-export` is **not** a command:
+`cli/transcript_export.py` has no CLI entry, its only live consumer (the
+transcript backfill's `parse_jsonl`/`_assistant_text`) was ported in US10, and
 `export_transcript`/`export_last_turn` have no production caller — DS10 deletion
 inventory, not TS1 scope.
 
@@ -162,3 +177,4 @@ subcommands now answer from TS by default.
 | 2026-09-07 | **US10 slice F, group 2 flipped: `diagnose-journeys`, `repair-journeys` (dry run), `backfill-codex-session` route to TS.** Deterministic, so no gate beyond the family switch. Checklist: journey-repair and backfill goldens green; `journey_repair_apply` probe green on the demo copy (dry run and `--apply` before/after); lifecycle smoke green with the three routes now on TS and `--apply` verified to stay on Python; redaction and revert exercised. `conversation-logger` 10/15 → 13/15. |
 | 2026-09-07 | **US10 slice F, group 3 flipped: `session-start` and `session-maintenance` route to TS** (`--fast` ungated; the full run and maintenance under the replay gate). Checklist: session-composite golden green including the poison-pill accounting scenario; `session_composites` probe green on the demo copy (two orphans closed, one poisoned and carried over, one retitle, one extraction, fifteen ledger rows in order); lifecycle smoke green with every route now on TS and the maintenance re-run adding zero ledger rows; redaction and revert exercised. `conversation-logger` 13/15 → 15/15. The family's deterministic Python subcommands are at zero. |
 | 2026-09-07 | **TS1 inventory reconciled** against `src/memory/__main__.py` dispatch and `routing.ts`. The DS7 index carried two stale lists (`conversation-logger` mute/switch — flipped in US5; `transcript-export` and `migration-rehearsal` — not top-level commands) and omitted `runtime` and `journey-projection`, which this ledger already counted. Index prose, candidate table, ledger, and the TS1 package now agree on the eight commands above plus the ‡ branch residuals. `runtime` flagged for an explicit port-or-DS10 decision (§); `memory-rehearse-migration` recorded as an out-of-denominator Python entry point needing an owner. US10 row status corrected to done. |
+| 2026-09-07 | **TS1 decisions recorded; denominator 32 → 30.** `runtime` splits by mutation: reads (`status|version|diagnose|latest|pending|release-notes`) port in TS1 slice 2 with `welcome`; the git-based update/release half is DS10's to redesign under npm, not ported. `migrate-legacy` retires unported in DS10 with a documented cutoff; `memory-rehearse-migration` retires unported in DS10, closing its 2026-04-17 open discussion. TS1 is 0/6 and sliced (1 `backup`+`repair-encoding`, 2 `welcome`+`runtime` reads, 3 extension catalog+`journey-projection`); slices 1–2 pull before US6. Nothing routed or deleted today. |

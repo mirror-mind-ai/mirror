@@ -11,6 +11,61 @@ resolved.
 
 ## Completed Decisions
 
+### CV22.DS7.TS1 ops tail: `runtime` splits, rehearsal and legacy migration retire in DS10
+
+**Date:** 2026-09-07
+**Reference:** [CV22.DS7.TS1 Ops/utility tail](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-ts1-ops-utility-tail/index.md), [CV22.DS7 Burn-Down Ledger](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/burn-down-ledger.md), [CV22.DS10 Python Retirement And npm Distribution](roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/index.md), [REFERENCE — Legacy Migration Workflow](../../REFERENCE.md#legacy-migration-workflow)
+**Participants:** Vinícius Manhães Teles
+
+The 2026-09-07 reconciliation of the TS1 inventory against
+`src/memory/__main__.py` left three items with no written owner. Evidence
+gathered for the decision: Python's `runtime diagnose` already misreports the
+TS-owned schema — it flags the TS-authored migration `017_journey_parent_column`
+as `core_migration_unknown` on any install that has run the TS engine; the
+v0.8.0 release defined `runtime update` as a git-pull workflow over the runtime
+clone, which npm distribution redesigns rather than ports; `migration_rehearsal.py`
+rehearses the Python migration engine, whose custody DS6 already moved to TS and
+proved over real legacy copies; `migrate-legacy` converts Portuguese-era
+(`travessia` → `journey`, pre-CV0) databases, which REFERENCE already marked a
+removal candidate and which no user who arrived through a published release can
+hold.
+
+Decided:
+
+1. **`runtime` splits by mutation.** The read subcommands (`status`, `version`,
+   `diagnose`, `latest`, `pending`, `release-notes`) are ported in TS1 together
+   with `welcome`, which imports them; porting `diagnose` also fixes the live
+   false alarm. The mutating subcommands (`update`, `pull`, `stable`, `backup`,
+   `release-doctor`, `release-promote`) are **not ported at parity**; DS10 owns
+   their redesign under npm distribution, including whether `release-promote`
+   belongs in the product command surface at all.
+2. **`memory-rehearse-migration` retires in DS10, unported.** This closes the
+   2026-04-17 open discussion. If a rehearsal of TS migrations on a real-DB copy
+   is ever wanted, it is a TS-native tool against the TS engine and separate
+   scope, not a port of the Python tool.
+3. **`migrate-legacy` retires in DS10, unported, with a documented cutoff:**
+   Portuguese-era databases must be migrated with a pre-DS10 release. The tool
+   stays in git history and the last Python-bearing release can still run it.
+   The cutoff pattern is the one DS7.TS2 established for the extension compat
+   host.
+4. **The burn-down denominator moves 32 → 30.** `runtime` and `migrate-legacy`
+   join `mcp`, `web`, and `eval` as explicitly owned later work. The `runtime`
+   read subcommands are tracked as TS1 branch coverage, not as a burned-down
+   top-level command, because the ledger rule requires an ungated TS route for
+   the whole command.
+5. **TS1 is sliced, not pulled as one bucket:** slice 1 `backup` +
+   `repair-encoding`; slice 2 `welcome` + `runtime` reads; slice 3 the extension
+   catalog (`extensions`, `ext`, the US1-deferred `list`/`inspect` branches) +
+   `journey-projection`. Slices 1 and 2 are pulled before DS7.US6 because they
+   close live gaps (`repair-journeys --apply`, the `diagnose` false alarm) and
+   `backup` is the gate the Soul and Builder write ports lean on. US8 stays
+   last.
+
+Nothing changes at runtime today: Python fallback keeps serving `runtime`'s
+mutating half and `migrate-legacy` until DS10, no routing entry flips, no file
+is deleted, and push, release, deletion, and npm publication remain separate
+Navigator gates.
+
 ### CV22 becomes a single-owner migration
 
 **Date:** 2026-09-07
@@ -1728,7 +1783,8 @@ This decision resolves the previously open `MIRROR_USER_DIR` discussion in princ
 
 ### Migration rehearsal — long-term status
 
-**Status:** Open
+**Status:** Resolved 2026-09-07 — retires in CV22.DS10, unported; see
+[CV22.DS7.TS1 ops tail decision](#cv22ds7ts1-ops-tail-runtime-splits-rehearsal-and-legacy-migration-retire-in-ds10)
 **Raised:** 2026-04-17
 
 `src/memory/cli/migration_rehearsal.py` and its tests exist to allow safe dry-run

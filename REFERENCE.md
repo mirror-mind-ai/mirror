@@ -669,7 +669,9 @@ workspace is running without `MIRROR_USER`/`MIRROR_HOME`.
 
 > **Note:** This workflow exists for users migrating from Portuguese-era
 > databases (pre-CV0). Most early users have already completed this migration.
-> This section is a removal candidate for a future CV.
+> **Scheduled for removal in CV22.DS10** (decision 2026-09-07): Portuguese-era
+> databases must be migrated with a pre-DS10 release; the command will not be
+> ported to the TypeScript core.
 
 Use this when you have a Portuguese-era source database such as `memoria.db`
 and want to migrate it into a user home.

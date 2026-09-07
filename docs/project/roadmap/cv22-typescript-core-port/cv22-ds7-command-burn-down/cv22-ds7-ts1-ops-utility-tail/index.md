@@ -33,18 +33,53 @@ Reconciled 2026-09-07 against `src/memory/__main__.py` dispatch and
 `ts/src/frontDoor/routing.ts`; the [burn-down ledger](../burn-down-ledger.md)
 is the auditable denominator.
 
-- Top-level commands still on Python fallback (0/8): `backup`,
-  `repair-encoding`, `extensions`, `ext`, `welcome`, `migrate-legacy`,
-  `runtime` (see Open Decisions), `journey-projection`.
-- Subcommand branches US1 deferred here: `list extensions|all`,
+Six top-level commands (0/6) plus branch residuals, delivered as three slices
+in this order. Each slice is its own pull, plan, and flip; slices 1 and 2 are
+pulled before DS7.US6.
+
+### Slice 1 — DB safety tools: `backup`, `repair-encoding`
+
+- `backup` — dated zip archive of the memory database. Gives TS the
+  dated-archive property it lacks (`ts/src/frontDoor/liveBackup.ts` is a
+  fixed-name pre-write snapshot) and unblocks the `repair-journeys --apply`
+  routing line US10 left on Python (Python gates the mutating repair behind
+  that archive). One routing line once it lands.
+- `repair-encoding` — dry-run/apply repair of reversible UTF-8/Windows mojibake
+  in user text. A backup-gated write, proven on copies.
+
+### Slice 2 — Daily-visible tail: `welcome`, `runtime` reads
+
+- `welcome` — rendered at every Pi session start by
+  `.pi/extensions/mirror-logger.ts` (`--status-line` and full card). Imports
+  `inspect_git_update_plan`, `check_runtime_update_availability`,
+  `package_version` from `runtime`, so the reads below come with it.
+- `runtime status|version|diagnose|latest|pending|release-notes` — the read
+  half. Allowlist each subcommand explicitly in `routing.ts` (the
+  `list`/`inspect`/`descriptor` pattern) so the mutating half can never inherit
+  the route. `diagnose` is also a live fix: Python's version flags the
+  TS-authored `017_journey_parent_column` as `core_migration_unknown`.
+
+### Slice 3 — Extension catalog and projection contract
+
+- `extensions` (list, validate, sync, install, uninstall, expose-claude,
+  clean-claude) and `ext` (dispatch into a command-skill extension's CLI).
+  Install/uninstall/expose/clean mutate skill directories on disk — not low
+  risk; this slice earns the multi-persona Plan review.
+- The branches US1 deferred here: `list extensions|all`,
   `inspect extension|runtime-catalog|llm-calls|embedding-provenance`.
-- The `repair-journeys --apply` routing line, which US10 left on Python until
-  `backup` is ported (Python gates the mutating repair behind the dated zip
-  archive `backup` produces; the front door's fixed-name pre-write snapshot is a
-  weaker property).
+- `journey-projection` — CLI transport for the Journey Projection Contract
+  consumed by the extension API (`memory/extensions/api.py`, `loader.py`);
+  coupled to TS2's `mirror-context-v1`.
 
 ## Out Of Scope
 
+- `runtime update|pull|stable|backup|release-doctor|release-promote` — the
+  git-based update/release workflow. DS10 redesigns it under npm distribution;
+  it is not ported at parity. Python fallback serves it until then.
+- `migrate-legacy` — retires unported in DS10 with a documented cutoff
+  (Portuguese-era databases must be migrated with a pre-DS10 release).
+- `memory-rehearse-migration` — retires unported in DS10; its 2026-04-17 open
+  discussion is closed.
 - `conversation-logger` mute/switch — flipped in US5.
 - `transcript-export` — not a command; its live seam (the transcript backfill)
   was ported in US10, and `export_transcript`/`export_last_turn` have no
@@ -52,18 +87,13 @@ is the auditable denominator.
 - Sibling DS7 stories (US6–US9); live-provider cutover (DS8); MCP (DS9);
   Python deletion, rename, and npm (DS10).
 
-## Open Decisions (resolve at plan time, not silently)
+## Decisions
 
-- `runtime` — ≈3k lines; `update|pull|stable|release-doctor|release-notes|`
-  `release-promote` are the safe runtime updater and release-promotion
-  machinery, closer to DS10's runtime/package cutover than to the rest of this
-  tail. Port here, or hand to DS10 and move the ledger denominator 32 → 31.
-- `memory-rehearse-migration` — `cli/migration_rehearsal.py` console script,
-  outside the `python -m memory` denominator; open discussion in
-  `docs/project/decisions.md` since 2026-04-17. Port here, or DS10 removes it
-  and closes the discussion.
-- Whether `backup` goes first as its own slice: it unblocks
-  `repair-journeys --apply` and is the backup gate the other write ports lean on.
+Recorded 2026-09-07 in
+[Decisions — CV22.DS7.TS1 ops tail](../../../decisions.md#cv22ds7ts1-ops-tail-runtime-splits-rehearsal-and-legacy-migration-retire-in-ds10):
+`runtime` splits by mutation; `memory-rehearse-migration` and `migrate-legacy`
+retire unported in DS10; the ledger denominator moves 32 → 30; TS1 is sliced
+as above with slices 1–2 before US6.
 
 ## Validation
 

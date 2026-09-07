@@ -93,24 +93,21 @@ into the families that will become child stories:
   flow-unit; inspect/adopt/prepare-templates/sync-cursor). The largest,
   highest-churn, `transport=verbatim` surface, re-homing in-flight CV20/CV21
   work. Ported last or in tight lockstep with a frozen oracle snapshot.
-- **Ops/utility tail** — the eight top-level `python -m memory` commands still
+- **Ops/utility tail** — the six top-level `python -m memory` commands still
   on Python fallback with no other owner: `backup`, `repair-encoding`,
-  `extensions`, `ext`, `welcome`, `migrate-legacy`, `runtime`,
-  `journey-projection`; plus the subcommand branches US1 deferred here
+  `extensions`, `ext`, `welcome`, `journey-projection`; plus the `runtime` read
+  subcommands (`status|version|diagnose|latest|pending|release-notes`, which
+  `welcome` imports), the subcommand branches US1 deferred here
   (`list extensions|all`, `inspect extension|runtime-catalog|llm-calls|`
-  `embedding-provenance`) and the `repair-journeys --apply` routing line that
-  waits on the `backup` port. Cleanup to reach the zero-deterministic-command
-  line. `runtime` (≈3k lines; `update`/`pull`/`stable`/`release-*` are the safe
-  runtime updater and release-promotion machinery) needs an explicit
-  port-or-DS10 decision at plan time — it is not low risk by inspection.
-  Reconciled 2026-09-07 against `src/memory/__main__.py`: `conversation-logger`
-  mute/switch flipped in US5; `transcript-export` is not a command (its only
-  live consumer, the transcript backfill, was ported in US10, and the export
-  functions have no production caller); `migration-rehearsal` is the
-  `memory-rehearse-migration` console script, outside the denominator, and
-  needs an owner — TS1 port or DS10 removal, closing the open discussion in
-  `decisions.md`. The [burn-down ledger](burn-down-ledger.md) is the auditable
-  list.
+  `embedding-provenance`), and the `repair-journeys --apply` routing line that
+  waits on the `backup` port. Delivered as three slices (see the
+  [TS1 package](cv22-ds7-ts1-ops-utility-tail/index.md)). Decided 2026-09-07:
+  `runtime`'s git-based update/release half is DS10's to redesign under npm, not
+  ported; `migrate-legacy` and the `memory-rehearse-migration` console script
+  retire unported in DS10; `conversation-logger` mute/switch was flipped in US5;
+  `transcript-export` is not a command (its live seam was ported in US10). The
+  [burn-down ledger](burn-down-ledger.md) is the auditable list; its
+  denominator is 30.
 - **Workspace/web hierarchy retirement rider** — recursive Workspace JSON, hierarchy-
   bearing selector payloads, parent/create web adapters, and compatibility evidence for
   the existing static JavaScript consumers. This is DS7.US9, not a CLI command and not
@@ -173,7 +170,11 @@ Named explicitly so no child-story plan can claim they were ambiguous:
   **not** replace the complete `python -m memory web` process, inventory every unrelated
   endpoint, package static assets, delete Python, resolve the `memory → mirror` rename,
   or ship npm. Those are DS10, gated on DS7+DS8+DS9 and on every command and non-command
-  runtime carrying explicit TS ownership.
+  runtime carrying explicit TS ownership. DS7 also does **not** port `runtime`'s
+  git-based update/release subcommands (`update|pull|stable|backup|release-doctor|`
+  `release-promote`), `migrate-legacy`, or `memory-rehearse-migration`: DS10 redesigns
+  the updater under npm and retires the other two with a documented cutoff
+  (decision 2026-09-07). Python fallback serves them until then.
 
 ---
 
@@ -210,7 +211,7 @@ and may land whenever its US1/CR051 and CR052 dependencies are stable.
 | CV22.DS7.US7 | Explorer Mode | User Story | `explore` exploratory-story surfaces answered by TS (med risk) | 🟡 Planned |
 | CV22.DS7.US8 | Builder/Ariad tree | User Story | `build` full Delivery + Refinement lifecycle answered by TS, re-homing in-flight CV20/CV21 work; largest, highest-churn, `transport=verbatim` surface (highest risk — churn) | 🟡 Planned |
 | [CV22.DS7.US9](cv22-ds7-us9-workspace-web-hierarchy-parity/index.md) | Workspace and web hierarchy parity | User Story — retirement rider | Recursive Workspace DTOs, hierarchy-bearing endpoint adapters, selected-scope isolation, and existing JavaScript renderer compatibility have named TS ownership and parity evidence; excluded from the command denominator but required for DS7 done | 🟡 Planned |
-| [CV22.DS7.TS1](cv22-ds7-ts1-ops-utility-tail/index.md) | Ops/utility tail | Technical Story | `backup`, `repair-encoding`, `extensions`, `ext`, `welcome`, `migrate-legacy`, `runtime`, `journey-projection`, the US1-deferred `list extensions/all` and `inspect extension/runtime-catalog/llm-calls/embedding-provenance` branches, and the `repair-journeys --apply` route answered by TS to reach zero deterministic Python commands (low–med risk, except `runtime`: explicit port-or-DS10 decision at plan time) | 🟡 Planned |
+| [CV22.DS7.TS1](cv22-ds7-ts1-ops-utility-tail/index.md) | Ops/utility tail | Technical Story | Three slices: (1) `backup`, `repair-encoding`; (2) `welcome` + `runtime` reads; (3) `extensions`, `ext`, `journey-projection`, the US1-deferred `list extensions/all` and `inspect extension/runtime-catalog/llm-calls/embedding-provenance` branches — plus the `repair-journeys --apply` route — answered by TS to reach zero deterministic Python commands (low–med risk; slice 3 mutates skill directories and takes the Plan review). `runtime`'s mutating half and `migrate-legacy` are DS10's, not here. | 🟡 Planned |
 
 `identity edit` (spawns `$EDITOR`) and other interactive seams are called out for
 an explicit port-or-keep decision at plan time rather than a silent port.
@@ -318,8 +319,10 @@ CV22.DS7 is done when:
   Soul, Explorer, mirror-mode, cultivation, extraction orchestration, the
   remaining identity/journey reads and writes, and the content/ops tail.
 - The only remaining Python runtime dependencies are explicitly owned convergence work:
-  the **live-provider transport (DS8)**, the **MCP server (DS9)**, and the final complete
-  web-process/package cutover in **DS10** — never an unnamed deterministic surface.
+  the **live-provider transport (DS8)**, the **MCP server (DS9)**, and in **DS10** the
+  final complete web-process/package cutover, the `runtime` update/release redesign
+  under npm, and the `migrate-legacy` / `memory-rehearse-migration` retirements —
+  never an unnamed deterministic surface.
 - Every routing flip produced **no user-visible change**; each family remained
   independently revertible to Python fallback with no data migration.
 - Writes were proven on copies, backup-gated, redacted by default; no real

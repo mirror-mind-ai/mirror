@@ -53,6 +53,33 @@ This gate does not require provider authors to use JavaScript. Extensions may ow
 executable runtime; the Mirror core must not own Python as their permanent compatibility
 layer.
 
+## Command Surfaces Assigned From DS7 (decision 2026-09-07)
+
+The [DS7.TS1 ops-tail decision](../../../decisions.md#cv22ds7ts1-ops-tail-runtime-splits-rehearsal-and-legacy-migration-retire-in-ds10)
+assigns three Python command surfaces to DS10 instead of porting them at parity.
+They are excluded from the DS7 burn-down denominator (30) and served by Python
+fallback until DS10 acts on them:
+
+1. **`runtime` update/release half** — `update`, `pull`, `stable`, `backup`,
+   `release-doctor`, `release-promote`. This is the git-based updater over the
+   runtime clone that v0.8.0 introduced (`main` integration, `stable` channel,
+   dry-run planning, fast-forward execution, updater self-recovery, tag push).
+   npm distribution redesigns the mechanism (versioned installs, dist-tags) rather
+   than porting it; whether `release-promote` belongs in the product command
+   surface at all, or in release tooling, is a DS10 design decision. The read
+   half (`status`, `version`, `diagnose`, `latest`, `pending`, `release-notes`)
+   is ported by DS7.TS1 and is not DS10 scope.
+2. **`migrate-legacy`** — the Portuguese-era (`travessia` → `journey`, pre-CV0)
+   database conversion. Retired unported, with a documented cutoff in the release
+   notes: Portuguese-era databases must be migrated with a pre-DS10 release. The
+   tool remains in git history and the last Python-bearing release can still run
+   it. Same cutoff pattern as the extension compat host above.
+3. **`memory-rehearse-migration`** — the `pyproject.toml` console script
+   (`cli/migration_rehearsal.py`) that rehearses the Python migration engine on a
+   DB copy. Retired unported: DS6 moved migration custody to TS and proved the TS
+   engine over real legacy copies, so the tool validates a retired engine. A TS
+   rehearsal tool, if ever wanted, is separate scope against the TS engine.
+
 ## Ownership Boundary
 
 - DS7.US9 owns recursive hierarchy DTOs, deterministic hierarchy adapters, and browser
@@ -69,6 +96,9 @@ layer.
 - The TS process and packaged static assets pass the complete web convergence gate.
 - No web execution path depends on Python.
 - The DS7.TS2 legacy extension context host and every core-owned launcher for it are removed.
+- The `runtime` update/release path has a TS-owned npm-era replacement with operational
+  smoke coverage; `migrate-legacy` and `memory-rehearse-migration` are removed with their
+  cutoff documented in the release notes.
 - Python deletion, package rename, npm publication, stable promotion, tag, and release
   remain separate Navigator-authorized actions.
 
