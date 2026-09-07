@@ -317,24 +317,36 @@ check(
 const codex = step(
   "backfill-codex-session",
   ["conversation-logger", "backfill-codex-session", CODEX_FIXTURE],
-  "python",
+  "ts",
 );
 check(
   codex.stdout.trim() === `Backfilled 1 Codex session from ${CODEX_FIXTURE}`,
   "backfill-codex-session reports the import",
   codex.stdout,
 );
-const diagnose = step("diagnose-journeys", ["conversation-logger", "diagnose-journeys"], "python");
+const diagnose = step("diagnose-journeys", ["conversation-logger", "diagnose-journeys"], "ts");
 check(
   diagnose.stdout.trim().split("\n")[0]?.startsWith("Repair candidates: "),
   "diagnose-journeys renders the findings header",
   diagnose.stdout,
 );
-const repair = step("repair-journeys (dry run)", ["conversation-logger", "repair-journeys"], "python");
+const repair = step("repair-journeys (dry run)", ["conversation-logger", "repair-journeys"], "ts");
 check(
   repair.stdout.trim().endsWith("Dry run only. Re-run with --apply to repair after reviewing candidates."),
   "repair-journeys without --apply prints the dry-run notice",
   repair.stdout,
+);
+
+// The mutating repair keeps its Python route until the backup port lands.
+const applyRepair = step(
+  "repair-journeys --apply",
+  ["conversation-logger", "repair-journeys", "--apply"],
+  "python",
+);
+check(
+  applyRepair.stdout.includes("Repaired: "),
+  "repair-journeys --apply reports through Python",
+  applyRepair.stdout,
 );
 
 // 8. Redaction: no payload text anywhere the front door writes.

@@ -431,14 +431,39 @@ test("the subcommand is found after --mirror-home and --session-id, as Python's 
   );
 });
 
-test("the unflipped conversation-logger subcommands stay on Python", () => {
-  for (const sub of [
-    "session-start",
-    "session-maintenance",
-    "diagnose-journeys",
-    "repair-journeys",
-    "backfill-codex-session",
+test("diagnose-journeys, dry-run repair-journeys, and backfill-codex-session route to TS without any gate", () => {
+  for (const argv of [
+    ["diagnose-journeys"],
+    ["diagnose-journeys", "--limit", "5"],
+    ["repair-journeys"],
+    ["repair-journeys", "--limit", "5"],
+    ["backfill-codex-session", "/tmp/session.jsonl", "--interface", "codex-cli"],
   ]) {
+    const decision = routeMemoryCommand(["conversation-logger", ...argv], {});
+    assert.equal(decision.engine, "ts", argv.join(" "));
+  }
+  assert.equal(
+    routeMemoryCommand(["conversation-logger", "diagnose-journeys"], {
+      MIRROR_TS_CONVERSATION_LOGGER: "0",
+    }).engine,
+    "python",
+  );
+});
+
+test("repair-journeys --apply stays on Python until the backup port lands", () => {
+  for (const argv of [
+    ["repair-journeys", "--apply"],
+    ["repair-journeys", "--limit", "2", "--apply"],
+    ["--mirror-home", "/home/x", "repair-journeys", "--apply"],
+  ]) {
+    const decision = routeMemoryCommand(["conversation-logger", ...argv], CONVERSATION_REPLAY_ENV);
+    assert.equal(decision.engine, "python", argv.join(" "));
+    assert.match(decision.reason, /backup port \(DS7\.TS1\)/);
+  }
+});
+
+test("the unflipped conversation-logger subcommands stay on Python", () => {
+  for (const sub of ["session-start", "session-maintenance"]) {
     const decision = routeMemoryCommand(["conversation-logger", sub], CONVERSATION_REPLAY_ENV);
     assert.equal(decision.engine, "python", `${sub} has not flipped yet`);
   }

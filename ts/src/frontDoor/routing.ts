@@ -47,6 +47,10 @@ const TS_CONVERSATION_LOGGER_SUBCOMMANDS = new Set([
   "log-assistant",
   "user-prompt",
   "discard-current",
+  // US10 slice F, group 2 (need slice E): diagnose, dry-run repair, Codex import.
+  "diagnose-journeys",
+  "repair-journeys",
+  "backfill-codex-session",
 ]);
 
 // CV22.DS7.US10 slice F. These reach Python's `end_conversation`, which runs
@@ -411,6 +415,16 @@ export function routeMemoryCommand(
       };
     }
     const sub = conversationLoggerSubcommand(argv);
+    if (sub === "repair-journeys" && argv.includes("--apply")) {
+      // The mutating repair is gated in Python behind the zip backup that
+      // DS7.TS1's ops tail ports; the front door's fixed-name pre-write
+      // snapshot is a weaker safety property, so --apply stays on Python.
+      return {
+        command,
+        engine: "python",
+        reason: "repair-journeys --apply waits for the backup port (DS7.TS1)",
+      };
+    }
     if (sub && TS_CONVERSATION_LOGGER_SUBCOMMANDS.has(sub)) {
       return {
         command,
