@@ -64,7 +64,14 @@ def main() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         home = Path(tmp) / "session-composite-fixture"
         home.mkdir()
-        for key in ("MEMORY_DIR", "MEMORY_PROD_DIR", "MEMORY_ENV"):
+        # OPENROUTER_API_KEY is popped BEFORE `memory` is imported so that any
+        # network path this generator forgets to stub raises exactly as it does
+        # in CI, instead of silently succeeding against a live provider on a
+        # developer machine. Found on 2026-09-07 when the CI determinism gate
+        # first ran this generator: `close_stale_orphans` runs the REAL
+        # extraction pipeline, whose summary embedding was going live here and
+        # quarantining in CI, so the committed report differed by machine.
+        for key in ("MEMORY_DIR", "MEMORY_PROD_DIR", "MEMORY_ENV", "OPENROUTER_API_KEY"):
             os.environ.pop(key, None)
         fixture_db = home / "memory.db"
         os.environ["MIRROR_HOME"] = str(home)
@@ -76,10 +83,21 @@ def main() -> None:
         # report must show. The real backfill port is slice E.
         os.environ["PI_SESSIONS_DIR"] = str(Path(tmp) / "absent-pi-sessions")
 
+        import numpy as np
+
         from memory.cli import conversation_logger as logger
         from memory.client import MemoryClient
+        from memory.config import EMBEDDING_DIMENSIONS
         from memory.intelligence import extraction as extraction_module
         from memory.models import Conversation, Message
+        from memory.services import conversation as conversation_module
+
+        # The extraction pipeline embeds the (stubbed) summary before it marks
+        # the conversation extracted. A fixed vector keeps that step offline;
+        # nothing in this golden reads the embedding bytes.
+        conversation_module.generate_embedding = lambda text, **kwargs: np.zeros(
+            EMBEDDING_DIMENSIONS, dtype=np.float32
+        )
 
         mem = MemoryClient(db_path=fixture_db)
         opened = Path(mem.conn.execute("PRAGMA database_list").fetchone()[2]).resolve()
@@ -171,7 +189,9 @@ def main() -> None:
             message_count=4,
             last_message_at="2026-09-03T09:00:00.000000Z",
         )
-        record("maintenance_closes_and_extracts_stale_orphan", logger.session_maintenance(str(home)))
+        record(
+            "maintenance_closes_and_extracts_stale_orphan", logger.session_maintenance(str(home))
+        )
 
         # 3. Re-running immediately is idempotent: the orphan is closed and
         # extracted, so every step reports zero work again.

@@ -217,7 +217,15 @@ def _run_hook(logger, home: Path, payload: dict) -> None:
 def main() -> None:
     with tempfile.TemporaryDirectory() as tmp_name:
         tmp = Path(tmp_name)
-        for key in ("MEMORY_DIR", "MEMORY_PROD_DIR", "MEMORY_ENV", "PI_SESSIONS_DIR"):
+        # No path in this golden may reach a provider; popping the key before
+        # `memory` is imported makes any future one raise here as it would in CI.
+        for key in (
+            "MEMORY_DIR",
+            "MEMORY_PROD_DIR",
+            "MEMORY_ENV",
+            "PI_SESSIONS_DIR",
+            "OPENROUTER_API_KEY",
+        ):
             os.environ.pop(key, None)
         os.environ["MEMORY_RECEPTION"] = "0"
 
