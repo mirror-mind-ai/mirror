@@ -19,6 +19,8 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
+import write_parity_lifecycle as lifecycle
+
 import memory.models as models_mod
 import memory.storage.identity as identity_mod
 import memory.storage.memories as memories_mod
@@ -30,6 +32,8 @@ from memory.storage.store import Store
 
 DEFAULT_WORK_DIR = Path("tmp/parity/write")
 FROZEN_NOW = datetime(2026, 6, 23, 12, 0, 0, 123456, tzinfo=timezone.utc)
+# `models._now()` under the frozen clock.
+FROZEN_NOW_ISO = FROZEN_NOW.isoformat().replace("+00:00", "Z")
 JOURNEY_SLUG = "parity-journey"
 # Conversation-logger probe (CV22.DS7.US5). The logger is the product's
 # highest-volume write path, so its parity is proven on a real-DB copy, not
@@ -447,13 +451,29 @@ def _build_fixture(
     fixture_path = work_dir / "write-parity-fixture.json"
 
     _safe_copy_database(source_db, seed_db)
+    # The lifecycle probes grade an OPERATION over seeded rows, so the seeds go
+    # into the seed database itself: both copies start from the same state and
+    # neither side re-creates it.
+    seeder = lifecycle.SEEDERS.get(probe)
+    if seeder is not None:
+        seed_conn = get_connection(seed_db)
+        seed_conn.row_factory = sqlite3.Row
+        try:
+            seeder(Store(seed_conn))
+            seed_conn.commit()
+        finally:
+            seed_conn.close()
     _safe_copy_database(seed_db, python_copy)
 
     conn = get_connection(python_copy)
     conn.row_factory = sqlite3.Row
     store = Store(conn)
     try:
-        if probe == "reinforcement":
+        if probe in lifecycle.PROBES:
+            conn.close()
+            probe_dict = lifecycle.PROBES[probe](python_copy, _FrozenDateTime, FROZEN_NOW_ISO)
+            probe_dict["frozen_now_ms"] = int(FROZEN_NOW.timestamp() * 1000)
+        elif probe == "reinforcement":
             probe_dict = _reinforcement_probe(conn, store, targets, context)
         elif probe == "journey":
             probe_dict = _journey_probe(conn, store)
@@ -464,7 +484,8 @@ def _build_fixture(
         else:
             raise ValueError(f"unknown probe: {probe}")
     finally:
-        conn.close()
+        if probe not in lifecycle.PROBES:
+            conn.close()
 
     fixture = {
         "source_label": source_db.name,
@@ -484,7 +505,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--probe",
         default="reinforcement",
-        choices=("reinforcement", "journey", "identity", "conversation_logger"),
+        choices=(
+            "reinforcement",
+            "journey",
+            "identity",
+            "conversation_logger",
+            "close_tail",
+            "session_composites",
+            "journey_repair_apply",
+        ),
     )
     parser.add_argument("--targets", default=3, type=int)
     parser.add_argument("--context", default="retrieval")

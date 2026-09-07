@@ -170,3 +170,17 @@ jobs:
         run: uv run python ts/parity/real_db_copy_parity.py --source-db tmp/parity/demo-memory.db
         env:
           MEMORY_ENV: test
+
+      # Every write probe on the demo copy: the DS4/US5 deterministic writes and
+      # the US10 extraction lifecycle (both cores answered by the same stub).
+      # Copy-only and redacted by design; no live database is ever involved.
+      - name: Write parity on the demo copy (redacted, must pass)
+        run: |
+          for probe in reinforcement journey identity conversation_logger \
+                       close_tail session_composites journey_repair_apply; do
+            uv run python ts/parity/write_parity.py \
+              --source-db tmp/parity/demo-memory.db --probe "$probe" \
+              --work-dir "tmp/parity/write-$probe"
+          done
+        env:
+          MEMORY_ENV: test

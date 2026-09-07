@@ -24,6 +24,7 @@ import {
 } from "#conversation/sessionComposites.ts";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import type { WritableDatabase } from "#db/database.ts";
+import { normalizeMaintenanceReport } from "#parity/maintenanceReport.ts";
 import { EMBEDDING_DIMENSIONS, type EmbeddingProvider } from "#providers/embedding.ts";
 import type { LlmProvider, LlmRequest, LlmResponse } from "#providers/llm.ts";
 
@@ -46,28 +47,8 @@ const golden: Golden = JSON.parse(readFileSync(GOLDEN_PATH, "utf8"));
 
 const NOW = "2026-09-03T12:00:00.000000Z";
 
-/** Python renders `f"{label}: {count} ({elapsed:.1f}s)"`. */
-const TIMING_RE = /^(?<label>[^:]+): (?<count>\d+) \((?<seconds>\d+\.\d)s\)$/;
-
-/**
- * Replace each timing token with a placeholder, but only after it matches the
- * oracle's grammar. Stripping the token unconditionally would let report drift
- * ride through the one check that exists to catch it.
- */
-function normalizeReport(report: string): string {
-  return report
-    .split("\n")
-    .map((line) => {
-      if (!line.includes("(") || !line.endsWith("s)")) return line;
-      const match = TIMING_RE.exec(line);
-      assert.ok(
-        match?.groups,
-        `timing line does not match Python's grammar: ${JSON.stringify(line)}`,
-      );
-      return `${match.groups.label}: ${match.groups.count} (<elapsed>s)`;
-    })
-    .join("\n");
-}
+/** The shared normalizer (probes, smoke, and this golden must agree on it). */
+const normalizeReport = normalizeMaintenanceReport;
 
 /**
  * The generator's `fake_send_to_model`, keyed by role instead of by prompt

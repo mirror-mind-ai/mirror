@@ -13,10 +13,19 @@ import { type BackupRecord, requireBackup } from "#db/backupGate.ts";
 import { assertCopyTarget } from "#db/copyGuard.ts";
 import { openDatabaseCopyForWrite } from "#db/database.ts";
 import { assertFtsIntegrity } from "#db/ftsIntegrity.ts";
+import { ensureMigratedOnOpen } from "#db/migrateOnOpen.ts";
 import { updateIdentityMetadata } from "#identity/identityStore.ts";
 import { setIdentity } from "#identity/setIdentity.ts";
 import { createJourney, setProjectPath } from "#journey/journeyWrite.ts";
 import { logAccess, logUse } from "#memory/reinforcement.ts";
+import {
+  type CloseTailProbeParams,
+  closeTailProbe,
+  type JourneyRepairApplyProbeParams,
+  journeyRepairApplyProbe,
+  type SessionCompositesProbeParams,
+  sessionCompositesProbe,
+} from "./lifecycleProbes.ts";
 import { evaluateWriteProbe, type MutatedRow, type WriteProbeParityResult } from "./writeParity.ts";
 import { applyWriteProbe, type WriteProbe } from "./writeProbe.ts";
 
@@ -73,6 +82,17 @@ export type WriteProbeFixture =
   | (WriteProbeBase & {
       probe_type: "conversation_logger";
       conversation_logger: ConversationLoggerProbeParams;
+    })
+  // CV22.DS7.US10 slice F: the extraction lifecycle on a real-DB copy, both
+  // cores answered by the same stub (see lifecycleProbes.ts).
+  | (WriteProbeBase & { probe_type: "close_tail"; close_tail: CloseTailProbeParams })
+  | (WriteProbeBase & {
+      probe_type: "session_composites";
+      session_composites: SessionCompositesProbeParams;
+    })
+  | (WriteProbeBase & {
+      probe_type: "journey_repair_apply";
+      journey_repair_apply: JourneyRepairApplyProbeParams;
     });
 
 /**
@@ -304,6 +324,12 @@ function buildWriteProbe(fixture: WriteProbeFixture): WriteProbe {
         },
       };
     }
+    case "close_tail":
+      return closeTailProbe(fixture.label, fixture.now_iso, fixture.close_tail);
+    case "session_composites":
+      return sessionCompositesProbe(fixture.label, fixture.now_iso, fixture.session_composites);
+    case "journey_repair_apply":
+      return journeyRepairApplyProbe(fixture.label, fixture.journey_repair_apply);
     default:
       return assertNever(fixture);
   }
@@ -344,28 +370,36 @@ function canonicalizeMetadataCells(rows: readonly MutatedRow[]): MutatedRow[] {
  * Replay each probe on a fresh copy of the seed through the TS core and grade it
  * against the Python-oracle state carried in the fixture.
  */
-export function verifyWriteFixture(
+export async function verifyWriteFixture(
   fixture: WriteParityFixture,
   options: { includeSensitiveDebug?: boolean } = {},
-): WriteProbeParityResult[] {
+): Promise<WriteProbeParityResult[]> {
   requireBackup(fixture.backup);
-  return fixture.probes.map((probe) => {
+  const results: WriteProbeParityResult[] = [];
+  for (const probe of fixture.probes) {
     assertCopyTarget(fixture.ts_copy_path);
     copyFileSync(fixture.seed_db_path, fixture.ts_copy_path);
+    // The front door never writes without migrate-on-open (CV22.DS6.US3), so
+    // neither does the harness: a TS-authored column such as `parent_journey`
+    // is part of the schema the TS write path assumes.
+    ensureMigratedOnOpen(fixture.ts_copy_path);
     const db = openDatabaseCopyForWrite(fixture.ts_copy_path);
     try {
-      const tsState = applyWriteProbe(db, buildWriteProbe(probe));
+      const tsState = await applyWriteProbe(db, buildWriteProbe(probe));
       // Grade the FTS side-effect of the write, not just the declared columns:
       // a memories mutation fires the memories_fts triggers (no-op if absent).
       assertFtsIntegrity(db);
-      return evaluateWriteProbe(
-        probe.label,
-        canonicalizeMetadataCells(probe.python_state),
-        canonicalizeMetadataCells(tsState),
-        options,
+      results.push(
+        evaluateWriteProbe(
+          probe.label,
+          canonicalizeMetadataCells(probe.python_state),
+          canonicalizeMetadataCells(tsState),
+          options,
+        ),
       );
     } finally {
       db.close();
     }
-  });
+  }
+  return results;
 }

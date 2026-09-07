@@ -13,6 +13,7 @@
 // different tables never collide. Integer columns are normalized (safe bigint ->
 // number) so a TS snapshot and a Python-oracle JSON fixture hash identically.
 
+import { createHash } from "node:crypto";
 import type { WritableDatabase } from "#db/database.ts";
 import type { MutatedRow, WriteCell } from "./writeParity.ts";
 
@@ -36,8 +37,13 @@ export interface WriteProbe {
    * Mutate the copy. Any time-based write is stamped from a frozen clock the
    * probe closes over (the oracle's `now_iso`), so the transition is
    * deterministic without threading a clock argument through the seam.
+   *
+   * May be async (the extraction lifecycle awaits its providers) and may
+   * return extra rows for state the write produced outside the database --
+   * a rendered report, a findings list -- graded alongside the snapshots.
    */
-  apply(db: WritableDatabase): void;
+  // biome-ignore lint/suspicious/noConfusingVoidType: `void` is the natural type of a probe that returns no extra rows.
+  apply(db: WritableDatabase): void | MutatedRow[] | Promise<void | MutatedRow[]>;
 }
 
 const IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/;
@@ -63,6 +69,12 @@ function normalizeCell(value: unknown): WriteCell {
   }
   if (typeof value === "number" || typeof value === "string" || typeof value === "boolean") {
     return value;
+  }
+  // Embedding blobs are compared by digest, the same projection the Python
+  // oracle applies (`blob:sha256:<hex>`), so a vector byte difference still
+  // fails without carrying kilobytes of float bytes through the fixture.
+  if (value instanceof Uint8Array) {
+    return `blob:sha256:${createHash("sha256").update(value).digest("hex")}`;
   }
   throw new Error(`unsupported write-parity cell type: ${typeof value}`);
 }
@@ -98,7 +110,10 @@ export function snapshotState(db: WritableDatabase, probe: WriteProbe): MutatedR
 }
 
 /** Apply a probe to a writable copy, then snapshot the resulting state. */
-export function applyWriteProbe(db: WritableDatabase, probe: WriteProbe): MutatedRow[] {
-  probe.apply(db);
-  return snapshotState(db, probe);
+export async function applyWriteProbe(
+  db: WritableDatabase,
+  probe: WriteProbe,
+): Promise<MutatedRow[]> {
+  const extra = (await probe.apply(db)) ?? [];
+  return [...snapshotState(db, probe), ...extra];
 }

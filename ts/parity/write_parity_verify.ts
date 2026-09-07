@@ -10,7 +10,7 @@ const { fixturePath, includeSensitiveDebug } = parseVerifyArgs(
 );
 
 const fixture = loadFixture<WriteParityFixture>(fixturePath);
-const results = verifyWriteFixture(fixture, { includeSensitiveDebug });
+const results = await verifyWriteFixture(fixture, { includeSensitiveDebug });
 
 process.stdout.write("== write-parity ==\n");
 process.stdout.write(renderRedactedWriteReport(results));

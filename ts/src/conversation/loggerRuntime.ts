@@ -123,7 +123,7 @@ export function createLoggerRuntime(options: LoggerRuntimeOptions): LoggerRuntim
         costUsd: null,
         conversationId,
       },
-      { now: deps.nowIso, id: deps.newId },
+      { now: deps.nowIso },
     );
 
   const maxAttempts = resolveExtractionMaxAttempts({ env });

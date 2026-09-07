@@ -71,7 +71,7 @@ export async function runConversationExtraction(
   const now = options.now ?? nowIso;
   const id = options.id ?? newId;
   const userName = resolveUserName(db);
-  const ledger = options.ledger ? llmLedger(db, conversationId, { now, id }) : undefined;
+  const ledger = options.ledger ? llmLedger(db, conversationId, now) : undefined;
 
   // A failure anywhere below propagates unmodified. Python records it -- the
   // `llm_failed` status, the attempt counter, and quarantine at the max --
@@ -115,7 +115,7 @@ export async function runConversationExtraction(
     // narrower scope (add_embedding_provenance is called from
     // add_memory/add_attachment only, never from the summary path).
     const summaryEmbedding = await generateEmbeddingSafely(options.embeddings, finalSummary, {
-      onAttempt: logEmbeddingAttempt(db, conversationId),
+      onAttempt: logEmbeddingAttempt(db, conversationId, now),
     });
     db.prepare(
       `INSERT INTO conversation_embeddings (conversation_id, summary_embedding) VALUES (?, ?) ` +
@@ -132,7 +132,7 @@ export async function runConversationExtraction(
     const memoryId = id();
     const embeddingText = `${memory.title}. ${memory.content}${memory.context ? ` Context: ${memory.context}` : ""}`;
     const embedding = await generateEmbeddingSafely(options.embeddings, embeddingText, {
-      onAttempt: logEmbeddingAttempt(db, conversationId),
+      onAttempt: logEmbeddingAttempt(db, conversationId, now),
     });
     insertMemory(db, memoryId, conversationId, memory, embeddingToBytes(embedding), now());
     memoryIds.push(memoryId);
@@ -266,11 +266,16 @@ function resolveUserName(db: WritableDatabase): string {
  * `llm_calls` row per successful call. Cost is Python's `compute_cost`, which
  * is unpriced (NULL) for any model outside its price table -- every replay
  * fixture model, and the estimate itself is a DS8 live-cutover concern.
+ *
+ * Rows are stamped from the orchestration's clock so an injected `now`
+ * governs the ledger too, but their ids stay generated: the ledger is graded
+ * by insertion order everywhere it is compared, never by id, and scripting
+ * ids for it would only make callers count rows they do not care about.
  */
 function llmLedger(
   db: WritableDatabase,
   conversationId: string,
-  clock: { now: () => string; id: () => string },
+  now: () => string,
 ): (role: string) => OnLlmCall {
   return (role) => (response, prompt) =>
     logLlmCall(
@@ -286,7 +291,7 @@ function llmLedger(
         costUsd: null,
         conversationId,
       },
-      clock,
+      { now },
     );
 }
 
@@ -297,16 +302,23 @@ function llmLedger(
 function logEmbeddingAttempt(
   db: WritableDatabase,
   conversationId: string,
+  now: () => string,
 ): (info: EmbeddingAttemptInfo) => void {
   return (info) => {
-    logLlmCall(db, {
-      role: "embedding",
-      model: resolveEmbeddingModel(),
-      prompt: info.text,
-      response: "",
-      latencyMs: info.latencyMs,
-      conversationId,
-    });
+    logLlmCall(
+      db,
+      {
+        role: "embedding",
+        model: resolveEmbeddingModel(),
+        prompt: info.text,
+        response: "",
+        latencyMs: info.latencyMs,
+        conversationId,
+      },
+      // The orchestration's clock, not the wall clock: an injected `now`
+      // must stamp every row the pipeline writes, the ledger included.
+      { now },
+    );
   };
 }
 

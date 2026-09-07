@@ -71,12 +71,12 @@ function reinforcementProbe(): WriteProbe {
   };
 }
 
-test("snapshotState captures multiple tables including an inserted row", () => {
+test("snapshotState captures multiple tables including an inserted row", async () => {
   const { aPath, cleanup } = tempCopies();
   seed(aPath);
   const db = openDatabaseCopyForWrite(aPath);
   try {
-    const rows = applyWriteProbe(db, reinforcementProbe());
+    const rows = await applyWriteProbe(db, reinforcementProbe());
     assert.deepEqual(rows, [
       { id: "memories:m1", cells: { last_accessed_at: ISO, use_count: 4 } },
       {
@@ -90,15 +90,15 @@ test("snapshotState captures multiple tables including an inserted row", () => {
   }
 });
 
-test("identical two-table applies across copies yield PASS", () => {
+test("identical two-table applies across copies yield PASS", async () => {
   const { aPath, bPath, cleanup } = tempCopies();
   seed(aPath);
   seed(bPath);
   const a = openDatabaseCopyForWrite(aPath);
   const b = openDatabaseCopyForWrite(bPath);
   try {
-    const pythonRows = applyWriteProbe(a, reinforcementProbe());
-    const tsRows = applyWriteProbe(b, reinforcementProbe());
+    const pythonRows = await applyWriteProbe(a, reinforcementProbe());
+    const tsRows = await applyWriteProbe(b, reinforcementProbe());
     assert.equal(evaluateWriteProbe("reinforcement", pythonRows, tsRows).match, true);
   } finally {
     a.close();
@@ -107,14 +107,14 @@ test("identical two-table applies across copies yield PASS", () => {
   }
 });
 
-test("a divergent access_context in the inserted row yields FAIL", () => {
+test("a divergent access_context in the inserted row yields FAIL", async () => {
   const { aPath, bPath, cleanup } = tempCopies();
   seed(aPath);
   seed(bPath);
   const a = openDatabaseCopyForWrite(aPath);
   const b = openDatabaseCopyForWrite(bPath);
   try {
-    const good = applyWriteProbe(a, reinforcementProbe());
+    const good = await applyWriteProbe(a, reinforcementProbe());
     const drifted = reinforcementProbe();
     drifted.apply = (db) => {
       db.prepare(
@@ -123,7 +123,7 @@ test("a divergent access_context in the inserted row yields FAIL", () => {
       db.prepare("UPDATE memories SET last_accessed_at = ? WHERE id = ?").run(ISO, "m1");
       db.prepare("UPDATE memories SET use_count = use_count + 1 WHERE id = ?").run("m1");
     };
-    const bad = applyWriteProbe(b, drifted);
+    const bad = await applyWriteProbe(b, drifted);
     assert.equal(evaluateWriteProbe("reinforcement", good, bad).match, false);
   } finally {
     a.close();
@@ -132,7 +132,7 @@ test("a divergent access_context in the inserted row yields FAIL", () => {
   }
 });
 
-test("snapshotState rejects an unsafe SQL identifier before querying", () => {
+test("snapshotState rejects an unsafe SQL identifier before querying", async () => {
   const { aPath, cleanup } = tempCopies();
   seed(aPath);
   const db = openDatabaseCopyForWrite(aPath);
@@ -150,7 +150,7 @@ test("snapshotState rejects an unsafe SQL identifier before querying", () => {
       ],
       apply() {},
     };
-    assert.throws(() => applyWriteProbe(db, badProbe), /unsafe SQL identifier/);
+    await assert.rejects(applyWriteProbe(db, badProbe), /unsafe SQL identifier/);
   } finally {
     db.close();
     cleanup();

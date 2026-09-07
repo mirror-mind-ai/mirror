@@ -71,11 +71,11 @@ function fixtureWithOracle(
   };
 }
 
-test("verifyWriteFixture PASSes a matching two-table reinforcement oracle", () => {
+test("verifyWriteFixture PASSes a matching two-table reinforcement oracle", async () => {
   const ws = tempWorkspace();
   seed(ws.seedPath);
   try {
-    const results = verifyWriteFixture(fixtureWithOracle(4, CONTEXT, ws));
+    const results = await verifyWriteFixture(fixtureWithOracle(4, CONTEXT, ws));
     assert.equal(results.length, 1);
     assert.equal(results[0].match, true);
   } finally {
@@ -83,46 +83,49 @@ test("verifyWriteFixture PASSes a matching two-table reinforcement oracle", () =
   }
 });
 
-test("verifyWriteFixture FAILs when the oracle use_count diverges", () => {
+test("verifyWriteFixture FAILs when the oracle use_count diverges", async () => {
   const ws = tempWorkspace();
   seed(ws.seedPath);
   try {
-    assert.equal(verifyWriteFixture(fixtureWithOracle(5, CONTEXT, ws))[0].match, false);
+    assert.equal((await verifyWriteFixture(fixtureWithOracle(5, CONTEXT, ws)))[0]?.match, false);
   } finally {
     ws.cleanup();
   }
 });
 
-test("verifyWriteFixture FAILs when the oracle access_context diverges", () => {
+test("verifyWriteFixture FAILs when the oracle access_context diverges", async () => {
   const ws = tempWorkspace();
   seed(ws.seedPath);
   try {
-    assert.equal(verifyWriteFixture(fixtureWithOracle(4, "different", ws))[0].match, false);
+    assert.equal(
+      (await verifyWriteFixture(fixtureWithOracle(4, "different", ws)))[0]?.match,
+      false,
+    );
   } finally {
     ws.cleanup();
   }
 });
 
-test("verifyWriteFixture rejects an unknown probe type", () => {
+test("verifyWriteFixture rejects an unknown probe type", async () => {
   const ws = tempWorkspace();
   seed(ws.seedPath);
   try {
     const fixture = fixtureWithOracle(4, CONTEXT, ws);
     // Simulate malformed oracle JSON: the union forbids this at compile time.
     (fixture.probes[0] as { probe_type: string }).probe_type = "nonexistent";
-    assert.throws(() => verifyWriteFixture(fixture), /unknown write probe type/);
+    await assert.rejects(verifyWriteFixture(fixture), /unknown write probe type/);
   } finally {
     ws.cleanup();
   }
 });
 
-test("verifyWriteFixture aborts when no backup is recorded", () => {
+test("verifyWriteFixture aborts when no backup is recorded", async () => {
   const ws = tempWorkspace();
   seed(ws.seedPath);
   try {
     const fixture = fixtureWithOracle(4, CONTEXT, ws);
     fixture.backup = undefined;
-    assert.throws(() => verifyWriteFixture(fixture), BackupGateError);
+    await assert.rejects(verifyWriteFixture(fixture), BackupGateError);
   } finally {
     ws.cleanup();
   }
@@ -182,22 +185,22 @@ function journeyFixture(
   };
 }
 
-test("verifyWriteFixture PASSes a matching journey oracle (identity row incl. metadata)", () => {
+test("verifyWriteFixture PASSes a matching journey oracle (identity row incl. metadata)", async () => {
   const ws = tempWorkspace();
   seedIdentity(ws.seedPath);
   try {
-    assert.equal(verifyWriteFixture(journeyFixture(JOURNEY_META, ws))[0].match, true);
+    assert.equal((await verifyWriteFixture(journeyFixture(JOURNEY_META, ws)))[0]?.match, true);
   } finally {
     ws.cleanup();
   }
 });
 
-test("verifyWriteFixture FAILs when the journey metadata JSON diverges", () => {
+test("verifyWriteFixture FAILs when the journey metadata JSON diverges", async () => {
   const ws = tempWorkspace();
   seedIdentity(ws.seedPath);
   try {
     const divergent = '{"color": "blue", "icon": "star", "project_path": "/DIFFERENT"}';
-    assert.equal(verifyWriteFixture(journeyFixture(divergent, ws))[0].match, false);
+    assert.equal((await verifyWriteFixture(journeyFixture(divergent, ws)))[0]?.match, false);
   } finally {
     ws.cleanup();
   }
@@ -333,22 +336,25 @@ function identityFixture(
   };
 }
 
-test("verifyWriteFixture PASSes an identity oracle (insert, update, inherit, metadata-only)", () => {
+test("verifyWriteFixture PASSes an identity oracle (insert, update, inherit, metadata-only)", async () => {
   const ws = tempWorkspace();
   seedIdentityRows(ws.seedPath);
   try {
-    assert.equal(verifyWriteFixture(identityFixture('{"keep": true}', ws))[0].match, true);
+    assert.equal((await verifyWriteFixture(identityFixture('{"keep": true}', ws)))[0]?.match, true);
   } finally {
     ws.cleanup();
   }
 });
 
-test("verifyWriteFixture FAILs when the inherited identity metadata diverges", () => {
+test("verifyWriteFixture FAILs when the inherited identity metadata diverges", async () => {
   const ws = tempWorkspace();
   seedIdentityRows(ws.seedPath);
   try {
     // The inherit case must keep {"keep": true}; expecting anything else must FAIL.
-    assert.equal(verifyWriteFixture(identityFixture('{"keep": false}', ws))[0].match, false);
+    assert.equal(
+      (await verifyWriteFixture(identityFixture('{"keep": false}', ws)))[0]?.match,
+      false,
+    );
   } finally {
     ws.cleanup();
   }
