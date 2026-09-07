@@ -31,12 +31,14 @@ export interface RouteEnvironment {
   MIRROR_TS_MIRROR_EMBEDDING_REPLAY?: string;
   MIRROR_TS_CONVERSATION_LOGGER?: string;
   MIRROR_TS_CONVERSATION_APPEND?: string;
+  MIRROR_TS_CONVERSATION_LLM_REPLAY?: string;
+  MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY?: string;
   MEMORY_RECEPTION?: string;
 }
 
-// CV22.DS7.US5 slice A. Only these `conversation-logger` subcommands are
-// deterministic end to end; the rest reach Python's `end_conversation`, which
-// runs extraction and close-time metadata finalization through the LLM.
+// CV22.DS7.US5 slice A, extended by CV22.DS7.US10 slice F. These
+// `conversation-logger` subcommands are deterministic end to end and route to
+// TS under the family switch alone.
 const TS_CONVERSATION_LOGGER_SUBCOMMANDS = new Set([
   "mute",
   "unmute",
@@ -46,6 +48,32 @@ const TS_CONVERSATION_LOGGER_SUBCOMMANDS = new Set([
   "user-prompt",
   "discard-current",
 ]);
+
+// CV22.DS7.US10 slice F. These reach Python's `end_conversation`, which runs
+// extraction and close-time metadata finalization through the LLM. They route
+// to TS only under the replay transport; an unconfigured install keeps the
+// Python fallback, which is the live-cutover boundary DS8 owns. Flipped in the
+// plan's dependency order: `switch`, `session-end-pi`, `session-end` first
+// (they need slice C' only).
+const TS_CONVERSATION_LOGGER_LLM_SUBCOMMANDS = new Set(["switch", "session-end-pi", "session-end"]);
+
+/** Python's `main()`: strip `--mirror-home X` and `--session-id X`, then `args[0]`. */
+function conversationLoggerSubcommand(argv: readonly string[]): string | undefined {
+  const args = [...argv.slice(1)];
+  for (const option of ["--mirror-home", "--session-id"]) {
+    const index = args.indexOf(option);
+    if (index !== -1) args.splice(index, 2);
+  }
+  return args[0];
+}
+
+function conversationLlmReplayConfigured(env: RouteEnvironment): boolean {
+  return (
+    externalRoutesEnabled(env) &&
+    Boolean(env.MIRROR_TS_CONVERSATION_LLM_REPLAY) &&
+    Boolean(env.MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY)
+  );
+}
 
 function externalRoutesEnabled(env: RouteEnvironment): boolean {
   return env.MIRROR_TS_EXTERNAL_ROUTES === "1";
@@ -382,12 +410,26 @@ export function routeMemoryCommand(
         reason: "conversation-logger TS route disabled by MIRROR_TS_CONVERSATION_LOGGER=0",
       };
     }
-    const sub = argv[1];
+    const sub = conversationLoggerSubcommand(argv);
     if (sub && TS_CONVERSATION_LOGGER_SUBCOMMANDS.has(sub)) {
       return {
         command,
         engine: "ts",
         reason: `DS7.US5 conversation-logger ${sub} ported to TS`,
+      };
+    }
+    if (sub && TS_CONVERSATION_LOGGER_LLM_SUBCOMMANDS.has(sub)) {
+      if (conversationLlmReplayConfigured(env)) {
+        return {
+          command,
+          engine: "ts",
+          reason: `DS7.US10 conversation-logger ${sub} routed to TS under replay-safe config`,
+        };
+      }
+      return {
+        command,
+        engine: "python",
+        reason: `conversation-logger ${sub} needs DS7.US10 replay config for TS route`,
       };
     }
     return {

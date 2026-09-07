@@ -65,16 +65,25 @@ evidence.
 | `log-assistant` | ✅ | ✅ flipped | — |
 | `user-prompt` (hook) | ✅ | ✅ flipped | — |
 | `discard-current` | ✅ | ✅ flipped | — |
-| `switch` | skeleton only | ❌ | LLM close tail (slice C/D) |
-| `session-end-pi` | skeleton only | ❌ | LLM close tail (slice C/D) |
-| `session-end` (hook) | skeleton only | ❌ | LLM close tail (slice C/D) |
-| `session-start` | ❌ | ❌ | slice D |
-| `session-maintenance` | ❌ | ❌ | slice D |
-| `diagnose-journeys` | ❌ | ❌ | slice E |
-| `repair-journeys` | ❌ | ❌ | slice E (mutating repair) |
-| `backfill-codex-session` | ❌ | ❌ | slice E |
+| `switch` | ✅ | ✅ flipped (replay-gated) | — |
+| `session-end-pi` | ✅ | ✅ flipped (replay-gated) | — |
+| `session-end` (hook) | ✅ | ✅ flipped (replay-gated) | — |
+| `session-start` | ✅ | ❌ | US10 slice F, group 3 |
+| `session-maintenance` | ✅ | ❌ | US10 slice F, group 3 |
+| `diagnose-journeys` | ✅ | ❌ | US10 slice F, group 2 |
+| `repair-journeys` | ✅ (dry run; `--apply` waits for the `backup` port, DS7.TS1) | ❌ | US10 slice F, group 2 |
+| `backfill-codex-session` | ✅ | ❌ | US10 slice F, group 2 |
 
-**Ported: 7/15. Routed to TS: 7/15** — flipped 2026-09-02.
+**Ported: 15/15. Routed to TS: 10/15** — slice A flipped 2026-09-02; US10
+group 1 (`switch`, `session-end-pi`, `session-end`) flipped 2026-09-07.
+
+**Replay gate (US10):** the subcommands that cross the LLM close tail route
+to TS only when `MIRROR_TS_EXTERNAL_ROUTES=1`,
+`MIRROR_TS_CONVERSATION_LLM_REPLAY`, and
+`MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY` are all set; an unconfigured
+install keeps the Python fallback, so the live model call stays Python's
+until DS8. Unsetting the replay config is a second, per-subcommand-family
+revert for exactly those routes.
 
 **Revert control:** `MIRROR_TS_CONVERSATION_LOGGER=0` sends the whole family
 back to Python with no code change and no data migration. The gate was
@@ -118,3 +127,4 @@ subcommands now answer from TS by default.
 | 2026-09-03 | **US10 slice B′: `conversations append` flipped.** The US5 blocker is resolved — append idempotency is now value-semantics in both cores, so `1` and `1.0` are the same value and legacy rows replay instead of conflicting. Fixed in Python first, proven red-before-green on 3.10 and 3.12, contract text updated in the same commit. Seven-point checklist green, including a cross-core replay proof in both directions and legacy-byte tolerance. Revert control: `MIRROR_TS_CONVERSATION_APPEND=0`. |
 | 2026-09-07 | **US10 slices D and E complete; nothing routed.** Session composites, diagnose/repair, the atomic session import (Python fixed first for the import-vs-hook race), the Pi/Codex backfills, the transcript assistant backfill TS never had, and the session-less `session-end` route are all ported and graded by state goldens. `conversation-logger` remains 7/15 routed; slice F flips begin next. Found on the way: `generateTitle` (US5) sliced by UTF-16 unit, not code point — fixed; and CI's determinism gate regenerated none of the US10 goldens — now all six. |
 | 2026-09-07 | **Slice D generator was not hermetic.** The first CI run of the extended determinism gate showed `session-composite.golden.json` regenerating differently on Linux: `close_stale_orphans` runs the real extraction pipeline, whose summary embedding went live through the developer's `OPENROUTER_API_KEY` and quarantined in CI without one. The committed golden was correct but had been produced with network access. Generator now pops the key before import and stubs the embedding; golden byte-identical under 3.10 and 3.12 with no key. |
+| 2026-09-07 | **US10 slice F, group 1 flipped: `switch`, `session-end-pi`, `session-end` route to TS under the replay gate.** Seven-point checklist: goldens green (1209 TS tests); the three new real-DB-copy write probes green (`close_tail`, `session_composites`, `journey_repair_apply` — plus the DS4 `journey` probe, found broken since DS6.US2 and repaired); the hook-inclusive lifecycle smoke green through the real front door (`ts/parity/conversation_lifecycle_smoke.ts`, 58 checks); read-side and write-side harnesses green over the already-flipped families; the front-door log carries no payloads and the ledger withholds bodies; `MIRROR_TS_CONVERSATION_LOGGER=0` exercised. `conversation-logger` 7/15 → 10/15. Every write probe and the smoke now run in the CI parity job. |

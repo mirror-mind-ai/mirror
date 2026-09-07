@@ -184,3 +184,9 @@ jobs:
           done
         env:
           MEMORY_ENV: test
+
+      # The hook-inclusive lifecycle smoke through the real front door: hooks
+      # over stdin, the close tail under the replay transport, unflipped
+      # subcommands through the real Python fallback (CV22.DS7.US10 slice F).
+      - name: Conversation-logger lifecycle smoke (replay transport, must pass)
+        run: node --no-warnings ts/parity/conversation_lifecycle_smoke.ts

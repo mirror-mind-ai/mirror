@@ -379,19 +379,68 @@ test("conversation-logger routes deterministic subcommands to TS", () => {
   }
 });
 
-test("conversation-logger keeps LLM-tail subcommands on Python after the flip", () => {
-  const env = {};
+// --- CV22.DS7.US10 slice F: the LLM-tail flips, in the plan's dependency order ---
+
+const CONVERSATION_REPLAY_ENV = {
+  MIRROR_TS_EXTERNAL_ROUTES: "1",
+  MIRROR_TS_CONVERSATION_LLM_REPLAY: "/tmp/llm.json",
+  MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY: "/tmp/embedding.json",
+};
+
+test("switch, session-end-pi, and session-end route to TS only under the replay transport", () => {
+  for (const sub of ["switch", "session-end-pi", "session-end"]) {
+    const ts = routeMemoryCommand(["conversation-logger", sub], CONVERSATION_REPLAY_ENV);
+    assert.equal(ts.engine, "ts", sub);
+    assert.match(ts.reason, /DS7\.US10 .* replay-safe config/);
+
+    // Unconfigured, half-configured, and gate-less installs all keep Python:
+    // the live LLM call stays Python's until DS8.
+    for (const env of [
+      {},
+      { MIRROR_TS_CONVERSATION_LLM_REPLAY: "/tmp/llm.json" },
+      { MIRROR_TS_EXTERNAL_ROUTES: "1", MIRROR_TS_CONVERSATION_LLM_REPLAY: "/tmp/llm.json" },
+      {
+        MIRROR_TS_CONVERSATION_LLM_REPLAY: "/tmp/llm.json",
+        MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY: "/tmp/embedding.json",
+      },
+    ]) {
+      const decision = routeMemoryCommand(["conversation-logger", sub], env);
+      assert.equal(decision.engine, "python", `${sub} under ${JSON.stringify(env)}`);
+      assert.match(decision.reason, /needs DS7\.US10 replay config/);
+    }
+  }
+});
+
+test("the family switch reverts the flipped LLM-tail subcommands too", () => {
+  const env = { ...CONVERSATION_REPLAY_ENV, MIRROR_TS_CONVERSATION_LOGGER: "0" };
+  for (const sub of ["switch", "session-end-pi", "session-end"]) {
+    assert.equal(routeMemoryCommand(["conversation-logger", sub], env).engine, "python", sub);
+  }
+});
+
+test("the subcommand is found after --mirror-home and --session-id, as Python's main() strips them", () => {
+  const decision = routeMemoryCommand(
+    ["conversation-logger", "--mirror-home", "/home/x", "--session-id", "s1", "switch"],
+    CONVERSATION_REPLAY_ENV,
+  );
+  assert.equal(decision.engine, "ts");
+  assert.match(decision.reason, /switch/);
+  assert.equal(
+    routeMemoryCommand(["conversation-logger", "--mirror-home", "/home/x", "status"], {}).engine,
+    "ts",
+  );
+});
+
+test("the unflipped conversation-logger subcommands stay on Python", () => {
   for (const sub of [
-    "switch",
-    "session-end",
-    "session-end-pi",
     "session-start",
     "session-maintenance",
     "diagnose-journeys",
+    "repair-journeys",
     "backfill-codex-session",
   ]) {
-    const decision = routeMemoryCommand(["conversation-logger", sub], env);
-    assert.equal(decision.engine, "python", `${sub} must stay on Python in slice A`);
+    const decision = routeMemoryCommand(["conversation-logger", sub], CONVERSATION_REPLAY_ENV);
+    assert.equal(decision.engine, "python", `${sub} has not flipped yet`);
   }
 });
 
