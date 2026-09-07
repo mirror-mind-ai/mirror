@@ -11,6 +11,59 @@ resolved.
 
 ## Completed Decisions
 
+### CV22 becomes a single-owner migration
+
+**Date:** 2026-09-07
+**Reference:** [CV22 Collaboration Strategy](roadmap/cv22-typescript-core-port/collaboration-strategy.md), [CV22 TypeScript Core Port](roadmap/cv22-typescript-core-port/index.md), [CV22.DS7 Command Burn-Down](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/index.md)
+**Participants:** Vinícius Manhães Teles, Alisson Vale
+
+Since DS2 the TypeScript Core Port was a two-person, part-time effort divided
+by baton blocks handed off at coherent plateaus, with a proposed lane split for
+the DS6–DS10 convergence work: mechanical seams, fixtures, and package
+mechanics to Vinícius; semantic coherence, Ariad alignment, and Python
+retirement decisions to Alisson. Alisson has moved to a different aspect of
+Mirror and will not be working on the Python core on `main`.
+
+Decided:
+
+1. **Vinícius is the sole owner of the migration** — the DS7 remainder (US6,
+   US7, US8, US9, TS1), DS8, DS9, and DS10. The baton model is closed; its
+   history stays in the collaboration strategy as the evidence record for the
+   DS2–DS5 plateaus.
+2. **Plateau discipline is kept as session-to-session resumability.** Work
+   still stops only at coherent, resumable states, and the handoff statement
+   (what is true, what is undone, what is next, which evidence) is written for
+   the next session and the Mirror that loads the journey, in the story package
+   and the burn-down ledger.
+3. **The multi-persona review is the standing second opinion.** With no second
+   human at any boundary, the Plan review before implementation is required for
+   every story above a small bounded slice, and the implementation/handoff
+   review after validation stays. Skipping either is a recorded decision in the
+   story package, never a default.
+4. **The ownership split is collapsed.** Python retirement decisions — what
+   DS10 removes, what gets a documented cutoff, what `runtime`'s git-based
+   update path becomes under npm distribution — are taken by the port owner at
+   plan time and recorded near the roadmap. The three open TS1 decisions
+   (`runtime` port-or-DS10, `memory-rehearse-migration` removal, `migrate-legacy`
+   cutoff) no longer wait on a second confirmer.
+5. **The moving-target policy is unchanged; its exposure is reduced.** The
+   2026-08-13 decision and its 2026-09-02 restart still hold: no global Python
+   freeze, Python remains product authority for unported commands, every Python
+   change creates named TS parity scope. What changes is that the main source
+   of Python movement — CV20/CV21 Builder work on `main` — no longer has an
+   active author. DS7.US8's moving-oracle risk drops to maintenance and
+   parity-driven fixes, all caught by the oracle-drift tripwire; re-baselining
+   after every `main` merge remains mandatory.
+6. **Bus factor is named and mitigated by rule, not by hope:** resumable
+   plateaus, portable validation (redacted real-DB-copy harness, demo database,
+   CI determinism gate, per-story `test-guide.md`), decisions in files, and
+   green CI on every push.
+
+This changes who carries the work and how it is reviewed. It does not change
+the database-seam discipline, the risk-first sequencing, the golden oracle,
+copy-based write validation, the DS7–DS10 chain, or any Navigator gate on push,
+release, deletion, or npm publication.
+
 ### CV22 restarts after reconciliation of the pause-window Python behavior
 
 **Date:** 2026-09-02

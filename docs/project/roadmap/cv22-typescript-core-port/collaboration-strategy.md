@@ -2,36 +2,168 @@
 
 # CV22 Collaboration Strategy
 
-**Purpose:** record how Alisson and Vinícius will divide the TypeScript Core Port work with fewer handoffs, so both humans and both Mirrors can preserve the same operating understanding.
+**Purpose:** record how the TypeScript Core Port is operated, so the human
+driving it and the Mirror loading the journey keep the same understanding of
+ownership, cadence, review, and the rules that protect convergence.
+
+**Operating model since 2026-09-07: single owner.** Vinícius is solely
+responsible for the entire migration — the DS7 remainder, DS8, DS9, and DS10.
+Alisson moved to a different aspect of Mirror and is not working on the Python
+core on `main`. The two-person baton model that carried DS2–DS5 is closed; its
+record is preserved below as history, because the handoff statements are the
+evidence chain for those plateaus. Decision record:
+[Decisions — CV22 becomes a single-owner migration](../../decisions.md).
 
 ---
 
 ## Context
 
-CV22 ports Mirror Mind's Python core (`src/memory/`) to TypeScript through a database-seam strangler. The work is part-time and collaborative. Alisson and Vinícius are both active in the migration, and the main coordination risk is not lack of skill. It is too many small handoffs.
+CV22 ports Mirror Mind's Python core (`src/memory/`) to TypeScript through a
+database-seam strangler. The work is part-time and long-running, and its
+coordination risk has changed shape:
 
-Small handoffs create hidden cost: repeated re-contextualization, unclear ownership, partial states that are hard to resume, and pressure to explain every local decision. The preferred strategy is therefore to pass the work only at meaningful plateaus.
+- With two people, the risk was too many small handoffs — repeated
+  re-contextualization, unclear ownership, partial states that are hard to
+  resume, pressure to explain every local decision.
+- With one person working part-time, the same cost appears between sessions
+  instead of between people — and there is no second human at any boundary.
 
-A handoff should happen when the project reaches a new habitable state, not when an arbitrary task is half-finished.
+The strategy therefore keeps the plateau discipline exactly as it was and moves
+the review burden onto the structured persona panel.
 
 ---
 
 ## Strategy
 
-Work is divided by **baton blocks**, not by fine-grained specialization.
+### Work in plateaus, not tasks
 
-Each person carries the work until a coherent plateau exists. Then the baton passes with a clear statement of:
+Each block of work runs until a coherent, habitable state exists — a state that
+a future session can resume without reconstructing intent from chat history. A
+plateau closes with a handoff statement, now addressed to the next session and
+to the Mirror that will load the journey next:
 
 - what is now true;
 - what remains intentionally undone;
-- what the next person should bring to the next plateau;
-- which validation evidence supports the handoff.
+- what the next plateau is;
+- which validation evidence supports it.
 
-This minimizes coordination overhead while preserving continuity.
+Story packages (`index.md`, `plan.md`, `validation.md`, `review.md`,
+`handoff.md`) and the
+[burn-down ledger](cv22-ds7-command-burn-down/burn-down-ledger.md) are where
+those statements live. A session should not end mid-slice when a plateau is
+within reach; when it must, the story package says so explicitly.
+
+### The persona panel is the standing second opinion
+
+With no second human, the multi-persona technical review is not a supplement to
+review — it is the review. Baseline panel: engineer, quality-assurance,
+database-architect, devops-engineer, security-engineer; add ai-engineer when a
+story touches model-in-the-loop behavior (DS8 especially).
+
+Two checkpoints, unchanged from the two-person phase:
+
+1. **Plan review, before implementation** — each persona reviews the planned
+   slice, risks, validation route, and missing constraints, so the plan is
+   enriched before code starts. Required for every story above a small slice.
+   A small slice is one bounded command or subcommand family with an existing
+   pattern to copy (for example, `backup` after the DS4 write pattern).
+2. **Implementation/handoff review, after validation** — each persona reviews
+   the delivered code, tests, safety posture, operational risks, and
+   resumability. Findings are classified as blockers, non-blocking debt,
+   questions for the next plateau, or accepted scope boundaries.
+
+Skipping either checkpoint is a recorded decision in the story package, not a
+default.
+
+### Ownership is not split
+
+The earlier lane split — mechanical seams, fixtures, and package mechanics on
+one side; semantic coherence, Ariad alignment, and Python retirement decisions
+on the other — is collapsed. Python retirement decisions (what DS10 removes,
+what gets a documented cutoff, what `runtime`'s update path becomes under npm
+distribution) are taken by the same person porting the seams, at plan time,
+and recorded near the roadmap. Nobody confirms them; that is precisely why they
+must be written down.
 
 ---
 
-## Proposed Baton Sequence
+## Operating Rules
+
+### Preserve the database-seam discipline
+
+The shared SQLite database remains the seam. Read-only commands may be
+validated live when safe. Writes must prove parity on database copies before
+they are trusted against real user data; write parity is never proven against
+the live production database.
+
+### Python is product authority only where TS is not
+
+Per the
+[2026-08-13](../../decisions.md#typescript-strangler-tracks-a-moving-python-product-instead-of-freezing-it)
+and
+[2026-09-02](../../decisions.md#cv22-restarts-after-reconciliation-of-the-pause-window-python-behavior)
+decisions there is no global Python freeze: Python remains product authority
+for commands TS has not strangled, and each Python change creates named TS
+parity scope in the owning CV22 story. Once a command is ported, new behavior
+for it lands in TS and Python becomes compatibility-only there.
+
+What changed on 2026-09-07 is exposure, not policy. The main source of Python
+movement was CV20/CV21 Builder work on `main`, and its author is no longer
+working on the Python core. Remaining movement is maintenance fixes and
+parity-driven oracle fixes by the port owner, both caught by the oracle-drift
+tripwire (`ts/parity/oracle-baseline.json`). DS7.US8's "moving oracle" risk is
+reduced, not eliminated: re-baseline after every `main` merge, and treat any
+drift as a build failure.
+
+### Make validation portable
+
+Every plateau leaves commands and expected observations that another session,
+another Mirror, or a future collaborator can run without reconstructing intent.
+The redacted real-DB-copy harness (`ts/parity/real_db_copy_parity.py`), the
+portable demo database (`ts/parity/generate_demo_memory_db.py`), the CI
+determinism gate, and each story's `test-guide.md` are the vehicles. Real
+database artifacts are never committed.
+
+### Record decisions near the roadmap
+
+Stable collaboration or architecture decisions go in CV22 docs or
+[`docs/project/decisions.md`](../../decisions.md), not only in conversation
+memory. A single owner has no one to remind them of an unrecorded decision.
+
+### Protect the bus factor
+
+Single ownership raises the cost of an interrupted plateau. The mitigations
+are the rules above, applied without exception: resumable plateaus, portable
+validation, decisions in files, story packages that a stranger could pick up,
+and green CI on every push.
+
+---
+
+## Remaining Sequence
+
+```text
+DS7 — command burn-down (7/12): US6 Soul, US7 Explorer, US8 Builder/Ariad tree,
+      US9 Workspace/web hierarchy rider, TS1 ops/utility tail (sliced; open
+      decisions recorded in the TS1 package)
+→ DS8 live-provider cutover
+→ DS9 TS MCP server
+→ DS10 Python retirement and npm distribution
+```
+
+The risk-first ordering from the DS7 package still applies: the Builder/Ariad
+tree last, against the most stable oracle available. The deletion gate remains
+DS6's schema custody transfer (done); DS10 cannot delete Python until every
+command and non-command runtime surface carries explicit TS ownership.
+
+---
+
+## History — Two-Person Phase (closed 2026-09-07)
+
+Between DS2 and DS5 the port was shared by Alisson and Vinícius and divided by
+**baton blocks**: each person carried the work until a coherent plateau
+existed, then passed it with a statement of what was true, what was undone,
+what came next, and which evidence supported it. The batons below are kept as
+written, as the evidence record for those plateaus.
 
 ### Baton 1: Alisson closes CV22.DS2.US1, `search` Command Parity
 
@@ -91,9 +223,9 @@ Handoff statement to Vinícius:
 
 ### Baton 4: Vinícius carries CV22.DS4, Deterministic Writes
 
-Vinícius carries the write-command block.
+Vinícius carried the write-command block.
 
-Expected plateau:
+Plateau reached:
 
 - deterministic write commands are ported to TS;
 - writes are validated against database copies, never directly against the live production database during parity proof;
@@ -118,81 +250,21 @@ Handoff statement to Vinícius:
 
 > DS5 is closed at the replay-safe external-API plateau. The TS core can exercise external-provider-backed command families without live credentials in CI, and the front door routes only validated DS5 surfaces under explicit gates while preserving Python fallback everywhere else. Please treat this as replay/copy-safe parity, not live-provider cutover. The next work should either verify/push the DS5 closure and then move toward DS6 convergence/schema custody, or explicitly plan a live-provider cutover story with the new multi-persona Plan review protocol before implementation.
 
-### Later batons: CV22.DS6–DS10 (division made)
+### After Baton 5
 
-The remaining convergence work has now been divided, risk-first, into five
-Delivery Stories — see
+The remaining convergence work was divided, risk-first, into five Delivery
+Stories — see
 [Decisions — CV22.DS6 splits into a risk-ordered retirement chain](../../decisions.md):
 **DS6** Schema Custody Transfer, **DS7** Command Burn-Down & Re-homed Feature
 Work, **DS8** Live-Provider Cutover, **DS9** TS MCP Server, **DS10** Python
-Retirement & npm Distribution. Live-provider cutover stays in scope (option A)
-so the Python core can be fully deleted rather than leaving a permanent shim.
+Retirement & npm Distribution. DS6 and the first seven DS7 stories were
+delivered under that division; their records live in the DS6 and DS7 packages
+and in the [worklog](../../../process/worklog.md). The "likely ownership
+pattern" the division proposed (mechanical seams to Vinícius, semantic
+coherence and retirement decisions to Alisson) never became fine-grained
+slicing and is superseded by the single-owner model above.
 
-The deletion gate is **DS6 — schema custody transfer** (RS003/CR019), now
-authored as a full package
-([CV22.DS6](cv22-ds6-schema-custody-transfer/index.md)). Everything that
-creates, migrates, and disciplines the database lives only in Python (schema
-DDL, migration engine and `_migrations` bookkeeping, cross-process bootstrap
-locking, WAL and pragma discipline in `src/memory/db/connection.py`). TS must
-own all of it, proven over real legacy databases, before the Python core can be
-deleted. Recorded plan inputs for the same horizon: the DS5 access-count read
-strategy and the DS5/DS8/DS9 security riders in the CV22 index; the schema-state
-guard (`ts/src/db/schemaState.ts`) already holds the seam closed during the
-transition and its `KNOWN_MIGRATION_IDS` snapshot becomes the handover manifest.
-
-Likely ownership pattern:
-
-- Vinícius leads mechanical engineering of deterministic seams, fixtures, record/replay, and package mechanics.
-- Alisson leads semantic coherence, product/runtime feel, Ariad alignment, MCP/plugin convergence meaning, and Python retirement decisions.
-
-But this should not become fine-grained slicing too early. The same baton rule applies: hand off at coherent plateaus.
-
----
-
-## Operating Rules
-
-### Prefer plateau handoffs
-
-A handoff should say: “this state is coherent and resumable.” Avoid handing off while the code is merely locally understandable to the current driver.
-
-### Use multi-persona technical review at baton boundaries
-
-For significant Delivery Stories and handoffs, run a structured review with the shared technical personas before the baton changes hands. The baseline review panel is:
-
-- engineer;
-- QA;
-- database architect;
-- devops;
-- security.
-
-The review has two checkpoints:
-
-1. **Plan review, before implementation** — each persona reviews the planned slice, risks, validation route, and missing constraints. This is the preferred protocol for new work, following Vinícius's Ariad practice: enrich the plan before code starts, similar in spirit to TDD but with the full technical team shaping the target.
-2. **Implementation/handoff review, after validation** — each persona reviews the delivered code, tests, safety posture, operational risks, and handoff clarity. Findings are classified as blockers, non-blocking debt, questions for the next driver, or accepted scope boundaries.
-
-If a story is already implemented before this protocol is applied, do not reopen the Plan artificially. Run the implementation/handoff review and record that the plan-stage review was skipped because the protocol was adopted mid-story.
-
-The handoff should include a compact review summary: personas consulted, blockers resolved or absent, non-blocking findings, explicit scope boundaries, and the final recommendation.
-
-### Preserve the database-seam discipline
-
-The shared SQLite database remains the seam. Read-only commands may be validated live when safe. Writes must prove parity on database copies before they are trusted against real user data.
-
-### Keep Python maintenance-only
-
-Python remains the oracle and fallback during the transition, not the place for new feature growth. New feature work should land in TS when it belongs to CV22.
-
-### Make validation portable
-
-Every baton should leave commands and expected observations that another person, or another Mirror, can run without reconstructing intent from chat history.
-
-### Record decisions near the roadmap
-
-Stable collaboration or architecture decisions should be recorded in CV22 docs or `docs/project/decisions.md`, not only in conversation memory.
-
----
-
-## Compact Sequence
+### Closed sequence
 
 ```text
 Alisson: CV22.DS2.US1 search parity + CV22.DS2.TS3 reusable redacted real-DB-copy parity harness
@@ -200,21 +272,18 @@ Alisson: CV22.DS2.US1 search parity + CV22.DS2.TS3 reusable redacted real-DB-cop
 → Alisson: CV22.DS3 Pi TS front door and dogfooding
 → Vinícius: CV22.DS4 deterministic writes
 → Alisson: CV22.DS5 replay-safe external-API commands and gated front-door routing
-→ Next: verify/push DS5 closure, hand off to Vinícius, then divide CV22.DS6/live-provider convergence after the new Plan-review protocol
+→ DS6 and DS7 US1–US5, US10, TS2 under the risk-ordered division
+→ 2026-09-07: single owner (Vinícius) for the DS7 remainder, DS8, DS9, DS10
 ```
 
 ---
 
 ## Why This Shape
 
-This strategy reduces the number of handoffs while still keeping the migration incremental. It avoids splitting work so finely that both people must continuously reload the same local context. It also avoids giving one person an entire vague CV-level arc.
-
-The baton changes hands when the terrain changes nature:
-
-- from proving the core search parity;
-- to completing read-only parity;
-- to making the transition state usable;
-- to allowing safe writes;
-- to external APIs and final convergence.
-
-That is the rhythm CV22 needs: fewer transfers, clearer plateaus, stronger continuity.
+The two-person shape reduced handoffs while keeping the migration incremental:
+the baton changed hands when the terrain changed nature. The single-owner shape
+keeps what made that work — plateaus, portable validation, decisions in files —
+and replaces the human at the boundary with the persona panel, because the
+thing a second person actually provided was not labor but dissent at the right
+moment. That is the rhythm CV22 still needs: fewer transfers, clearer
+plateaus, stronger continuity, and a review that cannot be skipped by accident.
