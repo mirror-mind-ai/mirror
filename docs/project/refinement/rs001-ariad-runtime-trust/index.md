@@ -34,3 +34,7 @@ cannot choose safely.
 - [CR009 — Name the target project in artifact materialization surfaces](cr009-name-the-target-project-in-artifact-surfaces.md)
 - [CR015 — Preserve Driver-authored Plan before approval](cr015-preserve-driver-authored-plan-before-approval.md)
 - [CR016 — Verify authored roadmap state before Delivery Story Done](cr016-verify-authored-roadmap-before-ds-done.md)
+- [CR017 — Every mutating Ariad command warns that the Operational projection failed, and names no consequence](cr017-projection-refresh-warning-on-every-command.md)
+- [CR018 — Story titles containing `/` are truncated to the text after the last slash in surfaces and scaffolds](cr018-story-titles-with-slashes-truncated-in-surfaces-and-scaffolds.md)
+- [CR019 — The Plan checkpoint states things that are not true for the target project](cr019-plan-checkpoint-states-untruths-about-the-target-project.md)
+- [CR020 — No read-only way to re-render the active checkpoint, and the refusals name the wrong reason](cr020-no-read-only-way-to-re-render-the-active-checkpoint.md)
