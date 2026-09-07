@@ -12,6 +12,16 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-07 — CV22.DS7.US10 Extraction Lifecycle (session composites & LLM-tail flips) completed
+
+The extraction lifecycle is fully burned down. **`conversation-logger` answers from TypeScript for all fifteen subcommands**: the ten deterministic ones under the family switch, and the five that cross `end_conversation`'s LLM close tail — `switch`, `session-end-pi`, the `session-end` hook, `session-start`, `session-maintenance` — only under the replay transport (`MIRROR_TS_EXTERNAL_ROUTES=1` plus the two `MIRROR_TS_CONVERSATION_*_REPLAY` fixtures), so an unconfigured install keeps the Python fallback and no live model call moves before DS8. Two revert controls remain: the family switch and unsetting the gate. `conversations append` flipped too (float metadata resolved value-semantics in Python first). **DS7 progress 6/12 → 7/12.**
+
+**Ported:** the close-time metadata lifecycle engine and its three LLM surfaces with byte-exact prompt assembly; the session composites with their string-exact report; journey inference and the mutating repair; the atomic session import (Python fixed first for the import-vs-hook race); the Pi, Codex, and transcript backfills — TypeScript had no transcript backfill at all; Python's extraction failure accounting (attempts, quarantine); the model-call ledger the DS5 pipeline never wrote.
+
+**Found by porting, fixed in both cores' favor:** TypeScript assembled no prompt bytes at all (a live provider would have received a bare transcript); the extraction driver never awaited the async orchestration, so a rejected extraction escaped isolation and counted as a success; embedding ledger rows were stamped from the wall clock; `generateTitle` cut by UTF-16 unit; the slice-D golden generator went live through a developer's key for three days; the DS4 `journey` write probe had been silently broken since DS6.US2; CI regenerated none of the US10 goldens and ran none of the write probes. All seven probes and a 64-check hook-inclusive lifecycle smoke through the real front door now run in the CI parity job.
+
+**Validation** run by the Navigator (smoke, the lifecycle by hand on a kept home, the three cross-core probes on the demo copy) and accepted with two explicit qualifications: `repair-journeys --apply` stays on Python until DS7.TS1 ports `backup`, and the TypeScript ledger is unpriced until DS8. **Debt Review** deferred seven findings with a revisit trigger; the discarded second summary call, the UTF-16 title length in `titleNeedsImprovement`, and the local-only web-server test became **CR056–CR058** under the new **RS010 — CV22 Oracle And Port Hygiene**.
+
 ### 2026-09-02 — CV22 restarted; CV22.DS7.US5 Extraction Lifecycle (deterministic core) completed
 
 CV22 was restarted after the pause-window reconciliation merge, then DS7.US5 was pulled, planned under a three-persona review (ai-engineer, prompt-engineer, quality-assurance), implemented, validated, and closed.

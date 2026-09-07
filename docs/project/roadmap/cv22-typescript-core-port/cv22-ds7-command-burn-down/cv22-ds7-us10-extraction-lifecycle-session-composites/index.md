@@ -2,11 +2,13 @@
 
 # CV22.DS7.US10 — Extraction lifecycle: session composites & LLM-tail flips
 
-**Status:** 🔵 In Progress — implementation complete (slices C′, B′, D, E, F;
-2026-09-07). `conversation-logger` 15/15 routed to TS, the five LLM-crossing
-subcommands under the replay gate; `repair-journeys --apply` is the one
-recorded exception (waits for DS7.TS1's `backup` port). Awaiting Navigator
-Validation. Resume from [handoff.md](handoff.md).
+**Status:** ✅ Done (2026-09-07). `conversation-logger` 15/15 routed to TS,
+the five LLM-crossing subcommands under the replay gate; `repair-journeys
+--apply` is the one recorded exception (waits for DS7.TS1's `backup` port).
+Validation accepted by the Navigator; Debt Review deferred seven findings
+(three captured as CR056–CR058 under RS010). Story record: [plan](plan.md),
+[test-guide](test-guide.md), [validation](validation.md), [review](review.md),
+[coherence](coherence.md), [handoff](handoff.md).
 **Type:** User Story
 **Continues:** [CV22.DS7.US5](../cv22-ds7-us5-extraction-lifecycle/index.md)
 
