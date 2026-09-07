@@ -159,6 +159,12 @@ jobs:
         with:
           node-version: "24"
 
+      # The harness verifiers need no npm package, but the lifecycle smoke
+      # spawns the real front door, which does (yaml, for the seed route).
+      - name: Install TypeScript dependencies (for the front-door smoke)
+        working-directory: ts
+        run: npm ci
+
       - name: Generate portable demo database
         run: |
           mkdir -p tmp/parity
