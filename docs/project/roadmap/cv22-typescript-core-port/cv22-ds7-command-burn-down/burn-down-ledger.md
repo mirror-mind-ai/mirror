@@ -25,17 +25,17 @@ the three explicitly owned by later Delivery Stories: `mcp` (DS9), `web`
 | Read-only deterministic | `detect-persona`, `journeys`, `memories` (listing) | 3/3 | DS2 | ✅ done |
 | Deterministic writes | `identity set`, `journey set-path` | (subcommands) | DS4 | ✅ done |
 | External under replay | `memories --search`, `consult` | 1/1 (+`consult`) | DS5 | ✅ done |
-| Identity/journey reads & writes | `identity`, `journey`, `seed`, `init`, `descriptor`, `list`, `inspect`, `conversations`, `recall` | 9/9† | DS7.US1 | ✅ done |
+| Identity/journey reads & writes | `identity`, `journey`, `seed`, `init`, `descriptor`, `list`, `inspect`, `conversations`, `recall` | 9/9†‡ | DS7.US1 | ✅ done |
 | Content & planning writes | `journal`, `tasks`, `week` | 3/3 | DS7.US2 | ✅ done |
 | Memory cultivation | `consolidate`, `shadow` | 2/2 | DS7.US3 | ✅ done |
 | mirror-mode orchestration | `mirror`, `mode` | 2/2 | DS7.US4 | ✅ done |
 | Extension context runtime | (`ext`/`extensions` context path) | — | DS7.TS2 | ✅ done |
 | **Extraction lifecycle (deterministic core)** | **`conversation-logger`** | **partial** | **DS7.US5** | ✅ **done — 7/15 subcommands flipped** |
-| Extraction lifecycle (composites & LLM tail) | `conversation-logger` remainder | 8/8 | DS7.US10 | 🔵 in progress — all eight flipped; `--apply` route waits for TS1; Validation pending |
+| Extraction lifecycle (composites & LLM tail) | `conversation-logger` remainder | 8/8‡ | DS7.US10 | ✅ done (2026-09-07) — `repair-journeys --apply` route waits for TS1's `backup` |
 | Soul Mode | `soul` | 0/1 | DS7.US6 | 🟡 planned |
 | Explorer Mode | `explore` | 0/1 | DS7.US7 | 🟡 planned |
 | Builder/Ariad | `build` | 0/1 | DS7.US8 | 🟡 planned |
-| Ops/utility tail | `backup`, `repair-encoding`, `extensions`, `ext`, `welcome`, `migrate-legacy`, `runtime`, `journey-projection` | 0/8 | DS7.TS1 | 🟡 planned |
+| Ops/utility tail | `backup`, `repair-encoding`, `extensions`, `ext`, `welcome`, `migrate-legacy`, `runtime`§, `journey-projection` | 0/8‡ | DS7.TS1 | 🟡 planned |
 
 Deferred to later Delivery Stories (excluded from the denominator): `mcp`
 (DS9), `web` (DS10), `eval` (DS8).
@@ -46,6 +46,31 @@ main — which is exactly how the 2026-09-02 routing defect happened — so "don
 here means "the subcommands that existed when it was ported", not "every argv
 shape forever". `append` keeps its own explicit routing entry precisely so it
 can never again be answered by inheritance.
+
+‡ Branch residuals owed by TS1, not counted in the top-level numbers above: US1
+deferred `list extensions|all` and
+`inspect extension|runtime-catalog|llm-calls|embedding-provenance`
+(`routing.ts` sends them to Python, bound to TS1), and US10 left
+`repair-journeys --apply` on Python until TS1 ports `backup`. The family
+counts are top-level commands; these branches are the per-branch remainder the
+rule above requires to stay visible.
+
+§ `runtime` is ≈3k lines
+(`status|version|latest|pending|diagnose|update|pull|backup|stable|release-doctor|release-notes|release-promote`)
+— the safe runtime updater and release-promotion machinery, closer to DS10's
+runtime/package cutover than to `repair-encoding`. It is counted in the 32
+denominator today; whether TS1 ports it or DS10 owns it is an explicit decision
+at TS1 plan time. If DS10 takes it, the denominator moves 32 → 31 here, not
+silently.
+
+Outside the denominator, still Python-only, owner needed before DS10 deletes
+Python: `memory-rehearse-migration` (`cli/migration_rehearsal.py`, a
+`pyproject.toml` console script; open discussion in `decisions.md` since
+2026-04-17). `transcript-export` is **not** a command: `cli/transcript_export.py`
+has no CLI entry, its only live consumer (the transcript backfill's
+`parse_jsonl`/`_assistant_text`) was ported in US10, and
+`export_transcript`/`export_last_turn` have no production caller — DS10 deletion
+inventory, not TS1 scope.
 
 ---
 
@@ -136,3 +161,4 @@ subcommands now answer from TS by default.
 | 2026-09-07 | **US10 slice F, group 1 flipped: `switch`, `session-end-pi`, `session-end` route to TS under the replay gate.** Seven-point checklist: goldens green (1209 TS tests); the three new real-DB-copy write probes green (`close_tail`, `session_composites`, `journey_repair_apply` — plus the DS4 `journey` probe, found broken since DS6.US2 and repaired); the hook-inclusive lifecycle smoke green through the real front door (`ts/parity/conversation_lifecycle_smoke.ts`, 58 checks); read-side and write-side harnesses green over the already-flipped families; the front-door log carries no payloads and the ledger withholds bodies; `MIRROR_TS_CONVERSATION_LOGGER=0` exercised. `conversation-logger` 7/15 → 10/15. Every write probe and the smoke now run in the CI parity job. |
 | 2026-09-07 | **US10 slice F, group 2 flipped: `diagnose-journeys`, `repair-journeys` (dry run), `backfill-codex-session` route to TS.** Deterministic, so no gate beyond the family switch. Checklist: journey-repair and backfill goldens green; `journey_repair_apply` probe green on the demo copy (dry run and `--apply` before/after); lifecycle smoke green with the three routes now on TS and `--apply` verified to stay on Python; redaction and revert exercised. `conversation-logger` 10/15 → 13/15. |
 | 2026-09-07 | **US10 slice F, group 3 flipped: `session-start` and `session-maintenance` route to TS** (`--fast` ungated; the full run and maintenance under the replay gate). Checklist: session-composite golden green including the poison-pill accounting scenario; `session_composites` probe green on the demo copy (two orphans closed, one poisoned and carried over, one retitle, one extraction, fifteen ledger rows in order); lifecycle smoke green with every route now on TS and the maintenance re-run adding zero ledger rows; redaction and revert exercised. `conversation-logger` 13/15 → 15/15. The family's deterministic Python subcommands are at zero. |
+| 2026-09-07 | **TS1 inventory reconciled** against `src/memory/__main__.py` dispatch and `routing.ts`. The DS7 index carried two stale lists (`conversation-logger` mute/switch — flipped in US5; `transcript-export` and `migration-rehearsal` — not top-level commands) and omitted `runtime` and `journey-projection`, which this ledger already counted. Index prose, candidate table, ledger, and the TS1 package now agree on the eight commands above plus the ‡ branch residuals. `runtime` flagged for an explicit port-or-DS10 decision (§); `memory-rehearse-migration` recorded as an out-of-denominator Python entry point needing an owner. US10 row status corrected to done. |

@@ -93,10 +93,24 @@ into the families that will become child stories:
   flow-unit; inspect/adopt/prepare-templates/sync-cursor). The largest,
   highest-churn, `transport=verbatim` surface, re-homing in-flight CV20/CV21
   work. Ported last or in tight lockstep with a frozen oracle snapshot.
-- **Ops/utility tail** — `backup`, `repair-encoding`, `extensions`, `ext`,
-  `welcome`, `migrate-legacy`, `migration-rehearsal`, `transcript-export`,
-  `conversation-logger` (mute/switch), `inspect llm-calls`. Cleanup to reach the
-  zero-deterministic-command line.
+- **Ops/utility tail** — the eight top-level `python -m memory` commands still
+  on Python fallback with no other owner: `backup`, `repair-encoding`,
+  `extensions`, `ext`, `welcome`, `migrate-legacy`, `runtime`,
+  `journey-projection`; plus the subcommand branches US1 deferred here
+  (`list extensions|all`, `inspect extension|runtime-catalog|llm-calls|`
+  `embedding-provenance`) and the `repair-journeys --apply` routing line that
+  waits on the `backup` port. Cleanup to reach the zero-deterministic-command
+  line. `runtime` (≈3k lines; `update`/`pull`/`stable`/`release-*` are the safe
+  runtime updater and release-promotion machinery) needs an explicit
+  port-or-DS10 decision at plan time — it is not low risk by inspection.
+  Reconciled 2026-09-07 against `src/memory/__main__.py`: `conversation-logger`
+  mute/switch flipped in US5; `transcript-export` is not a command (its only
+  live consumer, the transcript backfill, was ported in US10, and the export
+  functions have no production caller); `migration-rehearsal` is the
+  `memory-rehearse-migration` console script, outside the denominator, and
+  needs an owner — TS1 port or DS10 removal, closing the open discussion in
+  `decisions.md`. The [burn-down ledger](burn-down-ledger.md) is the auditable
+  list.
 - **Workspace/web hierarchy retirement rider** — recursive Workspace JSON, hierarchy-
   bearing selector payloads, parent/create web adapters, and compatibility evidence for
   the existing static JavaScript consumers. This is DS7.US9, not a CLI command and not
@@ -196,7 +210,7 @@ and may land whenever its US1/CR051 and CR052 dependencies are stable.
 | CV22.DS7.US7 | Explorer Mode | User Story | `explore` exploratory-story surfaces answered by TS (med risk) | 🟡 Planned |
 | CV22.DS7.US8 | Builder/Ariad tree | User Story | `build` full Delivery + Refinement lifecycle answered by TS, re-homing in-flight CV20/CV21 work; largest, highest-churn, `transport=verbatim` surface (highest risk — churn) | 🟡 Planned |
 | [CV22.DS7.US9](cv22-ds7-us9-workspace-web-hierarchy-parity/index.md) | Workspace and web hierarchy parity | User Story — retirement rider | Recursive Workspace DTOs, hierarchy-bearing endpoint adapters, selected-scope isolation, and existing JavaScript renderer compatibility have named TS ownership and parity evidence; excluded from the command denominator but required for DS7 done | 🟡 Planned |
-| CV22.DS7.TS1 | Ops/utility tail | Technical Story | `backup`, `repair-encoding`, `extensions`, `ext`, `welcome`, `migrate-legacy`, `transcript-export`, `inspect llm-calls` answered by TS to reach zero deterministic Python commands (low–med risk) | 🟡 Planned |
+| [CV22.DS7.TS1](cv22-ds7-ts1-ops-utility-tail/index.md) | Ops/utility tail | Technical Story | `backup`, `repair-encoding`, `extensions`, `ext`, `welcome`, `migrate-legacy`, `runtime`, `journey-projection`, the US1-deferred `list extensions/all` and `inspect extension/runtime-catalog/llm-calls/embedding-provenance` branches, and the `repair-journeys --apply` route answered by TS to reach zero deterministic Python commands (low–med risk, except `runtime`: explicit port-or-DS10 decision at plan time) | 🟡 Planned |
 
 `identity edit` (spawns `$EDITOR`) and other interactive seams are called out for
 an explicit port-or-keep decision at plan time rather than a silent port.
