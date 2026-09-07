@@ -2,8 +2,9 @@
 
 # CV22.DS7.US10 — Extraction lifecycle: session composites & LLM-tail flips
 
-**Status:** 🔵 In Progress — slices C′, B′, and D done; slice E half done
-(paused 2026-09-03). Resume from [handoff.md](handoff.md).
+**Status:** 🔵 In Progress — slices C′, B′, D, and E done (2026-09-07);
+slice F (the eight routing flips) not started. Resume from
+[handoff.md](handoff.md).
 **Type:** User Story
 **Continues:** [CV22.DS7.US5](../cv22-ds7-us5-extraction-lifecycle/index.md)
 

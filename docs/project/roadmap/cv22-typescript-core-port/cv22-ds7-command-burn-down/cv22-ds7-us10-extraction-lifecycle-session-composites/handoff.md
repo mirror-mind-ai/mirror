@@ -1,11 +1,8 @@
-# Handoff — CV22.DS7.US10 (paused 2026-09-03)
+# Handoff — CV22.DS7.US10 (plateau: slice E complete, 2026-09-07)
 
 **Ariad state:** active item `CV22.DS7.US10`, `last_delivery_event=plan_approved`,
 no active checkpoint, no pending confirmation. Implementation is mid-flight;
 nothing is validated or done. Resume with `/mm-build mirror-ts-core`.
-
-**Branch state:** working tree clean, 11 commits ahead of `90bb5f4` (US5 closure).
-Nothing pushed yet — see *Before anything else* below.
 
 ---
 
@@ -16,113 +13,120 @@ Nothing pushed yet — see *Before anything else* below.
 | **C′** | Close tail under replay | ✅ done |
 | **B′** | Float metadata + `append` flip | ✅ done |
 | **D** | Session composites | ✅ done |
-| **E** | Diagnose/repair + backfills | 🔵 half done |
-| **F** | The eight routing flips | ⬜ not started |
+| **E** | Diagnose/repair + backfills | ✅ done (2026-09-07) |
+| **F** | The eight routing flips + E2E | ⬜ not started |
 
-### Slice E remaining (the next work)
+Every port the plan names now exists in `ts/src/conversation/`; nothing new
+is routed. `conversation-logger` is still **7/15** with `conversations append`
+on TS. The remaining work is slice F: wiring and flipping, one subcommand at a
+time, through the seven-point checklist.
 
-1. **`backfill_pi_sessions`** — `src/memory/cli/conversation_logger.py:596`.
-   Source-dir resolution order is part of the contract: explicit argument →
-   module override → `PI_SESSIONS_DIR` → `~/.pi/agent/sessions`. JSONL parsing,
-   `>= 2` message gate, provisional title from the first user line truncated to
-   60 chars, runtime-session upsert with `closed_at`. Slice D currently injects
-   this as `backfillPiSessions` returning 0; wire the real one in
-   `sessionComposites.ts`.
-2. **`backfill_codex_session`** — same file, line 673. Note it titles via
-   `_generate_title` (deterministic truncation), **not** `set_provisional_title`
-   like the Pi backfill. That asymmetry is Python's; reproduce it.
-3. **The session-less backfill path** in `hook_session_end` (line 994): when
-   `session_id` is empty but a transcript exists, Python still backfills. US5's
-   hook port deliberately left this out.
+### Slice E, second half (what landed 2026-09-07)
 
-### Slice F flip order (from the approved plan, do not reorder)
+- `sessionImport.ts` — `importClosedConversation`, the atomic seam with the
+  in-transaction binding re-check (resolved decision 4B). Proven by a real
+  second process holding `BEGIN IMMEDIATE`, binding the session, and keeping
+  its binding while the backfill returns 0.
+- `backfill.ts` — `backfillPiSessions` + `resolvePiSessionsDir` (argument →
+  `PI_SESSIONS_DIR` → `~/.pi/agent/sessions`), `backfillCodexSession`.
+- `transcriptBackfill.ts` — `backfillAssistantMessages` (+ `parseJsonl`,
+  `assistantText`). TypeScript had **no** transcript backfill before this;
+  US5's hook port only resolved the path.
+- `logger.ts` — `handleSessionEndHook` now ends **then** backfills, including
+  the session-less route. The order is pinned: the just-ended `ended_at`
+  bounds the backfill, and reversing it fails two tests.
+- `sessionComposites.ts` — `backfillPiSessions` is a **required** dep (the
+  slice-D stub defaulting to 0 is gone). The composite still reads no
+  environment; slice F's composition root resolves the directory.
+- `util/pythonText.ts` — the code-point comparator that `append.ts` and
+  `metadataLifecycle.ts` had each duplicated, plus code-point slicing and
+  Python's `Path` component ordering. `generateTitle` (US5) was cutting by
+  UTF-16 unit; fixed, pinned by the Codex emoji golden.
+- `ts/test/fixtures/backfill/` + `backfill.golden.json` +
+  `generate_backfill_golden.py`; `transcript_export.py` registered as an
+  oracle; CI's determinism gate now regenerates all six US10 goldens on 3.10
+  and 3.12 (it regenerated none of them before).
 
-- `switch`, `session-end-pi`, `session-end` — need C′ only (**unblocked now**)
-- `diagnose-journeys`, `repair-journeys`, `backfill-codex-session` — need E
-- `session-maintenance`, full `session-start` — need C′ + D + E's `backfill-pi-sessions`
+## Slice F — read before flipping anything
 
-Each flip goes through the seven-point checklist in `test-guide.md` and updates
-`burn-down-ledger.md`. `conversation-logger` is at **7/15**; `conversations
-append` is already TS with revert control `MIRROR_TS_CONVERSATION_APPEND=0`.
+**Prerequisite gap.** `test-guide.md` names three write-parity probes
+(`close_tail`, `session_composites`, `journey_repair_apply`) as flip
+checklist item 2, and `ts/parity/write_parity.py` has none of them — only the
+four US5-era probes. Either build them before the first flip or take an
+explicit Navigator decision to substitute the state goldens plus the E2E smoke
+for item 2. Do not flip with item 2 silently unmet.
+
+**Composition root.** The front door needs a `MaintenanceDeps` builder:
+`closeConversation` = `endConversation` + `createCloseHooks` under the replay
+gate (as `sessionComposites.test.ts` wires it), `retitleConversation` =
+`maybeGenerateTitle`, `runExtraction` = the DS5 orchestration,
+`backfillPiSessions` = `backfillPiSessions(db, { sessionsDir:
+resolvePiSessionsDir(null, process.env, homedir()) }, deps)`, `monotonic` =
+`performance.now() / 1000`, `now` = `nowIso`. `loggerCli.ts` must grow the
+eight subcommands and `routing.ts`'s `TS_CONVERSATION_LOGGER_SUBCOMMANDS`
+must admit each only when it flips.
+
+**Flip order (approved plan, do not reorder):**
+
+- `switch`, `session-end-pi`, `session-end` — need C′ only (unblocked)
+- `diagnose-journeys`, `repair-journeys`, `backfill-codex-session` — need E (unblocked now)
+- `session-maintenance`, full `session-start` — need C′ + D + E (unblocked now)
+
+Each flip: seven-point checklist in `test-guide.md`, `burn-down-ledger.md`
+updated, `MIRROR_TS_CONVERSATION_LOGGER=0` exercised once.
 
 ---
 
-## Before anything else
-
-Nothing has been pushed. Push and verify CI before starting new work — this
-branch changed Python behavior (the append contract) and CI covers 3.10 and
-3.12, which is exactly where that change needs proving on someone else's
-machine.
+## Verification (all green at this plateau)
 
 ```bash
-git push
-gh run list --limit 1
-gh run watch
-```
-
-There is one **pre-existing, unrelated** local failure:
-`tests/unit/memory/web/test_server.py::test_operations_run_api_executes_runtime_diagnose_through_controlled_command`.
-Confirmed failing on clean HEAD with all US10 work stashed. It spawns
-`python -m memory runtime diagnose` as a subprocess and the test's wait window
-expires locally. **Check whether it also fails in CI** — if it does not, it is a
-local-environment artifact; if it does, it deserves its own CR. Not US10 scope
-either way.
-
----
-
-## Verification (all green at pause, except the above)
-
-```bash
-cd ts && npm test && npm run typecheck && npm run lint && cd ..   # 1169 TS tests
-uv run pytest tests/ -q --ignore=tests/live                        # 2826 Python tests
+cd ts && npm test && npm run typecheck && npm run lint && cd ..   # 1190 TS tests
+uv run pytest tests/ -q --ignore=tests/live                        # 2829 Python tests (see below)
 uv run python scripts/check_oracle_drift.py
 uv run ruff check src/ tests/ && uv run ruff format --check src/ tests/
 
 # Golden determinism — every generator must be a no-op on a clean tree
-MEMORY_ENV=test uv run python ts/parity/generate_metadata_lifecycle_golden.py
-MEMORY_ENV=test uv run python ts/parity/generate_prompt_assembly_golden.py
-MEMORY_ENV=test uv run python ts/parity/generate_close_tail_golden.py
-MEMORY_ENV=test uv run python ts/parity/generate_session_composite_golden.py
-MEMORY_ENV=test uv run python ts/parity/generate_journey_repair_golden.py
+for g in metadata_lifecycle prompt_assembly close_tail session_composite journey_repair backfill; do
+  MEMORY_ENV=test uv run python ts/parity/generate_${g}_golden.py >/dev/null
+done
 git diff --exit-code ts/test/goldens/
 ```
+
+**Resolved:** the local-only failure in
+`tests/unit/memory/web/test_server.py::test_operations_run_api_executes_runtime_diagnose_through_controlled_command`
+is a local-environment artifact — CI was green at `47086b9` with the same
+tree. Deselect it locally; it is not US10 scope.
 
 ---
 
 ## Two working rules this story earned the hard way
 
-**1. Mutation-test every golden before trusting it.** Three times a suite went
-green on the first run and was still weak. Each time the gap was a *boundary*,
-not a branch:
+**1. Mutation-test every golden before trusting it.** Now four times: slice E's
+second half went green first run with five boundaries untested (window start,
+window end, conversation start, window end past the clock, user text blocks).
+Each was found by a surviving mutation, never by reading. Deliberately break
+the constant and confirm a test fails. If nothing fails, the evidence is
+decorative.
 
-- C′: substance threshold `>= 4` and the medium/low confidence split `>= 10`
-  survived mutation because no scenario sat on either boundary (12 boundary
-  scenarios added).
-- D: the stale-orphan threshold survived `30 → 60` because every fixture was
-  three hours idle (29- and 31-minute fixtures added).
-- E: an "ambiguous aliases" fixture compared lengths 9 and 8, so the ambiguity
-  branch was never exercised at all.
-
-Deliberately break the constant and confirm a test fails. If nothing fails, the
-evidence is decorative.
-
-**2. Goldens must be regeneration-stable, and two were not.** Slice D stored raw
-wall-clock seconds; slice E stored Python's set-iteration order, which string
-hash randomization varies *per process*. Both were fixed by moving the check
-into the generator (raise on non-conforming input) and storing only normalized
-values. Run any new generator 3+ times and compare hashes before committing.
+**2. Goldens must be regeneration-stable.** Slice E's second generator had a
+subtler version of the same bug: `memory.config` reads `DB_PATH` at import, so
+re-pointing it between sections silently kept writing to the first fixture
+database. Every logger call now passes `mirror_home` explicitly and the
+fixture path is resolved through the same rule. Run any new generator 3+ times
+and compare hashes — and check the counts make sense before believing them.
 
 ---
 
 ## Open items carried forward
 
-- **Debt register** (`plan.md`) has four entries awaiting this story's Debt
-  Review: unbounded orphan spend, the discarded second summary call, the cost of
+- **Debt register** (`plan.md`) has four entries awaiting Debt Review:
+  unbounded orphan spend, the discarded second summary call, the cost of
   re-closing a finalized conversation, and the stored-JSON byte divergences.
-- **Slice D hook-race disposition** is still undecided (resolved decision 3):
-  prove concurrent hook get-or-create on copies with the 8-process pattern, or
-  record it as an accepted risk with rationale. Decide it explicitly.
-- **DS8 inputs found here, worth carrying into that story's plan:** TypeScript
-  had no prompt assembly at all before this story (a live provider would have
-  sent a bare transcript with no instructions); `close_stale_orphans` is
-  unbounded; and re-closing a conversation costs three extra model calls.
+- **Code-point vs code-unit elsewhere.** `titleNeedsImprovement`
+  (`metadataLifecycle.ts`) compares `title.length >= 55` where Python uses
+  `len()`. Same class as the `generateTitle` fix; not touched because it sits
+  under the slice-C′ goldens and no fixture has an astral character near the
+  boundary. Worth a CR, not a silent edit.
+- **Hook-race disposition** is resolved (decision 4, plan.md); no harness.
+- **DS8 inputs:** TypeScript had no prompt assembly before this story;
+  `close_stale_orphans` is unbounded; re-closing costs three calls.

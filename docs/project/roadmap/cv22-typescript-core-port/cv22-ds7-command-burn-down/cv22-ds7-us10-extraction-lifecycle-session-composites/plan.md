@@ -104,7 +104,26 @@ pinned), and the DS5 orchestration `runConversationExtraction`
   and slice C′ pieces in Python's exact step order. Report parity is
   string-exact in grammar and counts; elapsed-seconds values are wall-clock
   and cannot be byte-stable — parity strategy per resolved decision 2.
-- **E — Diagnose/repair + backfills.**
+- **E — Diagnose/repair + backfills.** ✅ Done 2026-09-07 (`461bb5d`
+  diagnose/repair; `47086b9` the Python-first import atomicity fix of
+  resolved decision 4B; and the backfill port commit). Ports
+  `import_closed_conversation` (`sessionImport.ts`, the atomic seam with the
+  in-transaction binding re-check, proven with a real second process holding
+  the lock), `backfill_pi_sessions` and `backfill_codex_session`
+  (`backfill.ts`), `backfill_assistant_messages` (`transcriptBackfill.ts` —
+  TypeScript had no transcript backfill at all), and the session-less
+  `hook_session_end` route. Graded as database state over a committed
+  fixture corpus (`ts/test/fixtures/backfill/`, `backfill.golden.json`);
+  every generator and helper mutation-tested, with five boundary fixtures
+  added after the first green run survived mutations (exact window start and
+  end, exact conversation start, a window end past the frozen clock, a user
+  entry with text blocks).
+  Divergence found and fixed while porting: `generateTitle` (US5) cut by
+  UTF-16 code unit where Python's `_generate_title` slices by code point, so
+  an emoji-led title diverged; fixed and pinned by the Codex emoji golden.
+  The shared code-point comparator two modules had duplicated was extracted
+  to `ts/src/util/pythonText.ts` and the Pi walk order (Python sorts `Path`
+  by components, not by string) added to it.
   `diagnose-journeys` (read-only), `repair-journeys` (dry-run default;
   `--apply` proven on copies with before/after assertions, same discipline as
   every write), journey inference with its semantic path behind the replay

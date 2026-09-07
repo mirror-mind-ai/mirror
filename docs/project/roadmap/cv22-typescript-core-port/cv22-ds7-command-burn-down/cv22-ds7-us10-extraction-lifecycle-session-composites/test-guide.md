@@ -17,14 +17,38 @@ cd ts && npm test && npm run typecheck && npm run lint && cd ..
 uv run pytest tests/ -q --ignore=tests/live
 uv run python scripts/check_oracle_drift.py
 
-# Golden determinism — regeneration must be a no-op on a clean tree
+# Golden determinism — regeneration must be a no-op on a clean tree.
+# CI runs the same six on Python 3.10 and 3.12 (gate extended 2026-09-07;
+# until then only the pre-US10 generators were regenerated in CI).
 MEMORY_ENV=test uv run python ts/parity/generate_metadata_lifecycle_golden.py   # landed (slice C′)
 MEMORY_ENV=test uv run python ts/parity/generate_prompt_assembly_golden.py      # landed (slice C′, all six surfaces)
 MEMORY_ENV=test uv run python ts/parity/generate_close_tail_golden.py           # landed (slice C′, call sequences)
-MEMORY_ENV=test uv run python ts/parity/generate_session_composite_golden.py    # (lands in slice D)
-MEMORY_ENV=test uv run python ts/parity/generate_journey_repair_golden.py       # (lands in slice E)
+MEMORY_ENV=test uv run python ts/parity/generate_session_composite_golden.py    # landed (slice D)
+MEMORY_ENV=test uv run python ts/parity/generate_journey_repair_golden.py       # landed (slice E)
+MEMORY_ENV=test uv run python ts/parity/generate_backfill_golden.py             # landed (slice E: Pi/Codex/transcript + hook routes)
 git diff --exit-code ts/test/goldens/
 ```
+
+## Backfill state goldens (slice E)
+
+The three backfills and the four `hook_session_end` routes are graded as
+resulting database state over the committed corpus in
+`ts/test/fixtures/backfill/`. The import-vs-live-hook race (resolved decision
+4B) is proven with a real second process holding the write lock.
+
+```bash
+cd ts && node --test test/conversation/backfill.test.ts \
+  test/conversation/transcriptBackfill.test.ts test/conversation/logger-hooks.test.ts && cd ..
+```
+
+- **Pass:** counts and full state (conversations, messages, runtime sessions
+  in insertion order) equal the oracle's; the Pi walk order is `a/b.jsonl`
+  before `a-x/c.jsonl`; the race test leaves the live binding active with
+  count 0.
+- **Fail:** any state divergence, a string-ordered walk, or a clobbered
+  binding. Mutation-check: flip `<=` to `<` on any bound in
+  `transcriptBackfill.ts` — a fixture sits on every boundary, so one test
+  must fail.
 
 ## Replay prompt-digest assertion (slice C′)
 
@@ -140,7 +164,7 @@ py() { MEMORY_ENV=test MIRROR_HOME="$PY_HOME" MIRROR_USER="$(basename "$PY_HOME"
 - **Fail:** any divergence in row states, ordering, ledger roles, report
   grammar or counts, or a fallback subcommand behaving differently.
 
-### Session-less backfill path (slice E)
+### Session-less backfill path (slice E — landed; routes in slice F)
 
 ```bash
 echo '{"session_id":"","transcript_path":"'$SMOKE_HOME'/transcript.jsonl"}' \
