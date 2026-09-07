@@ -2,7 +2,7 @@
 
 # CV22 — TypeScript Core Port (Database-Seam Strangler)
 
-**Status:** 🟢 Active — restarted 2026-09-02 after pause-window reconciliation; DS7 command burn-down in progress (7/12)
+**Status:** 🟢 Active — restarted 2026-09-02 after pause-window reconciliation; DS7 command burn-down in progress (7/14)
 **Goal:** Port Mirror Mind's Python core (`src/memory/`) to TypeScript through a database-seam strangler — never a big-bang rewrite — so the system converges on one language across core and runtimes, distributes through npm, widens the contributor pool, and aligns with the MCP/plugin ecosystem, all without losing the accumulated correctness of the ranker, extraction, and memory pipeline.
 
 ---
@@ -282,7 +282,10 @@ Risk-first, mirroring the decision spine:
    blocks DS10 closure until deleted. US5 and US10 then ported the extraction
    lifecycle end to end (**7/12**): `conversation-logger` answers from TS for
    all fifteen subcommands, the five that cross the LLM close tail only under
-   the replay transport, so the live model call stays Python's until DS8.
+   the replay transport, so the live model call stays Python's until DS8. On
+   2026-09-07 the ops tail was reconciled against the real dispatch, `runtime`'s
+   update/release half and `migrate-legacy` were assigned to DS10, and the tail
+   was split into three technical stories (TS1, TS3, TS4) — DS7 is **7/14**.
    US9 is the separately
    visible non-command Workspace/web hierarchy rider required
    before DS7 can finish.

@@ -3,7 +3,7 @@
 # CV22.DS7 — Command Burn-Down & Re-homed Feature Work
 
 **Delivery Story:** Port the remaining **deterministic** command surface from the Python core to the TypeScript core — the Builder/Ariad tree (re-homing CV20/CV21 in-flight work), Soul, Explorer, mirror-mode orchestration, memory cultivation, the extraction lifecycle, remaining identity/journey reads and writes, and the content/ops tail — behind the DS5 replay-safe `LlmTransport` seam and the DS6 TS-owned database. Carry the bounded non-command Workspace/web hierarchy retirement rider so zero commands cannot conceal a live Python browser contract. DS8, DS9, and DS10 own the later live-provider, MCP, and final runtime/package cutovers.
-**Status:** 🟢 In Progress — US1–US5, US10, and TS2 are done (**7/12**); US6–US9 and TS1 remain. US10 closed the extraction lifecycle: `conversation-logger` is 15/15 on TS, its five LLM-crossing subcommands under the replay gate until DS8, with `repair-journeys --apply` waiting on TS1's `backup` port. US5 was re-scoped on 2026-09-02 to its deterministic core, with the LLM-close-tail slices moved to the new US10, so the denominator moved from 11 to 12. TS2 removed US4's whole-command extension fallback through TS-owned `mirror-context-v1`; its finite Python compatibility host has mandatory deletion ownership in DS10.
+**Status:** 🟢 In Progress — US1–US5, US10, and TS2 are done (**7/14**); TS1, TS3, US6–US9, and TS4 remain. US10 closed the extraction lifecycle: `conversation-logger` is 15/15 on TS, its five LLM-crossing subcommands under the replay gate until DS8, with `repair-journeys --apply` waiting on TS1's `backup` port. US5 was re-scoped on 2026-09-02 to its deterministic core, with the LLM-close-tail slices moved to the new US10, so the denominator moved from 11 to 12; on 2026-09-07 the ops tail was split into three technical stories (TS1, TS3, TS4) so each slice is its own pull, moving it to 14. TS2 removed US4's whole-command extension fallback through TS-owned `mirror-context-v1`; its finite Python compatibility host has mandatory deletion ownership in DS10.
 **Type:** Delivery Story
 **Depends on:** [CV22.DS3 Pi TS Front Door](../cv22-ds3-pi-ts-front-door/index.md) (done) for the routing table this story flips entries in; [CV22.DS4 Deterministic Writes](../cv22-ds4-deterministic-writes/index.md) (done) for backup-gated, copy-validated write discipline; [CV22.DS5 External-API Commands](../cv22-ds5-external-api-commands/index.md) (done) for the replay-safe `LlmTransport` provider boundary that orchestration ports behind; [CV22.DS6 Schema Custody Transfer](../cv22-ds6-schema-custody-transfer/index.md) (done) so every write/migration a ported command needs is answered by the TS-owned database.
 **Retirement rider dependency:** [RS008](../../../refinement/rs008-v0319-recursive-journey-parity/index.md) CR050–CR053 provide metadata authority, recursive reads, safe movement, and conservative removal; CR054 assigns their Workspace/web convergence owner.
@@ -100,8 +100,10 @@ into the families that will become child stories:
   `welcome` imports), the subcommand branches US1 deferred here
   (`list extensions|all`, `inspect extension|runtime-catalog|llm-calls|`
   `embedding-provenance`), and the `repair-journeys --apply` routing line that
-  waits on the `backup` port. Delivered as three slices (see the
-  [TS1 package](cv22-ds7-ts1-ops-utility-tail/index.md)). Decided 2026-09-07:
+  waits on the `backup` port. Delivered as three technical stories — TS1 DB
+  safety tools, TS3 daily-visible tail, TS4 extension catalog and projection
+  contract (see the [TS1 package](cv22-ds7-ts1-ops-utility-tail/index.md)).
+  Decided 2026-09-07:
   `runtime`'s git-based update/release half is DS10's to redesign under npm, not
   ported; `migrate-legacy` and the `memory-rehearse-migration` console script
   retire unported in DS10; `conversation-logger` mute/switch was flipped in US5;
@@ -192,8 +194,11 @@ The table uses the canonical `| Code | Story | Type | Outcome | Status |`
 candidate-story grammar so Ariad Expand can resolve and reuse this authored
 package. Row order is the risk-first command sequence: US1 (low-churn deterministic
 tail) first, the security-sensitive cultivation/extraction writes in the middle behind
-the replay seam, the highest-churn `transport=verbatim` Builder/Ariad tree (US8) last,
-and the ops tail (TS1) to reach zero. TS2 is placed immediately after US4 because it owns
+the replay seam, the highest-churn `transport=verbatim` Builder/Ariad tree (US8) last.
+The ops tail is three technical stories: TS1 (`backup`, `repair-encoding`) and TS3
+(`welcome`, `runtime` reads) sit before US6 because they close live gaps and `backup` is
+the gate the Soul and Builder write ports lean on; TS4 (extension catalog,
+`journey-projection`) stays in the tail to reach zero. TS2 is placed immediately after US4 because it owns
 US4's explicit extension-binding fallback and must close before the `mirror load` command
 can count as fully burned down. US9 is a separately visible non-command retirement rider
 and may land whenever its US1/CR051 and CR052 dependencies are stable.
@@ -207,11 +212,13 @@ and may land whenever its US1/CR051 and CR052 dependencies are stable.
 | [CV22.DS7.TS2](cv22-ds7-ts2-extension-context-provider-runtime-convergence/index.md) | Extension context provider runtime convergence | Technical Story | Replace US4's bounded Python-only extension-provider fallback with a TS-owned compatibility contract; no silent context loss and no permanent language bridge (high risk — extension compatibility) | ✅ Done — `mirror-context-v1` active; finite legacy host deletion gated in DS10 |
 | [CV22.DS7.US5](cv22-ds7-us5-extraction-lifecycle/index.md) | Extraction lifecycle: deterministic core | User Story | Deterministic `conversation-logger` core, hook entries, the `conversations append` boundary, and the budgeted extraction driver answered by TS; seven subcommands flipped (high risk — writes) | ✅ Done |
 | [CV22.DS7.US10](cv22-ds7-us10-extraction-lifecycle-session-composites/index.md) | Extraction lifecycle: session composites & LLM-tail flips | User Story | Session composites, diagnose/repair, backfills, and the flips that cross `end_conversation`'s LLM close tail, behind the replay transport (high risk — writes + provider seam) | ✅ Done |
+| [CV22.DS7.TS1](cv22-ds7-ts1-ops-utility-tail/index.md) | Ops/utility tail 1: DB safety tools | Technical Story | `backup` (dated zip archive; unblocks the `repair-journeys --apply` route) and `repair-encoding` (backup-gated mojibake repair) answered by TS, proven on copies (low risk; DS4 write pattern) | 🟡 Planned |
+| CV22.DS7.TS3 | Ops/utility tail 2: daily-visible tail | Technical Story | `welcome` (session-start card and status line) and the `runtime` read subcommands it imports — `status`, `version`, `diagnose`, `latest`, `pending`, `release-notes` — answered by TS, each allowlisted explicitly so the DS10-owned mutating half never inherits the route; `diagnose` stops misreporting TS-authored migrations (low–med risk) | 🟡 Planned |
 | CV22.DS7.US6 | Soul Mode | User Story | `soul` full surface answered by TS with `transport=verbatim` rendering parity and the `soul apply` identity-write gate (med–high risk) | 🟡 Planned |
 | CV22.DS7.US7 | Explorer Mode | User Story | `explore` exploratory-story surfaces answered by TS (med risk) | 🟡 Planned |
 | CV22.DS7.US8 | Builder/Ariad tree | User Story | `build` full Delivery + Refinement lifecycle answered by TS, re-homing in-flight CV20/CV21 work; largest, highest-churn, `transport=verbatim` surface (highest risk — churn) | 🟡 Planned |
 | [CV22.DS7.US9](cv22-ds7-us9-workspace-web-hierarchy-parity/index.md) | Workspace and web hierarchy parity | User Story — retirement rider | Recursive Workspace DTOs, hierarchy-bearing endpoint adapters, selected-scope isolation, and existing JavaScript renderer compatibility have named TS ownership and parity evidence; excluded from the command denominator but required for DS7 done | 🟡 Planned |
-| [CV22.DS7.TS1](cv22-ds7-ts1-ops-utility-tail/index.md) | Ops/utility tail | Technical Story | Three slices: (1) `backup`, `repair-encoding`; (2) `welcome` + `runtime` reads; (3) `extensions`, `ext`, `journey-projection`, the US1-deferred `list extensions/all` and `inspect extension/runtime-catalog/llm-calls/embedding-provenance` branches — plus the `repair-journeys --apply` route — answered by TS to reach zero deterministic Python commands (low–med risk; slice 3 mutates skill directories and takes the Plan review). `runtime`'s mutating half and `migrate-legacy` are DS10's, not here. | 🟡 Planned |
+| CV22.DS7.TS4 | Ops/utility tail 3: extension catalog and projection contract | Technical Story | `extensions`, `ext`, `journey-projection`, and the US1-deferred `list extensions/all` and `inspect extension/runtime-catalog/llm-calls/embedding-provenance` branches answered by TS to reach zero deterministic Python commands (med risk — install/uninstall/expose/clean mutate skill directories; takes the multi-persona Plan review). `runtime`'s mutating half and `migrate-legacy` are DS10's, not here. | 🟡 Planned |
 
 `identity edit` (spawns `$EDITOR`) and other interactive seams are called out for
 an explicit port-or-keep decision at plan time rather than a silent port.

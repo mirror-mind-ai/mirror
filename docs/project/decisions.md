@@ -56,7 +56,9 @@ Decided:
 5. **TS1 is sliced, not pulled as one bucket:** slice 1 `backup` +
    `repair-encoding`; slice 2 `welcome` + `runtime` reads; slice 3 the extension
    catalog (`extensions`, `ext`, the US1-deferred `list`/`inspect` branches) +
-   `journey-projection`. Slices 1 and 2 are pulled before DS7.US6 because they
+   `journey-projection`. Because Ariad pulls one roadmap item at a time, the
+   slices are three technical stories — TS1, TS3, TS4 — and DS7's story count
+   moves 12 → 14. Slices 1 and 2 are pulled before DS7.US6 because they
    close live gaps (`repair-journeys --apply`, the `diagnose` false alarm) and
    `backup` is the gate the Soul and Builder write ports lean on. US8 stays
    last.

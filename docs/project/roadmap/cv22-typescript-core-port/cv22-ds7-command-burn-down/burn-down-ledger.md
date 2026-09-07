@@ -39,7 +39,7 @@ documented cutoff, not ported). Working denominator: **30** (32 until the
 | Soul Mode | `soul` | 0/1 | DS7.US6 | 🟡 planned |
 | Explorer Mode | `explore` | 0/1 | DS7.US7 | 🟡 planned |
 | Builder/Ariad | `build` | 0/1 | DS7.US8 | 🟡 planned |
-| Ops/utility tail | `backup`, `repair-encoding`, `extensions`, `ext`, `welcome`, `journey-projection` (+ `runtime` reads§) | 0/6‡ | DS7.TS1 | 🟡 planned — sliced: 1 `backup`+`repair-encoding`; 2 `welcome`+`runtime` reads; 3 extension catalog+`journey-projection` |
+| Ops/utility tail | `backup`, `repair-encoding`, `extensions`, `ext`, `welcome`, `journey-projection` (+ `runtime` reads§) | 0/6‡ | DS7.TS1 / TS3 / TS4 | 🟡 planned — TS1 `backup`+`repair-encoding`; TS3 `welcome`+`runtime` reads; TS4 extension catalog+`journey-projection` |
 
 Deferred to later Delivery Stories (excluded from the denominator): `mcp`
 (DS9), `web` (DS10), `eval` (DS8), `runtime` (DS10, mutating half; reads are
@@ -73,7 +73,7 @@ its reads are tracked here as branch coverage:
 
 | `runtime` subcommand | Owner | TS ported | Routed to TS |
 |----------------------|-------|:---------:|:------------:|
-| `status`, `version`, `diagnose`, `latest`, `pending`, `release-notes` | TS1 slice 2 | — | — |
+| `status`, `version`, `diagnose`, `latest`, `pending`, `release-notes` | DS7.TS3 | — | — |
 | `update`, `pull`, `stable`, `backup`, `release-doctor`, `release-promote` | DS10 (redesign under npm) | n/a | Python until DS10 |
 
 Outside the denominator and retiring unported in DS10:
@@ -178,3 +178,4 @@ subcommands now answer from TS by default.
 | 2026-09-07 | **US10 slice F, group 3 flipped: `session-start` and `session-maintenance` route to TS** (`--fast` ungated; the full run and maintenance under the replay gate). Checklist: session-composite golden green including the poison-pill accounting scenario; `session_composites` probe green on the demo copy (two orphans closed, one poisoned and carried over, one retitle, one extraction, fifteen ledger rows in order); lifecycle smoke green with every route now on TS and the maintenance re-run adding zero ledger rows; redaction and revert exercised. `conversation-logger` 13/15 → 15/15. The family's deterministic Python subcommands are at zero. |
 | 2026-09-07 | **TS1 inventory reconciled** against `src/memory/__main__.py` dispatch and `routing.ts`. The DS7 index carried two stale lists (`conversation-logger` mute/switch — flipped in US5; `transcript-export` and `migration-rehearsal` — not top-level commands) and omitted `runtime` and `journey-projection`, which this ledger already counted. Index prose, candidate table, ledger, and the TS1 package now agree on the eight commands above plus the ‡ branch residuals. `runtime` flagged for an explicit port-or-DS10 decision (§); `memory-rehearse-migration` recorded as an out-of-denominator Python entry point needing an owner. US10 row status corrected to done. |
 | 2026-09-07 | **TS1 decisions recorded; denominator 32 → 30.** `runtime` splits by mutation: reads (`status|version|diagnose|latest|pending|release-notes`) port in TS1 slice 2 with `welcome`; the git-based update/release half is DS10's to redesign under npm, not ported. `migrate-legacy` retires unported in DS10 with a documented cutoff; `memory-rehearse-migration` retires unported in DS10, closing its 2026-04-17 open discussion. TS1 is 0/6 and sliced (1 `backup`+`repair-encoding`, 2 `welcome`+`runtime` reads, 3 extension catalog+`journey-projection`); slices 1–2 pull before US6. Nothing routed or deleted today. |
+| 2026-09-07 | **Ops tail split into three technical stories** so each slice is its own Ariad pull under the one-active-item rule: TS1 (`backup`, `repair-encoding`), TS3 (`welcome`, `runtime` reads), TS4 (extension catalog, `journey-projection`, US1-deferred branches). DS7 story denominator 12 → 14; command denominator unchanged at 30. TS1 pulled. |
