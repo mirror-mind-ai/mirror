@@ -26,6 +26,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 OUT_PATH = HERE.parent / "test" / "goldens" / "session-composite.golden.json"
 
+# Any transcript carrying this marker makes the stubbed extraction call fail.
+POISON_MARKER = "POISON"
+
 # Python renders `f"{label}: {count} ({elapsed:.1f}s)"`. The capture keeps the
 # label and count exact while isolating the wall-clock number.
 TIMING_RE = re.compile(r"^(?P<label>[^:]+): (?P<count>\d+) \((?P<seconds>\d+\.\d)s\)$")
@@ -115,10 +118,15 @@ def main() -> None:
 
         replies = {"title": "A generated title", "summary": "A summary.", "tags": '["alpha"]'}
 
-        def fake_send_to_model(model, messages, **kwargs):  # noqa: ANN001, ANN003
+        def fake_send_to_model(model, messages, **kwargs):
             from memory.intelligence import prompts as p
 
             prompt = messages[0]["content"]
+            # A poison-pill transcript: the extraction call fails every time,
+            # which is how CV9.E2.S7's attempt counter and quarantine are
+            # reached through the REAL pipeline rather than by seeding flags.
+            if prompt.startswith(p.EXTRACTION_PROMPT) and POISON_MARKER in prompt:
+                raise RuntimeError("provider rejected the transcript")
             if prompt.startswith(p.CONVERSATION_TITLE_PROMPT):
                 return _Response(replies["title"])
             if prompt.startswith(p.CONVERSATION_TAGS_PROMPT):
@@ -138,6 +146,7 @@ def main() -> None:
             message_count: int,
             last_message_at: str,
             journey: str | None = "mirror-ts-core",
+            content_prefix: str = "",
         ) -> None:
             mem.store.create_conversation(
                 Conversation(
@@ -156,7 +165,7 @@ def main() -> None:
                         id=f"{conversation_id}-m{index:02d}",
                         conversation_id=conversation_id,
                         role="user" if index % 2 == 0 else "assistant",
-                        content=f"line {index}",
+                        content=f"{content_prefix}line {index}",
                         created_at=last_message_at,
                     )
                 )
@@ -173,6 +182,12 @@ def main() -> None:
                     **(extra or {}),
                 }
             )
+
+        def metadata_of(conversation_id: str) -> str | None:
+            row = mem.store.conn.execute(
+                "SELECT metadata FROM conversations WHERE id = ?", (conversation_id,)
+            ).fetchone()
+            return row["metadata"] if row else None
 
         # 1. Nothing to do: every step reports zero and no warning tail appears.
         record("maintenance_empty_database", logger.session_maintenance(mirror_home=str(home)))
@@ -209,7 +224,32 @@ def main() -> None:
         )
         record("maintenance_retitles_pending_conversation", logger.session_maintenance(str(home)))
 
-        # 5. The quarantine warning tail.
+        # 4b. A poison-pill stale orphan reaches quarantine through the real
+        # pipeline. Run one: closing it runs the close tail (extraction fails,
+        # attempt 1; finalization still runs), then extract_pending retries it
+        # (attempt 2) and reports the carry-over. Run two: attempt 3 quarantines
+        # it, and the report's warning tail replaces the carry-over line.
+        seed_conversation(
+            "conv-poison",
+            ended=False,
+            title="Provisional title",
+            metadata=json.dumps({"title_status": "provisional"}),
+            message_count=4,
+            last_message_at="2026-09-03T09:00:00.000000Z",
+            content_prefix=POISON_MARKER + " ",
+        )
+        record(
+            "maintenance_poison_pill_first_run_carries_over",
+            logger.session_maintenance(str(home)),
+            extra={"poison_metadata": metadata_of("conv-poison")},
+        )
+        record(
+            "maintenance_poison_pill_second_run_quarantines",
+            logger.session_maintenance(str(home)),
+            extra={"poison_metadata": metadata_of("conv-poison")},
+        )
+
+        # 5. The quarantine warning tail, seeded directly (counts with 4b's).
         seed_conversation(
             "conv-quarantined",
             ended=True,

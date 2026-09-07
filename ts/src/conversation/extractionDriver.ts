@@ -60,25 +60,35 @@ export function selectUnextractedConversations(
 export interface ExtractPendingOptions {
   /** Defaults to the released maintenance budget. */
   limit?: number;
-  /** The DS5 orchestration behind replay; throwing marks this one failed. */
-  runExtraction: (db: WritableDatabase, conversationId: string) => void;
+  /**
+   * The DS5 orchestration behind replay, wrapped in Python's `_run_extraction`
+   * accounting (`extractionRun.ts`); a throw or a rejection marks this one
+   * failed. Async because the orchestration awaits providers -- a synchronous
+   * signature here would let a rejected extraction escape the isolation below
+   * and count as a success.
+   */
+  runExtraction: (db: WritableDatabase, conversationId: string) => Promise<void> | void;
 }
 
 /**
- * Extract memories from ended conversations not yet processed.
+ * Extract memories from ended conversations not yet processed, one at a time
+ * in queue order.
  *
  * Returns the number of conversations successfully extracted. Each is isolated:
  * a failure is skipped so it cannot crash the batch or block the queue behind
  * it, matching Python's bare `except Exception: continue`.
  */
-export function extractPending(db: WritableDatabase, options: ExtractPendingOptions): number {
+export async function extractPending(
+  db: WritableDatabase,
+  options: ExtractPendingOptions,
+): Promise<number> {
   const limit = options.limit ?? DEFAULT_MAINTENANCE_MAX_EXTRACTIONS;
   if (limit <= 0) return 0;
 
   let extracted = 0;
   for (const conversation of selectUnextractedConversations(db, limit)) {
     try {
-      options.runExtraction(db, conversation.id);
+      await options.runExtraction(db, conversation.id);
       extracted += 1;
     } catch {}
   }

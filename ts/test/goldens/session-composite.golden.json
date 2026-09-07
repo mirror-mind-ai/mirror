@@ -93,7 +93,31 @@
       ]
     },
     {
-      "label": "maintenance_reports_quarantine_tail",
+      "label": "maintenance_poison_pill_first_run_carries_over",
+      "poison_metadata": "{\"title_status\": \"generated\", \"extraction_attempts\": 2, \"extraction_status\": \"llm_failed\", \"previous_title\": \"Provisional title\", \"title_source\": \"close_time_metadata_finalization\", \"summary_status\": \"generated\", \"summary_source\": \"close_time_metadata_finalization\", \"tags_status\": \"generated\", \"tags_source\": \"close_time_metadata_finalization\", \"metadata_lifecycle_version\": 1, \"last_metadata_update_source\": \"close_time_metadata_finalization\"}",
+      "report_normalized": "Conversation maintenance complete.\nClosed stale conversations: 1 (<elapsed>s)\nBackfilled Pi sessions: 0 (<elapsed>s)\nRetitled pending conversations: 0 (<elapsed>s)\nExtracted pending conversations: 0 (<elapsed>s)\n1 conversation(s) carried over to the next run (maintenance extraction budget)",
+      "steps": [
+        {
+          "count": 1,
+          "label": "Closed stale conversations"
+        },
+        {
+          "count": 0,
+          "label": "Backfilled Pi sessions"
+        },
+        {
+          "count": 0,
+          "label": "Retitled pending conversations"
+        },
+        {
+          "count": 0,
+          "label": "Extracted pending conversations"
+        }
+      ]
+    },
+    {
+      "label": "maintenance_poison_pill_second_run_quarantines",
+      "poison_metadata": "{\"title_status\": \"generated\", \"extraction_attempts\": 3, \"extraction_status\": \"llm_failed\", \"previous_title\": \"Provisional title\", \"title_source\": \"close_time_metadata_finalization\", \"summary_status\": \"generated\", \"summary_source\": \"close_time_metadata_finalization\", \"tags_status\": \"generated\", \"tags_source\": \"close_time_metadata_finalization\", \"metadata_lifecycle_version\": 1, \"last_metadata_update_source\": \"close_time_metadata_finalization\", \"extraction_quarantined\": true}",
       "report_normalized": "Conversation maintenance complete.\nClosed stale conversations: 0 (<elapsed>s)\nBackfilled Pi sessions: 0 (<elapsed>s)\nRetitled pending conversations: 0 (<elapsed>s)\nExtracted pending conversations: 0 (<elapsed>s)\n\u26a0 1 conversation(s) quarantined after repeated extraction failure",
       "steps": [
         {
@@ -115,8 +139,30 @@
       ]
     },
     {
+      "label": "maintenance_reports_quarantine_tail",
+      "report_normalized": "Conversation maintenance complete.\nClosed stale conversations: 0 (<elapsed>s)\nBackfilled Pi sessions: 0 (<elapsed>s)\nRetitled pending conversations: 0 (<elapsed>s)\nExtracted pending conversations: 0 (<elapsed>s)\n\u26a0 2 conversation(s) quarantined after repeated extraction failure",
+      "steps": [
+        {
+          "count": 0,
+          "label": "Closed stale conversations"
+        },
+        {
+          "count": 0,
+          "label": "Backfilled Pi sessions"
+        },
+        {
+          "count": 0,
+          "label": "Retitled pending conversations"
+        },
+        {
+          "count": 0,
+          "label": "Extracted pending conversations"
+        }
+      ]
+    },
+    {
       "label": "session_start_full",
-      "report_normalized": "Conversation logging ACTIVE.\nConversation maintenance complete.\nClosed stale conversations: 0 (<elapsed>s)\nBackfilled Pi sessions: 0 (<elapsed>s)\nRetitled pending conversations: 0 (<elapsed>s)\nExtracted pending conversations: 0 (<elapsed>s)\n\u26a0 1 conversation(s) quarantined after repeated extraction failure",
+      "report_normalized": "Conversation logging ACTIVE.\nConversation maintenance complete.\nClosed stale conversations: 0 (<elapsed>s)\nBackfilled Pi sessions: 0 (<elapsed>s)\nRetitled pending conversations: 0 (<elapsed>s)\nExtracted pending conversations: 0 (<elapsed>s)\n\u26a0 2 conversation(s) quarantined after repeated extraction failure",
       "steps": [
         {
           "count": 0,

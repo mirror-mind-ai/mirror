@@ -38,8 +38,8 @@ export interface MaintenanceDeps {
   closeConversation: (db: WritableDatabase, conversationId: string) => Promise<void> | void;
   /** Improve one ended conversation's title; returns true when it changed. */
   retitleConversation: (db: WritableDatabase, conversationId: string) => Promise<boolean> | boolean;
-  /** The DS5 orchestration behind replay, as the driver already injects it. */
-  runExtraction: (db: WritableDatabase, conversationId: string) => void;
+  /** The DS5 orchestration behind replay with its accounting, as the driver injects it. */
+  runExtraction: (db: WritableDatabase, conversationId: string) => Promise<void> | void;
   /**
    * `backfillPiSessions` (slice E) bound to its resolved sessions directory.
    * Injected rather than resolved here so the composite never reads the

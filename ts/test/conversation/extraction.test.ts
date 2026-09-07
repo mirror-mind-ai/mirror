@@ -4,6 +4,10 @@ import { join } from "node:path";
 import test from "node:test";
 
 import { runConversationExtraction } from "#conversation/extraction.ts";
+import {
+  recordFailedExtractionAttempt,
+  runExtractionWithAccounting,
+} from "#conversation/extractionRun.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import { DEFAULT_EXTRACTION_MODEL } from "#providers/config.ts";
 import { ReplayEmbeddingProvider } from "#providers/embedding.ts";
@@ -233,29 +237,82 @@ test("runConversationExtraction records extraction_dropped only when sanitize ac
   }
 });
 
-test("runConversationExtraction records extraction_status: llm_failed and still throws when the LLM call fails (AI-10)", async () => {
+test("runConversationExtraction leaves the row untouched and throws when the LLM call fails; the accounting wrapper records it (AI-10, CV9.E2.S7)", async () => {
   const { db, path } = await makeDb("status-llm-failed.db");
   try {
     insertConversation(db, { id: "c1", journey: "cv22", metadata: '{"kept":true}' });
     for (let i = 1; i <= 4; i += 1)
       insertMessage(db, "c1", i % 2 ? "user" : "assistant", `m${i}`, i);
-
-    await assert.rejects(
-      runConversationExtraction(db, "c1", {
+    const extraction = (database: WritableDatabase, conversationId: string) =>
+      runConversationExtraction(database, conversationId, {
         llm: new FailingLlmProvider(),
         embeddings: new ReplayEmbeddingProvider({
           kind: "embedding",
           response: { embedding: VALID_EMBEDDING },
         }),
         now: fixedNow,
-      }),
+      });
+
+    // The orchestration itself records nothing: Python's `_extract_and_persist`
+    // leaves the metadata alone and lets `_run_extraction` account for it.
+    await assert.rejects(extraction(db, "c1"), /llm provider unreachable/);
+    assert.deepEqual(metadataOf(db, "c1"), { kept: true });
+
+    // The wrapper is Python's `_run_extraction`: attempt counted, status
+    // stamped, error propagated unmodified, and NOT marked extracted -- a
+    // failed attempt is not "done". Key order is Python's dict order.
+    await assert.rejects(
+      runExtractionWithAccounting(db, "c1", extraction),
       /llm provider unreachable/,
     );
-
-    // Recorded, but NOT marked extracted -- a failed attempt is not "done"
-    // (mirrors Python not setting meta["extracted"] on the exception path).
-    assert.deepEqual(metadataOf(db, "c1"), { kept: true, extraction_status: "llm_failed" });
+    assert.equal(
+      db.prepare("SELECT metadata FROM conversations WHERE id = 'c1'").get()?.metadata,
+      '{"kept": true, "extraction_attempts": 1, "extraction_status": "llm_failed"}',
+    );
     assert.equal(db.prepare("SELECT COUNT(*) AS count FROM memories").get()?.count, 0);
+
+    // Two more failures reach EXTRACTION_MAX_ATTEMPTS and quarantine the row.
+    await assert.rejects(runExtractionWithAccounting(db, "c1", extraction));
+    assert.deepEqual(metadataOf(db, "c1"), {
+      kept: true,
+      extraction_attempts: 2,
+      extraction_status: "llm_failed",
+    });
+    await assert.rejects(runExtractionWithAccounting(db, "c1", extraction));
+    assert.deepEqual(metadataOf(db, "c1"), {
+      kept: true,
+      extraction_attempts: 3,
+      extraction_status: "llm_failed",
+      extraction_quarantined: true,
+    });
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("recordFailedExtractionAttempt tolerates a missing row, a string counter, and malformed metadata", async () => {
+  const { db, path } = await makeDb("attempt-edges.db");
+  try {
+    assert.equal(recordFailedExtractionAttempt(db, "absent"), 0);
+
+    // Python `int("2") + 1`.
+    insertConversation(db, {
+      id: "c-str",
+      journey: "cv22",
+      metadata: '{"extraction_attempts":"2"}',
+    });
+    assert.equal(recordFailedExtractionAttempt(db, "c-str"), 3);
+    assert.equal(metadataOf(db, "c-str").extraction_quarantined, true);
+
+    // Python `_metadata_dict` yields {} for unparseable metadata: the counter
+    // starts over rather than crashing the maintenance loop.
+    insertConversation(db, { id: "c-bad", journey: "cv22", metadata: "{not json" });
+    assert.equal(recordFailedExtractionAttempt(db, "c-bad"), 1);
+    assert.deepEqual(metadataOf(db, "c-bad"), {
+      extraction_attempts: 1,
+      extraction_status: "llm_failed",
+    });
   } finally {
     db.close();
     await rm(path, { force: true });

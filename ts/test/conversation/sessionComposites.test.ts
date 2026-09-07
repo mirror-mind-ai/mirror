@@ -14,14 +14,17 @@ import { mkdtempSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import { createCloseHooks, maybeGenerateTitle } from "#conversation/closeTail.ts";
+import { runConversationExtraction } from "#conversation/extraction.ts";
+import { runExtractionWithAccounting } from "#conversation/extractionRun.ts";
 import { endConversation } from "#conversation/logger.ts";
 import {
   closeStaleOrphans,
   retitlePendingConversations,
   sessionMaintenance,
 } from "#conversation/sessionComposites.ts";
-import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
-import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import { bootstrapDatabase } from "#db/bootstrap.ts";
+import type { WritableDatabase } from "#db/database.ts";
+import { EMBEDDING_DIMENSIONS, type EmbeddingProvider } from "#providers/embedding.ts";
 import type { LlmProvider, LlmRequest, LlmResponse } from "#providers/llm.ts";
 
 const GOLDEN_PATH = new URL("../goldens/session-composite.golden.json", import.meta.url);
@@ -32,8 +35,12 @@ interface Golden {
     label: string;
     report_normalized: string;
     steps: { label: string; count: number }[];
+    poison_metadata?: string | null;
   }[];
 }
+
+/** The generator's marker: any transcript carrying it fails extraction. */
+const POISON_MARKER = "POISON";
 
 const golden: Golden = JSON.parse(readFileSync(GOLDEN_PATH, "utf8"));
 
@@ -62,27 +69,46 @@ function normalizeReport(report: string): string {
     .join("\n");
 }
 
+/**
+ * The generator's `fake_send_to_model`, keyed by role instead of by prompt
+ * prefix: the same replies, and the same poison-pill failure for extraction.
+ * `summary` is the extraction pipeline's summary call; `conversation_summary`
+ * is the close-time finalization's. Python answers both with "A summary.".
+ */
 class StubProvider implements LlmProvider {
   readonly calls: LlmRequest[] = [];
   async complete(request: LlmRequest): Promise<LlmResponse> {
     this.calls.push(request);
+    if (request.role === "extraction" && request.prompt.includes(POISON_MARKER)) {
+      throw new Error("provider rejected the transcript");
+    }
     const content =
       request.role === "conversation_title"
         ? "A generated title"
         : request.role === "conversation_tags"
           ? '["alpha"]'
-          : request.role === "conversation_summary"
+          : request.role === "conversation_summary" || request.role === "summary"
             ? "A summary."
             : "[]";
     return { content, model: "fixture-model" };
   }
 }
 
+/** The generator's stubbed `generate_embedding`: a fixed zero vector. */
+const stubEmbeddings: EmbeddingProvider = {
+  async embed() {
+    return Array<number>(EMBEDDING_DIMENSIONS).fill(0);
+  },
+};
+
+/**
+ * The real schema, not a hand-built subset: the extraction pipeline writes
+ * conversation_embeddings, memories, tasks, and llm_calls, and the generator
+ * runs it for real against the Python bootstrap.
+ */
 function fixture(): WritableDatabase {
   const dir = mkdtempSync("/tmp/session-composite-");
-  const db = openDatabaseCopyForWrite(join(dir, "copy.db"));
-  createRuntimeTables(db);
-  return db;
+  return bootstrapDatabase(join(dir, "copy.db"));
 }
 
 interface SeedOptions {
@@ -92,6 +118,7 @@ interface SeedOptions {
   messageCount: number;
   lastMessageAt: string;
   journey?: string | null;
+  contentPrefix?: string;
 }
 
 function seedConversation(db: WritableDatabase, id: string, options: SeedOptions): void {
@@ -113,7 +140,7 @@ function seedConversation(db: WritableDatabase, id: string, options: SeedOptions
       `${id}-m${String(index).padStart(2, "0")}`,
       id,
       index % 2 === 0 ? "user" : "assistant",
-      `line ${index}`,
+      `${options.contentPrefix ?? ""}line ${index}`,
       options.lastMessageAt,
     );
   }
@@ -129,38 +156,48 @@ function stubClock(): () => number {
 }
 
 function maintenanceDeps(llm: LlmProvider) {
+  let counter = 0;
+  const deps = {
+    newId: () => {
+      counter += 1;
+      return `id${String(counter).padStart(6, "0")}`;
+    },
+    nowIso: () => NOW,
+  };
+  // The DS5 orchestration wrapped in Python's `_run_extraction` accounting --
+  // the same composition the front door wires, so the maintenance report is
+  // produced by the real pipeline on both sides of the golden.
+  const runExtraction = (database: WritableDatabase, conversationId: string) =>
+    runExtractionWithAccounting(database, conversationId, (innerDb, id) =>
+      runConversationExtraction(innerDb, id, {
+        llm,
+        embeddings: stubEmbeddings,
+        now: deps.nowIso,
+        id: deps.newId,
+      }),
+    );
   return {
     closeConversation: async (database: WritableDatabase, conversationId: string) => {
       await endConversation(
         database,
         conversationId,
         { extract: true },
-        { newId: () => "unused", nowIso: () => NOW },
-        createCloseHooks({
-          llm,
-          runExtraction: () => {
-            // Mirrors the generator's stubbed extraction: the pipeline runs and
-            // marks the conversation, it just produces no memories.
-            const metadata = database
-              .prepare("SELECT metadata FROM conversations WHERE id = ?")
-              .get(conversationId) as Record<string, unknown>;
-            const parsed = metadata.metadata ? JSON.parse(String(metadata.metadata)) : {};
-            parsed.extracted = true;
-            parsed.extraction_status = "no_signal";
-            database
-              .prepare("UPDATE conversations SET metadata = ? WHERE id = ?")
-              .run(JSON.stringify(parsed), conversationId);
-          },
-        }),
+        deps,
+        createCloseHooks({ llm, runExtraction }),
       );
     },
     retitleConversation: (database: WritableDatabase, conversationId: string) =>
       maybeGenerateTitle(database, conversationId, { llm, source: "startup_maintenance" }),
-    runExtraction: () => {},
+    runExtraction,
     backfillPiSessions: () => 0,
     monotonic: stubClock(),
     now: () => NOW,
   };
+}
+
+function metadataOf(db: WritableDatabase, conversationId: string): string | null {
+  const row = db.prepare("SELECT metadata FROM conversations WHERE id = ?").get(conversationId);
+  return typeof row?.metadata === "string" ? row.metadata : null;
 }
 
 function scenario(label: string) {
@@ -235,8 +272,53 @@ test("maintenance retitles a pending conversation", async () => {
   db.close();
 });
 
+test("a poison-pill orphan is carried over, then quarantined, through the real pipeline", async () => {
+  const db = fixture();
+  seedConversation(db, "conv-poison", {
+    ended: false,
+    title: "Provisional title",
+    metadata: JSON.stringify({ title_status: "provisional" }),
+    messageCount: 4,
+    lastMessageAt: "2026-09-03T09:00:00.000000Z",
+    contentPrefix: `${POISON_MARKER} `,
+  });
+  const llm = new StubProvider();
+
+  // Run one: the close tail's extraction fails (attempt 1) but finalization
+  // still runs; extract_pending retries it (attempt 2) and reports carry-over.
+  const first = scenario("maintenance_poison_pill_first_run_carries_over");
+  assert.equal(
+    normalizeReport(await sessionMaintenance(db, maintenanceDeps(llm))),
+    first.report_normalized,
+  );
+  assert.equal(metadataOf(db, "conv-poison"), first.poison_metadata);
+
+  // Run two: attempt 3 quarantines it; the warning tail replaces the carry-over.
+  const second = scenario("maintenance_poison_pill_second_run_quarantines");
+  assert.equal(
+    normalizeReport(await sessionMaintenance(db, maintenanceDeps(llm))),
+    second.report_normalized,
+  );
+  assert.equal(metadataOf(db, "conv-poison"), second.poison_metadata);
+
+  // Quarantined means never retried: a third run makes no extraction call.
+  const before = llm.calls.length;
+  await sessionMaintenance(db, maintenanceDeps(llm));
+  assert.equal(llm.calls.length, before);
+  db.close();
+});
+
 test("maintenance appends the quarantine warning tail", async () => {
   const db = fixture();
+  // The golden counts two: the generator's poison conversation is quarantined
+  // by then, alongside the one seeded with the flag directly.
+  seedConversation(db, "conv-poison", {
+    ended: true,
+    title: "Poisoned",
+    metadata: JSON.stringify({ extraction_quarantined: true }),
+    messageCount: 4,
+    lastMessageAt: "2026-09-03T09:00:00.000000Z",
+  });
   seedConversation(db, "conv-quarantined", {
     ended: true,
     title: "Quarantined",

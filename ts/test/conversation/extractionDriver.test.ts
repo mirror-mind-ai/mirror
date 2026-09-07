@@ -113,7 +113,7 @@ test("malformed conversation metadata makes the eligibility query raise, as in P
 
 // --- AI-05: the spend bound ---
 
-test("extractPending never exceeds its budget and carries the remainder over", () => {
+test("extractPending never exceeds its budget and carries the remainder over", async () => {
   const db = fixture();
   for (let index = 0; index < 7; index += 1) {
     seedConversation(db, {
@@ -123,7 +123,7 @@ test("extractPending never exceeds its budget and carries the remainder over", (
   }
   const attempted: string[] = [];
 
-  const extracted = extractPending(db, {
+  const extracted = await extractPending(db, {
     limit: 3,
     runExtraction: (_db, conversationId) => {
       attempted.push(conversationId);
@@ -141,7 +141,7 @@ test("extractPending never exceeds its budget and carries the remainder over", (
   db.close();
 });
 
-test("extractPending defaults to the released maintenance budget", () => {
+test("extractPending defaults to the released maintenance budget", async () => {
   assert.equal(DEFAULT_MAINTENANCE_MAX_EXTRACTIONS, 10);
   const db = fixture();
   for (let index = 0; index < 12; index += 1) {
@@ -152,7 +152,7 @@ test("extractPending defaults to the released maintenance budget", () => {
   }
   let attempts = 0;
 
-  extractPending(db, {
+  await extractPending(db, {
     runExtraction: (_db, conversationId) => {
       attempts += 1;
       db.prepare("UPDATE conversations SET metadata = '{\"extracted\": 1}' WHERE id = ?").run(
@@ -165,12 +165,12 @@ test("extractPending defaults to the released maintenance budget", () => {
   db.close();
 });
 
-test("a non-positive budget attempts nothing", () => {
+test("a non-positive budget attempts nothing", async () => {
   const db = fixture();
   seedConversation(db, { id: "conv-1" });
   let attempts = 0;
 
-  const extracted = extractPending(db, {
+  const extracted = await extractPending(db, {
     limit: 0,
     runExtraction: () => {
       attempts += 1;
@@ -184,14 +184,14 @@ test("a non-positive budget attempts nothing", () => {
 
 // --- CV9.E2.S7: per-conversation isolation ---
 
-test("a poison-pill conversation cannot block the ones queued behind it", () => {
+test("a poison-pill conversation cannot block the ones queued behind it", async () => {
   const db = fixture();
   seedConversation(db, { id: "poison", endedAt: "2026-09-02T09:00:00.000000Z" });
   seedConversation(db, { id: "healthy-1", endedAt: "2026-09-02T10:00:00.000000Z" });
   seedConversation(db, { id: "healthy-2", endedAt: "2026-09-02T11:00:00.000000Z" });
   const attempted: string[] = [];
 
-  const extracted = extractPending(db, {
+  const extracted = await extractPending(db, {
     limit: 10,
     runExtraction: (_db, conversationId) => {
       attempted.push(conversationId);
@@ -210,12 +210,12 @@ test("a poison-pill conversation cannot block the ones queued behind it", () => 
   db.close();
 });
 
-test("extractPending reports zero when every conversation fails", () => {
+test("extractPending reports zero when every conversation fails", async () => {
   const db = fixture();
   seedConversation(db, { id: "conv-1" });
   seedConversation(db, { id: "conv-2", endedAt: "2026-09-02T13:00:00.000000Z" });
 
-  const extracted = extractPending(db, {
+  const extracted = await extractPending(db, {
     limit: 10,
     runExtraction: () => {
       throw new Error("provider unconfigured");
@@ -228,7 +228,7 @@ test("extractPending reports zero when every conversation fails", () => {
   db.close();
 });
 
-test("extractPending re-entry is idempotent once conversations are extracted", () => {
+test("extractPending re-entry is idempotent once conversations are extracted", async () => {
   const db = fixture();
   seedConversation(db, { id: "conv-1" });
   const run = () =>
@@ -241,8 +241,8 @@ test("extractPending re-entry is idempotent once conversations are extracted", (
       },
     });
 
-  assert.equal(run(), 1);
-  assert.equal(run(), 0);
+  assert.equal(await run(), 1);
+  assert.equal(await run(), 0);
   assert.equal(countCarriedOverConversations(db), 0);
   db.close();
 });
@@ -262,6 +262,30 @@ test("the maintenance counters report quarantine, parse failures, and carry-over
   assert.equal(countConversationsWithExtractionStatus(db, "parse_failed"), 1);
   assert.equal(countConversationsWithExtractionStatus(db, "ok"), 0);
   // Carry-over excludes quarantined and already-extracted conversations.
+  assert.equal(countCarriedOverConversations(db), 1);
+  db.close();
+});
+
+// --- slice F: the orchestration is async ---
+
+test("a rejected extraction is isolated and counted as a failure, not swallowed as a success", async () => {
+  const db = fixture();
+  seedConversation(db, { id: "conv-rejects" });
+  seedConversation(db, { id: "conv-ok", endedAt: "2026-09-02T13:00:00.000000Z" });
+
+  const extracted = await extractPending(db, {
+    limit: 10,
+    runExtraction: async (_db, conversationId) => {
+      if (conversationId === "conv-rejects") throw new Error("replay fixture missing role");
+      db.prepare("UPDATE conversations SET metadata = '{\"extracted\": 1}' WHERE id = ?").run(
+        conversationId,
+      );
+    },
+  });
+
+  // Before the driver awaited, a rejection escaped the try/catch entirely and
+  // the loop counted the conversation as extracted.
+  assert.equal(extracted, 1);
   assert.equal(countCarriedOverConversations(db), 1);
   db.close();
 });

@@ -1,3 +1,4 @@
+import { metadataDict } from "#conversation/closeTail.ts";
 import type { WritableDatabase } from "#db/database.ts";
 import { embeddingToBytes } from "#db/decode.ts";
 import { optionalString, requireString } from "#db/rowDecode.ts";
@@ -62,30 +63,18 @@ export async function runConversationExtraction(
   const id = options.id ?? newId;
   const userName = resolveUserName(db);
 
-  let extractedMemories: ExtractedMemory[];
-  let extractionStatus: ExtractionStatus;
-  try {
-    const outcome = await extractMemoriesWithStatus(options.llm, messages, {
-      persona: conv.persona,
-      journey: conv.journey,
-      userName,
-    });
-    extractedMemories = outcome.memories;
-    extractionStatus = outcome.status;
-  } catch (error) {
-    // Mirrors Python's exception path (AI-10, CV9.E2.S16): record why, then
-    // still propagate. Deliberately does NOT set `extracted` -- a failed
-    // attempt is not "done" -- and re-throws the original error unmodified.
-    const failureMetadata = metadataDict(conv.metadata);
-    failureMetadata.extraction_status = "llm_failed";
-    db.prepare("UPDATE conversations SET metadata = ? WHERE id = ?").run(
-      // Python writes conversation metadata with `ensure_ascii=False`; the
-      // separators and raw UTF-8 are both part of the stored bytes.
-      pythonJsonDumps(failureMetadata),
-      conversationId,
-    );
-    throw error;
-  }
+  // A failure anywhere below propagates unmodified. Python records it -- the
+  // `llm_failed` status, the attempt counter, and quarantine at the max --
+  // OUTSIDE this orchestration, in `_run_extraction`; the port keeps that
+  // accounting in `extractionRun.ts` for the same reason: the stored metadata
+  // key order depends on it being written once, there, never partly here.
+  const outcome = await extractMemoriesWithStatus(options.llm, messages, {
+    persona: conv.persona,
+    journey: conv.journey,
+    userName,
+  });
+  let extractedMemories: ExtractedMemory[] = outcome.memories;
+  const extractionStatus: ExtractionStatus = outcome.status;
 
   if (options.twoPass && extractedMemories.length > 0) {
     extractedMemories = await curateAgainstExisting(
@@ -294,16 +283,4 @@ function insertMemory(
     embedding,
     metadata: addEmbeddingProvenance(null),
   });
-}
-
-function metadataDict(value: string | null): Record<string, unknown> {
-  if (!value) return {};
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
-      : {};
-  } catch {
-    return {};
-  }
 }
