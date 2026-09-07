@@ -22,6 +22,8 @@
 //   * Python's `\b` is likewise Unicode-aware. The transcript probe replaces it
 //     with an explicit `(?<![\p{L}\p{N}_])` lookbehind rather than JS `\b`.
 
+import { sortByCodePoint } from "#util/pythonText.ts";
+
 /** The conversation fields the lifecycle policy reads. */
 export interface ConversationLike {
   id: string;
@@ -420,19 +422,6 @@ export function meaningfulTerms(text: string): Set<string> {
   const matches = text.match(/[\p{L}\p{N}_\u00C0-\u00FF]{4,}/gu) ?? [];
   const terms = new Set(matches.map((token) => token.toLowerCase()));
   return new Set([...terms].filter((term) => !stopWords.has(term)));
-}
-
-/** Sort by Unicode code point, matching Python's `sorted()` on strings. */
-function sortByCodePoint(values: string[]): string[] {
-  return [...values].sort((a, b) => {
-    const aPoints = [...a].map((c) => c.codePointAt(0) ?? 0);
-    const bPoints = [...b].map((c) => c.codePointAt(0) ?? 0);
-    const shared = Math.min(aPoints.length, bPoints.length);
-    for (let i = 0; i < shared; i += 1) {
-      if (aPoints[i] !== bPoints[i]) return (aPoints[i] as number) - (bPoints[i] as number);
-    }
-    return aPoints.length - bPoints.length;
-  });
 }
 
 /**

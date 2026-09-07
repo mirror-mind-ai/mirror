@@ -14,6 +14,7 @@
 // through the other with such metadata would raise `idempotency_conflict`.
 
 import { type WritableDatabase, withTransaction } from "#db/database.ts";
+import { compareByCodePoint } from "#util/pythonText.ts";
 
 export const APPEND_SCHEMA_VERSION = "1.0.0";
 export const MAX_PAYLOAD_BYTES = 262_144;
@@ -96,18 +97,6 @@ export interface AppendReceipt {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-/** Python sorts keys by code point; JS `<` compares UTF-16 code units. */
-function compareByCodePoint(a: string, b: string): number {
-  const left = Array.from(a);
-  const right = Array.from(b);
-  const shared = Math.min(left.length, right.length);
-  for (let index = 0; index < shared; index += 1) {
-    const delta = (left[index]?.codePointAt(0) ?? 0) - (right[index]?.codePointAt(0) ?? 0);
-    if (delta !== 0) return delta;
-  }
-  return left.length - right.length;
 }
 
 /** Python `json.dumps(..., ensure_ascii=False, sort_keys=True, separators=(",", ":"))`. */
