@@ -62,6 +62,7 @@ jobs:
           uv run python ts/parity/generate_session_composite_golden.py
           uv run python ts/parity/generate_journey_repair_golden.py
           uv run python ts/parity/generate_backfill_golden.py
+          uv run python ts/parity/generate_repair_encoding_golden.py
           git diff --exit-code ts/test/goldens/
         env:
           MEMORY_ENV: test

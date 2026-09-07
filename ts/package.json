@@ -8,6 +8,7 @@
     "node": ">=24"
   },
   "imports": {
+    "#backup/*": "./src/backup/*",
     "#consult/*": "./src/consult/*",
     "#conversation/*": "./src/conversation/*",
     "#cultivation/*": "./src/cultivation/*",
@@ -26,6 +27,7 @@
     "#parity/*": "./src/parity/*",
     "#persona/*": "./src/persona/*",
     "#providers/*": "./src/providers/*",
+    "#repair/*": "./src/repair/*",
     "#search/*": "./src/search/*",
     "#seed/*": "./src/seed/*",
     "#tasks/*": "./src/tasks/*",

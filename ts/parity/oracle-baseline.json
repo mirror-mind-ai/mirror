@@ -1,11 +1,13 @@
 {
   "_semantics": "Green means no ported Python oracle changed since this baseline. It does NOT prove the TypeScript port is in behavioral parity -- reconcile the port (RS007) and prove parity separately.",
   "oracles": {
+    "src/memory/cli/backup.py": "a6f5d739346ad105c5bcb6d493a84a484e4e71de",
     "src/memory/cli/consolidate_cmd.py": "d3c33ec4f1dc5b71131efc3e6c9e36da3cbc8639",
     "src/memory/cli/consult.py": "88b51b3227b22b6a9126bc8e5b6fa7671f724f99",
     "src/memory/cli/conversation_logger.py": "5a9d5b6118c98b197020b3d006190a67a79b34b0",
     "src/memory/cli/extensions.py": "f3557b137eb2d1346fc958be1a9096342787579c",
     "src/memory/cli/mode.py": "1cd3129a3aa8076819b70b6e85a50564142296e7",
+    "src/memory/cli/repair_encoding.py": "7b5830e76168ac26e50cce9c7bbe1a671c3a10a0",
     "src/memory/cli/shadow_cmd.py": "4eb935f9886c1ca2283dd066aebd6ae3bdf51103",
     "src/memory/cli/tasks.py": "a624ec1cde4b58ec59f673adbe44606a1b22e1d1",
     "src/memory/cli/tasks_cmd.py": "134788a6e6413321fbad9faf61853450ff4e5ce2",

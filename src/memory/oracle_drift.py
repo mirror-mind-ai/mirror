@@ -120,6 +120,11 @@ ORACLE_PATHS: tuple[str, ...] = (
     # (ts/src/conversation/transcriptBackfill.ts). Tracked at file granularity
     # like every other entry although only those two helpers are ported.
     "src/memory/cli/transcript_export.py",
+    # DS7.TS1: the DB safety tools. `repair_encoding.py` is ported whole
+    # (ts/src/repair/encodingRepair.ts); `backup.py` is the dated zip archive
+    # the repair gates on, ported in the same story (ts/src/backup/).
+    "src/memory/cli/repair_encoding.py",
+    "src/memory/cli/backup.py",
 )
 
 BASELINE_RELPATH = "ts/parity/oracle-baseline.json"
