@@ -2,7 +2,9 @@
 
 # CV22.DS7.TS3 — Ops/utility tail 2: daily-visible tail
 
-**Status:** 🟡 Planned — pulled 2026-09-08; Plan pending Navigator approval.
+**Status:** 🔵 Implemented — flipped 2026-09-08; pending Navigator validation.
+`welcome` and `runtime status|version|diagnose|release-notes` route to TS by
+default; `MIRROR_TS_WELCOME=0` / `MIRROR_TS_RUNTIME_READS=0` revert independently.
 **Type:** Technical Story
 
 ---

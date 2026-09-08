@@ -66,11 +66,17 @@ function repairEncodingRouteEnabled(env: RouteEnvironment): boolean {
   return gateEnabled(env.MIRROR_TS_REPAIR_ENCODING);
 }
 
-// CV22.DS7.TS3: the daily-visible tail carries two independent gates, default
-// OFF until the plateau 6 flip. `welcome` and the read-only `runtime`
-// subcommands are separately revertible because they fail differently: a bad
-// `welcome` is visible on every turn, a bad `runtime diagnose` only when asked.
-const DAILY_VISIBLE_TAIL_DEFAULT_ON = false;
+// CV22.DS7.TS3: the daily-visible tail carries two independent gates. Flipped
+// 2026-09-08 after the checklist went green (five goldens, the stats/status
+// real-DB-copy probes, the both-engine smoke, the spawn spy, redaction,
+// revertibility, ledger). They default ON; `=0` is the revert control with no
+// code change and no data migration.
+//
+// `welcome` and the read-only `runtime` subcommands stay SEPARATELY revertible
+// because they fail differently: a bad `welcome` is wrong on every turn and
+// must be revertible without touching diagnostics, while a bad `runtime
+// diagnose` is wrong only when asked.
+const DAILY_VISIBLE_TAIL_DEFAULT_ON = true;
 
 function tailGateEnabled(value: string | undefined): boolean {
   if (value === "0") return false;
@@ -569,7 +575,7 @@ export function routeMemoryCommand(
       return {
         command,
         engine: "python",
-        reason: "welcome TS route disabled by MIRROR_TS_WELCOME",
+        reason: "welcome TS route disabled by MIRROR_TS_WELCOME=0",
       };
     }
     return { command, engine: "ts", reason: "DS7.TS3 welcome ported to TS" };
@@ -593,7 +599,7 @@ export function routeMemoryCommand(
       return {
         command,
         engine: "python",
-        reason: "runtime read TS route disabled by MIRROR_TS_RUNTIME_READS",
+        reason: "runtime read TS route disabled by MIRROR_TS_RUNTIME_READS=0",
       };
     }
     return { command, engine: "ts", reason: `DS7.TS3 runtime ${subcommand} ported to TS` };

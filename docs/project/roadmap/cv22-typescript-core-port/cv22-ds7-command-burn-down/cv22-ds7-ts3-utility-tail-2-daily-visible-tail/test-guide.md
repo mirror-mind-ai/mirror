@@ -5,7 +5,10 @@
 ## Automated Validation
 
 ```bash
-uv run python ts/parity/generate_runtime_reads_golden.py
+uv run python ts/parity/generate_runtime_git_golden.py
+uv run python ts/parity/generate_release_notes_golden.py
+uv run python ts/parity/generate_runtime_status_golden.py
+uv run python ts/parity/generate_runtime_diagnose_golden.py
 uv run python ts/parity/generate_welcome_golden.py
 git diff --exit-code ts/test/goldens/
 cd ts && npm run typecheck && npm run lint && npm test && cd ..
@@ -13,6 +16,11 @@ uv run python scripts/check_oracle_drift.py
 uv run python ts/parity/real_db_copy_parity.py --source-db tmp/parity/demo-memory.db   # status/stats lines
 node ts/parity/conversation_lifecycle_smoke.ts   # welcome, status line, runtime reads through both engines
 ```
+
+The plan named one generator (`generate_runtime_reads_golden.py`); the port
+split it into four as the plateaus landed — git/version, release notes, status,
+and diagnose — because each grades a different oracle surface and a single
+corpus would have regenerated all of them on any change to one.
 
 Expected: every command exits 0; goldens regenerate as a no-op; the smoke's
 `welcome`/`runtime` steps route to TS by default and to Python under
@@ -38,4 +46,26 @@ like before with `welcome ts` logged. Fail: any other difference.
 
 ## Validation Evidence
 
-Pending implementation and validation.
+Automated (2026-09-08, plateaus 1–6):
+
+- 1296 TS tests green; typecheck and lint clean.
+- Five goldens regenerate as a no-op and are byte-identical under Python 3.10
+  and 3.12; all five are in the CI determinism gate.
+- `cli/runtime.py`, `cli/welcome.py`, and `extensions/migrations.py` registered
+  in the oracle-drift tripwire; check clean.
+- Real-DB-copy probes `welcome_stats_line` and `welcome_status_line` green on
+  the demo copy.
+- Lifecycle smoke green at 110 checks: every tail surface through both engines,
+  the shipped default with no gate set, each gate reverted independently, and
+  the status line proven to leave the database byte-identical.
+- Spawn spy (a recording `git` shim first on PATH) proves the status line
+  spawns nothing; the card is the control that proves the spy works.
+
+Intended divergence, recorded rather than skipped: on a database carrying the
+TS-authored `017_journey_parent_column`, Python reports
+`core_migration_unknown` and TS reports the ledger current. The smoke asserts
+that every other line still matches — TS removed the false alarm and changed
+nothing else.
+
+Navigator route: **pending** — see the four steps above. Step 4 (a new Pi
+session) is the story's stated reason and cannot be self-certified.

@@ -515,8 +515,10 @@ check(
 );
 
 // 12. CV22.DS7.TS3 -- the daily-visible tail through both engines. The gates
-// default OFF at plateau 5, so each side is selected explicitly and the two
-// outputs are compared byte for byte. Plateau 6 flips the defaults.
+// are FLIPPED, so the TS side carries no gate at all in this environment (the
+// kill switches are deleted from `baseEnv` above): the smoke proves the
+// shipped default, not a configuration only the smoke sets. The Python side is
+// selected with `=0`, which is the revert control.
 //
 // `runtime version` and `runtime release-notes` take no `--mirror-home`, so
 // they bypass the helper that appends it -- argparse would reject the flag.
@@ -534,7 +536,7 @@ function runRaw(args: string[], env: Record<string, string>): StepResult {
   };
 }
 
-const TAIL_ON = { MIRROR_TS_WELCOME: "1", MIRROR_TS_RUNTIME_READS: "1" };
+const TAIL_DEFAULT: Record<string, string> = {};
 const TAIL_OFF = { MIRROR_TS_WELCOME: "0", MIRROR_TS_RUNTIME_READS: "0" };
 
 /**
@@ -563,10 +565,10 @@ for (const [label, args, raw, mayDiverge] of [
 ] as [string, string[], boolean, boolean][]) {
   const invoke = (env: Record<string, string>): StepResult =>
     raw ? runRaw(args, env) : run(args, { env });
-  const ts = invoke(TAIL_ON);
+  const ts = invoke(TAIL_DEFAULT);
   const py = invoke(TAIL_OFF);
-  check(ts.route === "ts", `${label}: routes to TS under the gate`, ts.route);
-  check(py.route === "python", `${label}: routes to Python with the gate off`, py.route);
+  check(ts.route === "ts", `${label}: routes to TS by default (no gate set)`, ts.route);
+  check(py.route === "python", `${label}: reverts to Python with the gate at 0`, py.route);
 
   if (!mayDiverge) {
     check(
@@ -603,7 +605,18 @@ for (const [label, args, raw, mayDiverge] of [
 // The per-turn path must not write. A status line that migrates the database
 // it reads would report a state it created.
 const beforeStatusLine = readFileSync(dbPath);
-run(["welcome", "--status-line"], { env: TAIL_ON });
+run(["welcome", "--status-line"], { env: TAIL_DEFAULT });
+
+// The two tail gates revert INDEPENDENTLY: they fail differently, so reverting
+// the per-turn surface must not drag diagnostics back to Python with it.
+check(
+  run(["runtime", "status"], { env: { MIRROR_TS_WELCOME: "0" } }).route === "ts",
+  "MIRROR_TS_WELCOME=0 does not revert the runtime reads",
+);
+check(
+  run(["welcome"], { env: { MIRROR_TS_RUNTIME_READS: "0" } }).route === "ts",
+  "MIRROR_TS_RUNTIME_READS=0 does not revert welcome",
+);
 check(
   Buffer.compare(readFileSync(dbPath), beforeStatusLine) === 0,
   "welcome --status-line leaves the database byte-identical",

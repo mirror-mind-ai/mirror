@@ -114,14 +114,18 @@ function logLines(f: Fixture): string[] {
   return readFileSync(path, "utf8").split("\n").filter(Boolean);
 }
 
-test("the tail is gated off: welcome and runtime reads fall back to Python", () => {
+test("the gates are the revert control: =0 hands the tail back to Python", () => {
   const f = fixture();
   try {
-    // The gates default OFF in this plateau, so the front door must hand both
-    // to Python. That is the whole revertibility contract: nothing user-facing
-    // changes until plateau 6 flips them. Run from the repo root so the Python
-    // fallback genuinely answers instead of failing to spawn.
-    const welcome = runCli(f, ["welcome", "--mirror-home", f.home], {}, REPO_ROOT);
+    // Flipped 2026-09-08, so TS is the default and `=0` is the way back with
+    // no code change. Run from the repo root so the Python fallback genuinely
+    // answers instead of failing to spawn.
+    const welcome = runCli(
+      f,
+      ["welcome", "--mirror-home", f.home],
+      { MIRROR_TS_WELCOME: "0" },
+      REPO_ROOT,
+    );
     assert.equal(welcome.status, 0, welcome.stderr);
     assert.match(welcome.stdout, /◇ Mirror · mirror-home/);
     assert.ok(
@@ -129,7 +133,7 @@ test("the tail is gated off: welcome and runtime reads fall back to Python", () 
       "expected the front-door log to record welcome on python",
     );
 
-    const status = runCli(f, ["runtime", "version"], {}, REPO_ROOT);
+    const status = runCli(f, ["runtime", "version"], { MIRROR_TS_RUNTIME_READS: "0" }, REPO_ROOT);
     assert.match(status.stdout, /^Mirror runtime version\n/);
     assert.ok(
       logLines(f).some((line) => line.includes("\truntime\tpython\t")),
@@ -140,10 +144,10 @@ test("the tail is gated off: welcome and runtime reads fall back to Python", () 
   }
 });
 
-test("welcome answers from TS under the gate, card and status line alike", () => {
+test("welcome answers from TS by default, card and status line alike", () => {
   const f = fixture();
   try {
-    const env = { MIRROR_TS_WELCOME: "1" };
+    const env = {};
 
     const card = runCli(f, ["welcome", "--mirror-home", f.home], env);
     assert.equal(card.status, 0, card.stderr);
@@ -174,7 +178,7 @@ test("MIRROR_WELCOME=off silences the card on both engines", () => {
     // Both engines honour the kill switch, which is why it is asserted on
     // both: a gate that silences one core and not the other would make the
     // flip itself user-visible.
-    for (const env of [{ MIRROR_TS_WELCOME: "1" }, { MIRROR_TS_WELCOME: "0" }]) {
+    for (const env of [{}, { MIRROR_TS_WELCOME: "0" }]) {
       const result = runCli(
         f,
         ["welcome", "--mirror-home", f.home],
@@ -192,7 +196,7 @@ test("MIRROR_WELCOME=off silences the card on both engines", () => {
 test("runtime version and release-notes answer from TS with exit 0", () => {
   const f = fixture();
   try {
-    const env = { MIRROR_TS_RUNTIME_READS: "1" };
+    const env = {};
 
     const version = runCli(f, ["runtime", "version"], env);
     assert.equal(version.status, 0, version.stderr);
@@ -218,7 +222,7 @@ test("runtime version and release-notes answer from TS with exit 0", () => {
 test("runtime status and diagnose carry the oracle's exit codes", () => {
   const f = fixture();
   try {
-    const env = { MIRROR_TS_RUNTIME_READS: "1" };
+    const env = {};
 
     // The fixture repo is clean and the database is bootstrapped, but the
     // fixture home is a fresh temp dir whose permissions are the process
@@ -243,14 +247,11 @@ test("runtime status and diagnose carry the oracle's exit codes", () => {
   }
 });
 
-test("the DS10 updater stays on Python even with the read gate on", () => {
+test("the DS10 updater stays on Python even with the reads flipped", () => {
   const f = fixture();
   try {
     // `--check` is the cheapest updater path and needs no network to refuse.
-    const result = runCli(f, ["runtime", "update", "--check"], {
-      MIRROR_TS_RUNTIME_READS: "1",
-      MIRROR_TS_BACKUP: "1",
-    });
+    const result = runCli(f, ["runtime", "update", "--check"], { MIRROR_TS_BACKUP: "1" });
     // Python answers (or fails to spawn in a bare test env); either way the
     // front door must have ROUTED it to python, which the log records.
     assert.ok(
@@ -268,9 +269,7 @@ test("the status line reaches the database read-only: no bootstrap, no migration
   try {
     const dbPath = join(f.home, "memory.db");
     const before = readFileSync(dbPath);
-    const result = runCli(f, ["welcome", "--status-line", "--mirror-home", f.home], {
-      MIRROR_TS_WELCOME: "1",
-    });
+    const result = runCli(f, ["welcome", "--status-line", "--mirror-home", f.home], {});
     assert.equal(result.status, 0, result.stderr);
     // Byte-identical: a diagnostic that migrates the database it reads would
     // report a state it created, and the per-turn path must never write.
@@ -285,15 +284,13 @@ test("an unbootstrapped home still renders, with zeroes", () => {
   try {
     const empty = join(f.root, "empty-home");
     mkdirSync(empty, { recursive: true });
-    const card = runCli(f, ["welcome", "--mirror-home", empty], { MIRROR_TS_WELCOME: "1" });
+    const card = runCli(f, ["welcome", "--mirror-home", empty], {});
     assert.equal(card.status, 0, card.stderr);
     assert.match(card.stdout, /0 journeys · 0 personas · 0 memories · 0 conversations/);
     // The card must not have created a database as a side effect.
     assert.equal(existsSync(join(empty, "memory.db")), false);
 
-    const line = runCli(f, ["welcome", "--status-line", "--mirror-home", empty], {
-      MIRROR_TS_WELCOME: "1",
-    });
+    const line = runCli(f, ["welcome", "--status-line", "--mirror-home", empty], {});
     assert.equal(line.stdout, "◇ empty-home · ✓\n");
   } finally {
     f.cleanup();
@@ -310,7 +307,7 @@ test("REPO_ROOT stays out of the fixture: the CLI under test is this checkout", 
 test("release-notes tells a positional from an option value", () => {
   const f = fixture();
   try {
-    const env = { MIRROR_TS_RUNTIME_READS: "1" };
+    const env = {};
     const latest = runCli(f, ["runtime", "release-notes"], env).stdout;
 
     // `--ref pending` names a REF; the positional is still absent, so this is

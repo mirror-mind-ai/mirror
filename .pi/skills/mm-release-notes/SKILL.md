@@ -25,21 +25,24 @@ Use when the user asks any natural-language variant of:
 For the latest release note:
 
 ```bash
-uv run python -m memory runtime release-notes latest
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime release-notes latest
 ```
 
 For a specific version:
 
 ```bash
-uv run python -m memory runtime release-notes vX.Y.Z
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime release-notes vX.Y.Z
 ```
 
 For an update prompt or any question about what changed in the newly available
 version, prefer cumulative pending notes:
 
 ```bash
-uv run python -m memory runtime release-notes pending
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime release-notes pending
 ```
+
+`latest`, `pending`, and `vX.Y.Z` are ARGUMENTS of `release-notes`, not
+subcommands.
 
 If the user names the currently available version from the welcome card, still
 prefer `pending` unless they explicitly ask for only that single version. The

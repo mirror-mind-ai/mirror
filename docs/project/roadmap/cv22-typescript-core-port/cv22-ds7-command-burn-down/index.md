@@ -96,7 +96,7 @@ into the families that will become child stories:
 - **Ops/utility tail** — the six top-level `python -m memory` commands still
   on Python fallback with no other owner: `backup`, `repair-encoding`,
   `extensions`, `ext`, `welcome`, `journey-projection`; plus the `runtime` read
-  subcommands (`status|version|diagnose|latest|pending|release-notes`, which
+  subcommands (`status|version|diagnose|release-notes`, which
   `welcome` imports), the subcommand branches US1 deferred here
   (`list extensions|all`, `inspect extension|runtime-catalog|llm-calls|`
   `embedding-provenance`), and the `repair-journeys --apply` routing line that
