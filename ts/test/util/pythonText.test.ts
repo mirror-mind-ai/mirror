@@ -4,9 +4,50 @@ import {
   codePointLength,
   compareByCodePoint,
   comparePathComponents,
+  pyRStrip,
+  pySplitLines,
+  pySplitWhitespace,
   sliceCodePoints,
   sortByCodePoint,
 } from "#util/pythonText.ts";
+
+test("pySplitWhitespace uses Python's separator set, not JavaScript's \\s", () => {
+  // U+001F is whitespace to Python and not to JS; U+FEFF is the reverse.
+  assert.deepEqual(pySplitWhitespace("one\u001ftwo"), ["one", "two"]);
+  assert.deepEqual(pySplitWhitespace("one\ufefftwo"), ["one\ufefftwo"]);
+  assert.deepEqual(pySplitWhitespace("one\u00a0two\u3000three"), ["one", "two", "three"]);
+  // Runs collapse and the edges produce no empty fields, unlike split(/\s+/).
+  assert.deepEqual(pySplitWhitespace("  a   b  "), ["a", "b"]);
+  assert.deepEqual(pySplitWhitespace("   "), []);
+  assert.deepEqual(pySplitWhitespace(""), []);
+});
+
+test("pySplitLines knows the eleven Python line boundaries", () => {
+  for (const boundary of [
+    "\n",
+    "\r",
+    "\v",
+    "\f",
+    "\u001c",
+    "\u001d",
+    "\u001e",
+    "\u0085",
+    "\u2028",
+    "\u2029",
+  ]) {
+    assert.deepEqual(pySplitLines(`a${boundary}b`), ["a", "b"], `boundary ${escape(boundary)}`);
+  }
+  assert.deepEqual(pySplitLines("a\r\nb"), ["a", "b"], "CRLF is one boundary, not two");
+  assert.deepEqual(pySplitLines("a\n"), ["a"], "a trailing boundary adds no empty field");
+  assert.deepEqual(pySplitLines("a\n\nb"), ["a", "", "b"], "an interior blank line survives");
+  assert.deepEqual(pySplitLines(""), []);
+});
+
+test("pyRStrip removes Python's trailing whitespace only", () => {
+  assert.equal(pyRStrip("  a  "), "  a");
+  assert.equal(pyRStrip("a\u001f"), "a");
+  assert.equal(pyRStrip("a\ufeff"), "a\ufeff");
+});
 
 test("compareByCodePoint orders astral characters after the BMP, as Python does", () => {
   // JS `<` compares the lead surrogate (0xD83C) against 0xFFFF and says the

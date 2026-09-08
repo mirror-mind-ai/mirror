@@ -41,6 +41,70 @@ export function pyStrip(text: string): string {
   return text.replace(PY_STRIP_RE, "");
 }
 
+const PY_RSTRIP_RE = new RegExp(`[${PYTHON_WHITESPACE_CLASS}]+$`, "u");
+
+/** Python `str.rstrip()` with no argument. */
+export function pyRStrip(text: string): string {
+  return text.replace(PY_RSTRIP_RE, "");
+}
+
+const PY_SPLIT_RE = new RegExp(`[${PYTHON_WHITESPACE_CLASS}]+`, "u");
+
+/**
+ * Python `str.split()` with no argument: split on RUNS of whitespace and drop
+ * the empty leading/trailing fields. `"a  b ".split()` is `["a", "b"]`, while
+ * JavaScript's `"a  b ".split(/\s+/)` yields a trailing `""` -- and disagrees
+ * about the separator set on U+001C-U+001F and U+FEFF besides.
+ */
+export function pySplitWhitespace(text: string): string[] {
+  const stripped = pyStrip(text);
+  if (stripped === "") return [];
+  return stripped.split(PY_SPLIT_RE);
+}
+
+/**
+ * Python `str.splitlines()`: the line boundaries are \n, \r, \r\n, \v, \f,
+ * U+001C, U+001D, U+001E, U+0085, U+2028, and U+2029 -- eleven of them, where
+ * `split("\n")` knows one. A ritual card fed a form feed renders as two blocks
+ * in Python and one long line in a naive port.
+ *
+ * Like Python, a trailing boundary does not produce a final empty field.
+ */
+export function pySplitLines(text: string): string[] {
+  if (text === "") return [];
+  const lines: string[] = [];
+  let current = "";
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index] as string;
+    if (char === "\r") {
+      lines.push(current);
+      current = "";
+      if (text[index + 1] === "\n") index += 1;
+      continue;
+    }
+    if (PY_LINE_BOUNDARIES.has(char)) {
+      lines.push(current);
+      current = "";
+      continue;
+    }
+    current += char;
+  }
+  if (current !== "") lines.push(current);
+  return lines;
+}
+
+const PY_LINE_BOUNDARIES = new Set([
+  "\n",
+  "\v",
+  "\f",
+  "\u001c",
+  "\u001d",
+  "\u001e",
+  "\u0085",
+  "\u2028",
+  "\u2029",
+]);
+
 /**
  * Python truthiness. JavaScript and Python agree on `null`/`undefined`,
  * `false`, `0`, `NaN`, and `""` -- and disagree on containers: `[]` and `{}`

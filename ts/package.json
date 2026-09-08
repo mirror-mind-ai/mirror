@@ -31,6 +31,7 @@
     "#runtime/*": "./src/runtime/*",
     "#search/*": "./src/search/*",
     "#seed/*": "./src/seed/*",
+    "#soul/*": "./src/soul/*",
     "#tasks/*": "./src/tasks/*",
     "#util/*": "./src/util/*",
     "#welcome/*": "./src/welcome/*",

@@ -1,0 +1,780 @@
+{
+  "scenarios": [
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ✧  POSSIBLE LISTENINGS               │\n│                                        │\n│   ✦ Self Voice                         │\n│     what remains true                  │\n│                                        │\n│   Say if you want to hear one of these │\n│   voices now, or just continue the     │\n│   conversation.                        │\n╰────────────────────────────────────────╯",
+      "input": {
+        "options": [
+          {
+            "description": "what remains true",
+            "voice": "self"
+          }
+        ]
+      },
+      "name": "listen_single_voice",
+      "renderer": "possible_listenings"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ✧  POSSIBLE LISTENINGS               │\n│                                        │\n│   ✦ Self Voice                         │\n│     what remains true without proof    │\n│                                        │\n│   ◐ Shadow Voice                       │\n│     the protection hiding inside the   │\n│     control                            │\n│                                        │\n│   ♢ Wisdom Voice                       │\n│     the lesson already present in the  │\n│     situation                          │\n│                                        │\n│   ✺ Beauty Voice                       │\n│     the form aliveness is taking right │\n│     now                                │\n│                                        │\n│   Say if you want to hear one of these │\n│   voices now, or just continue the     │\n│   conversation.                        │\n╰────────────────────────────────────────╯",
+      "input": {
+        "options": [
+          {
+            "description": "what remains true without proof",
+            "voice": "self"
+          },
+          {
+            "description": "the protection hiding inside the control",
+            "voice": "shadow"
+          },
+          {
+            "description": "the lesson already present in the situation",
+            "voice": "wisdom"
+          },
+          {
+            "description": "the form aliveness is taking right now",
+            "voice": "beauty"
+          }
+        ]
+      },
+      "name": "listen_all_four_voices",
+      "renderer": "possible_listenings"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ✧  POSSIBLE LISTENINGS               │\n│                                        │\n│   ✦ Self Voice                         │\n│     a description long enough to wrap  │\n│     across several lines of the card   │\n│                                        │\n│   Say if you want to hear one of these │\n│   voices now, or just continue the     │\n│   conversation.                        │\n╰────────────────────────────────────────╯",
+      "input": {
+        "options": [
+          {
+            "description": "a description long enough to wrap across several lines of the card",
+            "voice": "self"
+          }
+        ]
+      },
+      "name": "listen_wraps_long_description",
+      "renderer": "possible_listenings"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ✧  POSSIBLE LISTENINGS               │\n│                                        │\n│   ✺ Beauty Voice                       │\n│     🎯 a target and 🌱 a seed carried    │\n│     through the whole card             │\n│                                        │\n│   Say if you want to hear one of these │\n│   voices now, or just continue the     │\n│   conversation.                        │\n╰────────────────────────────────────────╯",
+      "input": {
+        "options": [
+          {
+            "description": "🎯 a target and 🌱 a seed carried through the whole card",
+            "voice": "beauty"
+          }
+        ]
+      },
+      "name": "listen_astral_emoji",
+      "renderer": "possible_listenings"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ✧  POSSIBLE LISTENINGS               │\n│                                        │\n│   ♢ Wisdom Voice                       │\n│     沉默不是空白而是尚未成形的語言在等待被聽見的時刻到來         │\n│                                        │\n│   Say if you want to hear one of these │\n│   voices now, or just continue the     │\n│   conversation.                        │\n╰────────────────────────────────────────╯",
+      "input": {
+        "options": [
+          {
+            "description": "沉默不是空白而是尚未成形的語言在等待被聽見的時刻到來",
+            "voice": "wisdom"
+          }
+        ]
+      },
+      "name": "listen_cjk",
+      "renderer": "possible_listenings"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ✧  POSSIBLE LISTENINGS               │\n│                                        │\n│   ✦ Self Voice                         │\n│     á é í combining acutes that must│\n│     count as two code points each      │\n│                                        │\n│   Say if you want to hear one of these │\n│   voices now, or just continue the     │\n│   conversation.                        │\n╰────────────────────────────────────────╯",
+      "input": {
+        "options": [
+          {
+            "description": "á é í combining acutes that must count as two code points each",
+            "voice": "self"
+          }
+        ]
+      },
+      "name": "listen_combining_marks",
+      "renderer": "possible_listenings"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ✧  POSSIBLE LISTENINGS               │\n│                                        │\n│   ◐ Shadow Voice                       │\n│     xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx│\n│                                        │\n│   Say if you want to hear one of these │\n│   voices now, or just continue the     │\n│   conversation.                        │\n╰────────────────────────────────────────╯",
+      "input": {
+        "options": [
+          {
+            "description": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "voice": "shadow"
+          }
+        ]
+      },
+      "name": "listen_unbroken_token",
+      "renderer": "possible_listenings"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ✧  POSSIBLE LISTENINGS               │\n│                                        │\n│   ✦ Self Voice                         │\n│     one two three separated by         │\n│     non-breaking spaces                │\n│                                        │\n│   Say if you want to hear one of these │\n│   voices now, or just continue the     │\n│   conversation.                        │\n╰────────────────────────────────────────╯",
+      "input": {
+        "options": [
+          {
+            "description": "one two three separated by non-breaking spaces",
+            "voice": "self"
+          }
+        ]
+      },
+      "name": "listen_nbsp_separators",
+      "renderer": "possible_listenings"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ✧  POSSIBLE LISTENINGS               │\n│                                        │\n│   ✦ Self Voice                         │\n│     one two three separated by         │\n│     ideographic spaces                 │\n│                                        │\n│   Say if you want to hear one of these │\n│   voices now, or just continue the     │\n│   conversation.                        │\n╰────────────────────────────────────────╯",
+      "input": {
+        "options": [
+          {
+            "description": "one　two　three separated by ideographic spaces",
+            "voice": "self"
+          }
+        ]
+      },
+      "name": "listen_ideographic_space",
+      "renderer": "possible_listenings"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ✧  POSSIBLE LISTENINGS               │\n│                                        │\n│   ✦ Self Voice                         │\n│     one two three separated by a unit  │\n│     separator                          │\n│                                        │\n│   Say if you want to hear one of these │\n│   voices now, or just continue the     │\n│   conversation.                        │\n╰────────────────────────────────────────╯",
+      "input": {
+        "options": [
+          {
+            "description": "one\u001ftwo three separated by a unit separator",
+            "voice": "self"
+          }
+        ]
+      },
+      "name": "listen_unit_separator",
+      "renderer": "possible_listenings"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ✧  POSSIBLE LISTENINGS               │\n│                                        │\n│   ✦ Self Voice                         │\n│     one﻿two three joined by a          │\n│     byte-order mark                    │\n│                                        │\n│   Say if you want to hear one of these │\n│   voices now, or just continue the     │\n│   conversation.                        │\n╰────────────────────────────────────────╯",
+      "input": {
+        "options": [
+          {
+            "description": "one﻿two three joined by a byte-order mark",
+            "voice": "self"
+          }
+        ]
+      },
+      "name": "listen_bom_joined",
+      "renderer": "possible_listenings"
+    },
+    {
+      "expected_error": "at least one listening option is required",
+      "input": {
+        "options": []
+      },
+      "name": "listen_error_no_options",
+      "renderer": "possible_listenings"
+    },
+    {
+      "expected_error": "unknown listening voice: ego",
+      "input": {
+        "options": [
+          {
+            "description": "not a voice",
+            "voice": "ego"
+          }
+        ]
+      },
+      "name": "listen_error_unknown_voice",
+      "renderer": "possible_listenings"
+    },
+    {
+      "expected_error": "listening option descriptions must not be empty",
+      "input": {
+        "options": [
+          {
+            "description": "   ",
+            "voice": "self"
+          }
+        ]
+      },
+      "name": "listen_error_blank_description",
+      "renderer": "possible_listenings"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ❦  FRUIT IN MATURATION               │\n│                                        │\n│   a small true thing                   │\n│                                        │\n│   continue if you want to mature more  │\n│   or say you wish to harvest           │\n╰────────────────────────────────────────╯",
+      "input": {
+        "fruit": "a small true thing"
+      },
+      "name": "fruit_short",
+      "renderer": "fruit_in_maturation"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ❦  FRUIT IN MATURATION               │\n│                                        │\n│   a fruit whose sentence is long enough│\n│   that it must wrap more than once     │\n│   inside the card                      │\n│                                        │\n│   continue if you want to mature more  │\n│   or say you wish to harvest           │\n╰────────────────────────────────────────╯",
+      "input": {
+        "fruit": "a fruit whose sentence is long enough that it must wrap more than once inside the card"
+      },
+      "name": "fruit_wraps",
+      "renderer": "fruit_in_maturation"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ❦  FRUIT IN MATURATION               │\n│                                        │\n│   🎯 a target and 🌱 a seed carried      │\n│   through the whole card               │\n│                                        │\n│   continue if you want to mature more  │\n│   or say you wish to harvest           │\n╰────────────────────────────────────────╯",
+      "input": {
+        "fruit": "🎯 a target and 🌱 a seed carried through the whole card"
+      },
+      "name": "fruit_astral",
+      "renderer": "fruit_in_maturation"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ❦  FRUIT IN MATURATION               │\n│                                        │\n│   沉默不是空白而是尚未成形的語言在等待被聽見的時刻到來           │\n│                                        │\n│   continue if you want to mature more  │\n│   or say you wish to harvest           │\n╰────────────────────────────────────────╯",
+      "input": {
+        "fruit": "沉默不是空白而是尚未成形的語言在等待被聽見的時刻到來"
+      },
+      "name": "fruit_cjk",
+      "renderer": "fruit_in_maturation"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ❦  FRUIT IN MATURATION               │\n│                                        │\n│   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx│\n│                                        │\n│   continue if you want to mature more  │\n│   or say you wish to harvest           │\n╰────────────────────────────────────────╯",
+      "input": {
+        "fruit": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      },
+      "name": "fruit_unbroken_token",
+      "renderer": "fruit_in_maturation"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ❦  FRUIT IN MATURATION               │\n│                                        │\n│   padded on both ends                  │\n│                                        │\n│   continue if you want to mature more  │\n│   or say you wish to harvest           │\n╰────────────────────────────────────────╯",
+      "input": {
+        "fruit": "\n\n  padded on both ends  \n\n"
+      },
+      "name": "fruit_strips_padding",
+      "renderer": "fruit_in_maturation"
+    },
+    {
+      "expected_error": "fruit must not be empty",
+      "input": {
+        "fruit": "   "
+      },
+      "name": "fruit_error_empty",
+      "renderer": "fruit_in_maturation"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ❦  HARVESTED FRUIT                   │\n│                                        │\n│   a small true thing                   │\n│                                        │\n│   save to journal as it is             │\n│   or change anything first?            │\n╰────────────────────────────────────────╯",
+      "input": {
+        "fruit": "a small true thing"
+      },
+      "name": "harvest_short",
+      "renderer": "harvested_fruit"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ❦  HARVESTED FRUIT                   │\n│                                        │\n│   a fruit whose sentence is long enough│\n│   that it must wrap more than once     │\n│   inside the card                      │\n│                                        │\n│   save to journal as it is             │\n│   or change anything first?            │\n╰────────────────────────────────────────╯",
+      "input": {
+        "fruit": "a fruit whose sentence is long enough that it must wrap more than once inside the card"
+      },
+      "name": "harvest_wraps",
+      "renderer": "harvested_fruit"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ❦  HARVESTED FRUIT                   │\n│                                        │\n│   🎯 a target and 🌱 a seed carried      │\n│   through the whole card               │\n│                                        │\n│   save to journal as it is             │\n│   or change anything first?            │\n╰────────────────────────────────────────╯",
+      "input": {
+        "fruit": "🎯 a target and 🌱 a seed carried through the whole card"
+      },
+      "name": "harvest_astral",
+      "renderer": "harvested_fruit"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ❦  HARVESTED FRUIT                   │\n│                                        │\n│   沉默不是空白而是尚未成形的語言在等待被聽見的時刻到來           │\n│                                        │\n│   save to journal as it is             │\n│   or change anything first?            │\n╰────────────────────────────────────────╯",
+      "input": {
+        "fruit": "沉默不是空白而是尚未成形的語言在等待被聽見的時刻到來"
+      },
+      "name": "harvest_cjk",
+      "renderer": "harvested_fruit"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ❦  HARVESTED FRUIT                   │\n│                                        │\n│   xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx│\n│                                        │\n│   save to journal as it is             │\n│   or change anything first?            │\n╰────────────────────────────────────────╯",
+      "input": {
+        "fruit": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      },
+      "name": "harvest_unbroken_token",
+      "renderer": "harvested_fruit"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ❦  HARVESTED FRUIT                   │\n│                                        │\n│   padded on both ends                  │\n│                                        │\n│   save to journal as it is             │\n│   or change anything first?            │\n╰────────────────────────────────────────╯",
+      "input": {
+        "fruit": "\n\n  padded on both ends  \n\n"
+      },
+      "name": "harvest_strips_padding",
+      "renderer": "harvested_fruit"
+    },
+    {
+      "expected_error": "fruit must not be empty",
+      "input": {
+        "fruit": "   "
+      },
+      "name": "harvest_error_empty",
+      "renderer": "harvested_fruit"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ☾  CLOSING RITE                      │\n│                                        │\n│   what was harvested                   │\n│   one clear thing                      │\n╰────────────────────────────────────────╯",
+      "input": {
+        "harvested": "one clear thing"
+      },
+      "name": "close_single_section",
+      "renderer": "closing_rite"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ☾  CLOSING RITE                      │\n│                                        │\n│   what was harvested                   │\n│   what was harvested today             │\n│                                        │\n│   what still echoes                    │\n│   what still echoes after the rite     │\n│                                        │\n│   what remains open                    │\n│   what remains open and unresolved     │\n│                                        │\n│   what may want integration            │\n│   what may want integration later on   │\n╰────────────────────────────────────────╯",
+      "input": {
+        "echoes": "what still echoes after the rite",
+        "harvested": "what was harvested today",
+        "integration": "what may want integration later on",
+        "remains_open": "what remains open and unresolved"
+      },
+      "name": "close_all_sections",
+      "renderer": "closing_rite"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ☾  CLOSING RITE                      │\n│                                        │\n│   what was harvested                   │\n│   first paragraph                      │\n│                                        │\n│   second paragraph after a literal     │\n│   escape                               │\n╰────────────────────────────────────────╯",
+      "input": {
+        "harvested": "first paragraph\\n\\nsecond paragraph after a literal escape"
+      },
+      "name": "close_escaped_newlines",
+      "renderer": "closing_rite"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ☾  CLOSING RITE                      │\n│                                        │\n│   what still echoes                    │\n│   first paragraph                      │\n│                                        │\n│   second paragraph after blank lines   │\n│                                        │\n│   third                                │\n╰────────────────────────────────────────╯",
+      "input": {
+        "echoes": "first paragraph\n\n\nsecond paragraph after blank lines\n\nthird"
+      },
+      "name": "close_multi_paragraph",
+      "renderer": "closing_rite"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ☾  CLOSING RITE                      │\n│                                        │\n│   what still echoes                    │\n│   first block                          │\n│   second block after a vertical tab    │\n╰────────────────────────────────────────╯",
+      "input": {
+        "echoes": "first block\u000bsecond block after a vertical tab"
+      },
+      "name": "close_vertical_tab_block",
+      "renderer": "closing_rite"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ☾  CLOSING RITE                      │\n│                                        │\n│   what still echoes                    │\n│   first block                          │\n│   second block after a form feed       │\n╰────────────────────────────────────────╯",
+      "input": {
+        "echoes": "first block\fsecond block after a form feed"
+      },
+      "name": "close_form_feed_block",
+      "renderer": "closing_rite"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ☾  CLOSING RITE                      │\n│                                        │\n│   what still echoes                    │\n│   first block                          │\n│   second block after NEL               │\n╰────────────────────────────────────────╯",
+      "input": {
+        "echoes": "first blocksecond block after NEL"
+      },
+      "name": "close_next_line_block",
+      "renderer": "closing_rite"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ☾  CLOSING RITE                      │\n│                                        │\n│   what still echoes                    │\n│   first block                          │\n│   second block after U+2028            │\n╰────────────────────────────────────────╯",
+      "input": {
+        "echoes": "first block second block after U+2028"
+      },
+      "name": "close_line_separator_block",
+      "renderer": "closing_rite"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ☾  CLOSING RITE                      │\n│                                        │\n│   what was harvested                   │\n│   kept                                 │\n╰────────────────────────────────────────╯",
+      "input": {
+        "echoes": "   ",
+        "harvested": "kept"
+      },
+      "name": "close_skips_blank_sections",
+      "renderer": "closing_rite"
+    },
+    {
+      "expected_error": "at least one closing section is required",
+      "input": {
+        "echoes": null,
+        "harvested": "  "
+      },
+      "name": "close_error_all_empty",
+      "renderer": "closing_rite"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ☾  INTEGRATION PROPOSAL              │\n│                                        │\n│   origin                               │\n│   origin material                      │\n│                                        │\n│   proposal only — nothing changed      │\n╰────────────────────────────────────────╯",
+      "input": {
+        "journal": "origin material"
+      },
+      "name": "review_single_section",
+      "renderer": "integration_review"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ☾  INTEGRATION PROPOSAL              │\n│                                        │\n│   origin                               │\n│   the journal entry this came from     │\n│                                        │\n│   self                                 │\n│   a principle that wants to be         │\n│   incorporated                         │\n│                                        │\n│   shadow                               │\n│   a hidden need that became visible    │\n│                                        │\n│   ego behavior                         │\n│   an operational pattern worth naming  │\n│                                        │\n│   persona                              │\n│   a participation pattern in one       │\n│   persona                              │\n│                                        │\n│   leave open                           │\n│   what should stay open for now        │\n│                                        │\n│   proposal only — nothing changed      │\n╰────────────────────────────────────────╯",
+      "input": {
+        "ego": "an operational pattern worth naming",
+        "journal": "the journal entry this came from",
+        "leave_open": "what should stay open for now",
+        "persona": "a participation pattern in one persona",
+        "self_material": "a principle that wants to be incorporated",
+        "shadow": "a hidden need that became visible"
+      },
+      "name": "review_all_sections",
+      "renderer": "integration_review"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ☾  INTEGRATION PROPOSAL              │\n│                                        │\n│   ego behavior                         │\n│   only the ego section                 │\n│                                        │\n│   proposal only — nothing changed      │\n╰────────────────────────────────────────╯",
+      "input": {
+        "ego": "only the ego section"
+      },
+      "name": "review_footer_present",
+      "renderer": "integration_review"
+    },
+    {
+      "expected_error": "at least one integration review section is required",
+      "input": {},
+      "name": "review_error_all_empty",
+      "renderer": "integration_review"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ✦  SELF ENRICHMENT PROPOSAL          │\n│                                        │\n│   target                               │\n│   self/soul                            │\n│                                        │\n│   origin                               │\n│   a Soul Mode rite on 2026-09-08       │\n│                                        │\n│   current                              │\n│   the current content of the layer     │\n│                                        │\n│   proposed                             │\n│   the enrichment being proposed for    │\n│   this layer                           │\n│                                        │\n│   why this may belong                  │\n│   why this may belong in the identity  │\n│   document                             │\n│                                        │\n│   proposal only — no identity changed  │\n╰────────────────────────────────────────╯",
+      "input": {
+        "current": "the current content of the layer",
+        "key": "soul",
+        "layer": "self",
+        "origin": "a Soul Mode rite on 2026-09-08",
+        "proposed": "the enrichment being proposed for this layer",
+        "why": "why this may belong in the identity document"
+      },
+      "name": "proposal_self",
+      "renderer": "enrichment_proposal"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ◐  SHADOW ENRICHMENT PROPOSAL        │\n│                                        │\n│   target                               │\n│   shadow/profile                       │\n│                                        │\n│   origin                               │\n│   a Soul Mode rite on 2026-09-08       │\n│                                        │\n│   current                              │\n│   the current content of the layer     │\n│                                        │\n│   proposed                             │\n│   the enrichment being proposed for    │\n│   this layer                           │\n│                                        │\n│   why this may belong                  │\n│   why this may belong in the identity  │\n│   document                             │\n│                                        │\n│   proposal only — no identity changed  │\n╰────────────────────────────────────────╯",
+      "input": {
+        "current": "the current content of the layer",
+        "key": "profile",
+        "layer": "shadow",
+        "origin": "a Soul Mode rite on 2026-09-08",
+        "proposed": "the enrichment being proposed for this layer",
+        "why": "why this may belong in the identity document"
+      },
+      "name": "proposal_shadow",
+      "renderer": "enrichment_proposal"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ◇  EGO ENRICHMENT PROPOSAL           │\n│                                        │\n│   target                               │\n│   ego/profile                          │\n│                                        │\n│   origin                               │\n│   a Soul Mode rite on 2026-09-08       │\n│                                        │\n│   current                              │\n│   the current content of the layer     │\n│                                        │\n│   proposed                             │\n│   the enrichment being proposed for    │\n│   this layer                           │\n│                                        │\n│   why this may belong                  │\n│   why this may belong in the identity  │\n│   document                             │\n│                                        │\n│   proposal only — no identity changed  │\n╰────────────────────────────────────────╯",
+      "input": {
+        "current": "the current content of the layer",
+        "key": "profile",
+        "layer": "ego",
+        "origin": "a Soul Mode rite on 2026-09-08",
+        "proposed": "the enrichment being proposed for this layer",
+        "why": "why this may belong in the identity document"
+      },
+      "name": "proposal_ego",
+      "renderer": "enrichment_proposal"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ◈  PERSONA ENRICHMENT PROPOSAL       │\n│                                        │\n│   target                               │\n│   persona/profile                      │\n│                                        │\n│   origin                               │\n│   a Soul Mode rite on 2026-09-08       │\n│                                        │\n│   current                              │\n│   the current content of the layer     │\n│                                        │\n│   proposed                             │\n│   the enrichment being proposed for    │\n│   this layer                           │\n│                                        │\n│   why this may belong                  │\n│   why this may belong in the identity  │\n│   document                             │\n│                                        │\n│   proposal only — no identity changed  │\n╰────────────────────────────────────────╯",
+      "input": {
+        "current": "the current content of the layer",
+        "key": "profile",
+        "layer": "persona",
+        "origin": "a Soul Mode rite on 2026-09-08",
+        "proposed": "the enrichment being proposed for this layer",
+        "why": "why this may belong in the identity document"
+      },
+      "name": "proposal_persona",
+      "renderer": "enrichment_proposal"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ✦  SELF ENRICHMENT PROPOSAL          │\n│                                        │\n│   target                               │\n│   self/soul                            │\n│                                        │\n│   origin                               │\n│   a rite                               │\n│                                        │\n│   current                              │\n│   none loaded                          │\n│                                        │\n│   proposed                             │\n│   new material                         │\n│                                        │\n│   why this may belong                  │\n│   because it recurs                    │\n│                                        │\n│   proposal only — no identity changed  │\n╰────────────────────────────────────────╯",
+      "input": {
+        "current": null,
+        "key": "soul",
+        "layer": "self",
+        "origin": "a rite",
+        "proposed": "new material",
+        "why": "because it recurs"
+      },
+      "name": "proposal_current_none",
+      "renderer": "enrichment_proposal"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ✦  SELF ENRICHMENT PROPOSAL          │\n│                                        │\n│   target                               │\n│   self/soul                            │\n│                                        │\n│   origin                               │\n│   a rite                               │\n│                                        │\n│   current                              │\n│   none loaded                          │\n│                                        │\n│   proposed                             │\n│   new material                         │\n│                                        │\n│   why this may belong                  │\n│   because it recurs                    │\n│                                        │\n│   proposal only — no identity changed  │\n╰────────────────────────────────────────╯",
+      "input": {
+        "current": "   ",
+        "key": "soul",
+        "layer": "self",
+        "origin": "a rite",
+        "proposed": "new material",
+        "why": "because it recurs"
+      },
+      "name": "proposal_current_blank",
+      "renderer": "enrichment_proposal"
+    },
+    {
+      "expected_error": "unsupported psyche layer: voice",
+      "input": {
+        "current": null,
+        "key": "k",
+        "layer": "voice",
+        "origin": "o",
+        "proposed": "p",
+        "why": "w"
+      },
+      "name": "proposal_error_bad_layer",
+      "renderer": "enrichment_proposal"
+    },
+    {
+      "expected_error": "proposal key must not be empty",
+      "input": {
+        "current": null,
+        "key": "   ",
+        "layer": "self",
+        "origin": "o",
+        "proposed": "p",
+        "why": "w"
+      },
+      "name": "proposal_error_blank_key",
+      "renderer": "enrichment_proposal"
+    },
+    {
+      "expected_error": "proposal origin must not be empty",
+      "input": {
+        "current": null,
+        "key": "soul",
+        "layer": "self",
+        "origin": "  ",
+        "proposed": "p",
+        "why": "w"
+      },
+      "name": "proposal_error_blank_origin",
+      "renderer": "enrichment_proposal"
+    },
+    {
+      "expected_error": "proposal content must not be empty",
+      "input": {
+        "current": null,
+        "key": "soul",
+        "layer": "self",
+        "origin": "o",
+        "proposed": "",
+        "why": "w"
+      },
+      "name": "proposal_error_blank_proposed",
+      "renderer": "enrichment_proposal"
+    },
+    {
+      "expected_error": "proposal rationale must not be empty",
+      "input": {
+        "current": null,
+        "key": "soul",
+        "layer": "self",
+        "origin": "o",
+        "proposed": "p",
+        "why": "   "
+      },
+      "name": "proposal_error_blank_why",
+      "renderer": "enrichment_proposal"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ✦  SELF IDENTITY UPDATED             │\n│                                        │\n│   target                               │\n│   self/soul                            │\n│                                        │\n│   applied                              │\n│   the exact content integrated into the│\n│   layer                                │\n╰────────────────────────────────────────╯",
+      "input": {
+        "content": "the exact content integrated into the layer",
+        "key": "soul",
+        "layer": "self"
+      },
+      "name": "applied_self",
+      "renderer": "identity_change_applied"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ◐  SHADOW IDENTITY UPDATED           │\n│                                        │\n│   target                               │\n│   shadow/profile                       │\n│                                        │\n│   applied                              │\n│   the exact content integrated into the│\n│   layer                                │\n╰────────────────────────────────────────╯",
+      "input": {
+        "content": "the exact content integrated into the layer",
+        "key": "profile",
+        "layer": "shadow"
+      },
+      "name": "applied_shadow",
+      "renderer": "identity_change_applied"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ◇  EGO IDENTITY UPDATED              │\n│                                        │\n│   target                               │\n│   ego/profile                          │\n│                                        │\n│   applied                              │\n│   the exact content integrated into the│\n│   layer                                │\n╰────────────────────────────────────────╯",
+      "input": {
+        "content": "the exact content integrated into the layer",
+        "key": "profile",
+        "layer": "ego"
+      },
+      "name": "applied_ego",
+      "renderer": "identity_change_applied"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ◈  PERSONA IDENTITY UPDATED          │\n│                                        │\n│   target                               │\n│   persona/profile                      │\n│                                        │\n│   applied                              │\n│   the exact content integrated into the│\n│   layer                                │\n╰────────────────────────────────────────╯",
+      "input": {
+        "content": "the exact content integrated into the layer",
+        "key": "profile",
+        "layer": "persona"
+      },
+      "name": "applied_persona",
+      "renderer": "identity_change_applied"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ✦  SELF IDENTITY UPDATED             │\n│                                        │\n│   target                               │\n│   self/soul                            │\n│                                        │\n│   applied                              │\n│   🎯 a target and 🌱 a seed carried      │\n│   through the whole card               │\n╰────────────────────────────────────────╯",
+      "input": {
+        "content": "🎯 a target and 🌱 a seed carried through the whole card",
+        "key": "soul",
+        "layer": "self"
+      },
+      "name": "applied_astral",
+      "renderer": "identity_change_applied"
+    },
+    {
+      "expected_error": "unsupported psyche layer: voice",
+      "input": {
+        "content": "c",
+        "key": "k",
+        "layer": "voice"
+      },
+      "name": "applied_error_bad_layer",
+      "renderer": "identity_change_applied"
+    },
+    {
+      "expected_error": "identity key must not be empty",
+      "input": {
+        "content": "c",
+        "key": " ",
+        "layer": "self"
+      },
+      "name": "applied_error_blank_key",
+      "renderer": "identity_change_applied"
+    },
+    {
+      "expected_error": "identity content must not be empty",
+      "input": {
+        "content": "  ",
+        "key": "soul",
+        "layer": "self"
+      },
+      "name": "applied_error_blank_content",
+      "renderer": "identity_change_applied"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ✦  SELF VOICE LISTENING              │\n│                                        │\n│   the voice says                       │\n│                                        │\n│   usefulness can remain a gift only    │\n│   when it stops being payment for      │\n│   belonging                            │\n╰────────────────────────────────────────╯",
+      "input": {
+        "voice": "self"
+      },
+      "name": "rite_self_default_utterance",
+      "renderer": "active_rite"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ◐  SHADOW VOICE LISTENING            │\n│                                        │\n│   the voice says                       │\n│                                        │\n│   if they depend on me, they cannot    │\n│   forget me                            │\n╰────────────────────────────────────────╯",
+      "input": {
+        "voice": "shadow"
+      },
+      "name": "rite_shadow_default_utterance",
+      "renderer": "active_rite"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ♢  WISDOM VOICE LISTENING            │\n│                                        │\n│   the voice says                       │\n│                                        │\n│   what the wisdom voice says now       │\n╰────────────────────────────────────────╯",
+      "input": {
+        "utterance": "what the wisdom voice says now",
+        "voice": "wisdom"
+      },
+      "name": "rite_wisdom_with_says",
+      "renderer": "active_rite"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ✺  BEAUTY VOICE LISTENING            │\n│                                        │\n│   the voice says                       │\n│                                        │\n│   what the beauty voice says now       │\n╰────────────────────────────────────────╯",
+      "input": {
+        "utterance": "what the beauty voice says now",
+        "voice": "beauty"
+      },
+      "name": "rite_beauty_with_says",
+      "renderer": "active_rite"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ✦  SELF VOICE LISTENING              │\n│                                        │\n│   the voice says                       │\n│                                        │\n│   the legacy alias supplies the        │\n│   utterance                            │\n╰────────────────────────────────────────╯",
+      "input": {
+        "question": "the legacy alias supplies the utterance",
+        "voice": "self"
+      },
+      "name": "rite_question_alias",
+      "renderer": "active_rite"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ✦  SELF VOICE LISTENING              │\n│                                        │\n│   the voice says                       │\n│                                        │\n│   says wins                            │\n╰────────────────────────────────────────╯",
+      "input": {
+        "question": "question loses",
+        "utterance": "says wins",
+        "voice": "self"
+      },
+      "name": "rite_says_wins_over_question",
+      "renderer": "active_rite"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ✦  SELF VOICE LISTENING              │\n│                                        │\n│   the voice says                       │\n│                                        │\n│   first paragraph                      │\n│                                        │\n│   second paragraph after a literal     │\n│   escape                               │\n╰────────────────────────────────────────╯",
+      "input": {
+        "utterance": "first paragraph\\n\\nsecond paragraph after a literal escape",
+        "voice": "self"
+      },
+      "name": "rite_escaped_newlines",
+      "renderer": "active_rite"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ◐  SHADOW VOICE LISTENING            │\n│                                        │\n│   the voice says                       │\n│                                        │\n│   first paragraph                      │\n│                                        │\n│   second paragraph after blank lines   │\n│                                        │\n│   third                                │\n╰────────────────────────────────────────╯",
+      "input": {
+        "utterance": "first paragraph\n\n\nsecond paragraph after blank lines\n\nthird",
+        "voice": "shadow"
+      },
+      "name": "rite_multi_paragraph",
+      "renderer": "active_rite"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ✦  SELF VOICE LISTENING              │\n│                                        │\n│   the voice says                       │\n│                                        │\n│   🎯 a target and 🌱 a seed carried      │\n│   through the whole card               │\n╰────────────────────────────────────────╯",
+      "input": {
+        "utterance": "🎯 a target and 🌱 a seed carried through the whole card",
+        "voice": "self"
+      },
+      "name": "rite_astral",
+      "renderer": "active_rite"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ◐  SHADOW VOICE LISTENING            │\n│                                        │\n│   the voice says                       │\n│                                        │\n│   沉默不是空白而是尚未成形的語言在等待被聽見的時刻到來           │\n╰────────────────────────────────────────╯",
+      "input": {
+        "utterance": "沉默不是空白而是尚未成形的語言在等待被聽見的時刻到來",
+        "voice": "shadow"
+      },
+      "name": "rite_cjk",
+      "renderer": "active_rite"
+    },
+    {
+      "expected_stdout": "Soul Mode\n╭────────────────────────────────────────╮\n│   ✦  SELF VOICE LISTENING              │\n│                                        │\n│   the voice says                       │\n│                                        │\n│   body                                 │\n╰────────────────────────────────────────╯",
+      "input": {
+        "listening_for": "ignored",
+        "utterance": "body",
+        "voice": "self"
+      },
+      "name": "rite_listening_for_is_inert",
+      "renderer": "active_rite"
+    },
+    {
+      "expected_error": "unsupported active rite voice: ego",
+      "input": {
+        "voice": "ego"
+      },
+      "name": "rite_error_unknown_voice",
+      "renderer": "active_rite"
+    },
+    {
+      "expected_error": "Wisdom Voice requires a situated --says response",
+      "input": {
+        "voice": "wisdom"
+      },
+      "name": "rite_error_wisdom_requires_says",
+      "renderer": "active_rite"
+    },
+    {
+      "expected_error": "Beauty Voice requires a situated --says response",
+      "input": {
+        "voice": "beauty"
+      },
+      "name": "rite_error_beauty_requires_says",
+      "renderer": "active_rite"
+    },
+    {
+      "expected_error": "active rite voice utterance must not be empty",
+      "input": {
+        "utterance": "   ",
+        "voice": "self"
+      },
+      "name": "rite_error_blank_utterance",
+      "renderer": "active_rite"
+    }
+  ]
+}

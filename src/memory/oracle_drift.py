@@ -139,6 +139,12 @@ ORACLE_PATHS: tuple[str, ...] = (
     # belongs to the extension catalog (TS4) -- but the checksum normalisation
     # is the part both halves must agree on, so drift here is a parity signal.
     "src/memory/extensions/migrations.py",
+    # DS7.US6 plateau 1: the Soul Mode surfaces. `transport=verbatim` cards
+    # ported whole (ts/src/soul/render.ts), including the wrapping helpers whose
+    # code-point and whitespace semantics the golden pins. The rest of the Soul
+    # tree (session state, prompts, identity integration, harvest) lands in
+    # plateaus 2-5 and joins this list there.
+    "src/memory/surfaces/soul.py",
 )
 
 BASELINE_RELPATH = "ts/parity/oracle-baseline.json"
