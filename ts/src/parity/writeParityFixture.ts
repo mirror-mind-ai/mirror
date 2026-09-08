@@ -27,6 +27,7 @@ import {
   sessionCompositesProbe,
 } from "./lifecycleProbes.ts";
 import { type RepairEncodingProbeParams, repairEncodingProbe } from "./safetyToolsProbes.ts";
+import { type SoulStateProbeParams, soulStateProbe } from "./soulProbes.ts";
 import { evaluateWriteProbe, type MutatedRow, type WriteProbeParityResult } from "./writeParity.ts";
 import { applyWriteProbe, type WriteProbe } from "./writeProbe.ts";
 
@@ -99,7 +100,9 @@ export type WriteProbeFixture =
   | (WriteProbeBase & {
       probe_type: "repair_encoding";
       repair_encoding: RepairEncodingProbeParams;
-    });
+    })
+  // CV22.DS7.US6: the Soul ritual's session state, graded step by step.
+  | (WriteProbeBase & { probe_type: "soul_state"; soul_state: SoulStateProbeParams });
 
 /**
  * CV22.DS7.US5. The oracle's generated ids ride in the fixture because the TS
@@ -338,6 +341,8 @@ function buildWriteProbe(fixture: WriteProbeFixture): WriteProbe {
       return journeyRepairApplyProbe(fixture.label, fixture.journey_repair_apply);
     case "repair_encoding":
       return repairEncodingProbe(fixture.label, fixture.repair_encoding);
+    case "soul_state":
+      return soulStateProbe(fixture.label, fixture.soul_state, fixture.now_iso);
     default:
       return assertNever(fixture);
   }

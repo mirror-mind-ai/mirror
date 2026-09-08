@@ -21,6 +21,7 @@ from pathlib import Path
 
 import write_parity_lifecycle as lifecycle
 import write_parity_safety_tools as safety_tools
+import write_parity_soul as soul
 
 import memory.models as models_mod
 import memory.storage.identity as identity_mod
@@ -78,8 +79,8 @@ class _FrozenDateTime(datetime):
 
 
 # Operation probes: seed the shared start state, then grade an operation on it.
-SEEDERS = {**lifecycle.SEEDERS, **safety_tools.SEEDERS}
-PROBES = {**lifecycle.PROBES, **safety_tools.PROBES}
+SEEDERS = {**lifecycle.SEEDERS, **safety_tools.SEEDERS, **soul.SEEDERS}
+PROBES = {**lifecycle.PROBES, **safety_tools.PROBES, **soul.PROBES}
 
 
 def _sha256_file(path: Path) -> str:
@@ -520,6 +521,7 @@ def main(argv: list[str] | None = None) -> int:
             "session_composites",
             "journey_repair_apply",
             "repair_encoding",
+            "soul_state",
         ),
     )
     parser.add_argument("--targets", default=3, type=int)

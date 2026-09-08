@@ -141,10 +141,14 @@ ORACLE_PATHS: tuple[str, ...] = (
     "src/memory/extensions/migrations.py",
     # DS7.US6 plateau 1: the Soul Mode surfaces. `transport=verbatim` cards
     # ported whole (ts/src/soul/render.ts), including the wrapping helpers whose
-    # code-point and whitespace semantics the golden pins. The rest of the Soul
-    # tree (session state, prompts, identity integration, harvest) lands in
-    # plateaus 2-5 and joins this list there.
+    # code-point and whitespace semantics the golden pins.
     "src/memory/surfaces/soul.py",
+    # DS7.US6 plateau 2: the ritual's session state on `runtime_sessions.
+    # metadata` (ts/src/soul/state.ts). `cli/soul.py` is tracked at file
+    # granularity like every other entry, although plateau 2 ports only its
+    # session-id resolution; the command dispatch follows in plateau 6.
+    "src/memory/services/soul.py",
+    "src/memory/cli/soul.py",
 )
 
 BASELINE_RELPATH = "ts/parity/oracle-baseline.json"

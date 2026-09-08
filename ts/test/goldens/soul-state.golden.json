@@ -1,0 +1,418 @@
+{
+  "session_constant": "__global_soul_mode__",
+  "session_ids": [
+    {
+      "active_row": "active-row-session",
+      "env": "",
+      "explicit": "explicit-id",
+      "name": "explicit_wins",
+      "resolved": "explicit-id",
+      "resolved_soul_only": "explicit-id"
+    },
+    {
+      "active_row": "active-row-session",
+      "env": "",
+      "explicit": "  spaced  ",
+      "name": "explicit_is_not_stripped",
+      "resolved": "  spaced  ",
+      "resolved_soul_only": "spaced"
+    },
+    {
+      "active_row": "active-row-session",
+      "env": "env-id",
+      "explicit": null,
+      "name": "env_used_when_no_explicit",
+      "resolved": "env-id",
+      "resolved_soul_only": "env-id"
+    },
+    {
+      "active_row": "active-row-session",
+      "env": "  env-id  ",
+      "explicit": null,
+      "name": "env_is_stripped",
+      "resolved": "env-id",
+      "resolved_soul_only": "env-id"
+    },
+    {
+      "active_row": "active-row-session",
+      "env": "",
+      "explicit": null,
+      "name": "active_row_when_no_explicit_or_env",
+      "resolved": "active-row-session",
+      "resolved_soul_only": "__global_soul_mode__"
+    },
+    {
+      "active_row": null,
+      "env": "",
+      "explicit": null,
+      "name": "global_constant_when_nothing",
+      "resolved": "__global_soul_mode__",
+      "resolved_soul_only": "__global_soul_mode__"
+    }
+  ],
+  "state": [
+    {
+      "after": {
+        "active": 1,
+        "metadata": "{\"soul\": {\"fruit_in_maturation\": \"a small true thing\"}}",
+        "row_present": true
+      },
+      "name": "fruit_set_on_empty_metadata",
+      "result": "a small true thing",
+      "seed_metadata": null,
+      "seed_row": true
+    },
+    {
+      "after": {
+        "active": 1,
+        "metadata": "{\"soul\": {\"fruit_in_maturation\": \"padded\"}}",
+        "row_present": true
+      },
+      "name": "fruit_set_strips_padding",
+      "result": "padded",
+      "seed_metadata": null,
+      "seed_row": true
+    },
+    {
+      "after": {
+        "active": 1,
+        "metadata": "{\"soul\": {\"fruit_in_maturation\": \"café 🎯 沉默\"}}",
+        "row_present": true
+      },
+      "name": "fruit_set_unicode_kept_raw",
+      "result": "café 🎯 沉默",
+      "seed_metadata": null,
+      "seed_row": true
+    },
+    {
+      "after": {
+        "active": 1,
+        "metadata": "{\"operating_mode\": {\"active_mode\": \"Soul Mode\", \"active_journey\": \"j\"}, \"soul\": {\"fruit_in_maturation\": \"kept alongside operating mode\"}}",
+        "row_present": true
+      },
+      "name": "fruit_set_preserves_other_metadata_keys",
+      "result": "kept alongside operating mode",
+      "seed_metadata": "{\"operating_mode\": {\"active_mode\": \"Soul Mode\", \"active_journey\": \"j\"}}",
+      "seed_row": true
+    },
+    {
+      "after": {
+        "active": 1,
+        "metadata": "{\"soul\": {\"fruit_in_maturation\": \"new\"}}",
+        "row_present": true
+      },
+      "name": "fruit_set_overwrites_existing",
+      "result": "new",
+      "seed_metadata": "{\"soul\": {\"fruit_in_maturation\": \"old\"}}",
+      "seed_row": true
+    },
+    {
+      "after": {
+        "active": 1,
+        "metadata": "{\"soul\": {\"harvested_fruit\": \"already harvested\", \"fruit_in_maturation\": \"a second maturation\"}}",
+        "row_present": true
+      },
+      "name": "fruit_set_keeps_harvest_key",
+      "result": "a second maturation",
+      "seed_metadata": "{\"soul\": {\"harvested_fruit\": \"already harvested\"}}",
+      "seed_row": true
+    },
+    {
+      "after": {
+        "active": 1,
+        "metadata": "{\"soul\": {\"fruit_in_maturation\": \"recovered\"}}",
+        "row_present": true
+      },
+      "name": "fruit_set_on_invalid_json",
+      "result": "recovered",
+      "seed_metadata": "{not json",
+      "seed_row": true
+    },
+    {
+      "after": {
+        "active": 1,
+        "metadata": "{\"soul\": {\"fruit_in_maturation\": \"recovered\"}}",
+        "row_present": true
+      },
+      "name": "fruit_set_on_non_object_json",
+      "result": "recovered",
+      "seed_metadata": "[1, 2]",
+      "seed_row": true
+    },
+    {
+      "after": {
+        "active": 1,
+        "metadata": "{\"soul\": {\"fruit_in_maturation\": \"recovered\"}}",
+        "row_present": true
+      },
+      "name": "fruit_set_on_non_dict_soul_key",
+      "result": "recovered",
+      "seed_metadata": "{\"soul\": \"scalar\"}",
+      "seed_row": true
+    },
+    {
+      "after": {
+        "active": 1,
+        "metadata": null,
+        "row_present": true
+      },
+      "expected_error": "fruit must not be empty",
+      "name": "fruit_set_error_blank",
+      "seed_metadata": null,
+      "seed_row": true
+    },
+    {
+      "after": {
+        "active": 1,
+        "metadata": "{\"soul\": {\"fruit_in_maturation\": \"row created\"}}",
+        "row_present": true
+      },
+      "name": "fruit_set_creates_missing_row",
+      "result": "row created",
+      "seed_metadata": null,
+      "seed_row": false
+    },
+    {
+      "after": {
+        "active": 1,
+        "metadata": "{\"soul\": {\"fruit_in_maturation\": \" padded \"}}",
+        "row_present": true
+      },
+      "name": "fruit_get_present",
+      "result": "padded",
+      "seed_metadata": "{\"soul\": {\"fruit_in_maturation\": \" padded \"}}",
+      "seed_row": true
+    },
+    {
+      "after": {
+        "active": 1,
+        "metadata": "{\"soul\": {\"harvested_fruit\": \"h\"}}",
+        "row_present": true
+      },
+      "name": "fruit_get_absent",
+      "result": null,
+      "seed_metadata": "{\"soul\": {\"harvested_fruit\": \"h\"}}",
+      "seed_row": true
+    },
+    {
+      "after": {
+        "active": 1,
+        "metadata": "{\"soul\": {\"fruit_in_maturation\": \"   \"}}",
+        "row_present": true
+      },
+      "name": "fruit_get_blank_value",
+      "result": null,
+      "seed_metadata": "{\"soul\": {\"fruit_in_maturation\": \"   \"}}",
+      "seed_row": true
+    },
+    {
+      "after": {
+        "active": 1,
+        "metadata": "{\"soul\": {\"fruit_in_maturation\": 42}}",
+        "row_present": true
+      },
+      "name": "fruit_get_non_string_value",
+      "result": null,
+      "seed_metadata": "{\"soul\": {\"fruit_in_maturation\": 42}}",
+      "seed_row": true
+    },
+    {
+      "after": {
+        "active": null,
+        "metadata": null,
+        "row_present": false
+      },
+      "name": "fruit_get_no_row",
+      "result": null,
+      "seed_metadata": null,
+      "seed_row": false
+    },
+    {
+      "after": {
+        "active": 1,
+        "metadata": "{not json",
+        "row_present": true
+      },
+      "name": "fruit_get_invalid_json",
+      "result": null,
+      "seed_metadata": "{not json",
+      "seed_row": true
+    },
+    {
+      "after": {
+        "active": 1,
+        "metadata": null,
+        "row_present": true
+      },
+      "name": "fruit_clear_last_key_writes_null",
+      "result": null,
+      "seed_metadata": "{\"soul\": {\"fruit_in_maturation\": \"f\"}}",
+      "seed_row": true
+    },
+    {
+      "after": {
+        "active": 1,
+        "metadata": "{\"soul\": {\"harvested_fruit\": \"h\"}}",
+        "row_present": true
+      },
+      "name": "fruit_clear_keeps_sibling_soul_key",
+      "result": null,
+      "seed_metadata": "{\"soul\": {\"fruit_in_maturation\": \"f\", \"harvested_fruit\": \"h\"}}",
+      "seed_row": true
+    },
+    {
+      "after": {
+        "active": 1,
+        "metadata": "{\"operating_mode\": {\"active_mode\": \"Soul Mode\", \"active_journey\": \"j\"}}",
+        "row_present": true
+      },
+      "name": "fruit_clear_keeps_other_metadata",
+      "result": null,
+      "seed_metadata": "{\"operating_mode\": {\"active_mode\": \"Soul Mode\", \"active_journey\": \"j\"}, \"soul\": {\"fruit_in_maturation\": \"f\"}}",
+      "seed_row": true
+    },
+    {
+      "after": {
+        "active": null,
+        "metadata": null,
+        "row_present": false
+      },
+      "name": "fruit_clear_no_row_writes_nothing",
+      "result": null,
+      "seed_metadata": null,
+      "seed_row": false
+    },
+    {
+      "after": {
+        "active": 1,
+        "metadata": "{\"soul\": {\"harvested_fruit\": \"h\"}}",
+        "row_present": true
+      },
+      "name": "fruit_clear_absent_key",
+      "result": null,
+      "seed_metadata": "{\"soul\": {\"harvested_fruit\": \"h\"}}",
+      "seed_row": true
+    },
+    {
+      "after": {
+        "active": 1,
+        "metadata": "{\"soul\": {\"harvested_fruit\": \"matured\"}}",
+        "row_present": true
+      },
+      "name": "harvest_set_promotes_maturation",
+      "result": "matured",
+      "seed_metadata": "{\"soul\": {\"fruit_in_maturation\": \"matured\"}}",
+      "seed_row": true
+    },
+    {
+      "after": {
+        "active": 1,
+        "metadata": "{\"soul\": {\"harvested_fruit\": \"explicit\"}}",
+        "row_present": true
+      },
+      "name": "harvest_set_explicit_replaces_maturation",
+      "result": "explicit",
+      "seed_metadata": "{\"soul\": {\"fruit_in_maturation\": \"matured\"}}",
+      "seed_row": true
+    },
+    {
+      "after": {
+        "active": 1,
+        "metadata": null,
+        "row_present": true
+      },
+      "expected_error": "harvested fruit must not be empty",
+      "name": "harvest_set_error_nothing_to_harvest",
+      "seed_metadata": null,
+      "seed_row": true
+    },
+    {
+      "after": {
+        "active": 1,
+        "metadata": "{\"soul\": {\"harvested_fruit\": \"matured\"}}",
+        "row_present": true
+      },
+      "name": "harvest_set_blank_falls_back_to_maturation",
+      "result": "matured",
+      "seed_metadata": "{\"soul\": {\"fruit_in_maturation\": \"matured\"}}",
+      "seed_row": true
+    },
+    {
+      "after": {
+        "active": 1,
+        "metadata": null,
+        "row_present": true
+      },
+      "expected_error": "harvested fruit must not be empty",
+      "name": "harvest_set_error_blank_and_no_maturation",
+      "seed_metadata": null,
+      "seed_row": true
+    },
+    {
+      "after": {
+        "active": 1,
+        "metadata": "{\"operating_mode\": {\"active_mode\": \"Soul Mode\", \"active_journey\": \"j\"}, \"soul\": {\"harvested_fruit\": \"matured\"}}",
+        "row_present": true
+      },
+      "name": "harvest_set_preserves_other_metadata",
+      "result": "matured",
+      "seed_metadata": "{\"operating_mode\": {\"active_mode\": \"Soul Mode\", \"active_journey\": \"j\"}, \"soul\": {\"fruit_in_maturation\": \"matured\"}}",
+      "seed_row": true
+    },
+    {
+      "after": {
+        "active": 1,
+        "metadata": "{\"soul\": {\"harvested_fruit\": \"h\"}}",
+        "row_present": true
+      },
+      "name": "harvest_get_present",
+      "result": "h",
+      "seed_metadata": "{\"soul\": {\"harvested_fruit\": \"h\"}}",
+      "seed_row": true
+    },
+    {
+      "after": {
+        "active": 1,
+        "metadata": null,
+        "row_present": true
+      },
+      "name": "harvest_get_absent",
+      "result": null,
+      "seed_metadata": null,
+      "seed_row": true
+    },
+    {
+      "after": {
+        "active": 1,
+        "metadata": null,
+        "row_present": true
+      },
+      "name": "harvest_clear_writes_null",
+      "result": null,
+      "seed_metadata": "{\"soul\": {\"harvested_fruit\": \"h\"}}",
+      "seed_row": true
+    },
+    {
+      "after": {
+        "active": 1,
+        "metadata": "{\"soul\": {\"fruit_in_maturation\": \"f\"}}",
+        "row_present": true
+      },
+      "name": "harvest_clear_keeps_maturation",
+      "result": null,
+      "seed_metadata": "{\"soul\": {\"fruit_in_maturation\": \"f\", \"harvested_fruit\": \"h\"}}",
+      "seed_row": true
+    },
+    {
+      "after": {
+        "active": null,
+        "metadata": null,
+        "row_present": false
+      },
+      "name": "harvest_clear_no_row_writes_nothing",
+      "result": null,
+      "seed_metadata": null,
+      "seed_row": false
+    }
+  ]
+}

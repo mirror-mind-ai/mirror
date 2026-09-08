@@ -45,12 +45,7 @@ Nothing is routed. `routeMemoryCommand(["soul", …])` still returns Python, and
 no gate exists yet — `MIRROR_TS_SOUL` arrives in plateau 6. The renderers have
 no caller inside TS; plateaus 2–5 supply them.
 
-**Next plateau.** Plateau 2 — `ts/src/soul/state.ts`: session-id precedence
-(explicit → operating-mode session → `MIRROR_SESSION_ID` →
-`__global_soul_mode__`) and the fruit/harvest metadata rules on
-`runtime_sessions.metadata`, including the `NULL`-vs-`{}` empty-metadata
-contract and the move-and-pop behavior of `harvest set`. Golden plus the
-`soul_state` write probe on a redacted copy.
+**Next plateau.** Plateau 2 — `ts/src/soul/state.ts` (now complete; see below).
 
 **Blocking check owed before plateau 4.** Confirm `identity_integrations` is in
 the TS-owned schema (`ts/src/db/schema.ts`). The plan's database-architect
@@ -74,3 +69,75 @@ around.
   `test_operations_run_api_executes_runtime_diagnose_through_controlled_command`
   failed once on a wall-clock budget and passed on re-run. Already captured as
   **CR058** under RS010; no new record needed.
+
+---
+
+## Plateau 2 — Soul session state (2026-09-08)
+
+**What is now true.**
+
+`ts/src/soul/state.ts` ports the ritual's provisional state on
+`runtime_sessions.metadata`: session-id resolution, fruit maturation, harvest
+promotion, and both clears. Graded by `soul-state.golden.json` — 33 state
+scenarios (3 refused) and 6 session-id scenarios — plus a new `soul_state`
+write probe replaying the ritual on a copy of the real demo database. 119 Soul
+tests green; TS suite 1418 green; typecheck, biome, ruff clean; golden
+byte-identical under 3.10, 3.12, and 3.14.
+
+`services/soul.py` and `cli/soul.py` joined the oracle tripwire; the state
+generator joined the determinism gate and `soul_state` joined the CI write-probe
+loop.
+
+**Mutation evidence.** Four deliberate mutations, all caught by the unit
+golden:
+
+| Mutation | Scenarios failed |
+|---|---:|
+| `JSON.stringify` instead of Python's `", "`/`": "` separators | 14 |
+| write `"{}"` instead of SQL NULL when the metadata empties | 2 |
+| let `clear` create a session row Python never touches | 2 |
+| harvest promotes without popping the maturation key | 4 |
+
+The probe was checked the same way: the harvest mutation flips it to
+`match: false`, so it is not a vacuous pass.
+
+**What the probe does and does not prove.** `writeParityFixture.ts`
+canonicalizes every `metadata` cell (parse, then key-sorted re-stringify) so
+write parity grades the VALUE rather than the serialization dialect — a
+deliberate DS6.US1 decision. Byte parity of the column is therefore pinned by
+the unit golden, which reads the raw column; the probe proves the state a real
+database ends in, step by step. Both statements are needed; neither implies the
+other.
+
+**Next plateau.** Plateau 3 — `ts/src/soul/prompts.ts`: the three voice
+templates read from `src/memory/prompts/*.md` by resolved path (no vendored
+copy) and the Self-identity placeholder replacement, which must be a literal
+replacement rather than a regex substitution.
+
+**Found on the way, not fixed — needs a Navigator decision.**
+
+US4 writes `runtime_sessions.metadata` in a different JSON dialect than Python.
+Proven on two temporary homes running the same command:
+
+```text
+python: '{"operating_mode": {"active_mode": "Soul Mode", "active_journey": "mirror-ts-core"}}'
+ts:     '{"operating_mode":{"active_mode":"Soul Mode","active_journey":"mirror-ts-core"}}'
+```
+
+`activateOperatingMode` uses `JSON.stringify`; Python uses
+`json.dumps(..., ensure_ascii=False)`. Nothing breaks — both cores parse either
+form, and the write-parity harness canonicalizes metadata precisely so a
+dialect difference does not fail. But the column is co-written by both cores
+until every command that touches it is flipped, and `ts/src/util/pyGenerators.ts`
+exists because this project treats a byte divergence in a shared column as a
+defect elsewhere.
+
+Soul writes the Python dialect (`pythonJsonDumps`), so US6 is coherent on its
+own. The decision that remains is whether `activateOperatingMode` should be
+corrected too. It is a one-line change in US4 territory that alters the bytes a
+live flipped command writes, so it is not something to slip into this story
+silently — recommended as a CR under RS010 rather than a quiet fix here.
+
+It becomes load-bearing at plateau 3: `soul load` calls `activate_mode`, so
+until this is settled, that leaf's bytes depend on which core last wrote the
+row.
