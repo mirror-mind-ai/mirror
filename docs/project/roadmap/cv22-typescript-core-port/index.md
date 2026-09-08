@@ -2,7 +2,7 @@
 
 # CV22 — TypeScript Core Port (Database-Seam Strangler)
 
-**Status:** 🟢 Active — restarted 2026-09-02 after pause-window reconciliation; DS7 command burn-down in progress (9/14)
+**Status:** 🟢 Active — restarted 2026-09-02 after pause-window reconciliation; DS7 command burn-down in progress (10/14)
 **Goal:** Port Mirror Mind's Python core (`src/memory/`) to TypeScript through a database-seam strangler — never a big-bang rewrite — so the system converges on one language across core and runtimes, distributes through npm, widens the contributor pool, and aligns with the MCP/plugin ecosystem, all without losing the accumulated correctness of the ranker, extraction, and memory pipeline.
 
 ---
@@ -291,8 +291,10 @@ Risk-first, mirroring the decision spine:
    first hot-path extension call to enter it. TS3 then ported the
    daily-visible tail (`welcome` and the read-only `runtime` subcommands), so
    the per-turn status line no longer pays a Python start and `runtime
-   diagnose` stopped misreporting the TS-owned schema — DS7 is **9/14**.
-   US9 is the separately
+   diagnose` stopped misreporting the TS-owned schema. US6 then ported the
+   Soul ritual — the first `transport=verbatim` surface with an identity
+   write, and the rehearsal for US8's much larger Builder tree — so DS7 is
+   **10/14**. US9 is the separately
    visible non-command Workspace/web hierarchy rider required
    before DS7 can finish.
 8. **DS8 — live-provider cutover**: implement the `live` mode of the TS

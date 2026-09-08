@@ -142,8 +142,8 @@ and green CI on every push.
 ## Remaining Sequence
 
 ```text
-DS7 — command burn-down (9/14): US6 Soul, US7 Explorer, US9 Workspace/web
-      hierarchy rider, TS4 extension catalog and projection contract,
+DS7 — command burn-down (10/14): US7 Explorer, US9 Workspace/web hierarchy
+      rider, TS4 extension catalog and projection contract,
       US8 Builder/Ariad tree last
 → DS8 live-provider cutover
 → DS9 TS MCP server

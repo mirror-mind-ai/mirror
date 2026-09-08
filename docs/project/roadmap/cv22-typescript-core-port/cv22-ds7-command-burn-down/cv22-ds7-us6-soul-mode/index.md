@@ -2,7 +2,7 @@
 
 # CV22.DS7.US6 — Soul Mode
 
-**Status:** 🟡 Planned — Plan authored, pending Navigator approval
+**Status:** ✅ Done — flipped 2026-09-08; Navigator-validated on the real home
 **Type:** User Story
 
 ---

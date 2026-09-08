@@ -42,3 +42,6 @@ evidence stays honest as both cores move.
 - [CR063 — Keep journey slugs consistent across tables in repair-encoding](cr063-keep-journey-slugs-consistent-across-tables-in-repair-encoding.md)
 - [CR065 — Make parity fixture generators hermetic by construction](cr065-make-parity-fixture-generators-hermetic-by-construction.md)
 - [CR066 — Skip a naive timestamp instead of crashing the diagnosis](cr066-skip-a-naive-timestamp-instead-of-crashing-the-diagnosis.md)
+- [CR069 — Fail cleanly when `soul apply` is given an unknown id](cr069-fail-cleanly-when-soul-apply-is-given-an-unknown-id.md)
+- [CR070 — Render or remove the inert `--listening-for` argument](cr070-render-or-remove-the-inert-listening-for-argument.md)
+- [CR071 — Collapse the triplicated skill command references](cr071-collapse-the-triplicated-skill-command-references.md)
