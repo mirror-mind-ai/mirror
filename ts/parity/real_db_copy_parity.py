@@ -364,13 +364,17 @@ def _welcome_probes(copied_db: Path, work_dir: Path) -> tuple[list[dict], str]:
     a fresh test database has one conversation and no history.
 
     The copy is hardlinked into a home-shaped directory (not copied again) so
-    `compose_status_line` can resolve it the way the real runtime does.
+    `compose_status_line` can resolve it the way the real runtime does. The link
+    is named by `db_name_for_env`, NOT hardcoded to `memory.db`: the parity job
+    runs under `MEMORY_ENV=test`, where the runtime looks for `memory_test.db`,
+    and a hardcoded name would leave the mode segment silently untested there.
     """
     from memory.cli import welcome as wc
+    from memory.config import db_name_for_env
 
     home = work_dir / "welcome-home"
     home.mkdir(exist_ok=True)
-    linked = home / "memory.db"
+    linked = home / db_name_for_env()
     if not linked.exists():
         try:
             os.link(copied_db, linked)

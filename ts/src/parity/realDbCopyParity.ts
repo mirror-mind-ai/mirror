@@ -6,6 +6,7 @@ import {
   listConsolidations,
 } from "#cultivation/consolidationStore.ts";
 import type { Database } from "#db/database.ts";
+import { dbNameForEnv } from "#frontDoor/dbPath.ts";
 import { type JourneyIdentityRow, listJourneyOptions } from "#journey/journeyOptions.ts";
 import { countMemoriesByType, listRecentMemorySummaries } from "#memory/listing.ts";
 import { detectPersona, type PersonaRoutingRow } from "#persona/detectPersona.ts";
@@ -344,20 +345,25 @@ export function renderRedactedReport(results: readonly ProbeParityResult[]): str
  * they carry exactly what a synthetic fixture cannot pressure -- four-digit
  * counts and their thousands separator, and the "since <Mon> <Year>" label
  * derived from the earliest conversation ever recorded.
+ *
+ * The AMBIENT environment is read, not overridden. The oracle read it too, and
+ * `MEMORY_ENV` moves two things at once: the status line's environment segment
+ * and the database NAME the mode segment looks for. Forcing production here
+ * while the parity job runs under `MEMORY_ENV=test` made TypeScript answer
+ * about a different file than Python did -- which is exactly how CI caught it.
  */
 export function evaluateWelcomeProbes(
   fixture: RealDbCopyFixture,
   options: { includeSensitiveDebug?: boolean } = {},
 ): ProbeParityResult[] {
   const home = fixture.welcome_home_path;
-  const dbPath = home === undefined ? null : join(home, "memory.db");
+  const dbPath =
+    home === undefined ? null : join(home, dbNameForEnv(process.env.MEMORY_ENV || "production"));
   return (fixture.welcome_probes ?? []).map((probe) => {
-    let actual: string;
-    if (probe.label === "welcome_stats_line") {
-      actual = formatStats(readWelcomeStats(dbPath));
-    } else {
-      actual = composeStatusLine({ mirrorHome: home ?? null, env: { MEMORY_ENV: undefined } });
-    }
+    const actual =
+      probe.label === "welcome_stats_line"
+        ? formatStats(readWelcomeStats(dbPath))
+        : composeStatusLine({ mirrorHome: home ?? null });
     return toProbeResult(probe.label, probe.expected_order, [actual], options);
   });
 }

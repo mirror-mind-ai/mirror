@@ -13,7 +13,7 @@ uv run python ts/parity/generate_welcome_golden.py
 git diff --exit-code ts/test/goldens/
 cd ts && npm run typecheck && npm run lint && npm test && cd ..
 uv run python scripts/check_oracle_drift.py
-uv run python ts/parity/real_db_copy_parity.py --source-db tmp/parity/demo-memory.db   # status/stats lines
+MEMORY_ENV=test uv run python ts/parity/real_db_copy_parity.py --source-db tmp/parity/demo-memory.db   # status/stats lines
 node ts/parity/conversation_lifecycle_smoke.ts   # welcome, status line, runtime reads through both engines
 ```
 
@@ -21,6 +21,12 @@ The plan named one generator (`generate_runtime_reads_golden.py`); the port
 split it into four as the plateaus landed — git/version, release notes, status,
 and diagnose — because each grades a different oracle surface and a single
 corpus would have regenerated all of them on any change to one.
+
+`MEMORY_ENV=test` on the real-DB-copy line is not decoration: it is what the
+CI parity job sets, and running the harness without it hides any defect that
+depends on the environment. The welcome status-line probe is exactly such a
+case — `MEMORY_ENV` moves both the line's environment segment and the database
+NAME the mode segment looks for.
 
 Expected: every command exits 0; goldens regenerate as a no-op; the smoke's
 `welcome`/`runtime` steps route to TS by default and to Python under
