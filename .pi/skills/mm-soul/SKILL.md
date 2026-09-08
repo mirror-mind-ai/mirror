@@ -42,7 +42,7 @@ start Soul Mode for <journey-slug>
 ## 1. Activate Soul Mode
 
 ```bash
-uv run python -m memory soul load [slug]
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul load [slug]
 ```
 
 The command:
@@ -76,7 +76,7 @@ Use the contained renderer. This call is required Soul Mode behavior, not
 optional tool use:
 
 ```bash
-uv run python -m memory soul listen \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul listen \
   --self "situated Self Voice description" \
   --shadow "situated Shadow Voice description" \
   [--wisdom "situated Wisdom Voice description"] \
@@ -133,18 +133,18 @@ Voice, Wisdom Voice, or Beauty Voice in natural language, render the listening
 surface before the interpretive bridge:
 
 ```bash
-uv run python -m memory soul rite self
-uv run python -m memory soul rite shadow
-uv run python -m memory soul rite wisdom \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul rite self
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul rite shadow
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul rite wisdom \
   --says "complete Wisdom Voice response"
-uv run python -m memory soul rite beauty \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul rite beauty \
   --says "complete Beauty Voice response"
 ```
 
 You may pass situated listening copy when it improves continuity:
 
 ```bash
-uv run python -m memory soul rite self \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul rite self \
   --says "complete Self Voice response"
 ```
 
@@ -157,7 +157,7 @@ connecting what the voice says to the ongoing conversation. Do not render a
 For Self Voice, use the composed prompt as the voice contract:
 
 ```bash
-uv run python -m memory soul prompt self
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul prompt self
 ```
 
 This command injects the user's current `self/soul` identity layer into the base
@@ -182,7 +182,7 @@ voice response back to the conversation.
 For Wisdom Voice, use the canonical prompt as the voice contract:
 
 ```bash
-uv run python -m memory soul prompt wisdom
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul prompt wisdom
 ```
 
 Before rendering the Wisdom card, compose the complete Wisdom Voice utterance yourself from the prompt and the user's living material. Then call `soul rite wisdom --says "..."`. Never call `soul rite wisdom` without `--says`; that would render no real voice.
@@ -223,7 +223,7 @@ that is reliable.
 For Beauty Voice, use the canonical prompt as the voice contract:
 
 ```bash
-uv run python -m memory soul prompt beauty
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul prompt beauty
 ```
 
 Before rendering the Beauty card, compose the complete Beauty Voice utterance yourself from the prompt and the user's living material. Then call `soul rite beauty --says "..."`. Never call `soul rite beauty` without `--says`; that would render no real voice.
@@ -252,7 +252,7 @@ During an active Self Voice or Shadow Voice rite, when the conversation yields a
 provisional harvest, render one Fruit In Maturation at the end of the response:
 
 ```bash
-uv run python -m memory soul fruit set "provisional fruit text"
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul fruit set "provisional fruit text"
 ```
 
 Use `--session-id` when a Pi session id is available.
@@ -265,7 +265,7 @@ call `fruit set` with the denser formulation.
 If needed, render the current fruit first:
 
 ```bash
-uv run python -m memory soul fruit show
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul fruit show
 ```
 
 Fruit maturation replaces the wording, not the lineage. Preserve the previous
@@ -310,7 +310,7 @@ close this ritual
 Compose compact situated material from the conversation and call:
 
 ```bash
-uv run python -m memory soul close \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul close \
   --harvested "what was harvested" \
   --echoes "what still echoes" \
   --open "what remains open" \
@@ -347,7 +347,7 @@ remain, render Integration Proposal. This card is the proposed integration text
 itself, not a preliminary map:
 
 ```bash
-uv run python -m memory soul review \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul review \
   --origin "where this material came from" \
   --self "first-person principle/practice" \
   --shadow "protective part to recognize" \
@@ -393,7 +393,7 @@ uv run python -m memory identity get persona <persona-id>
 Then render a proposal-only surface:
 
 ```bash
-uv run python -m memory soul propose self \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul propose self \
   --origin "Soul Mode harvest / review context" \
   --current "current self/soul material or none loaded" \
   --proposed "proposed identity content" \
@@ -438,7 +438,7 @@ Do you confirm applying exactly this text?
 If the user explicitly confirms applying a proposal, call:
 
 ```bash
-uv run python -m memory soul apply self \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul apply self \
   --proposed "exact proposed integration text" \
   --origin "Soul Mode harvest / integration proposal context" \
   --confirm APPLY
@@ -468,13 +468,13 @@ When the user says they wish to harvest, close the current fruit into a Harveste
 Fruit surface:
 
 ```bash
-uv run python -m memory soul harvest set "final fruit text"
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul harvest set "final fruit text"
 ```
 
 If the fruit is already harvested, render it with:
 
 ```bash
-uv run python -m memory soul harvest show
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul harvest show
 ```
 
 Paste the Harvested Fruit surface visibly. Do not save automatically. The card
@@ -484,7 +484,7 @@ confirm saving or request an edit.
 When the user confirms saving, call:
 
 ```bash
-uv run python -m memory soul harvest save [--journey journey-slug]
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul harvest save [--journey journey-slug]
 ```
 
 This creates one structured Markdown journal entry and clears the harvested fruit state. When a runtime conversation is available, the journal entry includes the originating `conversation_id`, an origin link, and preserved conversation material. If the user asks to save again after state is cleared, do not create a duplicate.
@@ -496,7 +496,7 @@ remaining echoes/open questions from the conversation. Then ask: `There is livin
 When the user declines saving, call:
 
 ```bash
-uv run python -m memory soul harvest decline
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts soul harvest decline
 ```
 
 This clears the harvested fruit without creating a journal entry.

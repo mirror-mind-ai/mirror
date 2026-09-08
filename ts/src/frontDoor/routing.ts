@@ -620,12 +620,12 @@ export function routeMemoryCommand(
         reason: `soul subcommand not ported to TS: ${subcommand || "(none)"}`,
       };
     }
-    // The gate is OFF by default until the flip (US6 plateau 7); after it, `=0`
-    // is the revert control. The whole family shares ONE gate because Soul is a
-    // single ritual and a half-flipped ritual cannot be reviewed in a live
-    // session.
     if (!soulGateEnabled(env)) {
-      return { command, engine: "python", reason: "soul TS route not enabled (MIRROR_TS_SOUL)" };
+      return {
+        command,
+        engine: "python",
+        reason: "soul TS route disabled by MIRROR_TS_SOUL=0",
+      };
     }
     // `harvest save` is the one leaf that crosses the provider seam, through
     // the embedding alone. Without the replay transport it stays on Python, the
@@ -659,8 +659,18 @@ const TS_SOUL_SUBCOMMANDS = new Set([
   "prompt",
 ]);
 
+// CV22.DS7.US6: the Soul ritual. Flipped 2026-09-08 after the seven-point
+// checklist went green and the Navigator validated the real home -- ten
+// surfaces byte-identical across both engines including the refusal paths, the
+// identity write proven on two copies of the live database (document and audit
+// row identical), and the revert exercised.
+//
+// ONE gate for the whole family, unlike the daily-visible tail's two: Soul is a
+// single ritual, and a half-flipped ritual cannot be reviewed in a live
+// session. `MIRROR_TS_SOUL=0` is the revert control, with no code change and no
+// data migration.
 function soulGateEnabled(env: RouteEnvironment): boolean {
-  return env.MIRROR_TS_SOUL === "1";
+  return env.MIRROR_TS_SOUL !== "0";
 }
 
 /** `soul harvest <action>`, skipping the options argparse strips first. */

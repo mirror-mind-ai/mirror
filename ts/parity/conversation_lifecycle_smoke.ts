@@ -90,6 +90,7 @@ delete baseEnv.MIRROR_TS_BACKUP;
 delete baseEnv.MIRROR_TS_REPAIR_ENCODING;
 delete baseEnv.MIRROR_TS_WELCOME;
 delete baseEnv.MIRROR_TS_RUNTIME_READS;
+delete baseEnv.MIRROR_TS_SOUL;
 // Empty, not deleted: `memory.config` re-applies a repo `.env` with
 // `os.environ.setdefault` at import, so a DELETED key comes back and
 // `runtime diagnose` would make a live OpenRouter call on the Python side --
@@ -646,8 +647,11 @@ check(reverted.stdout.trim() === "ACTIVE", "the reverted status answers from Pyt
 // with MIRROR_TS_SOUL=1 (proving the route that plateau 7 will make default)
 // and once without (proving today's shipped default is still Python), and the
 // two outputs are compared byte for byte.
-const SOUL_ON = { MIRROR_TS_SOUL: "1", MIRROR_HOME: home };
-const SOUL_OFF = { MIRROR_HOME: home };
+// After the 2026-09-08 flip the SHIPPED route is TS with no gate in the
+// environment, so `SOUL_ON` sets none: the steps below prove the default rather
+// than a configuration. `SOUL_OFF` is the revert control.
+const SOUL_ON = { MIRROR_HOME: home };
+const SOUL_OFF = { MIRROR_HOME: home, MIRROR_TS_SOUL: "0" };
 const soulSession = "smoke-soul-session";
 
 // Python's `soul` parser accepts NO `--mirror-home` (nor does `explore`, which
@@ -679,8 +683,8 @@ function soulStep(label: string, args: string[]): StepResult {
 function soulBothEngines(label: string, args: string[]): { ts: StepResult; python: StepResult } {
   const ts = runSoul(args, SOUL_ON);
   const python = runSoul(args, SOUL_OFF);
-  check(ts.route === "ts", `${label}: TS route under MIRROR_TS_SOUL=1`, ts.route);
-  check(python.route === "python", `${label}: Python by default (gate off)`, python.route);
+  check(ts.route === "ts", `${label}: TS by default, no gate in the environment`, ts.route);
+  check(python.route === "python", `${label}: MIRROR_TS_SOUL=0 reverts to Python`, python.route);
   check(
     ts.stdout === python.stdout,
     `${label}: both engines render identically`,

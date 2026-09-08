@@ -402,8 +402,45 @@ asserts both sides. Recorded in
 [decisions.md](../../../decisions.md#the-typescript-front-door-may-accept---mirror-home-where-a-python-command-refuses-it),
 and the same decision covers `explore` when US7 reaches it.
 
-**Next plateau.** Plateau 7 — the flip, and it is the first plateau that changes
-what a live session does. It needs, in order: Navigator validation on the real
-home (the routes in [test-guide.md](test-guide.md#navigator-validation),
-including `soul apply` on a COPY first), then the gate defaulting on, the three
-`mm-soul` skill copies switched to the front door, and the ledger's flip entry.
+**Next plateau.** Plateau 7 (now complete; see below).
+
+---
+
+## Plateau 7 — Flipped (2026-09-08)
+
+**What is now true.**
+
+`soul` answers from the TypeScript core by default. `MIRROR_TS_SOUL=0` reverts
+the whole family with no code change and no data migration, and the revert wins
+over the embedding replay variable so a revert cannot leave one leaf behind. All
+three `mm-soul` skill copies invoke the front door — 20 invocations each — so
+the flipped route reaches live sessions and not only the smoke.
+
+Verified on the real home after the flip: `soul rite self` with NO gate in the
+environment logs `soul ts exit=0`, and the same command under
+`MIRROR_TS_SOUL=0` logs `soul python exit=0`.
+
+**Navigator validation (2026-09-08).** Ten comparisons through both engines,
+byte-identical with matching exit codes, including two refusal paths; the
+identity write proven on two copies of the live database with document and audit
+row identical; the revert exercised; zero `fell_back` markers.
+
+**The validation sheet was defective on the first attempt, and it matters.** The
+comparison loop used `read -ra`, which is bash-only. Under zsh the array stayed
+empty, so both sides ran a bare `soul` — which the allowlist routes to Python —
+and the loop printed five passes while comparing two identical FAILURES of the
+same engine. It was caught by reading the output (`✓ soul : identical`, with an
+empty subcommand name), not by any check. The corrected harness then
+over-corrected: `eval` re-split the quoted arguments and truncated multi-word
+values on the TS side only, producing five false failures. First harness: false
+passes. Second: false failures. Neither touched the port.
+
+This is the same failure class the story spent five plateaus mutation-testing
+against — a check that passes without measuring — reappearing in the validation
+instrument itself. The lesson generalizes past this story: an evidence-producing
+script needs the same scrutiny as the code it grades, and "the shapes were
+verified" is not the same claim as "the sheet was verified".
+
+**Remaining before Ariad Validation.** One live Pi Soul Mode session on the
+flipped default — the last acceptance route in
+[test-guide.md](test-guide.md#navigator-validation).

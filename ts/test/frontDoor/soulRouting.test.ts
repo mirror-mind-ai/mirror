@@ -1,7 +1,8 @@
 // CV22.DS7.US6 plateau 6 — the `soul` routing contract.
 //
 // Three properties, in rising order of consequence:
-//   1. the gate is OFF by default, so this build ships no behavior change;
+//   1. the family answers from TS by DEFAULT since the 2026-09-08 flip, and
+//      `MIRROR_TS_SOUL=0` reverts it with no code change;
 //   2. subcommands are allowlisted BY NAME, so a subcommand Python grows later
 //      reaches Python instead of inheriting the route (RS009/CR055 — the
 //      `conversations append` defect exited 0 and discarded the payload);
@@ -13,20 +14,23 @@ import test from "node:test";
 import { routeMemoryCommand } from "#frontDoor/routing.ts";
 import { SOUL_SUBCOMMANDS } from "#frontDoor/soulRoute.ts";
 
-const ON = { MIRROR_TS_SOUL: "1" };
+// The SHIPPED environment: no gate set at all. Every assertion below that uses
+// `ON` would also pass with the gate forced on, which is exactly why the
+// default-route test uses an empty environment instead.
+const ON = {};
 
-test("soul is not routed to TS without the gate", () => {
+test("soul answers from TS with NO gate in the environment (the shipped default)", () => {
   for (const subcommand of SOUL_SUBCOMMANDS) {
+    if (subcommand === "harvest") continue; // its `save` action is asserted separately
     const decision = routeMemoryCommand(["soul", subcommand], {});
-    assert.equal(decision.engine, "python", `${subcommand} must stay on Python by default`);
-    assert.match(decision.reason, /MIRROR_TS_SOUL/);
+    assert.equal(decision.engine, "ts", `${subcommand} must answer from TS by default`);
   }
 });
 
-test("every ported subcommand routes to TS with the gate on", () => {
+test("MIRROR_TS_SOUL=1 is accepted but unnecessary after the flip", () => {
   for (const subcommand of SOUL_SUBCOMMANDS) {
-    if (subcommand === "harvest") continue; // its `save` action is asserted separately
-    assert.equal(routeMemoryCommand(["soul", subcommand], ON).engine, "ts", subcommand);
+    if (subcommand === "harvest") continue;
+    assert.equal(routeMemoryCommand(["soul", subcommand], { MIRROR_TS_SOUL: "1" }).engine, "ts");
   }
 });
 
