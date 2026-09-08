@@ -34,3 +34,4 @@ cannot choose safely.
 - [CR009 — Name the target project in artifact materialization surfaces](cr009-name-the-target-project-in-artifact-surfaces.md)
 - [CR015 — Preserve Driver-authored Plan before approval](cr015-preserve-driver-authored-plan-before-approval.md)
 - [CR016 — Verify authored roadmap state before Delivery Story Done](cr016-verify-authored-roadmap-before-ds-done.md)
+- [CR067 — Render the refused checkpoint, not a hardcoded Implement stage](cr067-render-the-refused-checkpoint-not-a-hardcoded-implement-stage.md)
