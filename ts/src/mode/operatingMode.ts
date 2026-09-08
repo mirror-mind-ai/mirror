@@ -8,6 +8,20 @@ import {
 
 export const OPERATING_MODE_METADATA_KEY = "operating_mode";
 
+/** Port of `MODE_ICONS`: the glyph each lens is announced with. */
+export const MODE_ICONS: Readonly<Record<string, string>> = {
+  "Mirror Mode": "◌",
+  "Builder Mode": "■",
+  "Explorer Mode": "△",
+  "Soul Mode": "☾",
+};
+
+/** Port of `OperatingModeState.label`: the icon, then the mode, or just the mode. */
+export function modeLabel(state: OperatingModeState): string {
+  const icon = MODE_ICONS[state.mode];
+  return icon ? `${icon} ${state.mode}` : state.mode;
+}
+
 export interface OperatingModeState {
   mode: string;
   journey: string | null;

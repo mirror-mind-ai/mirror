@@ -131,6 +131,9 @@ ORACLE_PATHS: tuple[str, ...] = (
     # the same file is NOT ported and retires unported in DS10; tracked at file
     # granularity like every other entry, so drift anywhere in it stays visible.
     "src/memory/cli/runtime.py",
+    # DS7.TS3 plateau 4: the welcome card and the per-turn status line, plus the
+    # update cache whose BYTES both cores read and write during the transition.
+    "src/memory/cli/welcome.py",
     # DS7.TS3 plateau 3a: `inspect_migration_files` and the checksum contract it
     # shares with `run_migrations`. Only the read side is ported -- the runner
     # belongs to the extension catalog (TS4) -- but the checksum normalisation

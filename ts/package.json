@@ -33,6 +33,7 @@
     "#seed/*": "./src/seed/*",
     "#tasks/*": "./src/tasks/*",
     "#util/*": "./src/util/*",
+    "#welcome/*": "./src/welcome/*",
     "#fixtures/*": "./test/fixtures/*",
     "#goldens/*": "./test/goldens/*",
     "#helpers/*": "./test/helpers/*"

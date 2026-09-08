@@ -56,6 +56,15 @@ export interface RuntimeVersionReport {
   updateChannel: MarkerValue;
 }
 
+export interface GitUpdatePlan {
+  upstream: string | null;
+  ahead: number | null;
+  behind: number | null;
+  ready: boolean;
+  action: string;
+  note: string | null;
+}
+
 export interface UpdateAvailability {
   version: string;
   upstream: string | null;
@@ -336,6 +345,94 @@ export function checkUpdateAvailability(
     remote_commit: remoteCommit,
     status: classifyUpdateStatus(git.repository, localCommit, remoteCommit),
   });
+}
+
+/**
+ * Port of `inspect_git_update_plan`: how far HEAD is from the channel's
+ * upstream, and whether a fast-forward is the honest move.
+ *
+ * Unlike `checkUpdateAvailability`, this asks the LOCAL object database only --
+ * it is the plan, not the check, so an unfetched channel is `blocked` here
+ * rather than a reason to query the remote.
+ */
+export function inspectGitUpdatePlan(
+  git: GitStatus,
+  updateChannel: MarkerValue | null = null,
+): GitUpdatePlan {
+  const blocked = (upstream: string | null, note: string): GitUpdatePlan => ({
+    upstream,
+    ahead: null,
+    behind: null,
+    ready: false,
+    action: "blocked",
+    note,
+  });
+  if (git.repository === null) return blocked(null, "repository unavailable");
+
+  let upstream: string;
+  if (updateChannel === null) {
+    const resolved = runGit(
+      ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"],
+      git.repository,
+    );
+    if (resolved.code !== 0 || !resolved.stdout) {
+      return blocked(null, resolved.stderr || "no upstream configured");
+    }
+    upstream = resolved.stdout;
+  } else {
+    upstream = upstreamFor(updateChannel);
+    const verified = runGit(["rev-parse", "--verify", upstream], git.repository);
+    if (verified.code !== 0) {
+      return blocked(
+        upstream,
+        verified.stderr || `update channel ${updateChannel.value} is not fetched`,
+      );
+    }
+  }
+
+  const counted = runGit(
+    ["rev-list", "--left-right", "--count", `HEAD...${upstream}`],
+    git.repository,
+  );
+  if (counted.code !== 0 || !counted.stdout) {
+    return blocked(upstream, counted.stderr || "cannot compare upstream");
+  }
+  const [aheadText, behindText] = counted.stdout.split(/\s+/);
+  const ahead = Number(aheadText);
+  const behind = Number(behindText);
+  if (
+    aheadText === undefined ||
+    behindText === undefined ||
+    !Number.isInteger(ahead) ||
+    !Number.isInteger(behind)
+  ) {
+    return blocked(upstream, `unexpected git count: ${counted.stdout}`);
+  }
+
+  if (ahead === 0 && behind === 0) {
+    return { upstream, ahead, behind, ready: true, action: "none", note: "already up to date" };
+  }
+  if (ahead === 0 && behind > 0) {
+    return {
+      upstream,
+      ahead,
+      behind,
+      ready: true,
+      action: "pull",
+      note: `pull ${behind} remote commit(s)`,
+    };
+  }
+  if (ahead > 0 && behind === 0) {
+    return {
+      upstream,
+      ahead,
+      behind,
+      ready: false,
+      action: "blocked",
+      note: "local commits present",
+    };
+  }
+  return { upstream, ahead, behind, ready: false, action: "blocked", note: "branch diverged" };
 }
 
 export function renderRuntimeVersion(report: RuntimeVersionReport): string {

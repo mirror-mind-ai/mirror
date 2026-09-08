@@ -46,6 +46,31 @@ export function pythonJsonDumpsEnsureAscii(value: unknown): string {
   return escapeNonAscii(pythonJsonDumps(value));
 }
 
+/**
+ * Serialize like Python `json.dumps(value, indent=2, sort_keys=True)` -- the
+ * shape of a file written to be read back by BOTH cores.
+ *
+ * `ensure_ascii` is left at Python's default (True), because the call site this
+ * mirrors leaves it there too: the welcome's update cache is written with a
+ * plain `json.dumps(payload, indent=2, sort_keys=True)`. A release title
+ * carrying an em dash must land as `\u2014`, not as raw UTF-8, or the two
+ * cores write different bytes for the same state and thrash each other's TTL.
+ */
+export function pythonJsonDumpsIndented(value: unknown, indent = 2): string {
+  return escapeNonAscii(JSON.stringify(sortKeysDeep(value), null, indent));
+}
+
+/** Python's `sort_keys=True`, applied at every level. */
+function sortKeysDeep(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sortKeysDeep);
+  if (typeof value !== "object" || value === null) return value;
+  const sorted: Record<string, unknown> = {};
+  for (const key of Object.keys(value as Record<string, unknown>).sort()) {
+    sorted[key] = sortKeysDeep((value as Record<string, unknown>)[key]);
+  }
+  return sorted;
+}
+
 function escapeNonAscii(text: string): string {
   return text.replace(/[\u0080-\uffff]/g, (character) => {
     const code = character.charCodeAt(0).toString(16).padStart(4, "0");

@@ -68,6 +68,7 @@ jobs:
           uv run python ts/parity/generate_release_notes_golden.py
           uv run python ts/parity/generate_runtime_status_golden.py
           uv run python ts/parity/generate_runtime_diagnose_golden.py
+          uv run python ts/parity/generate_welcome_golden.py
           git diff --exit-code ts/test/goldens/
         env:
           MEMORY_ENV: test
