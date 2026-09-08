@@ -2,8 +2,7 @@
 
 # CV22.DS7.TS3 — Ops/utility tail 2: daily-visible tail
 
-**Status:** 🔵 Implemented — flipped 2026-09-08; validation accepted, debt
-deferred (CR065, CR066), closure pending. `welcome` and
+**Status:** ✅ Done — flipped and closed 2026-09-08. `welcome` and
 `runtime status|version|diagnose|release-notes` route to TS by default;
 `MIRROR_TS_WELCOME=0` / `MIRROR_TS_RUNTIME_READS=0` revert independently.
 **Type:** Technical Story
