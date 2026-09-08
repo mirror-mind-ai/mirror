@@ -157,6 +157,26 @@ type MirrorStatusContext = {
 export default function (pi: ExtensionAPI) {
 	// --- Helpers ---
 
+	/**
+	 * Every Mirror command this extension runs enters the TypeScript front
+	 * door (`ts/src/frontDoor/cli.ts`), the same entry the skills use, so
+	 * `routing.ts` decides which engine answers, each family's revert control
+	 * (`MIRROR_TS_*=0`) reaches live sessions, and `front-door.log` records
+	 * the route. Unported commands fall back to Python inside the front door,
+	 * which is where the `uv run python -m memory` invocation now lives --
+	 * with the venv resolution that used to be this file's concern.
+	 *
+	 * The relative path resolves because Pi runs with the repository root as
+	 * its working directory, the same invariant the skills rely on.
+	 * `--env-file-if-exists` keeps a missing `.env` from turning a hook into
+	 * a hard failure (RS009 CR059).
+	 */
+	const FRONT_DOOR_ARGV = [
+		"--no-warnings",
+		"--env-file-if-exists=.env",
+		"ts/src/frontDoor/cli.ts",
+	];
+
 	function log(level: string, msg: string): void {
 		try {
 			const ts = new Date().toISOString();
@@ -167,12 +187,12 @@ export default function (pi: ExtensionAPI) {
 		}
 	}
 
-	function runPyBackground(args: string[], label: string): void {
+	function runMirrorBackground(args: string[], label: string): void {
 		let logFd: number | undefined;
 		try {
 			mkdirSync(MIRROR_DIR, { recursive: true });
 			logFd = openSync(LOG_FILE, "a");
-			const child = spawn("uv", ["run", "python", ...args], {
+			const child = spawn("node", [...FRONT_DOOR_ARGV, ...args], {
 				cwd: process.cwd(),
 				stdio: ["ignore", logFd, logFd],
 				// Windows: a detached console child materializes as a visible
@@ -199,51 +219,19 @@ export default function (pi: ExtensionAPI) {
 		}
 	}
 
-	async function runPy(args: string[]): Promise<string> {
+	async function runMirror(args: string[]): Promise<string> {
 		try {
-			// Use `uv run python` so the project's venv (which has the `memory`
-			// package installed) is used. Plain `python3` resolves to whatever PATH
-			// finds first (often a pyenv shim without project deps), causing
-			// `ModuleNotFoundError: No module named 'memory'`. See conversa
-			// 2026-05-10 for full diagnosis.
-			const result = await pi.exec("uv", ["run", "python", ...args], {
+			const result = await pi.exec("node", [...FRONT_DOOR_ARGV, ...args], {
 				timeout: 30_000,
 			});
 			const stderr = (result?.stderr ?? "").trim();
 			if (stderr) {
-				log("WARN", `stderr from [${args.slice(0, 3).join(" ")}]: ${stderr.slice(0, 500)}`);
+				log("WARN", `stderr from [${args.slice(0, 2).join(" ")}]: ${stderr.slice(0, 500)}`);
 			}
 			return (result?.stdout ?? "").trim();
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : String(err);
-			log("ERROR", `runPy failed [${args.slice(0, 3).join(" ")}]: ${message.slice(0, 500)}`);
-			return "";
-		}
-	}
-
-	/**
-	 * Run a Mirror command through the TypeScript front door
-	 * (`ts/src/frontDoor/cli.ts`), the same entry the skills use, so the
-	 * routing table decides which engine answers and the front-door log
-	 * records the route. Unported commands fall back to Python inside the
-	 * front door itself. Only the session-shutdown backup goes this way for
-	 * now (CV22.DS7.TS1); moving the remaining `runPy` calls is RS009 work.
-	 */
-	async function runFrontDoor(args: string[]): Promise<string> {
-		try {
-			const result = await pi.exec(
-				"node",
-				["--no-warnings", "--env-file-if-exists=.env", "ts/src/frontDoor/cli.ts", ...args],
-				{ timeout: 30_000 },
-			);
-			const stderr = (result?.stderr ?? "").trim();
-			if (stderr) {
-				log("WARN", `stderr from front door [${args.slice(0, 2).join(" ")}]: ${stderr.slice(0, 500)}`);
-			}
-			return (result?.stdout ?? "").trim();
-		} catch (err: unknown) {
-			const message = err instanceof Error ? err.message : String(err);
-			log("ERROR", `runFrontDoor failed [${args.slice(0, 2).join(" ")}]: ${message.slice(0, 500)}`);
+			log("ERROR", `runMirror failed [${args.slice(0, 2).join(" ")}]: ${message.slice(0, 500)}`);
 			return "";
 		}
 	}
@@ -267,11 +255,11 @@ export default function (pi: ExtensionAPI) {
 	async function refreshMirrorStatus(ctx: MirrorStatusContext): Promise<void> {
 		if (!ctx.hasUI) return;
 		const sessionId = ctx.sessionManager.getSessionFile() ?? null;
-		const statusArgs = ["-m", "memory", "welcome", "--status-line"];
+		const statusArgs = ["welcome", "--status-line"];
 		if (sessionId) {
 			statusArgs.push("--session-id", sessionId);
 		}
-		const compactStatus = (await runPy(statusArgs)).trim();
+		const compactStatus = (await runMirror(statusArgs)).trim();
 		const externalCatalog = loadInstalledPiExternalSkills();
 		const externalSkills = externalCatalog?.extensions ?? [];
 		const status = compactStatus || "◇ Mirror · ?";
@@ -376,7 +364,7 @@ export default function (pi: ExtensionAPI) {
 		if (ctx.hasUI) {
 			ctx.ui.setStatus("mirror", "◇ Mirror · starting… maintenance will continue in background");
 		}
-		const summary = await runPy(["-m", "memory", "conversation-logger", "session-start", "--fast"]);
+		const summary = await runMirror(["conversation-logger", "session-start", "--fast"]);
 		if (ctx.hasUI) {
 			ctx.ui.setStatus("mirror", "◇ Mirror · checking release status…");
 		}
@@ -388,7 +376,7 @@ export default function (pi: ExtensionAPI) {
 		log("INFO", `session-start result: ${summary || "(empty)"}`);
 		log("INFO", externalSkillSummary);
 
-		const welcome = (await runPy(["-m", "memory", "welcome"])).trim();
+		const welcome = (await runMirror(["welcome"])).trim();
 		if (welcome) {
 			log("INFO", `welcome: ${welcome.split("\n")[0]}`);
 		}
@@ -398,9 +386,9 @@ export default function (pi: ExtensionAPI) {
 				ctx.ui.notify(welcome, "info");
 			}
 			await refreshMirrorStatus(ctx);
-			runPyBackground(["-m", "memory", "conversation-logger", "session-maintenance"], "session-maintenance");
+			runMirrorBackground(["conversation-logger", "session-maintenance"], "session-maintenance");
 		} else {
-			runPyBackground(["-m", "memory", "conversation-logger", "session-maintenance"], "session-maintenance");
+			runMirrorBackground(["conversation-logger", "session-maintenance"], "session-maintenance");
 		}
 	});
 
@@ -414,9 +402,7 @@ export default function (pi: ExtensionAPI) {
 		if (!prompt || prompt.startsWith("/")) return;
 
 		log("INFO", `log-user: ${prompt.slice(0, 80)}...`);
-		await runPy([
-			"-m",
-			"memory",
+		await runMirror([
 			"conversation-logger",
 			"log-user",
 			sessionId,
@@ -461,17 +447,8 @@ export default function (pi: ExtensionAPI) {
 		const combined = assistantTexts.join("\n\n---\n\n");
 		const content = truncate(combined);
 
-		runPyBackground(
-			[
-				"-m",
-				"memory",
-				"conversation-logger",
-				"log-assistant",
-				sessionId,
-				content,
-				"--interface",
-				"pi",
-			],
+		runMirrorBackground(
+			["conversation-logger", "log-assistant", sessionId, content, "--interface", "pi"],
 			"log-assistant",
 		);
 		await refreshMirrorStatus(ctx);
@@ -486,12 +463,12 @@ export default function (pi: ExtensionAPI) {
 		const sessionId = ctx.sessionManager.getSessionFile() ?? null;
 
 		if (sessionId) {
-			await runPy(["-m", "memory", "conversation-logger", "session-end-pi", sessionId]);
+			await runMirror(["conversation-logger", "session-end-pi", sessionId]);
 			log("INFO", `session closed: ${sessionId}`);
 		}
 
 		// The dated zip backup answers from TypeScript (CV22.DS7.TS1); the front
 		// door's routing table -- and MIRROR_TS_BACKUP=0 -- decide the engine.
-		await runFrontDoor(["backup", "--silent"]);
+		await runMirror(["backup", "--silent"]);
 	});
 }

@@ -17,6 +17,15 @@ set -euo pipefail
 
 cd "${GEMINI_PROJECT_DIR}" 2>/dev/null || cd "$(dirname "$0")/../.." || exit 0
 
+# Every Mirror command below enters the TypeScript front door
+# (ts/src/frontDoor/cli.ts), the same entry the Pi extension and the skills
+# use, so routing.ts decides which engine answers, each family's revert
+# control (MIRROR_TS_*=0) reaches live sessions, and front-door.log records
+# the route. Unported commands fall back to Python inside the front door.
+# `--env-file-if-exists` keeps a missing .env from turning a hook into a hard
+# failure (RS009 CR059).
+MIRROR="node --no-warnings --env-file-if-exists=.env ts/src/frontDoor/cli.ts"
+
 # Read stdin once; it can only be consumed once.
 INPUT=$(cat)
 
@@ -37,14 +46,14 @@ fi
 
 # Log the user turn (async-style: errors go to stderr, never block the turn).
 if [[ -n "$PROMPT" && -n "$SESSION_ID" ]]; then
-  uv run python -m memory conversation-logger log-user \
+  ${MIRROR} conversation-logger log-user \
     "${SESSION_ID}" "${PROMPT}" --interface gemini_cli 2>/dev/null || true
 fi
 
 # Mirror Mode context injection.
 # mirror load --context-only returns the identity block when Mirror Mode is
 # active for this session, or exits silently when it is not.
-CONTEXT=$(uv run python -m memory mirror load \
+CONTEXT=$(${MIRROR} mirror load \
   --context-only \
   --query "${PROMPT}" \
   --session-id "${SESSION_ID}" 2>/dev/null || echo "")

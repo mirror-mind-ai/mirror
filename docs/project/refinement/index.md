@@ -8,8 +8,8 @@ If a linked document and this index disagree, this index wins.
 
 ## Current Focus
 
-- Refinement Story: RS003
-- Change Request: none
+- Refinement Story: RS009
+- Change Request: CR059
 
 Selecting a focus is an explicit project decision. Reading this file never selects or
 executes work.
@@ -45,7 +45,7 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 12 | [CR056](rs010-cv22-oracle-and-port-hygiene/cr056-measure-title-length-by-code-point.md) | RS010 | Measure title length by code point in titleNeedsImprovement | captured | — | — |
 | 13 | [CR057](rs010-cv22-oracle-and-port-hygiene/cr057-stop-paying-for-the-discarded-summary-in-the-close-tail.md) | RS010 | Stop paying for the discarded summary in the close tail | captured | — | — |
 | 14 | [CR058](rs010-cv22-oracle-and-port-hygiene/cr058-wait-for-completion-in-the-runtime-diagnose-web-test.md) | RS010 | Wait for completion, not a wall-clock budget, in the runtime-diagnose web test | captured | — | — |
-| 15 | [CR059](rs009-cv22-front-door-routing-correctness/cr059-route-extension-and-hook-calls-through-the-front-door.md) | RS009 | Route the Pi extension and Gemini hook calls through the front door | captured | — | — |
+| 15 | [CR059](rs009-cv22-front-door-routing-correctness/cr059-route-extension-and-hook-calls-through-the-front-door.md) | RS009 | Route the Pi extension and Gemini hook calls through the front door | in_progress | @viniciusteles | `mirror-ts-core` |
 | 16 | [CR060](rs010-cv22-oracle-and-port-hygiene/cr060-fail-loudly-when-a-silent-backup-fails.md) | RS010 | Fail loudly when a silent backup fails | captured | — | — |
 | 17 | [CR061](rs010-cv22-oracle-and-port-hygiene/cr061-snapshot-the-live-database-consistently-before-zipping.md) | RS010 | Snapshot the live database consistently before zipping | captured | — | — |
 | 18 | [CR062](rs010-cv22-oracle-and-port-hygiene/cr062-write-backup-archives-owner-only.md) | RS010 | Write backup archives owner-only | captured | — | — |

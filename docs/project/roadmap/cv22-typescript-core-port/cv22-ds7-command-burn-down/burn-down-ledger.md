@@ -12,6 +12,15 @@ sends it to TS **ungated** and its story's flip checklist was green. A command
 behind an opt-in gate is **not** burned down — the gate means production still
 reaches Python. Coverage is per subcommand/branch, not per top-level command.
 
+**What "routed to TS" reaches (RS009 CR059, 2026-09-08).** Until this date the
+Pi extension and the Gemini hooks called `uv run python -m memory` directly and
+never entered the front door, so a flipped route was exercised by the lifecycle
+smoke and by the skills — not by a live session. Both runtimes now enter
+`ts/src/frontDoor/cli.ts`, so from here "routed to TS" means live Pi and Gemini
+sessions too, and a `MIRROR_TS_*=0` set before launching the runtime reverts
+them. Flips recorded before this date were true of the routing table and the
+smoke; they became true of daily sessions on 2026-09-08.
+
 **Denominator.** The 35 top-level `python -m memory <command>` entries, minus
 the five explicitly owned by later Delivery Stories: `mcp` (DS9), `web`
 (DS10), `eval` (DS8, live provider), `runtime` (DS10 — its git-based
