@@ -1,0 +1,410 @@
+{
+  "meta": {
+    "divergence_d3_observed_not_graded": "The `fts_corrupt` finding embeds the DRIVER's error text, and the two cores link different SQLite builds -- so this was expected to be a third recorded divergence. It is narrower than that. Both scenarios here are graded byte for byte: a plain table named memories_fts yields 'no such column: memories_fts' from both, and page-zeroed corruption yields 'vtable constructor failed: memories_fts' from both. The messages diverge only for corruption written into the FTS5 SHADOW TABLES (Python: 'database disk image is malformed'; node:sqlite: 'fts5: corruption found reading blob N from table \"memories_fts\"'), and node:sqlite refuses to perform that write at all ('table memories_fts_data may not be modified'). It is therefore unreachable as a graded scenario, and the reason is a safety property of the TS driver rather than a hole in the port.",
+    "fixture_version": "9.9.9",
+    "front_door_window": "Log entries are written relative to generation time (1h, 2h, and 30h old), so the reported COUNT is stable regardless of when either core runs.",
+    "model_pin_probe": "OPENROUTER_API_KEY is cleared, so the oracle's catalog fetch fails and yields no findings -- inconclusive, not a confirmed-missing pin. TypeScript reaches the same answer with no provider at all until DS8 adds the live fetch.",
+    "note": "Oracle: src/memory/cli/runtime.py diagnose surface over fixture mirror homes built by this generator and rebuilt identically by the TypeScript test.",
+    "placeholders": "<root> is the temp directory.",
+    "python_migration_ids": [
+      "001_project_to_travessia",
+      "002_create_attachments",
+      "003_create_tasks",
+      "004_tasks_temporal_fields",
+      "005_travessia_to_journey",
+      "006_create_llm_calls",
+      "007_create_identity_descriptors",
+      "008_create_memories_fts",
+      "009_memories_reinforcement_columns",
+      "010_create_consolidations",
+      "011_create_operation_runs",
+      "012_create_operation_run_events",
+      "013_create_exploratory_stories",
+      "014_create_identity_integrations",
+      "015_create_builder_workbench",
+      "016_builder_workbench_display_codes"
+    ]
+  },
+  "scenarios": {
+    "clean": {
+      "exit_code": 0,
+      "findings": [],
+      "render": "Mirror runtime drift diagnosis\n\nFindings: 0\n\nStatus: ready\n"
+    },
+    "core_migrations_pending": {
+      "exit_code": 1,
+      "findings": [
+        {
+          "code": "core_migration_pending",
+          "detail": "015_create_builder_workbench",
+          "recommendation": "run pending core migrations only after backup",
+          "repair_route": "backup then migrate",
+          "severity": "blocker",
+          "subject": "database _migrations"
+        },
+        {
+          "code": "core_migration_pending",
+          "detail": "016_builder_workbench_display_codes",
+          "recommendation": "run pending core migrations only after backup",
+          "repair_route": "backup then migrate",
+          "severity": "blocker",
+          "subject": "database _migrations"
+        }
+      ],
+      "render": "Mirror runtime drift diagnosis\n\nFindings: 2 attention needed\n\n[blocker] core_migration_pending: 015_create_builder_workbench\nSubject: database _migrations\nRecommendation: run pending core migrations only after backup\nRepair route: backup then migrate\n\n[blocker] core_migration_pending: 016_builder_workbench_display_codes\nSubject: database _migrations\nRecommendation: run pending core migrations only after backup\nRepair route: backup then migrate\n\nStatus: attention needed\n"
+    },
+    "core_migrations_unknown": {
+      "exit_code": 1,
+      "findings": [
+        {
+          "code": "core_migration_unknown",
+          "detail": "999_from_the_future",
+          "recommendation": "classify as legacy core row, extension-owned row, or experimental drift",
+          "repair_route": "manual review",
+          "severity": "attention",
+          "subject": "database _migrations"
+        }
+      ],
+      "render": "Mirror runtime drift diagnosis\n\nFindings: 1 attention needed\n\n[attention] core_migration_unknown: 999_from_the_future\nSubject: database _migrations\nRecommendation: classify as legacy core row, extension-owned row, or experimental drift\nRepair route: manual review\n\nStatus: attention needed\n"
+    },
+    "database_missing": {
+      "exit_code": 1,
+      "findings": [
+        {
+          "code": "database_missing",
+          "detail": "<root>/home-db-missing/memory.db",
+          "recommendation": "restore or initialize the memory database before update planning",
+          "repair_route": "restore or initialize",
+          "severity": "blocker",
+          "subject": "database"
+        },
+        {
+          "code": "core_migration_unreadable",
+          "detail": "database missing",
+          "recommendation": "restore readable migration tracking before update planning",
+          "repair_route": "database repair",
+          "severity": "blocker",
+          "subject": "database _migrations"
+        }
+      ],
+      "render": "Mirror runtime drift diagnosis\n\nFindings: 2 attention needed\n\n[blocker] database_missing: <root>/home-db-missing/memory.db\nSubject: database\nRecommendation: restore or initialize the memory database before update planning\nRepair route: restore or initialize\n\n[blocker] core_migration_unreadable: database missing\nSubject: database _migrations\nRecommendation: restore readable migration tracking before update planning\nRepair route: database repair\n\nStatus: attention needed\n"
+    },
+    "database_page_corruption": {
+      "exit_code": 1,
+      "findings": [
+        {
+          "code": "fts_corrupt",
+          "detail": "FTS query failed (vtable constructor failed: memories_fts); the index may be corrupt or desynced",
+          "recommendation": "rebuild the FTS index: INSERT INTO memories_fts(memories_fts) VALUES('rebuild')",
+          "repair_route": "rebuild memories_fts",
+          "severity": "attention",
+          "subject": "memories_fts"
+        },
+        {
+          "code": "core_migration_pending",
+          "detail": "001_project_to_travessia",
+          "recommendation": "run pending core migrations only after backup",
+          "repair_route": "backup then migrate",
+          "severity": "blocker",
+          "subject": "database _migrations"
+        },
+        {
+          "code": "core_migration_pending",
+          "detail": "002_create_attachments",
+          "recommendation": "run pending core migrations only after backup",
+          "repair_route": "backup then migrate",
+          "severity": "blocker",
+          "subject": "database _migrations"
+        },
+        {
+          "code": "core_migration_pending",
+          "detail": "003_create_tasks",
+          "recommendation": "run pending core migrations only after backup",
+          "repair_route": "backup then migrate",
+          "severity": "blocker",
+          "subject": "database _migrations"
+        },
+        {
+          "code": "core_migration_pending",
+          "detail": "004_tasks_temporal_fields",
+          "recommendation": "run pending core migrations only after backup",
+          "repair_route": "backup then migrate",
+          "severity": "blocker",
+          "subject": "database _migrations"
+        },
+        {
+          "code": "core_migration_pending",
+          "detail": "005_travessia_to_journey",
+          "recommendation": "run pending core migrations only after backup",
+          "repair_route": "backup then migrate",
+          "severity": "blocker",
+          "subject": "database _migrations"
+        },
+        {
+          "code": "core_migration_pending",
+          "detail": "006_create_llm_calls",
+          "recommendation": "run pending core migrations only after backup",
+          "repair_route": "backup then migrate",
+          "severity": "blocker",
+          "subject": "database _migrations"
+        },
+        {
+          "code": "core_migration_pending",
+          "detail": "007_create_identity_descriptors",
+          "recommendation": "run pending core migrations only after backup",
+          "repair_route": "backup then migrate",
+          "severity": "blocker",
+          "subject": "database _migrations"
+        },
+        {
+          "code": "core_migration_pending",
+          "detail": "008_create_memories_fts",
+          "recommendation": "run pending core migrations only after backup",
+          "repair_route": "backup then migrate",
+          "severity": "blocker",
+          "subject": "database _migrations"
+        },
+        {
+          "code": "core_migration_pending",
+          "detail": "009_memories_reinforcement_columns",
+          "recommendation": "run pending core migrations only after backup",
+          "repair_route": "backup then migrate",
+          "severity": "blocker",
+          "subject": "database _migrations"
+        },
+        {
+          "code": "core_migration_pending",
+          "detail": "010_create_consolidations",
+          "recommendation": "run pending core migrations only after backup",
+          "repair_route": "backup then migrate",
+          "severity": "blocker",
+          "subject": "database _migrations"
+        },
+        {
+          "code": "core_migration_pending",
+          "detail": "011_create_operation_runs",
+          "recommendation": "run pending core migrations only after backup",
+          "repair_route": "backup then migrate",
+          "severity": "blocker",
+          "subject": "database _migrations"
+        },
+        {
+          "code": "core_migration_pending",
+          "detail": "012_create_operation_run_events",
+          "recommendation": "run pending core migrations only after backup",
+          "repair_route": "backup then migrate",
+          "severity": "blocker",
+          "subject": "database _migrations"
+        },
+        {
+          "code": "core_migration_pending",
+          "detail": "013_create_exploratory_stories",
+          "recommendation": "run pending core migrations only after backup",
+          "repair_route": "backup then migrate",
+          "severity": "blocker",
+          "subject": "database _migrations"
+        },
+        {
+          "code": "core_migration_pending",
+          "detail": "014_create_identity_integrations",
+          "recommendation": "run pending core migrations only after backup",
+          "repair_route": "backup then migrate",
+          "severity": "blocker",
+          "subject": "database _migrations"
+        },
+        {
+          "code": "core_migration_pending",
+          "detail": "015_create_builder_workbench",
+          "recommendation": "run pending core migrations only after backup",
+          "repair_route": "backup then migrate",
+          "severity": "blocker",
+          "subject": "database _migrations"
+        },
+        {
+          "code": "core_migration_pending",
+          "detail": "016_builder_workbench_display_codes",
+          "recommendation": "run pending core migrations only after backup",
+          "repair_route": "backup then migrate",
+          "severity": "blocker",
+          "subject": "database _migrations"
+        },
+        {
+          "code": "core_migration_unreadable",
+          "detail": "database disk image is malformed",
+          "recommendation": "restore readable migration tracking before update planning",
+          "repair_route": "database repair",
+          "severity": "blocker",
+          "subject": "database _migrations"
+        }
+      ],
+      "render": "Mirror runtime drift diagnosis\n\nFindings: 18 attention needed\n\n[attention] fts_corrupt: FTS query failed (vtable constructor failed: memories_fts); the index may be corrupt or desynced\nSubject: memories_fts\nRecommendation: rebuild the FTS index: INSERT INTO memories_fts(memories_fts) VALUES('rebuild')\nRepair route: rebuild memories_fts\n\n[blocker] core_migration_pending: 001_project_to_travessia\nSubject: database _migrations\nRecommendation: run pending core migrations only after backup\nRepair route: backup then migrate\n\n[blocker] core_migration_pending: 002_create_attachments\nSubject: database _migrations\nRecommendation: run pending core migrations only after backup\nRepair route: backup then migrate\n\n[blocker] core_migration_pending: 003_create_tasks\nSubject: database _migrations\nRecommendation: run pending core migrations only after backup\nRepair route: backup then migrate\n\n[blocker] core_migration_pending: 004_tasks_temporal_fields\nSubject: database _migrations\nRecommendation: run pending core migrations only after backup\nRepair route: backup then migrate\n\n[blocker] core_migration_pending: 005_travessia_to_journey\nSubject: database _migrations\nRecommendation: run pending core migrations only after backup\nRepair route: backup then migrate\n\n[blocker] core_migration_pending: 006_create_llm_calls\nSubject: database _migrations\nRecommendation: run pending core migrations only after backup\nRepair route: backup then migrate\n\n[blocker] core_migration_pending: 007_create_identity_descriptors\nSubject: database _migrations\nRecommendation: run pending core migrations only after backup\nRepair route: backup then migrate\n\n[blocker] core_migration_pending: 008_create_memories_fts\nSubject: database _migrations\nRecommendation: run pending core migrations only after backup\nRepair route: backup then migrate\n\n[blocker] core_migration_pending: 009_memories_reinforcement_columns\nSubject: database _migrations\nRecommendation: run pending core migrations only after backup\nRepair route: backup then migrate\n\n[blocker] core_migration_pending: 010_create_consolidations\nSubject: database _migrations\nRecommendation: run pending core migrations only after backup\nRepair route: backup then migrate\n\n[blocker] core_migration_pending: 011_create_operation_runs\nSubject: database _migrations\nRecommendation: run pending core migrations only after backup\nRepair route: backup then migrate\n\n[blocker] core_migration_pending: 012_create_operation_run_events\nSubject: database _migrations\nRecommendation: run pending core migrations only after backup\nRepair route: backup then migrate\n\n[blocker] core_migration_pending: 013_create_exploratory_stories\nSubject: database _migrations\nRecommendation: run pending core migrations only after backup\nRepair route: backup then migrate\n\n[blocker] core_migration_pending: 014_create_identity_integrations\nSubject: database _migrations\nRecommendation: run pending core migrations only after backup\nRepair route: backup then migrate\n\n[blocker] core_migration_pending: 015_create_builder_workbench\nSubject: database _migrations\nRecommendation: run pending core migrations only after backup\nRepair route: backup then migrate\n\n[blocker] core_migration_pending: 016_builder_workbench_display_codes\nSubject: database _migrations\nRecommendation: run pending core migrations only after backup\nRepair route: backup then migrate\n\n[blocker] core_migration_unreadable: database disk image is malformed\nSubject: database _migrations\nRecommendation: restore readable migration tracking before update planning\nRepair route: database repair\n\nStatus: attention needed\n"
+    },
+    "extension_findings": {
+      "exit_code": 1,
+      "findings": [
+        {
+          "code": "extension_manifest_invalid",
+          "detail": "missing required field 'summary' in <root>/home-ext/extensions/demo-broken/skill.yaml",
+          "recommendation": "repair or reinstall the extension manifest before update planning",
+          "repair_route": "extension repair",
+          "severity": "blocker",
+          "subject": "extension/demo-broken"
+        },
+        {
+          "code": "extension_migration_pending",
+          "detail": "002_pending.sql",
+          "recommendation": "run pending extension migrations only after backup",
+          "repair_route": "backup then extension migrate",
+          "severity": "blocker",
+          "subject": "extension/demo-widget"
+        },
+        {
+          "code": "extension_migration_checksum_drift",
+          "detail": "001_init.sql",
+          "recommendation": "restore the original migration file or create a new migration",
+          "repair_route": "extension repair",
+          "severity": "blocker",
+          "subject": "extension/demo-widget"
+        },
+        {
+          "code": "extension_migration_unknown",
+          "detail": "003_vanished.sql",
+          "recommendation": "compare installed extension with canonical source and classify history",
+          "repair_route": "manual review or reinstall",
+          "severity": "attention",
+          "subject": "extension/demo-widget"
+        }
+      ],
+      "render": "Mirror runtime drift diagnosis\n\nFindings: 4 attention needed\n\n[blocker] extension_manifest_invalid: missing required field 'summary' in <root>/home-ext/extensions/demo-broken/skill.yaml\nSubject: extension/demo-broken\nRecommendation: repair or reinstall the extension manifest before update planning\nRepair route: extension repair\n\n[blocker] extension_migration_pending: 002_pending.sql\nSubject: extension/demo-widget\nRecommendation: run pending extension migrations only after backup\nRepair route: backup then extension migrate\n\n[blocker] extension_migration_checksum_drift: 001_init.sql\nSubject: extension/demo-widget\nRecommendation: restore the original migration file or create a new migration\nRepair route: extension repair\n\n[attention] extension_migration_unknown: 003_vanished.sql\nSubject: extension/demo-widget\nRecommendation: compare installed extension with canonical source and classify history\nRepair route: manual review or reinstall\n\nStatus: attention needed\n"
+    },
+    "front_door_errors": {
+      "exit_code": 1,
+      "findings": [
+        {
+          "code": "front_door_errors",
+          "detail": "2 front-door error(s) in the last 24h (<root>/home-front-door-errors/front-door.log)",
+          "recommendation": "inspect the front-door log; rule out routing, schema-guard, and backup failures",
+          "repair_route": "review front-door.log",
+          "severity": "attention",
+          "subject": "front door"
+        }
+      ],
+      "render": "Mirror runtime drift diagnosis\n\nFindings: 1 attention needed\n\n[attention] front_door_errors: 2 front-door error(s) in the last 24h (<root>/home-front-door-errors/front-door.log)\nSubject: front door\nRecommendation: inspect the front-door log; rule out routing, schema-guard, and backup failures\nRepair route: review front-door.log\n\nStatus: attention needed\n"
+    },
+    "fts_decoy_table": {
+      "exit_code": 1,
+      "findings": [
+        {
+          "code": "fts_corrupt",
+          "detail": "FTS query failed (no such column: memories_fts); the index may be corrupt or desynced",
+          "recommendation": "rebuild the FTS index: INSERT INTO memories_fts(memories_fts) VALUES('rebuild')",
+          "repair_route": "rebuild memories_fts",
+          "severity": "attention",
+          "subject": "memories_fts"
+        }
+      ],
+      "render": "Mirror runtime drift diagnosis\n\nFindings: 1 attention needed\n\n[attention] fts_corrupt: FTS query failed (no such column: memories_fts); the index may be corrupt or desynced\nSubject: memories_fts\nRecommendation: rebuild the FTS index: INSERT INTO memories_fts(memories_fts) VALUES('rebuild')\nRepair route: rebuild memories_fts\n\nStatus: attention needed\n"
+    },
+    "fts_healthy": {
+      "exit_code": 0,
+      "findings": [],
+      "render": "Mirror runtime drift diagnosis\n\nFindings: 0\n\nStatus: ready\n"
+    },
+    "git_dirty": {
+      "exit_code": 1,
+      "findings": [
+        {
+          "code": "git_dirty",
+          "detail": " M src/memory/cli/runtime.py",
+          "recommendation": "commit, stash, or discard intentional work before update planning",
+          "repair_route": "commit or manual review",
+          "severity": "attention",
+          "subject": "repository"
+        },
+        {
+          "code": "git_dirty",
+          "detail": "?? scratch.txt",
+          "recommendation": "review untracked file before update planning",
+          "repair_route": "manual review",
+          "severity": "attention",
+          "subject": "repository"
+        },
+        {
+          "code": "git_dirty",
+          "detail": "?? pi-session-2026-09-08.html",
+          "recommendation": "archive or ignore generated session HTML before update planning",
+          "repair_route": "manual review",
+          "severity": "attention",
+          "subject": "repository"
+        }
+      ],
+      "render": "Mirror runtime drift diagnosis\n\nFindings: 3 attention needed\n\n[attention] git_dirty:  M src/memory/cli/runtime.py\nSubject: repository\nRecommendation: commit, stash, or discard intentional work before update planning\nRepair route: commit or manual review\n\n[attention] git_dirty: ?? scratch.txt\nSubject: repository\nRecommendation: review untracked file before update planning\nRepair route: manual review\n\n[attention] git_dirty: ?? pi-session-2026-09-08.html\nSubject: repository\nRecommendation: archive or ignore generated session HTML before update planning\nRepair route: manual review\n\nStatus: attention needed\n"
+    },
+    "loose_permissions": {
+      "exit_code": 1,
+      "findings": [
+        {
+          "code": "loose_permissions",
+          "detail": "<root>/home-loose-perms is group/other-accessible (mode 755)",
+          "recommendation": "mirror data should be owner-only; restrict directories to 700 and files to 600",
+          "repair_route": "chmod 700 <root>/home-loose-perms",
+          "severity": "attention",
+          "subject": "mirror home"
+        },
+        {
+          "code": "loose_permissions",
+          "detail": "<root>/home-loose-perms/memory.db is group/other-accessible (mode 644)",
+          "recommendation": "mirror data should be owner-only; restrict directories to 700 and files to 600",
+          "repair_route": "chmod 600 <root>/home-loose-perms/memory.db",
+          "severity": "attention",
+          "subject": "database"
+        }
+      ],
+      "render": "Mirror runtime drift diagnosis\n\nFindings: 2 attention needed\n\n[attention] loose_permissions: <root>/home-loose-perms is group/other-accessible (mode 755)\nSubject: mirror home\nRecommendation: mirror data should be owner-only; restrict directories to 700 and files to 600\nRepair route: chmod 700 <root>/home-loose-perms\n\n[attention] loose_permissions: <root>/home-loose-perms/memory.db is group/other-accessible (mode 644)\nSubject: database\nRecommendation: mirror data should be owner-only; restrict directories to 700 and files to 600\nRepair route: chmod 600 <root>/home-loose-perms/memory.db\n\nStatus: attention needed\n"
+    },
+    "mirror_home_missing": {
+      "exit_code": 1,
+      "findings": [
+        {
+          "code": "mirror_home_missing",
+          "detail": "Mirror home is not configured. Set MIRROR_HOME or MIRROR_USER.",
+          "recommendation": "configure MIRROR_HOME or MIRROR_USER before update planning",
+          "repair_route": "configuration",
+          "severity": "blocker",
+          "subject": "mirror home"
+        },
+        {
+          "code": "core_migration_unreadable",
+          "detail": "database path unknown",
+          "recommendation": "restore readable migration tracking before update planning",
+          "repair_route": "database repair",
+          "severity": "blocker",
+          "subject": "database _migrations"
+        }
+      ],
+      "render": "Mirror runtime drift diagnosis\n\nFindings: 2 attention needed\n\n[blocker] mirror_home_missing: Mirror home is not configured. Set MIRROR_HOME or MIRROR_USER.\nSubject: mirror home\nRecommendation: configure MIRROR_HOME or MIRROR_USER before update planning\nRepair route: configuration\n\n[blocker] core_migration_unreadable: database path unknown\nSubject: database _migrations\nRecommendation: restore readable migration tracking before update planning\nRepair route: database repair\n\nStatus: attention needed\n"
+    },
+    "root_state": {
+      "exit_code": 1,
+      "findings": [
+        {
+          "code": "legacy_root_runtime_state",
+          "detail": "<root>/homes-root/backups",
+          "recommendation": "relocate into the owning mirror home (see REFERENCE.md — Relocating legacy root runtime state)",
+          "repair_route": "manual relocation",
+          "severity": "attention",
+          "subject": "homes root <root>/homes-root"
+        },
+        {
+          "code": "legacy_root_runtime_state",
+          "detail": "<root>/homes-root/stray-notes.md",
+          "recommendation": "relocate into the owning mirror home (see REFERENCE.md — Relocating legacy root runtime state)",
+          "repair_route": "manual relocation",
+          "severity": "attention",
+          "subject": "homes root <root>/homes-root"
+        }
+      ],
+      "render": "Mirror runtime drift diagnosis\n\nFindings: 2 attention needed\n\n[attention] legacy_root_runtime_state: <root>/homes-root/backups\nSubject: homes root <root>/homes-root\nRecommendation: relocate into the owning mirror home (see REFERENCE.md — Relocating legacy root runtime state)\nRepair route: manual relocation\n\n[attention] legacy_root_runtime_state: <root>/homes-root/stray-notes.md\nSubject: homes root <root>/homes-root\nRecommendation: relocate into the owning mirror home (see REFERENCE.md — Relocating legacy root runtime state)\nRepair route: manual relocation\n\nStatus: attention needed\n"
+    }
+  }
+}
