@@ -588,3 +588,79 @@ test("conversations listing still routes to TS", () => {
   assert.equal(routeMemoryCommand(["conversations"], {}).engine, "ts");
   assert.equal(routeMemoryCommand(["conversations", "--limit", "5"], {}).engine, "ts");
 });
+
+// --- CV22.DS7.TS3: the daily-visible tail ---------------------------------
+
+test("welcome stays Python until MIRROR_TS_WELCOME=1 flips it", () => {
+  for (const argv of [
+    ["welcome"],
+    ["welcome", "--status-line", "--session-id", "s1"],
+    ["welcome", "--mirror-home", "/home/x"],
+  ]) {
+    const off = routeMemoryCommand(argv, {});
+    assert.equal(off.engine, "python", argv.join(" "));
+    assert.match(off.reason, /MIRROR_TS_WELCOME/);
+    assert.equal(routeMemoryCommand(argv, { MIRROR_TS_WELCOME: "0" }).engine, "python");
+    assert.deepEqual(routeMemoryCommand(argv, { MIRROR_TS_WELCOME: "1" }), {
+      command: "welcome",
+      engine: "ts",
+      reason: "DS7.TS3 welcome ported to TS",
+    });
+  }
+});
+
+test("the four read-only runtime subcommands flip together on MIRROR_TS_RUNTIME_READS", () => {
+  for (const sub of ["status", "version", "diagnose", "release-notes"]) {
+    const off = routeMemoryCommand(["runtime", sub], {});
+    assert.equal(off.engine, "python", sub);
+    assert.match(off.reason, /MIRROR_TS_RUNTIME_READS/);
+    const on = routeMemoryCommand(["runtime", sub], { MIRROR_TS_RUNTIME_READS: "1" });
+    assert.equal(on.engine, "ts", sub);
+    assert.equal(on.reason, `DS7.TS3 runtime ${sub} ported to TS`);
+  }
+});
+
+test("release-notes ARGUMENTS are not subcommands", () => {
+  // The 2026-09-07 decision text and the burn-down ledger's table listed
+  // `latest` and `pending` as subcommands. They are positionals of
+  // `release-notes`, and this story corrects that -- so they must ride the
+  // release-notes route, not be refused as unknown subcommands.
+  for (const argv of [
+    ["runtime", "release-notes", "latest"],
+    ["runtime", "release-notes", "pending"],
+    ["runtime", "release-notes", "v0.31.0"],
+    ["runtime", "release-notes", "pending", "--no-fetch"],
+  ]) {
+    const decision = routeMemoryCommand(argv, { MIRROR_TS_RUNTIME_READS: "1" });
+    assert.equal(decision.engine, "ts", argv.join(" "));
+    assert.equal(decision.reason, "DS7.TS3 runtime release-notes ported to TS");
+  }
+});
+
+test("the DS10 updater and release machinery are refused by name, even with the gate on", () => {
+  for (const sub of ["update", "pull", "stable", "backup", "release-doctor", "release-promote"]) {
+    const decision = routeMemoryCommand(["runtime", sub], {
+      MIRROR_TS_RUNTIME_READS: "1",
+      MIRROR_TS_BACKUP: "1",
+    });
+    assert.equal(decision.engine, "python", sub);
+    assert.match(decision.reason, /DS10/, sub);
+  }
+  // `runtime backup` must not inherit the top-level `backup` command's route.
+  assert.equal(routeMemoryCommand(["backup"], { MIRROR_TS_BACKUP: "1" }).engine, "ts");
+  assert.equal(
+    routeMemoryCommand(["runtime", "backup"], { MIRROR_TS_BACKUP: "1" }).engine,
+    "python",
+  );
+});
+
+test("an unknown runtime subcommand is refused, not inherited", () => {
+  // The allowlist's whole purpose: a subcommand Python grows later must not
+  // acquire a TS route because `runtime` already has one.
+  for (const sub of ["", "doctor", "publish", "--help"]) {
+    const argv = sub ? ["runtime", sub] : ["runtime"];
+    const decision = routeMemoryCommand(argv, { MIRROR_TS_RUNTIME_READS: "1" });
+    assert.equal(decision.engine, "python", sub);
+    assert.match(decision.reason, /not ported to TS/, sub);
+  }
+});

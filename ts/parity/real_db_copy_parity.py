@@ -355,6 +355,38 @@ def _week_probe(store: Store) -> dict:
     }
 
 
+def _welcome_probes(copied_db: Path, work_dir: Path) -> tuple[list[dict], str]:
+    """`welcome`'s two DB-derived surfaces over the real copy (CV22.DS7.TS3).
+
+    The stats line and the status line are the parts of the welcome that read a
+    real person's database, and the counts, the pluralisation, and the "since
+    <Mon> <Year>" label are exactly what a synthetic fixture cannot pressure --
+    a fresh test database has one conversation and no history.
+
+    The copy is hardlinked into a home-shaped directory (not copied again) so
+    `compose_status_line` can resolve it the way the real runtime does.
+    """
+    from memory.cli import welcome as wc
+
+    home = work_dir / "welcome-home"
+    home.mkdir(exist_ok=True)
+    linked = home / "memory.db"
+    if not linked.exists():
+        try:
+            os.link(copied_db, linked)
+        except OSError:
+            shutil.copy2(copied_db, linked)
+
+    probes = [
+        {"label": "welcome_stats_line", "expected_order": [wc._stats_line(linked)]},
+        {
+            "label": "welcome_status_line",
+            "expected_order": [wc.compose_status_line(mirror_home=str(home))],
+        },
+    ]
+    return probes, str(home.resolve())
+
+
 def _build_fixture(*, source_db: Path, work_dir: Path, limit: int) -> Path:
     copied_db = work_dir / "memory.real-db-copy-parity.db"
     fixture_path = work_dir / "real-db-copy-fixture.json"
@@ -407,6 +439,7 @@ def _build_fixture(*, source_db: Path, work_dir: Path, limit: int) -> Path:
         week_probes = [_week_probe(store)]
         cultivation_cluster_probe = _cultivation_cluster_probe(store)
         cultivation_consolidation_probes = _cultivation_consolidation_probes(store)
+        welcome_probes, welcome_home = _welcome_probes(copied_db, work_dir)
     finally:
         search_mod.datetime = original_datetime
         search_mod.generate_embedding = original_generate_embedding
@@ -435,6 +468,8 @@ def _build_fixture(*, source_db: Path, work_dir: Path, limit: int) -> Path:
         "week_probes": week_probes,
         "cultivation_cluster_probe": cultivation_cluster_probe,
         "cultivation_consolidation_probes": cultivation_consolidation_probes,
+        "welcome_probes": welcome_probes,
+        "welcome_home_path": welcome_home,
     }
     fixture_path.write_text(json.dumps(fixture), encoding="utf-8")
     return fixture_path

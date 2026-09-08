@@ -1,3 +1,5 @@
+import { DS10_RUNTIME_SUBCOMMANDS, TS_RUNTIME_READ_SUBCOMMANDS } from "./runtimeRoute.ts";
+
 export type FrontDoorEngine = "ts" | "python";
 
 export interface RouteDecision {
@@ -35,6 +37,8 @@ export interface RouteEnvironment {
   MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY?: string;
   MIRROR_TS_BACKUP?: string;
   MIRROR_TS_REPAIR_ENCODING?: string;
+  MIRROR_TS_WELCOME?: string;
+  MIRROR_TS_RUNTIME_READS?: string;
   MEMORY_RECEPTION?: string;
 }
 
@@ -60,6 +64,18 @@ function backupRouteEnabled(env: RouteEnvironment): boolean {
 
 function repairEncodingRouteEnabled(env: RouteEnvironment): boolean {
   return gateEnabled(env.MIRROR_TS_REPAIR_ENCODING);
+}
+
+// CV22.DS7.TS3: the daily-visible tail carries two independent gates, default
+// OFF until the plateau 6 flip. `welcome` and the read-only `runtime`
+// subcommands are separately revertible because they fail differently: a bad
+// `welcome` is visible on every turn, a bad `runtime diagnose` only when asked.
+const DAILY_VISIBLE_TAIL_DEFAULT_ON = false;
+
+function tailGateEnabled(value: string | undefined): boolean {
+  if (value === "0") return false;
+  if (value === "1") return true;
+  return DAILY_VISIBLE_TAIL_DEFAULT_ON;
 }
 
 // CV22.DS7.US5 slice A, extended by CV22.DS7.US10 slice F. These
@@ -546,6 +562,41 @@ export function routeMemoryCommand(
       };
     }
     return { command, engine: "ts", reason: "DS7.TS1 repair-encoding ported to TS" };
+  }
+
+  if (command === "welcome") {
+    if (!tailGateEnabled(env.MIRROR_TS_WELCOME)) {
+      return {
+        command,
+        engine: "python",
+        reason: "welcome TS route disabled by MIRROR_TS_WELCOME",
+      };
+    }
+    return { command, engine: "ts", reason: "DS7.TS3 welcome ported to TS" };
+  }
+
+  if (command === "runtime") {
+    const subcommand = argv[1] ?? "";
+    // Allowlist, not blocklist. The updater and release machinery are DS10's,
+    // and so is anything Python grows later: a subcommand this build has never
+    // heard of must not acquire a TS route because `runtime` already has one.
+    if (!TS_RUNTIME_READ_SUBCOMMANDS.has(subcommand)) {
+      return {
+        command,
+        engine: "python",
+        reason: DS10_RUNTIME_SUBCOMMANDS.has(subcommand)
+          ? `runtime ${subcommand} is the git-based updater/release machinery, redesigned in DS10`
+          : `runtime subcommand not ported to TS: ${subcommand || "(none)"}`,
+      };
+    }
+    if (!tailGateEnabled(env.MIRROR_TS_RUNTIME_READS)) {
+      return {
+        command,
+        engine: "python",
+        reason: "runtime read TS route disabled by MIRROR_TS_RUNTIME_READS",
+      };
+    }
+    return { command, engine: "ts", reason: `DS7.TS3 runtime ${subcommand} ported to TS` };
   }
 
   return { command, engine: "python", reason: "command not ported to TS" };

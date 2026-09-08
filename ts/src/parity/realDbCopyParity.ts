@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { join } from "node:path";
 import { clusterMemories } from "#cultivation/cluster.ts";
 import {
   type CultivationMemoryWithEmbedding,
@@ -15,6 +16,8 @@ import {
   type SearchWeights,
 } from "#search/ranker.ts";
 import { getTasksForWeek, listTasks } from "#tasks/taskStore.ts";
+import { formatStats, readWelcomeStats } from "#welcome/card.ts";
+import { composeStatusLine } from "#welcome/statusLine.ts";
 import { orderedIdsMatch } from "./golden.ts";
 
 export interface RealDbCopyProbe {
@@ -82,6 +85,15 @@ export interface RealDbCopyFixture {
   cultivation_cluster_probe?: CultivationClusterProbe;
   /** `consolidate`/`shadow list` ordering probes (CV22.DS7.US3), replayed over `copied_db_path`. */
   cultivation_consolidation_probes?: CultivationConsolidationProbe[];
+  /** `welcome`'s stats and status lines (CV22.DS7.TS3), replayed over the copy. */
+  welcome_probes?: WelcomeProbe[];
+  /** A home-shaped directory holding the copy as `memory.db`. */
+  welcome_home_path?: string;
+}
+
+export interface WelcomeProbe {
+  label: string;
+  expected_order: string[];
 }
 
 /** The cluster-ordering probe: the full embedded-memory pool plus the oracle's ordered clusters. */
@@ -322,4 +334,30 @@ export function renderRedactedReport(results: readonly ProbeParityResult[]): str
   const passed = results.every((result) => result.match);
   lines.push(`overall_match: ${passed ? "true" : "false"}`);
   return `${lines.join("\n")}\n`;
+}
+
+/**
+ * Replay `welcome`'s two DB-derived surfaces over the real copy
+ * (CV22.DS7.TS3): the stats line and the status line.
+ *
+ * These are the parts of the welcome that read a real person's database, and
+ * they carry exactly what a synthetic fixture cannot pressure -- four-digit
+ * counts and their thousands separator, and the "since <Mon> <Year>" label
+ * derived from the earliest conversation ever recorded.
+ */
+export function evaluateWelcomeProbes(
+  fixture: RealDbCopyFixture,
+  options: { includeSensitiveDebug?: boolean } = {},
+): ProbeParityResult[] {
+  const home = fixture.welcome_home_path;
+  const dbPath = home === undefined ? null : join(home, "memory.db");
+  return (fixture.welcome_probes ?? []).map((probe) => {
+    let actual: string;
+    if (probe.label === "welcome_stats_line") {
+      actual = formatStats(readWelcomeStats(dbPath));
+    } else {
+      actual = composeStatusLine({ mirrorHome: home ?? null, env: { MEMORY_ENV: undefined } });
+    }
+    return toProbeResult(probe.label, probe.expected_order, [actual], options);
+  });
 }

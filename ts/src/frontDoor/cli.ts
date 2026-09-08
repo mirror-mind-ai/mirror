@@ -131,6 +131,7 @@ import {
 } from "./render/tasksImportSync.ts";
 import { renderWeekView } from "./render/week.ts";
 import { type FrontDoorEngine, routeMemoryCommand } from "./routing.ts";
+import { runRuntimeReadRoute, runWelcomeRoute } from "./runtimeRoute.ts";
 import { runMemorySearchRoute } from "./searchRoute.ts";
 import { resolveSeedPaths } from "./seedPaths.ts";
 import {
@@ -1351,6 +1352,11 @@ async function dispatchTs(argv: readonly string[]): Promise<number> {
       withLiveWriteDb: (dbPath, write) => withLiveWriteDbAt(dbPath, "repair-encoding", write),
     });
   }
+  // CV22.DS7.TS3: the daily-visible tail. Both are read-only and open the
+  // database, when at all, through a read-only handle -- no bootstrap, no
+  // migrate-on-open, and for `welcome --status-line` no subprocess whatsoever.
+  if (argv[0] === "welcome") return runWelcomeRoute(argv);
+  if (argv[0] === "runtime") return runRuntimeReadRoute(argv);
   if (isMemorySearch(argv)) return runMemorySearch(argv);
   if (isConsult(argv)) {
     if (isConsultCredits(argv)) {

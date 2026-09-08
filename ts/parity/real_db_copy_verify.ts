@@ -7,6 +7,7 @@ import {
   evaluateSearchProbes,
   evaluateTasksProbes,
   evaluateWeekProbes,
+  evaluateWelcomeProbes,
   type ProbeParityResult,
   type RealDbCopyFixture,
   renderRedactedReport,
@@ -26,6 +27,9 @@ let listingResults: ProbeParityResult[] = [];
 let tasksResults: ProbeParityResult[] = [];
 let weekResults: ProbeParityResult[] = [];
 let cultivationResults: ProbeParityResult[] = [];
+const welcomeResults: ProbeParityResult[] = fixture.welcome_probes?.length
+  ? evaluateWelcomeProbes(fixture, { includeSensitiveDebug })
+  : [];
 if (fixture.copied_db_path) {
   const db = openDatabaseReadOnly(fixture.copied_db_path);
   try {
@@ -72,6 +76,10 @@ if (cultivationResults.length > 0) {
   process.stdout.write("== cultivation ==\n");
   process.stdout.write(renderRedactedReport(cultivationResults));
 }
+if (welcomeResults.length > 0) {
+  process.stdout.write("== welcome ==\n");
+  process.stdout.write(renderRedactedReport(welcomeResults));
+}
 
 const allResults = [
   ...searchResults,
@@ -81,6 +89,7 @@ const allResults = [
   ...tasksResults,
   ...weekResults,
   ...cultivationResults,
+  ...welcomeResults,
 ];
 if (includeSensitiveDebug) {
   process.stdout.write("\nSENSITIVE DEBUG OUTPUT ENABLED\n");

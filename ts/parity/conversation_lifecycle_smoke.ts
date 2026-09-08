@@ -26,7 +26,7 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { normalizeMaintenanceReport } from "../src/parity/maintenanceReport.ts";
 
@@ -88,7 +88,22 @@ const baseEnv: Record<string, string> = {
 delete baseEnv.MIRROR_TS_CONVERSATION_LOGGER;
 delete baseEnv.MIRROR_TS_BACKUP;
 delete baseEnv.MIRROR_TS_REPAIR_ENCODING;
-delete baseEnv.OPENROUTER_API_KEY;
+delete baseEnv.MIRROR_TS_WELCOME;
+delete baseEnv.MIRROR_TS_RUNTIME_READS;
+// Empty, not deleted: `memory.config` re-applies a repo `.env` with
+// `os.environ.setdefault` at import, so a DELETED key comes back and
+// `runtime diagnose` would make a live OpenRouter call on the Python side --
+// warning `model_pin_unresolved` where TS cannot until DS8, and breaking the
+// byte comparison for a reason that has nothing to do with the port.
+baseEnv.OPENROUTER_API_KEY = "";
+// The welcome's remote update check is bounded but real; the smoke stays offline.
+baseEnv.MIRROR_WELCOME_REMOTE_UPDATE_CHECK = "off";
+// `runtime version` and `release-notes` take no `--mirror-home`, so without an
+// ambient home they would resolve the DEVELOPER's real mirror home and append
+// to its front-door.log. Pin both to the disposable home; the explicit
+// `--mirror-home` every other step passes still takes precedence.
+baseEnv.MIRROR_HOME = home;
+baseEnv.MIRROR_USER = basename(home);
 
 // --- harness ------------------------------------------------------------------
 
@@ -497,6 +512,101 @@ check(
   afterPy.stdout.includes("Repairable mojibake hits: 0"),
   "Python finds nothing left to repair after the TS apply",
   afterPy.stdout,
+);
+
+// 12. CV22.DS7.TS3 -- the daily-visible tail through both engines. The gates
+// default OFF at plateau 5, so each side is selected explicitly and the two
+// outputs are compared byte for byte. Plateau 6 flips the defaults.
+//
+// `runtime version` and `runtime release-notes` take no `--mirror-home`, so
+// they bypass the helper that appends it -- argparse would reject the flag.
+function runRaw(args: string[], env: Record<string, string>): StepResult {
+  const result = spawnSync(process.execPath, [CLI, ...args], {
+    encoding: "utf8",
+    cwd: resolve(TS_ROOT, ".."),
+    env: { ...baseEnv, ...env },
+  });
+  return {
+    stdout: result.stdout ?? "",
+    stderr: result.stderr ?? "",
+    status: result.status,
+    route: lastRoute(),
+  };
+}
+
+const TAIL_ON = { MIRROR_TS_WELCOME: "1", MIRROR_TS_RUNTIME_READS: "1" };
+const TAIL_OFF = { MIRROR_TS_WELCOME: "0", MIRROR_TS_RUNTIME_READS: "0" };
+
+/**
+ * Lines that may legitimately differ between the engines on THIS database.
+ *
+ * `status` and `diagnose` are the two commands the story exists to change:
+ * they grade the migration ledger, and the TS core knows the TS-authored
+ * `017_journey_parent_column` that Python calls unknown. Everything else --
+ * including every other finding -- must still match, so the assertion below is
+ * "TS removed the false alarm and changed nothing else", not byte identity.
+ *
+ * `front_door_errors` is a harness artifact, not a port difference: the finding
+ * COUNTS entries in the front-door log, and this smoke appends to that same log
+ * on every step -- including the two diagnose invocations being compared. The
+ * count therefore moves between them no matter which engine answers.
+ */
+const DIVERGENT_LINE =
+  /017_journey_parent_column|core_migration_unknown|^Core migrations:|^Findings:|^Status:|^Subject: database _migrations$|^Recommendation: classify as legacy core row|^Repair route: manual review$|front_door_errors/;
+
+for (const [label, args, raw, mayDiverge] of [
+  ["welcome", ["welcome"], false, false],
+  ["welcome --status-line", ["welcome", "--status-line"], false, false],
+  ["runtime version", ["runtime", "version"], true, false],
+  ["runtime status", ["runtime", "status"], false, true],
+  ["runtime diagnose", ["runtime", "diagnose"], false, true],
+] as [string, string[], boolean, boolean][]) {
+  const invoke = (env: Record<string, string>): StepResult =>
+    raw ? runRaw(args, env) : run(args, { env });
+  const ts = invoke(TAIL_ON);
+  const py = invoke(TAIL_OFF);
+  check(ts.route === "ts", `${label}: routes to TS under the gate`, ts.route);
+  check(py.route === "python", `${label}: routes to Python with the gate off`, py.route);
+
+  if (!mayDiverge) {
+    check(
+      ts.stdout === py.stdout,
+      `${label}: byte-identical across engines`,
+      `--- ts ---\n${ts.stdout}--- python ---\n${py.stdout}`,
+    );
+    check(
+      ts.status === py.status,
+      `${label}: same exit code across engines`,
+      `ts=${ts.status} python=${py.status}`,
+    );
+    continue;
+  }
+
+  const tsLines = ts.stdout.split("\n");
+  const pyLines = py.stdout.split("\n");
+  const unexplained = pyLines.filter(
+    (line) => !DIVERGENT_LINE.test(line) && !tsLines.includes(line),
+  );
+  check(
+    unexplained.length === 0,
+    `${label}: TS drops the 017 false alarm and changes nothing else`,
+    `lines only Python produced:\n${unexplained.join("\n")}`,
+  );
+  check(
+    py.stdout.includes("017_journey_parent_column") &&
+      !ts.stdout.includes("017_journey_parent_column"),
+    `${label}: Python flags the TS-authored migration and TS does not`,
+    `--- ts ---\n${ts.stdout}--- python ---\n${py.stdout}`,
+  );
+}
+
+// The per-turn path must not write. A status line that migrates the database
+// it reads would report a state it created.
+const beforeStatusLine = readFileSync(dbPath);
+run(["welcome", "--status-line"], { env: TAIL_ON });
+check(
+  Buffer.compare(readFileSync(dbPath), beforeStatusLine) === 0,
+  "welcome --status-line leaves the database byte-identical",
 );
 
 // 8. Redaction: no payload text anywhere the front door writes.
