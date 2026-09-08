@@ -87,7 +87,7 @@ catalog and projection contract). Reconciled 2026-09-07 against
 ## Decisions
 
 Recorded 2026-09-07 in
-[Decisions — CV22.DS7.TS1 ops tail](../../../decisions.md#cv22ds7ts1-ops-tail-runtime-splits-rehearsal-and-legacy-migration-retire-in-ds10):
+[Decisions — CV22.DS7.TS1 ops tail](../../../../decisions.md#cv22ds7ts1-ops-tail-runtime-splits-rehearsal-and-legacy-migration-retire-in-ds10):
 `runtime` splits by mutation; `memory-rehearse-migration` and `migrate-legacy`
 retire unported in DS10; the ledger denominator moves 32 → 30; the ops tail is
 three technical stories (TS1, TS3, TS4) with TS1 and TS3 before US6.
