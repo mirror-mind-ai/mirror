@@ -11,8 +11,8 @@ import golden from "#goldens/soul-harvest.golden.json" with { type: "json" };
 import {
   composeSoulHarvestJournal,
   pyTitle,
-  titleFromFruit,
   type TranscriptMessage,
+  titleFromFruit,
 } from "#soul/harvest.ts";
 
 interface Scenario {

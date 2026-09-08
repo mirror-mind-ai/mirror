@@ -12,12 +12,11 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { mkdtempSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import golden from "#goldens/soul-prompt.golden.json" with { type: "json" };
 import { createIdentityTable } from "#helpers/identitySchema.ts";
-import { codePointLength } from "#util/pythonText.ts";
 import {
   composeSoulBeautyVoicePrompt,
   composeSoulSelfVoicePrompt,
@@ -29,6 +28,7 @@ import {
   SELF_IDENTITY_PLACEHOLDER,
   SELF_IDENTITY_UNAVAILABLE,
 } from "#soul/prompts.ts";
+import { codePointLength } from "#util/pythonText.ts";
 
 interface SelfCase {
   name: string;

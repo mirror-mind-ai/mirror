@@ -8,8 +8,8 @@
 // wrong one (both keys present at once, `"{}"` where Python writes NULL).
 
 import { createHash } from "node:crypto";
-import { EMBEDDING_DIMENSIONS } from "#providers/embedding.ts";
 import { embeddingToBytes } from "#db/decode.ts";
+import { EMBEDDING_DIMENSIONS } from "#providers/embedding.ts";
 import { applyIdentityIntegration } from "#soul/apply.ts";
 import { saveHarvestedFruit } from "#soul/harvest.ts";
 import {

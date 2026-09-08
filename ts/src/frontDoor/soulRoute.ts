@@ -18,7 +18,7 @@ import { persistStickyDefaults } from "#mirror/orchestration.ts";
 import { resolveRuntimeSessionId } from "#mirror/runtimeSession.ts";
 import { activateOperatingMode } from "#mode/operatingMode.ts";
 import { applyIdentityIntegration, SoulApplyError } from "#soul/apply.ts";
-import { saveHarvestedFruit, SoulHarvestError, type TranscriptMessage } from "#soul/harvest.ts";
+import { SoulHarvestError, saveHarvestedFruit, type TranscriptMessage } from "#soul/harvest.ts";
 import {
   composeSoulBeautyVoicePrompt,
   composeSoulSelfVoicePrompt,
@@ -33,8 +33,8 @@ import {
   renderIdentityChangeApplied,
   renderIntegrationReview,
   renderPossibleListenings,
-  SoulSurfaceError,
   type SoulListeningOption,
+  SoulSurfaceError,
 } from "#soul/render.ts";
 import {
   clearFruitInMaturation,
@@ -43,8 +43,8 @@ import {
   getHarvestedFruit,
   harvestFruit,
   resolveCliSoulSessionId,
-  setFruitInMaturation,
   SoulStateError,
+  setFruitInMaturation,
 } from "#soul/state.ts";
 import { renderSoulModeTransition } from "#soul/transition.ts";
 import { newId, nowIso } from "#util/pyGenerators.ts";

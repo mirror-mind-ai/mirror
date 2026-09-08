@@ -88,7 +88,6 @@ import {
   runModeRead,
   runModeWriteRoute,
 } from "./mirrorModeRoute.ts";
-import { runSoulRoute } from "./soulRoute.ts";
 import { nodeVersionError } from "./nodeSupport.ts";
 import {
   renderConsolidateApply,
@@ -135,6 +134,7 @@ import { type FrontDoorEngine, routeMemoryCommand } from "./routing.ts";
 import { runRuntimeReadRoute, runWelcomeRoute } from "./runtimeRoute.ts";
 import { runMemorySearchRoute } from "./searchRoute.ts";
 import { resolveSeedPaths } from "./seedPaths.ts";
+import { runSoulRoute } from "./soulRoute.ts";
 import {
   applyTasksImport,
   applyTasksSyncConfig,

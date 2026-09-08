@@ -29,10 +29,10 @@ import {
 import { type RepairEncodingProbeParams, repairEncodingProbe } from "./safetyToolsProbes.ts";
 import {
   type SoulApplyProbeParams,
-  soulApplyProbe,
   type SoulHarvestSaveProbeParams,
-  soulHarvestSaveProbe,
   type SoulStateProbeParams,
+  soulApplyProbe,
+  soulHarvestSaveProbe,
   soulStateProbe,
 } from "./soulProbes.ts";
 import { evaluateWriteProbe, type MutatedRow, type WriteProbeParityResult } from "./writeParity.ts";

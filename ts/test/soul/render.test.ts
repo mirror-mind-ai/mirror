@@ -13,7 +13,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import golden from "#goldens/soul-surface.golden.json" with { type: "json" };
-import { renderSoulModeTransition } from "#soul/transition.ts";
 import {
   renderActiveRite,
   renderClosingRite,
@@ -25,6 +24,7 @@ import {
   renderPossibleListenings,
   type SoulListeningOption,
 } from "#soul/render.ts";
+import { renderSoulModeTransition } from "#soul/transition.ts";
 
 interface Scenario {
   name: string;
