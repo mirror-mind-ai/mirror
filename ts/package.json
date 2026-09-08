@@ -28,6 +28,7 @@
     "#persona/*": "./src/persona/*",
     "#providers/*": "./src/providers/*",
     "#repair/*": "./src/repair/*",
+    "#runtime/*": "./src/runtime/*",
     "#search/*": "./src/search/*",
     "#seed/*": "./src/seed/*",
     "#tasks/*": "./src/tasks/*",

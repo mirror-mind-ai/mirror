@@ -1,0 +1,458 @@
+{
+  "meta": {
+    "fixture_version": "9.9.9",
+    "note": "Oracle: src/memory/cli/runtime.py over a fixture repository with a file:// bare remote, built by this generator and rebuilt identically by the TypeScript test. Only the temp root is a placeholder (<root>); commit ids are real, because fixed content and fixed author/committer dates make git object ids reproducible and path-independent.",
+    "package_version_note": "Python prefers importlib metadata and falls back to this pyproject walk; TypeScript reads pyproject only. Equal for an editable install.",
+    "pyproject_version": "9.9.9",
+    "remote_url_shape": "path"
+  },
+  "scenarios": {
+    "behind_by_one": {
+      "availability": {
+        "local_commit": "114d7864a301fe379b116360eadd9f55325579b6",
+        "note": null,
+        "remote_commit": "be31806a91587cf00ce1e914005df331751805f3",
+        "status": "update_available",
+        "target_release": null,
+        "update_channel": {
+          "note": null,
+          "source": null,
+          "value": "stable"
+        },
+        "upstream": "origin/stable",
+        "version": "9.9.9"
+      },
+      "availability_render": "Mirror runtime update check\n\nVersion: 9.9.9\nUpdate channel: stable\nCurrent: 114d786\nUpstream: origin/stable @ be31806\nAvailability: update_available\n\nRelease details: not fetched by this check; dry-run can show them when local refs contain release notes.\nPreview:\nuv run python -m memory runtime update --dry-run\n\nUpdate:\nuv run python -m memory runtime update\n",
+      "channel_override": null,
+      "clone_role": {
+        "note": null,
+        "source": null,
+        "value": "production"
+      },
+      "git": {
+        "branch": "stable",
+        "commit": "114d786",
+        "dirty": false,
+        "error": null,
+        "repository": "<root>/clone"
+      },
+      "update_channel": {
+        "note": null,
+        "source": null,
+        "value": "stable"
+      },
+      "version_render": "Mirror runtime version\n\nVersion: 9.9.9\nRepository: <root>/clone\nGit branch: stable\nGit commit: 114d786\nClone role: production\nUpdate channel: stable\n",
+      "worktree": []
+    },
+    "channel_override_main": {
+      "availability": {
+        "local_commit": "114d786",
+        "note": "remote query failed",
+        "remote_commit": null,
+        "status": "unknown",
+        "target_release": null,
+        "update_channel": {
+          "note": "command override",
+          "source": null,
+          "value": "main"
+        },
+        "upstream": "origin/main",
+        "version": "9.9.9"
+      },
+      "availability_render": "Mirror runtime update check\n\nVersion: 9.9.9\nUpdate channel: main\nUpdate channel note: command override\nCurrent: 114d786\nUpstream: origin/main @ unknown\nAvailability: unknown\nReason: remote query failed\n",
+      "channel_override": "main",
+      "clone_role": {
+        "note": null,
+        "source": null,
+        "value": "production"
+      },
+      "git": {
+        "branch": "stable",
+        "commit": "114d786",
+        "dirty": false,
+        "error": null,
+        "repository": "<root>/clone"
+      },
+      "update_channel": {
+        "note": "command override",
+        "source": null,
+        "value": "main"
+      },
+      "version_render": "Mirror runtime version\n\nVersion: 9.9.9\nRepository: <root>/clone\nGit branch: stable\nGit commit: 114d786\nClone role: production\nUpdate channel: main\nUpdate channel note: command override\n",
+      "worktree": []
+    },
+    "channel_override_unknown": {
+      "availability": {
+        "local_commit": "114d7864a301fe379b116360eadd9f55325579b6",
+        "note": null,
+        "remote_commit": "be31806a91587cf00ce1e914005df331751805f3",
+        "status": "update_available",
+        "target_release": null,
+        "update_channel": {
+          "note": "unknown channel 'nonsense', defaulting to stable",
+          "source": null,
+          "value": "stable"
+        },
+        "upstream": "origin/stable",
+        "version": "9.9.9"
+      },
+      "availability_render": "Mirror runtime update check\n\nVersion: 9.9.9\nUpdate channel: stable\nUpdate channel note: unknown channel 'nonsense', defaulting to stable\nCurrent: 114d786\nUpstream: origin/stable @ be31806\nAvailability: update_available\n\nRelease details: not fetched by this check; dry-run can show them when local refs contain release notes.\nPreview:\nuv run python -m memory runtime update --dry-run\n\nUpdate:\nuv run python -m memory runtime update\n",
+      "channel_override": "Nonsense",
+      "clone_role": {
+        "note": null,
+        "source": null,
+        "value": "production"
+      },
+      "git": {
+        "branch": "stable",
+        "commit": "114d786",
+        "dirty": false,
+        "error": null,
+        "repository": "<root>/clone"
+      },
+      "update_channel": {
+        "note": "unknown channel 'nonsense', defaulting to stable",
+        "source": null,
+        "value": "stable"
+      },
+      "version_render": "Mirror runtime version\n\nVersion: 9.9.9\nRepository: <root>/clone\nGit branch: stable\nGit commit: 114d786\nClone role: production\nUpdate channel: stable\nUpdate channel note: unknown channel 'nonsense', defaulting to stable\n",
+      "worktree": []
+    },
+    "dirty_worktree": {
+      "availability": {
+        "local_commit": "114d7864a301fe379b116360eadd9f55325579b6",
+        "note": null,
+        "remote_commit": "be31806a91587cf00ce1e914005df331751805f3",
+        "status": "update_available",
+        "target_release": null,
+        "update_channel": {
+          "note": null,
+          "source": null,
+          "value": "stable"
+        },
+        "upstream": "origin/stable",
+        "version": "9.9.9"
+      },
+      "availability_render": "Mirror runtime update check\n\nVersion: 9.9.9\nUpdate channel: stable\nCurrent: 114d786\nUpstream: origin/stable @ be31806\nAvailability: update_available\n\nRelease details: not fetched by this check; dry-run can show them when local refs contain release notes.\nPreview:\nuv run python -m memory runtime update --dry-run\n\nUpdate:\nuv run python -m memory runtime update\n",
+      "channel_override": null,
+      "clone_role": {
+        "note": null,
+        "source": null,
+        "value": "production"
+      },
+      "git": {
+        "branch": "stable",
+        "commit": "114d786",
+        "dirty": true,
+        "error": null,
+        "repository": "<root>/clone"
+      },
+      "update_channel": {
+        "note": null,
+        "source": null,
+        "value": "stable"
+      },
+      "version_render": "Mirror runtime version\n\nVersion: 9.9.9\nRepository: <root>/clone\nGit branch: stable\nGit commit: 114d786\nClone role: production\nUpdate channel: stable\n",
+      "worktree": [
+        {
+          "path": "README.md",
+          "status": "M "
+        },
+        {
+          "path": "project.toml",
+          "status": "R "
+        },
+        {
+          "path": "untracked.txt",
+          "status": "??"
+        }
+      ]
+    },
+    "diverged": {
+      "availability": {
+        "local_commit": "8291ce78b9f175ef308285079997788ca68fe58c",
+        "note": null,
+        "remote_commit": "0bbd57daa21762aaaf22c78ef96b557f384314c9",
+        "status": "diverged",
+        "target_release": null,
+        "update_channel": {
+          "note": null,
+          "source": null,
+          "value": "stable"
+        },
+        "upstream": "origin/stable",
+        "version": "9.9.9"
+      },
+      "availability_render": "Mirror runtime update check\n\nVersion: 9.9.9\nUpdate channel: stable\nCurrent: 8291ce7\nUpstream: origin/stable @ 0bbd57d\nAvailability: diverged\n",
+      "channel_override": null,
+      "clone_role": {
+        "note": null,
+        "source": null,
+        "value": "production"
+      },
+      "git": {
+        "branch": "stable",
+        "commit": "8291ce7",
+        "dirty": false,
+        "error": null,
+        "repository": "<root>/clone"
+      },
+      "update_channel": {
+        "note": null,
+        "source": null,
+        "value": "stable"
+      },
+      "version_render": "Mirror runtime version\n\nVersion: 9.9.9\nRepository: <root>/clone\nGit branch: stable\nGit commit: 8291ce7\nClone role: production\nUpdate channel: stable\n",
+      "worktree": []
+    },
+    "local_ahead": {
+      "availability": {
+        "local_commit": "8291ce78b9f175ef308285079997788ca68fe58c",
+        "note": null,
+        "remote_commit": "be31806a91587cf00ce1e914005df331751805f3",
+        "status": "local_ahead",
+        "target_release": null,
+        "update_channel": {
+          "note": null,
+          "source": null,
+          "value": "stable"
+        },
+        "upstream": "origin/stable",
+        "version": "9.9.9"
+      },
+      "availability_render": "Mirror runtime update check\n\nVersion: 9.9.9\nUpdate channel: stable\nCurrent: 8291ce7\nUpstream: origin/stable @ be31806\nAvailability: local_ahead\n",
+      "channel_override": null,
+      "clone_role": {
+        "note": null,
+        "source": null,
+        "value": "production"
+      },
+      "git": {
+        "branch": "stable",
+        "commit": "8291ce7",
+        "dirty": false,
+        "error": null,
+        "repository": "<root>/clone"
+      },
+      "update_channel": {
+        "note": null,
+        "source": null,
+        "value": "stable"
+      },
+      "version_render": "Mirror runtime version\n\nVersion: 9.9.9\nRepository: <root>/clone\nGit branch: stable\nGit commit: 8291ce7\nClone role: production\nUpdate channel: stable\n",
+      "worktree": []
+    },
+    "markers_unknown_value": {
+      "availability": {
+        "local_commit": "114d7864a301fe379b116360eadd9f55325579b6",
+        "note": null,
+        "remote_commit": "be31806a91587cf00ce1e914005df331751805f3",
+        "status": "update_available",
+        "target_release": null,
+        "update_channel": {
+          "note": "unknown channel 'weekly', defaulting to stable",
+          "source": "<root>/clone/.mirror-update-channel",
+          "value": "stable"
+        },
+        "upstream": "origin/stable",
+        "version": "9.9.9"
+      },
+      "availability_render": "Mirror runtime update check\n\nVersion: 9.9.9\nUpdate channel: stable\nUpdate channel note: unknown channel 'weekly', defaulting to stable\nCurrent: 114d786\nUpstream: origin/stable @ be31806\nAvailability: update_available\n\nRelease details: not fetched by this check; dry-run can show them when local refs contain release notes.\nPreview:\nuv run python -m memory runtime update --dry-run\n\nUpdate:\nuv run python -m memory runtime update\n",
+      "channel_override": null,
+      "clone_role": {
+        "note": "unknown role 'staging', defaulting to production",
+        "source": "<root>/clone/.mirror-clone-role",
+        "value": "production"
+      },
+      "git": {
+        "branch": "stable",
+        "commit": "114d786",
+        "dirty": true,
+        "error": null,
+        "repository": "<root>/clone"
+      },
+      "update_channel": {
+        "note": "unknown channel 'weekly', defaulting to stable",
+        "source": "<root>/clone/.mirror-update-channel",
+        "value": "stable"
+      },
+      "version_render": "Mirror runtime version\n\nVersion: 9.9.9\nRepository: <root>/clone\nGit branch: stable\nGit commit: 114d786\nClone role: production\nClone role note: unknown role 'staging', defaulting to production\nUpdate channel: stable\nUpdate channel note: unknown channel 'weekly', defaulting to stable\n",
+      "worktree": [
+        {
+          "path": ".mirror-clone-role",
+          "status": "??"
+        },
+        {
+          "path": ".mirror-update-channel",
+          "status": "??"
+        }
+      ]
+    },
+    "markers_uppercase": {
+      "availability": {
+        "local_commit": "8291ce7",
+        "note": "remote query failed",
+        "remote_commit": null,
+        "status": "unknown",
+        "target_release": null,
+        "update_channel": {
+          "note": null,
+          "source": "<root>/clone/.mirror-update-channel",
+          "value": "main"
+        },
+        "upstream": "origin/main",
+        "version": "9.9.9"
+      },
+      "availability_render": "Mirror runtime update check\n\nVersion: 9.9.9\nUpdate channel: main\nCurrent: 8291ce7\nUpstream: origin/main @ unknown\nAvailability: unknown\nReason: remote query failed\n",
+      "channel_override": null,
+      "clone_role": {
+        "note": null,
+        "source": "<root>/clone/.mirror-clone-role",
+        "value": "dev"
+      },
+      "git": {
+        "branch": "stable",
+        "commit": "8291ce7",
+        "dirty": true,
+        "error": null,
+        "repository": "<root>/clone"
+      },
+      "update_channel": {
+        "note": null,
+        "source": "<root>/clone/.mirror-update-channel",
+        "value": "main"
+      },
+      "version_render": "Mirror runtime version\n\nVersion: 9.9.9\nRepository: <root>/clone\nGit branch: stable\nGit commit: 8291ce7\nClone role: dev\nUpdate channel: main\n",
+      "worktree": [
+        {
+          "path": ".mirror-clone-role",
+          "status": "??"
+        },
+        {
+          "path": ".mirror-update-channel",
+          "status": "??"
+        }
+      ]
+    },
+    "markers_valid": {
+      "availability": {
+        "local_commit": "114d786",
+        "note": "remote query failed",
+        "remote_commit": null,
+        "status": "unknown",
+        "target_release": null,
+        "update_channel": {
+          "note": null,
+          "source": "<root>/clone/.mirror-update-channel",
+          "value": "main"
+        },
+        "upstream": "origin/main",
+        "version": "9.9.9"
+      },
+      "availability_render": "Mirror runtime update check\n\nVersion: 9.9.9\nUpdate channel: main\nCurrent: 114d786\nUpstream: origin/main @ unknown\nAvailability: unknown\nReason: remote query failed\n",
+      "channel_override": null,
+      "clone_role": {
+        "note": null,
+        "source": "<root>/clone/.mirror-clone-role",
+        "value": "dev"
+      },
+      "git": {
+        "branch": "stable",
+        "commit": "114d786",
+        "dirty": true,
+        "error": null,
+        "repository": "<root>/clone"
+      },
+      "update_channel": {
+        "note": null,
+        "source": "<root>/clone/.mirror-update-channel",
+        "value": "main"
+      },
+      "version_render": "Mirror runtime version\n\nVersion: 9.9.9\nRepository: <root>/clone\nGit branch: stable\nGit commit: 114d786\nClone role: dev\nUpdate channel: main\n",
+      "worktree": [
+        {
+          "path": ".mirror-clone-role",
+          "status": "??"
+        },
+        {
+          "path": ".mirror-update-channel",
+          "status": "??"
+        }
+      ]
+    },
+    "not_a_repository": {
+      "availability": {
+        "local_commit": null,
+        "note": "repository unavailable",
+        "remote_commit": null,
+        "status": "unknown",
+        "target_release": null,
+        "update_channel": {
+          "note": "no repository",
+          "source": null,
+          "value": "stable"
+        },
+        "upstream": null,
+        "version": "9.9.9"
+      },
+      "availability_render": "Mirror runtime update check\n\nVersion: 9.9.9\nUpdate channel: stable\nUpdate channel note: no repository\nCurrent: unknown\nUpstream: none\nAvailability: unknown\nReason: repository unavailable\n",
+      "channel_override": null,
+      "clone_role": {
+        "note": "no repository",
+        "source": null,
+        "value": "production"
+      },
+      "git": {
+        "branch": null,
+        "commit": null,
+        "dirty": null,
+        "error": "fatal: not a git repository (or any of the parent directories): .git",
+        "repository": null
+      },
+      "update_channel": {
+        "note": "no repository",
+        "source": null,
+        "value": "stable"
+      },
+      "version_render": "Mirror runtime version\n\nVersion: 9.9.9\nRepository: unknown\nGit branch: unknown\nGit commit: unknown\nGit status note: fatal: not a git repository (or any of the parent directories): .git\nClone role: production\nClone role note: no repository\nUpdate channel: stable\nUpdate channel note: no repository\n",
+      "worktree": []
+    },
+    "up_to_date": {
+      "availability": {
+        "local_commit": "be31806a91587cf00ce1e914005df331751805f3",
+        "note": null,
+        "remote_commit": "be31806a91587cf00ce1e914005df331751805f3",
+        "status": "up_to_date",
+        "target_release": null,
+        "update_channel": {
+          "note": null,
+          "source": null,
+          "value": "stable"
+        },
+        "upstream": "origin/stable",
+        "version": "9.9.9"
+      },
+      "availability_render": "Mirror runtime update check\n\nVersion: 9.9.9\nUpdate channel: stable\nCurrent: be31806\nUpstream: origin/stable @ be31806\nAvailability: up_to_date\n\nNext: no update needed\n",
+      "channel_override": null,
+      "clone_role": {
+        "note": null,
+        "source": null,
+        "value": "production"
+      },
+      "git": {
+        "branch": "stable",
+        "commit": "be31806",
+        "dirty": false,
+        "error": null,
+        "repository": "<root>/clone"
+      },
+      "update_channel": {
+        "note": null,
+        "source": null,
+        "value": "stable"
+      },
+      "version_render": "Mirror runtime version\n\nVersion: 9.9.9\nRepository: <root>/clone\nGit branch: stable\nGit commit: be31806\nClone role: production\nUpdate channel: stable\n",
+      "worktree": []
+    }
+  }
+}
