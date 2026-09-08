@@ -1212,7 +1212,7 @@ function runModeWrite(argv: readonly string[]): Promise<number> {
  * the dispatcher reports one it does not own, fall back to Python instead of
  * guessing — this is the product's primary write path.
  */
-async function runConversationLoggerWrite(argv: readonly string[]): Promise<number> {
+async function runConversationLoggerWrite(argv: readonly string[]): Promise<DispatchOutcome> {
   // `withMirrorWriteDb` is shared by every write route, so the not-handled
   // signal rides a local flag rather than widening its return type for one
   // caller.
@@ -1225,7 +1225,10 @@ async function runConversationLoggerWrite(argv: readonly string[]): Promise<numb
     }
     return result;
   });
-  return handled ? exitCode : fallbackPython(argv);
+  if (handled) return { exitCode, engine: "ts" };
+  // Defense in depth behind the routing gate: the route refused (an
+  // unconfigured LLM close tail), so Python answers and the log says so.
+  return { exitCode: fallbackPython(argv), engine: "python" };
 }
 
 /** Best-effort log path from the same resolver; null when unconfigured. */
@@ -1299,8 +1302,30 @@ async function runMemorySearch(argv: readonly string[]): Promise<number> {
   }
 }
 
-async function dispatch(argv: readonly string[], engine: FrontDoorEngine): Promise<number> {
-  if (engine === "python") return fallbackPython(argv);
+/**
+ * What actually answered, alongside the exit code. The routing table's decision
+ * and the answering engine are usually the same, but a TS route may fall back
+ * to Python inside dispatch, and `front-door.log` is the production record of
+ * which engine served a command (RS009 CR059) -- so it records the outcome, not
+ * the intent (RS009 CR064).
+ */
+interface DispatchOutcome {
+  exitCode: number;
+  engine: FrontDoorEngine;
+}
+
+async function dispatch(
+  argv: readonly string[],
+  engine: FrontDoorEngine,
+): Promise<DispatchOutcome> {
+  if (engine === "python") return { exitCode: fallbackPython(argv), engine: "python" };
+  // The only route that can still choose Python after being routed to TS.
+  if (isConversationLoggerCommand(argv)) return runConversationLoggerWrite(argv);
+  return { exitCode: await dispatchTs(argv), engine: "ts" };
+}
+
+/** Every route that is answered by TypeScript once dispatch has chosen it. */
+async function dispatchTs(argv: readonly string[]): Promise<number> {
   if (isInit(argv)) return runInit(argv);
   if (isSeed(argv)) return runSeedCommand(argv);
   if (isIdentityWrite(argv)) return runIdentityWrite(argv);
@@ -1312,7 +1337,6 @@ async function dispatch(argv: readonly string[], engine: FrontDoorEngine): Promi
   if (isMirrorWrite(argv)) return runMirrorWrite(argv);
   if (isModeWrite(argv)) return runModeWrite(argv);
   if (isConversationsAppend(argv)) return runConversationsAppend(argv);
-  if (isConversationLoggerCommand(argv)) return runConversationLoggerWrite(argv);
   // CV22.DS7.TS1: the DB safety tools. `backup` never opens or bootstraps the
   // database; `repair-encoding --apply` rides the live-write seam.
   if (argv[0] === "backup") {
@@ -1347,16 +1371,21 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
   const decision = routeMemoryCommand(argv);
   const logPath = resolveLogPath(argv);
   try {
-    const exitCode = await dispatch(argv, decision.engine);
+    const outcome = await dispatch(argv, decision.engine);
     logFrontDoor(logPath, {
       command: decision.command,
-      route: decision.engine,
-      exitCode,
-      detail: undefined,
+      route: outcome.engine,
+      exitCode: outcome.exitCode,
+      // A route that answered on the other engine is an event worth seeing: it
+      // means a gate is set one way and the runtime disagreed. Metadata only.
+      detail:
+        outcome.engine === decision.engine ? undefined : `fell_back routed=${decision.engine}`,
     });
-    return exitCode;
+    return outcome.exitCode;
   } catch (error) {
-    // Metadata-only: the error's name/category, never argument values.
+    // The throwing engine is unknown here, so the decision is the best
+    // available attribution. Metadata-only: the error's name/category, never
+    // argument values.
     const detail = error instanceof Error ? error.name : "unknown error";
     logFrontDoor(logPath, {
       command: decision.command,

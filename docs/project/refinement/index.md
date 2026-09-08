@@ -49,7 +49,6 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 17 | [CR061](rs010-cv22-oracle-and-port-hygiene/cr061-snapshot-the-live-database-consistently-before-zipping.md) | RS010 | Snapshot the live database consistently before zipping | captured | — | — |
 | 18 | [CR062](rs010-cv22-oracle-and-port-hygiene/cr062-write-backup-archives-owner-only.md) | RS010 | Write backup archives owner-only | captured | — | — |
 | 19 | [CR063](rs010-cv22-oracle-and-port-hygiene/cr063-keep-journey-slugs-consistent-across-tables-in-repair-encoding.md) | RS010 | Keep journey slugs consistent across tables in repair-encoding | captured | — | — |
-| 20 | [CR064](rs009-cv22-front-door-routing-correctness/cr064-log-the-engine-that-answered-not-the-engine-that-was-chosen.md) | RS009 | Log the engine that answered, not the engine that was chosen | captured | — | — |
 | — | [CR011](rs003-revisable-refinement-lifecycle/cr011-resume-stranded-change-request.md) | RS003 | Resume a stranded Change Request | done | @alissonvale | `main` |
 | — | [CR016](rs001-ariad-runtime-trust/cr016-verify-authored-roadmap-before-ds-done.md) | RS001 | Verify authored roadmap state before Delivery Story Done | done | @alissonvale | `main` |
 | — | [CR015](rs001-ariad-runtime-trust/cr015-preserve-driver-authored-plan-before-approval.md) | RS001 | Preserve Driver-authored Plan before approval | promoted | — | `CV20.DS15` |
@@ -57,6 +56,7 @@ Open work is ordered intentionally. Terminal history follows open work.
 | — | [CR006](rs002-collaborative-refinement-work/cr006-record-active-driver-and-delivery-link.md) | RS002 | Record the active Driver and delivery link | done | @alissonvale | `refinement/rs002-collaborative-workbench` |
 | — | [CR005](rs002-collaborative-refinement-work/cr005-present-canonical-workbench-clearly.md) | RS002 | Present the canonical Workbench clearly | done | @alissonvale | `refinement/rs002-collaborative-workbench` |
 | — | [CR003](rs001-ariad-runtime-trust/cr003-surface-materialization-truth.md) | RS001 | Make artifact materialization surfaces truthful | done | — | — |
+| — | [CR064](rs009-cv22-front-door-routing-correctness/cr064-log-the-engine-that-answered-not-the-engine-that-was-chosen.md) | RS009 | Log the engine that answered, not the engine that was chosen | done | @viniciusteles | `mirror-ts-core` |
 | — | [CR059](rs009-cv22-front-door-routing-correctness/cr059-route-extension-and-hook-calls-through-the-front-door.md) | RS009 | Route the Pi extension and Gemini hook calls through the front door | done | @viniciusteles | `mirror-ts-core` |
 | — | [CR054](rs008-v0319-recursive-journey-parity/cr054-assign-workspace-and-web-hierarchy-parity-ownership.md) | RS008 | Assign Workspace and web hierarchy parity ownership | done | @alissonvale | `mirror-ts-core` |
 | — | [CR053](rs008-v0319-recursive-journey-parity/cr053-port-conservative-transactional-journey-removal.md) | RS008 | Port conservative transactional journey removal | done | @alissonvale | `mirror-ts-core` |
