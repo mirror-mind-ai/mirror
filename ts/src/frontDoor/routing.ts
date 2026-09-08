@@ -39,6 +39,8 @@ export interface RouteEnvironment {
   MIRROR_TS_REPAIR_ENCODING?: string;
   MIRROR_TS_WELCOME?: string;
   MIRROR_TS_RUNTIME_READS?: string;
+  MIRROR_TS_SOUL?: string;
+  MIRROR_TS_SOUL_EMBEDDING_REPLAY?: string;
   MEMORY_RECEPTION?: string;
 }
 
@@ -605,5 +607,68 @@ export function routeMemoryCommand(
     return { command, engine: "ts", reason: `DS7.TS3 runtime ${subcommand} ported to TS` };
   }
 
+  if (command === "soul") {
+    const subcommand = argv[1] ?? "";
+    // Allowlist by NAME, like `runtime`, and for the same reason: a subcommand
+    // Python grows later must reach Python rather than inherit this route
+    // because the family is claimed. That is the `conversations append` defect
+    // (RS009/CR055), which exited 0 and discarded the caller's payload.
+    if (!TS_SOUL_SUBCOMMANDS.has(subcommand)) {
+      return {
+        command,
+        engine: "python",
+        reason: `soul subcommand not ported to TS: ${subcommand || "(none)"}`,
+      };
+    }
+    // The gate is OFF by default until the flip (US6 plateau 7); after it, `=0`
+    // is the revert control. The whole family shares ONE gate because Soul is a
+    // single ritual and a half-flipped ritual cannot be reviewed in a live
+    // session.
+    if (!soulGateEnabled(env)) {
+      return { command, engine: "python", reason: "soul TS route not enabled (MIRROR_TS_SOUL)" };
+    }
+    // `harvest save` is the one leaf that crosses the provider seam, through
+    // the embedding alone. Without the replay transport it stays on Python, the
+    // same boundary US10's close tail draws; the live call is DS8's.
+    if (subcommand === "harvest" && soulHarvestAction(argv) === "save") {
+      if (!env.MIRROR_TS_SOUL_EMBEDDING_REPLAY) {
+        return {
+          command,
+          engine: "python",
+          reason: "soul harvest save needs the embedding replay transport until DS8",
+        };
+      }
+    }
+    return { command, engine: "ts", reason: `DS7.US6 soul ${subcommand} ported to TS` };
+  }
+
   return { command, engine: "python", reason: "command not ported to TS" };
+}
+
+// Python's argparse subcommands for `soul`, by name.
+const TS_SOUL_SUBCOMMANDS = new Set([
+  "load",
+  "listen",
+  "rite",
+  "close",
+  "review",
+  "propose",
+  "apply",
+  "fruit",
+  "harvest",
+  "prompt",
+]);
+
+function soulGateEnabled(env: RouteEnvironment): boolean {
+  return env.MIRROR_TS_SOUL === "1";
+}
+
+/** `soul harvest <action>`, skipping the options argparse strips first. */
+function soulHarvestAction(argv: readonly string[]): string | undefined {
+  const args = [...argv.slice(2)];
+  for (const option of ["--mirror-home", "--db-path", "--session-id", "--journey"]) {
+    const index = args.indexOf(option);
+    if (index !== -1) args.splice(index, 2);
+  }
+  return args[0];
 }

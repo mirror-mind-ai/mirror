@@ -45,7 +45,7 @@ documented cutoff, not ported). Working denominator: **30** (32 until the
 | Extension context runtime | (`ext`/`extensions` context path) | — | DS7.TS2 | ✅ done |
 | **Extraction lifecycle (deterministic core)** | **`conversation-logger`** | **partial** | **DS7.US5** | ✅ **done — 7/15 subcommands flipped** |
 | Extraction lifecycle (composites & LLM tail) | `conversation-logger` remainder | 8/8‡ | DS7.US10 | ✅ done (2026-09-07) — `repair-journeys --apply` route waits for TS1's `backup` |
-| Soul Mode | `soul` | 0/1 | DS7.US6 | 🟡 planned |
+| Soul Mode | `soul` | 0/1 | DS7.US6 | 🔵 in progress — ported and gated OFF (`MIRROR_TS_SOUL`); flip pending Navigator validation |
 | Explorer Mode | `explore` | 0/1 | DS7.US7 | 🟡 planned |
 | Builder/Ariad | `build` | 0/1 | DS7.US8 | 🟡 planned |
 | Ops/utility tail | `backup`, `repair-encoding`, `extensions`, `ext`, `welcome`, `journey-projection` (+ `runtime` reads§) | 3/6‡ | DS7.TS1 / TS3 / TS4 | 🔵 in progress — TS1 `backup`+`repair-encoding` ✅ flipped 2026-09-07; TS3 `welcome` ✅ flipped 2026-09-08 (+ `runtime` reads as branch coverage); TS4 extension catalog+`journey-projection` |
@@ -176,6 +176,59 @@ subcommands now answer from TS by default.
 
 ---
 
+## `soul` — per-subcommand detail (DS7.US6)
+
+Ten subcommands, seventeen leaves, all ported as of 2026-09-08 and **none
+routed**: `MIRROR_TS_SOUL` is absent by default, so every leaf still answers
+from Python. The gate covers the whole family deliberately — Soul is one
+ritual, and a half-flipped ritual cannot be reviewed in a live session.
+
+| Subcommand | TS ported | Routed to TS | Note |
+|------------|:---------:|:------------:|------|
+| `load` | ✅ | ⬜ gated off | mode activation + sticky journey default |
+| `listen` | ✅ | ⬜ gated off | the per-turn ritual surface |
+| `rite` | ✅ | ⬜ gated off | four voices; `--question` legacy alias |
+| `close` | ✅ | ⬜ gated off | — |
+| `review` | ✅ | ⬜ gated off | `--origin`/`--journal` share one dest |
+| `propose` | ✅ | ⬜ gated off | proposal only; writes nothing |
+| `apply` | ✅ | ⬜ gated off | identity write; `--confirm APPLY` |
+| `fruit set\|show\|clear` | ✅ | ⬜ gated off | `runtime_sessions.metadata` |
+| `harvest set\|show\|decline` | ✅ | ⬜ gated off | promote-and-pop in one write |
+| `harvest save` | ✅ | ⬜ **replay-gated** | the only leaf crossing the provider seam |
+| `prompt self\|wisdom\|beauty` | ✅ | ⬜ gated off | templates vendored into `ts/src/soul/prompts/` |
+
+**The provider seam is one leaf, not the family.** `harvest save` calls
+`add_journal` with title, layer, and tags all supplied, so Python's journal
+classifier is unreachable and the embedding is the only external call. It
+routes to TS only when `MIRROR_TS_SOUL_EMBEDDING_REPLAY` is configured; an
+unconfigured install keeps Python for that leaf alone, exactly as US10's close
+tail does. The live call is DS8's.
+
+**Subcommands are allowlisted by name** (`TS_SOUL_SUBCOMMANDS` in
+`routing.ts`), so a subcommand Python grows later reaches Python instead of
+inheriting the route — the rule RS009/CR055 exists for.
+
+### Pre-flip checklist (2026-09-08)
+
+| # | Check | Status |
+|---|-------|--------|
+| 1 | Goldens (surfaces, state, prompts, apply, harvest; 3.10 and 3.12) | ✅ five corpora, byte-identical |
+| 2 | Real-DB-copy probes | ✅ `soul_state`, `soul_apply`, `soul_harvest_save` on the demo copy |
+| 3 | Ritual E2E smoke through the front door | ✅ 157 checks; both engines byte-identical on every read-only surface |
+| 4 | Regression pass over flipped families | ✅ TS suite 1502; all nine write probes green |
+| 5 | Redaction check | ✅ `front-door.log` carries no ritual text |
+| 6 | Revertibility exercised | ✅ gate absent = Python; `MIRROR_TS_SOUL=0` = Python |
+| 7 | Burn-down ledger updated | ✅ this entry |
+
+**Recorded divergence, pending Navigator decision at the flip.** Python's
+`soul` parser accepts no `--mirror-home` and refuses it with argparse's exit 2;
+the TS route accepts it like every other front-door command. A superset rather
+than a changed answer for any invocation that works today, asserted in the
+smoke so it stays visible. `explore` has the same gap and US7 will meet it
+again.
+
+---
+
 ## DB safety tools — per-command detail (DS7.TS1)
 
 `backup` and `repair-encoding` are ported and wired through the front door
@@ -244,4 +297,5 @@ default route, and the `=0` steps prove the revert.
 | 2026-09-08 | **TS3 flipped: `welcome` and the four read-only `runtime` subcommands route to TS by default.** `MIRROR_TS_WELCOME=0` / `MIRROR_TS_RUNTIME_READS=0` are the revert controls, and they revert independently — a bad per-turn status line must not drag diagnostics back with it. The per-turn status line now answers from TS on every turn without a Python start: the Pi extension has entered the front door since CR059, so the hot path flipped with the gate and needed no extension change. `runtime diagnose` stops reporting `core_migration_unknown: 017_journey_parent_column` on every install that has run the TS engine — the false alarm this story exists to remove, and the one intended divergence from the oracle. Checklist: 1296 TS tests; five goldens byte-identical under 3.10 and 3.12; stats-line and status-line probes green on the demo copy; the lifecycle smoke green at 110 checks proving the SHIPPED default with no gate in its environment, both engines compared side by side, and each gate reverted independently; a PATH-shim spawn spy proving the status line shells out to nothing; front-door log carries command/engine only. `mm-welcome` and `mm-release-notes` now invoke the front door. Ops tail 2/6 → 3/6; DS7 stays 8/14 until TS3 is done. |
 | 2026-09-08 | **TS3 plateaus 1–5 complete; nothing routed by default.** The daily-visible tail — `welcome` (card and per-turn status line) and the read-only `runtime` subcommands — is ported and wired through the front door behind `MIRROR_TS_WELCOME` / `MIRROR_TS_RUNTIME_READS`, both default off. Graded by four new corpora (git/version, release notes, status, diagnose, welcome) covering the intended `017_journey_parent_column` divergence, the extension manifest and migration read side, and the update cache's exact bytes. Evidence: two new real-DB-copy probes (stats line, status line) green on the demo copy; the lifecycle smoke extended to 108 checks running both engines side by side; a PATH-shim spawn spy proving the per-turn status line shells out to nothing; `cli/runtime.py`, `cli/welcome.py`, and `extensions/migrations.py` in the drift tripwire; all five generators in the determinism gate. The `runtime` read routes are allowlisted by subcommand, so DS10's updater and release machinery are refused **by name**, never by inheritance. Two corpus defects found and fixed in the generators, not the assertions: the status generator baked the developer's real mirror home into a committed golden (`.env` is re-applied by `memory.config` at import with `setdefault`, restoring anything cleared before it), and the welcome generator recorded a TTL boundary the oracle cannot observe because it reads its own clock. |
 | 2026-09-08 | **CV22.DS7.TS3 done.** Validation accepted by the Navigator on the real home and on a live Pi session: `welcome` and `runtime release-notes latest` byte-identical across engines, `runtime diagnose` reporting `Findings: 0` (exit 0) where Python still reports the `017_journey_parent_column` false alarm (exit 1), and `front-door.log` showing every unattended `welcome` on `ts` with zero `fell_back` markers. Debt Review deferred two findings: parity generators leaking the ambient environment into committed artifacts became **CR065**, and the oracle's uncaught `TypeError` on a naive front-door-log timestamp became **CR066**, both under RS010. Coherence found and fixed five authored-state drifts, including the canonical 2026-09-07 decision entry in `docs/project/decisions.md` still calling `latest`/`pending` subcommands. Captured separately after closure: **CR067** under RS001, a refused checkpoint rendering a hardcoded `Implement` stage across four lifecycle commands. DS7 progress 8/14 → 9/14; ops tail 3/6; command denominator 30. |
+| 2026-09-08 | **US6 ported; nothing routed.** The Soul ritual -- 10 subcommands, 17 leaves -- is ported across five plateaus and wired through the front door behind `MIRROR_TS_SOUL`, absent by default. Five golden corpora byte-identical under 3.10/3.12/3.14; three real-DB-copy probes (`soul_state`, `soul_apply`, `soul_harvest_save`); the lifecycle smoke extended to 157 checks running the whole ritual through both engines on one disposable home, byte-identical on every read-only surface. Found and fixed on the way, as a Navigator-authorized scope amendment: US4's `activateOperatingMode` wrote `runtime_sessions.metadata` in JavaScript's JSON dialect where Python writes its own -- invisible because both the mirror-state golden and the write-parity harness compare that column by value, and Soul shares the same row. Found and left for Debt Review: `soul apply` with an unknown `--conversation-id` raises `sqlite3.IntegrityError` through a CLI that catches only `ValueError`; and Python's `soul` parser accepts no `--mirror-home`. |
 | 2026-09-08 | **CV22.DS7.TS1 done.** Validation accepted by the Navigator on the real home, including a real Pi session shutdown whose backup entered the front door (`memory_20260908_095020.zip`, `backup / ts / exit=0`). Debt Review deferred five findings with revisit triggers: the extension/hook front-door bypass became **CR059** under RS009; silent-failure exit code, torn-snapshot backup, 0644 archives, and cross-table slug repair became **CR060–CR063** under RS010. DS7 progress 7/14 → 8/14; ops tail 2/6. |

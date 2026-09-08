@@ -208,7 +208,11 @@ export function titleFromSummary(summary: string): string {
   return title;
 }
 
-function persistStickyDefaults(
+/**
+ * Port of `_persist_global_sticky_defaults`. Exported for `soul load`, which
+ * calls the same writer with `persona=None` (CV22.DS7.US6).
+ */
+export function persistStickyDefaults(
   db: WritableDatabase,
   persona: string | null,
   journey: string | null,

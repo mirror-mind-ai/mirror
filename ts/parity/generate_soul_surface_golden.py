@@ -35,6 +35,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from memory.surfaces.mode_transition import render_soul_mode_transition
 from memory.surfaces.soul import (
     SoulListeningOption,
     render_active_rite,
@@ -361,6 +362,28 @@ def build_scenarios() -> list[dict[str, Any]]:
     scenarios.append(_rite("rite_error_wisdom_requires_says", "wisdom"))
     scenarios.append(_rite("rite_error_beauty_requires_says", "beauty"))
     scenarios.append(_rite("rite_error_blank_utterance", "self", utterance="   "))
+
+    # --- the Soul Mode entry card (surfaces/mode_transition.py) ---
+    # A different module and a different WIDTH (56, not 40), but the same
+    # transport=verbatim contract, so it is graded here rather than in a fifth
+    # artifact. `journey` is accepted and deliberately discarded by the oracle,
+    # so both call shapes are recorded to pin that it cannot leak into the card.
+    scenarios.append(
+        _scenario(
+            "mode_transition_without_journey",
+            "mode_transition",
+            lambda: render_soul_mode_transition(journey=None),
+            {"journey": None},
+        )
+    )
+    scenarios.append(
+        _scenario(
+            "mode_transition_with_journey",
+            "mode_transition",
+            lambda: render_soul_mode_transition(journey="mirror-ts-core"),
+            {"journey": "mirror-ts-core"},
+        )
+    )
 
     return scenarios
 

@@ -88,6 +88,7 @@ import {
   runModeRead,
   runModeWriteRoute,
 } from "./mirrorModeRoute.ts";
+import { runSoulRoute } from "./soulRoute.ts";
 import { nodeVersionError } from "./nodeSupport.ts";
 import {
   renderConsolidateApply,
@@ -1208,6 +1209,10 @@ function runModeWrite(argv: readonly string[]): Promise<number> {
   return withMirrorWriteDb(argv, (db) => runModeWriteRoute(db, argv));
 }
 
+function runSoulWrite(argv: readonly string[]): Promise<number> {
+  return withMirrorWriteDb(argv, (db) => runSoulRoute(db, argv));
+}
+
 /**
  * CV22.DS7.US5. Routing only sends the deterministic subcommands here, but if
  * the dispatcher reports one it does not own, fall back to Python instead of
@@ -1337,6 +1342,10 @@ async function dispatchTs(argv: readonly string[]): Promise<number> {
   if (isShadowSubcommandWrite(argv)) return runShadowWrite(argv);
   if (isMirrorWrite(argv)) return runMirrorWrite(argv);
   if (isModeWrite(argv)) return runModeWrite(argv);
+  // CV22.DS7.US6: the Soul ritual. Gated off until the flip; `routing.ts`
+  // allowlists its subcommands by name and keeps `harvest save` on Python
+  // until the embedding replay transport is configured.
+  if (argv[0] === "soul") return runSoulWrite(argv);
   if (isConversationsAppend(argv)) return runConversationsAppend(argv);
   // CV22.DS7.TS1: the DB safety tools. `backup` never opens or bootstraps the
   // database; `repair-encoding --apply` rides the live-write seam.

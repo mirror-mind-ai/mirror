@@ -355,7 +355,54 @@ every non-alphabetic character, so an unknown role `tool_call` renders as
 sentence and U+FEFF does not; and `rstrip(".!?")` strips a character SET, not a
 suffix.
 
-**Next plateau.** Plateau 6 — the front door: `runSoul` dispatch, the
-`MIRROR_TS_SOUL` gate (default OFF), subcommands allowlisted BY NAME so a
-subcommand Python grows later cannot inherit the route, the ritual lifecycle
-smoke, and the ledger's pre-flip entry. Nothing flips until plateau 7.
+**Next plateau.** Plateau 6 (now complete; see below).
+
+---
+
+## Plateau 6 — Front door, gated off (2026-09-08)
+
+**What is now true.**
+
+`ts/src/frontDoor/soulRoute.ts` dispatches all 17 leaves; `routing.ts` gates the
+family behind `MIRROR_TS_SOUL`, **absent by default**, with subcommands
+allowlisted by name. The Soul entry card is ported
+(`ts/src/soul/transition.ts`) and graded by the surface golden. TS suite 1502
+green; the lifecycle smoke grew from 110 to **157 checks**, running the whole
+ritual through BOTH engines on one disposable home.
+
+Nothing is routed. Every `soul` invocation still answers from Python unless the
+gate is set explicitly.
+
+**What the smoke proves.** Every read-only surface — `listen`, `rite`, `close`,
+`review`, `propose`, `prompt wisdom` — renders byte-identically on both engines,
+with identical exit codes, including the refusal path (`rite wisdom` without
+`--says`: same stderr, same exit 1). The stateful sequence is verified in the
+database as it runs: the fruit lands in Python's JSON dialect, harvest promotes
+and pops in one write, and declining the last soul key writes SQL NULL rather
+than `"{}"`.
+
+**Three defects in my own first draft, found before they shipped.**
+
+1. `soul load` used the Soul session resolver. Python's `cmd_load` uses the
+   OPERATING-MODE resolver, which may return null — in which case `activate_mode`
+   writes the GLOBAL mode row instead of a session row. The draft would have
+   written to a different row than Python does.
+2. `runPrompt` stripped a trailing newline. `print(template)` appends one to a
+   template that already ends with one, so the shipped output ends with two.
+   The smoke's byte comparison of `soul prompt wisdom` now proves it.
+3. I reintroduced the lazy-import indirection I had removed in plateau 2.
+   Deleted again.
+
+**Recorded divergence, needs a decision at the flip.** Python's `soul` parser
+accepts NO `--mirror-home` and refuses it with argparse's exit 2; the TS route
+accepts it like every other front-door command. This is a superset rather than a
+changed answer for any invocation that works today, and the smoke asserts BOTH
+sides so it stays visible instead of silently diverging. `explore` has the same
+gap, so US7 will meet it again — worth deciding once: teach Python the flag, or
+accept the TS superset and record it.
+
+**Next plateau.** Plateau 7 — the flip, and it is the first plateau that changes
+what a live session does. It needs, in order: Navigator validation on the real
+home (the routes in [test-guide.md](test-guide.md#navigator-validation),
+including `soul apply` on a COPY first), then the gate defaulting on, the three
+`mm-soul` skill copies switched to the front door, and the ledger's flip entry.

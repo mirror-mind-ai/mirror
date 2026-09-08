@@ -637,6 +637,199 @@ const reverted = run(["conversation-logger", "status"], { env: { MIRROR_TS_CONVE
 check(reverted.route === "python", "MIRROR_TS_CONVERSATION_LOGGER=0 reverts to Python", reverted.route);
 check(reverted.stdout.trim() === "ACTIVE", "the reverted status answers from Python", reverted.stdout);
 
+// 10. CV22.DS7.US6 — the Soul ritual, run end to end through BOTH engines on
+// the same disposable home. Every surface here is transport=verbatim, and the
+// bugs in a stateful ritual live in the TRANSITIONS, not in single renders, so
+// the sequence runs as one session rather than as isolated calls.
+//
+// The gate is off in this build, so each step is run twice on purpose: once
+// with MIRROR_TS_SOUL=1 (proving the route that plateau 7 will make default)
+// and once without (proving today's shipped default is still Python), and the
+// two outputs are compared byte for byte.
+const SOUL_ON = { MIRROR_TS_SOUL: "1", MIRROR_HOME: home };
+const SOUL_OFF = { MIRROR_HOME: home };
+const soulSession = "smoke-soul-session";
+
+// Python's `soul` parser accepts NO `--mirror-home` (nor does `explore`, which
+// US7 will meet), so every invocation here targets the disposable home through
+// the environment instead -- the way a real session reaches it. The divergence
+// this exposes is asserted explicitly further down rather than worked around
+// silently.
+function runSoul(args: string[], env: Record<string, string>): StepResult {
+  const result = spawnSync(process.execPath, [CLI, ...args], {
+    encoding: "utf8",
+    cwd: resolve(TS_ROOT, ".."),
+    env: { ...baseEnv, ...env },
+  });
+  return {
+    stdout: result.stdout ?? "",
+    stderr: result.stderr ?? "",
+    status: result.status,
+    route: lastRoute(),
+  };
+}
+
+function soulStep(label: string, args: string[]): StepResult {
+  const result = runSoul(args, SOUL_ON);
+  check(result.status === 0, `${label}: exit 0`, `exit=${result.status} ${result.stderr.trim()}`);
+  check(result.route === "ts", `${label}: routed to ts`, result.route);
+  return result;
+}
+
+function soulBothEngines(label: string, args: string[]): { ts: StepResult; python: StepResult } {
+  const ts = runSoul(args, SOUL_ON);
+  const python = runSoul(args, SOUL_OFF);
+  check(ts.route === "ts", `${label}: TS route under MIRROR_TS_SOUL=1`, ts.route);
+  check(python.route === "python", `${label}: Python by default (gate off)`, python.route);
+  check(
+    ts.stdout === python.stdout,
+    `${label}: both engines render identically`,
+    `ts=${JSON.stringify(ts.stdout.slice(0, 120))} python=${JSON.stringify(python.stdout.slice(0, 120))}`,
+  );
+  check(ts.status === python.status, `${label}: same exit code`, `${ts.status} vs ${python.status}`);
+  return { ts, python };
+}
+
+// Read-only ritual surfaces: identical on both engines, no state touched.
+soulBothEngines("soul listen", [
+  "soul",
+  "listen",
+  "--self",
+  "what remains true without proof",
+  "--shadow",
+  "the protection inside the control",
+]);
+soulBothEngines("soul rite self", ["soul", "rite", "self", "--says", "o que resiste a ser explicado"]);
+soulBothEngines("soul close", ["soul", "close", "--harvested", "uma verdade", "--echoes", "um eco"]);
+soulBothEngines("soul review", ["soul", "review", "--origin", "a origem", "--self", "um princípio"]);
+soulBothEngines("soul propose", [
+  "soul",
+  "propose",
+  "self",
+  "--origin",
+  "um rito",
+  "--proposed",
+  "um princípio novo",
+  "--why",
+  "porque recorre",
+]);
+soulBothEngines("soul prompt wisdom", ["soul", "prompt", "wisdom"]);
+
+// Refusals are ritual text too, and they must match including the exit code.
+const refusedRite = soulBothEngines("soul rite wisdom without --says", ["soul", "rite", "wisdom"]);
+check(refusedRite.ts.status === 1, "soul rite wisdom: exit 1", `${refusedRite.ts.status}`);
+check(
+  refusedRite.ts.stderr === refusedRite.python.stderr,
+  "soul rite wisdom: identical stderr",
+  `ts=${refusedRite.ts.stderr.trim()} python=${refusedRite.python.stderr.trim()}`,
+);
+
+// Stateful sequence on the TS engine, verified in the database as it goes.
+const fruitSet = soulStep("soul fruit set", [
+  "soul",
+  "fruit",
+  "set",
+  "um fruto em maturação",
+  "--session-id",
+  soulSession,
+]);
+check(
+  fruitSet.stdout.includes("FRUIT IN MATURATION"),
+  "soul fruit set renders the maturation card",
+  fruitSet.stdout,
+);
+const [afterSet] = query<{ metadata: string }>(
+  "SELECT metadata FROM runtime_sessions WHERE session_id = ?",
+  soulSession,
+);
+check(
+  (afterSet?.metadata ?? "").includes('"soul": {"fruit_in_maturation"'),
+  "the fruit is stored in Python's JSON dialect",
+  afterSet?.metadata ?? "(no row)",
+);
+
+soulStep("soul fruit show", ["soul", "fruit", "show", "--session-id", soulSession]);
+soulStep("soul harvest set", ["soul", "harvest", "set", "--session-id", soulSession]);
+const [afterHarvest] = query<{ metadata: string }>(
+  "SELECT metadata FROM runtime_sessions WHERE session_id = ?",
+  soulSession,
+);
+check(
+  (afterHarvest?.metadata ?? "").includes("harvested_fruit") &&
+    !(afterHarvest?.metadata ?? "").includes("fruit_in_maturation"),
+  "harvest promotes and pops in one write",
+  afterHarvest?.metadata ?? "(no row)",
+);
+
+soulStep("soul harvest decline", ["soul", "harvest", "decline", "--session-id", soulSession]);
+const [afterDecline] = query<{ metadata: string | null }>(
+  "SELECT metadata FROM runtime_sessions WHERE session_id = ?",
+  soulSession,
+);
+check(
+  afterDecline?.metadata === null,
+  "declining the last soul key writes SQL NULL, not '{}'",
+  String(afterDecline?.metadata),
+);
+
+// `soul load` activates the mode. Run on TS only, because it WRITES and the
+// two engines would each claim the row; the card itself is already proven
+// identical by the golden, so what this checks is the state transition.
+const soulLoad = soulStep("soul load", ["soul", "load", "--session-id", soulSession]);
+check(
+  soulLoad.stdout.includes("SOUL MODE ACTIVE"),
+  "soul load renders the entry card",
+  soulLoad.stdout.slice(0, 80),
+);
+const [afterLoad] = query<{ metadata: string }>(
+  "SELECT metadata FROM runtime_sessions WHERE session_id = ?",
+  soulSession,
+);
+check(
+  (afterLoad?.metadata ?? "").includes('"operating_mode": {"active_mode": "Soul Mode"'),
+  "soul load writes the operating mode in Python's dialect",
+  afterLoad?.metadata ?? "(no row)",
+);
+
+// `harvest save` is the one leaf that crosses the provider seam: it must stay
+// on Python until the embedding replay transport is configured, even with the
+// family gate on.
+const saveWithoutReplay = runSoul(["soul", "harvest", "save", "--session-id", soulSession], SOUL_ON);
+check(
+  saveWithoutReplay.route === "python",
+  "soul harvest save stays on Python without the replay transport",
+  saveWithoutReplay.route,
+);
+
+// An unported subcommand reaches Python by name, never by inheritance.
+const unknownSub = runSoul(["soul", "publish"], SOUL_ON);
+check(
+  unknownSub.route === "python",
+  "an unallowlisted soul subcommand reaches Python by name",
+  unknownSub.route,
+);
+
+// Recorded divergence: Python's `soul` parser has no `--mirror-home`, so it
+// refuses the flag with argparse's exit 2 while the TS route -- like every
+// other front-door command -- accepts it. A superset, not a changed answer for
+// any invocation that works today, and asserted so it stays visible.
+const soulHomeFlagTs = runSoul(["soul", "listen", "--self", "x", "--mirror-home", home], SOUL_ON);
+const soulHomeFlagPython = runSoul(
+  ["soul", "listen", "--self", "x", "--mirror-home", home],
+  SOUL_OFF,
+);
+check(soulHomeFlagTs.status === 0, "TS soul accepts --mirror-home", `${soulHomeFlagTs.status}`);
+check(
+  soulHomeFlagPython.status === 2,
+  "Python soul refuses --mirror-home (recorded divergence)",
+  `${soulHomeFlagPython.status}`,
+);
+
+check(
+  !frontDoorLog.includes("um fruto em maturação") && !frontDoorLog.includes("resiste a ser explicado"),
+  "the front-door log carries no ritual text",
+);
+
 // --- report --------------------------------------------------------------------
 
 process.stdout.write("== conversation-logger lifecycle smoke ==\n");

@@ -13,6 +13,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import golden from "#goldens/soul-surface.golden.json" with { type: "json" };
+import { renderSoulModeTransition } from "#soul/transition.ts";
 import {
   renderActiveRite,
   renderClosingRite,
@@ -76,6 +77,8 @@ function render(scenario: Scenario): string {
         key: str("key"),
         content: str("content"),
       });
+    case "mode_transition":
+      return renderSoulModeTransition(opt("journey"));
     case "active_rite":
       return renderActiveRite(str("voice"), {
         utterance: opt("utterance"),
@@ -99,6 +102,7 @@ test("the golden covers every renderer and both outcomes", () => {
       "harvested_fruit",
       "identity_change_applied",
       "integration_review",
+      "mode_transition",
       "possible_listenings",
     ],
     "a renderer without a scenario is an ungraded surface",
@@ -130,6 +134,7 @@ test("every rendered card is exactly WIDTH code points wide, not UTF-16 units", 
   // still be wrong; measuring in code points is the actual contract.
   for (const scenario of scenarios) {
     if (scenario.expected_stdout === undefined) continue;
+    if (scenario.renderer === "mode_transition") continue; // WIDTH 56, asserted below
     for (const cardLine of scenario.expected_stdout.split("\n").slice(1)) {
       assert.equal(
         Array.from(cardLine).length,
@@ -137,5 +142,13 @@ test("every rendered card is exactly WIDTH code points wide, not UTF-16 units", 
         `${scenario.name}: "${cardLine}" is not 40 code points between the borders`,
       );
     }
+  }
+});
+
+test("the Soul entry card is 56 wide and never carries the journey", () => {
+  const withoutJourney = renderSoulModeTransition(null);
+  assert.equal(renderSoulModeTransition("mirror-ts-core"), withoutJourney);
+  for (const cardLine of withoutJourney.split("\n").slice(1)) {
+    assert.equal(Array.from(cardLine).length, 58, `"${cardLine}" is not 56 code points wide`);
   }
 });

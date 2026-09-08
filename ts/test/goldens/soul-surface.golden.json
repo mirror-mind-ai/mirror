@@ -775,6 +775,22 @@
       },
       "name": "rite_error_blank_utterance",
       "renderer": "active_rite"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        ☾  SOUL MODE ACTIVE                             │\n│                                                        │\n│  Soul Mode turns the day toward the inner life.        │\n│                                                        │\n│  ✦  IN ORDER TO                                        │\n│  remember who you are                                  │\n│                                                        │\n│  ▹  START BY ANSWERING                                 │\n│  how is your day going today?                          │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "journey": null
+      },
+      "name": "mode_transition_without_journey",
+      "renderer": "mode_transition"
+    },
+    {
+      "expected_stdout": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        ☾  SOUL MODE ACTIVE                             │\n│                                                        │\n│  Soul Mode turns the day toward the inner life.        │\n│                                                        │\n│  ✦  IN ORDER TO                                        │\n│  remember who you are                                  │\n│                                                        │\n│  ▹  START BY ANSWERING                                 │\n│  how is your day going today?                          │\n╰────────────────────────────────────────────────────────╯",
+      "input": {
+        "journey": "mirror-ts-core"
+      },
+      "name": "mode_transition_with_journey",
+      "renderer": "mode_transition"
     }
   ]
 }
