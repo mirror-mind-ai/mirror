@@ -7,6 +7,7 @@
 // are the point: a port can end in the right state having passed through the
 // wrong one (both keys present at once, `"{}"` where Python writes NULL).
 
+import { applyIdentityIntegration } from "#soul/apply.ts";
 import {
   clearFruitInMaturation,
   clearHarvestedFruit,
@@ -21,6 +22,58 @@ export interface SoulStateProbeParams {
   bare_session_id: string;
   first_fruit: string;
   second_fruit: string;
+}
+
+export interface SoulApplyProbeParams {
+  layer: string;
+  key: string;
+  content: string;
+  origin: string;
+  integration_id: string;
+}
+
+/**
+ * The identity integration on a real-database copy: the audit row field by
+ * field (the oracle's id and clock ride in the fixture, so they are comparable
+ * rather than merely shaped alike) and the resulting identity DOCUMENT.
+ */
+export function soulApplyProbe(
+  label: string,
+  params: SoulApplyProbeParams,
+  nowIso: string,
+): WriteProbe {
+  return {
+    label,
+    snapshots: [],
+    apply(db): MutatedRow[] {
+      applyIdentityIntegration(
+        db,
+        {
+          layer: params.layer,
+          key: params.key,
+          content: params.content,
+          origin: params.origin,
+        },
+        { newId: () => params.integration_id, nowIso },
+      );
+      const rows = db
+        .prepare(
+          "SELECT id, layer, key, content, source, origin, conversation_id," +
+            " journal_id, created_at, status, metadata FROM identity_integrations" +
+            " ORDER BY rowid",
+        )
+        .all() as Record<string, unknown>[];
+      const state: MutatedRow[] = rows.map((row, index) => ({
+        id: `integration:${index}`,
+        cells: row as MutatedRow["cells"],
+      }));
+      const document = db
+        .prepare("SELECT content FROM identity WHERE layer = ? AND key = ?")
+        .get(params.layer, params.key) as { content: string };
+      state.push({ id: "identity:document", cells: { content: document.content } });
+      return state;
+    },
+  };
 }
 
 export function soulStateProbe(

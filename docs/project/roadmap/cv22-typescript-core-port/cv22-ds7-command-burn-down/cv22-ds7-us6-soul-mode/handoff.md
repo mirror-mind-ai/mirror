@@ -232,7 +232,74 @@ prompt containing an astral emoji, off by exactly one. Fixed to use
 `codePointLength`. The story's own subject matter caught the story's own
 assertion.
 
-**Next plateau.** Plateau 4 — `ts/src/soul/apply.ts`: the `identity_integrations`
-row and the identity-document section append, behind the US3 allowlist. The
-blocking check recorded at plateau 1 still applies and must be answered first:
-confirm `identity_integrations` is in the TS-owned schema.
+**Next plateau.** Plateau 4 (now complete; see below).
+
+---
+
+## Plateau 4 — Identity integration (2026-09-08)
+
+**Blocking check answered.** `identity_integrations` IS in the TS-owned schema
+(`ts/src/db/schema.ts` plus migration `014_create_identity_integrations`) and is
+present in both the live and demo databases. The plateau-1 stop condition is
+cleared; no schema work was needed.
+
+**What is now true.**
+
+`ts/src/soul/apply.ts` ports the audit row and the identity-document append.
+18 apply tests green against a 16-scenario golden; a new `soul_apply` write
+probe replays the integration on a copy of the real demo database and matches;
+TS suite 1463 green; golden byte-identical under 3.10, 3.12, and 3.14.
+
+**Second plan deviation, and this one is a parity requirement.** The plan said
+to "route the write through the US3 identity-write allowlist and fences". That
+would have been wrong. Python's own docstring on
+`apply_consolidation_identity_update` says the allowlist is narrow to the
+`propose_consolidation` → accept flow, where the target layer is MODEL-CHOSEN
+and untrusted, and it names Soul Mode integration as a caller of the
+general-purpose write instead. The two also append differently — consolidation
+joins raw content after a blank line, Soul inserts a dated bullet inside a
+titled section — so routing Soul through that gate would have changed behavior,
+not merely tightened it.
+
+Soul's actual guards are reproduced exactly: layer ∈ the four section titles,
+non-empty content, and the CLI's `--confirm APPLY`. Whether that is the right
+guard for ritual-authored text is a product question, recorded for Debt Review
+rather than answered by a port.
+
+**Mutation evidence.**
+
+| Mutation | Tests failed |
+|---|---:|
+| heading matched by prefix instead of substring | 7 |
+| no `rstrip` before the bullet | 2 (and the probe) |
+| provenance not stripped-or-nulled | 2 |
+| metadata not key-sorted | 1 (after the corpus fix below) |
+| `trimStart()` instead of `lstrip("\n")` | 0 — see below |
+
+**Two mutations survived, and neither was fixed by adding a test that pretends
+to catch it.**
+
+- *`trimStart()` for `lstrip("\n")` is unreachable.* The slice always begins at
+  a `"\n## "` match, so after the newlines the next character is always `#` and
+  the two functions cannot differ at this call site. Verified directly rather
+  than assumed. Python's form is kept because it is what the oracle does, and
+  the module comment now says the divergence is unreachable instead of calling
+  it a trap — so nobody later "strengthens" the corpus with a case that cannot
+  exist.
+- *The metadata-sorting assertion was neutralized by the fixture itself.* The
+  golden is written with `sort_keys=True`, so the TS test was handed
+  already-sorted keys and a port that forgot Python's own `sort_keys=True`
+  still produced matching bytes. The test now reverses the key order before
+  calling, and the mutation fails.
+
+**Found on the way, for Debt Review.** `soul apply --conversation-id` or
+`--journal-id` with an id that does not exist raises `sqlite3.IntegrityError`
+from the foreign key straight through the CLI, which catches only `ValueError`.
+The user gets a traceback where every other refusal in this command is a clean
+`Error: ...` line. Not graded in the golden — the message is engine-specific —
+but reproduced in the fixture as a seeded-refs case so the valid path stays
+covered.
+
+**Note for plateau 5.** Soul's two writes use DIFFERENT JSON rules: the
+integration's metadata is `sort_keys=True`, while the harvest journal's metadata
+is insertion-ordered. Both are pinned by their own goldens; do not unify them.

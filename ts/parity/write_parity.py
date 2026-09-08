@@ -522,6 +522,7 @@ def main(argv: list[str] | None = None) -> int:
             "journey_repair_apply",
             "repair_encoding",
             "soul_state",
+            "soul_apply",
         ),
     )
     parser.add_argument("--targets", default=3, type=int)

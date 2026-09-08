@@ -1,0 +1,509 @@
+{
+  "frozen_now_iso": "2026-09-08T14:30:15.123456Z",
+  "frozen_uuid": "5ou1a99y",
+  "scenarios": [
+    {
+      "content": "a first incorporated principle",
+      "conversation_id": null,
+      "expected_identity": {
+        "content": "## New Incorporated Principles\n\n- [2026-09-08] a first incorporated principle",
+        "created_at": "2026-09-08T14:30:15.123456Z",
+        "updated_at": "2026-09-08T14:30:15.123456Z"
+      },
+      "expected_integration_rows": [
+        {
+          "content": "a first incorporated principle",
+          "conversation_id": null,
+          "created_at": "2026-09-08T14:30:15.123456Z",
+          "id": "5ou1a99y",
+          "journal_id": null,
+          "key": "soul",
+          "layer": "self",
+          "metadata": "{}",
+          "origin": null,
+          "source": "soul_mode",
+          "status": "active"
+        }
+      ],
+      "journal_id": null,
+      "key": "soul",
+      "layer": "self",
+      "metadata": null,
+      "name": "empty_document",
+      "origin": null,
+      "seed": null
+    },
+    {
+      "content": "appended under a new heading",
+      "conversation_id": null,
+      "expected_identity": {
+        "content": "# Soul\n\nOnly a preamble and no matching section.\n\n## New Incorporated Principles\n\n- [2026-09-08] appended under a new heading",
+        "created_at": "2026-09-08T14:30:15.123456Z",
+        "updated_at": "2026-09-08T14:30:15.123456Z"
+      },
+      "expected_integration_rows": [
+        {
+          "content": "appended under a new heading",
+          "conversation_id": null,
+          "created_at": "2026-09-08T14:30:15.123456Z",
+          "id": "5ou1a99y",
+          "journal_id": null,
+          "key": "soul",
+          "layer": "self",
+          "metadata": "{}",
+          "origin": null,
+          "source": "soul_mode",
+          "status": "active"
+        }
+      ],
+      "journal_id": null,
+      "key": "soul",
+      "layer": "self",
+      "metadata": null,
+      "name": "heading_absent",
+      "origin": null,
+      "seed": [
+        "self",
+        "soul",
+        "# Soul\n\nOnly a preamble and no matching section."
+      ]
+    },
+    {
+      "content": "a second principle",
+      "conversation_id": null,
+      "expected_identity": {
+        "content": "# Soul\n\nSome preamble.\n\n## New Incorporated Principles\n\n- [2026-01-01] an older principle\n- [2026-09-08] a second principle",
+        "created_at": "2026-09-08T14:30:15.123456Z",
+        "updated_at": "2026-09-08T14:30:15.123456Z"
+      },
+      "expected_integration_rows": [
+        {
+          "content": "a second principle",
+          "conversation_id": null,
+          "created_at": "2026-09-08T14:30:15.123456Z",
+          "id": "5ou1a99y",
+          "journal_id": null,
+          "key": "soul",
+          "layer": "self",
+          "metadata": "{}",
+          "origin": null,
+          "source": "soul_mode",
+          "status": "active"
+        }
+      ],
+      "journal_id": null,
+      "key": "soul",
+      "layer": "self",
+      "metadata": null,
+      "name": "heading_is_last_section",
+      "origin": null,
+      "seed": [
+        "self",
+        "soul",
+        "# Soul\n\nSome preamble.\n\n## New Incorporated Principles\n\n- [2026-01-01] an older principle"
+      ]
+    },
+    {
+      "content": "inserted before the next section",
+      "conversation_id": null,
+      "expected_identity": {
+        "content": "# Soul\n\n## New Incorporated Principles\n\n- [2026-01-01] an older principle\n- [2026-09-08] inserted before the next section\n\n## Another Section\n\nkept as is",
+        "created_at": "2026-09-08T14:30:15.123456Z",
+        "updated_at": "2026-09-08T14:30:15.123456Z"
+      },
+      "expected_integration_rows": [
+        {
+          "content": "inserted before the next section",
+          "conversation_id": null,
+          "created_at": "2026-09-08T14:30:15.123456Z",
+          "id": "5ou1a99y",
+          "journal_id": null,
+          "key": "soul",
+          "layer": "self",
+          "metadata": "{}",
+          "origin": null,
+          "source": "soul_mode",
+          "status": "active"
+        }
+      ],
+      "journal_id": null,
+      "key": "soul",
+      "layer": "self",
+      "metadata": null,
+      "name": "heading_followed_by_section",
+      "origin": null,
+      "seed": [
+        "self",
+        "soul",
+        "# Soul\n\n## New Incorporated Principles\n\n- [2026-01-01] an older principle\n\n## Another Section\n\nkept as is"
+      ]
+    },
+    {
+      "content": "lstrip removes newlines only",
+      "conversation_id": null,
+      "expected_identity": {
+        "content": "# Soul\n\n## New Incorporated Principles\n\n- [2026-01-01] older\n- [2026-09-08] lstrip removes newlines only\n\n## Another Section\n\n    indented body that lstrip('\\n') must keep",
+        "created_at": "2026-09-08T14:30:15.123456Z",
+        "updated_at": "2026-09-08T14:30:15.123456Z"
+      },
+      "expected_integration_rows": [
+        {
+          "content": "lstrip removes newlines only",
+          "conversation_id": null,
+          "created_at": "2026-09-08T14:30:15.123456Z",
+          "id": "5ou1a99y",
+          "journal_id": null,
+          "key": "soul",
+          "layer": "self",
+          "metadata": "{}",
+          "origin": null,
+          "source": "soul_mode",
+          "status": "active"
+        }
+      ],
+      "journal_id": null,
+      "key": "soul",
+      "layer": "self",
+      "metadata": null,
+      "name": "next_section_keeps_indent",
+      "origin": null,
+      "seed": [
+        "self",
+        "soul",
+        "# Soul\n\n## New Incorporated Principles\n\n- [2026-01-01] older\n\n## Another Section\n\n    indented body that lstrip('\\n') must keep"
+      ]
+    },
+    {
+      "content": "rstrip before the bullet",
+      "conversation_id": null,
+      "expected_identity": {
+        "content": "# Soul\n\n## New Incorporated Principles\n\n- [2026-01-01] older\n- [2026-09-08] rstrip before the bullet",
+        "created_at": "2026-09-08T14:30:15.123456Z",
+        "updated_at": "2026-09-08T14:30:15.123456Z"
+      },
+      "expected_integration_rows": [
+        {
+          "content": "rstrip before the bullet",
+          "conversation_id": null,
+          "created_at": "2026-09-08T14:30:15.123456Z",
+          "id": "5ou1a99y",
+          "journal_id": null,
+          "key": "soul",
+          "layer": "self",
+          "metadata": "{}",
+          "origin": null,
+          "source": "soul_mode",
+          "status": "active"
+        }
+      ],
+      "journal_id": null,
+      "key": "soul",
+      "layer": "self",
+      "metadata": null,
+      "name": "trailing_blank_lines_collapse",
+      "origin": null,
+      "seed": [
+        "self",
+        "soul",
+        "# Soul\n\n## New Incorporated Principles\n\n- [2026-01-01] older\n\n\n\n"
+      ]
+    },
+    {
+      "content": "   padded content   ",
+      "conversation_id": null,
+      "expected_identity": {
+        "content": "# Soul\n\nSome preamble.\n\n## New Incorporated Principles\n\n- [2026-01-01] an older principle\n- [2026-09-08] padded content",
+        "created_at": "2026-09-08T14:30:15.123456Z",
+        "updated_at": "2026-09-08T14:30:15.123456Z"
+      },
+      "expected_integration_rows": [
+        {
+          "content": "padded content",
+          "conversation_id": null,
+          "created_at": "2026-09-08T14:30:15.123456Z",
+          "id": "5ou1a99y",
+          "journal_id": null,
+          "key": "soul",
+          "layer": "self",
+          "metadata": "{}",
+          "origin": null,
+          "source": "soul_mode",
+          "status": "active"
+        }
+      ],
+      "journal_id": null,
+      "key": "soul",
+      "layer": "self",
+      "metadata": null,
+      "name": "content_is_stripped",
+      "origin": null,
+      "seed": [
+        "self",
+        "soul",
+        "# Soul\n\nSome preamble.\n\n## New Incorporated Principles\n\n- [2026-01-01] an older principle"
+      ]
+    },
+    {
+      "content": "index arithmetic must survive astral characters",
+      "conversation_id": null,
+      "expected_identity": {
+        "content": "# Soul 🎯 沉默\n\nPreamble with astral text.\n\n## New Incorporated Principles\n\n- older\n- [2026-09-08] index arithmetic must survive astral characters",
+        "created_at": "2026-09-08T14:30:15.123456Z",
+        "updated_at": "2026-09-08T14:30:15.123456Z"
+      },
+      "expected_integration_rows": [
+        {
+          "content": "index arithmetic must survive astral characters",
+          "conversation_id": null,
+          "created_at": "2026-09-08T14:30:15.123456Z",
+          "id": "5ou1a99y",
+          "journal_id": null,
+          "key": "soul",
+          "layer": "self",
+          "metadata": "{}",
+          "origin": null,
+          "source": "soul_mode",
+          "status": "active"
+        }
+      ],
+      "journal_id": null,
+      "key": "soul",
+      "layer": "self",
+      "metadata": null,
+      "name": "astral_text_before_heading",
+      "origin": null,
+      "seed": [
+        "self",
+        "soul",
+        "# Soul 🎯 沉默\n\nPreamble with astral text.\n\n## New Incorporated Principles\n\n- older"
+      ]
+    },
+    {
+      "content": "Python matches the title inside a longer heading",
+      "conversation_id": null,
+      "expected_identity": {
+        "content": "# Soul\n\n## New Incorporated Principles And More\n\n- [2026-01-01] a longer heading that CONTAINS the title\n- [2026-09-08] Python matches the title inside a longer heading",
+        "created_at": "2026-09-08T14:30:15.123456Z",
+        "updated_at": "2026-09-08T14:30:15.123456Z"
+      },
+      "expected_integration_rows": [
+        {
+          "content": "Python matches the title inside a longer heading",
+          "conversation_id": null,
+          "created_at": "2026-09-08T14:30:15.123456Z",
+          "id": "5ou1a99y",
+          "journal_id": null,
+          "key": "soul",
+          "layer": "self",
+          "metadata": "{}",
+          "origin": null,
+          "source": "soul_mode",
+          "status": "active"
+        }
+      ],
+      "journal_id": null,
+      "key": "soul",
+      "layer": "self",
+      "metadata": null,
+      "name": "heading_matches_as_substring",
+      "origin": null,
+      "seed": [
+        "self",
+        "soul",
+        "# Soul\n\n## New Incorporated Principles And More\n\n- [2026-01-01] a longer heading that CONTAINS the title"
+      ]
+    },
+    {
+      "content": "material integrated into shadow",
+      "conversation_id": null,
+      "expected_identity": {
+        "content": "## New Hidden Needs Recognized\n\n- [2026-09-08] material integrated into shadow",
+        "created_at": "2026-09-08T14:30:15.123456Z",
+        "updated_at": "2026-09-08T14:30:15.123456Z"
+      },
+      "expected_integration_rows": [
+        {
+          "content": "material integrated into shadow",
+          "conversation_id": null,
+          "created_at": "2026-09-08T14:30:15.123456Z",
+          "id": "5ou1a99y",
+          "journal_id": null,
+          "key": "profile",
+          "layer": "shadow",
+          "metadata": "{}",
+          "origin": null,
+          "source": "soul_mode",
+          "status": "active"
+        }
+      ],
+      "journal_id": null,
+      "key": "profile",
+      "layer": "shadow",
+      "metadata": null,
+      "name": "layer_shadow",
+      "origin": null,
+      "seed": null
+    },
+    {
+      "content": "material integrated into ego",
+      "conversation_id": null,
+      "expected_identity": {
+        "content": "## New Operational Patterns Identified\n\n- [2026-09-08] material integrated into ego",
+        "created_at": "2026-09-08T14:30:15.123456Z",
+        "updated_at": "2026-09-08T14:30:15.123456Z"
+      },
+      "expected_integration_rows": [
+        {
+          "content": "material integrated into ego",
+          "conversation_id": null,
+          "created_at": "2026-09-08T14:30:15.123456Z",
+          "id": "5ou1a99y",
+          "journal_id": null,
+          "key": "behavior",
+          "layer": "ego",
+          "metadata": "{}",
+          "origin": null,
+          "source": "soul_mode",
+          "status": "active"
+        }
+      ],
+      "journal_id": null,
+      "key": "behavior",
+      "layer": "ego",
+      "metadata": null,
+      "name": "layer_ego",
+      "origin": null,
+      "seed": null
+    },
+    {
+      "content": "material integrated into persona",
+      "conversation_id": null,
+      "expected_identity": {
+        "content": "## New Participation Patterns Revealed\n\n- [2026-09-08] material integrated into persona",
+        "created_at": "2026-09-08T14:30:15.123456Z",
+        "updated_at": "2026-09-08T14:30:15.123456Z"
+      },
+      "expected_integration_rows": [
+        {
+          "content": "material integrated into persona",
+          "conversation_id": null,
+          "created_at": "2026-09-08T14:30:15.123456Z",
+          "id": "5ou1a99y",
+          "journal_id": null,
+          "key": "engineer",
+          "layer": "persona",
+          "metadata": "{}",
+          "origin": null,
+          "source": "soul_mode",
+          "status": "active"
+        }
+      ],
+      "journal_id": null,
+      "key": "engineer",
+      "layer": "persona",
+      "metadata": null,
+      "name": "layer_persona",
+      "origin": null,
+      "seed": null
+    },
+    {
+      "content": "with provenance",
+      "conversation_id": "  conv-1  ",
+      "expected_identity": {
+        "content": "## New Incorporated Principles\n\n- [2026-09-08] with provenance",
+        "created_at": "2026-09-08T14:30:15.123456Z",
+        "updated_at": "2026-09-08T14:30:15.123456Z"
+      },
+      "expected_integration_rows": [
+        {
+          "content": "with provenance",
+          "conversation_id": "conv-1",
+          "created_at": "2026-09-08T14:30:15.123456Z",
+          "id": "5ou1a99y",
+          "journal_id": "mem-1",
+          "key": "soul",
+          "layer": "self",
+          "metadata": "{\"a_first\": 2, \"z_last\": 1}",
+          "origin": "a Soul Mode rite on 2026-09-08",
+          "source": "soul_mode",
+          "status": "active"
+        }
+      ],
+      "journal_id": "  mem-1  ",
+      "key": "soul",
+      "layer": "self",
+      "metadata": {
+        "a_first": 2,
+        "z_last": 1
+      },
+      "name": "records_provenance",
+      "origin": "  a Soul Mode rite on 2026-09-08  ",
+      "seed": null
+    },
+    {
+      "content": "with blank provenance",
+      "conversation_id": "  ",
+      "expected_identity": {
+        "content": "## New Incorporated Principles\n\n- [2026-09-08] with blank provenance",
+        "created_at": "2026-09-08T14:30:15.123456Z",
+        "updated_at": "2026-09-08T14:30:15.123456Z"
+      },
+      "expected_integration_rows": [
+        {
+          "content": "with blank provenance",
+          "conversation_id": null,
+          "created_at": "2026-09-08T14:30:15.123456Z",
+          "id": "5ou1a99y",
+          "journal_id": null,
+          "key": "soul",
+          "layer": "self",
+          "metadata": "{}",
+          "origin": null,
+          "source": "soul_mode",
+          "status": "active"
+        }
+      ],
+      "journal_id": "",
+      "key": "soul",
+      "layer": "self",
+      "metadata": null,
+      "name": "blank_provenance_becomes_null",
+      "origin": "   ",
+      "seed": null
+    },
+    {
+      "content": "c",
+      "conversation_id": null,
+      "expected_error": "unsupported psyche layer: voice",
+      "expected_identity": null,
+      "expected_integration_rows": [],
+      "journal_id": null,
+      "key": "k",
+      "layer": "voice",
+      "metadata": null,
+      "name": "error_unsupported_layer",
+      "origin": null,
+      "seed": null
+    },
+    {
+      "content": "   ",
+      "conversation_id": null,
+      "expected_error": "identity content must not be empty",
+      "expected_identity": null,
+      "expected_integration_rows": [],
+      "journal_id": null,
+      "key": "soul",
+      "layer": "self",
+      "metadata": null,
+      "name": "error_blank_content",
+      "origin": null,
+      "seed": null
+    }
+  ],
+  "section_titles": {
+    "ego": "New Operational Patterns Identified",
+    "persona": "New Participation Patterns Revealed",
+    "self": "New Incorporated Principles",
+    "shadow": "New Hidden Needs Recognized"
+  }
+}
