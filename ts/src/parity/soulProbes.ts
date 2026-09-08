@@ -7,7 +7,11 @@
 // are the point: a port can end in the right state having passed through the
 // wrong one (both keys present at once, `"{}"` where Python writes NULL).
 
+import { createHash } from "node:crypto";
+import { EMBEDDING_DIMENSIONS } from "#providers/embedding.ts";
+import { embeddingToBytes } from "#db/decode.ts";
 import { applyIdentityIntegration } from "#soul/apply.ts";
+import { saveHarvestedFruit } from "#soul/harvest.ts";
 import {
   clearFruitInMaturation,
   clearHarvestedFruit,
@@ -117,6 +121,68 @@ export function soulStateProbe(
       clearFruitInMaturation(db, params.bare_session_id, nowIso);
       record("7_bare_session_clear_writes_null", params.bare_session_id);
       return steps;
+    },
+  };
+}
+
+export interface SoulHarvestSaveProbeParams {
+  session_id: string;
+  memory_id: string;
+}
+
+/**
+ * `soul harvest save` on a real-database copy, with the embedding answered
+ * offline by the same fixed vector the oracle used.
+ *
+ * The graded state is the journal row, the embedding blob's hash, and the
+ * session metadata after the harvest key is cleared -- the write is only
+ * complete if all three moved together.
+ */
+export function soulHarvestSaveProbe(
+  label: string,
+  params: SoulHarvestSaveProbeParams,
+  nowIso: string,
+): WriteProbe {
+  return {
+    label,
+    snapshots: [],
+    apply(db): MutatedRow[] {
+      saveHarvestedFruit(
+        db,
+        { sessionId: params.session_id, journey: null },
+        {
+          newId: () => params.memory_id,
+          nowIso,
+          embed: () => embeddingToBytes(Array<number>(EMBEDDING_DIMENSIONS).fill(0.25)),
+          readMessages: (conversationId) =>
+            db
+              .prepare(
+                "SELECT role, content FROM messages WHERE conversation_id = ? ORDER BY rowid",
+              )
+              .all(conversationId) as { role: string; content: string }[],
+        },
+      );
+      const row = db
+        .prepare(
+          "SELECT id, conversation_id, memory_type, layer, title, content, context, journey," +
+            " persona, tags, created_at, relevance_score, metadata, use_count, readiness_state" +
+            " FROM memories WHERE id = ?",
+        )
+        .get(params.memory_id) as Record<string, unknown>;
+      const embedding = db
+        .prepare("SELECT embedding FROM memories WHERE id = ?")
+        .get(params.memory_id) as { embedding: Uint8Array };
+      const session = db
+        .prepare("SELECT metadata FROM runtime_sessions WHERE session_id = ?")
+        .get(params.session_id) as { metadata: string | null };
+      return [
+        { id: "memory:row", cells: row as MutatedRow["cells"] },
+        {
+          id: "memory:embedding_sha256",
+          cells: { sha256: createHash("sha256").update(embedding.embedding).digest("hex") },
+        },
+        { id: "session:metadata", cells: { metadata: session.metadata } },
+      ];
     },
   };
 }

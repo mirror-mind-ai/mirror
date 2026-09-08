@@ -523,6 +523,7 @@ def main(argv: list[str] | None = None) -> int:
             "repair_encoding",
             "soul_state",
             "soul_apply",
+            "soul_harvest_save",
         ),
     )
     parser.add_argument("--targets", default=3, type=int)

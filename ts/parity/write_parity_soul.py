@@ -28,6 +28,7 @@ and never touches the source.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import sqlite3
 from pathlib import Path
@@ -241,5 +242,131 @@ def soul_apply_probe(python_copy: Path, frozen_datetime, now_iso: str) -> dict:
 
 PROBE_UUID = "5ou1pr0b"
 
-SEEDERS = {"soul_state": seed_soul_state, "soul_apply": seed_soul_apply}
-PROBES = {"soul_state": soul_state_probe, "soul_apply": soul_apply_probe}
+# --- harvest save --------------------------------------------------------
+
+HARVEST_SESSION = "write-parity-soul-harvest-session"
+HARVEST_CONVERSATION = "write-parity-soul-harvest-conversation"
+HARVEST_FRUIT = "Uma verdade colhida. Ela continua verdadeira depois do rito."
+HARVEST_MEMORY_ID = "5ou1h4rv"
+HARVEST_TURNS = (
+    ("user", "o que ficou vivo hoje"),
+    ("assistant", "o que resiste a ser explicado"),
+)
+
+
+def seed_soul_harvest(store: Store) -> None:
+    """A harvested fruit on a session bound to a real conversation with turns."""
+    import json as _json
+
+    from memory.models import Conversation, Message
+
+    store.create_conversation(
+        Conversation(id=HARVEST_CONVERSATION, interface="pi", started_at="2026-06-23T11:00:00Z")
+    )
+    for role, content in HARVEST_TURNS:
+        store.add_message(Message(conversation_id=HARVEST_CONVERSATION, role=role, content=content))
+    store.upsert_runtime_session(
+        HARVEST_SESSION,
+        interface="pi",
+        conversation_id=HARVEST_CONVERSATION,
+        metadata=_json.dumps({"soul": {"harvested_fruit": HARVEST_FRUIT}}, ensure_ascii=False),
+    )
+
+
+def soul_harvest_save_probe(python_copy: Path, frozen_datetime, now_iso: str) -> dict:
+    """`soul harvest save` on the Python copy, embedding answered offline.
+
+    This is the one Soul leaf that crosses the provider seam, and only through
+    the embedding: `add_journal` is called with title, layer, and tags all
+    supplied, so the journal classifier is unreachable. The stub proves that --
+    if a model call were reachable, there is nothing here to answer it.
+    """
+    import memory.models as models_mod
+    import memory.services.memory as memory_service_mod
+    from memory.cli import soul as soul_cli
+    from memory.client import MemoryClient
+
+    original_datetime = models_mod.datetime
+    original_uuid = models_mod._uuid
+    original_embed = memory_service_mod.generate_embedding
+    models_mod.datetime = frozen_datetime
+    models_mod._uuid = lambda: HARVEST_MEMORY_ID
+    memory_service_mod.generate_embedding = _fake_embedding
+
+    mem = MemoryClient(db_path=python_copy)
+    try:
+        state = soul_cli.get_harvested_fruit(mem.store, session_id=HARVEST_SESSION)
+        session = mem.store.get_runtime_session(HARVEST_SESSION)
+        conversation_id = session.conversation_id if session else None
+        journal = soul_cli.compose_soul_harvest_journal(
+            fruit=state.fruit,
+            conversation_id=conversation_id,
+            messages=mem.store.get_messages(conversation_id) if conversation_id else [],
+        )
+        memory = mem.add_journal(
+            content=journal.content,
+            title=journal.title,
+            layer="self",
+            tags=["soul-mode", "harvested-fruit"],
+            conversation_id=conversation_id,
+            journey=None,
+            metadata=journal.metadata,
+        )
+        soul_cli.clear_harvested_fruit(mem.store, session_id=HARVEST_SESSION)
+        mem.conn.commit()
+        row = mem.conn.execute(
+            "SELECT id, conversation_id, memory_type, layer, title, content, context, journey,"
+            " persona, tags, created_at, relevance_score, metadata, use_count, readiness_state"
+            " FROM memories WHERE id = ?",
+            (memory.id,),
+        ).fetchone()
+        embedding = mem.conn.execute(
+            "SELECT embedding FROM memories WHERE id = ?", (memory.id,)
+        ).fetchone()[0]
+        metadata = mem.conn.execute(
+            "SELECT metadata FROM runtime_sessions WHERE session_id = ?", (HARVEST_SESSION,)
+        ).fetchone()[0]
+    finally:
+        mem.close()
+        models_mod.datetime = original_datetime
+        models_mod._uuid = original_uuid
+        memory_service_mod.generate_embedding = original_embed
+
+    return {
+        "label": "soul_harvest_save_demo",
+        "probe_type": "soul_harvest_save",
+        "now_iso": now_iso,
+        "target_ids": [HARVEST_MEMORY_ID],
+        "soul_harvest_save": {
+            "session_id": HARVEST_SESSION,
+            "memory_id": HARVEST_MEMORY_ID,
+        },
+        "python_state": [
+            {"id": "memory:row", "cells": dict(row)},
+            {
+                "id": "memory:embedding_sha256",
+                "cells": {"sha256": hashlib.sha256(embedding).hexdigest()},
+            },
+            {"id": "session:metadata", "cells": {"metadata": metadata}},
+        ],
+    }
+
+
+def _fake_embedding(text: str, *, attempts: int = 3, on_llm_call=None):
+    import numpy as np
+
+    from memory.intelligence.embeddings import EMBEDDING_DIMENSIONS
+
+    return np.full(EMBEDDING_DIMENSIONS, 0.25, dtype=np.float32)
+
+
+SEEDERS = {
+    "soul_state": seed_soul_state,
+    "soul_apply": seed_soul_apply,
+    "soul_harvest_save": seed_soul_harvest,
+}
+PROBES = {
+    "soul_state": soul_state_probe,
+    "soul_apply": soul_apply_probe,
+    "soul_harvest_save": soul_harvest_save_probe,
+}

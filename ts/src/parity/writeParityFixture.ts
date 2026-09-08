@@ -30,6 +30,8 @@ import { type RepairEncodingProbeParams, repairEncodingProbe } from "./safetyToo
 import {
   type SoulApplyProbeParams,
   soulApplyProbe,
+  type SoulHarvestSaveProbeParams,
+  soulHarvestSaveProbe,
   type SoulStateProbeParams,
   soulStateProbe,
 } from "./soulProbes.ts";
@@ -108,7 +110,11 @@ export type WriteProbeFixture =
     })
   // CV22.DS7.US6: the Soul ritual's session state, graded step by step.
   | (WriteProbeBase & { probe_type: "soul_state"; soul_state: SoulStateProbeParams })
-  | (WriteProbeBase & { probe_type: "soul_apply"; soul_apply: SoulApplyProbeParams });
+  | (WriteProbeBase & { probe_type: "soul_apply"; soul_apply: SoulApplyProbeParams })
+  | (WriteProbeBase & {
+      probe_type: "soul_harvest_save";
+      soul_harvest_save: SoulHarvestSaveProbeParams;
+    });
 
 /**
  * CV22.DS7.US5. The oracle's generated ids ride in the fixture because the TS
@@ -351,6 +357,8 @@ function buildWriteProbe(fixture: WriteProbeFixture): WriteProbe {
       return soulStateProbe(fixture.label, fixture.soul_state, fixture.now_iso);
     case "soul_apply":
       return soulApplyProbe(fixture.label, fixture.soul_apply, fixture.now_iso);
+    case "soul_harvest_save":
+      return soulHarvestSaveProbe(fixture.label, fixture.soul_harvest_save, fixture.now_iso);
     default:
       return assertNever(fixture);
   }

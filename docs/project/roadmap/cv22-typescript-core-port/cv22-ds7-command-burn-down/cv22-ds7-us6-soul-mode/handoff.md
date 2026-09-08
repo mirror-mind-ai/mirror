@@ -303,3 +303,59 @@ covered.
 **Note for plateau 5.** Soul's two writes use DIFFERENT JSON rules: the
 integration's metadata is `sort_keys=True`, while the harvest journal's metadata
 is insertion-ordered. Both are pinned by their own goldens; do not unify them.
+
+---
+
+## Plateau 5 — Harvest journal (2026-09-08)
+
+**What is now true.**
+
+`ts/src/soul/harvest.ts` ports the journal composition and the `harvest save`
+write. 29 harvest tests against a 26-scenario golden; a new
+`soul_harvest_save` write probe replays the save on a copy of the real demo
+database and matches on the journal row, the embedding blob's hash, and the
+cleared session metadata. TS suite 1492 green; golden byte-identical under 3.10,
+3.12, and 3.14.
+
+**The provider seam is narrower than the plan assumed, and it is now proven.**
+`soul harvest save` calls `add_journal` with title, layer, AND tags all
+supplied, so Python's `classify_journal_entry` is unreachable from this path.
+The probe stubs only the embedding: if a model call were reachable, there would
+be nothing to answer it and the probe would fail. So the leaf crosses the seam
+through the embedding alone, which is why it routes under the DS5 replay
+transport and the live call remains DS8's.
+
+**Mutation evidence.**
+
+| Mutation | Result |
+|---|---|
+| UTF-16 `.length` for the 80 boundary | 1 test |
+| UTF-16 slice for the 77 truncation | 2 tests |
+| `charAt(0).toUpperCase()` instead of `str.title()` | 1 test |
+| `split("\n")` instead of `splitlines()` | 4 tests |
+| suffix strip instead of `rstrip(".!?")` | 1 test |
+| metadata without embedding provenance | probe fails |
+| harvest not cleared after save | probe fails |
+| wrong `memory_type` | probe fails |
+| tags with `ensure_ascii=False` | nothing — unreachable |
+
+The last one is the same category as plateau 4's `lstrip`: `HARVEST_JOURNAL_TAGS`
+is a fixed ASCII constant, so the two dumps cannot differ at this call site. The
+oracle's form is kept because the rule belongs to `services/memory.py`'s writer
+and a future caller with non-ASCII tags would make it real; the comment says so
+rather than a test pretending to prove it.
+
+One mutation also failed to APPLY on the first attempt — Biome had reformatted
+the target ternary across four lines — and was re-run properly rather than
+recorded as a pass. That is the plateau-3 lesson doing its job.
+
+**Python behaviors worth naming**, all pinned: `str.title()` capitalizes after
+every non-alphabetic character, so an unknown role `tool_call` renders as
+`Tool_Call`; the sentence split uses Python's whitespace class, so U+001F ends a
+sentence and U+FEFF does not; and `rstrip(".!?")` strips a character SET, not a
+suffix.
+
+**Next plateau.** Plateau 6 — the front door: `runSoul` dispatch, the
+`MIRROR_TS_SOUL` gate (default OFF), subcommands allowlisted BY NAME so a
+subcommand Python grows later cannot inherit the route, the ritual lifecycle
+smoke, and the ledger's pre-flip entry. Nothing flips until plateau 7.

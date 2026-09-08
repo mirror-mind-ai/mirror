@@ -158,6 +158,12 @@ ORACLE_PATHS: tuple[str, ...] = (
     "src/memory/prompts/soul_self_voice.md",
     "src/memory/prompts/soul_wisdom_voice.md",
     "src/memory/prompts/soul_beauty_voice.md",
+    # DS7.US6 plateau 5: the harvest journal composition. The `add_journal`
+    # path it writes through lives in services/memory.py, tracked here because
+    # `memory_embed_text`, the tags dump, and the provenance rule are all
+    # reproduced by ts/src/soul/harvest.ts.
+    "src/memory/services/soul_journal.py",
+    "src/memory/services/memory.py",
 )
 
 BASELINE_RELPATH = "ts/parity/oracle-baseline.json"
