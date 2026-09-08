@@ -36,3 +36,7 @@ evidence stays honest as both cores move.
 - [CR056 — Measure title length by code point in titleNeedsImprovement](cr056-measure-title-length-by-code-point.md)
 - [CR057 — Stop paying for the discarded summary in the close tail](cr057-stop-paying-for-the-discarded-summary-in-the-close-tail.md)
 - [CR058 — Wait for completion, not a wall-clock budget, in the runtime-diagnose web test](cr058-wait-for-completion-in-the-runtime-diagnose-web-test.md)
+- [CR060 — Fail loudly when a silent backup fails](cr060-fail-loudly-when-a-silent-backup-fails.md)
+- [CR061 — Snapshot the live database consistently before zipping](cr061-snapshot-the-live-database-consistently-before-zipping.md)
+- [CR062 — Write backup archives owner-only](cr062-write-backup-archives-owner-only.md)
+- [CR063 — Keep journey slugs consistent across tables in repair-encoding](cr063-keep-journey-slugs-consistent-across-tables-in-repair-encoding.md)

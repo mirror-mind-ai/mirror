@@ -20,8 +20,8 @@ uv run python scripts/check_oracle_drift.py
 mkdir -p tmp/parity
 uv run python ts/parity/generate_demo_memory_db.py --out tmp/parity/demo-memory.db
 uv run python ts/parity/write_parity.py --source-db tmp/parity/demo-memory.db --probe repair_encoding
-uv run python ts/parity/write_parity.py --source-db tmp/parity/demo-memory.db --probe backup_archive
 uv run python ts/parity/write_parity.py --source-db tmp/parity/demo-memory.db --probe journey_repair_apply
+# backup archive parity lives in the smoke: both real CLIs on the same file, Python's zipfile reading the TS archive
 node ts/parity/conversation_lifecycle_smoke.ts   # now includes backup, repair-encoding, repair-journeys --apply
 ```
 
@@ -76,4 +76,14 @@ parity is never proven against the live production database.
 
 ## Validation Evidence
 
-Pending implementation and validation.
+Recorded 2026-09-08 in [validation.md](validation.md). Automated: 1240 TS
+tests, both goldens deterministic on 3.10 and 3.12, oracle tripwire clean,
+`repair_encoding` and `journey_repair_apply` probes green on the demo copy,
+the 87-check lifecycle smoke with Python's `zipfile` reading the TS archive,
+`.pi` typecheck clean. Navigator route: items 1, 2, 4 run by the Driver on the
+real home (dry run byte-identical across engines; a real front-door backup,
+`unzip -t` clean, redacted log line; apply on two seeded copies identical
+across engines, live DB untouched); item 3 by the Navigator — a new Pi session
+quit at 09:50 local produced `memory_20260908_095020.zip` and a
+`backup / ts / exit=0` front-door log line, the first hot-path extension call
+to enter the front door. Accepted by the Navigator.

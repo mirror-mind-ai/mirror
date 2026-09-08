@@ -2,7 +2,13 @@
 
 # CV22.DS7.TS1 — Ops/utility tail 1: DB safety tools
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done (2026-09-08). `backup`, `repair-encoding`, and
+`conversation-logger repair-journeys --apply` answer from TS by default
+(`MIRROR_TS_BACKUP=0` / `MIRROR_TS_REPAIR_ENCODING=0` revert); the Pi
+extension's session-shutdown backup and the `mm-backup` skill enter the front
+door. Validation accepted by the Navigator; Debt Review deferred five findings
+as CR059 (RS009) and CR060–CR063 (RS010). Story record: [plan](plan.md),
+[test-guide](test-guide.md), [validation](validation.md), [review](review.md).
 **Type:** Technical Story
 
 ---
