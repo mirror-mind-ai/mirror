@@ -1785,6 +1785,34 @@ This decision resolves the previously open `MIRROR_USER_DIR` discussion in princ
 
 ---
 
+### The TypeScript front door may accept `--mirror-home` where a Python command refuses it
+
+**Date:** 2026-09-08
+**Reference:** [CV22.DS7.US6](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us6-soul-mode/index.md), [burn-down ledger](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/burn-down-ledger.md)
+
+Python's `soul` parser declares no `--mirror-home` and refuses the flag with argparse's
+exit 2. `explore` has the same gap. The TypeScript front door resolves the mirror home
+uniformly for every command it answers, so a ported `soul` accepts a flag its oracle
+rejects.
+
+Decision: **accept the superset and record it.** The TS route keeps `--mirror-home`;
+Python is not taught the flag as part of the port.
+
+The reasoning is that this changes no answer for any invocation that works today. The
+flag currently produces an error on Python, so no caller can depend on its behavior, and
+every skill and hook invokes `soul` without it. Reproducing the refusal in TypeScript
+would mean writing code whose only purpose is to fail, in a command family that DS10
+deletes from Python anyway; teaching Python the flag would mean growing the surface of a
+core being retired.
+
+The divergence is asserted on BOTH sides in the lifecycle smoke — TS exits 0, Python
+exits 2 — so it stays visible as a recorded property rather than drifting silently. The
+same decision covers `explore` when DS7.US7 reaches it.
+
+This does not license divergence generally. Parity remains the rule; a superset is
+acceptable only when the oracle's behavior is an error, no caller can depend on it, and
+the difference is recorded and asserted.
+
 ## Open Discussions
 
 ### Migration rehearsal — long-term status

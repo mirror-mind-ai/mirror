@@ -220,12 +220,14 @@ inheriting the route — the rule RS009/CR055 exists for.
 | 6 | Revertibility exercised | ✅ gate absent = Python; `MIRROR_TS_SOUL=0` = Python |
 | 7 | Burn-down ledger updated | ✅ this entry |
 
-**Recorded divergence, pending Navigator decision at the flip.** Python's
-`soul` parser accepts no `--mirror-home` and refuses it with argparse's exit 2;
-the TS route accepts it like every other front-door command. A superset rather
-than a changed answer for any invocation that works today, asserted in the
-smoke so it stays visible. `explore` has the same gap and US7 will meet it
-again.
+**Accepted divergence (Navigator decision, 2026-09-08).** Python's `soul`
+parser accepts no `--mirror-home` and refuses it with argparse's exit 2; the TS
+route accepts it like every other front-door command. The superset is accepted
+rather than reproduced: the flag is an ERROR on Python today, so no caller can
+depend on it, and every skill and hook invokes `soul` without it. Asserted on
+both sides in the smoke so it stays visible. The same decision covers `explore`
+when US7 reaches it. Recorded in
+[decisions.md](../../decisions.md#the-typescript-front-door-may-accept---mirror-home-where-a-python-command-refuses-it).
 
 ---
 

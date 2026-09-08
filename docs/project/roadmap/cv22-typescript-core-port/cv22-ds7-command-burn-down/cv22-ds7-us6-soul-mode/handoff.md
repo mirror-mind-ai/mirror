@@ -393,13 +393,14 @@ than `"{}"`.
 3. I reintroduced the lazy-import indirection I had removed in plateau 2.
    Deleted again.
 
-**Recorded divergence, needs a decision at the flip.** Python's `soul` parser
-accepts NO `--mirror-home` and refuses it with argparse's exit 2; the TS route
-accepts it like every other front-door command. This is a superset rather than a
-changed answer for any invocation that works today, and the smoke asserts BOTH
-sides so it stays visible instead of silently diverging. `explore` has the same
-gap, so US7 will meet it again — worth deciding once: teach Python the flag, or
-accept the TS superset and record it.
+**Divergence decided (Navigator, 2026-09-08): accept the TS superset.** Python's
+`soul` parser accepts NO `--mirror-home` and refuses it with argparse's exit 2;
+the TS route accepts it like every other front-door command. Accepted rather
+than reproduced, because the flag is an ERROR on Python today — no caller can
+depend on it — and every skill and hook invokes `soul` without it. The smoke
+asserts both sides. Recorded in
+[decisions.md](../../../decisions.md#the-typescript-front-door-may-accept---mirror-home-where-a-python-command-refuses-it),
+and the same decision covers `explore` when US7 reaches it.
 
 **Next plateau.** Plateau 7 — the flip, and it is the first plateau that changes
 what a live session does. It needs, in order: Navigator validation on the real
