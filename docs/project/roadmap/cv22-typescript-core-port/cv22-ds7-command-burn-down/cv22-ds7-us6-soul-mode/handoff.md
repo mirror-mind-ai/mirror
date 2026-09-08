@@ -169,3 +169,70 @@ the conversation-logger lifecycle smoke green; golden byte-identical under 3.10,
 **Not touched.** The sticky-defaults and conversation writers already use
 `pythonJsonDumps`; no mode surface rendering changed. `mode` stays routed to TS
 exactly as before — this changes the bytes it writes, not where it runs.
+
+---
+
+## Plateau 3 — Voice prompts (2026-09-08)
+
+**What is now true.**
+
+`ts/src/soul/prompts.ts` composes the three voice prompts. The templates are
+vendored verbatim as `.md` files in `ts/src/soul/prompts/`. 18 prompt tests
+green; TS suite 1445 green; golden byte-identical under 3.10, 3.12, and 3.14.
+
+**Plan deviation, and why.** The plan said to read the templates from
+`src/memory/prompts/*.md` by resolved path, "one authority, no vendored copy".
+The evidence overruled it:
+
+- No TypeScript source reads outside `ts/` at runtime today; every reference to
+  `src/memory/...` in `ts/src` is a comment naming an oracle. A path read would
+  have been the port's first real runtime dependency on the Python tree —
+  immediately before DS10 deletes it and ships `ts/` as an npm package.
+- Vendoring them as TypeScript template literals, the pattern used by
+  `ts/src/extraction/prompts.ts`, would require escaping 38 backticks and
+  produce a diff nobody can review against the originals.
+
+Vendoring the files verbatim avoids both, and the drift the plan feared is
+closed by a test rather than by architecture: `prompts.test.ts` asserts each
+vendored file is byte-identical to its Python original. Appending one newline
+to a vendored template fails 10 tests. That test reads the Python tree, which is
+legitimate for a drift guard and is not runtime behavior; it retires at DS10
+when `src/memory/` is deleted and the vendored copies become the sole source of
+truth — deliberately, and only then.
+
+**Mutation evidence.**
+
+| Mutation | Tests failed |
+|---|---:|
+| `replaceAll` with a replacement STRING (dollar patterns interpreted) | 2 |
+| `replace()` instead of `replaceAll()` (first occurrence only) | 1 |
+| JS `trim()` instead of Python `strip()` | 2 |
+| one newline appended to a vendored template | 10 |
+
+The injection is the security case the plan's review asked for: Python's
+`str.replace` is literal, while JavaScript interprets `$&`, `` $` ``, `$'`,
+`$1`, and `$$` inside a replacement string — and the replacement here is the
+user's own identity document. Only the replacer-function form is safe, and the
+corpus carries an identity built from those exact sequences.
+
+**Two corpus lessons worth carrying to plateau 4.**
+
+- The `trim()` mutation initially survived: no corpus case used whitespace where
+  the two languages disagree. Added U+001F (stripped by Python, kept by
+  `trim()`) and U+FEFF (the reverse); the mutation then failed 2 tests. A
+  mutation that survives is a statement about the corpus, not about the code.
+- A mutation that reports zero failures must be verified as APPLIED before it is
+  believed. One `perl` substitution here silently matched nothing after Biome
+  reformatted the target line across two lines, and reported a clean pass that
+  meant nothing. Diff the file, then read the result.
+
+**Found on the way.** The first failure in this plateau was in my own test, not
+in the port: it compared JavaScript's `.length` against Python's `len()` for a
+prompt containing an astral emoji, off by exactly one. Fixed to use
+`codePointLength`. The story's own subject matter caught the story's own
+assertion.
+
+**Next plateau.** Plateau 4 — `ts/src/soul/apply.ts`: the `identity_integrations`
+row and the identity-document section append, behind the US3 allowlist. The
+blocking check recorded at plateau 1 still applies and must be answered first:
+confirm `identity_integrations` is in the TS-owned schema.

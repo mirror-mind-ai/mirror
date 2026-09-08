@@ -149,6 +149,15 @@ ORACLE_PATHS: tuple[str, ...] = (
     # session-id resolution; the command dispatch follows in plateau 6.
     "src/memory/services/soul.py",
     "src/memory/cli/soul.py",
+    # DS7.US6 plateau 3: the voice prompts. The three templates are VENDORED
+    # verbatim into ts/src/soul/prompts/ (the TS core has no runtime dependency
+    # on this tree, and DS10 deletes it), so they are tracked here as content
+    # oracles: a change to any of them must be copied across, which
+    # ts/test/soul/prompts.test.ts enforces by byte equality.
+    "src/memory/services/soul_prompt.py",
+    "src/memory/prompts/soul_self_voice.md",
+    "src/memory/prompts/soul_wisdom_voice.md",
+    "src/memory/prompts/soul_beauty_voice.md",
 )
 
 BASELINE_RELPATH = "ts/parity/oracle-baseline.json"
