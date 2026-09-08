@@ -243,7 +243,7 @@ rather than reproduced: the flag is an ERROR on Python today, so no caller can
 depend on it, and every skill and hook invokes `soul` without it. Asserted on
 both sides in the smoke so it stays visible. The same decision covers `explore`
 when US7 reaches it. Recorded in
-[decisions.md](../../decisions.md#the-typescript-front-door-may-accept---mirror-home-where-a-python-command-refuses-it).
+[decisions.md](../../../decisions.md#the-typescript-front-door-may-accept---mirror-home-where-a-python-command-refuses-it).
 
 ---
 

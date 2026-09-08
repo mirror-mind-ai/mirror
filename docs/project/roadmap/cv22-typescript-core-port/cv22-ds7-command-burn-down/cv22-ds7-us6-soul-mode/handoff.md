@@ -399,7 +399,7 @@ the TS route accepts it like every other front-door command. Accepted rather
 than reproduced, because the flag is an ERROR on Python today — no caller can
 depend on it — and every skill and hook invokes `soul` without it. The smoke
 asserts both sides. Recorded in
-[decisions.md](../../../decisions.md#the-typescript-front-door-may-accept---mirror-home-where-a-python-command-refuses-it),
+[decisions.md](../../../../decisions.md#the-typescript-front-door-may-accept---mirror-home-where-a-python-command-refuses-it),
 and the same decision covers `explore` when US7 reaches it.
 
 **Next plateau.** Plateau 7 (now complete; see below).
