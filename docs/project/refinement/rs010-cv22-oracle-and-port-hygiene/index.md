@@ -40,3 +40,5 @@ evidence stays honest as both cores move.
 - [CR061 — Snapshot the live database consistently before zipping](cr061-snapshot-the-live-database-consistently-before-zipping.md)
 - [CR062 — Write backup archives owner-only](cr062-write-backup-archives-owner-only.md)
 - [CR063 — Keep journey slugs consistent across tables in repair-encoding](cr063-keep-journey-slugs-consistent-across-tables-in-repair-encoding.md)
+- [CR065 — Make parity fixture generators hermetic by construction](cr065-make-parity-fixture-generators-hermetic-by-construction.md)
+- [CR066 — Skip a naive timestamp instead of crashing the diagnosis](cr066-skip-a-naive-timestamp-instead-of-crashing-the-diagnosis.md)
