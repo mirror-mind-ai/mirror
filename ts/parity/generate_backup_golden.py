@@ -41,6 +41,12 @@ OUT_PATH = HERE.parent / "test" / "goldens" / "backup.golden.json"
 
 os.environ["TZ"] = "UTC"
 time.tzset()
+# Same hermeticity rule as the repair-encoding generator: CI exports
+# MEMORY_ENV=test, which `memory.config` reads at import time; clear every
+# database override before the first `memory` import so the oracle resolves
+# the fixture as memory.db everywhere.
+for _key in ("MEMORY_DIR", "MEMORY_PROD_DIR", "MEMORY_ENV", "DB_PATH", "DB_BACKUP_PATH", "BACKUP_DIR"):
+    os.environ.pop(_key, None)
 
 FROZEN_NOW = datetime(2026, 9, 7, 14, 3, 5)
 FIXTURE_MTIME = int(datetime(2026, 9, 1, 12, 34, 56).timestamp())  # UTC, TZ pinned above

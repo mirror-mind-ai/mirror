@@ -132,7 +132,20 @@ def _state(conn: sqlite3.Connection) -> dict[str, list[dict[str, object]]]:
     return state
 
 
+# The golden must not depend on the generating environment: CI's Python job
+# exports MEMORY_ENV=test, which `memory.config` reads at import time and
+# would rename the fixture database. Clear it -- and every other database
+# override -- before the first `memory` import, not after.
+_ENV_OVERRIDES = ("MEMORY_DIR", "MEMORY_PROD_DIR", "MEMORY_ENV", "DB_PATH", "DB_BACKUP_PATH", "BACKUP_DIR")
+
+
+def _clear_database_environment() -> None:
+    for key in _ENV_OVERRIDES:
+        os.environ.pop(key, None)
+
+
 def main() -> None:
+    _clear_database_environment()
     from memory.cli import repair_encoding
 
     text_cases = [
@@ -152,8 +165,6 @@ def main() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         home = Path(tmp) / "repair-encoding-fixture"
         home.mkdir()
-        for key in ("MEMORY_DIR", "MEMORY_PROD_DIR", "MEMORY_ENV", "DB_PATH", "DB_BACKUP_PATH"):
-            os.environ.pop(key, None)
         db_path = home / "memory.db"
 
         conn = sqlite3.connect(db_path)
