@@ -67,8 +67,9 @@ fallback until DS10 acts on them:
    npm distribution redesigns the mechanism (versioned installs, dist-tags) rather
    than porting it; whether `release-promote` belongs in the product command
    surface at all, or in release tooling, is a DS10 design decision. The read
-   half (`status`, `version`, `diagnose`, `latest`, `pending`, `release-notes`)
-   is ported by DS7.TS1 and is not DS10 scope.
+   half (`status`, `version`, `diagnose`, `release-notes` — `latest` and
+   `pending` are arguments of `release-notes`, not subcommands) is ported by
+   DS7.TS3 and is not DS10 scope.
 2. **`migrate-legacy`** — the Portuguese-era (`travessia` → `journey`, pre-CV0)
    database conversion. Retired unported, with a documented cutoff in the release
    notes: Portuguese-era databases must be migrated with a pre-DS10 release. The

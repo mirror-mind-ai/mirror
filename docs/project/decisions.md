@@ -33,9 +33,13 @@ hold.
 Decided:
 
 1. **`runtime` splits by mutation.** The read subcommands (`status`, `version`,
-   `diagnose`, `latest`, `pending`, `release-notes`) are ported in TS1 together
-   with `welcome`, which imports them; porting `diagnose` also fixes the live
-   false alarm. The mutating subcommands (`update`, `pull`, `stable`, `backup`,
+   `diagnose`, `release-notes`) are ported in TS1 together with `welcome`, which
+   imports them; porting `diagnose` also fixes the live false alarm.
+   *(Corrected 2026-09-08 during CV22.DS7.TS3: this entry originally listed
+   `latest` and `pending` as subcommands. They are positional arguments of
+   `release-notes` — `runtime release-notes [latest|<version>|pending]` — so
+   there are four read subcommands, not six. The routing table allowlists those
+   four by name.)* The mutating subcommands (`update`, `pull`, `stable`, `backup`,
    `release-doctor`, `release-promote`) are **not ported at parity**; DS10 owns
    their redesign under npm distribution, including whether `release-promote`
    belongs in the product command surface at all.
