@@ -35,3 +35,4 @@ inherit a TS route it was never ported into.
 
 - [CR055 — Audit subcommand inheritance across claimed command families](cr055-audit-subcommand-inheritance-in-claimed-families.md)
 - [CR059 — Route the Pi extension and Gemini hook calls through the front door](cr059-route-extension-and-hook-calls-through-the-front-door.md)
+- [CR064 — Log the engine that answered, not the engine that was chosen](cr064-log-the-engine-that-answered-not-the-engine-that-was-chosen.md)

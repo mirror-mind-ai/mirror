@@ -2,13 +2,14 @@
 
 # CR059 — Route the Pi extension and Gemini hook calls through the front door
 
-**Status:** in_progress
+**Status:** done
 **RS:** RS009
 **Driver:** @viniciusteles
 **Delivery:** `mirror-ts-core`
 
 Phase history: captured 2026-09-08 (CV22.DS7.TS1 Debt Review) → planned
-2026-09-08 (Navigator approved the plan below) → in_progress 2026-09-08.
+2026-09-08 (Navigator approved the plan below) → in_progress 2026-09-08 →
+validated 2026-09-08 (Navigator ran a real Pi session) → done 2026-09-08.
 
 ## Problem
 
@@ -158,8 +159,66 @@ With `MIRROR_TS_CONVERSATION_LOGGER=0` exported before the hook, the same
 `log-user` logs `python` — the revert control reaching a live hook for the
 first time.
 
-Pi validation route pending with the Navigator (a real session start, one
-prompt, and quit).
+## Validation
+
+Natural route, run by the Navigator on his own install: start a new Pi
+session, send one ordinary prompt, quit, then read `front-door.log`.
+
+Expected observation: the whole turn appears with the routes `routing.ts`
+prescribes, the prompt text does not appear, and the session behaves normally.
+Pass: all of that holds. Fail: a missing command, an unexpected route, prompt
+text in the log, or a degraded session.
+
+Observed 2026-09-08, 11:48–11:49 local:
+
+```text
+11:48:32  conversation-logger  ts      session-start --fast
+11:48:33  welcome              python  welcome card, then the status line (TS3 ports these)
+11:48:52  conversation-logger  python  session-maintenance -- the DETACHED background call,
+                                       replay-gated, so Python answers
+11:49:10  conversation-logger  ts      log-user
+11:49:17  journeys             ts      a skill read during the turn
+11:49:27  conversation-logger  ts      log-assistant
+11:49:27  welcome              python  status refresh after the turn
+11:49:46  conversation-logger  python  session-end-pi, replay-gated
+11:49:47  backup               ts      shutdown archive
+```
+
+Every expected entry is present and every route matches the table, including
+`runMirrorBackground`'s detached `session-maintenance`. Verified beyond the
+log: every line carries the fixed six-field shape with an empty detail (no
+payload, no path); the turn's messages are in `messages`; the shutdown
+archive `memory_20260908_114946.zip` passes `unzip -t`. Before this change the
+same session produced no `conversation-logger` or `welcome` entries at all.
+
+**Navigator accepted 2026-09-08**, including the qualitative half of the pass
+condition: the session behaved normally.
+
+## Review
+
+Proportionality: the change is confined to callers — two helper bodies, four
+hook scripts, one new test — and adds no abstraction beyond a shared argv
+constant per runtime. No routing entry, no port, no flip.
+
+Debt introduced: none. Debt carried: the `welcome --status-line` refresh costs
+~190 ms more per turn until TS3 ports `welcome`; it is asynchronous and after
+the turn, and it is TS3's scope, not new debt.
+
+Debt found while reviewing, captured rather than fixed: **CR064** — `main()`
+logs `decision.engine`, so a TS route that falls back to Python inside dispatch
+(the replay-gated logger subcommands) is recorded as `ts`. Harmless while the
+log covered only skills; it matters now that the log is the production evidence
+this CR created, and that the burn-down ledger points at it.
+
+## Outcome
+
+Done 2026-09-08. Both runtimes enter the front door: the routing table governs
+live Pi and Gemini sessions, `MIRROR_TS_*=0` reverts a live hook (proven on the
+Gemini side), and `front-door.log` is the record of what answered. The
+burn-down ledger's rules now state that flips recorded before this date were
+true of the routing table and the smoke, and became true of daily sessions
+today. Delivered on `mirror-ts-core` in commit `6238e89`; validation evidence
+above. Follow-up: CR064.
 
 ## Outcome
 
