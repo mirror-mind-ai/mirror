@@ -71,6 +71,7 @@ jobs:
           uv run python ts/parity/generate_welcome_golden.py
           uv run python ts/parity/generate_soul_surface_golden.py
           uv run python ts/parity/generate_soul_state_golden.py
+          uv run python ts/parity/generate_operating_mode_golden.py
           git diff --exit-code ts/test/goldens/
         env:
           MEMORY_ENV: test

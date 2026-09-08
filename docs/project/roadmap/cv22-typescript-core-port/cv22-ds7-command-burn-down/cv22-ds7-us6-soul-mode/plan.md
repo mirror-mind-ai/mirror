@@ -151,6 +151,35 @@ closed it for the Pi extension and the Gemini hooks.
 13. Flip the gate, switch all three `mm-soul` skill copies to the front door,
     update the burn-down ledger with the per-leaf table and the flip checklist.
 
+## Scope Amendment — operating-mode metadata dialect (Navigator-authorized, 2026-09-08)
+
+Found at plateau 2 and accepted into this story on explicit Navigator decision,
+after the plan's `scope_change_detected` stop condition was raised rather than
+absorbed silently.
+
+DS7.US4's `activateOperatingMode` wrote `runtime_sessions.metadata` with
+`JSON.stringify`, where Python writes `json.dumps(..., ensure_ascii=False)`.
+The two cores therefore stored different bytes for identical state in a column
+that both write, and that Soul shares as the same JSON object.
+
+It is in this story rather than a CR because `soul load` calls that writer:
+leaving it would have made the plateau-3 parity claim depend on which core last
+touched the row.
+
+**Added to scope:**
+
+14. `ts/src/mode/operatingMode.ts` writes the Python dialect through
+    `pythonJsonDumps` on all three paths (session activate, global activate,
+    session deactivate).
+15. A byte-level golden, `operating-mode-metadata.golden.json`, generated from
+    Python. It exists because no existing artifact could see this class:
+    `mirror-state.golden.json` stores metadata as a parsed object and the
+    write-parity harness canonicalizes the cell before hashing, both by design.
+    Reverting the fix fails 7 of its scenarios and nothing else in the suite.
+
+Still out of scope: the sticky-defaults and conversation writers, which already
+use `pythonJsonDumps`, and any change to what the mode surfaces render.
+
 ## Non-Goals
 
 - **No ritual behavior change.** Every surface is reproduced as Python renders

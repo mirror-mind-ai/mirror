@@ -5,8 +5,19 @@ import {
   getRuntimeSession,
   upsertRuntimeSession,
 } from "#mirror/runtimeSession.ts";
+import { pythonJsonDumps } from "#util/pyGenerators.ts";
 
 export const OPERATING_MODE_METADATA_KEY = "operating_mode";
+
+// `runtime_sessions.metadata` is written by BOTH cores for as long as any
+// command that touches it is still on Python -- Soul (DS7.US6) shares the very
+// same row and object. Python writes it with `json.dumps(..., ensure_ascii=
+// False)`, whose separators are `", "` and `": "`; `JSON.stringify` writes
+// neither and escapes nothing, so the two cores stored different bytes for
+// identical state until DS7.US6 corrected it. Nothing failed, because both the
+// mirror-state golden and the write-parity harness compare metadata by VALUE --
+// which is exactly why the divergence survived. The bytes are pinned directly
+// by `operating-mode-metadata.golden.json`.
 
 /** Port of `MODE_ICONS`: the glyph each lens is announced with. */
 export const MODE_ICONS: Readonly<Record<string, string>> = {
@@ -44,14 +55,14 @@ export function activateOperatingMode(
     upsertRuntimeSession(
       db,
       input.sessionId,
-      { metadata: JSON.stringify(metadata), active: true },
+      { metadata: pythonJsonDumps(metadata), active: true },
       nowIso,
     );
   } else {
     upsertRuntimeSession(
       db,
       GLOBAL_OPERATING_MODE_SESSION_ID,
-      { metadata: JSON.stringify(payload), active: true },
+      { metadata: pythonJsonDumps(payload), active: true },
       nowIso,
     );
   }
@@ -79,7 +90,7 @@ export function deactivateOperatingMode(
   upsertRuntimeSession(
     db,
     sessionId,
-    { metadata: Object.keys(metadata).length > 0 ? JSON.stringify(metadata) : null },
+    { metadata: Object.keys(metadata).length > 0 ? pythonJsonDumps(metadata) : null },
     nowIso,
   );
 }

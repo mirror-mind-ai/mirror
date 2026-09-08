@@ -132,12 +132,40 @@ until every command that touches it is flipped, and `ts/src/util/pyGenerators.ts
 exists because this project treats a byte divergence in a shared column as a
 defect elsewhere.
 
-Soul writes the Python dialect (`pythonJsonDumps`), so US6 is coherent on its
-own. The decision that remains is whether `activateOperatingMode` should be
-corrected too. It is a one-line change in US4 territory that alters the bytes a
-live flipped command writes, so it is not something to slip into this story
-silently — recommended as a CR under RS010 rather than a quiet fix here.
+Soul writes the Python dialect (`pythonJsonDumps`), so US6 was coherent on its
+own; the open question was whether `activateOperatingMode` should be corrected
+too. **Navigator decided on 2026-09-08: fix it now, inside US6.** Recorded as a
+scope amendment in [plan.md](plan.md#scope-amendment--operating-mode-metadata-dialect-navigator-authorized-2026-09-08)
+and resolved below.
 
-It becomes load-bearing at plateau 3: `soul load` calls `activate_mode`, so
-until this is settled, that leaf's bytes depend on which core last wrote the
-row.
+---
+
+## Plateau 2b — operating-mode metadata dialect (2026-09-08)
+
+**What is now true.**
+
+All three write paths in `ts/src/mode/operatingMode.ts` — session activate,
+global activate, session deactivate — serialize through `pythonJsonDumps`. Both
+cores now store identical bytes, proven end to end on two temporary homes
+running the same command through each engine:
+
+```text
+python: '{"operating_mode": {"active_mode": "Soul Mode", "active_journey": "mirror-ts-core"}}'
+ts:     '{"operating_mode": {"active_mode": "Soul Mode", "active_journey": "mirror-ts-core"}}'
+```
+
+**Why a new golden was necessary.** Reverting the fix fails 7 scenarios of the
+new `operating-mode-metadata.golden.json` and **nothing else in the 1420-test
+suite**. That is the measurement of the blind spot: `mirror-state.golden.json`
+stores metadata as a parsed object and the write-parity harness canonicalizes
+the cell before hashing — both correct for what they grade, and between them
+blind to a dialect divergence for as long as it existed. The new golden asserts
+the raw column string and nothing else.
+
+**Evidence.** TS suite 1427 green; all nine write probes `overall_match: true`;
+the conversation-logger lifecycle smoke green; golden byte-identical under 3.10,
+3.12, and 3.14; typecheck, biome, ruff clean.
+
+**Not touched.** The sticky-defaults and conversation writers already use
+`pythonJsonDumps`; no mode surface rendering changed. `mode` stays routed to TS
+exactly as before — this changes the bytes it writes, not where it runs.
