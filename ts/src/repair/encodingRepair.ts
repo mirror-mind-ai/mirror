@@ -18,6 +18,7 @@
 //     is not JavaScript's `\s`, and caps by code point, not `.length`.
 
 import { type Database, type WritableDatabase, withTransaction } from "#db/database.ts";
+import { pythonWhitespaceRegex } from "#util/pythonText.ts";
 
 /** One repairable cell: where it is, what it holds, what it becomes. */
 export interface RepairHit {
@@ -144,11 +145,10 @@ export function hasRepairableMojibake(text: string): boolean {
 /**
  * Python's `str.isspace()` set — what `str.split()` with no separator splits
  * on. Differs from JavaScript `\s`: it includes U+001C–U+001F and excludes
- * U+FEFF.
+ * U+FEFF. Shared with the extension migration checksum, which depends on the
+ * same distinction (CV22.DS7.TS3).
  */
-const PYTHON_WHITESPACE =
-  // biome-ignore lint/suspicious/noControlCharactersInRegex: U+001C–U+001F ARE whitespace to Python's str.split(); the golden pins them.
-  /[\t\n\v\f\r\u001c-\u001f \u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+/gu;
+const PYTHON_WHITESPACE = pythonWhitespaceRegex();
 
 /**
  * Port of `_preview`: collapse whitespace runs to single spaces, trim, and cap

@@ -125,6 +125,17 @@ ORACLE_PATHS: tuple[str, ...] = (
     # the repair gates on, ported in the same story (ts/src/backup/).
     "src/memory/cli/repair_encoding.py",
     "src/memory/cli/backup.py",
+    # DS7.TS3: the read half of the runtime surface -- read-only git and version
+    # inspection (plateau 1), the release-note readers (plateau 2), and the
+    # status readers and renderers (plateau 3a). The update/release machinery in
+    # the same file is NOT ported and retires unported in DS10; tracked at file
+    # granularity like every other entry, so drift anywhere in it stays visible.
+    "src/memory/cli/runtime.py",
+    # DS7.TS3 plateau 3a: `inspect_migration_files` and the checksum contract it
+    # shares with `run_migrations`. Only the read side is ported -- the runner
+    # belongs to the extension catalog (TS4) -- but the checksum normalisation
+    # is the part both halves must agree on, so drift here is a parity signal.
+    "src/memory/extensions/migrations.py",
 )
 
 BASELINE_RELPATH = "ts/parity/oracle-baseline.json"
