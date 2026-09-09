@@ -12,6 +12,16 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-09 — CV22.DS7.US7 Explorer Mode completed
+
+**The `explore` family answers from TypeScript by default**, `MIRROR_TS_EXPLORE=0` reverting it in one move, with 11 of 14 leaves on TS. `story promote` stays on Python **by name**: its tail calls Builder `load`, which US8 owns, and `explore` is the first family with a nested subparser so the allowlist refuses an unknown subcommand and an unknown `story` action separately.
+
+Two findings reshaped the story. First, **every Explorer Story write asks Python to publish a Journey projection into the user's project** — a dependency DS7 had scheduled after both of its only two consumers. The first response was to port the projection subsystem early; that was reversed the same session on evidence that publication is linearizable through an `fcntl.flock` lock Node cannot share, so an early port would put two unsynchronized writers on the same `.mirror/projections` tree for the whole transition, and after Python is gone there is one writer and no problem. Publication stays Python-owned, TypeScript ports only the refresh DECISION, and DS10 carries the deletion gate. Both the superseded decision and its reversal are kept, because the first one's evidence is why the seam exists.
+
+Second, paying CR071 at Debt Review found that its predicted failure had **already happened**: eleven skills reached the front door on Pi while calling `uv run python -m memory` directly on Claude Code and the published plugin, `journeys` among them, flipped back in DS3. Nothing was broken — Python answered correctly — but "answers from TS" was true for one runtime of three, TS-only fixes never reached the others, and DS10 deletes the module those copies invoke. Repaired to 13/13/13 and guarded by a CI check that fails when a flip updates one copy and not the others.
+
+Three characterization goldens (52 surface scenarios, 12 story-state families, 35 redaction rows), two real-DB-copy write probes including one grading filesystem state, and a 200-check lifecycle smoke. The goldens caught two defects in my own port on the way: `fields.x ?? UNSET` folding an explicit clear into a keep, and a negative lookbehind standing in for a word boundary and over-redacting a phone number by one character. **DS7 progress 10/15 → 11/15.**
+
 ### 2026-09-08 — CV22.DS7.US6 Soul Mode completed
 
 **The whole `soul` ritual — 10 subcommands, 17 leaves — answers from TypeScript by default**, with `MIRROR_TS_SOUL=0` reverting the family in one move and winning over the embedding replay variable so a revert cannot strand a leaf. One gate for the family, unlike the daily-visible tail's two, because a half-flipped ritual cannot be reviewed in a live session. `harvest save` keeps a second condition: it is the only leaf that crosses the provider seam, and the crossing is narrower than the plan assumed — `add_journal` receives title, layer, and tags, so the journal classifier is unreachable and only the embedding is external, proven by a probe that stubs the embedding alone. All three `mm-soul` skill copies moved to the front door in the same change, applying the CR059 rule at flip time instead of discovering it afterwards. **DS7 progress 9/14 → 10/14.**
