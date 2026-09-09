@@ -75,6 +75,7 @@ import {
 } from "./cultivationRoute.ts";
 import { MirrorHomeNotConfiguredError, resolveDbPath } from "./dbPath.ts";
 import { runBackupRoute, runRepairEncodingRoute } from "./dbSafetyToolsRoute.ts";
+import { defaultExploreRouteDeps, runExploreRoute } from "./exploreRoute.ts";
 import { frontDoorLogPath, logFrontDoor } from "./frontDoorLog.ts";
 import { applyIdentitySet } from "./identityWrite.ts";
 import { applyJourneySetPath } from "./journeyWriteRoute.ts";
@@ -1213,6 +1214,16 @@ function runSoulWrite(argv: readonly string[]): Promise<number> {
   return withMirrorWriteDb(argv, (db) => runSoulRoute(db, argv));
 }
 
+function runExploreWrite(argv: readonly string[]): Promise<number> {
+  // The projection seam needs the same `--mirror-home` the command was given,
+  // because it delegates to a separate Python process that resolves its own
+  // database from that home rather than inheriting this one.
+  const mirrorHome = optionValue(argv.slice(1), "--mirror-home");
+  return withMirrorWriteDb(argv, (db) =>
+    runExploreRoute(db, argv, defaultExploreRouteDeps(mirrorHome)),
+  );
+}
+
 /**
  * CV22.DS7.US5. Routing only sends the deterministic subcommands here, but if
  * the dispatcher reports one it does not own, fall back to Python instead of
@@ -1346,6 +1357,7 @@ async function dispatchTs(argv: readonly string[]): Promise<number> {
   // allowlists its subcommands by name and keeps `harvest save` on Python
   // until the embedding replay transport is configured.
   if (argv[0] === "soul") return runSoulWrite(argv);
+  if (argv[0] === "explore") return runExploreWrite(argv);
   if (isConversationsAppend(argv)) return runConversationsAppend(argv);
   // CV22.DS7.TS1: the DB safety tools. `backup` never opens or bootstraps the
   // database; `repair-encoding --apply` rides the live-write seam.

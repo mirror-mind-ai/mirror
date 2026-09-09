@@ -91,6 +91,7 @@ delete baseEnv.MIRROR_TS_REPAIR_ENCODING;
 delete baseEnv.MIRROR_TS_WELCOME;
 delete baseEnv.MIRROR_TS_RUNTIME_READS;
 delete baseEnv.MIRROR_TS_SOUL;
+delete baseEnv.MIRROR_TS_EXPLORE;
 // Empty, not deleted: `memory.config` re-applies a repo `.env` with
 // `os.environ.setdefault` at import, so a DELETED key comes back and
 // `runtime diagnose` would make a live OpenRouter call on the Python side --
@@ -832,6 +833,263 @@ check(
 check(
   !frontDoorLog.includes("um fruto em maturação") && !frontDoorLog.includes("resiste a ser explicado"),
   "the front-door log carries no ritual text",
+);
+
+// --- CV22.DS7.US7: Explorer Mode -----------------------------------------------
+//
+// One continuous exploration, because the bugs in stateful narrative surfaces
+// live in the TRANSITIONS -- open, thicken, attractor, experiment, snapshot,
+// handoff, archive -- not in single renders.
+//
+// The gate is OFF in this build, so `EXPLORE_ON` sets it explicitly (proving
+// the route the flip plateau will make default) and the absence of the variable
+// proves today's shipped default is still Python.
+const EXPLORE_ON = { MIRROR_HOME: home, MIRROR_TS_EXPLORE: "1" };
+const EXPLORE_DEFAULT = { MIRROR_HOME: home };
+const exploreJourney = "smoke-explore-journey";
+const exploreProject = join(home, "explore-project");
+
+function runExplore(args: string[], env: Record<string, string>): StepResult {
+  const result = spawnSync(process.execPath, [CLI, ...args], {
+    encoding: "utf8",
+    cwd: resolve(TS_ROOT, ".."),
+    env: { ...baseEnv, ...env },
+  });
+  return {
+    stdout: result.stdout ?? "",
+    stderr: result.stderr ?? "",
+    status: result.status,
+    route: lastRoute(),
+  };
+}
+
+function exploreStep(label: string, args: string[]): StepResult {
+  const result = runExplore(args, EXPLORE_ON);
+  check(result.status === 0, `${label}: exit 0`, `exit=${result.status} ${result.stderr.trim()}`);
+  check(result.route === "ts", `${label}: routed to ts`, result.route);
+  return result;
+}
+
+// The gate is the shipped default until the flip: no variable, no TS route.
+const exploreDefault = runExplore(["explore", "story", "show", exploreJourney], EXPLORE_DEFAULT);
+check(
+  exploreDefault.route === "python",
+  "explore stays on Python without MIRROR_TS_EXPLORE (pre-flip default)",
+  exploreDefault.route,
+);
+
+// A journey with a project path, so the handoff step has somewhere to write.
+mkdirSync(exploreProject, { recursive: true });
+step(
+  "seed explore journey",
+  [
+    "identity",
+    "set",
+    "journey",
+    exploreJourney,
+    "--content",
+    "# Smoke Explore\n**Status:** active\n",
+    "--mirror-home",
+    home,
+  ],
+  "ts",
+);
+step(
+  "set explore project path",
+  ["journey", "set-path", exploreJourney, exploreProject, "--mirror-home", home],
+  "ts",
+);
+
+const exploreOpen = exploreStep("explore story open", [
+  "explore",
+  "story",
+  "open",
+  exploreJourney,
+  "--story",
+  "a parte que ainda não sabemos nomear",
+]);
+check(
+  exploreOpen.stdout.includes("[[MIRROR_REQUIRED_SURFACE_BEGIN:exploratory_story_opened]]"),
+  "explore story open emits the required-surface marker",
+  exploreOpen.stdout.slice(0, 120),
+);
+
+// THE seam check. `explore story open` is answered by TypeScript, and the
+// Journey projection it must publish is written by Python, because publication
+// is linearizable through an `fcntl.flock` lock Node cannot share.
+//
+// The delegation is best-effort by contract -- a refresh that cannot run must
+// not fail the write -- which means a broken seam is SILENT. If the Python
+// subcommand is renamed, its options change, or the spawn stops working, every
+// test above still passes and the projection quietly stops updating. This is
+// the check that catches that, and it is the reason it asserts a file rather
+// than a log line.
+const publishedProjection = join(exploreProject, ".mirror", "projections", "ariad", "operational.json");
+check(
+  existsSync(publishedProjection),
+  "the TS write delegated its Journey projection refresh to Python, which published",
+  publishedProjection,
+);
+
+const exploreThicken = exploreStep("explore story thicken", [
+  "explore",
+  "story",
+  "thicken",
+  exploreJourney,
+  "--story",
+  "o muro era um problema de renderização",
+  "--changed",
+  "a pergunta mudou",
+]);
+check(
+  exploreThicken.stdout.includes("STORY THICKENED"),
+  "explore story thicken renders the thickened card",
+  exploreThicken.stdout.slice(0, 120),
+);
+
+exploreStep("explore story attractors", [
+  "explore",
+  "story",
+  "attractors",
+  exploreJourney,
+  "--attractor",
+  "graduar a superfície, não a intenção",
+  "--status",
+  "accepted",
+]);
+exploreStep("explore story experiment", [
+  "explore",
+  "story",
+  "experiment",
+  exploreJourney,
+  "--title",
+  "portar um comando ritual de ponta a ponta",
+]);
+exploreStep("explore story snapshot", ["explore", "story", "snapshot", exploreJourney]);
+
+// One durable row, not one per mutation: the upsert must inherit its id.
+const exploreRows = query<{ id: string; status: string; title: string }>(
+  "SELECT id, status, title FROM exploratory_stories WHERE journey = ?",
+  exploreJourney,
+);
+check(
+  exploreRows.length === 1,
+  "five mutations produced exactly one active row",
+  `${exploreRows.length} rows`,
+);
+
+// The legacy runtime payload is still dual-written on every mutation.
+const [exploreSession] = query<{ metadata: string | null; active: number }>(
+  "SELECT metadata, active FROM runtime_sessions WHERE session_id = ?",
+  `__explorer_story__:${exploreJourney}`,
+);
+check(
+  (exploreSession?.metadata ?? "").includes('"current_exploratory_story":'),
+  "the legacy runtime payload is written alongside the durable row",
+  exploreSession?.metadata?.slice(0, 120) ?? "(no row)",
+);
+
+const exploreHandoff = exploreStep("explore story handoff", [
+  "explore",
+  "story",
+  "handoff",
+  exploreJourney,
+  "--title",
+  "Paridade é um problema de renderização",
+  "--summary",
+  "forma suficiente para planejar",
+]);
+check(
+  exploreHandoff.stdout.includes("BUILDER HANDOFF PROPOSED"),
+  "explore story handoff renders the handoff card",
+  exploreHandoff.stdout.slice(0, 120),
+);
+const handoffIndex = join(
+  exploreProject,
+  "docs",
+  "project",
+  "explorations",
+  "paridade-e-um-problema-de-renderizacao",
+  "index.md",
+);
+check(
+  existsSync(handoffIndex),
+  "the handoff wrote its documents into the journey's project",
+  handoffIndex,
+);
+
+const exploreList = exploreStep("explore story list", ["explore", "story", "list", exploreJourney]);
+check(
+  exploreList.stdout.includes("[[MIRROR_REQUIRED_SURFACE_BEGIN:exploratory_stories]]"),
+  "explore story list emits the required-surface marker",
+  exploreList.stdout.slice(0, 120),
+);
+
+exploreStep("explore story archive", ["explore", "story", "archive", exploreJourney]);
+const [archivedSession] = query<{ metadata: string | null; active: number }>(
+  "SELECT metadata, active FROM runtime_sessions WHERE session_id = ?",
+  `__explorer_story__:${exploreJourney}`,
+);
+check(
+  archivedSession?.active === 0 && archivedSession?.metadata === null,
+  "archive deactivates the legacy payload instead of leaving it readable",
+  `active=${archivedSession?.active} metadata=${String(archivedSession?.metadata)}`,
+);
+
+// `explore load` activates the mode. TS only: it WRITES, and both engines would
+// each claim the row.
+const exploreLoad = exploreStep("explore load", ["explore", "load", exploreJourney]);
+check(
+  exploreLoad.stdout.includes("EXPLORER MODE ACTIVE"),
+  "explore load renders the entry card",
+  exploreLoad.stdout.slice(0, 120),
+);
+check(
+  exploreLoad.stdout.includes("=== Explorer Mode guidance ==="),
+  "explore load emits the guidance block",
+  exploreLoad.stdout.slice(-200),
+);
+
+// `story promote` is refused BY NAME: its tail is Builder load, which is US8's.
+const explorePromote = runExplore(["explore", "story", "promote", exploreJourney], EXPLORE_ON);
+check(
+  explorePromote.route === "python",
+  "explore story promote stays on Python until US8 owns Builder load",
+  explorePromote.route,
+);
+
+// An unallowlisted action reaches Python by name, never by inheritance.
+const exploreUnknown = runExplore(["explore", "story", "publish", exploreJourney], EXPLORE_ON);
+check(
+  exploreUnknown.route === "python",
+  "an unallowlisted explore story action reaches Python by name",
+  exploreUnknown.route,
+);
+
+// Recorded divergence, the same one Soul carries: Python's `explore` parser has
+// no `--mirror-home` and refuses it with argparse's exit 2, while the TS route
+// accepts it like every other front-door command. A superset, not a changed
+// answer for any invocation that works today.
+const exploreHomeFlagTs = runExplore(
+  ["explore", "story", "show", exploreJourney, "--mirror-home", home],
+  EXPLORE_ON,
+);
+const exploreHomeFlagPython = runExplore(
+  ["explore", "story", "show", exploreJourney, "--mirror-home", home],
+  EXPLORE_DEFAULT,
+);
+check(exploreHomeFlagTs.status === 0, "TS explore accepts --mirror-home", `${exploreHomeFlagTs.status}`);
+check(
+  exploreHomeFlagPython.status === 2,
+  "Python explore refuses --mirror-home (recorded divergence)",
+  `${exploreHomeFlagPython.status}`,
+);
+
+const exploreLog = readFileSync(join(home, "front-door.log"), "utf8");
+check(
+  !exploreLog.includes("ainda não sabemos nomear") &&
+    !exploreLog.includes("problema de renderização"),
+  "the front-door log carries no exploratory story text",
 );
 
 // --- report --------------------------------------------------------------------

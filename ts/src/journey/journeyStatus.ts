@@ -50,6 +50,26 @@ export function getSyncFile(db: Database, journeyKey: string): string | null {
 }
 
 /**
+ * Port of `get_project_path`: the journey's metadata `project_path`, expanded.
+ *
+ * Python expands `~` defensively on read, because values written before
+ * write-side normalization can still be stored in tilde form. A no-op for
+ * canonical paths, and load-bearing for the ones it is not.
+ */
+export function getProjectPath(db: Database, journeyKey: string): string | null {
+  const metadata = getIdentityMetadata(db, JOURNEY_LAYER, journeyKey);
+  if (!metadata) return null;
+  try {
+    const parsed = JSON.parse(metadata) as unknown;
+    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+    const value = (parsed as Record<string, unknown>).project_path;
+    return typeof value === "string" ? expandHome(value) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Port of `get_journey_path`: prefer the external sync file (expanduser'd) when
  * configured and readable; on ANY read failure (missing, permission, or other
  * I/O error — matching Python's broad `OSError` catch), fall back to the

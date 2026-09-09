@@ -175,6 +175,42 @@ def _rebuild(options: dict[str, str]) -> Mapping[str, object]:
         }
 
 
+def _refresh(options: dict[str, str]) -> Mapping[str, object]:
+    """Run the post-commit refresh with coordinator semantics.
+
+    Exists for the TypeScript core (CV22.DS7.US7). Projection publication is
+    linearizable through a `fcntl.flock` lock that Node cannot share, so Python
+    stays the single writer of `.mirror/projections` for the whole transition
+    and TypeScript commands that produce a refresh delegate to this entry point.
+
+    It is NOT `rebuild-operational`. That one always compiles AND publishes;
+    the coordinator publishes only when the compiled digest changed, and
+    reusing rebuild would emit a snapshot and a receipt on every Explorer write
+    where Python emits none.
+
+    Deletion is owned by CV22.DS10's Journey Projection Refresh Seam gate. This
+    is Python surface added deliberately to a component being retired.
+
+    Best-effort by contract, matching `Store.request_projection_refresh`: the
+    source write has already committed, so a failure here is reported in the
+    payload and never raised.
+    """
+    home = _home(options)
+    journey = _required(options, "--journey")
+    if options:
+        raise _unsupported()
+    with _client(home) as client:
+        outcome = client.projection_refresh.request(journey)
+        return {
+            "status": outcome.status,
+            "journeyId": outcome.journey_id,
+            "sourceRevision": outcome.source_revision,
+            # `code` is annotated `str | None` but carries a ProjectionErrorCode
+            # on the failure path; normalize rather than trusting either.
+            "code": getattr(outcome.code, "value", outcome.code),
+        }
+
+
 def _inspect(options: dict[str, str]) -> Mapping[str, object]:
     home = _home(options)
     journey = _required(options, "--journey")
@@ -235,6 +271,7 @@ def cmd_journey_projection(args: Sequence[str]) -> int:
             "capabilities": _capabilities,
             "probe-prepare": _probe_prepare,
             "rebuild-operational": _rebuild,
+            "refresh": _refresh,
             "inspect": _inspect,
             "probe-publish": _probe_publish,
         }

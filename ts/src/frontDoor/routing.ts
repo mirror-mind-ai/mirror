@@ -41,6 +41,7 @@ export interface RouteEnvironment {
   MIRROR_TS_RUNTIME_READS?: string;
   MIRROR_TS_SOUL?: string;
   MIRROR_TS_SOUL_EMBEDDING_REPLAY?: string;
+  MIRROR_TS_EXPLORE?: string;
   MEMORY_RECEPTION?: string;
 }
 
@@ -642,6 +643,38 @@ export function routeMemoryCommand(
     return { command, engine: "ts", reason: `DS7.US6 soul ${subcommand} ported to TS` };
   }
 
+  if (command === "explore") {
+    const subcommand = argv[1] ?? "";
+    // TWO levels, because `explore` is the first family with a nested
+    // subparser. A single-level allowlist would claim `explore story
+    // <anything>` and answer an argv shape this route has never implemented.
+    if (!TS_EXPLORE_SUBCOMMANDS.has(subcommand)) {
+      return {
+        command,
+        engine: "python",
+        reason: `explore subcommand not ported to TS: ${subcommand || "(none)"}`,
+      };
+    }
+    if (subcommand === "story") {
+      const action = exploreStoryAction(argv);
+      if (!TS_EXPLORE_STORY_ACTIONS.has(action ?? "")) {
+        return {
+          command,
+          engine: "python",
+          reason: `explore story action not ported to TS: ${action || "(none)"}`,
+        };
+      }
+    }
+    if (!exploreGateEnabled(env)) {
+      return {
+        command,
+        engine: "python",
+        reason: "explore TS route disabled by MIRROR_TS_EXPLORE=0",
+      };
+    }
+    return { command, engine: "ts", reason: `DS7.US7 explore ${subcommand} ported to TS` };
+  }
+
   return { command, engine: "python", reason: "command not ported to TS" };
 }
 
@@ -671,6 +704,47 @@ const TS_SOUL_SUBCOMMANDS = new Set([
 // data migration.
 function soulGateEnabled(env: RouteEnvironment): boolean {
   return env.MIRROR_TS_SOUL !== "0";
+}
+
+// Python's argparse subcommands for `explore`, by name.
+const TS_EXPLORE_SUBCOMMANDS = new Set(["load", "deactivate", "story"]);
+
+// Python's `explore story` actions, by name.
+//
+// `promote` is absent DELIBERATELY, not by oversight: `cmd_story_promote` ends
+// by calling Builder `load`, which US8 owns. The leaf stays on Python until the
+// Builder tree is ported, and the burn-down ledger carries the dependency so it
+// cannot be forgotten when the gate flips.
+const TS_EXPLORE_STORY_ACTIONS = new Set([
+  "show",
+  "list",
+  "archive",
+  "update",
+  "clear",
+  "open",
+  "thicken",
+  "snapshot",
+  "attractors",
+  "experiment",
+  "handoff",
+]);
+
+// CV22.DS7.US7: Explorer Mode. Default OFF until the flip plateau, so the route
+// can be exercised by the smoke and the Navigator before it reaches a live
+// session. ONE gate for the family, like Soul: a half-flipped lived mode cannot
+// be reviewed.
+function exploreGateEnabled(env: RouteEnvironment): boolean {
+  return env.MIRROR_TS_EXPLORE === "1";
+}
+
+/** `explore story <action>`, skipping the options argparse strips first. */
+function exploreStoryAction(argv: readonly string[]): string | undefined {
+  const args = [...argv.slice(2)];
+  for (const option of ["--mirror-home", "--db-path", "--session-id"]) {
+    const index = args.indexOf(option);
+    if (index !== -1) args.splice(index, 2);
+  }
+  return args[0];
 }
 
 /** `soul harvest <action>`, skipping the options argparse strips first. */
