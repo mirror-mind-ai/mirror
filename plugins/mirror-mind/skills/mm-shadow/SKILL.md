@@ -36,7 +36,7 @@ fires AND the structural layer has confirmed content. It surfaces with provenanc
 ## 1. Show current shadow layer (orientation)
 
 ```bash
-uv run python -m memory shadow show
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts shadow show
 ```
 
 ---
@@ -44,7 +44,7 @@ uv run python -m memory shadow show
 ## 2. Scan for candidate observations
 
 ```bash
-uv run python -m memory shadow scan [--limit 50]
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts shadow scan [--limit 50]
 ```
 
 Scans memories where:
@@ -75,18 +75,18 @@ Ask: **accept / edit / reject?**
 
 **Accept:**
 ```bash
-uv run python -m memory shadow apply <proposal_id>
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts shadow apply <proposal_id>
 ```
 
 **Accept with edited content:**
 ```bash
-uv run python -m memory shadow apply <proposal_id> \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts shadow apply <proposal_id> \
   --content "User-revised observation text"
 ```
 
 **Reject:**
 ```bash
-uv run python -m memory shadow reject <proposal_id>
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts shadow reject <proposal_id>
 ```
 
 What happens on acceptance:
@@ -101,7 +101,7 @@ Rejected proposals leave the shadow layer and source memories unchanged.
 ## 5. List history
 
 ```bash
-uv run python -m memory shadow list [--status pending|accepted|rejected]
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts shadow list [--status pending|accepted|rejected]
 ```
 
 ---

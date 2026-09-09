@@ -22,18 +22,20 @@ Sends prompts with Mirror identity context to other models through OpenRouter.
 
 ## Flow
 
+> Through the front door the model call has a 10-minute ceiling (`MIRROR_FRONTDOOR_PYTHON_TIMEOUT_MS`); a call killed at the ceiling is spent but leaves no `llm_calls` row. Direct Python invocation had no bound (CR072).
+
 ### Explicit Question
 
 Analyze the message to determine persona and journey using the same Mirror routing.
 
 ```bash
-uv run python -m memory consult FAMILY TIER "QUESTION" \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts consult FAMILY TIER "QUESTION" \
   [--persona PERSONA] [--journey JOURNEY] [--org]
 ```
 
 **Examples:**
-- `/mm:consult gemini lite "draft an opening for this article"` -> `uv run python -m memory consult gemini lite "draft an opening for this article" --persona writer`
-- `/mm:consult deepseek "is this design overengineered?"` -> `uv run python -m memory consult deepseek "is this design overengineered?" --persona engineer`
+- `/mm:consult gemini lite "draft an opening for this article"` -> `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts consult gemini lite "draft an opening for this article" --persona writer`
+- `/mm:consult deepseek "is this design overengineered?"` -> `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts consult deepseek "is this design overengineered?" --persona engineer`
 
 The script prints the response, cost, and balance. Always show the complete response to the user without summarizing or omitting it. Any Claude comments come after the full response.
 
@@ -46,7 +48,7 @@ When the user omits the question, they want a second opinion on the current conv
 3. Send it as an ask:
 
 ```bash
-uv run python -m memory consult FAMILY TIER "SYNTHESIZED_PROMPT" \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts consult FAMILY TIER "SYNTHESIZED_PROMPT" \
   [--persona PERSONA] [--journey JOURNEY] [--org]
 ```
 
@@ -64,7 +66,7 @@ Suggest 3 alternative article topics for software leaders, keeping depth without
 ## Credits
 
 ```bash
-uv run python -m memory consult credits
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts consult credits
 ```
 
 Shows OpenRouter usage and remaining balance.

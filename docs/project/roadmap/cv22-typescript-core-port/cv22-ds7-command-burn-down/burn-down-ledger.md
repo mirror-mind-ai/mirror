@@ -22,14 +22,22 @@ from TS in an unconfigured install is listed in the [Remainder](#remainder)
 below with a named owner; that table, not the family rows, is what "done =
 zero" is audited against.
 
-**Skill invocations are a second bypass (CR072).** A flipped route reaches a
-live session only if the caller enters the front door. CR059 routed the Pi
-extension and Gemini hooks; CR071 made the three skill copies agree. Neither
-made every *skill* enter the front door: as of 2026-09-09, `mm-tasks`,
-`mm-week`, `mm-consolidate`, `mm-shadow`, `mm-consult`, `mm-mute`, `mm-new`,
-`mm-discard`, and `mm-mirror` still invoke `uv run python -m memory` directly
-while their routes point at TS. A family row's ✅ therefore means the routing
-table and the smoke — not necessarily the skill a Navigator types.
+**Skill invocations were a second bypass (CR072, closed 2026-09-09).** A
+flipped route reaches a live session only if the caller enters the front door.
+CR059 routed the Pi extension and Gemini hooks; CR071 made the three skill
+copies agree. Neither made every *skill* enter the front door: until
+2026-09-09, `mm-tasks`, `mm-week`, `mm-consolidate`, `mm-shadow`,
+`mm-consult`, `mm-mute`, `mm-new`, `mm-discard`, and `mm-mirror` invoked
+`uv run python -m memory` directly while their routes pointed at TS — and the
+checker written to close it found three more (`mm-soul`'s `identity get` and
+`mode deactivate` lines, `mm-explore`'s `conversations`, `mm-build`'s `mirror
+log`). CR072 moved 110 invocation lines across 36 files to the front door and
+added a CI assertion: a skill may invoke Python only for a command on
+`PYTHON_ALLOWLIST` in `scripts/check_skill_command_parity.py`, each entry
+naming its owner (`build`→US8, `journal`→US11, `identity edit`→TS4, the
+`runtime` update half→DS10). From here a family row's ✅ means the skill a
+Navigator types, too — for any skill whose command is on the allowlist, the
+row is honest by construction because the command is not ✅.
 
 **What "routed to TS" reaches (RS009 CR059, 2026-09-08).** Until this date the
 Pi extension and the Gemini hooks called `uv run python -m memory` directly and
@@ -229,10 +237,10 @@ without them, and nothing inherited the work until CR068 (2026-09-09).
 | `week save` | ❌ | Python | **US11** | **no LLM** — reads the pending file, `add_task` per item. Mis-labelled "LLM-gated" in `routing.ts` |
 | `journal` | ❌ | Python | **US11** | `classify_journal_entry` (LLM) → `add_memory` (embedding). No TS module exists |
 
-**Routed to TS: 10/13.** The `mm-tasks`, `mm-week`, and `mm-journal` skills
-all still invoke Python directly (CR072), so even the ten flipped leaves reach
-a live Pi session only through the extension, not through the skill a Navigator
-types.
+**Routed to TS: 10/13.** Until CR072 (2026-09-09) the `mm-tasks` and
+`mm-week` skills invoked Python directly, so the ten flipped leaves reached a
+live Pi session only through the extension; they now enter the front door.
+`mm-journal` stays on Python by allowlist until US11 flips `journal`.
 
 ---
 

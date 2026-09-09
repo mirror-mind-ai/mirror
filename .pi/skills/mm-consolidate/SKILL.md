@@ -34,8 +34,10 @@ This is intentional — identity updates are meaningful acts.
 
 ## 1. Scan for proposals
 
+> Through the front door the scan has a 10-minute ceiling (`MIRROR_FRONTDOOR_PYTHON_TIMEOUT_MS`); a scan killed at the ceiling is spent but leaves no `llm_calls` row. Direct Python invocation had no bound (CR072).
+
 ```bash
-uv run python -m memory consolidate scan \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts consolidate scan \
   [--journey <slug>] \
   [--layer <layer>] \
   [--limit 5] \
@@ -69,18 +71,18 @@ Ask: **accept as-is / edit / reject?**
 
 **Accept as-is:**
 ```bash
-uv run python -m memory consolidate apply <proposal_id>
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts consolidate apply <proposal_id>
 ```
 
 **Accept with edited content:**
 ```bash
-uv run python -m memory consolidate apply <proposal_id> \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts consolidate apply <proposal_id> \
   --content "User-revised version of the proposed content"
 ```
 
 **Reject:**
 ```bash
-uv run python -m memory consolidate reject <proposal_id>
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts consolidate reject <proposal_id>
 ```
 
 What happens on acceptance:
@@ -95,7 +97,7 @@ Rejected proposals leave source memories unchanged.
 ## 4. List consolidation history
 
 ```bash
-uv run python -m memory consolidate list [--status pending|accepted|rejected] [--limit 20]
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts consolidate list [--status pending|accepted|rejected] [--limit 20]
 ```
 
 ---

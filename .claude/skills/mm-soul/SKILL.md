@@ -316,7 +316,7 @@ If the user says yes, render Integration Proposal. If the user declines and incl
 toward ending for today, exit Soul Mode by deactivating the active operating mode:
 
 ```bash
-uv run python -m memory mode deactivate
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts mode deactivate
 ```
 
 Then leave a short farewell in Mirror's normal voice. If the user brings another
@@ -370,10 +370,10 @@ When the user asks how one specific point could remain in Self, Shadow, Ego, or 
 persona, first load the current target identity when possible:
 
 ```bash
-uv run python -m memory identity get self soul
-uv run python -m memory identity get shadow profile
-uv run python -m memory identity get ego behavior
-uv run python -m memory identity get persona <persona-id>
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity get self soul
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity get shadow profile
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity get ego behavior
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity get persona <persona-id>
 ```
 
 Then render a proposal-only surface:

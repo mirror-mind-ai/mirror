@@ -9,7 +9,7 @@ user-invocable: true
 When receiving `/mm:tasks`, run:
 
 ```bash
-uv run python -m memory tasks [SUBCOMMAND] [ARGS]
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts tasks [SUBCOMMAND] [ARGS]
 ```
 
 ## Subcommands

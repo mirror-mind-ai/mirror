@@ -210,7 +210,7 @@ Do not switch to Builder silently. First produce a transfer document set and
 render the handoff proposal. If the user asks to include source conversations,
 confirm which conversations should be included before adding raw source evidence.
 When the user names the current or recent conversation rather than an id, inspect
-recent journey conversations with `uv run python -m memory conversations --journey
+recent journey conversations with `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts conversations --journey
 <slug> --limit 5`, show the candidate source evidence, and ask for confirmation.
 Use `--source-conversation <conversation-id>` for reviewed source evidence. Use
 `--include-full-conversation` only after explicit confirmation that raw

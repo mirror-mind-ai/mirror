@@ -84,8 +84,10 @@ DS7.US2–US5 and DS5, but a flipped route reaches a live session only if the
 caller enters the front door, and these skills never did — so those flips have
 been real for the Pi extension and the smoke, not for the skill a Navigator
 types. [CR072](../../../refinement/rs009-cv22-front-door-routing-correctness/cr072-route-every-skill-through-the-front-door.md)
-(RS009) owns the repair and brings item 2 above forward: the parity check gains
-its "Python entry point absent" assertion when CR072 lands, not at DS10.
+(RS009) owned the repair and brought item 2 above forward: since 2026-09-09
+`scripts/check_skill_command_parity.py` carries `PYTHON_ALLOWLIST`, and a skill
+may invoke Python only for an allowlisted command that names its owning story.
+DS10's job for item 2 is now to require that list to be **empty**.
 
 The remaining residue after CR072 is the unported set: `mm-build` (the Ariad
 lifecycle, until DS7.US8), `mm-journal` (until DS7.US11), `mm-update` (the

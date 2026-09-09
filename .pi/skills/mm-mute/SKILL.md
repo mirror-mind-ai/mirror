@@ -10,9 +10,9 @@ When receiving `/mm-mute`:
 
 1. Check current status:
    ```bash
-   uv run python -m memory conversation-logger status
+   NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts conversation-logger status
    ```
 
 2. Toggle:
-   - If **ACTIVE**: run `uv run python -m memory conversation-logger mute` → say "Conversation logging muted."
-   - If **MUTED**: run `uv run python -m memory conversation-logger unmute` → say "Conversation logging reactivated."
+   - If **ACTIVE**: run `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts conversation-logger mute` → say "Conversation logging muted."
+   - If **MUTED**: run `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts conversation-logger unmute` → say "Conversation logging reactivated."

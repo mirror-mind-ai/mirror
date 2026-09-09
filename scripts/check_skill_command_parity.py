@@ -24,6 +24,13 @@ What is checked, and what deliberately is not:
   * NOT CHECKED -- the frontmatter name, the per-runtime Usage sections, or the
     natural-language examples, which are Portuguese in `.pi` and English in the
     others. Those differences are deliberate.
+  * CHECKED (CR072) -- a skill may invoke `uv run python -m memory` only for a
+    command on PYTHON_ALLOWLIST, which names the story that owns each entry.
+    Agreement across copies is necessary but not sufficient: nine skills whose
+    routes already pointed at TypeScript agreed, in all three copies, on calling
+    Python directly -- so the US2-US5 flips reached the extension and the smoke
+    but never the skill a Navigator types. The allowlist shrinks as the owning
+    stories flip; after DS10 it must be empty.
 
 Usage:
     python scripts/check_skill_command_parity.py
@@ -48,6 +55,44 @@ PYTHON = "python"
 # command surface that follows -- `journeys`, `soul load [slug]`, and so on.
 FRONT_DOOR_RE = re.compile(r"ts/src/frontDoor/cli\.ts\s+(?P<rest>.+)$")
 PYTHON_RE = re.compile(r"uv run python -m memory\s+(?P<rest>.+)$")
+
+# CR072: the only commands a skill may still reach through Python, each with the
+# story that owns its port or retirement. Entries are token prefixes of the
+# invocation -- `identity edit` allows exactly that leaf, not `identity set`.
+# A Python invocation that matches no entry fails CI. Remove an entry in the
+# same commit that flips its route; DS10's Skill Invocation Gate requires the
+# list to be empty before Python is deleted.
+PYTHON_ALLOWLIST: dict[str, str] = {
+    "build": "CV22.DS7.US8 (Builder/Ariad tree, unported)",
+    "journal": "CV22.DS7.US11 (content & planning LLM tail, unported)",
+    "identity edit": "CV22.DS7.TS4 (interactive $EDITOR seam, unported)",
+    "runtime update": "CV22.DS10 (updater redesigned under npm)",
+    "runtime pull": "CV22.DS10 (updater redesigned under npm)",
+    "runtime stable": "CV22.DS10 (updater redesigned under npm)",
+    "runtime backup": "CV22.DS10 (updater redesigned under npm)",
+    "runtime release-doctor": "CV22.DS10 (release tooling redesigned under npm)",
+    "runtime release-promote": "CV22.DS10 (release tooling redesigned under npm)",
+}
+
+
+def invocation_tokens(rest: str) -> list[str]:
+    """The command-path tokens of an invocation, stopping at the first argument."""
+    tokens: list[str] = []
+    for token in rest.split():
+        if token.startswith(("-", "<", "[", "$", '"', "'", "`")):
+            break
+        tokens.append(token.rstrip("`"))
+    return tokens
+
+
+def allowlisted(rest: str) -> str | None:
+    """The owning story if this Python invocation is still permitted, else None."""
+    tokens = invocation_tokens(rest)
+    for prefix, owner in PYTHON_ALLOWLIST.items():
+        needed = prefix.split()
+        if tokens[: len(needed)] == needed:
+            return owner
+    return None
 
 
 def command_name(rest: str) -> str:
@@ -76,6 +121,26 @@ def entry_points(path: Path) -> dict[str, set[str]]:
     return found
 
 
+def check_python_allowlist(skill: str, problems: list[str]) -> None:
+    """CR072: every direct Python invocation must name an owner via PYTHON_ALLOWLIST."""
+    copies = {
+        ".pi": PI_ROOT / skill / "SKILL.md",
+        ".claude": CLAUDE_ROOT / skill / "SKILL.md",
+        "plugins/mirror-mind": PLUGIN_ROOT / skill / "SKILL.md",
+    }
+    for label, path in copies.items():
+        if not path.exists():
+            continue
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            match = PYTHON_RE.search(line)
+            if match and allowlisted(match.group("rest")) is None:
+                surface = " ".join(invocation_tokens(match.group("rest"))) or "(bare)"
+                problems.append(
+                    f"{skill}: {label}/SKILL.md:{number} invokes Python for `{surface}`, "
+                    "which is not on PYTHON_ALLOWLIST -- route it through the front door"
+                )
+
+
 def check_byte_identity(skill: str, problems: list[str]) -> None:
     claude = CLAUDE_ROOT / skill / "SKILL.md"
     plugin = PLUGIN_ROOT / skill / "SKILL.md"
@@ -83,9 +148,7 @@ def check_byte_identity(skill: str, problems: list[str]) -> None:
         problems.append(f"{skill}: missing a .claude or plugins/mirror-mind copy")
         return
     if claude.read_bytes() != plugin.read_bytes():
-        problems.append(
-            f"{skill}: .claude and plugins/mirror-mind copies are not byte-identical"
-        )
+        problems.append(f"{skill}: .claude and plugins/mirror-mind copies are not byte-identical")
 
 
 def check_entry_points(skill: str, problems: list[str]) -> None:
@@ -126,6 +189,7 @@ def main() -> int:
     for skill in skills:
         check_byte_identity(skill, problems)
         check_entry_points(skill, problems)
+        check_python_allowlist(skill, problems)
 
     if problems:
         print("skill command parity: DRIFT DETECTED\n")
@@ -134,7 +198,10 @@ def main() -> int:
         print(
             "\nRemediation: a flip must update the invocation in ALL THREE skill copies.\n"
             "Switch the lagging copies to the same entry point `.pi` uses; leave argument\n"
-            "spellings and the Portuguese/English examples alone (CR071)."
+            "spellings and the Portuguese/English examples alone (CR071). A Python\n"
+            "invocation off PYTHON_ALLOWLIST must move to the front door, or -- only if\n"
+            "the command is genuinely unported -- be added to the allowlist WITH its\n"
+            "owning story (CR072)."
         )
         return 1
 

@@ -9,20 +9,20 @@ user-invocable: true
 When receiving `/mm-week` (no arguments):
 
 ```bash
-uv run python -m memory week
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts week
 ```
 
 When receiving `/mm-week plan "<free text>"`:
 
 ```bash
-uv run python -m memory week plan "<free text>"
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts week plan "<free text>"
 ```
 
 This calls an LLM to extract temporal items. After showing the extracted items,
 ask the user to confirm before saving. If confirmed:
 
 ```bash
-uv run python -m memory week save
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts week save
 ```
 
 Present all output to the user without modification.

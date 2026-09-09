@@ -104,5 +104,5 @@ NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts journey 
 When the user says "End the session":
 
 ```bash
-uv run python -m memory mirror log "SESSION_SUMMARY"
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts mirror log "SESSION_SUMMARY"
 ```

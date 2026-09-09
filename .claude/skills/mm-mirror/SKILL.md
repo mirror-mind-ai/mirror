@@ -11,7 +11,7 @@ Use this procedure to answer in Mirror Mode. Automatic routing in `CLAUDE.md` de
 ---
 
 > ⛔ **HARD CONSTRAINT**
-> You must **NEVER** produce a mirror-mode response without first running `uv run python -m memory mirror load`.
+> You must **NEVER** produce a mirror-mode response without first running `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts mirror load`.
 > No exceptions. Not for short answers. Not for clarifying questions. Not when the query seems obvious.
 > **Load first. Always.**
 
@@ -29,10 +29,10 @@ Use this procedure to answer in Mirror Mode. Automatic routing in `CLAUDE.md` de
 
 This is always the first action, before any visible output to the user.
 
-> **Automatic hook:** When the user invokes `/mm:mirror` explicitly, `mirror-inject.sh` already performs the session-aware mirror activation and injects the base context using the Claude hook `session_id`. You should still run `uv run python -m memory mirror load` to satisfy the load-first rule and refresh context, but session routing is hook-owned in Claude Code.
+> **Automatic hook:** When the user invokes `/mm:mirror` explicitly, `mirror-inject.sh` already performs the session-aware mirror activation and injects the base context using the Claude hook `session_id`. You should still run `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts mirror load` to satisfy the load-first rule and refresh context, but session routing is hook-owned in Claude Code.
 
 ```bash
-uv run python -m memory mirror load \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts mirror load \
   --query "full text of the user's prompt" \
   [--persona PERSONA_ID] \
   [--journey JOURNEY_ID] \

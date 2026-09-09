@@ -11,7 +11,7 @@ When receiving `/mm:week`, run according to the arguments.
 ## No Argument: Weekly View
 
 ```bash
-uv run python -m memory week view
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts week view
 ```
 
 Shows current-week tasks and appointments grouped by day.
@@ -26,7 +26,7 @@ Shows current-week tasks and appointments grouped by day.
 ## With Text: Ingest Weekly Plan
 
 ```bash
-uv run python -m memory week plan "TEXTO LIVRE"
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts week plan "TEXTO LIVRE"
 ```
 
 The script extracts items through the LLM and returns JSON with proposed items plus similarity warnings.
@@ -36,7 +36,7 @@ The script extracts items through the LLM and returns JSON with proposed items p
 2. Present extracted items in readable form.
 3. Show similarity warnings if any.
 4. Ask for confirmation before creating items.
-5. After confirmation, run: `uv run python -m memory week save`
+5. After confirmation, run: `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts week save`
 
 Never save automatically without user confirmation.
 
