@@ -729,12 +729,17 @@ const TS_EXPLORE_STORY_ACTIONS = new Set([
   "handoff",
 ]);
 
-// CV22.DS7.US7: Explorer Mode. Default OFF until the flip plateau, so the route
-// can be exercised by the smoke and the Navigator before it reaches a live
-// session. ONE gate for the family, like Soul: a half-flipped lived mode cannot
-// be reviewed.
+// CV22.DS7.US7: Explorer Mode. Flipped 2026-09-09 after the eleven-point
+// checklist went green and the Navigator validated the real home -- nine
+// populated surfaces across three real journeys (`mirror`, `mirror-gui`,
+// `finances`) byte-identical on both engines, including the promoted-story path
+// where an inactive legacy payload must NOT be resurrected.
+//
+// ONE gate for the family, like Soul: Explorer is a single lived mode, and a
+// half-flipped mode cannot be reviewed in a live session. `MIRROR_TS_EXPLORE=0`
+// is the revert control, with no code change and no data migration.
 function exploreGateEnabled(env: RouteEnvironment): boolean {
-  return env.MIRROR_TS_EXPLORE === "1";
+  return env.MIRROR_TS_EXPLORE !== "0";
 }
 
 /** `explore story <action>`, skipping the options argparse strips first. */

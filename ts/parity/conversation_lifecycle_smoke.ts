@@ -841,11 +841,11 @@ check(
 // live in the TRANSITIONS -- open, thicken, attractor, experiment, snapshot,
 // handoff, archive -- not in single renders.
 //
-// The gate is OFF in this build, so `EXPLORE_ON` sets it explicitly (proving
-// the route the flip plateau will make default) and the absence of the variable
-// proves today's shipped default is still Python.
-const EXPLORE_ON = { MIRROR_HOME: home, MIRROR_TS_EXPLORE: "1" };
-const EXPLORE_DEFAULT = { MIRROR_HOME: home };
+// After the 2026-09-09 flip the SHIPPED route is TS with no gate in the
+// environment, so `EXPLORE_ON` sets none: the steps below prove the default
+// rather than a configuration. `EXPLORE_OFF` is the revert control.
+const EXPLORE_ON = { MIRROR_HOME: home };
+const EXPLORE_OFF = { MIRROR_HOME: home, MIRROR_TS_EXPLORE: "0" };
 const exploreJourney = "smoke-explore-journey";
 const exploreProject = join(home, "explore-project");
 
@@ -870,12 +870,13 @@ function exploreStep(label: string, args: string[]): StepResult {
   return result;
 }
 
-// The gate is the shipped default until the flip: no variable, no TS route.
-const exploreDefault = runExplore(["explore", "story", "show", exploreJourney], EXPLORE_DEFAULT);
+// The revert control, exercised before anything else writes: `=0` must take the
+// whole family back to Python with no code change.
+const exploreReverted = runExplore(["explore", "story", "show", exploreJourney], EXPLORE_OFF);
 check(
-  exploreDefault.route === "python",
-  "explore stays on Python without MIRROR_TS_EXPLORE (pre-flip default)",
-  exploreDefault.route,
+  exploreReverted.route === "python",
+  "MIRROR_TS_EXPLORE=0 reverts the whole family to Python",
+  exploreReverted.route,
 );
 
 // A journey with a project path, so the handoff step has somewhere to write.
@@ -1076,7 +1077,7 @@ const exploreHomeFlagTs = runExplore(
 );
 const exploreHomeFlagPython = runExplore(
   ["explore", "story", "show", exploreJourney, "--mirror-home", home],
-  EXPLORE_DEFAULT,
+  EXPLORE_OFF,
 );
 check(exploreHomeFlagTs.status === 0, "TS explore accepts --mirror-home", `${exploreHomeFlagTs.status}`);
 check(

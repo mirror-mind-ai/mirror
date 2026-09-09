@@ -466,13 +466,23 @@ and the whole-exploration smoke.
   Product decision, out of scope here, worth a CR under RS010. (Phone numbers
   are covered — the plan's original claim was wrong.)
 - The handoff directory collision loop is a TOCTOU; reproduced deliberately.
-- **Flaky Python test, found at plateau 6, not US7's:**
+- **A test budget with no headroom, found at plateau 6, not US7's:**
   `tests/unit/memory/web/test_server.py::test_operations_run_api_executes_runtime_diagnose_through_controlled_command`
-  fails intermittently with "Operation run did not finish" — the run is still
-  `running` when the assertion fires. Reproduced on a stashed (clean) tree, so
-  it predates this story, and it passed on the next full run, so it is timing
-  and not a regression. The collaboration strategy requires green CI on every
-  push; an intermittent red undermines exactly that. RS010 candidate.
+  fails locally 2 runs in 3 with "Operation run did not finish".
+
+  Measured rather than guessed: `wait_for_run` polls 40 times at 0.05s, so the
+  budget is **2.00s**, and the subprocess it waits on —
+  `<interpreter> -m memory runtime diagnose` — takes **2.29s, 2.50s, 2.87s** on
+  three consecutive runs on this machine. The budget is not marginally tight;
+  it is below the floor.
+
+  It predates this story (reproduced on a stashed tree) and has NOT failed in
+  CI — the two recent red runs were Biome import ordering, not this. So it is a
+  fixed budget that happens to fit CI's runners and does not fit this one, which
+  means it will start failing for whoever gets a slower machine or a slower
+  `runtime diagnose`. Deliberately not fixed inside the flip commit: it is
+  someone else's test, the repair is a judgement about how long a real
+  subprocess may take, and folding it in would hide it. RS010 candidate.
 - The delegated `journey-projection refresh` subcommand is a contract TS now
   depends on, but it is NOT in the oracle-drift tripwire, because the tripwire
   tracks *ported* oracles and this one is delegated-to. The lifecycle smoke's

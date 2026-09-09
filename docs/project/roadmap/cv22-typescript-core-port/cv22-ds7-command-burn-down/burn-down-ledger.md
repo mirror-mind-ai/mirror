@@ -46,7 +46,7 @@ documented cutoff, not ported). Working denominator: **30** (32 until the
 | **Extraction lifecycle (deterministic core)** | **`conversation-logger`** | **partial** | **DS7.US5** | ✅ **done — 7/15 subcommands flipped** |
 | Extraction lifecycle (composites & LLM tail) | `conversation-logger` remainder | 8/8‡ | DS7.US10 | ✅ done (2026-09-07) — `repair-journeys --apply` route waits for TS1's `backup` |
 | Soul Mode | `soul` | 1/1 | DS7.US6 | ✅ done — flipped 2026-09-08; `harvest save` replay-gated until DS8 |
-| Explorer Mode | `explore` | 0/1 | DS7.US7 | 🔵 in progress — surfaces ported (plateau 1); projection refresh delegated to Python behind a DS10-owned seam |
+| Explorer Mode | `explore` | 1/1 | DS7.US7 | ✅ done — flipped 2026-09-09; `story promote` on Python until US8; projection refresh delegated behind a DS10-owned seam |
 | Builder/Ariad | `build` | 0/1 | DS7.US8 | 🟡 planned |
 | Ops/utility tail | `backup`, `repair-encoding`, `extensions`, `ext`, `welcome`, `journey-projection` (+ `runtime` reads§) | 3/6‡ | DS7.TS1 / TS3 / TS4 / TS5 | 🔵 in progress — TS1 `backup`+`repair-encoding` ✅ flipped 2026-09-07; TS3 `welcome` ✅ flipped 2026-09-08 (+ `runtime` reads as branch coverage); TS4 extension catalog; TS5 `journey-projection` **last** — blocked by the `fcntl.flock` dual-writer window until Python retires |
 
@@ -249,29 +249,30 @@ when US7 reaches it. Recorded in
 
 ## `explore` — per-leaf detail (DS7.US7)
 
-Three subcommands, fourteen leaves, **ported and routed behind
-`MIRROR_TS_EXPLORE`, gate absent by default — NOT yet flipped.** The gate covers
-the family for the same reason Soul's does: Explorer is one lived mode, and a
-half-flipped mode cannot be reviewed in a live session.
+Three subcommands, fourteen leaves, **flipped 2026-09-09**: the family answers
+from TS by default and `MIRROR_TS_EXPLORE=0` is the revert control, with no code
+change and no data migration. The gate covers the family for the same reason
+Soul's does: Explorer is one lived mode, and a half-flipped mode cannot be
+reviewed in a live session.
 
 | Leaf | TS ported | Routed to TS | Note |
 |------|:---------:|:------------:|------|
-| `load` | ✅ | ⏸ gated | mode activation + sticky journey default; calls the PUBLIC sticky writer, not Python's private one |
-| `deactivate` | ✅ | ⏸ gated | — |
-| `story show` | ✅ | ⏸ gated | plain-text context, not a boxed card |
-| `story list` | ✅ | ⏸ gated | active → promoted → archived, then `updated_at DESC` |
-| `story archive` | ✅ | ⏸ gated | deactivates the legacy runtime payload |
-| `story clear` | ✅ | ⏸ gated | archive under the pre-DS8 command's name |
-| `story update` | ✅ | ⏸ gated | `_UNSET` vs explicit clear |
-| `story open` | ✅ | ⏸ gated | — |
-| `story thicken` | ✅ | ⏸ gated | — |
-| `story snapshot` | ✅ | ⏸ gated | — |
-| `story attractors` | ✅ | ⏸ gated | — |
-| `story experiment` | ✅ | ⏸ gated | — |
-| `story handoff` | ✅ | ⏸ gated | writes five documents into the user's project |
+| `load` | ✅ | ✅ flipped | mode activation + sticky journey default; calls the PUBLIC sticky writer, not Python's private one |
+| `deactivate` | ✅ | ✅ flipped | — |
+| `story show` | ✅ | ✅ flipped | plain-text context, not a boxed card |
+| `story list` | ✅ | ✅ flipped | active → promoted → archived, then `updated_at DESC` |
+| `story archive` | ✅ | ✅ flipped | deactivates the legacy runtime payload |
+| `story clear` | ✅ | ✅ flipped | archive under the pre-DS8 command's name |
+| `story update` | ✅ | ✅ flipped | `_UNSET` vs explicit clear |
+| `story open` | ✅ | ✅ flipped | — |
+| `story thicken` | ✅ | ✅ flipped | — |
+| `story snapshot` | ✅ | ✅ flipped | — |
+| `story attractors` | ✅ | ✅ flipped | — |
+| `story experiment` | ✅ | ✅ flipped | — |
+| `story handoff` | ✅ | ✅ flipped | writes five documents into the user's project |
 | `story promote` | ❌ | ❌ **Python, by name** | its tail is Builder `load` — **blocked on US8** |
 
-**11 of 14 leaves reach TS once the gate flips.** `story promote` is not a
+**11 of 14 leaves answer from TS.** `story promote` is not a
 missing port: `cmd_story_promote` ends by calling `build_cli.cmd_load`, so it
 cannot leave Python before the Builder tree does. Its surface renderer
 (`render_no_builder_handoff`) IS ported and graded, so the flip after US8 is a
@@ -298,7 +299,7 @@ and refuses it with argparse's exit 2; the TS route accepts it like every other
 front-door command. The same superset Soul accepted on 2026-09-08, asserted on
 both sides in the smoke so it stays visible.
 
-### Flip checklist (pending Navigator validation)
+### Flip checklist (2026-09-09)
 
 | # | Check | Status |
 |---|-------|--------|
@@ -311,11 +312,33 @@ both sides in the smoke so it stays visible.
 | 7 | Projection refresh proven to publish, and proven NOT to on an unrelated edit | ✅ |
 | 8 | Three `mm-explore` skill copies switched to the front door (12 invocations each) | ✅ |
 | 9 | Oracle-drift tripwire clean with four `explore` oracles registered | ✅ |
-| 10 | **Navigator validation on the real home** (`test-guide.md`) | ⏸ **pending** |
-| 11 | **Gate default on** (`MIRROR_TS_EXPLORE` absent → TS) | ⏸ **pending** |
+| 10 | Navigator validation on the real home | ✅ |
+| 11 | Gate default on (`MIRROR_TS_EXPLORE` absent → TS) | ✅ |
 
-Steps 1–9 are done and committed. Steps 10–11 are the flip, and 11 must not
-precede 10.
+**Navigator validation, 2026-09-09.** Nine comparisons across the three real
+journeys that actually carry Exploratory Stories — `mirror` (active, 3.3 KB
+legacy payload, project path), `mirror-gui` (active, 2.1 KB payload, no project
+path), and `finances` (promoted, payload inactive) — `show`, `list`, and
+`snapshot` on both engines, all byte-identical, on populated surfaces of 13–75
+lines. `finances show` returning the empty card on both engines is the
+promoted-story path: an INACTIVE legacy payload must not be resurrected, and
+neither engine resurrects it. Timing on the real home: TS 0.55s against Python
+0.80s, with the TS path also taking a 49 MB pre-write snapshot.
+
+**The first validation run was void and is recorded because it is the failure
+class this ledger exists to catch.** The sheet's placeholder journey slug was
+left literal, so all three comparisons hit the missing-journey path and printed
+three PASSes for two identical empty responses. The sheet's own "confirm the
+comparison ran something" step caught it — the same defect shape as US6's
+bash-only `read -ra` sheet, arriving through a placeholder instead of a shell
+builtin.
+
+**Not covered by real-home evidence:** the legacy runtime-payload READ fallback.
+All three journeys have durable rows, which win, and `finances`'s payload is
+inactive. The fallback fires only when a durable row is absent while an active
+payload exists, and no journey on the validated home is in that state. It is
+covered by 20 golden scenarios and by nothing else — recorded rather than
+implied.
 
 ---
 
@@ -389,6 +412,7 @@ default route, and the `=0` steps prove the revert.
 | 2026-09-08 | **CV22.DS7.TS3 done.** Validation accepted by the Navigator on the real home and on a live Pi session: `welcome` and `runtime release-notes latest` byte-identical across engines, `runtime diagnose` reporting `Findings: 0` (exit 0) where Python still reports the `017_journey_parent_column` false alarm (exit 1), and `front-door.log` showing every unattended `welcome` on `ts` with zero `fell_back` markers. Debt Review deferred two findings: parity generators leaking the ambient environment into committed artifacts became **CR065**, and the oracle's uncaught `TypeError` on a naive front-door-log timestamp became **CR066**, both under RS010. Coherence found and fixed five authored-state drifts, including the canonical 2026-09-07 decision entry in `docs/project/decisions.md` still calling `latest`/`pending` subcommands. Captured separately after closure: **CR067** under RS001, a refused checkpoint rendering a hardcoded `Implement` stage across four lifecycle commands. DS7 progress 8/14 → 9/14; ops tail 3/6; command denominator 30. |
 | 2026-09-08 | **US6 flipped: the whole `soul` family routes to TS by default.** `MIRROR_TS_SOUL=0` is the revert control and wins over the embedding replay variable. All three `mm-soul` skill copies (`.pi`, `.claude`, `plugins/mirror-mind`) now invoke the front door, 20 invocations each, so the flipped route reaches live sessions rather than only the smoke. `harvest save` remains replay-gated: it is the only leaf crossing the provider seam, and an unconfigured install keeps Python for that leaf alone until DS8. Checklist green with the smoke run with NO gate in its environment (161 checks), eleven write probes, and Navigator validation on the real home. Soul Mode 0/1 -> 1/1; DS7 command denominator 30. |
 | 2026-09-08 | **US6 ported; nothing routed.** The Soul ritual -- 10 subcommands, 17 leaves -- is ported across five plateaus and wired through the front door behind `MIRROR_TS_SOUL`, absent by default. Five golden corpora byte-identical under 3.10/3.12/3.14; three real-DB-copy probes (`soul_state`, `soul_apply`, `soul_harvest_save`); the lifecycle smoke extended to 157 checks running the whole ritual through both engines on one disposable home, byte-identical on every read-only surface. Found and fixed on the way, as a Navigator-authorized scope amendment: US4's `activateOperatingMode` wrote `runtime_sessions.metadata` in JavaScript's JSON dialect where Python writes its own -- invisible because both the mirror-state golden and the write-parity harness compare that column by value, and Soul shares the same row. Found and left for Debt Review: `soul apply` with an unknown `--conversation-id` raises `sqlite3.IntegrityError` through a CLI that catches only `ValueError`; and Python's `soul` parser accepts no `--mirror-home`. |
+| 2026-09-09 | **US7 flipped: the whole `explore` family routes to TS by default.** `MIRROR_TS_EXPLORE=0` is the revert control and wins over everything. All three `mm-explore` skill copies (`.pi`, `.claude`, `plugins/mirror-mind`) already entered through the front door before the flip — 12 invocations each, behavior-preserving while the gate was off — so the flip changed one predicate rather than 36 call sites and the engine at once. **11 of 14 leaves answer from TS**; `story promote` stays on Python by name until US8 owns Builder `load`, and its surface renderer is already ported and graded so that flip is a route entry and nothing else. Checklist green with the smoke run with NO gate in its environment (200 checks), two write probes, and Navigator validation on the real home: nine populated surfaces across `mirror`, `mirror-gui`, and `finances`, byte-identical on both engines, including the promoted-story path where an inactive legacy payload must not be resurrected. Explorer Mode 0/1 → 1/1; DS7 command denominator 30. |
 | 2026-09-09 | **US7 ported behind `MIRROR_TS_EXPLORE`; nothing routed.** Explorer Mode — 3 subcommands, 14 leaves — is ported across five plateaus and wired through the front door behind a gate that is **absent by default**. Three golden corpora (52 surface scenarios, 12 story-state families, 35 redaction rows + 10 artifact writes) byte-identical under 3.10 and 3.12; two real-DB-copy probes (`explorer_story`, `explorer_handoff`, the latter grading FILESYSTEM state on a scratch project); the lifecycle smoke extended to 200 checks running a whole exploration — open, thicken, attractors, experiment, snapshot, handoff, list, archive, load — through the front door on one disposable home. **11 of 14 leaves reach TS.** `story promote` is refused by name (its tail is Builder `load`, US8); the two-level allowlist refuses an unknown subcommand and an unknown `story` action separately, because `explore` is the first family with a nested subparser. Found and fixed by the smoke on its first run: the projection seam resolved `--mirror-home` only from the command line, so under an ambient `MIRROR_HOME` — how every real runtime invokes it — it silently stopped publishing. Best-effort delegation means a broken seam is invisible, which is why the smoke asserts the published `operational.json` rather than a log line. Recorded divergence, same as Soul's: Python's `explore` parser refuses `--mirror-home` with argparse's exit 2 where the TS route accepts it. |
 | 2026-09-09 | **Reorder reversed the same session: projection publication stays Python-owned until retirement; US7 resumes.** The dependency in the entry below is real, but the remedy was chosen before reading the subsystem's concurrency contract. `docs/product/architecture.md` states projection publication is *linearizable per Journey* through one cross-process lock; that lock is `filelock.FileLock` → `fcntl.flock` on `.mirror/projections/.publication.lock`. **Node has no `flock` in core**, and mkdir-based JavaScript lock libraries do not exclude against `fcntl.flock` at all, so a TS publisher and the Python publisher would write the same tree with no mutual exclusion for the entire transition — breaking the merge-after-lock manifest guarantee in a git-tracked directory. After Python is deleted there is one writer and no problem, so an early port buys nothing and costs a concurrency hole. Decision: publication stays Python-owned; TS5 keeps its identity but returns to the ops tail as its **last** item; US7 and later US8 request the refresh through one named Python seam that DS10 deletes with the rest. Needs a small `journey-projection` subcommand carrying coordinator semantics, because `rebuild-operational` always publishes where the coordinator skips an unchanged digest (probe: `status='unchanged'` on the second consecutive write) — Python surface knowingly added to a component being retired. US7 resumes at plateau 2 with a Navigator-authorized Scope B amendment. Denominators unchanged: 15 stories, 30 commands. |
 | 2026-09-09 | *(superseded by the entry above the same day — evidence retained)* **DS7 reordered: the Journey projection seam moves ahead of Explorer and the Builder tree.** US7 plateau 1 landed (`d469a8f`) — the eleven Explorer Story renderers and the `△ EXPLORER MODE ACTIVE` card, 52 scenarios generated from Python, 54 tests green, `surfaces/explorer_story.py` on the drift tripwire, nothing routed. Reading terrain for plateau 2 found that **every Explorer Story write calls `store.request_projection_refresh(journey)`**, which compiles and publishes an Ariad operational projection into the user's project: a hermetic probe showed one `update_explorer_story` creating `.mirror/projections/ariad/operational.json`, `current.json`, a receipt, and the publication lock where nothing existed before. The subsystem is 2,221 lines under `src/memory/journey_projections/`, assigned to TS4 — scheduled *after* US7. The callers make the inversion explicit: `request_projection_refresh` has exactly two producer families, `services/explorer_story.py` (3 sites, US7) and `builder/` (20 sites, US8), and both were scheduled before the story that owns the seam. Navigator chose to split the projection contract out of TS4 into **TS5** and port it first, over absorbing 2,221 lines into US7, half-flipping Explorer to its read-only leaves, shelling into Python per write, or accepting silent projection staleness — the last being the `conversations append` class (CR055) the ledger exists to prevent. US7 pauses at its plateau-1 boundary with a written [handoff](cv22-ds7-us7-explorer-mode/handoff.md); its approved plan needs one Scope B addition on resume, the `_projected_story` change-detection comparison. Story denominator 14 → 15; command denominator unchanged at 30, since `journey-projection` was already counted in the ops tail. |
