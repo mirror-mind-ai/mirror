@@ -27,12 +27,12 @@ Use these commands to inspect and edit identity directly — no YAML files neede
 List all identity entries currently stored in the database.
 
 ```bash
-uv run python -m memory identity list [--layer LAYER] [--mirror-home PATH]
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity list [--layer LAYER] [--mirror-home PATH]
 ```
 
 **Examples:**
-- `uv run python -m memory identity list` — all entries
-- `uv run python -m memory identity list --layer ego` — only ego layer
+- `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity list` — all entries
+- `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity list --layer ego` — only ego layer
 
 Layers: `self`, `ego`, `user`, `organization`, `persona`, `journey`, `journey_path`
 
@@ -43,13 +43,13 @@ Layers: `self`, `ego`, `user`, `organization`, `persona`, `journey`, `journey_pa
 Print the full content of one identity entry.
 
 ```bash
-uv run python -m memory identity get <layer> <key> [--mirror-home PATH]
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity get <layer> <key> [--mirror-home PATH]
 ```
 
 **Examples:**
-- `uv run python -m memory identity get ego behavior`
-- `uv run python -m memory identity get self soul`
-- `uv run python -m memory identity get persona engineer`
+- `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity get ego behavior`
+- `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity get self soul`
+- `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity get persona engineer`
 
 ---
 
@@ -58,14 +58,14 @@ uv run python -m memory identity get <layer> <key> [--mirror-home PATH]
 Update identity content directly in the database.
 
 ```bash
-uv run python -m memory identity set <layer> <key> --content "..." [--mirror-home PATH]
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity set <layer> <key> --content "..." [--mirror-home PATH]
 ```
 
 If `--content` is omitted, content is read from stdin.
 
 **Examples:**
-- `uv run python -m memory identity set ego behavior --content "Be direct."`
-- `cat new-soul.md | uv run python -m memory identity set self soul`
+- `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity set ego behavior --content "Be direct."`
+- `cat new-soul.md | NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity set self soul`
 
 ---
 

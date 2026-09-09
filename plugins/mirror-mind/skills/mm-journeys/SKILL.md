@@ -9,7 +9,7 @@ user-invocable: true
 When receiving `/mm:journeys`, run:
 
 ```bash
-uv run python -m memory journeys
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts journeys
 ```
 
 The script prints a compact hierarchical journey list, including parent/child indentation when configured. Present the result to the user without modification so the hierarchy remains intact.

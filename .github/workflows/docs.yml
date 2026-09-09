@@ -7,6 +7,7 @@ on:
       - "docs/**"
       - "**.md"
       - "scripts/check_doc_links.py"
+      - "scripts/check_skill_command_parity.py"
       - "src/memory/docs_lint.py"
   pull_request:
     branches: [main]
@@ -14,6 +15,7 @@ on:
       - "docs/**"
       - "**.md"
       - "scripts/check_doc_links.py"
+      - "scripts/check_skill_command_parity.py"
       - "src/memory/docs_lint.py"
 
 permissions:
@@ -45,3 +47,13 @@ jobs:
 
       - name: Check documentation links and anchors
         run: uv run python scripts/check_doc_links.py
+
+      # Fails when a strangler flip updates the invocation in one runtime's
+      # skill copy and not the others (CR071). By 2026-09-09 eleven skills had
+      # drifted this way -- reaching the front door on Pi while still calling
+      # `uv run python -m memory` on Claude Code and the published plugin, for
+      # commands flipped as far back as DS3. Nothing failed, because Python
+      # answered correctly; the claim "answers from TS" was simply untrue for
+      # two of three runtimes, and DS10 deletes the module those copies invoke.
+      - name: Check skill command parity across runtime copies
+        run: uv run python scripts/check_skill_command_parity.py

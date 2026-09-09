@@ -9,7 +9,7 @@ user-invocable: true
 When receiving `/mm:recall <id>`, run:
 
 ```bash
-uv run python -m memory recall CONV_ID [--limit N]
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts recall CONV_ID [--limit N]
 ```
 
 `CONV_ID` can be the full ID or only its prefix, such as `a3b2c1d4`.

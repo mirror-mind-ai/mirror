@@ -96,7 +96,7 @@ Follow the project's existing documentation structure. Do not create a generic d
 If the journey does not yet have an associated project:
 
 ```bash
-uv run python -m memory journey set-path <slug> /path/to/project
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts journey set-path <slug> /path/to/project
 ```
 
 ## 6. Finalize Session

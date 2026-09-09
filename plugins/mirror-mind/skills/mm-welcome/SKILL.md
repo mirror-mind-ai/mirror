@@ -9,7 +9,7 @@ user-invocable: true
 When receiving `/mm:welcome`, run:
 
 ```bash
-uv run python -m memory welcome
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts welcome
 ```
 
 Show the user the output verbatim. The welcome is a short, state-aware

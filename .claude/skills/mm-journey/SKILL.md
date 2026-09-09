@@ -11,7 +11,7 @@ Use `/mm:journey` or `/mm:journey reflexo` to inspect journey status.
 ## 1. Load Status
 
 ```bash
-uv run python -m memory journey [JOURNEY]
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts journey [JOURNEY]
 ```
 
 If `$ARGUMENTS` was passed, use it as the journey name. Otherwise the script loads all journeys.
@@ -27,11 +27,11 @@ Combine the script output into a clear view of current progress.
 If the journey path appears outdated relative to recent conversations and memories, suggest an update. After user confirmation:
 
 ```bash
-uv run python -m memory journey update JOURNEY "UPDATED_CONTENT"
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts journey update JOURNEY "UPDATED_CONTENT"
 ```
 
 For long content, use stdin:
 
 ```bash
-echo "CONTENT" | uv run python -m memory journey update JOURNEY -
+echo "CONTENT" | NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts journey update JOURNEY -
 ```

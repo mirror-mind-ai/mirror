@@ -19,13 +19,13 @@ Use when the user asks any natural-language variant of:
 For the latest release note:
 
 ```bash
-uv run python -m memory runtime release-notes latest
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime release-notes latest
 ```
 
 For a specific version:
 
 ```bash
-uv run python -m memory runtime release-notes vX.Y.Z
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime release-notes vX.Y.Z
 ```
 
 Show the output verbatim. Do not summarize unless the user explicitly asks for a shorter explanation.

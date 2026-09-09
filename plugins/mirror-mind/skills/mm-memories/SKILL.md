@@ -9,7 +9,7 @@ user-invocable: true
 When receiving `/mm:memories`, run:
 
 ```bash
-uv run python -m memory memories [--type TYPE] [--layer LAYER] [--journey ID] [--limit N] [--search QUERY]
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts memories [--type TYPE] [--layer LAYER] [--journey ID] [--limit N] [--search QUERY]
 ```
 
 If `$ARGUMENTS` contains a type, use it as `--type`.

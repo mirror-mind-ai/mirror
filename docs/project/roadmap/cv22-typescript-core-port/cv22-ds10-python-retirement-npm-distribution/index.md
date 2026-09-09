@@ -53,6 +53,33 @@ This gate does not require provider authors to use JavaScript. Extensions may ow
 executable runtime; the Mirror core must not own Python as their permanent compatibility
 layer.
 
+## Skill Invocation Gate
+
+Python deletion is not only a code question: **the skills invoke it by name.**
+
+[CR071](../../../refinement/rs010-cv22-oracle-and-port-hygiene/cr071-collapse-the-triplicated-skill-command-references.md)
+found on 2026-09-09 that eleven skills reached the front door on Pi while still
+calling `uv run python -m memory` directly on Claude Code and the published
+plugin — including `journeys`, flipped in DS3. The invocations were repaired and
+`scripts/check_skill_command_parity.py` now fails CI when a flip updates one
+copy and not the others.
+
+That check guarantees the three copies AGREE. It does not guarantee they have
+stopped calling Python, and after DS10 they must. Before Python retirement or
+npm publication, DS10 must:
+
+1. confirm no skill copy in any runtime invokes `uv run python -m memory`, in
+   any of `.pi/skills/`, `.claude/skills/`, or `plugins/mirror-mind/skills/`;
+2. give the parity check a second assertion — the Python entry point is not
+   merely consistent, it is absent — or replace it with that assertion;
+3. verify the packaged plugin's invocation form resolves for an installed user,
+   not only inside a runtime clone.
+
+The residue at the time of writing is `mm-build` (the whole Ariad lifecycle,
+unported until DS7.US8) and `mm-identity`'s `identity edit`, which spawns
+`$EDITOR` and is an interactive seam kept on Python by design. Both need an
+explicit answer here, not an assumption that the burn-down covered them.
+
 ## Journey Projection Refresh Seam Deletion Gate
 
 The [2026-09-09 decision](../../../decisions.md#journey-projection-publication-stays-python-owned-until-the-retirement-window)
