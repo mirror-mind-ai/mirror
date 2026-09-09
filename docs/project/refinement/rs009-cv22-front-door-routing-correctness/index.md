@@ -37,3 +37,4 @@ inherit a TS route it was never ported into.
 - [CR059 — Route the Pi extension and Gemini hook calls through the front door](cr059-route-extension-and-hook-calls-through-the-front-door.md)
 - [CR064 — Log the engine that answered, not the engine that was chosen](cr064-log-the-engine-that-answered-not-the-engine-that-was-chosen.md)
 - [CR068 — Stop reporting unported LLM-gated leaves as burned down](cr068-stop-reporting-unported-llm-gated-leaves-as-burned-down.md)
+- [CR072 — Route every skill through the front door](cr072-route-every-skill-through-the-front-door.md)
