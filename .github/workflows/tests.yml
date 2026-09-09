@@ -77,6 +77,7 @@ jobs:
           uv run python ts/parity/generate_soul_harvest_golden.py
           uv run python ts/parity/generate_explorer_surface_golden.py
           uv run python ts/parity/generate_explorer_story_golden.py
+          uv run python ts/parity/generate_explorer_handoff_golden.py
           git diff --exit-code ts/test/goldens/
         env:
           MEMORY_ENV: test
@@ -204,7 +205,7 @@ jobs:
           for probe in reinforcement journey identity conversation_logger \
                        close_tail session_composites journey_repair_apply \
                        repair_encoding soul_state soul_apply soul_harvest_save \
-                       explorer_story; do
+                       explorer_story explorer_handoff; do
             uv run python ts/parity/write_parity.py \
               --source-db tmp/parity/demo-memory.db --probe "$probe" \
               --work-dir "tmp/parity/write-$probe"

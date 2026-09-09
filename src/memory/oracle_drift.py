@@ -177,6 +177,12 @@ ORACLE_PATHS: tuple[str, ...] = (
     # ts/src/explorer/story.ts.
     "src/memory/services/explorer_story.py",
     "src/memory/storage/explorer_stories.py",
+    # DS7.US7 plateau 3: the handoff artifacts. This one writes into the USER'S
+    # OWN PROJECT, so `_obfuscate_sensitive_text` is a security boundary rather
+    # than a formatting detail: a pattern weakened here and not copied across
+    # leaks a real key into a file the user commits. Ported into
+    # ts/src/explorer/handoff.ts.
+    "src/memory/services/explorer_handoff.py",
 )
 
 BASELINE_RELPATH = "ts/parity/oracle-baseline.json"

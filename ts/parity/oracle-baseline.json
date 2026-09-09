@@ -39,6 +39,7 @@
     "src/memory/services/attachment.py": "5c2b1c02133a70995cd3c7016eebb5eaef6ed285",
     "src/memory/services/conversation.py": "a17daac52458b4a539839f5b739d4c8ac1cc674e",
     "src/memory/services/conversation_append.py": "31137be081a66d1a5c9900f5334fc7d9b22b42e2",
+    "src/memory/services/explorer_handoff.py": "0d6dfd0b98174b13079db32c0e9ad3f29c746256",
     "src/memory/services/explorer_story.py": "b25f705c2931e4fadaee70bd3731be09ed0eeead",
     "src/memory/services/identity.py": "926f0a3f747e3363dc94190d4dca62ae7bc4a71e",
     "src/memory/services/journey.py": "2b35fc62bab71c9c5c8d303cb3ce700c5e8bd3b1",

@@ -217,10 +217,14 @@ API, and any change to what the projection contains. Those are TS5's.
 - **No `story promote` flip.** It is refused to Python by name until US8 owns
   Builder `load`. TS does not shell out to Python to complete the tail — that
   would create a cross-language call DS10 must then delete.
-- **No obfuscation improvement.** The four patterns are ported at their current
-  strength, including their known gaps (`/home/...`, bearer tokens, phone
-  numbers). Strengthening them is a product decision and a CR, and it would
-  break parity if done here.
+- **No obfuscation improvement.** The patterns are ported at their current
+  strength, including their known gaps (`/home/...`, bearer tokens without an
+  `=`). Strengthening them is a product decision and a CR, and it would break
+  parity if done here.
+  *(Corrected at plateau 3: the plan said "four patterns" and listed phone
+  numbers as a gap. There are **five**, and the fifth is a phone-number pattern
+  — `\b(?:\+?\d[\d .()-]{8,}\d)\b`. The claim was written from the terrain read
+  rather than from the code, and the golden corrected it.)*
 - **No CR071 payment.** The three skill copies are updated, not deduplicated.
   Deduplication is CR071's, due before US8.
 - **No exploration-document schema change.** The five handoff documents keep
@@ -446,8 +450,9 @@ and the whole-exploration smoke.
   across three `mm-explore` copies. Reinforces the CR; does not resolve it.
 - Python's `cmd_load` importing `_persist_global_sticky_defaults`, a private of
   `memory.skills.mirror` — same finding US6 recorded for `soul`.
-- The obfuscation patterns miss `/home/...`, bearer tokens, and phone numbers.
-  Product decision, out of scope here, worth a CR under RS010.
+- The obfuscation patterns miss `/home/...` and bearer tokens without an `=`.
+  Product decision, out of scope here, worth a CR under RS010. (Phone numbers
+  are covered — the plan's original claim was wrong.)
 - The handoff directory collision loop is a TOCTOU; reproduced deliberately.
 
 ## Stop Conditions

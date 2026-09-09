@@ -1,0 +1,635 @@
+{
+  "artifacts": [
+    {
+      "documents": {
+        "docs/project/explorations/a-first-exploration/exploratory-story.md": "# Exploratory Story: A first exploration\n\n## Source\n\n- Journey: `probe-journey`\n- Story id: `not recorded`\n- Mode: Explorer Mode\n\n## Continuous Thickening Narrative\n\n_No continuous thickening narrative recorded._\n\n## Current Exploratory Story\n\n_No story text recorded._\n\n## Narrative Summary\n\n_No narrative summary recorded._\n\n## Last Story Card\n\n_No last story card recorded._\n\n## Attractors\n\n_No attractors recorded._\n\n## Experiment Proposal\n\n_No experiment proposal recorded._\n\n## What Changed Through Exploration\n\nThis section should preserve the evolution of the exploration: the original question, the meaningful pivots, the corrections that changed the story, and the current point of promotion. If this document was generated from a short runtime summary, Builder should ask the Navigator whether more conversation evidence must be folded in before roadmap work starts.\n",
+        "docs/project/explorations/a-first-exploration/handoff-info.md": "# Handoff Info: A first exploration\n\n## Handoff Summary\n\n_No handoff summary recorded._\n\n## Handoff Completeness Checklist\n\n- [ ] continuous exploratory thickening\n- [ ] source evidence list\n- [ ] surfaces and story state\n- [ ] phases or evolution narrative\n- [ ] examples or simulations\n- [ ] product decisions\n- [ ] user conversation flows\n- [x] transition rules\n- [x] risks\n- [x] boundaries\n- [x] open questions\n- [x] what Builder should preserve\n- [x] what Builder should not assume\n\nMissing or weak evidence before Builder should treat this as complete:\n- continuous exploratory thickening\n- source evidence list\n- surfaces and story state\n- phases or evolution narrative\n- examples or simulations\n- product decisions\n- user conversation flows\n\n## What Builder Should Preserve\n\n- The exploration is not only a feature request. It carries discovery context and product judgment.\n- The attractor and experiment proposal should guide Builder's first roadmap framing.\n- The product design proposal should be translated into roadmap/story docs only after Builder reads the project.\n\n## Risks\n\n- Builder may over-treat exploratory material as settled delivery scope.\n- Builder may flatten open questions into implementation assumptions.\n- Builder may focus on mechanism before preserving the user-facing product shape.\n\n## Open Questions\n\n- Which parts of this exploration should become roadmap stories?\n- What validation route proves the product behavior externally?\n- What should remain outside the first delivery slice?\n\n## Boundaries\n\n- This handoff is not a delivery plan.\n- Builder must still read the project, create or update roadmap/story docs, and validate with the Navigator.\n- Explorer preserved uncertainty; Builder should not erase it prematurely.\n\n## Non-Assumptions\n\n- Do not assume implementation architecture from this handoff.\n- Do not assume all open questions are in scope.\n- Do not assume the experiment proposal has already been validated.\n\n## Attractors\n\n_No attractors recorded._\n\n## Experiment Status\n\n_No experiment proposal recorded._\n\n## Promotion Boundary\n\nBuilder executes only after explicit confirmation from the Navigator.\n",
+        "docs/project/explorations/a-first-exploration/index.md": "# Exploration Handoff: A first exploration\n\n## Editorial Synthesis\n\n_No editorial synthesis recorded._\n\n## Durable Story\n\n- Story id: `not recorded`\n- Journey: `probe-journey`\n- Status: `active`\n\n## Source Evidence\n\n_No source conversations were attached to this handoff._\n\n## What Was Decided\n\n_No decided product direction recorded._\n\n## Transfer Documents\n\n- [Exploratory Story](exploratory-story.md): discovery narrative and continuous thickening.\n- [Handoff Info](handoff-info.md): risks, open questions, boundaries, and non-assumptions for Builder.\n- [Product Design Proposal](product-design-proposal.md): user-facing product behavior, without implementation detail.\n- Full conversation evidence was not included in this handoff.\n\n## Current Attractors\n\n_No attractors recorded._\n\n## Current Experiment Proposal\n\n_No experiment proposal recorded._\n\n## Builder Reading Order\n\nRead this `index.md` first, then `exploratory-story.md`, then `handoff-info.md`, then `product-design-proposal.md`. If `full-conversation.md` exists, read it as source evidence, not as a delivery plan. Treat the set as exploration output, not as a completed delivery plan.\n",
+        "docs/project/explorations/a-first-exploration/product-design-proposal.md": "# Product Design Proposal: A first exploration\n\n## Product Intent\n\n_No product intent summary recorded._\n\n## User-Facing Behavior\n\n_No current story recorded._\n\n## What The Product Should Feel Like\n\nThe product should preserve the exploratory shape discovered by Explorer Mode. It should show the user what is happening at the product level, not expose implementation mechanics first.\n\n## Interaction Flow\n\n- User works in Explorer Mode while uncertainty is still alive.\n- Explorer surfaces story changes visibly.\n- Explorer names attractors and proposes small experiments.\n- Explorer proposes Builder handoff only when the user asks or confirms readiness.\n- Builder begins only after explicit confirmation.\n\n## Product-Level States\n\n- Exploratory Story active.\n- Attractor proposed or accepted.\n- Experiment proposal proposed or accepted.\n- Builder handoff proposed.\n\n## Acceptance Behavior\n\n- The user can understand what is being proposed without reading implementation details.\n- The proposal preserves uncertainty and open questions.\n- The proposal gives Builder enough product shape to create roadmap or story plans.\n\n## Explicit Non-Goals\n\n- This document does not define implementation architecture.\n- This document does not create delivery tasks by itself.\n- This document does not replace Builder planning.\n\n## Open Product Questions\n\n- Which behavior is necessary for the first delivery slice?\n- What should remain exploratory after Builder starts?\n- What user validation will prove the product behavior works?\n"
+      },
+      "editorial_synthesis": null,
+      "handoff": {
+        "artifact_dir": "docs/project/explorations/a-first-exploration",
+        "exploratory_story_path": "docs/project/explorations/a-first-exploration/exploratory-story.md",
+        "full_conversation_path": null,
+        "handoff_info_path": "docs/project/explorations/a-first-exploration/handoff-info.md",
+        "index_path": "docs/project/explorations/a-first-exploration/index.md",
+        "product_design_proposal_path": "docs/project/explorations/a-first-exploration/product-design-proposal.md",
+        "readiness": "proposed",
+        "summary": null,
+        "title": "A first exploration"
+      },
+      "include_full_conversation": false,
+      "name": "minimal_story",
+      "pre_existing": [],
+      "sources": [],
+      "story": {
+        "attractors": [],
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": null,
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "status": "active",
+        "title": null
+      },
+      "summary": null,
+      "title": "A first exploration"
+    },
+    {
+      "documents": {
+        "docs/project/explorations/parity-is-a-rendering-problem/exploratory-story.md": "# Exploratory Story: Parity is a rendering problem\n\n## Source\n\n- Journey: `probe-journey`\n- Story id: `01J0STORY`\n- Mode: Explorer Mode\n\n## Continuous Thickening Narrative\n\nThe wall was never the database.\n\n## Current Exploratory Story\n\nParity is cheap to claim and expensive to prove.\n\n## Narrative Summary\n\nTwo cores, one database, one denominator nobody trusts.\n\n## Last Story Card\n\nThe oracle moved while we were reading it.\n\n## Attractors\n\n- **grade the surface, not the intent** (`accepted`)\n  - every verbatim card becomes a golden ✦\n- **one gate per lived mode** (`proposed`)\n\n## Experiment Proposal\n\n**port one ritual command end to end** (`proposed`)\n\nsmall enough to finish, whole enough to learn the shape\n\n## What Changed Through Exploration\n\nThis section should preserve the evolution of the exploration: the original question, the meaningful pivots, the corrections that changed the story, and the current point of promotion. If this document was generated from a short runtime summary, Builder should ask the Navigator whether more conversation evidence must be folded in before roadmap work starts.\n",
+        "docs/project/explorations/parity-is-a-rendering-problem/handoff-info.md": "# Handoff Info: Parity is a rendering problem\n\n## Handoff Summary\n\nEnough shape to plan, not enough to commit.\n\n## Handoff Completeness Checklist\n\n- [x] continuous exploratory thickening\n- [x] source evidence list\n- [x] surfaces and story state\n- [x] phases or evolution narrative\n- [ ] examples or simulations\n- [x] product decisions\n- [ ] user conversation flows\n- [x] transition rules\n- [x] risks\n- [x] boundaries\n- [x] open questions\n- [x] what Builder should preserve\n- [x] what Builder should not assume\n\nMissing or weak evidence before Builder should treat this as complete:\n- examples or simulations\n- user conversation flows\n\n## What Builder Should Preserve\n\n- The exploration is not only a feature request. It carries discovery context and product judgment.\n- The attractor and experiment proposal should guide Builder's first roadmap framing.\n- The product design proposal should be translated into roadmap/story docs only after Builder reads the project.\n\n## Risks\n\n- Builder may over-treat exploratory material as settled delivery scope.\n- Builder may flatten open questions into implementation assumptions.\n- Builder may focus on mechanism before preserving the user-facing product shape.\n\n## Open Questions\n\n- Which parts of this exploration should become roadmap stories?\n- What validation route proves the product behavior externally?\n- What should remain outside the first delivery slice?\n\n## Boundaries\n\n- This handoff is not a delivery plan.\n- Builder must still read the project, create or update roadmap/story docs, and validate with the Navigator.\n- Explorer preserved uncertainty; Builder should not erase it prematurely.\n\n## Non-Assumptions\n\n- Do not assume implementation architecture from this handoff.\n- Do not assume all open questions are in scope.\n- Do not assume the experiment proposal has already been validated.\n\n## Attractors\n\n- **grade the surface, not the intent** (`accepted`)\n  - every verbatim card becomes a golden ✦\n- **one gate per lived mode** (`proposed`)\n\n## Experiment Status\n\n**port one ritual command end to end** (`proposed`)\n\nsmall enough to finish, whole enough to learn the shape\n\n## Promotion Boundary\n\nBuilder executes only after explicit confirmation from the Navigator.\n",
+        "docs/project/explorations/parity-is-a-rendering-problem/index.md": "# Exploration Handoff: Parity is a rendering problem\n\n## Editorial Synthesis\n\nThe wall was never the database.\n\n## Durable Story\n\n- Story id: `01J0STORY`\n- Journey: `probe-journey`\n- Status: `active`\n\n## Source Evidence\n\n- `c1` — Where parity breaks (origin)\n- `c2` — Untitled conversation (source evidence)\n\n## What Was Decided\n\nParity is cheap to claim and expensive to prove.\n\nTwo cores, one database, one denominator nobody trusts.\n\n## Transfer Documents\n\n- [Exploratory Story](exploratory-story.md): discovery narrative and continuous thickening.\n- [Handoff Info](handoff-info.md): risks, open questions, boundaries, and non-assumptions for Builder.\n- [Product Design Proposal](product-design-proposal.md): user-facing product behavior, without implementation detail.\n- Full conversation evidence was not included in this handoff.\n\n## Current Attractors\n\n- **grade the surface, not the intent** (`accepted`)\n  - every verbatim card becomes a golden ✦\n- **one gate per lived mode** (`proposed`)\n\n## Current Experiment Proposal\n\n**port one ritual command end to end** (`proposed`)\n\nsmall enough to finish, whole enough to learn the shape\n\n## Builder Reading Order\n\nRead this `index.md` first, then `exploratory-story.md`, then `handoff-info.md`, then `product-design-proposal.md`. If `full-conversation.md` exists, read it as source evidence, not as a delivery plan. Treat the set as exploration output, not as a completed delivery plan.\n",
+        "docs/project/explorations/parity-is-a-rendering-problem/product-design-proposal.md": "# Product Design Proposal: Parity is a rendering problem\n\n## Product Intent\n\nEnough shape to plan, not enough to commit.\n\n## User-Facing Behavior\n\nParity is cheap to claim and expensive to prove.\n\n## What The Product Should Feel Like\n\nThe product should preserve the exploratory shape discovered by Explorer Mode. It should show the user what is happening at the product level, not expose implementation mechanics first.\n\n## Interaction Flow\n\n- User works in Explorer Mode while uncertainty is still alive.\n- Explorer surfaces story changes visibly.\n- Explorer names attractors and proposes small experiments.\n- Explorer proposes Builder handoff only when the user asks or confirms readiness.\n- Builder begins only after explicit confirmation.\n\n## Product-Level States\n\n- Exploratory Story active.\n- Attractor proposed or accepted.\n- Experiment proposal proposed or accepted.\n- Builder handoff proposed.\n\n## Acceptance Behavior\n\n- The user can understand what is being proposed without reading implementation details.\n- The proposal preserves uncertainty and open questions.\n- The proposal gives Builder enough product shape to create roadmap or story plans.\n\n## Explicit Non-Goals\n\n- This document does not define implementation architecture.\n- This document does not create delivery tasks by itself.\n- This document does not replace Builder planning.\n\n## Open Product Questions\n\n- Which behavior is necessary for the first delivery slice?\n- What should remain exploratory after Builder starts?\n- What user validation will prove the product behavior works?\n"
+      },
+      "editorial_synthesis": "The wall was never the database.",
+      "handoff": {
+        "artifact_dir": "docs/project/explorations/parity-is-a-rendering-problem",
+        "exploratory_story_path": "docs/project/explorations/parity-is-a-rendering-problem/exploratory-story.md",
+        "full_conversation_path": null,
+        "handoff_info_path": "docs/project/explorations/parity-is-a-rendering-problem/handoff-info.md",
+        "index_path": "docs/project/explorations/parity-is-a-rendering-problem/index.md",
+        "product_design_proposal_path": "docs/project/explorations/parity-is-a-rendering-problem/product-design-proposal.md",
+        "readiness": "proposed",
+        "summary": "Enough shape to plan, not enough to commit.",
+        "title": "Parity is a rendering problem"
+      },
+      "include_full_conversation": false,
+      "name": "full_story_with_sources",
+      "pre_existing": [],
+      "sources": [
+        {
+          "conversation_id": "c1",
+          "messages": [],
+          "role": "origin",
+          "title": "Where parity breaks"
+        },
+        {
+          "conversation_id": "c2",
+          "messages": [],
+          "role": "source evidence",
+          "title": null
+        }
+      ],
+      "story": {
+        "attractors": [
+          {
+            "description": "every verbatim card becomes a golden ✦",
+            "label": "grade the surface, not the intent",
+            "status": "accepted"
+          },
+          {
+            "description": null,
+            "label": "one gate per lived mode",
+            "status": "proposed"
+          }
+        ],
+        "current_exploratory_story": "Parity is cheap to claim and expensive to prove.",
+        "experiment_proposal": {
+          "description": "small enough to finish, whole enough to learn the shape",
+          "status": "proposed",
+          "title": "port one ritual command end to end"
+        },
+        "id": "01J0STORY",
+        "journey": "probe-journey",
+        "last_story_card": "The oracle moved while we were reading it.",
+        "narrative_field_summary": "Two cores, one database, one denominator nobody trusts.",
+        "status": "active",
+        "title": "A title"
+      },
+      "summary": "Enough shape to plan, not enough to commit.",
+      "title": "Parity is a rendering problem"
+    },
+    {
+      "documents": {
+        "docs/project/explorations/with-transcript-evidence/exploratory-story.md": "# Exploratory Story: With transcript evidence\n\n## Source\n\n- Journey: `probe-journey`\n- Story id: `01J0STORY`\n- Mode: Explorer Mode\n\n## Continuous Thickening Narrative\n\nTwo cores, one database, one denominator nobody trusts.\n\n## Current Exploratory Story\n\nParity is cheap to claim and expensive to prove.\n\n## Narrative Summary\n\nTwo cores, one database, one denominator nobody trusts.\n\n## Last Story Card\n\nThe oracle moved while we were reading it.\n\n## Attractors\n\n- **grade the surface, not the intent** (`accepted`)\n  - every verbatim card becomes a golden ✦\n- **one gate per lived mode** (`proposed`)\n\n## Experiment Proposal\n\n**port one ritual command end to end** (`proposed`)\n\nsmall enough to finish, whole enough to learn the shape\n\n## What Changed Through Exploration\n\nThis section should preserve the evolution of the exploration: the original question, the meaningful pivots, the corrections that changed the story, and the current point of promotion. If this document was generated from a short runtime summary, Builder should ask the Navigator whether more conversation evidence must be folded in before roadmap work starts.\n",
+        "docs/project/explorations/with-transcript-evidence/full-conversation.md": "# Full Conversation Evidence\n\nThis document is source evidence for a Builder handoff. Sensitive personal or local details may have been obfuscated before writing.\n\n## Conversation c1\n\n- Title: Where parity breaks\n- Evidence role: origin\n\n### user\n\nmy key is api_key=[SECRET]\n\n### assistant\n\nI read [LOCAL_PATH] and mailed [PRIVATE_EMAIL]\n\n## Conversation c2\n\n- Title: Untitled conversation\n- Evidence role: source evidence\n",
+        "docs/project/explorations/with-transcript-evidence/handoff-info.md": "# Handoff Info: With transcript evidence\n\n## Handoff Summary\n\ncarries raw messages\n\n## Handoff Completeness Checklist\n\n- [x] continuous exploratory thickening\n- [x] source evidence list\n- [x] surfaces and story state\n- [x] phases or evolution narrative\n- [x] examples or simulations\n- [x] product decisions\n- [x] user conversation flows\n- [x] transition rules\n- [x] risks\n- [x] boundaries\n- [x] open questions\n- [x] what Builder should preserve\n- [x] what Builder should not assume\n\n## What Builder Should Preserve\n\n- The exploration is not only a feature request. It carries discovery context and product judgment.\n- The attractor and experiment proposal should guide Builder's first roadmap framing.\n- The product design proposal should be translated into roadmap/story docs only after Builder reads the project.\n\n## Risks\n\n- Builder may over-treat exploratory material as settled delivery scope.\n- Builder may flatten open questions into implementation assumptions.\n- Builder may focus on mechanism before preserving the user-facing product shape.\n\n## Open Questions\n\n- Which parts of this exploration should become roadmap stories?\n- What validation route proves the product behavior externally?\n- What should remain outside the first delivery slice?\n\n## Boundaries\n\n- This handoff is not a delivery plan.\n- Builder must still read the project, create or update roadmap/story docs, and validate with the Navigator.\n- Explorer preserved uncertainty; Builder should not erase it prematurely.\n\n## Non-Assumptions\n\n- Do not assume implementation architecture from this handoff.\n- Do not assume all open questions are in scope.\n- Do not assume the experiment proposal has already been validated.\n\n## Attractors\n\n- **grade the surface, not the intent** (`accepted`)\n  - every verbatim card becomes a golden ✦\n- **one gate per lived mode** (`proposed`)\n\n## Experiment Status\n\n**port one ritual command end to end** (`proposed`)\n\nsmall enough to finish, whole enough to learn the shape\n\n## Promotion Boundary\n\nBuilder executes only after explicit confirmation from the Navigator.\n",
+        "docs/project/explorations/with-transcript-evidence/index.md": "# Exploration Handoff: With transcript evidence\n\n## Editorial Synthesis\n\ncarries raw messages\n\n## Durable Story\n\n- Story id: `01J0STORY`\n- Journey: `probe-journey`\n- Status: `active`\n\n## Source Evidence\n\n- `c1` — Where parity breaks (origin)\n- `c2` — Untitled conversation (source evidence)\n\n## What Was Decided\n\nParity is cheap to claim and expensive to prove.\n\nTwo cores, one database, one denominator nobody trusts.\n\n## Transfer Documents\n\n- [Exploratory Story](exploratory-story.md): discovery narrative and continuous thickening.\n- [Handoff Info](handoff-info.md): risks, open questions, boundaries, and non-assumptions for Builder.\n- [Product Design Proposal](product-design-proposal.md): user-facing product behavior, without implementation detail.\n- [Full Conversation Evidence](full-conversation.md): privacy-reviewed raw source material.\n\n## Current Attractors\n\n- **grade the surface, not the intent** (`accepted`)\n  - every verbatim card becomes a golden ✦\n- **one gate per lived mode** (`proposed`)\n\n## Current Experiment Proposal\n\n**port one ritual command end to end** (`proposed`)\n\nsmall enough to finish, whole enough to learn the shape\n\n## Builder Reading Order\n\nRead this `index.md` first, then `exploratory-story.md`, then `handoff-info.md`, then `product-design-proposal.md`. If `full-conversation.md` exists, read it as source evidence, not as a delivery plan. Treat the set as exploration output, not as a completed delivery plan.\n",
+        "docs/project/explorations/with-transcript-evidence/product-design-proposal.md": "# Product Design Proposal: With transcript evidence\n\n## Product Intent\n\ncarries raw messages\n\n## User-Facing Behavior\n\nParity is cheap to claim and expensive to prove.\n\n## What The Product Should Feel Like\n\nThe product should preserve the exploratory shape discovered by Explorer Mode. It should show the user what is happening at the product level, not expose implementation mechanics first.\n\n## Interaction Flow\n\n- User works in Explorer Mode while uncertainty is still alive.\n- Explorer surfaces story changes visibly.\n- Explorer names attractors and proposes small experiments.\n- Explorer proposes Builder handoff only when the user asks or confirms readiness.\n- Builder begins only after explicit confirmation.\n\n## Product-Level States\n\n- Exploratory Story active.\n- Attractor proposed or accepted.\n- Experiment proposal proposed or accepted.\n- Builder handoff proposed.\n\n## Acceptance Behavior\n\n- The user can understand what is being proposed without reading implementation details.\n- The proposal preserves uncertainty and open questions.\n- The proposal gives Builder enough product shape to create roadmap or story plans.\n\n## Explicit Non-Goals\n\n- This document does not define implementation architecture.\n- This document does not create delivery tasks by itself.\n- This document does not replace Builder planning.\n\n## Open Product Questions\n\n- Which behavior is necessary for the first delivery slice?\n- What should remain exploratory after Builder starts?\n- What user validation will prove the product behavior works?\n"
+      },
+      "editorial_synthesis": null,
+      "handoff": {
+        "artifact_dir": "docs/project/explorations/with-transcript-evidence",
+        "exploratory_story_path": "docs/project/explorations/with-transcript-evidence/exploratory-story.md",
+        "full_conversation_path": "docs/project/explorations/with-transcript-evidence/full-conversation.md",
+        "handoff_info_path": "docs/project/explorations/with-transcript-evidence/handoff-info.md",
+        "index_path": "docs/project/explorations/with-transcript-evidence/index.md",
+        "product_design_proposal_path": "docs/project/explorations/with-transcript-evidence/product-design-proposal.md",
+        "readiness": "proposed",
+        "summary": "carries raw messages",
+        "title": "With transcript evidence"
+      },
+      "include_full_conversation": true,
+      "name": "full_conversation_is_obfuscated",
+      "pre_existing": [],
+      "sources": [
+        {
+          "conversation_id": "c1",
+          "messages": [
+            {
+              "content": "my key is api_key=sk-abcdefghijklmnop",
+              "role": "user"
+            },
+            {
+              "content": "I read /Users/nav/dev/project and mailed nav@example.com",
+              "role": "assistant"
+            }
+          ],
+          "role": "origin",
+          "title": "Where parity breaks"
+        },
+        {
+          "conversation_id": "c2",
+          "messages": [],
+          "role": "source evidence",
+          "title": null
+        }
+      ],
+      "story": {
+        "attractors": [
+          {
+            "description": "every verbatim card becomes a golden ✦",
+            "label": "grade the surface, not the intent",
+            "status": "accepted"
+          },
+          {
+            "description": null,
+            "label": "one gate per lived mode",
+            "status": "proposed"
+          }
+        ],
+        "current_exploratory_story": "Parity is cheap to claim and expensive to prove.",
+        "experiment_proposal": {
+          "description": "small enough to finish, whole enough to learn the shape",
+          "status": "proposed",
+          "title": "port one ritual command end to end"
+        },
+        "id": "01J0STORY",
+        "journey": "probe-journey",
+        "last_story_card": "The oracle moved while we were reading it.",
+        "narrative_field_summary": "Two cores, one database, one denominator nobody trusts.",
+        "status": "active",
+        "title": "A title"
+      },
+      "summary": "carries raw messages",
+      "title": "With transcript evidence"
+    },
+    {
+      "documents": {
+        "docs/project/explorations/asked-for-a-transcript-with-nothing-to-write/exploratory-story.md": "# Exploratory Story: Asked for a transcript with nothing to write\n\n## Source\n\n- Journey: `probe-journey`\n- Story id: `01J0STORY`\n- Mode: Explorer Mode\n\n## Continuous Thickening Narrative\n\nTwo cores, one database, one denominator nobody trusts.\n\n## Current Exploratory Story\n\nParity is cheap to claim and expensive to prove.\n\n## Narrative Summary\n\nTwo cores, one database, one denominator nobody trusts.\n\n## Last Story Card\n\nThe oracle moved while we were reading it.\n\n## Attractors\n\n- **grade the surface, not the intent** (`accepted`)\n  - every verbatim card becomes a golden ✦\n- **one gate per lived mode** (`proposed`)\n\n## Experiment Proposal\n\n**port one ritual command end to end** (`proposed`)\n\nsmall enough to finish, whole enough to learn the shape\n\n## What Changed Through Exploration\n\nThis section should preserve the evolution of the exploration: the original question, the meaningful pivots, the corrections that changed the story, and the current point of promotion. If this document was generated from a short runtime summary, Builder should ask the Navigator whether more conversation evidence must be folded in before roadmap work starts.\n",
+        "docs/project/explorations/asked-for-a-transcript-with-nothing-to-write/handoff-info.md": "# Handoff Info: Asked for a transcript with nothing to write\n\n## Handoff Summary\n\nTwo cores, one database, one denominator nobody trusts.\n\n## Handoff Completeness Checklist\n\n- [x] continuous exploratory thickening\n- [ ] source evidence list\n- [x] surfaces and story state\n- [x] phases or evolution narrative\n- [ ] examples or simulations\n- [x] product decisions\n- [ ] user conversation flows\n- [x] transition rules\n- [x] risks\n- [x] boundaries\n- [x] open questions\n- [x] what Builder should preserve\n- [x] what Builder should not assume\n\nMissing or weak evidence before Builder should treat this as complete:\n- source evidence list\n- examples or simulations\n- user conversation flows\n\n## What Builder Should Preserve\n\n- The exploration is not only a feature request. It carries discovery context and product judgment.\n- The attractor and experiment proposal should guide Builder's first roadmap framing.\n- The product design proposal should be translated into roadmap/story docs only after Builder reads the project.\n\n## Risks\n\n- Builder may over-treat exploratory material as settled delivery scope.\n- Builder may flatten open questions into implementation assumptions.\n- Builder may focus on mechanism before preserving the user-facing product shape.\n\n## Open Questions\n\n- Which parts of this exploration should become roadmap stories?\n- What validation route proves the product behavior externally?\n- What should remain outside the first delivery slice?\n\n## Boundaries\n\n- This handoff is not a delivery plan.\n- Builder must still read the project, create or update roadmap/story docs, and validate with the Navigator.\n- Explorer preserved uncertainty; Builder should not erase it prematurely.\n\n## Non-Assumptions\n\n- Do not assume implementation architecture from this handoff.\n- Do not assume all open questions are in scope.\n- Do not assume the experiment proposal has already been validated.\n\n## Attractors\n\n- **grade the surface, not the intent** (`accepted`)\n  - every verbatim card becomes a golden ✦\n- **one gate per lived mode** (`proposed`)\n\n## Experiment Status\n\n**port one ritual command end to end** (`proposed`)\n\nsmall enough to finish, whole enough to learn the shape\n\n## Promotion Boundary\n\nBuilder executes only after explicit confirmation from the Navigator.\n",
+        "docs/project/explorations/asked-for-a-transcript-with-nothing-to-write/index.md": "# Exploration Handoff: Asked for a transcript with nothing to write\n\n## Editorial Synthesis\n\nTwo cores, one database, one denominator nobody trusts.\n\n## Durable Story\n\n- Story id: `01J0STORY`\n- Journey: `probe-journey`\n- Status: `active`\n\n## Source Evidence\n\n_No source conversations were attached to this handoff._\n\n## What Was Decided\n\nParity is cheap to claim and expensive to prove.\n\nTwo cores, one database, one denominator nobody trusts.\n\n## Transfer Documents\n\n- [Exploratory Story](exploratory-story.md): discovery narrative and continuous thickening.\n- [Handoff Info](handoff-info.md): risks, open questions, boundaries, and non-assumptions for Builder.\n- [Product Design Proposal](product-design-proposal.md): user-facing product behavior, without implementation detail.\n- Full conversation evidence was not included in this handoff.\n\n## Current Attractors\n\n- **grade the surface, not the intent** (`accepted`)\n  - every verbatim card becomes a golden ✦\n- **one gate per lived mode** (`proposed`)\n\n## Current Experiment Proposal\n\n**port one ritual command end to end** (`proposed`)\n\nsmall enough to finish, whole enough to learn the shape\n\n## Builder Reading Order\n\nRead this `index.md` first, then `exploratory-story.md`, then `handoff-info.md`, then `product-design-proposal.md`. If `full-conversation.md` exists, read it as source evidence, not as a delivery plan. Treat the set as exploration output, not as a completed delivery plan.\n",
+        "docs/project/explorations/asked-for-a-transcript-with-nothing-to-write/product-design-proposal.md": "# Product Design Proposal: Asked for a transcript with nothing to write\n\n## Product Intent\n\nTwo cores, one database, one denominator nobody trusts.\n\n## User-Facing Behavior\n\nParity is cheap to claim and expensive to prove.\n\n## What The Product Should Feel Like\n\nThe product should preserve the exploratory shape discovered by Explorer Mode. It should show the user what is happening at the product level, not expose implementation mechanics first.\n\n## Interaction Flow\n\n- User works in Explorer Mode while uncertainty is still alive.\n- Explorer surfaces story changes visibly.\n- Explorer names attractors and proposes small experiments.\n- Explorer proposes Builder handoff only when the user asks or confirms readiness.\n- Builder begins only after explicit confirmation.\n\n## Product-Level States\n\n- Exploratory Story active.\n- Attractor proposed or accepted.\n- Experiment proposal proposed or accepted.\n- Builder handoff proposed.\n\n## Acceptance Behavior\n\n- The user can understand what is being proposed without reading implementation details.\n- The proposal preserves uncertainty and open questions.\n- The proposal gives Builder enough product shape to create roadmap or story plans.\n\n## Explicit Non-Goals\n\n- This document does not define implementation architecture.\n- This document does not create delivery tasks by itself.\n- This document does not replace Builder planning.\n\n## Open Product Questions\n\n- Which behavior is necessary for the first delivery slice?\n- What should remain exploratory after Builder starts?\n- What user validation will prove the product behavior works?\n"
+      },
+      "editorial_synthesis": null,
+      "handoff": {
+        "artifact_dir": "docs/project/explorations/asked-for-a-transcript-with-nothing-to-write",
+        "exploratory_story_path": "docs/project/explorations/asked-for-a-transcript-with-nothing-to-write/exploratory-story.md",
+        "full_conversation_path": null,
+        "handoff_info_path": "docs/project/explorations/asked-for-a-transcript-with-nothing-to-write/handoff-info.md",
+        "index_path": "docs/project/explorations/asked-for-a-transcript-with-nothing-to-write/index.md",
+        "product_design_proposal_path": "docs/project/explorations/asked-for-a-transcript-with-nothing-to-write/product-design-proposal.md",
+        "readiness": "proposed",
+        "summary": null,
+        "title": "Asked for a transcript with nothing to write"
+      },
+      "include_full_conversation": true,
+      "name": "include_full_conversation_without_sources",
+      "pre_existing": [],
+      "sources": [],
+      "story": {
+        "attractors": [
+          {
+            "description": "every verbatim card becomes a golden ✦",
+            "label": "grade the surface, not the intent",
+            "status": "accepted"
+          },
+          {
+            "description": null,
+            "label": "one gate per lived mode",
+            "status": "proposed"
+          }
+        ],
+        "current_exploratory_story": "Parity is cheap to claim and expensive to prove.",
+        "experiment_proposal": {
+          "description": "small enough to finish, whole enough to learn the shape",
+          "status": "proposed",
+          "title": "port one ritual command end to end"
+        },
+        "id": "01J0STORY",
+        "journey": "probe-journey",
+        "last_story_card": "The oracle moved while we were reading it.",
+        "narrative_field_summary": "Two cores, one database, one denominator nobody trusts.",
+        "status": "active",
+        "title": "A title"
+      },
+      "summary": null,
+      "title": "Asked for a transcript with nothing to write"
+    },
+    {
+      "documents": {
+        "docs/project/explorations/parity-is-a-rendering-problem-3/exploratory-story.md": "# Exploratory Story: Parity is a rendering problem\n\n## Source\n\n- Journey: `probe-journey`\n- Story id: `not recorded`\n- Mode: Explorer Mode\n\n## Continuous Thickening Narrative\n\n_No continuous thickening narrative recorded._\n\n## Current Exploratory Story\n\n_No story text recorded._\n\n## Narrative Summary\n\n_No narrative summary recorded._\n\n## Last Story Card\n\n_No last story card recorded._\n\n## Attractors\n\n_No attractors recorded._\n\n## Experiment Proposal\n\n_No experiment proposal recorded._\n\n## What Changed Through Exploration\n\nThis section should preserve the evolution of the exploration: the original question, the meaningful pivots, the corrections that changed the story, and the current point of promotion. If this document was generated from a short runtime summary, Builder should ask the Navigator whether more conversation evidence must be folded in before roadmap work starts.\n",
+        "docs/project/explorations/parity-is-a-rendering-problem-3/handoff-info.md": "# Handoff Info: Parity is a rendering problem\n\n## Handoff Summary\n\n_No handoff summary recorded._\n\n## Handoff Completeness Checklist\n\n- [ ] continuous exploratory thickening\n- [ ] source evidence list\n- [ ] surfaces and story state\n- [ ] phases or evolution narrative\n- [ ] examples or simulations\n- [ ] product decisions\n- [ ] user conversation flows\n- [x] transition rules\n- [x] risks\n- [x] boundaries\n- [x] open questions\n- [x] what Builder should preserve\n- [x] what Builder should not assume\n\nMissing or weak evidence before Builder should treat this as complete:\n- continuous exploratory thickening\n- source evidence list\n- surfaces and story state\n- phases or evolution narrative\n- examples or simulations\n- product decisions\n- user conversation flows\n\n## What Builder Should Preserve\n\n- The exploration is not only a feature request. It carries discovery context and product judgment.\n- The attractor and experiment proposal should guide Builder's first roadmap framing.\n- The product design proposal should be translated into roadmap/story docs only after Builder reads the project.\n\n## Risks\n\n- Builder may over-treat exploratory material as settled delivery scope.\n- Builder may flatten open questions into implementation assumptions.\n- Builder may focus on mechanism before preserving the user-facing product shape.\n\n## Open Questions\n\n- Which parts of this exploration should become roadmap stories?\n- What validation route proves the product behavior externally?\n- What should remain outside the first delivery slice?\n\n## Boundaries\n\n- This handoff is not a delivery plan.\n- Builder must still read the project, create or update roadmap/story docs, and validate with the Navigator.\n- Explorer preserved uncertainty; Builder should not erase it prematurely.\n\n## Non-Assumptions\n\n- Do not assume implementation architecture from this handoff.\n- Do not assume all open questions are in scope.\n- Do not assume the experiment proposal has already been validated.\n\n## Attractors\n\n_No attractors recorded._\n\n## Experiment Status\n\n_No experiment proposal recorded._\n\n## Promotion Boundary\n\nBuilder executes only after explicit confirmation from the Navigator.\n",
+        "docs/project/explorations/parity-is-a-rendering-problem-3/index.md": "# Exploration Handoff: Parity is a rendering problem\n\n## Editorial Synthesis\n\n_No editorial synthesis recorded._\n\n## Durable Story\n\n- Story id: `not recorded`\n- Journey: `probe-journey`\n- Status: `active`\n\n## Source Evidence\n\n_No source conversations were attached to this handoff._\n\n## What Was Decided\n\n_No decided product direction recorded._\n\n## Transfer Documents\n\n- [Exploratory Story](exploratory-story.md): discovery narrative and continuous thickening.\n- [Handoff Info](handoff-info.md): risks, open questions, boundaries, and non-assumptions for Builder.\n- [Product Design Proposal](product-design-proposal.md): user-facing product behavior, without implementation detail.\n- Full conversation evidence was not included in this handoff.\n\n## Current Attractors\n\n_No attractors recorded._\n\n## Current Experiment Proposal\n\n_No experiment proposal recorded._\n\n## Builder Reading Order\n\nRead this `index.md` first, then `exploratory-story.md`, then `handoff-info.md`, then `product-design-proposal.md`. If `full-conversation.md` exists, read it as source evidence, not as a delivery plan. Treat the set as exploration output, not as a completed delivery plan.\n",
+        "docs/project/explorations/parity-is-a-rendering-problem-3/product-design-proposal.md": "# Product Design Proposal: Parity is a rendering problem\n\n## Product Intent\n\n_No product intent summary recorded._\n\n## User-Facing Behavior\n\n_No current story recorded._\n\n## What The Product Should Feel Like\n\nThe product should preserve the exploratory shape discovered by Explorer Mode. It should show the user what is happening at the product level, not expose implementation mechanics first.\n\n## Interaction Flow\n\n- User works in Explorer Mode while uncertainty is still alive.\n- Explorer surfaces story changes visibly.\n- Explorer names attractors and proposes small experiments.\n- Explorer proposes Builder handoff only when the user asks or confirms readiness.\n- Builder begins only after explicit confirmation.\n\n## Product-Level States\n\n- Exploratory Story active.\n- Attractor proposed or accepted.\n- Experiment proposal proposed or accepted.\n- Builder handoff proposed.\n\n## Acceptance Behavior\n\n- The user can understand what is being proposed without reading implementation details.\n- The proposal preserves uncertainty and open questions.\n- The proposal gives Builder enough product shape to create roadmap or story plans.\n\n## Explicit Non-Goals\n\n- This document does not define implementation architecture.\n- This document does not create delivery tasks by itself.\n- This document does not replace Builder planning.\n\n## Open Product Questions\n\n- Which behavior is necessary for the first delivery slice?\n- What should remain exploratory after Builder starts?\n- What user validation will prove the product behavior works?\n"
+      },
+      "editorial_synthesis": null,
+      "handoff": {
+        "artifact_dir": "docs/project/explorations/parity-is-a-rendering-problem-3",
+        "exploratory_story_path": "docs/project/explorations/parity-is-a-rendering-problem-3/exploratory-story.md",
+        "full_conversation_path": null,
+        "handoff_info_path": "docs/project/explorations/parity-is-a-rendering-problem-3/handoff-info.md",
+        "index_path": "docs/project/explorations/parity-is-a-rendering-problem-3/index.md",
+        "product_design_proposal_path": "docs/project/explorations/parity-is-a-rendering-problem-3/product-design-proposal.md",
+        "readiness": "proposed",
+        "summary": null,
+        "title": "Parity is a rendering problem"
+      },
+      "include_full_conversation": false,
+      "name": "slug_collision_appends_suffix",
+      "pre_existing": [
+        "parity-is-a-rendering-problem",
+        "parity-is-a-rendering-problem-2"
+      ],
+      "sources": [],
+      "story": {
+        "attractors": [],
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": null,
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "status": "active",
+        "title": null
+      },
+      "summary": null,
+      "title": "Parity is a rendering problem"
+    },
+    {
+      "documents": {
+        "docs/project/explorations/exploration/exploratory-story.md": "# Exploratory Story: !!!\n\n## Source\n\n- Journey: `probe-journey`\n- Story id: `not recorded`\n- Mode: Explorer Mode\n\n## Continuous Thickening Narrative\n\n_No continuous thickening narrative recorded._\n\n## Current Exploratory Story\n\nthe story text wins\n\n## Narrative Summary\n\n_No narrative summary recorded._\n\n## Last Story Card\n\n_No last story card recorded._\n\n## Attractors\n\n_No attractors recorded._\n\n## Experiment Proposal\n\n_No experiment proposal recorded._\n\n## What Changed Through Exploration\n\nThis section should preserve the evolution of the exploration: the original question, the meaningful pivots, the corrections that changed the story, and the current point of promotion. If this document was generated from a short runtime summary, Builder should ask the Navigator whether more conversation evidence must be folded in before roadmap work starts.\n",
+        "docs/project/explorations/exploration/handoff-info.md": "# Handoff Info: !!!\n\n## Handoff Summary\n\n_No handoff summary recorded._\n\n## Handoff Completeness Checklist\n\n- [ ] continuous exploratory thickening\n- [ ] source evidence list\n- [x] surfaces and story state\n- [ ] phases or evolution narrative\n- [ ] examples or simulations\n- [x] product decisions\n- [ ] user conversation flows\n- [x] transition rules\n- [x] risks\n- [x] boundaries\n- [x] open questions\n- [x] what Builder should preserve\n- [x] what Builder should not assume\n\nMissing or weak evidence before Builder should treat this as complete:\n- continuous exploratory thickening\n- source evidence list\n- phases or evolution narrative\n- examples or simulations\n- user conversation flows\n\n## What Builder Should Preserve\n\n- The exploration is not only a feature request. It carries discovery context and product judgment.\n- The attractor and experiment proposal should guide Builder's first roadmap framing.\n- The product design proposal should be translated into roadmap/story docs only after Builder reads the project.\n\n## Risks\n\n- Builder may over-treat exploratory material as settled delivery scope.\n- Builder may flatten open questions into implementation assumptions.\n- Builder may focus on mechanism before preserving the user-facing product shape.\n\n## Open Questions\n\n- Which parts of this exploration should become roadmap stories?\n- What validation route proves the product behavior externally?\n- What should remain outside the first delivery slice?\n\n## Boundaries\n\n- This handoff is not a delivery plan.\n- Builder must still read the project, create or update roadmap/story docs, and validate with the Navigator.\n- Explorer preserved uncertainty; Builder should not erase it prematurely.\n\n## Non-Assumptions\n\n- Do not assume implementation architecture from this handoff.\n- Do not assume all open questions are in scope.\n- Do not assume the experiment proposal has already been validated.\n\n## Attractors\n\n_No attractors recorded._\n\n## Experiment Status\n\n_No experiment proposal recorded._\n\n## Promotion Boundary\n\nBuilder executes only after explicit confirmation from the Navigator.\n",
+        "docs/project/explorations/exploration/index.md": "# Exploration Handoff: !!!\n\n## Editorial Synthesis\n\n_No editorial synthesis recorded._\n\n## Durable Story\n\n- Story id: `not recorded`\n- Journey: `probe-journey`\n- Status: `active`\n\n## Source Evidence\n\n_No source conversations were attached to this handoff._\n\n## What Was Decided\n\nthe story text wins\n\n## Transfer Documents\n\n- [Exploratory Story](exploratory-story.md): discovery narrative and continuous thickening.\n- [Handoff Info](handoff-info.md): risks, open questions, boundaries, and non-assumptions for Builder.\n- [Product Design Proposal](product-design-proposal.md): user-facing product behavior, without implementation detail.\n- Full conversation evidence was not included in this handoff.\n\n## Current Attractors\n\n_No attractors recorded._\n\n## Current Experiment Proposal\n\n_No experiment proposal recorded._\n\n## Builder Reading Order\n\nRead this `index.md` first, then `exploratory-story.md`, then `handoff-info.md`, then `product-design-proposal.md`. If `full-conversation.md` exists, read it as source evidence, not as a delivery plan. Treat the set as exploration output, not as a completed delivery plan.\n",
+        "docs/project/explorations/exploration/product-design-proposal.md": "# Product Design Proposal: !!!\n\n## Product Intent\n\n_No product intent summary recorded._\n\n## User-Facing Behavior\n\nthe story text wins\n\n## What The Product Should Feel Like\n\nThe product should preserve the exploratory shape discovered by Explorer Mode. It should show the user what is happening at the product level, not expose implementation mechanics first.\n\n## Interaction Flow\n\n- User works in Explorer Mode while uncertainty is still alive.\n- Explorer surfaces story changes visibly.\n- Explorer names attractors and proposes small experiments.\n- Explorer proposes Builder handoff only when the user asks or confirms readiness.\n- Builder begins only after explicit confirmation.\n\n## Product-Level States\n\n- Exploratory Story active.\n- Attractor proposed or accepted.\n- Experiment proposal proposed or accepted.\n- Builder handoff proposed.\n\n## Acceptance Behavior\n\n- The user can understand what is being proposed without reading implementation details.\n- The proposal preserves uncertainty and open questions.\n- The proposal gives Builder enough product shape to create roadmap or story plans.\n\n## Explicit Non-Goals\n\n- This document does not define implementation architecture.\n- This document does not create delivery tasks by itself.\n- This document does not replace Builder planning.\n\n## Open Product Questions\n\n- Which behavior is necessary for the first delivery slice?\n- What should remain exploratory after Builder starts?\n- What user validation will prove the product behavior works?\n"
+      },
+      "editorial_synthesis": null,
+      "handoff": {
+        "artifact_dir": "docs/project/explorations/exploration",
+        "exploratory_story_path": "docs/project/explorations/exploration/exploratory-story.md",
+        "full_conversation_path": null,
+        "handoff_info_path": "docs/project/explorations/exploration/handoff-info.md",
+        "index_path": "docs/project/explorations/exploration/index.md",
+        "product_design_proposal_path": "docs/project/explorations/exploration/product-design-proposal.md",
+        "readiness": "proposed",
+        "summary": null,
+        "title": "!!!"
+      },
+      "include_full_conversation": false,
+      "name": "title_slugs_to_nothing_falls_back_to_story_text",
+      "pre_existing": [],
+      "sources": [],
+      "story": {
+        "attractors": [],
+        "current_exploratory_story": "the story text wins",
+        "experiment_proposal": null,
+        "id": null,
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "status": "active",
+        "title": null
+      },
+      "summary": null,
+      "title": "!!!"
+    },
+    {
+      "documents": {
+        "docs/project/explorations/exploration/exploratory-story.md": "# Exploratory Story:    \n\n## Source\n\n- Journey: `probe-journey`\n- Story id: `not recorded`\n- Mode: Explorer Mode\n\n## Continuous Thickening Narrative\n\n_No continuous thickening narrative recorded._\n\n## Current Exploratory Story\n\n_No story text recorded._\n\n## Narrative Summary\n\n_No narrative summary recorded._\n\n## Last Story Card\n\n_No last story card recorded._\n\n## Attractors\n\n_No attractors recorded._\n\n## Experiment Proposal\n\n_No experiment proposal recorded._\n\n## What Changed Through Exploration\n\nThis section should preserve the evolution of the exploration: the original question, the meaningful pivots, the corrections that changed the story, and the current point of promotion. If this document was generated from a short runtime summary, Builder should ask the Navigator whether more conversation evidence must be folded in before roadmap work starts.\n",
+        "docs/project/explorations/exploration/handoff-info.md": "# Handoff Info:    \n\n## Handoff Summary\n\n_No handoff summary recorded._\n\n## Handoff Completeness Checklist\n\n- [ ] continuous exploratory thickening\n- [ ] source evidence list\n- [ ] surfaces and story state\n- [ ] phases or evolution narrative\n- [ ] examples or simulations\n- [ ] product decisions\n- [ ] user conversation flows\n- [x] transition rules\n- [x] risks\n- [x] boundaries\n- [x] open questions\n- [x] what Builder should preserve\n- [x] what Builder should not assume\n\nMissing or weak evidence before Builder should treat this as complete:\n- continuous exploratory thickening\n- source evidence list\n- surfaces and story state\n- phases or evolution narrative\n- examples or simulations\n- product decisions\n- user conversation flows\n\n## What Builder Should Preserve\n\n- The exploration is not only a feature request. It carries discovery context and product judgment.\n- The attractor and experiment proposal should guide Builder's first roadmap framing.\n- The product design proposal should be translated into roadmap/story docs only after Builder reads the project.\n\n## Risks\n\n- Builder may over-treat exploratory material as settled delivery scope.\n- Builder may flatten open questions into implementation assumptions.\n- Builder may focus on mechanism before preserving the user-facing product shape.\n\n## Open Questions\n\n- Which parts of this exploration should become roadmap stories?\n- What validation route proves the product behavior externally?\n- What should remain outside the first delivery slice?\n\n## Boundaries\n\n- This handoff is not a delivery plan.\n- Builder must still read the project, create or update roadmap/story docs, and validate with the Navigator.\n- Explorer preserved uncertainty; Builder should not erase it prematurely.\n\n## Non-Assumptions\n\n- Do not assume implementation architecture from this handoff.\n- Do not assume all open questions are in scope.\n- Do not assume the experiment proposal has already been validated.\n\n## Attractors\n\n_No attractors recorded._\n\n## Experiment Status\n\n_No experiment proposal recorded._\n\n## Promotion Boundary\n\nBuilder executes only after explicit confirmation from the Navigator.\n",
+        "docs/project/explorations/exploration/index.md": "# Exploration Handoff:    \n\n## Editorial Synthesis\n\n_No editorial synthesis recorded._\n\n## Durable Story\n\n- Story id: `not recorded`\n- Journey: `probe-journey`\n- Status: `active`\n\n## Source Evidence\n\n_No source conversations were attached to this handoff._\n\n## What Was Decided\n\n_No decided product direction recorded._\n\n## Transfer Documents\n\n- [Exploratory Story](exploratory-story.md): discovery narrative and continuous thickening.\n- [Handoff Info](handoff-info.md): risks, open questions, boundaries, and non-assumptions for Builder.\n- [Product Design Proposal](product-design-proposal.md): user-facing product behavior, without implementation detail.\n- Full conversation evidence was not included in this handoff.\n\n## Current Attractors\n\n_No attractors recorded._\n\n## Current Experiment Proposal\n\n_No experiment proposal recorded._\n\n## Builder Reading Order\n\nRead this `index.md` first, then `exploratory-story.md`, then `handoff-info.md`, then `product-design-proposal.md`. If `full-conversation.md` exists, read it as source evidence, not as a delivery plan. Treat the set as exploration output, not as a completed delivery plan.\n",
+        "docs/project/explorations/exploration/product-design-proposal.md": "# Product Design Proposal:    \n\n## Product Intent\n\n_No product intent summary recorded._\n\n## User-Facing Behavior\n\n_No current story recorded._\n\n## What The Product Should Feel Like\n\nThe product should preserve the exploratory shape discovered by Explorer Mode. It should show the user what is happening at the product level, not expose implementation mechanics first.\n\n## Interaction Flow\n\n- User works in Explorer Mode while uncertainty is still alive.\n- Explorer surfaces story changes visibly.\n- Explorer names attractors and proposes small experiments.\n- Explorer proposes Builder handoff only when the user asks or confirms readiness.\n- Builder begins only after explicit confirmation.\n\n## Product-Level States\n\n- Exploratory Story active.\n- Attractor proposed or accepted.\n- Experiment proposal proposed or accepted.\n- Builder handoff proposed.\n\n## Acceptance Behavior\n\n- The user can understand what is being proposed without reading implementation details.\n- The proposal preserves uncertainty and open questions.\n- The proposal gives Builder enough product shape to create roadmap or story plans.\n\n## Explicit Non-Goals\n\n- This document does not define implementation architecture.\n- This document does not create delivery tasks by itself.\n- This document does not replace Builder planning.\n\n## Open Product Questions\n\n- Which behavior is necessary for the first delivery slice?\n- What should remain exploratory after Builder starts?\n- What user validation will prove the product behavior works?\n"
+      },
+      "editorial_synthesis": null,
+      "handoff": {
+        "artifact_dir": "docs/project/explorations/exploration",
+        "exploratory_story_path": "docs/project/explorations/exploration/exploratory-story.md",
+        "full_conversation_path": null,
+        "handoff_info_path": "docs/project/explorations/exploration/handoff-info.md",
+        "index_path": "docs/project/explorations/exploration/index.md",
+        "product_design_proposal_path": "docs/project/explorations/exploration/product-design-proposal.md",
+        "readiness": "proposed",
+        "summary": null,
+        "title": "   "
+      },
+      "include_full_conversation": false,
+      "name": "title_and_story_slug_to_nothing_falls_back_to_journey",
+      "pre_existing": [],
+      "sources": [],
+      "story": {
+        "attractors": [],
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": null,
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "status": "active",
+        "title": null
+      },
+      "summary": null,
+      "title": "   "
+    },
+    {
+      "documents": {
+        "docs/project/explorations/etc-passwd/exploratory-story.md": "# Exploratory Story: ../../etc/passwd\n\n## Source\n\n- Journey: `probe-journey`\n- Story id: `not recorded`\n- Mode: Explorer Mode\n\n## Continuous Thickening Narrative\n\n_No continuous thickening narrative recorded._\n\n## Current Exploratory Story\n\n_No story text recorded._\n\n## Narrative Summary\n\n_No narrative summary recorded._\n\n## Last Story Card\n\n_No last story card recorded._\n\n## Attractors\n\n_No attractors recorded._\n\n## Experiment Proposal\n\n_No experiment proposal recorded._\n\n## What Changed Through Exploration\n\nThis section should preserve the evolution of the exploration: the original question, the meaningful pivots, the corrections that changed the story, and the current point of promotion. If this document was generated from a short runtime summary, Builder should ask the Navigator whether more conversation evidence must be folded in before roadmap work starts.\n",
+        "docs/project/explorations/etc-passwd/handoff-info.md": "# Handoff Info: ../../etc/passwd\n\n## Handoff Summary\n\n_No handoff summary recorded._\n\n## Handoff Completeness Checklist\n\n- [ ] continuous exploratory thickening\n- [ ] source evidence list\n- [ ] surfaces and story state\n- [ ] phases or evolution narrative\n- [ ] examples or simulations\n- [ ] product decisions\n- [ ] user conversation flows\n- [x] transition rules\n- [x] risks\n- [x] boundaries\n- [x] open questions\n- [x] what Builder should preserve\n- [x] what Builder should not assume\n\nMissing or weak evidence before Builder should treat this as complete:\n- continuous exploratory thickening\n- source evidence list\n- surfaces and story state\n- phases or evolution narrative\n- examples or simulations\n- product decisions\n- user conversation flows\n\n## What Builder Should Preserve\n\n- The exploration is not only a feature request. It carries discovery context and product judgment.\n- The attractor and experiment proposal should guide Builder's first roadmap framing.\n- The product design proposal should be translated into roadmap/story docs only after Builder reads the project.\n\n## Risks\n\n- Builder may over-treat exploratory material as settled delivery scope.\n- Builder may flatten open questions into implementation assumptions.\n- Builder may focus on mechanism before preserving the user-facing product shape.\n\n## Open Questions\n\n- Which parts of this exploration should become roadmap stories?\n- What validation route proves the product behavior externally?\n- What should remain outside the first delivery slice?\n\n## Boundaries\n\n- This handoff is not a delivery plan.\n- Builder must still read the project, create or update roadmap/story docs, and validate with the Navigator.\n- Explorer preserved uncertainty; Builder should not erase it prematurely.\n\n## Non-Assumptions\n\n- Do not assume implementation architecture from this handoff.\n- Do not assume all open questions are in scope.\n- Do not assume the experiment proposal has already been validated.\n\n## Attractors\n\n_No attractors recorded._\n\n## Experiment Status\n\n_No experiment proposal recorded._\n\n## Promotion Boundary\n\nBuilder executes only after explicit confirmation from the Navigator.\n",
+        "docs/project/explorations/etc-passwd/index.md": "# Exploration Handoff: ../../etc/passwd\n\n## Editorial Synthesis\n\n_No editorial synthesis recorded._\n\n## Durable Story\n\n- Story id: `not recorded`\n- Journey: `probe-journey`\n- Status: `active`\n\n## Source Evidence\n\n_No source conversations were attached to this handoff._\n\n## What Was Decided\n\n_No decided product direction recorded._\n\n## Transfer Documents\n\n- [Exploratory Story](exploratory-story.md): discovery narrative and continuous thickening.\n- [Handoff Info](handoff-info.md): risks, open questions, boundaries, and non-assumptions for Builder.\n- [Product Design Proposal](product-design-proposal.md): user-facing product behavior, without implementation detail.\n- Full conversation evidence was not included in this handoff.\n\n## Current Attractors\n\n_No attractors recorded._\n\n## Current Experiment Proposal\n\n_No experiment proposal recorded._\n\n## Builder Reading Order\n\nRead this `index.md` first, then `exploratory-story.md`, then `handoff-info.md`, then `product-design-proposal.md`. If `full-conversation.md` exists, read it as source evidence, not as a delivery plan. Treat the set as exploration output, not as a completed delivery plan.\n",
+        "docs/project/explorations/etc-passwd/product-design-proposal.md": "# Product Design Proposal: ../../etc/passwd\n\n## Product Intent\n\n_No product intent summary recorded._\n\n## User-Facing Behavior\n\n_No current story recorded._\n\n## What The Product Should Feel Like\n\nThe product should preserve the exploratory shape discovered by Explorer Mode. It should show the user what is happening at the product level, not expose implementation mechanics first.\n\n## Interaction Flow\n\n- User works in Explorer Mode while uncertainty is still alive.\n- Explorer surfaces story changes visibly.\n- Explorer names attractors and proposes small experiments.\n- Explorer proposes Builder handoff only when the user asks or confirms readiness.\n- Builder begins only after explicit confirmation.\n\n## Product-Level States\n\n- Exploratory Story active.\n- Attractor proposed or accepted.\n- Experiment proposal proposed or accepted.\n- Builder handoff proposed.\n\n## Acceptance Behavior\n\n- The user can understand what is being proposed without reading implementation details.\n- The proposal preserves uncertainty and open questions.\n- The proposal gives Builder enough product shape to create roadmap or story plans.\n\n## Explicit Non-Goals\n\n- This document does not define implementation architecture.\n- This document does not create delivery tasks by itself.\n- This document does not replace Builder planning.\n\n## Open Product Questions\n\n- Which behavior is necessary for the first delivery slice?\n- What should remain exploratory after Builder starts?\n- What user validation will prove the product behavior works?\n"
+      },
+      "editorial_synthesis": null,
+      "handoff": {
+        "artifact_dir": "docs/project/explorations/etc-passwd",
+        "exploratory_story_path": "docs/project/explorations/etc-passwd/exploratory-story.md",
+        "full_conversation_path": null,
+        "handoff_info_path": "docs/project/explorations/etc-passwd/handoff-info.md",
+        "index_path": "docs/project/explorations/etc-passwd/index.md",
+        "product_design_proposal_path": "docs/project/explorations/etc-passwd/product-design-proposal.md",
+        "readiness": "proposed",
+        "summary": null,
+        "title": "../../etc/passwd"
+      },
+      "include_full_conversation": false,
+      "name": "traversal_looking_title_is_slugged_flat",
+      "pre_existing": [],
+      "sources": [],
+      "story": {
+        "attractors": [],
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": null,
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "status": "active",
+        "title": null
+      },
+      "summary": null,
+      "title": "../../etc/passwd"
+    },
+    {
+      "documents": {
+        "docs/project/explorations/exploracoes-o-que-ficou-vivo/exploratory-story.md": "# Exploratory Story: Explorações — o que ficou vivo ✦\n\n## Source\n\n- Journey: `probe-journey`\n- Story id: `not recorded`\n- Mode: Explorer Mode\n\n## Continuous Thickening Narrative\n\n_No continuous thickening narrative recorded._\n\n## Current Exploratory Story\n\n_No story text recorded._\n\n## Narrative Summary\n\n_No narrative summary recorded._\n\n## Last Story Card\n\n_No last story card recorded._\n\n## Attractors\n\n_No attractors recorded._\n\n## Experiment Proposal\n\n_No experiment proposal recorded._\n\n## What Changed Through Exploration\n\nThis section should preserve the evolution of the exploration: the original question, the meaningful pivots, the corrections that changed the story, and the current point of promotion. If this document was generated from a short runtime summary, Builder should ask the Navigator whether more conversation evidence must be folded in before roadmap work starts.\n",
+        "docs/project/explorations/exploracoes-o-que-ficou-vivo/handoff-info.md": "# Handoff Info: Explorações — o que ficou vivo ✦\n\n## Handoff Summary\n\n_No handoff summary recorded._\n\n## Handoff Completeness Checklist\n\n- [ ] continuous exploratory thickening\n- [ ] source evidence list\n- [ ] surfaces and story state\n- [ ] phases or evolution narrative\n- [ ] examples or simulations\n- [ ] product decisions\n- [ ] user conversation flows\n- [x] transition rules\n- [x] risks\n- [x] boundaries\n- [x] open questions\n- [x] what Builder should preserve\n- [x] what Builder should not assume\n\nMissing or weak evidence before Builder should treat this as complete:\n- continuous exploratory thickening\n- source evidence list\n- surfaces and story state\n- phases or evolution narrative\n- examples or simulations\n- product decisions\n- user conversation flows\n\n## What Builder Should Preserve\n\n- The exploration is not only a feature request. It carries discovery context and product judgment.\n- The attractor and experiment proposal should guide Builder's first roadmap framing.\n- The product design proposal should be translated into roadmap/story docs only after Builder reads the project.\n\n## Risks\n\n- Builder may over-treat exploratory material as settled delivery scope.\n- Builder may flatten open questions into implementation assumptions.\n- Builder may focus on mechanism before preserving the user-facing product shape.\n\n## Open Questions\n\n- Which parts of this exploration should become roadmap stories?\n- What validation route proves the product behavior externally?\n- What should remain outside the first delivery slice?\n\n## Boundaries\n\n- This handoff is not a delivery plan.\n- Builder must still read the project, create or update roadmap/story docs, and validate with the Navigator.\n- Explorer preserved uncertainty; Builder should not erase it prematurely.\n\n## Non-Assumptions\n\n- Do not assume implementation architecture from this handoff.\n- Do not assume all open questions are in scope.\n- Do not assume the experiment proposal has already been validated.\n\n## Attractors\n\n_No attractors recorded._\n\n## Experiment Status\n\n_No experiment proposal recorded._\n\n## Promotion Boundary\n\nBuilder executes only after explicit confirmation from the Navigator.\n",
+        "docs/project/explorations/exploracoes-o-que-ficou-vivo/index.md": "# Exploration Handoff: Explorações — o que ficou vivo ✦\n\n## Editorial Synthesis\n\n_No editorial synthesis recorded._\n\n## Durable Story\n\n- Story id: `not recorded`\n- Journey: `probe-journey`\n- Status: `active`\n\n## Source Evidence\n\n_No source conversations were attached to this handoff._\n\n## What Was Decided\n\n_No decided product direction recorded._\n\n## Transfer Documents\n\n- [Exploratory Story](exploratory-story.md): discovery narrative and continuous thickening.\n- [Handoff Info](handoff-info.md): risks, open questions, boundaries, and non-assumptions for Builder.\n- [Product Design Proposal](product-design-proposal.md): user-facing product behavior, without implementation detail.\n- Full conversation evidence was not included in this handoff.\n\n## Current Attractors\n\n_No attractors recorded._\n\n## Current Experiment Proposal\n\n_No experiment proposal recorded._\n\n## Builder Reading Order\n\nRead this `index.md` first, then `exploratory-story.md`, then `handoff-info.md`, then `product-design-proposal.md`. If `full-conversation.md` exists, read it as source evidence, not as a delivery plan. Treat the set as exploration output, not as a completed delivery plan.\n",
+        "docs/project/explorations/exploracoes-o-que-ficou-vivo/product-design-proposal.md": "# Product Design Proposal: Explorações — o que ficou vivo ✦\n\n## Product Intent\n\n_No product intent summary recorded._\n\n## User-Facing Behavior\n\n_No current story recorded._\n\n## What The Product Should Feel Like\n\nThe product should preserve the exploratory shape discovered by Explorer Mode. It should show the user what is happening at the product level, not expose implementation mechanics first.\n\n## Interaction Flow\n\n- User works in Explorer Mode while uncertainty is still alive.\n- Explorer surfaces story changes visibly.\n- Explorer names attractors and proposes small experiments.\n- Explorer proposes Builder handoff only when the user asks or confirms readiness.\n- Builder begins only after explicit confirmation.\n\n## Product-Level States\n\n- Exploratory Story active.\n- Attractor proposed or accepted.\n- Experiment proposal proposed or accepted.\n- Builder handoff proposed.\n\n## Acceptance Behavior\n\n- The user can understand what is being proposed without reading implementation details.\n- The proposal preserves uncertainty and open questions.\n- The proposal gives Builder enough product shape to create roadmap or story plans.\n\n## Explicit Non-Goals\n\n- This document does not define implementation architecture.\n- This document does not create delivery tasks by itself.\n- This document does not replace Builder planning.\n\n## Open Product Questions\n\n- Which behavior is necessary for the first delivery slice?\n- What should remain exploratory after Builder starts?\n- What user validation will prove the product behavior works?\n"
+      },
+      "editorial_synthesis": null,
+      "handoff": {
+        "artifact_dir": "docs/project/explorations/exploracoes-o-que-ficou-vivo",
+        "exploratory_story_path": "docs/project/explorations/exploracoes-o-que-ficou-vivo/exploratory-story.md",
+        "full_conversation_path": null,
+        "handoff_info_path": "docs/project/explorations/exploracoes-o-que-ficou-vivo/handoff-info.md",
+        "index_path": "docs/project/explorations/exploracoes-o-que-ficou-vivo/index.md",
+        "product_design_proposal_path": "docs/project/explorations/exploracoes-o-que-ficou-vivo/product-design-proposal.md",
+        "readiness": "proposed",
+        "summary": null,
+        "title": "Explorações — o que ficou vivo ✦"
+      },
+      "include_full_conversation": false,
+      "name": "accented_and_unicode_title",
+      "pre_existing": [],
+      "sources": [],
+      "story": {
+        "attractors": [],
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": null,
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "status": "active",
+        "title": null
+      },
+      "summary": null,
+      "title": "Explorações — o que ficou vivo ✦"
+    },
+    {
+      "documents": {
+        "docs/project/explorations/an-exploration-title-an-exploration-title-an-exploration-title-an-exploration-ti/exploratory-story.md": "# Exploratory Story: an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title \n\n## Source\n\n- Journey: `probe-journey`\n- Story id: `not recorded`\n- Mode: Explorer Mode\n\n## Continuous Thickening Narrative\n\n_No continuous thickening narrative recorded._\n\n## Current Exploratory Story\n\n_No story text recorded._\n\n## Narrative Summary\n\n_No narrative summary recorded._\n\n## Last Story Card\n\n_No last story card recorded._\n\n## Attractors\n\n_No attractors recorded._\n\n## Experiment Proposal\n\n_No experiment proposal recorded._\n\n## What Changed Through Exploration\n\nThis section should preserve the evolution of the exploration: the original question, the meaningful pivots, the corrections that changed the story, and the current point of promotion. If this document was generated from a short runtime summary, Builder should ask the Navigator whether more conversation evidence must be folded in before roadmap work starts.\n",
+        "docs/project/explorations/an-exploration-title-an-exploration-title-an-exploration-title-an-exploration-ti/handoff-info.md": "# Handoff Info: an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title \n\n## Handoff Summary\n\n_No handoff summary recorded._\n\n## Handoff Completeness Checklist\n\n- [ ] continuous exploratory thickening\n- [ ] source evidence list\n- [ ] surfaces and story state\n- [ ] phases or evolution narrative\n- [ ] examples or simulations\n- [ ] product decisions\n- [ ] user conversation flows\n- [x] transition rules\n- [x] risks\n- [x] boundaries\n- [x] open questions\n- [x] what Builder should preserve\n- [x] what Builder should not assume\n\nMissing or weak evidence before Builder should treat this as complete:\n- continuous exploratory thickening\n- source evidence list\n- surfaces and story state\n- phases or evolution narrative\n- examples or simulations\n- product decisions\n- user conversation flows\n\n## What Builder Should Preserve\n\n- The exploration is not only a feature request. It carries discovery context and product judgment.\n- The attractor and experiment proposal should guide Builder's first roadmap framing.\n- The product design proposal should be translated into roadmap/story docs only after Builder reads the project.\n\n## Risks\n\n- Builder may over-treat exploratory material as settled delivery scope.\n- Builder may flatten open questions into implementation assumptions.\n- Builder may focus on mechanism before preserving the user-facing product shape.\n\n## Open Questions\n\n- Which parts of this exploration should become roadmap stories?\n- What validation route proves the product behavior externally?\n- What should remain outside the first delivery slice?\n\n## Boundaries\n\n- This handoff is not a delivery plan.\n- Builder must still read the project, create or update roadmap/story docs, and validate with the Navigator.\n- Explorer preserved uncertainty; Builder should not erase it prematurely.\n\n## Non-Assumptions\n\n- Do not assume implementation architecture from this handoff.\n- Do not assume all open questions are in scope.\n- Do not assume the experiment proposal has already been validated.\n\n## Attractors\n\n_No attractors recorded._\n\n## Experiment Status\n\n_No experiment proposal recorded._\n\n## Promotion Boundary\n\nBuilder executes only after explicit confirmation from the Navigator.\n",
+        "docs/project/explorations/an-exploration-title-an-exploration-title-an-exploration-title-an-exploration-ti/index.md": "# Exploration Handoff: an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title \n\n## Editorial Synthesis\n\n_No editorial synthesis recorded._\n\n## Durable Story\n\n- Story id: `not recorded`\n- Journey: `probe-journey`\n- Status: `active`\n\n## Source Evidence\n\n_No source conversations were attached to this handoff._\n\n## What Was Decided\n\n_No decided product direction recorded._\n\n## Transfer Documents\n\n- [Exploratory Story](exploratory-story.md): discovery narrative and continuous thickening.\n- [Handoff Info](handoff-info.md): risks, open questions, boundaries, and non-assumptions for Builder.\n- [Product Design Proposal](product-design-proposal.md): user-facing product behavior, without implementation detail.\n- Full conversation evidence was not included in this handoff.\n\n## Current Attractors\n\n_No attractors recorded._\n\n## Current Experiment Proposal\n\n_No experiment proposal recorded._\n\n## Builder Reading Order\n\nRead this `index.md` first, then `exploratory-story.md`, then `handoff-info.md`, then `product-design-proposal.md`. If `full-conversation.md` exists, read it as source evidence, not as a delivery plan. Treat the set as exploration output, not as a completed delivery plan.\n",
+        "docs/project/explorations/an-exploration-title-an-exploration-title-an-exploration-title-an-exploration-ti/product-design-proposal.md": "# Product Design Proposal: an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title \n\n## Product Intent\n\n_No product intent summary recorded._\n\n## User-Facing Behavior\n\n_No current story recorded._\n\n## What The Product Should Feel Like\n\nThe product should preserve the exploratory shape discovered by Explorer Mode. It should show the user what is happening at the product level, not expose implementation mechanics first.\n\n## Interaction Flow\n\n- User works in Explorer Mode while uncertainty is still alive.\n- Explorer surfaces story changes visibly.\n- Explorer names attractors and proposes small experiments.\n- Explorer proposes Builder handoff only when the user asks or confirms readiness.\n- Builder begins only after explicit confirmation.\n\n## Product-Level States\n\n- Exploratory Story active.\n- Attractor proposed or accepted.\n- Experiment proposal proposed or accepted.\n- Builder handoff proposed.\n\n## Acceptance Behavior\n\n- The user can understand what is being proposed without reading implementation details.\n- The proposal preserves uncertainty and open questions.\n- The proposal gives Builder enough product shape to create roadmap or story plans.\n\n## Explicit Non-Goals\n\n- This document does not define implementation architecture.\n- This document does not create delivery tasks by itself.\n- This document does not replace Builder planning.\n\n## Open Product Questions\n\n- Which behavior is necessary for the first delivery slice?\n- What should remain exploratory after Builder starts?\n- What user validation will prove the product behavior works?\n"
+      },
+      "editorial_synthesis": null,
+      "handoff": {
+        "artifact_dir": "docs/project/explorations/an-exploration-title-an-exploration-title-an-exploration-title-an-exploration-ti",
+        "exploratory_story_path": "docs/project/explorations/an-exploration-title-an-exploration-title-an-exploration-title-an-exploration-ti/exploratory-story.md",
+        "full_conversation_path": null,
+        "handoff_info_path": "docs/project/explorations/an-exploration-title-an-exploration-title-an-exploration-title-an-exploration-ti/handoff-info.md",
+        "index_path": "docs/project/explorations/an-exploration-title-an-exploration-title-an-exploration-title-an-exploration-ti/index.md",
+        "product_design_proposal_path": "docs/project/explorations/an-exploration-title-an-exploration-title-an-exploration-title-an-exploration-ti/product-design-proposal.md",
+        "readiness": "proposed",
+        "summary": null,
+        "title": "an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title "
+      },
+      "include_full_conversation": false,
+      "name": "very_long_title_is_capped",
+      "pre_existing": [],
+      "sources": [],
+      "story": {
+        "attractors": [],
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": null,
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "status": "active",
+        "title": null
+      },
+      "summary": null,
+      "title": "an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title an exploration title "
+    }
+  ],
+  "redaction": [
+    {
+      "expected": "the file is at [LOCAL_PATH] today",
+      "input": "the file is at /Users/nav/dev/project/src/main.ts today",
+      "name": "path_simple"
+    },
+    {
+      "expected": "see ([LOCAL_PATH]) for the detail",
+      "input": "see (/Users/nav/notes.md) for the detail",
+      "name": "path_stops_at_paren"
+    },
+    {
+      "expected": "see [[LOCAL_PATH]] for the detail",
+      "input": "see [/Users/nav/notes.md] for the detail",
+      "name": "path_stops_at_bracket"
+    },
+    {
+      "expected": "[LOCAL_PATH]",
+      "input": "/Users/nav/dev/project",
+      "name": "path_to_end_of_line"
+    },
+    {
+      "expected": "the file is at /home/nav/dev/project/src/main.ts",
+      "input": "the file is at /home/nav/dev/project/src/main.ts",
+      "name": "path_negative_home"
+    },
+    {
+      "expected": "the file is at .[LOCAL_PATH]",
+      "input": "the file is at ./Users/nav/notes.md",
+      "name": "path_negative_relative"
+    },
+    {
+      "expected": "[LOCAL_PATH]\u001fand more",
+      "input": "/Users/nav/a\u001fand more",
+      "name": "path_unit_separator_terminator"
+    },
+    {
+      "expected": "[LOCAL_PATH] more",
+      "input": "/Users/nav/a﻿and more",
+      "name": "path_bom_terminator"
+    },
+    {
+      "expected": "[LOCAL_PATH] and more",
+      "input": "/Users/nav/a and more",
+      "name": "path_nbsp_terminator"
+    },
+    {
+      "expected": "api_key=[SECRET] in the env",
+      "input": "api_key=sk_live_abcdefghijklmnop in the env",
+      "name": "secret_api_key"
+    },
+    {
+      "expected": "api-key=[SECRET] in the env",
+      "input": "api-key=abcdefghijklmnop in the env",
+      "name": "secret_api_dash_key"
+    },
+    {
+      "expected": "apikey=[SECRET] in the env",
+      "input": "apikey=abcdefghijklmnop in the env",
+      "name": "secret_apikey_no_separator"
+    },
+    {
+      "expected": "API_KEY=[SECRET] in the env",
+      "input": "API_KEY=ABCDEFGHIJKLMNOP in the env",
+      "name": "secret_uppercase"
+    },
+    {
+      "expected": "ToKeN=[SECRET] in the env",
+      "input": "ToKeN = abcdefghijklmnop in the env",
+      "name": "secret_mixed_case_token"
+    },
+    {
+      "expected": "password=[SECRET] and nothing else",
+      "input": "password=hunter2 and nothing else",
+      "name": "secret_password"
+    },
+    {
+      "expected": "secret=[SECRET]",
+      "input": "secret  =  abcdefghijklmnop",
+      "name": "secret_spaces_around_equals"
+    },
+    {
+      "expected": "the api_key is stored in the vault",
+      "input": "the api_key is stored in the vault",
+      "name": "secret_negative_no_equals"
+    },
+    {
+      "expected": "monkey=abcdefghijklmnop",
+      "input": "monkey=abcdefghijklmnop",
+      "name": "secret_negative_other_word"
+    },
+    {
+      "expected": "token=[SECRET] and more",
+      "input": "token=abc$&def$1ghi and more",
+      "name": "secret_dollar_in_value"
+    },
+    {
+      "expected": "[SECRET] is the key",
+      "input": "sk-abcdefghijklmnopqrstuvwxyz0123 is the key",
+      "name": "sk_key_long"
+    },
+    {
+      "expected": "[SECRET] is the key",
+      "input": "sk-abcdefghijkl is the key",
+      "name": "sk_key_exactly_twelve"
+    },
+    {
+      "expected": "sk-abcdefghijk is too short",
+      "input": "sk-abcdefghijk is too short",
+      "name": "sk_key_negative_eleven"
+    },
+    {
+      "expected": "[SECRET] is the key",
+      "input": "sk-abc_def-ghi_jkl-mno is the key",
+      "name": "sk_key_with_dashes_underscores"
+    },
+    {
+      "expected": "write to [PRIVATE_EMAIL] about it",
+      "input": "write to nav@example.com about it",
+      "name": "email_simple"
+    },
+    {
+      "expected": "write to [PRIVATE_EMAIL] about it",
+      "input": "write to nav+mirror@example.co.uk about it",
+      "name": "email_plus_tag"
+    },
+    {
+      "expected": "write to nav@localhost about it",
+      "input": "write to nav@localhost about it",
+      "name": "email_negative_no_tld"
+    },
+    {
+      "expected": "write to nav@example.c about it",
+      "input": "write to nav@example.c about it",
+      "name": "email_negative_single_char_tld"
+    },
+    {
+      "expected": "call +[PRIVATE_PHONE] tomorrow",
+      "input": "call +55 21 99999-1234 tomorrow",
+      "name": "phone_international"
+    },
+    {
+      "expected": "call ([PRIVATE_PHONE] tomorrow",
+      "input": "call (21) 9999-1234 tomorrow",
+      "name": "phone_parens"
+    },
+    {
+      "expected": "call 12345 tomorrow",
+      "input": "call 12345 tomorrow",
+      "name": "phone_negative_short"
+    },
+    {
+      "expected": "call +[PRIVATE_PHONE] tomorrow",
+      "input": "call +٩٩ ٢١ ٩٩٩٩٩ ١٢٣٤ tomorrow",
+      "name": "phone_unicode_digits"
+    },
+    {
+      "expected": "call [PRIVATE_PHONE] today",
+      "input": "call १२३४५६७८९० today",
+      "name": "phone_devanagari_digits"
+    },
+    {
+      "expected": "[PRIVATE_EMAIL] ran [LOCAL_PATH] with api_key=[SECRET] at +[PRIVATE_PHONE]",
+      "input": "nav@example.com ran /Users/nav/x with api_key=sk-abcdefghijklmnop at +55 21 99999-1234",
+      "name": "combined_all_patterns"
+    },
+    {
+      "expected": "",
+      "input": "",
+      "name": "empty"
+    },
+    {
+      "expected": "a perfectly ordinary sentence about exploration",
+      "input": "a perfectly ordinary sentence about exploration",
+      "name": "no_sensitive_content"
+    }
+  ]
+}

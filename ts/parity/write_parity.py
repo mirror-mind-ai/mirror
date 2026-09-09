@@ -526,6 +526,7 @@ def main(argv: list[str] | None = None) -> int:
             "soul_apply",
             "soul_harvest_save",
             "explorer_story",
+            "explorer_handoff",
         ),
     )
     parser.add_argument("--targets", default=3, type=int)

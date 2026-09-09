@@ -18,7 +18,12 @@ import { updateIdentityMetadata } from "#identity/identityStore.ts";
 import { setIdentity } from "#identity/setIdentity.ts";
 import { createJourney, setProjectPath } from "#journey/journeyWrite.ts";
 import { logAccess, logUse } from "#memory/reinforcement.ts";
-import { type ExplorerStoryProbeParams, explorerStoryProbe } from "./explorerProbes.ts";
+import {
+  type ExplorerHandoffProbeParams,
+  type ExplorerStoryProbeParams,
+  explorerHandoffProbe,
+  explorerStoryProbe,
+} from "./explorerProbes.ts";
 import {
   type CloseTailProbeParams,
   closeTailProbe,
@@ -121,6 +126,12 @@ export type WriteProbeFixture =
   | (WriteProbeBase & {
       probe_type: "explorer_story";
       explorer_story: ExplorerStoryProbeParams;
+    })
+  // CV22.DS7.US7: the handoff documents, graded as FILESYSTEM state — the one
+  // command in this story that writes into the user's own repository.
+  | (WriteProbeBase & {
+      probe_type: "explorer_handoff";
+      explorer_handoff: ExplorerHandoffProbeParams;
     });
 
 /**
@@ -362,6 +373,8 @@ function buildWriteProbe(fixture: WriteProbeFixture): WriteProbe {
       return repairEncodingProbe(fixture.label, fixture.repair_encoding);
     case "explorer_story":
       return explorerStoryProbe(fixture.label, fixture.explorer_story, fixture.now_iso);
+    case "explorer_handoff":
+      return explorerHandoffProbe(fixture.label, fixture.explorer_handoff);
     case "soul_state":
       return soulStateProbe(fixture.label, fixture.soul_state, fixture.now_iso);
     case "soul_apply":

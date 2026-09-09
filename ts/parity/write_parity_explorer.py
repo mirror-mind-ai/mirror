@@ -222,5 +222,131 @@ def explorer_story_probe(python_copy, frozen_datetime, now_iso: str) -> dict[str
     }
 
 
+# --- handoff artifacts ---------------------------------------------------
+
+HANDOFF_TITLE = "Parity is a rendering problem"
+HANDOFF_SUMMARY = "Enough shape to plan, not enough to commit."
+HANDOFF_SYNTHESIS = "The wall was never the database."
+HANDOFF_COLLISIONS = ("parity-is-a-rendering-problem", "parity-is-a-rendering-problem-2")
+HANDOFF_TRANSCRIPT = (
+    ("user", "my key is api_key=sk-abcdefghijklmnop and my path is /Users/nav/dev/project"),
+    ("assistant", "mailed nav@example.com and called +55 21 99999-1234 — also १२३४५६७८९०"),
+)
+
+
+def explorer_handoff_probe(python_copy, frozen_datetime, now_iso: str) -> dict[str, Any]:
+    """Write the five handoff documents into a scratch project on disk.
+
+    Unlike every other probe here the graded state is FILESYSTEM state, because
+    that is what this command produces: documents inside the user's own
+    repository. The scratch project is created beside the database copy, so the
+    harness's work directory stays the only thing either core touches.
+
+    The transcript carries one instance of every redaction pattern, including a
+    Devanagari phone number -- the row that separates Python's Unicode-aware
+    `\\d` from JavaScript's ASCII one, and the only place in this story where a
+    port can leak a real secret into a file the user commits.
+    """
+    from memory.services.explorer_handoff import (
+        HandoffConversationSource,
+        HandoffSourceMessage,
+        write_builder_handoff_artifacts,
+    )
+    from memory.services.explorer_story import (
+        ExplorerAttractor,
+        ExplorerExperimentProposal,
+        ExplorerStory,
+    )
+
+    work_dir = Path(python_copy).parent
+    project = work_dir / "python-handoff-project"
+    explorations = project / "docs" / "project" / "explorations"
+    for collision in HANDOFF_COLLISIONS:
+        (explorations / collision).mkdir(parents=True, exist_ok=True)
+
+    story = ExplorerStory(
+        journey=PROBE_JOURNEY,
+        id="wpexplr",
+        title=HANDOFF_TITLE,
+        status="active",
+        current_exploratory_story=OPENING_STORY,
+        narrative_field_summary="Two cores, one database, one denominator nobody trusts.",
+        last_story_card="The oracle moved while we were reading it.",
+        attractors=(
+            ExplorerAttractor(
+                label=ATTRACTOR_LABEL, description=ATTRACTOR_DETAIL, status="accepted"
+            ),
+        ),
+        experiment_proposal=ExplorerExperimentProposal(title=EXPERIMENT_TITLE),
+    )
+    sources = (
+        HandoffConversationSource(
+            conversation_id=SOURCE_CONVERSATION_ID,
+            title="Where parity breaks",
+            role="origin",
+            messages=tuple(
+                HandoffSourceMessage(role=role, content=content)
+                for role, content in HANDOFF_TRANSCRIPT
+            ),
+        ),
+    )
+
+    handoff = write_builder_handoff_artifacts(
+        project,
+        story,
+        title=HANDOFF_TITLE,
+        summary=HANDOFF_SUMMARY,
+        editorial_synthesis=HANDOFF_SYNTHESIS,
+        source_conversations=sources,
+        include_full_conversation=True,
+    )
+
+    base = Path(handoff.artifact_dir)
+    state = [
+        {
+            "id": "handoff:artifact_dir",
+            "cells": {"path": base.relative_to(project).as_posix()},
+        }
+    ]
+    for path in sorted(base.rglob("*")):
+        if path.is_file():
+            state.append(
+                {
+                    "id": f"handoff:{path.relative_to(base).as_posix()}",
+                    "cells": {"content": path.read_text(encoding="utf-8")},
+                }
+            )
+
+    return {
+        "label": "explorer_handoff_demo",
+        "probe_type": "explorer_handoff",
+        "now_iso": now_iso,
+        "target_ids": [PROBE_JOURNEY],
+        "explorer_handoff": {
+            # The TS side writes into its OWN scratch project beside the same
+            # database copies, so neither core can observe the other's files.
+            "ts_project_dir": str((work_dir / "ts-handoff-project").resolve()),
+            "journey": PROBE_JOURNEY,
+            "story_id": "wpexplr",
+            "title": HANDOFF_TITLE,
+            "summary": HANDOFF_SUMMARY,
+            "editorial_synthesis": HANDOFF_SYNTHESIS,
+            "current_story": OPENING_STORY,
+            "narrative_summary": "Two cores, one database, one denominator nobody trusts.",
+            "last_story_card": "The oracle moved while we were reading it.",
+            "attractor_label": ATTRACTOR_LABEL,
+            "attractor_detail": ATTRACTOR_DETAIL,
+            "experiment_title": EXPERIMENT_TITLE,
+            "source_conversation_id": SOURCE_CONVERSATION_ID,
+            "source_title": "Where parity breaks",
+            "collisions": list(HANDOFF_COLLISIONS),
+            "transcript": [
+                {"role": role, "content": content} for role, content in HANDOFF_TRANSCRIPT
+            ],
+        },
+        "python_state": state,
+    }
+
+
 SEEDERS = {"explorer_story": seed_explorer_story}
-PROBES = {"explorer_story": explorer_story_probe}
+PROBES = {"explorer_story": explorer_story_probe, "explorer_handoff": explorer_handoff_probe}

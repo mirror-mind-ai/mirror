@@ -11,8 +11,13 @@
 // row where the partial unique index expects one, or an archive that leaves the
 // legacy runtime payload active for the next reader to resurrect.
 
+import { mkdirSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
+
+import { type HandoffConversationSource, writeBuilderHandoffArtifacts } from "#explorer/handoff.ts";
 import {
   archiveExplorerStory,
+  type ExplorerStory,
   type StoryClock,
   setExplorerAttractors,
   setExplorerExperimentProposal,
@@ -145,4 +150,123 @@ function sortedRow(row: Record<string, unknown>): Record<string, unknown> {
   const sorted: Record<string, unknown> = {};
   for (const key of Object.keys(row).sort()) sorted[key] = row[key];
   return sorted;
+}
+
+export interface ExplorerHandoffProbeParams {
+  ts_project_dir: string;
+  journey: string;
+  story_id: string;
+  title: string;
+  summary: string;
+  editorial_synthesis: string;
+  current_story: string;
+  narrative_summary: string;
+  last_story_card: string;
+  attractor_label: string;
+  attractor_detail: string;
+  experiment_title: string;
+  source_conversation_id: string;
+  source_title: string;
+  collisions: string[];
+  transcript: { role: string; content: string }[];
+}
+
+/**
+ * The handoff artifacts on a scratch project directory.
+ *
+ * The only probe in this harness whose graded state is FILESYSTEM state, because
+ * that is what the command produces: documents inside the user's own repository.
+ * Each core writes into its own scratch project beside the database copies, so
+ * neither can observe the other's files, and the comparison is the chosen
+ * directory plus every document byte for byte.
+ *
+ * The transcript carries one instance of every redaction pattern, including a
+ * Devanagari phone number -- the row that separates Python's Unicode-aware `\d`
+ * from JavaScript's ASCII one, and the only place in this story where a port can
+ * leak a real secret into a file the user commits.
+ */
+export function explorerHandoffProbe(
+  label: string,
+  params: ExplorerHandoffProbeParams,
+): WriteProbe {
+  return {
+    label,
+    // No table is declared: this write never touches the database.
+    snapshots: [],
+    apply(): MutatedRow[] {
+      const project = params.ts_project_dir;
+      rmSync(project, { recursive: true, force: true });
+      const explorations = join(project, "docs", "project", "explorations");
+      for (const collision of params.collisions) {
+        mkdirSync(join(explorations, collision), { recursive: true });
+      }
+
+      const story: ExplorerStory = {
+        journey: params.journey,
+        currentExploratoryStory: params.current_story,
+        narrativeFieldSummary: params.narrative_summary,
+        lastStoryCard: params.last_story_card,
+        attractors: [
+          {
+            label: params.attractor_label,
+            description: params.attractor_detail,
+            status: "accepted",
+          },
+        ],
+        experimentProposal: {
+          title: params.experiment_title,
+          description: null,
+          status: "proposed",
+        },
+        builderHandoff: null,
+        sourceConversations: [],
+        id: params.story_id,
+        title: params.title,
+        status: "active",
+        createdAt: null,
+        updatedAt: null,
+        promotedAt: null,
+        archivedAt: null,
+      };
+
+      const sources: HandoffConversationSource[] = [
+        {
+          conversationId: params.source_conversation_id,
+          title: params.source_title,
+          role: "origin",
+          messages: params.transcript,
+        },
+      ];
+
+      const handoff = writeBuilderHandoffArtifacts(project, story, {
+        title: params.title,
+        summary: params.summary,
+        editorialSynthesis: params.editorial_synthesis,
+        sourceConversations: sources,
+        includeFullConversation: true,
+      });
+
+      const base = handoff.artifactDir as string;
+      const steps: MutatedRow[] = [
+        {
+          id: "handoff:artifact_dir",
+          cells: { path: relative(project, base).split("\\").join("/") },
+        },
+      ];
+      const walk = (directory: string): void => {
+        for (const entry of readdirSync(directory).sort()) {
+          const path = join(directory, entry);
+          if (statSync(path).isDirectory()) walk(path);
+          else {
+            steps.push({
+              id: `handoff:${relative(base, path).split("\\").join("/")}`,
+              cells: { content: readFileSync(path, "utf-8") },
+            });
+          }
+        }
+      };
+      walk(base);
+      return steps;
+    },
+  };
 }
