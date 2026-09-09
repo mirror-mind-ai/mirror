@@ -18,6 +18,7 @@ import { updateIdentityMetadata } from "#identity/identityStore.ts";
 import { setIdentity } from "#identity/setIdentity.ts";
 import { createJourney, setProjectPath } from "#journey/journeyWrite.ts";
 import { logAccess, logUse } from "#memory/reinforcement.ts";
+import { type ExplorerStoryProbeParams, explorerStoryProbe } from "./explorerProbes.ts";
 import {
   type CloseTailProbeParams,
   closeTailProbe,
@@ -114,6 +115,12 @@ export type WriteProbeFixture =
   | (WriteProbeBase & {
       probe_type: "soul_harvest_save";
       soul_harvest_save: SoulHarvestSaveProbeParams;
+    })
+  // CV22.DS7.US7: the Exploratory Story's durable row AND its legacy runtime
+  // payload, graded together after every step.
+  | (WriteProbeBase & {
+      probe_type: "explorer_story";
+      explorer_story: ExplorerStoryProbeParams;
     });
 
 /**
@@ -353,6 +360,8 @@ function buildWriteProbe(fixture: WriteProbeFixture): WriteProbe {
       return journeyRepairApplyProbe(fixture.label, fixture.journey_repair_apply);
     case "repair_encoding":
       return repairEncodingProbe(fixture.label, fixture.repair_encoding);
+    case "explorer_story":
+      return explorerStoryProbe(fixture.label, fixture.explorer_story, fixture.now_iso);
     case "soul_state":
       return soulStateProbe(fixture.label, fixture.soul_state, fixture.now_iso);
     case "soul_apply":

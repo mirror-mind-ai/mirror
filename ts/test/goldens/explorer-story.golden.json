@@ -1,0 +1,2830 @@
+{
+  "archive_without_story": {
+    "result": null,
+    "runtime": {
+      "active": 0,
+      "metadata": null,
+      "row_present": true
+    }
+  },
+  "clear_is_archive": {
+    "rows": [
+      {
+        "archived_at": "2026-09-09T12:02:00Z",
+        "artifact_dir": null,
+        "attractors_json": "[]",
+        "builder_handoff_json": null,
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_story": "to be cleared",
+        "experiment_proposal_json": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_summary": null,
+        "promoted_at": null,
+        "source_conversations_json": "[]",
+        "status": "archived",
+        "title": "to be cleared",
+        "updated_at": "2026-09-09T12:02:00Z"
+      }
+    ],
+    "runtime": {
+      "active": 0,
+      "metadata": null,
+      "row_present": true
+    }
+  },
+  "columns": [
+    {
+      "name": "base_has_null_experiment_and_handoff",
+      "result": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_exploratory_story": "base story",
+        "experiment_proposal": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "base story",
+        "updated_at": "2026-09-09T12:01:00Z"
+      },
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[]",
+          "builder_handoff_json": null,
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": "base story",
+          "experiment_proposal_json": null,
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": null,
+          "narrative_summary": null,
+          "promoted_at": null,
+          "source_conversations_json": "[]",
+          "status": "active",
+          "title": "base story",
+          "updated_at": "2026-09-09T12:01:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"base story\", \"status\": \"active\", \"current_exploratory_story\": \"base story\", \"narrative_field_summary\": null, \"last_story_card\": null, \"attractors\": [], \"experiment_proposal\": null, \"builder_handoff\": null, \"source_conversations\": []}",
+        "row_present": true
+      }
+    },
+    {
+      "name": "attractors_unicode_insertion_order",
+      "result": {
+        "archived_at": null,
+        "attractors": [
+          {
+            "description": "沉默不是空白而是尚未成形的語言",
+            "label": "🌱 a seed 🎯 and a target",
+            "status": "accepted"
+          },
+          {
+            "description": null,
+            "label": "padded",
+            "status": "proposed"
+          }
+        ],
+        "builder_handoff": null,
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_exploratory_story": "base story",
+        "experiment_proposal": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "base story",
+        "updated_at": "2026-09-09T12:02:00Z"
+      },
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[{\"label\": \"🌱 a seed 🎯 and a target\", \"description\": \"沉默不是空白而是尚未成形的語言\", \"status\": \"accepted\"}, {\"label\": \"padded\", \"description\": null, \"status\": \"proposed\"}]",
+          "builder_handoff_json": null,
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": "base story",
+          "experiment_proposal_json": null,
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": null,
+          "narrative_summary": null,
+          "promoted_at": null,
+          "source_conversations_json": "[]",
+          "status": "active",
+          "title": "base story",
+          "updated_at": "2026-09-09T12:02:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"base story\", \"status\": \"active\", \"current_exploratory_story\": \"base story\", \"narrative_field_summary\": null, \"last_story_card\": null, \"attractors\": [{\"label\": \"🌱 a seed 🎯 and a target\", \"description\": \"沉默不是空白而是尚未成形的語言\", \"status\": \"accepted\"}, {\"label\": \"padded\", \"description\": null, \"status\": \"proposed\"}], \"experiment_proposal\": null, \"builder_handoff\": null, \"source_conversations\": []}",
+        "row_present": true
+      }
+    },
+    {
+      "name": "attractors_empty_list_clears",
+      "result": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_exploratory_story": "base story",
+        "experiment_proposal": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "base story",
+        "updated_at": "2026-09-09T12:02:00Z"
+      },
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[]",
+          "builder_handoff_json": null,
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": "base story",
+          "experiment_proposal_json": null,
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": null,
+          "narrative_summary": null,
+          "promoted_at": null,
+          "source_conversations_json": "[]",
+          "status": "active",
+          "title": "base story",
+          "updated_at": "2026-09-09T12:02:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"base story\", \"status\": \"active\", \"current_exploratory_story\": \"base story\", \"narrative_field_summary\": null, \"last_story_card\": null, \"attractors\": [], \"experiment_proposal\": null, \"builder_handoff\": null, \"source_conversations\": []}",
+        "row_present": true
+      }
+    },
+    {
+      "expected_error": "attractor label must not be empty",
+      "name": "attractor_blank_label_refuses",
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[]",
+          "builder_handoff_json": null,
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": "base story",
+          "experiment_proposal_json": null,
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": null,
+          "narrative_summary": null,
+          "promoted_at": null,
+          "source_conversations_json": "[]",
+          "status": "active",
+          "title": "base story",
+          "updated_at": "2026-09-09T12:01:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"base story\", \"status\": \"active\", \"current_exploratory_story\": \"base story\", \"narrative_field_summary\": null, \"last_story_card\": null, \"attractors\": [], \"experiment_proposal\": null, \"builder_handoff\": null, \"source_conversations\": []}",
+        "row_present": true
+      }
+    },
+    {
+      "name": "experiment_written",
+      "result": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_exploratory_story": "base story",
+        "experiment_proposal": {
+          "description": null,
+          "status": "accepted",
+          "title": "沉默不是空白而是尚未成形的語言"
+        },
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "base story",
+        "updated_at": "2026-09-09T12:02:00Z"
+      },
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[]",
+          "builder_handoff_json": null,
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": "base story",
+          "experiment_proposal_json": "{\"title\": \"沉默不是空白而是尚未成形的語言\", \"description\": null, \"status\": \"accepted\"}",
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": null,
+          "narrative_summary": null,
+          "promoted_at": null,
+          "source_conversations_json": "[]",
+          "status": "active",
+          "title": "base story",
+          "updated_at": "2026-09-09T12:02:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"base story\", \"status\": \"active\", \"current_exploratory_story\": \"base story\", \"narrative_field_summary\": null, \"last_story_card\": null, \"attractors\": [], \"experiment_proposal\": {\"title\": \"沉默不是空白而是尚未成形的語言\", \"description\": null, \"status\": \"accepted\"}, \"builder_handoff\": null, \"source_conversations\": []}",
+        "row_present": true
+      }
+    },
+    {
+      "expected_error": "experiment title must not be empty",
+      "name": "experiment_blank_title_refuses",
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[]",
+          "builder_handoff_json": null,
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": "base story",
+          "experiment_proposal_json": null,
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": null,
+          "narrative_summary": null,
+          "promoted_at": null,
+          "source_conversations_json": "[]",
+          "status": "active",
+          "title": "base story",
+          "updated_at": "2026-09-09T12:01:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"base story\", \"status\": \"active\", \"current_exploratory_story\": \"base story\", \"narrative_field_summary\": null, \"last_story_card\": null, \"attractors\": [], \"experiment_proposal\": null, \"builder_handoff\": null, \"source_conversations\": []}",
+        "row_present": true
+      }
+    },
+    {
+      "name": "handoff_written",
+      "result": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": {
+          "artifact_dir": "/tmp/x",
+          "exploratory_story_path": null,
+          "full_conversation_path": null,
+          "handoff_info_path": null,
+          "index_path": "/tmp/x/index.md",
+          "product_design_proposal_path": null,
+          "readiness": "confirmed",
+          "summary": null,
+          "title": "a handoff"
+        },
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_exploratory_story": "base story",
+        "experiment_proposal": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "base story",
+        "updated_at": "2026-09-09T12:02:00Z"
+      },
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[]",
+          "builder_handoff_json": "{\"title\": \"a handoff\", \"summary\": null, \"readiness\": \"confirmed\", \"artifact_dir\": \"/tmp/x\", \"index_path\": \"/tmp/x/index.md\", \"exploratory_story_path\": null, \"handoff_info_path\": null, \"product_design_proposal_path\": null, \"full_conversation_path\": null}",
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": "base story",
+          "experiment_proposal_json": null,
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": null,
+          "narrative_summary": null,
+          "promoted_at": null,
+          "source_conversations_json": "[]",
+          "status": "active",
+          "title": "base story",
+          "updated_at": "2026-09-09T12:02:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"base story\", \"status\": \"active\", \"current_exploratory_story\": \"base story\", \"narrative_field_summary\": null, \"last_story_card\": null, \"attractors\": [], \"experiment_proposal\": null, \"builder_handoff\": {\"title\": \"a handoff\", \"summary\": null, \"readiness\": \"confirmed\", \"artifact_dir\": \"/tmp/x\", \"index_path\": \"/tmp/x/index.md\", \"exploratory_story_path\": null, \"handoff_info_path\": null, \"product_design_proposal_path\": null, \"full_conversation_path\": null}, \"source_conversations\": []}",
+        "row_present": true
+      }
+    },
+    {
+      "name": "handoff_invalid_readiness_falls_back",
+      "result": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": {
+          "artifact_dir": null,
+          "exploratory_story_path": null,
+          "full_conversation_path": null,
+          "handoff_info_path": null,
+          "index_path": null,
+          "product_design_proposal_path": null,
+          "readiness": "proposed",
+          "summary": null,
+          "title": "a handoff"
+        },
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_exploratory_story": "base story",
+        "experiment_proposal": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "base story",
+        "updated_at": "2026-09-09T12:02:00Z"
+      },
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[]",
+          "builder_handoff_json": "{\"title\": \"a handoff\", \"summary\": null, \"readiness\": \"proposed\", \"artifact_dir\": null, \"index_path\": null, \"exploratory_story_path\": null, \"handoff_info_path\": null, \"product_design_proposal_path\": null, \"full_conversation_path\": null}",
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": "base story",
+          "experiment_proposal_json": null,
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": null,
+          "narrative_summary": null,
+          "promoted_at": null,
+          "source_conversations_json": "[]",
+          "status": "active",
+          "title": "base story",
+          "updated_at": "2026-09-09T12:02:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"base story\", \"status\": \"active\", \"current_exploratory_story\": \"base story\", \"narrative_field_summary\": null, \"last_story_card\": null, \"attractors\": [], \"experiment_proposal\": null, \"builder_handoff\": {\"title\": \"a handoff\", \"summary\": null, \"readiness\": \"proposed\", \"artifact_dir\": null, \"index_path\": null, \"exploratory_story_path\": null, \"handoff_info_path\": null, \"product_design_proposal_path\": null, \"full_conversation_path\": null}, \"source_conversations\": []}",
+        "row_present": true
+      }
+    },
+    {
+      "expected_error": "builder handoff title must not be empty",
+      "name": "handoff_blank_title_refuses",
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[]",
+          "builder_handoff_json": null,
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": "base story",
+          "experiment_proposal_json": null,
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": null,
+          "narrative_summary": null,
+          "promoted_at": null,
+          "source_conversations_json": "[]",
+          "status": "active",
+          "title": "base story",
+          "updated_at": "2026-09-09T12:01:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"base story\", \"status\": \"active\", \"current_exploratory_story\": \"base story\", \"narrative_field_summary\": null, \"last_story_card\": null, \"attractors\": [], \"experiment_proposal\": null, \"builder_handoff\": null, \"source_conversations\": []}",
+        "row_present": true
+      }
+    },
+    {
+      "name": "source_conversations_written",
+      "result": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_exploratory_story": "base story",
+        "experiment_proposal": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [
+          {
+            "conversation_id": "c1",
+            "role": "origin",
+            "title": "🌱 a seed 🎯 and a target"
+          },
+          {
+            "conversation_id": "c2",
+            "role": "source evidence",
+            "title": null
+          }
+        ],
+        "status": "active",
+        "title": "base story",
+        "updated_at": "2026-09-09T12:02:00Z"
+      },
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[]",
+          "builder_handoff_json": null,
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": "base story",
+          "experiment_proposal_json": null,
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": null,
+          "narrative_summary": null,
+          "promoted_at": null,
+          "source_conversations_json": "[{\"conversation_id\": \"c1\", \"title\": \"🌱 a seed 🎯 and a target\", \"role\": \"origin\"}, {\"conversation_id\": \"c2\", \"title\": null, \"role\": \"source evidence\"}]",
+          "status": "active",
+          "title": "base story",
+          "updated_at": "2026-09-09T12:02:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"base story\", \"status\": \"active\", \"current_exploratory_story\": \"base story\", \"narrative_field_summary\": null, \"last_story_card\": null, \"attractors\": [], \"experiment_proposal\": null, \"builder_handoff\": null, \"source_conversations\": [{\"conversation_id\": \"c1\", \"title\": \"🌱 a seed 🎯 and a target\", \"role\": \"origin\"}, {\"conversation_id\": \"c2\", \"title\": null, \"role\": \"source evidence\"}]}",
+        "row_present": true
+      }
+    },
+    {
+      "expected_error": "source conversation id must not be empty",
+      "name": "source_conversation_blank_id_refuses",
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[]",
+          "builder_handoff_json": null,
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": "base story",
+          "experiment_proposal_json": null,
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": null,
+          "narrative_summary": null,
+          "promoted_at": null,
+          "source_conversations_json": "[]",
+          "status": "active",
+          "title": "base story",
+          "updated_at": "2026-09-09T12:01:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"base story\", \"status\": \"active\", \"current_exploratory_story\": \"base story\", \"narrative_field_summary\": null, \"last_story_card\": null, \"attractors\": [], \"experiment_proposal\": null, \"builder_handoff\": null, \"source_conversations\": []}",
+        "row_present": true
+      }
+    }
+  ],
+  "context_render": [
+    {
+      "expected_stdout": "=== △ Exploratory Story ===\njourney: probe-journey\nstatus: active",
+      "name": "minimal",
+      "story": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": null,
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": null,
+        "updated_at": null
+      }
+    },
+    {
+      "expected_stdout": "=== △ Exploratory Story ===\njourney: probe-journey\nid: id-1\nstatus: active\ntitle: A title\n\ncurrent exploratory story:\nthe story\nover two lines\n\nnarrative field summary:\nthe summary\n\nlast story card:\nthe card\n\nattractors:\n- with detail [accepted]\n  detail\n- without detail [proposed]\n\nexperiment proposal:\nan experiment [accepted]\nhow\n\nsource conversations:\n- c1 — t [origin]\n- c2 [source evidence]\n\nbuilder handoff:\na handoff [confirmed]\nartifact_dir: /tmp/dir\nindex: /tmp/dir/index.md\nfull conversation: /tmp/dir/full-conversation.md",
+      "name": "full",
+      "story": {
+        "archived_at": null,
+        "attractors": [
+          {
+            "description": "detail",
+            "label": "with detail",
+            "status": "accepted"
+          },
+          {
+            "description": null,
+            "label": "without detail",
+            "status": "proposed"
+          }
+        ],
+        "builder_handoff": {
+          "artifact_dir": "/tmp/dir",
+          "exploratory_story_path": null,
+          "full_conversation_path": "/tmp/dir/full-conversation.md",
+          "handoff_info_path": null,
+          "index_path": "/tmp/dir/index.md",
+          "product_design_proposal_path": null,
+          "readiness": "confirmed",
+          "summary": null,
+          "title": "a handoff"
+        },
+        "created_at": null,
+        "current_exploratory_story": "the story\nover two lines",
+        "experiment_proposal": {
+          "description": "how",
+          "status": "accepted",
+          "title": "an experiment"
+        },
+        "id": "id-1",
+        "journey": "probe-journey",
+        "last_story_card": "the card",
+        "narrative_field_summary": "the summary",
+        "promoted_at": null,
+        "source_conversations": [
+          {
+            "conversation_id": "c1",
+            "role": "origin",
+            "title": "t"
+          },
+          {
+            "conversation_id": "c2",
+            "role": "source evidence",
+            "title": null
+          }
+        ],
+        "status": "active",
+        "title": "A title",
+        "updated_at": null
+      }
+    },
+    {
+      "expected_stdout": "=== △ Exploratory Story ===\njourney: probe-journey\nstatus: active\n\nbuilder handoff:\nbare handoff [proposed]",
+      "name": "handoff_without_optional_paths",
+      "story": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": {
+          "artifact_dir": null,
+          "exploratory_story_path": null,
+          "full_conversation_path": null,
+          "handoff_info_path": null,
+          "index_path": null,
+          "product_design_proposal_path": null,
+          "readiness": "proposed",
+          "summary": null,
+          "title": "bare handoff"
+        },
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": null,
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": null,
+        "updated_at": null
+      }
+    },
+    {
+      "expected_stdout": "=== △ Exploratory Story ===\njourney: probe-journey\nstatus: active\n\ncurrent exploratory story:\n🌱 a seed 🎯 and a target",
+      "name": "unicode",
+      "story": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": "🌱 a seed 🎯 and a target",
+        "experiment_proposal": null,
+        "id": null,
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": null,
+        "updated_at": null
+      }
+    }
+  ],
+  "derive_title": [
+    {
+      "current_story": "a short story",
+      "name": "from_story",
+      "narrative_summary": null,
+      "title": "a short story"
+    },
+    {
+      "current_story": "first line\nsecond line\nthird",
+      "name": "first_line_only",
+      "narrative_summary": null,
+      "title": "first line"
+    },
+    {
+      "current_story": "\n\n  padded first line  \n\nrest",
+      "name": "strips_before_splitting",
+      "narrative_summary": null,
+      "title": "padded first line"
+    },
+    {
+      "current_story": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "name": "truncates_at_80",
+      "narrative_summary": null,
+      "title": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    {
+      "current_story": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy   tail",
+      "name": "truncation_then_strip",
+      "narrative_summary": null,
+      "title": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+    },
+    {
+      "current_story": null,
+      "name": "falls_back_to_summary",
+      "narrative_summary": "the summary becomes the title",
+      "title": "the summary becomes the title"
+    },
+    {
+      "current_story": null,
+      "name": "falls_back_to_constant",
+      "narrative_summary": null,
+      "title": "Exploratory Story"
+    },
+    {
+      "current_story": "🌱 a seed 🎯 and a target🌱 a seed 🎯 and a target🌱 a seed 🎯 and a target🌱 a seed 🎯 and a target🌱 a seed 🎯 and a target🌱 a seed 🎯 and a target🌱 a seed 🎯 and a target🌱 a seed 🎯 and a target",
+      "name": "unicode_counts_code_points",
+      "narrative_summary": null,
+      "title": "🌱 a seed 🎯 and a target🌱 a seed 🎯 and a target🌱 a seed 🎯 and a target🌱 a seed 🎯"
+    }
+  ],
+  "journey_normalization": [
+    {
+      "journey": "  probe-journey  ",
+      "name": "padded",
+      "result": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_exploratory_story": "x",
+        "experiment_proposal": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "x",
+        "updated_at": "2026-09-09T12:01:00Z"
+      }
+    },
+    {
+      "expected_error": "journey must not be empty",
+      "journey": "   ",
+      "name": "blank"
+    },
+    {
+      "expected_error": "journey must not be empty",
+      "journey": "",
+      "name": "empty"
+    }
+  ],
+  "legacy_fallback": [
+    {
+      "name": "valid_full",
+      "seed_active": true,
+      "seed_metadata": "{\"current_exploratory_story\": \"a legacy story\", \"narrative_field_summary\": \"a legacy summary\", \"last_story_card\": \"a legacy card\", \"attractors\": [{\"label\": \"legacy attractor\", \"description\": \"detail\", \"status\": \"accepted\"}], \"experiment_proposal\": {\"title\": \"legacy experiment\", \"status\": \"accepted\"}, \"builder_handoff\": {\"title\": \"legacy handoff\", \"readiness\": \"confirmed\"}, \"source_conversations\": [{\"conversation_id\": \"conv-1\", \"title\": \"t\", \"role\": \"origin\"}]}",
+      "story": {
+        "archived_at": null,
+        "attractors": [
+          {
+            "description": "detail",
+            "label": "legacy attractor",
+            "status": "accepted"
+          }
+        ],
+        "builder_handoff": {
+          "artifact_dir": null,
+          "exploratory_story_path": null,
+          "full_conversation_path": null,
+          "handoff_info_path": null,
+          "index_path": null,
+          "product_design_proposal_path": null,
+          "readiness": "confirmed",
+          "summary": null,
+          "title": "legacy handoff"
+        },
+        "created_at": null,
+        "current_exploratory_story": "a legacy story",
+        "experiment_proposal": {
+          "description": null,
+          "status": "accepted",
+          "title": "legacy experiment"
+        },
+        "id": null,
+        "journey": "probe-journey",
+        "last_story_card": "a legacy card",
+        "narrative_field_summary": "a legacy summary",
+        "promoted_at": null,
+        "source_conversations": [
+          {
+            "conversation_id": "conv-1",
+            "role": "origin",
+            "title": "t"
+          }
+        ],
+        "status": "active",
+        "title": null,
+        "updated_at": null
+      }
+    },
+    {
+      "name": "valid_minimal",
+      "seed_active": true,
+      "seed_metadata": "{\"current_exploratory_story\": \"only text\"}",
+      "story": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": "only text",
+        "experiment_proposal": null,
+        "id": null,
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": null,
+        "updated_at": null
+      }
+    },
+    {
+      "name": "invalid_json",
+      "seed_active": true,
+      "seed_metadata": "{not json at all",
+      "story": null
+    },
+    {
+      "name": "json_array",
+      "seed_active": true,
+      "seed_metadata": "[{\"current_exploratory_story\": \"x\"}]",
+      "story": null
+    },
+    {
+      "name": "json_string",
+      "seed_active": true,
+      "seed_metadata": "\"a bare string\"",
+      "story": null
+    },
+    {
+      "name": "json_null",
+      "seed_active": true,
+      "seed_metadata": "null",
+      "story": null
+    },
+    {
+      "name": "empty_object",
+      "seed_active": true,
+      "seed_metadata": "{}",
+      "story": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": null,
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": null,
+        "updated_at": null
+      }
+    },
+    {
+      "name": "empty_string_metadata",
+      "seed_active": true,
+      "seed_metadata": "",
+      "story": null
+    },
+    {
+      "name": "non_string_fields",
+      "seed_active": true,
+      "seed_metadata": "{\"current_exploratory_story\": 42, \"attractors\": 7}",
+      "story": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": null,
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": null,
+        "updated_at": null
+      }
+    },
+    {
+      "name": "blank_string_fields",
+      "seed_active": true,
+      "seed_metadata": "{\"current_exploratory_story\": \"   \"}",
+      "story": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": null,
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": null,
+        "updated_at": null
+      }
+    },
+    {
+      "name": "attractor_without_label",
+      "seed_active": true,
+      "seed_metadata": "{\"attractors\": [{\"description\": \"no label\"}, {\"label\": \"kept\"}]}",
+      "story": {
+        "archived_at": null,
+        "attractors": [
+          {
+            "description": null,
+            "label": "kept",
+            "status": "proposed"
+          }
+        ],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": null,
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": null,
+        "updated_at": null
+      }
+    },
+    {
+      "name": "attractor_not_a_dict",
+      "seed_active": true,
+      "seed_metadata": "{\"attractors\": [\"a string\", {\"label\": \"kept\"}]}",
+      "story": {
+        "archived_at": null,
+        "attractors": [
+          {
+            "description": null,
+            "label": "kept",
+            "status": "proposed"
+          }
+        ],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": null,
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": null,
+        "updated_at": null
+      }
+    },
+    {
+      "name": "invalid_status_falls_back",
+      "seed_active": true,
+      "seed_metadata": "{\"attractors\": [{\"label\": \"l\", \"status\": \"invented\"}]}",
+      "story": {
+        "archived_at": null,
+        "attractors": [
+          {
+            "description": null,
+            "label": "l",
+            "status": "proposed"
+          }
+        ],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": null,
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": null,
+        "updated_at": null
+      }
+    },
+    {
+      "name": "experiment_without_title",
+      "seed_active": true,
+      "seed_metadata": "{\"experiment_proposal\": {\"description\": \"no title\"}}",
+      "story": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": null,
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": null,
+        "updated_at": null
+      }
+    },
+    {
+      "name": "handoff_without_title",
+      "seed_active": true,
+      "seed_metadata": "{\"builder_handoff\": {\"summary\": \"no title\"}}",
+      "story": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": null,
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": null,
+        "updated_at": null
+      }
+    },
+    {
+      "name": "source_without_id",
+      "seed_active": true,
+      "seed_metadata": "{\"source_conversations\": [{\"title\": \"no id\"}, {\"conversation_id\": \"kept\"}]}",
+      "story": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": null,
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [
+          {
+            "conversation_id": "kept",
+            "role": "source evidence",
+            "title": null
+          }
+        ],
+        "status": "active",
+        "title": null,
+        "updated_at": null
+      }
+    },
+    {
+      "name": "source_blank_role_defaults",
+      "seed_active": true,
+      "seed_metadata": "{\"source_conversations\": [{\"conversation_id\": \"c\", \"role\": \"  \"}]}",
+      "story": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": null,
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [
+          {
+            "conversation_id": "c",
+            "role": "source evidence",
+            "title": null
+          }
+        ],
+        "status": "active",
+        "title": null,
+        "updated_at": null
+      }
+    },
+    {
+      "name": "null_metadata",
+      "seed_active": true,
+      "seed_metadata": null,
+      "story": null
+    },
+    {
+      "name": "inactive_session_is_ignored",
+      "seed_active": false,
+      "seed_metadata": "{\"current_exploratory_story\": \"must not be read\"}",
+      "story": null
+    },
+    {
+      "name": "legacy_story_migrates_into_durable_on_update",
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[]",
+          "builder_handoff_json": null,
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": "legacy text",
+          "experiment_proposal_json": null,
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": "lc",
+          "narrative_summary": "added later",
+          "promoted_at": null,
+          "source_conversations_json": "[]",
+          "status": "active",
+          "title": "legacy text",
+          "updated_at": "2026-09-09T12:01:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"legacy text\", \"status\": \"active\", \"current_exploratory_story\": \"legacy text\", \"narrative_field_summary\": \"added later\", \"last_story_card\": \"lc\", \"attractors\": [], \"experiment_proposal\": null, \"builder_handoff\": null, \"source_conversations\": []}",
+        "row_present": true
+      },
+      "seed_active": true,
+      "seed_metadata": "(see name)",
+      "story": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_exploratory_story": "legacy text",
+        "experiment_proposal": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": "lc",
+        "narrative_field_summary": "added later",
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "legacy text",
+        "updated_at": "2026-09-09T12:01:00Z"
+      }
+    }
+  ],
+  "lifecycle": {
+    "archived": {
+      "archived_at": "2026-09-09T12:02:00Z",
+      "attractors": [],
+      "builder_handoff": null,
+      "created_at": "2026-09-09T12:01:00Z",
+      "current_exploratory_story": "story one",
+      "experiment_proposal": null,
+      "id": "explorer-01",
+      "journey": "probe-journey",
+      "last_story_card": null,
+      "narrative_field_summary": null,
+      "promoted_at": null,
+      "source_conversations": [],
+      "status": "archived",
+      "title": "story one",
+      "updated_at": "2026-09-09T12:02:00Z"
+    },
+    "list": [
+      {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": "2026-09-09T12:05:00Z",
+        "current_exploratory_story": "story three",
+        "experiment_proposal": null,
+        "id": "explorer-03",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "story three",
+        "updated_at": "2026-09-09T12:05:00Z"
+      },
+      {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": "2026-09-09T12:03:00Z",
+        "current_exploratory_story": "story two",
+        "experiment_proposal": null,
+        "id": "explorer-02",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": "2026-09-09T12:04:00Z",
+        "source_conversations": [],
+        "status": "promoted",
+        "title": "story two",
+        "updated_at": "2026-09-09T12:04:00Z"
+      },
+      {
+        "archived_at": "2026-09-09T12:02:00Z",
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_exploratory_story": "story one",
+        "experiment_proposal": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "archived",
+        "title": "story one",
+        "updated_at": "2026-09-09T12:02:00Z"
+      }
+    ],
+    "promoted": {
+      "archived_at": null,
+      "attractors": [],
+      "builder_handoff": null,
+      "created_at": "2026-09-09T12:03:00Z",
+      "current_exploratory_story": "story two",
+      "experiment_proposal": null,
+      "id": "explorer-02",
+      "journey": "probe-journey",
+      "last_story_card": null,
+      "narrative_field_summary": null,
+      "promoted_at": "2026-09-09T12:04:00Z",
+      "source_conversations": [],
+      "status": "promoted",
+      "title": "story two",
+      "updated_at": "2026-09-09T12:04:00Z"
+    },
+    "rows": [
+      {
+        "archived_at": "2026-09-09T12:02:00Z",
+        "artifact_dir": null,
+        "attractors_json": "[]",
+        "builder_handoff_json": null,
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_story": "story one",
+        "experiment_proposal_json": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_summary": null,
+        "promoted_at": null,
+        "source_conversations_json": "[]",
+        "status": "archived",
+        "title": "story one",
+        "updated_at": "2026-09-09T12:02:00Z"
+      },
+      {
+        "archived_at": null,
+        "artifact_dir": null,
+        "attractors_json": "[]",
+        "builder_handoff_json": null,
+        "created_at": "2026-09-09T12:03:00Z",
+        "current_story": "story two",
+        "experiment_proposal_json": null,
+        "id": "explorer-02",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_summary": null,
+        "promoted_at": "2026-09-09T12:04:00Z",
+        "source_conversations_json": "[]",
+        "status": "promoted",
+        "title": "story two",
+        "updated_at": "2026-09-09T12:04:00Z"
+      },
+      {
+        "archived_at": null,
+        "artifact_dir": null,
+        "attractors_json": "[]",
+        "builder_handoff_json": null,
+        "created_at": "2026-09-09T12:05:00Z",
+        "current_story": "story three",
+        "experiment_proposal_json": null,
+        "id": "explorer-03",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_summary": null,
+        "promoted_at": null,
+        "source_conversations_json": "[]",
+        "status": "active",
+        "title": "story three",
+        "updated_at": "2026-09-09T12:05:00Z"
+      }
+    ],
+    "runtime_after_archive": {
+      "active": 0,
+      "metadata": null,
+      "row_present": true
+    }
+  },
+  "projection_change_detection": [
+    {
+      "left": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "id-1",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "t",
+        "updated_at": null
+      },
+      "name": "identical",
+      "refresh_requested": false,
+      "right": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "id-1",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "t",
+        "updated_at": null
+      }
+    },
+    {
+      "left": null,
+      "name": "none_vs_story",
+      "refresh_requested": true,
+      "right": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "id-1",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "t",
+        "updated_at": null
+      }
+    },
+    {
+      "left": null,
+      "name": "both_none",
+      "refresh_requested": false,
+      "right": null
+    },
+    {
+      "left": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": "a",
+        "experiment_proposal": null,
+        "id": "id-1",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "t",
+        "updated_at": null
+      },
+      "name": "current_story_is_not_compared",
+      "refresh_requested": false,
+      "right": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": "b",
+        "experiment_proposal": null,
+        "id": "id-1",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "t",
+        "updated_at": null
+      }
+    },
+    {
+      "left": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "id-1",
+        "journey": "probe-journey",
+        "last_story_card": "a",
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "t",
+        "updated_at": null
+      },
+      "name": "last_card_is_not_compared",
+      "refresh_requested": false,
+      "right": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "id-1",
+        "journey": "probe-journey",
+        "last_story_card": "b",
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "t",
+        "updated_at": null
+      }
+    },
+    {
+      "left": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "id-1",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "a",
+        "updated_at": null
+      },
+      "name": "title_is_compared",
+      "refresh_requested": true,
+      "right": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "id-1",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "b",
+        "updated_at": null
+      }
+    },
+    {
+      "left": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "id-1",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "t",
+        "updated_at": null
+      },
+      "name": "status_is_compared",
+      "refresh_requested": true,
+      "right": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "id-1",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "archived",
+        "title": "t",
+        "updated_at": null
+      }
+    },
+    {
+      "left": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "a",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "t",
+        "updated_at": null
+      },
+      "name": "id_is_compared",
+      "refresh_requested": true,
+      "right": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "b",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "t",
+        "updated_at": null
+      }
+    },
+    {
+      "left": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "id-1",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": "a",
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "t",
+        "updated_at": null
+      },
+      "name": "summary_is_compared",
+      "refresh_requested": true,
+      "right": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "id-1",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": "b",
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "t",
+        "updated_at": null
+      }
+    },
+    {
+      "left": {
+        "archived_at": null,
+        "attractors": [
+          {
+            "description": null,
+            "label": "a",
+            "status": "proposed"
+          }
+        ],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "id-1",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "t",
+        "updated_at": null
+      },
+      "name": "attractors_are_compared",
+      "refresh_requested": true,
+      "right": {
+        "archived_at": null,
+        "attractors": [
+          {
+            "description": null,
+            "label": "b",
+            "status": "proposed"
+          }
+        ],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "id-1",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "t",
+        "updated_at": null
+      }
+    },
+    {
+      "left": {
+        "archived_at": null,
+        "attractors": [
+          {
+            "description": null,
+            "label": "a",
+            "status": "proposed"
+          },
+          {
+            "description": null,
+            "label": "b",
+            "status": "proposed"
+          }
+        ],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "id-1",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "t",
+        "updated_at": null
+      },
+      "name": "attractor_order_is_compared",
+      "refresh_requested": true,
+      "right": {
+        "archived_at": null,
+        "attractors": [
+          {
+            "description": null,
+            "label": "b",
+            "status": "proposed"
+          },
+          {
+            "description": null,
+            "label": "a",
+            "status": "proposed"
+          }
+        ],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "id-1",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "t",
+        "updated_at": null
+      }
+    },
+    {
+      "left": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": {
+          "description": null,
+          "status": "proposed",
+          "title": "a"
+        },
+        "id": "id-1",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "t",
+        "updated_at": null
+      },
+      "name": "experiment_is_compared",
+      "refresh_requested": true,
+      "right": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": {
+          "description": null,
+          "status": "proposed",
+          "title": "b"
+        },
+        "id": "id-1",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "t",
+        "updated_at": null
+      }
+    },
+    {
+      "left": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": {
+          "artifact_dir": null,
+          "exploratory_story_path": null,
+          "full_conversation_path": null,
+          "handoff_info_path": null,
+          "index_path": null,
+          "product_design_proposal_path": null,
+          "readiness": "proposed",
+          "summary": null,
+          "title": "a"
+        },
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "id-1",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "t",
+        "updated_at": null
+      },
+      "name": "handoff_is_compared",
+      "refresh_requested": true,
+      "right": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": {
+          "artifact_dir": null,
+          "exploratory_story_path": null,
+          "full_conversation_path": null,
+          "handoff_info_path": null,
+          "index_path": null,
+          "product_design_proposal_path": null,
+          "readiness": "proposed",
+          "summary": null,
+          "title": "b"
+        },
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "id-1",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "t",
+        "updated_at": null
+      }
+    },
+    {
+      "left": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "id-1",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "t",
+        "updated_at": null
+      },
+      "name": "handoff_present_vs_absent",
+      "refresh_requested": true,
+      "right": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": {
+          "artifact_dir": null,
+          "exploratory_story_path": null,
+          "full_conversation_path": null,
+          "handoff_info_path": null,
+          "index_path": null,
+          "product_design_proposal_path": null,
+          "readiness": "proposed",
+          "summary": null,
+          "title": "a"
+        },
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "id-1",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "t",
+        "updated_at": null
+      }
+    },
+    {
+      "left": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "id-1",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [
+          {
+            "conversation_id": "a",
+            "role": "source evidence",
+            "title": null
+          }
+        ],
+        "status": "active",
+        "title": "t",
+        "updated_at": null
+      },
+      "name": "source_conversations_are_not_compared",
+      "refresh_requested": false,
+      "right": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": null,
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "id-1",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [
+          {
+            "conversation_id": "b",
+            "role": "source evidence",
+            "title": null
+          }
+        ],
+        "status": "active",
+        "title": "t",
+        "updated_at": null
+      }
+    }
+  ],
+  "promote_without_story": {
+    "result": null,
+    "runtime": {
+      "active": 0,
+      "metadata": null,
+      "row_present": true
+    }
+  },
+  "update_matrix": [
+    {
+      "argument": "__UNSET__",
+      "field": "current_exploratory_story",
+      "name": "fresh_current_story_omitted",
+      "result": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "Exploratory Story",
+        "updated_at": "2026-09-09T12:01:00Z"
+      },
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[]",
+          "builder_handoff_json": null,
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": null,
+          "experiment_proposal_json": null,
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": null,
+          "narrative_summary": null,
+          "promoted_at": null,
+          "source_conversations_json": "[]",
+          "status": "active",
+          "title": "Exploratory Story",
+          "updated_at": "2026-09-09T12:01:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"Exploratory Story\", \"status\": \"active\", \"current_exploratory_story\": null, \"narrative_field_summary\": null, \"last_story_card\": null, \"attractors\": [], \"experiment_proposal\": null, \"builder_handoff\": null, \"source_conversations\": []}",
+        "row_present": true
+      },
+      "seeded": false
+    },
+    {
+      "argument": null,
+      "field": "current_exploratory_story",
+      "name": "fresh_current_story_none",
+      "result": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "Exploratory Story",
+        "updated_at": "2026-09-09T12:01:00Z"
+      },
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[]",
+          "builder_handoff_json": null,
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": null,
+          "experiment_proposal_json": null,
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": null,
+          "narrative_summary": null,
+          "promoted_at": null,
+          "source_conversations_json": "[]",
+          "status": "active",
+          "title": "Exploratory Story",
+          "updated_at": "2026-09-09T12:01:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"Exploratory Story\", \"status\": \"active\", \"current_exploratory_story\": null, \"narrative_field_summary\": null, \"last_story_card\": null, \"attractors\": [], \"experiment_proposal\": null, \"builder_handoff\": null, \"source_conversations\": []}",
+        "row_present": true
+      },
+      "seeded": false
+    },
+    {
+      "argument": "",
+      "field": "current_exploratory_story",
+      "name": "fresh_current_story_empty_string",
+      "result": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "Exploratory Story",
+        "updated_at": "2026-09-09T12:01:00Z"
+      },
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[]",
+          "builder_handoff_json": null,
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": null,
+          "experiment_proposal_json": null,
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": null,
+          "narrative_summary": null,
+          "promoted_at": null,
+          "source_conversations_json": "[]",
+          "status": "active",
+          "title": "Exploratory Story",
+          "updated_at": "2026-09-09T12:01:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"Exploratory Story\", \"status\": \"active\", \"current_exploratory_story\": null, \"narrative_field_summary\": null, \"last_story_card\": null, \"attractors\": [], \"experiment_proposal\": null, \"builder_handoff\": null, \"source_conversations\": []}",
+        "row_present": true
+      },
+      "seeded": false
+    },
+    {
+      "argument": "   ",
+      "field": "current_exploratory_story",
+      "name": "fresh_current_story_blank_string",
+      "result": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "Exploratory Story",
+        "updated_at": "2026-09-09T12:01:00Z"
+      },
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[]",
+          "builder_handoff_json": null,
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": null,
+          "experiment_proposal_json": null,
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": null,
+          "narrative_summary": null,
+          "promoted_at": null,
+          "source_conversations_json": "[]",
+          "status": "active",
+          "title": "Exploratory Story",
+          "updated_at": "2026-09-09T12:01:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"Exploratory Story\", \"status\": \"active\", \"current_exploratory_story\": null, \"narrative_field_summary\": null, \"last_story_card\": null, \"attractors\": [], \"experiment_proposal\": null, \"builder_handoff\": null, \"source_conversations\": []}",
+        "row_present": true
+      },
+      "seeded": false
+    },
+    {
+      "argument": "  a value with padding  ",
+      "field": "current_exploratory_story",
+      "name": "fresh_current_story_padded_value",
+      "result": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_exploratory_story": "a value with padding",
+        "experiment_proposal": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "a value with padding",
+        "updated_at": "2026-09-09T12:01:00Z"
+      },
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[]",
+          "builder_handoff_json": null,
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": "a value with padding",
+          "experiment_proposal_json": null,
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": null,
+          "narrative_summary": null,
+          "promoted_at": null,
+          "source_conversations_json": "[]",
+          "status": "active",
+          "title": "a value with padding",
+          "updated_at": "2026-09-09T12:01:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"a value with padding\", \"status\": \"active\", \"current_exploratory_story\": \"a value with padding\", \"narrative_field_summary\": null, \"last_story_card\": null, \"attractors\": [], \"experiment_proposal\": null, \"builder_handoff\": null, \"source_conversations\": []}",
+        "row_present": true
+      },
+      "seeded": false
+    },
+    {
+      "argument": "a value",
+      "field": "current_exploratory_story",
+      "name": "fresh_current_story_value",
+      "result": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_exploratory_story": "a value",
+        "experiment_proposal": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "a value",
+        "updated_at": "2026-09-09T12:01:00Z"
+      },
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[]",
+          "builder_handoff_json": null,
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": "a value",
+          "experiment_proposal_json": null,
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": null,
+          "narrative_summary": null,
+          "promoted_at": null,
+          "source_conversations_json": "[]",
+          "status": "active",
+          "title": "a value",
+          "updated_at": "2026-09-09T12:01:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"a value\", \"status\": \"active\", \"current_exploratory_story\": \"a value\", \"narrative_field_summary\": null, \"last_story_card\": null, \"attractors\": [], \"experiment_proposal\": null, \"builder_handoff\": null, \"source_conversations\": []}",
+        "row_present": true
+      },
+      "seeded": false
+    },
+    {
+      "argument": "__UNSET__",
+      "field": "current_exploratory_story",
+      "name": "seeded_current_story_omitted",
+      "result": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_exploratory_story": "seeded story",
+        "experiment_proposal": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": "seeded card",
+        "narrative_field_summary": "seeded summary",
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "seeded story",
+        "updated_at": "2026-09-09T12:02:00Z"
+      },
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[]",
+          "builder_handoff_json": null,
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": "seeded story",
+          "experiment_proposal_json": null,
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": "seeded card",
+          "narrative_summary": "seeded summary",
+          "promoted_at": null,
+          "source_conversations_json": "[]",
+          "status": "active",
+          "title": "seeded story",
+          "updated_at": "2026-09-09T12:02:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"seeded story\", \"status\": \"active\", \"current_exploratory_story\": \"seeded story\", \"narrative_field_summary\": \"seeded summary\", \"last_story_card\": \"seeded card\", \"attractors\": [], \"experiment_proposal\": null, \"builder_handoff\": null, \"source_conversations\": []}",
+        "row_present": true
+      },
+      "seeded": true
+    },
+    {
+      "argument": null,
+      "field": "current_exploratory_story",
+      "name": "seeded_current_story_none",
+      "result": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": "seeded card",
+        "narrative_field_summary": "seeded summary",
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "seeded story",
+        "updated_at": "2026-09-09T12:02:00Z"
+      },
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[]",
+          "builder_handoff_json": null,
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": null,
+          "experiment_proposal_json": null,
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": "seeded card",
+          "narrative_summary": "seeded summary",
+          "promoted_at": null,
+          "source_conversations_json": "[]",
+          "status": "active",
+          "title": "seeded story",
+          "updated_at": "2026-09-09T12:02:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"seeded story\", \"status\": \"active\", \"current_exploratory_story\": null, \"narrative_field_summary\": \"seeded summary\", \"last_story_card\": \"seeded card\", \"attractors\": [], \"experiment_proposal\": null, \"builder_handoff\": null, \"source_conversations\": []}",
+        "row_present": true
+      },
+      "seeded": true
+    },
+    {
+      "argument": "",
+      "field": "current_exploratory_story",
+      "name": "seeded_current_story_empty_string",
+      "result": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": "seeded card",
+        "narrative_field_summary": "seeded summary",
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "seeded story",
+        "updated_at": "2026-09-09T12:02:00Z"
+      },
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[]",
+          "builder_handoff_json": null,
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": null,
+          "experiment_proposal_json": null,
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": "seeded card",
+          "narrative_summary": "seeded summary",
+          "promoted_at": null,
+          "source_conversations_json": "[]",
+          "status": "active",
+          "title": "seeded story",
+          "updated_at": "2026-09-09T12:02:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"seeded story\", \"status\": \"active\", \"current_exploratory_story\": null, \"narrative_field_summary\": \"seeded summary\", \"last_story_card\": \"seeded card\", \"attractors\": [], \"experiment_proposal\": null, \"builder_handoff\": null, \"source_conversations\": []}",
+        "row_present": true
+      },
+      "seeded": true
+    },
+    {
+      "argument": "   ",
+      "field": "current_exploratory_story",
+      "name": "seeded_current_story_blank_string",
+      "result": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_exploratory_story": null,
+        "experiment_proposal": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": "seeded card",
+        "narrative_field_summary": "seeded summary",
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "seeded story",
+        "updated_at": "2026-09-09T12:02:00Z"
+      },
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[]",
+          "builder_handoff_json": null,
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": null,
+          "experiment_proposal_json": null,
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": "seeded card",
+          "narrative_summary": "seeded summary",
+          "promoted_at": null,
+          "source_conversations_json": "[]",
+          "status": "active",
+          "title": "seeded story",
+          "updated_at": "2026-09-09T12:02:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"seeded story\", \"status\": \"active\", \"current_exploratory_story\": null, \"narrative_field_summary\": \"seeded summary\", \"last_story_card\": \"seeded card\", \"attractors\": [], \"experiment_proposal\": null, \"builder_handoff\": null, \"source_conversations\": []}",
+        "row_present": true
+      },
+      "seeded": true
+    },
+    {
+      "argument": "  a value with padding  ",
+      "field": "current_exploratory_story",
+      "name": "seeded_current_story_padded_value",
+      "result": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_exploratory_story": "a value with padding",
+        "experiment_proposal": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": "seeded card",
+        "narrative_field_summary": "seeded summary",
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "seeded story",
+        "updated_at": "2026-09-09T12:02:00Z"
+      },
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[]",
+          "builder_handoff_json": null,
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": "a value with padding",
+          "experiment_proposal_json": null,
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": "seeded card",
+          "narrative_summary": "seeded summary",
+          "promoted_at": null,
+          "source_conversations_json": "[]",
+          "status": "active",
+          "title": "seeded story",
+          "updated_at": "2026-09-09T12:02:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"seeded story\", \"status\": \"active\", \"current_exploratory_story\": \"a value with padding\", \"narrative_field_summary\": \"seeded summary\", \"last_story_card\": \"seeded card\", \"attractors\": [], \"experiment_proposal\": null, \"builder_handoff\": null, \"source_conversations\": []}",
+        "row_present": true
+      },
+      "seeded": true
+    },
+    {
+      "argument": "a value",
+      "field": "current_exploratory_story",
+      "name": "seeded_current_story_value",
+      "result": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_exploratory_story": "a value",
+        "experiment_proposal": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": "seeded card",
+        "narrative_field_summary": "seeded summary",
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "seeded story",
+        "updated_at": "2026-09-09T12:02:00Z"
+      },
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[]",
+          "builder_handoff_json": null,
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": "a value",
+          "experiment_proposal_json": null,
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": "seeded card",
+          "narrative_summary": "seeded summary",
+          "promoted_at": null,
+          "source_conversations_json": "[]",
+          "status": "active",
+          "title": "seeded story",
+          "updated_at": "2026-09-09T12:02:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"seeded story\", \"status\": \"active\", \"current_exploratory_story\": \"a value\", \"narrative_field_summary\": \"seeded summary\", \"last_story_card\": \"seeded card\", \"attractors\": [], \"experiment_proposal\": null, \"builder_handoff\": null, \"source_conversations\": []}",
+        "row_present": true
+      },
+      "seeded": true
+    },
+    {
+      "argument": "__UNSET__",
+      "field": "narrative_field_summary",
+      "name": "seeded_narrative_field_summary_omitted",
+      "result": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_exploratory_story": "seeded story",
+        "experiment_proposal": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": "seeded card",
+        "narrative_field_summary": "seeded summary",
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "seeded story",
+        "updated_at": "2026-09-09T12:02:00Z"
+      },
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[]",
+          "builder_handoff_json": null,
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": "seeded story",
+          "experiment_proposal_json": null,
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": "seeded card",
+          "narrative_summary": "seeded summary",
+          "promoted_at": null,
+          "source_conversations_json": "[]",
+          "status": "active",
+          "title": "seeded story",
+          "updated_at": "2026-09-09T12:02:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"seeded story\", \"status\": \"active\", \"current_exploratory_story\": \"seeded story\", \"narrative_field_summary\": \"seeded summary\", \"last_story_card\": \"seeded card\", \"attractors\": [], \"experiment_proposal\": null, \"builder_handoff\": null, \"source_conversations\": []}",
+        "row_present": true
+      },
+      "seeded": true
+    },
+    {
+      "argument": null,
+      "field": "narrative_field_summary",
+      "name": "seeded_narrative_field_summary_none",
+      "result": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_exploratory_story": "seeded story",
+        "experiment_proposal": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": "seeded card",
+        "narrative_field_summary": null,
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "seeded story",
+        "updated_at": "2026-09-09T12:02:00Z"
+      },
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[]",
+          "builder_handoff_json": null,
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": "seeded story",
+          "experiment_proposal_json": null,
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": "seeded card",
+          "narrative_summary": null,
+          "promoted_at": null,
+          "source_conversations_json": "[]",
+          "status": "active",
+          "title": "seeded story",
+          "updated_at": "2026-09-09T12:02:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"seeded story\", \"status\": \"active\", \"current_exploratory_story\": \"seeded story\", \"narrative_field_summary\": null, \"last_story_card\": \"seeded card\", \"attractors\": [], \"experiment_proposal\": null, \"builder_handoff\": null, \"source_conversations\": []}",
+        "row_present": true
+      },
+      "seeded": true
+    },
+    {
+      "argument": "replaced",
+      "field": "narrative_field_summary",
+      "name": "seeded_narrative_field_summary_value",
+      "result": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_exploratory_story": "seeded story",
+        "experiment_proposal": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": "seeded card",
+        "narrative_field_summary": "replaced",
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "seeded story",
+        "updated_at": "2026-09-09T12:02:00Z"
+      },
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[]",
+          "builder_handoff_json": null,
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": "seeded story",
+          "experiment_proposal_json": null,
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": "seeded card",
+          "narrative_summary": "replaced",
+          "promoted_at": null,
+          "source_conversations_json": "[]",
+          "status": "active",
+          "title": "seeded story",
+          "updated_at": "2026-09-09T12:02:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"seeded story\", \"status\": \"active\", \"current_exploratory_story\": \"seeded story\", \"narrative_field_summary\": \"replaced\", \"last_story_card\": \"seeded card\", \"attractors\": [], \"experiment_proposal\": null, \"builder_handoff\": null, \"source_conversations\": []}",
+        "row_present": true
+      },
+      "seeded": true
+    },
+    {
+      "argument": "__UNSET__",
+      "field": "last_story_card",
+      "name": "seeded_last_story_card_omitted",
+      "result": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_exploratory_story": "seeded story",
+        "experiment_proposal": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": "seeded card",
+        "narrative_field_summary": "seeded summary",
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "seeded story",
+        "updated_at": "2026-09-09T12:02:00Z"
+      },
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[]",
+          "builder_handoff_json": null,
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": "seeded story",
+          "experiment_proposal_json": null,
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": "seeded card",
+          "narrative_summary": "seeded summary",
+          "promoted_at": null,
+          "source_conversations_json": "[]",
+          "status": "active",
+          "title": "seeded story",
+          "updated_at": "2026-09-09T12:02:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"seeded story\", \"status\": \"active\", \"current_exploratory_story\": \"seeded story\", \"narrative_field_summary\": \"seeded summary\", \"last_story_card\": \"seeded card\", \"attractors\": [], \"experiment_proposal\": null, \"builder_handoff\": null, \"source_conversations\": []}",
+        "row_present": true
+      },
+      "seeded": true
+    },
+    {
+      "argument": null,
+      "field": "last_story_card",
+      "name": "seeded_last_story_card_none",
+      "result": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_exploratory_story": "seeded story",
+        "experiment_proposal": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_field_summary": "seeded summary",
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "seeded story",
+        "updated_at": "2026-09-09T12:02:00Z"
+      },
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[]",
+          "builder_handoff_json": null,
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": "seeded story",
+          "experiment_proposal_json": null,
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": null,
+          "narrative_summary": "seeded summary",
+          "promoted_at": null,
+          "source_conversations_json": "[]",
+          "status": "active",
+          "title": "seeded story",
+          "updated_at": "2026-09-09T12:02:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"seeded story\", \"status\": \"active\", \"current_exploratory_story\": \"seeded story\", \"narrative_field_summary\": \"seeded summary\", \"last_story_card\": null, \"attractors\": [], \"experiment_proposal\": null, \"builder_handoff\": null, \"source_conversations\": []}",
+        "row_present": true
+      },
+      "seeded": true
+    },
+    {
+      "argument": "replaced",
+      "field": "last_story_card",
+      "name": "seeded_last_story_card_value",
+      "result": {
+        "archived_at": null,
+        "attractors": [],
+        "builder_handoff": null,
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_exploratory_story": "seeded story",
+        "experiment_proposal": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": "replaced",
+        "narrative_field_summary": "seeded summary",
+        "promoted_at": null,
+        "source_conversations": [],
+        "status": "active",
+        "title": "seeded story",
+        "updated_at": "2026-09-09T12:02:00Z"
+      },
+      "rows": [
+        {
+          "archived_at": null,
+          "artifact_dir": null,
+          "attractors_json": "[]",
+          "builder_handoff_json": null,
+          "created_at": "2026-09-09T12:01:00Z",
+          "current_story": "seeded story",
+          "experiment_proposal_json": null,
+          "id": "explorer-01",
+          "journey": "probe-journey",
+          "last_story_card": "replaced",
+          "narrative_summary": "seeded summary",
+          "promoted_at": null,
+          "source_conversations_json": "[]",
+          "status": "active",
+          "title": "seeded story",
+          "updated_at": "2026-09-09T12:02:00Z"
+        }
+      ],
+      "runtime": {
+        "active": 1,
+        "metadata": "{\"id\": \"explorer-01\", \"title\": \"seeded story\", \"status\": \"active\", \"current_exploratory_story\": \"seeded story\", \"narrative_field_summary\": \"seeded summary\", \"last_story_card\": \"replaced\", \"attractors\": [], \"experiment_proposal\": null, \"builder_handoff\": null, \"source_conversations\": []}",
+        "row_present": true
+      },
+      "seeded": true
+    }
+  ],
+  "upsert_identity": {
+    "first": {
+      "archived_at": null,
+      "attractors": [],
+      "builder_handoff": null,
+      "created_at": "2026-09-09T12:01:00Z",
+      "current_exploratory_story": "first",
+      "experiment_proposal": null,
+      "id": "explorer-01",
+      "journey": "probe-journey",
+      "last_story_card": null,
+      "narrative_field_summary": null,
+      "promoted_at": null,
+      "source_conversations": [],
+      "status": "active",
+      "title": "first",
+      "updated_at": "2026-09-09T12:01:00Z"
+    },
+    "rows": [
+      {
+        "archived_at": null,
+        "artifact_dir": null,
+        "attractors_json": "[]",
+        "builder_handoff_json": null,
+        "created_at": "2026-09-09T12:01:00Z",
+        "current_story": "second",
+        "experiment_proposal_json": null,
+        "id": "explorer-01",
+        "journey": "probe-journey",
+        "last_story_card": null,
+        "narrative_summary": null,
+        "promoted_at": null,
+        "source_conversations_json": "[]",
+        "status": "active",
+        "title": "first",
+        "updated_at": "2026-09-09T12:02:00Z"
+      }
+    ],
+    "second": {
+      "archived_at": null,
+      "attractors": [],
+      "builder_handoff": null,
+      "created_at": "2026-09-09T12:01:00Z",
+      "current_exploratory_story": "second",
+      "experiment_proposal": null,
+      "id": "explorer-01",
+      "journey": "probe-journey",
+      "last_story_card": null,
+      "narrative_field_summary": null,
+      "promoted_at": null,
+      "source_conversations": [],
+      "status": "active",
+      "title": "first",
+      "updated_at": "2026-09-09T12:02:00Z"
+    }
+  }
+}

@@ -170,6 +170,13 @@ ORACLE_PATHS: tuple[str, ...] = (
     # files carry DIFFERENT `_wrap` helpers (this one chunks a long word, that
     # one lets it overflow), so drift in either must stay independently visible.
     "src/memory/surfaces/explorer_story.py",
+    # DS7.US7 plateau 2: the Exploratory Story's dual store. `services/` owns
+    # the `_UNSET` semantics, the legacy runtime-payload fallback, and
+    # `_projected_story`; `storage/` owns the upsert identity rules and the
+    # `ensure_ascii=False` column bytes. Both are ported into
+    # ts/src/explorer/story.ts.
+    "src/memory/services/explorer_story.py",
+    "src/memory/storage/explorer_stories.py",
 )
 
 BASELINE_RELPATH = "ts/parity/oracle-baseline.json"

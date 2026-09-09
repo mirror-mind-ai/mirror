@@ -76,6 +76,7 @@ jobs:
           uv run python ts/parity/generate_soul_apply_golden.py
           uv run python ts/parity/generate_soul_harvest_golden.py
           uv run python ts/parity/generate_explorer_surface_golden.py
+          uv run python ts/parity/generate_explorer_story_golden.py
           git diff --exit-code ts/test/goldens/
         env:
           MEMORY_ENV: test
@@ -193,14 +194,17 @@ jobs:
 
       # Every write probe on the demo copy: the DS4/US5 deterministic writes,
       # the US10 extraction lifecycle (both cores answered by the same stub),
-      # the TS1 mojibake repair over seeded rows, and the US6 Soul ritual state
-      # graded step by step.
+      # the TS1 mojibake repair over seeded rows, the US6 Soul ritual state
+      # graded step by step, and the US7 Exploratory Story graded across BOTH
+      # of its stores (the durable row and the legacy runtime payload) after
+      # every step of one exploration.
       # Copy-only and redacted by design; no live database is ever involved.
       - name: Write parity on the demo copy (redacted, must pass)
         run: |
           for probe in reinforcement journey identity conversation_logger \
                        close_tail session_composites journey_repair_apply \
-                       repair_encoding soul_state soul_apply soul_harvest_save; do
+                       repair_encoding soul_state soul_apply soul_harvest_save \
+                       explorer_story; do
             uv run python ts/parity/write_parity.py \
               --source-db tmp/parity/demo-memory.db --probe "$probe" \
               --work-dir "tmp/parity/write-$probe"

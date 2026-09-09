@@ -19,6 +19,7 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
+import write_parity_explorer as explorer
 import write_parity_lifecycle as lifecycle
 import write_parity_safety_tools as safety_tools
 import write_parity_soul as soul
@@ -79,8 +80,8 @@ class _FrozenDateTime(datetime):
 
 
 # Operation probes: seed the shared start state, then grade an operation on it.
-SEEDERS = {**lifecycle.SEEDERS, **safety_tools.SEEDERS, **soul.SEEDERS}
-PROBES = {**lifecycle.PROBES, **safety_tools.PROBES, **soul.PROBES}
+SEEDERS = {**lifecycle.SEEDERS, **safety_tools.SEEDERS, **soul.SEEDERS, **explorer.SEEDERS}
+PROBES = {**lifecycle.PROBES, **safety_tools.PROBES, **soul.PROBES, **explorer.PROBES}
 
 
 def _sha256_file(path: Path) -> str:
@@ -524,6 +525,7 @@ def main(argv: list[str] | None = None) -> int:
             "soul_state",
             "soul_apply",
             "soul_harvest_save",
+            "explorer_story",
         ),
     )
     parser.add_argument("--targets", default=3, type=int)
