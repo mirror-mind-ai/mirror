@@ -82,7 +82,8 @@ contract that a skill (`mm-journey`) documents, and both land in
 `scripts/check_skill_command_parity.py` or the skill files it guards. This
 section is the plan of record for both; CR073 keeps its own scope and acceptance.
 
-_Awaiting Navigator approval; status stays `captured` until approved._
+_Amended 2026-09-09 after the ai-engineer + quality-assurance Plan review (recorded
+below). Awaiting Navigator approval; status stays `captured` until approved._
 
 ### Scope
 
@@ -93,6 +94,15 @@ _Awaiting Navigator approval; status stays `captured` until approved._
    `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts <command>`.
    Argument spellings, the Portuguese examples in `.pi`, and the per-runtime
    Usage sections are untouched.
+
+   **Prose references are in scope, not only code blocks.** A skill file is a
+   prompt; the invocation is a token sequence the model reproduces from it.
+   `mm-mirror` line 15 is imperative prose (*"Never produce a Mirror Mode
+   response without first running `uv run python -m memory mirror load`"*) and
+   line 39 is the code block. Rewriting one and not the other leaves the model
+   two forms in one prompt and lets it pick. The checker scans every line, so CI
+   would catch a leftover — but the 89 count above already includes prose
+   mentions, and the rewrite must too.
 
    | Skill | `.pi` | `.claude` | `plugins` | Commands |
    |---|--:|--:|--:|---|
@@ -128,10 +138,32 @@ _Awaiting Navigator approval; status stays `captured` until approved._
    skills already enter the front door.
 
 **CR073 — the sentinel.** See its own document; summarised here because it
-shares this plan: refuse a content argument matching `^-` that is not exactly
-`-`, add the empty guard `identity set` already has, and fix the misleading
-`<content|-stdin>` usage string — Python first as the oracle, then TS, then the
-`mm-journey` skill copies.
+shares this plan. **Amended:** the guard refuses **flag-shaped** input —
+`^--?[A-Za-z]` — not everything beginning with `-`. The captured CR asserted
+that *"an argument that begins with `-` is never plausible journey path text"*;
+four of the six journey-path rows in the Navigator's database contain markdown
+lists, and a path written as a list from line one starts with `- `. The guard
+must let list-shaped input through. Plus the empty guard `identity set` already
+has, and the misleading `<content|-stdin>` usage string fixed — Python first as
+the oracle, then TS, then the `mm-journey` skill copies.
+
+**Named scope the capture missed:** `src/memory/cli/journey.py` is not in
+`ts/parity/oracle-baseline.json` and no `journey update` golden exists. "Proven
+red-before-green on both engines" requires creating that golden (a
+Python-generated corpus over the accept/refuse matrix below) and registering the
+file in the drift tripwire. Small, but it is scope.
+
+**CR073 test matrix** (each case on both engines):
+
+| Input | Expected | Why |
+|---|---|---|
+| `-stdin` | refuse, exit ≠ 0, no write, message names `-` | the incident |
+| `--stdin`, `-s`, `--content` | refuse | flag-shaped |
+| `""`, `"   "` | refuse (`content is empty`) | empty guard |
+| `-` with piped stdin | accept, content = stdin | the real sentinel, unchanged |
+| `- phase 1\n- phase 2` | **accept** | list-shaped; legitimate |
+| `— em-dash lead` | accept | not a flag |
+| ordinary positional text | accept, unchanged | regression |
 
 ### Decision required at approval — CR073's argument shape
 
@@ -157,6 +189,32 @@ The cost is accepted and temporary: it inverts at DS8, when those routes flip to
 TS and the front-door path drops Python entirely. Paying it now is the point of
 the CR — a skill outside the front door cannot observe DS8 at all.
 
+### Behavior changes the skills inherit from the front door
+
+Stated so they are accepted knowingly rather than discovered:
+
+- **A 10-minute ceiling on Python-routed commands.** `spawnSync` kills the
+  fallback at `DEFAULT_PYTHON_TIMEOUT_MS`; direct invocation had no bound. This
+  lands on `mm-consult` and `mm-consolidate scan` — model-backed, previously
+  unbounded. On a kill mid-call the `llm_calls` row is never written: spend
+  without a ledger line. Accepted — ten minutes exceeds any observed call, and
+  a hung session is the worse failure. The two skills' text will state the
+  ceiling in one line.
+- **Every skill now depends on Node, `uv`, a parseable `cli.ts`, and `.env` in
+  cwd.** Before, `mm-mirror` needed only Python. Route-level TS failures fall
+  back to Python (CR064's `fell_back` path); front-door-level failures do not.
+  Checked 2026-09-09 on Node v25.9.0: with `.env` absent from cwd, Node exits
+  **9** with `node: .env: not found` and runs nothing — loud, no wrong-home
+  risk. Missing `node` is a shell error before anything runs. The cwd
+  assumption itself is shared with the current Python form (`uv run python -m
+  memory` from `/tmp` fails with `No module named memory`), so it is neither
+  worsened nor fixed here.
+- **Observability, intended.** Today `mm-mirror` leaves no trace; the daily
+  Mirror turn is unobservable. After this CR every skill call leaves one
+  `front-door.log` line — command, engine, exit, `fell_back` when applicable.
+  That is DS8's evaluation substrate: per-family fallback rates and
+  before/after latency from a log that already exists. DS8's plan should use it.
+
 ### Affected files
 
 - 27 `SKILL.md` files under `.pi/skills/`, `.claude/skills/`,
@@ -164,35 +222,62 @@ the CR — a skill outside the front door cannot observe DS8 at all.
 - `scripts/check_skill_command_parity.py`
 - `src/memory/cli/journey.py`, `ts/src/frontDoor/cli.ts` (CR073)
 - `.pi/skills/mm-journey/SKILL.md` + two copies (CR073 usage string)
-- goldens and tests for the CR073 refusals; `ts/parity/oracle-baseline.json`
+- `.pi/skills/mm-consult/SKILL.md`, `.pi/skills/mm-consolidate/SKILL.md` + copies
+  (one line each, the timeout ceiling)
+- **new:** a `journey update` golden generator and corpus;
+  `ts/parity/oracle-baseline.json` gains `src/memory/cli/journey.py`
 - `docs/.../burn-down-ledger.md`, DS10 index note
 
 ### Acceptance
 
 1. No skill copy in any runtime invokes `uv run python -m memory` for a command
-   outside the allowlist.
+   outside the allowlist — in code blocks **or prose**.
 2. The checker fails on injected drift for **both** new failure modes: a skill
-   reverted to Python off-allowlist, and copies that disagree.
-3. `journey update <slug> -stdin` exits non-zero, writes nothing, and names the
-   correct sentinel — on both engines, proven red-before-green.
-4. `journey update <slug> ""` is refused on both engines.
-5. A correct `journey update` and a correct piped `-` are unchanged.
-6. Every repaired skill still produces its previous output.
+   reverted to Python off-allowlist, and copies that disagree. The CR071 proof
+   (copies disagreeing) is re-run, not assumed.
+3. The CR073 test matrix above passes on both engines, proven red-before-green
+   against a Python-generated golden; `cli/journey.py` is in the drift tripwire.
+4. **Both-paths diff.** The six documented invocations that carry no placeholder
+   — `tasks list`, `week view`, `consolidate list`, `shadow list`,
+   `conversation-logger status`, `consult credits` — produce byte-identical
+   stdout via `uv run python -m memory` and via the front door. *(Replaces the
+   unverifiable "every repaired skill still produces its previous output": this
+   is exactly what is covered, and nothing more is claimed.)*
+5. The Navigator validation route below passes.
 
 ### Validation route (Navigator)
 
 Same prediction-then-observation shape CR068 used, with its three guards (log
-delta exact, every `exit=0`, engine column discriminates):
+delta exact, every `exit=0`, engine column discriminates). **Amended to sample
+by risk, not convenience:** the costliest journeys to break are `mm-mirror`
+(every Mirror turn — the highest-frequency path in the product) and the
+conversation-lifecycle skills, where a broken `mm-new` misfiles a session.
 
-1. Run one repaired skill per engine class in a fresh Pi session — one
-   TS-routed (`/mm-tasks`) and one Python-routed (`/mm-consult`) — and confirm
-   the visible output is unchanged.
+1. In a fresh Pi session, run **`/mm-mirror`** on a real prompt, **`/mm-new`**,
+   **`/mm-tasks`**, and **`/mm-consult`** — two Python-routed, two TS-routed,
+   both critical journeys covered — and confirm the visible output is
+   unchanged.
 2. `front-door.log` gains one line per invocation, correct engine, `exit=0`.
    Before this CR those calls left **no** log line at all, which is itself the
    observation: absence → presence proves the skill entered.
 3. `journey update mirror-ts-core -stdin` is refused with the journey path
-   intact — read it back to confirm. This is the incident replayed.
-4. Injected-drift proof for the checker.
+   intact — read it back to confirm. This is the incident replayed. Then
+   `journey update <scratch-slug> "- a\n- b"` is **accepted** — the false
+   positive the review caught, proven absent.
+4. Injected-drift proof for the checker, both modes.
+5. Record the measured `mirror load --query` latency through the front door,
+   once, so the plan carries the number for the path that matters rather than
+   the `journal --help` proxy.
+
+### Revert contract
+
+Skill text has no environment kill-switch; the revert is `git revert` of the
+skill commit, which restores direct Python invocation with no data migration.
+This adds no new exposure: ungated families (`tasks`, `week view`, the
+lifecycle reads) never had a switch, and gated families keep theirs — the front
+door honours `MIRROR_TS_*=0` and the replay gates exactly as before. CR073's
+guard reverts with the same commit; a reverted guard reopens the sentinel
+defect, nothing else.
 
 ### Exclusions
 
@@ -210,6 +295,54 @@ Local implementation only. Driver and Delivery must be recorded before
 `in_progress`. Navigator validation is required before `validated`; push and
 release remain separate gates. Neither CR may absorb the other's closure — two
 records, two validations, two `done` decisions.
+
+### Multi-Persona Plan Review (2026-09-09)
+
+Run per the collaboration strategy's Plan-review checkpoint, at the Navigator's
+request, with the two lenses named: ai-engineer and quality-assurance. Findings
+are recorded here so no later checkpoint can claim they were unknown. All
+blockers were folded into the amended plan above.
+
+**◇ quality-assurance**
+
+- *Blocker — the CR073 guard refused legitimate content.* Specified as `^-`;
+  four of six journey-path rows carry markdown lists. Amended to flag-shaped
+  `^--?[A-Za-z]` with `- item` as an accept case in the matrix.
+- *Blocker — the validation route sampled by convenience.* `/mm-tasks` +
+  `/mm-consult` are the easiest to run, not the costliest to break. Amended to
+  include `/mm-mirror` and `/mm-new`.
+- *Blocker — acceptance #6 was unverifiable.* "Every repaired skill still
+  produces its previous output" had no mechanism. Replaced with the
+  six-invocation both-paths diff, stated as exactly what is covered.
+- *Non-blocking, new scope* — no `journey update` golden exists and
+  `cli/journey.py` is not in the drift tripwire. Added to scope.
+- *Non-blocking* — no revert section. Added.
+- *Accepted boundary* — three copies, one runtime validated; `.claude` and
+  `plugins` are validated by text agreement only, as CR071 accepted.
+
+**◇ ai-engineer**
+
+- *Non-blocking* — a skill file is a prompt; prose and code-block invocations
+  must agree or the model picks. Prose references added to scope explicitly.
+  The 71-character boilerplate is more surface for a model to mistype than the
+  Python form; accepted, because CR071 set it and DS10's npm entry point is the
+  structural fix — no wrapper invented here.
+- *Non-blocking* — the blast radius of a broken front door grows from
+  extension hooks to every skill. Route failures fall back; front-door failures
+  do not. The `.env`-absent case was checked in review rather than deferred to
+  the route: loud failure, exit 9, nothing runs.
+- *Question, answered* — the 10-minute fallback ceiling is new for `consult`
+  and `consolidate scan`. Accepted and stated in both skills' text.
+- *Positive, now claimed* — the daily Mirror turn becomes observable; handed to
+  DS8 as its evaluation substrate.
+- *Refinement* — the +160 ms was measured on `journal --help`; the route now
+  records it on `mirror load --query`.
+
+**Converged, no dissent:** the batch itself; the +160 ms accepted as temporary;
+no argument-shape convergence for `journey update`; re-deferring CR068's
+completeness-guard debt to the last of US11/TS4/DS8.
+
+**Read after amendment:** ready for Navigator approval.
 
 ## Evidence
 

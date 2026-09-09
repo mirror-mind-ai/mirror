@@ -75,9 +75,20 @@ row instead of failing.
 
 A near-miss sentinel is refused, not stored.
 
-- `journey update <slug> -stdin` (and `--stdin`, `-­-`, and any argument that
-  begins with `-` but is not exactly `-`) exits non-zero with a message naming
-  the correct sentinel, and writes nothing.
+- `journey update <slug> -stdin` (and `--stdin`, `-s`, `--content`, and any
+  other **flag-shaped** argument — `^--?[A-Za-z]` — that is not exactly `-`)
+  exits non-zero with a message naming the correct sentinel, and writes
+  nothing.
+
+  > **Corrected at Plan review, 2026-09-09.** As captured, this section said
+  > *"any argument that begins with `-`"* and asserted that such an argument is
+  > *"never plausible journey path text."* That is false: four of the six
+  > journey-path rows in the Navigator's database contain markdown lists, and a
+  > path written as a list from line one begins with `- `. A guard on `^-`
+  > would have refused legitimate content with the same confidence it refuses
+  > `-stdin`. The guard is flag-shaped; list-shaped input (`- `, hyphen-space)
+  > and an em-dash lead are accepted. The original premise is left visible
+  > rather than silently rewritten.
 - The usage string stops teaching the wrong thing. Either spell the sentinel
   unambiguously (`<slug> <content>` / `<slug> -` with a line explaining that
   `-` means stdin), or — preferred, because it removes the sentinel class
@@ -87,9 +98,10 @@ A near-miss sentinel is refused, not stored.
   refuses it.
 - Both engines behave identically, and the parity golden pins the refusals.
 
-An argument that begins with `-` is never plausible journey path text. Refusing
-it costs nothing and closes the whole near-miss family, including spellings
-nobody has thought of yet.
+A flag-shaped argument is never plausible journey path text; a list-shaped one
+is. Refusing the former costs nothing and closes the near-miss family that
+matters — every sentinel typo is a letter after one or two hyphens — without
+touching the latter.
 
 ## Impact
 
@@ -132,17 +144,20 @@ _Awaiting Navigator approval; status stays `captured` until approved._
 
 Proposed shape, smallest first:
 
-1. Refuse any content argument matching `^-` that is not exactly `-`, in both
-   engines, with a message naming the sentinel. Python first (it is the oracle),
-   then TS, red-before-green on both.
+1. Refuse any content argument matching `^--?[A-Za-z]` that is not exactly `-`,
+   in both engines, with a message naming the sentinel. Python first (it is the
+   oracle), then TS, red-before-green on both. List-shaped (`- `) and em-dash
+   input are accepted — see the corrected Expected Behavior.
 2. Add the empty/whitespace guard `identity set` already has.
 3. Fix the usage string in both engines and in the `mm-journey` skill copies.
-4. Decide whether to converge `journey update` on the `identity set` argument
-   shape (`--content` or stdin). This is a CLI contract change, so it needs an
-   explicit decision: it would break any existing caller passing content
-   positionally. Recommend deciding it here rather than leaving two shapes for
-   the same primitive.
-5. Golden coverage for each refusal, registered in the drift tripwire.
+4. ~~Decide whether to converge `journey update` on the `identity set` argument
+   shape.~~ **Decided at Plan review: no.** Breaking for positional callers; the
+   guard closes the defect without a contract change. The divergence between
+   the two sibling commands is accepted and recorded.
+5. Golden coverage for the full accept/refuse matrix (in CR072's plan of
+   record), generated from Python, registered in the drift tripwire. **New
+   scope:** no `journey update` golden exists today and `src/memory/cli/journey.py`
+   is not in `ts/parity/oracle-baseline.json`; both are created here.
 
 Boundaries: this CR changes argument validation and messages. It does not
 change what a successful `journey update` writes, does not add confirmation
