@@ -9,7 +9,7 @@ If a linked document and this index disagree, this index wins.
 ## Current Focus
 
 - Refinement Story: RS009
-- Change Request: none
+- Change Request: CR072 (batched with CR073, RS010)
 
 Selecting a focus is an explicit project decision. Reading this file never selects or
 executes work.

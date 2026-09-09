@@ -116,7 +116,21 @@ No user-visible defect exists today beyond the incident already repaired.
 
 ## Plan Or Decision
 
-_Pending Navigator selection._ Proposed shape, smallest first:
+**Batched with [CR072](../rs009-cv22-front-door-routing-correctness/cr072-route-every-skill-through-the-front-door.md)
+(RS009) by Navigator decision, 2026-09-09.** One branch, one Plan — recorded in
+CR072 — two CR records, two validations, two closures. Batched because CR072
+rewrites skill invocations and this CR fixes a CLI contract that the
+`mm-journey` skill documents, so both edit the same skill files.
+
+**Argument-shape decision (step 4 below): recommended NO.** Converging
+`journey update` onto `identity set`'s `--content`-or-stdin shape is a breaking
+change for any caller passing content positionally, and the guard in step 1
+closes the defect without one. The divergence between the two sibling commands
+is recorded as accepted. Pending Navigator approval with the batch Plan.
+
+_Awaiting Navigator approval; status stays `captured` until approved._
+
+Proposed shape, smallest first:
 
 1. Refuse any content argument matching `^-` that is not exactly `-`, in both
    engines, with a message naming the sentinel. Python first (it is the oracle),
