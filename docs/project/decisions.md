@@ -11,6 +11,66 @@ resolved.
 
 ## Completed Decisions
 
+### CV22.DS7 reorders: the Journey projection seam precedes Explorer and the Builder tree
+
+**Date:** 2026-09-09
+**Reference:** [CV22.DS7 Command Burn-Down](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/index.md), [CV22.DS7.US7 Explorer Mode](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us7-explorer-mode/index.md), [CV22.DS7 Burn-Down Ledger](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/burn-down-ledger.md)
+**Participants:** Vinícius Manhães Teles
+
+US7 plateau 1 (the Explorer surfaces) landed, and reading the terrain for
+plateau 2 surfaced a dependency the DS7 ordering did not account for: **every
+Explorer Story write calls `store.request_projection_refresh(journey)`**, which
+compiles and publishes an Ariad operational projection into the user's project
+directory.
+
+Evidence, from a hermetic probe on a temporary database and project root: one
+`update_explorer_story` call creates four files that did not exist before ---
+`.mirror/projections/ariad/operational.json`, `.mirror/projections/current.json`,
+a publication receipt, and the publication lock. This repository already carries
+live ones.
+
+The subsystem behind that call is `src/memory/journey_projections/` --- 2,221
+lines spanning a roadmap/refinement/exploration Markdown compiler, a publication
+kernel with locks and receipts, and divergence detection. DS7 assigns it to TS4
+(`journey-projection`), which is scheduled *after* US7.
+
+The callers make the inversion explicit. `request_projection_refresh` has exactly
+two producer families: `src/memory/builder/` (20 call sites --- US8) and
+`src/memory/services/explorer_story.py` (3 call sites --- US7). Both consumers of
+the seam are scheduled before the story that owns it. US7 is simply where it
+surfaced first.
+
+Decision: **split the projection contract out of TS4 into its own technical
+story and port it before US7 and US8.** TS4 keeps the extension catalog
+(`extensions`, `ext`, and the US1-deferred `list`/`inspect` branches);
+CV22.DS7.TS5 takes the Journey projection subsystem, the `journey-projection`
+command, and the `requestProjectionRefresh` seam that Explorer and Builder call.
+This follows the TS1 precedent of slicing an ops-tail story so each slice is its
+own Ariad pull under the one-active-item rule.
+
+Rejected alternatives, with reasons:
+
+- **Absorb the subsystem into US7.** 2,221 lines including Markdown
+  compilation is Delivery-Story-sized, not a User Story slice.
+- **Flip only Explorer's non-writing leaves** (`load`, `deactivate`,
+  `story show|list|snapshot`), leaving the eight write leaves on Python. Rejected
+  because it half-flips a lived mode, which the DS7 persona panel named as
+  unreviewable in a live session, and because the ledger row would read 6/14
+  while implying Explorer is ported.
+- **Have TS write and shell into Python for the refresh.** Rejected for the same
+  reason the US7 plan rejected it for `story promote`: a cross-language call DS10
+  must then delete, here on a per-write hot path.
+- **Accept bounded staleness with a CR.** Rejected because the failure is
+  silent --- the command exits 0 and the projection the project carries is quietly
+  wrong --- which is the `conversations append` class (RS009/CR055) the burn-down
+  exists to prevent.
+
+US7 pauses at its plateau-1 boundary with the Explorer surfaces committed,
+graded, and registered in the oracle-drift tripwire. Nothing was routed, so no
+user-visible behavior depends on the pause.
+
+---
+
 ### CV22.DS7.TS1 ops tail: `runtime` splits, rehearsal and legacy migration retire in DS10
 
 **Date:** 2026-09-07
