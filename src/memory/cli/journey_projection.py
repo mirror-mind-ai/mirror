@@ -194,12 +194,20 @@ def _refresh(options: dict[str, str]) -> Mapping[str, object]:
     Best-effort by contract, matching `Store.request_projection_refresh`: the
     source write has already committed, so a failure here is reported in the
     payload and never raised.
+
+    `--mirror-home` is OPTIONAL here, unlike every other operation in this CLI.
+    The caller is the TypeScript front door, which inherits the environment a
+    runtime already resolved -- usually `MIRROR_USER` from a project `.env`,
+    not `MIRROR_HOME`. Requiring the flag would make the delegation resolve a
+    home the front door never chose, and because the seam is best-effort the
+    mismatch would be SILENT: the projection would simply stop refreshing.
     """
-    home = _home(options)
+    home_option = options.pop("--mirror-home", "").strip()
     journey = _required(options, "--journey")
     if options:
         raise _unsupported()
-    with _client(home) as client:
+    home = Path(home_option).expanduser().resolve() if home_option else None
+    with _refresh_client(home) as client:
         outcome = client.projection_refresh.request(journey)
         return {
             "status": outcome.status,
@@ -209,6 +217,15 @@ def _refresh(options: dict[str, str]) -> Mapping[str, object]:
             # on the failure path; normalize rather than trusting either.
             "code": getattr(outcome.code, "value", outcome.code),
         }
+
+
+def _refresh_client(home: Path | None) -> MemoryClient:
+    """The refresh client: an explicit home when given, the ambient one when not."""
+    from memory.client import MemoryClient
+
+    if home is not None:
+        return _client(home)
+    return MemoryClient()
 
 
 def _inspect(options: dict[str, str]) -> Mapping[str, object]:

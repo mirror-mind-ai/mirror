@@ -85,6 +85,34 @@ test("the no-op seam exists so tests and smokes never spawn", () => {
   assert.doesNotThrow(() => noProjectionRefresh.request("j"));
 });
 
+test("the title is derived ONCE, so story edits stop requesting refreshes", () => {
+  // The whole call frequency of the seam rests on this. `_projected_story`
+  // compares `title` and not `current_story`, and `_derive_title` runs only
+  // when the row has no title — `update_explorer_story` carries the existing
+  // one forward. A port that re-derived the title on every write would spawn
+  // Python and publish a snapshot on every keystroke-sized edit.
+  const { db, clock } = fixture();
+
+  const created = updateExplorerStory(db, "j", clock, { currentExploratoryStory: "first" });
+  assert.equal(created.story.title, "first");
+  assert.equal(created.refreshRequested, true, "creating a story changes the projection");
+
+  const edited = updateExplorerStory(db, "j", clock, { currentExploratoryStory: "second" });
+  assert.equal(edited.story.currentExploratoryStory, "second");
+  assert.equal(edited.story.title, "first", "the title does not follow the story text");
+  assert.equal(
+    edited.refreshRequested,
+    false,
+    "editing the story after creation must not request a refresh",
+  );
+
+  // The narrative summary IS compared, so this one does.
+  const summarized = updateExplorerStory(db, "j", clock, {
+    narrativeFieldSummary: "a summary",
+  });
+  assert.equal(summarized.refreshRequested, true, "a summary change reaches the projection");
+});
+
 test("a mutation the projection does not care about never calls the seam", () => {
   // `_projected_story` excludes `last_story_card`. Requesting a refresh anyway
   // would publish a snapshot and a receipt into the user's repository on every

@@ -27,6 +27,7 @@ and never touches the source.
 from __future__ import annotations
 
 import json
+import shutil
 import sqlite3
 from pathlib import Path
 from typing import Any
@@ -260,6 +261,12 @@ def explorer_handoff_probe(python_copy, frozen_datetime, now_iso: str) -> dict[s
 
     work_dir = Path(python_copy).parent
     project = work_dir / "python-handoff-project"
+    # Reset, because the harness reuses its work directory across runs and the
+    # collision loop counts what it finds: a leftover `-3` from a previous run
+    # makes this run choose `-4` while the TS side, which resets, chooses `-3`.
+    # The probe would then fail for a reason that has nothing to do with the
+    # port. Both sides reset; neither observes the other.
+    shutil.rmtree(project, ignore_errors=True)
     explorations = project / "docs" / "project" / "explorations"
     for collision in HANDOFF_COLLISIONS:
         (explorations / collision).mkdir(parents=True, exist_ok=True)

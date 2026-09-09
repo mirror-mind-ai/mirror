@@ -247,6 +247,78 @@ when US7 reaches it. Recorded in
 
 ---
 
+## `explore` — per-leaf detail (DS7.US7)
+
+Three subcommands, fourteen leaves, **ported and routed behind
+`MIRROR_TS_EXPLORE`, gate absent by default — NOT yet flipped.** The gate covers
+the family for the same reason Soul's does: Explorer is one lived mode, and a
+half-flipped mode cannot be reviewed in a live session.
+
+| Leaf | TS ported | Routed to TS | Note |
+|------|:---------:|:------------:|------|
+| `load` | ✅ | ⏸ gated | mode activation + sticky journey default; calls the PUBLIC sticky writer, not Python's private one |
+| `deactivate` | ✅ | ⏸ gated | — |
+| `story show` | ✅ | ⏸ gated | plain-text context, not a boxed card |
+| `story list` | ✅ | ⏸ gated | active → promoted → archived, then `updated_at DESC` |
+| `story archive` | ✅ | ⏸ gated | deactivates the legacy runtime payload |
+| `story clear` | ✅ | ⏸ gated | archive under the pre-DS8 command's name |
+| `story update` | ✅ | ⏸ gated | `_UNSET` vs explicit clear |
+| `story open` | ✅ | ⏸ gated | — |
+| `story thicken` | ✅ | ⏸ gated | — |
+| `story snapshot` | ✅ | ⏸ gated | — |
+| `story attractors` | ✅ | ⏸ gated | — |
+| `story experiment` | ✅ | ⏸ gated | — |
+| `story handoff` | ✅ | ⏸ gated | writes five documents into the user's project |
+| `story promote` | ❌ | ❌ **Python, by name** | its tail is Builder `load` — **blocked on US8** |
+
+**11 of 14 leaves reach TS once the gate flips.** `story promote` is not a
+missing port: `cmd_story_promote` ends by calling `build_cli.cmd_load`, so it
+cannot leave Python before the Builder tree does. Its surface renderer
+(`render_no_builder_handoff`) IS ported and graded, so the flip after US8 is a
+route entry and nothing else.
+
+**Two-level allowlist.** `explore` is the first family with a nested subparser,
+so `routing.ts` refuses an unknown `explore <sub>` and an unknown `explore story
+<action>` separately. A single-level allowlist would claim `explore story
+<anything>` — the `conversations append` defect (CR055) that exited 0 and
+discarded the caller's data.
+
+**The projection seam.** Every Explorer Story write asks Python to refresh the
+Journey projection, because publication is linearizable through an `fcntl.flock`
+lock Node cannot share. TypeScript ports the *decision* (`_projected_story`) and
+delegates the *publication* to `journey-projection refresh`, whose deletion is
+owned by [DS10's gate](../cv22-ds10-python-retirement-npm-distribution/index.md#journey-projection-refresh-seam-deletion-gate).
+The delegation is best-effort by contract, so a broken seam is SILENT — which is
+why the lifecycle smoke asserts a published `operational.json` file rather than a
+log line, and why that check caught the seam resolving `--mirror-home` from the
+command line only while every real runtime passes it through the environment.
+
+**Accepted divergence.** Python's `explore` parser accepts no `--mirror-home`
+and refuses it with argparse's exit 2; the TS route accepts it like every other
+front-door command. The same superset Soul accepted on 2026-09-08, asserted on
+both sides in the smoke so it stays visible.
+
+### Flip checklist (pending Navigator validation)
+
+| # | Check | Status |
+|---|-------|--------|
+| 1 | Three golden corpora byte-identical, regenerated under the determinism gate | ✅ |
+| 2 | `explorer_story` write probe green on a real-database copy | ✅ |
+| 3 | `explorer_handoff` write probe green — project trees byte-identical | ✅ |
+| 4 | Lifecycle smoke: whole exploration, 200 checks, one disposable home | ✅ |
+| 5 | Two-level allowlist refuses unknown subcommand and unknown story action | ✅ |
+| 6 | `story promote` refused by name, routed to Python | ✅ |
+| 7 | Projection refresh proven to publish, and proven NOT to on an unrelated edit | ✅ |
+| 8 | Three `mm-explore` skill copies switched to the front door (12 invocations each) | ✅ |
+| 9 | Oracle-drift tripwire clean with four `explore` oracles registered | ✅ |
+| 10 | **Navigator validation on the real home** (`test-guide.md`) | ⏸ **pending** |
+| 11 | **Gate default on** (`MIRROR_TS_EXPLORE` absent → TS) | ⏸ **pending** |
+
+Steps 1–9 are done and committed. Steps 10–11 are the flip, and 11 must not
+precede 10.
+
+---
+
 ## DB safety tools — per-command detail (DS7.TS1)
 
 `backup` and `repair-encoding` are ported and wired through the front door

@@ -104,6 +104,12 @@ failure containment matching Python's best-effort post-commit behavior.
 TS5 keeps its identity as a separate technical story and moves to **last** in the
 ops tail, where the dual-writer window has closed.
 
+Corrected at plateau 5: the title is derived ONCE, at creation, and carried
+forward on every later write (`update_explorer_story` passes the existing title;
+`_derive_title` runs only when there is none). So a story-text edit after the
+first write requests no projection refresh at all. See the plan's Scope
+Amendment item 16 for the full correction.
+
 Also carry forward, already recorded in the plan and unaffected by the pause:
 the durable/legacy dual read **and dual write** (`_store_story` writes the
 runtime-state payload too — the "pre-DS8" framing in the service docstring

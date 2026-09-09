@@ -181,11 +181,23 @@ retirement window closes it.
 
 16. `_projected_story` change detection, ported as a pure function. It compares
     `id`, `title`, `status`, `narrative_field_summary`, attractors, experiment,
-    and handoff — deliberately **not** `current_story` or `last_story_card`,
-    although `title` is derived from `current_story` through `_derive_title`, so
-    a story edit usually reaches it anyway. That asymmetry is behavior: pinned
-    by a golden row that changes only `last_story_card` and must NOT request a
-    refresh, and one that changes only `current_story` and must.
+    and handoff — deliberately **not** `current_story` or `last_story_card`.
+
+    *(Corrected at plateau 5, from the oracle rather than from reading:* this
+    plan originally added "although `title` is derived from `current_story`, so
+    a story edit usually reaches it anyway". **It does not.** `_derive_title`
+    runs only when the row has no title — `_store_story` passes `story.title or
+    _derive_title(story)`, and `update_explorer_story` carries the existing
+    title forward. The golden shows it plainly: a second write with story text
+    `"second"` keeps title `"first"`. So after creation, editing the story text
+    or the last card requests **no refresh at all**. The refresh fires on
+    creation, on a narrative-summary change, on archive/promote, and on
+    attractors, experiment, or handoff — a much smaller set than implied, and
+    the reason the delegated spawn is not a hot path.)*
+
+    Pinned by golden rows in both directions, and by an explicit test naming
+    the title's stickiness, since the whole call frequency of the seam depends
+    on it.
 17. A named refresh seam, `ts/src/explorer/projectionRefresh.ts`, invoked at the
     same three points and only when 16 reports a change. It delegates to Python
     through a new `journey-projection refresh --journey <slug>` subcommand
@@ -454,6 +466,19 @@ and the whole-exploration smoke.
   Product decision, out of scope here, worth a CR under RS010. (Phone numbers
   are covered — the plan's original claim was wrong.)
 - The handoff directory collision loop is a TOCTOU; reproduced deliberately.
+- **Flaky Python test, found at plateau 6, not US7's:**
+  `tests/unit/memory/web/test_server.py::test_operations_run_api_executes_runtime_diagnose_through_controlled_command`
+  fails intermittently with "Operation run did not finish" — the run is still
+  `running` when the assertion fires. Reproduced on a stashed (clean) tree, so
+  it predates this story, and it passed on the next full run, so it is timing
+  and not a regression. The collaboration strategy requires green CI on every
+  push; an intermittent red undermines exactly that. RS010 candidate.
+- The delegated `journey-projection refresh` subcommand is a contract TS now
+  depends on, but it is NOT in the oracle-drift tripwire, because the tripwire
+  tracks *ported* oracles and this one is delegated-to. The lifecycle smoke's
+  published-`operational.json` check is the guard instead — behavioral rather
+  than byte-based. Deliberate, and worth confirming at Debt Review rather than
+  leaving as an omission.
 
 ## Stop Conditions
 

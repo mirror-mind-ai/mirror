@@ -32,14 +32,20 @@ export interface ProjectionRefreshSeam {
 
 export interface ProjectionRefreshOptions {
   /**
-   * The mirror home to delegate against.
+   * `--mirror-home`, forwarded ONLY when the command itself was given one.
    *
-   * Required, because the delegated process resolves its OWN database and
-   * cannot inherit this one. Most invocations do not pass `--mirror-home` —
-   * runtimes set `MIRROR_HOME` in the environment instead — so the caller must
-   * resolve both, and a request with neither is skipped rather than guessed.
-   * Getting this wrong is invisible: the seam is best-effort, so a home it
-   * cannot resolve would silently stop refreshing forever.
+   * The delegated process resolves its own database, and the home chain has
+   * three links — `--mirror-home`, then `MIRROR_HOME`, then `MIRROR_USER` from
+   * a project `.env`. Most real invocations use the last one. Re-deriving that
+   * chain here would duplicate it in a second language and drift; passing a
+   * home the front door never chose would be worse, because `MIRROR_HOME` and
+   * `MIRROR_USER` CONFLICT when the basenames disagree and Python refuses the
+   * pair outright.
+   *
+   * So: forward the explicit flag when there is one, and otherwise let Python
+   * resolve exactly as it would have if the user had typed the command. Either
+   * mistake here is invisible — the seam is best-effort, so a home it resolves
+   * differently just stops refreshing, quietly, forever.
    */
   readonly mirrorHome?: string | null;
   /** Milliseconds before the delegated process is abandoned. */
@@ -63,27 +69,9 @@ export function createPythonProjectionRefresh(
 ): ProjectionRefreshSeam {
   return {
     request(journey: string): void {
-      const mirrorHome = options.mirrorHome ?? process.env.MIRROR_HOME ?? null;
-      if (!mirrorHome) {
-        options.onDiagnostic?.(
-          "projection refresh skipped: no --mirror-home and no MIRROR_HOME to delegate against",
-        );
-        return;
-      }
-      const args = [
-        "run",
-        "python",
-        "-m",
-        "memory",
-        "journey-projection",
-        "refresh",
-        "--mirror-home",
-        mirrorHome,
-        "--journey",
-        journey,
-        "--format",
-        "json",
-      ];
+      const args = ["run", "python", "-m", "memory", "journey-projection", "refresh"];
+      if (options.mirrorHome) args.push("--mirror-home", options.mirrorHome);
+      args.push("--journey", journey, "--format", "json");
 
       try {
         const result = spawnSync("uv", args, {
