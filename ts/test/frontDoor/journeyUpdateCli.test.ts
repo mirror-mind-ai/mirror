@@ -86,11 +86,16 @@ test("front door `journey update` reads content from stdin when given '-'", () =
   }
 });
 
-test("front door `journey update` requires both a slug and content", () => {
+test("front door `journey update` requires both a slug and content, exiting 1 like the oracle", () => {
+  // Python's `journey update` prints its usage and `sys.exit(1)`. This route
+  // returned 2 until CR073 -- a parity divergence on a flipped write path that
+  // the golden (journeyUpdateGolden.test.ts, "usage: no content") now pins.
   const { dbPath, cleanup } = journeyDbCopy();
   try {
     const result = frontDoor(dbPath, ["journey", "update", "demo"]);
-    assert.equal(result.status, 2);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /Pass '-' as <content> to read it from stdin/);
+    assert.doesNotMatch(result.stderr, /-stdin/);
   } finally {
     cleanup();
   }

@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import re
 import sys
 
 from memory import MemoryClient
@@ -56,9 +57,34 @@ def cmd_set_path(journey: str, path: str, *, mirror_home: str | None = None) -> 
     print(project_path)
 
 
+UPDATE_USAGE = (
+    "Usage: python -m memory journey update <slug> <content>\n"
+    "       Pass '-' as <content> to read it from stdin."
+)
+
+# A flag-shaped argument -- one or two hyphens followed by a letter -- is never
+# journey path text; it is a mistyped stdin sentinel (`-stdin`, `--stdin`) or a
+# stray option. Refusing it is what keeps a caller who follows the old
+# `<content|-stdin>` usage string literally from replacing a journey's path
+# with the six characters `-stdin` and being told it succeeded (CR073). A
+# markdown list (`- item`) or an em-dash lead is NOT flag-shaped and stays
+# valid: four of six real journey paths carry lists.
+_FLAG_SHAPED = re.compile(r"^--?[A-Za-z]")
+
+
 def cmd_update(journey: str, content: str, *, mirror_home: str | None = None) -> None:
     if content == "-":
         content = sys.stdin.read()
+    elif _FLAG_SHAPED.match(content):
+        print(
+            f"Error: '{content}' looks like an option, not journey path text. "
+            "Pass '-' as <content> to read it from stdin.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    if not content.strip():
+        print("Error: content is empty.", file=sys.stderr)
+        sys.exit(1)
     mem = MemoryClient(db_path=db_path_from_mirror_home(mirror_home))
     mem.set_journey_path(journey, content)
     print(f"Journey path '{journey}' updated.", file=sys.stderr)
@@ -97,7 +123,7 @@ def main(argv: list[str] | None = None) -> None:
         cmd_mutate(mirror_home=mirror_home)
     elif remaining and remaining[0] == "update":
         if len(remaining) < 3:
-            print("Usage: python -m memory journey update <slug> <content|-stdin>", file=sys.stderr)
+            print(UPDATE_USAGE, file=sys.stderr)
             sys.exit(1)
         cmd_update(remaining[1], remaining[2], mirror_home=mirror_home)
     elif remaining and remaining[0] == "set-path":

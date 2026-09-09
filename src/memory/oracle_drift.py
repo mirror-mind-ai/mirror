@@ -72,6 +72,13 @@ ORACLE_PATHS: tuple[str, ...] = (
     # journey-service surface not yet ported; tracked at file granularity like
     # every other entry, so drift anywhere in it is at least visible.
     "src/memory/services/journey.py",
+    # CR073: `journey update`'s sentinel/empty guards and usage text, graded
+    # byte-exact by ts/test/goldens/journey-update.golden.json. The file was
+    # ported in DS7.US1 slice B and flipped, but never registered here -- a
+    # Python change to it would not have tripped drift. `status`, `set-path`,
+    # `mutate`, and `export-registry` live in the same file and are tracked at
+    # file granularity like every other entry.
+    "src/memory/cli/journey.py",
     # RS008 CR053: conservative journey association inventory and atomic removal.
     "src/memory/storage/identity.py",
     # DS7.US3 memory cultivation: consolidation persistence, cluster_memories,

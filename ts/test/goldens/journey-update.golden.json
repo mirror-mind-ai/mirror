@@ -1,0 +1,110 @@
+{
+  "before": "# Before\n",
+  "cases": [
+    {
+      "content": "-stdin",
+      "exit": 1,
+      "journey_path_after": "# Before\n",
+      "label": "incident: -stdin",
+      "stderr": "Error: '-stdin' looks like an option, not journey path text. Pass '-' as <content> to read it from stdin.\n",
+      "stdin": "# piped document\n"
+    },
+    {
+      "content": "--stdin",
+      "exit": 1,
+      "journey_path_after": "# Before\n",
+      "label": "flag-shaped: --stdin",
+      "stderr": "Error: '--stdin' looks like an option, not journey path text. Pass '-' as <content> to read it from stdin.\n",
+      "stdin": null
+    },
+    {
+      "content": "-s",
+      "exit": 1,
+      "journey_path_after": "# Before\n",
+      "label": "flag-shaped: -s",
+      "stderr": "Error: '-s' looks like an option, not journey path text. Pass '-' as <content> to read it from stdin.\n",
+      "stdin": null
+    },
+    {
+      "content": "--content",
+      "exit": 1,
+      "journey_path_after": "# Before\n",
+      "label": "flag-shaped: --content",
+      "stderr": "Error: '--content' looks like an option, not journey path text. Pass '-' as <content> to read it from stdin.\n",
+      "stdin": null
+    },
+    {
+      "content": "",
+      "exit": 1,
+      "journey_path_after": "# Before\n",
+      "label": "empty",
+      "stderr": "Error: content is empty.\n",
+      "stdin": null
+    },
+    {
+      "content": "   ",
+      "exit": 1,
+      "journey_path_after": "# Before\n",
+      "label": "whitespace",
+      "stderr": "Error: content is empty.\n",
+      "stdin": null
+    },
+    {
+      "content": "\n",
+      "exit": 1,
+      "journey_path_after": "# Before\n",
+      "label": "newline only",
+      "stderr": "Error: content is empty.\n",
+      "stdin": null
+    },
+    {
+      "content": "-",
+      "exit": 0,
+      "journey_path_after": "# From stdin\n",
+      "label": "sentinel with stdin",
+      "stderr": "Journey path 'probe' updated.\n",
+      "stdin": "# From stdin\n"
+    },
+    {
+      "content": "- phase 1\n- phase 2",
+      "exit": 0,
+      "journey_path_after": "- phase 1\n- phase 2",
+      "label": "markdown list from line one",
+      "stderr": "Journey path 'probe' updated.\n",
+      "stdin": null
+    },
+    {
+      "content": "— em-dash lead",
+      "exit": 0,
+      "journey_path_after": "— em-dash lead",
+      "label": "em-dash lead",
+      "stderr": "Journey path 'probe' updated.\n",
+      "stdin": null
+    },
+    {
+      "content": "DS7 — Command Burn-Down (11/15)",
+      "exit": 0,
+      "journey_path_after": "DS7 — Command Burn-Down (11/15)",
+      "label": "ordinary text",
+      "stderr": "Journey path 'probe' updated.\n",
+      "stdin": null
+    },
+    {
+      "content": "phase-1 and phase-2",
+      "exit": 0,
+      "journey_path_after": "phase-1 and phase-2",
+      "label": "hyphen inside text",
+      "stderr": "Journey path 'probe' updated.\n",
+      "stdin": null
+    },
+    {
+      "content": null,
+      "exit": 1,
+      "journey_path_after": "# Before\n",
+      "label": "usage: no content",
+      "stderr": "Usage: python -m memory journey update <slug> <content>\n       Pass '-' as <content> to read it from stdin.\n",
+      "stdin": null
+    }
+  ],
+  "slug": "probe"
+}

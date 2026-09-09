@@ -797,13 +797,27 @@ function runJourneyWrite(argv: readonly string[]): number {
 }
 
 /**
- * Route `journey update <slug> <content|-stdin>` to the TS core (DS7.US1 Slice B).
+ * Route `journey update <slug> <content>` to the TS core (DS7.US1 Slice B).
  * A thin wrapper over the already-ported `setIdentity`: Python's own
  * `set_journey_path` is the SAME upsert-identity primitive with a fixed
  * `journey_path` layer, no created/updated verb distinction (always prints
  * "updated", matching Python exactly), and no check that the journey slug
  * itself exists.
+ *
+ * CR073: the stdin sentinel is exactly `-`. A FLAG-SHAPED argument -- one or
+ * two hyphens then a letter -- is a mistyped sentinel (`-stdin`, `--stdin`) or
+ * a stray option, never path text, and is refused before anything is written.
+ * A markdown list (`- item`) or an em-dash lead is not flag-shaped and stays
+ * valid: four of six real journey paths carry lists. Empty content is refused
+ * as `identity set` already does. Messages and exit codes are byte-exact to
+ * the Python oracle (`ts/test/goldens/journey-update.golden.json`), including
+ * the usage path's exit 1, which this route previously returned as 2.
  */
+const JOURNEY_UPDATE_USAGE =
+  "Usage: python -m memory journey update <slug> <content>\n" +
+  "       Pass '-' as <content> to read it from stdin.";
+const FLAG_SHAPED_CONTENT = /^--?[A-Za-z]/;
+
 function runJourneyUpdateWrite(argv: readonly string[]): number {
   const args = argv.slice(2);
   const positionals = stripOptionWithValue(
@@ -813,10 +827,22 @@ function runJourneyUpdateWrite(argv: readonly string[]): number {
   const slug = positionals[0];
   let content = positionals[1];
   if (!slug || content === undefined) {
-    console.error("Usage: journey update <slug> <content|-stdin>");
-    return 2;
+    console.error(JOURNEY_UPDATE_USAGE);
+    return 1;
   }
-  if (content === "-") content = readStdinContent();
+  if (content === "-") {
+    content = readStdinContent();
+  } else if (FLAG_SHAPED_CONTENT.test(content)) {
+    console.error(
+      `Error: '${content}' looks like an option, not journey path text. ` +
+        "Pass '-' as <content> to read it from stdin.",
+    );
+    return 1;
+  }
+  if (!content.trim()) {
+    console.error("Error: content is empty.");
+    return 1;
+  }
   return withLiveWriteDb(argv, (db) => {
     setIdentity(db, { id: newId(), layer: JOURNEY_PATH_LAYER, key: slug, content }, nowIso());
     console.error(`Journey path '${slug}' updated.`);
