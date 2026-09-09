@@ -37,10 +37,7 @@ test("MIRROR_TS_EXPLORE=1 is accepted but unnecessary after the flip", () => {
   assert.equal(routeMemoryCommand(["explore", "load", "a-journey"], ON).engine, "ts");
   assert.equal(routeMemoryCommand(["explore", "deactivate"], ON).engine, "ts");
   for (const action of EXPLORE_STORY_ACTIONS) {
-    assert.equal(
-      routeMemoryCommand(["explore", "story", action, "a-journey"], ON).engine,
-      "ts",
-    );
+    assert.equal(routeMemoryCommand(["explore", "story", action, "a-journey"], ON).engine, "ts");
   }
 });
 
