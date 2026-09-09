@@ -2,7 +2,7 @@
 
 # CR068 — Stop reporting unported LLM-gated leaves as burned down
 
-**Status:** in_progress
+**Status:** done
 **RS:** RS009
 **Driver:** @viniciusteles
 **Delivery:** `mirror-ts-core`
@@ -149,9 +149,85 @@ then `find_tasks_by_title`. `routing.ts` refuses `descriptor generate` as
 ported"; `ts/src/conversation/metadataLifecycle.ts` exists. `identity edit`
 is refused as "interactive $EDITOR".
 
+## Validation
+
+**Accepted 2026-09-09** by @viniciusteles.
+
+Because this CR changed documentation only, the question was not "does the code
+work" but **can the corrected ledger predict the system's behavior?** The route
+therefore required a written prediction from the tables *before* any command
+ran; observing first would have validated nothing.
+
+Route: read the *Content & planning writes* per-leaf table and the *Remainder*
+table, predict the answering engine for five leaves, then run them through the
+front door on the real home and read `front-door.log`.
+
+| # | Command | Ledger predicts | Log recorded |
+|---|---------|-----------------|--------------|
+| 1 | `week view` | ts | `week ts exit=0` |
+| 2 | `week save` | python | `week python exit=0` |
+| 3 | `journal --help` | python | `journal python exit=0` |
+| 4 | `tasks list` | ts | `tasks ts exit=0` |
+| 5 | `consult credits` | python | `consult python exit=0` |
+
+Rows 1 and 2 are the acceptance core: one command, two subcommands, two
+engines. The row this CR replaced (`3/3 ✅ done`) could not have predicted row 2.
+
+The sheet carried three guards against the failure class this project has
+recorded twice (US6's bash-only `read -ra` comparing two identical failures;
+US7's literal placeholder slug comparing two empty responses). All three held:
+the log grew by exactly five lines (429 → 434), every entry exited 0, and the
+engine column contained both values (3 python / 2 ts). A sheet that measured
+nothing would have failed at least one.
+
+Incidental live evidence: `consult credits` returned R$ 18.29 on the
+implementer's run and R$ 18.28 on the Navigator's — a real OpenRouter call,
+answered by Python, which is the production-reality claim demonstrated rather
+than argued.
+
+**Limits of this validation, stated because a spot check that claims more than
+it measured is the defect this ledger exists to prevent.** Five leaves were
+checked, so *completeness* of the Remainder table is not established by this
+route — it rests on a read of `routing.ts`. The log shows `consult python`; it
+does not show that the opt-in gate is the reason, which is a code inference.
+And the dispositions (US11, TS4, DS10) are accepted judgments, not observables.
+
+## Review
+
+**Proportionality.** 565 lines across 10 files for three unowned leaves reads
+heavy, but most of it is the Remainder table and the per-leaf detail section —
+new standing structure, not prose about this defect. Justified: the burn-down
+denominator is the artifact the strangler proves convergence with, and it now
+has a place where an unowned leaf cannot hide. The alternative, correcting one
+row, would have left the same defect class free to recur, which it already had
+four more times.
+
+**Scope discipline.** The CR ported nothing, changed no route, and revisited no
+flip decision, as its boundaries required. `week save`'s wrong refusal reason in
+`routing.ts` was documented, not fixed, and belongs to US11.
+
+**One of the CR's own premises was wrong and is recorded as such** rather than
+quietly corrected: it assumed all three leaves were LLM-gated. `week save` is
+not. Capturing a CR from a partly mistaken reading is normal; leaving the
+mistake in the record is what keeps the next reader honest.
+
+**Debt — deferred, with a revisit trigger.** The Remainder table's
+*completeness* has no automated guard. It is accurate today because
+`routing.ts` was read end to end; nothing prevents drift the next time a route
+changes. This is the same defect class this CR just paid, one level up: an
+accounting artifact whose truth depends on someone remembering. The fix is a
+check that enumerates every routing decision and diffs it against the table.
+
+- **Decision:** defer.
+- **Reason:** the natural home is **CR072**, which already opens
+  `check_skill_command_parity.py` and adds an assertion to it; building a second
+  checker now would duplicate the harness.
+- **Revisit trigger:** when CR072 is planned. If CR072 is parked or rejected,
+  this debt returns as its own CR rather than lapsing.
+
 ## Outcome
 
-**Implemented 2026-09-09; pending Navigator validation.**
+**Done 2026-09-09.** Implemented, validated on the real home, reviewed.
 
 What changed, all in project documents (no code, no route, no SQLite):
 
@@ -185,7 +261,16 @@ Expected: `journal` and `week plan` → `python`; `week view` → `ts`. Pass: th
 table and the log agree. Fail: any row whose engine the log contradicts.
 
 **Not done by this CR:** no route changed; `week save` still says "LLM-gated"
-in `routing.ts` until US11 corrects it; the nine bypassing skills are CR072.
+in `routing.ts` until US11 corrects it; the nine bypassing skills are CR072;
+the Remainder table's completeness guard is deferred to CR072 with a trigger.
+
+**What it changed downstream.** The inspection that paid this CR produced the
+re-sequencing recorded in
+[Decisions — CV22 makes the ported work real before porting more](../../decisions.md#cv22-makes-the-ported-work-real-before-porting-more):
+DS8 moved ahead of US8, TS5 moved to DS10, US8's D1 resolved to retire the
+SQLite Workbench, and CR072/CR073 were captured. A CR scoped to "correct an
+accounting row" ended up re-ordering the remainder of the Delivery Story,
+which is the argument for reading terrain when paying small debts.
 
 ## Provenance
 
