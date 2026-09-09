@@ -197,9 +197,40 @@ Grep for the sentinel across both cores returns exactly the two `journey
 update` sites, so the pattern is not used anywhere else and fixing it is
 local.
 
+## Implementation Evidence (2026-09-09, commit `8097cdd`)
+
+Evidence, not validation. Navigator validation is the route in CR072's Plan.
+
+- **Python first, red-before-green.** 16 tests over the accept/refuse matrix:
+  8 failed before the guard (all four flag-shaped refusals, all three empty
+  refusals, the usage string), 0 after. The accept cases and the `-` sentinel
+  passed before and after — they had to.
+- **Golden.** `ts/parity/generate_journey_update_golden.py` drives the real
+  `cli.journey.main` on a fresh home per case: 13 cases, 8 refusals, 5
+  accepts, byte-exact stderr and post-write path. Regenerate is a no-op.
+  Registered in the determinism gate.
+- **TS.** 14 golden-driven tests: 8 red before the port — the front door was
+  faithfully reproducing the defect, writing `-stdin` and reporting success —
+  14 green after. Full TS suite 1719/0.
+- **Two things found and corrected in scope:**
+  - the TS route exited **2** on the usage path where Python exits **1** — a
+    pre-existing parity divergence on a flipped write path, pinned by a test
+    that asserted the divergent value. Aligned to the oracle; the golden now
+    pins it.
+  - `src/memory/cli/journey.py` was never in the oracle-drift tripwire, though
+    ported and flipped in DS7.US1. Registered; the baseline gained exactly one
+    line and no other sha moved.
+- **One planned change not needed:** the `mm-journey` skill already taught `-`
+  correctly in all three copies. The only teacher of `-stdin` was the
+  command's own usage string — the Mirror read it from the CLI, not the skill.
+- **The incident, replayed on a scratch home against Python:**
+  `echo "# doc" | journey update probe -stdin` → exit 1, `Error: '-stdin'
+  looks like an option, not journey path text. Pass '-' as <content> to read
+  it from stdin.`, path unchanged.
+
 ## Outcome
 
-_Pending._
+_Implemented; awaiting Navigator validation._
 
 ## Provenance
 

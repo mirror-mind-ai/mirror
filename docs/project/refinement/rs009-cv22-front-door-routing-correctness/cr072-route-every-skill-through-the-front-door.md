@@ -367,9 +367,41 @@ per CR071's checker): `mm-tasks` 4 Python / 0 front door, `mm-week` 3 / 0,
 `mm-new` 2 / 0, `mm-discard` 1 / 0, `mm-mirror` 2 / 0. Contrast `mm-soul`
 6 / 20, `mm-explore` 2 / 12, `mm-journeys` 0 / 1.
 
+## Implementation Evidence (2026-09-09, commit `3e05f0a`)
+
+Evidence, not validation. Navigator validation is the route in the Plan.
+
+- **The assertion was written first and run on the untouched tree.** It
+  found the nine skills — and three more the plan's count missed: `mm-soul`
+  (5 non-`soul` lines: `identity get` ×4, `mode deactivate`), `mm-explore`
+  (`conversations`), `mm-build` (`mirror log`). Ported commands left on
+  Python by the stories that flipped their neighbours. And it found prose:
+  `mm-mirror`'s "NEVER produce a response without first running …" line.
+- **110 lines across 36 files** moved (plan estimated 89 / 27). The rewrite
+  was driven by the checker's own `allowlisted()`, so the rewrite rule and the
+  CI rule are one rule. Allowlisted `build load` lines in `mm-explore` and
+  `mm-soul` stayed on Python, verified.
+- **`PYTHON_ALLOWLIST`** matches token prefixes — `identity edit` permits that
+  leaf, not `identity set` — a granularity the plan's wording (`identity edit`
+  as a command) would have got wrong at command level.
+- **Injected-drift proof, both modes.** One copy reverted: trips the CR071
+  disagreement check *and* the allowlist. All three copies reverted together
+  (invisible to CR071): trips the allowlist. Restored; checker clean.
+  A first attempt at mode 1 used a GNU-only `sed` address on macOS and
+  injected nothing — caught because the checker stayed clean when it should
+  not have, redone portably. Recorded because a proof that did not inject is
+  the sheet-that-measured-nothing class.
+- **Both-paths diff (acceptance #4): 6/6 byte-identical** — `tasks list`
+  (43,933 bytes), `week view`, `consolidate list`, `shadow list`,
+  `conversation-logger status`, `consult credits`. Five answered from TS, the
+  last from Python behind the DS8 gate. All `exit=0`.
+- The 10-minute ceiling is stated in `mm-consult` and `mm-consolidate`, all
+  three copies; `.claude`/`plugins` byte-identity held.
+- Checks: skill parity clean (25 skills), doc links clean, ruff clean.
+
 ## Outcome
 
-_Pending._
+_Implemented; awaiting Navigator validation._
 
 ## Provenance
 
