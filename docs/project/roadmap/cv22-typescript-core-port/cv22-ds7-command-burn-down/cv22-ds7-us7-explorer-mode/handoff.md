@@ -8,7 +8,7 @@ projection subsystem first, and resumed the same day when that subsystem's
 cross-process `fcntl.flock` contract showed an early TypeScript port would
 create a second unsynchronized writer for the whole transition window. Python
 keeps the lock; US7 delegates the refresh. See
-[Decisions — Journey projection publication stays Python-owned](../../../decisions.md#journey-projection-publication-stays-python-owned-until-the-retirement-window)
+[Decisions — Journey projection publication stays Python-owned](../../../../decisions.md#journey-projection-publication-stays-python-owned-until-the-retirement-window)
 and the plan's [Scope Amendment](plan.md#scope-amendment--the-journey-projection-refresh-seam-navigator-authorized-2026-09-09).
 
 This document is kept as the plateau-1 record: what is true, what is undone, and

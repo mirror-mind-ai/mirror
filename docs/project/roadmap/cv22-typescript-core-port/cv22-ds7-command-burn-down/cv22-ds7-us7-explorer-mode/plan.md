@@ -161,7 +161,7 @@ row that says why and who unblocks it.
 Found while reading terrain for plateau 2 and accepted into this story on
 explicit Navigator decision, after the plan's `scope_change_detected` stop
 condition was raised rather than absorbed silently. Full reasoning:
-[Decisions — Journey projection publication stays Python-owned](../../../decisions.md#journey-projection-publication-stays-python-owned-until-the-retirement-window).
+[Decisions — Journey projection publication stays Python-owned](../../../../decisions.md#journey-projection-publication-stays-python-owned-until-the-retirement-window).
 
 **What the original plan missed.** Every Explorer Story write calls
 `store.request_projection_refresh(journey)` (`services/explorer_story.py` lines
