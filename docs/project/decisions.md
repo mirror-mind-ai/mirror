@@ -11,7 +11,77 @@ resolved.
 
 ## Completed Decisions
 
+### Journey projection publication stays Python-owned until the retirement window
+
+**Date:** 2026-09-09
+**Reference:** [CV22.DS7 Command Burn-Down](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/index.md), [CV22.DS7.US7 Explorer Mode](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us7-explorer-mode/index.md), [Architecture — Journey projections](../product/architecture.md), [CV22.DS10 Python Retirement And npm Distribution](roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/index.md)
+**Participants:** Vinícius Manhães Teles
+
+**Supersedes the ordering half of the entry below.** The dependency that entry
+describes is real and its evidence stands; the remedy it chose was wrong,
+because it was made before reading the subsystem's concurrency contract.
+
+The architecture states that projection publication is **linearizable per
+Journey**, with core writers, extension writers, and inspection sharing one
+cross-process Journey lock. That lock is `filelock.FileLock`, which resolves to
+`fcntl.flock` on `.mirror/projections/.publication.lock`
+(`journey_projections/storage.py`).
+
+Node has no `flock` in core, and the common JavaScript lock libraries use
+mkdir/directory locking, which does not exclude against `fcntl.flock` at all.
+Reproducing Python's advisory lock from TypeScript requires a native addon,
+which conflicts directly with DS10's cross-platform npm distribution goal.
+
+The consequence is decisive: for the whole transition window — every story from
+here to DS10 — a TypeScript publisher and the Python publisher would write the
+same `.mirror/projections` tree **with no mutual exclusion between them**,
+breaking the merge-after-lock manifest guarantee in a directory the user's
+project carries under version control. Once Python is deleted there is exactly
+one writer and the problem does not exist. Porting the publisher early therefore
+buys nothing and costs a concurrency hole for as long as both cores coexist.
+
+Decision: **projection publication stays Python-owned until the retirement
+window.** Python remains the single writer of the projection tree. TypeScript
+commands that produce a refresh — Explorer Story writes now, the Builder tree at
+US8 — request it through one named Python seam, not through a whole-command
+fallback. TS5 keeps its identity as a separate technical story but returns to
+the ops tail, and its port lands in the retirement window when the dual-writer
+window has closed. This is the same strangler shape DS3 uses at the routing
+boundary and US6 used for `harvest save`, moved one level inward: the command is
+TypeScript, one side effect is not.
+
+The delegation is not exactly the existing `journey-projection
+rebuild-operational`, which always compiles **and** publishes, where the
+coordinator publishes only when the compiled digest changed — a probe showed
+`status='unchanged'` on the second consecutive write. Exact parity needs a small
+Python entry point carrying coordinator semantics, added as a subcommand of
+`journey-projection`. That adds Python surface to a component being retired,
+accepted knowingly because it is bounded, honest about what it is, and deleted
+by the same DS10 story that deletes the rest.
+
+Rejected: implementing `flock` in TypeScript through a native addon (breaks npm
+cross-platform distribution); porting the subsystem now anyway and accepting an
+unsynchronized dual writer (breaks a guarantee the architecture makes
+explicitly); keeping the whole `explore story` write family on Python until DS10
+(half-flips a lived mode, which the DS7 panel named unreviewable).
+
+Correction note: the option set that produced the superseded decision was
+incomplete. It sized the subsystem before reading its locking contract, so
+"delegate the side effect to Python" was dismissed on hot-path grounds that the
+evidence does not support — Explorer Story writes are a handful per exploration
+session, not a per-turn surface like `soul listen`.
+
+---
+
 ### CV22.DS7 reorders: the Journey projection seam precedes Explorer and the Builder tree
+
+> **Superseded on 2026-09-09** by *Journey projection publication stays
+> Python-owned until the retirement window*, above. The dependency evidence
+> recorded here remains accurate and is the reason the seam exists at all; only
+> the chosen remedy — porting the projection subsystem ahead of US7 and US8 —
+> was reversed, after the subsystem's cross-process locking contract showed that
+> an early port creates an unsynchronized dual writer. Kept in full because the
+> reasoning chain is the evidence for the correction.
 
 **Date:** 2026-09-09
 **Reference:** [CV22.DS7 Command Burn-Down](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/index.md), [CV22.DS7.US7 Explorer Mode](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us7-explorer-mode/index.md), [CV22.DS7 Burn-Down Ledger](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/burn-down-ledger.md)
@@ -40,8 +110,8 @@ two producer families: `src/memory/builder/` (20 call sites --- US8) and
 the seam are scheduled before the story that owns it. US7 is simply where it
 surfaced first.
 
-Decision: **split the projection contract out of TS4 into its own technical
-story and port it before US7 and US8.** TS4 keeps the extension catalog
+Decision (superseded): **split the projection contract out of TS4 into its own
+technical story and port it before US7 and US8.** TS4 keeps the extension catalog
 (`extensions`, `ext`, and the US1-deferred `list`/`inspect` branches);
 CV22.DS7.TS5 takes the Journey projection subsystem, the `journey-projection`
 command, and the `requestProjectionRefresh` seam that Explorer and Builder call.
@@ -67,7 +137,8 @@ Rejected alternatives, with reasons:
 
 US7 pauses at its plateau-1 boundary with the Explorer surfaces committed,
 graded, and registered in the oracle-drift tripwire. Nothing was routed, so no
-user-visible behavior depends on the pause.
+user-visible behavior depends on the pause. *(The pause lasted one session: the
+superseding decision resumed US7 with a Python-delegated refresh seam.)*
 
 ---
 

@@ -2,10 +2,17 @@
 
 # Handoff — CV22.DS7.US7 — Explorer Mode (paused at plateau 1)
 
-**Status at pause:** plateau 1 of 6 complete. Nothing is routed. Paused on
-2026-09-09 by an explicit Navigator decision to port the Journey projection
-seam first — see
-[Decisions — CV22.DS7 reorders](../../../decisions.md#cv22ds7-reorders-the-journey-projection-seam-precedes-explorer-and-the-builder-tree).
+**Status:** plateau 1 of 6 complete. Nothing is routed. **The pause is resolved**
+— it lasted one session. US7 was paused on 2026-09-09 to port the Journey
+projection subsystem first, and resumed the same day when that subsystem's
+cross-process `fcntl.flock` contract showed an early TypeScript port would
+create a second unsynchronized writer for the whole transition window. Python
+keeps the lock; US7 delegates the refresh. See
+[Decisions — Journey projection publication stays Python-owned](../../../decisions.md#journey-projection-publication-stays-python-owned-until-the-retirement-window)
+and the plan's [Scope Amendment](plan.md#scope-amendment--the-journey-projection-refresh-seam-navigator-authorized-2026-09-09).
+
+This document is kept as the plateau-1 record: what is true, what is undone, and
+the blocker analysis a resuming session should not have to redo.
 
 Written for the session that resumes this story, which may be a different
 session, a different Mirror, or a later collaborator. It assumes only the
@@ -77,16 +84,25 @@ Porting plateau 2 without that seam would make TS exit 0 while silently leaving
 the project's projection stale — the `conversations append` failure class
 (RS009/CR055) arriving through a side effect instead of a write.
 
-## What unblocks it
+## How it was resolved
 
-CV22.DS7.TS5 — the Journey projection contract. When TS exposes an equivalent of
-`request_projection_refresh`, plateau 2 resumes by calling it from the three
-sites `services/explorer_story.py` calls it from, and the plan needs one
-addition to Scope B: **the refresh request and its `_projected_story` change
-detection**, which compares `id`, `title`, `status`, `narrative_field_summary`,
-attractors, experiment, and handoff — deliberately *not* `current_story` or
-`last_story_card`, though `title` is derived from `current_story`, so a story
-edit usually reaches it anyway. That comparison is behavior and needs a test.
+Not by porting the publisher. `docs/product/architecture.md` promises
+*linearizable per Journey* publication through one cross-process lock, and that
+lock is `filelock.FileLock` → `fcntl.flock`. Node has no `flock` in core, and
+mkdir-based JavaScript lock libraries do not exclude against it — so a TS
+publisher would not be a port, it would be a second writer with no mutual
+exclusion, for as long as both cores exist. After Python is deleted there is one
+writer and no problem, which makes this the one subsystem where porting early is
+strictly worse than porting late.
+
+So Python keeps the lock and TS delegates. Plateaus 2–6 proceed with plan Scope
+items 16–19: `_projected_story` change detection ported as a pure function, a
+named seam calling a new `journey-projection refresh` subcommand with coordinator
+semantics, DS10 deletion ownership recorded for that subcommand, and
+failure containment matching Python's best-effort post-commit behavior.
+
+TS5 keeps its identity as a separate technical story and moves to **last** in the
+ops tail, where the dual-writer window has closed.
 
 Also carry forward, already recorded in the plan and unaffected by the pause:
 the durable/legacy dual read **and dual write** (`_store_story` writes the
@@ -96,11 +112,14 @@ until US8.
 
 ## Next plateau
 
-Resume at plateau 2 once TS5 lands. Re-read [plan.md](plan.md) first: it is
-approved and current except for the Scope B addition named above, which should
-be recorded as a Navigator-authorized scope amendment in the plan itself when
-the story resumes, in the shape US6 used for its operating-mode metadata
-amendment.
+Plateau 2, now unblocked. [plan.md](plan.md) is approved and current: the scope
+addition is recorded in it as a Navigator-authorized amendment, in the shape US6
+used for its operating-mode metadata amendment.
+
+Do not re-derive the projection analysis. The seam is decided, its Python
+subcommand has named DS10 deletion ownership, and TS never writes under
+`.mirror/projections` while both cores exist — a plan stop condition fires if it
+does.
 
 ## Validation evidence supporting this state
 

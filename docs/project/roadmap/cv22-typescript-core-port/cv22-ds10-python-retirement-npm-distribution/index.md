@@ -53,6 +53,34 @@ This gate does not require provider authors to use JavaScript. Extensions may ow
 executable runtime; the Mirror core must not own Python as their permanent compatibility
 layer.
 
+## Journey Projection Refresh Seam Deletion Gate
+
+The [2026-09-09 decision](../../../decisions.md#journey-projection-publication-stays-python-owned-until-the-retirement-window)
+keeps Journey projection publication Python-owned for the whole transition,
+because publication is linearizable through `fcntl.flock` and a TypeScript
+publisher would be a second writer with no mutual exclusion against Python's
+lock. TypeScript commands that produce a refresh — Explorer Story writes
+(DS7.US7), the Builder tree (DS7.US8) — delegate it to Python through a
+`journey-projection refresh --journey <slug>` subcommand carrying
+`ProjectionRefreshCoordinator` semantics.
+
+That subcommand is Python surface added deliberately to a component being
+retired. Before Python retirement or npm publication, DS10 must:
+
+1. land CV22.DS7.TS5, so TypeScript owns projection compilation and publication
+   and is the **only** writer of `.mirror/projections`;
+2. delete the `journey-projection refresh` subcommand and every TS call site
+   that spawns it;
+3. prove the packaged artifact spawns no Python for a projection refresh;
+4. prove the TS publisher holds a single-writer lock appropriate for one core,
+   since the `fcntl.flock` compatibility constraint that forced this seam
+   disappears with Python; and
+5. confirm the refresh remains best-effort after the source commit — a failed
+   projection must never fail the Explorer or Builder write that requested it.
+
+Ordering note: TS5 is last in the DS7 ops tail precisely because of this gate.
+It cannot be pulled forward without reintroducing the dual-writer window.
+
 ## Command Surfaces Assigned From DS7 (decision 2026-09-07)
 
 The [DS7.TS1 ops-tail decision](../../../decisions.md#cv22ds7ts1-ops-tail-runtime-splits-rehearsal-and-legacy-migration-retire-in-ds10)

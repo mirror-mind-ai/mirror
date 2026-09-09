@@ -156,6 +156,57 @@ row that says why and who unblocks it.
 15. Flip the gate, switch all three `mm-explore` skill copies to the front door,
     update the burn-down ledger with the per-leaf table and the flip checklist.
 
+## Scope Amendment — the Journey projection refresh seam (Navigator-authorized, 2026-09-09)
+
+Found while reading terrain for plateau 2 and accepted into this story on
+explicit Navigator decision, after the plan's `scope_change_detected` stop
+condition was raised rather than absorbed silently. Full reasoning:
+[Decisions — Journey projection publication stays Python-owned](../../../decisions.md#journey-projection-publication-stays-python-owned-until-the-retirement-window).
+
+**What the original plan missed.** Every Explorer Story write calls
+`store.request_projection_refresh(journey)` (`services/explorer_story.py` lines
+265, 280, 366). That is not a no-op: it compiles and publishes an Ariad
+operational projection into the user's project. A hermetic probe showed one
+`update_explorer_story` creating `.mirror/projections/ariad/operational.json`,
+`current.json`, a receipt, and `.publication.lock` where no files existed.
+
+**Why TypeScript does not port the publisher here.** Publication is linearizable
+per Journey through `filelock.FileLock` → `fcntl.flock`. Node has no `flock` in
+core and mkdir-based JavaScript locks do not exclude against it, so a TS
+publisher would be a second, unsynchronized writer for the whole transition
+window. Python stays the single writer; TS5 ports the subsystem after the
+retirement window closes it.
+
+**Added to scope:**
+
+16. `_projected_story` change detection, ported as a pure function. It compares
+    `id`, `title`, `status`, `narrative_field_summary`, attractors, experiment,
+    and handoff — deliberately **not** `current_story` or `last_story_card`,
+    although `title` is derived from `current_story` through `_derive_title`, so
+    a story edit usually reaches it anyway. That asymmetry is behavior: pinned
+    by a golden row that changes only `last_story_card` and must NOT request a
+    refresh, and one that changes only `current_story` and must.
+17. A named refresh seam, `ts/src/explorer/projectionRefresh.ts`, invoked at the
+    same three points and only when 16 reports a change. It delegates to Python
+    through a new `journey-projection refresh --journey <slug>` subcommand
+    carrying **coordinator** semantics — compile, compare digest, publish only
+    when changed. `rebuild-operational` is not reused: it always publishes, so
+    it would emit snapshots and receipts where Python emits none.
+18. That subcommand in `src/memory/cli/journey_projection.py`: ~15 lines over
+    the existing `ProjectionRefreshCoordinator`, with **explicit deletion
+    ownership recorded in DS10** beside TS2's compatibility host. Python surface
+    added to a component being retired, knowingly and in writing.
+19. Failure containment: Python's coordinator swallows refresh failure after the
+    source commit by design — the store write is authoritative and the
+    projection is best-effort. The TS seam reproduces exactly that: a failed or
+    unavailable delegation must not fail the Explorer write, must not print to
+    stdout, and must leave the same log signature. A test asserts the write
+    survives a seam that cannot run at all.
+
+**Still out of scope:** the projection subsystem itself, the
+`journey-projection` command's existing operations, the extension projection
+API, and any change to what the projection contains. Those are TS5's.
+
 ## Non-Goals
 
 - **No Explorer behavior change.** Every surface is reproduced as Python renders
@@ -175,6 +226,8 @@ row that says why and who unblocks it.
 - **No exploration-document schema change.** The five handoff documents keep
   their current headings and ordering.
 - **No Builder, Workspace, or extension-catalog work** (US8, US9, TS4).
+- **No projection publisher port.** TS does not write `.mirror/projections`.
+  While both cores exist, Python holds the only lock that means anything.
 
 ## Acceptance Behavior
 
@@ -408,6 +461,9 @@ and the whole-exploration smoke.
   that cannot be reproduced deterministically across 3.10 and 3.12.
 - `navigator_decision_needed` — before any `story handoff` against a real
   project directory, and before flipping `promote` ahead of US8.
+- `plan_rule_conflict` — if the delegated refresh turns out to need more than
+  the coordinator entry point named in the amendment, or if any TS code path is
+  found writing under `.mirror/projections`.
 
 ## Approval Gate
 
