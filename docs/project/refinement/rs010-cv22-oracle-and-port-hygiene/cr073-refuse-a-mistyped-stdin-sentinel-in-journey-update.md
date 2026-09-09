@@ -2,10 +2,10 @@
 
 # CR073 — Refuse a mistyped stdin sentinel in `journey update`
 
-**Status:** captured
+**Status:** in_progress
 **RS:** RS010
-**Driver:** —
-**Delivery:** —
+**Driver:** @viniciusteles
+**Delivery:** `mirror-ts-core`
 
 ## Problem
 
@@ -140,7 +140,7 @@ change for any caller passing content positionally, and the guard in step 1
 closes the defect without one. The divergence between the two sibling commands
 is recorded as accepted. Pending Navigator approval with the batch Plan.
 
-_Awaiting Navigator approval; status stays `captured` until approved._
+_Approved by the Navigator 2026-09-09 as part of the CR072 batch plan; implementation started the same day._
 
 Proposed shape, smallest first:
 

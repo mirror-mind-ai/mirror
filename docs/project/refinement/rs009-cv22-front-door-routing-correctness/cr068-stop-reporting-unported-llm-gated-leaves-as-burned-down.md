@@ -225,6 +225,17 @@ check that enumerates every routing decision and diffs it against the table.
 - **Revisit trigger:** when CR072 is planned. If CR072 is parked or rejected,
   this debt returns as its own CR rather than lapsing.
 
+> **Trigger fired and re-deferred, 2026-09-09.** CR072 was planned the same
+> day. The panel (ai-engineer, quality-assurance) converged on **not** taking
+> the guard in the CR072 batch, and the Navigator accepted: the right design
+> is not a markdown parser over the ledger but making `routing.ts`'s ~20 Python
+> refusal reasons *name their owning story* and asserting that in a test —
+> ownership lives beside the routing decision where it cannot drift. US11, TS4,
+> and DS8 are each about to rewrite the refusal strings in their families, so
+> doing it now means doing it twice. **New trigger: when the last of
+> US11 / TS4 / DS8 lands.** If any of the three is parked, the debt returns as
+> its own CR at that point rather than waiting on a story that will not come.
+
 ## Outcome
 
 **Done 2026-09-09.** Implemented, validated on the real home, reviewed.

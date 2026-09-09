@@ -2,10 +2,10 @@
 
 # CR072 — Route every skill through the front door
 
-**Status:** captured
+**Status:** in_progress
 **RS:** RS009
-**Driver:** —
-**Delivery:** —
+**Driver:** @viniciusteles
+**Delivery:** `mirror-ts-core`
 
 ## Problem
 
@@ -83,7 +83,9 @@ contract that a skill (`mm-journey`) documents, and both land in
 section is the plan of record for both; CR073 keeps its own scope and acceptance.
 
 _Amended 2026-09-09 after the ai-engineer + quality-assurance Plan review (recorded
-below). Awaiting Navigator approval; status stays `captured` until approved._
+below). **Approved by the Navigator 2026-09-09** with the +160 ms accepted, no
+argument-shape convergence, and CR068's debt re-deferred. Driver @viniciusteles,
+Delivery `mirror-ts-core`; implementation started the same day._
 
 ### Scope
 
