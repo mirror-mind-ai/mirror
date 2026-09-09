@@ -164,6 +164,12 @@ ORACLE_PATHS: tuple[str, ...] = (
     # reproduced by ts/src/soul/harvest.ts.
     "src/memory/services/soul_journal.py",
     "src/memory/services/memory.py",
+    # DS7.US7 plateau 1: the Explorer Story surfaces. `transport=verbatim` cards
+    # ported whole (ts/src/explorer/render.ts). The △ EXPLORER MODE ACTIVE card
+    # lives in surfaces/mode_transition.py, already tracked above -- and the two
+    # files carry DIFFERENT `_wrap` helpers (this one chunks a long word, that
+    # one lets it overflow), so drift in either must stay independently visible.
+    "src/memory/surfaces/explorer_story.py",
 )
 
 BASELINE_RELPATH = "ts/parity/oracle-baseline.json"

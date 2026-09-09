@@ -75,6 +75,7 @@ jobs:
           uv run python ts/parity/generate_soul_prompt_golden.py
           uv run python ts/parity/generate_soul_apply_golden.py
           uv run python ts/parity/generate_soul_harvest_golden.py
+          uv run python ts/parity/generate_explorer_surface_golden.py
           git diff --exit-code ts/test/goldens/
         env:
           MEMORY_ENV: test

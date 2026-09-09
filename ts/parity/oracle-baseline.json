@@ -56,6 +56,7 @@
     "src/memory/storage/messages.py": "36360a06d738a72aee57dcddb4f474602c420ef2",
     "src/memory/storage/store.py": "b07dd1b40d9193c008c345b8dffb0e1bb2ea3d75",
     "src/memory/storage/tasks.py": "61a483eb1ece79e33e181bc7a7862ac6d991268f",
+    "src/memory/surfaces/explorer_story.py": "722b92224c646ceac89ffd1d8e59342d7f097a77",
     "src/memory/surfaces/mode_transition.py": "3a77d4ac8c02b9a5a34f2a47ccbcee80e94ae3bc",
     "src/memory/surfaces/soul.py": "9b1d866cb1b7407a91bf8531b93a940b58c968ef",
     "src/memory/utils.py": "e8f64360540d425abbbca68839fac9fbc63b5c27"
