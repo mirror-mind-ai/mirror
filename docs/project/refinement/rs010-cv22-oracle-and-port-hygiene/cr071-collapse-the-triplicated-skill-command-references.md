@@ -2,7 +2,7 @@
 
 # CR071 — Collapse the triplicated skill command references
 
-**Status:** in_progress
+**Status:** done
 **RS:** RS010
 **Driver:** @viniciusteles
 **Delivery:** `mirror-ts-core`
@@ -212,6 +212,43 @@ is `mm-build` (unported until DS7.US8) and `mm-identity`'s `identity edit`.
 
 Paid inside CV22.DS7.US7's Debt Review as a `pay_now` decision, which the Ariad
 runtime held the story open for until it was done.
+
+## Navigator Validation
+
+**Accepted 2026-09-09** by @viniciusteles.
+
+Route: run `/mm-journeys` on Pi in a fresh session — one of the eleven repaired
+skills. The expected observation was that **nothing changes**, which is the point:
+the repair touched `.claude` and `plugins/mirror-mind` only, so the runtime the
+Navigator actually uses must be undisturbed. Confirmed working.
+
+Evidence recorded above is not validation and did not substitute for it: the
+before/after check output, the injected-drift proof, and green CI at `b8c9c2d`
+establish that the guard bites, not that the product still behaves.
+
+## Review
+
+**Proportionality.** A 130-line checker and a mechanical repair, against a
+defect that had already reached two of three shipped distributions and blocks
+DS10. Proportionate. The rejected alternative — generating the copies from one
+source — would have been a build step modelling deliberate per-runtime
+differences, which is a larger machine than the problem.
+
+**Debt introduced.** One: the checker is a fourth thing that knows how a skill
+invocation is spelled, alongside the three copies. If the invocation FORM changes
+(a different node flag, a different entry path), the checker's two regexes must
+change with it. Bounded, and it fails loudly rather than silently — an unmatched
+line is simply not checked, which is the weaker failure direction. Recorded, not
+deferred to a CR.
+
+**Debt carried forward.** The DS10 Skill Invocation Gate, linked below. This CR
+deliberately did not resolve it: `mm-build` cannot leave Python until US8, and
+`identity edit` is an interactive `$EDITOR` seam whose disposition is a product
+decision, not a port decision.
+
+**Not done, and deliberately.** No copy was collapsed, no argument spelling was
+touched, no Portuguese/English example was flattened, and no routing decision
+changed.
 
 ## Provenance
 
