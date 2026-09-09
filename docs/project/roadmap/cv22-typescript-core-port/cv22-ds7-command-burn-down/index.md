@@ -3,7 +3,7 @@
 # CV22.DS7 — Command Burn-Down & Re-homed Feature Work
 
 **Delivery Story:** Port the remaining **deterministic** command surface from the Python core to the TypeScript core — the Builder/Ariad tree (re-homing CV20/CV21 in-flight work), Soul, Explorer, mirror-mode orchestration, memory cultivation, the extraction lifecycle, remaining identity/journey reads and writes, and the content/ops tail — behind the DS5 replay-safe `LlmTransport` seam and the DS6 TS-owned database. Carry the bounded non-command Workspace/web hierarchy retirement rider so zero commands cannot conceal a live Python browser contract. DS8, DS9, and DS10 own the later live-provider, MCP, and final runtime/package cutovers.
-**Status:** 🟢 In Progress — US1–US5, US10, TS1, TS2, TS3, US6, and US7 are done (**11/15**); US8, US9, TS4, and TS5 remain. **US7 flipped 2026-09-09**: `explore` answers from TS by default, 11 of its 14 leaves, with `story promote` on Python by name until US8 owns Builder `load`. Explorer's Story writes reach the Journey projection publisher, whose cross-process `fcntl.flock` contract TypeScript cannot share during the transition, so publication stays Python-owned and US7 requests the refresh through one named Python seam that DS10 deletes — see [Decisions — Journey projection publication stays Python-owned](../../../decisions.md#journey-projection-publication-stays-python-owned-until-the-retirement-window). TS5 was split out of TS4 on 2026-09-09 and stays in the ops tail, moving the story denominator from 14 to 15; the command denominator is unchanged at 30, because `journey-projection` was already counted in the ops tail. US10 closed the extraction lifecycle: `conversation-logger` is 15/15 on TS, its five LLM-crossing subcommands under the replay gate until DS8; TS1 ported `backup` and `repair-encoding` and flipped `repair-journeys --apply` with them on 2026-09-07 (done 2026-09-08). US5 was re-scoped on 2026-09-02 to its deterministic core, with the LLM-close-tail slices moved to the new US10, so the denominator moved from 11 to 12; on 2026-09-07 the ops tail was split into three technical stories (TS1, TS3, TS4) so each slice is its own pull, moving it to 14. TS2 removed US4's whole-command extension fallback through TS-owned `mirror-context-v1`; its finite Python compatibility host has mandatory deletion ownership in DS10.
+**Status:** 🟢 In Progress — US1–US5, US10, TS1, TS2, TS3, US6, and US7 are done (**11/15**); US8, US9, TS4, and US11 remain. **Re-sequenced 2026-09-09** after a code-level inspection (see [Decisions — CV22 makes the ported work real before porting more](../../../decisions.md#cv22-makes-the-ported-work-real-before-porting-more)): thirteen ported leaves sit behind the opt-in `MIRROR_TS_EXTERNAL_ROUTES` gate and answer from Python in production, and nine skills bypass the front door, so the order is now CR072 (skills) → **US11** → **DS8** → US8 → TS4 → DS9 → US9 → DS10 (with TS5 as its first act). **US11** was created by CR068 to own the three LLM-tail leaves US2 sent to a story that dissolved, plus `descriptor generate` and the ES-001 lifecycle CLI faces; **TS5 was reassigned to DS10** because its publisher cannot land while both cores write, so DS7 could never have closed on it — the story denominator stays 15, the command denominator moves 30 → 29. **US7 flipped 2026-09-09**: `explore` answers from TS by default, 11 of its 14 leaves, with `story promote` on Python by name until US8 owns Builder `load`. Explorer's Story writes reach the Journey projection publisher, whose cross-process `fcntl.flock` contract TypeScript cannot share during the transition, so publication stays Python-owned and US7 requests the refresh through one named Python seam that DS10 deletes — see [Decisions — Journey projection publication stays Python-owned](../../../decisions.md#journey-projection-publication-stays-python-owned-until-the-retirement-window). TS5 was split out of TS4 on 2026-09-09 and, later the same day, reassigned to DS10; US11 took its place, so the story denominator stays 15. US10 closed the extraction lifecycle: `conversation-logger` is 15/15 on TS, its five LLM-crossing subcommands under the replay gate until DS8; TS1 ported `backup` and `repair-encoding` and flipped `repair-journeys --apply` with them on 2026-09-07 (done 2026-09-08). US5 was re-scoped on 2026-09-02 to its deterministic core, with the LLM-close-tail slices moved to the new US10, so the denominator moved from 11 to 12; on 2026-09-07 the ops tail was split into three technical stories (TS1, TS3, TS4) so each slice is its own pull, moving it to 14. TS2 removed US4's whole-command extension fallback through TS-owned `mirror-context-v1`; its finite Python compatibility host has mandatory deletion ownership in DS10.
 **Type:** Delivery Story
 **Depends on:** [CV22.DS3 Pi TS Front Door](../cv22-ds3-pi-ts-front-door/index.md) (done) for the routing table this story flips entries in; [CV22.DS4 Deterministic Writes](../cv22-ds4-deterministic-writes/index.md) (done) for backup-gated, copy-validated write discipline; [CV22.DS5 External-API Commands](../cv22-ds5-external-api-commands/index.md) (done) for the replay-safe `LlmTransport` provider boundary that orchestration ports behind; [CV22.DS6 Schema Custody Transfer](../cv22-ds6-schema-custody-transfer/index.md) (done) so every write/migration a ported command needs is answered by the TS-owned database.
 **Retirement rider dependency:** [RS008](../../../refinement/rs008-v0319-recursive-journey-parity/index.md) CR050–CR053 provide metadata authority, recursive reads, safe movement, and conservative removal; CR054 assigns their Workspace/web convergence owner.
@@ -183,32 +183,47 @@ Named explicitly so no child-story plan can claim they were ambiguous:
 ## Candidate Stories
 
 Codes and titles below are the planned expansion; child folders and links are
-created on pull/expand. Risk-first: extend the proven read/write patterns on the
-low-churn deterministic tail first, port the security-sensitive cultivation and
-extraction writes in the middle behind the replay seam, and take the
-highest-churn `transport=verbatim` Builder/Ariad tree last (or in tight lockstep
-with a frozen oracle snapshot), so the moving target is ported against the most
-stable possible oracle.
+created on pull/expand. Risk-first as originally authored: extend the proven
+read/write patterns on the low-churn deterministic tail first, port the
+security-sensitive cultivation and extraction writes in the middle behind the replay
+seam, and take the highest-churn `transport=verbatim` Builder/Ariad tree last (or in
+tight lockstep with a frozen oracle snapshot), so the moving target is ported against
+the most stable possible oracle. The "last" premise expired on 2026-09-07 with single
+ownership — see the re-sequencing note below the table.
 
 The table uses the canonical `| Code | Story | Type | Outcome | Status |`
 candidate-story grammar so Ariad Expand can resolve and reuse this authored
-package. Row order is the risk-first command sequence: US1 (low-churn deterministic
-tail) first, the security-sensitive cultivation/extraction writes in the middle behind
-the replay seam, the highest-churn `transport=verbatim` Builder/Ariad tree (US8) last.
-The ops tail is four technical stories: TS1 (`backup`, `repair-encoding`) and TS3
+package. Row order is the risk-first command sequence as authored: US1 (low-churn
+deterministic tail) first, the security-sensitive cultivation/extraction writes in the
+middle behind the replay seam, the Builder/Ariad tree (US8) after them. Since
+2026-09-09 the executable order is the one in the Status line above — US11 and DS8
+before US8 — and the table's order is historical, not a pull queue.
+The ops tail is three technical stories: TS1 (`backup`, `repair-encoding`) and TS3
 (`welcome`, `runtime` reads) sit before US6 because they close live gaps and `backup` is
-the gate the Soul and Builder write ports lean on; TS5 (Journey projection contract) was
-split out of TS4 on 2026-09-09 and stays **last**, because projection publication is
-linearizable through a `fcntl.flock` lock that TypeScript cannot share with Python: an
-early port would put two unsynchronized writers on the same `.mirror/projections` tree for
-the whole transition, and once Python is gone there is only one writer and no problem.
+the gate the Soul and Builder write ports lean on; TS4 (extension catalog, plus the
+`identity edit` port) stays in the tail to reach zero. TS5 (Journey projection contract)
+was split out of TS4 on 2026-09-09 and reassigned to DS10 the same day: projection
+publication is linearizable through a `fcntl.flock` lock that TypeScript cannot share with
+Python, so an early port would put two unsynchronized writers on the same
+`.mirror/projections` tree for the whole transition. Once Python is gone there is one
+writer and no problem — which makes TS5 the first act of retirement, not a DS7 story.
 `request_projection_refresh` has exactly two caller families,
 `services/explorer_story.py` (US7) and `builder/` (US8); both delegate the refresh to
 Python through a named seam DS10 deletes, rather than each carrying a partial port.
-TS4 (extension catalog) stays in the tail to reach zero. TS2 is placed immediately after US4 because it owns
-US4's explicit extension-binding fallback and must close before the `mirror load` command
-can count as fully burned down. US9 is a separately visible non-command retirement rider
-and may land whenever its US1/CR051 and CR052 dependencies are stable.
+TS2 is placed immediately after US4 because it owns US4's explicit extension-binding
+fallback and must close before the `mirror load` command can count as fully burned down.
+US9 is a separately visible non-command retirement rider and may land whenever its
+US1/CR051 and CR052 dependencies are stable; with zero `web` conversations in the last
+thirty days it is sequenced late, adjacent to DS10's web cutover.
+
+**US8 is no longer "last".** The risk-first ordering put the Builder tree last because it
+was a moving oracle under a second author. Since the 2026-09-07 single-owner decision the
+repository shows no Builder change on `main` after 2026-09-02, so deferral buys no
+stability. What still goes before US8 is smaller and makes already-ported work real:
+CR072 routes the bypassing skills through the front door, US11 finishes the LLM tail so
+DS8 flips everything with one review, and DS8 puts the thirteen replay-gated leaves —
+including the product's live LLM surface, the session close tail — into production before
+the Builder tree is stacked on the same substrate.
 
 | Code | Story | Type | Outcome | Status |
 |------|-------|------|---------|--------|
@@ -225,8 +240,9 @@ and may land whenever its US1/CR051 and CR052 dependencies are stable.
 | CV22.DS7.US7 | Explorer Mode | User Story | `explore` exploratory-story surfaces answered by TS, with projection refresh delegated to Python behind a named DS10-owned seam (med risk) | ✅ Done — flipped 2026-09-09; 11/14 leaves on TS, `story promote` blocked on US8 |
 | [CV22.DS7.US8](cv22-ds7-us8-builder-ariad-tree/index.md) | Builder/Ariad tree | User Story | `build` full Delivery + Refinement lifecycle answered by TS, re-homing in-flight CV20/CV21 work; largest, highest-churn, `transport=verbatim` surface (highest risk — churn) | 🟡 Planned |
 | [CV22.DS7.US9](cv22-ds7-us9-workspace-web-hierarchy-parity/index.md) | Workspace and web hierarchy parity | User Story — retirement rider | Recursive Workspace DTOs, hierarchy-bearing endpoint adapters, selected-scope isolation, and existing JavaScript renderer compatibility have named TS ownership and parity evidence; excluded from the command denominator but required for DS7 done | 🟡 Planned |
-| CV22.DS7.TS5 | Journey projection contract | Technical Story | The `journey_projections` subsystem and the `journey-projection` command answered by TS. Deliberately **last** in the ops tail: publication is linearizable through `fcntl.flock`, which TypeScript cannot share with Python, so this may only land when the dual-writer window has closed. Until then Python is the single writer and TS commands delegate the refresh (high risk — writes into the user's project, publication kernel with locks and receipts, Markdown read-model compiler) | 🟡 Planned |
-| CV22.DS7.TS4 | Ops/utility tail 3: extension catalog | Technical Story | `extensions`, `ext`, and the US1-deferred `list extensions/all` and `inspect extension/runtime-catalog/llm-calls/embedding-provenance` branches answered by TS to reach zero deterministic Python commands (med risk — install/uninstall/expose/clean mutate skill directories; takes the multi-persona Plan review). `journey-projection` moved to TS5 on 2026-09-09; `runtime`'s mutating half and `migrate-legacy` are DS10's, not here. | 🟡 Planned |
+| [CV22.DS7.US11](cv22-ds7-us11-content-planning-llm-tail/index.md) | Content & planning LLM tail | User Story | `journal`, `week plan`, `week save`, and `descriptor generate` answered by TS — `week save` ungated (it is deterministic), the three LLM leaves under the replay transport until DS8 — plus the ES-001 `conversations` metadata-lifecycle CLI faces wired to the engine US10 already ported (low–med risk; the US5 → US10 shape: US2's deterministic core spawns its LLM tail). Created by CR068 | 🟡 Planned |
+| CV22.DS7.TS4 | Ops/utility tail 3: extension catalog | Technical Story | `extensions`, `ext`, the US1-deferred `list extensions/all` and `inspect extension/runtime-catalog/llm-calls/embedding-provenance` branches, and `identity edit` (a `spawnSync($EDITOR)` seam, assigned 2026-09-09) answered by TS to reach zero deterministic Python commands (med risk — install/uninstall/expose/clean mutate skill directories; `ext <id> <extension-subcommand>` dispatches into an extension's own Python entry and needs a compat-host-or-contract decision at Plan; takes the multi-persona Plan review). `runtime`'s mutating half and `migrate-legacy` are DS10's, not here. | 🟡 Planned |
+| CV22.DS7.TS5 | Journey projection contract | Technical Story | *Reassigned to [CV22.DS10](../cv22-ds10-python-retirement-npm-distribution/index.md) on 2026-09-09.* Publication is linearizable through `fcntl.flock`, which TypeScript cannot share with Python; the publisher can only land in the same act that retires Python's, so it is DS10's first act, not a DS7 story. Kept here as a row so the reassignment is visible, not silent | ↗ Moved to DS10 |
 
 `identity edit` (spawns `$EDITOR`) and other interactive seams are called out for
 an explicit port-or-keep decision at plan time rather than a silent port.

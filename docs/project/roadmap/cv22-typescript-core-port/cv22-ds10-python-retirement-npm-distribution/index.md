@@ -75,10 +75,24 @@ npm publication, DS10 must:
 3. verify the packaged plugin's invocation form resolves for an installed user,
    not only inside a runtime clone.
 
-The residue at the time of writing is `mm-build` (the whole Ariad lifecycle,
-unported until DS7.US8) and `mm-identity`'s `identity edit`, which spawns
-`$EDITOR` and is an interactive seam kept on Python by design. Both need an
-explicit answer here, not an assumption that the burn-down covered them.
+The residue at the time of writing (2026-09-09, corrected the same day by the
+CR068 inspection) is larger than CR071 recorded. **Nine skills whose routes
+already point at TypeScript still invoke `uv run python -m memory` directly**:
+`mm-tasks`, `mm-week`, `mm-consolidate`, `mm-shadow`, `mm-consult`, `mm-mute`,
+`mm-new`, `mm-discard`, and `mm-mirror`. Their families were flipped in
+DS7.US2–US5 and DS5, but a flipped route reaches a live session only if the
+caller enters the front door, and these skills never did — so those flips have
+been real for the Pi extension and the smoke, not for the skill a Navigator
+types. [CR072](../../../refinement/rs009-cv22-front-door-routing-correctness/cr072-route-every-skill-through-the-front-door.md)
+(RS009) owns the repair and brings item 2 above forward: the parity check gains
+its "Python entry point absent" assertion when CR072 lands, not at DS10.
+
+The remaining residue after CR072 is the unported set: `mm-build` (the Ariad
+lifecycle, until DS7.US8), `mm-journal` (until DS7.US11), `mm-update` (the
+`runtime` update half, redesigned here), and `mm-identity`'s `identity edit`
+(assigned to DS7.TS4 on 2026-09-09 as a `spawnSync($EDITOR)` port — "kept on
+Python by design" was never a disposition once Python is deleted). Each needs
+an explicit answer here, not an assumption that the burn-down covered them.
 
 ## Journey Projection Refresh Seam Deletion Gate
 
@@ -105,15 +119,22 @@ retired. Before Python retirement or npm publication, DS10 must:
 5. confirm the refresh remains best-effort after the source commit — a failed
    projection must never fail the Explorer or Builder write that requested it.
 
-Ordering note: TS5 is last in the DS7 ops tail precisely because of this gate.
-It cannot be pulled forward without reintroducing the dual-writer window.
+Ordering note: **TS5 was reassigned from DS7 to DS10 on 2026-09-09.** A story
+that can only land in the act that retires Python's publisher is a retirement
+story, and leaving it in DS7 meant DS7 could never close on its
+deterministic-command promise. TS5 is DS10's first act: port the compiler and
+publisher, cut over, and delete the Python publisher and the `refresh` seam in
+one flip, so the dual-writer window never opens. It cannot be pulled forward
+into the DS7 remainder without reintroducing that window. `journey-projection`
+left the DS7 command denominator with it (30 → 29).
 
 ## Command Surfaces Assigned From DS7 (decision 2026-09-07)
 
 The [DS7.TS1 ops-tail decision](../../../decisions.md#cv22ds7ts1-ops-tail-runtime-splits-rehearsal-and-legacy-migration-retire-in-ds10)
-assigns three Python command surfaces to DS10 instead of porting them at parity.
-They are excluded from the DS7 burn-down denominator (30) and served by Python
-fallback until DS10 acts on them:
+assigns three Python command surfaces to DS10 instead of porting them at parity,
+and the [2026-09-09 re-sequencing decision](../../../decisions.md#cv22-makes-the-ported-work-real-before-porting-more)
+adds three more (items 4–6). They are excluded from the DS7 burn-down
+denominator (29) and served by Python fallback until DS10 acts on them:
 
 1. **`runtime` update/release half** — `update`, `pull`, `stable`, `backup`,
    `release-doctor`, `release-promote`. This is the git-based updater over the
@@ -135,6 +156,24 @@ fallback until DS10 acts on them:
    DB copy. Retired unported: DS6 moved migration custody to TS and proved the TS
    engine over real legacy copies, so the tool validates a retired engine. A TS
    rehearsal tool, if ever wanted, is separate scope against the TS engine.
+4. **`journey-projection`** (all subcommands) and the `journey_projections`
+   subsystem — CV22.DS7.TS5, reassigned here. Ported and cut over as DS10's
+   first act; see the seam deletion gate above.
+5. **The SQLite Refinement Workbench** — `build refinement-story
+   create|overview|park|pull` and the eleven `build change-request` verbs
+   (fifteen of the Builder tree's 42 leaves). CV20.DS12 delivered the
+   document-first Workbench and made `docs/project/refinement/index.md` the
+   canonical RS/CR authority; `mm-build` reaches the SQLite path only when that
+   index is absent. Retired unported with a documented cutoff (US8 decision D1,
+   2026-09-09): a journey still carrying SQLite Workbench rows must adopt the
+   document-first index with a pre-DS10 release. Existing rows stay readable
+   through the last Python-bearing release. DS7.US8 ports the remaining 27
+   leaves and must not spend parity effort on these fifteen.
+6. **`conversations --metadata-backfill-preview|-apply`** — the one-shot
+   backfill of pre-ES-001 conversation rows (CV9.DS7). Retired unported: the
+   lifecycle *engine* is on TS (DS7.US10) and its operator faces are wired by
+   DS7.US11; the backfill ran once and validates nothing after that. Cutoff
+   documented in the release notes with the others.
 
 ## Ownership Boundary
 
@@ -153,8 +192,14 @@ fallback until DS10 acts on them:
 - No web execution path depends on Python.
 - The DS7.TS2 legacy extension context host and every core-owned launcher for it are removed.
 - The `runtime` update/release path has a TS-owned npm-era replacement with operational
-  smoke coverage; `migrate-legacy` and `memory-rehearse-migration` are removed with their
-  cutoff documented in the release notes.
+  smoke coverage; `migrate-legacy`, `memory-rehearse-migration`, the SQLite Refinement
+  Workbench verbs, and the ES-001 backfill flags are removed with their cutoffs
+  documented in the release notes.
+- TS5 is done: TypeScript is the only writer of `.mirror/projections`, and the
+  `journey-projection refresh` seam and its TS call sites are gone.
+- No skill copy in any runtime invokes `uv run python -m memory`, and the skill parity
+  check asserts the entry point is absent (CR072 brought the assertion forward; DS10
+  verifies it holds for the packaged plugin).
 - Python deletion, package rename, npm publication, stable promotion, tag, and release
   remain separate Navigator-authorized actions.
 

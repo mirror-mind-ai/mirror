@@ -12,6 +12,25 @@ sends it to TS **ungated** and its story's flip checklist was green. A command
 behind an opt-in gate is **not** burned down — the gate means production still
 reaches Python. Coverage is per subcommand/branch, not per top-level command.
 
+**Reassignment rule (CR068, 2026-09-09).** When a story reassigns scope to
+another story, the *receiving* story must name it in its own package, or the
+scope has no owner. A reassignment recorded only in the sending story's prose
+is not an owner — US2 sent `journal` and `week plan|save` to US5, US5 was
+re-scoped without them, and the ledger kept the family at `3/3 done` for a
+week while three leaves answered from Python. Every leaf that does not answer
+from TS in an unconfigured install is listed in the [Remainder](#remainder)
+below with a named owner; that table, not the family rows, is what "done =
+zero" is audited against.
+
+**Skill invocations are a second bypass (CR072).** A flipped route reaches a
+live session only if the caller enters the front door. CR059 routed the Pi
+extension and Gemini hooks; CR071 made the three skill copies agree. Neither
+made every *skill* enter the front door: as of 2026-09-09, `mm-tasks`,
+`mm-week`, `mm-consolidate`, `mm-shadow`, `mm-consult`, `mm-mute`, `mm-new`,
+`mm-discard`, and `mm-mirror` still invoke `uv run python -m memory` directly
+while their routes point at TS. A family row's ✅ therefore means the routing
+table and the smoke — not necessarily the skill a Navigator types.
+
 **What "routed to TS" reaches (RS009 CR059, 2026-09-08).** Until this date the
 Pi extension and the Gemini hooks called `uv run python -m memory` directly and
 never entered the front door, so a flipped route was exercised by the lifecycle
@@ -22,12 +41,24 @@ them. Flips recorded before this date were true of the routing table and the
 smoke; they became true of daily sessions on 2026-09-08.
 
 **Denominator.** The 35 top-level `python -m memory <command>` entries, minus
-the five explicitly owned by later Delivery Stories: `mcp` (DS9), `web`
+the six explicitly owned by later Delivery Stories: `mcp` (DS9), `web`
 (DS10), `eval` (DS8, live provider), `runtime` (DS10 — its git-based
 update/release half is redesigned under npm, not ported; TS1 ports the read
-subcommands as branch coverage), and `migrate-legacy` (DS10 — retired with a
-documented cutoff, not ported). Working denominator: **30** (32 until the
-2026-09-07 decision; see History).
+subcommands as branch coverage), `migrate-legacy` (DS10 — retired with a
+documented cutoff, not ported), and `journey-projection` (DS10 — TS5 was
+reassigned there on 2026-09-09 because its publisher cannot land while both
+cores write; see History). Working denominator: **29** (30 until 2026-09-09;
+32 until the 2026-09-07 decision).
+
+**Production reality (2026-09-09).** Every LLM-crossing leaf routes to TS only
+under `MIRROR_TS_EXTERNAL_ROUTES=1` plus a replay fixture. No real install sets
+those, so **thirteen ported and graded leaves answer from Python in production**
+— `mirror load --query`, `memories --search`, `consult`, `consolidate
+scan|apply`, `shadow scan`, the five `conversation-logger` close-tail
+subcommands, and `soul harvest save`. The family rows mark them ✅ under the
+DS7↔DS8 convention (orchestration on TS under replay counts as DS7-done); the
+[Remainder](#remainder) lists them under DS8 so the convention cannot hide
+them.
 
 ---
 
@@ -39,7 +70,7 @@ documented cutoff, not ported). Working denominator: **30** (32 until the
 | Deterministic writes | `identity set`, `journey set-path` | (subcommands) | DS4 | ✅ done |
 | External under replay | `memories --search`, `consult` | 1/1 (+`consult`) | DS5 | ✅ done |
 | Identity/journey reads & writes | `identity`, `journey`, `seed`, `init`, `descriptor`, `list`, `inspect`, `conversations`, `recall` | 9/9†‡ | DS7.US1 | ✅ done |
-| Content & planning writes | `journal`, `tasks`, `week` | 3/3 | DS7.US2 | ✅ done |
+| Content & planning writes | `journal`, `tasks`, `week` | 1/3¶ | DS7.US2 / US11 | 🔵 in progress — US2 ported the deterministic core (`tasks` 9/9, `week view`); `journal`, `week plan`, `week save` were sent to US5, which was re-scoped without them (CR068). **DS7.US11** owns them |
 | Memory cultivation | `consolidate`, `shadow` | 2/2 | DS7.US3 | ✅ done |
 | mirror-mode orchestration | `mirror`, `mode` | 2/2 | DS7.US4 | ✅ done |
 | Extension context runtime | (`ext`/`extensions` context path) | — | DS7.TS2 | ✅ done |
@@ -48,11 +79,22 @@ documented cutoff, not ported). Working denominator: **30** (32 until the
 | Soul Mode | `soul` | 1/1 | DS7.US6 | ✅ done — flipped 2026-09-08; `harvest save` replay-gated until DS8 |
 | Explorer Mode | `explore` | 1/1 | DS7.US7 | ✅ done — flipped 2026-09-09; `story promote` on Python until US8; projection refresh delegated behind a DS10-owned seam |
 | Builder/Ariad | `build` | 0/1 | DS7.US8 | 🟡 planned |
-| Ops/utility tail | `backup`, `repair-encoding`, `extensions`, `ext`, `welcome`, `journey-projection` (+ `runtime` reads§) | 3/6‡ | DS7.TS1 / TS3 / TS4 / TS5 | 🔵 in progress — TS1 `backup`+`repair-encoding` ✅ flipped 2026-09-07; TS3 `welcome` ✅ flipped 2026-09-08 (+ `runtime` reads as branch coverage); TS4 extension catalog; TS5 `journey-projection` **last** — blocked by the `fcntl.flock` dual-writer window until Python retires |
+| Ops/utility tail | `backup`, `repair-encoding`, `extensions`, `ext`, `welcome` (+ `runtime` reads§) | 3/5‡ | DS7.TS1 / TS3 / TS4 | 🔵 in progress — TS1 `backup`+`repair-encoding` ✅ flipped 2026-09-07; TS3 `welcome` ✅ flipped 2026-09-08 (+ `runtime` reads as branch coverage); TS4 extension catalog (also takes `identity edit`). `journey-projection` left this row for DS10 on 2026-09-09 with TS5 |
 
 Deferred to later Delivery Stories (excluded from the denominator): `mcp`
 (DS9), `web` (DS10), `eval` (DS8), `runtime` (DS10, mutating half; reads are
-TS1 branch coverage), `migrate-legacy` (DS10 retirement with cutoff).
+TS1 branch coverage), `migrate-legacy` (DS10 retirement with cutoff),
+`journey-projection` (DS10 — TS5, ported and cut over in the same act that
+retires the Python publisher, so the `fcntl.flock` dual-writer window never
+opens).
+
+¶ The Content & planning row is counted per leaf since CR068. `tasks` is
+9/9 routed; `week` is 1/3 (`view` on TS; `plan` is one LLM extraction and
+`save` is **deterministic** — it reads the pending file and calls `add_task`,
+which is already on TS — so the routing table's "LLM-gated" reason is wrong for
+`save`); `journal` is 0/1 (one LLM classification plus one embedding, the
+same shape as `soul harvest save`; no TS module exists). All four are owned by
+DS7.US11.
 
 † `conversations` covers its **listing read** (DS7.US1) and, since 2026-09-03,
 `append` (DS7.US10 slice B′). A family marked done can still grow subcommands on
@@ -61,13 +103,22 @@ here means "the subcommands that existed when it was ported", not "every argv
 shape forever". `append` keeps its own explicit routing entry precisely so it
 can never again be answered by inheritance.
 
-‡ Branch residuals owed by TS1, not counted in the top-level numbers above: US1
-deferred `list extensions|all` and
-`inspect extension|runtime-catalog|llm-calls|embedding-provenance`
-(`routing.ts` sends them to Python, bound to TS1), and US10 left
-`repair-journeys --apply` on Python until TS1 ports `backup`. The family
-counts are top-level commands; these branches are the per-branch remainder the
-rule above requires to stay visible.
+‡ Branch residuals not counted in the top-level numbers above. Owed by
+**TS4**: US1 deferred `list extensions|all` and
+`inspect extension|runtime-catalog|llm-calls|embedding-provenance`, and
+`identity edit` (US1 "kept it on Python" as an interactive `$EDITOR` seam —
+but Python is deleted in DS10, so "keep" was never a disposition; it is a
+`spawnSync($EDITOR)` port, assigned to TS4 on 2026-09-09). Owed by **US11**:
+`descriptor generate` (US1 kept it "as the DS7↔DS8 live seam", but DS8 flips
+live mode and ports nothing — its orchestration is US11's, same shape as
+`journal`), and the ES-001 `conversations` metadata-lifecycle CLI faces
+(`--metadata-lifecycle-dry-run|-demo|-preview-at-message|-apply`) whose
+*engine* US10 already ported to `conversation/metadataLifecycle.ts` — only the
+flags are unwired. Retiring in **DS10**: the one-shot
+`--metadata-backfill-preview|-apply` flags. US10's `repair-journeys --apply`
+residual closed with TS1 on 2026-09-07. The family counts are top-level
+commands; these branches are the per-branch remainder the rule above requires
+to stay visible, and the [Remainder](#remainder) consolidates them.
 
 § `runtime` is split by mutation (decision 2026-09-07). TS1 ports the read
 subcommands `status|version|diagnose|release-notes` with
@@ -103,6 +154,85 @@ be migrated with a pre-DS10 release). `transcript-export` is **not** a command:
 transcript backfill's `parse_jsonl`/`_assistant_text`) was ported in US10, and
 `export_transcript`/`export_last_turn` have no production caller — DS10 deletion
 inventory, not TS1 scope.
+
+---
+
+## Remainder
+
+Every leaf that does **not** answer from TypeScript in an unconfigured install,
+with its owner. Built from `routing.ts` refusal reasons on 2026-09-09 (CR068).
+When this table is empty except for the DS8 block, DS7 is done; when the DS8
+block is empty too, the strangler has no Python fallback left on the command
+surface. Additions here require an owner in the same edit — an unowned row is
+the defect this ledger exists to prevent.
+
+### Unported — deterministic
+
+| Leaf | Owner | Note |
+|------|-------|------|
+| `build` — 27 in-scope leaves (29 subcommands, 42 leaves in Python) | DS7.US8 | Self-hosting story; see the [US8 package](cv22-ds7-us8-builder-ariad-tree/index.md) |
+| `build refinement-story create\|overview\|park\|pull`, `build change-request` × 11 | DS10 (retire, cutoff) | The SQLite Refinement Workbench, superseded by CV20.DS12's document-first Workbench (US8 D1, decided 2026-09-09) |
+| `explore story promote` | DS7.US8 | Renderer ported in US7; the tail is Builder `load`. Flips as a route entry with US8 |
+| `extensions install\|uninstall\|expose-claude\|clean-claude` | DS7.TS4 | Mutates skill directories |
+| `ext list`, `ext <id>`, `ext <id> bind\|unbind\|bindings\|migrate` | DS7.TS4 | Catalog and bindings |
+| `ext <id> <extension-subcommand>` | DS7.TS4 — **plan input** | Dynamic dispatch into an extension's own Python entry point. TS4 must decide: finite compat host (TS2's shape) or a TS extension-command contract. Not a silent port |
+| `list extensions\|all` | DS7.TS4 | US1-deferred branch |
+| `inspect extension\|runtime-catalog\|llm-calls\|embedding-provenance` | DS7.TS4 | US1-deferred branches |
+| `identity edit` | DS7.TS4 | `spawnSync($EDITOR)`; "kept on Python" is not a disposition once Python is deleted |
+| `week save` | DS7.US11 | Deterministic — pending file → `add_task`. Routing reason "LLM-gated" is wrong |
+| `conversations --metadata-lifecycle-dry-run\|-demo\|-preview-at-message\|-apply` | DS7.US11 | Engine already in `conversation/metadataLifecycle.ts`; CLI faces unwired |
+| `conversations --metadata-backfill-preview\|-apply` | DS10 (retire) | One-shot backfill of pre-ES-001 rows |
+| `journey-projection` (all) | DS10 (TS5) | Publisher cannot land while both cores write (`fcntl.flock`) |
+
+### Unported — LLM orchestration (port under replay; live is DS8's)
+
+| Leaf | Owner | Note |
+|------|-------|------|
+| `journal` | DS7.US11 | 1 LLM classification + 1 embedding — `soul harvest save`'s shape |
+| `week plan` | DS7.US11 | 1 LLM extraction, then a deterministic similarity check and a pending-file write |
+| `descriptor generate` | DS7.US11 | 1 LLM call; no skill or hook calls it |
+
+### Ported and graded — replay-gated, Python in production until DS8
+
+| Leaf | Ported by | Live traffic (llm_calls, this home) |
+|------|-----------|-------------------------------------|
+| `memories --search` | DS5 | `embedding` 171 rows — the highest-volume role |
+| `consult credits`, `consult ask` | DS5 | none recorded |
+| `mirror load --query` | DS7.US4 | no `reception` rows recorded |
+| `consolidate scan`, `consolidate apply` | DS7.US3 | none recorded |
+| `shadow scan` | DS7.US3 | none recorded |
+| `conversation-logger switch\|session-end-pi\|session-end\|session-start (full)\|session-maintenance` | DS7.US10 | `conversation_title` 158, `summary` 23, `tags` 23, `extraction` 21, `task_extraction` 21 — the close tail is the product's live LLM surface |
+| `soul harvest save` | DS7.US6 | none recorded |
+
+Thirteen leaves. DS8's validation effort belongs where the traffic is: the
+close tail and the search embedding — exactly the surfaces US10 pinned with
+byte-exact prompt digests.
+
+### Out of the denominator (owned elsewhere, unported by decision)
+
+`mcp` (DS9); `web` (DS10); `eval` (DS8); `runtime update|pull|stable|backup|release-doctor|release-promote` (DS10, redesigned under npm); `migrate-legacy` and `memory-rehearse-migration` (DS10, retired with cutoff); `journey-projection` (DS10, TS5).
+
+---
+
+## Content & planning writes — per-leaf detail (DS7.US2 / US11)
+
+Three commands, thirteen leaves. US2 ported and flipped the ten deterministic
+ones on 2026-08 under the family's routes; the three that cross the LLM or
+embedding seam were reassigned to US5 in US2's prose, US5 was re-scoped
+without them, and nothing inherited the work until CR068 (2026-09-09).
+
+| Leaf | TS ported | Routed to TS | Owner | Note |
+|------|:---------:|:------------:|-------|------|
+| `tasks list\|add\|done\|doing\|block\|import\|delete\|sync\|sync-config` | ✅ | ✅ | US2 | nine leaves, allowlisted by name |
+| `week view` (and bare `week`) | ✅ | ✅ | US2 | — |
+| `week plan` | ❌ | Python | **US11** | `extract_week_plan` (LLM) → similarity check → pending JSON file |
+| `week save` | ❌ | Python | **US11** | **no LLM** — reads the pending file, `add_task` per item. Mis-labelled "LLM-gated" in `routing.ts` |
+| `journal` | ❌ | Python | **US11** | `classify_journal_entry` (LLM) → `add_memory` (embedding). No TS module exists |
+
+**Routed to TS: 10/13.** The `mm-tasks`, `mm-week`, and `mm-journal` skills
+all still invoke Python directly (CR072), so even the ten flipped leaves reach
+a live Pi session only through the extension, not through the skill a Navigator
+types.
 
 ---
 
@@ -417,3 +547,4 @@ default route, and the `=0` steps prove the revert.
 | 2026-09-09 | **Reorder reversed the same session: projection publication stays Python-owned until retirement; US7 resumes.** The dependency in the entry below is real, but the remedy was chosen before reading the subsystem's concurrency contract. `docs/product/architecture.md` states projection publication is *linearizable per Journey* through one cross-process lock; that lock is `filelock.FileLock` → `fcntl.flock` on `.mirror/projections/.publication.lock`. **Node has no `flock` in core**, and mkdir-based JavaScript lock libraries do not exclude against `fcntl.flock` at all, so a TS publisher and the Python publisher would write the same tree with no mutual exclusion for the entire transition — breaking the merge-after-lock manifest guarantee in a git-tracked directory. After Python is deleted there is one writer and no problem, so an early port buys nothing and costs a concurrency hole. Decision: publication stays Python-owned; TS5 keeps its identity but returns to the ops tail as its **last** item; US7 and later US8 request the refresh through one named Python seam that DS10 deletes with the rest. Needs a small `journey-projection` subcommand carrying coordinator semantics, because `rebuild-operational` always publishes where the coordinator skips an unchanged digest (probe: `status='unchanged'` on the second consecutive write) — Python surface knowingly added to a component being retired. US7 resumes at plateau 2 with a Navigator-authorized Scope B amendment. Denominators unchanged: 15 stories, 30 commands. |
 | 2026-09-09 | *(superseded by the entry above the same day — evidence retained)* **DS7 reordered: the Journey projection seam moves ahead of Explorer and the Builder tree.** US7 plateau 1 landed (`d469a8f`) — the eleven Explorer Story renderers and the `△ EXPLORER MODE ACTIVE` card, 52 scenarios generated from Python, 54 tests green, `surfaces/explorer_story.py` on the drift tripwire, nothing routed. Reading terrain for plateau 2 found that **every Explorer Story write calls `store.request_projection_refresh(journey)`**, which compiles and publishes an Ariad operational projection into the user's project: a hermetic probe showed one `update_explorer_story` creating `.mirror/projections/ariad/operational.json`, `current.json`, a receipt, and the publication lock where nothing existed before. The subsystem is 2,221 lines under `src/memory/journey_projections/`, assigned to TS4 — scheduled *after* US7. The callers make the inversion explicit: `request_projection_refresh` has exactly two producer families, `services/explorer_story.py` (3 sites, US7) and `builder/` (20 sites, US8), and both were scheduled before the story that owns the seam. Navigator chose to split the projection contract out of TS4 into **TS5** and port it first, over absorbing 2,221 lines into US7, half-flipping Explorer to its read-only leaves, shelling into Python per write, or accepting silent projection staleness — the last being the `conversations append` class (CR055) the ledger exists to prevent. US7 pauses at its plateau-1 boundary with a written [handoff](cv22-ds7-us7-explorer-mode/handoff.md); its approved plan needs one Scope B addition on resume, the `_projected_story` change-detection comparison. Story denominator 14 → 15; command denominator unchanged at 30, since `journey-projection` was already counted in the ops tail. |
 | 2026-09-08 | **CV22.DS7.TS1 done.** Validation accepted by the Navigator on the real home, including a real Pi session shutdown whose backup entered the front door (`memory_20260908_095020.zip`, `backup / ts / exit=0`). Debt Review deferred five findings with revisit triggers: the extension/hook front-door bypass became **CR059** under RS009; silent-failure exit code, torn-snapshot backup, 0644 archives, and cross-table slug repair became **CR060–CR063** under RS010. DS7 progress 7/14 → 8/14; ops tail 2/6. |
+| 2026-09-09 | **CR068 paid: the ledger stops over-reporting, and the remainder gets owners.** The *Content & planning writes* row read `3/3 done` while `journal`, `week plan`, and `week save` answered from Python — reassigned to US5 in US2's prose, dropped when US5 was re-scoped, inherited by nobody. Corrected to per-leaf (`tasks` 9/9, `week` 1/3, `journal` 0/1) with a detail table in the shape the `conversation-logger` and `runtime` sections use. Reading `routing.ts` end to end for the correction found more of the same class: `descriptor generate` (US1 "kept it as the DS8 seam" — DS8 ports nothing), `identity edit` ("kept on Python" — Python is deleted in DS10), and the ES-001 `conversations` metadata-lifecycle flags ("own slice" — no slice claimed them; the engine is already in TS). And `week save` is not LLM-gated at all: it reads the pending file and calls `add_task`, which is on TS. Dispositions (Navigator, 2026-09-09): **DS7.US11** owns `journal`, `week plan|save`, `descriptor generate`, and the lifecycle dry-run/demo/preview/apply faces; **TS4** takes `identity edit` as a `spawnSync($EDITOR)` port; **DS10** retires the one-shot backfill flags. A consolidated **Remainder** table now lists every leaf that does not answer from TS in an unconfigured install with its owner — including the thirteen ported leaves that sit behind the opt-in `MIRROR_TS_EXTERNAL_ROUTES` gate and therefore answer from Python in production until DS8. New rule: the receiving story must name reassigned scope, or the scope has no owner. Two more decisions recorded the same day: **TS5 leaves DS7 for DS10** (its publisher cannot land while both cores write, so DS7 could never have closed on it) — command denominator 30 → 29, story denominator stays 15 after US11 joins; and **US8's D1 resolves to retire** the SQLite Refinement Workbench in DS10 (15 of 42 leaves). Captured separately: **CR072** (RS009) — nine skills whose routes are on TS still invoke Python directly. See [Decisions — CV22 makes the ported work real before porting more](../../../decisions.md#cv22-makes-the-ported-work-real-before-porting-more). |

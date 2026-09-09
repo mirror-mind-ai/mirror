@@ -140,7 +140,7 @@ CR054 proved that zero commands alone cannot safely authorize Python deletion.
 | [CV22.DS4](cv22-ds4-deterministic-writes/index.md) | Deterministic Writes | Port write commands (journey/identity CRUD, `log_access`) with parity proven on DB copies; backup-gated; schema-compatible; CLI-write routing on the TS front door (identity + journey) | ✅ Done |
 | [CV22.DS5](cv22-ds5-external-api-commands/index.md) | External-API Commands | Port extraction, embeddings/search, and consult behind replay-safe provider boundaries; route validated external command surfaces through the TS front door while preserving Python fallback for unsafe/unconfigured paths | ✅ Done |
 | [CV22.DS6](cv22-ds6-schema-custody-transfer/index.md) | Schema Custody Transfer | Move all database creation, migration, and discipline from Python to TS — bootstrap DDL (rewritten in English per CV0), migration engine and `_migrations` bookkeeping, cross-process bootstrap locking, connection pragma discipline — proven over real legacy databases; plus the two schema decisions gated on custody (`identity.metadata` canonicalization, `parent_journey` first-class column) | ✅ Done — all children complete (TS1–TS5, US1–US3); TS owns bootstrap/migration/locking/pragmas, proven over real legacy copies including migration-016's real ADD-COLUMN + backfill; the deletion gate is cleared |
-| [CV22.DS7](cv22-ds7-command-burn-down/index.md) | Command Burn-Down & Re-homed Feature Work | Port the remaining command surface to TS — the Builder/Ariad tree (re-homed CV20/CV21 in-flight work), Soul, Explorer, mirror-mode orchestration, remaining identity/journey reads and writes, and the extraction lifecycle — until the deterministic Python command surface is empty; complete the non-command Workspace/web hierarchy retirement rider | 🟢 In Progress — US1–US5, US10, US6, US7, TS1, TS2, TS3 done (**11/15**); US8, US9, TS4, TS5 remain; DS10 owns deletion of TS2's finite compatibility host and the two gates US7 added |
+| [CV22.DS7](cv22-ds7-command-burn-down/index.md) | Command Burn-Down & Re-homed Feature Work | Port the remaining command surface to TS — the Builder/Ariad tree (re-homed CV20/CV21 in-flight work), Soul, Explorer, mirror-mode orchestration, remaining identity/journey reads and writes, and the extraction lifecycle — until the deterministic Python command surface is empty; complete the non-command Workspace/web hierarchy retirement rider | 🟢 In Progress — US1–US5, US10, US6, US7, TS1, TS2, TS3 done (**11/15**); US8, US9, TS4, US11 remain (TS5 reassigned to DS10 and US11 created on 2026-09-09; denominator unchanged). Re-sequenced 2026-09-09: CR072 → US11 → **DS8** → US8 → TS4 → DS9 → US9 → DS10 — see [Decisions](../../decisions.md#cv22-makes-the-ported-work-real-before-porting-more). DS10 owns deletion of TS2's finite compatibility host, the two gates US7 added, TS5, and the retired SQLite Workbench verbs |
 | CV22.DS8 | Live-Provider Cutover | Implement the `live` mode of the TS `LlmTransport` (chat + embeddings) with per-role timeouts, bounded retries, error taxonomy, and metadata-only logging (AI-18); route real external calls through TS; validated by live smoke contracts, not golden parity; multi-persona Plan review before implementation | 🟡 Planned |
 | CV22.DS9 | TS MCP Server | Threat model first (RS005: localhost binding, per-tool permission scoping, tightest gate on identity-mutating tools; AI-19: per-tool rate/budget guards against denial-of-wallet), then port `python -m memory mcp` to TS | 🟡 Planned |
 | [CV22.DS10](cv22-ds10-python-retirement-npm-distribution/index.md) | Python Retirement & npm Distribution | After zero commands, converge the complete Python web process/endpoint inventory and packaged assets; only then may deletion, rename, and npm distribution be planned under separate gates | 🟡 Planned — CR054 web convergence gate authored; DS10 not pulled |
@@ -293,14 +293,25 @@ Risk-first, mirroring the decision spine:
    the per-turn status line no longer pays a Python start and `runtime
    diagnose` stopped misreporting the TS-owned schema. US6 then ported the
    Soul ritual — the first `transport=verbatim` surface with an identity
-   write, and the rehearsal for US8's much larger Builder tree — so DS7 is
-   **10/14**. US9 is the separately
-   visible non-command Workspace/web hierarchy rider required
-   before DS7 can finish.
-8. **DS8 — live-provider cutover**: implement the `live` mode of the TS
-   `LlmTransport` (AI-18) so real external calls leave Python; validated by
-   live smoke contracts, not golden parity, and run through the multi-persona
-   Plan review because it spends real money and carries real secrets.
+   write, and the rehearsal for US8's much larger Builder tree. US7 then
+   ported Explorer Mode (11 of 14 leaves; `story promote` waits on US8), so
+   DS7 is **11/15**. On 2026-09-09 a code-level inspection re-sequenced the
+   remainder (see [Decisions](../../decisions.md#cv22-makes-the-ported-work-real-before-porting-more)):
+   CR068 created **US11** for the LLM tail US2 had sent to a story that
+   dissolved; **TS5** moved to DS10, because its publisher can only land in
+   the act that retires Python's; and **DS8 was pulled ahead of US8**, because
+   thirteen ported leaves — the product's LLM core — sit behind an opt-in gate
+   and answer from Python in production. US9 is the separately visible
+   non-command Workspace/web hierarchy rider required before DS7 can finish,
+   sequenced late next to DS10's web cutover.
+8. **DS8 — live-provider cutover** (next after US11): implement the `live`
+   mode of the TS `LlmTransport` (AI-18) so real external calls leave Python;
+   validated by live smoke contracts, not golden parity, and run through the
+   multi-persona Plan review because it spends real money and carries real
+   secrets. Small in code — the live config and the provider interfaces exist;
+   the Python to match is 447 lines — and large in effect: seventeen leaves
+   reach production, flipped by traffic and pin coverage (search embedding,
+   close tail, `mirror load`, cultivation, consult, `harvest save`, US11).
 9. **DS9 — TS MCP server**: threat model first (RS005 scoping rider, AI-19
    denial-of-wallet rider), then port `python -m memory mcp` to TS.
 10. **DS10 — Python retirement & npm distribution**: after the command, provider, and

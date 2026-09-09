@@ -2,7 +2,7 @@
 
 # CV22.DS7.US8 — Builder/Ariad tree
 
-**Status:** 🟡 Planned — authored, not pulled
+**Status:** 🟡 Planned — authored, not pulled. Sequenced after CR072, US11, and DS8 (decision 2026-09-09); D1 resolved the same day
 **Type:** User Story
 **Owner:** CV22.DS7 for the whole `build` command surface and the Builder runtime state it writes
 **Depends on:** [CV22.DS7.US1](../cv22-ds7-us1-remaining-identity-journey-reads-writes/index.md)
@@ -64,8 +64,8 @@ under `src/memory/surfaces/`.
 | 6 | Continuation | `continue-lifecycle` | 1 | `lifecycle.py`, `lifecycle_ribbon.py` |
 | 7 | Refinement Workbench (legacy SQLite) | `refinement-story create\|overview\|park\|pull`; `change-request attach\|capture\|discard\|done\|mark-implemented\|park\|plan\|promote\|reject\|resume\|validate` | 15 | `workbench.py`, `workbench_surfaces.py` |
 
-Groups 1–6 are **27 leaves**. Group 7 is **15 leaves** and is the subject of the
-first open decision below.
+Groups 1–6 are **27 leaves** and are this story's scope. Group 7 is **15 leaves**
+and is **retired in DS10** (D1, resolved 2026-09-09 — see below).
 
 ## Open Decisions For Plan Review
 
@@ -74,7 +74,7 @@ argues about them instead of discovering them. The single-owner rule applies:
 they are taken at plan time and written down, because nobody else will confirm
 them.
 
-### D1 — Port or retire the SQLite Refinement Workbench (15 of 42 leaves)
+### D1 — Port or retire the SQLite Refinement Workbench (15 of 42 leaves) — **RESOLVED: retire**
 
 CV20.DS6 delivered the SQLite Workbench. **CV20.DS12 (done) delivered the
 document-first Workbench and made one project index the canonical RS/CR
@@ -83,19 +83,18 @@ authority.** `mm-build` routes accordingly: file-first when
 This project itself moved to the file-first authority — `docs/project/refinement/index.md`
 is the record CR068 and CR071 live in.
 
-So group 7 is 15 leaves of a **superseded** storage model, and porting it means
-paying full parity cost for a legacy path. The options:
+So group 7 was 15 leaves of a **superseded** storage model, and porting it would
+have meant paying full parity cost for a legacy path. Options weighed: port at
+parity; retire in DS10 with a documented cutoff; port a read-only subset.
 
-1. **Port at parity** — safest for journeys that never adopted the document-first
-   Workbench; costs roughly a third of the story.
-2. **Retire in DS10 with a documented cutoff**, as `migrate-legacy` and
-   `memory-rehearse-migration` already are, leaving Python as the compatibility
-   answer until deletion. Drops US8 from 42 to 27 leaves.
-3. **Port a read-only subset** so existing SQLite rows stay inspectable, and
-   retire the mutating verbs.
-
-This decision must be made **before** slicing, because it changes the story's
-size by a third. It is not a Driver decision.
+**Navigator decision, 2026-09-09: retire in DS10 with a documented cutoff**,
+recorded in the [DS10 package](../../cv22-ds10-python-retirement-npm-distribution/index.md#command-surfaces-assigned-from-ds7-decision-2026-09-07)
+(item 5) and in [decisions.md](../../../../decisions.md#cv22-makes-the-ported-work-real-before-porting-more).
+US8 is **27 leaves**. The routing entry for `build` must refuse the fifteen
+Workbench leaves **by name** (Python by explicit refusal, never by inheritance),
+so the retired path stays visible in the Remainder until DS10 deletes it. The
+`mm-build` skill's legacy-SQLite section stays as documentation of the
+compatibility path and is removed with DS10.
 
 ### D2 — Cursor state authority during the transition
 
@@ -152,9 +151,8 @@ ports its own execution machinery:
 
 ## Slice Sequence For Future Pull
 
-Dependency-ordered, each slice a resumable plateau with a written handoff. Slice
-count assumes D1 resolves to retire or defer group 7; add a slice if it resolves
-to port.
+Dependency-ordered, each slice a resumable plateau with a written handoff. Seven
+slices for 27 leaves; D1 resolved to retire, so no Workbench slice.
 
 1. **Read-only orientation** — `inspect-method`, `pull-candidates`, `load`
    (resume/home surfaces), `check-implementation`. Pure rendering plus cursor

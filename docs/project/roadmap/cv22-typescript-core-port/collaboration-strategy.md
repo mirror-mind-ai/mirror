@@ -142,18 +142,28 @@ and green CI on every push.
 ## Remaining Sequence
 
 ```text
-DS7 — command burn-down (10/14): US7 Explorer, US9 Workspace/web hierarchy
-      rider, TS4 extension catalog and projection contract,
-      US8 Builder/Ariad tree last
-→ DS8 live-provider cutover
-→ DS9 TS MCP server
-→ DS10 Python retirement and npm distribution
+CR072 — route the nine bypassing skills through the front door
+→ DS7.US11 — content & planning LLM tail (journal, week plan|save,
+              descriptor generate, ES-001 lifecycle faces)
+→ DS8 — live-provider cutover: seventeen leaves reach production
+→ DS7.US8 — Builder/Ariad tree (27 leaves; SQLite Workbench retired in DS10)
+→ DS7.TS4 — extension catalog + identity edit
+→ DS9 — TS MCP server
+→ DS7.US9 — Workspace/web hierarchy rider, adjacent to DS10's web cutover
+→ DS10 — TS5 projection cutover as its first act, then retirement and npm
 ```
 
-The risk-first ordering from the DS7 package still applies: the Builder/Ariad
-tree last, against the most stable oracle available. The deletion gate remains
-DS6's schema custody transfer (done); DS10 cannot delete Python until every
-command and non-command runtime surface carries explicit TS ownership.
+Re-sequenced 2026-09-09 — see
+[Decisions — CV22 makes the ported work real before porting more](../../decisions.md#cv22-makes-the-ported-work-real-before-porting-more).
+The DS7 plan review's "Builder tree last, against the most stable oracle"
+rule was written for a moving oracle under a second author; with single
+ownership the Builder tree has not moved on `main` since 2026-09-02, so the
+rule's premise is gone and what remains is size, answered by slicing. What now
+goes before US8 is smaller and makes already-ported work real: thirteen ported
+leaves answer from Python in production behind an opt-in gate, and nine skills
+bypass the front door. The deletion gate remains DS6's schema custody transfer
+(done); DS10 cannot delete Python until every command and non-command runtime
+surface carries explicit TS ownership.
 
 ---
 

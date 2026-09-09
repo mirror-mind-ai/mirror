@@ -11,6 +11,85 @@ resolved.
 
 ## Completed Decisions
 
+### CV22 makes the ported work real before porting more
+
+**Date:** 2026-09-09
+**Reference:** [CV22.DS7 Command Burn-Down](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/index.md), [Burn-Down Ledger](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/burn-down-ledger.md), [CV22.DS7.US8](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md), [CV22.DS7.US11](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us11-content-planning-llm-tail/index.md), [CV22.DS10](roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/index.md), [CR068](refinement/rs009-cv22-front-door-routing-correctness/cr068-stop-reporting-unported-llm-gated-leaves-as-burned-down.md), [CR072](refinement/rs009-cv22-front-door-routing-correctness/cr072-route-every-skill-through-the-front-door.md)
+**Participants:** Vinícius Manhães Teles
+
+A code-level inspection of the CV22 remainder — `routing.ts` end to end, the
+provider substrate, the skill invocations, the live `llm_calls` traffic, the
+extension catalog, `origin/main` — found that the biggest gap in the strangler
+was not unported code but **ported code that production never reaches**:
+
+- **Thirteen ported and graded leaves answer from Python in production.** Every
+  LLM-crossing route flips to TS only under `MIRROR_TS_EXTERNAL_ROUTES=1` plus a
+  replay fixture; no real install sets those. That set is the product's LLM
+  core: `mirror load --query`, `memories --search`, `consult`, cultivation
+  scans, the five `conversation-logger` close-tail subcommands, `soul harvest
+  save`. The live traffic profile (417 `llm_calls` rows: `embedding` 171,
+  `conversation_title` 158, then summary/tags/extraction/task_extraction) says
+  the surface that matters is the close tail plus the search embedding — the
+  surfaces US10 pinned with byte-exact prompt digests.
+- **DS8 is small.** TypeScript already has the live configuration
+  (`OPENROUTER_BASE_URL`, key reading, model pins) and the `LlmProvider`
+  interface; it lacks only the live implementations. The Python to match is
+  `llm_router.py`, `embeddings.py`, `cost.py`: 447 lines.
+- **Nine skills bypass the front door.** `mm-tasks`, `mm-week`,
+  `mm-consolidate`, `mm-shadow`, `mm-consult`, `mm-mute`, `mm-new`,
+  `mm-discard`, `mm-mirror` invoke `uv run python -m memory` while their routes
+  point at TS. CR059 routed the extension and hooks; CR071 made the three copies
+  agree; neither made the skills enter. The US2–US5 flips have been real for the
+  extension and the smoke, not for the skill a Navigator types — and flipping
+  `mirror load` live in DS8 would be invisible through `mm-mirror`.
+- **The Builder oracle is still.** No commit on `origin/main` ahead of the
+  branch touches `src/memory/builder/`; the last Builder change on `main` was
+  2026-09-02. The "port US8 last against a stable oracle" rationale from the
+  DS7 plan review expired with single ownership. What remains is size, and the
+  answer to size is slicing, not sequencing.
+- **Five more leaves had no owner**, beyond CR068's three: `descriptor
+  generate` (US1 "kept it as the DS8 seam" — DS8 flips live mode and ports
+  nothing), `identity edit` ("kept on Python" — Python is deleted), and the
+  ES-001 `conversations` metadata-lifecycle flags ("own slice" — none claimed
+  them; the engine is already in TS). And `week save` is not LLM-gated at all.
+- The web UI had zero conversations in thirty days (222 via Pi), so US9's value
+  is as a DS10 prerequisite, not a daily path.
+
+**Decisions.**
+
+1. **Order.** CR072 (skills through the front door) → DS7.US11 → **DS8** →
+   DS7.US8 → DS7.TS4 → DS9 → DS7.US9 → DS10 with TS5 as its first act. DS8 moves
+   ahead of the Builder tree so seventeen leaves (thirteen ported plus US11's
+   four) reach production, and the ported orchestration meets real traffic
+   before the largest story is stacked on the same substrate. US11 goes before
+   DS8 so DS8 flips everything with one review. Inside DS8, flip by traffic and
+   pin coverage: search embedding, close tail, `mirror load`, cultivation,
+   consult, `harvest save`, US11.
+2. **TS5 leaves DS7 for DS10.** A story that can only land in the act that
+   retires Python's publisher is a retirement story; leaving it in DS7 meant DS7
+   could never close. `journey-projection` leaves the command denominator
+   (30 → 29). The story denominator stays 15 because US11 joins.
+3. **US8 D1: retire the SQLite Refinement Workbench in DS10** with a documented
+   cutoff — fifteen of the Builder tree's 42 leaves. CV20.DS12 superseded it;
+   this project runs file-first; nobody should adopt the legacy path now. US8
+   ports 27 leaves and refuses the fifteen by name.
+4. **Orphan dispositions.** `descriptor generate` → US11. `identity edit` →
+   TS4, as a `spawnSync($EDITOR)` port. ES-001 lifecycle
+   dry-run/demo/preview/apply faces → US11 (engine exists); the one-shot
+   backfill flags → DS10 retirement.
+5. **Reassignment rule** (ledger): the receiving story must name reassigned
+   scope, or the scope has no owner. A consolidated **Remainder** table in the
+   ledger lists every leaf that does not answer from TS in an unconfigured
+   install, with its owner, including the replay-gated thirteen under DS8 — so
+   the DS7↔DS8 convention cannot hide them.
+6. **CR072 captured** under RS009 and brings DS10's "Python entry point absent"
+   assertion forward into the skill parity check.
+
+**Principle.** The strangler promised measurable burn-down with no user-visible
+change. Closing the gap between "ported" and "in production" is cheaper than
+any remaining port and de-risks every story after it. Make what is ported real
+before porting more.
+
 ### Journey projection publication stays Python-owned until the retirement window
 
 **Date:** 2026-09-09
