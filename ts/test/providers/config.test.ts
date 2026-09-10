@@ -6,6 +6,8 @@ import {
   DEFAULT_EXTRACTION_MODEL,
   resolveEmbeddingModel,
   resolveExtractionModel,
+  resolveLlmMaxRetries,
+  resolveLlmTimeoutMs,
   resolveLogLlmCallsMode,
   resolveProviderConfig,
 } from "#providers/config.ts";
@@ -95,5 +97,54 @@ test("resolveEmbeddingModel honors a MEMORY_EMBEDDING_MODEL override (CR043)", (
   assert.equal(
     resolveEmbeddingModel({ env: { MEMORY_EMBEDDING_MODEL: "vendor/custom-embedding" } }),
     "vendor/custom-embedding",
+  );
+});
+
+// --- CV22.DS8.US1: per-role timeouts and the retry ceiling (AI-18) ---------
+
+test("resolveLlmTimeoutMs mirrors Python's per-role defaults, in milliseconds", () => {
+  // Python holds seconds (config.py LLM_TIMEOUT_*); the TS transport needs ms
+  // for AbortSignal.timeout. The VALUES must not drift -- a longer TS timeout
+  // would reintroduce exactly the hook stall AI-01 removed.
+  assert.equal(resolveLlmTimeoutMs("extraction", { env: {} }), 60_000);
+  assert.equal(resolveLlmTimeoutMs("reception", { env: {} }), 10_000);
+  assert.equal(resolveLlmTimeoutMs("embedding", { env: {} }), 15_000);
+});
+
+test("resolveLlmTimeoutMs honors each role's env override independently", () => {
+  const env = {
+    MEMORY_LLM_TIMEOUT_EXTRACTION: "90",
+    MEMORY_LLM_TIMEOUT_RECEPTION: "5",
+    MEMORY_LLM_TIMEOUT_EMBEDDING: "7.5",
+  };
+  assert.equal(resolveLlmTimeoutMs("extraction", { env }), 90_000);
+  assert.equal(resolveLlmTimeoutMs("reception", { env }), 5_000);
+  // Python's float() accepts fractional seconds; the ms conversion keeps them.
+  assert.equal(resolveLlmTimeoutMs("embedding", { env }), 7_500);
+});
+
+test("resolveLlmTimeoutMs fails loudly on a non-numeric override, as Python's float() would", () => {
+  // Python raises at import; substituting the default here would silently give
+  // a misconfigured install a different timeout than the operator asked for.
+  assert.throws(
+    () => resolveLlmTimeoutMs("embedding", { env: { MEMORY_LLM_TIMEOUT_EMBEDDING: "abc" } }),
+    /could not convert string to float/i,
+  );
+  assert.throws(
+    () => resolveLlmTimeoutMs("embedding", { env: { MEMORY_LLM_TIMEOUT_EMBEDDING: "" } }),
+    /could not convert string to float/i,
+  );
+});
+
+test("resolveLlmMaxRetries mirrors Python's MEMORY_LLM_MAX_RETRIES default of 2", () => {
+  assert.equal(resolveLlmMaxRetries({ env: {} }), 2);
+  assert.equal(resolveLlmMaxRetries({ env: { MEMORY_LLM_MAX_RETRIES: "0" } }), 0);
+  assert.equal(resolveLlmMaxRetries({ env: { MEMORY_LLM_MAX_RETRIES: "5" } }), 5);
+});
+
+test("resolveLlmMaxRetries fails loudly on a non-integer override, as Python's int() would", () => {
+  assert.throws(
+    () => resolveLlmMaxRetries({ env: { MEMORY_LLM_MAX_RETRIES: "2.5" } }),
+    /invalid literal for int\(\)/i,
   );
 });

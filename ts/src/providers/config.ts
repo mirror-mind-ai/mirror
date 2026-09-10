@@ -138,3 +138,52 @@ function parsePythonInt(raw: string | undefined, fallback: number): number {
   }
   return Number.parseInt(raw, 10);
 }
+
+/**
+ * Python `float(os.getenv(name, default))`. Same contract as `parsePythonInt`:
+ * only absence takes the default, and a present non-numeric value fails loudly
+ * instead of silently reverting to a value the operator did not ask for.
+ */
+function parsePythonFloat(raw: string | undefined, fallback: number): number {
+  if (raw === undefined) return fallback;
+  const parsed = Number(raw);
+  if (raw.trim() === "" || Number.isNaN(parsed)) {
+    throw new Error(`could not convert string to float: '${raw}'`);
+  }
+  return parsed;
+}
+
+// Per-role call bounds (AI-18, CV22.DS8.US1). Python bounds every model call at
+// client construction (`config.py` LLM_TIMEOUT_*, LLM_MAX_RETRIES) so a hung
+// provider connection cannot stall a session hook or the interactive path --
+// the OpenAI SDK default is 600s. The TS live transport carries the same bounds
+// under the same env names; only the unit changes (Python seconds -> ms for
+// AbortSignal.timeout).
+
+/** The three call classes Python bounds separately. */
+export type LlmTimeoutRole = "extraction" | "reception" | "embedding";
+
+const LLM_TIMEOUT_ENV: Readonly<Record<LlmTimeoutRole, { name: string; defaultSeconds: number }>> =
+  {
+    extraction: { name: "MEMORY_LLM_TIMEOUT_EXTRACTION", defaultSeconds: 60 },
+    reception: { name: "MEMORY_LLM_TIMEOUT_RECEPTION", defaultSeconds: 10 },
+    embedding: { name: "MEMORY_LLM_TIMEOUT_EMBEDDING", defaultSeconds: 15 },
+  };
+
+/**
+ * Milliseconds to bound one provider call of `role`, from Python's per-role
+ * second-valued pins. All three ship together even though CV22.DS8.US1 only
+ * uses `embedding`: the config surface is the same shape for US2/US3, and a
+ * half-ported timeout table is how per-role bounds quietly become one bound.
+ */
+export function resolveLlmTimeoutMs(role: LlmTimeoutRole, options: ModelPinOptions = {}): number {
+  const env = options.env ?? process.env;
+  const { name, defaultSeconds } = LLM_TIMEOUT_ENV[role];
+  return parsePythonFloat(env[name], defaultSeconds) * 1000;
+}
+
+/** Python `LLM_MAX_RETRIES = int(os.getenv("MEMORY_LLM_MAX_RETRIES", "2"))`. */
+export function resolveLlmMaxRetries(options: ModelPinOptions = {}): number {
+  const env = options.env ?? process.env;
+  return parsePythonInt(env.MEMORY_LLM_MAX_RETRIES, 2);
+}

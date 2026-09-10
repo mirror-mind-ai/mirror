@@ -84,6 +84,7 @@ jobs:
           uv run python ts/parity/generate_week_plan_golden.py
           uv run python ts/parity/generate_descriptor_golden.py
           uv run python ts/parity/generate_lifecycle_faces_golden.py
+          uv run python ts/parity/generate_cost_golden.py
           git diff --exit-code ts/test/goldens/
         env:
           MEMORY_ENV: test
