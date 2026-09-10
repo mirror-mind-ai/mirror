@@ -114,7 +114,7 @@ test("reception replay is logged metadata-only", async () => {
     sessionId: "s1",
     receptionEnabled: true,
     llmProvider: provider,
-    embeddingProvider: { embed: async () => [1, 0] },
+    embeddingProvider: { embed: async () => ({ vector: [1, 0], promptTokens: null }) },
     newId: ids(),
     nowIso: times(),
   });

@@ -68,7 +68,10 @@ function fixture(): Fixture {
       deps,
       loadLlm: async () => llm,
       loadEmbeddings: async () => ({
-        embed: async () => Array<number>(EMBEDDING_DIMENSIONS).fill(0),
+        embed: async () => ({
+          vector: Array<number>(EMBEDDING_DIMENSIONS).fill(0),
+          promptTokens: null,
+        }),
       }),
       monotonic: () => 0,
     });

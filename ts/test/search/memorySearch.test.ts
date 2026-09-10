@@ -4,7 +4,8 @@ import { join } from "node:path";
 import test from "node:test";
 
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
-import type { EmbeddingProvider } from "#providers/embedding.ts";
+import { ProviderConfigError } from "#providers/config.ts";
+import type { EmbeddingProvider, EmbeddingResult } from "#providers/embedding.ts";
 import { ReplayEmbeddingProvider } from "#providers/embedding.ts";
 import {
   accessCountsByMemoryId,
@@ -18,7 +19,7 @@ import {
  * provider that always fails, so degraded-mode is exercised deterministically
  * without a live network dependency. */
 class FailingEmbeddingProvider implements EmbeddingProvider {
-  async embed(): Promise<readonly number[]> {
+  async embed(): Promise<never> {
     throw new Error("embedding provider unreachable");
   }
 }
@@ -35,9 +36,12 @@ class EmptyThenSucceedsEmbeddingProvider implements EmbeddingProvider {
     this.emptyCount = emptyCount;
     this.vector = vector;
   }
-  async embed(): Promise<readonly number[]> {
+  async embed(): Promise<EmbeddingResult> {
     this.calls += 1;
-    return this.calls <= this.emptyCount ? [] : this.vector;
+    return {
+      vector: this.calls <= this.emptyCount ? [] : this.vector,
+      promptTokens: null,
+    };
   }
 }
 
@@ -321,9 +325,88 @@ test("searchMemoriesWithStatus logs the query embedding call to the ledger (AI-0
       .prepare("SELECT role, prompt_tokens, cost_usd FROM llm_calls WHERE role = 'embedding'")
       .all() as { role: string; prompt_tokens: number | null; cost_usd: number | null }[];
     assert.equal(rows.length, 1);
-    // Honest limitation: no usage data from EmbeddingProvider -- unpriced, not fabricated.
+    // A replayed call cost nothing, so it stays unpriced rather than being
+    // given a fictional price. This is what keeps every existing golden and
+    // parity probe byte-identical across the DS8 live cutover.
     assert.equal(rows[0]?.prompt_tokens, null);
     assert.equal(rows[0]?.cost_usd, null);
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("a live embedding call is priced in the ledger, as Python prices it (CV22.DS8.US1)", async () => {
+  const { db, path } = await makeDb("embedding-ledger-live.db");
+  try {
+    insertMemory(db, {
+      id: "semantic-hit",
+      content: "mirror builder ariad",
+      embedding: [1, 0, 0],
+      createdAt: "2026-01-03T00:00:00Z",
+    });
+    rebuildFts(db);
+
+    // A provider that reports usage, as the live one does. Python's
+    // build_llm_logger prices this row from compute_cost because an embedding
+    // call has no generation id to fetch a real cost for; an unpriced row here
+    // would make the highest-volume role in the ledger look free.
+    const provider: EmbeddingProvider = {
+      embed: async () => ({ vector: VALID_EMBEDDING, promptTokens: 1000 }),
+    };
+    await searchMemoriesWithStatus(db, { query: "builder", limit: 5, provider });
+
+    const rows = db
+      .prepare("SELECT model, prompt_tokens, cost_usd, prompt, response FROM llm_calls")
+      .all() as {
+      model: string;
+      prompt_tokens: number | null;
+      cost_usd: number | null;
+      prompt: string;
+      response: string;
+    }[];
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0]?.prompt_tokens, 1000);
+    // 1000 prompt tokens at the embedding pin's $0.00002/1k, no completion side.
+    assert.equal(rows[0]?.cost_usd, 0.00002);
+    assert.equal(rows[0]?.model, "openai/text-embedding-3-small");
+    // Metadata mode withholds bodies: the query text is never persisted.
+    assert.equal(rows[0]?.prompt, "");
+    assert.equal(rows[0]?.response, "");
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("an unconfigured install writes NO ledger row and degrades (CV22.DS8.US1)", async () => {
+  const { db, path } = await makeDb("embedding-ledger-unconfigured.db");
+  try {
+    insertMemory(db, {
+      id: "lexical-hit",
+      content: "mirror builder release notes",
+      embedding: [1, 0, 0],
+      createdAt: "2026-01-03T00:00:00Z",
+    });
+    rebuildFts(db);
+
+    // Python raises before its attempt loop when the key is missing, so no
+    // llm_calls row exists. Logging an unpriced row here would be a parity
+    // break invisible to every replay test, because replay always has a "key".
+    const provider: EmbeddingProvider = {
+      embed: async () => {
+        throw new ProviderConfigError("OPENROUTER_API_KEY is not configured.");
+      },
+    };
+    const outcome = await searchMemoriesWithStatus(db, {
+      query: "release",
+      limit: 5,
+      provider,
+    });
+
+    assert.equal(outcome.degraded, true, "a missing key degrades, it does not crash");
+    const rows = db.prepare("SELECT id FROM llm_calls").all();
+    assert.equal(rows.length, 0);
   } finally {
     db.close();
     await rm(path, { force: true });

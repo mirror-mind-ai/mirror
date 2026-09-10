@@ -101,7 +101,7 @@ test("attachment context uses replayed semantic score and selected journey only"
   const context = await loadMirrorContext(db, {
     journey: "selected",
     query: "plan",
-    embeddingProvider: { embed: async () => embedding },
+    embeddingProvider: { embed: async () => ({ vector: embedding, promptTokens: null }) },
   });
   assert.match(context, /plan\.md \(score: 1\.000\)/);
   assert.match(context, /Selected attachment/);

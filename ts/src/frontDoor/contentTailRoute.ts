@@ -88,7 +88,7 @@ export async function runJournalRoute(
 
   // Embed the SAME text `addJournal` would compute, so the vector and the
   // graded write path cannot drift apart.
-  const vector = await providers.embedding.embed(
+  const { vector } = await providers.embedding.embed(
     memoryEmbedText(classification.title, content, null),
   );
   const embedding = new Uint8Array(new Float32Array(vector).buffer);

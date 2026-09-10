@@ -1,15 +1,19 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { ProviderConfigError } from "#providers/config.ts";
 import {
   addEmbeddingProvenance,
   DEFAULT_EMBEDDING_ATTEMPTS,
   EMBEDDING_DIMENSIONS,
   EmbeddingError,
   type EmbeddingProvider,
+  type EmbeddingResult,
   embeddingProvenance,
   generateEmbeddingSafely,
+  LiveEmbeddingProvider,
 } from "#providers/embedding.ts";
+import { LlmTransportError } from "#providers/openrouter.ts";
 
 const noSleep = async () => {};
 const VALID = Array(EMBEDDING_DIMENSIONS).fill(0.1);
@@ -20,9 +24,9 @@ class CountingProvider implements EmbeddingProvider {
   constructor(behavior: (call: number) => Promise<readonly number[]>) {
     this.behavior = behavior;
   }
-  async embed(): Promise<readonly number[]> {
+  async embed(): Promise<EmbeddingResult> {
     this.calls += 1;
-    return this.behavior(this.calls);
+    return { vector: await this.behavior(this.calls), promptTokens: null };
   }
 }
 
@@ -178,4 +182,205 @@ test("addEmbeddingProvenance never throws on malformed existing metadata (write-
 
 test("DEFAULT_EMBEDDING_ATTEMPTS matches Python's default of 3", () => {
   assert.equal(DEFAULT_EMBEDDING_ATTEMPTS, 3);
+});
+
+// --- CV22.DS8.US1: the live provider and the unconfigured-install boundary ---
+
+const LIVE_ENV = { OPENROUTER_API_KEY: "sk-or-v1-live-test" };
+
+function liveProvider(post: (path: string, body: unknown) => Promise<unknown>) {
+  const calls: { path: string; body: unknown }[] = [];
+  const provider = new LiveEmbeddingProvider({
+    env: LIVE_ENV,
+    createClient: () => ({
+      postJson: async (path, body) => {
+        calls.push({ path, body });
+        return post(path, body);
+      },
+    }),
+  });
+  return { provider, calls };
+}
+
+function embeddingResponse(vector: readonly number[], promptTokens?: number): unknown {
+  return {
+    data: [{ embedding: vector }],
+    ...(promptTokens === undefined ? {} : { usage: { prompt_tokens: promptTokens } }),
+  };
+}
+
+test("the live provider returns the vector and the usage the ledger prices from", async () => {
+  const { provider, calls } = liveProvider(async () => embeddingResponse(VALID, 7));
+
+  const result = await provider.embed("hello");
+
+  assert.deepEqual(result.vector, VALID);
+  assert.equal(result.promptTokens, 7);
+  assert.equal(calls[0]?.path, "/embeddings");
+  assert.deepEqual(calls[0]?.body, { input: "hello", model: "openai/text-embedding-3-small" });
+});
+
+test("missing usage is null, not zero -- an unpriced call must not look free", async () => {
+  const { provider } = liveProvider(async () => embeddingResponse(VALID));
+
+  const result = await provider.embed("hello");
+
+  assert.equal(result.promptTokens, null);
+});
+
+test("an empty data array is TRANSIENT, so the retry budget still applies", async () => {
+  // Python's `_extract_embedding` raises a non-permanent EmbeddingError here
+  // and `generate_embedding` retries. The provider must therefore report an
+  // EMPTY VECTOR rather than throwing: a throw is terminal at the
+  // generateEmbeddingSafely layer and would invert the taxonomy.
+  const { provider } = liveProvider(async () => ({ data: [] }));
+
+  const result = await provider.embed("hello");
+
+  assert.deepEqual(result.vector, []);
+});
+
+test("an empty embedding payload is transient in the same way", async () => {
+  const { provider } = liveProvider(async () => embeddingResponse([]));
+
+  const result = await provider.embed("hello");
+
+  assert.deepEqual(result.vector, []);
+});
+
+test("a non-numeric payload is malformed_output, never stored as a vector", async () => {
+  const { provider } = liveProvider(async () => embeddingResponse(["nope"] as never));
+
+  const error = await provider.embed("hello").catch((e: unknown) => e);
+
+  assert.ok(error instanceof LlmTransportError);
+  assert.equal(error.kind, "malformed_output");
+});
+
+test("a response with no data at all is transient, exactly as Python treats it", async () => {
+  // Tempting to call this malformed -- but Python's `_extract_embedding` does
+  // `if not data: raise EmbeddingError("No embedding data received")` WITHOUT
+  // permanent=True, so a shapeless response is retried, not failed hard.
+  // Classifying it as malformed_output here would make TS give up where Python
+  // recovers on the second attempt.
+  const { provider } = liveProvider(async () => ({ unexpected: true }));
+
+  const result = await provider.embed("hello");
+
+  assert.deepEqual(result.vector, []);
+});
+
+test("a data list holding something that is not an embedding object is malformed", async () => {
+  // Distinct from the case above: `data` is present and non-empty, so Python
+  // proceeds to `data[0].embedding` and dies on the attribute. That is a
+  // deterministic shape error, not a transient emptiness.
+  const { provider } = liveProvider(async () => ({ data: ["not-an-object"] }));
+
+  const error = await provider.embed("hello").catch((e: unknown) => e);
+
+  assert.ok(error instanceof LlmTransportError);
+  assert.equal(error.kind, "malformed_output");
+});
+
+test("the live provider bounds the call with the embedding-tier timeout", async () => {
+  let seenTimeout: number | undefined;
+  const provider = new LiveEmbeddingProvider({
+    env: LIVE_ENV,
+    createClient: () => ({
+      postJson: async (_path, _body, options) => {
+        seenTimeout = options.timeoutMs;
+        return embeddingResponse(VALID, 1);
+      },
+    }),
+  });
+
+  await provider.embed("hello");
+
+  assert.equal(seenTimeout, 15_000, "Python's LLM_TIMEOUT_EMBEDDING, not an SDK default");
+});
+
+test("constructing the live provider without a key does NOT throw", async () => {
+  // Config resolves lazily on the first embed(). Resolving at construction
+  // would throw OUTSIDE searchMemoriesWithStatus's try, crashing the command
+  // instead of degrading to lexical-only the way Python does.
+  assert.doesNotThrow(() => new LiveEmbeddingProvider({ env: {} }));
+});
+
+test("embedding without a key raises ProviderConfigError from inside embed()", async () => {
+  const provider = new LiveEmbeddingProvider({ env: {} });
+
+  const error = await provider.embed("hello").catch((e: unknown) => e);
+
+  assert.ok(error instanceof ProviderConfigError);
+});
+
+test("generateEmbeddingSafely rethrows a config error WITHOUT logging an attempt", async () => {
+  // Python raises its RuntimeError before the attempt loop, so an unconfigured
+  // install writes NO llm_calls row. Firing onAttempt here would give TS an
+  // unpriced ledger row where Python has none -- a parity break invisible in
+  // every replay test, because replay always has a "key".
+  const attempts: unknown[] = [];
+  const provider: EmbeddingProvider = {
+    embed: async () => {
+      throw new ProviderConfigError("OPENROUTER_API_KEY is not configured.");
+    },
+  };
+
+  const error = await generateEmbeddingSafely(provider, "hello", {
+    sleep: noSleep,
+    onAttempt: (info) => attempts.push(info),
+  }).catch((e: unknown) => e);
+
+  assert.ok(error instanceof ProviderConfigError, "the config error is not re-typed");
+  assert.equal(attempts.length, 0, "no ledger row for a call that was never attempted");
+});
+
+test("a real provider failure still logs its attempt, as Python's unpriced row does", async () => {
+  const attempts: unknown[] = [];
+  const provider: EmbeddingProvider = {
+    embed: async () => {
+      throw new LlmTransportError("provider_error", "provider connection failed");
+    },
+  };
+
+  await generateEmbeddingSafely(provider, "hello", {
+    sleep: noSleep,
+    onAttempt: (info) => attempts.push(info),
+  }).catch(() => undefined);
+
+  assert.equal(attempts.length, 1, "a failed round-trip is real spend and must be visible");
+});
+
+test("the attempt hook reports usage on the retried attempts too", async () => {
+  // Each round-trip is billable, so each one must be visible. Python logs per
+  // attempt for exactly this reason (D-003 / CV9.E2.S18).
+  const attempts: (number | null)[] = [];
+  let call = 0;
+  const provider: EmbeddingProvider = {
+    embed: async () => {
+      call += 1;
+      return call === 1 ? { vector: [], promptTokens: 3 } : { vector: VALID, promptTokens: 4 };
+    },
+  };
+
+  await generateEmbeddingSafely(provider, "hello", {
+    sleep: noSleep,
+    onAttempt: (info) => attempts.push(info.promptTokens),
+  });
+
+  assert.deepEqual(attempts, [3, 4]);
+});
+
+test("usage from the provider reaches the attempt hook so the row can be priced", async () => {
+  const attempts: { promptTokens: number | null }[] = [];
+  const provider: EmbeddingProvider = {
+    embed: async () => ({ vector: VALID, promptTokens: 11 }),
+  };
+
+  await generateEmbeddingSafely(provider, "hello", {
+    sleep: noSleep,
+    onAttempt: (info) => attempts.push({ promptTokens: info.promptTokens }),
+  });
+
+  assert.deepEqual(attempts, [{ promptTokens: 11 }]);
 });

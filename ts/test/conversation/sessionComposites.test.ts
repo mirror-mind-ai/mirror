@@ -78,7 +78,7 @@ class StubProvider implements LlmProvider {
 /** The generator's stubbed `generate_embedding`: a fixed zero vector. */
 const stubEmbeddings: EmbeddingProvider = {
   async embed() {
-    return Array<number>(EMBEDDING_DIMENSIONS).fill(0);
+    return { vector: Array<number>(EMBEDDING_DIMENSIONS).fill(0), promptTokens: null };
   },
 };
 

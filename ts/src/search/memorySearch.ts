@@ -3,6 +3,7 @@ import { optionalNumber, optionalString, requireString } from "#db/rowDecode.ts"
 import { logAccess } from "#memory/reinforcement.ts";
 import { logLlmCall } from "#observability/llmCalls.ts";
 import { resolveEmbeddingModel } from "#providers/config.ts";
+import { computeCost } from "#providers/cost.ts";
 import {
   type EmbeddingAttemptInfo,
   type EmbeddingProvider,
@@ -232,15 +233,26 @@ export function ftsQuery(query: string): string {
 
 /** Wires generateEmbeddingSafely's onAttempt hook to the llm_calls ledger
  * (AI-09/D-003), reusing CR040's fail-soft logLlmCall unchanged. The query
- * text is not stored (not tied to a conversation), so no conversationId. */
+ * text is not stored (not tied to a conversation), so no conversationId.
+ *
+ * Tokens and cost (CV22.DS8.US1): Python's `build_llm_logger` prices every
+ * embedding row from `compute_cost`, because an embedding call has no
+ * generation id to fetch a real cost for. Under replay both stay null -- a
+ * replayed call cost nothing, and pricing it would be a fiction -- so every
+ * existing golden is unchanged. A FAILED live attempt also lands unpriced
+ * (no usage came back), which is Python's unpriced-row behavior and keeps
+ * real spend visible rather than silently absent. */
 function logQueryEmbeddingAttempt(db: WritableDatabase): (info: EmbeddingAttemptInfo) => void {
   return (info) => {
+    const model = resolveEmbeddingModel();
     logLlmCall(db, {
       role: "embedding",
-      model: resolveEmbeddingModel(),
+      model,
       prompt: info.text,
       response: "",
       latencyMs: info.latencyMs,
+      promptTokens: info.promptTokens,
+      costUsd: computeCost(model, info.promptTokens, null),
     });
   };
 }

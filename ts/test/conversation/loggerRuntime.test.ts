@@ -44,7 +44,12 @@ function fixture(env: LoggerRuntimeEnv = {}) {
     },
     loadEmbeddings: async () => {
       loads.embeddings += 1;
-      return { embed: async () => Array<number>(EMBEDDING_DIMENSIONS).fill(0) };
+      return {
+        embed: async () => ({
+          vector: Array<number>(EMBEDDING_DIMENSIONS).fill(0),
+          promptTokens: null,
+        }),
+      };
     },
   });
   return { db, home, runtime, loads };

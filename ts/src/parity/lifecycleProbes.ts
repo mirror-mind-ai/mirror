@@ -97,7 +97,10 @@ function stubRuntime(
     deps: { newId, nowIso: () => nowIso },
     loadLlm: async () => new OracleStubProvider(replies, poisonMarker),
     loadEmbeddings: async () => ({
-      embed: async () => Array<number>(EMBEDDING_DIMENSIONS).fill(EMBEDDING_VALUE),
+      embed: async () => ({
+        vector: Array<number>(EMBEDDING_DIMENSIONS).fill(EMBEDDING_VALUE),
+        promptTokens: null,
+      }),
     }),
     monotonic: () => 0,
   });
