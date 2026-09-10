@@ -1,0 +1,237 @@
+/**
+ * Navigator-run live embedding smoke contract (CV22.DS8.US1).
+ *
+ * NEVER runs in CI. This is the only check in the repo that spends real money
+ * and reaches a real provider, so it is a script a human runs deliberately,
+ * not a test a pipeline can trip into.
+ *
+ * What the hermetic tests cannot prove:
+ *
+ *   - that the live request shape is accepted by OpenRouter at all;
+ *   - that the vectors it returns are usable (1536-dim, finite, self-consistent);
+ *   - that TS vectors live in the SAME SPACE as the vectors already in the
+ *     corpus, which Python produced. Dimension and self-similarity prove the
+ *     pipe works; only `--cross-check` proves the geometry matches. Without it
+ *     a silent provider re-route to a different 1536-dim space would degrade
+ *     every ranking with no failing test anywhere (AI-07 is a shape guard, not
+ *     a space guard).
+ *
+ * Usage:
+ *   node ts/parity/live_embedding_smoke.ts --db tmp/parity/demo-memory.db
+ *   node ts/parity/live_embedding_smoke.ts --db tmp/parity/real-copy.db --cross-check <memory-id>
+ *
+ * Output is redacted by default: counts, dimensions, similarities, latencies.
+ * Never a vector, never a memory's content, never the key.
+ */
+
+import { openDatabaseCopyForWrite } from "#db/database.ts";
+import { assertCopyTarget } from "#db/copyGuard.ts";
+import { resolveEmbeddingModel } from "#providers/config.ts";
+import { EMBEDDING_DIMENSIONS, LiveEmbeddingProvider } from "#providers/embedding.ts";
+import { memoryEmbedText } from "#soul/harvest.ts";
+
+const PROBE_TEXT = "The mirror keeps a local memory of journeys, decisions, and identity.";
+const PROBE_DISTANT = "Sourdough starter needs feeding twice a day in warm weather.";
+
+/** Captures everything printed so the run can grep itself for the key. */
+const printed: string[] = [];
+function say(line: string): void {
+  printed.push(line);
+  process.stdout.write(`${line}\n`);
+}
+
+function optionValue(argv: readonly string[], name: string): string | undefined {
+  const index = argv.indexOf(name);
+  return index === -1 ? undefined : argv[index + 1];
+}
+
+function cosine(a: readonly number[], b: readonly number[]): number {
+  let dot = 0;
+  let normA = 0;
+  let normB = 0;
+  for (let i = 0; i < a.length; i += 1) {
+    const x = a[i] ?? 0;
+    const y = b[i] ?? 0;
+    dot += x * y;
+    normA += x * x;
+    normB += y * y;
+  }
+  if (normA === 0 || normB === 0) return 0;
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+function bytesToVector(blob: Uint8Array): readonly number[] {
+  return Array.from(
+    new Float32Array(blob.buffer, blob.byteOffset, blob.byteLength / Float32Array.BYTES_PER_ELEMENT),
+  );
+}
+
+function fail(message: string): never {
+  say(`FAIL ${message}`);
+  process.exit(1);
+}
+
+function check(condition: boolean, label: string, detail: string): void {
+  if (!condition) fail(`${label} -- ${detail}`);
+  say(`  ok  ${label} (${detail})`);
+}
+
+async function main(argv: readonly string[]): Promise<void> {
+  if (!process.env.OPENROUTER_API_KEY?.trim()) {
+    fail("OPENROUTER_API_KEY is not set; this smoke exists to exercise the LIVE path");
+  }
+  const dbPath = optionValue(argv, "--db");
+  if (!dbPath) fail("--db <copy> is required");
+  // Fails closed on a live memory.db or any path outside tmp/. The smoke both
+  // reads memories and writes llm_calls rows, so it must never touch the real
+  // database (CR030 copy discipline). Reported as a clean refusal rather than
+  // a stack trace: this is the guard a hurried operator is most likely to hit.
+  try {
+    assertCopyTarget(dbPath);
+  } catch (error) {
+    fail(error instanceof Error ? error.message : "refusing this database path");
+  }
+
+  const model = resolveEmbeddingModel();
+  say(`live embedding smoke -- model=${model} db=${dbPath}`);
+
+  const db = openDatabaseCopyForWrite(dbPath);
+  const before = ledgerCount(db);
+  const provider = new LiveEmbeddingProvider();
+
+  try {
+    const t0 = Date.now();
+    const first = await provider.embed(PROBE_TEXT);
+    const firstMs = Date.now() - t0;
+    const second = await provider.embed(PROBE_TEXT);
+    const distant = await provider.embed(PROBE_DISTANT);
+
+    check(
+      first.vector.length === EMBEDDING_DIMENSIONS,
+      "dimension",
+      `${first.vector.length} == ${EMBEDDING_DIMENSIONS}`,
+    );
+    check(
+      first.vector.every((value) => Number.isFinite(value)),
+      "all values finite",
+      "no NaN or Infinity would reach the corpus",
+    );
+    const selfSimilarity = cosine(first.vector, second.vector);
+    check(
+      selfSimilarity >= 0.999,
+      "self-similarity",
+      `cos=${selfSimilarity.toFixed(6)} >= 0.999`,
+    );
+    const distantSimilarity = cosine(first.vector, distant.vector);
+    check(
+      distantSimilarity < selfSimilarity,
+      "an unrelated sentence is further away",
+      `cos=${distantSimilarity.toFixed(4)} < ${selfSimilarity.toFixed(4)}`,
+    );
+    say(`  ..  first-call latency ${firstMs}ms, usage prompt_tokens=${first.promptTokens ?? "null"}`);
+
+    const crossCheckId = optionValue(argv, "--cross-check");
+    if (crossCheckId) await crossCheck(db, provider, crossCheckId);
+    else
+      say(
+        "  ..  --cross-check skipped: vector-space parity against a Python-era vector NOT proven",
+      );
+
+    reportLedger(db, before, model);
+  } finally {
+    db.close();
+  }
+
+  const key = process.env.OPENROUTER_API_KEY ?? "";
+  if (key && printed.some((line) => line.includes(key))) {
+    fail("the API key appeared in this script's own output");
+  }
+  say("PASS live embedding smoke");
+}
+
+/**
+ * The retrieval-parity proof: re-embed a real memory's text through TS and
+ * compare with the vector Python stored for it. Anything below 0.99 means the
+ * two engines are not embedding into the same space, and the cutover must not
+ * proceed on shape checks alone.
+ */
+async function crossCheck(
+  db: ReturnType<typeof openDatabaseCopyForWrite>,
+  provider: LiveEmbeddingProvider,
+  memoryId: string,
+): Promise<void> {
+  const row = db
+    .prepare("SELECT title, content, embedding FROM memories WHERE id = ?")
+    .get(memoryId) as { title: string; content: string; embedding: Uint8Array } | undefined;
+  if (!row) fail(`--cross-check memory ${memoryId} not found in the copy`);
+  if (!(row.embedding instanceof Uint8Array)) fail("stored embedding is not a BLOB");
+
+  const stored = bytesToVector(row.embedding);
+  if (stored.length !== EMBEDDING_DIMENSIONS) {
+    fail(`stored vector is ${stored.length}-dim; pick a memory embedded with the current pin`);
+  }
+  // The SAME text add_memory embeds, so a mismatch means the space differs --
+  // not that the inputs differed.
+  const fresh = await provider.embed(memoryEmbedText(row.title, row.content, null));
+  const similarity = cosine(stored, fresh.vector);
+  check(
+    similarity >= 0.99,
+    "vector-space parity with the stored Python-era vector",
+    `cos=${similarity.toFixed(6)} >= 0.99`,
+  );
+}
+
+function ledgerCount(db: ReturnType<typeof openDatabaseCopyForWrite>): number {
+  const row = db.prepare("SELECT COUNT(*) AS n FROM llm_calls").get() as { n: number };
+  return row.n;
+}
+
+/** Reports the rows the run produced. Bodies must be empty in metadata mode. */
+function reportLedger(
+  db: ReturnType<typeof openDatabaseCopyForWrite>,
+  before: number,
+  model: string,
+): void {
+  const rows = db
+    .prepare(
+      `SELECT model, prompt_tokens, cost_usd, latency_ms, LENGTH(prompt) AS prompt_len,
+              LENGTH(response) AS response_len
+         FROM llm_calls WHERE role = 'embedding' ORDER BY called_at DESC LIMIT ?`,
+    )
+    .all(ledgerCount(db) - before) as {
+    model: string;
+    prompt_tokens: number | null;
+    cost_usd: number | null;
+    latency_ms: number | null;
+    prompt_len: number;
+    response_len: number;
+  }[];
+
+  check(rows.length > 0, "ledger rows written", `${rows.length} embedding rows`);
+  check(
+    rows.every((row) => row.model === model),
+    "every row names the configured pin",
+    model,
+  );
+  check(
+    rows.every((row) => row.prompt_len === 0 && row.response_len === 0),
+    "bodies withheld",
+    "metadata mode never persists the query text",
+  );
+  check(
+    rows.every((row) => (row.latency_ms ?? 0) > 0),
+    "latency recorded",
+    "a real round-trip took measurable time",
+  );
+  // Usage and cost are REPORTED, not asserted: whether OpenRouter returns
+  // `usage` for embeddings is a provider fact, and Python writes null in the
+  // same case. Parity against Python's row for the same query is step 4 of the
+  // Navigator route in test-guide.md, and that is where it is judged.
+  const priced = rows.filter((row) => row.cost_usd !== null).length;
+  say(
+    `  ..  usage reported on ${priced}/${rows.length} rows` +
+      `${priced === 0 ? " (provider omitted usage; Python must show the same)" : ""}`,
+  );
+}
+
+await main(process.argv.slice(2));
