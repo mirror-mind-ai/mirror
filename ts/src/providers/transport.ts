@@ -13,9 +13,12 @@
 
 export type ProviderTransportMode = "python" | "replay" | "live";
 
-export interface ProviderTransportEnv {
-  [name: string]: string | undefined;
-}
+/**
+ * Read-only env view. Indexed access is deliberate: families name their
+ * variables as data (`revertVar`), so a typed per-variable interface would
+ * have to be extended for every family US2/US3 flips.
+ */
+export type ProviderTransportEnv = Readonly<Record<string, string | undefined>>;
 
 export interface ProviderTransportSpec {
   /** Family revert control. `=0` sends the family back to Python. */

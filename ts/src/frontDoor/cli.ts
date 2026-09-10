@@ -1391,7 +1391,17 @@ async function runMemorySearch(argv: readonly string[]): Promise<number> {
   const db = openDatabaseForWrite(dbPath, ensureBackup(dbPath));
   try {
     assertSchemaState(db);
-    process.stdout.write(await runMemorySearchRoute(db, argv.slice(1)));
+    process.stdout.write(
+      await runMemorySearchRoute(db, argv.slice(1), {
+        onDegraded: (detail) =>
+          logFrontDoor(frontDoorLogPath(dbPath), {
+            command: argv[0] ?? null,
+            route: "ts",
+            exitCode: 0,
+            detail,
+          }),
+      }),
+    );
     return 0;
   } catch (error) {
     if (error instanceof SchemaStateError) {

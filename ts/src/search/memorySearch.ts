@@ -2,13 +2,15 @@ import type { SqlValue, WritableDatabase } from "#db/database.ts";
 import { optionalNumber, optionalString, requireString } from "#db/rowDecode.ts";
 import { logAccess } from "#memory/reinforcement.ts";
 import { logLlmCall } from "#observability/llmCalls.ts";
-import { resolveEmbeddingModel } from "#providers/config.ts";
+import { ProviderConfigError, resolveEmbeddingModel } from "#providers/config.ts";
 import { computeCost } from "#providers/cost.ts";
 import {
   type EmbeddingAttemptInfo,
+  EmbeddingError,
   type EmbeddingProvider,
   generateEmbeddingSafely,
 } from "#providers/embedding.ts";
+import { LlmTransportError } from "#providers/openrouter.ts";
 import { nowIso } from "#util/pyGenerators.ts";
 import {
   type RankableMemory,
@@ -40,6 +42,12 @@ export interface FreshSearchResult extends RankedMemory {}
 export interface FreshSearchOutcome {
   results: FreshSearchResult[];
   degraded: boolean;
+  /**
+   * Metadata-only cause of a degraded search: the transport taxonomy kind, or
+   * `config` when no key is set. Never a message, never the query -- this is
+   * written to the front-door log, which forbids payloads (RS005/CR026).
+   */
+  degradedKind?: string;
 }
 
 export const DEFAULT_SEARCH_RANKER_CONFIG = {
@@ -79,6 +87,7 @@ export async function searchMemoriesWithStatus(
   const limit = options.limit ?? 5;
   let queryEmbedding: readonly number[] = [];
   let degraded = false;
+  let degradedKind: string | undefined;
   try {
     // generateEmbeddingSafely (CR043) retries a transient empty response up to
     // its default budget before giving up -- matching Python's search, which
@@ -89,8 +98,13 @@ export async function searchMemoriesWithStatus(
       onAttempt: logQueryEmbeddingAttempt(db),
       sleep: options.embeddingRetrySleep,
     });
-  } catch {
+  } catch (error) {
     degraded = true;
+    // Keep the CLASS of failure (AI-18 taxonomy) so an operator can tell an
+    // expired key from a timeout from a rate limit. Without this the front
+    // door only ever says "offline or no API key", which is a guess -- and
+    // the taxonomy the live transport builds would die here unseen.
+    degradedKind = classifyDegradedCause(error);
   }
 
   const memories = listSearchMemoryRows(db, options);
@@ -124,7 +138,7 @@ export async function searchMemoriesWithStatus(
   for (const result of ranked) {
     logAccess(db, result.id, accessNow, options.query.slice(0, 200));
   }
-  return { results: ranked, degraded };
+  return { results: ranked, degraded, degradedKind };
 }
 
 /** Thin, non-breaking wrapper over `searchMemoriesWithStatus`, mirroring
@@ -270,4 +284,20 @@ function toMemoryRow(row: Record<string, unknown>): MemoryRow {
     relevance_score: optionalNumber(row, "relevance_score") ?? 0,
     embedding_b64: Buffer.from(embedding).toString("base64"),
   };
+}
+
+/**
+ * Reduce a degraded-search cause to a short, content-free category
+ * (CV22.DS8.US1). Only the CLASS travels: provider messages can echo request
+ * content, and the front-door log forbids payloads.
+ */
+function classifyDegradedCause(error: unknown): string {
+  if (error instanceof ProviderConfigError) return "config";
+  if (error instanceof LlmTransportError) return error.kind;
+  if (error instanceof EmbeddingError) {
+    // generateEmbeddingSafely wraps a provider exception; the inner kind is
+    // gone by then, so the honest answer is the layer that failed.
+    return error.permanent ? "embedding_permanent" : "embedding_exhausted";
+  }
+  return "unknown";
 }

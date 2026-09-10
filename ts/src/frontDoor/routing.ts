@@ -1,3 +1,5 @@
+import { resolveProviderTransport } from "#providers/transport.ts";
+
 import { DS10_RUNTIME_SUBCOMMANDS, TS_RUNTIME_READ_SUBCOMMANDS } from "./runtimeRoute.ts";
 
 export type FrontDoorEngine = "ts" | "python";
@@ -39,8 +41,13 @@ const CONVERSATIONS_LIFECYCLE_FLAGS = [
   ...DS10_BACKFILL_FLAGS,
 ];
 
-export interface RouteEnvironment {
+// A type alias rather than an interface: aliases get an implicit index
+// signature, which is what lets the named variables below still be passed to
+// `resolveProviderTransport`, whose families name their variables as data.
+export type RouteEnvironment = {
   MIRROR_TS_EXTERNAL_ROUTES?: string;
+  /** CV22.DS8.US1 revert control for the fresh-semantic-search leaf. */
+  MIRROR_TS_SEARCH?: string;
   MIRROR_TS_SEARCH_EMBEDDING_REPLAY?: string;
   MIRROR_TS_CONSULT_LLM_REPLAY?: string;
   MIRROR_TS_CREDITS_REPLAY?: string;
@@ -68,7 +75,7 @@ export interface RouteEnvironment {
   MIRROR_TS_DESCRIPTOR?: string;
   MIRROR_TS_DESCRIPTOR_LLM_REPLAY?: string;
   MEMORY_RECEPTION?: string;
-}
+};
 
 // CV22.DS7.TS1: the DB safety tools carry independent per-command gates.
 // Flipped 2026-09-07 after the seven-point checklist went green (goldens,
@@ -166,6 +173,20 @@ function externalRoutesEnabled(env: RouteEnvironment): boolean {
   return env.MIRROR_TS_EXTERNAL_ROUTES === "1";
 }
 
+/**
+ * The search family's transport spec (CV22.DS8.US1).
+ *
+ * `MIRROR_TS_EXTERNAL_ROUTES` is deliberately absent: it was DS5's safety gate
+ * while replay was the PRODUCTION route for this leaf, and after the live
+ * cutover replay is a test transport. The other families keep the gate until
+ * US2/US3 flip them.
+ */
+export const SEARCH_TRANSPORT = {
+  revertVar: "MIRROR_TS_SEARCH",
+  replayVar: "MIRROR_TS_SEARCH_EMBEDDING_REPLAY",
+  liveReason: "DS8.US1 fresh semantic search live",
+} as const;
+
 export function routeMemoryCommand(
   argv: readonly string[],
   env: RouteEnvironment = process.env,
@@ -179,17 +200,15 @@ export function routeMemoryCommand(
 
   if (command === "memories") {
     if (argv.includes("--search")) {
-      if (externalRoutesEnabled(env) && env.MIRROR_TS_SEARCH_EMBEDDING_REPLAY) {
-        return {
-          command,
-          engine: "ts",
-          reason: "DS5 fresh semantic search routed to TS under replay-safe config",
-        };
-      }
+      // CV22.DS8.US1: fresh semantic search reaches the live provider from TS
+      // by default. `MIRROR_TS_SEARCH=0` is the revert; a replay fixture still
+      // wins for CI and the parity harness. One precedence, shared with every
+      // family US2/US3 flips.
+      const transport = resolveProviderTransport(env, SEARCH_TRANSPORT);
       return {
         command,
-        engine: "python",
-        reason: "fresh semantic search needs DS5 replay/live config for TS route",
+        engine: transport.mode === "python" ? "python" : "ts",
+        reason: transport.reason,
       };
     }
     return { command, engine: "ts", reason: "DS2 memory listing read ported to TS" };

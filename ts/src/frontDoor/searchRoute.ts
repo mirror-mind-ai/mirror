@@ -1,11 +1,14 @@
 import type { WritableDatabase } from "#db/database.ts";
 import { requireString } from "#db/rowDecode.ts";
-import { loadReplayEmbeddingProvider } from "#providers/embedding.ts";
+import type { EmbeddingProvider } from "#providers/embedding.ts";
+import { LiveEmbeddingProvider, loadReplayEmbeddingProvider } from "#providers/embedding.ts";
+import { resolveProviderTransport } from "#providers/transport.ts";
 import type { FreshSearchResult } from "#search/memorySearch.ts";
 import { searchMemoriesWithStatus } from "#search/memorySearch.ts";
 import { optionValue } from "./args.ts";
 import { ICONS } from "./render/icons.ts";
 import { tagsText } from "./render/memories.ts";
+import { SEARCH_TRANSPORT } from "./routing.ts";
 
 // Mirrors Python's cli/memories.py degraded_note wording exactly (AI-04),
 // including under a degraded search with zero results.
@@ -23,18 +26,39 @@ export interface SearchMemoryRow {
   tags: string | null;
 }
 
+/**
+ * Resolve the embedding provider by the same precedence the router used
+ * (CV22.DS8.US1), so the route can never disagree with the routing decision
+ * about which transport is in play.
+ */
+async function resolveSearchEmbeddingProvider(
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<EmbeddingProvider> {
+  const transport = resolveProviderTransport(env, SEARCH_TRANSPORT);
+  if (transport.mode === "replay" && transport.replayPath) {
+    return loadReplayEmbeddingProvider(transport.replayPath);
+  }
+  // Live. The provider resolves its config lazily, so a missing key surfaces
+  // inside searchMemoriesWithStatus and degrades to lexical-only rather than
+  // failing the command -- Python's behavior for an unconfigured install.
+  return new LiveEmbeddingProvider({ env });
+}
+
+export interface MemorySearchRouteOptions {
+  /** Receives a content-free degraded category for the front-door log. */
+  onDegraded?: (detail: string) => void;
+}
+
 export async function runMemorySearchRoute(
   db: WritableDatabase,
   args: readonly string[],
+  options: MemorySearchRouteOptions = {},
 ): Promise<string> {
   const query = optionValue(args, "--search");
   if (!query) throw new Error("memories --search requires a query");
-  const replayPath = process.env.MIRROR_TS_SEARCH_EMBEDDING_REPLAY;
-  if (!replayPath)
-    throw new Error("MIRROR_TS_SEARCH_EMBEDDING_REPLAY is required for TS search route");
-  const provider = await loadReplayEmbeddingProvider(replayPath);
+  const provider = await resolveSearchEmbeddingProvider();
   const limit = Number(optionValue(args, "--limit") ?? 20);
-  const { results, degraded } = await searchMemoriesWithStatus(db, {
+  const { results, degraded, degradedKind } = await searchMemoriesWithStatus(db, {
     query,
     limit,
     memoryType: optionValue(args, "--type"),
@@ -42,6 +66,13 @@ export async function runMemorySearchRoute(
     journey: optionValue(args, "--journey"),
     provider,
   });
+  // A degraded live search is the one failure an operator has to diagnose
+  // without a re-run, so the taxonomy class reaches the front-door log rather
+  // than dying inside the degrade path. Category only -- never a message,
+  // never the query (RS005/CR026).
+  if (degraded && degradedKind) {
+    options.onDegraded?.(`embedding_degraded kind=${degradedKind}`);
+  }
   const rows = memoriesById(
     db,
     results.map((result) => result.id),

@@ -13,10 +13,13 @@ test("routes DS2 read commands to TS", () => {
 });
 
 test("routes DS5 external commands to TS only under replay-safe gate", () => {
+  // CV22.DS8.US1 flipped `memories --search`: an unconfigured install now
+  // reaches the live provider through TS instead of falling back to Python.
+  // The remaining DS5 surfaces below keep their replay gate until US3.
   assert.deepEqual(routeMemoryCommand(["memories", "--search", "builder"]), {
     command: "memories",
-    engine: "python",
-    reason: "fresh semantic search needs DS5 replay/live config for TS route",
+    engine: "ts",
+    reason: "DS8.US1 fresh semantic search live",
   });
   assert.deepEqual(
     routeMemoryCommand(["memories", "--search", "builder"], {
@@ -26,7 +29,7 @@ test("routes DS5 external commands to TS only under replay-safe gate", () => {
     {
       command: "memories",
       engine: "ts",
-      reason: "DS5 fresh semantic search routed to TS under replay-safe config",
+      reason: "MIRROR_TS_SEARCH_EMBEDDING_REPLAY replay transport",
     },
   );
   assert.deepEqual(
@@ -827,4 +830,53 @@ test("the plain conversations listing is unaffected by the lifecycle split", () 
     routeMemoryCommand(["conversations"], { MIRROR_TS_CONVERSATIONS_LIFECYCLE: "1" }).engine,
     "ts",
   );
+});
+
+// --- CV22.DS8.US1: the fresh-semantic-search live cutover -------------------
+
+test("memories --search reaches the live provider with nothing configured", () => {
+  // The cutover itself: before this story an unconfigured install answered
+  // this leaf from Python, which is what kept the Python core alive for the
+  // highest-volume role in the ledger.
+  const decision = routeMemoryCommand(["memories", "--search", "builder"], {});
+
+  assert.equal(decision.engine, "ts");
+  assert.equal(decision.reason, "DS8.US1 fresh semantic search live");
+});
+
+test("MIRROR_TS_SEARCH=0 reverts the search leaf to Python with no code change", () => {
+  const decision = routeMemoryCommand(["memories", "--search", "builder"], {
+    MIRROR_TS_SEARCH: "0",
+  });
+
+  assert.equal(decision.engine, "python");
+  assert.match(decision.reason, /revert/i);
+});
+
+test("the revert wins over a replay fixture left in the same shell", () => {
+  const decision = routeMemoryCommand(["memories", "--search", "builder"], {
+    MIRROR_TS_SEARCH: "0",
+    MIRROR_TS_SEARCH_EMBEDDING_REPLAY: "/tmp/embedding.json",
+  });
+
+  assert.equal(decision.engine, "python");
+});
+
+test("a replay fixture no longer needs MIRROR_TS_EXTERNAL_ROUTES for search", () => {
+  // That gate was DS5's safety catch while replay was this leaf's PRODUCTION
+  // transport. After the cutover replay is a test transport, so requiring the
+  // gate would only make CI and the parity harness depend on it.
+  const decision = routeMemoryCommand(["memories", "--search", "builder"], {
+    MIRROR_TS_SEARCH_EMBEDDING_REPLAY: "/tmp/embedding.json",
+  });
+
+  assert.equal(decision.engine, "ts");
+  assert.match(decision.reason, /replay/);
+});
+
+test("plain memory listing is unaffected by the search transport gates", () => {
+  const decision = routeMemoryCommand(["memories", "--limit", "5"], { MIRROR_TS_SEARCH: "0" });
+
+  assert.equal(decision.engine, "ts");
+  assert.equal(decision.reason, "DS2 memory listing read ported to TS");
 });
