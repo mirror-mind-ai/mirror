@@ -15,7 +15,15 @@ export type LlmRole =
   // match Python's `build_llm_logger` roles so the llm_calls ledger agrees.
   | "conversation_title"
   | "conversation_tags"
-  | "conversation_summary";
+  | "conversation_summary"
+  // CV22.DS7.US11 — the content & planning tail. Role names match Python's
+  // `build_llm_logger` roles so the `llm_calls` ledger agrees across engines,
+  // with one deliberate exception: Python's `generate_descriptor` passes no
+  // `on_llm_call`, so the `descriptor` role writes NO ledger row on either
+  // engine. Parity preserves the gap; closing it is a DS8 plan input.
+  | "journal_classification"
+  | "week_plan"
+  | "descriptor";
 
 export interface LlmRequest {
   role: LlmRole;

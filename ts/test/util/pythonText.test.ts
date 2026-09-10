@@ -4,6 +4,7 @@ import {
   codePointLength,
   compareByCodePoint,
   comparePathComponents,
+  pyFormat,
   pyRStrip,
   pySplitLines,
   pySplitWhitespace,
@@ -93,4 +94,39 @@ test("comparePathComponents puts a/b before a-x/c, unlike a joined-string sort",
     ["emoji-title.jsonl"],
     ["nested", "deeper", "d.jsonl"],
   ]);
+});
+
+// --- pyFormat (CV22.DS7.US11) ----------------------------------------------
+//
+// Added when the prompt-assembly golden caught a `replaceAll`-based
+// substitution leaving `{{` doubled in WEEK_PLAN_PROMPT's JSON example. The
+// escaping rule is the whole reason this helper exists, so it is tested
+// directly rather than only through the prompts that use it.
+
+test("pyFormat substitutes named fields", () => {
+  assert.equal(
+    pyFormat("Today is {today} ({weekday}).", { today: "2026-09-09", weekday: "Wednesday" }),
+    "Today is 2026-09-09 (Wednesday).",
+  );
+});
+
+test("pyFormat collapses doubled braces to literals, as str.format does", () => {
+  assert.equal(pyFormat('[{{\n  "k": "{v}"\n}}]', { v: "x" }), '[{\n  "k": "x"\n}]');
+  assert.equal(pyFormat("{{}}", {}), "{}");
+  assert.equal(pyFormat("{{{v}}}", { v: "mid" }), "{mid}");
+});
+
+test("pyFormat raises on an unknown field instead of emitting the placeholder", () => {
+  // Python raises KeyError; silently leaving `{oops}` in a prompt would ship a
+  // literal brace-name to a model and pass a digest check only by accident.
+  assert.throws(() => pyFormat("a {oops} b", { other: "x" }), /no value for field "oops"/);
+});
+
+test("pyFormat rejects malformed braces", () => {
+  assert.throws(() => pyFormat("a {unclosed", { unclosed: "x" }), /unmatched/);
+  assert.throws(() => pyFormat("a } b", {}), /single '}'/);
+});
+
+test("pyFormat leaves non-field text untouched, including non-BMP characters", () => {
+  assert.equal(pyFormat("\u{1F30D} {a} \u2615", { a: "b" }), "\u{1F30D} b \u2615");
 });

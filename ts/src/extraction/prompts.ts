@@ -261,3 +261,110 @@ restating it as fact.
 
 ## Conversation
 `;
+
+// CV22.DS7.US11. Concatenated with the raw entry by `classify_journal_entry`
+// (temperature 0.3). Carries the CV9.E2.S25 fence wording.
+export const JOURNAL_CLASSIFICATION_PROMPT = `You are the memory system for Mirror Mind, a Jungian mirror AI.
+
+Analyze this journal entry and classify it. Return ONLY a JSON object, with no markdown:
+
+{
+  "title": "concise title capturing the essence of the entry, max 10 words",
+  "layer": "self or ego or shadow",
+  "tags": ["tag1", "tag2", "..."]
+}
+
+## Jungian Layer Criteria
+- **self**: Deep identity, purpose, core values, or meaning of life
+- **ego**: Day-to-day operational state, practical frustrations, work/routine reflections
+- **shadow**: Unresolved tensions, fears, repeating patterns, avoided themes, vulnerability
+
+## Tag Rules
+- 3 to 6 emotional or thematic tags for future search
+- Use words that capture the feeling, not only the topic
+- Examples: anxiety, gratitude, solitude, clarity, exhaustion, purpose, fear, hope
+
+## Journal Entry
+`;
+
+// CV22.DS7.US11. `.format(layer=, key=)` then concatenated with the content
+// by `generate_descriptor` (temperature 0.2).
+export const DESCRIPTOR_PROMPT = `You are generating a routing descriptor for Mirror Mind.
+
+A routing descriptor is 1-2 sentences that tell a classifier exactly when to
+activate this entity. It must be written for routing accuracy, not for depth
+or voice.
+
+## Rules
+
+- For a **persona**: name the action domains and task types this persona handles.
+  Lead with verbs and domains. Example: "Handles code review, architecture
+  decisions, debugging, and software engineering tasks."
+- For a **journey**: name what the journey is about and when a user's message
+  is in scope. Example: "Active work on the Mirror Mind infrastructure —
+  Python backend, memory system, skills, and identity architecture."
+- Maximum 150 characters. One or two sentences. Plain text only.
+- Do not mention Mirror Mind, AI, or meta-system references.
+- Do not start with the entity name or slug.
+
+## Entity
+
+Layer: {layer}
+Key: {key}
+
+## Full content
+
+`;
+
+// CV22.DS7.US11. `.format(today=, weekday=, journeys=)` then concatenated with
+// the raw text by `extract_week_plan` (temperature 0.2). The reference date is
+// baked into the bytes, so any digest over this prompt is clock-dependent.
+export const WEEK_PLAN_PROMPT = `You are the temporal planning system for Mirror Mind.
+
+Analyze the text below and extract ALL temporal items: tasks, commitments,
+events, and meetings.
+
+## Reference Date
+Today is {today} ({weekday}).
+
+## Active Journeys
+{journeys}
+
+## Extraction Rules
+
+1. **due_date** (required): Resolve ALL relative time references to absolute dates (YYYY-MM-DD).
+   - "today" -> {today}
+   - "tomorrow" -> the next day
+   - "Friday" -> the next Friday from today
+   - etc.
+
+2. **scheduled_at**: Use ONLY when an exact time is mentioned, such as "at 7pm" or "15:00".
+   Format: YYYY-MM-DDTHH:MM. DO NOT INVENT TIMES.
+
+3. **time_hint**: Use for vague time references such as "late afternoon", "during the day", "morning", or "afternoon".
+   If scheduled_at is present, time_hint is null.
+
+4. **journey**: Associate the most likely active journey slug using the list above.
+   If there is no clear match, use null.
+
+5. **title**: Short and actionable. If the item is tentative, include "(tentative)" in the title.
+
+6. **context**: Brief context note extracted from the original text.
+
+## Response Format
+Return ONLY a JSON array, with no markdown:
+[
+  {{
+    "title": "...",
+    "due_date": "YYYY-MM-DD",
+    "scheduled_at": "YYYY-MM-DDTHH:MM" or null,
+    "time_hint": "..." or null,
+    "journey": "slug" or null,
+    "context": "..."
+  }}
+]
+
+If there are no items, return: []
+
+## Text
+`;

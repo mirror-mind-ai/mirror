@@ -187,3 +187,47 @@ export function comparePathComponents(a: readonly string[], b: readonly string[]
   }
   return a.length - b.length;
 }
+
+/**
+ * Python `str.format(**values)` for named fields, including brace escaping.
+ *
+ * `"{{"` and `"}}"` are LITERAL braces in a format string and collapse to a
+ * single brace, which a naive `replaceAll("{name}", value)` leaves doubled.
+ * `WEEK_PLAN_PROMPT` embeds a JSON example written with doubled braces exactly
+ * so `.format()` can be applied to it, so the difference is not cosmetic: the
+ * assembled prompt bytes -- and therefore the replay digest -- disagree
+ * (CV22.DS7.US11, caught by the prompt-assembly golden).
+ *
+ * Only the subset the vendored templates use is implemented: named fields with
+ * no conversion, no format spec, no attribute or index access. An unknown
+ * field raises, as Python's `KeyError` does, rather than silently emitting the
+ * placeholder into a prompt.
+ */
+export function pyFormat(template: string, values: Readonly<Record<string, string>>): string {
+  let out = "";
+  for (let index = 0; index < template.length; index += 1) {
+    const char = template[index];
+    const next = template[index + 1];
+    if (char === "{" && next === "{") {
+      out += "{";
+      index += 1;
+    } else if (char === "}" && next === "}") {
+      out += "}";
+      index += 1;
+    } else if (char === "{") {
+      const close = template.indexOf("}", index + 1);
+      if (close === -1) throw new Error("pyFormat: unmatched '{' in template");
+      const field = template.slice(index + 1, close);
+      if (!Object.hasOwn(values, field)) {
+        throw new Error(`pyFormat: no value for field ${JSON.stringify(field)}`);
+      }
+      out += values[field];
+      index = close;
+    } else if (char === "}") {
+      throw new Error("pyFormat: single '}' in template");
+    } else {
+      out += char;
+    }
+  }
+  return out;
+}

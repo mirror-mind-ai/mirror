@@ -463,7 +463,51 @@ provider roles, the vendored prompt templates, and the digest-pinned assembly
 goldens — with `week_plan`'s generator freezing both the clock and the journey
 set.
 
-**Checks at handoff.** TS 1733 pass / 0 fail; Python unit+integration green
+### Plateau 2 complete — provider roles and prompt assembly (2026-09-09)
+
+**What is now true.** No routing changed. The three roles exist, the three
+templates are vendored byte-exact, assembly is digest-pinned.
+
+- `LlmRole` gains `journal_classification`, `week_plan`, `descriptor`, with the
+  `descriptor` ledger gap documented at the type.
+- The templates were **generated from the Python source**, never retyped, and
+  appended to `ts/src/extraction/prompts.ts` — one TS module mirroring one
+  Python module, which is the convention that file's header already states, so
+  the `prompts.py` tripwire keeps mapping to exactly one TS file. Lengths match
+  Python exactly: 809 / 894 / 1373.
+- `ts/src/planning/promptAssembly.ts` — the three builders, the journeys-text
+  renderer, an injected clock, and the three temperatures carried for DS8.
+- `generate_prompt_assembly_golden.py` extended with 8 US11 scenarios; the
+  clock AND the journey set are frozen.
+
+**Findings worth carrying.**
+
+1. **Python's `.format()` collapses `{{` to `{`, and `WEEK_PLAN_PROMPT`
+   contains a JSON example written with doubled braces.** A `replaceAll`-based
+   substitution left them doubled, changing the assembled bytes. Caught by the
+   digest, not by review. Fixed with `pyFormat` in `#util/pythonText.ts`
+   (raises on an unknown field rather than emitting the placeholder), tested
+   directly — it is now a shared Python-semantics primitive beside
+   `sliceCodePoints`.
+2. **Journey descriptions are truncated TWICE** — 200 code points in
+   `ingest_week_plan`, then 100 in `extract_week_plan`. Only the second cut
+   reaches the model. The plan's terrain named only the first.
+3. **Sharing the golden broke a sibling test.** `conversationMetadata.test.ts`
+   looped over every scenario and asserted an exact surface list. Both are now
+   scoped, and a new assertion proves the split stays exhaustive — a future
+   surface cannot fall through both files ungraded.
+4. **`weekPlanClock` reproduces two Python-isms**: local-time `datetime.now()`
+   and Monday-indexed `weekday()` against JavaScript's Sunday-indexed
+   `getDay()`. Tested on a Wednesday, a Sunday, and a zero-padded January date.
+
+**Checks at handoff.** TS 1752 pass / 0 fail; the two goldens regenerate
+byte-identically; oracle drift clean; ruff and biome clean. The single Python
+failure is **CR058's known wall-clock flake** in the web diagnose test —
+verified by stashing every change and reproducing it on a clean tree.
+
+---
+
+**Plateau 1 checks (superseded above).** TS 1733 pass / 0 fail; Python unit+integration green
 (the one failure seen is CR058's known wall-clock flake in the web diagnose
 test); `tsc --noEmit` clean; biome clean; ruff clean on `src/` and `tests/`;
 the golden regenerates byte-identically; the cross-engine proof clean; oracle

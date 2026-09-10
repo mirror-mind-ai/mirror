@@ -68,7 +68,26 @@ const TRANSCRIPT_BUILDERS: Record<
   task_extraction: buildTaskExtractionPrompt,
 };
 
-for (const scenario of golden.scenarios) {
+// The golden is shared: CV22.DS7.US11 added `journal_classification`,
+// `descriptor`, and `week_plan` scenarios, which are not transcript-fenced and
+// are graded by `test/planning/promptAssembly.test.ts`. This loop owns the
+// close-tail surfaces only, and asserts below that the split stays exhaustive
+// so a future surface cannot fall through both files ungraded.
+const CLOSE_TAIL_SURFACES = new Set([...Object.keys(TRANSCRIPT_BUILDERS), "curation"]);
+const US11_SURFACES = new Set(["journal_classification", "descriptor", "week_plan"]);
+
+test("every scenario in the shared golden is owned by exactly one test file", () => {
+  for (const scenario of golden.scenarios) {
+    const here = CLOSE_TAIL_SURFACES.has(scenario.surface);
+    const there = US11_SURFACES.has(scenario.surface);
+    assert.ok(
+      here !== there,
+      `surface ${scenario.surface} is graded ${here && there ? "twice" : "nowhere"}`,
+    );
+  }
+});
+
+for (const scenario of golden.scenarios.filter((s) => CLOSE_TAIL_SURFACES.has(s.surface))) {
   test(`assembled prompt is byte-identical: ${scenario.label}`, () => {
     let assembled: string;
     if (scenario.surface === "curation") {
@@ -86,15 +105,21 @@ for (const scenario of golden.scenarios) {
 }
 
 test("golden covers every LLM surface the extraction lifecycle sends", () => {
+  // Asserts PRESENCE, not exclusivity: the corpus is shared, and CV22.DS7.US11
+  // added three non-transcript surfaces graded in test/planning. An exact
+  // deepEqual here would fail every time a future story adds a role, which
+  // says nothing about the extraction lifecycle's own coverage.
   const surfaces = new Set(golden.scenarios.map((s) => s.surface));
-  assert.deepEqual([...surfaces].sort(), [
+  for (const surface of [
     "conversation_summary",
     "conversation_tags",
     "conversation_title",
     "curation",
     "extraction",
     "task_extraction",
-  ]);
+  ]) {
+    assert.ok(surfaces.has(surface), `extraction-lifecycle surface ${surface} is covered`);
+  }
   // The tags branches are enumerated separately even though they assemble the
   // same bytes today, so a future summary-dependent tags prompt cannot change
   // one branch without the golden noticing.
