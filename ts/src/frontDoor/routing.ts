@@ -42,6 +42,7 @@ export interface RouteEnvironment {
   MIRROR_TS_SOUL?: string;
   MIRROR_TS_SOUL_EMBEDDING_REPLAY?: string;
   MIRROR_TS_EXPLORE?: string;
+  MIRROR_TS_WEEK?: string;
   MEMORY_RECEPTION?: string;
 }
 
@@ -337,18 +338,42 @@ export function routeMemoryCommand(
   }
 
   if (command === "week") {
-    // `view` (and the bare `week` default) is a deterministic read ported
-    // here. `plan`/`save` are LLM/embedding-gated and reassigned to US5 (see
-    // the plan's scope correction) -- they stay on Python fallback, not as an
-    // oversight but as a permanent seam boundary.
+    // `view` (and the bare `week` default) is a deterministic read ported in
+    // DS7.US2 and flipped UNGATED there -- `MIRROR_TS_WEEK` deliberately does
+    // not cover it, so reverting a bad `plan`/`save` cannot drag `view` back
+    // to Python (US11 Plan review, quality-assurance).
+    //
+    // CR068 corrected this family's accounting: US2 sent `plan` and `save` to
+    // US5, US5 was re-scoped without them, and nothing inherited the work --
+    // and the refusal reason recorded here claimed BOTH were "LLM-gated",
+    // which is false for `save`. `save_week_items` reads the pending file and
+    // calls `add_task`, on TS since US2; it crosses no provider seam and flips
+    // ungated. Only `plan` calls a model.
     const sub = argv[1];
     if (sub === undefined || sub === "view") {
       return { command, engine: "ts", reason: "DS7.US2 week view read ported to TS" };
     }
+    if (sub === "save") {
+      if (!weekGateEnabled(env)) {
+        return {
+          command,
+          engine: "python",
+          reason: "week save needs MIRROR_TS_WEEK=1 until the DS7.US11 flip",
+        };
+      }
+      return { command, engine: "ts", reason: "DS7.US11 week save (deterministic) ported to TS" };
+    }
+    if (sub === "plan") {
+      return {
+        command,
+        engine: "python",
+        reason: "week plan calls the model; DS7.US11 ports it behind the replay transport",
+      };
+    }
     return {
       command,
       engine: "python",
-      reason: "week plan/save are LLM-gated and reassigned to US5, not ported here",
+      reason: `week subcommand not ported to TS: ${sub || "(none)"}`,
     };
   }
 
@@ -707,6 +732,13 @@ function soulGateEnabled(env: RouteEnvironment): boolean {
 }
 
 // Python's argparse subcommands for `explore`, by name.
+// CV22.DS7.US11 plateau 1. `week save` is deterministic, so it carries an
+// ordinary revert gate rather than a replay gate. Default OFF until the
+// plateau-6 flip; `plan` joins this gate when it lands behind replay.
+function weekGateEnabled(env: RouteEnvironment): boolean {
+  return env.MIRROR_TS_WEEK === "1";
+}
+
 const TS_EXPLORE_SUBCOMMANDS = new Set(["load", "deactivate", "story"]);
 
 // Python's `explore story` actions, by name.

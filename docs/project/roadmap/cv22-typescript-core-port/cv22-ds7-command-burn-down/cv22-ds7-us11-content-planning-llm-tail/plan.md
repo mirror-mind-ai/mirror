@@ -418,4 +418,53 @@ authorize push, release, or any DS8 live-mode work.
 
 ## Handoff
 
-_No plateau completed yet._
+### Plateau 1 complete — `week save` and the pending-file contract (2026-09-09)
+
+**What is now true.** `week save` is ported, graded, and wired through the
+front door behind `MIRROR_TS_WEEK`, **absent by default** — nothing routes to
+TS yet. `week view` deliberately does not join the gate.
+
+- `ts/src/planning/weekPending.ts` — the pending-file contract (path,
+  serialization, read/write/unlink), written as the contract because both
+  engines use it during the transition.
+- `ts/src/planning/weekSave.ts` — the port. `timeSuffix` validates the
+  timestamp shape explicitly rather than trusting `new Date(...)`: Node's
+  parser is more permissive than `datetime.fromisoformat`, so a naive port
+  renders a time where Python's `except ValueError` renders none.
+- `ts/parity/generate_week_save_golden.py` → 10 cases. Ids are aliased in
+  receipt order (the conversation-logger convention) **and their raw shape is
+  recorded separately**, so aliasing cannot hide a port emitting wrong-format
+  ids.
+- `ts/parity/week_pending_cross_engine.py` — the plan's evidence item #4, both
+  directions, plus a byte comparison of what each engine serializes.
+- `routing.ts` — `save` gated, `plan` refused with a true reason, unknown
+  subcommands refused by name.
+- 11 TS golden tests, 3 routing tests; determinism gate registered.
+
+**Findings worth carrying.**
+
+1. **The receipt embeds generated task ids**, so the corpus could not be
+   byte-pinned without aliasing. Discovered by the determinism check failing on
+   the second run, not by reading the code.
+2. **`week save` writes N rows and unlinks after the loop** — confirmed against
+   the oracle. A mid-loop failure leaves partial tasks and the file. Parity
+   preserved; noted for Debt Review.
+3. **The cross-engine harness first failed with `no such table: tasks`** — it
+   copied a WAL-mode database without checkpointing, so the schema was still in
+   the `-wal` file. Harness defect, not a port defect, but the same trap will
+   catch plateau 3's write probe; checkpoint before copying.
+4. **A refusal reason I wrote said "disabled by MIRROR_TS_WEEK=0" for a
+   default-OFF gate**, which is untrue when the variable is simply absent.
+   Corrected to "needs MIRROR_TS_WEEK=1". Surfaces that describe state must
+   describe the state that exists.
+
+**What remains undone.** Plateaus 2–6, unchanged. Next is plateau 2: the three
+provider roles, the vendored prompt templates, and the digest-pinned assembly
+goldens — with `week_plan`'s generator freezing both the clock and the journey
+set.
+
+**Checks at handoff.** TS 1733 pass / 0 fail; Python unit+integration green
+(the one failure seen is CR058's known wall-clock flake in the web diagnose
+test); `tsc --noEmit` clean; biome clean; ruff clean on `src/` and `tests/`;
+the golden regenerates byte-identically; the cross-engine proof clean; oracle
+drift clean.

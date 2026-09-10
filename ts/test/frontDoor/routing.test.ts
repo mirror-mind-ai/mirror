@@ -674,3 +674,37 @@ test("an unknown runtime subcommand is refused, not inherited", () => {
     assert.match(decision.reason, /not ported to TS/, sub);
   }
 });
+
+// --- CV22.DS7.US11 plateau 1: `week save` -----------------------------------
+//
+// CR068 found this family's refusal reason claiming BOTH `plan` and `save`
+// were "LLM-gated". `save` crosses no provider seam, so it carries an ordinary
+// gate and flips ungated at the plateau-6 flip. `view` was flipped UNGATED in
+// US2 and must NOT join the gate: reverting a bad `save` cannot be allowed to
+// drag a previously-unrevertible read back to Python.
+
+test("week save routes to TS only under MIRROR_TS_WEEK=1, and never drags `view` with it", () => {
+  assert.equal(routeMemoryCommand(["week", "save"], {}).engine, "python");
+  assert.equal(routeMemoryCommand(["week", "save"], { MIRROR_TS_WEEK: "1" }).engine, "ts");
+  assert.equal(routeMemoryCommand(["week", "save"], { MIRROR_TS_WEEK: "0" }).engine, "python");
+
+  // `view` ignores the gate in both directions.
+  assert.equal(routeMemoryCommand(["week", "view"], { MIRROR_TS_WEEK: "0" }).engine, "ts");
+  assert.equal(routeMemoryCommand(["week"], { MIRROR_TS_WEEK: "0" }).engine, "ts");
+});
+
+test("week plan stays on Python, and its refusal reason no longer mislabels `save`", () => {
+  const plan = routeMemoryCommand(["week", "plan", "some text"], { MIRROR_TS_WEEK: "1" });
+  assert.equal(plan.engine, "python");
+  assert.match(plan.reason, /calls the model/);
+
+  const save = routeMemoryCommand(["week", "save"], {});
+  assert.doesNotMatch(save.reason, /LLM-gated/, "save is deterministic; CR068 corrected this");
+  assert.doesNotMatch(save.reason, /=0/, "the gate is default-off, so '=0' would be untrue");
+});
+
+test("an unknown week subcommand is refused by name, never inherited", () => {
+  const unknown = routeMemoryCommand(["week", "bogus"], { MIRROR_TS_WEEK: "1" });
+  assert.equal(unknown.engine, "python");
+  assert.match(unknown.reason, /bogus/);
+});

@@ -55,6 +55,7 @@ import { setIdentity } from "#identity/setIdentity.ts";
 import { IdentityRootExistsError, initUserHome, TemplatesNotFoundError } from "#init/init.ts";
 import { JOURNEY_PATH_LAYER } from "#journey/journeyStatus.ts";
 import { JourneyNotFoundError } from "#journey/journeyWrite.ts";
+import { runWeekSave } from "#planning/weekSave.ts";
 import { loadReplayEmbeddingProvider } from "#providers/embedding.ts";
 import { loadReplayLlmProvider } from "#providers/llm.ts";
 import { runSeed } from "#seed/seed.ts";
@@ -426,6 +427,22 @@ function runTasksRead(db: Database, args: readonly string[]): number {
  * in production; tests inject a frozen instant by calling `renderWeekView`
  * directly rather than through this CLI entry point.
  */
+/**
+ * `week save` (CV22.DS7.US11 plateau 1) is the only `week` leaf that writes.
+ * `view` stays on the read seam; `plan` is Python's until it lands behind the
+ * replay transport.
+ */
+function isWeekSaveWrite(argv: readonly string[]): boolean {
+  return argv[0] === "week" && argv[1] === "save";
+}
+
+function runWeekSaveWrite(argv: readonly string[]): number {
+  return withLiveWriteDb(argv, (db) => {
+    runWeekSave(db, {});
+    return 0;
+  });
+}
+
 function runWeekRead(db: Database, _args: readonly string[]): number {
   const now = new Date();
   const range = computeWeekRange(now);
@@ -1375,6 +1392,7 @@ async function dispatchTs(argv: readonly string[]): Promise<number> {
   if (isJourneyWrite(argv)) return runJourneyWrite(argv);
   if (isJourneyUpdateWrite(argv)) return runJourneyUpdateWrite(argv);
   if (isTasksSubcommandWrite(argv)) return runTasksWrite(argv);
+  if (isWeekSaveWrite(argv)) return runWeekSaveWrite(argv);
   if (isConsolidateSubcommandWrite(argv)) return runConsolidateWrite(argv);
   if (isShadowSubcommandWrite(argv)) return runShadowWrite(argv);
   if (isMirrorWrite(argv)) return runMirrorWrite(argv);
