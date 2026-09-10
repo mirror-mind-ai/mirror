@@ -2,7 +2,7 @@
 
 # CV22.DS7.US11 — Content & planning LLM tail
 
-**Status:** 🟡 Planned — authored, not pulled
+**Status:** ✅ Done — flipped and validated 2026-09-09
 **Type:** User Story
 **Created by:** [CR068](../../../../refinement/rs009-cv22-front-door-routing-correctness/cr068-stop-reporting-unported-llm-gated-leaves-as-burned-down.md) (2026-09-09)
 **Depends on:** [CV22.DS7.US2](../cv22-ds7-us2-content-planning-writes/index.md) (done) for

@@ -46,3 +46,4 @@ evidence stays honest as both cores move.
 - [CR070 — Render or remove the inert `--listening-for` argument](cr070-render-or-remove-the-inert-listening-for-argument.md)
 - [CR071 — Collapse the triplicated skill command references](cr071-collapse-the-triplicated-skill-command-references.md)
 - [CR073 — Refuse a mistyped stdin sentinel in `journey update`](cr073-refuse-a-mistyped-stdin-sentinel-in-journey-update.md)
+- [CR074 — Harden the `week plan` pending file](cr074-harden-the-week-plan-pending-file.md)
