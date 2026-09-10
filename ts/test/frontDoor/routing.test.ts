@@ -694,9 +694,13 @@ test("week save routes to TS only under MIRROR_TS_WEEK=1, and never drags `view`
 });
 
 test("week plan stays on Python, and its refusal reason no longer mislabels `save`", () => {
+  // Plateau 4 gave `plan` its own replay requirement, so the reason now names
+  // the replay config rather than the model. What must stay true is that the
+  // reason is about `plan` alone and never mislabels `save`.
   const plan = routeMemoryCommand(["week", "plan", "some text"], { MIRROR_TS_WEEK: "1" });
   assert.equal(plan.engine, "python");
-  assert.match(plan.reason, /calls the model/);
+  assert.match(plan.reason, /week plan/);
+  assert.doesNotMatch(plan.reason, /save/);
 
   const save = routeMemoryCommand(["week", "save"], {});
   assert.doesNotMatch(save.reason, /LLM-gated/, "save is deterministic; CR068 corrected this");
@@ -745,4 +749,18 @@ test("an unconfigured journal route names the gate, not a false '=0'", () => {
   // The gate is default-OFF during the story; saying "disabled by =0" would be
   // untrue when the variable is simply absent (the plateau-1 lesson).
   assert.match(routeMemoryCommand(["journal", "x"], {}).reason, /needs MIRROR_TS_JOURNAL=1/);
+});
+
+test("the three week leaves carry three different requirements", () => {
+  const replay = { MIRROR_TS_EXTERNAL_ROUTES: "1", MIRROR_TS_WEEK_LLM_REPLAY: "fixture.json" };
+  // `view`: ungated since US2.
+  assert.equal(routeMemoryCommand(["week", "view"], {}).engine, "ts");
+  // `save`: deterministic — the family gate alone is enough.
+  assert.equal(routeMemoryCommand(["week", "save"], { MIRROR_TS_WEEK: "1" }).engine, "ts");
+  // `plan`: one model call — gate AND replay.
+  assert.equal(routeMemoryCommand(["week", "plan", "x"], { MIRROR_TS_WEEK: "1" }).engine, "python");
+  assert.equal(
+    routeMemoryCommand(["week", "plan", "x"], { MIRROR_TS_WEEK: "1", ...replay }).engine,
+    "ts",
+  );
 });

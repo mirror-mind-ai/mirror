@@ -540,7 +540,50 @@ typecheck.
 frozen-clock prompt (plateau 2 built it), the `LIKE '%fragment%'` similarity
 port with its unescaped wildcards, and the pending-file write.
 
-**Checks at handoff.** TS 1777 pass / 0 fail; `cli/journal.py` added to the
+### Plateau 4 complete — `week plan` behind replay (2026-09-09)
+
+**What is now true.** `week plan` is ported and gated behind `MIRROR_TS_WEEK`
+**plus** an LLM replay fixture — one model call, no embedding, so it needs one
+fixture where `journal` needs two. The three `week` leaves now carry three
+different requirements: `view` ungated (US2), `save` gated only, `plan` gated
+plus replay.
+
+**The Plan review's correction, closed.** The plan originally described the
+similarity check as a `LIKE` prefix query. It is `LIKE '%fragment%'` — a
+contains match over the first 20 code points, unescaped, with the journey
+argument unused. Injecting the tidier implementation the original plan
+described (prefix + escaped wildcards) fails exactly the two wildcard cases the
+review forced into the corpus, and nothing else. Had the review not caught the
+description, the port would have shipped the tidy version and the golden would
+have agreed with it.
+
+**A stricter oracle than assumed.** `ExtractedWeekItem` is a pydantic model with
+`extra="forbid"` and no coercion, so an unknown key, a non-string `title`, AND a
+present-but-mistyped OPTIONAL field each raise — meaning the whole item is
+skipped, not defaulted. The first port defaulted a bad optional to null and kept
+the item. Verified against the oracle directly, then pinned with three cases.
+
+**Wrong helper, right name.** `pythonJsonDumpsIndented` sorts keys and escapes
+non-ASCII; `cmd_plan` uses `ensure_ascii=False` with NO `sort_keys`, so
+insertion order is the contract. Plain `JSON.stringify(value, null, 2)` is the
+match. A helper whose name reads like the thing you need is not the thing you
+need.
+
+**A stale assertion of my own.** Plateau 1's routing test asserted `week plan`'s
+refusal reason matched `/calls the model/`. Plateau 4 legitimately changed that
+string, and the test failed — correctly. Rewritten to assert what must stay
+true: the reason names `plan` and never mislabels `save`.
+
+**What remains undone.** Plateaus 5 and 6. Next is plateau 5: `descriptor
+generate` and the four ES-001 lifecycle CLI faces over the engine US10 ported.
+
+**Checks at handoff.** TS 1797 pass / 0 fail; the week-plan golden regenerates
+byte-identically; oracle drift clean; ruff and biome clean on CI's scope. The
+Python failure remains CR058's wall-clock flake.
+
+---
+
+**Plateau 3 checks (superseded above).** TS 1777 pass / 0 fail; `cli/journal.py` added to the
 drift tripwire (baseline gained exactly one line, no other sha moved); the
 journal golden regenerates byte-identically; ruff and biome clean on CI's
 scope. The Python failure remains CR058's wall-clock flake.

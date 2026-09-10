@@ -1,0 +1,455 @@
+{
+  "cases": [
+    {
+      "clock": {
+        "today": "2026-09-09",
+        "weekday": "Wednesday"
+      },
+      "existing_tasks": [],
+      "journeys": [
+        {
+          "description": "Port the Python core to TypeScript.",
+          "slug": "mirror-ts-core"
+        },
+        {
+          "description": "Administrative work.",
+          "slug": "admin"
+        }
+      ],
+      "label": "no items returned",
+      "llm_calls": [
+        {
+          "model": "stub/model",
+          "role": "week_plan"
+        }
+      ],
+      "model_response": "[]",
+      "pending_file": null,
+      "stdout": "No temporal items found in the text.\n",
+      "text": "nada temporal aqui"
+    },
+    {
+      "clock": {
+        "today": "2026-09-09",
+        "weekday": "Wednesday"
+      },
+      "existing_tasks": [],
+      "journeys": [
+        {
+          "description": "Port the Python core to TypeScript.",
+          "slug": "mirror-ts-core"
+        },
+        {
+          "description": "Administrative work.",
+          "slug": "admin"
+        }
+      ],
+      "label": "non-list response",
+      "llm_calls": [
+        {
+          "model": "stub/model",
+          "role": "week_plan"
+        }
+      ],
+      "model_response": "{\"not\": \"a list\"}",
+      "pending_file": null,
+      "stdout": "No temporal items found in the text.\n",
+      "text": "qualquer coisa"
+    },
+    {
+      "clock": {
+        "today": "2026-09-09",
+        "weekday": "Wednesday"
+      },
+      "existing_tasks": [],
+      "journeys": [
+        {
+          "description": "Port the Python core to TypeScript.",
+          "slug": "mirror-ts-core"
+        },
+        {
+          "description": "Administrative work.",
+          "slug": "admin"
+        }
+      ],
+      "label": "one plain item",
+      "llm_calls": [
+        {
+          "model": "stub/model",
+          "role": "week_plan"
+        }
+      ],
+      "model_response": "[{\"title\": \"Revisar o plano\", \"due_date\": \"2026-09-09\"}]",
+      "pending_file": "[\n  {\n    \"title\": \"Revisar o plano\",\n    \"due_date\": \"2026-09-09\",\n    \"scheduled_at\": null,\n    \"time_hint\": null,\n    \"journey\": null,\n    \"context\": null\n  }\n]",
+      "stdout": "{\n  \"items\": [\n    {\n      \"title\": \"Revisar o plano\",\n      \"due_date\": \"2026-09-09\",\n      \"scheduled_at\": null,\n      \"time_hint\": null,\n      \"journey\": null,\n      \"context\": null\n    }\n  ],\n  \"pending_file\": \"<pending-file>\"\n}\n",
+      "text": "Quarta: revisar o plano."
+    },
+    {
+      "clock": {
+        "today": "2026-09-09",
+        "weekday": "Wednesday"
+      },
+      "existing_tasks": [],
+      "journeys": [
+        {
+          "description": "Port the Python core to TypeScript.",
+          "slug": "mirror-ts-core"
+        },
+        {
+          "description": "Administrative work.",
+          "slug": "admin"
+        }
+      ],
+      "label": "malformed item is skipped, sibling survives",
+      "llm_calls": [
+        {
+          "model": "stub/model",
+          "role": "week_plan"
+        }
+      ],
+      "model_response": "[{\"title\": \"Boa\", \"due_date\": \"2026-09-10\"}, {\"no_title_field\": true}]",
+      "pending_file": "[\n  {\n    \"title\": \"Boa\",\n    \"due_date\": \"2026-09-10\",\n    \"scheduled_at\": null,\n    \"time_hint\": null,\n    \"journey\": null,\n    \"context\": null\n  }\n]",
+      "stdout": "{\n  \"items\": [\n    {\n      \"title\": \"Boa\",\n      \"due_date\": \"2026-09-10\",\n      \"scheduled_at\": null,\n      \"time_hint\": null,\n      \"journey\": null,\n      \"context\": null\n    }\n  ],\n  \"pending_file\": \"<pending-file>\"\n}\n",
+      "text": "duas coisas"
+    },
+    {
+      "clock": {
+        "today": "2026-09-09",
+        "weekday": "Wednesday"
+      },
+      "existing_tasks": [
+        {
+          "due_date": "2026-09-10",
+          "title": "Revisar o plano semanal"
+        }
+      ],
+      "journeys": [
+        {
+          "description": "Port the Python core to TypeScript.",
+          "slug": "mirror-ts-core"
+        },
+        {
+          "description": "Administrative work.",
+          "slug": "admin"
+        }
+      ],
+      "label": "similar existing task warns, naming the first match",
+      "llm_calls": [
+        {
+          "model": "stub/model",
+          "role": "week_plan"
+        }
+      ],
+      "model_response": "[{\"title\": \"Revisar o plano\", \"due_date\": \"2026-09-10\"}]",
+      "pending_file": "[\n  {\n    \"title\": \"Revisar o plano\",\n    \"due_date\": \"2026-09-10\",\n    \"scheduled_at\": null,\n    \"time_hint\": null,\n    \"journey\": null,\n    \"context\": null\n  }\n]",
+      "stdout": "{\n  \"items\": [\n    {\n      \"title\": \"Revisar o plano\",\n      \"due_date\": \"2026-09-10\",\n      \"scheduled_at\": null,\n      \"time_hint\": null,\n      \"journey\": null,\n      \"context\": null,\n      \"warning\": \"Similar item already exists: 'Revisar o plano semanal'\"\n    }\n  ],\n  \"pending_file\": \"<pending-file>\"\n}\n",
+      "text": "Revisar o plano de novo"
+    },
+    {
+      "clock": {
+        "today": "2026-09-09",
+        "weekday": "Wednesday"
+      },
+      "existing_tasks": [
+        {
+          "due_date": "2026-09-11",
+          "title": "Revisar o plano semanal"
+        }
+      ],
+      "journeys": [
+        {
+          "description": "Port the Python core to TypeScript.",
+          "slug": "mirror-ts-core"
+        },
+        {
+          "description": "Administrative work.",
+          "slug": "admin"
+        }
+      ],
+      "label": "same fragment but a DIFFERENT due date does not warn",
+      "llm_calls": [
+        {
+          "model": "stub/model",
+          "role": "week_plan"
+        }
+      ],
+      "model_response": "[{\"title\": \"Revisar o plano\", \"due_date\": \"2026-09-10\"}]",
+      "pending_file": "[\n  {\n    \"title\": \"Revisar o plano\",\n    \"due_date\": \"2026-09-10\",\n    \"scheduled_at\": null,\n    \"time_hint\": null,\n    \"journey\": null,\n    \"context\": null\n  }\n]",
+      "stdout": "{\n  \"items\": [\n    {\n      \"title\": \"Revisar o plano\",\n      \"due_date\": \"2026-09-10\",\n      \"scheduled_at\": null,\n      \"time_hint\": null,\n      \"journey\": null,\n      \"context\": null\n    }\n  ],\n  \"pending_file\": \"<pending-file>\"\n}\n",
+      "text": "Revisar o plano de novo"
+    },
+    {
+      "clock": {
+        "today": "2026-09-09",
+        "weekday": "Wednesday"
+      },
+      "existing_tasks": [
+        {
+          "due_date": "2026-09-10",
+          "status": "done",
+          "title": "Revisar o plano semanal"
+        }
+      ],
+      "journeys": [
+        {
+          "description": "Port the Python core to TypeScript.",
+          "slug": "mirror-ts-core"
+        },
+        {
+          "description": "Administrative work.",
+          "slug": "admin"
+        }
+      ],
+      "label": "a matching task already DONE does not warn",
+      "llm_calls": [
+        {
+          "model": "stub/model",
+          "role": "week_plan"
+        }
+      ],
+      "model_response": "[{\"title\": \"Revisar o plano\", \"due_date\": \"2026-09-10\"}]",
+      "pending_file": "[\n  {\n    \"title\": \"Revisar o plano\",\n    \"due_date\": \"2026-09-10\",\n    \"scheduled_at\": null,\n    \"time_hint\": null,\n    \"journey\": null,\n    \"context\": null\n  }\n]",
+      "stdout": "{\n  \"items\": [\n    {\n      \"title\": \"Revisar o plano\",\n      \"due_date\": \"2026-09-10\",\n      \"scheduled_at\": null,\n      \"time_hint\": null,\n      \"journey\": null,\n      \"context\": null\n    }\n  ],\n  \"pending_file\": \"<pending-file>\"\n}\n",
+      "text": "Revisar o plano de novo"
+    },
+    {
+      "clock": {
+        "today": "2026-09-09",
+        "weekday": "Wednesday"
+      },
+      "existing_tasks": [
+        {
+          "due_date": "2026-09-10",
+          "title": "ABCDEFGHIJKLMNOPQRST-outra-cauda"
+        }
+      ],
+      "journeys": [
+        {
+          "description": "Port the Python core to TypeScript.",
+          "slug": "mirror-ts-core"
+        },
+        {
+          "description": "Administrative work.",
+          "slug": "admin"
+        }
+      ],
+      "label": "only the first 20 characters form the fragment",
+      "llm_calls": [
+        {
+          "model": "stub/model",
+          "role": "week_plan"
+        }
+      ],
+      "model_response": "[{\"title\": \"ABCDEFGHIJKLMNOPQRSTUVWXYZ-cauda\", \"due_date\": \"2026-09-10\"}]",
+      "pending_file": "[\n  {\n    \"title\": \"ABCDEFGHIJKLMNOPQRSTUVWXYZ-cauda\",\n    \"due_date\": \"2026-09-10\",\n    \"scheduled_at\": null,\n    \"time_hint\": null,\n    \"journey\": null,\n    \"context\": null\n  }\n]",
+      "stdout": "{\n  \"items\": [\n    {\n      \"title\": \"ABCDEFGHIJKLMNOPQRSTUVWXYZ-cauda\",\n      \"due_date\": \"2026-09-10\",\n      \"scheduled_at\": null,\n      \"time_hint\": null,\n      \"journey\": null,\n      \"context\": null,\n      \"warning\": \"Similar item already exists: 'ABCDEFGHIJKLMNOPQRST-outra-cauda'\"\n    }\n  ],\n  \"pending_file\": \"<pending-file>\"\n}\n",
+      "text": "titulo longo"
+    },
+    {
+      "clock": {
+        "today": "2026-09-09",
+        "weekday": "Wednesday"
+      },
+      "existing_tasks": [
+        {
+          "due_date": "2026-09-10",
+          "title": "100 qualquer coisa do plano"
+        }
+      ],
+      "journeys": [
+        {
+          "description": "Port the Python core to TypeScript.",
+          "slug": "mirror-ts-core"
+        },
+        {
+          "description": "Administrative work.",
+          "slug": "admin"
+        }
+      ],
+      "label": "percent in a title is an UNESCAPED LIKE wildcard",
+      "llm_calls": [
+        {
+          "model": "stub/model",
+          "role": "week_plan"
+        }
+      ],
+      "model_response": "[{\"title\": \"100% do plano\", \"due_date\": \"2026-09-10\"}]",
+      "pending_file": "[\n  {\n    \"title\": \"100% do plano\",\n    \"due_date\": \"2026-09-10\",\n    \"scheduled_at\": null,\n    \"time_hint\": null,\n    \"journey\": null,\n    \"context\": null\n  }\n]",
+      "stdout": "{\n  \"items\": [\n    {\n      \"title\": \"100% do plano\",\n      \"due_date\": \"2026-09-10\",\n      \"scheduled_at\": null,\n      \"time_hint\": null,\n      \"journey\": null,\n      \"context\": null,\n      \"warning\": \"Similar item already exists: '100 qualquer coisa do plano'\"\n    }\n  ],\n  \"pending_file\": \"<pending-file>\"\n}\n",
+      "text": "desconto"
+    },
+    {
+      "clock": {
+        "today": "2026-09-09",
+        "weekday": "Wednesday"
+      },
+      "existing_tasks": [
+        {
+          "due_date": "2026-09-10",
+          "title": "abc"
+        }
+      ],
+      "journeys": [
+        {
+          "description": "Port the Python core to TypeScript.",
+          "slug": "mirror-ts-core"
+        },
+        {
+          "description": "Administrative work.",
+          "slug": "admin"
+        }
+      ],
+      "label": "underscore in a title is an UNESCAPED single-char wildcard",
+      "llm_calls": [
+        {
+          "model": "stub/model",
+          "role": "week_plan"
+        }
+      ],
+      "model_response": "[{\"title\": \"a_c\", \"due_date\": \"2026-09-10\"}]",
+      "pending_file": "[\n  {\n    \"title\": \"a_c\",\n    \"due_date\": \"2026-09-10\",\n    \"scheduled_at\": null,\n    \"time_hint\": null,\n    \"journey\": null,\n    \"context\": null\n  }\n]",
+      "stdout": "{\n  \"items\": [\n    {\n      \"title\": \"a_c\",\n      \"due_date\": \"2026-09-10\",\n      \"scheduled_at\": null,\n      \"time_hint\": null,\n      \"journey\": null,\n      \"context\": null,\n      \"warning\": \"Similar item already exists: 'abc'\"\n    }\n  ],\n  \"pending_file\": \"<pending-file>\"\n}\n",
+      "text": "slug"
+    },
+    {
+      "clock": {
+        "today": "2026-09-09",
+        "weekday": "Wednesday"
+      },
+      "existing_tasks": [],
+      "journeys": [
+        {
+          "description": "Port the Python core to TypeScript.",
+          "slug": "mirror-ts-core"
+        },
+        {
+          "description": "Administrative work.",
+          "slug": "admin"
+        }
+      ],
+      "label": "non-ASCII title: the 20 is code points",
+      "llm_calls": [
+        {
+          "model": "stub/model",
+          "role": "week_plan"
+        }
+      ],
+      "model_response": "[{\"title\": \"🌍 viagem longíssima para o norte\", \"due_date\": \"2026-09-10\"}]",
+      "pending_file": "[\n  {\n    \"title\": \"🌍 viagem longíssima para o norte\",\n    \"due_date\": \"2026-09-10\",\n    \"scheduled_at\": null,\n    \"time_hint\": null,\n    \"journey\": null,\n    \"context\": null\n  }\n]",
+      "stdout": "{\n  \"items\": [\n    {\n      \"title\": \"🌍 viagem longíssima para o norte\",\n      \"due_date\": \"2026-09-10\",\n      \"scheduled_at\": null,\n      \"time_hint\": null,\n      \"journey\": null,\n      \"context\": null\n    }\n  ],\n  \"pending_file\": \"<pending-file>\"\n}\n",
+      "text": "viagem"
+    },
+    {
+      "clock": {
+        "today": "2026-09-09",
+        "weekday": "Wednesday"
+      },
+      "existing_tasks": [],
+      "journeys": [
+        {
+          "description": "Port the Python core to TypeScript.",
+          "slug": "mirror-ts-core"
+        },
+        {
+          "description": "Administrative work.",
+          "slug": "admin"
+        }
+      ],
+      "label": "a non-string OPTIONAL field skips the whole item (pydantic forbids it)",
+      "llm_calls": [
+        {
+          "model": "stub/model",
+          "role": "week_plan"
+        }
+      ],
+      "model_response": "[{\"title\": \"Boa\", \"due_date\": \"2026-09-10\"}, {\"title\": \"Ruim\", \"due_date\": \"2026-09-10\", \"scheduled_at\": 5}]",
+      "pending_file": "[\n  {\n    \"title\": \"Boa\",\n    \"due_date\": \"2026-09-10\",\n    \"scheduled_at\": null,\n    \"time_hint\": null,\n    \"journey\": null,\n    \"context\": null\n  }\n]",
+      "stdout": "{\n  \"items\": [\n    {\n      \"title\": \"Boa\",\n      \"due_date\": \"2026-09-10\",\n      \"scheduled_at\": null,\n      \"time_hint\": null,\n      \"journey\": null,\n      \"context\": null\n    }\n  ],\n  \"pending_file\": \"<pending-file>\"\n}\n",
+      "text": "tipo errado"
+    },
+    {
+      "clock": {
+        "today": "2026-09-09",
+        "weekday": "Wednesday"
+      },
+      "existing_tasks": [],
+      "journeys": [
+        {
+          "description": "Port the Python core to TypeScript.",
+          "slug": "mirror-ts-core"
+        },
+        {
+          "description": "Administrative work.",
+          "slug": "admin"
+        }
+      ],
+      "label": "an UNKNOWN key skips the item (extra=forbid)",
+      "llm_calls": [
+        {
+          "model": "stub/model",
+          "role": "week_plan"
+        }
+      ],
+      "model_response": "[{\"title\": \"Com extra\", \"due_date\": \"2026-09-10\", \"nope\": 1}]",
+      "pending_file": null,
+      "stdout": "No temporal items found in the text.\n",
+      "text": "chave extra"
+    },
+    {
+      "clock": {
+        "today": "2026-09-09",
+        "weekday": "Wednesday"
+      },
+      "existing_tasks": [],
+      "journeys": [
+        {
+          "description": "Port the Python core to TypeScript.",
+          "slug": "mirror-ts-core"
+        },
+        {
+          "description": "Administrative work.",
+          "slug": "admin"
+        }
+      ],
+      "label": "explicit nulls are accepted",
+      "llm_calls": [
+        {
+          "model": "stub/model",
+          "role": "week_plan"
+        }
+      ],
+      "model_response": "[{\"title\": \"Com nulos\", \"due_date\": \"2026-09-10\", \"scheduled_at\": null, \"time_hint\": null, \"journey\": null, \"context\": null}]",
+      "pending_file": "[\n  {\n    \"title\": \"Com nulos\",\n    \"due_date\": \"2026-09-10\",\n    \"scheduled_at\": null,\n    \"time_hint\": null,\n    \"journey\": null,\n    \"context\": null\n  }\n]",
+      "stdout": "{\n  \"items\": [\n    {\n      \"title\": \"Com nulos\",\n      \"due_date\": \"2026-09-10\",\n      \"scheduled_at\": null,\n      \"time_hint\": null,\n      \"journey\": null,\n      \"context\": null\n    }\n  ],\n  \"pending_file\": \"<pending-file>\"\n}\n",
+      "text": "nulos"
+    },
+    {
+      "clock": {
+        "today": "2026-09-09",
+        "weekday": "Wednesday"
+      },
+      "existing_tasks": [],
+      "journeys": [
+        {
+          "description": "Port the Python core to TypeScript.",
+          "slug": "mirror-ts-core"
+        },
+        {
+          "description": "Administrative work.",
+          "slug": "admin"
+        }
+      ],
+      "label": "all optional fields present",
+      "llm_calls": [
+        {
+          "model": "stub/model",
+          "role": "week_plan"
+        }
+      ],
+      "model_response": "[{\"title\": \"Call com cliente\", \"due_date\": \"2026-09-10\", \"scheduled_at\": \"2026-09-10T18:00\", \"time_hint\": \"late afternoon\", \"journey\": \"admin\", \"context\": \"trimestral\"}]",
+      "pending_file": "[\n  {\n    \"title\": \"Call com cliente\",\n    \"due_date\": \"2026-09-10\",\n    \"scheduled_at\": \"2026-09-10T18:00\",\n    \"time_hint\": \"late afternoon\",\n    \"journey\": \"admin\",\n    \"context\": \"trimestral\"\n  }\n]",
+      "stdout": "{\n  \"items\": [\n    {\n      \"title\": \"Call com cliente\",\n      \"due_date\": \"2026-09-10\",\n      \"scheduled_at\": \"2026-09-10T18:00\",\n      \"time_hint\": \"late afternoon\",\n      \"journey\": \"admin\",\n      \"context\": \"trimestral\"\n    }\n  ],\n  \"pending_file\": \"<pending-file>\"\n}\n",
+      "text": "reuniao"
+    }
+  ]
+}

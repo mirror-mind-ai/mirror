@@ -46,6 +46,7 @@ export interface RouteEnvironment {
   MIRROR_TS_JOURNAL?: string;
   MIRROR_TS_JOURNAL_LLM_REPLAY?: string;
   MIRROR_TS_JOURNAL_EMBEDDING_REPLAY?: string;
+  MIRROR_TS_WEEK_LLM_REPLAY?: string;
   MEMORY_RECEPTION?: string;
 }
 
@@ -367,10 +368,26 @@ export function routeMemoryCommand(
       return { command, engine: "ts", reason: "DS7.US11 week save (deterministic) ported to TS" };
     }
     if (sub === "plan") {
+      // One model call, no embedding -- so it needs the LLM replay fixture
+      // only, unlike `journal` which crosses the seam twice.
+      if (!weekGateEnabled(env)) {
+        return {
+          command,
+          engine: "python",
+          reason: "week plan needs MIRROR_TS_WEEK=1 until the DS7.US11 flip",
+        };
+      }
+      if (!externalRoutesEnabled(env) || !env.MIRROR_TS_WEEK_LLM_REPLAY) {
+        return {
+          command,
+          engine: "python",
+          reason: "week plan needs DS7.US11 replay config for TS route",
+        };
+      }
       return {
         command,
-        engine: "python",
-        reason: "week plan calls the model; DS7.US11 ports it behind the replay transport",
+        engine: "ts",
+        reason: "DS7.US11 week plan routed to TS under replay-safe config",
       };
     }
     return {
