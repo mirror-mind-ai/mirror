@@ -92,3 +92,61 @@ Hermetic tests with an injected `fetch` (no network in CI); the replay path
 unchanged in CI and the harness; a Navigator-run live smoke contract on a DB
 copy; one real search on the real home; revert exercised. See
 [plan.md](plan.md) and [test-guide.md](test-guide.md).
+
+---
+
+## Handoff — plateau 1–6 implemented, Navigator validation pending (2026-09-10)
+
+**What is now true.** The live transport substrate exists and the search leaf
+is cut over. Five commits, CI green at `7e00bed` (Tests + Docs):
+
+| Plateau | Commit | Landed |
+|---|---|---|
+| 1 | `400494f` | `cost.ts` port + golden; per-role timeout/retry resolvers |
+| 2 | `fbd1004` | `openrouter.ts` fetch client; `transport.ts` precedence |
+| 3–4 | `8251456` | `LiveEmbeddingProvider`; `EmbeddingResult` widening; priced ledger row |
+| 6 | `cde5a30` | route flip, degraded taxonomy in the front-door log, skill doc |
+| 5 | `7e00bed` | `live_embedding_smoke.ts` with `--cross-check` |
+
+1890 TS tests pass; every existing golden and the parity harness are unchanged,
+which is the evidence that replay behavior did not move.
+
+**Two things the writing corrected.** A response with no `data` is *transient*
+in Python (`_extract_embedding` raises without `permanent=True`), not
+malformed — TS must retry where I first expected it to fail hard; only a
+present-but-wrong `data` shape is malformed. And `generateEmbeddingSafely` had
+to grow an explicit `ProviderConfigError` bypass, because without it an
+unconfigured install would write an unpriced ledger row where Python writes
+none — a parity break invisible to every replay test, since replay always has
+a "key".
+
+**What remains intentionally undone.**
+
+1. **Navigator validation** — the seven-step route in `test-guide.md`. Steps 2
+   and 4 need a *discriminating query* (zero FTS overlap against a known
+   memory) recorded in the guide before running; step 3 needs a real-DB copy
+   and a memory id for `--cross-check`. Nothing about the cutover is proven
+   against a real provider yet: **no live call has ever been made from this
+   code.**
+2. **Docs** — burn-down ledger (move `memories --search` out of the
+   replay-gated block, family row to flipped-ungated, dated entry), REFERENCE
+   env table (`MIRROR_TS_SEARCH`, three timeouts, `MEMORY_LLM_MAX_RETRIES`,
+   `NODE_EXTRA_CA_CERTS`, `NODE_USE_ENV_PROXY`), decision record (fetch-based,
+   no SDK; constant base URL; `redirect: "error"`).
+3. **Handoff persona review** — the post-validation checkpoint.
+
+**Known risk, accepted and unmitigated in code.** Node's `fetch` ignores
+`HTTPS_PROXY` unless `NODE_USE_ENV_PROXY=1`. An install behind a proxy that
+worked on Python will degrade to lexical after this flip, and the degraded
+note will misattribute it to "offline or no API key". The front-door log now
+carries the real class (`kind=provider_error`), which is how it would be
+diagnosed. Documented, not coded around.
+
+**Unrelated pre-existing failure.** `tests/unit/memory/web/test_server.py::
+test_operations_run_api_executes_runtime_diagnose_through_controlled_command`
+fails on this machine and reproduces on a clean tree. No Python file is
+touched by this story.
+
+**Next plateau.** Run the Navigator route; if step 3 (`cos >= 0.99`) fails,
+stop — the vectors are not in the corpus's space and the flip must be reverted
+with `MIRROR_TS_SEARCH=0` rather than debugged in production.
