@@ -1,0 +1,419 @@
+{
+  "cases": [
+    {
+      "argument": "<conversation-provisional>",
+      "error": null,
+      "face": "dry_run",
+      "label": "provisional title, four messages",
+      "report": {
+        "conversation_id": "<conversation-provisional>",
+        "fields": {
+          "summary": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for a summary"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "vamos trabalhar no maestro",
+            "decision": "repair",
+            "lock_state": "unlocked",
+            "provenance": "first_user",
+            "readiness": "ready",
+            "reason": "current title is provisional or weak"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "argument": "<conversation-manual>",
+      "error": null,
+      "face": "dry_run",
+      "label": "manual title is preserved",
+      "report": {
+        "conversation_id": "<conversation-manual>",
+        "fields": {
+          "summary": {
+            "current_value": null,
+            "decision": "defer",
+            "provenance": null,
+            "readiness": "not_ready",
+            "reason": "summary needs more conversation substance"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "defer",
+            "provenance": null,
+            "readiness": "not_ready",
+            "reason": "tags need more conversation substance"
+          },
+          "title": {
+            "current_value": "Manual conversation title",
+            "decision": "preserve",
+            "lock_state": "manual_locked",
+            "provenance": "manual",
+            "readiness": "locked",
+            "reason": "manual title lock is preserved"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "argument": "<conversation-empty>",
+      "error": null,
+      "face": "dry_run",
+      "label": "no messages",
+      "report": {
+        "conversation_id": "<conversation-empty>",
+        "fields": {
+          "summary": {
+            "current_value": null,
+            "decision": "defer",
+            "provenance": null,
+            "readiness": "not_ready",
+            "reason": "summary needs more conversation substance"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "defer",
+            "provenance": null,
+            "readiness": "not_ready",
+            "reason": "tags need more conversation substance"
+          },
+          "title": {
+            "current_value": null,
+            "decision": "defer",
+            "lock_state": "unlocked",
+            "provenance": null,
+            "readiness": "not_ready",
+            "reason": "conversation needs at least one user and one assistant message"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "argument": "<conversation-provisional>",
+      "error": null,
+      "face": "dry_run",
+      "label": "id prefix resolves",
+      "report": {
+        "conversation_id": "<conversation-provisional>",
+        "fields": {
+          "summary": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for a summary"
+          },
+          "tags": {
+            "current_value": null,
+            "decision": "create",
+            "provenance": null,
+            "readiness": "ready",
+            "reason": "conversation has enough substance for tags"
+          },
+          "title": {
+            "current_value": "vamos trabalhar no maestro",
+            "decision": "repair",
+            "lock_state": "unlocked",
+            "provenance": "first_user",
+            "readiness": "ready",
+            "reason": "current title is provisional or weak"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
+      "argument": "does-not-exist",
+      "error": "Conversation 'does-not-exist' not found",
+      "face": "dry_run",
+      "label": "unknown conversation id",
+      "report": null
+    },
+    {
+      "argument": "",
+      "error": "conversationId is required",
+      "face": "dry_run",
+      "label": "empty conversation id",
+      "report": null
+    },
+    {
+      "argument": "<provisional-message-1>",
+      "error": null,
+      "face": "preview_at_message",
+      "label": "boundary at the first message",
+      "report": {
+        "conversation_id": "<conversation-provisional>",
+        "dry_run": {
+          "conversation_id": "<conversation-provisional>",
+          "fields": {
+            "summary": {
+              "current_value": null,
+              "decision": "defer",
+              "provenance": null,
+              "readiness": "not_ready",
+              "reason": "summary needs more conversation substance"
+            },
+            "tags": {
+              "current_value": null,
+              "decision": "defer",
+              "provenance": null,
+              "readiness": "not_ready",
+              "reason": "tags need more conversation substance"
+            },
+            "title": {
+              "current_value": "vamos trabalhar no maestro",
+              "decision": "defer",
+              "lock_state": "unlocked",
+              "provenance": "first_user",
+              "readiness": "not_ready",
+              "reason": "conversation needs at least one user and one assistant message"
+            }
+          },
+          "metadata_lifecycle_version": 1,
+          "mode": "dry_run",
+          "mutated": false
+        },
+        "excluded_message_count": 3,
+        "included_message_count": 1,
+        "message_id": "<provisional-message-1>",
+        "mode": "debug_preview_at_message",
+        "mutated": false
+      }
+    },
+    {
+      "argument": "<provisional-message-2>",
+      "error": null,
+      "face": "preview_at_message",
+      "label": "boundary at a middle message",
+      "report": {
+        "conversation_id": "<conversation-provisional>",
+        "dry_run": {
+          "conversation_id": "<conversation-provisional>",
+          "fields": {
+            "summary": {
+              "current_value": null,
+              "decision": "defer",
+              "provenance": null,
+              "readiness": "not_ready",
+              "reason": "summary needs more conversation substance"
+            },
+            "tags": {
+              "current_value": null,
+              "decision": "defer",
+              "provenance": null,
+              "readiness": "not_ready",
+              "reason": "tags need more conversation substance"
+            },
+            "title": {
+              "current_value": "vamos trabalhar no maestro",
+              "decision": "repair",
+              "lock_state": "unlocked",
+              "provenance": "first_user",
+              "readiness": "ready",
+              "reason": "current title is provisional or weak"
+            }
+          },
+          "metadata_lifecycle_version": 1,
+          "mode": "dry_run",
+          "mutated": false
+        },
+        "excluded_message_count": 2,
+        "included_message_count": 2,
+        "message_id": "<provisional-message-2>",
+        "mode": "debug_preview_at_message",
+        "mutated": false
+      }
+    },
+    {
+      "argument": "<provisional-message-4>",
+      "error": null,
+      "face": "preview_at_message",
+      "label": "boundary at the last message",
+      "report": {
+        "conversation_id": "<conversation-provisional>",
+        "dry_run": {
+          "conversation_id": "<conversation-provisional>",
+          "fields": {
+            "summary": {
+              "current_value": null,
+              "decision": "create",
+              "provenance": null,
+              "readiness": "ready",
+              "reason": "conversation has enough substance for a summary"
+            },
+            "tags": {
+              "current_value": null,
+              "decision": "create",
+              "provenance": null,
+              "readiness": "ready",
+              "reason": "conversation has enough substance for tags"
+            },
+            "title": {
+              "current_value": "vamos trabalhar no maestro",
+              "decision": "repair",
+              "lock_state": "unlocked",
+              "provenance": "first_user",
+              "readiness": "ready",
+              "reason": "current title is provisional or weak"
+            }
+          },
+          "metadata_lifecycle_version": 1,
+          "mode": "dry_run",
+          "mutated": false
+        },
+        "excluded_message_count": 0,
+        "included_message_count": 4,
+        "message_id": "<provisional-message-4>",
+        "mode": "debug_preview_at_message",
+        "mutated": false
+      }
+    },
+    {
+      "argument": "<provisional-message-3>",
+      "error": null,
+      "face": "preview_at_message",
+      "label": "message id prefix resolves",
+      "report": {
+        "conversation_id": "<conversation-provisional>",
+        "dry_run": {
+          "conversation_id": "<conversation-provisional>",
+          "fields": {
+            "summary": {
+              "current_value": null,
+              "decision": "defer",
+              "provenance": null,
+              "readiness": "not_ready",
+              "reason": "summary needs more conversation substance"
+            },
+            "tags": {
+              "current_value": null,
+              "decision": "defer",
+              "provenance": null,
+              "readiness": "not_ready",
+              "reason": "tags need more conversation substance"
+            },
+            "title": {
+              "current_value": "vamos trabalhar no maestro",
+              "decision": "repair",
+              "lock_state": "unlocked",
+              "provenance": "first_user",
+              "readiness": "ready",
+              "reason": "current title is provisional or weak"
+            }
+          },
+          "metadata_lifecycle_version": 1,
+          "mode": "dry_run",
+          "mutated": false
+        },
+        "excluded_message_count": 1,
+        "included_message_count": 3,
+        "message_id": "<provisional-message-3>",
+        "mode": "debug_preview_at_message",
+        "mutated": false
+      }
+    },
+    {
+      "argument": "no-such-message",
+      "error": "Message 'no-such-message' not found",
+      "face": "preview_at_message",
+      "label": "unknown message id",
+      "report": null
+    },
+    {
+      "argument": "",
+      "error": "messageId is required",
+      "face": "preview_at_message",
+      "label": "empty message id",
+      "report": null
+    }
+  ],
+  "seeds": {
+    "empty": {
+      "conversation_row": {
+        "id": "<conversation-empty>",
+        "metadata": null,
+        "started_at": "2026-09-09T12:00:09.000000Z",
+        "title": null
+      },
+      "message_rows": []
+    },
+    "manual": {
+      "conversation_row": {
+        "id": "<conversation-manual>",
+        "metadata": "{\"title_source\": \"manual\", \"title_status\": \"manual\"}",
+        "started_at": "2026-09-09T12:00:06.000000Z",
+        "title": "Manual conversation title"
+      },
+      "message_rows": [
+        {
+          "content": "Mensagem 0 sobre o checkpoint do plano.",
+          "created_at": "2026-09-09T12:00:07.000000Z",
+          "id": "<manual-message-1>",
+          "role": "user"
+        },
+        {
+          "content": "Mensagem 1 sobre o checkpoint do plano.",
+          "created_at": "2026-09-09T12:00:08.000000Z",
+          "id": "<manual-message-2>",
+          "role": "assistant"
+        }
+      ]
+    },
+    "provisional": {
+      "conversation_row": {
+        "id": "<conversation-provisional>",
+        "metadata": "{\"title_source\": \"first_user\", \"title_status\": \"provisional\"}",
+        "started_at": "2026-09-09T12:00:01.000000Z",
+        "title": "vamos trabalhar no maestro"
+      },
+      "message_rows": [
+        {
+          "content": "Mensagem 0 sobre o checkpoint do plano.",
+          "created_at": "2026-09-09T12:00:02.000000Z",
+          "id": "<provisional-message-1>",
+          "role": "user"
+        },
+        {
+          "content": "Mensagem 1 sobre o checkpoint do plano.",
+          "created_at": "2026-09-09T12:00:03.000000Z",
+          "id": "<provisional-message-2>",
+          "role": "assistant"
+        },
+        {
+          "content": "Mensagem 2 sobre o checkpoint do plano.",
+          "created_at": "2026-09-09T12:00:04.000000Z",
+          "id": "<provisional-message-3>",
+          "role": "user"
+        },
+        {
+          "content": "Mensagem 3 sobre o checkpoint do plano.",
+          "created_at": "2026-09-09T12:00:05.000000Z",
+          "id": "<provisional-message-4>",
+          "role": "assistant"
+        }
+      ]
+    }
+  }
+}

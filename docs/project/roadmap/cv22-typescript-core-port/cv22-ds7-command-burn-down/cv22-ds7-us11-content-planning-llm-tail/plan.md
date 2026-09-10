@@ -212,6 +212,30 @@ handoff. Nothing routes by default until plateau 6.
     `descriptor` and ES-001 residuals closed in the ‡ note, Remainder rows for
     US11 removed, History entry. DS7 index row → Done.
 
+## Scope Amendment — the ES-001 write faces (Navigator-authorized, 2026-09-09)
+
+**What the plan got wrong.** Scope item 18 recorded the four ES-001 faces as
+"the four faces over the existing `metadataLifecycle.ts` engine — only the
+flags are unwired". That is true of `--metadata-lifecycle-dry-run` and
+`--metadata-lifecycle-preview-at-message`. It is **false** of
+`--metadata-lifecycle-apply` and `--metadata-lifecycle-demo`: both need
+`apply_metadata_lifecycle`, roughly 80 lines of unported decision logic with a
+write path — `ts/src/conversation/closeTail.ts` already carries an explicit
+refusal for exactly this — and `demo` calls `apply`. The Plan review examined
+all four as wiring, so `apply` would have ridden in on a review that never
+looked at it.
+
+**Decision (option B).** Ship the two reads in US11. Refuse `apply` and `demo`
+**by name** in `routing.ts`, assigned to **DS7.TS4**, which already owns
+`identity edit` and the extension catalog. The two `--metadata-backfill-*`
+flags remain DS10 retirements, also refused by name. Each of the six flags now
+names its own owner in its refusal reason; none can inherit another's route
+(CR055).
+
+**Effect on the Done condition below:** "the four lifecycle faces answer from
+TS ungated" becomes "the two lifecycle READ faces answer from TS ungated, and
+the two write faces are refused by name naming DS7.TS4".
+
 ## Non-Goals
 
 - **No live provider call.** Every LLM leaf routes to TS only under replay;
@@ -577,7 +601,51 @@ true: the reason names `plan` and never mislabels `save`.
 **What remains undone.** Plateaus 5 and 6. Next is plateau 5: `descriptor
 generate` and the four ES-001 lifecycle CLI faces over the engine US10 ported.
 
-**Checks at handoff.** TS 1797 pass / 0 fail; the week-plan golden regenerates
+### Plateau 5 complete — `descriptor generate` and the ES-001 read faces (2026-09-09)
+
+**5a — `descriptor generate`.** Ported; the corpus records ZERO `llm_calls`
+rows for every case, because Python passes no `on_llm_call` here. A port that
+started logging would be "better" and wrong. Also pinned: the 80-character
+preview is code points with the ellipsis only past the boundary, target order
+is personas THEN journeys, a missing identity exits 1 with Python's
+repr-quoted message, an empty response is skipped but still counted.
+
+**5b — the read faces, after a scope stop.** See the Scope Amendment above.
+`--metadata-lifecycle-dry-run` and `--metadata-lifecycle-preview-at-message`
+are ported over US10's engine; `apply` and `demo` are refused by name for TS4.
+
+**Findings worth carrying.**
+
+1. **A type assertion hid a real port bug.** `asConversationLike` returned
+   `{ id, title } as ConversationLike`, dropping `metadata` — and
+   `titleNeedsImprovement` reads `metadata.title_status` to decide `repair` vs
+   `keep`. Every provisional-title decision silently became `keep`. The cast
+   compiled and suppressed the exact error that would have caught it; removing
+   it let the row satisfy the interface structurally.
+2. **A fixture I invented disagreed with the oracle.** The first test seeded my
+   guess at what `set_provisional_title` writes; the real metadata is
+   `{"title_source": "first_user", "title_status": "provisional"}`. The
+   generator now records the actual conversation and message rows, so the test
+   rebuilds the oracle's world instead of an idea of it.
+3. **The corpus embedded live timestamps.** Fixed by mapping every distinct
+   timestamp to a deterministic synthetic value in SORTED order, so the
+   relative ordering the boundary walk depends on survives.
+4. **`descriptor`'s generator captured exit 2 for all nine cases** on its first
+   run: `--mirror-home` belongs to the parent parser, so passing it after the
+   subcommand is an argparse error. Caught because nine identical exit-2 cases
+   are not a plausible oracle.
+5. **`tsc` caught what the suite did not**, twice: a dropped `metadata` field
+   and a `MessageLike` without `id`. The engine's interface declares only what
+   the policy reads, which is correct — the caller declared its own row type.
+
+**What remains undone.** Plateau 6, the flip.
+
+**Checks at handoff.** TS 1826 pass / 0 fail; four goldens regenerate
+byte-identically; oracle drift clean; ruff and biome clean on CI's scope.
+
+---
+
+**Plateau 4 checks (superseded above).** TS 1797 pass / 0 fail; the week-plan golden regenerates
 byte-identically; oracle drift clean; ruff and biome clean on CI's scope. The
 Python failure remains CR058's wall-clock flake.
 

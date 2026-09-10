@@ -764,3 +764,51 @@ test("the three week leaves carry three different requirements", () => {
     "ts",
   );
 });
+
+// --- CV22.DS7.US11 plateau 5b: the ES-001 lifecycle flags -------------------
+//
+// CR068 found the family unowned. US11 splits it by what each flag needs:
+// two pure reads port here, the two writes need the unported
+// apply_metadata_lifecycle and go to TS4, the two backfills retire in DS10.
+// Each is refused BY NAME so none can inherit another's route (CR055).
+
+test("lifecycle READ flags route to TS under their own gate", () => {
+  const gate = { MIRROR_TS_CONVERSATIONS_LIFECYCLE: "1" };
+  for (const flag of ["--metadata-lifecycle-dry-run", "--metadata-lifecycle-preview-at-message"]) {
+    assert.equal(routeMemoryCommand(["conversations", flag, "x"], {}).engine, "python");
+    assert.equal(routeMemoryCommand(["conversations", flag, "x"], gate).engine, "ts");
+    assert.equal(
+      routeMemoryCommand(["conversations", flag, "x"], {
+        MIRROR_TS_CONVERSATIONS_LIFECYCLE: "0",
+      }).engine,
+      "python",
+    );
+  }
+});
+
+test("lifecycle WRITE flags are refused by name and name DS7.TS4 as their owner", () => {
+  const gate = { MIRROR_TS_CONVERSATIONS_LIFECYCLE: "1" };
+  for (const flag of ["--metadata-lifecycle-apply", "--metadata-lifecycle-demo"]) {
+    const decision = routeMemoryCommand(["conversations", flag, "x"], gate);
+    assert.equal(decision.engine, "python", `${flag} must not inherit the read route`);
+    assert.match(decision.reason, /DS7\.TS4/);
+    assert.match(decision.reason, new RegExp(flag.replace(/-/g, "\\-")));
+  }
+});
+
+test("backfill flags are refused by name and name DS10", () => {
+  const gate = { MIRROR_TS_CONVERSATIONS_LIFECYCLE: "1" };
+  for (const flag of ["--metadata-backfill-preview", "--metadata-backfill-apply"]) {
+    const decision = routeMemoryCommand(["conversations", flag, "x"], gate);
+    assert.equal(decision.engine, "python");
+    assert.match(decision.reason, /DS10/);
+  }
+});
+
+test("the plain conversations listing is unaffected by the lifecycle split", () => {
+  assert.equal(routeMemoryCommand(["conversations"], {}).engine, "ts");
+  assert.equal(
+    routeMemoryCommand(["conversations"], { MIRROR_TS_CONVERSATIONS_LIFECYCLE: "1" }).engine,
+    "ts",
+  );
+});

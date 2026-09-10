@@ -188,7 +188,7 @@ the defect this ledger exists to prevent.
 | `inspect extension\|runtime-catalog\|llm-calls\|embedding-provenance` | DS7.TS4 | US1-deferred branches |
 | `identity edit` | DS7.TS4 | `spawnSync($EDITOR)`; "kept on Python" is not a disposition once Python is deleted |
 | `week save` | DS7.US11 | Deterministic — pending file → `add_task`. Routing reason "LLM-gated" is wrong |
-| `conversations --metadata-lifecycle-dry-run\|-demo\|-preview-at-message\|-apply` | DS7.US11 | Engine already in `conversation/metadataLifecycle.ts`; CLI faces unwired |
+| `conversations --metadata-lifecycle-apply\|-demo` | DS7.TS4 | Both need `apply_metadata_lifecycle`, ~80 lines of unported decision logic with a write path; `demo` calls `apply`. US11 recorded all four faces as wiring, which was true of the two reads only (Navigator decision 2026-09-09) |
 | `conversations --metadata-backfill-preview\|-apply` | DS10 (retire) | One-shot backfill of pre-ES-001 rows |
 | `journey-projection` (all) | DS10 (TS5) | Publisher cannot land while both cores write (`fcntl.flock`) |
 

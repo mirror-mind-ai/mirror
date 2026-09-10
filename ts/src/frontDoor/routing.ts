@@ -10,16 +10,33 @@ export interface RouteDecision {
 
 const TS_READ_COMMANDS = new Set(["detect-persona", "journeys"]);
 
-// The Conversation Metadata Lifecycle (ES-001) preview/apply flags on
-// `conversations` are stateful writes, a separate slice from DS7.US1's plain
-// listing port -- any of them forces the Python fallback.
-const CONVERSATIONS_LIFECYCLE_FLAGS = [
+// The Conversation Metadata Lifecycle (ES-001) flags on `conversations`.
+// CR068 found the whole family unowned: DS7.US1 called it "own slice" and no
+// slice claimed it. DS7.US11 splits it three ways by what each flag actually
+// needs, rather than treating them as one block.
+//
+// READS -- pure, over the engine DS7.US10 already ported. Gated by
+// MIRROR_TS_CONVERSATIONS_LIFECYCLE.
+const TS_LIFECYCLE_READ_FLAGS = [
   "--metadata-lifecycle-dry-run",
-  "--metadata-lifecycle-apply",
-  "--metadata-lifecycle-demo",
   "--metadata-lifecycle-preview-at-message",
-  "--metadata-backfill-preview",
-  "--metadata-backfill-apply",
+];
+
+// WRITES -- both need `apply_metadata_lifecycle`, ~80 lines of unported
+// decision logic (`closeTail.ts` carries the same refusal), and `demo` calls
+// `apply`. Refused BY NAME and assigned to DS7.TS4 by Navigator decision
+// 2026-09-09, rather than silently inheriting a route or being reported as
+// ported.
+const TS4_LIFECYCLE_WRITE_FLAGS = ["--metadata-lifecycle-apply", "--metadata-lifecycle-demo"];
+
+// One-shot backfill of pre-ES-001 rows. Retired unported in DS10 with a
+// documented cutoff; refused by name so it can never inherit the read route.
+const DS10_BACKFILL_FLAGS = ["--metadata-backfill-preview", "--metadata-backfill-apply"];
+
+const CONVERSATIONS_LIFECYCLE_FLAGS = [
+  ...TS_LIFECYCLE_READ_FLAGS,
+  ...TS4_LIFECYCLE_WRITE_FLAGS,
+  ...DS10_BACKFILL_FLAGS,
 ];
 
 export interface RouteEnvironment {
@@ -47,6 +64,7 @@ export interface RouteEnvironment {
   MIRROR_TS_JOURNAL_LLM_REPLAY?: string;
   MIRROR_TS_JOURNAL_EMBEDDING_REPLAY?: string;
   MIRROR_TS_WEEK_LLM_REPLAY?: string;
+  MIRROR_TS_CONVERSATIONS_LIFECYCLE?: string;
   MEMORY_RECEPTION?: string;
 }
 
@@ -265,11 +283,43 @@ export function routeMemoryCommand(
         reason: "DS7.US10 conversations append boundary ported to TS",
       };
     }
-    if (CONVERSATIONS_LIFECYCLE_FLAGS.some((flag) => argv.includes(flag))) {
+    const backfillFlag = DS10_BACKFILL_FLAGS.find((flag) => argv.includes(flag));
+    if (backfillFlag) {
       return {
         command,
         engine: "python",
-        reason: "conversations metadata-lifecycle/backfill writes not ported to TS",
+        reason: `${backfillFlag} retires unported in DS10, not ported here`,
+      };
+    }
+    const writeFlag = TS4_LIFECYCLE_WRITE_FLAGS.find((flag) => argv.includes(flag));
+    if (writeFlag) {
+      return {
+        command,
+        engine: "python",
+        reason: `${writeFlag} needs apply_metadata_lifecycle, owned by DS7.TS4`,
+      };
+    }
+    const readFlag = TS_LIFECYCLE_READ_FLAGS.find((flag) => argv.includes(flag));
+    if (readFlag) {
+      if (env.MIRROR_TS_CONVERSATIONS_LIFECYCLE === "0") {
+        return {
+          command,
+          engine: "python",
+          reason: "conversations lifecycle reads disabled by MIRROR_TS_CONVERSATIONS_LIFECYCLE=0",
+        };
+      }
+      if (env.MIRROR_TS_CONVERSATIONS_LIFECYCLE !== "1") {
+        return {
+          command,
+          engine: "python",
+          reason:
+            "conversations lifecycle reads need MIRROR_TS_CONVERSATIONS_LIFECYCLE=1 until the DS7.US11 flip",
+        };
+      }
+      return {
+        command,
+        engine: "ts",
+        reason: `DS7.US11 ${readFlag} ported to TS`,
       };
     }
     return { command, engine: "ts", reason: "DS7.US1 conversations listing read ported to TS" };
