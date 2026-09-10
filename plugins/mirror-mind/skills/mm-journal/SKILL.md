@@ -9,7 +9,7 @@ user-invocable: true
 When receiving `/mm:journal`, run:
 
 ```bash
-uv run python -m memory journal [--journey SLUG] "ENTRY_TEXT"
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts journal [--journey SLUG] "ENTRY_TEXT"
 ```
 
 The entry text comes from `$ARGUMENTS`. If the user did not provide text, ask what they want to record.

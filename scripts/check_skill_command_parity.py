@@ -64,7 +64,6 @@ PYTHON_RE = re.compile(r"uv run python -m memory\s+(?P<rest>.+)$")
 # list to be empty before Python is deleted.
 PYTHON_ALLOWLIST: dict[str, str] = {
     "build": "CV22.DS7.US8 (Builder/Ariad tree, unported)",
-    "journal": "CV22.DS7.US11 (content & planning LLM tail, unported)",
     "identity edit": "CV22.DS7.TS4 (interactive $EDITOR seam, unported)",
     "runtime update": "CV22.DS10 (updater redesigned under npm)",
     "runtime pull": "CV22.DS10 (updater redesigned under npm)",

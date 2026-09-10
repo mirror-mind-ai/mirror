@@ -640,7 +640,48 @@ are ported over US10's engine; `apply` and `demo` are refused by name for TS4.
 
 **What remains undone.** Plateau 6, the flip.
 
-**Checks at handoff.** TS 1826 pass / 0 fail; four goldens regenerate
+### Plateau 6 complete — the flip (2026-09-09)
+
+**What is now true.** Four independent gates default ON:
+`MIRROR_TS_WEEK`, `MIRROR_TS_JOURNAL`, `MIRROR_TS_DESCRIPTOR`,
+`MIRROR_TS_CONVERSATIONS_LIFECYCLE`; `=0` reverts each with no code change and
+no data migration. `week view` stays outside its family gate on purpose.
+
+- **Ungated on TS:** `week save`, `--metadata-lifecycle-dry-run`,
+  `--metadata-lifecycle-preview-at-message`.
+- **Replay-gated:** `journal`, `week plan`, `descriptor generate` — an
+  unconfigured install still answers them from Python until DS8.
+- **Refused by name:** `--metadata-lifecycle-apply|-demo` (DS7.TS4),
+  `--metadata-backfill-preview|-apply` (DS10).
+- `mm-journal`'s three copies enter the front door; `journal` left
+  `PYTHON_ALLOWLIST`, so CI now fails if it regresses to Python.
+
+**The finding of this plateau.** `LlmRole` and the replay fixture's runtime
+guard were two hand-maintained lists. Plateau 2 added three roles to the type;
+the guard silently kept rejecting them. Every unit test stayed green — the type
+is erased at runtime and no test fed a fixture through the validator — and the
+FIRST end-to-end run through the real front door threw `unsupported role
+'journal_classification'`. Both are now derived from one `LLM_ROLES` array, with
+a test that feeds every declared role through the validator.
+
+That is the plateau's argument for itself: five plateaus of goldens, mutation
+checks and typechecks did not catch it, and one real invocation did.
+
+**Also found here:** my own scratch fixture had the wrong embedding shape
+(`vectors` rather than `response.embedding[]`) — a reminder that a hand-written
+fixture is a guess until the code accepts it.
+
+**Checks at handoff.** TS 1830 pass / 0 fail; typecheck, biome, ruff clean;
+all six goldens regenerate byte-identically; oracle drift clean; skill parity
+clean. Every surface was exercised end to end through the real front door on a
+scratch home, and the lifecycle dry-run was compared byte-for-byte against
+Python on the same conversation (765 bytes, identical).
+
+**What remains.** Navigator validation, then Debt Review and Done.
+
+---
+
+**Plateau 5 checks (superseded above).** TS 1826 pass / 0 fail; four goldens regenerate
 byte-identically; oracle drift clean; ruff and biome clean on CI's scope.
 
 ---

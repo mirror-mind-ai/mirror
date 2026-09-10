@@ -65,6 +65,8 @@ export interface RouteEnvironment {
   MIRROR_TS_JOURNAL_EMBEDDING_REPLAY?: string;
   MIRROR_TS_WEEK_LLM_REPLAY?: string;
   MIRROR_TS_CONVERSATIONS_LIFECYCLE?: string;
+  MIRROR_TS_DESCRIPTOR?: string;
+  MIRROR_TS_DESCRIPTOR_LLM_REPLAY?: string;
   MEMORY_RECEPTION?: string;
 }
 
@@ -308,14 +310,6 @@ export function routeMemoryCommand(
           reason: "conversations lifecycle reads disabled by MIRROR_TS_CONVERSATIONS_LIFECYCLE=0",
         };
       }
-      if (env.MIRROR_TS_CONVERSATIONS_LIFECYCLE !== "1") {
-        return {
-          command,
-          engine: "python",
-          reason:
-            "conversations lifecycle reads need MIRROR_TS_CONVERSATIONS_LIFECYCLE=1 until the DS7.US11 flip",
-        };
-      }
       return {
         command,
         engine: "ts",
@@ -363,7 +357,32 @@ export function routeMemoryCommand(
     if (argv[1] === "list") {
       return { command, engine: "ts", reason: "DS7.US1 descriptor list read ported to TS" };
     }
-    return { command, engine: "python", reason: "descriptor generate (LLM) not ported to TS" };
+    if (argv[1] === "generate") {
+      if (env.MIRROR_TS_DESCRIPTOR === "0") {
+        return {
+          command,
+          engine: "python",
+          reason: "descriptor generate TS route disabled by MIRROR_TS_DESCRIPTOR=0",
+        };
+      }
+      if (!externalRoutesEnabled(env) || !env.MIRROR_TS_DESCRIPTOR_LLM_REPLAY) {
+        return {
+          command,
+          engine: "python",
+          reason: "descriptor generate needs DS7.US11 replay config for TS route",
+        };
+      }
+      return {
+        command,
+        engine: "ts",
+        reason: "DS7.US11 descriptor generate routed to TS under replay-safe config",
+      };
+    }
+    return {
+      command,
+      engine: "python",
+      reason: `descriptor subcommand not ported to TS: ${argv[1] || "(none)"}`,
+    };
   }
 
   if (command === "tasks") {
@@ -412,7 +431,7 @@ export function routeMemoryCommand(
         return {
           command,
           engine: "python",
-          reason: "week save needs MIRROR_TS_WEEK=1 until the DS7.US11 flip",
+          reason: "week save TS route disabled by MIRROR_TS_WEEK=0",
         };
       }
       return { command, engine: "ts", reason: "DS7.US11 week save (deterministic) ported to TS" };
@@ -424,7 +443,7 @@ export function routeMemoryCommand(
         return {
           command,
           engine: "python",
-          reason: "week plan needs MIRROR_TS_WEEK=1 until the DS7.US11 flip",
+          reason: "week plan TS route disabled by MIRROR_TS_WEEK=0",
         };
       }
       if (!externalRoutesEnabled(env) || !env.MIRROR_TS_WEEK_LLM_REPLAY) {
@@ -778,13 +797,6 @@ export function routeMemoryCommand(
         reason: "journal TS route disabled by MIRROR_TS_JOURNAL=0",
       };
     }
-    if (env.MIRROR_TS_JOURNAL !== "1") {
-      return {
-        command,
-        engine: "python",
-        reason: "journal needs MIRROR_TS_JOURNAL=1 until the DS7.US11 flip",
-      };
-    }
     if (!journalReplayConfigured(env)) {
       return {
         command,
@@ -831,11 +843,14 @@ function soulGateEnabled(env: RouteEnvironment): boolean {
 }
 
 // Python's argparse subcommands for `explore`, by name.
-// CV22.DS7.US11 plateau 1. `week save` is deterministic, so it carries an
-// ordinary revert gate rather than a replay gate. Default OFF until the
-// plateau-6 flip; `plan` joins this gate when it lands behind replay.
+// CV22.DS7.US11. `week save` is deterministic and carries an ordinary revert
+// gate; `week plan` needs this gate AND the LLM replay fixture. FLIPPED
+// 2026-09-09: default ON, `=0` is the revert control with no code change and
+// no data migration. `week view` deliberately stays outside this gate -- it
+// was flipped ungated in US2 and reverting `save`/`plan` must not drag a
+// previously unrevertible read back to Python.
 function weekGateEnabled(env: RouteEnvironment): boolean {
-  return env.MIRROR_TS_WEEK === "1";
+  return env.MIRROR_TS_WEEK !== "0";
 }
 
 // CV22.DS7.US11 plateau 3. `journal` crosses the provider seam twice — one

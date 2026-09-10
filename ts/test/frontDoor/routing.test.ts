@@ -96,15 +96,19 @@ test("routes every `tasks` write subcommand (add/done/doing/block/delete/import/
   }
 });
 
-test("routes `week` view/default to TS but keeps plan/save on Python (LLM-gated, reassigned to US5)", () => {
-  assert.deepEqual(routeMemoryCommand(["week"]), {
+test("routes `week` view/save to TS and keeps plan on Python until its replay config exists", () => {
+  // An EXPLICIT empty env: these assertions must not depend on whatever
+  // MIRROR_TS_* the developer running the suite happens to export.
+  assert.deepEqual(routeMemoryCommand(["week"], {}), {
     command: "week",
     engine: "ts",
     reason: "DS7.US2 week view read ported to TS",
   });
-  assert.equal(routeMemoryCommand(["week", "view"]).engine, "ts");
-  assert.equal(routeMemoryCommand(["week", "plan", "text"]).engine, "python");
-  assert.equal(routeMemoryCommand(["week", "save"]).engine, "python");
+  assert.equal(routeMemoryCommand(["week", "view"], {}).engine, "ts");
+  // Flipped 2026-09-09: `save` is deterministic and default ON; `plan` needs
+  // the replay transport, so an unconfigured install keeps Python until DS8.
+  assert.equal(routeMemoryCommand(["week", "save"], {}).engine, "ts");
+  assert.equal(routeMemoryCommand(["week", "plan", "text"], {}).engine, "python");
 });
 
 test("routes `init` to TS", () => {
@@ -132,25 +136,29 @@ test("routes `recall` to TS", () => {
   assert.equal(routeMemoryCommand(["recall", "abc1234", "--limit", "5"]).engine, "ts");
 });
 
-test("routes `conversations` listing to TS but keeps metadata-lifecycle/backfill flags on Python", () => {
-  assert.deepEqual(routeMemoryCommand(["conversations"]), {
+test("routes `conversations` listing and the two lifecycle READ faces to TS", () => {
+  assert.deepEqual(routeMemoryCommand(["conversations"], {}), {
     command: "conversations",
     engine: "ts",
     reason: "DS7.US1 conversations listing read ported to TS",
   });
   assert.equal(
-    routeMemoryCommand(["conversations", "--journey", "demo", "--limit", "5"]).engine,
+    routeMemoryCommand(["conversations", "--journey", "demo", "--limit", "5"], {}).engine,
     "ts",
   );
+  // Flipped 2026-09-09: the two deterministic reads answer from TS.
+  for (const flag of ["--metadata-lifecycle-dry-run", "--metadata-lifecycle-preview-at-message"]) {
+    assert.equal(routeMemoryCommand(["conversations", flag, "x"], {}).engine, "ts", flag);
+  }
+  // The writes and the backfills stay on Python, each refused BY NAME with its
+  // own owner (DS7.TS4 and DS10 respectively).
   for (const flag of [
-    "--metadata-lifecycle-dry-run",
     "--metadata-lifecycle-apply",
     "--metadata-lifecycle-demo",
-    "--metadata-lifecycle-preview-at-message",
     "--metadata-backfill-preview",
     "--metadata-backfill-apply",
   ]) {
-    assert.equal(routeMemoryCommand(["conversations", flag]).engine, "python");
+    assert.equal(routeMemoryCommand(["conversations", flag, "x"], {}).engine, "python", flag);
   }
 });
 
@@ -683,8 +691,9 @@ test("an unknown runtime subcommand is refused, not inherited", () => {
 // US2 and must NOT join the gate: reverting a bad `save` cannot be allowed to
 // drag a previously-unrevertible read back to Python.
 
-test("week save routes to TS only under MIRROR_TS_WEEK=1, and never drags `view` with it", () => {
-  assert.equal(routeMemoryCommand(["week", "save"], {}).engine, "python");
+test("week save answers from TS by default, and never drags `view` with its gate", () => {
+  // Flipped 2026-09-09: default ON, `=0` is the revert control.
+  assert.equal(routeMemoryCommand(["week", "save"], {}).engine, "ts");
   assert.equal(routeMemoryCommand(["week", "save"], { MIRROR_TS_WEEK: "1" }).engine, "ts");
   assert.equal(routeMemoryCommand(["week", "save"], { MIRROR_TS_WEEK: "0" }).engine, "python");
 
@@ -725,9 +734,12 @@ test("journal reaches TS only with both the family gate and the replay config", 
     MIRROR_TS_JOURNAL_LLM_REPLAY: "fixture.json",
     MIRROR_TS_JOURNAL_EMBEDDING_REPLAY: "fixture.json",
   };
+  // The family gate is ON by default since the flip, but the replay config is
+  // absent on a real install -- so journal still answers from Python in
+  // production until DS8. That is the DS7/DS8 boundary, not an oversight.
   assert.equal(routeMemoryCommand(["journal", "x"], {}).engine, "python");
   assert.equal(routeMemoryCommand(["journal", "x"], { MIRROR_TS_JOURNAL: "1" }).engine, "python");
-  assert.equal(routeMemoryCommand(["journal", "x"], replay).engine, "python");
+  assert.equal(routeMemoryCommand(["journal", "x"], replay).engine, "ts");
   assert.equal(
     routeMemoryCommand(["journal", "x"], { MIRROR_TS_JOURNAL: "1", ...replay }).engine,
     "ts",
@@ -745,10 +757,13 @@ test("MIRROR_TS_JOURNAL=0 wins over a configured replay transport", () => {
   assert.match(decision.reason, /disabled by MIRROR_TS_JOURNAL=0/);
 });
 
-test("an unconfigured journal route names the gate, not a false '=0'", () => {
-  // The gate is default-OFF during the story; saying "disabled by =0" would be
-  // untrue when the variable is simply absent (the plateau-1 lesson).
-  assert.match(routeMemoryCommand(["journal", "x"], {}).reason, /needs MIRROR_TS_JOURNAL=1/);
+test("an unconfigured journal route names the replay config, not a false '=0'", () => {
+  // After the flip the family gate is ON, so the honest reason for falling
+  // back is the missing replay transport. A reason must describe the state
+  // that exists (the plateau-1 lesson).
+  const reason = routeMemoryCommand(["journal", "x"], {}).reason;
+  assert.match(reason, /replay config/);
+  assert.doesNotMatch(reason, /=0/);
 });
 
 test("the three week leaves carry three different requirements", () => {
@@ -775,7 +790,8 @@ test("the three week leaves carry three different requirements", () => {
 test("lifecycle READ flags route to TS under their own gate", () => {
   const gate = { MIRROR_TS_CONVERSATIONS_LIFECYCLE: "1" };
   for (const flag of ["--metadata-lifecycle-dry-run", "--metadata-lifecycle-preview-at-message"]) {
-    assert.equal(routeMemoryCommand(["conversations", flag, "x"], {}).engine, "python");
+    // Flipped 2026-09-09: deterministic reads, so default ON with no replay.
+    assert.equal(routeMemoryCommand(["conversations", flag, "x"], {}).engine, "ts");
     assert.equal(routeMemoryCommand(["conversations", flag, "x"], gate).engine, "ts");
     assert.equal(
       routeMemoryCommand(["conversations", flag, "x"], {

@@ -2,28 +2,40 @@ import { createHash } from "node:crypto";
 
 import { loadReplayFixture } from "./replay.ts";
 
-export type LlmRole =
-  | "extraction"
-  | "task_extraction"
-  | "summary"
-  | "curation"
-  | "consult"
-  | "reception"
-  | "consolidation"
-  | "shadow_scan"
-  // CV22.DS7.US10 slice C′ — the close-time metadata surfaces. Role names
+/**
+ * Every role the replay transport understands.
+ *
+ * The type AND the runtime guard are derived from this one array. They used to
+ * be written twice -- a union type plus a hand-maintained `isLlmRole` chain --
+ * and CV22.DS7.US11 added three roles to the type while the guard silently
+ * kept rejecting them. The unit tests passed; the first end-to-end run through
+ * the front door failed with "unsupported role 'journal_classification'".
+ * One list, no drift.
+ */
+export const LLM_ROLES = [
+  "extraction",
+  "task_extraction",
+  "summary",
+  "curation",
+  "consult",
+  "reception",
+  "consolidation",
+  "shadow_scan",
+  // CV22.DS7.US10 slice C' -- the close-time metadata surfaces. Role names
   // match Python's `build_llm_logger` roles so the llm_calls ledger agrees.
-  | "conversation_title"
-  | "conversation_tags"
-  | "conversation_summary"
-  // CV22.DS7.US11 — the content & planning tail. Role names match Python's
-  // `build_llm_logger` roles so the `llm_calls` ledger agrees across engines,
-  // with one deliberate exception: Python's `generate_descriptor` passes no
+  "conversation_title",
+  "conversation_tags",
+  "conversation_summary",
+  // CV22.DS7.US11 -- the content & planning tail. Same naming rule, with one
+  // deliberate exception: Python's `generate_descriptor` passes no
   // `on_llm_call`, so the `descriptor` role writes NO ledger row on either
   // engine. Parity preserves the gap; closing it is a DS8 plan input.
-  | "journal_classification"
-  | "week_plan"
-  | "descriptor";
+  "journal_classification",
+  "week_plan",
+  "descriptor",
+] as const;
+
+export type LlmRole = (typeof LLM_ROLES)[number];
 
 export interface LlmRequest {
   role: LlmRole;
@@ -137,19 +149,7 @@ export function assertReplayLlmFixture(value: unknown): asserts value is ReplayL
 }
 
 function isLlmRole(value: string): value is LlmRole {
-  return (
-    value === "extraction" ||
-    value === "task_extraction" ||
-    value === "summary" ||
-    value === "curation" ||
-    value === "consult" ||
-    value === "reception" ||
-    value === "consolidation" ||
-    value === "shadow_scan" ||
-    value === "conversation_title" ||
-    value === "conversation_tags" ||
-    value === "conversation_summary"
-  );
+  return (LLM_ROLES as readonly string[]).includes(value);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

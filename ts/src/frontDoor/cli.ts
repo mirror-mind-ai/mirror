@@ -66,6 +66,12 @@ import { newId, nowIso } from "#util/pyGenerators.ts";
 import { hasOption, optionValue, stripOptionWithValue } from "./args.ts";
 import { runConsultRoute } from "./consultRoute.ts";
 import {
+  runDescriptorGenerateRoute,
+  runJournalRoute,
+  runLifecycleFaceRead,
+  runWeekPlanRoute,
+} from "./contentTailRoute.ts";
+import {
   isConversationLoggerCommand,
   runConversationLoggerRoute,
 } from "./conversationLoggerRoute.ts";
@@ -256,8 +262,14 @@ function runTs(argv: readonly string[]): number {
     else if (command === "list") return runListRead(db, args);
     else if (command === "inspect") return runInspectRead(db, args);
     else if (command === "recall") return runRecallRead(db, args);
-    else if (command === "conversations") return runConversationsRead(db, args);
-    else if (command === "journey") return runJourneyStatusRead(db, args);
+    else if (command === "conversations") {
+      // CV22.DS7.US11: the two ES-001 read faces share the read seam with the
+      // plain listing; routing.ts has already refused the write faces.
+      const lifecycleFace =
+        args.includes("--metadata-lifecycle-dry-run") ||
+        args.includes("--metadata-lifecycle-preview-at-message");
+      return lifecycleFace ? runLifecycleFaceRead(db, args) : runConversationsRead(db, args);
+    } else if (command === "journey") return runJourneyStatusRead(db, args);
     else if (command === "tasks") return runTasksRead(db, args);
     else if (command === "week") return runWeekRead(db, args);
     else if (command === "consolidate") return runConsolidateRead(db, args);
@@ -441,6 +453,36 @@ function runWeekSaveWrite(argv: readonly string[]): number {
     runWeekSave(db, {});
     return 0;
   });
+}
+
+/** CV22.DS7.US11: the replay-gated content-tail routes. */
+async function runJournalContentRoute(argv: readonly string[]): Promise<number> {
+  const llmPath = process.env.MIRROR_TS_JOURNAL_LLM_REPLAY;
+  const embeddingPath = process.env.MIRROR_TS_JOURNAL_EMBEDDING_REPLAY;
+  if (!llmPath || !embeddingPath) {
+    // routing.ts already gates on both; reachable only via direct misuse.
+    throw new Error("journal TS route requires the DS7.US11 replay configuration");
+  }
+  const [llm, embedding] = await Promise.all([
+    loadReplayLlmProvider(llmPath),
+    loadReplayEmbeddingProvider(embeddingPath),
+  ]);
+  return withLiveWriteDbAsync(argv, (db) => runJournalRoute(db, argv.slice(1), { llm, embedding }));
+}
+
+async function runWeekPlanContentRoute(argv: readonly string[]): Promise<number> {
+  const llmPath = process.env.MIRROR_TS_WEEK_LLM_REPLAY;
+  if (!llmPath) throw new Error("week plan TS route requires MIRROR_TS_WEEK_LLM_REPLAY");
+  const llm = await loadReplayLlmProvider(llmPath);
+  return withLiveWriteDbAsync(argv, (db) => runWeekPlanRoute(db, argv.slice(2), llm));
+}
+
+async function runDescriptorContentRoute(argv: readonly string[]): Promise<number> {
+  const llmPath = process.env.MIRROR_TS_DESCRIPTOR_LLM_REPLAY;
+  if (!llmPath)
+    throw new Error("descriptor generate TS route requires MIRROR_TS_DESCRIPTOR_LLM_REPLAY");
+  const llm = await loadReplayLlmProvider(llmPath);
+  return withLiveWriteDbAsync(argv, (db) => runDescriptorGenerateRoute(db, argv.slice(2), llm));
 }
 
 function runWeekRead(db: Database, _args: readonly string[]): number {
@@ -1393,6 +1435,9 @@ async function dispatchTs(argv: readonly string[]): Promise<number> {
   if (isJourneyUpdateWrite(argv)) return runJourneyUpdateWrite(argv);
   if (isTasksSubcommandWrite(argv)) return runTasksWrite(argv);
   if (isWeekSaveWrite(argv)) return runWeekSaveWrite(argv);
+  if (argv[0] === "week" && argv[1] === "plan") return runWeekPlanContentRoute(argv);
+  if (argv[0] === "journal") return runJournalContentRoute(argv);
+  if (argv[0] === "descriptor" && argv[1] === "generate") return runDescriptorContentRoute(argv);
   if (isConsolidateSubcommandWrite(argv)) return runConsolidateWrite(argv);
   if (isShadowSubcommandWrite(argv)) return runShadowWrite(argv);
   if (isMirrorWrite(argv)) return runMirrorWrite(argv);
