@@ -72,6 +72,10 @@ ORACLE_PATHS: tuple[str, ...] = (
     # journey-service surface not yet ported; tracked at file granularity like
     # every other entry, so drift anywhere in it is at least visible.
     "src/memory/services/journey.py",
+    # CV22.DS7.US11 plateau 5: `descriptor generate`'s target selection and
+    # receipt. `descriptor list` was ported in US1 but the file was never
+    # registered, so a Python change to either half was invisible to drift.
+    "src/memory/cli/descriptor.py",
     # CV22.DS7.US11 plateau 3: `journal`'s receipt and the classification
     # post-processing (AI-24 coercion, the non-JSON fallback). The write path
     # itself is `services/memory.py`, already registered above.

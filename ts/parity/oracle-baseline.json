@@ -5,6 +5,7 @@
     "src/memory/cli/consolidate_cmd.py": "d3c33ec4f1dc5b71131efc3e6c9e36da3cbc8639",
     "src/memory/cli/consult.py": "88b51b3227b22b6a9126bc8e5b6fa7671f724f99",
     "src/memory/cli/conversation_logger.py": "5a9d5b6118c98b197020b3d006190a67a79b34b0",
+    "src/memory/cli/descriptor.py": "a1093002a9d33df77f6fbdf97ff3f400f95219e8",
     "src/memory/cli/extensions.py": "f3557b137eb2d1346fc958be1a9096342787579c",
     "src/memory/cli/journal.py": "6e0761bd38ea8fa93828dbcb804b366afa7f8f4d",
     "src/memory/cli/journey.py": "436f73badb29c9b7b51c701816c5d88a3a51fc57",

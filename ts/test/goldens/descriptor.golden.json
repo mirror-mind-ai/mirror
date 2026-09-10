@@ -1,0 +1,261 @@
+{
+  "cases": [
+    {
+      "argv": [
+        "generate"
+      ],
+      "descriptors": [],
+      "exit": 0,
+      "identities": [],
+      "label": "no identities at all",
+      "llm_calls": [],
+      "responses": [],
+      "stderr": "",
+      "stdout": "No entities found to describe.\n"
+    },
+    {
+      "argv": [
+        "generate",
+        "--layer",
+        "persona",
+        "--key",
+        "absent"
+      ],
+      "descriptors": [],
+      "exit": 1,
+      "identities": [
+        {
+          "content": "I drive the code.",
+          "key": "engineer",
+          "layer": "persona"
+        }
+      ],
+      "label": "missing identity with --layer --key",
+      "llm_calls": [],
+      "responses": [],
+      "stderr": "No identity found for layer='persona' key='absent'\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "generate",
+        "--layer",
+        "persona",
+        "--key",
+        "engineer"
+      ],
+      "descriptors": [
+        {
+          "descriptor": "Routes engineering questions.",
+          "key": "engineer",
+          "layer": "persona"
+        }
+      ],
+      "exit": 0,
+      "identities": [
+        {
+          "content": "I drive the code.",
+          "key": "engineer",
+          "layer": "persona"
+        }
+      ],
+      "label": "one target via --layer --key",
+      "llm_calls": [],
+      "responses": [
+        "Routes engineering questions."
+      ],
+      "stderr": "",
+      "stdout": "  generating persona/engineer... done — Routes engineering questions.\n\n1/1 descriptors generated.\n"
+    },
+    {
+      "argv": [
+        "generate",
+        "--layer",
+        "journey"
+      ],
+      "descriptors": [
+        {
+          "descriptor": "Routes port questions.",
+          "key": "mirror-ts-core",
+          "layer": "journey"
+        }
+      ],
+      "exit": 0,
+      "identities": [
+        {
+          "content": "I drive the code.",
+          "key": "engineer",
+          "layer": "persona"
+        },
+        {
+          "content": "Port the core.",
+          "key": "mirror-ts-core",
+          "layer": "journey"
+        }
+      ],
+      "label": "--layer alone covers the layer",
+      "llm_calls": [],
+      "responses": [
+        "Routes port questions."
+      ],
+      "stderr": "",
+      "stdout": "  generating journey/mirror-ts-core... done — Routes port questions.\n\n1/1 descriptors generated.\n"
+    },
+    {
+      "argv": [
+        "generate"
+      ],
+      "descriptors": [
+        {
+          "descriptor": "Journey descriptor.",
+          "key": "mirror-ts-core",
+          "layer": "journey"
+        },
+        {
+          "descriptor": "Persona descriptor.",
+          "key": "engineer",
+          "layer": "persona"
+        }
+      ],
+      "exit": 0,
+      "identities": [
+        {
+          "content": "I drive the code.",
+          "key": "engineer",
+          "layer": "persona"
+        },
+        {
+          "content": "Port the core.",
+          "key": "mirror-ts-core",
+          "layer": "journey"
+        }
+      ],
+      "label": "no flags: personas THEN journeys",
+      "llm_calls": [],
+      "responses": [
+        "Persona descriptor.",
+        "Journey descriptor."
+      ],
+      "stderr": "",
+      "stdout": "  generating persona/engineer... done — Persona descriptor.\n  generating journey/mirror-ts-core... done — Journey descriptor.\n\n2/2 descriptors generated.\n"
+    },
+    {
+      "argv": [
+        "generate",
+        "--layer",
+        "persona",
+        "--key",
+        "engineer"
+      ],
+      "descriptors": [],
+      "exit": 0,
+      "identities": [
+        {
+          "content": "I drive the code.",
+          "key": "engineer",
+          "layer": "persona"
+        }
+      ],
+      "label": "empty response is skipped but still counted",
+      "llm_calls": [],
+      "responses": [
+        ""
+      ],
+      "stderr": "",
+      "stdout": "  generating persona/engineer... skipped (empty response)\n\n0/1 descriptors generated.\n"
+    },
+    {
+      "argv": [
+        "generate",
+        "--layer",
+        "persona",
+        "--key",
+        "engineer"
+      ],
+      "descriptors": [
+        {
+          "descriptor": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "key": "engineer",
+          "layer": "persona"
+        }
+      ],
+      "exit": 0,
+      "identities": [
+        {
+          "content": "I drive the code.",
+          "key": "engineer",
+          "layer": "persona"
+        }
+      ],
+      "label": "long descriptor preview is truncated with an ellipsis",
+      "llm_calls": [],
+      "responses": [
+        "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      ],
+      "stderr": "",
+      "stdout": "  generating persona/engineer... done — AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA...\n\n1/1 descriptors generated.\n"
+    },
+    {
+      "argv": [
+        "generate",
+        "--layer",
+        "persona",
+        "--key",
+        "engineer"
+      ],
+      "descriptors": [
+        {
+          "descriptor": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+          "key": "engineer",
+          "layer": "persona"
+        }
+      ],
+      "exit": 0,
+      "identities": [
+        {
+          "content": "I drive the code.",
+          "key": "engineer",
+          "layer": "persona"
+        }
+      ],
+      "label": "exactly 80 characters: no ellipsis",
+      "llm_calls": [],
+      "responses": [
+        "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+      ],
+      "stderr": "",
+      "stdout": "  generating persona/engineer... done — BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\n\n1/1 descriptors generated.\n"
+    },
+    {
+      "argv": [
+        "generate",
+        "--layer",
+        "persona",
+        "--key",
+        "engineer"
+      ],
+      "descriptors": [
+        {
+          "descriptor": "🌍CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+          "key": "engineer",
+          "layer": "persona"
+        }
+      ],
+      "exit": 0,
+      "identities": [
+        {
+          "content": "I drive the code.",
+          "key": "engineer",
+          "layer": "persona"
+        }
+      ],
+      "label": "non-BMP descriptor: the 80 is code points",
+      "llm_calls": [],
+      "responses": [
+        "🌍CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
+      ],
+      "stderr": "",
+      "stdout": "  generating persona/engineer... done — 🌍CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC...\n\n1/1 descriptors generated.\n"
+    }
+  ]
+}
