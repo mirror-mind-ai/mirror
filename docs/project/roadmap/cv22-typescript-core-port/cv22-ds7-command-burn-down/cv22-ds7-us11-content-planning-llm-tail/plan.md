@@ -500,7 +500,54 @@ templates are vendored byte-exact, assembly is digest-pinned.
    and Monday-indexed `weekday()` against JavaScript's Sunday-indexed
    `getDay()`. Tested on a Wednesday, a Sunday, and a zero-padded January date.
 
-**Checks at handoff.** TS 1752 pass / 0 fail; the two goldens regenerate
+### Plateau 3 complete — `journal` behind replay (2026-09-09)
+
+**What is now true.** `journal` is ported and routed behind
+`MIRROR_TS_JOURNAL` **plus** the replay transport, both absent by default.
+`ts/src/memory/journal.ts` reuses `createMemoryRow`, `memoryEmbedText`, and
+`addEmbeddingProvenance` rather than duplicating US6's write path.
+
+**The corpus pinned four Python behaviours a reasonable port gets wrong:**
+
+1. **`", ".join(tags)` over a STRING iterates characters.** A model returning
+   `"not-a-list"` makes Python's receipt read `n, o, t, -, a, -, l, i, s, t`.
+   It looks like a defect and is reproduced deliberately.
+2. **The non-JSON fallback cuts the title at 60 CODE POINTS**, proven with a
+   non-BMP entry whose emoji must not split.
+3. **AI-24 coercion** — an invalid layer becomes `ego` before the write.
+4. **Embed-before-insert** — a failing embedding persists nothing, while the
+   classification row AND an **unpriced** embedding row already exist in
+   `llm_calls`.
+
+**A generator defect caught before it could mislead.** The first draft stubbed
+`generate_embedding` at the service level, which bypasses `_log_embedding_call`
+and produced a corpus recording ONE ledger row where Python writes TWO. The
+port would have been graded against a wrong number and DS8 would have found it
+live. Fixed by stubbing the embedding CLIENT instead, so the real function —
+and its ledger callback — still runs.
+
+**Both mutation checks bite.** Removing AI-24 coercion fails three tests. A
+genuine insert-then-embed port fails exactly the database-architect's case and
+nothing else. The first attempt at that mutation was not a defect at all —
+JavaScript evaluates call arguments before the call, so `embed` still threw
+first; recorded because a mutation that does not mutate proves nothing.
+
+**Also.** `tsc` caught a `string | null` narrowing the test run did not: node's
+type stripping executes without typechecking, so a green suite is not a green
+typecheck.
+
+**What remains undone.** Plateaus 4–6. Next is plateau 4, `week plan`: the
+frozen-clock prompt (plateau 2 built it), the `LIKE '%fragment%'` similarity
+port with its unescaped wildcards, and the pending-file write.
+
+**Checks at handoff.** TS 1777 pass / 0 fail; `cli/journal.py` added to the
+drift tripwire (baseline gained exactly one line, no other sha moved); the
+journal golden regenerates byte-identically; ruff and biome clean on CI's
+scope. The Python failure remains CR058's wall-clock flake.
+
+---
+
+**Plateau 2 checks (superseded above).** TS 1752 pass / 0 fail; the two goldens regenerate
 byte-identically; oracle drift clean; ruff and biome clean. The single Python
 failure is **CR058's known wall-clock flake** in the web diagnose test —
 verified by stashing every change and reproducing it on a clean tree.

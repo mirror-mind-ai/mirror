@@ -72,6 +72,10 @@ ORACLE_PATHS: tuple[str, ...] = (
     # journey-service surface not yet ported; tracked at file granularity like
     # every other entry, so drift anywhere in it is at least visible.
     "src/memory/services/journey.py",
+    # CV22.DS7.US11 plateau 3: `journal`'s receipt and the classification
+    # post-processing (AI-24 coercion, the non-JSON fallback). The write path
+    # itself is `services/memory.py`, already registered above.
+    "src/memory/cli/journal.py",
     # CR073: `journey update`'s sentinel/empty guards and usage text, graded
     # byte-exact by ts/test/goldens/journey-update.golden.json. The file was
     # ported in DS7.US1 slice B and flipped, but never registered here -- a

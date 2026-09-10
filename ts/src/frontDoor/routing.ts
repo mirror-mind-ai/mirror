@@ -43,6 +43,9 @@ export interface RouteEnvironment {
   MIRROR_TS_SOUL_EMBEDDING_REPLAY?: string;
   MIRROR_TS_EXPLORE?: string;
   MIRROR_TS_WEEK?: string;
+  MIRROR_TS_JOURNAL?: string;
+  MIRROR_TS_JOURNAL_LLM_REPLAY?: string;
+  MIRROR_TS_JOURNAL_EMBEDDING_REPLAY?: string;
   MEMORY_RECEPTION?: string;
 }
 
@@ -700,6 +703,35 @@ export function routeMemoryCommand(
     return { command, engine: "ts", reason: `DS7.US7 explore ${subcommand} ported to TS` };
   }
 
+  if (command === "journal") {
+    if (env.MIRROR_TS_JOURNAL === "0") {
+      return {
+        command,
+        engine: "python",
+        reason: "journal TS route disabled by MIRROR_TS_JOURNAL=0",
+      };
+    }
+    if (env.MIRROR_TS_JOURNAL !== "1") {
+      return {
+        command,
+        engine: "python",
+        reason: "journal needs MIRROR_TS_JOURNAL=1 until the DS7.US11 flip",
+      };
+    }
+    if (!journalReplayConfigured(env)) {
+      return {
+        command,
+        engine: "python",
+        reason: "journal needs DS7.US11 replay config (LLM + embedding) for TS route",
+      };
+    }
+    return {
+      command,
+      engine: "ts",
+      reason: "DS7.US11 journal routed to TS under replay-safe config",
+    };
+  }
+
   return { command, engine: "python", reason: "command not ported to TS" };
 }
 
@@ -737,6 +769,19 @@ function soulGateEnabled(env: RouteEnvironment): boolean {
 // plateau-6 flip; `plan` joins this gate when it lands behind replay.
 function weekGateEnabled(env: RouteEnvironment): boolean {
   return env.MIRROR_TS_WEEK === "1";
+}
+
+// CV22.DS7.US11 plateau 3. `journal` crosses the provider seam twice — one
+// classification call and one embedding — so it routes to TS only under the
+// replay transport, exactly as `soul harvest save` and the conversation close
+// tail do. An unconfigured install keeps Python until DS8 flips live mode.
+// Default OFF until the plateau-6 flip.
+function journalReplayConfigured(env: RouteEnvironment): boolean {
+  return (
+    externalRoutesEnabled(env) &&
+    Boolean(env.MIRROR_TS_JOURNAL_LLM_REPLAY) &&
+    Boolean(env.MIRROR_TS_JOURNAL_EMBEDDING_REPLAY)
+  );
 }
 
 const TS_EXPLORE_SUBCOMMANDS = new Set(["load", "deactivate", "story"]);

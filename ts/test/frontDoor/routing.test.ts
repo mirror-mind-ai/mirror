@@ -708,3 +708,41 @@ test("an unknown week subcommand is refused by name, never inherited", () => {
   assert.equal(unknown.engine, "python");
   assert.match(unknown.reason, /bogus/);
 });
+
+// --- CV22.DS7.US11 plateau 3: `journal` ------------------------------------
+//
+// journal crosses the seam TWICE (classification + embedding), so it needs the
+// replay transport as well as its family gate. CR068 found it reported as
+// burned down while no TS module existed at all.
+
+test("journal reaches TS only with both the family gate and the replay config", () => {
+  const replay = {
+    MIRROR_TS_EXTERNAL_ROUTES: "1",
+    MIRROR_TS_JOURNAL_LLM_REPLAY: "fixture.json",
+    MIRROR_TS_JOURNAL_EMBEDDING_REPLAY: "fixture.json",
+  };
+  assert.equal(routeMemoryCommand(["journal", "x"], {}).engine, "python");
+  assert.equal(routeMemoryCommand(["journal", "x"], { MIRROR_TS_JOURNAL: "1" }).engine, "python");
+  assert.equal(routeMemoryCommand(["journal", "x"], replay).engine, "python");
+  assert.equal(
+    routeMemoryCommand(["journal", "x"], { MIRROR_TS_JOURNAL: "1", ...replay }).engine,
+    "ts",
+  );
+});
+
+test("MIRROR_TS_JOURNAL=0 wins over a configured replay transport", () => {
+  const decision = routeMemoryCommand(["journal", "x"], {
+    MIRROR_TS_JOURNAL: "0",
+    MIRROR_TS_EXTERNAL_ROUTES: "1",
+    MIRROR_TS_JOURNAL_LLM_REPLAY: "fixture.json",
+    MIRROR_TS_JOURNAL_EMBEDDING_REPLAY: "fixture.json",
+  });
+  assert.equal(decision.engine, "python");
+  assert.match(decision.reason, /disabled by MIRROR_TS_JOURNAL=0/);
+});
+
+test("an unconfigured journal route names the gate, not a false '=0'", () => {
+  // The gate is default-OFF during the story; saying "disabled by =0" would be
+  // untrue when the variable is simply absent (the plateau-1 lesson).
+  assert.match(routeMemoryCommand(["journal", "x"], {}).reason, /needs MIRROR_TS_JOURNAL=1/);
+});
