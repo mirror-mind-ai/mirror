@@ -2,7 +2,7 @@
 
 # CR073 — Refuse a mistyped stdin sentinel in `journey update`
 
-**Status:** in_progress
+**Status:** done
 **RS:** RS010
 **Driver:** @viniciusteles
 **Delivery:** `mirror-ts-core`
@@ -228,9 +228,77 @@ Evidence, not validation. Navigator validation is the route in CR072's Plan.
   looks like an option, not journey path text. Pass '-' as <content> to read
   it from stdin.`, path unchanged.
 
+## Validation
+
+**Accepted 2026-09-09** by @viniciusteles, as part of the CR072 batch route.
+
+The incident replayed on the real home: `echo "# doc" | journey update
+mirror-ts-core -stdin` was refused, exit 1, with the journey path intact —
+read back to confirm. The false positive the Plan review caught was proven
+absent in the same pass: list-shaped content (`- a` / `- b`) was **accepted**,
+exit 0.
+
+Both halves mattered. A guard that only refused would have passed a validation
+that only tested refusals; the accept case is what proves the review's
+correction was implemented and not merely written down.
+
+**Limits.** Two cases were exercised live, of thirteen in the golden. The rest
+rest on the corpus and the drift tripwire, which is the intended division: the
+golden grades the matrix, the Navigator grades the incident.
+
+**Residue removed.** Step 4's accept case wrote a real `journey_path` row for
+the non-existent slug `cr073-scratch` — test residue from a sheet I authored,
+on the production database. Removed after a dated backup
+(`memory_20260910_125457.zip`); `journey_path` returned from 7 rows to 6 and
+`mirror-ts-core` was verified intact. It also *demonstrated* the adjacent
+defect below, on live data, which is why that finding now has evidence rather
+than a code reading.
+
+## Review
+
+**Proportionality.** A six-line guard, a 13-case golden, a tripwire
+registration, and 16 Python tests for a defect that silently destroyed data
+with no undo. The golden looks generous against the guard, but it paid for
+itself immediately: it caught the exit-code divergence below, which no test
+targeting the sentinel would have found.
+
+**Scope discipline.** The batch stayed inside its boundaries. The one planned
+edit that proved unnecessary — the `mm-journey` skill — was dropped rather than
+made to justify the plan, and the reason recorded: the skill taught `-`
+correctly all along; the command's own usage string was the only teacher of
+`-stdin`.
+
+**Debt 1 — exit-code parity is unaudited. Deferred with a trigger.** This CR
+found, by accident, that the TS route exited 2 where Python exits 1 on the
+usage path — a divergence on a *flipped* command, protected by a test that
+asserted the wrong value. Nothing systematically checks exit-code parity across
+the ~26 flipped commands; goldens cover it only where a golden exists, and the
+oldest flips predate the practice. One divergence found by accident implies
+others.
+
+- **Decision:** defer.
+- **Revisit trigger:** when **CV22.DS7.US8 is planned**. US8 is the largest
+  remaining flip (27 leaves, every one a refusal-heavy lifecycle command), so
+  the audit is cheapest as a US8 plan input and most valuable before its
+  surface multiplies the problem.
+
+**Debt 2 — `journey update` still accepts a non-existent slug. Deferred with a
+trigger.** Named as adjacent-and-out-of-scope at capture; the validation route
+then created a live orphan row, so it now has evidence. A mistyped slug writes
+a `journey_path` row for a journey that does not exist, silently, exit 0 — the
+same silent-acceptance family the sentinel belonged to.
+
+- **Decision:** defer.
+- **Revisit trigger:** when **TS4 or US11 next touches journey/identity
+  writes**, whichever comes first. Recommend capturing it as its own CR before
+  then if the Navigator wants it owned rather than triggered.
+
 ## Outcome
 
-_Implemented; awaiting Navigator validation._
+**Done 2026-09-09.** Implemented on both engines, validated on the real home
+by replaying the incident, reviewed. `journey update` refuses a mistyped
+sentinel, refuses empty content, and states the real sentinel in its usage —
+and the file is now in the oracle-drift tripwire it was missing from.
 
 ## Provenance
 

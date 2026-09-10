@@ -2,7 +2,7 @@
 
 # CR072 — Route every skill through the front door
 
-**Status:** in_progress
+**Status:** done
 **RS:** RS009
 **Driver:** @viniciusteles
 **Delivery:** `mirror-ts-core`
@@ -399,9 +399,70 @@ Evidence, not validation. Navigator validation is the route in the Plan.
   three copies; `.claude`/`plugins` byte-identity held.
 - Checks: skill parity clean (25 skills), doc links clean, ruff clean.
 
+## Validation
+
+**Accepted 2026-09-09** by @viniciusteles.
+
+Route: predict the answering engine from the ledger, then run four skills in a
+fresh Pi session sampled by risk rather than convenience — `/mm-mirror` (every
+Mirror turn), `/mm-new` (a broken switch misfiles a session), `/mm-tasks`,
+`/mm-consult` — plus the CR073 steps, then read `front-door.log`.
+
+**The expected observation was that nothing visible changes**, and nothing did.
+That is the acceptance: 110 rewritten invocation lines across four Delivery
+Stories' worth of flipped families, and the product behaved identically. The
+log is where the change is visible — those four skills previously left **no
+line at all**, so absence → presence is the proof the skill entered the front
+door rather than calling Python behind it.
+
+**Limits.** Four of twelve repaired skills were exercised live; the remaining
+eight rest on the both-paths diff (six invocations, byte-identical) and the
+checker. Only the `.pi` copy was run — `.claude` and `plugins/mirror-mind` are
+covered by byte-identity and the entry-point assertion, the boundary CR071
+accepted. The +160 ms on Python-routed skills was not separately timed in this
+session; see Review.
+
+## Review
+
+**Proportionality.** 110 lines across 36 files plus ~60 lines of checker, for a
+defect that made four Delivery Stories' flips invisible to skill-driven
+sessions. Proportionate, and the checker is the part that lasts. CR071's
+rejected alternative — generating the three copies from one source — stays
+rejected: the per-runtime differences are deliberate content.
+
+**What the sequencing bought.** Writing the assertion *before* the rewrite
+found 21 lines the plan's own count had missed and made the rewrite rule and
+the CI rule the same function. Had the rewrite gone first, `mm-soul`'s five
+lines, `mm-explore`'s and `mm-build`'s one each would have survived as
+agreed-upon Python across all three copies — invisible to CR071 and to a
+hand-written scope list.
+
+**Debt — deferred, folded into an existing trigger.** `PYTHON_ALLOWLIST` names
+an owner per entry, but nothing checks the entry is still *true*. When US11
+flips `journal`, the line must be removed by hand or CI keeps permitting Python
+for a command that no longer needs it — the same "truth depends on someone
+remembering" class this CR exists to close, one level up. The fix is the design
+already named in [CR068](cr068-stop-reporting-unported-llm-gated-leaves-as-burned-down.md)'s
+deferred debt: make `routing.ts`'s refusal reasons the single source of
+ownership truth, then derive both the ledger's Remainder table and this
+allowlist from it, so a stale entry is a failing assertion rather than a
+memory. Same revisit trigger, unchanged: **when the last of US11 / TS4 / DS8
+lands.**
+
+**Plan item deliberately not completed — recorded, not dropped.** The plan's
+validation route asked for the measured `mirror load --query` latency through
+the front door. It was not captured, and I am recording `no_action` rather than
+chasing it: the quantity CR072 controls is the process-start overhead, already
+measured at ~160 ms, and the absolute figure for that command is dominated by
+the embedding and reception calls this CR does not touch. The number would
+describe the model, not the change. If the daily turn ever feels slower before
+DS8, the overhead figure is the one to reason with.
+
 ## Outcome
 
-_Implemented; awaiting Navigator validation._
+**Done 2026-09-09.** Implemented, validated on the real home, reviewed. Twelve
+skills now enter the front door; the four that still reach Python do so through
+an allowlist that names the story owning each one.
 
 ## Provenance
 

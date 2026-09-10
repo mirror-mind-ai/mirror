@@ -9,7 +9,7 @@ If a linked document and this index disagree, this index wins.
 ## Current Focus
 
 - Refinement Story: RS009
-- Change Request: CR072 (batched with CR073, RS010)
+- Change Request: none
 
 Selecting a focus is an explicit project decision. Reading this file never selects or
 executes work.
@@ -58,8 +58,8 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 26 | [CR067](rs001-ariad-runtime-trust/cr067-render-the-refused-checkpoint-not-a-hardcoded-implement-stage.md) | RS001 | Render the refused checkpoint, not a hardcoded Implement stage | captured | — | — |
 | 28 | [CR069](rs010-cv22-oracle-and-port-hygiene/cr069-fail-cleanly-when-soul-apply-is-given-an-unknown-id.md) | RS010 | Fail cleanly when `soul apply` is given an unknown id | captured | — | — |
 | 29 | [CR070](rs010-cv22-oracle-and-port-hygiene/cr070-render-or-remove-the-inert-listening-for-argument.md) | RS010 | Render or remove the inert `--listening-for` argument | captured | — | — |
-| 30 | [CR072](rs009-cv22-front-door-routing-correctness/cr072-route-every-skill-through-the-front-door.md) | RS009 | Route every skill through the front door | in_progress | @viniciusteles | `mirror-ts-core` |
-| 31 | [CR073](rs010-cv22-oracle-and-port-hygiene/cr073-refuse-a-mistyped-stdin-sentinel-in-journey-update.md) | RS010 | Refuse a mistyped stdin sentinel in `journey update` | in_progress | @viniciusteles | `mirror-ts-core` |
+| — | [CR072](rs009-cv22-front-door-routing-correctness/cr072-route-every-skill-through-the-front-door.md) | RS009 | Route every skill through the front door | done | @viniciusteles | `mirror-ts-core` |
+| — | [CR073](rs010-cv22-oracle-and-port-hygiene/cr073-refuse-a-mistyped-stdin-sentinel-in-journey-update.md) | RS010 | Refuse a mistyped stdin sentinel in `journey update` | done | @viniciusteles | `mirror-ts-core` |
 | — | [CR068](rs009-cv22-front-door-routing-correctness/cr068-stop-reporting-unported-llm-gated-leaves-as-burned-down.md) | RS009 | Stop reporting unported LLM-gated leaves as burned down | done | @viniciusteles | `mirror-ts-core` |
 | — | [CR071](rs010-cv22-oracle-and-port-hygiene/cr071-collapse-the-triplicated-skill-command-references.md) | RS010 | Collapse the triplicated skill command references | done | @viniciusteles | `mirror-ts-core` |
 | — | [CR011](rs003-revisable-refinement-lifecycle/cr011-resume-stranded-change-request.md) | RS003 | Resume a stranded Change Request | done | @alissonvale | `main` |
