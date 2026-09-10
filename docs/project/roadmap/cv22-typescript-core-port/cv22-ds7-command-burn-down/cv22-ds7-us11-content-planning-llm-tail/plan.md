@@ -2,7 +2,7 @@
 
 # Plan — CV22.DS7.US11 — Content & planning LLM tail
 
-**Status:** drafted 2026-09-09 — awaiting multi-persona Plan review, then Navigator approval
+**Status:** drafted 2026-09-09; **amended the same day after the five-persona Plan review** (recorded below) — awaiting Navigator approval
 **Driver:** the Mirror (engineer persona) · **Navigator:** Vinícius
 
 ## Objective
@@ -24,7 +24,7 @@ Read from the code on 2026-09-09; every claim below has a file behind it.
 | Leaf | Python entry | What it does | Seam | TS today |
 |---|---|---|---|---|
 | `journal <text…> [--journey]` | `cli/journal.py` (54 lines) → `MemoryService.add_journal` | joins argv, refuses empty; `classify_journal_entry` (LLM, `temperature=0.3`, role `journal_classification`) → title/layer/tags with **AI-24 layer coercion to `ego`** when the model returns a layer outside `VALID_MEMORY_LAYERS`; then `add_memory` (embedding); prints a 5–6 line receipt with the layer label and the 8-char id | 1 LLM + 1 embedding | none |
-| `week plan <text>` | `cli/week.py:cmd_plan` → `TaskService.ingest_week_plan` | collects every `journey` identity as `{slug, description[:200]}` context; `extract_week_plan` builds its prompt with **`datetime.now()`** (today + weekday); per item, `find_tasks_by_title(title[:20])` filtered to same `due_date` and status ≠ done → `warning`; writes `tempfile.gettempdir()/mm_week_pending.json`; prints a JSON report | 1 LLM, clock-dependent prompt | none |
+| `week plan <text>` | `cli/week.py:cmd_plan` → `TaskService.ingest_week_plan` | collects every `journey` identity as `{slug, description[:200]}` context; `extract_week_plan` builds its prompt with **`datetime.now()`** (today + weekday); per item, `find_tasks_by_title(title[:20])` — `LIKE '%fragment%'`, a **contains** match, **unescaped** (`%`/`_` in a title are wildcards), journey filter present in the store but **not passed** by `ingest_week_plan` — filtered to same `due_date` and status ≠ done → `warning`; writes `tempfile.gettempdir()/mm_week_pending.json`; prints a JSON report | 1 LLM, clock-dependent prompt | none |
 | `week save` | `cli/week.py:cmd_save` → `TaskService.save_week_items` | reads the pending file, `ExtractedWeekItem(**p)` each, `add_task(source="week_plan")`, unlinks the file, prints `✅ N items saved:` + one line per task with `HH:MM` or `(time_hint)` and `[journey]` | **none** | `add_task` ported (US2) |
 | `descriptor generate [--layer --key]` | `cli/descriptor.py:_cmd_generate` | selects identity rows (one or all); per target `generate_descriptor(content, layer, key)` (LLM, **no `on_llm_call`** → no `llm_calls` row, unlike every other role); `store.upsert_descriptor`; prints progress lines and `N/M descriptors generated.` | 1 LLM per target | `descriptor list` ported (US1) |
 | `conversations --metadata-lifecycle-dry-run <id>` | `cli/conversations.py` | `dry_run_metadata_lifecycle` → JSON | none | engine in `conversation/metadataLifecycle.ts` (US10); CLI face unwired |
@@ -98,6 +98,10 @@ handoff. Nothing routes by default until plateau 6.
    during the transition.
 5. Routing: `week save` → TS under `MIRROR_TS_WEEK` (default **off** until
    plateau 6); refusal reason for `plan` corrected to say what is true.
+   **`MIRROR_TS_WEEK` governs `plan` and `save` only.** `week view` was
+   flipped ungated in US2 and stays ungated — a family gate would make a
+   never-revertible route revertible as a side effect, and `=0` on a bad
+   `plan` must not drag `view` back to Python (QA, review).
 
 ### Plateau 2 — provider roles and prompt assembly (no routing)
 
@@ -111,11 +115,18 @@ handoff. Nothing routes by default until plateau 6.
    `assembleJournalPrompt(content)`, `assembleWeekPlanPrompt(text, journeys,
    now)`, `assembleDescriptorPrompt(content, layer, key)`.
 8. `generate_prompt_assembly_golden.py` extended (US10's generator) with the
-   three roles; digests pinned. `week_plan`'s generator freezes the clock.
+   three roles; digests pinned. `week_plan`'s generator freezes **both the
+   clock and the journey set** — the prompt embeds every `journey` identity's
+   first 200 characters, so the digest depends on DB content; the generator
+   seeds a fixed set (ai-engineer, review; the CR065 hermetic class).
+   `classify_journal_entry`'s `temperature=0.3` is carried on the
+   `LlmRequest` now, so DS8's live mode inherits it instead of rediscovering
+   it; replay ignores it.
 
 ### Plateau 3 — `journal` (replay-gated)
 
-9. `ts/src/planning/journal.ts`: argv join, empty refusal (exit 1, Python's
+9. `ts/src/memory/journal.ts` (a memory write, beside the US2 listing read —
+   not planning; one directory per family): argv join, empty refusal (exit 1, Python's
    message), `classifyJournalEntry` behind `LlmProvider` with `_parse_json_
    response` parity (the non-dict fallback `{title: content[:60], layer:
    "ego", tags: []}` — **by code point**, the `generateTitle` lesson), AI-24
@@ -125,8 +136,14 @@ handoff. Nothing routes by default until plateau 6.
 10. Golden: `generate_journal_golden.py` under replay — a well-formed
     response, an invalid-layer response (coerced), a non-JSON response
     (fallback), tags as a non-list, the `--journey` line present/absent,
-    empty input refused. Grades stdout, the `memories` row, the embedding
-    row, and the two `llm_calls` rows.
+    empty input refused, **and an embedding-provider failure**: Python's
+    `add_memory` generates the embedding *before* it inserts, so a raising
+    embedding leaves **zero** `memories` rows while the
+    `journal_classification` `llm_calls` row already exists — the exact shape
+    a naive insert-then-embed port gets wrong (database-architect, review).
+    Grades stdout, the `memories` row, the embedding row, and the `llm_calls`
+    rows. **Fixture text is synthetic by construction**; the generator pops
+    provider keys and never reads real journal content (security, review).
 11. Real-DB-copy write probe `journal` on the demo copy.
 12. Routing: `journal` → TS when `MIRROR_TS_JOURNAL` and the replay config
     (`MIRROR_TS_EXTERNAL_ROUTES=1` + `MIRROR_TS_JOURNAL_LLM_REPLAY` +
@@ -138,14 +155,18 @@ handoff. Nothing routes by default until plateau 6.
 13. `ts/src/planning/weekPlan.ts`: journey context (every `journey` identity,
     `content[:200]` **by code point**), the frozen-`now` prompt, `extract_week_
     plan` parsing parity (`ExtractedWeekItem` shape; drop/coerce rules exactly
-    as Python), the similarity check — `find_tasks_by_title(title[:20])` is a
-    `LIKE` prefix query; port the SQL, not a reimplementation — the
+    as Python), the similarity check — `find_tasks_by_title(title[:20])` is
+    `LIKE '%fragment%'`, a contains match with **no wildcard escaping** and
+    the journey argument **not passed**; port that SQL exactly, quirks
+    included — the
     same-`due_date`-not-done filter, the pending-file write, the JSON report
     with `pending_file` path.
 14. Golden: `generate_week_plan_golden.py` under replay with the clock frozen —
     no items, items with/without similar existing tasks, a similar task that is
     done (must not warn), a similar task on a different date (must not warn),
-    a 21+-char title (prefix boundary), a non-ASCII title (code-point slicing).
+    a 21+-char title (fragment boundary), a non-ASCII title (code-point
+    slicing), **a title containing `%` and one containing `_`** (unescaped
+    wildcards — must over-match exactly as Python does).
     Grades stdout + the pending file bytes + `llm_calls` row.
 15. Routing: `week plan` → TS under `MIRROR_TS_WEEK` + replay config.
 
@@ -157,7 +178,10 @@ handoff. Nothing routes by default until plateau 6.
     the 80-char preview (**by code point**) and `skipped (empty response)`, the
     `N/M` summary. No `llm_calls` row, matching Python (item 6).
 17. Golden under replay: one target, all targets, an empty response, a missing
-    identity. Grades stdout + the descriptor rows.
+    identity. Grades stdout + the descriptor rows. **Fixture limitation,
+    stated:** replay resolves one response per role, so the all-targets case
+    replays the *same* descriptor for every target; it asserts N upserts and
+    the control flow, not N distinct strings.
 18. `ts/src/frontDoor/conversationsLifecycleRoute.ts`: the four faces over the
     existing `metadataLifecycle.ts` engine — `dry-run`, `demo`,
     `preview-at-message`, `apply` (with `--title/--summary/--tags`) — JSON
@@ -257,18 +281,24 @@ every `exit=0` except the intended refusals, engine column discriminates).
    tests/integration -m "not live"`; the six new/extended goldens byte-identical
    on 3.10 and 3.12; the write probes on the demo copy; the lifecycle smoke with
    no gate in the environment; oracle drift clean; skill parity clean.
-2. **Navigator, on the real home, replay-configured** (the fixtures ship in the
-   repo; the route states the exact env):
-   - `week plan "<a real plan sentence>"` → the JSON report; then `week save`
-     → the receipt; then `/mm-tasks` shows the items. *Expected: identical to
-     yesterday's Python behavior; new tasks appear.*
-   - `journal "<a real one-line entry>"` → the receipt with a layer label and
-     id; `memories --type journal` shows it. *Expected: identical shape; the
-     classification is whatever the fixture replays, which the route names.*
-   - `conversations --metadata-lifecycle-dry-run <a real conversation id>` →
-     JSON. *Expected: byte-identical to Python's on the same id (run both).*
+2. **Navigator route — write leaves on a scratch home, reads on the real
+   home.** Fixture-replayed classifications and extractions must not land in
+   the production store (the `cr073-scratch` class, with content). The route
+   as handed over will name the scratch path, the seed command
+   (`generate_demo_memory_db.py`), and the exact env — no placeholders. Shape:
+   - *(scratch home)* `week plan "<sentence>"` → the JSON report; `week save`
+     → the receipt; `tasks list` shows the items. Then the same two commands
+     through Python on a second copy of the same scratch home: **byte-identical
+     stdout and identical `tasks` rows.**
+   - *(scratch home)* `journal "<entry>"` → the receipt; `memories --type
+     journal` shows it; same through Python on the second copy, identical.
+   - *(real home, read-only)* `conversations --metadata-lifecycle-dry-run <a
+     real conversation id>` → JSON. *Expected: byte-identical to Python's on
+     the same id (run both).*
    - `conversations --metadata-backfill-preview` → refused, reason names DS10.
-   - One revert: `MIRROR_TS_JOURNAL=0 journal "…"` → Python answers.
+   - *(scratch home)* One revert: `MIRROR_TS_JOURNAL=0 journal "…"` → Python
+     answers; `MIRROR_TS_WEEK=0 week view` still answers from **TS** (the gate
+     does not cover `view`).
 3. **E2E decision:** required — the lifecycle smoke through the real front
    door is the E2E, and the Navigator route above is the live acceptance.
    Pass: every expected observation holds and the log discriminates. Fail:
@@ -297,14 +327,58 @@ the real home (validated on one target — the all-targets path is golden-only).
 - Each plateau ends with a handoff paragraph in this file's `## Handoff`
   section, written for the next session.
 
-## Persona Review (plan stage)
+## Persona Review (plan stage — 2026-09-09, five lenses)
 
-_Pending. The story is above a small slice — four leaves across two seams plus
-four CLI faces — so the collaboration strategy requires the review before
-approval. Panel: engineer, quality-assurance, ai-engineer (model-in-the-loop:
-three roles, digests, replay fixtures), security-engineer (journal writes
-identity-classified memory; front-door redaction), database-architect
-(memories + embedding + llm_calls in one write path; tasks rows)._
+Run at the Navigator's request before approval. Findings recorded so no later
+checkpoint can claim they were unknown; every blocker is folded into the plan
+above.
+
+**◇ engineer**
+- *Blocker — similarity query misdescribed.* The plan said "`LIKE` prefix
+  query"; the code is `LIKE '%fragment%'`, unescaped, journey not passed. A
+  Driver following the plan would have written `LIKE 'x%'`. Terrain and
+  plateau 4 corrected; `%`/`_` golden cases added.
+- *Non-blocking — cohesion.* `journal` moved from `ts/src/planning/` to
+  `ts/src/memory/`; it is a memory write.
+- *Verified* — `addTask` carries `source/scheduled_at/time_hint/context`;
+  `parseJsonResponse` exists. No hidden primitive scope in plateaus 1 and 3.
+
+**◇ quality-assurance**
+- *Blocker — the route wrote fixture-classified data to production.* Write
+  leaves now validate on a scratch home seeded from the demo DB, compared
+  against Python on a second copy; the real home is read-only faces and the
+  revert.
+- *Blocker — `MIRROR_TS_WEEK` would have newly gated `week view`.* Decided:
+  the gate governs `plan|save` only; `view` stays ungated.
+- *Non-blocking* — embedding-failure and wildcard golden cases added.
+- *Accepted boundary* — all-targets `descriptor generate` is golden-only.
+
+**◇ ai-engineer**
+- *Non-blocking* — replay resolves one response per role; the all-targets
+  descriptor case replays one string N times. Stated as a limitation.
+- *Non-blocking* — `temperature=0.3` carried on the request now, for DS8.
+- *Non-blocking* — the `week_plan` digest depends on journey rows; generator
+  now freezes the journey set as well as the clock.
+- *Converged* — `descriptor` unledgered is a DS8 input.
+
+**◇ security-engineer**
+- *Debt to capture* — the pending file (fixed name, shared temp, umask,
+  symlink-following). Parity preserves; fix both engines together later.
+- *Added to contract* — fixtures synthetic by construction; no real journal
+  text in `ts/test/goldens/`. Redaction test already in scope.
+- *Converged* — AI-24 coercion as tested logic; `apply` takes human values.
+
+**◇ database-architect**
+- *Golden case added* — embed-before-insert: a raising embedding leaves zero
+  `memories` rows and one `llm_calls` row. The naive port inverts the order.
+- *Accepted* — `week save` is N inserts, not one transaction; mid-loop failure
+  leaves partial tasks and the file. Parity; not golden-injectable.
+- *Verified* — `upsert_descriptor` has its TS table since US1. No schema scope.
+
+**Converged, no dissent:** plateau order; replay-only boundary; no prompt or
+rule changes; deterministic `week save` first with the cross-engine proof.
+
+**Read after amendment:** ready for Navigator approval.
 
 ## Debt / CRs To Capture At Debt Review (candidates)
 
@@ -315,6 +389,11 @@ identity-classified memory; front-door redaction), database-architect
   existing; parity preserves it.
 - `week plan` stores the model's `journey` slug without checking it exists —
   the CR073 debt-2 family.
+- **Capture at Debt Review (security, review):** the pending file — fixed
+  name in the shared temp dir, default umask, personal plan text, `write_text`
+  follows a pre-existing symlink. Parity preserves all of it here and must not
+  tighten TS alone (a TS-only mode change breaks the cross-engine proof); fix
+  both engines together under RS010 beside CR062.
 
 ## Stop Conditions
 
