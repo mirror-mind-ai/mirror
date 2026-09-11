@@ -5,6 +5,7 @@ import {
   type ExtensionContextDiagnostic,
 } from "#extensions/contextRuntime.ts";
 import { activateOperatingMode } from "#mode/operatingMode.ts";
+import type { OnProviderCallOutcome } from "#observability/callOutcome.ts";
 import { logLlmCall } from "#observability/llmCalls.ts";
 import { computeCost } from "#providers/cost.ts";
 import type { EmbeddingProvider } from "#providers/embedding.ts";
@@ -36,6 +37,13 @@ export interface MirrorLoadInput {
   sessionId?: string | null;
   environmentSessionId?: string | null;
   receptionEnabled: boolean;
+  /**
+   * Reception's outcome, for the front-door log. `mirror load --query` is the
+   * per-activation surface: it swallows every failure into an empty context,
+   * so without this a provider outage, a prompt-layer parse failure, and a
+   * genuinely unclassifiable message all look like "no persona routed".
+   */
+  onReceptionOutcome?: OnProviderCallOutcome;
   llmProvider?: LlmProvider;
   embeddingProvider?: EmbeddingProvider;
   databasePath?: string;
@@ -62,6 +70,7 @@ export async function runMirrorLoad(
 ): Promise<RenderedMirrorLoad> {
   const resolved = await resolveMirrorDefaults(db, {
     ...input,
+    onReceptionOutcome: input.onReceptionOutcome,
     // Priced, as Python's `build_llm_logger(role="reception")` prices it
     // (CV22.DS8.US3). The row existed before but carried a null cost, so
     // every Mirror Mode activation with a query would have logged live spend

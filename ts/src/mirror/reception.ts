@@ -1,4 +1,5 @@
 import { parseJsonResponse } from "#extraction/json.ts";
+import { classifyProviderError, type OnProviderCallOutcome } from "#observability/callOutcome.ts";
 import type { LlmProvider, LlmResponse } from "#providers/llm.ts";
 import { pyFormat } from "#util/pythonText.ts";
 
@@ -99,6 +100,7 @@ export async function runReception(
   journeys: readonly ReceptionJourney[],
   provider: LlmProvider,
   onLlmCall?: (response: LlmResponse, prompt: string) => void,
+  onOutcome?: OnProviderCallOutcome,
 ): Promise<ReceptionResult> {
   if (!query.trim()) return { ...EMPTY_RECEPTION_RESULT, personas: [] };
   const prompt = buildReceptionPrompt(query, personas, journeys);
@@ -106,17 +108,31 @@ export async function runReception(
     const response = await provider.complete({ role: "reception", prompt, temperature: 0.1 });
     onLlmCall?.(response, prompt);
     const parsed = parseJsonResponse(response.content);
-    if (!isRecord(parsed)) return { ...EMPTY_RECEPTION_RESULT, personas: [] };
+    if (!isRecord(parsed)) {
+      // The classifier answered with something the parser could not use. The
+      // result is the same empty context as a provider outage, and the cause
+      // is not: this one is prompt-layer, and it was paid for.
+      onOutcome?.({ outcome: "parse_failed" });
+      return { ...EMPTY_RECEPTION_RESULT, personas: [] };
+    }
     const personasOut = Array.isArray(parsed.personas)
       ? parsed.personas.filter((item): item is string => typeof item === "string")
       : [];
-    return {
+    const result = {
       personas: personasOut,
       journey: typeof parsed.journey === "string" ? parsed.journey : null,
       touchesIdentity: pythonTruthy(parsed.touches_identity),
       touchesShadow: pythonTruthy(parsed.touches_shadow),
     };
-  } catch {
+    const carriedSignal =
+      result.personas.length > 0 ||
+      result.journey !== null ||
+      result.touchesIdentity ||
+      result.touchesShadow;
+    onOutcome?.({ outcome: carriedSignal ? "answered" : "empty" });
+    return result;
+  } catch (error) {
+    onOutcome?.({ outcome: "transport_failed", kind: classifyProviderError(error) });
     return { ...EMPTY_RECEPTION_RESULT, personas: [] };
   }
 }

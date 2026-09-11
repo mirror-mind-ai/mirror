@@ -73,6 +73,26 @@ function consolidationStatus(dbPath: string, id: string): string | undefined {
   }
 }
 
+/** Two near-identical embedded memories: exactly one cluster for `scan`. */
+function seedSimilarMemories(dbPath: string, content = "A memory."): void {
+  const db = openDatabaseCopyForWrite(dbPath);
+  try {
+    for (const [id, vector] of [
+      ["m1", [1, 0, 0, 0]],
+      ["m2", [0.99, 0.01, 0, 0]],
+    ] as const) {
+      insertMemory(db, {
+        id,
+        content,
+        createdAt: "2026-01-15T00:00:00.000000Z",
+        embedding: embeddingToBytes([...vector]),
+      });
+    }
+  } finally {
+    db.close();
+  }
+}
+
 // --- consolidate list / reject -------------------------------------------------
 
 test("front door `consolidate list` prints 'No consolidations found.' on an empty database", () => {
@@ -482,6 +502,69 @@ test("front door redaction: the front-door log never contains proposal content, 
     assert.doesNotMatch(logContent, new RegExp(secretProposal));
     assert.doesNotMatch(logContent, new RegExp(secretRationale));
     assert.match(logContent, /\bconsolidate\t/);
+  } finally {
+    ws.cleanup();
+  }
+});
+
+// --- CV22.DS8.US3: the outcome seam reaches the front-door log ----------------
+
+test("front door `consolidate scan` reports its fan-out and per-call outcomes", () => {
+  const ws = cultivationDbCopy();
+  try {
+    seedSimilarMemories(ws.dbPath);
+    const fixture = join(ws.tmpDir, "consolidation-replay.json");
+    writeFileSync(
+      fixture,
+      JSON.stringify({ kind: "llm", responses: { consolidation: "I am prose, not JSON." } }),
+    );
+
+    const result = spawnFrontDoor(["consolidate", "scan", "--db-path", ws.dbPath], {
+      MIRROR_TS_EXTERNAL_ROUTES: "1",
+      MIRROR_TS_CULTIVATION_LLM_REPLAY: fixture,
+    });
+
+    assert.equal(result.status, 0);
+    const logContent = readFileSync(join(ws.tmpDir, "front-door.log"), "utf8");
+    // The distinction the swallow destroys: this run produced no proposals
+    // because the MODEL's answer was unusable, not because there was nothing
+    // to propose. A count-based check cannot tell those apart.
+    assert.match(logContent, /consolidation outcome=parse_failed/);
+    assert.match(logContent, /consolidation calls=1 parse_failed=1/);
+  } finally {
+    ws.cleanup();
+  }
+});
+
+test("front door `consolidate scan` logs the outcome class without the cluster's content", () => {
+  const ws = cultivationDbCopy();
+  try {
+    seedSimilarMemories(ws.dbPath, "SECRET-MEMORY-CONTENT");
+    const fixture = join(ws.tmpDir, "consolidation-replay.json");
+    writeFileSync(
+      fixture,
+      JSON.stringify({
+        kind: "llm",
+        responses: {
+          consolidation: JSON.stringify({
+            action: "merge",
+            proposed_content: "SECRET-PROPOSED-CONTENT",
+          }),
+        },
+      }),
+    );
+
+    spawnFrontDoor(["consolidate", "scan", "--db-path", ws.dbPath], {
+      MIRROR_TS_EXTERNAL_ROUTES: "1",
+      MIRROR_TS_CULTIVATION_LLM_REPLAY: fixture,
+    });
+
+    const logContent = readFileSync(join(ws.tmpDir, "front-door.log"), "utf8");
+    assert.match(logContent, /consolidation calls=1 answered=1/);
+    assert.doesNotMatch(logContent, /SECRET-MEMORY-CONTENT/);
+    assert.doesNotMatch(logContent, /SECRET-PROPOSED-CONTENT/);
+    // A successful call gets no per-call line; the summary carries it.
+    assert.doesNotMatch(logContent, /outcome=answered/);
   } finally {
     ws.cleanup();
   }

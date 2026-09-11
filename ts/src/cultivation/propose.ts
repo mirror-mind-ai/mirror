@@ -17,6 +17,7 @@
 
 import { fenceUntrusted } from "#extraction/fencing.ts";
 import { parseJsonResponse } from "#extraction/json.ts";
+import { classifyProviderError, type OnProviderCallOutcome } from "#observability/callOutcome.ts";
 import type { ChatLedgerHook } from "#observability/ledgerHooks.ts";
 import { resolveExtractionModel } from "#providers/config.ts";
 import type { LlmProvider } from "#providers/llm.ts";
@@ -84,6 +85,12 @@ export interface ProposeConsolidationOptions {
    * moment this reaches a live provider (CV22.DS8.US3).
    */
   onLlmCall?: ChatLedgerHook;
+  /**
+   * What happened on this call, category only. Every `null` below is Python's
+   * swallow, and without this they are indistinguishable from each other and
+   * from an honest "no proposal" (CV22.DS8.US3).
+   */
+  onOutcome?: OnProviderCallOutcome;
 }
 
 /**
@@ -115,19 +122,35 @@ export async function proposeConsolidation(
     // the parser rejects still leaves a row: the call was made and paid for.
     options.onLlmCall?.(response, prompt);
     content = response.content;
-  } catch {
+  } catch (error) {
+    options.onOutcome?.({ outcome: "transport_failed", kind: classifyProviderError(error) });
     return null;
   }
 
   const data = parseJsonResponse(content);
-  if (!isRecord(data)) return null;
+  // A response the parser cannot use is a PROMPT-layer signal, not a transport
+  // one: the call succeeded and was paid for.
+  if (!isRecord(data)) {
+    options.onOutcome?.({ outcome: "parse_failed" });
+    return null;
+  }
 
+  // The model answered and was understood; we rejected what it proposed. That
+  // is "nothing to do", not a failure.
   const action = typeof data.action === "string" ? data.action.toLowerCase() : "";
-  if (!CONSOLIDATION_ACTIONS.has(action)) return null;
+  if (!CONSOLIDATION_ACTIONS.has(action)) {
+    options.onOutcome?.({ outcome: "empty" });
+    return null;
+  }
 
   const proposedContent =
     typeof data.proposed_content === "string" ? data.proposed_content.trim() : "";
-  if (!proposedContent) return null;
+  if (!proposedContent) {
+    options.onOutcome?.({ outcome: "empty" });
+    return null;
+  }
+
+  options.onOutcome?.({ outcome: "answered" });
 
   const targetLayer =
     typeof data.target_layer === "string" && data.target_layer ? data.target_layer : null;
@@ -155,6 +178,8 @@ export interface ProposeShadowObservationsOptions {
   nowIso: () => string;
   /** Python's `build_llm_logger(store, role="shadow_scan")`; see above. */
   onLlmCall?: ChatLedgerHook;
+  /** What happened on the one call, category only; see `ProposeConsolidationOptions`. */
+  onOutcome?: OnProviderCallOutcome;
 }
 
 /**
@@ -196,12 +221,16 @@ export async function proposeShadowObservations(
     });
     options.onLlmCall?.(response, prompt);
     content = response.content;
-  } catch {
+  } catch (error) {
+    options.onOutcome?.({ outcome: "transport_failed", kind: classifyProviderError(error) });
     return [];
   }
 
   const data = parseJsonResponse(content);
-  if (!Array.isArray(data)) return [];
+  if (!Array.isArray(data)) {
+    options.onOutcome?.({ outcome: "parse_failed" });
+    return [];
+  }
 
   const results: ConsolidationRow[] = [];
   for (const item of data) {
@@ -231,6 +260,7 @@ export async function proposeShadowObservations(
       reviewed_at: null,
     });
   }
+  options.onOutcome?.({ outcome: results.length > 0 ? "answered" : "empty" });
   return results;
 }
 

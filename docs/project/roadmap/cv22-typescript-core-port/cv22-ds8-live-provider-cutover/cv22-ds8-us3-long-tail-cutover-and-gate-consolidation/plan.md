@@ -222,11 +222,27 @@ every verdict while proving nothing about the model. Each of those routes
 exposes a structured per-call outcome and surfaces it into the front-door
 log the way `searchRoute` surfaces `embedding_degraded kind=`:
 
-- `consolidate scan` / `shadow scan`: `outcome=proposed|no_action|parse_failed|transport_failed kind=<taxonomy>`
-  per call, plus `calls=N` for the invocation;
-- reception: `reception=ok|empty|parse_failed|transport_failed`.
+- `consolidate scan` / `shadow scan`: an outcome per call, plus `calls=N` for
+  the invocation;
+- reception: the same, for its one call;
+- `descriptor generate`: `calls=N` for the fan-out (§6).
 
-Category only, never content. The smoke reads outcomes, not counts (§7).
+**One taxonomy, not one per surface** (amended during plateau 5). The plan
+sketched `proposed|no_action|…` for cultivation and `ok|empty|…` for
+reception; two vocabularies is two maps to keep in step, which is the
+`LLM_ROLES` shape this story keeps meeting. The implemented union is
+`answered | empty | parse_failed | transport_failed`, and the log line already
+names the surface, so the outcome only has to name the SHAPE of what happened:
+
+```text
+consolidation outcome=parse_failed
+consolidation calls=3 answered=2 parse_failed=1
+```
+
+One summary line per invocation, always — it carries `calls=N` and the full
+distribution. Plus one line per non-`answered` call, because only those carry
+a `kind=`; a line per successful call would triple the log for no diagnostic
+gain. Category only, never content. The smoke reads outcomes, not counts (§7).
 Cost: none — it is a seam, not a call.
 
 ### 6. Route flips and gate retirement — `routing.ts`
@@ -278,11 +294,11 @@ per call:
   the copy when asked);
 - `week-plan` → pending file written, items parsed as a list, one row;
 - `descriptor` → one entity upserted, non-empty, one priced row;
-- `consolidate-scan` → `calls=N`, N rows, **≥ 1 `proposed`, zero
+- `consolidate-scan` → `calls=N`, N rows, **≥ 1 `answered`, zero
   `parse_failed`** — the smoke seeds a cluster that should merge when the
   copy's real data offers none, so a zero-proposal run cannot pass
   (US2's "zero live calls" lesson);
-- `shadow-scan` → one row, outcome `proposed|no_action`, never
+- `shadow-scan` → one row, outcome `answered` or `empty`, never
   `parse_failed`.
 
 Key absent from all output — the smoke captures its own stdout and stderr
@@ -347,7 +363,9 @@ And the front-door log carries reception=ok|empty|parse_failed|transport_failed
 
 Given `consolidate scan` or `shadow scan` live
 When the calls complete
-Then the front-door log carries calls=N and one outcome per call
+Then the front-door log carries calls=N with the outcome distribution
+And a transport failure is distinguishable from a parse failure and from
+    an honest "nothing to propose", none of which the swallow can tell apart
 And a call that failed at the transport leaves no proposal and hides no paid row
 
 Given a fixture for only one half of a two-fixture family
@@ -409,9 +427,10 @@ And a generation id with whitespace is refused before any request is built
   row per call; harvest one row; reception priced; consult `prompt` bytes
   under `full` and the cost fallback; descriptor one per entity; merge row
   persists on insert failure).
-- Outcome seam tests: each of `proposed|no_action|parse_failed|transport_failed`
-  reaches the front-door log with `calls=N`; reception's four outcomes;
-  content never present.
+- Outcome seam tests: each of `answered|empty|parse_failed|transport_failed`
+  reaches the front-door log with `calls=N`; reception's four outcomes; the
+  two zero-proposal runs (healthy vs broken) are legible apart; content never
+  present.
 - Failure-mode tests per the §5 table, with the fixed-phrase stderr rule for
   `consult credits`, `consult ask`, `journal`, `week plan`, `harvest save`.
 - Regression: every golden and both lifecycle smokes byte-identical under

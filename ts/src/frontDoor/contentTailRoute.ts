@@ -26,6 +26,7 @@ import {
   interpretJournalClassification,
   renderJournalReceipt,
 } from "#memory/journal.ts";
+import { classifyProviderError, type OnProviderCallOutcome } from "#observability/callOutcome.ts";
 import { chatLedgerHook, embeddingLedgerHook } from "#observability/ledgerHooks.ts";
 import {
   buildDescriptorPrompt,
@@ -157,6 +158,10 @@ export async function runDescriptorGenerateRoute(
   db: WritableDatabase,
   args: readonly string[],
   llm: LlmProvider,
+  // Without `--layer/--key` this makes ONE CALL PER persona AND per journey.
+  // Nothing bounds it but the argument, so the fan-out is reported rather than
+  // inferred from the ledger afterwards (CV22.DS8.US3 plan review, security).
+  onOutcome?: OnProviderCallOutcome,
 ): Promise<number> {
   const flag = (name: string): string | null => {
     const index = args.indexOf(name);
@@ -172,6 +177,8 @@ export async function runDescriptorGenerateRoute(
       // call, and "" on any provider exception. Both reach the same
       // "skipped (empty response)" line.
       if (!pyStrip(target.content)) {
+        // Python returns "" BEFORE the model call, so this entity costs
+        // nothing and is not a call at all.
         descriptors.set(`${target.layer}/${target.key}`, "");
         continue;
       }
@@ -192,8 +199,11 @@ export async function runDescriptorGenerateRoute(
         // single-command spend in this story. Recorded in decisions.md; the
         // descriptor golden now reads "Python zero rows, TS one per entity".
         chatLedgerHook(db, "descriptor")(response, prompt);
-        descriptors.set(`${target.layer}/${target.key}`, pyStrip(response.content));
-      } catch {
+        const descriptor = pyStrip(response.content);
+        onOutcome?.({ outcome: descriptor ? "answered" : "empty" });
+        descriptors.set(`${target.layer}/${target.key}`, descriptor);
+      } catch (error) {
+        onOutcome?.({ outcome: "transport_failed", kind: classifyProviderError(error) });
         descriptors.set(`${target.layer}/${target.key}`, "");
       }
     }

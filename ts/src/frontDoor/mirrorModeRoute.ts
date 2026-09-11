@@ -14,6 +14,7 @@ import {
   renderModeActivation,
   renderModeStatus,
 } from "#mode/operatingMode.ts";
+import type { OnProviderCallOutcome } from "#observability/callOutcome.ts";
 import { loadReplayEmbeddingProvider } from "#providers/embedding.ts";
 import { loadReplayLlmProvider } from "#providers/llm.ts";
 import { newId, nowIso } from "#util/pyGenerators.ts";
@@ -57,6 +58,7 @@ export async function runMirrorWriteRoute(
   dbPath: string,
   argv: readonly string[],
   env: MirrorRouteEnvironment = process.env,
+  options: { onReceptionOutcome?: OnProviderCallOutcome } = {},
 ): Promise<number> {
   const sub = argv[1];
   const args = argv.slice(2);
@@ -104,6 +106,7 @@ export async function runMirrorWriteRoute(
     sessionId,
     environmentSessionId: env.MIRROR_SESSION_ID ?? null,
     receptionEnabled,
+    onReceptionOutcome: options.onReceptionOutcome,
     llmProvider:
       query && receptionEnabled && llmReplay ? await loadReplayLlmProvider(llmReplay) : undefined,
     embeddingProvider:

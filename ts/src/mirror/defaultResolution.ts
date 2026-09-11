@@ -1,5 +1,6 @@
 import type { Database } from "#db/database.ts";
 import { descriptorsByLayer } from "#descriptor/descriptorRead.ts";
+import type { OnProviderCallOutcome } from "#observability/callOutcome.ts";
 import { detectPersona, type PersonaRoutingRow } from "#persona/detectPersona.ts";
 import { type EmbeddingProvider, generateEmbeddingSafely } from "#providers/embedding.ts";
 import type { LlmProvider, LlmResponse } from "#providers/llm.ts";
@@ -25,6 +26,8 @@ export interface ResolveMirrorDefaultsInput {
   llmProvider?: LlmProvider;
   embeddingProvider?: EmbeddingProvider;
   onReceptionLlmCall?: (response: LlmResponse, prompt: string) => void;
+  /** Reception's outcome, category only; see `observability/callOutcome.ts`. */
+  onReceptionOutcome?: OnProviderCallOutcome;
 }
 
 interface IdentityRoutingRow {
@@ -68,6 +71,7 @@ export async function resolveMirrorDefaults(
       })),
       input.llmProvider,
       input.onReceptionLlmCall,
+      input.onReceptionOutcome,
     );
     if (reception.personas.length > 0 && persona === null) persona = reception.personas[0] ?? null;
     if (reception.journey && journey === null) journey = reception.journey;

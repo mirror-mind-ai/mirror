@@ -55,6 +55,11 @@ import { setIdentity } from "#identity/setIdentity.ts";
 import { IdentityRootExistsError, initUserHome, TemplatesNotFoundError } from "#init/init.ts";
 import { JOURNEY_PATH_LAYER } from "#journey/journeyStatus.ts";
 import { JourneyNotFoundError } from "#journey/journeyWrite.ts";
+import {
+  CallOutcomeTally,
+  formatCallOutcome,
+  type ProviderCallReport,
+} from "#observability/callOutcome.ts";
 import { chatLedgerHook } from "#observability/ledgerHooks.ts";
 import { runWeekSave } from "#planning/weekSave.ts";
 import { loadReplayEmbeddingProvider } from "#providers/embedding.ts";
@@ -483,7 +488,12 @@ async function runDescriptorContentRoute(argv: readonly string[]): Promise<numbe
   if (!llmPath)
     throw new Error("descriptor generate TS route requires MIRROR_TS_DESCRIPTOR_LLM_REPLAY");
   const llm = await loadReplayLlmProvider(llmPath);
-  return withLiveWriteDbAsync(argv, (db) => runDescriptorGenerateRoute(db, argv.slice(2), llm));
+  const reporter = outcomeReporter(argv, "descriptor");
+  return withLiveWriteDbAsync(argv, async (db) => {
+    const exitCode = await runDescriptorGenerateRoute(db, argv.slice(2), llm, reporter.onOutcome);
+    reporter.logSummary();
+    return exitCode;
+  });
 }
 
 function runWeekRead(db: Database, _args: readonly string[]): number {
@@ -1204,6 +1214,7 @@ async function runConsolidateScanWrite(argv: readonly string[]): Promise<number>
     throw new Error("MIRROR_TS_CULTIVATION_LLM_REPLAY is required for TS consolidate scan route");
   }
   const provider = await loadReplayLlmProvider(replayPath);
+  const reporter = outcomeReporter(argv, "consolidation");
   return withLiveWriteDbAsync(argv, async (db) => {
     const result = await consolidateScan(db, {
       journey,
@@ -1214,7 +1225,9 @@ async function runConsolidateScanWrite(argv: readonly string[]): Promise<number>
       id: newId,
       nowIso,
       onLlmCall: chatLedgerHook(db, "consolidation"),
+      onOutcome: reporter.onOutcome,
     });
+    reporter.logSummary();
     process.stdout.write(renderConsolidateScan(result, threshold));
     return 0;
   });
@@ -1230,6 +1243,7 @@ async function runShadowScanWrite(argv: readonly string[]): Promise<number> {
     throw new Error("MIRROR_TS_CULTIVATION_LLM_REPLAY is required for TS shadow scan route");
   }
   const provider = await loadReplayLlmProvider(replayPath);
+  const reporter = outcomeReporter(argv, "shadow_scan");
   return withLiveWriteDbAsync(argv, async (db) => {
     const result = await shadowScan(db, {
       limit,
@@ -1237,7 +1251,9 @@ async function runShadowScanWrite(argv: readonly string[]): Promise<number> {
       id: newId,
       nowIso,
       onLlmCall: chatLedgerHook(db, "shadow_scan"),
+      onOutcome: reporter.onOutcome,
     });
+    reporter.logSummary();
     process.stdout.write(renderShadowScan(result));
     return 0;
   });
@@ -1296,7 +1312,16 @@ function runMirrorWrite(argv: readonly string[]): Promise<number> | number {
     console.error("warning: mirror deactivate invoked without --session-id; no state change.");
     return 0;
   }
-  return withMirrorWriteDb(argv, (db, dbPath) => runMirrorWriteRoute(db, dbPath, argv));
+  const reporter = outcomeReporter(argv, "reception");
+  return withMirrorWriteDb(argv, async (db, dbPath) => {
+    const exitCode = await runMirrorWriteRoute(db, dbPath, argv, process.env, {
+      onReceptionOutcome: reporter.onOutcome,
+    });
+    // Only a `--query` run reaches reception; a deterministic `mirror load`
+    // makes no call, and a `calls=0` line for it would be noise.
+    if (reporter.calls > 0) reporter.logSummary();
+    return exitCode;
+  });
 }
 
 function runModeWrite(argv: readonly string[]): Promise<number> {
@@ -1339,6 +1364,53 @@ async function runConversationLoggerWrite(argv: readonly string[]): Promise<Disp
   // Defense in depth behind the routing gate: the route refused (an
   // unconfigured LLM close tail), so Python answers and the log says so.
   return { exitCode: fallbackPython(argv), engine: "python" };
+}
+
+/**
+ * Surface a provider-backed call's outcome into the front-door log
+ * (CV22.DS8.US3).
+ *
+ * One SUMMARY line per invocation, always -- it carries `calls=N` and the full
+ * outcome distribution, which is what makes a fan-out visible after the fact
+ * and what the live smoke reads instead of counting ledger rows. Plus one line
+ * per NON-answered call, because only those carry a `kind=` worth having; a
+ * line per successful call would triple the log for no diagnostic gain.
+ *
+ * Category only: no cluster content, no query, no model output.
+ */
+function outcomeReporter(
+  argv: readonly string[],
+  surface: string,
+): {
+  onOutcome: (report: ProviderCallReport) => void;
+  logSummary: () => void;
+  readonly calls: number;
+} {
+  const logPath = resolveLogPath(argv);
+  const tally = new CallOutcomeTally();
+  return {
+    get calls() {
+      return tally.calls;
+    },
+    onOutcome: (report) => {
+      tally.record(report);
+      if (report.outcome === "answered") return;
+      logFrontDoor(logPath, {
+        command: argv[0] ?? null,
+        route: "ts",
+        exitCode: 0,
+        detail: formatCallOutcome(surface, report),
+      });
+    },
+    logSummary: () => {
+      logFrontDoor(logPath, {
+        command: argv[0] ?? null,
+        route: "ts",
+        exitCode: 0,
+        detail: `${surface} ${tally.summary()}`,
+      });
+    },
+  };
 }
 
 /** Best-effort log path from the same resolver; null when unconfigured. */
