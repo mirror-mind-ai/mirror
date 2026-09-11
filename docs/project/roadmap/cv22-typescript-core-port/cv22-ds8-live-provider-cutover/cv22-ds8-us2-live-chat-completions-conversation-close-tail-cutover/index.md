@@ -2,7 +2,7 @@
 
 # CV22.DS8.US2 — Live chat completions + conversation close-tail cutover
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 **Type:** User Story
 
 ---
