@@ -6,6 +6,7 @@ import {
 } from "#extensions/contextRuntime.ts";
 import { activateOperatingMode } from "#mode/operatingMode.ts";
 import { logLlmCall } from "#observability/llmCalls.ts";
+import { computeCost } from "#providers/cost.ts";
 import type { EmbeddingProvider } from "#providers/embedding.ts";
 import type { LlmProvider } from "#providers/llm.ts";
 import { loadMirrorContext } from "./context.ts";
@@ -61,6 +62,10 @@ export async function runMirrorLoad(
 ): Promise<RenderedMirrorLoad> {
   const resolved = await resolveMirrorDefaults(db, {
     ...input,
+    // Priced, as Python's `build_llm_logger(role="reception")` prices it
+    // (CV22.DS8.US3). The row existed before but carried a null cost, so
+    // every Mirror Mode activation with a query would have logged live spend
+    // as free.
     onReceptionLlmCall: (response, prompt) =>
       logLlmCall(
         db,
@@ -72,6 +77,11 @@ export async function runMirrorLoad(
           promptTokens: response.promptTokens,
           completionTokens: response.completionTokens,
           latencyMs: response.latencyMs,
+          costUsd: computeCost(
+            response.model ?? "unknown",
+            response.promptTokens ?? null,
+            response.completionTokens ?? null,
+          ),
           sessionId: input.sessionId ?? null,
         },
         { id: input.newId, now: input.nowIso },

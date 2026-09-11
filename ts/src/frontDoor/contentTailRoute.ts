@@ -26,6 +26,7 @@ import {
   interpretJournalClassification,
   renderJournalReceipt,
 } from "#memory/journal.ts";
+import { chatLedgerHook, embeddingLedgerHook } from "#observability/ledgerHooks.ts";
 import {
   buildDescriptorPrompt,
   buildJournalClassificationPrompt,
@@ -37,7 +38,7 @@ import {
 } from "#planning/promptAssembly.ts";
 import { defaultPendingPath } from "#planning/weekPending.ts";
 import { buildJourneyContext, runWeekPlan } from "#planning/weekPlan.ts";
-import type { EmbeddingProvider } from "#providers/embedding.ts";
+import { type EmbeddingProvider, generateEmbeddingSafely } from "#providers/embedding.ts";
 import type { LlmProvider } from "#providers/llm.ts";
 import { memoryEmbedText } from "#soul/harvest.ts";
 import { newId, nowIso } from "#util/pyGenerators.ts";
@@ -75,11 +76,14 @@ export async function runJournalRoute(
     return 1;
   }
 
+  const prompt = buildJournalClassificationPrompt(content);
   const response = await providers.llm.complete({
     role: "journal_classification",
-    prompt: buildJournalClassificationPrompt(content),
+    prompt,
     temperature: JOURNAL_TEMPERATURE,
   });
+  // Python's `add_journal` passes build_llm_logger(role="journal_classification").
+  chatLedgerHook(db, "journal_classification")(response, prompt);
   const classification = interpretJournalClassification(
     response.content,
     content,
@@ -88,8 +92,17 @@ export async function runJournalRoute(
 
   // Embed the SAME text `addJournal` would compute, so the vector and the
   // graded write path cannot drift apart.
-  const { vector } = await providers.embedding.embed(
+  //
+  // Through `generateEmbeddingSafely`, not `provider.embed` directly (CR075).
+  // The wrapper owns three behaviors Python's `generate_embedding` has and a
+  // bare call does not: bounded retry of a transient empty payload, the AI-07
+  // permanent dimension-mismatch guard, and the ledger hook. All three were
+  // harmless while a fixture always answered with a well-formed vector for
+  // free, and all three become reachable the moment this is billable.
+  const vector = await generateEmbeddingSafely(
+    providers.embedding,
     memoryEmbedText(classification.title, content, null),
+    { onAttempt: embeddingLedgerHook(db) },
   );
   const embedding = new Uint8Array(new Float32Array(vector).buffer);
 
@@ -110,6 +123,11 @@ export async function runWeekPlanRoute(
   db: WritableDatabase,
   args: readonly string[],
   llm: LlmProvider,
+  // Test seam only: the pending file lives at one well-known path, shared with
+  // Python, and a test must not write to the operator's real one. The default
+  // is unchanged -- hardening the file itself is CR074, which has to move both
+  // engines together.
+  options: { pendingPath?: string } = {},
 ): Promise<number> {
   const text = args.find((token) => !token.startsWith("--")) ?? "";
   const clock = weekPlanClock(new Date());
@@ -122,12 +140,14 @@ export async function runWeekPlanRoute(
     prompt,
     temperature: WEEK_PLAN_TEMPERATURE,
   });
+  // Python's `services/tasks.py` passes build_llm_logger(role="week_plan").
+  chatLedgerHook(db, "week_plan")(response, prompt);
 
   runWeekPlan(db, text, {
     complete: () => response.content,
     parseJson: parseJsonResponse,
     clock,
-    pendingPath: defaultPendingPath(),
+    pendingPath: options.pendingPath ?? defaultPendingPath(),
     print: (value) => process.stdout.write(value),
   });
   return 0;
@@ -156,11 +176,22 @@ export async function runDescriptorGenerateRoute(
         continue;
       }
       try {
+        const prompt = buildDescriptorPrompt(target.content, target.layer, target.key);
         const response = await llm.complete({
           role: "descriptor",
-          prompt: buildDescriptorPrompt(target.content, target.layer, target.key),
+          prompt,
           temperature: DESCRIPTOR_TEMPERATURE,
         });
+        // A DELIBERATE DIVERGENCE, decided at plan time (CV22.DS8.US3).
+        // Python's `generate_descriptor` is the one LLM caller that takes no
+        // `on_llm_call`, so neither engine recorded this spend. US11 preserved
+        // the gap as parity and flagged it as a DS8 input; DS8 closes it in
+        // TypeScript, which is the product authority for a ported command
+        // (2026-08-13). `descriptor generate` fans out one call per persona
+        // and per journey, so a ledger blind to it is blind to the largest
+        // single-command spend in this story. Recorded in decisions.md; the
+        // descriptor golden now reads "Python zero rows, TS one per entity".
+        chatLedgerHook(db, "descriptor")(response, prompt);
         descriptors.set(`${target.layer}/${target.key}`, pyStrip(response.content));
       } catch {
         descriptors.set(`${target.layer}/${target.key}`, "");

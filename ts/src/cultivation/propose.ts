@@ -17,6 +17,7 @@
 
 import { fenceUntrusted } from "#extraction/fencing.ts";
 import { parseJsonResponse } from "#extraction/json.ts";
+import type { ChatLedgerHook } from "#observability/ledgerHooks.ts";
 import { resolveExtractionModel } from "#providers/config.ts";
 import type { LlmProvider } from "#providers/llm.ts";
 import type { ConsolidationRow, CultivationMemory } from "./consolidationStore.ts";
@@ -76,6 +77,13 @@ export function formatShadowStructure(entries: readonly ShadowStructureEntry[]):
 export interface ProposeConsolidationOptions {
   id: string;
   nowIso: string;
+  /**
+   * Python passes `on_llm_call=build_llm_logger(store, role="consolidation")`
+   * from `consolidate_cmd`. TypeScript logged nothing, which was accurate
+   * while every call was replayed and free, and stops being accurate the
+   * moment this reaches a live provider (CV22.DS8.US3).
+   */
+  onLlmCall?: ChatLedgerHook;
 }
 
 /**
@@ -103,6 +111,9 @@ export async function proposeConsolidation(
       model: resolveExtractionModel(),
       temperature: 0.1,
     });
+    // Python logs AFTER a successful call and BEFORE parsing, so a response
+    // the parser rejects still leaves a row: the call was made and paid for.
+    options.onLlmCall?.(response, prompt);
     content = response.content;
   } catch {
     return null;
@@ -142,6 +153,8 @@ export interface ProposeShadowObservationsOptions {
   /** Called once per emitted observation, matching Python's per-item `_uuid()`/`_now()`. */
   id: () => string;
   nowIso: () => string;
+  /** Python's `build_llm_logger(store, role="shadow_scan")`; see above. */
+  onLlmCall?: ChatLedgerHook;
 }
 
 /**
@@ -181,6 +194,7 @@ export async function proposeShadowObservations(
       model: resolveExtractionModel(),
       temperature: 0.1,
     });
+    options.onLlmCall?.(response, prompt);
     content = response.content;
   } catch {
     return [];

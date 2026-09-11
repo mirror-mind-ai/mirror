@@ -55,6 +55,7 @@ import { setIdentity } from "#identity/setIdentity.ts";
 import { IdentityRootExistsError, initUserHome, TemplatesNotFoundError } from "#init/init.ts";
 import { JOURNEY_PATH_LAYER } from "#journey/journeyStatus.ts";
 import { JourneyNotFoundError } from "#journey/journeyWrite.ts";
+import { chatLedgerHook } from "#observability/ledgerHooks.ts";
 import { runWeekSave } from "#planning/weekSave.ts";
 import { loadReplayEmbeddingProvider } from "#providers/embedding.ts";
 import { loadReplayLlmProvider } from "#providers/llm.ts";
@@ -1212,6 +1213,7 @@ async function runConsolidateScanWrite(argv: readonly string[]): Promise<number>
       provider,
       id: newId,
       nowIso,
+      onLlmCall: chatLedgerHook(db, "consolidation"),
     });
     process.stdout.write(renderConsolidateScan(result, threshold));
     return 0;
@@ -1229,7 +1231,13 @@ async function runShadowScanWrite(argv: readonly string[]): Promise<number> {
   }
   const provider = await loadReplayLlmProvider(replayPath);
   return withLiveWriteDbAsync(argv, async (db) => {
-    const result = await shadowScan(db, { limit, provider, id: newId, nowIso });
+    const result = await shadowScan(db, {
+      limit,
+      provider,
+      id: newId,
+      nowIso,
+      onLlmCall: chatLedgerHook(db, "shadow_scan"),
+    });
     process.stdout.write(renderShadowScan(result));
     return 0;
   });

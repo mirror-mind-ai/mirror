@@ -16,6 +16,7 @@ import {
   updateConsolidationStatus,
 } from "#cultivation/consolidationStore.ts";
 import type { WritableDatabase } from "#db/database.ts";
+import { embeddingLedgerHook } from "#observability/ledgerHooks.ts";
 import type { EmbeddingProvider } from "#providers/embedding.ts";
 
 // --- Shared resolution (both families) ---------------------------------------
@@ -131,6 +132,11 @@ export async function runConsolidateApply(
       embeddingProvider,
       id: ids.mergeMemoryId,
       nowIso: ids.nowIso,
+      // Python's `consolidate_cmd` passes build_llm_logger(role="embedding")
+      // into `generate_embedding` here. The wrapper's hook already existed on
+      // this path; nobody had ever passed it one (CV22.DS8.US3, CR075's
+      // adjacent case).
+      onEmbeddingAttempt: embeddingLedgerHook(db, { now: () => ids.nowIso }),
     });
     if (outcome.kind === "source_not_found") return { kind: "merge_source_not_found" };
     return {

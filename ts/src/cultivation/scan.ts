@@ -5,6 +5,7 @@
 
 import type { WritableDatabase } from "#db/database.ts";
 import { listIdentityByLayer } from "#identity/identityRead.ts";
+import type { ChatLedgerHook } from "#observability/ledgerHooks.ts";
 import type { LlmProvider } from "#providers/llm.ts";
 import { clusterMemories, DEFAULT_CLUSTER_THRESHOLD } from "./cluster.ts";
 import {
@@ -32,6 +33,8 @@ export interface ConsolidateScanOptions {
   /** Called once per cluster considered, matching Python's per-Consolidation `_uuid()`/`_now()`. */
   id: () => string;
   nowIso: () => string;
+  /** Ledger hook for the one `consolidation` call per cluster. */
+  onLlmCall?: ChatLedgerHook;
 }
 
 /** One attempted cluster's outcome, in scan order -- `proposal: null` is
@@ -81,6 +84,7 @@ export async function consolidateScan(
     const proposal = await proposeConsolidation(options.provider, cluster, {
       id: options.id(),
       nowIso: options.nowIso(),
+      onLlmCall: options.onLlmCall,
     });
     if (proposal === null) {
       results.push({ cluster, proposal: null });
@@ -95,6 +99,8 @@ export async function consolidateScan(
 export interface ShadowScanOptions {
   limit?: number;
   provider: LlmProvider;
+  /** Ledger hook for the one `shadow_scan` call; Python always passes one. */
+  onLlmCall?: ChatLedgerHook;
   /** Called once per emitted observation, matching Python's per-item `_uuid()`/`_now()`. */
   id: () => string;
   nowIso: () => string;
@@ -125,6 +131,7 @@ export async function shadowScan(
   const proposals = await proposeShadowObservations(options.provider, memories, shadowEntries, {
     id: options.id,
     nowIso: options.nowIso,
+    onLlmCall: options.onLlmCall,
   });
 
   const proposalsCreated = proposals.map((proposal) => createConsolidation(db, proposal));

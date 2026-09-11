@@ -196,3 +196,18 @@ export const CONVERSATION_TAIL_TRANSPORT: ProviderTransportSpec = {
   },
   liveReason: "DS8.US2 conversation close tail live",
 };
+
+/**
+ * `soul harvest save` (CV22.DS8.US3) -- the one leaf of the Soul command that
+ * crosses the provider seam, and only through the embedding: the save supplies
+ * title, layer, and tags, so Python's journal classifier is unreachable.
+ *
+ * The revert is the whole Soul family switch rather than a new variable: every
+ * other Soul leaf is deterministic, so `MIRROR_TS_SOUL=0` reverting all of
+ * them costs nothing and adds no third thing to remember.
+ */
+export const SOUL_HARVEST_TRANSPORT: ProviderTransportSpec = {
+  revertVar: "MIRROR_TS_SOUL",
+  replay: { embedding: "MIRROR_TS_SOUL_EMBEDDING_REPLAY" },
+  liveReason: "DS8.US3 soul harvest save live",
+};

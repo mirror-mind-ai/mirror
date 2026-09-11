@@ -15,9 +15,8 @@ import {
   type OnLlmCall,
 } from "#extraction/conversation.ts";
 import { createMemoryRow } from "#memory/memoryWrite.ts";
-import { logLlmCall } from "#observability/llmCalls.ts";
-import { resolveEmbeddingModel, resolveExtractionModel } from "#providers/config.ts";
-import { computeCost } from "#providers/cost.ts";
+import { chatLedgerHook, embeddingLedgerHook } from "#observability/ledgerHooks.ts";
+import { resolveExtractionModel } from "#providers/config.ts";
 import {
   addEmbeddingProvenance,
   type EmbeddingAttemptInfo,
@@ -286,81 +285,24 @@ function resolveUserName(db: WritableDatabase): string {
 }
 
 /**
- * Python's `_make_logger(role, conversation_id)` -> `build_llm_logger`: one
- * `llm_calls` row per successful call. Cost is Python's `compute_cost`, which
- * is unpriced (NULL) for any model outside its price table -- every replay
- * fixture model, and the estimate itself is a DS8 live-cutover concern.
- *
- * Rows are stamped from the orchestration's clock so an injected `now`
- * governs the ledger too, but their ids stay generated: the ledger is graded
- * by insertion order everywhere it is compared, never by id, and scripting
- * ids for it would only make callers count rows they do not care about.
+ * The close tail's two ledger hooks. Roles match Python's `build_llm_logger`
+ * roles so the `llm_calls` ledger agrees across engines; the orchestration's
+ * clock stamps every row.
  */
 function llmLedger(
   db: WritableDatabase,
   conversationId: string,
   now: () => string,
 ): (role: string) => OnLlmCall {
-  return (role) => (response, prompt) =>
-    logLlmCall(
-      db,
-      {
-        role,
-        model: response.model ?? resolveExtractionModel(),
-        prompt,
-        response: response.content,
-        promptTokens: response.promptTokens ?? null,
-        completionTokens: response.completionTokens ?? null,
-        latencyMs: response.latencyMs ?? null,
-        // Python's build_llm_logger prices every chat row from the static
-        // table; an embedding/extraction call has no generation id to fetch a
-        // real cost for, so the estimate IS the cost of record. Under replay
-        // no usage comes back, so this stays null and the goldens are
-        // unchanged (CV22.DS8.US2).
-        costUsd: computeCost(
-          response.model ?? resolveExtractionModel(),
-          response.promptTokens ?? null,
-          response.completionTokens ?? null,
-        ),
-        conversationId,
-      },
-      { now },
-    );
+  return (role) => chatLedgerHook(db, role, { conversationId, now });
 }
 
-/** Wires generateEmbeddingSafely's onAttempt hook to the llm_calls ledger
- * (AI-09/D-003), reusing CR040's fail-soft logLlmCall unchanged -- "a vector
- * is not text", so response is always empty; the input text itself gets the
- * same metadata-mode body-withholding logLlmCall already applies to consult. */
 function logEmbeddingAttempt(
   db: WritableDatabase,
   conversationId: string,
   now: () => string,
 ): (info: EmbeddingAttemptInfo) => void {
-  return (info) => {
-    const model = resolveEmbeddingModel();
-    logLlmCall(
-      db,
-      {
-        role: "embedding",
-        model,
-        prompt: info.text,
-        response: "",
-        latencyMs: info.latencyMs,
-        // Priced like Python's build_llm_logger (CV22.DS8.US2). US1 priced the
-        // SEARCH embedding hook only -- pricing is a per-call-site decision,
-        // not something generateEmbeddingSafely confers -- so extraction's
-        // embeddings were still landing unpriced. A failed attempt has no
-        // usage and stays unpriced rather than vanishing.
-        promptTokens: info.promptTokens,
-        costUsd: computeCost(model, info.promptTokens, null),
-        conversationId,
-      },
-      // The orchestration's clock, not the wall clock: an injected `now`
-      // must stamp every row the pipeline writes, the ledger included.
-      { now },
-    );
-  };
+  return embeddingLedgerHook(db, { conversationId, now });
 }
 
 function insertMemory(

@@ -17,8 +17,17 @@ import { getIdentityContent } from "#identity/identityRead.ts";
 import { persistStickyDefaults } from "#mirror/orchestration.ts";
 import { resolveRuntimeSessionId } from "#mirror/runtimeSession.ts";
 import { activateOperatingMode } from "#mode/operatingMode.ts";
+import { embeddingLedgerHook } from "#observability/ledgerHooks.ts";
+import { generateEmbeddingSafely } from "#providers/embedding.ts";
+import { resolveFamilyProviders } from "#providers/familyProviders.ts";
+import { SOUL_HARVEST_TRANSPORT } from "#providers/transport.ts";
 import { applyIdentityIntegration, SoulApplyError } from "#soul/apply.ts";
-import { SoulHarvestError, saveHarvestedFruit, type TranscriptMessage } from "#soul/harvest.ts";
+import {
+  persistHarvestSave,
+  planHarvestSave,
+  SoulHarvestError,
+  type TranscriptMessage,
+} from "#soul/harvest.ts";
 import {
   composeSoulBeautyVoicePrompt,
   composeSoulSelfVoicePrompt,
@@ -115,7 +124,17 @@ function usageError(message: string): number {
 
 export interface SoulRouteDeps {
   readMessages: (db: Database, conversationId: string) => TranscriptMessage[];
-  embed: (text: string) => Uint8Array;
+  /**
+   * The harvest journal's embedding (CV22.DS8.US3).
+   *
+   * Async because it is a real, billable provider round trip: `routing.ts`
+   * used to keep `harvest save` on Python unless a replay fixture was set, and
+   * nothing ever supplied one through the front door -- so the only leaf of
+   * the Soul command that crosses the provider seam could not complete on
+   * TypeScript at all. The route now resolves the family's provider and
+   * embeds through `generateEmbeddingSafely`, with the ledger hook attached.
+   */
+  embed: (db: WritableDatabase, text: string) => Promise<Uint8Array>;
   newId: () => string;
   nowIso: () => string;
 }
@@ -125,24 +144,30 @@ export const defaultSoulRouteDeps: SoulRouteDeps = {
     db
       .prepare("SELECT role, content FROM messages WHERE conversation_id = ? ORDER BY rowid")
       .all(conversationId) as unknown as TranscriptMessage[],
-  // Reachable only under the replay transport; `routing.ts` keeps
-  // `harvest save` on Python until the embedding provider is configured, so
-  // this default exists to make the missing configuration loud rather than to
-  // silently write a zero vector.
-  embed: () => {
-    throw new SoulHarvestError(
-      "harvest save requires the embedding replay transport (MIRROR_TS_SOUL_EMBEDDING_REPLAY)",
-    );
+  embed: async (db, text) => {
+    const family = await resolveFamilyProviders(process.env, SOUL_HARVEST_TRANSPORT);
+    if (!family?.embedding) {
+      // `routing.ts` reverts the family before the route is reached, so this
+      // is defense in depth rather than the operator-facing message.
+      throw new SoulHarvestError("soul harvest save requires an embedding provider");
+    }
+    // Through the wrapper, like every other embedding path: bounded retry of a
+    // transient empty payload, the AI-07 dimension guard, and one ledger row
+    // per round trip, priced (CR075's adjacent case).
+    const vector = await generateEmbeddingSafely(family.embedding, text, {
+      onAttempt: embeddingLedgerHook(db),
+    });
+    return new Uint8Array(new Float32Array(vector).buffer);
   },
   newId,
   nowIso,
 };
 
-export function runSoulRoute(
+export async function runSoulRoute(
   db: WritableDatabase,
   argv: readonly string[],
   deps: SoulRouteDeps = defaultSoulRouteDeps,
-): number {
+): Promise<number> {
   const rawArgs = argv.slice(1);
   const args = positionals(rawArgs);
   const sub = args[0];
@@ -207,7 +232,7 @@ export function runSoulRoute(
       case "fruit":
         return runFruit(db, args[1], args[2] ?? null, option("--session-id"), deps);
       case "harvest":
-        return runHarvest(db, args[1], args[2] ?? null, option, deps);
+        return await runHarvest(db, args[1], args[2] ?? null, option, deps);
       case "prompt":
         return runPrompt(db, args[1]);
       default:
@@ -349,13 +374,13 @@ function runFruit(
   return usageError(`soul fruit: unknown action ${action ?? ""}`);
 }
 
-function runHarvest(
+async function runHarvest(
   db: WritableDatabase,
   action: string | undefined,
   fruit: string | null,
   option: (name: string) => string | null,
   deps: SoulRouteDeps,
-): number {
+): Promise<number> {
   const resolved = resolveCliSoulSessionId(
     db,
     option("--session-id"),
@@ -373,15 +398,18 @@ function runHarvest(
   if (action === "save") {
     const state = getHarvestedFruit(db, resolved);
     if (!state.fruit) return fail("No harvested fruit.");
-    const result = saveHarvestedFruit(
+    // Compose, then embed, then persist. The fruit is cleared inside the
+    // persist step, so a failing embedding leaves it harvested for a retry
+    // rather than losing it to a provider outage -- Python's ordering.
+    const plan = planHarvestSave(db, resolved, (conversationId) =>
+      deps.readMessages(db, conversationId),
+    );
+    const embedding = await deps.embed(db, plan.embedText);
+    const result = persistHarvestSave(
       db,
+      plan,
       { sessionId: resolved, journey: option("--journey") },
-      {
-        newId: deps.newId,
-        nowIso: deps.nowIso(),
-        embed: deps.embed,
-        readMessages: (conversationId) => deps.readMessages(db, conversationId),
-      },
+      { newId: deps.newId, nowIso: deps.nowIso(), embedding },
     );
     process.stdout.write(`Harvest saved to journal. ${result.memoryId}\n`);
     return 0;

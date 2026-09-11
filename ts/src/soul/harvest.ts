@@ -158,25 +158,29 @@ export interface SaveHarvestedFruitResult {
   conversationId: string | null;
 }
 
+/** What the save is about to write, before anything external happens. */
+export interface HarvestSavePlan {
+  entry: SoulJournalEntry;
+  conversationId: string | null;
+  /** Exactly the text `add_memory` embeds, so the vector cannot drift from the row. */
+  embedText: string;
+}
+
 /**
- * Port of `cmd_harvest("save")`: compose the entry, insert the journal memory,
- * then clear the harvested fruit.
+ * Read the harvested fruit and compose the journal entry, without writing or
+ * embedding anything.
  *
- * `layer`, `title`, and `tags` are all supplied, so Python's journal classifier
- * is unreachable from this path -- the embedding is the only external call, and
- * it arrives as an already-computed vector from the caller's transport.
+ * Split out for CV22.DS8.US3: the embedding is an async, billable call that
+ * has to happen between composing and persisting, and the text to embed is
+ * only known after composition. One composition path, so the live route and
+ * the write-parity probe cannot diverge.
  */
-export function saveHarvestedFruit(
+export function planHarvestSave(
   db: WritableDatabase,
-  input: { sessionId: string; journey?: string | null },
-  deps: {
-    newId: () => string;
-    nowIso: string;
-    embed: (text: string) => Uint8Array;
-    readMessages: (conversationId: string) => TranscriptMessage[];
-  },
-): SaveHarvestedFruitResult {
-  const state = getHarvestedFruit(db, input.sessionId);
+  sessionId: string,
+  readMessages: (conversationId: string) => TranscriptMessage[],
+): HarvestSavePlan {
+  const state = getHarvestedFruit(db, sessionId);
   if (!state.fruit) throw new SoulHarvestError("No harvested fruit.");
 
   const session = db
@@ -187,9 +191,27 @@ export function saveHarvestedFruit(
   const entry = composeSoulHarvestJournal({
     fruit: state.fruit,
     conversationId,
-    messages: conversationId ? deps.readMessages(conversationId) : [],
+    messages: conversationId ? readMessages(conversationId) : [],
   });
 
+  return { entry, conversationId, embedText: memoryEmbedText(entry.title, entry.content, null) };
+}
+
+/**
+ * Persist a planned harvest: insert the journal memory with an
+ * already-computed vector, then clear the harvested fruit.
+ *
+ * The fruit is cleared LAST and only here, so a failed embedding leaves it in
+ * place for a retry -- Python's ordering, where `generate_embedding` raises
+ * out of `add_journal` before `clear_harvested_fruit` is reached.
+ */
+export function persistHarvestSave(
+  db: WritableDatabase,
+  plan: HarvestSavePlan,
+  input: { sessionId: string; journey?: string | null },
+  deps: { newId: () => string; nowIso: string; embedding: Uint8Array },
+): SaveHarvestedFruitResult {
+  const { entry, conversationId } = plan;
   const memoryId = deps.newId();
   createMemoryRow(db, {
     id: memoryId,
@@ -209,10 +231,37 @@ export function saveHarvestedFruit(
     // would make the difference real.
     tags: pythonJsonDumpsEnsureAscii(HARVEST_JOURNAL_TAGS),
     createdAt: deps.nowIso,
-    embedding: deps.embed(memoryEmbedText(entry.title, entry.content, null)),
+    embedding: deps.embedding,
     metadata: addEmbeddingProvenance(entry.metadata),
   });
 
   clearHarvestedFruit(db, input.sessionId, deps.nowIso);
   return { memoryId, entry, conversationId };
+}
+
+/**
+ * Port of `cmd_harvest("save")`: compose, embed, insert, clear.
+ *
+ * `layer`, `title`, and `tags` are all supplied, so Python's journal classifier
+ * is unreachable from this path -- the embedding is the only external call.
+ * Kept as the synchronous whole for callers that already hold a vector source
+ * (the write-parity probe); the live route composes and persists separately so
+ * it can await a real embedding in between.
+ */
+export function saveHarvestedFruit(
+  db: WritableDatabase,
+  input: { sessionId: string; journey?: string | null },
+  deps: {
+    newId: () => string;
+    nowIso: string;
+    embed: (text: string) => Uint8Array;
+    readMessages: (conversationId: string) => TranscriptMessage[];
+  },
+): SaveHarvestedFruitResult {
+  const plan = planHarvestSave(db, input.sessionId, deps.readMessages);
+  return persistHarvestSave(db, plan, input, {
+    newId: deps.newId,
+    nowIso: deps.nowIso,
+    embedding: deps.embed(plan.embedText),
+  });
 }

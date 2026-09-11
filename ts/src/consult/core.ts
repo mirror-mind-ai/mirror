@@ -1,5 +1,6 @@
 import type { WritableDatabase } from "#db/database.ts";
 import { logLlmCall } from "#observability/llmCalls.ts";
+import { computeCost } from "#providers/cost.ts";
 import type { CreditProvider } from "#providers/credits.ts";
 import type { LlmMessage, LlmProvider, LlmRequest } from "#providers/llm.ts";
 import { pythonJsonDumps } from "#util/pyGenerators.ts";
@@ -66,17 +67,24 @@ export async function runConsultAsk(
     : null;
   const credits = await options.credits.getCredits();
   if (options.db) {
-    // Consult joins the ledger with its real fetched cost (AI-09) -- never the
-    // static per-token estimate, which has no entry for consult's models anyway.
+    // Consult joins the ledger with its real fetched cost (AI-09). When the
+    // poll comes back empty, Python does NOT store null -- `build_llm_logger`
+    // falls through to `compute_cost`, so the row says "estimated" where this
+    // used to say "unknown". Most of consult's models are outside the price
+    // table and estimate to null anyway, but the two engines must mean the
+    // same thing by a null (CV22.DS8.US3 plan review, database-architect).
+    const model = response.model ?? command.modelId;
     logLlmCall(options.db, {
       role: "consult",
-      model: response.model ?? command.modelId,
+      model,
       prompt: request.prompt,
       response: response.content,
       promptTokens: response.promptTokens,
       completionTokens: response.completionTokens,
       latencyMs: response.latencyMs,
-      costUsd: cost,
+      costUsd:
+        cost ??
+        computeCost(model, response.promptTokens ?? null, response.completionTokens ?? null),
     });
   }
   return renderConsultAsk(command.modelId, response, credits, cost);
