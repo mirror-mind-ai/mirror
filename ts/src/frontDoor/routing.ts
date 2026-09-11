@@ -157,14 +157,17 @@ const TS_CONVERSATION_LOGGER_LLM_SUBCOMMANDS = new Set([
   "session-maintenance",
 ]);
 
-// CV22.DS8.US2 stages the live cutover in the order US10 proved and flipped
-// these in. Group 1 composes the close tail and nothing else -- `session-end`
-// is the subcommand that fires unattended from the Pi hook, so it is the one
-// observed on a database copy and then on the real home before group 2
-// follows. Group 2 composes the close tail WITH backfill and orphan handling
-// and can close several conversations in a single run, so a defect there is
-// multiplied; it keeps the replay transport until group 1 has been live.
-const DS8_LIVE_CLOSE_TAIL_GROUP_1 = new Set(["switch", "session-end-pi", "session-end"]);
+// CV22.DS8.US2 staged the live cutover in the order US10 proved and flipped
+// these in: group 1 (`switch`, `session-end-pi`, `session-end`) first, because
+// `session-end` fires unattended from the Pi hook; then group 2
+// (`session-start` full, `session-maintenance`), which composes the close tail
+// WITH backfill and orphan handling and can close several conversations in one
+// run, multiplying any defect.
+//
+// Group 1 was observed live on the real home on 2026-09-11 -- a full close
+// tail with extraction_status=ok, six memories at 1536 dims, and every ledger
+// row priced with bodies withheld -- so the staging has served its purpose and
+// all five subcommands now share one live decision.
 
 /** Python's `main()`: strip `--mirror-home X` and `--session-id X`, then `args[0]`. */
 function conversationLoggerSubcommand(argv: readonly string[]): string | undefined {
@@ -640,16 +643,7 @@ export function routeMemoryCommand(
       if (transport.mode === "replay") {
         return { command, engine: "ts", reason: `${transport.reason} (${sub})` };
       }
-      // Live, staged: group 1 only, until the Navigator has observed it on the
-      // real home (see DS8_LIVE_CLOSE_TAIL_GROUP_1).
-      if (DS8_LIVE_CLOSE_TAIL_GROUP_1.has(sub)) {
-        return { command, engine: "ts", reason: `${transport.reason} (${sub})` };
-      }
-      return {
-        command,
-        engine: "python",
-        reason: `conversation-logger ${sub} awaits the DS8.US2 group 2 live flip`,
-      };
+      return { command, engine: "ts", reason: `${transport.reason} (${sub})` };
     }
     return {
       command,

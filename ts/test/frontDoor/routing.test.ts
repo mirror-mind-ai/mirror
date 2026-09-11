@@ -413,9 +413,9 @@ test("the LLM-tail subcommands no longer require the replay transport (CV22.DS8.
     assert.match(live.reason, /DS8\.US2 conversation close tail live/, sub);
   }
 
-  // Group 2 keeps the old shape until its own flip.
+  // Group 2 followed on the same day, after group 1 was observed live.
   for (const sub of ["session-start", "session-maintenance"]) {
-    assert.equal(routeMemoryCommand(["conversation-logger", sub], {}).engine, "python", sub);
+    assert.equal(routeMemoryCommand(["conversation-logger", sub], {}).engine, "ts", sub);
   }
 });
 
@@ -436,15 +436,24 @@ test("the family switch reverts the flipped LLM-tail subcommands too", () => {
   );
 });
 
-test("session-start --fast routes to TS without the gate; full session-start needs it", () => {
+test("session-start --fast stays ungated even when the close tail is reverted", () => {
+  // `--fast` makes no model call at all, so it is not part of the close-tail
+  // family's risk and must not follow its revert. The full run does: it was
+  // gated on the replay transport under DS7.US10 and is live under DS8.US2.
+  const reverted = { MIRROR_TS_CONVERSATION_LLM_TAIL: "0" };
   assert.equal(
     routeMemoryCommand(["conversation-logger", "session-start", "--fast"], {}).engine,
     "ts",
   );
-  assert.equal(routeMemoryCommand(["conversation-logger", "session-start"], {}).engine, "python");
   assert.equal(
-    routeMemoryCommand(["conversation-logger", "session-start"], CONVERSATION_REPLAY_ENV).engine,
+    routeMemoryCommand(["conversation-logger", "session-start", "--fast"], reverted).engine,
     "ts",
+    "a close-tail revert must not drag back a subcommand that never calls a model",
+  );
+  assert.equal(routeMemoryCommand(["conversation-logger", "session-start"], {}).engine, "ts");
+  assert.equal(
+    routeMemoryCommand(["conversation-logger", "session-start"], reverted).engine,
+    "python",
   );
 });
 
@@ -887,14 +896,16 @@ test("group 1 close-tail subcommands reach the live provider with nothing config
   }
 });
 
-test("group 2 still needs the replay transport until its own flip", () => {
-  // Staged on purpose: these compose the close tail with backfill and orphan
-  // handling and can close several conversations in one run, so they wait for
-  // group 1 to be observed live on the real home.
+test("group 2 is live once group 1 has been observed on the real home", () => {
+  // The staging existed to put the unattended hook path in front of the
+  // multi-conversation path, not to keep them apart permanently. Group 1 ran
+  // a full live close tail on the real home on 2026-09-11 (extraction ok, six
+  // memories at full dimension, every row priced), so both groups now share
+  // one decision.
   for (const sub of GROUP_2) {
     const decision = routeMemoryCommand(["conversation-logger", sub], {});
-    assert.equal(decision.engine, "python", sub);
-    assert.match(decision.reason, /DS8\.US2 group 2/, sub);
+    assert.equal(decision.engine, "ts", sub);
+    assert.match(decision.reason, /DS8\.US2 conversation close tail live/, sub);
   }
 });
 
