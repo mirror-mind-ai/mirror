@@ -17,6 +17,7 @@ import {
 import { createMemoryRow } from "#memory/memoryWrite.ts";
 import { logLlmCall } from "#observability/llmCalls.ts";
 import { resolveEmbeddingModel, resolveExtractionModel } from "#providers/config.ts";
+import { computeCost } from "#providers/cost.ts";
 import {
   addEmbeddingProvenance,
   type EmbeddingAttemptInfo,
@@ -109,18 +110,45 @@ export async function runConversationExtraction(
       ? naiveSummary(messages)
       : await replayedSummary(options.llm, messages, userName, ledger?.("summary"));
   const finalSummary = summaryText || naiveSummary(messages);
-  if (finalSummary) {
-    // Logged to the ledger (AI-09/D-003), but NOT provenance-stamped:
-    // conversation_embeddings has no metadata column, matching Python's own
-    // narrower scope (add_embedding_provenance is called from
-    // add_memory/add_attachment only, never from the summary path).
-    const summaryEmbedding = await generateEmbeddingSafely(options.embeddings, finalSummary, {
+
+  // Stage EVERY network embedding first -- the summary and each memory -- so a
+  // failure leaves nothing persisted. The retry then starts clean and does not
+  // duplicate rows or re-spend on embeddings (AI-03 / CV9.E2.S9).
+  //
+  // This mirrors Python's `_extract_and_persist` deliberately. The port
+  // originally interleaved embed -> insert per memory, which is invisible
+  // under replay -- replayed embeddings never fail -- and becomes a partial
+  // write the moment a live provider is on the other end: memories 1..n-1
+  // persisted, `extracted` unset, and a retry that inserts them a second time
+  // with a second paid embedding each (CV22.DS8.US2 plan review).
+  const summaryEmbeddingBytes = finalSummary
+    ? embeddingToBytes(
+        // Logged to the ledger (AI-09/D-003), but NOT provenance-stamped:
+        // conversation_embeddings has no metadata column, matching Python's own
+        // narrower scope (add_embedding_provenance is called from
+        // add_memory/add_attachment only, never from the summary path).
+        await generateEmbeddingSafely(options.embeddings, finalSummary, {
+          onAttempt: logEmbeddingAttempt(db, conversationId, now),
+        }),
+      )
+    : null;
+
+  const stagedMemories: { memory: (typeof extractedMemories)[number]; embedding: Uint8Array }[] =
+    [];
+  for (const memory of extractedMemories) {
+    const embeddingText = `${memory.title}. ${memory.content}${memory.context ? ` Context: ${memory.context}` : ""}`;
+    const embedding = await generateEmbeddingSafely(options.embeddings, embeddingText, {
       onAttempt: logEmbeddingAttempt(db, conversationId, now),
     });
+    stagedMemories.push({ memory, embedding: embeddingToBytes(embedding) });
+  }
+
+  // All embeddings succeeded -- only local writes remain.
+  if (summaryEmbeddingBytes !== null && finalSummary) {
     db.prepare(
       `INSERT INTO conversation_embeddings (conversation_id, summary_embedding) VALUES (?, ?) ` +
         `ON CONFLICT(conversation_id) DO UPDATE SET summary_embedding = excluded.summary_embedding`,
-    ).run(conversationId, embeddingToBytes(summaryEmbedding));
+    ).run(conversationId, summaryEmbeddingBytes);
     db.prepare("UPDATE conversations SET summary = ? WHERE id = ?").run(
       finalSummary.slice(0, 1000),
       conversationId,
@@ -128,13 +156,9 @@ export async function runConversationExtraction(
   }
 
   const memoryIds: string[] = [];
-  for (const memory of extractedMemories) {
+  for (const { memory, embedding } of stagedMemories) {
     const memoryId = id();
-    const embeddingText = `${memory.title}. ${memory.content}${memory.context ? ` Context: ${memory.context}` : ""}`;
-    const embedding = await generateEmbeddingSafely(options.embeddings, embeddingText, {
-      onAttempt: logEmbeddingAttempt(db, conversationId, now),
-    });
-    insertMemory(db, memoryId, conversationId, memory, embeddingToBytes(embedding), now());
+    insertMemory(db, memoryId, conversationId, memory, embedding, now());
     memoryIds.push(memoryId);
   }
 
@@ -288,7 +312,16 @@ function llmLedger(
         promptTokens: response.promptTokens ?? null,
         completionTokens: response.completionTokens ?? null,
         latencyMs: response.latencyMs ?? null,
-        costUsd: null,
+        // Python's build_llm_logger prices every chat row from the static
+        // table; an embedding/extraction call has no generation id to fetch a
+        // real cost for, so the estimate IS the cost of record. Under replay
+        // no usage comes back, so this stays null and the goldens are
+        // unchanged (CV22.DS8.US2).
+        costUsd: computeCost(
+          response.model ?? resolveExtractionModel(),
+          response.promptTokens ?? null,
+          response.completionTokens ?? null,
+        ),
         conversationId,
       },
       { now },
@@ -305,14 +338,22 @@ function logEmbeddingAttempt(
   now: () => string,
 ): (info: EmbeddingAttemptInfo) => void {
   return (info) => {
+    const model = resolveEmbeddingModel();
     logLlmCall(
       db,
       {
         role: "embedding",
-        model: resolveEmbeddingModel(),
+        model,
         prompt: info.text,
         response: "",
         latencyMs: info.latencyMs,
+        // Priced like Python's build_llm_logger (CV22.DS8.US2). US1 priced the
+        // SEARCH embedding hook only -- pricing is a per-call-site decision,
+        // not something generateEmbeddingSafely confers -- so extraction's
+        // embeddings were still landing unpriced. A failed attempt has no
+        // usage and stays unpriced rather than vanishing.
+        promptTokens: info.promptTokens,
+        costUsd: computeCost(model, info.promptTokens, null),
         conversationId,
       },
       // The orchestration's clock, not the wall clock: an injected `now`

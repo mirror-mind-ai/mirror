@@ -81,9 +81,16 @@ back.
 `costUsd: null`. Python's `build_llm_logger` prices every one of these rows
 via `compute_cost` (the extraction pin is in the table). Both become
 `computeCost(model, promptTokens, completionTokens)`; under replay tokens are
-absent so cost stays `null` and every golden is unchanged. Rows for the
-embedding calls inside extraction already go through `generateEmbeddingSafely`
-and are priced since US1.
+absent so cost stays `null` and every golden is unchanged.
+
+**Correction (found in implementation, 2026-09-11).** This plan originally
+claimed the embedding rows inside extraction "are priced since US1". They are
+not. US1 priced the **search** hook only; pricing is a per-call-site decision,
+not something `generateEmbeddingSafely` confers. `extraction.ts`'s
+`logEmbeddingAttempt` was still writing `costUsd: null`, so every embedding
+the close tail pays for landed unpriced. Fixed in the same plateau as the
+atomicity work, because the atomicity test asserts priced round-trips and
+would otherwise have been written around the defect.
 
 `prompt` column semantics under `MEMORY_LOG_LLM_CALLS=full`: Python stores
 `json.dumps(messages)` — the envelope — while TS stores the bare prompt.

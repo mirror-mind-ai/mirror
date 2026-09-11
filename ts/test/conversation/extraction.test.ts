@@ -10,9 +10,14 @@ import {
 } from "#conversation/extractionRun.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import { DEFAULT_EXTRACTION_MODEL } from "#providers/config.ts";
-import { ReplayEmbeddingProvider } from "#providers/embedding.ts";
+import {
+  type EmbeddingProvider,
+  type EmbeddingResult,
+  ReplayEmbeddingProvider,
+} from "#providers/embedding.ts";
 import type { LlmProvider } from "#providers/llm.ts";
 import { ReplayLlmProvider } from "#providers/llm.ts";
+import { LlmTransportError } from "#providers/openrouter.ts";
 
 /** Mirrors the FailingEmbeddingProvider pattern from CR037, applied to
  * LlmProvider -- deterministic proof of the llm_failed path without a live
@@ -491,6 +496,114 @@ test("task extraction failure does not block memory extraction", async () => {
 
     assert.deepEqual(result.memoryIds, ["m1"]);
     assert.deepEqual(result.taskIds, []);
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+// --- CV22.DS8.US2 plateau 1: the write unit of an extraction ------------
+
+/** Succeeds for the first `successes` embeddings, then fails like a live
+ * provider would. Replay providers never fail, which is exactly why the
+ * partial-write path below has never been exercised. */
+class FailAfterNEmbeddingProvider implements EmbeddingProvider {
+  calls = 0;
+  private readonly successes: number;
+  constructor(successes: number) {
+    this.successes = successes;
+  }
+  async embed(): Promise<EmbeddingResult> {
+    this.calls += 1;
+    if (this.calls > this.successes) {
+      throw new LlmTransportError("provider_error", "provider connection failed");
+    }
+    return { vector: VALID_EMBEDDING, promptTokens: 5 };
+  }
+}
+
+test("a failed embedding mid-extraction persists NOTHING (AI-03 / CV9.E2.S9 parity)", async () => {
+  const { db, path } = await makeDb("atomicity.db");
+  try {
+    insertConversation(db, { id: "c1", journey: "cv22", persona: "builder" });
+    insertMessage(db, "c1", "user", "We decided to port extraction.", 1);
+    insertMessage(db, "c1", "assistant", "I will keep it replay-safe.", 2);
+    insertMessage(db, "c1", "user", "Also remember the validation task.", 3);
+    insertMessage(db, "c1", "assistant", "Done.", 4);
+
+    // Summary embedding succeeds, first memory embedding succeeds, second fails.
+    // Python stages EVERY embedding -- summary included -- before it writes
+    // anything, so this run must leave the database exactly as it found it.
+    const embeddings = new FailAfterNEmbeddingProvider(2);
+
+    await assert.rejects(
+      runConversationExtraction(db, "c1", {
+        ...providers(),
+        embeddings,
+        now: fixedNow,
+        id: idSequence(["t1", "m1", "m2"]),
+      }),
+    );
+
+    assert.equal(
+      db.prepare("SELECT COUNT(*) AS count FROM memories").get()?.count,
+      0,
+      "a partial memory set would be duplicated by the retry, each with a paid embedding",
+    );
+    assert.equal(
+      db.prepare("SELECT COUNT(*) AS count FROM conversation_embeddings").get()?.count,
+      0,
+      "the summary embedding is staged with the rest, not written ahead of them",
+    );
+    assert.equal(
+      db.prepare("SELECT summary FROM conversations WHERE id = ?").get("c1")?.summary ?? null,
+      null,
+      "the summary row must not outlive a failed extraction",
+    );
+    assert.notEqual(metadataOf(db, "c1").extracted, true, "the conversation stays un-extracted");
+
+    // Real spend stays visible even though nothing was persisted: two
+    // successful round-trips, plus the failed one. The failure is logged
+    // UNPRICED rather than omitted -- a billable attempt that vanishes from
+    // the ledger understates spend, which is Python's contract too
+    // (_log_embedding_call on the exception path, prompt_tokens=None).
+    const rows = db
+      .prepare("SELECT cost_usd FROM llm_calls WHERE role = 'embedding' ORDER BY called_at")
+      .all() as { cost_usd: number | null }[];
+    assert.equal(rows.length, 3, "summary + first memory + the failed attempt");
+    assert.equal(rows.filter((row) => row.cost_usd !== null).length, 2, "two priced round-trips");
+    assert.equal(rows.filter((row) => row.cost_usd === null).length, 1, "the failure is unpriced");
+  } finally {
+    db.close();
+    await rm(path, { force: true });
+  }
+});
+
+test("a clean retry after a failed embedding inserts each memory exactly once", async () => {
+  const { db, path } = await makeDb("atomicity-retry.db");
+  try {
+    insertConversation(db, { id: "c1", journey: "cv22", persona: "builder" });
+    insertMessage(db, "c1", "user", "We decided to port extraction.", 1);
+    insertMessage(db, "c1", "assistant", "I will keep it replay-safe.", 2);
+    insertMessage(db, "c1", "user", "Also remember the validation task.", 3);
+    insertMessage(db, "c1", "assistant", "Done.", 4);
+
+    await assert.rejects(
+      runConversationExtraction(db, "c1", {
+        ...providers(),
+        embeddings: new FailAfterNEmbeddingProvider(2),
+        now: fixedNow,
+        id: idSequence(["t1", "m1", "m2"]),
+      }),
+    );
+    await runConversationExtraction(db, "c1", {
+      ...providers(),
+      now: fixedNow,
+      id: idSequence(["t2", "m1", "m2"]),
+    });
+
+    const titles = db.prepare("SELECT title FROM memories ORDER BY id").all();
+    assert.equal(titles.length, 2, "the retry starts clean instead of duplicating");
   } finally {
     db.close();
     await rm(path, { force: true });
