@@ -60,4 +60,73 @@ do not flip on the real home; that is a `navigator_decision_needed` stop.
 
 ## Validation Evidence
 
-Pending implementation and validation.
+Run 2026-09-11. Live OpenRouter throughout; copy-only steps against
+`tmp/parity/real-copy.db`. Total spend across all validation: well under $0.05.
+
+**1. Live chat smoke — PASS.** One title-shaped call: content returned within
+the 160-char cap, generation id present, latency 1.5–2.4s, usage reported.
+
+**2. Live close tail on a copy — PASS.** `--session-end 833ab86e`:
+
+```text
+extraction_status ok · 4 memories, all 1536-dim · title 52 chars ·
+tags array(6) · summary 660 chars · 10 ledger rows, bodies withheld
+role sequence: extraction -> task_extraction -> embedding x5 ->
+               conversation_title -> conversation_summary -> conversation_tags
+```
+
+The first run of this step reported **7/10 rows priced** and found the
+unpriced close-tail metadata roles (fixed in plateau 5); the re-run after the
+fix is 10/10.
+
+**3. Group 1 on the real home — PASS.** A real Pi session close, unattended
+through the hook. Front-door log: `conversation-logger  ts  exit=0` (twice),
+`backup  ts  exit=0`. Conversation `6272710d`: full tail, `extracted: true`,
+`extraction_status: ok`, **6 memories all at 1536 dims**, title/summary/tags
+all `generated` via `close_time_metadata_finalization`, every row priced,
+every body length 0. Close cost ≈ $0.0118.
+
+A second conversation the same evening (`fe665e10`, a short "list the
+journeys" exchange) received a title only — correct: Python's metadata profile
+grants short conversations a title without summary, tags, or extraction. Read
+from a bare `LIMIT 10` this looked like a missing summary/tags divergence; it
+was a window spanning two conversations. Worth recording, because that is the
+shape a real divergence would also take.
+
+**4. Group 2 on a copy — PASS, after a false start worth keeping.** The first
+`session-maintenance` run on an untouched copy returned `exit 0` with a clean
+report and made **zero live calls** (ledger 472 → 472): no work was due.
+Reporting that as validation would have proved nothing. With two conversations
+reset to pending, one run extracted both:
+
+| Conversation | Roles logged | Memories |
+|---|---|---|
+| `4f5cdf70` | extraction, task_extraction, embedding ×3 | 2 → 4 |
+| `85a60561` | extraction, task_extraction, embedding ×4 | 3 → 6 |
+
+11 rows, every one priced, every body empty, both `extraction_status=ok`. Each
+conversation's embedding count equals one summary embedding plus one per new
+memory — the plateau-1 atomicity contract holding under a real
+multi-conversation run rather than a fixture. Run cost $0.0032.
+
+**5. Reverts — PASS.** `MIRROR_TS_CONVERSATION_LLM_TAIL=0` routes the five
+close-tail subcommands to Python while `status`, `log-user`, and the rest of
+the deterministic seven stay on TypeScript; `session-start --fast` also stays,
+because it makes no model call. `MIRROR_TS_CONVERSATION_LOGGER=0` still
+reverts all fifteen. A replay fixture still wins over live, and the
+conversation lifecycle smoke passes unchanged — the evidence that replay
+behavior did not move.
+
+**6. Half-configured replay — PASS.** One fixture variable without the other
+refuses by name and makes no call.
+
+**Not exercised.** Live `timeout`, `auth`, `rate_limit`, and `provider_error`
+against a real provider — hermetic tests with an injected `fetch` only, as in
+US1. Real-home `session-maintenance` was not run separately: the real home had
+already exercised the identical close-tail code path through `session-end`,
+and the multi-conversation case was covered on the copy.
+
+**Observed, not a defect.** Three conversations on this home carry a historical
+`extraction_status=parse_failed` (2026-07-21, 2026-07-23, 2026-09-09), from
+before this story. `session-maintenance` surfaces them as a standing warning.
+Nothing in DS8 changed their state.

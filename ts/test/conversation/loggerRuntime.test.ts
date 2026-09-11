@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
-import { logUserMessage } from "#conversation/logger.ts";
+import { endConversation, logUserMessage } from "#conversation/logger.ts";
 import { runConversationLoggerCommand } from "#conversation/loggerCli.ts";
 import {
   createLoggerRuntime,
@@ -261,5 +261,108 @@ test("close-tail metadata rows are priced, not just the extraction roles", async
     assert.equal(row.prompt_tokens, 2761, `${row.role} carries usage`);
     assert.notEqual(row.cost_usd, null, `${row.role} must be priced when usage is present`);
   }
+  db.close();
+});
+
+test("the full close tail runs in LIVE mode and logs Python's role sequence", async () => {
+  // The live close tail is exercised end to end only by the Navigator smoke,
+  // which needs a network and a real key and therefore cannot run in CI. With
+  // `liveProviders` injectable, the orchestration itself -- which roles fire,
+  // in what order, priced, with bodies withheld -- is hermetically testable.
+  // That is the part a regression would break silently; the model's words are
+  // the part no test should assert.
+  const home = mkdtempSync("/tmp/logger-runtime-live-tail-");
+  const db = bootstrapDatabase(join(home, "memory.db"));
+  let sequence = 0;
+  const uniqueDeps = {
+    newId: () => {
+      sequence += 1;
+      return `live-${sequence}`;
+    },
+    nowIso: deps.nowIso,
+  };
+  logUserMessage(
+    db,
+    "s-live",
+    "we decided to port the close tail",
+    { interface: "pi" },
+    uniqueDeps,
+  );
+  for (const index of [1, 2, 3]) {
+    logUserMessage(db, "s-live", `message ${index}`, { interface: "pi" }, uniqueDeps);
+  }
+  const conversationId = (
+    db.prepare("SELECT id FROM conversations ORDER BY started_at DESC LIMIT 1").get() as {
+      id: string;
+    }
+  ).id;
+  db.prepare("UPDATE conversations SET journey = 'cv22' WHERE id = ?").run(conversationId);
+
+  const runtime = createLoggerRuntime({
+    db,
+    mirrorHome: home,
+    homeDir: home,
+    env: {},
+    deps: uniqueDeps,
+    liveProviders: () => ({
+      llm: {
+        complete: async (request) => ({
+          content:
+            request.role === "extraction"
+              ? JSON.stringify([
+                  {
+                    title: "Ported the close tail",
+                    content: "It runs live",
+                    memory_type: "decision",
+                  },
+                ])
+              : request.role === "task_extraction"
+                ? "[]"
+                : "A generated value",
+          model: "google/gemini-2.5-flash-lite",
+          promptTokens: 1000,
+          completionTokens: 10,
+          latencyMs: 5,
+        }),
+      },
+      embeddings: {
+        embed: async () => ({
+          vector: Array<number>(EMBEDDING_DIMENSIONS).fill(0.1),
+          promptTokens: 20,
+        }),
+      },
+    }),
+  });
+  assert.equal(runtime.transportMode, "live");
+
+  await endConversation(
+    db,
+    conversationId,
+    { extract: true },
+    uniqueDeps,
+    await runtime.closeHooks(),
+  );
+
+  const rows = db
+    .prepare(
+      "SELECT role, cost_usd, LENGTH(prompt) AS p, LENGTH(response) AS r FROM llm_calls ORDER BY called_at",
+    )
+    .all() as { role: string; cost_usd: number | null; p: number; r: number }[];
+  const roles = rows.map((row) => row.role);
+  assert.ok(roles.includes("extraction"), "extraction ran");
+  assert.ok(roles.includes("task_extraction"), "task extraction ran");
+  assert.ok(roles.includes("embedding"), "memories were embedded");
+  assert.ok(
+    rows.every((row) => row.cost_usd !== null),
+    "every live row is priced -- usage is present, so an unpriced row is a defect",
+  );
+  assert.ok(
+    rows.every((row) => row.p === 0 && row.r === 0),
+    "bodies withheld: no transcript text reaches the ledger",
+  );
+  const memories = db
+    .prepare("SELECT COUNT(*) AS n FROM memories WHERE conversation_id = ?")
+    .get(conversationId) as { n: number };
+  assert.equal(memories.n, 1);
   db.close();
 });
