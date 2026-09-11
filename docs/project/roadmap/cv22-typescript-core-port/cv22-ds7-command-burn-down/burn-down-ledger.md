@@ -76,7 +76,7 @@ them.
 |--------|----------|------:|-------|--------|
 | Read-only deterministic | `detect-persona`, `journeys`, `memories` (listing) | 3/3 | DS2 | ✅ done |
 | Deterministic writes | `identity set`, `journey set-path` | (subcommands) | DS4 | ✅ done |
-| External under replay | `memories --search`, `consult` | 1/1 (+`consult`) | DS5 | ✅ done |
+| External under replay | `memories --search`, `consult` | 1/1 (+`consult`) | DS5 / DS8.US1 | ✅ done — **`memories --search` flipped ungated 2026-09-11** (live provider; revert `MIRROR_TS_SEARCH=0`); `consult` stays replay-gated until DS8.US3 |
 | Identity/journey reads & writes | `identity`, `journey`, `seed`, `init`, `descriptor`, `list`, `inspect`, `conversations`, `recall` | 9/9†‡ | DS7.US1 | ✅ done |
 | Content & planning writes | `journal`, `tasks`, `week` | 3/3¶ | DS7.US2 / US11 | ✅ done — US2 ported the deterministic core; **US11 flipped 2026-09-09**: `week save` ungated, `journal` and `week plan` replay-gated until DS8. 13/13 leaves ported |
 | Memory cultivation | `consolidate`, `shadow` | 2/2 | DS7.US3 | ✅ done |
@@ -201,7 +201,6 @@ the defect this ledger exists to prevent.
 
 | Leaf | Ported by | Live traffic (llm_calls, this home) |
 |------|-----------|-------------------------------------|
-| `memories --search` | DS5 | `embedding` 171 rows — the highest-volume role |
 | `consult credits`, `consult ask` | DS5 | none recorded |
 | `mirror load --query` | DS7.US4 | no `reception` rows recorded |
 | `consolidate scan`, `consolidate apply` | DS7.US3 | none recorded |
@@ -212,9 +211,23 @@ the defect this ledger exists to prevent.
 | `week plan` | DS7.US11 | none recorded |
 | `descriptor generate` | DS7.US11 | none recorded |
 
-Sixteen leaves. DS8's validation effort belongs where the traffic is: the
-close tail and the search embedding — exactly the surfaces US10 pinned with
-byte-exact prompt digests.
+**Fifteen leaves** (was sixteen; `memories --search` left this block on
+2026-09-11 — see the live-cutover section below). DS8's remaining validation
+effort belongs where the traffic is: the conversation close tail, which
+DS8.US2 owns and which US10 pinned with byte-exact prompt digests.
+
+### Live in production — answered by TS against a real provider
+
+| Leaf | Cut over by | Revert control | Evidence |
+|------|-------------|----------------|----------|
+| `memories --search` | DS8.US1 (2026-09-11) | `MIRROR_TS_SEARCH=0` | vector-space parity `cos=1.000000` against a stored Python-era vector; ledger row identical to Python's for the same query (`11` tokens, `2.2e-07`); unconfigured install degrades with **zero** ledger rows and logs `kind=config` |
+
+The first leaf in CV22 where TypeScript spends real money. `embedding` was the
+highest-volume role in this home's ledger (171 rows, more than every other
+role combined), which is why it went first: the substrate it required — the
+fetch-based OpenRouter client, the AI-18 taxonomy, per-role timeouts, the cost
+authority, and the one revert→replay→live precedence — is now built and reused
+by DS8.US2/US3 for the remaining fifteen leaves.
 
 ### Out of the denominator (owned elsewhere, unported by decision)
 
@@ -559,3 +572,4 @@ default route, and the `=0` steps prove the revert.
 | 2026-09-08 | **CV22.DS7.TS1 done.** Validation accepted by the Navigator on the real home, including a real Pi session shutdown whose backup entered the front door (`memory_20260908_095020.zip`, `backup / ts / exit=0`). Debt Review deferred five findings with revisit triggers: the extension/hook front-door bypass became **CR059** under RS009; silent-failure exit code, torn-snapshot backup, 0644 archives, and cross-table slug repair became **CR060–CR063** under RS010. DS7 progress 7/14 → 8/14; ops tail 2/6. |
 | 2026-09-09 | **US11 flipped: the content & planning tail routes to TS.** `week save` and the two ES-001 lifecycle READ faces answer from TS **ungated**; `journal`, `week plan`, and `descriptor generate` answer from TS **under the replay transport**, so an unconfigured install keeps Python until DS8 — the boundary `soul harvest save` and the close tail already sit on. Revert controls: `MIRROR_TS_WEEK=0`, `MIRROR_TS_JOURNAL=0`, `MIRROR_TS_DESCRIPTOR=0`, `MIRROR_TS_CONVERSATIONS_LIFECYCLE=0`, each independent; `week view` deliberately stays outside the `week` gate because US2 flipped it ungated and reverting `save`/`plan` must not drag it back. `mm-journal`'s three copies enter the front door and `journal` leaves `PYTHON_ALLOWLIST`, so CI fails if it regresses. Content & planning 10/13 → **13/13**. **Scope amendment (Navigator, option B):** `--metadata-lifecycle-apply` and `--metadata-lifecycle-demo` need the unported `apply_metadata_lifecycle` and are refused **by name** for **DS7.TS4**; the two `--metadata-backfill-*` flags stay DS10 retirements, also by name. Six ES-001 flags, six owners, no inheritance. Command denominator 29; DS7 stories 12/15. |
 | 2026-09-09 | **CR068 paid: the ledger stops over-reporting, and the remainder gets owners.** The *Content & planning writes* row read `3/3 done` while `journal`, `week plan`, and `week save` answered from Python — reassigned to US5 in US2's prose, dropped when US5 was re-scoped, inherited by nobody. Corrected to per-leaf (`tasks` 9/9, `week` 1/3, `journal` 0/1) with a detail table in the shape the `conversation-logger` and `runtime` sections use. Reading `routing.ts` end to end for the correction found more of the same class: `descriptor generate` (US1 "kept it as the DS8 seam" — DS8 ports nothing), `identity edit` ("kept on Python" — Python is deleted in DS10), and the ES-001 `conversations` metadata-lifecycle flags ("own slice" — no slice claimed them; the engine is already in TS). And `week save` is not LLM-gated at all: it reads the pending file and calls `add_task`, which is on TS. Dispositions (Navigator, 2026-09-09): **DS7.US11** owns `journal`, `week plan|save`, `descriptor generate`, and the lifecycle dry-run/demo/preview/apply faces; **TS4** takes `identity edit` as a `spawnSync($EDITOR)` port; **DS10** retires the one-shot backfill flags. A consolidated **Remainder** table now lists every leaf that does not answer from TS in an unconfigured install with its owner — including the thirteen ported leaves that sit behind the opt-in `MIRROR_TS_EXTERNAL_ROUTES` gate and therefore answer from Python in production until DS8. New rule: the receiving story must name reassigned scope, or the scope has no owner. Two more decisions recorded the same day: **TS5 leaves DS7 for DS10** (its publisher cannot land while both cores write, so DS7 could never have closed on it) — command denominator 30 → 29, story denominator stays 15 after US11 joins; and **US8's D1 resolves to retire** the SQLite Refinement Workbench in DS10 (15 of 42 leaves). Captured separately: **CR072** (RS009) — nine skills whose routes are on TS still invoke Python directly. See [Decisions — CV22 makes the ported work real before porting more](../../../decisions.md#cv22-makes-the-ported-work-real-before-porting-more). |
+| 2026-09-11 | **DS8.US1: the first live-provider cutover. `memories --search` answers from TS against a real OpenRouter call in an unconfigured install.** Sixteen replay-gated leaves → fifteen. The substrate the remaining fifteen reuse landed with it: a fetch-based OpenRouter client porting the OpenAI SDK's retry *policy* rather than the package (no SDK on the path of every paid call), the AI-18 taxonomy `timeout\|auth\|rate_limit\|malformed_output\|provider_error` with an error object whose enumerable surface is `kind/status/retryable` and nothing else, per-role timeouts under Python's env names, `compute_cost` ported at last (CR040 skipped it because consult fetches a real generation cost — an embedding call has no generation id, so Python prices that row from the static table and TS had to as well), and one `resolveProviderTransport` precedence (revert → replay → live) that US2/US3 consume instead of re-deriving per leaf. Replay stops requiring `MIRROR_TS_EXTERNAL_ROUTES` for this leaf: that gate was DS5's safety catch while replay was the *production* transport, and after the cutover replay is a test transport. **Navigator validation 2026-09-11:** vector-space parity `cos=1.000000` against a stored Python-era vector — the check that would have aborted the cutover had it failed; ledger rows identical to Python's for the same query (`11` tokens, `2.2e-07`, bodies withheld); unconfigured install degrades to lexical with **zero** ledger rows and logs `embedding_degraded kind=config`, so an expired key is now distinguishable from an outage without a re-run. Revert: `MIRROR_TS_SEARCH=0`. Two defects found were both in the *harness*, not the product — the cross-check embedded a null `context` where Python appends `Context: …` (it would have reported a low cosine and looked exactly like the failure whose documented response is to abort), and the smoke asserted ledger rows while calling the provider directly, bypassing the layer that writes them. Accepted known risk: Node's `fetch` ignores `HTTPS_PROXY` unless `NODE_USE_ENV_PROXY=1`, so a proxied install degrades where Python would not. |

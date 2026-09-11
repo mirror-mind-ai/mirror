@@ -2185,4 +2185,52 @@ approval gates. No future transition may dual-write files and SQLite as peer aut
 
 ---
 
+### The TypeScript live transport is fetch-based, with no provider SDK
+
+**Date:** 2026-09-11 · **Context:** CV22.DS8.US1, the first live-provider cutover.
+
+Python reaches OpenRouter through the OpenAI SDK. The obvious port would adopt
+the same SDK in TypeScript. We ported the SDK's retry *policy* instead — retry
+connection failures, 408, 409, 429, and 5xx up to `MEMORY_LLM_MAX_RETRIES`,
+never another 4xx — and built the transport on Node's global `fetch`.
+
+Reasons, in order of weight:
+
+1. **Dependency surface on the paid path.** An SDK sits on the path of every
+   billable call, carries its own release cadence and breaking changes, and
+   brings a transitive tree into a package we intend to distribute through npm
+   (DS10). Node ≥ 24 ships `fetch`; the SDK's remaining value here was its
+   retry policy, which is thirty lines.
+2. **Testability.** Every side effect is injectable (`fetch`, `sleep`), so no
+   test in the repo can reach the network by accident, and each taxonomy class
+   gets a deterministic test. Faking an SDK client well enough to assert
+   backoff behavior is harder than owning the loop.
+3. **Error shape control.** We need an error that carries the AI-18
+   classification and *nothing else* — see below.
+
+Two rules travel with this decision and are pinned by tests:
+
+- **The base URL is a module constant, never env-derived.** A future "custom
+  provider endpoint" request meets a documented no: an attacker-influenced base
+  URL is an API-key exfiltration primitive. Redirects are refused outright
+  (`redirect: "error"`) rather than relying on the fetch spec to strip the
+  `Authorization` header on a cross-origin hop.
+- **`LlmTransportError` exposes `kind`, `status`, `retryable` and a redacted
+  message — never a `Response`, a body, or a `cause` chain.** Error objects are
+  serialized whole by loggers, test reporters, and crash handlers, so a body
+  kept "just for debugging" leaks both the key and the request content, which
+  in this product is a query, a transcript, or an identity document.
+
+**Accepted consequence.** Node's `fetch` does not honor `HTTPS_PROXY` unless
+`NODE_USE_ENV_PROXY=1`, and uses its own CA store rather than `certifi`. Both
+are documented in [configuration](../reference/configuration.md) rather than
+worked around in code; the front-door log records the real failure category so
+a proxy problem is not misread as a missing key.
+
+**What would change this.** If TS later needs streaming chat, provider
+fallback chains, or multi-provider routing, the cost/benefit shifts and an SDK
+becomes worth reconsidering — as a deliberate reversal, not a drift.
+
+---
+
 **See also:** [Briefing](briefing.md) · [Roadmap](roadmap/index.md) · [Worklog](../process/worklog.md)

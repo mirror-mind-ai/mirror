@@ -235,3 +235,61 @@ See [MEMORY_LOG_LLM_CALLS](#memory_log_llm_calls).
 ## Conversation routing
 
 See [MEMORY_RECEPTION](#memory_reception).
+
+## TypeScript live-provider transport (CV22.DS8)
+
+The TypeScript core reaches OpenRouter through its own `fetch`-based transport
+rather than the OpenAI SDK. It reads the same environment variables Python
+does, so a single configuration governs both engines during the migration.
+
+### Per-call bounds
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `MEMORY_LLM_TIMEOUT_EXTRACTION` | `60` | Seconds bounding one extraction-tier call |
+| `MEMORY_LLM_TIMEOUT_RECEPTION` | `10` | Seconds bounding one interactive reception call |
+| `MEMORY_LLM_TIMEOUT_EMBEDDING` | `15` | Seconds bounding one embedding call |
+| `MEMORY_LLM_MAX_RETRIES` | `2` | Retries **after** the first attempt (three attempts total) |
+
+Every call is bounded at construction so a hung provider connection cannot
+stall a session hook (the OpenAI SDK's own default is 600 seconds). Retries
+cover connection failures, 408, 409, 429, and 5xx — never another 4xx, which
+would spend money to receive the same answer. A `retry-after` header is
+honored but capped at 60 seconds. A non-numeric override fails loudly rather
+than silently reverting to the default, matching Python's `float()`/`int()`.
+
+### Route control
+
+| Variable | Meaning |
+|---|---|
+| `MIRROR_TS_SEARCH` | Set to `0` to send `memories --search` back to the Python engine. Wins over any replay fixture. |
+| `MIRROR_TS_SEARCH_EMBEDDING_REPLAY` | Path to a replay fixture. Used by CI and the parity harness; selects a deterministic transport that makes no network call. |
+
+With neither set, `memories --search` runs a live embedding through
+TypeScript. Without `OPENROUTER_API_KEY` it degrades to lexical-only search
+and prints the same note the Python engine prints — no call is attempted and
+no `llm_calls` row is written.
+
+### Node-specific environment differences
+
+Two behaviors differ from Python's HTTP stack and are **not** papered over in
+code. Both matter only if your machine needs them:
+
+- **Custom CA certificates.** Python pins `certifi`; Node uses its bundled CA
+  store. Point Node at a private CA with `NODE_EXTRA_CA_CERTS=/path/to/ca.pem`.
+- **HTTP proxies.** Python's `httpx` honors `HTTPS_PROXY` automatically; Node's
+  `fetch` ignores it unless you set `NODE_USE_ENV_PROXY=1` (Node ≥ 24). Behind
+  a proxy without that flag, a search degrades to lexical-only and the degraded
+  note will say "offline or no API key", which is misleading. The front-door
+  log records the real cause as a category — for example
+  `embedding_degraded kind=provider_error` — which is how to tell the two
+  apart.
+
+### Observability
+
+Live provider calls write one `llm_calls` row per round-trip, priced from the
+static model price table (an embedding call has no generation id to fetch a
+real cost for). Under `MEMORY_LOG_LLM_CALLS=metadata` — the default — the
+`prompt` and `response` columns are empty strings: your query text is never
+persisted. The API key is read from the environment only, never accepted as a
+command-line argument, never logged, and never included in an error message.
