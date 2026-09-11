@@ -2,7 +2,7 @@
 
 # CV22.DS8.US1 — Live transport substrate + live embeddings + `memories --search` cutover
 
-**Status:** 🟡 Planned
+**Status:** ✅ Done
 **Type:** User Story
 
 ---
