@@ -116,12 +116,33 @@ pin no SHA, and `propose.test.ts` explicitly defers prompt-level behavior to
 "DS8 + evals". At cutover the model would hear whatever TS assembles with
 nothing comparing it to Python.
 
-Surgical, no prompt text changes: extend `generate_prompt_assembly_golden.py`
-with `reception`, `consolidation`, and `shadow_scan` scenarios (plain,
-unicode, injection probe — the close tail's three), add the digests to the
-cultivation and mirror replay fixtures, pin consult's `SYSTEM_PREAMBLE` as a
-constant and the `[system, user]` envelope as a shape. This is its own
-plateau and a **precondition for groups A and C**.
+**Amended 2026-09-11, plateau 3 — a `plan_rule_conflict` stop.** The section
+above assumed every pre-digest family already assembles Python's prompt in
+TypeScript and merely lacks a SHA pin. Measured, that holds for `reception`
+and for consult's preamble. It is **false** for `consolidation` and
+`shadow_scan`: `propose.ts` sends a fenced Markdown dump of the memories — 121
+and 209 bytes against Python's 2,247 and 1,598 — with no task statement, no
+untrusted-input guard, and no JSON output contract. The deferral was
+deliberate and recorded in that file's own header. Porting those two templates
+became **CV22.DS8.TS2** and group C is gated on it; see
+[Decisions](../../../../decisions.md#the-cultivation-prompt-templates-are-their-own-story-not-a-line-in-the-cutover).
+
+What stays in this plateau, with no prompt text edited:
+
+- extend `generate_prompt_assembly_golden.py` with `reception` scenarios
+  (plain, unicode, injection probe — the close tail's three) and pin the
+  assembled bytes; add the digest to the mirror replay fixture;
+- pin consult's `SYSTEM_PREAMBLE` as a constant and the `[system, user]`
+  envelope as a shape;
+- **fix reception's assembly, which corrupts on `$` patterns.** TS uses
+  `String.replace()` with a string pattern, so `$&`, `` $` ``, `$'`, and `$1`
+  inside a persona description are substitution directives: a persona
+  described as `Cost: $& per hour` assembles as `Cost: {personas} per hour`.
+  Python's `str.format` has no such behavior. `pyFormat` already exists and is
+  what the US11 templates use. A parity defect in a leaf this story flips,
+  found by the pin work and fixed with it.
+
+This is a **precondition for group A**. Group C's precondition is TS2.
 
 ### 2. One provider factory — `ts/src/providers/familyProviders.ts`
 
@@ -232,7 +253,12 @@ Flip order is by exposure, each group with its own Navigator observation:
   `week plan`, `descriptor generate --layer … --key …` (one entity).
 - **Group C — multi-call:** `consolidate scan` (one call per cluster,
   bounded by `--limit`), `shadow scan`, `consolidate apply` on a `merge`.
-  Requires §1a.
+  **Blocked on CV22.DS8.TS2** (the cultivation prompt templates). Everything
+  else this story does for that family — the transport spec, the factory, the
+  ledger rows, the outcome seam, the revert variable, the gate retirement —
+  lands here; only the route flip waits. If TS2 has not landed when the rest
+  of US3 is validated, the three cultivation leaves stay replay-gated, US3
+  closes without them, and the burn-down ledger says so.
 
 ### 7. Live long-tail smoke — `ts/parity/live_long_tail_smoke.ts`
 
@@ -276,6 +302,10 @@ revert variables; `MIRROR_TS_EXTERNAL_ROUTES` removed), `ts/README.md`,
 ## Non-Goals
 
 - **CV22.DS8.TS1** (`eval` ownership) — its own decision story.
+- **CV22.DS8.TS2** — porting `CONSOLIDATION_PROMPT` and `SHADOW_SCAN_PROMPT`
+  into TypeScript and threading `userName`/`identityContext` from the
+  cultivation route. Split out of this story on 2026-09-11; group C's flip
+  waits on it.
 - **CR074** (`week plan` pending-file hardening) — changes both engines;
   not a cutover concern. **CR076** (collapse the three close-tail calls),
   **CR057** (discarded summary) — prompt-layer economics, US2 territory.
@@ -443,6 +473,9 @@ something each parser can use.
   Navigator steps 1–3**; (9) group B + step 4; (10) group C + step 5;
   (11) reverts, hygiene, docs, ledger, `decisions.md`, CR075/CR077 closure.
   A session that stops between plateaus records it in the package.
+- **Plateau 10 (group C) is gated on CV22.DS8.TS2.** Its non-flip work — the
+  cultivation ledger rows, the outcome seam, the revert variable, and the
+  factory migration — belongs to plateaus 4–6 and is not gated.
 - Plan review (2026-09-11) findings folded in: ai-engineer (outcome seam,
   zero-proposal guard, stated latency bound, descriptor gap closed),
   prompt-engineer (digest pins for `reception`/`consolidation`/`shadow_scan`

@@ -8,6 +8,7 @@ import { buildConsultLlmRequest, runConsult, SYSTEM_PREAMBLE } from "#consult/co
 import { resolveConsultModel } from "#consult/modelCatalog.ts";
 import { renderConsultAsk, renderCost, renderCredits } from "#consult/render.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
+import { promptAssemblyGolden, scenariosFor, sha256 } from "#helpers/promptAssemblyGolden.ts";
 import { ReplayCreditProvider } from "#providers/credits.ts";
 import { ReplayLlmProvider } from "#providers/llm.ts";
 
@@ -149,22 +150,31 @@ test("the envelope is carried as messages, not only as an encoded prompt", () =>
   assert.equal(request.prompt, JSON.parse(JSON.stringify(request.prompt)));
 });
 
-test("the recorded envelope is Python's json.dumps bytes, separators included", () => {
-  // Oracle, from `send_to_model`'s `json.dumps(messages, ensure_ascii=False)`:
-  //   uv run python -c "import json; print(json.dumps([...], ensure_ascii=False))"
-  // JSON.stringify omits the space after ',' and ':' that Python writes, so
-  // the two engines recorded different bytes for the same call in a column
-  // both of them read (US3 plan review, database-architect).
-  const request = buildConsultLlmRequest("model/a", "e aí?", "contexto — café");
-  const expected =
-    '[{"role": "system", "content": "You are the user\'s Mirror, as described in the context ' +
-    "below. Answer in first person, as the user.\\nRespect the vocabulary, tone, and philosophy " +
-    'described in the identity context.\\n\\ncontexto — café"}, ' +
-    '{"role": "user", "content": "e aí?"}]';
+test("the recorded envelope is Python's json.dumps bytes, and the wire array matches", () => {
+  // Graded against the oracle corpus rather than a hand-run comparison:
+  // `uv run python ts/parity/generate_prompt_assembly_golden.py`.
+  //
+  // `prompt` is what `send_to_model` records — json.dumps(messages,
+  // ensure_ascii=False) — and it is both the ledger's `prompt` column and what
+  // the replay transport resolves against. JSON.stringify omits the space
+  // after ',' and ':' that Python writes, so the two engines were recording
+  // different bytes for the same call in a column both of them read.
+  for (const scenario of scenariosFor("consult")) {
+    const inputs = scenario.inputs as { model_id: string; prompt: string; context: string };
+    const request = buildConsultLlmRequest(inputs.model_id, inputs.prompt, inputs.context);
 
-  assert.equal(request.prompt, expected);
-  // ensure_ascii=False: the accented text stays as text, not as \\u escapes.
-  assert.ok(request.prompt.includes("café"));
+    assert.equal(request.prompt, scenario.prompt, `${scenario.label}: recorded envelope bytes`);
+    assert.equal(sha256(request.prompt), scenario.prompt_sha256, `${scenario.label}: digest`);
+    assert.deepEqual(
+      request.messages,
+      (scenario as unknown as { messages: unknown }).messages,
+      `${scenario.label}: the array that reaches the model`,
+    );
+  }
+});
+
+test("consult's system preamble is byte-identical to the Python source", () => {
+  assert.equal(SYSTEM_PREAMBLE, promptAssemblyGolden().system_prompts.consult_preamble);
 });
 
 test("runConsult uses replayed LLM, cost, credits, and context seams", async () => {

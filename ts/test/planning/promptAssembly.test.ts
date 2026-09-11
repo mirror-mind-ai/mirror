@@ -1,14 +1,11 @@
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
 import { test } from "node:test";
-import { fileURLToPath } from "node:url";
 import {
   DESCRIPTOR_PROMPT,
   JOURNAL_CLASSIFICATION_PROMPT,
   WEEK_PLAN_PROMPT,
 } from "#extraction/prompts.ts";
+import { promptAssemblyGolden, sha256 } from "#helpers/promptAssemblyGolden.ts";
 import {
   buildDescriptorPrompt,
   buildJournalClassificationPrompt,
@@ -31,26 +28,7 @@ import {
  * produced.
  */
 
-interface Scenario {
-  label: string;
-  surface: string;
-  inputs: Record<string, unknown>;
-  prompt: string;
-  prompt_sha256: string;
-}
-interface Golden {
-  system_prompts: Record<string, string>;
-  scenarios: Scenario[];
-}
-
-const golden = JSON.parse(
-  readFileSync(
-    join(dirname(fileURLToPath(import.meta.url)), "..", "goldens", "prompt-assembly.golden.json"),
-    "utf8",
-  ),
-) as Golden;
-
-const sha256 = (value: string) => createHash("sha256").update(value, "utf8").digest("hex");
+const golden = promptAssemblyGolden();
 
 test("the three US11 templates are byte-identical to the Python source", () => {
   assert.equal(JOURNAL_CLASSIFICATION_PROMPT, golden.system_prompts.journal_classification);

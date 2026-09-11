@@ -68,21 +68,36 @@ const TRANSCRIPT_BUILDERS: Record<
   task_extraction: buildTaskExtractionPrompt,
 };
 
-// The golden is shared: CV22.DS7.US11 added `journal_classification`,
-// `descriptor`, and `week_plan` scenarios, which are not transcript-fenced and
-// are graded by `test/planning/promptAssembly.test.ts`. This loop owns the
-// close-tail surfaces only, and asserts below that the split stays exhaustive
-// so a future surface cannot fall through both files ungraded.
+// The golden is shared across stories, and each surface is graded in exactly
+// one file. This registry is the map, and the test below keeps it exhaustive
+// so a surface added to the corpus cannot fall through every file ungraded --
+// which is precisely what it caught when CV22.DS8.US3 added `reception` and
+// `consult` (a pinned prompt nobody grades is decoration).
 const CLOSE_TAIL_SURFACES = new Set([...Object.keys(TRANSCRIPT_BUILDERS), "curation"]);
-const US11_SURFACES = new Set(["journal_classification", "descriptor", "week_plan"]);
+const SURFACE_OWNERS: Readonly<Record<string, ReadonlySet<string>>> = {
+  "test/extraction/conversationMetadata.test.ts (this file)": CLOSE_TAIL_SURFACES,
+  // CV22.DS7.US11 -- not transcript-fenced.
+  "test/planning/promptAssembly.test.ts": new Set([
+    "journal_classification",
+    "descriptor",
+    "week_plan",
+  ]),
+  // CV22.DS8.US3 -- pre-digest surfaces, pinned before the live cutover.
+  "test/mirror/reception.test.ts": new Set(["reception"]),
+  "test/consult/consult.test.ts": new Set(["consult"]),
+};
 
 test("every scenario in the shared golden is owned by exactly one test file", () => {
   for (const scenario of golden.scenarios) {
-    const here = CLOSE_TAIL_SURFACES.has(scenario.surface);
-    const there = US11_SURFACES.has(scenario.surface);
-    assert.ok(
-      here !== there,
-      `surface ${scenario.surface} is graded ${here && there ? "twice" : "nowhere"}`,
+    const owners = Object.entries(SURFACE_OWNERS)
+      .filter(([, surfaces]) => surfaces.has(scenario.surface))
+      .map(([file]) => file);
+    assert.equal(
+      owners.length,
+      1,
+      owners.length === 0
+        ? `surface ${scenario.surface} is graded nowhere`
+        : `surface ${scenario.surface} is graded in ${owners.join(" and ")}`,
     );
   }
 });

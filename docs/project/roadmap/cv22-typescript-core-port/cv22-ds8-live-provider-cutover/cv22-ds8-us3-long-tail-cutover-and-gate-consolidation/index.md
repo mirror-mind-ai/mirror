@@ -2,7 +2,7 @@
 
 # CV22.DS8.US3 — Long-tail cutover and gate consolidation
 
-**Status:** 🟡 Planned — Plan reviewed 2026-09-11 (ai-engineer, prompt-engineer, security-engineer, database-architect, quality-assurance; findings folded in); pending Navigator approval
+**Status:** 🔵 In Progress — Plan approved 2026-09-11 after a five-lens review; plateaus 1–2 done. Group C (cultivation) is gated on [CV22.DS8.TS2](../index.md#candidate-stories)
 **Type:** User Story
 
 ---
@@ -53,9 +53,11 @@ Then it routes to Python; the family's deterministic leaves stay on TS
 - Transport gaps the tail exposes: consult's message envelope, per-role
   timeout tier (reception), `getJson` + `LiveCreditProvider` with the
   `generation_id` URL boundary, and CR077's multi-fixture spec.
-- Digest pins for the pre-digest roles (`reception`, `consolidation`,
-  `shadow_scan`, consult's preamble + envelope) — a precondition for the
-  consult/mirror and cultivation flips; no prompt text changes.
+- Digest pins for `reception` and consult's preamble + envelope — a
+  precondition for the consult/mirror flip — and the fix for reception's
+  `$`-pattern corruption in prompt assembly; no prompt text changes.
+  (`consolidation` and `shadow_scan` have no TypeScript template to pin;
+  porting them is CV22.DS8.TS2.)
 - One provider factory for every family; `loggerRuntime` migrates to it.
 - Ledger parity for every flipped leaf, embeddings through
   `generateEmbeddingSafely` (CR075 and its adjacent cases); consult's
@@ -73,7 +75,8 @@ Then it routes to Python; the family's deterministic leaves stay on TS
 
 ## Out Of Scope
 
-- CV22.DS8.TS1 (`eval`), CR074, CR076, CR057.
+- CV22.DS8.TS1 (`eval`), CV22.DS8.TS2 (cultivation prompt templates),
+  CR074, CR076, CR057.
 - Prompt text changes; Python changes; budget guards (DS9); TS4's
   `inspect llm-calls`.
 

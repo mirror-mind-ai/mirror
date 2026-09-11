@@ -1,5 +1,6 @@
 import { parseJsonResponse } from "#extraction/json.ts";
 import type { LlmProvider, LlmResponse } from "#providers/llm.ts";
+import { pyFormat } from "#util/pythonText.ts";
 
 export interface ReceptionPersona {
   slug: string;
@@ -26,6 +27,20 @@ export const EMPTY_RECEPTION_RESULT: ReceptionResult = Object.freeze({
   touchesShadow: false,
 });
 
+/**
+ * Byte-identical to Python's `RECEPTION_PROMPT`, doubled braces included.
+ *
+ * The braces are not cosmetic. Python substitutes through `str.format`, which
+ * requires `{{` to emit a literal `{`, so the JSON example in the response
+ * format section is doubled at the source. Holding the same bytes here means
+ * the template can be compared to the oracle directly, and it forces assembly
+ * through `pyFormat` -- which is the point: `String.replace()` with a string
+ * pattern treats `$&`, `` $` ``, `$'`, and `$1` in the REPLACEMENT as
+ * substitution directives, so a persona described as "Cost: $& per hour"
+ * assembled as "Cost: {personas} per hour" (CV22.DS8.US3). Python's `format`
+ * has no such behavior, no fixture ever carried a `$` pattern, and replay
+ * never reads a prompt -- so only a live call would have shown it.
+ */
 export const RECEPTION_PROMPT = `You are the reception classifier for Mirror Mind, a Jungian mirror AI.
 
 Your job is to classify a single user message on four axes so the mirror can
@@ -68,12 +83,12 @@ return a JSON object — nothing else.
 
 ## Response format
 Return ONLY a JSON object, no markdown:
-{
+{{
   "personas": ["slug", ...],
   "journey": "slug" or null,
   "touches_identity": true or false,
   "touches_shadow": true or false
-}
+}}
 
 ## User message
 `;
@@ -86,11 +101,7 @@ export async function runReception(
   onLlmCall?: (response: LlmResponse, prompt: string) => void,
 ): Promise<ReceptionResult> {
   if (!query.trim()) return { ...EMPTY_RECEPTION_RESULT, personas: [] };
-  const prompt =
-    RECEPTION_PROMPT.replace("{personas}", formatPersonas(personas)).replace(
-      "{journeys}",
-      formatJourneys(journeys),
-    ) + query;
+  const prompt = buildReceptionPrompt(query, personas, journeys);
   try {
     const response = await provider.complete({ role: "reception", prompt, temperature: 0.1 });
     onLlmCall?.(response, prompt);
@@ -108,6 +119,28 @@ export async function runReception(
   } catch {
     return { ...EMPTY_RECEPTION_RESULT, personas: [] };
   }
+}
+
+/**
+ * Python's assembled reception prompt: the formatted template, then the raw
+ * query appended after the `## User message` heading.
+ *
+ * Pure and exported so the assembled BYTES can be graded against the oracle
+ * corpus without a provider (CV22.DS8.US3). Replay resolves a fixture by role
+ * alone and never reads the prompt, so a drift here would have surfaced first
+ * against a real model.
+ */
+export function buildReceptionPrompt(
+  query: string,
+  personas: readonly ReceptionPersona[],
+  journeys: readonly ReceptionJourney[],
+): string {
+  return (
+    pyFormat(RECEPTION_PROMPT, {
+      personas: formatPersonas(personas),
+      journeys: formatJourneys(journeys),
+    }) + query
+  );
 }
 
 export function formatPersonas(personas: readonly ReceptionPersona[]): string {

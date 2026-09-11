@@ -203,8 +203,8 @@ the defect this ledger exists to prevent.
 |------|-----------|-------------------------------------|
 | `consult credits`, `consult ask` | DS5 | none recorded |
 | `mirror load --query` | DS7.US4 | no `reception` rows recorded |
-| `consolidate scan`, `consolidate apply` | DS7.US3 | none recorded |
-| `shadow scan` | DS7.US3 | none recorded |
+| `consolidate scan`, `consolidate apply` | DS7.US3 | none recorded — **flip gated on DS8.TS2**† |
+| `shadow scan` | DS7.US3 | none recorded — **flip gated on DS8.TS2**† |
 | `soul harvest save` | DS7.US6 | none recorded |
 | `journal` | DS7.US11 | none recorded |
 | `week plan` | DS7.US11 | none recorded |
@@ -215,6 +215,19 @@ the defect this ledger exists to prevent.
 US2). What remains is the low-traffic tail DS8.US3 owns: `consult`,
 `mirror load --query`, `consolidate`, `shadow`, `soul harvest save`,
 `journal`, `week plan`, and `descriptor generate`.
+
+† **The three cultivation leaves cannot flip with the rest (2026-09-11).**
+TypeScript never ported `CONSOLIDATION_PROMPT` or `SHADOW_SCAN_PROMPT`:
+`propose.ts` sends a fenced Markdown dump of the memories — 121 and 209 bytes
+against Python's 2,247 and 1,598 — with no task statement, no untrusted-input
+guard, and no JSON output contract. Replay resolves by role and never reads a
+prompt, so nothing caught it; live, the model would answer a memory dump with
+prose, the parse would fail, and `consolidate scan` would report "no
+proposals" indefinitely while the ledger showed paid calls. Porting the two
+templates is
+[CV22.DS8.TS2](../cv22-ds8-live-provider-cutover/index.md#why-ts2-exists-2026-09-11);
+until it lands these three rows stay here, and DS8 cannot claim an empty
+table.
 
 ### Live in production — answered by TS against a real provider
 

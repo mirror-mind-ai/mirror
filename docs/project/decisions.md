@@ -2273,3 +2273,49 @@ default rule in CV22 and every exception has to be visible:
   poll attempt is sent with `maxRetries: 0` so the transport's own retry
   budget cannot multiply into fifteen requests for a number that is optional
   by design.
+
+### The cultivation prompt templates are their own story, not a line in the cutover
+
+**Date:** 2026-09-11 · **Context:** CV22.DS8.US3 plateau 3 fired a
+`plan_rule_conflict` stop before any cultivation leaf was flipped.
+
+US3's plan treated the pre-digest prompt families as a pinning problem: the
+templates exist in TypeScript, they simply were never SHA-pinned against the
+Python oracle, so a drift would only surface at the live cutover. That reading
+holds for `reception`, and for the US11 and close-tail families already pinned.
+
+It does not hold for `consolidate scan` and `shadow scan`. TypeScript never
+ported `CONSOLIDATION_PROMPT` or `SHADOW_SCAN_PROMPT` at all: `propose.ts`
+assembles a fenced Markdown dump of the memories — measured at 121 and 209
+bytes against Python's 2,247 and 1,598 — carrying no task statement, no
+untrusted-input guard, and no JSON output contract. The deferral was explicit
+and is recorded in that file's own header ("the live prompt-level guard text is
+DS8, per the extraction precedent"), so DS8 owns the work; US3 mis-sized it.
+
+**Why this was invisible.** Under the replay transport the provider resolves a
+canned response by `request.role` and never reads the prompt, so every test and
+every golden passes with a stub prompt. The first reader of those bytes would
+have been a real model, on the leaf with the largest fan-out in the family.
+
+**The decision: split, do not absorb.** The work becomes `CV22.DS8.TS2`, and
+US3's cultivation flip (group C) is gated on it. US3 keeps groups A and B —
+`consult`, `mirror load --query`, `journal`, `soul harvest save`, `week plan`,
+`descriptor generate` — and the transport, ledger, gate-retirement, and
+outcome-seam work that the whole family needs.
+
+Reasons:
+
+1. **Different work.** Porting ~3.8k characters of instruction text against an
+   oracle is prompt authoring, not transport wiring. The rest of US3 is seams,
+   ledger rows, and routing.
+2. **Different reviewer.** The prompt engineer owns instruction text and should
+   read it *as text* before it reaches a live model, rather than approving it
+   as a line item inside a plateau labelled "pins".
+3. **Honest sizing.** Absorbing it would have grown the plateau roughly
+   fourfold and buried a substantive behavioral port inside a story whose plan
+   listed "any prompt text change" as a non-goal.
+
+**What does not change.** The three cultivation leaves stay replay-gated until
+TS2 lands, so DS8's done condition — an empty replay-gated table — cannot be
+claimed before TS2 closes. The dependency is recorded in the DS8 candidate
+table and in the burn-down ledger rather than left to sequencing memory.

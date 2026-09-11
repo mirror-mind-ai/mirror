@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { formatJourneys, formatPersonas, runReception } from "#mirror/reception.ts";
+import { promptAssemblyGolden, scenariosFor, sha256 } from "#helpers/promptAssemblyGolden.ts";
+import {
+  buildReceptionPrompt,
+  formatJourneys,
+  formatPersonas,
+  RECEPTION_PROMPT,
+  runReception,
+} from "#mirror/reception.ts";
 import { ReplayLlmProvider } from "#providers/llm.ts";
 
 test("reception formats compact persona and journey metadata", () => {
@@ -80,4 +87,56 @@ test("reception fails soft for malformed output, missing fixture role, and empty
     touchesIdentity: false,
     touchesShadow: false,
   });
+});
+
+// --- CV22.DS8.US3: assembled-prompt parity against the Python oracle ----------
+//
+// `reception` predates the digest discipline: it runs on every Mirror Mode
+// activation with a query, and nothing compared its assembled bytes to
+// Python's. Replay resolves a fixture by role and never reads the prompt, so
+// the first reader of a drifted prompt would have been a live model.
+
+test("the reception template is byte-identical to the Python source", () => {
+  // Doubled braces included. Holding Python's raw template is what forces
+  // assembly through pyFormat rather than String.replace.
+  assert.equal(RECEPTION_PROMPT, promptAssemblyGolden().system_prompts.reception);
+});
+
+for (const scenario of scenariosFor("reception")) {
+  test(`reception prompt assembly — ${scenario.label}`, () => {
+    const inputs = scenario.inputs as {
+      query: string;
+      personas: { slug: string; description: string; routing_keywords: string[] }[];
+      journeys: { slug: string; description: string }[];
+    };
+    const assembled = buildReceptionPrompt(
+      inputs.query,
+      inputs.personas.map((persona) => ({
+        slug: persona.slug,
+        description: persona.description,
+        routingKeywords: persona.routing_keywords,
+      })),
+      inputs.journeys,
+    );
+
+    assert.equal(assembled, scenario.prompt, "assembled bytes match the oracle");
+    assert.equal(sha256(assembled), scenario.prompt_sha256, "digest matches the pinned value");
+  });
+}
+
+test("dollar patterns in identity content survive assembly untouched", () => {
+  // The defect this pins: String.prototype.replace treats `$&`, "$`", `$'`,
+  // and `$1` in the REPLACEMENT as substitution directives, so a persona
+  // described as "Cost: $& per hour" assembled as "Cost: {personas} per hour"
+  // — the matched pattern injected into the prompt. Python's str.format has
+  // no such behavior, no fixture carried a `$`, and replay never reads a
+  // prompt, so only a live call would have shown it.
+  const assembled = buildReceptionPrompt(
+    "q",
+    [{ slug: "engineer", description: "Cost: $& and $` and $' and $1", routingKeywords: [] }],
+    [],
+  );
+
+  assert.match(assembled, /- engineer: Cost: \$& and \$` and \$' and \$1/);
+  assert.ok(!assembled.includes("{personas}"), "the field marker was consumed, not re-injected");
 });
