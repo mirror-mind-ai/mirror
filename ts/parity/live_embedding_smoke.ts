@@ -26,10 +26,11 @@
  * Never a vector, never a memory's content, never the key.
  */
 
-import { openDatabaseCopyForWrite } from "#db/database.ts";
 import { assertCopyTarget } from "#db/copyGuard.ts";
-import { resolveEmbeddingModel } from "#providers/config.ts";
+import { openDatabaseCopyForWrite } from "#db/database.ts";
+import { resolveEmbeddingModel, resolveLogLlmCallsMode } from "#providers/config.ts";
 import { EMBEDDING_DIMENSIONS, LiveEmbeddingProvider } from "#providers/embedding.ts";
+import { searchMemoriesWithStatus } from "#search/memorySearch.ts";
 import { memoryEmbedText } from "#soul/harvest.ts";
 
 const PROBE_TEXT = "The mirror keeps a local memory of journeys, decisions, and identity.";
@@ -145,7 +146,17 @@ async function main(argv: readonly string[]): Promise<void> {
         "  ..  --cross-check skipped: vector-space parity against a Python-era vector NOT proven",
       );
 
-    reportLedger(db, before, model);
+    // The probes above call the provider DIRECTLY, so they exercise the
+    // transport but nothing that writes to `llm_calls` -- the ledger row is
+    // produced by generateEmbeddingSafely's onAttempt hook, one layer up.
+    // Run one real search through that layer so the ledger assertions below
+    // are about behavior this script actually caused.
+    await searchMemoriesWithStatus(db, {
+      query: "mirror identity and memory",
+      limit: 3,
+      provider,
+    });
+    reportLedger(db, ledgerCount(db) - before, model);
   } finally {
     db.close();
   }
@@ -202,16 +213,22 @@ function ledgerCount(db: ReturnType<typeof openDatabaseCopyForWrite>): number {
 /** Reports the rows the run produced. Bodies must be empty in metadata mode. */
 function reportLedger(
   db: ReturnType<typeof openDatabaseCopyForWrite>,
-  before: number,
+  added: number,
   model: string,
 ): void {
+  if (resolveLogLlmCallsMode() === "off") {
+    // A deliberate operator choice, not a defect: say so rather than failing.
+    say("  ..  MEMORY_LOG_LLM_CALLS=off -- ledger assertions skipped by configuration");
+    return;
+  }
+  check(added > 0, "ledger rows written", `${added} new llm_calls rows`);
   const rows = db
     .prepare(
       `SELECT model, prompt_tokens, cost_usd, latency_ms, LENGTH(prompt) AS prompt_len,
               LENGTH(response) AS response_len
          FROM llm_calls WHERE role = 'embedding' ORDER BY called_at DESC LIMIT ?`,
     )
-    .all(ledgerCount(db) - before) as {
+    .all(added) as {
     model: string;
     prompt_tokens: number | null;
     cost_usd: number | null;
@@ -220,7 +237,6 @@ function reportLedger(
     response_len: number;
   }[];
 
-  check(rows.length > 0, "ledger rows written", `${rows.length} embedding rows`);
   check(
     rows.every((row) => row.model === model),
     "every row names the configured pin",
