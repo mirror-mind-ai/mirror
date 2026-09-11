@@ -16,6 +16,11 @@
  */
 
 import {
+  type CreditProvider,
+  LiveCreditProvider,
+  loadReplayCreditProvider,
+} from "#providers/credits.ts";
+import {
   type EmbeddingProvider,
   LiveEmbeddingProvider,
   loadReplayEmbeddingProvider,
@@ -38,6 +43,8 @@ export interface FamilyProviders {
   readonly llm?: LlmProvider;
   /** Present when the family declares an embedding fixture. */
   readonly embedding?: EmbeddingProvider;
+  /** Present when the family declares a credits fixture (`consult`). */
+  readonly credits?: CreditProvider;
 }
 
 /**
@@ -49,8 +56,10 @@ export interface FamilyProviders {
 export interface FamilyProviderOverrides {
   loadReplayLlm?: (path: string) => Promise<LlmProvider>;
   loadReplayEmbedding?: (path: string) => Promise<EmbeddingProvider>;
+  loadReplayCredits?: (path: string) => Promise<CreditProvider>;
   liveLlm?: (env: ProviderTransportEnv) => LlmProvider;
   liveEmbedding?: (env: ProviderTransportEnv) => EmbeddingProvider;
+  liveCredits?: (env: ProviderTransportEnv) => CreditProvider;
 }
 
 /**
@@ -84,11 +93,13 @@ async function replayProviders(
   const paths = decision.replayPaths ?? {};
   const loadLlm = overrides.loadReplayLlm ?? loadReplayLlmProvider;
   const loadEmbedding = overrides.loadReplayEmbedding ?? loadReplayEmbeddingProvider;
-  const [llm, embedding] = await Promise.all([
+  const loadCredits = overrides.loadReplayCredits ?? loadReplayCreditProvider;
+  const [llm, embedding, credits] = await Promise.all([
     paths.llm ? loadLlm(paths.llm) : undefined,
     paths.embedding ? loadEmbedding(paths.embedding) : undefined,
+    paths.credits ? loadCredits(paths.credits) : undefined,
   ]);
-  return { mode: "replay", reason: decision.reason, llm, embedding };
+  return { mode: "replay", reason: decision.reason, llm, embedding, credits };
 }
 
 function liveProviders(
@@ -100,10 +111,13 @@ function liveProviders(
   const buildLlm = overrides.liveLlm ?? ((live) => new LiveLlmProvider({ env: { ...live } }));
   const buildEmbedding =
     overrides.liveEmbedding ?? ((live) => new LiveEmbeddingProvider({ env: { ...live } }));
+  const buildCredits =
+    overrides.liveCredits ?? ((live) => new LiveCreditProvider({ env: { ...live } }));
   return {
     mode: "live",
     reason: decision.reason,
     llm: spec.replay?.llm ? buildLlm(env) : undefined,
     embedding: spec.replay?.embedding ? buildEmbedding(env) : undefined,
+    credits: spec.replay?.credits ? buildCredits(env) : undefined,
   };
 }

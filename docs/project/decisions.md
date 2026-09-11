@@ -2234,3 +2234,42 @@ becomes worth reconsidering — as a deliberate reversal, not a drift.
 ---
 
 **See also:** [Briefing](briefing.md) · [Roadmap](roadmap/index.md) · [Worklog](../process/worklog.md)
+
+### The TypeScript core bounds OpenRouter's read endpoints, where Python does not
+
+**Date:** 2026-09-11 · **Context:** CV22.DS8.US3, porting `get_credits` and
+`fetch_generation_cost` for the `consult` cutover.
+
+Python reaches `/credits` and `/generation` through bare
+`urllib.request.urlopen` with **no timeout argument**, so both calls inherit
+the socket default — effectively unbounded. `consult credits` renders the
+balance bar after every answer and `fetch_generation_cost` runs up to five
+times per `consult ask`, both in front of a waiting human. A stalled
+connection there parks the command with no way back except Ctrl-C.
+
+The TypeScript port bounds every attempt at the **embedding tier**
+(`MEMORY_LLM_TIMEOUT_EMBEDDING`, 15s by default). That tier is not arbitrary:
+it is the one Python itself uses for its only other cheap GET,
+`list_available_models()` on `/models`. So the divergence adopts a bound
+Python already applies to the same class of request, rather than inventing
+one.
+
+This is a deliberate behavioral divergence, recorded because parity is the
+default rule in CV22 and every exception has to be visible:
+
+- **Observable difference:** a hung read that Python would wait on forever
+  fails in TypeScript after 15 seconds. For `fetch_generation_cost` the
+  result is unchanged either way — its contract is already "return `null`
+  when the cost does not arrive", so a bounded attempt reaches that answer
+  sooner. For `get_credits` the difference is a `timeout` error instead of an
+  indefinite hang.
+- **Why not fix Python instead:** per the
+  [2026-08-13 moving-target decision](#typescript-strangler-tracks-a-moving-python-product-instead-of-freezing-it),
+  once a command is ported, new behavior lands in TypeScript and Python
+  becomes compatibility-only there. `consult` is ported in DS8.US3.
+- **What did not change:** the retry counts. Python makes exactly one request
+  for `/credits`, and the generation-cost poll is five attempts with 1/2/3/4s
+  between them, swallowing every error. Both are reproduced exactly, and each
+  poll attempt is sent with `maxRetries: 0` so the transport's own retry
+  budget cannot multiply into fifteen requests for a number that is optional
+  by design.

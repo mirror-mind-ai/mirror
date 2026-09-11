@@ -1,16 +1,17 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import { stubOpenRouterClient } from "#helpers/openRouterStub.ts";
 import { ProviderConfigError } from "#providers/config.ts";
 import { LiveLlmProvider } from "#providers/llm.ts";
-import { LlmTransportError, type PostJsonOptions } from "#providers/openrouter.ts";
+import { LlmTransportError, type ProviderRequestOptions } from "#providers/openrouter.ts";
 
 const LIVE_ENV = { OPENROUTER_API_KEY: "sk-or-v1-live-chat-test" };
 
 interface Captured {
   path: string;
   body: Record<string, unknown>;
-  options: PostJsonOptions;
+  options: ProviderRequestOptions;
 }
 
 function liveProvider(
@@ -20,12 +21,13 @@ function liveProvider(
   const calls: Captured[] = [];
   const provider = new LiveLlmProvider({
     env,
-    createClient: () => ({
-      postJson: async (path, body, options) => {
-        calls.push({ path, body: body as Record<string, unknown>, options });
-        return reply(body as Record<string, unknown>);
-      },
-    }),
+    createClient: () =>
+      stubOpenRouterClient({
+        postJson: async (path, body, options) => {
+          calls.push({ path, body: body as Record<string, unknown>, options });
+          return reply(body as Record<string, unknown>);
+        },
+      }),
   });
   return { provider, calls };
 }
@@ -98,7 +100,10 @@ test("temperature 0 is honored, not treated as absent", async () => {
   assert.equal(calls[0]?.body.temperature, 0);
 });
 
-test("no streaming, no tools, no system message -- Python sends none", async () => {
+test("no streaming, no tools, no system message for a single-prompt role", async () => {
+  // `consult` is the one caller that sends a system message, and it says so
+  // explicitly through `messages` (below). Every prompt-assembling role sends
+  // exactly what Python sends: one user turn.
   const { provider, calls } = liveProvider(() => chatReply("ok"));
 
   await provider.complete({ role: "extraction", prompt: "p" });
@@ -203,6 +208,90 @@ test("the call is bounded by the extraction-tier timeout, not an SDK default", a
   await provider.complete({ role: "conversation_title", prompt: "p" });
 
   assert.equal(calls[0]?.options.timeoutMs, 60_000);
+});
+
+// --- CV22.DS8.US3: the envelope and the per-role timeout tier -----------------
+
+test("a request with messages sends Python's array, not a JSON-encoded prompt", async () => {
+  // The defect this pins: `consult` packs its envelope into `prompt` because
+  // that is what the ledger column and the replay transport resolve against.
+  // Sent as the text of one user message, every digest still passes and the
+  // model reads a JSON document instead of a system instruction and a
+  // question.
+  const { provider, calls } = liveProvider(() => chatReply("ok"));
+
+  await provider.complete({
+    role: "consult",
+    prompt: '[{"role": "system", "content": "preamble"}, {"role": "user", "content": "q"}]',
+    messages: [
+      { role: "system", content: "preamble" },
+      { role: "user", content: "q" },
+    ],
+  });
+
+  const messages = messagesOf(calls[0] as Captured);
+  assert.equal(messages.length, 2);
+  assert.deepEqual(messages[0], { role: "system", content: "preamble" });
+  assert.deepEqual(messages[1], { role: "user", content: "q" });
+});
+
+test("only role and content reach the wire, whatever else a message object carries", async () => {
+  const { provider, calls } = liveProvider(() => chatReply("ok"));
+
+  await provider.complete({
+    role: "consult",
+    prompt: "envelope",
+    messages: [{ role: "user", content: "q", name: "leaked" } as never],
+  });
+
+  assert.deepEqual(messagesOf(calls[0] as Captured), [{ role: "user", content: "q" }]);
+});
+
+test("reception is bounded by the reception tier -- a human is waiting on it", async () => {
+  // Python's only caller that passes a timeout. Six times shorter than the
+  // extraction tier, because `mirror load --query` runs in front of the user
+  // on every Mirror Mode activation.
+  const { provider, calls } = liveProvider(() => chatReply("ok"));
+
+  await provider.complete({ role: "reception", prompt: "p" });
+
+  assert.equal(calls[0]?.options.timeoutMs, 10_000);
+});
+
+test("the reception tier follows its own env pin, not the extraction one", async () => {
+  const { provider, calls } = liveProvider(() => chatReply("ok"), {
+    ...LIVE_ENV,
+    MEMORY_LLM_TIMEOUT_RECEPTION: "4",
+    MEMORY_LLM_TIMEOUT_EXTRACTION: "90",
+  });
+
+  await provider.complete({ role: "reception", prompt: "p" });
+  await provider.complete({ role: "consolidation", prompt: "p" });
+
+  assert.equal(calls[0]?.options.timeoutMs, 4_000);
+  assert.equal(calls[1]?.options.timeoutMs, 90_000);
+});
+
+test("every role US3 flips inherits the extraction tier, as Python's callers do", async () => {
+  // Python passes no timeout from consult, cultivation, the content tail, or
+  // the descriptor; they all inherit LLM_TIMEOUT_EXTRACTION.
+  const { provider, calls } = liveProvider(() => chatReply("ok"));
+
+  for (const role of [
+    "consult",
+    "consolidation",
+    "shadow_scan",
+    "journal_classification",
+    "week_plan",
+    "descriptor",
+  ] as const) {
+    await provider.complete({ role, prompt: "p" });
+  }
+
+  assert.deepEqual(
+    calls.map((call) => call.options.timeoutMs),
+    Array(6).fill(60_000),
+  );
 });
 
 test("constructing without a key does not throw; embedding-time config does", async () => {

@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 
 import {
+  type LlmTimeoutRole,
   type ProviderConfig,
   resolveExtractionModel,
   resolveLlmMaxRetries,
@@ -45,9 +46,71 @@ export const LLM_ROLES = [
 
 export type LlmRole = (typeof LLM_ROLES)[number];
 
+/**
+ * Which timeout tier each role's call is bounded by (CV22.DS8.US3).
+ *
+ * Python's `send_to_model` defaults to `LLM_TIMEOUT_EXTRACTION` and only
+ * `reception` passes anything else (`LLM_TIMEOUT_RECEPTION`, 10s) -- it runs
+ * in front of a waiting human on every Mirror Mode activation, so it must give
+ * up six times sooner than a background extraction.
+ *
+ * A full `Record<LlmRole, ...>` rather than a default plus an exception list:
+ * the compiler then forces every role added to `LLM_ROLES` to declare its
+ * tier, instead of silently inheriting one. That is the US11 lesson -- a type
+ * and a hand-maintained companion that drifted apart.
+ */
+const LLM_TIMEOUT_TIER: Readonly<Record<LlmRole, LlmTimeoutRole>> = {
+  extraction: "extraction",
+  task_extraction: "extraction",
+  summary: "extraction",
+  curation: "extraction",
+  consult: "extraction",
+  reception: "reception",
+  consolidation: "extraction",
+  shadow_scan: "extraction",
+  conversation_title: "extraction",
+  conversation_tags: "extraction",
+  conversation_summary: "extraction",
+  journal_classification: "extraction",
+  week_plan: "extraction",
+  descriptor: "extraction",
+};
+
+/**
+ * The roles a message in Python's envelope can carry.
+ *
+ * Closed to `system` and `user` on purpose: those are the only two Python ever
+ * sends. An assistant prefill or a second turn would satisfy every prompt
+ * digest -- digests pin CONTENT, not STRUCTURE -- while changing what the
+ * model hears, so widening this union has to be a deliberate, reviewed edit.
+ */
+export type LlmMessageRole = "system" | "user";
+
+export interface LlmMessage {
+  role: LlmMessageRole;
+  content: string;
+}
+
 export interface LlmRequest {
   role: LlmRole;
+  /**
+   * The assembled prompt: what prompt digests pin and what the `llm_calls`
+   * ledger records. For a single-message call it is also what is sent.
+   */
   prompt: string;
+  /**
+   * Python's exact message array, for the calls that send more than one
+   * message (`consult` sends `system` + `user`).
+   *
+   * Two fields rather than one because they answer different questions.
+   * `prompt` is the AUDIT record -- Python logs `json.dumps(messages)` in the
+   * ledger's `prompt` column, and the replay transport resolves and digests
+   * against it. `messages` is the WIRE format. Collapsing them is precisely
+   * the defect this story found: consult's JSON-encoded envelope would have
+   * been sent as the text of one user message, passing every digest while the
+   * model read a different conversation.
+   */
+  messages?: readonly LlmMessage[];
   model?: string;
   temperature?: number;
   maxTokens?: number;
@@ -215,16 +278,17 @@ export class LiveLlmProvider implements LlmProvider {
       "/chat/completions",
       {
         model,
-        // Python: `[{"role": "user", "content": prompt}]`. Nothing else.
-        messages: [{ role: "user", content: request.prompt }],
+        // Python sends `[{"role": "user", "content": prompt}]` for every caller
+        // that assembles one prompt, and its own array for the callers that do
+        // not (`consult`). Nothing else, ever.
+        messages: request.messages
+          ? request.messages.map((message) => ({ role: message.role, content: message.content }))
+          : [{ role: "user", content: request.prompt }],
         temperature: request.temperature ?? DEFAULT_TEMPERATURE,
         max_tokens: request.maxTokens ?? DEFAULT_MAX_TOKENS,
       },
       {
-        // Every close-tail role inherits Python's extraction tier: its callers
-        // pass no timeout, so `LLM_TIMEOUT_EXTRACTION` applies. Reception's
-        // shorter tier belongs to `mirror load --query` (US3).
-        timeoutMs: resolveLlmTimeoutMs("extraction", { env: this.env }),
+        timeoutMs: resolveLlmTimeoutMs(LLM_TIMEOUT_TIER[request.role], { env: this.env }),
         maxRetries: resolveLlmMaxRetries({ env: this.env }),
       },
     );

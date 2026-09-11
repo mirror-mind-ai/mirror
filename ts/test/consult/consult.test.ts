@@ -134,6 +134,39 @@ test("buildConsultLlmRequest injects system preamble and user prompt", () => {
   ]);
 });
 
+test("the envelope is carried as messages, not only as an encoded prompt", () => {
+  // CV22.DS8.US3: `prompt` is the AUDIT record -- the ledger column and what
+  // the replay transport resolves against -- while `messages` is the WIRE
+  // format. Before this, only `prompt` existed, so the live provider would
+  // have sent the JSON envelope as the text of a single user message: every
+  // digest still passing, the model reading a different conversation.
+  const request = buildConsultLlmRequest("model/a", "question", "ctx");
+
+  assert.deepEqual(request.messages, [
+    { role: "system", content: `${SYSTEM_PREAMBLE}ctx` },
+    { role: "user", content: "question" },
+  ]);
+  assert.equal(request.prompt, JSON.parse(JSON.stringify(request.prompt)));
+});
+
+test("the recorded envelope is Python's json.dumps bytes, separators included", () => {
+  // Oracle, from `send_to_model`'s `json.dumps(messages, ensure_ascii=False)`:
+  //   uv run python -c "import json; print(json.dumps([...], ensure_ascii=False))"
+  // JSON.stringify omits the space after ',' and ':' that Python writes, so
+  // the two engines recorded different bytes for the same call in a column
+  // both of them read (US3 plan review, database-architect).
+  const request = buildConsultLlmRequest("model/a", "e aí?", "contexto — café");
+  const expected =
+    '[{"role": "system", "content": "You are the user\'s Mirror, as described in the context ' +
+    "below. Answer in first person, as the user.\\nRespect the vocabulary, tone, and philosophy " +
+    'described in the identity context.\\n\\ncontexto — café"}, ' +
+    '{"role": "user", "content": "e aí?"}]';
+
+  assert.equal(request.prompt, expected);
+  // ensure_ascii=False: the accented text stays as text, not as \\u escapes.
+  assert.ok(request.prompt.includes("café"));
+});
+
 test("runConsult uses replayed LLM, cost, credits, and context seams", async () => {
   const llm = new ReplayLlmProvider({
     kind: "llm",

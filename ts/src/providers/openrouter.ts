@@ -61,7 +61,7 @@ export interface OpenRouterClientOptions {
   sleep?: (ms: number) => Promise<void>;
 }
 
-export interface PostJsonOptions {
+export interface ProviderRequestOptions {
   /** Hard bound for one attempt, from the per-role pins in config.ts. */
   timeoutMs: number;
   /** Additional attempts after the first. Defaults to Python's ceiling of 2. */
@@ -69,7 +69,18 @@ export interface PostJsonOptions {
 }
 
 export interface OpenRouterClient {
-  postJson(path: string, body: unknown, options: PostJsonOptions): Promise<unknown>;
+  postJson(path: string, body: unknown, options: ProviderRequestOptions): Promise<unknown>;
+  /**
+   * A bounded GET, for OpenRouter's read endpoints (`/credits`,
+   * `/generation`).
+   *
+   * Python reaches those two through bare `urllib.request.urlopen` with **no
+   * timeout at all**, so a hung connection there parks the command forever.
+   * TypeScript bounds every attempt instead -- a deliberate divergence, at the
+   * embedding tier Python itself uses for its other cheap GET (`/models`).
+   * Recorded in `docs/project/decisions.md` (CV22.DS8.US3).
+   */
+  getJson(path: string, options: ProviderRequestOptions): Promise<unknown>;
 }
 
 /** Base backoff; doubles per attempt (0.5s, 1s, 2s, ...). */
@@ -136,16 +147,21 @@ export function createOpenRouterClient(
   // secret the client holds, so it is the only needle redaction needs.
   const redact = (message: string): string => redactString(message, { secrets: [config.apiKey] });
 
-  async function attempt(path: string, body: unknown, timeoutMs: number): Promise<AttemptOutcome> {
+  async function attempt(
+    method: "GET" | "POST",
+    path: string,
+    body: unknown,
+    timeoutMs: number,
+  ): Promise<AttemptOutcome> {
     let response: Response;
     try {
       response = await fetchImpl(`${config.baseUrl}${path}`, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          authorization: `Bearer ${config.apiKey}`,
-        },
-        body: JSON.stringify(body),
+        method,
+        headers:
+          method === "POST"
+            ? { "content-type": "application/json", authorization: `Bearer ${config.apiKey}` }
+            : { authorization: `Bearer ${config.apiKey}` },
+        body: method === "POST" ? JSON.stringify(body) : undefined,
         signal: AbortSignal.timeout(timeoutMs),
         // The base URL is a module constant; there is no legitimate redirect.
         // Refusing is explicit, rather than trusting the spec to strip the
@@ -201,16 +217,28 @@ export function createOpenRouterClient(
     }
   }
 
-  return {
-    async postJson(path, body, postOptions) {
-      const maxRetries = postOptions.maxRetries ?? DEFAULT_MAX_RETRIES;
+  // One retry loop for both verbs: the taxonomy, the retryable-status set, the
+  // `retry-after` handling, and the backoff are properties of the TRANSPORT,
+  // not of the method. A second loop for GET would be a second place for the
+  // policy to drift.
+  async function send(
+    method: "GET" | "POST",
+    path: string,
+    body: unknown,
+    requestOptions: ProviderRequestOptions,
+  ): Promise<unknown> {
+    const maxRetries = requestOptions.maxRetries ?? DEFAULT_MAX_RETRIES;
 
-      for (let index = 0; ; index += 1) {
-        const outcome = await attempt(path, body, postOptions.timeoutMs);
-        if (outcome.ok) return outcome.body;
-        if (!outcome.error.retryable || index === maxRetries) throw outcome.error;
-        await sleep(outcome.retryAfterMs ?? backoffMs(index));
-      }
-    },
+    for (let index = 0; ; index += 1) {
+      const outcome = await attempt(method, path, body, requestOptions.timeoutMs);
+      if (outcome.ok) return outcome.body;
+      if (!outcome.error.retryable || index === maxRetries) throw outcome.error;
+      await sleep(outcome.retryAfterMs ?? backoffMs(index));
+    }
+  }
+
+  return {
+    postJson: (path, body, requestOptions) => send("POST", path, body, requestOptions),
+    getJson: (path, requestOptions) => send("GET", path, undefined, requestOptions),
   };
 }

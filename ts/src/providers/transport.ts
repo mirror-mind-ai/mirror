@@ -26,13 +26,8 @@ export type ProviderTransportMode = "python" | "replay" | "incomplete_replay" | 
  */
 export type ProviderTransportEnv = Readonly<Record<string, string | undefined>>;
 
-/**
- * The provider kinds a replay fixture can answer for.
- *
- * `credits` joins this union in the plateau that builds `LiveCreditProvider`;
- * a kind the factory cannot build would be a branch no test could reach.
- */
-export type ProviderKind = "llm" | "embedding";
+/** The provider kinds a replay fixture can answer for. */
+export type ProviderKind = "llm" | "embedding" | "credits";
 
 /**
  * Which fixture variable answers for which provider kind.
@@ -129,7 +124,7 @@ export function resolveProviderTransport(
 
 /** The declared fixture variables, in a stable kind order for stable reasons. */
 function declaredReplayVars(spec: ProviderTransportSpec): [ProviderKind, string][] {
-  const order: ProviderKind[] = ["llm", "embedding"];
+  const order: ProviderKind[] = ["llm", "embedding", "credits"];
   return order
     .filter((kind) => Boolean(spec.replay?.[kind]))
     .map((kind) => [kind, spec.replay?.[kind] as string]);

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { stubOpenRouterClient } from "#helpers/openRouterStub.ts";
 import { ProviderConfigError } from "#providers/config.ts";
 import {
   addEmbeddingProvenance,
@@ -192,12 +193,13 @@ function liveProvider(post: (path: string, body: unknown) => Promise<unknown>) {
   const calls: { path: string; body: unknown }[] = [];
   const provider = new LiveEmbeddingProvider({
     env: LIVE_ENV,
-    createClient: () => ({
-      postJson: async (path, body) => {
-        calls.push({ path, body });
-        return post(path, body);
-      },
-    }),
+    createClient: () =>
+      stubOpenRouterClient({
+        postJson: async (path, body) => {
+          calls.push({ path, body });
+          return post(path, body);
+        },
+      }),
   });
   return { provider, calls };
 }
@@ -286,12 +288,13 @@ test("the live provider bounds the call with the embedding-tier timeout", async 
   let seenTimeout: number | undefined;
   const provider = new LiveEmbeddingProvider({
     env: LIVE_ENV,
-    createClient: () => ({
-      postJson: async (_path, _body, options) => {
-        seenTimeout = options.timeoutMs;
-        return embeddingResponse(VALID, 1);
-      },
-    }),
+    createClient: () =>
+      stubOpenRouterClient({
+        postJson: async (_path, _body, options) => {
+          seenTimeout = options.timeoutMs;
+          return embeddingResponse(VALID, 1);
+        },
+      }),
   });
 
   await provider.embed("hello");

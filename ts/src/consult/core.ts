@@ -1,7 +1,8 @@
 import type { WritableDatabase } from "#db/database.ts";
 import { logLlmCall } from "#observability/llmCalls.ts";
 import type { CreditProvider } from "#providers/credits.ts";
-import type { LlmProvider, LlmRequest } from "#providers/llm.ts";
+import type { LlmMessage, LlmProvider, LlmRequest } from "#providers/llm.ts";
+import { pythonJsonDumps } from "#util/pyGenerators.ts";
 import type { ConsultAskCommand, ConsultCreditsCommand, ConsultParseResult } from "./args.ts";
 import { renderConsultAsk, renderCredits } from "./render.ts";
 
@@ -81,21 +82,33 @@ export async function runConsultAsk(
   return renderConsultAsk(command.modelId, response, credits, cost);
 }
 
+/**
+ * Python's `cmd_ask` envelope: a system message carrying the preamble and the
+ * Mirror context, then the user's question.
+ *
+ * `messages` is what leaves for the provider; `prompt` is the same envelope
+ * serialized exactly as Python serializes it (`json.dumps(messages,
+ * ensure_ascii=False)` inside `send_to_model`), because that string is what
+ * the replay transport resolves against and what the ledger's `prompt` column
+ * holds under `MEMORY_LOG_LLM_CALLS=full`. `JSON.stringify` was close enough
+ * to read but not to compare: it omits the space after `,` and `:` that
+ * Python writes, so the two engines recorded different bytes for the same
+ * call in a column both of them read (CV22.DS8.US3 plan review,
+ * database-architect).
+ */
 export function buildConsultLlmRequest(
   modelId: string,
   prompt: string,
   context: string,
 ): LlmRequest {
+  const messages: LlmMessage[] = [
+    { role: "system", content: SYSTEM_PREAMBLE + context },
+    { role: "user", content: prompt },
+  ];
   return {
     role: "consult",
     model: modelId,
-    prompt: JSON.stringify(
-      [
-        { role: "system", content: SYSTEM_PREAMBLE + context },
-        { role: "user", content: prompt },
-      ],
-      null,
-      0,
-    ),
+    messages,
+    prompt: pythonJsonDumps(messages),
   };
 }

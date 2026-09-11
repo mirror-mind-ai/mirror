@@ -314,3 +314,57 @@ test("maxRetries=0 issues exactly one attempt", async () => {
 
   assert.equal(calls.length, 1);
 });
+
+// --- CV22.DS8.US3: the GET verb, on the same transport policy ----------------
+
+test("getJson issues a GET with no body and the key in the same one header", async () => {
+  const { transport, calls } = client([json({ data: { total_credits: 1 } })]);
+
+  const body = await transport.getJson("/credits", { timeoutMs: 15_000, maxRetries: 0 });
+
+  assert.deepEqual(body, { data: { total_credits: 1 } });
+  assert.equal(calls[0]?.init.method, "GET");
+  assert.equal(calls[0]?.init.body, undefined);
+  const headers = new Headers(calls[0]?.init.headers as Record<string, string>);
+  assert.equal(headers.get("authorization"), `Bearer ${CONFIG.apiKey}`);
+  assert.equal(headers.get("content-type"), null, "a GET has no body to type");
+});
+
+test("GET and POST share one retry policy, so it cannot drift between verbs", async () => {
+  // The taxonomy, the retryable-status set, retry-after, and the backoff are
+  // properties of the transport, not of the method. A second loop for GET
+  // would be a second place for the policy to age.
+  const { transport, waits } = client([
+    json({}, 429, { "retry-after": "2" }),
+    json({}, 500),
+    json({ data: {} }),
+  ]);
+
+  const body = await transport.getJson("/generation?id=gen-1", { timeoutMs: 15_000 });
+
+  assert.deepEqual(body, { data: {} });
+  assert.deepEqual(waits, [2000, 1000], "retry-after honored, then the computed backoff");
+});
+
+test("a GET refuses redirects too, so the key never follows a cross-origin hop", async () => {
+  const { transport, calls } = client([json({ data: {} })]);
+
+  await transport.getJson("/credits", { timeoutMs: 15_000 });
+
+  assert.equal(calls[0]?.init.redirect, "error");
+});
+
+test("a failing GET reports the taxonomy and carries no provider body", async () => {
+  const { transport } = client([json({ error: { message: "sk-or-v1-test-key is revoked" } }, 401)]);
+
+  await assert.rejects(
+    () => transport.getJson("/credits", { timeoutMs: 15_000 }),
+    (error: unknown) => {
+      assert.ok(error instanceof LlmTransportError);
+      assert.equal(error.kind, "auth");
+      assert.ok(!error.message.includes("revoked"), "no provider body in the message");
+      assert.ok(!error.message.includes(CONFIG.apiKey), "no key in the message");
+      return true;
+    },
+  );
+});
