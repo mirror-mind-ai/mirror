@@ -71,4 +71,76 @@ the degraded note will say "offline or no API key". Documented in REFERENCE.md.
 
 ## Validation Evidence
 
-Pending implementation and validation.
+Run 2026-09-11, real home (`~/.mirror-minds/vinicius-ts`), live OpenRouter,
+against `ts/parity/real-copy.db` for the copy-only steps. Total spend: four
+embedding calls, well under one cent.
+
+**1. Live smoke + vector-space parity — PASS**
+
+```text
+live embedding smoke -- model=openai/text-embedding-3-small db=tmp/parity/real-copy.db
+  ok  dimension (1536 == 1536)
+  ok  all values finite (no NaN or Infinity would reach the corpus)
+  ok  self-similarity (cos=1.000000 >= 0.999)
+  ok  an unrelated sentence is further away (cos=0.0321 < 1.0000)
+  ..  first-call latency 1533ms, usage prompt_tokens=14
+  ok  vector-space parity with the stored Python-era vector (cos=1.000000 >= 0.99)
+  ok  ledger rows written (1 new llm_calls rows)
+  ok  every row names the configured pin (openai/text-embedding-3-small)
+  ok  bodies withheld (metadata mode never persists the query text)
+  ok  latency recorded (a real round-trip took measurable time)
+  ..  usage reported on 1/1 rows
+PASS live embedding smoke
+```
+
+`cos=1.000000` against a stored Python-era vector is the load-bearing result:
+TS embeds into the same space as the existing corpus, so no ranking moves.
+
+**2. Live search, real home — PASS.** The discriminating query returned 20
+results with no degraded note, and `ddf1d328` — the memory the query was
+built to paraphrase — ranked #2 at 0.401. The query matches zero rows in
+`memories_fts`, so lexical-only would have returned nothing; results at all
+prove the semantic term ran.
+
+**3. Ledger row — PASS.** Exactly one new row (451 → 452):
+
+```text
+role|model|prompt_tokens|cost_usd|latency_ms|prompt_len|resp_len
+embedding|openai/text-embedding-3-small|11|2.2e-07|1264|0|0
+```
+
+Priced (11 tokens x $0.00002/1k = 2.2e-07), bodies withheld. Front-door log:
+`memories  ts  exit=0`.
+
+**4. Cross-engine parity — PASS.** The same query through
+`uv run python -m memory memories --search`, then the two newest rows:
+
+```text
+Python: openai/text-embedding-3-small | 11 | 2.2e-07 | 1346ms | 0 | 0
+TS:     openai/text-embedding-3-small | 11 | 2.2e-07 | 1264ms | 0 | 0
+```
+
+Identical in every column except latency. The `> 0` assumption the plan
+review replaced with a parity criterion was the right call, but in the event
+OpenRouter does report usage for embeddings, so both engines price the row.
+
+**5a. Unconfigured install — PASS.** Python's exact degraded note, lexical
+results, and **zero** new ledger rows — the `ProviderConfigError` bypass
+holding. Front-door log carries the class, not a guess:
+`embedding_degraded kind=config`.
+
+**5b. Revert — PASS.** `MIRROR_TS_SEARCH=0` routes to Python
+(`{"engine":"python","reason":"MIRROR_TS_SEARCH=0 revert to Python"}`) and the
+front-door log records route `python`.
+
+**Two harness defects found and fixed while preparing this route** (neither in
+product code): the cross-check embedded a null `context` where Python appends
+`Context: ...`, which would have reported a low cosine and looked exactly like
+the vector-space failure whose documented response is to abort the cutover;
+and the smoke asserted ledger rows while calling the provider directly,
+bypassing the layer that writes them.
+
+**Not exercised.** Live `timeout`, `auth`, `rate_limit`, and `provider_error`
+paths against a real provider — covered only by hermetic tests with an
+injected `fetch`. Forcing them live would mean revoking a key or provoking a
+429, which costs more than it proves at this stage.
