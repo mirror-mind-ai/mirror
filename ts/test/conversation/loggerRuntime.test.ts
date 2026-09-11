@@ -15,7 +15,6 @@ import {
   createLoggerRuntime,
   LlmTailUnconfiguredError,
   type LoggerRuntimeEnv,
-  ReplayFixtureIncompleteError,
 } from "#conversation/loggerRuntime.ts";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import {
@@ -26,6 +25,7 @@ import {
 } from "#providers/config.ts";
 import { EMBEDDING_DIMENSIONS } from "#providers/embedding.ts";
 import type { LlmProvider } from "#providers/llm.ts";
+import { ReplayFixtureIncompleteError } from "#providers/transport.ts";
 
 const deps = { newId: () => "id", nowIso: () => "2026-09-02T12:00:00.000000Z" };
 

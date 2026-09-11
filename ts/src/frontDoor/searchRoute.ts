@@ -1,8 +1,8 @@
 import type { WritableDatabase } from "#db/database.ts";
 import { requireString } from "#db/rowDecode.ts";
 import type { EmbeddingProvider } from "#providers/embedding.ts";
-import { LiveEmbeddingProvider, loadReplayEmbeddingProvider } from "#providers/embedding.ts";
-import { resolveProviderTransport, SEARCH_TRANSPORT } from "#providers/transport.ts";
+import { resolveFamilyProviders } from "#providers/familyProviders.ts";
+import { SEARCH_TRANSPORT } from "#providers/transport.ts";
 import type { FreshSearchResult } from "#search/memorySearch.ts";
 import { searchMemoriesWithStatus } from "#search/memorySearch.ts";
 import { optionValue } from "./args.ts";
@@ -33,14 +33,16 @@ export interface SearchMemoryRow {
 export async function resolveSearchEmbeddingProvider(
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<EmbeddingProvider> {
-  const transport = resolveProviderTransport(env, SEARCH_TRANSPORT);
-  if (transport.mode === "replay" && transport.replayPath) {
-    return loadReplayEmbeddingProvider(transport.replayPath);
-  }
-  // Live. The provider resolves its config lazily, so a missing key surfaces
+  // The live provider resolves its config lazily, so a missing key surfaces
   // inside searchMemoriesWithStatus and degrades to lexical-only rather than
   // failing the command -- Python's behavior for an unconfigured install.
-  return new LiveEmbeddingProvider({ env });
+  const family = await resolveFamilyProviders(env, SEARCH_TRANSPORT);
+  if (!family?.embedding) {
+    // `routing.ts` keeps `MIRROR_TS_SEARCH=0` on Python, so this route is only
+    // reached when the family resolved to replay or live.
+    throw new Error("memories --search requires an embedding provider");
+  }
+  return family.embedding;
 }
 
 export interface MemorySearchRouteOptions {

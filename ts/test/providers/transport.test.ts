@@ -1,9 +1,17 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { resolveProviderTransport } from "#providers/transport.ts";
+import {
+  CONVERSATION_TAIL_TRANSPORT,
+  type ProviderTransportSpec,
+  ReplayFixtureIncompleteError,
+  resolveProviderTransport,
+} from "#providers/transport.ts";
 
-const SEARCH = { revertVar: "MIRROR_TS_SEARCH", replayVar: "MIRROR_TS_SEARCH_EMBEDDING_REPLAY" };
+const SEARCH: ProviderTransportSpec = {
+  revertVar: "MIRROR_TS_SEARCH",
+  replay: { embedding: "MIRROR_TS_SEARCH_EMBEDDING_REPLAY" },
+};
 
 test("nothing configured means live -- the DS8 default an unconfigured install gets", () => {
   const decision = resolveProviderTransport({}, SEARCH);
@@ -31,7 +39,7 @@ test("a replay fixture selects replay, keeping CI and the parity harness determi
   );
 
   assert.equal(decision.mode, "replay");
-  assert.equal(decision.replayPath, "/tmp/fixture.json");
+  assert.deepEqual(decision.replayPaths, { embedding: "/tmp/fixture.json" });
 });
 
 test("replay no longer requires MIRROR_TS_EXTERNAL_ROUTES", () => {
@@ -80,7 +88,7 @@ test("the decision is a closed union every family reuses", () => {
       resolveProviderTransport({}, { revertVar: "MIRROR_TS_JOURNAL" }).mode,
       resolveProviderTransport(
         { MIRROR_TS_JOURNAL_LLM_REPLAY: "/tmp/f.json" },
-        { revertVar: "MIRROR_TS_JOURNAL", replayVar: "MIRROR_TS_JOURNAL_LLM_REPLAY" },
+        { revertVar: "MIRROR_TS_JOURNAL", replay: { llm: "MIRROR_TS_JOURNAL_LLM_REPLAY" } },
       ).mode,
     ].values(),
   );
@@ -92,5 +100,81 @@ test("a family with no replay variable can still choose python or live", () => {
   const decision = resolveProviderTransport({}, { revertVar: "MIRROR_TS_WEEK" });
 
   assert.equal(decision.mode, "live");
-  assert.equal(decision.replayPath, undefined);
+  assert.equal(decision.replayPaths, undefined);
+});
+
+// --- CR077: the spec carries the whole pair rule ------------------------------
+//
+// Before this, the spec named ONE fixture variable and the "both or neither"
+// rule lived privately in `loggerRuntime`. With only the LLM half set, the
+// router reported `engine=ts, reason=... replay transport` and the runtime
+// then refused -- a route reason the next layer contradicted, and a front-door
+// log line that claimed a replay that never happened.
+
+test("every declared fixture set selects replay, and each path is resolved by kind", () => {
+  const decision = resolveProviderTransport(
+    {
+      MIRROR_TS_CONVERSATION_LLM_REPLAY: "/tmp/llm.json",
+      MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY: "/tmp/emb.json",
+    },
+    CONVERSATION_TAIL_TRANSPORT,
+  );
+
+  assert.equal(decision.mode, "replay");
+  assert.deepEqual(decision.replayPaths, { llm: "/tmp/llm.json", embedding: "/tmp/emb.json" });
+});
+
+test("half a fixture is incomplete_replay -- never live, never Python", () => {
+  for (const [present, missing] of [
+    ["MIRROR_TS_CONVERSATION_LLM_REPLAY", "MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY"],
+    ["MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY", "MIRROR_TS_CONVERSATION_LLM_REPLAY"],
+  ] as const) {
+    const decision = resolveProviderTransport(
+      { [present]: "/tmp/half.json" },
+      CONVERSATION_TAIL_TRANSPORT,
+    );
+
+    assert.equal(decision.mode, "incomplete_replay", `${present} alone must not run`);
+    assert.deepEqual(decision.missingReplayVars, [missing]);
+    assert.deepEqual(decision.presentReplayVars, [present]);
+    // The reason names BOTH halves: an operator reading the front-door log has
+    // to know which variable to set, not merely that something is wrong.
+    assert.match(decision.reason, new RegExp(present));
+    assert.match(decision.reason, new RegExp(missing));
+  }
+});
+
+test("the revert still wins over a half-configured fixture", () => {
+  // Otherwise the operational escape hatch would be unreachable from exactly
+  // the shell most likely to need it: one where replay was being set up.
+  const decision = resolveProviderTransport(
+    {
+      MIRROR_TS_CONVERSATION_LLM_TAIL: "0",
+      MIRROR_TS_CONVERSATION_LLM_REPLAY: "/tmp/half.json",
+    },
+    CONVERSATION_TAIL_TRANSPORT,
+  );
+
+  assert.equal(decision.mode, "python");
+});
+
+test("the incomplete-replay error names the missing half and how to run live deliberately", () => {
+  const decision = resolveProviderTransport(
+    { MIRROR_TS_CONVERSATION_LLM_REPLAY: "/tmp/half.json" },
+    CONVERSATION_TAIL_TRANSPORT,
+  );
+  const error = new ReplayFixtureIncompleteError(decision);
+
+  assert.match(error.message, /MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY is not/);
+  assert.match(error.message, /spend real money/);
+  assert.match(error.message, /unset MIRROR_TS_CONVERSATION_LLM_REPLAY to run live/);
+});
+
+test("a single-fixture family's replay reason is unchanged, so the log reads the same", () => {
+  const decision = resolveProviderTransport(
+    { MIRROR_TS_SEARCH_EMBEDDING_REPLAY: "/tmp/f.json" },
+    SEARCH,
+  );
+
+  assert.equal(decision.reason, "MIRROR_TS_SEARCH_EMBEDDING_REPLAY replay transport");
 });

@@ -33,19 +33,10 @@ import {
   resolveTwoPassEnabled,
 } from "#providers/config.ts";
 import { computeCost } from "#providers/cost.ts";
+import type { EmbeddingProvider } from "#providers/embedding.ts";
+import { resolveFamilyProviders } from "#providers/familyProviders.ts";
+import type { LlmProvider, LlmResponse } from "#providers/llm.ts";
 import {
-  type EmbeddingProvider,
-  LiveEmbeddingProvider,
-  loadReplayEmbeddingProvider,
-} from "#providers/embedding.ts";
-import {
-  LiveLlmProvider,
-  type LlmProvider,
-  type LlmResponse,
-  loadReplayLlmProvider,
-} from "#providers/llm.ts";
-import {
-  CONVERSATION_TAIL_EMBEDDING_REPLAY_VAR,
   CONVERSATION_TAIL_TRANSPORT,
   type ProviderTransportMode,
   resolveProviderTransport,
@@ -122,26 +113,6 @@ export class LlmTailUnconfiguredError extends Error {
   }
 }
 
-/**
- * Exactly one of the two close-tail replay fixtures is set (CV22.DS8.US2).
- *
- * Deliberately NOT a subclass of `LlmTailUnconfiguredError`: that one means
- * "use Python", and falling back here would be no safer, because Python has no
- * replay transport and would spend on the live provider too -- just on the
- * other engine, and silently. Someone who set one variable meant to replay,
- * so the only honest answer is to stop and name the missing half.
- */
-export class ReplayFixtureIncompleteError extends Error {
-  constructor(missing: string, present: string) {
-    super(
-      `${present} is set but ${missing} is not. The conversation close tail needs BOTH ` +
-        "replay fixtures; running with one would reach the live provider and spend real money. " +
-        `Set ${missing}, or unset ${present} to run live deliberately.`,
-    );
-    this.name = "ReplayFixtureIncompleteError";
-  }
-}
-
 export interface LoggerRuntime {
   readonly deps: LoggerDeps;
   readonly mirrorHome: string;
@@ -161,54 +132,57 @@ export interface LoggerRuntime {
   readonly backup: ((stdout: (line: string) => void) => string | null) | null;
 }
 
+/**
+ * Adapt the close tail's PAIR-shaped live seam to the factory's per-kind
+ * overrides, memoized so one invocation builds one pair.
+ *
+ * The pair shape is load-bearing for tests: an atomicity test that fails the
+ * embedding on the second memory needs the same provider objects the close
+ * tail will call. Absent, the factory's own live defaults apply -- the default
+ * is not duplicated here.
+ */
+function liveTailOverrides(
+  env: LoggerRuntimeEnv,
+  liveProviders: LoggerRuntimeOptions["liveProviders"],
+): { liveLlm?: () => LlmProvider; liveEmbedding?: () => EmbeddingProvider } {
+  if (!liveProviders) return {};
+  let pair: { llm: LlmProvider; embeddings: EmbeddingProvider } | null = null;
+  const build = () => {
+    pair ??= liveProviders(env);
+    return pair;
+  };
+  return { liveLlm: () => build().llm, liveEmbedding: () => build().embeddings };
+}
+
 export function createLoggerRuntime(options: LoggerRuntimeOptions): LoggerRuntime {
   const { db, env, deps } = options;
-  const loadLlm = options.loadLlm ?? loadReplayLlmProvider;
-  const loadEmbeddings = options.loadEmbeddings ?? loadReplayEmbeddingProvider;
-  const llmPath = env.MIRROR_TS_CONVERSATION_LLM_REPLAY;
-  const embeddingPath = env[CONVERSATION_TAIL_EMBEDDING_REPLAY_VAR];
   const piSessionsDir = resolvePiSessionsDir(null, env, options.homeDir);
 
   // One precedence, shared with the router so the two cannot disagree about
-  // which transport is live: revert -> replay -> live.
+  // which transport is live: revert -> replay -> incomplete -> live. The pair
+  // rule that used to live here is now in the spec itself (CR077), so the
+  // router refuses a half-configured fixture with the same reason this does.
   const transport = resolveProviderTransport(env, CONVERSATION_TAIL_TRANSPORT);
-  // The LLM fixture selects replay mode; the embedding fixture is this
-  // family's second half. Either one alone is a refusal, never a live call.
-  const halfConfiguredReplay =
-    transport.mode !== "python" && Boolean(llmPath) !== Boolean(embeddingPath);
 
   let providers: Promise<{ llm: LlmProvider; embeddings: EmbeddingProvider }> | null = null;
   const loadProviders = () => {
     if (transport.mode === "python") {
       throw new LlmTailUnconfiguredError(`${CONVERSATION_TAIL_TRANSPORT.revertVar}=0`);
     }
-    if (halfConfiguredReplay) {
-      throw llmPath
-        ? new ReplayFixtureIncompleteError(
-            CONVERSATION_TAIL_EMBEDDING_REPLAY_VAR,
-            CONVERSATION_TAIL_TRANSPORT.replayVar as string,
-          )
-        : new ReplayFixtureIncompleteError(
-            CONVERSATION_TAIL_TRANSPORT.replayVar as string,
-            CONVERSATION_TAIL_EMBEDDING_REPLAY_VAR,
-          );
-    }
-    if (transport.mode === "replay" && llmPath && embeddingPath) {
-      providers ??= Promise.all([loadLlm(llmPath), loadEmbeddings(embeddingPath)]).then(
-        ([llm, embeddings]) => ({ llm, embeddings }),
-      );
-      return providers;
-    }
-    // Live. Both providers resolve their config lazily, so a missing key
-    // surfaces inside the close tail -- where the extraction driver records a
-    // failed attempt -- rather than crashing the session-end hook outright.
-    const buildLive =
-      options.liveProviders ??
-      ((liveEnv: LoggerRuntimeEnv) => ({
-        llm: new LiveLlmProvider({ env: liveEnv }),
-        embeddings: new LiveEmbeddingProvider({ env: liveEnv }),
-      }));
-    providers ??= Promise.resolve(buildLive(env));
+    providers ??= resolveFamilyProviders(env, CONVERSATION_TAIL_TRANSPORT, {
+      loadReplayLlm: options.loadLlm,
+      loadReplayEmbedding: options.loadEmbeddings,
+      ...liveTailOverrides(env, options.liveProviders),
+    }).then((family) => {
+      // `python` was handled above, and the factory declares both kinds for
+      // this family, so both are present by construction.
+      const llm = family?.llm;
+      const embeddings = family?.embedding;
+      if (!llm || !embeddings) {
+        throw new Error("the conversation close tail requires an LLM and an embedding provider");
+      }
+      return { llm, embeddings };
+    });
     return providers;
   };
 
