@@ -293,3 +293,27 @@ real cost for). Under `MEMORY_LOG_LLM_CALLS=metadata` — the default — the
 `prompt` and `response` columns are empty strings: your query text is never
 persisted. The API key is read from the environment only, never accepted as a
 command-line argument, never logged, and never included in an error message.
+
+### Conversation close tail (CV22.DS8.US2)
+
+The close tail — title, tags, summary, memory and task extraction, and their
+embeddings — runs when a session ends, including from the Pi `session-end`
+hook. It reads the same per-call bounds as every other live surface.
+
+| Variable | Meaning |
+|---|---|
+| `MIRROR_TS_CONVERSATION_LLM_TAIL` | Set to `0` to send the five close-tail subcommands (`switch`, `session-end-pi`, `session-end`, `session-start` full run, `session-maintenance`) back to the Python engine. The seven deterministic subcommands stay on TypeScript. |
+| `MIRROR_TS_CONVERSATION_LOGGER` | Set to `0` to revert the **whole** fifteen-subcommand family, for a larger scare. |
+| `MIRROR_TS_CONVERSATION_LLM_REPLAY` | Path to a chat replay fixture. Used by CI and the parity harness. |
+| `MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY` | Path to the matching embedding replay fixture. |
+
+**Both replay fixtures are required together.** Setting only one is refused by
+name rather than treated as live or as unconfigured: falling back to Python
+would not be safer, because the Python engine has no replay transport and
+would reach the live provider anyway — spending real money on the other
+engine while you believed you were replaying.
+
+Every close-tail call is written to `llm_calls` with its token usage and a
+cost computed from the static price table, matching the Python engine. Under
+`MEMORY_LOG_LLM_CALLS=metadata` (the default) the `prompt` and `response`
+columns stay empty, so transcript text is never persisted by the ledger.
