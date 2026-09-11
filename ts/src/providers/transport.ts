@@ -75,3 +75,46 @@ export function resolveProviderTransport(
 
   return { mode: "live", reason: spec.liveReason ?? "live provider" };
 }
+
+// --- Family transport specs ------------------------------------------------
+//
+// Each provider-backed family names its variables here, in one place, rather
+// than in the route that happens to consume them: `routing.ts` decides the
+// engine, `loggerRuntime.ts` builds the providers, and both must read the same
+// spec or they can disagree about which transport is live.
+
+/**
+ * Fresh semantic search (CV22.DS8.US1).
+ *
+ * `MIRROR_TS_EXTERNAL_ROUTES` is deliberately absent: it was DS5's safety gate
+ * while replay was the PRODUCTION route for this leaf, and after the live
+ * cutover replay is a test transport.
+ */
+export const SEARCH_TRANSPORT: ProviderTransportSpec = {
+  revertVar: "MIRROR_TS_SEARCH",
+  replayVar: "MIRROR_TS_SEARCH_EMBEDDING_REPLAY",
+  liveReason: "DS8.US1 fresh semantic search live",
+};
+
+/**
+ * The conversation close tail (CV22.DS8.US2): title, tags, summary, memory and
+ * task extraction, and their embeddings.
+ *
+ * Two replay fixtures back this family, not one. `replayVar` names the LLM
+ * fixture because that is what selects replay mode; the embedding fixture is
+ * checked alongside it by `loggerRuntime`, which refuses a half-configured
+ * pair rather than treating it as live.
+ *
+ * The revert is tail-only on purpose. `MIRROR_TS_CONVERSATION_LOGGER=0` still
+ * reverts all fifteen subcommands, but the seven deterministic ones have
+ * answered from TypeScript since 2026-09-02 and a live-provider scare must not
+ * drag them back with the five that cross the model.
+ */
+export const CONVERSATION_TAIL_TRANSPORT: ProviderTransportSpec = {
+  revertVar: "MIRROR_TS_CONVERSATION_LLM_TAIL",
+  replayVar: "MIRROR_TS_CONVERSATION_LLM_REPLAY",
+  liveReason: "DS8.US2 conversation close tail live",
+};
+
+/** The embedding fixture that must accompany the close tail's LLM fixture. */
+export const CONVERSATION_TAIL_EMBEDDING_REPLAY_VAR = "MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY";

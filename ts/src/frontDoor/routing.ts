@@ -1,4 +1,4 @@
-import { resolveProviderTransport } from "#providers/transport.ts";
+import { resolveProviderTransport, SEARCH_TRANSPORT } from "#providers/transport.ts";
 
 import { DS10_RUNTIME_SUBCOMMANDS, TS_RUNTIME_READ_SUBCOMMANDS } from "./runtimeRoute.ts";
 
@@ -172,20 +172,6 @@ function conversationLlmReplayConfigured(env: RouteEnvironment): boolean {
 function externalRoutesEnabled(env: RouteEnvironment): boolean {
   return env.MIRROR_TS_EXTERNAL_ROUTES === "1";
 }
-
-/**
- * The search family's transport spec (CV22.DS8.US1).
- *
- * `MIRROR_TS_EXTERNAL_ROUTES` is deliberately absent: it was DS5's safety gate
- * while replay was the PRODUCTION route for this leaf, and after the live
- * cutover replay is a test transport. The other families keep the gate until
- * US2/US3 flip them.
- */
-export const SEARCH_TRANSPORT = {
-  revertVar: "MIRROR_TS_SEARCH",
-  replayVar: "MIRROR_TS_SEARCH_EMBEDDING_REPLAY",
-  liveReason: "DS8.US1 fresh semantic search live",
-} as const;
 
 export function routeMemoryCommand(
   argv: readonly string[],

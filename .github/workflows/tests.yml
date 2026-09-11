@@ -141,6 +141,19 @@ jobs:
       - name: Lint (Biome)
         run: npm run lint
 
+      # CV22.DS8.US2 — since the close tail and search now reach a LIVE
+      # provider when no replay fixture is configured, "CI cannot spend" must
+      # be a checked property rather than a happy accident of the runner not
+      # having a key. A leaked key in the environment would turn any test that
+      # exercises those routes into real, silent spend.
+      - name: Assert CI holds no provider key
+        run: |
+          if [ -n "${OPENROUTER_API_KEY:-}" ]; then
+            echo "OPENROUTER_API_KEY is set in CI; live provider routes could spend real money." >&2
+            exit 1
+          fi
+          echo "no provider key present — live routes cannot be reached"
+
       - name: Run tests (node:test)
         run: npm test
         env:

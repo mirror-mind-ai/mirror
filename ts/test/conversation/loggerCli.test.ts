@@ -151,9 +151,10 @@ test("no subcommand exits 1 silently; an unknown one exits 0 silently, as Python
 
 // --- the fallback boundary ---
 
-test("LLM-tail subcommands fall back when the replay transport is unconfigured", async () => {
+test("LLM-tail subcommands fall back only when the tail is REVERTED (CV22.DS8.US2)", async () => {
   const f = fixture();
   logUserMessage(f.db, "s1", "hello", { interface: "pi" }, deps);
+  const reverted = { MIRROR_TS_CONVERSATION_LLM_TAIL: "0" };
   for (const argv of [
     ["switch", "--session-id", "s1"],
     ["session-end-pi", "s1"],
@@ -161,23 +162,38 @@ test("LLM-tail subcommands fall back when the replay transport is unconfigured",
     ["session-start"],
     ["session-maintenance"],
   ]) {
-    assert.deepEqual(await run(f, argv), { handled: false }, argv.join(" "));
+    assert.deepEqual(await run(f, argv, { env: reverted }), { handled: false }, argv.join(" "));
   }
-  // Half-configured is unconfigured: both fixtures are required.
-  assert.deepEqual(
-    await run(f, ["session-maintenance"], {
-      env: { MIRROR_TS_CONVERSATION_LLM_REPLAY: "/replay/llm.json" },
-    }),
-    { handled: false },
-  );
   // Nothing was ended or closed by the refused attempts.
   assert.equal(
-    f.db.prepare("SELECT active FROM runtime_sessions WHERE session_id = 's1'").get()?.active,
-    1,
+    f.db.prepare("SELECT COUNT(*) AS count FROM conversations WHERE ended_at IS NOT NULL").get()
+      ?.count,
+    0,
   );
-  f.db.close();
 });
 
+test("half a replay fixture REFUSES loudly instead of falling back or going live", async () => {
+  // Before US2 this was "half-configured is unconfigured" -- it fell back to
+  // Python. That is no longer safe: Python has no replay transport, so the
+  // fallback would run the close tail against the LIVE provider, spending
+  // real money on the other engine while the developer believed they were
+  // replaying. The refusal must reach the caller, not be swallowed as a
+  // routing decision.
+  const f = fixture();
+  logUserMessage(f.db, "s1", "hello", { interface: "pi" }, deps);
+
+  const error = await run(f, ["session-maintenance"], {
+    env: { MIRROR_TS_CONVERSATION_LLM_REPLAY: "/replay/llm.json" },
+  }).catch((e: unknown) => e);
+
+  assert.ok(error instanceof Error);
+  assert.match(error.message, /MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY/);
+  assert.equal(
+    f.db.prepare("SELECT COUNT(*) AS count FROM conversations WHERE ended_at IS NOT NULL").get()
+      ?.count,
+    0,
+  );
+});
 test("repair-journeys --apply with nothing to repair needs no backup and reports zero", async () => {
   const f = fixture();
   assert.deepEqual(await run(f, ["repair-journeys", "--apply"]), {
@@ -606,4 +622,55 @@ test("session-maintenance backfills Pi sessions from PI_SESSIONS_DIR through the
   assert.equal(row?.title, "A generated title");
   assert.ok(String(row?.metadata).includes('"title_source": "startup_maintenance"'));
   f.db.close();
+});
+
+// --- CV22.DS8.US2: the hook boundary ---------------------------------------
+
+test("a failing live close tail leaks nothing to stderr (hook -> transcript path)", async () => {
+  // A `session-end` hook runs inside Pi, and whatever it prints can land in
+  // the transcript the NEXT close tail logs, extracts, and embeds. So a
+  // provider error carrying a key or a chunk of the conversation would not
+  // just be printed once -- it would be persisted and retrievable. The close
+  // tail is fail-soft by design; this pins that it stays that way, with a
+  // provider whose error message is deliberately the worst case.
+  const home = mkdtempSync("/tmp/logger-cli-leak-");
+  const db = bootstrapDatabase(join(home, "memory.db"));
+  const secret = "sk-or-v1-PLANTED-KEY";
+  const transcript = "PLANTED-TRANSCRIPT-CONTENT";
+  logUserMessage(db, "s1", transcript, { interface: "pi" }, deps);
+  for (const index of [1, 2, 3]) {
+    logUserMessage(db, "s1", `filler ${index}`, { interface: "pi" }, deps);
+  }
+
+  const runtime = createLoggerRuntime({
+    db,
+    mirrorHome: home,
+    homeDir: home,
+    env: {},
+    deps,
+    liveProviders: () => ({
+      llm: {
+        complete: async () => {
+          throw new Error(`provider exploded: ${secret} while handling ${transcript}`);
+        },
+      },
+      embeddings: {
+        embed: async () => ({
+          vector: Array<number>(EMBEDDING_DIMENSIONS).fill(0),
+          promptTokens: null,
+        }),
+      },
+    }),
+  });
+
+  const result = await runConversationLoggerCommand(db, ["session-end-pi", "s1"], runtime, {});
+  if (!result.handled) throw new Error("expected the live tail to be handled by TypeScript");
+
+  const emitted = [...result.stdout, ...result.stderr].join("\n");
+  assert.ok(!emitted.includes(secret), "an API key must never reach the hook's output");
+  assert.ok(!emitted.includes(transcript), "transcript content must never reach the hook's output");
+  // Fail-soft: the session still closes. Observability must never break the
+  // pipeline it observes, and a hook that crashes would break session end.
+  assert.equal(result.handled, true);
+  assert.equal(result.exitCode, 0);
 });

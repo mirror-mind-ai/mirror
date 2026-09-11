@@ -2,13 +2,12 @@ import type { WritableDatabase } from "#db/database.ts";
 import { requireString } from "#db/rowDecode.ts";
 import type { EmbeddingProvider } from "#providers/embedding.ts";
 import { LiveEmbeddingProvider, loadReplayEmbeddingProvider } from "#providers/embedding.ts";
-import { resolveProviderTransport } from "#providers/transport.ts";
+import { resolveProviderTransport, SEARCH_TRANSPORT } from "#providers/transport.ts";
 import type { FreshSearchResult } from "#search/memorySearch.ts";
 import { searchMemoriesWithStatus } from "#search/memorySearch.ts";
 import { optionValue } from "./args.ts";
 import { ICONS } from "./render/icons.ts";
 import { tagsText } from "./render/memories.ts";
-import { SEARCH_TRANSPORT } from "./routing.ts";
 
 // Mirrors Python's cli/memories.py degraded_note wording exactly (AI-04),
 // including under a degraded search with zero results.

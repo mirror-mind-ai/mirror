@@ -14,6 +14,7 @@ import {
   createLoggerRuntime,
   LlmTailUnconfiguredError,
   type LoggerRuntimeEnv,
+  ReplayFixtureIncompleteError,
 } from "#conversation/loggerRuntime.ts";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import {
@@ -60,20 +61,66 @@ const CONFIGURED = {
   MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY: "/replay/embedding.json",
 };
 
-test("the LLM tail is configured only when both replay fixtures are set", async () => {
-  for (const env of [
-    {},
-    { MIRROR_TS_CONVERSATION_LLM_REPLAY: "/replay/llm.json" },
-    { MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY: "/replay/embedding.json" },
+test("with nothing configured the close tail is LIVE (CV22.DS8.US2 cutover)", async () => {
+  // Before US2 an empty environment meant "unconfigured" and fell back to
+  // Python. That is now the cutover: an ordinary install reaches the provider
+  // through TypeScript, and the replay loaders are never touched.
+  const { runtime, loads, db } = fixture({});
+
+  assert.equal(runtime.transportMode, "live");
+  assert.equal(runtime.llmTailConfigured, true);
+  await runtime.closeHooks();
+  assert.deepEqual(loads, { llm: 0, embeddings: 0 }, "no replay fixture is loaded in live mode");
+  db.close();
+});
+
+test("MIRROR_TS_CONVERSATION_LLM_TAIL=0 reverts the tail to Python", async () => {
+  const { runtime, loads, db } = fixture({ MIRROR_TS_CONVERSATION_LLM_TAIL: "0" });
+
+  assert.equal(runtime.transportMode, "python");
+  assert.equal(runtime.llmTailConfigured, false);
+  // LlmTailUnconfiguredError is what loggerCli turns into the Python fallback,
+  // so the revert keeps using the mechanism that already existed.
+  await assert.rejects(runtime.closeHooks(), LlmTailUnconfiguredError);
+  await assert.rejects(runtime.maintenanceDeps(), LlmTailUnconfiguredError);
+  assert.deepEqual(loads, { llm: 0, embeddings: 0 });
+  db.close();
+});
+
+test("the revert wins over replay fixtures left in the same shell", async () => {
+  const { runtime, db } = fixture({ ...CONFIGURED, MIRROR_TS_CONVERSATION_LLM_TAIL: "0" });
+
+  assert.equal(runtime.transportMode, "python");
+  db.close();
+});
+
+test("half a replay fixture REFUSES by name instead of going live", async () => {
+  // The dangerous shape: a developer sets one variable, expects a replayed
+  // close tail, and gets a live one. Falling back to Python would be no safer
+  // -- Python has no replay transport, so it would spend too, just on the
+  // other engine. The only safe answer is to stop and name the missing half.
+  for (const [present, missing] of [
+    ["MIRROR_TS_CONVERSATION_LLM_REPLAY", "MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY"],
+    ["MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY", "MIRROR_TS_CONVERSATION_LLM_REPLAY"],
   ]) {
-    const { runtime, loads, db } = fixture(env);
-    assert.equal(runtime.llmTailConfigured, false);
-    await assert.rejects(runtime.closeHooks(), LlmTailUnconfiguredError);
-    await assert.rejects(runtime.maintenanceDeps(), LlmTailUnconfiguredError);
+    const { runtime, loads, db } = fixture({ [present as string]: "/replay/one.json" });
+
+    const error = await runtime.closeHooks().catch((e: unknown) => e);
+    assert.ok(error instanceof ReplayFixtureIncompleteError, `${present} alone must refuse`);
+    assert.match((error as Error).message, new RegExp(missing as string));
+    assert.ok(
+      !(error instanceof LlmTailUnconfiguredError),
+      "a refusal must not be mistaken for the Python fallback",
+    );
     assert.deepEqual(loads, { llm: 0, embeddings: 0 });
     db.close();
   }
+});
+
+test("both replay fixtures select the replay transport", async () => {
   const { runtime, db } = fixture(CONFIGURED);
+
+  assert.equal(runtime.transportMode, "replay");
   assert.equal(runtime.llmTailConfigured, true);
   db.close();
 });

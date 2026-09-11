@@ -32,8 +32,23 @@ import {
   resolveSummarizeEnabled,
   resolveTwoPassEnabled,
 } from "#providers/config.ts";
-import { type EmbeddingProvider, loadReplayEmbeddingProvider } from "#providers/embedding.ts";
-import { type LlmProvider, type LlmResponse, loadReplayLlmProvider } from "#providers/llm.ts";
+import {
+  type EmbeddingProvider,
+  LiveEmbeddingProvider,
+  loadReplayEmbeddingProvider,
+} from "#providers/embedding.ts";
+import {
+  LiveLlmProvider,
+  type LlmProvider,
+  type LlmResponse,
+  loadReplayLlmProvider,
+} from "#providers/llm.ts";
+import {
+  CONVERSATION_TAIL_EMBEDDING_REPLAY_VAR,
+  CONVERSATION_TAIL_TRANSPORT,
+  type ProviderTransportMode,
+  resolveProviderTransport,
+} from "#providers/transport.ts";
 
 /** The environment names the logger runtime reads. */
 export type LoggerRuntimeEnv = {
@@ -42,6 +57,13 @@ export type LoggerRuntimeEnv = {
   PI_SESSIONS_DIR?: string;
   MIRROR_TS_CONVERSATION_LLM_REPLAY?: string;
   MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY?: string;
+  /** CV22.DS8.US2 tail-only revert; leaves the deterministic subcommands on TS. */
+  MIRROR_TS_CONVERSATION_LLM_TAIL?: string;
+  /** Read by the live providers when the close tail runs against a real model. */
+  OPENROUTER_API_KEY?: string;
+  MEMORY_LLM_TIMEOUT_EXTRACTION?: string;
+  MEMORY_LLM_MAX_RETRIES?: string;
+  MEMORY_EMBEDDING_MODEL?: string;
   MEMORY_SUMMARIZE?: string;
   MEMORY_TWO_PASS?: string;
   MEMORY_MAINTENANCE_MAX_EXTRACTIONS?: string;
@@ -55,6 +77,18 @@ export interface LoggerRuntimeOptions {
   homeDir: string;
   env: LoggerRuntimeEnv;
   deps: LoggerDeps;
+  /**
+   * Live provider factory, injectable for tests (CV22.DS8.US2).
+   *
+   * `loadLlm`/`loadEmbeddings` below are REPLAY-path loaders and are not
+   * consulted in live mode, so without this seam no test could exercise the
+   * close tail against a failing or instrumented live provider -- which is the
+   * behavior this story exists to change.
+   */
+  liveProviders?: (env: LoggerRuntimeEnv) => {
+    llm: LlmProvider;
+    embeddings: EmbeddingProvider;
+  };
   /** Provider loaders, injectable for tests; default to the replay fixtures. */
   loadLlm?: (path: string) => Promise<LlmProvider>;
   loadEmbeddings?: (path: string) => Promise<EmbeddingProvider>;
@@ -69,13 +103,41 @@ export interface LoggerRuntimeOptions {
   backup?: (stdout: (line: string) => void) => string | null;
 }
 
+/**
+ * The close tail is reverted to Python for this invocation.
+ *
+ * `loggerCli` turns this into the Python fallback, which is why the revert
+ * reuses it rather than inventing a second mechanism. Before CV22.DS8.US2 it
+ * meant "no replay fixture configured"; it now means an explicit
+ * `MIRROR_TS_CONVERSATION_LLM_TAIL=0`, because an unconfigured install goes
+ * live.
+ */
 export class LlmTailUnconfiguredError extends Error {
-  constructor(missing: string) {
+  constructor(reason: string) {
     super(
-      `${missing} is required for the TypeScript conversation-logger close tail; ` +
-        "unconfigured installs keep the Python fallback",
+      `${reason}; the TypeScript conversation-logger close tail is reverted to the Python fallback`,
     );
     this.name = "LlmTailUnconfiguredError";
+  }
+}
+
+/**
+ * Exactly one of the two close-tail replay fixtures is set (CV22.DS8.US2).
+ *
+ * Deliberately NOT a subclass of `LlmTailUnconfiguredError`: that one means
+ * "use Python", and falling back here would be no safer, because Python has no
+ * replay transport and would spend on the live provider too -- just on the
+ * other engine, and silently. Someone who set one variable meant to replay,
+ * so the only honest answer is to stop and name the missing half.
+ */
+export class ReplayFixtureIncompleteError extends Error {
+  constructor(missing: string, present: string) {
+    super(
+      `${present} is set but ${missing} is not. The conversation close tail needs BOTH ` +
+        "replay fixtures; running with one would reach the live provider and spend real money. " +
+        `Set ${missing}, or unset ${present} to run live deliberately.`,
+    );
+    this.name = "ReplayFixtureIncompleteError";
   }
 }
 
@@ -88,6 +150,8 @@ export interface LoggerRuntime {
   readonly piSessionsDir: string;
   /** Whether the LLM close tail can run under TypeScript in this invocation. */
   readonly llmTailConfigured: boolean;
+  /** Which transport answers the close tail here: python (revert), replay, or live. */
+  readonly transportMode: ProviderTransportMode;
   /** The close hooks (extraction + finalization) behind the replay transport. */
   closeHooks(): Promise<CloseHooks>;
   /** The full maintenance wiring, including the real Pi backfill. */
@@ -101,18 +165,49 @@ export function createLoggerRuntime(options: LoggerRuntimeOptions): LoggerRuntim
   const loadLlm = options.loadLlm ?? loadReplayLlmProvider;
   const loadEmbeddings = options.loadEmbeddings ?? loadReplayEmbeddingProvider;
   const llmPath = env.MIRROR_TS_CONVERSATION_LLM_REPLAY;
-  const embeddingPath = env.MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY;
+  const embeddingPath = env[CONVERSATION_TAIL_EMBEDDING_REPLAY_VAR];
   const piSessionsDir = resolvePiSessionsDir(null, env, options.homeDir);
+
+  // One precedence, shared with the router so the two cannot disagree about
+  // which transport is live: revert -> replay -> live.
+  const transport = resolveProviderTransport(env, CONVERSATION_TAIL_TRANSPORT);
+  // The LLM fixture selects replay mode; the embedding fixture is this
+  // family's second half. Either one alone is a refusal, never a live call.
+  const halfConfiguredReplay =
+    transport.mode !== "python" && Boolean(llmPath) !== Boolean(embeddingPath);
 
   let providers: Promise<{ llm: LlmProvider; embeddings: EmbeddingProvider }> | null = null;
   const loadProviders = () => {
-    if (!llmPath) throw new LlmTailUnconfiguredError("MIRROR_TS_CONVERSATION_LLM_REPLAY");
-    if (!embeddingPath) {
-      throw new LlmTailUnconfiguredError("MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY");
+    if (transport.mode === "python") {
+      throw new LlmTailUnconfiguredError(`${CONVERSATION_TAIL_TRANSPORT.revertVar}=0`);
     }
-    providers ??= Promise.all([loadLlm(llmPath), loadEmbeddings(embeddingPath)]).then(
-      ([llm, embeddings]) => ({ llm, embeddings }),
-    );
+    if (halfConfiguredReplay) {
+      throw llmPath
+        ? new ReplayFixtureIncompleteError(
+            CONVERSATION_TAIL_EMBEDDING_REPLAY_VAR,
+            CONVERSATION_TAIL_TRANSPORT.replayVar as string,
+          )
+        : new ReplayFixtureIncompleteError(
+            CONVERSATION_TAIL_TRANSPORT.replayVar as string,
+            CONVERSATION_TAIL_EMBEDDING_REPLAY_VAR,
+          );
+    }
+    if (transport.mode === "replay" && llmPath && embeddingPath) {
+      providers ??= Promise.all([loadLlm(llmPath), loadEmbeddings(embeddingPath)]).then(
+        ([llm, embeddings]) => ({ llm, embeddings }),
+      );
+      return providers;
+    }
+    // Live. Both providers resolve their config lazily, so a missing key
+    // surfaces inside the close tail -- where the extraction driver records a
+    // failed attempt -- rather than crashing the session-end hook outright.
+    const buildLive =
+      options.liveProviders ??
+      ((liveEnv: LoggerRuntimeEnv) => ({
+        llm: new LiveLlmProvider({ env: liveEnv }),
+        embeddings: new LiveEmbeddingProvider({ env: liveEnv }),
+      }));
+    providers ??= Promise.resolve(buildLive(env));
     return providers;
   };
 
@@ -167,7 +262,8 @@ export function createLoggerRuntime(options: LoggerRuntimeOptions): LoggerRuntim
     claudeProjectDir: env.CLAUDE_PROJECT_DIR || null,
     environmentSessionId: env.MIRROR_SESSION_ID?.trim() || null,
     piSessionsDir,
-    llmTailConfigured: Boolean(llmPath && embeddingPath),
+    llmTailConfigured: transport.mode !== "python",
+    transportMode: transport.mode,
     backup: options.backup ?? null,
     closeHooks,
     async maintenanceDeps(): Promise<MaintenanceDeps> {
