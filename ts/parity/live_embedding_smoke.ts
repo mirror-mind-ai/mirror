@@ -16,9 +16,11 @@
  *     every ranking with no failing test anywhere (AI-07 is a shape guard, not
  *     a space guard).
  *
- * Usage:
- *   node ts/parity/live_embedding_smoke.ts --db tmp/parity/demo-memory.db
- *   node ts/parity/live_embedding_smoke.ts --db tmp/parity/real-copy.db --cross-check <memory-id>
+ * Usage (note `--env-file`: the key lives in .env, and this script reads it
+ * from the ENVIRONMENT only -- it never opens a secrets file itself):
+ *   node --env-file=.env ts/parity/live_embedding_smoke.ts --db tmp/parity/demo-memory.db
+ *   node --env-file=.env ts/parity/live_embedding_smoke.ts --db tmp/parity/real-copy.db \
+ *     --cross-check <memory-id>
  *
  * Output is redacted by default: counts, dimensions, similarities, latencies.
  * Never a vector, never a memory's content, never the key.
@@ -78,7 +80,13 @@ function check(condition: boolean, label: string, detail: string): void {
 
 async function main(argv: readonly string[]): Promise<void> {
   if (!process.env.OPENROUTER_API_KEY?.trim()) {
-    fail("OPENROUTER_API_KEY is not set; this smoke exists to exercise the LIVE path");
+    // Name the fix, not just the problem: the key is in .env, and every other
+    // entry point in this repo reaches it through node's --env-file. A bare
+    // `node ts/parity/...` is the obvious thing to type and the wrong one.
+    fail(
+      "OPENROUTER_API_KEY is not set; this smoke exercises the LIVE path. " +
+        "If your key is in .env, re-run with: node --env-file=.env ts/parity/live_embedding_smoke.ts ...",
+    );
   }
   const dbPath = optionValue(argv, "--db");
   if (!dbPath) fail("--db <copy> is required");
