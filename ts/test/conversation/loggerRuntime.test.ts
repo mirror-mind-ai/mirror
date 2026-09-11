@@ -9,6 +9,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
+import { logUserMessage } from "#conversation/logger.ts";
 import { runConversationLoggerCommand } from "#conversation/loggerCli.ts";
 import {
   createLoggerRuntime,
@@ -191,4 +192,68 @@ test("the pipeline switches mirror Python's os.getenv reads, including int() str
     () => resolveMaintenanceMaxExtractions({ env: { MEMORY_MAINTENANCE_MAX_EXTRACTIONS: "" } }),
     /invalid literal/,
   );
+});
+
+test("close-tail metadata rows are priced, not just the extraction roles", async () => {
+  // The live smoke found these three carrying token counts and a null cost:
+  // title/tags/summary log through the runtime's ledger, while extraction logs
+  // through its own, and only the latter had been priced. Under REPLAY no
+  // usage comes back, so both shapes look identical and nothing failed -- the
+  // fake provider here reports usage precisely so the gap is visible.
+  const home = mkdtempSync("/tmp/logger-runtime-priced-");
+  const db = bootstrapDatabase(join(home, "memory.db"));
+  const runtime = createLoggerRuntime({
+    db,
+    mirrorHome: home,
+    homeDir: home,
+    env: {},
+    deps,
+    liveProviders: () => ({
+      llm: {
+        complete: async () => ({
+          content: "A generated title",
+          model: "google/gemini-2.5-flash-lite",
+          promptTokens: 2761,
+          completionTokens: 7,
+          latencyMs: 12,
+        }),
+      },
+      embeddings: {
+        embed: async () => ({
+          vector: Array<number>(EMBEDDING_DIMENSIONS).fill(0),
+          promptTokens: 10,
+        }),
+      },
+    }),
+  });
+
+  // A real conversation with enough messages for the metadata surfaces to run.
+  // The shared `deps.newId` returns a constant, which is fine for the tests
+  // above but collides on the messages primary key here.
+  let sequence = 0;
+  const uniqueDeps = { newId: () => `priced-${(sequence += 1)}`, nowIso: deps.nowIso };
+  logUserMessage(db, "s-priced", "we ported the close tail", { interface: "pi" }, uniqueDeps);
+  for (const index of [1, 2, 3]) {
+    logUserMessage(db, "s-priced", `message ${index}`, { interface: "pi" }, uniqueDeps);
+  }
+  const conversationId = (
+    db.prepare("SELECT id FROM conversations ORDER BY started_at DESC LIMIT 1").get() as {
+      id: string;
+    }
+  ).id;
+
+  const hooks = await runtime.closeHooks();
+  await hooks.finalizeMetadata?.(db, conversationId);
+
+  const rows = db.prepare("SELECT role, prompt_tokens, cost_usd FROM llm_calls").all() as {
+    role: string;
+    prompt_tokens: number | null;
+    cost_usd: number | null;
+  }[];
+  assert.ok(rows.length > 0, "the close tail logged at least one metadata row");
+  for (const row of rows) {
+    assert.equal(row.prompt_tokens, 2761, `${row.role} carries usage`);
+    assert.notEqual(row.cost_usd, null, `${row.role} must be priced when usage is present`);
+  }
+  db.close();
 });

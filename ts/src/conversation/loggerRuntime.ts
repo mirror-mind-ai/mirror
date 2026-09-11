@@ -32,6 +32,7 @@ import {
   resolveSummarizeEnabled,
   resolveTwoPassEnabled,
 } from "#providers/config.ts";
+import { computeCost } from "#providers/cost.ts";
 import {
   type EmbeddingProvider,
   LiveEmbeddingProvider,
@@ -212,23 +213,36 @@ export function createLoggerRuntime(options: LoggerRuntimeOptions): LoggerRuntim
   };
 
   // Python's `_make_logger(role, conversation_id)`: one ledger row per
-  // successful close-tail call. Cost stays unpriced (see extraction.ts).
-  const ledger = (role: string, response: LlmResponse, conversationId: string, prompt: string) =>
+  // successful close-tail call, priced through the cost authority exactly as
+  // `build_llm_logger` prices it (CV22.DS8.US2).
+  //
+  // This is the sibling of `extraction.ts`'s llmLedger and was missed when
+  // that one was fixed: the close-tail METADATA roles (title, tags, summary)
+  // log through here, so they carried token counts and a null cost while the
+  // extraction roles were priced. Found by the live smoke on real data, not by
+  // a test -- under replay no usage comes back, so both look identical.
+  const ledger = (role: string, response: LlmResponse, conversationId: string, prompt: string) => {
+    const model = response.model ?? resolveExtractionModel({ env });
     logLlmCall(
       db,
       {
         role,
-        model: response.model ?? resolveExtractionModel({ env }),
+        model,
         prompt,
         response: response.content,
         promptTokens: response.promptTokens ?? null,
         completionTokens: response.completionTokens ?? null,
         latencyMs: response.latencyMs ?? null,
-        costUsd: null,
+        costUsd: computeCost(
+          model,
+          response.promptTokens ?? null,
+          response.completionTokens ?? null,
+        ),
         conversationId,
       },
       { now: deps.nowIso },
     );
+  };
 
   const maxAttempts = resolveExtractionMaxAttempts({ env });
   const runExtraction = async (database: WritableDatabase, conversationId: string) => {
