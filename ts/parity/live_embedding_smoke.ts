@@ -161,8 +161,10 @@ async function crossCheck(
   memoryId: string,
 ): Promise<void> {
   const row = db
-    .prepare("SELECT title, content, embedding FROM memories WHERE id = ?")
-    .get(memoryId) as { title: string; content: string; embedding: Uint8Array } | undefined;
+    .prepare("SELECT title, content, context, embedding FROM memories WHERE id = ?")
+    .get(memoryId) as
+    | { title: string; content: string; context: string | null; embedding: Uint8Array }
+    | undefined;
   if (!row) fail(`--cross-check memory ${memoryId} not found in the copy`);
   if (!(row.embedding instanceof Uint8Array)) fail("stored embedding is not a BLOB");
 
@@ -170,9 +172,12 @@ async function crossCheck(
   if (stored.length !== EMBEDDING_DIMENSIONS) {
     fail(`stored vector is ${stored.length}-dim; pick a memory embedded with the current pin`);
   }
-  // The SAME text add_memory embeds, so a mismatch means the space differs --
-  // not that the inputs differed.
-  const fresh = await provider.embed(memoryEmbedText(row.title, row.content, null));
+  // The SAME text add_memory embedded, CONTEXT INCLUDED. Python's
+  // memory_embed_text appends "Context: ..." when the column is set, and on a
+  // real home essentially every extracted memory has one -- embedding without
+  // it would compare two different sentences and report a low cosine that says
+  // nothing about whether the two engines share a vector space.
+  const fresh = await provider.embed(memoryEmbedText(row.title, row.content, row.context));
   const similarity = cosine(stored, fresh.vector);
   check(
     similarity >= 0.99,

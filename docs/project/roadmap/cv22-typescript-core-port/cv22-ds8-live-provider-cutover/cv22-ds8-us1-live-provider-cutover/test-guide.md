@@ -46,7 +46,24 @@ ts/parity/generate_demo_memory_db.py --out tmp/parity/demo-memory.db`).
 | 6 | Same search with `MIRROR_TS_SEARCH=0` | Front-door log `engine=python`, reason names the revert | routes to Python | routes to TS |
 | 7 | `grep -c "<key>" <front-door log>` and `sqlite3 memory.db "select count(*) from llm_calls where prompt like '%<key>%' or response like '%<key>%'"` | `0` and `0` | both zero | anything else |
 
-**Discriminating query (fill in before step 2):** query = `…`, expected memory id = `…`.
+**Discriminating query (chosen 2026-09-10, verified against the real-DB copy):**
+
+```text
+What counterpart should an assistant embody to deserve a conversation?
+```
+
+Verified property: this phrase matches **zero** rows in `memories_fts` on the
+real corpus, so lexical-only search returns *nothing*. A non-empty result set
+therefore proves the semantic term ran — a far stronger signal than the
+absence of a degraded note. Semantically it is a paraphrase of memory
+`ddf1d328` ("the ego layer is a negative image of the user… what someone
+talking to the AI needs to become to be worth talking to").
+
+**Cross-check memory (step 3):** `ddf1d328` — current-pin provenance
+(`openai/text-embedding-3-small`), 6144-byte vector. Note the smoke re-embeds
+`title. content Context: <context>`; every current-pin memory on this home has
+a non-empty `context`, and omitting it would compare two different sentences
+and report a meaningless cosine.
 
 **Known accepted risk:** an install behind an HTTP proxy that worked on Python
 will degrade to lexical after this flip unless `NODE_USE_ENV_PROXY=1` is set;
