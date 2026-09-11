@@ -1,5 +1,13 @@
 import { createHash } from "node:crypto";
 
+import {
+  type ProviderConfig,
+  resolveExtractionModel,
+  resolveLlmMaxRetries,
+  resolveLlmTimeoutMs,
+  resolveProviderConfig,
+} from "./config.ts";
+import { createOpenRouterClient, LlmTransportError, type OpenRouterClient } from "./openrouter.ts";
 import { loadReplayFixture } from "./replay.ts";
 
 /**
@@ -154,4 +162,109 @@ function isLlmRole(value: string): value is LlmRole {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+// --- Live chat completions (CV22.DS8.US2) ----------------------------------
+
+/** Python's `send_to_model` defaults, which every un-overridden call inherits. */
+const DEFAULT_TEMPERATURE = 0.7;
+const DEFAULT_MAX_TOKENS = 4096;
+
+export interface LiveLlmProviderOptions {
+  env?: Record<string, string | undefined>;
+  /** Injectable for tests; no test in this repo may reach the network. */
+  createClient?: (config: ProviderConfig) => OpenRouterClient;
+}
+
+/**
+ * The live chat provider (CV22.DS8.US2), mirroring Python's `send_to_model`.
+ *
+ * Three properties carry the weight:
+ *
+ * 1. **The envelope is Python's.** Exactly one message, role `user`, content
+ *    byte-identical to the assembled prompt. US10 pinned SHA-256 digests of
+ *    every close-tail prompt so a drift fails under replay -- but those
+ *    digests pin CONTENT, not STRUCTURE. A system message, an assistant
+ *    prefill, or a second turn would satisfy every digest and still change
+ *    what the model hears. The envelope is asserted by test for that reason.
+ * 2. **Config resolves lazily**, on the first call. A missing key must surface
+ *    inside the close tail -- where the extraction driver records a failed
+ *    attempt -- not at construction, where it would crash the session-end hook
+ *    before any accounting happened.
+ * 3. **Model output is not transport output.** An empty or non-JSON completion
+ *    is a legitimate model outcome that the parser upstream reports as
+ *    `no_signal`/`parse_failed`. Only a broken HTTP-level SHAPE (no usable
+ *    `choices[0]`, Python's `IndexError`) is `malformed_output`. Conflating
+ *    them would retry a deterministic model answer and pay for it each time.
+ */
+export class LiveLlmProvider implements LlmProvider {
+  private readonly env: Record<string, string | undefined>;
+  private readonly createClient: (config: ProviderConfig) => OpenRouterClient;
+  private client: OpenRouterClient | null = null;
+
+  constructor(options: LiveLlmProviderOptions = {}) {
+    this.env = options.env ?? process.env;
+    this.createClient = options.createClient ?? ((config) => createOpenRouterClient(config));
+  }
+
+  async complete(request: LlmRequest): Promise<LlmResponse> {
+    const client = this.resolveClient();
+    const model = request.model ?? resolveExtractionModel({ env: this.env });
+    const startedAt = Date.now();
+    const body = await client.postJson(
+      "/chat/completions",
+      {
+        model,
+        // Python: `[{"role": "user", "content": prompt}]`. Nothing else.
+        messages: [{ role: "user", content: request.prompt }],
+        temperature: request.temperature ?? DEFAULT_TEMPERATURE,
+        max_tokens: request.maxTokens ?? DEFAULT_MAX_TOKENS,
+      },
+      {
+        // Every close-tail role inherits Python's extraction tier: its callers
+        // pass no timeout, so `LLM_TIMEOUT_EXTRACTION` applies. Reception's
+        // shorter tier belongs to `mirror load --query` (US3).
+        timeoutMs: resolveLlmTimeoutMs("extraction", { env: this.env }),
+        maxRetries: resolveLlmMaxRetries({ env: this.env }),
+      },
+    );
+    return interpretChatResponse(body, model, Date.now() - startedAt);
+  }
+
+  private resolveClient(): OpenRouterClient {
+    this.client ??= this.createClient(resolveProviderConfig("openrouter", { env: this.env }));
+    return this.client;
+  }
+}
+
+/** Mirrors `send_to_model`'s response handling branch for branch. */
+function interpretChatResponse(body: unknown, model: string, latencyMs: number): LlmResponse {
+  if (!isRecord(body)) {
+    throw new LlmTransportError("malformed_output", "chat response was not an object");
+  }
+  const choices = body.choices;
+  if (!Array.isArray(choices) || choices.length === 0 || !isRecord(choices[0])) {
+    // Python indexes `response.choices[0]` unguarded, so this is its
+    // IndexError: the response has no usable shape at all.
+    throw new LlmTransportError("malformed_output", "chat response carried no usable choice");
+  }
+  const message = choices[0].message;
+  const rawContent = isRecord(message) ? message.content : null;
+  // Python: `(response.choices[0].message.content or "").strip()`. An empty or
+  // absent completion is data, not a failure.
+  const content = typeof rawContent === "string" ? rawContent.trim() : "";
+  const usage = isRecord(body.usage) ? body.usage : null;
+  return {
+    content,
+    model,
+    generationId: typeof body.id === "string" ? body.id : null,
+    promptTokens: readTokenCount(usage?.prompt_tokens),
+    completionTokens: readTokenCount(usage?.completion_tokens),
+    latencyMs,
+  };
+}
+
+/** Usage is reported only when the provider gives a real integer; never 0 by default. */
+function readTokenCount(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isInteger(value) ? value : undefined;
 }
