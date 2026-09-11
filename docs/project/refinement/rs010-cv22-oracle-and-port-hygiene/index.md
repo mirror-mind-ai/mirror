@@ -47,3 +47,4 @@ evidence stays honest as both cores move.
 - [CR071 — Collapse the triplicated skill command references](cr071-collapse-the-triplicated-skill-command-references.md)
 - [CR073 — Refuse a mistyped stdin sentinel in `journey update`](cr073-refuse-a-mistyped-stdin-sentinel-in-journey-update.md)
 - [CR074 — Harden the `week plan` pending file](cr074-harden-the-week-plan-pending-file.md)
+- [CR075 — Route the journal embedding through the safety wrapper](cr075-route-the-journal-embedding-through-the-safety-wrapper.md)

@@ -31,6 +31,9 @@ import { openDatabaseCopyForWrite } from "#db/database.ts";
 import { resolveEmbeddingModel, resolveLogLlmCallsMode } from "#providers/config.ts";
 import { EMBEDDING_DIMENSIONS, LiveEmbeddingProvider } from "#providers/embedding.ts";
 import { searchMemoriesWithStatus } from "#search/memorySearch.ts";
+// The ranker's own cosine, not a second copy: this smoke exists to judge
+// vector similarity, so it must measure it the way search does.
+import { cosineSimilarity } from "#search/ranker.ts";
 import { memoryEmbedText } from "#soul/harvest.ts";
 
 const PROBE_TEXT = "The mirror keeps a local memory of journeys, decisions, and identity.";
@@ -46,21 +49,6 @@ function say(line: string): void {
 function optionValue(argv: readonly string[], name: string): string | undefined {
   const index = argv.indexOf(name);
   return index === -1 ? undefined : argv[index + 1];
-}
-
-function cosine(a: readonly number[], b: readonly number[]): number {
-  let dot = 0;
-  let normA = 0;
-  let normB = 0;
-  for (let i = 0; i < a.length; i += 1) {
-    const x = a[i] ?? 0;
-    const y = b[i] ?? 0;
-    dot += x * y;
-    normA += x * x;
-    normB += y * y;
-  }
-  if (normA === 0 || normB === 0) return 0;
-  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
 function bytesToVector(blob: Uint8Array): readonly number[] {
@@ -125,13 +113,13 @@ async function main(argv: readonly string[]): Promise<void> {
       "all values finite",
       "no NaN or Infinity would reach the corpus",
     );
-    const selfSimilarity = cosine(first.vector, second.vector);
+    const selfSimilarity = cosineSimilarity(first.vector, second.vector);
     check(
       selfSimilarity >= 0.999,
       "self-similarity",
       `cos=${selfSimilarity.toFixed(6)} >= 0.999`,
     );
-    const distantSimilarity = cosine(first.vector, distant.vector);
+    const distantSimilarity = cosineSimilarity(first.vector, distant.vector);
     check(
       distantSimilarity < selfSimilarity,
       "an unrelated sentence is further away",
@@ -197,7 +185,7 @@ async function crossCheck(
   // it would compare two different sentences and report a low cosine that says
   // nothing about whether the two engines share a vector space.
   const fresh = await provider.embed(memoryEmbedText(row.title, row.content, row.context));
-  const similarity = cosine(stored, fresh.vector);
+  const similarity = cosineSimilarity(stored, fresh.vector);
   check(
     similarity >= 0.99,
     "vector-space parity with the stored Python-era vector",

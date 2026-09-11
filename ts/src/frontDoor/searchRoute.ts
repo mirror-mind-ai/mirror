@@ -31,7 +31,7 @@ export interface SearchMemoryRow {
  * (CV22.DS8.US1), so the route can never disagree with the routing decision
  * about which transport is in play.
  */
-async function resolveSearchEmbeddingProvider(
+export async function resolveSearchEmbeddingProvider(
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<EmbeddingProvider> {
   const transport = resolveProviderTransport(env, SEARCH_TRANSPORT);
