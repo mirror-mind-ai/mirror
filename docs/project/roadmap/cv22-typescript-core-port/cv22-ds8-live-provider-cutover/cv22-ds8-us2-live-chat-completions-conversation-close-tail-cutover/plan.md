@@ -21,11 +21,14 @@ Mirrors Python's `send_to_model` exactly, over `createOpenRouterClient`:
   `temperature` = `request.temperature ?? 0.7`; `max_tokens` =
   `request.maxTokens ?? 4096` (Python's defaults; callers already pass the
   per-role values US10 graded: 0.2/0.3, title `max_tokens: 40`).
-- **The prompt is sent byte-for-byte as `messages[0].content`.** US10 pinned
-  SHA-256 digests of every assembled close-tail prompt so a drift fails under
-  replay; the live provider must not be a place where the graded prompt can
-  be altered. A hermetic test captures the request body and asserts
-  `messages[0].content === request.prompt`.
+- **The prompt is sent byte-for-byte, in Python's exact envelope.** US10
+  pinned SHA-256 digests of every assembled close-tail prompt so a drift
+  fails under replay; the live provider must not be a place where the graded
+  prompt can be altered. The digests pin *content*, not *structure*, so the
+  hermetic test asserts the envelope too: `messages.length === 1`,
+  `messages[0].role === "user"`, `messages[0].content === request.prompt`.
+  A system prompt, a second turn, or an assistant prefill would pass every
+  digest and change what the model hears (prompt-engineer review).
 - Response, branch for branch with Python:
   `content = (choices[0].message.content ?? "").trim()` — empty content is
   **not** an error (Python's `or ""`); `promptTokens`/`completionTokens` from
@@ -82,6 +85,30 @@ absent so cost stays `null` and every golden is unchanged. Rows for the
 embedding calls inside extraction already go through `generateEmbeddingSafely`
 and are priced since US1.
 
+`prompt` column semantics under `MEMORY_LOG_LLM_CALLS=full`: Python stores
+`json.dumps(messages)` — the envelope — while TS stores the bare prompt.
+**Decision: match Python.** The column exists for cross-engine audit and must
+mean one thing. Invisible in the default `metadata` mode; pinned by a test in
+`full` mode (database-architect review).
+
+### 3a. Extraction write atomicity — `ts/src/conversation/extraction.ts` (BLOCKER)
+
+Python embeds **every** extracted memory first and only then inserts
+(`conversation.py`: *"All embeddings succeeded — only local writes remain"*).
+TS interleaves embed → insert per memory with no transaction
+(`extraction.ts:131-138`). Under live, an embedding failure on memory 3 of 5
+leaves memories 1–2 persisted with `extracted` unset and the attempt recorded
+as failed; the retry re-extracts and inserts 1–2 again — duplicate memories,
+each with paid embeddings. Replay embeddings never fail, which is why no test
+has ever seen this, and why it belongs to the story that makes it reachable.
+
+Fix: embed all, collect vectors, then insert — Python's contract, no schema
+change, no locking story. Pinned by a test with a fake live embedding
+provider that fails on the **second** memory: zero rows in `memories`, the
+failed attempt recorded, and the ledger showing the paid round-trips that
+did happen (real spend stays visible). The summary embedding, when enabled,
+joins the same embed-first group.
+
 ### 4. Staged route flip — `routing.ts`
 
 Two plateaus, in the order US10 proved and flipped them, each with its own
@@ -106,8 +133,29 @@ Navigator-run, never CI, copy-guarded. One `conversation_title`-shaped call
 reported-not-asserted, latency > 0, one priced ledger row with bodies
 withheld, key absent from output. Then, with `--session-end <conversation-id>`,
 runs the real close tail on the copy against an un-extracted conversation and
-reports counts only: memories created, ledger rows by role in order, title
-set, summary length — never content.
+reports **structural verdicts, not just counts** (ai-engineer review):
+`extraction_status` (`ok` vs `parse_failed`), memory count, title non-empty
+and within the AI-24 60-code-point bound, tags parsed as a list, summary
+present, ledger rows by role in order — never content. A run that yields
+`parse_failed` on every role would pass a count-only check and be a real
+regression; when that happens the diagnosis is prompt-layer and routes to
+the prompt engineer, not to the transport.
+
+### 5a. Hook-boundary redaction — `loggerCli.ts`
+
+The transport's error shape (no body, no key) was designed for a log line.
+In US2 the boundary that matters is the **hook's stderr**: a `session-end`
+hook runs inside Pi, and what it prints can land in the transcript the next
+close tail logs and extracts. A hermetic test forces a live failure through
+`loggerCli` and asserts stderr carries only the taxonomy kind and a fixed
+phrase — never a provider body (security review).
+
+### 5b. CI cannot spend — `.github/workflows/tests.yml`
+
+After the flip, any TS test or smoke that runs a close-tail subcommand
+without both replay variables would try to go live; today it fails safe only
+because the key happens to be absent. Make it a property: the TS job asserts
+`OPENROUTER_API_KEY` is unset before `npm test` (security review).
 
 ### 6. Documentation
 
@@ -169,12 +217,19 @@ Then auth / rate_limit / success / timeout / malformed_output, with no body in a
 
 ### Automated (CI, hermetic)
 
-- `cd ts && npm run typecheck && npm run lint && npm test`.
-- `llm.test.ts`: `LiveLlmProvider` request shape (byte-identical prompt,
-  defaults 0.7/4096, per-request overrides), response branches (content
-  trim, `null` content → "", usage int-or-null, generationId, empty choices →
-  `malformed_output`), extraction-tier timeout, lazy config, no body in
-  errors.
+- `cd ts && npm run typecheck && npm run lint && npm test`, with the TS job
+  asserting `OPENROUTER_API_KEY` is unset.
+- `llm.test.ts`: `LiveLlmProvider` request shape (single `user` message,
+  byte-identical prompt, defaults 0.7/4096, per-request overrides), response
+  branches (content trim, `null` content → "", usage int-or-null,
+  generationId, empty choices → `malformed_output`), extraction-tier timeout,
+  lazy config, no body in errors.
+- `extraction.test.ts`: **embed-all-then-insert** — fake live embedding
+  provider failing on the second memory → zero `memories` rows, failed
+  attempt recorded, paid round-trips visible in the ledger; `prompt` column
+  holds the messages envelope in `full` mode.
+- `loggerCli.test.ts`: forced live failure → stderr carries kind + fixed
+  phrase only.
 - `loggerRuntime.test.ts`: three transport modes; half-configured replay
   refuses by name; ledger rows priced under a fake live provider, `null`
   under replay.
@@ -203,11 +258,19 @@ fixture-level evidence cannot stand in for a real session close.
 ## Implementation Contract
 
 - TDD: transport branches, provider resolution, and routing groups red first.
-- Plateaus, each committable: (1) `LiveLlmProvider` + tests; (2) priced chat
-  ledger rows; (3) provider resolution + tail revert + half-replay refusal;
-  (4) smoke script; (5) **flip group 1 + Navigator steps 1–4**; (6) flip group
-  2 + step 5; (7) docs. A session that must stop between plateaus records it
-  in the package.
+- Plateaus, each committable: (1) **extraction atomicity fix** (the blocker,
+  first, so no later plateau can be flipped over it); (2) `LiveLlmProvider` +
+  envelope test; (3) priced chat ledger rows + `prompt` envelope in `full`
+  mode; (4) provider resolution + tail revert + half-replay refusal +
+  hook-stderr test + CI key assertion; (5) smoke script with structural
+  verdicts; (6) **flip group 1 + Navigator steps 1–4**; (7) flip group 2 +
+  step 5; (8) docs. A session that must stop between plateaus records it in
+  the package.
+- Plan review (2026-09-11) findings folded in: database-architect
+  (atomicity blocker, `prompt` column semantics), ai-engineer (structural
+  verdicts; orchestration-not-content parity stated), security (hook-stderr
+  redaction, CI key-absence property), prompt-engineer (message envelope),
+  QA (corpus-consumption sequence, real-home revert-first rule).
 - The plan review (security + ai-engineer mandatory) runs before approval.
   Handoff review after validation.
 - No prompt text changes; no Python changes; `uv run` for Python; story-scoped

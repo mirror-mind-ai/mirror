@@ -44,9 +44,18 @@ real home sees a live call.
 - `ts/src/conversation/loggerRuntime.ts` — providers resolved through
   `resolveProviderTransport` (revert → replay → live) instead of replay-only;
   the `LlmTailUnconfiguredError` fallback becomes the explicit revert.
+- `ts/src/conversation/extraction.ts` — **embed all, then insert** (Python's
+  write contract). Today TS interleaves per memory with no transaction, so a
+  live embedding failure mid-extraction persists a partial set that the retry
+  duplicates. Unreachable under replay; reachable the moment this story flips.
 - `ts/src/conversation/extraction.ts` + `loggerRuntime.ts` ledger — chat rows
   priced via `computeCost` (today `costUsd: null`, a parity gap with Python's
-  `build_llm_logger`).
+  `build_llm_logger`); `prompt` column carries the messages envelope in
+  `full` mode, as Python's does.
+- `ts/src/conversation/loggerCli.ts` — hook stderr on a live failure carries
+  the taxonomy kind only, never a provider body (stderr can reach the next
+  transcript).
+- `.github/workflows/tests.yml` — the TS job asserts the key is absent.
 - `ts/src/frontDoor/routing.ts` — the five subcommands flip in two groups;
   `MIRROR_TS_CONVERSATION_LLM_TAIL=0` as the tail-only revert.
 - `ts/parity/live_chat_smoke.ts` — Navigator-run live chat contract.
