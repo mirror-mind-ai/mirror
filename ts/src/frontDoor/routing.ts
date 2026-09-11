@@ -1,4 +1,8 @@
-import { resolveProviderTransport, SEARCH_TRANSPORT } from "#providers/transport.ts";
+import {
+  CONVERSATION_TAIL_TRANSPORT,
+  resolveProviderTransport,
+  SEARCH_TRANSPORT,
+} from "#providers/transport.ts";
 
 import { DS10_RUNTIME_SUBCOMMANDS, TS_RUNTIME_READ_SUBCOMMANDS } from "./runtimeRoute.ts";
 
@@ -59,6 +63,8 @@ export type RouteEnvironment = {
   MIRROR_TS_CONVERSATION_APPEND?: string;
   MIRROR_TS_CONVERSATION_LLM_REPLAY?: string;
   MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY?: string;
+  /** CV22.DS8.US2 tail-only revert: the five close-tail subcommands, not the family. */
+  MIRROR_TS_CONVERSATION_LLM_TAIL?: string;
   MIRROR_TS_BACKUP?: string;
   MIRROR_TS_REPAIR_ENCODING?: string;
   MIRROR_TS_WELCOME?: string;
@@ -151,6 +157,15 @@ const TS_CONVERSATION_LOGGER_LLM_SUBCOMMANDS = new Set([
   "session-maintenance",
 ]);
 
+// CV22.DS8.US2 stages the live cutover in the order US10 proved and flipped
+// these in. Group 1 composes the close tail and nothing else -- `session-end`
+// is the subcommand that fires unattended from the Pi hook, so it is the one
+// observed on a database copy and then on the real home before group 2
+// follows. Group 2 composes the close tail WITH backfill and orphan handling
+// and can close several conversations in a single run, so a defect there is
+// multiplied; it keeps the replay transport until group 1 has been live.
+const DS8_LIVE_CLOSE_TAIL_GROUP_1 = new Set(["switch", "session-end-pi", "session-end"]);
+
 /** Python's `main()`: strip `--mirror-home X` and `--session-id X`, then `args[0]`. */
 function conversationLoggerSubcommand(argv: readonly string[]): string | undefined {
   const args = [...argv.slice(1)];
@@ -159,14 +174,6 @@ function conversationLoggerSubcommand(argv: readonly string[]): string | undefin
     if (index !== -1) args.splice(index, 2);
   }
   return args[0];
-}
-
-function conversationLlmReplayConfigured(env: RouteEnvironment): boolean {
-  return (
-    externalRoutesEnabled(env) &&
-    Boolean(env.MIRROR_TS_CONVERSATION_LLM_REPLAY) &&
-    Boolean(env.MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY)
-  );
 }
 
 function externalRoutesEnabled(env: RouteEnvironment): boolean {
@@ -626,17 +633,22 @@ export function routeMemoryCommand(
       };
     }
     if (sub && TS_CONVERSATION_LOGGER_LLM_SUBCOMMANDS.has(sub)) {
-      if (conversationLlmReplayConfigured(env)) {
-        return {
-          command,
-          engine: "ts",
-          reason: `DS7.US10 conversation-logger ${sub} routed to TS under replay-safe config`,
-        };
+      const transport = resolveProviderTransport(env, CONVERSATION_TAIL_TRANSPORT);
+      if (transport.mode === "python") {
+        return { command, engine: "python", reason: `${transport.reason} (${sub})` };
+      }
+      if (transport.mode === "replay") {
+        return { command, engine: "ts", reason: `${transport.reason} (${sub})` };
+      }
+      // Live, staged: group 1 only, until the Navigator has observed it on the
+      // real home (see DS8_LIVE_CLOSE_TAIL_GROUP_1).
+      if (DS8_LIVE_CLOSE_TAIL_GROUP_1.has(sub)) {
+        return { command, engine: "ts", reason: `${transport.reason} (${sub})` };
       }
       return {
         command,
         engine: "python",
-        reason: `conversation-logger ${sub} needs DS7.US10 replay config for TS route`,
+        reason: `conversation-logger ${sub} awaits the DS8.US2 group 2 live flip`,
       };
     }
     return {

@@ -231,7 +231,13 @@ test("close-tail metadata rows are priced, not just the extraction roles", async
   // The shared `deps.newId` returns a constant, which is fine for the tests
   // above but collides on the messages primary key here.
   let sequence = 0;
-  const uniqueDeps = { newId: () => `priced-${(sequence += 1)}`, nowIso: deps.nowIso };
+  const uniqueDeps = {
+    newId: () => {
+      sequence += 1;
+      return `priced-${sequence}`;
+    },
+    nowIso: deps.nowIso,
+  };
   logUserMessage(db, "s-priced", "we ported the close tail", { interface: "pi" }, uniqueDeps);
   for (const index of [1, 2, 3]) {
     logUserMessage(db, "s-priced", `message ${index}`, { interface: "pi" }, uniqueDeps);

@@ -398,33 +398,24 @@ const CONVERSATION_REPLAY_ENV = {
   MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY: "/tmp/embedding.json",
 };
 
-test("the LLM-tail subcommands route to TS only under the replay transport", () => {
-  for (const sub of [
-    "switch",
-    "session-end-pi",
-    "session-end",
-    "session-start",
-    "session-maintenance",
-  ]) {
-    const ts = routeMemoryCommand(["conversation-logger", sub], CONVERSATION_REPLAY_ENV);
-    assert.equal(ts.engine, "ts", sub);
-    assert.match(ts.reason, /DS7\.US10 .* replay-safe config/);
+test("the LLM-tail subcommands no longer require the replay transport (CV22.DS8.US2)", () => {
+  // This test previously asserted the DS7.US10 contract: replay or Python,
+  // never live. US2 is the story that changes it, so the contract it encodes
+  // has to change with it -- staged, group 1 first.
+  for (const sub of ["switch", "session-end-pi", "session-end"]) {
+    const replayed = routeMemoryCommand(["conversation-logger", sub], CONVERSATION_REPLAY_ENV);
+    assert.equal(replayed.engine, "ts", sub);
+    assert.match(replayed.reason, /replay/, sub);
 
-    // Unconfigured, half-configured, and gate-less installs all keep Python:
-    // the live LLM call stays Python's until DS8.
-    for (const env of [
-      {},
-      { MIRROR_TS_CONVERSATION_LLM_REPLAY: "/tmp/llm.json" },
-      { MIRROR_TS_EXTERNAL_ROUTES: "1", MIRROR_TS_CONVERSATION_LLM_REPLAY: "/tmp/llm.json" },
-      {
-        MIRROR_TS_CONVERSATION_LLM_REPLAY: "/tmp/llm.json",
-        MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY: "/tmp/embedding.json",
-      },
-    ]) {
-      const decision = routeMemoryCommand(["conversation-logger", sub], env);
-      assert.equal(decision.engine, "python", `${sub} under ${JSON.stringify(env)}`);
-      assert.match(decision.reason, /needs DS7\.US10 replay config/);
-    }
+    // Unconfigured now means LIVE for group 1 -- the cutover itself.
+    const live = routeMemoryCommand(["conversation-logger", sub], {});
+    assert.equal(live.engine, "ts", sub);
+    assert.match(live.reason, /DS8\.US2 conversation close tail live/, sub);
+  }
+
+  // Group 2 keeps the old shape until its own flip.
+  for (const sub of ["session-start", "session-maintenance"]) {
+    assert.equal(routeMemoryCommand(["conversation-logger", sub], {}).engine, "python", sub);
   }
 });
 
@@ -879,4 +870,81 @@ test("plain memory listing is unaffected by the search transport gates", () => {
 
   assert.equal(decision.engine, "ts");
   assert.equal(decision.reason, "DS2 memory listing read ported to TS");
+});
+
+// --- CV22.DS8.US2: the close-tail cutover, group 1 -------------------------
+
+const GROUP_1 = ["switch", "session-end-pi", "session-end"];
+const GROUP_2 = ["session-start", "session-maintenance"];
+
+test("group 1 close-tail subcommands reach the live provider with nothing configured", () => {
+  // The hook path first: `session-end` is what fires unattended when a Pi
+  // session closes, so it is the one validated on a copy before the real home.
+  for (const sub of GROUP_1) {
+    const decision = routeMemoryCommand(["conversation-logger", sub], {});
+    assert.equal(decision.engine, "ts", sub);
+    assert.equal(decision.reason, `DS8.US2 conversation close tail live (${sub})`, sub);
+  }
+});
+
+test("group 2 still needs the replay transport until its own flip", () => {
+  // Staged on purpose: these compose the close tail with backfill and orphan
+  // handling and can close several conversations in one run, so they wait for
+  // group 1 to be observed live on the real home.
+  for (const sub of GROUP_2) {
+    const decision = routeMemoryCommand(["conversation-logger", sub], {});
+    assert.equal(decision.engine, "python", sub);
+    assert.match(decision.reason, /DS8\.US2 group 2/, sub);
+  }
+});
+
+test("MIRROR_TS_CONVERSATION_LLM_TAIL=0 reverts the tail without touching the rest", () => {
+  const reverted = { MIRROR_TS_CONVERSATION_LLM_TAIL: "0" };
+  for (const sub of GROUP_1) {
+    assert.equal(routeMemoryCommand(["conversation-logger", sub], reverted).engine, "python", sub);
+  }
+  // The seven deterministic subcommands have answered from TS since
+  // 2026-09-02; a live-provider scare must not drag them back.
+  for (const sub of ["status", "log-user", "log-assistant", "mute", "discard-current"]) {
+    assert.equal(routeMemoryCommand(["conversation-logger", sub], reverted).engine, "ts", sub);
+  }
+});
+
+test("MIRROR_TS_CONVERSATION_LOGGER=0 still reverts the whole family", () => {
+  const off = { MIRROR_TS_CONVERSATION_LOGGER: "0" };
+  for (const sub of [...GROUP_1, ...GROUP_2, "status", "log-user"]) {
+    assert.equal(routeMemoryCommand(["conversation-logger", sub], off).engine, "python", sub);
+  }
+});
+
+test("a replay fixture keeps group 1 on TS without MIRROR_TS_EXTERNAL_ROUTES", () => {
+  const replay = {
+    MIRROR_TS_CONVERSATION_LLM_REPLAY: "/replay/llm.json",
+    MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY: "/replay/embedding.json",
+  };
+  for (const sub of GROUP_1) {
+    const decision = routeMemoryCommand(["conversation-logger", sub], replay);
+    assert.equal(decision.engine, "ts", sub);
+    assert.match(decision.reason, /replay/, sub);
+  }
+});
+
+test("the revert wins over replay fixtures left in the same shell", () => {
+  const decision = routeMemoryCommand(["conversation-logger", "session-end"], {
+    MIRROR_TS_CONVERSATION_LLM_TAIL: "0",
+    MIRROR_TS_CONVERSATION_LLM_REPLAY: "/replay/llm.json",
+    MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY: "/replay/embedding.json",
+  });
+
+  assert.equal(decision.engine, "python");
+});
+
+test("the subcommand is read after option stripping, as Python's main() does", () => {
+  const decision = routeMemoryCommand(
+    ["conversation-logger", "--mirror-home", "/tmp/home", "--session-id", "s1", "session-end"],
+    {},
+  );
+
+  assert.equal(decision.engine, "ts");
+  assert.match(decision.reason, /session-end/);
 });
