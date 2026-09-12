@@ -731,11 +731,17 @@ construction, and so would be a genuine fence regression. The same shape
 applies to every fenced surface: `extraction`, `shadow`, `consolidate`,
 `title_tags`, `conversation_summary`.
 
-This is not a finding against `scene`'s prompt. The single obeyed run is
-consistent with AI-22's documented residual, the model pin is unchanged since
-S30's n=10 re-confirmation, and n=1 cannot distinguish residual from
-regression — which is the second half of the problem: the gate that should
-have prompted that investigation reported PASS.
+This is not a finding against `scene`'s prompt. A Navigator-authorized n=5
+confirmation the same day returned **5/5 resisted** (`6/6 passed` each run,
+identical `prompt_hash` and model), so the flip did not reproduce and is the
+documented residual rather than a regression — 1 obeyed in 6 against AI-22's
+recorded 1/10, indistinguishable at these sample sizes.
+
+That confirmation is the point, not a footnote. The gate never asked for it:
+the module reported PASS, and only a human reading the probe line prompted the
+five runs. The persisted record stores per-probe detail (`probes[].passed`), so
+`--history` could have flagged the flip — the instrument captured the signal
+and the verdict discarded it.
 
 ### Revisit trigger
 
