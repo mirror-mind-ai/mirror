@@ -11,7 +11,7 @@ import {
 } from "#cultivation/propose.ts";
 import { CONSOLIDATION_PROMPT, SHADOW_SCAN_PROMPT } from "#extraction/prompts.ts";
 import { promptAssemblyGolden, scenariosFor, sha256 } from "#helpers/promptAssemblyGolden.ts";
-import type { ProviderCallOutcome } from "#observability/callOutcome.ts";
+import type { ProviderCallReport } from "#observability/callOutcome.ts";
 import { ReplayLlmProvider } from "#providers/llm.ts";
 
 /**
@@ -119,8 +119,8 @@ test("hostile cluster content survives assembly untouched: placeholders, doubled
 // --- Pin 3: replay fixtures enforce the digest for both roles ----------------------
 
 function outcomeSink() {
-  const outcomes: ProviderCallOutcome[] = [];
-  return { outcomes, onOutcome: (o: ProviderCallOutcome) => outcomes.push(o) };
+  const outcomes: ProviderCallReport[] = [];
+  return { outcomes, onOutcome: (o: ProviderCallReport) => outcomes.push(o) };
 }
 
 test("a replay fixture pinning promptDigests.consolidation accepts the oracle's bytes and refuses one byte of drift", async () => {

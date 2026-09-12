@@ -13,6 +13,10 @@ import {
 import type { LlmProvider, LlmRequest, LlmResponse } from "#providers/llm.ts";
 import { ReplayLlmProvider } from "#providers/llm.ts";
 
+/** Prompt inputs for the orchestration tests; the assembled BYTES are graded in
+ * cultivationPrompts.test.ts against the Python golden, so any values do here. */
+const ctx = { userName: "User", identityContext: "(no identity context loaded)" };
+
 function mem(overrides: Partial<CultivationMemory> = {}): CultivationMemory {
   return {
     id: "m1",
@@ -115,6 +119,7 @@ test("proposeConsolidation stores a pending Consolidation from a valid LLM respo
   const result = await proposeConsolidation(provider, cluster, {
     id: "c1",
     nowIso: "2026-01-01T00:00:00.000000Z",
+    ...ctx,
   });
   assert.deepEqual(result, {
     id: "c1",
@@ -139,7 +144,10 @@ test("proposeConsolidation returns null for an action outside the allowlist", as
       consolidation: JSON.stringify({ action: "delete_everything", proposed_content: "x" }),
     },
   });
-  assert.equal(await proposeConsolidation(provider, [mem()], { id: "c1", nowIso: "now" }), null);
+  assert.equal(
+    await proposeConsolidation(provider, [mem()], { id: "c1", nowIso: "now", ...ctx }),
+    null,
+  );
 });
 
 test("proposeConsolidation returns null for empty proposed_content", async () => {
@@ -147,7 +155,10 @@ test("proposeConsolidation returns null for empty proposed_content", async () =>
     kind: "llm",
     responses: { consolidation: JSON.stringify({ action: "merge", proposed_content: "   " }) },
   });
-  assert.equal(await proposeConsolidation(provider, [mem()], { id: "c1", nowIso: "now" }), null);
+  assert.equal(
+    await proposeConsolidation(provider, [mem()], { id: "c1", nowIso: "now", ...ctx }),
+    null,
+  );
 });
 
 test("proposeConsolidation returns null on unparsable JSON", async () => {
@@ -155,7 +166,10 @@ test("proposeConsolidation returns null on unparsable JSON", async () => {
     kind: "llm",
     responses: { consolidation: "not json at all" },
   });
-  assert.equal(await proposeConsolidation(provider, [mem()], { id: "c1", nowIso: "now" }), null);
+  assert.equal(
+    await proposeConsolidation(provider, [mem()], { id: "c1", nowIso: "now", ...ctx }),
+    null,
+  );
 });
 
 class ThrowingProvider implements LlmProvider {
@@ -166,7 +180,11 @@ class ThrowingProvider implements LlmProvider {
 
 test("proposeConsolidation returns null when the provider call rejects", async () => {
   assert.equal(
-    await proposeConsolidation(new ThrowingProvider(), [mem()], { id: "c1", nowIso: "now" }),
+    await proposeConsolidation(new ThrowingProvider(), [mem()], {
+      id: "c1",
+      nowIso: "now",
+      ...ctx,
+    }),
     null,
   );
 });
@@ -192,6 +210,7 @@ test("proposeShadowObservations stores one pending Consolidation per valid item,
   const results = await proposeShadowObservations(provider, [mem()], [], {
     id: () => ids[call++] as string,
     nowIso: () => "2026-01-01T00:00:00.000000Z",
+    userName: ctx.userName,
   });
   assert.deepEqual(results, [
     {
@@ -219,6 +238,7 @@ test("proposeShadowObservations skips an item with no observation text", async (
   const results = await proposeShadowObservations(provider, [mem()], [], {
     id: () => "unused",
     nowIso: () => "now",
+    userName: ctx.userName,
   });
   assert.deepEqual(results, []);
 });
@@ -228,6 +248,7 @@ test("proposeShadowObservations returns [] for an empty memory pool without call
   const results = await proposeShadowObservations(provider, [], [], {
     id: () => "x",
     nowIso: () => "now",
+    userName: ctx.userName,
   });
   assert.deepEqual(results, []);
   assert.equal(provider.calls.length, 0);
@@ -241,6 +262,7 @@ test("proposeShadowObservations returns [] when the response is not a JSON array
   const results = await proposeShadowObservations(provider, [mem()], [], {
     id: () => "x",
     nowIso: () => "now",
+    userName: ctx.userName,
   });
   assert.deepEqual(results, []);
 });
@@ -249,6 +271,7 @@ test("proposeShadowObservations returns [] when the provider call rejects", asyn
   const results = await proposeShadowObservations(new ThrowingProvider(), [mem()], [], {
     id: () => "x",
     nowIso: () => "now",
+    userName: ctx.userName,
   });
   assert.deepEqual(results, []);
 });
@@ -257,9 +280,10 @@ test("proposeShadowObservations returns [] when the provider call rejects", asyn
 //
 // The scan-level test proves PLUMBING: a poisoned proposal (a non-allowlisted
 // target_layer) is faithfully stored pending -- scan does NOT gate. Containment
-// (refusal) is proven at apply time, in applyActions.test.ts. This is
-// deliberate: proposal quality/prompt-level injection resistance is DS8 +
-// evals, not this story.
+// (refusal) is proven at apply time, in applyActions.test.ts. The prompt-level
+// guard text ("## Untrusted input") has travelled with the prompt since
+// CV22.DS8.TS2 and is pinned in cultivationPrompts.test.ts; it lowers the odds
+// of a poisoned proposal, it does not replace the apply-time gate.
 test("proposeConsolidation stores a poisoned proposal (non-allowlisted target_layer) as pending -- scan does not gate", async () => {
   const provider = new ReplayLlmProvider({
     kind: "llm",
@@ -273,7 +297,11 @@ test("proposeConsolidation stores a poisoned proposal (non-allowlisted target_la
       }),
     },
   });
-  const result = await proposeConsolidation(provider, [mem()], { id: "poisoned", nowIso: "now" });
+  const result = await proposeConsolidation(provider, [mem()], {
+    id: "poisoned",
+    nowIso: "now",
+    ...ctx,
+  });
   assert.equal(result?.status, "pending");
   assert.equal(result?.target_layer, "persona");
 });

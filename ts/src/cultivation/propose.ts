@@ -1,26 +1,28 @@
 // Port of `propose_consolidation` (`intelligence/consolidate.py`) and
 // `propose_shadow_observations` (`intelligence/shadow.py`) -- the LLM
 // orchestration half of `consolidate scan` / `shadow scan` (CV22.DS7.US3
-// Slice B). Runs behind the DS5 replay `LlmProvider`; the live call is DS8.
+// Slice B; live since CV22.DS8.TS2).
 //
-// Following the extraction precedent (`extraction/conversation.ts`), the
-// PROMPT SENT TO THE PROVIDER is deliberately NOT the full instructive
-// Python template (`CONSOLIDATION_PROMPT`/`SHADOW_SCAN_PROMPT`, with their
-// baked-in "## Untrusted input" guard) -- under replay the provider ignores
-// the prompt entirely (canned response keyed by role), so there is no TS
-// template surface to prove injection-resistance against yet. This ports the
-// deterministic formatting helpers (`formatCluster`/`formatShadowMemories`/
-// `formatShadowStructure`) and fences the user-derived block with
-// `fenceUntrusted`, matching the fence Python's real template wraps around
-// the same data; the live prompt-level guard text is DS8, per the extraction
-// precedent recorded in `fencing.ts`.
+// The prompt sent to the provider is Python's real template
+// (`CONSOLIDATION_PROMPT` / `SHADOW_SCAN_PROMPT`: task statement, identity or
+// dedup context, the "## Untrusted input" guard, and the JSON output
+// contract), assembled through `pyFormat` around the same fenced block Python
+// fences. The assembled bytes are graded against a golden captured from the
+// real Python builders and digest-pinned, because this file's history is the
+// cautionary tale: from DS7.US3 to DS8.TS2 it sent a fenced memory dump with
+// no instructions, and replay -- which resolves by role and never reads the
+// prompt -- could not tell. Live, the model would have answered prose,
+// `parseJsonResponse` would have failed, and every scan would have reported
+// "no proposals" while the ledger showed paid calls.
 
 import { fenceUntrusted } from "#extraction/fencing.ts";
 import { parseJsonResponse } from "#extraction/json.ts";
+import { CONSOLIDATION_PROMPT, SHADOW_SCAN_PROMPT } from "#extraction/prompts.ts";
 import { classifyProviderError, type OnProviderCallOutcome } from "#observability/callOutcome.ts";
 import type { ChatLedgerHook } from "#observability/ledgerHooks.ts";
 import { resolveExtractionModel } from "#providers/config.ts";
 import type { LlmProvider } from "#providers/llm.ts";
+import { pyFormat } from "#util/pythonText.ts";
 import type { ConsolidationRow, CultivationMemory } from "./consolidationStore.ts";
 
 /** Mirrors Python's action allowlist check in `propose_consolidation`. */
@@ -75,9 +77,48 @@ export function formatShadowStructure(entries: readonly ShadowStructureEntry[]):
   return entries.map((entry) => `### ${entry.key}\n${entry.content}`).join("\n\n");
 }
 
+/**
+ * Exactly what `propose_consolidation` sends: `CONSOLIDATION_PROMPT.format(...)`
+ * with only the user-derived cluster fenced -- `identity_context` is
+ * system-side. One pass, so a `{placeholder}` literal inside memory content
+ * is never expanded a second time.
+ */
+export function buildConsolidationPrompt(
+  cluster: readonly CultivationMemory[],
+  userName: string,
+  identityContext: string,
+): string {
+  return pyFormat(CONSOLIDATION_PROMPT, {
+    user_name: userName,
+    identity_context: identityContext,
+    cluster_text: fenceUntrusted("cluster", formatCluster(cluster)),
+  });
+}
+
+/**
+ * Exactly what `propose_shadow_observations` sends: `SHADOW_SCAN_PROMPT.format(...)`
+ * with only `shadow_memories` fenced -- `shadow_structure` is structural
+ * identity content, not user-injected, and Python leaves it unfenced.
+ */
+export function buildShadowScanPrompt(
+  memories: readonly CultivationMemory[],
+  shadowEntries: readonly ShadowStructureEntry[],
+  userName: string,
+): string {
+  return pyFormat(SHADOW_SCAN_PROMPT, {
+    user_name: userName,
+    shadow_structure: formatShadowStructure(shadowEntries),
+    shadow_memories: fenceUntrusted("shadow_memories", formatShadowMemories(memories)),
+  });
+}
+
 export interface ProposeConsolidationOptions {
   id: string;
   nowIso: string;
+  /** `cmd_scan`'s `_user_name(mem)`; see `promptContext.ts`. Required: the fallback lives in the resolver, as in Python. */
+  userName: string;
+  /** `cmd_scan`'s `_identity_context(mem)`; see `promptContext.ts`. */
+  identityContext: string;
   /**
    * Python passes `on_llm_call=build_llm_logger(store, role="consolidation")`
    * from `consolidate_cmd`. TypeScript logged nothing, which was accurate
@@ -109,7 +150,7 @@ export async function proposeConsolidation(
   cluster: readonly CultivationMemory[],
   options: ProposeConsolidationOptions,
 ): Promise<ConsolidationRow | null> {
-  const prompt = fenceUntrusted("cluster", formatCluster(cluster));
+  const prompt = buildConsolidationPrompt(cluster, options.userName, options.identityContext);
   let content: string;
   try {
     const response = await provider.complete({
@@ -176,6 +217,8 @@ export interface ProposeShadowObservationsOptions {
   /** Called once per emitted observation, matching Python's per-item `_uuid()`/`_now()`. */
   id: () => string;
   nowIso: () => string;
+  /** `cmd_scan`'s `_user_name(mem)`; see `promptContext.ts`. */
+  userName: string;
   /** Python's `build_llm_logger(store, role="shadow_scan")`; see above. */
   onLlmCall?: ChatLedgerHook;
   /** What happened on the one call, category only; see `ProposeConsolidationOptions`. */
@@ -202,14 +245,7 @@ export async function proposeShadowObservations(
 ): Promise<ConsolidationRow[]> {
   if (memories.length === 0) return [];
 
-  // `shadow_structure` is system-side identity content, not user-injected --
-  // Python fences only the `shadow_memories` block, not this one. Both parts
-  // travel in the prompt (dedup context + the fenced candidate pool), even
-  // though replay ignores prompt content entirely; this keeps the shape ready
-  // for DS8's live template to reuse verbatim.
-  const prompt =
-    `## Current structural shadow layer\n${formatShadowStructure(shadowEntries)}\n\n` +
-    fenceUntrusted("shadow_memories", formatShadowMemories(memories));
+  const prompt = buildShadowScanPrompt(memories, shadowEntries, options.userName);
 
   let content: string;
   try {

@@ -16,6 +16,7 @@ import {
   getMemoriesWithEmbeddingsForCultivation,
   getShadowCandidateMemories,
 } from "./consolidationStore.ts";
+import { consolidationIdentityContext, cultivationUserName } from "./promptContext.ts";
 import { proposeConsolidation, proposeShadowObservations } from "./propose.ts";
 
 /** Mirrors `consolidate scan`'s `--limit` default (max proposals per run). */
@@ -82,11 +83,18 @@ export async function consolidateScan(
   const allClusters = clusterMemories(memories, options.threshold ?? DEFAULT_CLUSTER_THRESHOLD);
   const clusters = allClusters.slice(0, options.limit ?? DEFAULT_CONSOLIDATE_SCAN_LIMIT);
 
+  // Resolved once per scan, after the cluster cap and before the loop --
+  // where `cmd_scan` resolves them (CV22.DS8.TS2).
+  const userName = cultivationUserName(db);
+  const identityContext = consolidationIdentityContext(db);
+
   const results: ConsolidateScanClusterOutcome[] = [];
   for (const cluster of clusters) {
     const proposal = await proposeConsolidation(options.provider, cluster, {
       id: options.id(),
       nowIso: options.nowIso(),
+      userName,
+      identityContext,
       onLlmCall: options.onLlmCall,
       onOutcome: options.onOutcome,
     });
@@ -137,6 +145,7 @@ export async function shadowScan(
   const proposals = await proposeShadowObservations(options.provider, memories, shadowEntries, {
     id: options.id,
     nowIso: options.nowIso,
+    userName: cultivationUserName(db),
     onLlmCall: options.onLlmCall,
     onOutcome: options.onOutcome,
   });

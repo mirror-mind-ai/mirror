@@ -85,6 +85,8 @@ const SURFACE_OWNERS: Readonly<Record<string, ReadonlySet<string>>> = {
   // CV22.DS8.US3 -- pre-digest surfaces, pinned before the live cutover.
   "test/mirror/reception.test.ts": new Set(["reception"]),
   "test/consult/consult.test.ts": new Set(["consult"]),
+  // CV22.DS8.TS2 -- captured from the real Python builders, not re-composed.
+  "test/cultivation/cultivationPrompts.test.ts": new Set(["consolidation", "shadow_scan"]),
 };
 
 test("every scenario in the shared golden is owned by exactly one test file", () => {
