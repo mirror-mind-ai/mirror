@@ -20,8 +20,30 @@ export interface PromptScenario {
   prompt_sha256: string;
 }
 
+/**
+ * Both Python owner-name resolvers, run over the same `user/identity` content
+ * (CV22.DS8.TS2). TS implements the `shadow_cmd` form; the one row where the
+ * two columns differ is the D1 deviation (no hardcoded owner name).
+ */
+export interface UserNameResolverCase {
+  label: string;
+  user_identity: string | null;
+  shadow_cmd: string;
+  consolidate_cmd: string;
+}
+
+export interface IdentityContextResolverCase {
+  label: string;
+  identity_rows: { layer: string; key: string; content: string }[];
+  identity_context: string;
+}
+
 export interface PromptAssemblyGolden {
   system_prompts: Record<string, string>;
+  resolvers: {
+    cultivation_user_name: UserNameResolverCase[];
+    consolidation_identity_context: IdentityContextResolverCase[];
+  };
   scenarios: PromptScenario[];
 }
 
