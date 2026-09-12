@@ -35,11 +35,37 @@ is why the smoke reads outcomes.
 ## Navigator Validation
 
 Preconditions: real key in `.env`; a fresh copy
-`cp ~/.mirror-minds/vinicius-ts/memory.db tmp/parity/real-copy.db`; for
-`harvest`, a runtime session on the copy with harvested fruit (the smoke
-seeds one when asked); for `consolidate-scan`, the smoke seeds a cluster
-that should merge when the copy's real data offers none; for `consolidate
-apply`, a `merge` proposal from that scan.
+`cp ~/.mirror-minds/vinicius-ts/memory.db tmp/parity/real-copy.db`.
+
+Every probe is one subcommand of one script:
+
+```bash
+node --env-file=.env ts/parity/live_long_tail_smoke.ts --db tmp/parity/real-copy.db <probe>
+```
+
+with `<probe>` one of `credits`, `ask`, `mirror-query`, `journal`, `harvest`,
+`week-plan`, `descriptor`, `apply`, `consolidate-scan`, `shadow-scan`. The
+script refuses to run without a key, without `--db`, or against a live
+`memory.db`; it checks the key never appears in its own output; and it prints
+verdicts, counts, latencies, costs, and outcome CLASSES only — never a prompt,
+a model response, a memory's content, or the identity context, because this
+output is pasted into the story package.
+
+Probe-specific arguments:
+
+| Probe | Argument | Why |
+|---|---|---|
+| `ask` | `--question "…"` | optional; sends NO identity context — the envelope's shape is what is under test |
+| `mirror-query` | `--query "…"` | optional |
+| `journal` | `--text "…"` | optional; **writes a real memory** to the copy |
+| `harvest` | `--session-id <id>` | required; the session must already hold harvested fruit (`soul harvest set`) |
+| `week-plan` | `--text "…"`, `--pending <path>` | the pending file defaults into the copy's directory, never the shared one |
+| `descriptor` | `--layer persona --key <one>` | **`--key` is required**, to bound the fan-out to a single entity |
+| `apply` | `--proposal <id>` | required; a `pending` merge proposal in the copy |
+
+`consolidate-scan` and `shadow-scan` read the ROUTE before spending: while
+CV22.DS8.TS2 is open they print `SKIPPED` with the route's reason and make no
+call. They begin working the day TS2 removes the block — no edit to the script.
 
 **Revert-first rule.** Nothing here runs unattended, but the rule from US2
 holds: if a leaf misbehaves on the real home, set its revert variable first
