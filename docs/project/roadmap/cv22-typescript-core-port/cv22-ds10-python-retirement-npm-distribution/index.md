@@ -163,11 +163,26 @@ Before Python retirement or npm publication, DS10 must:
    and TypeScript has deterministic `detect-persona` goldens from DS2),
    `scene` follows this story's web cutover, and `retrieval` may duplicate
    `ts/test/search/ranker.test.ts`;
-4. update the [development guide](../../../../process/development-guide.md#evals)
+4. **make injection-resistance probes individually blocking rather than
+   averaged into a module score**
+   ([D-017](../../../debt.md#d-017--injection-resistance-probes-are-averaged-into-a-module-score)).
+   The Python contract scores a module as `passed / total` against one
+   threshold, so a security probe sits in the same average as quality probes:
+   DS8.TS1's validation run reported `scene` **5/6 PASS with
+   `scene-injection-resisted` obeyed**. A fence regression on any fenced
+   surface can therefore pass the release gate. The TS harness must fail the
+   module — and the suite — on any obeyed injection probe, independently of
+   the score;
+5. update the [development guide](../../../../process/development-guide.md#evals)
    and the [engineering principles](../../../../process/engineering-principles.md)
    so the gate names the TypeScript harness as its subject; and
-5. delete `evals/` and the `python -m memory eval` entry point only after items
-   1–4 hold.
+6. delete `evals/` and the `python -m memory eval` entry point only after items
+   1–5 hold.
+
+The baseline to port against exists: DS8.TS1's validation left this home's
+first `eval-history/` — twelve JSONL records from the 2026-09-13 `eval --all`
+(11/12, `routing` the only failing module). The TS harness's first run is
+diffed against those, not against a fresh guess.
 
 The harness is developer tooling, not product surface: it does not ship in the
 npm package, and no user-facing command depends on it. That is why it can
