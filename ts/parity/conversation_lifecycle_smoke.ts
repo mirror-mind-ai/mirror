@@ -795,14 +795,21 @@ check(
   afterLoad?.metadata ?? "(no row)",
 );
 
-// `harvest save` is the one leaf that crosses the provider seam: it must stay
-// on Python until the embedding replay transport is configured, even with the
-// family gate on.
-const saveWithoutReplay = runSoul(["soul", "harvest", "save", "--session-id", soulSession], SOUL_ON);
+// `harvest save` is the one Soul leaf that crosses the provider seam. Until
+// CV22.DS8.US3 it stayed on Python without a replay fixture -- and the front
+// door never wired one, so the TypeScript path could not complete at all. It
+// now goes live by default, with the family switch as its revert.
+const saveUnconfigured = runSoul(["soul", "harvest", "save", "--session-id", soulSession], SOUL_ON);
 check(
-  saveWithoutReplay.route === "python",
-  "soul harvest save stays on Python without the replay transport",
-  saveWithoutReplay.route,
+  saveUnconfigured.route === "ts",
+  "soul harvest save reaches TS on an unconfigured install (DS8.US3)",
+  saveUnconfigured.route,
+);
+const saveReverted = runSoul(["soul", "harvest", "save", "--session-id", soulSession], SOUL_OFF);
+check(
+  saveReverted.route === "python",
+  "MIRROR_TS_SOUL=0 reverts harvest save with the rest of the family",
+  saveReverted.route,
 );
 
 // An unported subcommand reaches Python by name, never by inheritance.
