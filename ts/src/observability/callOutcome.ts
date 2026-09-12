@@ -91,4 +91,25 @@ export class CallOutcomeTally {
       .map(([outcome, count]) => `${outcome}=${count}`);
     return [`calls=${this.calls}`, ...counts].join(" ");
   }
+
+  /**
+   * `timeout=2 rate_limit=1` -- the transport-failure classes behind a
+   * `transport_failed=N`, or `""` when there were none. Kept apart from
+   * `summary()` so that line's pinned shape stays stable; the first live
+   * `consolidate scan` (CV22.DS8.TS2) reported `transport_failed=2` and
+   * nothing else, and the kind is the one field that separates a slow
+   * provider from a rate limit from a bad body.
+   */
+  failureKinds(): string {
+    const counts = new Map<string, number>();
+    for (const report of this.reports) {
+      if (report.outcome !== "transport_failed") continue;
+      const kind = report.kind ?? "unknown";
+      counts.set(kind, (counts.get(kind) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([kind, count]) => `${kind}=${count}`)
+      .join(" ");
+  }
 }

@@ -189,6 +189,8 @@ function tallyOf(): { tally: CallOutcomeTally; onOutcome: (report: ProviderCallR
  */
 function checkOutcomes(tally: CallOutcomeTally, options: { requireAnswered: boolean }): void {
   note(`outcomes: ${tally.summary()}`);
+  const kinds = tally.failureKinds();
+  if (kinds) note(`transport failures by class: ${kinds}`);
   check(tally.calls > 0, "the probe actually called the provider", `calls=${tally.calls}`);
   check(
     !tally.summary().includes("parse_failed"),

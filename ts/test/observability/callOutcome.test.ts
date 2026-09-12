@@ -235,6 +235,20 @@ test("the tally reports the fan-out, in a stable order", () => {
   assert.equal(tally.summary(), "calls=4 answered=2 parse_failed=1 transport_failed=1");
 });
 
+test("the tally names the transport-failure classes behind transport_failed=N", () => {
+  const tally = new CallOutcomeTally();
+  tally.record({ outcome: "transport_failed", kind: "timeout" });
+  tally.record({ outcome: "answered" });
+  tally.record({ outcome: "transport_failed", kind: "rate_limit" });
+  tally.record({ outcome: "transport_failed", kind: "timeout" });
+  tally.record({ outcome: "transport_failed" });
+
+  assert.equal(tally.failureKinds(), "rate_limit=1 timeout=2 unknown=1");
+  // The pinned summary line is unchanged by the new view.
+  assert.equal(tally.summary(), "calls=5 answered=1 transport_failed=4");
+  assert.equal(new CallOutcomeTally().failureKinds(), "");
+});
+
 test("the log line carries the class and never a message", () => {
   assert.equal(
     formatCallOutcome("consolidation", { outcome: "transport_failed", kind: "rate_limit" }),
