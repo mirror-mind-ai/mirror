@@ -49,3 +49,4 @@ evidence stays honest as both cores move.
 - [CR074 — Harden the `week plan` pending file](cr074-harden-the-week-plan-pending-file.md)
 - [CR075 — Route the journal embedding through the safety wrapper](cr075-route-the-journal-embedding-through-the-safety-wrapper.md)
 - [CR076 — Collapse the three close-tail metadata calls into one](cr076-collapse-the-three-close-tail-metadata-calls.md)
+- [CR078 — Stop spending thirteen seconds polling for a `consult` cost](cr078-stop-spending-thirteen-seconds-polling-for-a-consult-cost.md)
