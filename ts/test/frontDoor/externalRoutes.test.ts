@@ -17,7 +17,6 @@ test("front door runs consult credits through TS replay route", async () => {
   });
 
   const result = spawnFrontDoor(["consult", "credits"], {
-    MIRROR_TS_EXTERNAL_ROUTES: "1",
     MIRROR_TS_CREDITS_REPLAY: creditsPath,
   });
 
@@ -49,7 +48,6 @@ test("front door runs consult ask through TS replay route", async () => {
   });
 
   const result = spawnFrontDoor(["consult", "gemini", "hello"], {
-    MIRROR_TS_EXTERNAL_ROUTES: "1",
     MIRROR_TS_CREDITS_REPLAY: creditsPath,
     MIRROR_TS_CONSULT_LLM_REPLAY: llmPath,
     MIRROR_TS_CONSULT_CONTEXT: "synthetic context",
@@ -99,7 +97,6 @@ test("front door runs memories --search through TS replay route and keeps logs m
   const result = spawnFrontDoor(
     ["memories", "--search", "mirror builder", "--limit", "1", "--db-path", dbPath],
     {
-      MIRROR_TS_EXTERNAL_ROUTES: "1",
       MIRROR_TS_SEARCH_EMBEDDING_REPLAY: embeddingPath,
     },
   );

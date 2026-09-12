@@ -75,9 +75,9 @@ line item inside a plateau labelled "pins". See
 - All sixteen replay-gated leaves in the burn-down ledger's "Ported and
   graded — replay-gated" table answer from TS with no replay configuration
   set and no `MIRROR_TS_EXTERNAL_ROUTES` requirement; the ledger section is
-  emptied and the leaves move to their family rows as flipped-ungated. The
-  three cultivation leaves among them are gated on TS2, so DS8 cannot close
-  before TS2 does.
+  emptied and the leaves move to their family rows as flipped-ungated. The two
+  cultivation SCAN leaves among them are gated on TS2, so DS8 cannot close
+  before TS2 does; `consolidate apply` sends no prompt and is not.
 - The `live` transport enforces per-role timeouts, bounded retries, and the
   `timeout | auth | rate_limit | malformed_output | provider_error` taxonomy,
   with a test per class and no test that reaches the network.

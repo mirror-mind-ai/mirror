@@ -154,7 +154,6 @@ test("front door mirror load query uses scrubbed reception and embedding replay 
         ws.dbPath,
       ],
       {
-        MIRROR_TS_EXTERNAL_ROUTES: "1",
         MIRROR_TS_MIRROR_LLM_REPLAY: llmPath,
         MIRROR_TS_MIRROR_EMBEDDING_REPLAY: embeddingPath,
         MEMORY_RECEPTION: "1",

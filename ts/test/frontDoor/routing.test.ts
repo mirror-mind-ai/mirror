@@ -12,55 +12,47 @@ test("routes DS2 read commands to TS", () => {
   assert.equal(routeMemoryCommand(["memories", "--limit", "5"]).engine, "ts");
 });
 
-test("routes DS5 external commands to TS only under replay-safe gate", () => {
-  // CV22.DS8.US1 flipped `memories --search`: an unconfigured install now
-  // reaches the live provider through TS instead of falling back to Python.
-  // The remaining DS5 surfaces below keep their replay gate until US3.
-  assert.deepEqual(routeMemoryCommand(["memories", "--search", "builder"]), {
-    command: "memories",
-    engine: "ts",
-    reason: "DS8.US1 fresh semantic search live",
+test("both consult leaves are live by default, each with its own fixture requirement", () => {
+  // CV22.DS8.US3: the DS5 external-routes gate is retired. `credits` needs only
+  // the credits fixture to replay; `ask` needs the chat fixture too, and with
+  // the credits one alone it REFUSES rather than going live for the half
+  // nobody configured (CR077's asymmetric family).
+  assert.equal(routeMemoryCommand(["consult", "credits"]).engine, "ts");
+  assert.equal(routeMemoryCommand(["consult", "openai", "question"]).engine, "ts");
+
+  assert.equal(
+    routeMemoryCommand(["consult", "credits"], { MIRROR_TS_CREDITS_REPLAY: "/tmp/c.json" }).engine,
+    "ts",
+  );
+  const halfConfiguredAsk = routeMemoryCommand(["consult", "openai", "question"], {
+    MIRROR_TS_CREDITS_REPLAY: "/tmp/c.json",
   });
-  assert.deepEqual(
-    routeMemoryCommand(["memories", "--search", "builder"], {
-      MIRROR_TS_EXTERNAL_ROUTES: "1",
-      MIRROR_TS_SEARCH_EMBEDDING_REPLAY: "/tmp/embedding.json",
-    }),
-    {
-      command: "memories",
-      engine: "ts",
-      reason: "MIRROR_TS_SEARCH_EMBEDDING_REPLAY replay transport",
-    },
-  );
-  assert.deepEqual(
-    routeMemoryCommand(["consult", "credits"], {
-      MIRROR_TS_EXTERNAL_ROUTES: "1",
-      MIRROR_TS_CREDITS_REPLAY: "/tmp/credits.json",
-    }),
-    {
-      command: "consult",
-      engine: "ts",
-      reason: "DS5 consult credits routed to TS under replay-safe config",
-    },
-  );
-  assert.deepEqual(
-    routeMemoryCommand(["consult", "gemini", "hello"], {
-      MIRROR_TS_EXTERNAL_ROUTES: "1",
+  assert.equal(halfConfiguredAsk.engine, "python");
+  assert.match(halfConfiguredAsk.reason, /incomplete replay fixture/);
+  assert.match(halfConfiguredAsk.reason, /MIRROR_TS_CONSULT_LLM_REPLAY missing/);
+
+  assert.equal(
+    routeMemoryCommand(["consult", "openai", "question"], {
       MIRROR_TS_CONSULT_LLM_REPLAY: "/tmp/llm.json",
-      MIRROR_TS_CREDITS_REPLAY: "/tmp/credits.json",
-    }),
-    {
-      command: "consult",
-      engine: "ts",
-      reason: "DS5 consult ask routed to TS under replay-safe config",
-    },
+      MIRROR_TS_CREDITS_REPLAY: "/tmp/c.json",
+    }).engine,
+    "ts",
   );
+
+  // One variable reverts the whole family.
+  for (const argv of [
+    ["consult", "credits"],
+    ["consult", "openai", "q"],
+  ]) {
+    assert.equal(routeMemoryCommand(argv, { MIRROR_TS_CONSULT: "0" }).engine, "python");
+  }
 });
 
 test("keeps unported commands on Python fallback", () => {
   assert.equal(routeMemoryCommand(["build", "load", "mirror-ts-core"]).engine, "python");
-  assert.equal(routeMemoryCommand(["journal", "hello"]).engine, "python");
   assert.equal(routeMemoryCommand(["conversation-logger", "extract-pending"]).engine, "python");
+  // `journal` left this list in CV22.DS8.US3; it is live by default now.
+  assert.equal(routeMemoryCommand(["journal", "hello"]).engine, "ts");
 });
 
 test("routes `identity set/list/get` to TS but keeps the interactive `edit` on Python", () => {
@@ -99,19 +91,27 @@ test("routes every `tasks` write subcommand (add/done/doing/block/delete/import/
   }
 });
 
-test("routes `week` view/save to TS and keeps plan on Python until its replay config exists", () => {
-  // An EXPLICIT empty env: these assertions must not depend on whatever
-  // MIRROR_TS_* the developer running the suite happens to export.
-  assert.deepEqual(routeMemoryCommand(["week"], {}), {
-    command: "week",
-    engine: "ts",
-    reason: "DS7.US2 week view read ported to TS",
-  });
-  assert.equal(routeMemoryCommand(["week", "view"], {}).engine, "ts");
-  // Flipped 2026-09-09: `save` is deterministic and default ON; `plan` needs
-  // the replay transport, so an unconfigured install keeps Python until DS8.
-  assert.equal(routeMemoryCommand(["week", "save"], {}).engine, "ts");
-  assert.equal(routeMemoryCommand(["week", "plan", "text"], {}).engine, "python");
+test("all week leaves answer from TS; the revert covers save and plan, never view", () => {
+  for (const argv of [["week"], ["week", "view"], ["week", "save"], ["week", "plan", "text"]]) {
+    assert.equal(routeMemoryCommand(argv).engine, "ts", `${argv.join(" ")} is live by default`);
+  }
+  for (const argv of [
+    ["week", "save"],
+    ["week", "plan", "text"],
+  ]) {
+    assert.equal(routeMemoryCommand(argv, { MIRROR_TS_WEEK: "0" }).engine, "python");
+  }
+  // `view` deliberately sits OUTSIDE its family gate: it was flipped ungated in
+  // US2, and reverting a bad `plan` or `save` must not drag a previously
+  // unrevertible read back to Python (US11 Plan review, quality-assurance).
+  // US3 does not change that -- `view` crosses no provider seam.
+  assert.equal(routeMemoryCommand(["week", "view"], { MIRROR_TS_WEEK: "0" }).engine, "ts");
+  assert.equal(
+    routeMemoryCommand(["week", "plan", "t"], { MIRROR_TS_WEEK_LLM_REPLAY: "/tmp/w.json" }).engine,
+    "ts",
+    "a fixture still selects replay",
+  );
+  assert.equal(routeMemoryCommand(["week", "unknown"]).engine, "python");
 });
 
 test("routes `init` to TS", () => {
@@ -194,15 +194,14 @@ test("routes `list personas/journeys` to TS but keeps `list extensions/all` on P
   assert.equal(routeMemoryCommand(["list"]).engine, "python");
 });
 
-test("routes `descriptor list` to TS but keeps `descriptor generate` (LLM) on Python", () => {
-  assert.deepEqual(routeMemoryCommand(["descriptor", "list"]), {
-    command: "descriptor",
-    engine: "ts",
-    reason: "DS7.US1 descriptor list read ported to TS",
-  });
-  assert.equal(routeMemoryCommand(["descriptor", "list", "--layer", "persona"]).engine, "ts");
-  assert.equal(routeMemoryCommand(["descriptor", "generate"]).engine, "python");
-  assert.equal(routeMemoryCommand(["descriptor"]).engine, "python");
+test("descriptor list and generate both answer from TS, with generate revertible", () => {
+  assert.equal(routeMemoryCommand(["descriptor", "list"]).engine, "ts");
+  assert.equal(routeMemoryCommand(["descriptor", "generate"]).engine, "ts");
+  assert.equal(
+    routeMemoryCommand(["descriptor", "generate"], { MIRROR_TS_DESCRIPTOR: "0" }).engine,
+    "python",
+  );
+  assert.equal(routeMemoryCommand(["descriptor", "unknown"]).engine, "python");
 });
 
 test("routes `journey set-path`/`update`/status reads all to TS", () => {
@@ -227,52 +226,37 @@ test("routes `journey set-path`/`update`/status reads all to TS", () => {
   assert.equal(routeMemoryCommand(["journeys"]).engine, "ts");
 });
 
-test("routes `consolidate list`/`reject` to TS unconditionally, gates `apply`/`scan` on the DS7.US3 replay config", () => {
-  assert.deepEqual(routeMemoryCommand(["consolidate", "list"]), {
-    command: "consolidate",
-    engine: "ts",
-    reason: "DS7.US3 consolidate list/reject ported to TS",
-  });
-  assert.equal(routeMemoryCommand(["consolidate", "reject", "abc"]).engine, "ts");
+test("consolidate apply is live, scan waits for DS8.TS2, and one variable reverts the tail", () => {
+  for (const sub of ["list", "reject"]) {
+    assert.equal(routeMemoryCommand(["consolidate", sub, "abc"]).engine, "ts");
+  }
 
-  assert.deepEqual(routeMemoryCommand(["consolidate", "apply", "abc"]), {
-    command: "consolidate",
-    engine: "python",
-    reason: "consolidate apply needs DS7.US3 replay/live config for TS route (merge embedding)",
-  });
-  assert.deepEqual(
-    routeMemoryCommand(["consolidate", "apply", "abc"], {
-      MIRROR_TS_EXTERNAL_ROUTES: "1",
-      MIRROR_TS_CULTIVATION_EMBEDDING_REPLAY: "/tmp/embedding.json",
-    }),
-    {
-      command: "consolidate",
-      engine: "ts",
-      reason:
-        "DS7.US3 consolidate apply routed to TS under replay-safe config (merge needs embedding)",
-    },
-  );
-  // The external-routes gate alone (no fixture path) is not enough.
+  // `apply` sends NO prompt -- a merge only embeds -- so it is not blocked by
+  // TS2 and goes live with group B.
+  assert.equal(routeMemoryCommand(["consolidate", "apply", "abc"]).engine, "ts");
+
+  // `scan` sends a prompt TypeScript never ported, so live is blocked by name
+  // rather than silently allowed.
+  const scan = routeMemoryCommand(["consolidate", "scan"]);
+  assert.equal(scan.engine, "python");
+  assert.match(scan.reason, /live blocked by DS8\.TS2/);
+  // ...but replay still reaches TS, which is what the goldens and the parity
+  // harness use.
   assert.equal(
-    routeMemoryCommand(["consolidate", "apply", "abc"], { MIRROR_TS_EXTERNAL_ROUTES: "1" }).engine,
+    routeMemoryCommand(["consolidate", "scan"], {
+      MIRROR_TS_CULTIVATION_LLM_REPLAY: "/tmp/llm.json",
+    }).engine,
+    "ts",
+  );
+
+  // Tail-only revert: the deterministic leaves stay on TypeScript.
+  assert.equal(
+    routeMemoryCommand(["consolidate", "apply", "abc"], { MIRROR_TS_CULTIVATION: "0" }).engine,
     "python",
   );
-
-  assert.deepEqual(routeMemoryCommand(["consolidate", "scan"]), {
-    command: "consolidate",
-    engine: "python",
-    reason: "consolidate scan needs DS7.US3 replay/live config for TS route",
-  });
-  assert.deepEqual(
-    routeMemoryCommand(["consolidate", "scan"], {
-      MIRROR_TS_EXTERNAL_ROUTES: "1",
-      MIRROR_TS_CULTIVATION_LLM_REPLAY: "/tmp/llm.json",
-    }),
-    {
-      command: "consolidate",
-      engine: "ts",
-      reason: "DS7.US3 consolidate scan routed to TS under replay-safe config",
-    },
+  assert.equal(
+    routeMemoryCommand(["consolidate", "list"], { MIRROR_TS_CULTIVATION: "0" }).engine,
+    "ts",
   );
 
   assert.deepEqual(routeMemoryCommand(["consolidate", "unknown-sub"]), {
@@ -282,7 +266,7 @@ test("routes `consolidate list`/`reject` to TS unconditionally, gates `apply`/`s
   });
 });
 
-test("routes `shadow list`/`show`/`reject`/`apply` to TS unconditionally, gates `scan` on the DS7.US3 replay config", () => {
+test("shadow reads stay on TS, and `shadow scan` waits for DS8.TS2 with the others", () => {
   for (const sub of ["list", "show", "reject", "apply"]) {
     assert.deepEqual(routeMemoryCommand(["shadow", sub, "abc"]), {
       command: "shadow",
@@ -291,21 +275,13 @@ test("routes `shadow list`/`show`/`reject`/`apply` to TS unconditionally, gates 
     });
   }
 
-  assert.deepEqual(routeMemoryCommand(["shadow", "scan"]), {
-    command: "shadow",
-    engine: "python",
-    reason: "shadow scan needs DS7.US3 replay/live config for TS route",
-  });
-  assert.deepEqual(
-    routeMemoryCommand(["shadow", "scan"], {
-      MIRROR_TS_EXTERNAL_ROUTES: "1",
-      MIRROR_TS_CULTIVATION_LLM_REPLAY: "/tmp/llm.json",
-    }),
-    {
-      command: "shadow",
-      engine: "ts",
-      reason: "DS7.US3 shadow scan routed to TS under replay-safe config",
-    },
+  const scan = routeMemoryCommand(["shadow", "scan"]);
+  assert.equal(scan.engine, "python");
+  assert.match(scan.reason, /live blocked by DS8\.TS2/);
+  assert.equal(
+    routeMemoryCommand(["shadow", "scan"], { MIRROR_TS_CULTIVATION_LLM_REPLAY: "/tmp/llm.json" })
+      .engine,
+    "ts",
   );
 
   assert.deepEqual(routeMemoryCommand(["shadow", "unknown-sub"]), {
@@ -315,7 +291,7 @@ test("routes `shadow list`/`show`/`reject`/`apply` to TS unconditionally, gates 
   });
 });
 
-test("routes Mirror Mode core commands to TS and gates query orchestration on replay", () => {
+test("mirror load --query is live, revertible on its own, and MEMORY_RECEPTION=0 drops the chat half", () => {
   for (const argv of [
     ["mirror", "load"],
     ["mirror", "deactivate"],
@@ -327,18 +303,39 @@ test("routes Mirror Mode core commands to TS and gates query orchestration on re
   ]) {
     assert.equal(routeMemoryCommand(argv).engine, "ts");
   }
-  assert.equal(routeMemoryCommand(["mirror", "load", "--query", "hello"]).engine, "python");
+
+  assert.equal(routeMemoryCommand(["mirror", "load", "--query", "hello"]).engine, "ts");
+
+  // Its own revert: the deterministic `mirror load` is the most-used read in
+  // the product and must not be dragged back by a query-path scare.
+  assert.equal(
+    routeMemoryCommand(["mirror", "load", "--query", "hello"], { MIRROR_TS_MIRROR_QUERY: "0" })
+      .engine,
+    "python",
+  );
+  assert.equal(
+    routeMemoryCommand(["mirror", "load"], { MIRROR_TS_MIRROR_QUERY: "0" }).engine,
+    "ts",
+  );
+
+  // Replay needs both fixtures...
   assert.equal(
     routeMemoryCommand(["mirror", "load", "--query", "hello"], {
-      MIRROR_TS_EXTERNAL_ROUTES: "1",
       MIRROR_TS_MIRROR_EMBEDDING_REPLAY: "/tmp/embedding.json",
       MIRROR_TS_MIRROR_LLM_REPLAY: "/tmp/llm.json",
     }).engine,
     "ts",
   );
+  const halfConfigured = routeMemoryCommand(["mirror", "load", "--query", "hello"], {
+    MIRROR_TS_MIRROR_EMBEDDING_REPLAY: "/tmp/embedding.json",
+  });
+  assert.equal(halfConfigured.engine, "python");
+  assert.match(halfConfigured.reason, /incomplete replay fixture/);
+
+  // ...unless MEMORY_RECEPTION=0 removes the classifier on both engines, in
+  // which case the embedding fixture alone is a COMPLETE replay setup.
   assert.equal(
     routeMemoryCommand(["mirror", "load", "--query", "hello"], {
-      MIRROR_TS_EXTERNAL_ROUTES: "1",
       MIRROR_TS_MIRROR_EMBEDDING_REPLAY: "/tmp/embedding.json",
       MEMORY_RECEPTION: "0",
     }).engine,
@@ -393,7 +390,6 @@ test("conversation-logger routes deterministic subcommands to TS", () => {
 // --- CV22.DS7.US10 slice F: the LLM-tail flips, in the plan's dependency order ---
 
 const CONVERSATION_REPLAY_ENV = {
-  MIRROR_TS_EXTERNAL_ROUTES: "1",
   MIRROR_TS_CONVERSATION_LLM_REPLAY: "/tmp/llm.json",
   MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY: "/tmp/embedding.json",
 };
@@ -705,18 +701,21 @@ test("week save answers from TS by default, and never drags `view` with its gate
   assert.equal(routeMemoryCommand(["week"], { MIRROR_TS_WEEK: "0" }).engine, "ts");
 });
 
-test("week plan stays on Python, and its refusal reason no longer mislabels `save`", () => {
-  // Plateau 4 gave `plan` its own replay requirement, so the reason now names
-  // the replay config rather than the model. What must stay true is that the
-  // reason is about `plan` alone and never mislabels `save`.
-  const plan = routeMemoryCommand(["week", "plan", "some text"], { MIRROR_TS_WEEK: "1" });
-  assert.equal(plan.engine, "python");
-  assert.match(plan.reason, /week plan/);
+test("no week reason mislabels `save` as LLM-gated (CR068 stays corrected)", () => {
+  // DS8.US3 flipped `plan` live, so the old assertion (plan routes to Python)
+  // is gone. What CR068 established must survive the flip: a reason is about
+  // the leaf it describes, and `save` is never called LLM-gated -- it reads the
+  // pending file and calls add_task, crossing no provider seam.
+  const plan = routeMemoryCommand(["week", "plan", "some text"], {});
+  assert.equal(plan.engine, "ts");
   assert.doesNotMatch(plan.reason, /save/);
 
   const save = routeMemoryCommand(["week", "save"], {});
+  assert.equal(save.engine, "ts");
   assert.doesNotMatch(save.reason, /LLM-gated/, "save is deterministic; CR068 corrected this");
-  assert.doesNotMatch(save.reason, /=0/, "the gate is default-off, so '=0' would be untrue");
+
+  const reverted = routeMemoryCommand(["week", "save"], { MIRROR_TS_WEEK: "0" });
+  assert.match(reverted.reason, /MIRROR_TS_WEEK=0/, "a reason must describe the state that exists");
 });
 
 test("an unknown week subcommand is refused by name, never inherited", () => {
@@ -731,55 +730,60 @@ test("an unknown week subcommand is refused by name, never inherited", () => {
 // replay transport as well as its family gate. CR068 found it reported as
 // burned down while no TS module existed at all.
 
-test("journal reaches TS only with both the family gate and the replay config", () => {
-  const replay = {
-    MIRROR_TS_EXTERNAL_ROUTES: "1",
-    MIRROR_TS_JOURNAL_LLM_REPLAY: "fixture.json",
-    MIRROR_TS_JOURNAL_EMBEDDING_REPLAY: "fixture.json",
-  };
-  // The family gate is ON by default since the flip, but the replay config is
-  // absent on a real install -- so journal still answers from Python in
-  // production until DS8. That is the DS7/DS8 boundary, not an oversight.
-  assert.equal(routeMemoryCommand(["journal", "x"], {}).engine, "python");
-  assert.equal(routeMemoryCommand(["journal", "x"], { MIRROR_TS_JOURNAL: "1" }).engine, "python");
-  assert.equal(routeMemoryCommand(["journal", "x"], replay).engine, "ts");
+test("journal is live by default and refuses a half-configured replay pair", () => {
+  // CV22.DS8.US3: journal crosses the seam TWICE (classification + embedding),
+  // so its family declares two fixtures. Live needs neither; replay needs both.
+  assert.equal(routeMemoryCommand(["journal", "x"], {}).engine, "ts");
   assert.equal(
-    routeMemoryCommand(["journal", "x"], { MIRROR_TS_JOURNAL: "1", ...replay }).engine,
+    routeMemoryCommand(["journal", "x"], {
+      MIRROR_TS_JOURNAL_LLM_REPLAY: "fixture.json",
+      MIRROR_TS_JOURNAL_EMBEDDING_REPLAY: "fixture.json",
+    }).engine,
     "ts",
   );
+  const half = routeMemoryCommand(["journal", "x"], {
+    MIRROR_TS_JOURNAL_LLM_REPLAY: "fixture.json",
+  });
+  assert.equal(half.engine, "python", "half a fixture must never become a live call");
+  assert.match(half.reason, /MIRROR_TS_JOURNAL_EMBEDDING_REPLAY missing/);
 });
 
 test("MIRROR_TS_JOURNAL=0 wins over a configured replay transport", () => {
   const decision = routeMemoryCommand(["journal", "x"], {
     MIRROR_TS_JOURNAL: "0",
-    MIRROR_TS_EXTERNAL_ROUTES: "1",
     MIRROR_TS_JOURNAL_LLM_REPLAY: "fixture.json",
     MIRROR_TS_JOURNAL_EMBEDDING_REPLAY: "fixture.json",
   });
   assert.equal(decision.engine, "python");
-  assert.match(decision.reason, /disabled by MIRROR_TS_JOURNAL=0/);
+  assert.match(decision.reason, /MIRROR_TS_JOURNAL=0 revert/);
 });
 
-test("an unconfigured journal route names the replay config, not a false '=0'", () => {
-  // After the flip the family gate is ON, so the honest reason for falling
-  // back is the missing replay transport. A reason must describe the state
-  // that exists (the plateau-1 lesson).
+test("the journal route's reason describes the state that exists", () => {
+  // The plateau-1 lesson: a reason must describe reality. An unconfigured
+  // install is now LIVE, so the reason says live -- not "needs replay config",
+  // which was true before the cutover and false after it.
   const reason = routeMemoryCommand(["journal", "x"], {}).reason;
-  assert.match(reason, /replay config/);
+  assert.match(reason, /DS8\.US3 journal live/);
   assert.doesNotMatch(reason, /=0/);
+  assert.doesNotMatch(reason, /replay config/);
 });
 
-test("the three week leaves carry three different requirements", () => {
-  const replay = { MIRROR_TS_EXTERNAL_ROUTES: "1", MIRROR_TS_WEEK_LLM_REPLAY: "fixture.json" };
-  // `view`: ungated since US2.
-  assert.equal(routeMemoryCommand(["week", "view"], {}).engine, "ts");
-  // `save`: deterministic — the family gate alone is enough.
-  assert.equal(routeMemoryCommand(["week", "save"], { MIRROR_TS_WEEK: "1" }).engine, "ts");
-  // `plan`: one model call — gate AND replay.
-  assert.equal(routeMemoryCommand(["week", "plan", "x"], { MIRROR_TS_WEEK: "1" }).engine, "python");
+test("the week leaves' requirements collapse to one live default", () => {
+  // Before DS8 they carried three different requirements. After the cutover
+  // `view` and `save` make no provider call, `plan` makes one, and all three
+  // answer from TypeScript -- with `save` and `plan` revertible together and
+  // `view` deliberately outside the gate.
+  for (const argv of [
+    ["week", "view"],
+    ["week", "save"],
+    ["week", "plan", "x"],
+  ]) {
+    assert.equal(routeMemoryCommand(argv, {}).engine, "ts");
+  }
   assert.equal(
-    routeMemoryCommand(["week", "plan", "x"], { MIRROR_TS_WEEK: "1", ...replay }).engine,
+    routeMemoryCommand(["week", "plan", "x"], { MIRROR_TS_WEEK_LLM_REPLAY: "fixture.json" }).engine,
     "ts",
+    "only `plan` has a fixture to replay",
   );
 });
 
@@ -958,4 +962,63 @@ test("the subcommand is read after option stripping, as Python's main() does", (
 
   assert.equal(decision.engine, "ts");
   assert.match(decision.reason, /session-end/);
+});
+
+// --- CV22.DS8.US3: the retired DS5 gate --------------------------------------
+
+test("a stale MIRROR_TS_EXTERNAL_ROUTES is inert, in both directions", () => {
+  // The gate is GONE, not merely unused. It was DS5's safety catch while replay
+  // was the PRODUCTION route for these leaves; after the cutover replay is a
+  // test transport, so the gate would only be a second thing to set in CI and a
+  // stale value to trip over in a shell that once ran the parity harness.
+  //
+  // `=1` must not enable anything, and `=0` must not disable anything: an
+  // operator who exported it months ago should see no difference at all.
+  const leaves = [
+    ["consult", "credits"],
+    ["consult", "openai", "question"],
+    ["mirror", "load", "--query", "hello"],
+    ["journal", "an entry"],
+    ["week", "plan", "text"],
+    ["descriptor", "generate"],
+    ["soul", "harvest", "save"],
+    ["consolidate", "apply", "abc"],
+    ["consolidate", "scan"],
+    ["shadow", "scan"],
+    ["memories", "--search", "q"],
+  ];
+
+  for (const argv of leaves) {
+    const clean = routeMemoryCommand(argv, {});
+    for (const value of ["1", "0"]) {
+      const stale = routeMemoryCommand(argv, {
+        MIRROR_TS_EXTERNAL_ROUTES: value,
+      } as Record<string, string>);
+      assert.deepEqual(stale, clean, `${argv.join(" ")} changed with the stale gate at ${value}`);
+    }
+  }
+});
+
+test("every provider-backed family has exactly one variable that reverts it", () => {
+  // The DS8 done condition: "every family keeps a single-variable revert to
+  // Python until DS10 deletes it". A leaf with no revert is a leaf an operator
+  // cannot get out of at 2am.
+  const reverts: [string[], string][] = [
+    [["consult", "credits"], "MIRROR_TS_CONSULT"],
+    [["consult", "openai", "question"], "MIRROR_TS_CONSULT"],
+    [["mirror", "load", "--query", "hello"], "MIRROR_TS_MIRROR_QUERY"],
+    [["journal", "an entry"], "MIRROR_TS_JOURNAL"],
+    [["week", "plan", "text"], "MIRROR_TS_WEEK"],
+    [["descriptor", "generate"], "MIRROR_TS_DESCRIPTOR"],
+    [["soul", "harvest", "save"], "MIRROR_TS_SOUL"],
+    [["consolidate", "apply", "abc"], "MIRROR_TS_CULTIVATION"],
+    [["memories", "--search", "q"], "MIRROR_TS_SEARCH"],
+  ];
+
+  for (const [argv, variable] of reverts) {
+    assert.equal(routeMemoryCommand(argv, {}).engine, "ts", `${argv.join(" ")} answers from TS`);
+    const decision = routeMemoryCommand(argv, { [variable]: "0" } as Record<string, string>);
+    assert.equal(decision.engine, "python", `${variable}=0 must revert ${argv.join(" ")}`);
+    assert.match(decision.reason, new RegExp(`${variable}=0`));
+  }
 });

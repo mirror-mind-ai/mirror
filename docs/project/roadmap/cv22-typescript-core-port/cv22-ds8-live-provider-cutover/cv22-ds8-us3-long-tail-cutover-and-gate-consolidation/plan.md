@@ -268,13 +268,17 @@ Flip order is by exposure, each group with its own Navigator observation:
 - **Group B — attended single writes:** `journal`, `soul harvest save`,
   `week plan`, `descriptor generate --layer … --key …` (one entity).
 - **Group C — multi-call:** `consolidate scan` (one call per cluster,
-  bounded by `--limit`), `shadow scan`, `consolidate apply` on a `merge`.
-  **Blocked on CV22.DS8.TS2** (the cultivation prompt templates). Everything
+  bounded by `--limit`) and `shadow scan`. **Blocked on CV22.DS8.TS2** (the cultivation prompt templates). Everything
   else this story does for that family — the transport spec, the factory, the
   ledger rows, the outcome seam, the revert variable, the gate retirement —
   lands here; only the route flip waits. If TS2 has not landed when the rest
-  of US3 is validated, the three cultivation leaves stay replay-gated, US3
-  closes without them, and the burn-down ledger says so.
+  of US3 is validated, the two scan leaves stay replay-gated, US3 closes
+  without them, and the burn-down ledger says so.
+
+  `consolidate apply` moved to **group B** on 2026-09-11: it sends no prompt —
+  a `merge` embeds the merged content, an `identity_update` makes no provider
+  call — so TS2 does not gate it. The plan and the ledger both said "the three
+  cultivation leaves"; measured, it is two.
 
 ### 7. Live long-tail smoke — `ts/parity/live_long_tail_smoke.ts`
 

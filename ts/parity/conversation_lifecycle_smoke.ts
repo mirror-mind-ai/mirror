@@ -78,7 +78,6 @@ const baseEnv: Record<string, string> = {
   ...(process.env as Record<string, string>),
   NODE_OPTIONS: "--no-warnings",
   MEMORY_ENV: "test",
-  MIRROR_TS_EXTERNAL_ROUTES: "1",
   MIRROR_TS_CONVERSATION_LLM_REPLAY: llmFixture,
   MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY: embeddingFixture,
   PI_SESSIONS_DIR: join(home, "absent-pi-sessions"),

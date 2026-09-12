@@ -62,8 +62,16 @@ import {
 } from "#observability/callOutcome.ts";
 import { chatLedgerHook } from "#observability/ledgerHooks.ts";
 import { runWeekSave } from "#planning/weekSave.ts";
-import { loadReplayEmbeddingProvider } from "#providers/embedding.ts";
-import { loadReplayLlmProvider } from "#providers/llm.ts";
+import type { EmbeddingProvider } from "#providers/embedding.ts";
+import { resolveFamilyProviders } from "#providers/familyProviders.ts";
+import type { LlmProvider } from "#providers/llm.ts";
+import {
+  CULTIVATION_APPLY_TRANSPORT,
+  CULTIVATION_SCAN_TRANSPORT,
+  DESCRIPTOR_TRANSPORT,
+  JOURNAL_TRANSPORT,
+  WEEK_PLAN_TRANSPORT,
+} from "#providers/transport.ts";
 import { runSeed } from "#seed/seed.ts";
 import { getTasksForWeek, listTasks } from "#tasks/taskStore.ts";
 import { computeWeekRange } from "#tasks/weekView.ts";
@@ -461,33 +469,38 @@ function runWeekSaveWrite(argv: readonly string[]): number {
   });
 }
 
-/** CV22.DS7.US11: the replay-gated content-tail routes. */
+/**
+ * The content-tail routes (CV22.DS7.US11, live under CV22.DS8.US3).
+ *
+ * Each builds its providers from the same spec `routing.ts` decided with, so
+ * the route cannot disagree with the router about which transport is in play.
+ * A missing provider here is defense in depth: routing sends a reverted or
+ * half-configured family to Python before the route is reached.
+ */
 async function runJournalContentRoute(argv: readonly string[]): Promise<number> {
-  const llmPath = process.env.MIRROR_TS_JOURNAL_LLM_REPLAY;
-  const embeddingPath = process.env.MIRROR_TS_JOURNAL_EMBEDDING_REPLAY;
-  if (!llmPath || !embeddingPath) {
-    // routing.ts already gates on both; reachable only via direct misuse.
-    throw new Error("journal TS route requires the DS7.US11 replay configuration");
+  const family = await resolveFamilyProviders(process.env, JOURNAL_TRANSPORT);
+  if (!family?.llm || !family.embedding) {
+    throw new Error("journal requires an LLM and an embedding provider");
   }
-  const [llm, embedding] = await Promise.all([
-    loadReplayLlmProvider(llmPath),
-    loadReplayEmbeddingProvider(embeddingPath),
-  ]);
-  return withLiveWriteDbAsync(argv, (db) => runJournalRoute(db, argv.slice(1), { llm, embedding }));
+  return withLiveWriteDbAsync(argv, (db) =>
+    runJournalRoute(db, argv.slice(1), {
+      llm: family.llm as LlmProvider,
+      embedding: family.embedding as EmbeddingProvider,
+    }),
+  );
 }
 
 async function runWeekPlanContentRoute(argv: readonly string[]): Promise<number> {
-  const llmPath = process.env.MIRROR_TS_WEEK_LLM_REPLAY;
-  if (!llmPath) throw new Error("week plan TS route requires MIRROR_TS_WEEK_LLM_REPLAY");
-  const llm = await loadReplayLlmProvider(llmPath);
+  const family = await resolveFamilyProviders(process.env, WEEK_PLAN_TRANSPORT);
+  if (!family?.llm) throw new Error("week plan requires an LLM provider");
+  const llm = family.llm;
   return withLiveWriteDbAsync(argv, (db) => runWeekPlanRoute(db, argv.slice(2), llm));
 }
 
 async function runDescriptorContentRoute(argv: readonly string[]): Promise<number> {
-  const llmPath = process.env.MIRROR_TS_DESCRIPTOR_LLM_REPLAY;
-  if (!llmPath)
-    throw new Error("descriptor generate TS route requires MIRROR_TS_DESCRIPTOR_LLM_REPLAY");
-  const llm = await loadReplayLlmProvider(llmPath);
+  const family = await resolveFamilyProviders(process.env, DESCRIPTOR_TRANSPORT);
+  if (!family?.llm) throw new Error("descriptor generate requires an LLM provider");
+  const llm = family.llm;
   const reporter = outcomeReporter(argv, "descriptor");
   return withLiveWriteDbAsync(argv, async (db) => {
     const exitCode = await runDescriptorGenerateRoute(db, argv.slice(2), llm, reporter.onOutcome);
@@ -1177,14 +1190,9 @@ async function runConsolidateApplyWrite(argv: readonly string[]): Promise<number
     return 2;
   }
   const overrideContent = optionValue(args, "--content");
-  const replayPath = process.env.MIRROR_TS_CULTIVATION_EMBEDDING_REPLAY;
-  if (!replayPath) {
-    // routing.ts already gates on this; reachable only via direct misuse.
-    throw new Error(
-      "MIRROR_TS_CULTIVATION_EMBEDDING_REPLAY is required for TS consolidate apply route",
-    );
-  }
-  const embeddingProvider = await loadReplayEmbeddingProvider(replayPath);
+  const family = await resolveFamilyProviders(process.env, CULTIVATION_APPLY_TRANSPORT);
+  if (!family?.embedding) throw new Error("consolidate apply requires an embedding provider");
+  const embeddingProvider = family.embedding;
   return withLiveWriteDbAsync(argv, async (db) => {
     const outcome = await runConsolidateApplyRoute(
       db,
@@ -1209,11 +1217,9 @@ async function runConsolidateScanWrite(argv: readonly string[]): Promise<number>
   const limit = limitRaw !== null ? Number(limitRaw) : DEFAULT_CONSOLIDATE_SCAN_LIMIT;
   const thresholdRaw = optionValue(args, "--threshold");
   const threshold = thresholdRaw !== null ? Number(thresholdRaw) : DEFAULT_CLUSTER_THRESHOLD;
-  const replayPath = process.env.MIRROR_TS_CULTIVATION_LLM_REPLAY;
-  if (!replayPath) {
-    throw new Error("MIRROR_TS_CULTIVATION_LLM_REPLAY is required for TS consolidate scan route");
-  }
-  const provider = await loadReplayLlmProvider(replayPath);
+  const family = await resolveFamilyProviders(process.env, CULTIVATION_SCAN_TRANSPORT);
+  if (!family?.llm) throw new Error("consolidate scan requires an LLM provider");
+  const provider = family.llm;
   const reporter = outcomeReporter(argv, "consolidation");
   return withLiveWriteDbAsync(argv, async (db) => {
     const result = await consolidateScan(db, {
@@ -1238,11 +1244,9 @@ async function runShadowScanWrite(argv: readonly string[]): Promise<number> {
   const args = argv.slice(2);
   const limitRaw = optionValue(args, "--limit");
   const limit = limitRaw !== null ? Number(limitRaw) : DEFAULT_SHADOW_SCAN_LIMIT;
-  const replayPath = process.env.MIRROR_TS_CULTIVATION_LLM_REPLAY;
-  if (!replayPath) {
-    throw new Error("MIRROR_TS_CULTIVATION_LLM_REPLAY is required for TS shadow scan route");
-  }
-  const provider = await loadReplayLlmProvider(replayPath);
+  const family = await resolveFamilyProviders(process.env, CULTIVATION_SCAN_TRANSPORT);
+  if (!family?.llm) throw new Error("shadow scan requires an LLM provider");
+  const provider = family.llm;
   const reporter = outcomeReporter(argv, "shadow_scan");
   return withLiveWriteDbAsync(argv, async (db) => {
     const result = await shadowScan(db, {

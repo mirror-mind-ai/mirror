@@ -1,7 +1,17 @@
 import {
+  CONSULT_ASK_TRANSPORT,
+  CONSULT_CREDITS_TRANSPORT,
   CONVERSATION_TAIL_TRANSPORT,
+  CULTIVATION_APPLY_TRANSPORT,
+  CULTIVATION_SCAN_TRANSPORT,
+  DESCRIPTOR_TRANSPORT,
+  JOURNAL_TRANSPORT,
+  MIRROR_QUERY_TRANSPORT,
+  type ProviderTransportSpec,
   resolveProviderTransport,
   SEARCH_TRANSPORT,
+  SOUL_HARVEST_TRANSPORT,
+  WEEK_PLAN_TRANSPORT,
 } from "#providers/transport.ts";
 
 import { DS10_RUNTIME_SUBCOMMANDS, TS_RUNTIME_READ_SUBCOMMANDS } from "./runtimeRoute.ts";
@@ -49,14 +59,19 @@ const CONVERSATIONS_LIFECYCLE_FLAGS = [
 // signature, which is what lets the named variables below still be passed to
 // `resolveProviderTransport`, whose families name their variables as data.
 export type RouteEnvironment = {
-  MIRROR_TS_EXTERNAL_ROUTES?: string;
   /** CV22.DS8.US1 revert control for the fresh-semantic-search leaf. */
   MIRROR_TS_SEARCH?: string;
   MIRROR_TS_SEARCH_EMBEDDING_REPLAY?: string;
+  /** CV22.DS8.US3 revert control for both consult leaves. */
+  MIRROR_TS_CONSULT?: string;
   MIRROR_TS_CONSULT_LLM_REPLAY?: string;
   MIRROR_TS_CREDITS_REPLAY?: string;
+  /** CV22.DS8.US3 tail-only revert: the provider-crossing cultivation leaves. */
+  MIRROR_TS_CULTIVATION?: string;
   MIRROR_TS_CULTIVATION_LLM_REPLAY?: string;
   MIRROR_TS_CULTIVATION_EMBEDDING_REPLAY?: string;
+  /** CV22.DS8.US3 revert control for `mirror load --query` only. */
+  MIRROR_TS_MIRROR_QUERY?: string;
   MIRROR_TS_MIRROR_LLM_REPLAY?: string;
   MIRROR_TS_MIRROR_EMBEDDING_REPLAY?: string;
   MIRROR_TS_CONVERSATION_LOGGER?: string;
@@ -179,8 +194,31 @@ function conversationLoggerSubcommand(argv: readonly string[]): string | undefin
   return args[0];
 }
 
-function externalRoutesEnabled(env: RouteEnvironment): boolean {
-  return env.MIRROR_TS_EXTERNAL_ROUTES === "1";
+/**
+ * One decision for every provider-backed leaf (CV22.DS8.US3).
+ *
+ * `MIRROR_TS_EXTERNAL_ROUTES` is GONE, not merely unused. It was DS5's safety
+ * catch while replay was the PRODUCTION route for these leaves: requiring an
+ * extra opt-in made sense when "routed to TS" meant "answered from a fixture".
+ * After the live cutover replay is a test transport, so the gate would only
+ * add a second thing to set in CI and a stale value to trip over in a shell.
+ * A leftover `=1` or `=0` is inert, and a test pins that.
+ */
+function providerRoute(
+  command: string | null,
+  env: RouteEnvironment,
+  spec: ProviderTransportSpec,
+  leaf?: string,
+): RouteDecision {
+  const transport = resolveProviderTransport(env, spec);
+  const reason = leaf ? `${transport.reason} (${leaf})` : transport.reason;
+  return {
+    command,
+    // `incomplete_replay` is not live and not Python-by-choice: the runtime
+    // refuses by name so half a fixture cannot spend money (CR077).
+    engine: transport.mode === "python" || transport.mode === "incomplete_replay" ? "python" : "ts",
+    reason,
+  };
 }
 
 export function routeMemoryCommand(
@@ -211,32 +249,12 @@ export function routeMemoryCommand(
   }
 
   if (command === "consult") {
-    if (!externalRoutesEnabled(env)) {
-      return {
-        command,
-        engine: "python",
-        reason: "consult TS route requires DS5 external route gate",
-      };
-    }
-    if (argv[1] === "credits" && env.MIRROR_TS_CREDITS_REPLAY) {
-      return {
-        command,
-        engine: "ts",
-        reason: "DS5 consult credits routed to TS under replay-safe config",
-      };
-    }
-    if (env.MIRROR_TS_CONSULT_LLM_REPLAY && env.MIRROR_TS_CREDITS_REPLAY) {
-      return {
-        command,
-        engine: "ts",
-        reason: "DS5 consult ask routed to TS under replay-safe config",
-      };
-    }
-    return {
-      command,
-      engine: "python",
-      reason: "consult needs DS5 replay/live config for TS route",
-    };
+    // Per leaf, because the fixtures are: `credits` needs the credits fixture
+    // alone, `ask` needs the chat fixture too. With only the credits one set,
+    // `credits` replays and `ask` refuses rather than going half-live.
+    return argv[1] === "credits"
+      ? providerRoute(command, env, CONSULT_CREDITS_TRANSPORT, "credits")
+      : providerRoute(command, env, CONSULT_ASK_TRANSPORT, "ask");
   }
 
   if (command === "identity") {
@@ -373,25 +391,7 @@ export function routeMemoryCommand(
       return { command, engine: "ts", reason: "DS7.US1 descriptor list read ported to TS" };
     }
     if (argv[1] === "generate") {
-      if (env.MIRROR_TS_DESCRIPTOR === "0") {
-        return {
-          command,
-          engine: "python",
-          reason: "descriptor generate TS route disabled by MIRROR_TS_DESCRIPTOR=0",
-        };
-      }
-      if (!externalRoutesEnabled(env) || !env.MIRROR_TS_DESCRIPTOR_LLM_REPLAY) {
-        return {
-          command,
-          engine: "python",
-          reason: "descriptor generate needs DS7.US11 replay config for TS route",
-        };
-      }
-      return {
-        command,
-        engine: "ts",
-        reason: "DS7.US11 descriptor generate routed to TS under replay-safe config",
-      };
+      return providerRoute(command, env, DESCRIPTOR_TRANSPORT, "generate");
     }
     return {
       command,
@@ -454,25 +454,7 @@ export function routeMemoryCommand(
     if (sub === "plan") {
       // One model call, no embedding -- so it needs the LLM replay fixture
       // only, unlike `journal` which crosses the seam twice.
-      if (!weekGateEnabled(env)) {
-        return {
-          command,
-          engine: "python",
-          reason: "week plan TS route disabled by MIRROR_TS_WEEK=0",
-        };
-      }
-      if (!externalRoutesEnabled(env) || !env.MIRROR_TS_WEEK_LLM_REPLAY) {
-        return {
-          command,
-          engine: "python",
-          reason: "week plan needs DS7.US11 replay config for TS route",
-        };
-      }
-      return {
-        command,
-        engine: "ts",
-        reason: "DS7.US11 week plan routed to TS under replay-safe config",
-      };
+      return providerRoute(command, env, WEEK_PLAN_TRANSPORT, "plan");
     }
     return {
       command,
@@ -491,34 +473,15 @@ export function routeMemoryCommand(
     if (sub === "list" || sub === "reject") {
       return { command, engine: "ts", reason: "DS7.US3 consolidate list/reject ported to TS" };
     }
+    // `apply` sends NO prompt: a merge embeds the merged content and an
+    // identity_update makes no provider call at all. So it is not blocked by
+    // TS2, unlike `scan`. Gated as a whole because its action is read from the
+    // DB, not argv, and the routing decision precedes any DB open.
     if (sub === "apply") {
-      if (externalRoutesEnabled(env) && env.MIRROR_TS_CULTIVATION_EMBEDDING_REPLAY) {
-        return {
-          command,
-          engine: "ts",
-          reason:
-            "DS7.US3 consolidate apply routed to TS under replay-safe config (merge needs embedding)",
-        };
-      }
-      return {
-        command,
-        engine: "python",
-        reason: "consolidate apply needs DS7.US3 replay/live config for TS route (merge embedding)",
-      };
+      return providerRoute(command, env, CULTIVATION_APPLY_TRANSPORT, "apply");
     }
     if (sub === "scan") {
-      if (externalRoutesEnabled(env) && env.MIRROR_TS_CULTIVATION_LLM_REPLAY) {
-        return {
-          command,
-          engine: "ts",
-          reason: "DS7.US3 consolidate scan routed to TS under replay-safe config",
-        };
-      }
-      return {
-        command,
-        engine: "python",
-        reason: "consolidate scan needs DS7.US3 replay/live config for TS route",
-      };
+      return providerRoute(command, env, CULTIVATION_SCAN_TRANSPORT, "scan");
     }
     return { command, engine: "python", reason: "command not ported to TS" };
   }
@@ -536,18 +499,7 @@ export function routeMemoryCommand(
       };
     }
     if (sub === "scan") {
-      if (externalRoutesEnabled(env) && env.MIRROR_TS_CULTIVATION_LLM_REPLAY) {
-        return {
-          command,
-          engine: "ts",
-          reason: "DS7.US3 shadow scan routed to TS under replay-safe config",
-        };
-      }
-      return {
-        command,
-        engine: "python",
-        reason: "shadow scan needs DS7.US3 replay/live config for TS route",
-      };
+      return providerRoute(command, env, CULTIVATION_SCAN_TRANSPORT, "shadow scan");
     }
     return { command, engine: "python", reason: "command not ported to TS" };
   }
@@ -559,25 +511,17 @@ export function routeMemoryCommand(
       if (!hasQuery) {
         return { command, engine: "ts", reason: "DS7.US4 deterministic mirror load ported to TS" };
       }
-      if (!externalRoutesEnabled(env) || !env.MIRROR_TS_MIRROR_EMBEDDING_REPLAY) {
-        return {
-          command,
-          engine: "python",
-          reason: "mirror load query needs DS7.US4 replay embedding config for TS route",
-        };
-      }
-      if (env.MEMORY_RECEPTION !== "0" && !env.MIRROR_TS_MIRROR_LLM_REPLAY) {
-        return {
-          command,
-          engine: "python",
-          reason: "mirror load reception needs DS7.US4 replay LLM config for TS route",
-        };
-      }
-      return {
-        command,
-        engine: "ts",
-        reason: "DS7.US4 mirror load routed to TS under replay-safe config",
-      };
+      // `MEMORY_RECEPTION=0` skips the classifier on both engines, so the
+      // chat fixture stops being required for a replay run; the embedding half
+      // still is, because the query still searches attachments and journeys.
+      const spec =
+        env.MEMORY_RECEPTION === "0"
+          ? {
+              ...MIRROR_QUERY_TRANSPORT,
+              replay: { embedding: MIRROR_QUERY_TRANSPORT.replay?.embedding },
+            }
+          : MIRROR_QUERY_TRANSPORT;
+      return providerRoute(command, env, spec, "load --query");
     }
     if (sub === "deactivate" || sub === "log" || sub === "journeys") {
       return { command, engine: "ts", reason: `DS7.US4 mirror ${sub} ported to TS` };
@@ -757,13 +701,7 @@ export function routeMemoryCommand(
     // the embedding alone. Without the replay transport it stays on Python, the
     // same boundary US10's close tail draws; the live call is DS8's.
     if (subcommand === "harvest" && soulHarvestAction(argv) === "save") {
-      if (!env.MIRROR_TS_SOUL_EMBEDDING_REPLAY) {
-        return {
-          command,
-          engine: "python",
-          reason: "soul harvest save needs the embedding replay transport until DS8",
-        };
-      }
+      return providerRoute(command, env, SOUL_HARVEST_TRANSPORT, "harvest save");
     }
     return { command, engine: "ts", reason: `DS7.US6 soul ${subcommand} ported to TS` };
   }
@@ -801,25 +739,7 @@ export function routeMemoryCommand(
   }
 
   if (command === "journal") {
-    if (env.MIRROR_TS_JOURNAL === "0") {
-      return {
-        command,
-        engine: "python",
-        reason: "journal TS route disabled by MIRROR_TS_JOURNAL=0",
-      };
-    }
-    if (!journalReplayConfigured(env)) {
-      return {
-        command,
-        engine: "python",
-        reason: "journal needs DS7.US11 replay config (LLM + embedding) for TS route",
-      };
-    }
-    return {
-      command,
-      engine: "ts",
-      reason: "DS7.US11 journal routed to TS under replay-safe config",
-    };
+    return providerRoute(command, env, JOURNAL_TRANSPORT);
   }
 
   return { command, engine: "python", reason: "command not ported to TS" };
@@ -862,19 +782,6 @@ function soulGateEnabled(env: RouteEnvironment): boolean {
 // previously unrevertible read back to Python.
 function weekGateEnabled(env: RouteEnvironment): boolean {
   return env.MIRROR_TS_WEEK !== "0";
-}
-
-// CV22.DS7.US11 plateau 3. `journal` crosses the provider seam twice — one
-// classification call and one embedding — so it routes to TS only under the
-// replay transport, exactly as `soul harvest save` and the conversation close
-// tail do. An unconfigured install keeps Python until DS8 flips live mode.
-// Default OFF until the plateau-6 flip.
-function journalReplayConfigured(env: RouteEnvironment): boolean {
-  return (
-    externalRoutesEnabled(env) &&
-    Boolean(env.MIRROR_TS_JOURNAL_LLM_REPLAY) &&
-    Boolean(env.MIRROR_TS_JOURNAL_EMBEDDING_REPLAY)
-  );
 }
 
 const TS_EXPLORE_SUBCOMMANDS = new Set(["load", "deactivate", "story"]);

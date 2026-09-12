@@ -317,3 +317,67 @@ Every close-tail call is written to `llm_calls` with its token usage and a
 cost computed from the static price table, matching the Python engine. Under
 `MEMORY_LOG_LLM_CALLS=metadata` (the default) the `prompt` and `response`
 columns stay empty, so transcript text is never persisted by the ledger.
+
+### The long tail (CV22.DS8.US3)
+
+The remaining provider-crossing leaves — `consult`, `mirror load --query`,
+`journal`, `week plan`, `descriptor generate`, `soul harvest save`, and
+`consolidate apply` — answer from TypeScript against the live provider with no
+configuration. Each family keeps one variable that sends it back to Python.
+
+| Variable | Meaning |
+|---|---|
+| `MIRROR_TS_CONSULT` | Set to `0` to revert both `consult credits` and `consult ask`. |
+| `MIRROR_TS_MIRROR_QUERY` | Set to `0` to revert `mirror load --query` only. The deterministic `mirror load` stays on TypeScript: it is the most-used read in the product and must not be dragged back by a query-path problem. |
+| `MIRROR_TS_CULTIVATION` | Set to `0` to revert `consolidate scan\|apply` and `shadow scan`. `consolidate list\|reject\|show` stay on TypeScript — they cross no provider seam. |
+| `MIRROR_TS_JOURNAL` | Set to `0` to revert `journal`. |
+| `MIRROR_TS_WEEK` | Set to `0` to revert `week plan` and `week save`. `week view` deliberately stays outside this gate — it was flipped ungated earlier and reverting a planning problem must not take a working read with it. |
+| `MIRROR_TS_DESCRIPTOR` | Set to `0` to revert `descriptor generate`. |
+| `MIRROR_TS_SOUL` | Set to `0` to revert the whole Soul family, including `harvest save` — the one Soul leaf that reaches a provider. |
+
+Each family also accepts replay fixture paths for CI and the parity harness:
+`MIRROR_TS_CONSULT_LLM_REPLAY` with `MIRROR_TS_CREDITS_REPLAY`,
+`MIRROR_TS_MIRROR_LLM_REPLAY` with `MIRROR_TS_MIRROR_EMBEDDING_REPLAY`,
+`MIRROR_TS_CULTIVATION_LLM_REPLAY`,
+`MIRROR_TS_CULTIVATION_EMBEDDING_REPLAY`,
+`MIRROR_TS_JOURNAL_LLM_REPLAY` with `MIRROR_TS_JOURNAL_EMBEDDING_REPLAY`,
+`MIRROR_TS_WEEK_LLM_REPLAY`, `MIRROR_TS_DESCRIPTOR_LLM_REPLAY`, and
+`MIRROR_TS_SOUL_EMBEDDING_REPLAY`.
+
+**Where a family declares two fixtures, both are required together** — the
+same rule the close tail follows, and for the same reason. One exception is
+deliberate: `MIRROR_TS_CREDITS_REPLAY` alone is a complete replay setup for
+`consult credits`, which needs no chat provider, and an incomplete one for
+`consult ask`, which is refused by name rather than sent half-live.
+`MEMORY_RECEPTION=0` likewise removes the classifier from `mirror load
+--query` on both engines, after which the embedding fixture alone is complete.
+
+**`MIRROR_TS_EXTERNAL_ROUTES` is retired.** It was the opt-in that let these
+leaves reach TypeScript while replay was their production route; after the live
+cutover replay is a test transport, so the gate only added a second thing to
+set. A leftover value in a shell or a script is inert — it neither enables nor
+disables anything.
+
+#### What `descriptor generate` costs
+
+`descriptor generate` without `--layer` and `--key` makes one model call per
+persona **and** per journey. Nothing bounds that but the arguments, so the
+front-door log records `calls=N` for the invocation. Narrow it when you only
+need one entity.
+
+#### Reading a swallowed failure
+
+`consolidate scan`, `shadow scan`, and reception report "nothing found" for a
+provider outage, for model output that could not be parsed, and for an honest
+empty result alike — this matches the Python engine exactly. The front-door log
+carries the distinction as a category:
+
+```text
+consolidation outcome=parse_failed
+consolidation calls=3 answered=2 parse_failed=1
+reception outcome=transport_failed kind=rate_limit
+```
+
+`parse_failed` is a prompt-layer signal: the call arrived, was paid for, and
+came back unusable. `transport_failed` with its `kind=` is a transport signal.
+`empty` means the model answered and there was genuinely nothing to do.

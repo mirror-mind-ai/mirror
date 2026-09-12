@@ -82,18 +82,19 @@ CI determinism gates.
 
 The front door answers `mirror load|deactivate|log|journeys` and
 `mode activate|deactivate|status` through TypeScript for deterministic core paths.
-`mirror load --query` requires the ordinary external-route gate plus scrubbed replay
-fixtures while live providers remain owned by DS8:
+`mirror load --query` runs live against the provider since CV22.DS8.US3;
+`MIRROR_TS_MIRROR_QUERY=0` reverts that leaf alone. For a deterministic run, point it
+at scrubbed replay fixtures instead:
 
 ```bash
-MIRROR_TS_EXTERNAL_ROUTES=1 \
 MIRROR_TS_MIRROR_LLM_REPLAY=/path/to/reception.json \
 MIRROR_TS_MIRROR_EMBEDDING_REPLAY=/path/to/embedding.json \
 node ts/src/frontDoor/cli.ts mirror load --query "..."
 ```
 
-If `MEMORY_RECEPTION=0`, the LLM replay is not required, but query attachment/journey
-search still requires the embedding replay.
+Both fixtures are required together. If `MEMORY_RECEPTION=0`, the LLM replay is not
+required — the classifier is off on both engines — but query attachment/journey search
+still needs the embedding replay.
 
 CV22.DS7.TS2 keeps matching extension bindings on the TS route. Capabilities declare a
 no-shell `mirror-context-v1` process command; TS owns selection, ordering, bounded

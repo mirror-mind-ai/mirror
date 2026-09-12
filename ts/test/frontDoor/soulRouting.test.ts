@@ -52,29 +52,46 @@ test("the allowlist and the route's own subcommand list agree", () => {
   }
 });
 
-test("harvest save needs the embedding replay transport; the other actions do not", () => {
+test("harvest save is live like the rest of the family, and says so", () => {
+  // CV22.DS8.US3: before this, `save` was the one Soul leaf held on Python --
+  // it crosses the provider seam through the embedding, and the front door
+  // supplied no provider at all, so a replay variable nobody sets was the only
+  // way to reach the TypeScript path.
   for (const action of ["set", "show", "decline"]) {
     assert.equal(routeMemoryCommand(["soul", "harvest", action], ON).engine, "ts", action);
   }
   const save = routeMemoryCommand(["soul", "harvest", "save"], ON);
-  assert.equal(save.engine, "python");
-  assert.match(save.reason, /embedding replay transport until DS8/);
+  assert.equal(save.engine, "ts");
+  assert.match(save.reason, /DS8\.US3 soul harvest save live/);
   assert.equal(
     routeMemoryCommand(["soul", "harvest", "save"], {
       ...ON,
-      MIRROR_TS_SOUL_EMBEDDING_REPLAY: "1",
+      MIRROR_TS_SOUL_EMBEDDING_REPLAY: "/tmp/embedding.json",
     }).engine,
     "ts",
+    "a fixture still selects replay",
+  );
+  // The family switch is the revert: every other Soul leaf is deterministic,
+  // so reverting all of them costs nothing and adds no third thing to remember.
+  assert.equal(
+    routeMemoryCommand(["soul", "harvest", "save"], { MIRROR_TS_SOUL: "0" }).engine,
+    "python",
   );
 });
 
 test("harvest save is recognized behind the options argparse strips first", () => {
+  // The action must be found PAST the options, or `save` would inherit the
+  // generic soul route and skip its own transport decision entirely.
   const decision = routeMemoryCommand(
     ["soul", "harvest", "--session-id", "s1", "--journey", "j", "save"],
-    ON,
+    { ...ON, MIRROR_TS_SOUL_EMBEDDING_REPLAY: "/tmp/embedding.json" },
   );
-  assert.equal(decision.engine, "python", "the action must be found past the options");
-  assert.match(decision.reason, /embedding replay transport/);
+  assert.equal(decision.engine, "ts");
+  assert.match(
+    decision.reason,
+    /replay transport/,
+    "the save leaf's own decision, not the family's",
+  );
 });
 
 test("MIRROR_TS_SOUL=0 keeps the whole family on Python", () => {

@@ -15,17 +15,24 @@ import {
   renderModeStatus,
 } from "#mode/operatingMode.ts";
 import type { OnProviderCallOutcome } from "#observability/callOutcome.ts";
-import { loadReplayEmbeddingProvider } from "#providers/embedding.ts";
-import { loadReplayLlmProvider } from "#providers/llm.ts";
+import { resolveFamilyProviders } from "#providers/familyProviders.ts";
+import { MIRROR_QUERY_TRANSPORT } from "#providers/transport.ts";
 import { newId, nowIso } from "#util/pyGenerators.ts";
 import { hasOption, optionValue, stripOptionWithValue } from "./args.ts";
 
-export interface MirrorRouteEnvironment {
+/**
+ * A type alias rather than an interface, for the same reason `RouteEnvironment`
+ * is one: aliases get an implicit index signature, which is what lets the named
+ * variables still be handed to `resolveFamilyProviders`, whose families name
+ * their variables as data.
+ */
+export type MirrorRouteEnvironment = {
   MIRROR_SESSION_ID?: string;
   MEMORY_RECEPTION?: string;
+  MIRROR_TS_MIRROR_QUERY?: string;
   MIRROR_TS_MIRROR_LLM_REPLAY?: string;
   MIRROR_TS_MIRROR_EMBEDDING_REPLAY?: string;
-}
+};
 
 export function isMirrorWrite(argv: readonly string[]): boolean {
   return argv[0] === "mirror" && ["load", "deactivate", "log"].includes(argv[1] ?? "");
@@ -89,9 +96,11 @@ export async function runMirrorWriteRoute(
     return 0;
   }
   const query = optionValue(args, "--query");
-  const llmReplay = env.MIRROR_TS_MIRROR_LLM_REPLAY;
-  const embeddingReplay = env.MIRROR_TS_MIRROR_EMBEDDING_REPLAY;
   const receptionEnabled = env.MEMORY_RECEPTION !== "0";
+  // Built from the same spec `routing.ts` decided with, and only for a query
+  // run: a deterministic `mirror load` must not construct a provider, let
+  // alone resolve a key (CV22.DS8.US3).
+  const family = query ? await resolveFamilyProviders(env, MIRROR_QUERY_TRANSPORT) : null;
   const mirrorHome = dirname(dbPath);
   const rendered = await runMirrorLoad(db, {
     identity: basename(mirrorHome),
@@ -107,10 +116,8 @@ export async function runMirrorWriteRoute(
     environmentSessionId: env.MIRROR_SESSION_ID ?? null,
     receptionEnabled,
     onReceptionOutcome: options.onReceptionOutcome,
-    llmProvider:
-      query && receptionEnabled && llmReplay ? await loadReplayLlmProvider(llmReplay) : undefined,
-    embeddingProvider:
-      query && embeddingReplay ? await loadReplayEmbeddingProvider(embeddingReplay) : undefined,
+    llmProvider: receptionEnabled ? family?.llm : undefined,
+    embeddingProvider: family?.embedding,
     newId,
     nowIso,
   });

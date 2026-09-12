@@ -45,6 +45,15 @@ export interface ProviderTransportSpec {
   replay?: ProviderReplaySpec;
   /** Reason recorded when the live provider is selected. */
   liveReason?: string;
+  /**
+   * A story that must land before this family may go live, when one exists.
+   *
+   * Not a revert and not a config error: the port is incomplete, so Python
+   * answers and the reason says which story unblocks it. Deleting the field is
+   * the whole flip. Used by the cultivation SCAN leaves, whose prompts were
+   * never ported (CV22.DS8.TS2).
+   */
+  liveBlockedBy?: string;
 }
 
 export interface ProviderTransportDecision {
@@ -119,6 +128,9 @@ export function resolveProviderTransport(
     };
   }
 
+  if (spec.liveBlockedBy) {
+    return { mode: "python", reason: `live blocked by ${spec.liveBlockedBy}` };
+  }
   return { mode: "live", reason: spec.liveReason ?? "live provider" };
 }
 
@@ -210,4 +222,112 @@ export const SOUL_HARVEST_TRANSPORT: ProviderTransportSpec = {
   revertVar: "MIRROR_TS_SOUL",
   replay: { embedding: "MIRROR_TS_SOUL_EMBEDDING_REPLAY" },
   liveReason: "DS8.US3 soul harvest save live",
+};
+
+/**
+ * `consult credits` and `consult ask` (CV22.DS8.US3).
+ *
+ * TWO specs for one family, because the fixtures are genuinely per leaf:
+ * `credits` needs only the credits fixture, while `ask` needs the chat fixture
+ * AND the credits one (it fetches the call's real cost, then prints the
+ * balance). With the credits fixture alone, `credits` replays and `ask`
+ * refuses -- it must not go live for the half nobody configured.
+ */
+export const CONSULT_CREDITS_TRANSPORT: ProviderTransportSpec = {
+  revertVar: "MIRROR_TS_CONSULT",
+  replay: { credits: "MIRROR_TS_CREDITS_REPLAY" },
+  liveReason: "DS8.US3 consult credits live",
+};
+
+export const CONSULT_ASK_TRANSPORT: ProviderTransportSpec = {
+  revertVar: "MIRROR_TS_CONSULT",
+  replay: { llm: "MIRROR_TS_CONSULT_LLM_REPLAY", credits: "MIRROR_TS_CREDITS_REPLAY" },
+  liveReason: "DS8.US3 consult ask live",
+};
+
+/**
+ * `mirror load --query` (CV22.DS8.US3): the reception classifier plus the
+ * query's own embedding for attachment and journey search.
+ *
+ * Its own revert variable rather than a `mirror` family switch: the
+ * deterministic `mirror load` is the most-used read in the product and has
+ * answered from TypeScript since DS7.US4. A live-provider scare must revert
+ * the query path alone.
+ *
+ * `MEMORY_RECEPTION=0` still skips the classifier on both engines; the
+ * embedding half stays, which is why both fixtures are declared.
+ */
+export const MIRROR_QUERY_TRANSPORT: ProviderTransportSpec = {
+  revertVar: "MIRROR_TS_MIRROR_QUERY",
+  replay: {
+    llm: "MIRROR_TS_MIRROR_LLM_REPLAY",
+    embedding: "MIRROR_TS_MIRROR_EMBEDDING_REPLAY",
+  },
+  liveReason: "DS8.US3 mirror load --query live",
+};
+
+/**
+ * `consolidate scan` and `shadow scan` -- the two cultivation leaves that send
+ * a PROMPT (CV22.DS8.US3).
+ *
+ * Blocked from live by CV22.DS8.TS2: TypeScript never ported
+ * `CONSOLIDATION_PROMPT` or `SHADOW_SCAN_PROMPT`, so these leaves currently
+ * send a fenced Markdown dump of the memories with no task statement and no
+ * JSON output contract. Under replay that is invisible -- the provider answers
+ * by role and ignores the prompt -- which is why it survived to DS8.
+ *
+ * The revert is tail-only: `consolidate list|reject|show` are deterministic and
+ * have answered from TypeScript since DS7.US3.
+ */
+export const CULTIVATION_SCAN_TRANSPORT: ProviderTransportSpec = {
+  revertVar: "MIRROR_TS_CULTIVATION",
+  replay: { llm: "MIRROR_TS_CULTIVATION_LLM_REPLAY" },
+  liveReason: "DS8.US3 cultivation scan live",
+  liveBlockedBy: "DS8.TS2 (cultivation prompt templates not ported)",
+};
+
+/**
+ * `consolidate apply` (CV22.DS8.US3).
+ *
+ * A SEPARATE spec, and not blocked by TS2: apply sends no prompt at all. A
+ * `merge` embeds the merged content and an `identity_update` makes no provider
+ * call whatsoever, so the only fixture it can need is the embedding one. The
+ * plan and the burn-down ledger both said "the three cultivation leaves wait
+ * for TS2"; measured, it is two.
+ */
+export const CULTIVATION_APPLY_TRANSPORT: ProviderTransportSpec = {
+  revertVar: "MIRROR_TS_CULTIVATION",
+  replay: { embedding: "MIRROR_TS_CULTIVATION_EMBEDDING_REPLAY" },
+  liveReason: "DS8.US3 consolidate apply live",
+};
+
+/** `journal` (CV22.DS8.US3): classify the entry, then embed the memory. */
+export const JOURNAL_TRANSPORT: ProviderTransportSpec = {
+  revertVar: "MIRROR_TS_JOURNAL",
+  replay: {
+    llm: "MIRROR_TS_JOURNAL_LLM_REPLAY",
+    embedding: "MIRROR_TS_JOURNAL_EMBEDDING_REPLAY",
+  },
+  liveReason: "DS8.US3 journal live",
+};
+
+/**
+ * `week plan` (CV22.DS8.US3). `week save` and `week view` make no provider
+ * call and are already ungated; `MIRROR_TS_WEEK=0` still reverts all three,
+ * which is the existing family contract.
+ */
+export const WEEK_PLAN_TRANSPORT: ProviderTransportSpec = {
+  revertVar: "MIRROR_TS_WEEK",
+  replay: { llm: "MIRROR_TS_WEEK_LLM_REPLAY" },
+  liveReason: "DS8.US3 week plan live",
+};
+
+/**
+ * `descriptor generate` (CV22.DS8.US3). One call per persona AND per journey
+ * when no `--layer/--key` narrows it, so the front-door log records `calls=N`.
+ */
+export const DESCRIPTOR_TRANSPORT: ProviderTransportSpec = {
+  revertVar: "MIRROR_TS_DESCRIPTOR",
+  replay: { llm: "MIRROR_TS_DESCRIPTOR_LLM_REPLAY" },
+  liveReason: "DS8.US3 descriptor generate live",
 };

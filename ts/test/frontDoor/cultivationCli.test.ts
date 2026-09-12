@@ -196,7 +196,6 @@ test("front door `consolidate apply` (identity_update) writes through the allowl
     const result = spawnFrontDoor(
       ["consolidate", "apply", "abcd1234ef56", "--db-path", ws.dbPath],
       {
-        MIRROR_TS_EXTERNAL_ROUTES: "1",
         MIRROR_TS_CULTIVATION_EMBEDDING_REPLAY: writeValidEmbeddingFixture(ws),
       },
     );
@@ -223,7 +222,6 @@ test("front door `consolidate apply` (identity_update) REFUSES a non-allowlisted
     const result = spawnFrontDoor(
       ["consolidate", "apply", "abcd1234ef56", "--db-path", ws.dbPath],
       {
-        MIRROR_TS_EXTERNAL_ROUTES: "1",
         MIRROR_TS_CULTIVATION_EMBEDDING_REPLAY: writeValidEmbeddingFixture(ws),
       },
     );
@@ -238,7 +236,7 @@ test("front door `consolidate apply` (identity_update) REFUSES a non-allowlisted
   }
 });
 
-test("front door `consolidate apply` without the DS7.US3 replay gate routes to Python, per the front-door log", () => {
+test("front door `consolidate apply` reverts to Python by one variable, per the front-door log", () => {
   const ws = cultivationDbCopy();
   try {
     insertConsolidation(ws.dbPath, {
@@ -250,13 +248,17 @@ test("front door `consolidate apply` without the DS7.US3 replay gate routes to P
       targetKey: "profile",
       createdAt: "2026-01-15T00:00:00.000000Z",
     });
-    // No env gate set -- routing.ts must send this to Python. The stdout/
-    // stderr TEXT is not a reliable discriminator here: Python's own
+    // CV22.DS8.US3: `apply` is live by default now, so an absent gate no longer
+    // sends it to Python -- `MIRROR_TS_CULTIVATION=0` is what does.
+    //
+    // The stdout/stderr TEXT is not a reliable discriminator here: Python's own
     // `apply_consolidation_identity_update` carries the identical allowlist
     // message (the port is byte-exact), so both engines legitimately produce
     // the same refusal. The routing DECISION, recorded in the front-door log,
     // is the reliable signal that TS did not serve this command.
-    spawnFrontDoor(["consolidate", "apply", "abcd1234ef56", "--db-path", ws.dbPath]);
+    spawnFrontDoor(["consolidate", "apply", "abcd1234ef56", "--db-path", ws.dbPath], {
+      MIRROR_TS_CULTIVATION: "0",
+    });
     const logContent = readFileSync(join(ws.tmpDir, "front-door.log"), "utf8");
     assert.match(logContent, /\tpython\t/);
   } finally {
@@ -289,7 +291,6 @@ test("front door `consolidate apply` (merge) creates a merged memory via the rep
     const result = spawnFrontDoor(
       ["consolidate", "apply", "abcd1234ef56", "--db-path", ws.dbPath],
       {
-        MIRROR_TS_EXTERNAL_ROUTES: "1",
         MIRROR_TS_CULTIVATION_EMBEDDING_REPLAY: embeddingPath,
       },
     );
@@ -408,7 +409,6 @@ test("front door `consolidate scan` clusters and proposes under the replay gate"
     );
 
     const result = spawnFrontDoor(["consolidate", "scan", "--db-path", ws.dbPath], {
-      MIRROR_TS_EXTERNAL_ROUTES: "1",
       MIRROR_TS_CULTIVATION_LLM_REPLAY: llmPath,
     });
     assert.equal(result.status, 0);
@@ -448,7 +448,6 @@ test("front door `shadow scan` proposes over the candidate pool under the replay
     );
 
     const result = spawnFrontDoor(["shadow", "scan", "--db-path", ws.dbPath], {
-      MIRROR_TS_EXTERNAL_ROUTES: "1",
       MIRROR_TS_CULTIVATION_LLM_REPLAY: llmPath,
     });
     assert.equal(result.status, 0);
@@ -495,7 +494,6 @@ test("front door redaction: the front-door log never contains proposal content, 
       createdAt: "2026-01-15T00:00:00.000000Z",
     });
     spawnFrontDoor(["consolidate", "apply", "abcd1234ef56", "--db-path", ws.dbPath], {
-      MIRROR_TS_EXTERNAL_ROUTES: "1",
       MIRROR_TS_CULTIVATION_EMBEDDING_REPLAY: "/nonexistent-unused-for-this-action.json",
     });
     const logContent = readFileSync(join(ws.tmpDir, "front-door.log"), "utf8");
@@ -520,7 +518,6 @@ test("front door `consolidate scan` reports its fan-out and per-call outcomes", 
     );
 
     const result = spawnFrontDoor(["consolidate", "scan", "--db-path", ws.dbPath], {
-      MIRROR_TS_EXTERNAL_ROUTES: "1",
       MIRROR_TS_CULTIVATION_LLM_REPLAY: fixture,
     });
 
@@ -555,7 +552,6 @@ test("front door `consolidate scan` logs the outcome class without the cluster's
     );
 
     spawnFrontDoor(["consolidate", "scan", "--db-path", ws.dbPath], {
-      MIRROR_TS_EXTERNAL_ROUTES: "1",
       MIRROR_TS_CULTIVATION_LLM_REPLAY: fixture,
     });
 
