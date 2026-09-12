@@ -54,9 +54,53 @@ context` (2,242 chars). Synthetic inputs; nothing from a real database.
 
 The hard stop is satisfied: this reading precedes the first live call.
 
-## Navigator-run (pending)
+## Navigator-run (2026-09-13, database copy)
 
-Steps 6a–8c of the [test guide](test-guide.md): the live smoke on a copy
-with the `prompt_tokens` floor, the revert matrix, and the `scan → list →
-apply` journey on a copy home for both families. Evidence to be recorded
-here, redacted, with `prompt_tokens` visible and no `prompt` column.
+Copy of the owner's home under `tmp/parity/` (ignored). `MEMORY_LOG_LLM_CALLS`
+at its default; bodies withheld on every row (`LENGTH(prompt) = 0`). Model
+`google/gemini-2.5-flash-lite`; embedding `openai/text-embedding-3-small`.
+
+### 6a — `consolidate-scan`, two runs
+
+| Run | Verdict | Outcomes | `prompt_tokens` (floor 400) | Latency | Cost |
+|---|---|---|---|---|---|
+| 1 (16:29–16:32 UTC) | FAIL | `calls=3 answered=1 transport_failed=2` | 1186 on the answered call | **28,199 ms** on the answered call | $0.000196 |
+| 2 (16:49 UTC) | **PASS** | `calls=3 answered=3` | 1362, 1232, 1186 | 5,694 / 2,825 / 4,536 ms | $0.000592 |
+
+Reading. Run 1's answered call proves the ported prompt live: 1186 tokens
+(the dump it replaced was ~50) and a `merge` proposal with an allowlisted
+action. Its two failures were transport-layer (`parse_failed` would have
+named the prompt) during a window in which the same model that titled a
+conversation in 1.6 s that morning took 28 s to answer — consistent with
+the 60 s extraction bound (Python's own `MEMORY_LLM_TIMEOUT_EXTRACTION`)
+firing. The failure class was not captured because the smoke's tally counted
+`transport_failed` and dropped the `kind`; `fa6d2925` adds
+`failureKinds()` so the next such run names it. Loading and clustering the
+real corpus (950 embedded memories, 96 clusters) takes 0.8 s, measured on
+the copy without spending, so the wall time was the calls. Run 2, seventeen
+minutes later, answered all three in under 6 s each.
+
+The third cluster produced **1186 prompt tokens in both runs**: same cluster,
+same assembled bytes, same count. The prompt is deterministic live, not only
+in the golden.
+
+### 6b — `shadow-scan`
+
+**PASS.** `calls=1 answered=1`; `prompt_tokens 1251` (floor 300); 8,457 ms;
+$0.000272; three `shadow_observation` rows pending with `target_layer=shadow`,
+`target_key=profile`.
+
+### 7 — revert matrix
+
+`MIRROR_TS_CULTIVATION=0 node ts/parity/route_matrix.ts` → `PASS route matrix
+— every contract holds`. The three cultivation tail leaves (`apply`, `scan`,
+`shadow scan`) revert to Python as one; `consolidate list` and `shadow list`
+stay on TypeScript; every DS8 leaf is live by default with no story gate
+remaining; the retired `MIRROR_TS_EXTERNAL_ROUTES` is inert.
+
+### 8a–8c — the journey to `apply` (pending)
+
+`scan → list → apply` on `tmp/parity/copy-home` for both families. The copy
+now holds eleven pending `merge` rows and four pending `shadow_observation`
+rows produced by TypeScript's prompts, so 8b/8c can apply one of each without
+another scan.

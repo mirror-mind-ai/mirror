@@ -88,7 +88,7 @@ apply.
 
 ```bash
 mkdir -p tmp/parity/copy-home
-cp ~/.mirror-minds/<mirror>/memory.db tmp/parity/copy-home/memory.db
+cp ~/.mirror-minds/vinicius-ts/memory.db tmp/parity/copy-home/memory.db   # your mirror home
 cp tmp/parity/copy-home/memory.db tmp/parity/real-copy.db   # for the smoke
 ```
 
