@@ -89,7 +89,7 @@ _Pending._
 ## Provenance
 
 Found 2026-09-13 in the
-[plateau-4½ reading](../../roadmap/cv22-typescript-core-port/cv22-ds8-live-provider-cutover/cv22-ds8-ts2-port-the-cultivation-prompt-templates/validation.md#plateau-4½--prompt-engineer-reading-2026-09-13-before-any-live-call)
+[plateau-4½ reading](../../roadmap/cv22-typescript-core-port/cv22-ds8-live-provider-cutover/cv22-ds8-ts2-port-the-cultivation-prompt-templates/validation.md#plateau-4--prompt-engineer-reading-2026-09-13-before-any-live-call)
 of CV22.DS8.TS2, deferred in that story's
 [Debt Review](../../roadmap/cv22-typescript-core-port/cv22-ds8-live-provider-cutover/cv22-ds8-ts2-port-the-cultivation-prompt-templates/review.md)
 with this CR as the revisit trigger.
