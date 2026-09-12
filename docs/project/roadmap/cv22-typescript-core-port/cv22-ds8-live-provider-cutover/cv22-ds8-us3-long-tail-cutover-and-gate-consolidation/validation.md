@@ -2,6 +2,47 @@
 
 # Validation — CV22.DS8.US3
 
+> The lifecycle contract fields are recorded first, then the evidence they
+> summarize. The runtime regenerates this file's contract section on
+> `validate-item`; the evidence below is authored and was restored after a
+> regeneration replaced it (see the note at the end).
+
+## Lifecycle contract
+
+## Status
+
+Passed
+
+## Automated Checks
+
+- cd ts && npm run typecheck && npm run lint && npm test -- 2006 tests green, typecheck and lint clean; uv run python scripts/check_doc_links.py clean
+
+Checks status: passed
+
+## E2E
+
+Decision: required
+
+Evidence: Live OpenRouter, 2026-09-12. Eight probes of ts/parity/live_long_tail_smoke.ts on a copy of the real home ($0.000686 total): credits, ask, mirror-query, journal, harvest, week-plan, descriptor, apply. Then four writes on the REAL home through the skills and the front door: /mm-journal, soul harvest save, week plan, descriptor generate --layer persona --key quality-assurance. Thirteen ledger rows since 11:20, every one priced, every prompt/response length 0. Revert matrix and key hygiene pass via ts/parity/route_matrix.ts and ts/parity/key_hygiene.ts. Recorded in the story package's validation.md.
+
+## Navigator Validation
+
+Route: Seven-step route the Navigator ran personally: .env holdback, copy, credits (zero spend), ask + mirror-query with a cross-engine ledger-shape comparison against this home's own Python rows from 2026-09-10, real-home group A through /mm-consult and /mm-mirror, real-home group B writes, the revert matrix, and the key-hygiene grep.
+
+Navigator accepted: yes
+
+Expected observation: Each leaf answers from TypeScript, writes the llm_calls rows Python writes with a non-null cost, withholds bodies, reverts to Python with one variable, and leaves no key on any durable surface.
+
+Pass condition: Every probe PASS with no parse_failed or transport_failed outcome; zero unpriced rows; zero body bytes; zero key occurrences; every revert lands on Python and moves no bystander.
+
+Fail condition: Any parse_failed outcome, any unpriced row, any persisted body, any key occurrence, a ledger shape Python does not produce, or a revert that drags a deterministic leaf back to Python.
+
+## Missing Evidence
+
+- none
+
+---
+
 **Run 2026-09-12.** Live OpenRouter throughout. Copy-only steps against
 `tmp/parity/real-copy.db` (a copy of the real home, 477 ledger rows at the
 start). Total spend across every copy probe: **$0.000686**.
@@ -233,3 +274,20 @@ between the question and the answer.
   `live blocked by DS8.TS2 (cultivation prompt templates not ported)`.
 - **Live `timeout` / `auth` / `rate_limit` / `provider_error` classes** —
   hermetic tests with an injected `fetch` only, as in US1 and US2.
+
+---
+
+## A note on this file
+
+`build validate-item` **overwrote this document** with its generated summary:
+235 authored lines — the per-probe tables, the cross-engine ledger comparison,
+the two environmental traps, and the step 5-7 results — replaced by 33
+generated ones. The content above was restored from git and the generated
+contract fields folded in above it.
+
+This is the same shape as [CR004](../../../../refinement/rs001-ariad-runtime-trust/cr004-preserve-authored-story-index.md)
+(Plan materialization overwriting an authored story index) and
+[CR015](../../../../refinement/rs001-ariad-runtime-trust/cr015-preserve-driver-authored-plan-before-approval.md)
+(approval overwriting a Driver-authored Plan), now met at the Validation stage.
+Nothing was lost — the authored version was committed before the lifecycle
+commands ran, which is the only reason it was recoverable.
