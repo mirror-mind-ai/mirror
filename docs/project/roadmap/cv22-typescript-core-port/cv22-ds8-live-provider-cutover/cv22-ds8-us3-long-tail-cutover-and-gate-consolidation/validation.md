@@ -6,10 +6,10 @@
 `tmp/parity/real-copy.db` (a copy of the real home, 477 ledger rows at the
 start). Total spend across every copy probe: **$0.000686**.
 
-Status: **groups A and B validated on the copy; group A validated on the real
-home.** Group B on the real home, the revert matrix, and key hygiene remain.
-Group C (`consolidate scan`, `shadow scan`) is not in this route — it is
-blocked by [CV22.DS8.TS2](../index.md#why-ts2-exists-2026-09-11).
+Status: **groups A and B validated on a copy and on the real home; the revert
+matrix and key hygiene pass.** Group C (`consolidate scan`, `shadow scan`) is
+not in this route — it is blocked by
+[CV22.DS8.TS2](../index.md#why-ts2-exists-2026-09-11).
 
 ---
 
@@ -140,6 +140,60 @@ front-door.log:  mirror  ts  exit=0  reception calls=1 answered=1
 That last line is the outcome seam in production: the front-door log now says
 *why* a query produced what it produced, not merely that the command exited 0.
 
+## Step 5 — group B on the real home. **PASS (4/4)**
+
+The four holdback lines commented out of `.env`; `MIRROR_TS_CULTIVATION=0` left
+active, since `consolidate apply` was proven on the copy and its siblings are
+TS2-gated.
+
+| Write | Result | Ledger |
+|---|---|---|
+| `/mm-journal` | memory `7b7dd612`, `journal`/`ego`, 1536-dim, 4 tags | `journal_classification` `3.99e-05` → `embedding` `1.8e-07` |
+| `soul harvest save` | memory `2e2471de`, `journal`/`self`, tags `["soul-mode","harvested-fruit"]`, **fruit cleared** | `embedding` `6.0e-07` |
+| `week plan` | 2 items, both journey-attributed, pending file written | `week_plan` `0.0001861` |
+| `descriptor generate --layer persona --key quality-assurance` | descriptor created, 130 chars | `descriptor` `0.0001657` |
+
+Thirteen rows since 11:20, **every one priced, every `prompt`/`response`
+length 0**. The front-door log carries the seam in production:
+
+```text
+journal      ts  exit=0
+soul         ts  exit=0
+week         ts  exit=0
+descriptor   ts  exit=0   descriptor calls=1 answered=1
+```
+
+Unrelated but healthy: a close tail fired at 11:54 on a real session switch
+(`conversation_title` → `summary` → `tags` → `extraction` → `task_extraction`
+→ `embedding ×3`), all priced — US2's surface still well.
+
+## Step 6 — the revert matrix. **PASS**
+
+`node --env-file=.env ts/parity/route_matrix.ts` — a verdict, not a reading
+exercise; exits non-zero on any broken contract.
+
+- **nine families, nine single-variable reverts**, each naming its variable;
+- **seven bystanders unmoved**: `mirror load`, `week view`, `week save`,
+  `consolidate list`, `shadow list`, `soul listen`, `memories` listing. A
+  family switch that dragged a deterministic read back would be a worse outage
+  than the one it was reached for;
+- **six replay-pair cases**, including the deliberate asymmetry — the credits
+  fixture alone is COMPLETE for `consult credits` and HALF for `consult ask`,
+  which refuses by name — and `MEMORY_RECEPTION=0` making the embedding
+  fixture alone complete for `mirror load --query`;
+- **both scan leaves name the story that blocks them**;
+- **the retired DS5 gate is inert**: ten leaves compared at `=1`, `=0`, and
+  unset — identical engine and identical reason.
+
+## Step 7 — key hygiene. **PASS**
+
+`node --env-file=.env ts/parity/key_hygiene.ts <real home> <copy>` — zero on
+every surface, both databases: no ledger row carries the key, no front-door log
+line carries it, and **no ledger row stores a body at all** across 490 rows.
+That last one is not a leak by itself (`MEMORY_LOG_LLM_CALLS=full` stores
+bodies deliberately) but it is the property that would turn a future key
+rotation into a forensic search.
+
 ## Observed, not defects
 
 **`consult` spends ~13 seconds on bookkeeping.** "Took 14.7s" for a 45-token
@@ -154,11 +208,26 @@ than a stop.
 **The smoke rounds sub-microcent totals to `$0.000000`.** The `apply` probe
 reported that for a genuine `2.0e-07`. Cosmetic, in the script's own output.
 
+**`soul harvest save`'s revert reason does not match its siblings.** It reads
+`soul TS route disabled by MIRROR_TS_SOUL=0` where every other family reads
+`<VAR>=0 revert to Python`. Both are true — the family switch is checked before
+the leaf's own transport decision — and the contract holds. Cosmetic only.
+
+**Two validation commands failed for environmental reasons, not code reasons**,
+and both are recorded because the next person will meet them. Node's
+`--env-file` fills only UNSET variables, so `env -u VAR` re-reads the holdback
+from the file instead of lifting it; the override must SET `VAR=1`. And zsh
+does not word-split unquoted parameter expansions the way bash does, so a
+`for c in "journal x"; do node -e '...' $c; done` loop passed `"journal x"` as
+a single command name and printed `python  command not ported to TS` for every
+leaf — **a check that passed for the wrong reason**, which is the same shape as
+the zero-proposal run the outcome seam exists to catch. Both route checks are
+now scripts (`ts/parity/route_matrix.ts`, `ts/parity/key_hygiene.ts`) that do
+their own splitting and carry their own expectations, so no shell semantics sit
+between the question and the answer.
+
 ## Not exercised
 
-- **Group B on the real home** — the four holdback lines are still in `.env`.
-- **The revert matrix and the half-fixture refusals** (step 6) and **key
-  hygiene** (step 7).
 - **Group C** — `consolidate scan` and `shadow scan` print `SKIPPED` with the
   route's own reason while DS8.TS2 is open, and made no call:
   `live blocked by DS8.TS2 (cultivation prompt templates not ported)`.
