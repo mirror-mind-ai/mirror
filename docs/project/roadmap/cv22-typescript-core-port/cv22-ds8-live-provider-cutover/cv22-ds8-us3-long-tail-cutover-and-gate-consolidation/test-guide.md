@@ -71,6 +71,19 @@ call. They begin working the day TS2 removes the block — no edit to the script
 holds: if a leaf misbehaves on the real home, set its revert variable first
 and read the front-door log's `kind=` / `outcome=` line second.
 
+**Holding the real home back while validating on a copy.** The Pi extension
+invokes `ts/src/frontDoor/cli.ts` from the repository root with
+`--env-file-if-exists=.env`, so a flip in the working tree is live for the
+running session immediately. Put the revert variables in `.env` (gitignored,
+read per invocation, no relaunch needed) before starting, and remove them one
+group at a time.
+
+**Lifting the holdback for one command:** `--env-file` fills only variables
+that are UNSET — a value already in the environment wins — so `env -u VAR`
+does not work: it unsets the shell copy and the file supplies `=0` again. SET
+the variable instead, `VAR=1`, which routes live because only an exact `"0"`
+reverts.
+
 **Real-home acceptance lines — read before step 4.** These are real writes
 with real model output. `journal`: a memory retrieval will surface for
 years — write an entry you mean. `descriptor generate`: **overwrites** the
