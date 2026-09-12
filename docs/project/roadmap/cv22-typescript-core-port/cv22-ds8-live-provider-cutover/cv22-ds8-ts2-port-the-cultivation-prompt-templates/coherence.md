@@ -22,7 +22,8 @@ route; the seam was then proven on the right rows. The first live smoke's
 transport failures were treated as a measurement gap (the class was not
 captured) rather than guessed at; the tool was fixed and the re-run cleared.
 
-Two runtime overwrites were caught and reversed: `validate-item` replaced
+Three runtime overwrites were caught and reversed (`coherence-item` did it
+to this file too, after the paragraph below was written): `validate-item` replaced
 the authored `validation.md` with its flag scaffold and `review-item` did the
 same to `review.md`; both restored, and recorded as CR079's second data point
 rather than a new CR. Closure docs were committed before `coherence-item` and
