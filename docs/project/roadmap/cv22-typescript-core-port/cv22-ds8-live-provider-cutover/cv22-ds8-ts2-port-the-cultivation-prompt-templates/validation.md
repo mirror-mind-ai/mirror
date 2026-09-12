@@ -98,9 +98,33 @@ $0.000272; three `shadow_observation` rows pending with `target_layer=shadow`,
 stay on TypeScript; every DS8 leaf is live by default with no story gate
 remaining; the retired `MIRROR_TS_EXTERNAL_ROUTES` is inert.
 
-### 8a–8c — the journey to `apply` (pending)
+### 8a — front-door render (PASS)
 
-`scan → list → apply` on `tmp/parity/copy-home` for both families. The copy
-now holds eleven pending `merge` rows and four pending `shadow_observation`
-rows produced by TypeScript's prompts, so 8b/8c can apply one of each without
-another scan.
+`consolidate scan --limit 1 --mirror-home tmp/parity/copy-home`: Python's
+shape end to end — `Scanning 950 memories (threshold=0.75)...`, `Found 1
+cluster(s)`, the proposal card with source memories, rationale, and proposed
+content, then `1 proposal(s) created with status='pending'` and the review
+instructions. Produced `bda674e8` (`merge`) in `copy-home/memory.db`.
+
+Observation for Debt Review: the review instructions render Python's exact
+bytes — `python -m memory consolidate apply <proposal_id>` — while the
+command now answers from TypeScript through `cli.ts`. Parity-faithful and
+out of scope here; every ported render that names the Python entry point
+faces the same question at DS10.
+
+### 8b–8c — the journey to `apply` (in progress; Driver error corrected)
+
+Two databases were in play: the smoke wrote to `tmp/parity/real-copy.db`
+(`--db`), the front door to `tmp/parity/copy-home/memory.db`
+(`--mirror-home`). The Driver handed the Navigator ids `55486ca5` and
+`75b795e3` as TypeScript-produced rows; they are **Python-produced** rows
+from 2026-06-18 and 2026-04-30 that were already pending in the owner's home
+and thus present in both copies. Applying them proved what US3 already
+proved — TS's `apply` consumes Python's rows — not this story's seam. The
+earlier claim here that the copy held "eleven merge rows produced by
+TypeScript's prompts" was wrong: TypeScript produced four merges and three
+shadow observations, all in `real-copy.db`.
+
+Corrected route: apply `bda674e8` (the TS-prompt merge from 8a) on
+`copy-home`; run `shadow scan` on `copy-home` through the front door and apply
+the row it produces. Evidence below when run.
