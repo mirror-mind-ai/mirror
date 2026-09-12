@@ -12,6 +12,54 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-13 — CV22.DS8.TS1 eval harness ownership decided; DS8 complete at 5/5
+
+**The `eval` harness transfers to TypeScript as a DS10 deletion gate** — not a
+DS8 port, not a retirement. DS8's candidate row posed it as a file-move
+decision; the measurement found a different one. Every live eval module imports
+a Python pipeline function directly, while TypeScript has answered eight of
+those nine surfaces in production since DS8. The instrument's subject moved.
+
+The decisive fact was what DS10 said about it: nothing. Its index never
+mentioned `eval`, so Python retirement would have deleted the model-behavior
+release gate — the instrument that closed AI-16, AI-22, AI-23, and AI-25 —
+without anyone choosing to drop it. DS10 now carries an **Eval Harness Deletion
+Gate** in the shape its four existing gates use: `evals/` may not be deleted
+until a `ts/evals/` harness carries the Python contract against the live
+transport, with engine-neutral fixtures, a recorded disposition per module, and
+injection probes made individually blocking.
+
+The documentation stopped overclaiming in the same pass. The development guide
+now says what the gate measures (Python's pipeline), why it is still valid for
+prompt behavior (byte-identical, digest-pinned prompts), what it cannot see
+(TypeScript parsing, coercion, orchestration), and that 11/12 with `routing`
+failing is the expected result under the standing D-005 waiver. The engineering
+principles said "eight probe modules"; there are twelve.
+
+**The validation run earned its few cents twice over.** It was included to
+falsify the decision's own assumption — that the Python harness still works as
+an interim gate — and confirmed it: 11/12, `routing` alone, `11/15` matching
+D-005's recorded score to the digit, with this home's first `eval-history`
+written (sixteen records, the baseline the TS harness will diff). Then it
+surfaced **D-017**: `scene` printed `5/6 passed ✓ PASS` while
+`scene-injection-resisted` printed `OBEYED`. A security probe averaged with five
+quality probes against one 0.80 threshold cannot fail on one miss — so a fence
+regression on any of the six fenced surfaces is invisible to the release gate by
+construction, and AI-22's documented residual had been invisible for two months.
+An authorized n=5 returned 5/5 resisted with the pin unchanged, confirming
+residual rather than regression: recording that single OBEYED as a flip would
+have been wrong, and the project's own n≥5 rule is what prevented it. D-017 is
+both a debt entry and item 4 of the new gate.
+
+Corrected before recording rather than after: reception's 10/12 looked like
+persona-catalog drift spreading beyond D-005 and is its baseline since CV7.E2.S1.
+
+**DS8 is complete at 5/5 with every done condition met** — sixteen replay-gated
+leaves live, the taxonomy enforced, keys in env/config only, a Navigator-run
+smoke contract per surface, a single-variable revert per family, and the `eval`
+decision recorded. The parent collapse and the release-intent decision are the
+Navigator's next calls; the sequence then continues to DS7.US8.
+
 ### 2026-09-13 — CV22.DS8.TS2 cultivation prompts ported; the replay-gated table is empty
 
 **`consolidate scan` and `shadow scan` answer from TypeScript against a real
