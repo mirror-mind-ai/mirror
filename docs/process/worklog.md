@@ -12,6 +12,74 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-12 — CV22.DS8.US3 long-tail cutover completed
+
+**Nine provider-backed leaves now answer from TypeScript against a real
+provider on an unconfigured install**, each with one variable that reverts it,
+and `MIRROR_TS_EXTERNAL_ROUTES` is retired. US3 flipped eight of them:
+`consult credits|ask`, `mirror load --query`, `journal`, `week plan`,
+`descriptor generate`, `soul harvest save`, and `consolidate apply`.
+
+The roadmap row read as wiring. Four things in the code said otherwise, and
+each would have failed silently. **`consult` sends Python a two-message
+envelope** while the live provider hard-coded one user turn — and the envelope
+was already packed into the prompt string for the ledger, so live consult would
+have posted a JSON document as the text of a single message, passing every
+prompt digest while the model read a different conversation. **Reception needed
+its own 10-second timeout tier**, not extraction's 60. **There was no live
+credit provider at all** — `/credits` and `/generation` needed a GET verb the
+client did not have. And **the whole tail wrote no ledger rows**: Python logs
+`consolidation`, `shadow_scan`, `week_plan`, `journal_classification`, and the
+embeddings behind `journal`, `soul harvest save`, and `consolidate apply`;
+TypeScript logged none of them, and the reception row was unpriced. Invisible
+under replay, where a call is free and an absent row is accurate.
+
+Worse than a gap: **`soul harvest save` had no provider wired on the front-door
+path**. Routing sent it to TypeScript and the route's default `embed` threw, so
+the only Soul leaf that crosses the provider seam could not complete. It
+completed for the first time during this story's validation.
+
+**A plan stop condition fired in the middle and was honored.** The prompt-pin
+work found that TypeScript never ported `CONSOLIDATION_PROMPT` or
+`SHADOW_SCAN_PROMPT` at all — `propose.ts` sends a fenced Markdown dump of the
+memories, 121 and 209 bytes against Python's 2,247 and 1,598, with no task
+statement and no JSON output contract. Live, `consolidate scan` would have
+reported "no proposals" indefinitely while the ledger showed paid calls. The
+work was split into **CV22.DS8.TS2** rather than absorbed: porting instruction
+text against an oracle is prompt authoring with a different reviewer, and
+absorbing it would have buried a substantive behavioral port inside a plateau
+labelled "pins". Those two leaves stay on Python, refused by name
+(`live blocked by DS8.TS2`) so the dependency cannot be forgotten.
+
+Three review findings became the story's most durable parts. The swallowed
+failures are now legible — `consolidate scan`, `shadow scan`, and reception
+report `answered | empty | parse_failed | transport_failed` into the front-door
+log with a `calls=N` fan-out count, without changing what any function returns,
+so a run that spent money and produced nothing can no longer read as a healthy
+empty result. The `llm_calls` hooks became one authority instead of three
+hand-written copies that had already drifted. And consult's `prompt` column now
+holds Python's `json.dumps` bytes rather than `JSON.stringify`'s, with the cost
+falling back to the static estimate exactly as `build_llm_logger` does — a
+divergence the owner's own 2026-09-10 Python row proved, priced at exactly the
+estimate because its generation poll had come back empty.
+
+Validated live: eight probes on a database copy for $0.000686, four writes on
+the real home, the revert matrix, and key hygiene — thirteen ledger rows, zero
+unpriced, zero body bytes, zero key occurrences on any durable surface. Two
+throwaway shell checks became tools (`ts/parity/route_matrix.ts`,
+`ts/parity/key_hygiene.ts`) after one of them **passed for the wrong reason**:
+zsh does not word-split unquoted parameter expansions, so a verification loop
+handed the router `"journal x"` as a single command name and reported `python`
+for every leaf. That is the same failure shape the outcome seam exists to
+catch, met in the validation procedure itself.
+
+Also corrected mid-story: `consolidate apply` is not gated on TS2 — it sends no
+prompt at all — where the plan, the DS8 index, and the burn-down ledger had all
+said "the three cultivation leaves". CR075 and CR077 closed with the work;
+CR078 captured from the validation (consult spends ~13 seconds of a 14.7-second
+command polling for its own cost, faithfully, on both engines).
+
+
 ### 2026-09-09 — CV22.DS7.US7 Explorer Mode completed
 
 **The `explore` family answers from TypeScript by default**, `MIRROR_TS_EXPLORE=0` reverting it in one move, with 11 of 14 leaves on TS. `story promote` stays on Python **by name**: its tail calls Builder `load`, which US8 owns, and `explore` is the first family with a nested subparser so the allowlist refuses an unknown subcommand and an unknown `story` action separately.

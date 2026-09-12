@@ -58,15 +58,16 @@ reassigned there on 2026-09-09 because its publisher cannot land while both
 cores write; see History). Working denominator: **29** (30 until 2026-09-09;
 32 until the 2026-09-07 decision).
 
-**Production reality (2026-09-09).** Every LLM-crossing leaf routes to TS only
-under `MIRROR_TS_EXTERNAL_ROUTES=1` plus a replay fixture. No real install sets
-those, so **thirteen ported and graded leaves answer from Python in production**
-— `mirror load --query`, `memories --search`, `consult`, `consolidate
-scan|apply`, `shadow scan`, the five `conversation-logger` close-tail
-subcommands, and `soul harvest save`. The family rows mark them ✅ under the
-DS7↔DS8 convention (orchestration on TS under replay counts as DS7-done); the
-[Remainder](#remainder) lists them under DS8 so the convention cannot hide
-them.
+**Production reality (2026-09-12, superseding the 2026-09-09 note).** The
+`MIRROR_TS_EXTERNAL_ROUTES` gate is retired — it was DS5's safety catch while
+replay was the PRODUCTION route, and after the live cutover replay is a test
+transport. Fourteen of the sixteen replay-gated leaves now answer from
+TypeScript against a real provider on an unconfigured install, each with a
+single-variable revert. **Two remain**: `consolidate scan` and `shadow scan`,
+refused live by name pending
+[DS8.TS2](../cv22-ds8-live-provider-cutover/index.md#why-ts2-exists-2026-09-11).
+The earlier note said thirteen leaves answered from Python in production; that
+was true when written and is now true of two.
 
 ---
 
@@ -76,15 +77,15 @@ them.
 |--------|----------|------:|-------|--------|
 | Read-only deterministic | `detect-persona`, `journeys`, `memories` (listing) | 3/3 | DS2 | ✅ done |
 | Deterministic writes | `identity set`, `journey set-path` | (subcommands) | DS4 | ✅ done |
-| External under replay | `memories --search`, `consult` | 1/1 (+`consult`) | DS5 / DS8.US1 | ✅ done — **`memories --search` flipped ungated 2026-09-11** (live provider; revert `MIRROR_TS_SEARCH=0`); `consult` stays replay-gated until DS8.US3 |
-| Identity/journey reads & writes | `identity`, `journey`, `seed`, `init`, `descriptor`, `list`, `inspect`, `conversations`, `recall` | 9/9†‡ | DS7.US1 | ✅ done |
-| Content & planning writes | `journal`, `tasks`, `week` | 3/3¶ | DS7.US2 / US11 | ✅ done — US2 ported the deterministic core; **US11 flipped 2026-09-09**: `week save` ungated, `journal` and `week plan` replay-gated until DS8. 13/13 leaves ported |
-| Memory cultivation | `consolidate`, `shadow` | 2/2 | DS7.US3 | ✅ done |
-| mirror-mode orchestration | `mirror`, `mode` | 2/2 | DS7.US4 | ✅ done |
+| External under replay | `memories --search`, `consult` | 1/1 (+`consult`) | DS5 / DS8.US1 | ✅ done — **`memories --search` flipped ungated 2026-09-11** (live provider; revert `MIRROR_TS_SEARCH=0`); **`consult credits|ask` flipped ungated 2026-09-12** with DS8.US3 (revert `MIRROR_TS_CONSULT=0`) |
+| Identity/journey reads & writes | `identity`, `journey`, `seed`, `init`, `descriptor`, `list`, `inspect`, `conversations`, `recall` | 9/9†‡ | DS7.US1 | ✅ done — **`descriptor generate` flipped ungated 2026-09-12** with DS8.US3 (revert `MIRROR_TS_DESCRIPTOR=0`) |
+| Content & planning writes | `journal`, `tasks`, `week` | 3/3¶ | DS7.US2 / US11 | ✅ done — US2 ported the deterministic core; US11 flipped 2026-09-09; **`journal` and `week plan` flipped ungated 2026-09-12** with DS8.US3 (reverts `MIRROR_TS_JOURNAL=0`, `MIRROR_TS_WEEK=0`). 13/13 leaves ported |
+| Memory cultivation | `consolidate`, `shadow` | 2/2 | DS7.US3 | ✅ done — **`consolidate apply` flipped ungated 2026-09-12** (DS8.US3, revert `MIRROR_TS_CULTIVATION=0`); `consolidate scan` and `shadow scan` refused live by name pending DS8.TS2 |
+| mirror-mode orchestration | `mirror`, `mode` | 2/2 | DS7.US4 | ✅ done — **`mirror load --query` flipped ungated 2026-09-12** with DS8.US3 (revert `MIRROR_TS_MIRROR_QUERY=0`; the deterministic `mirror load` is outside that gate) |
 | Extension context runtime | (`ext`/`extensions` context path) | — | DS7.TS2 | ✅ done |
 | **Extraction lifecycle (deterministic core)** | **`conversation-logger`** | **partial** | **DS7.US5** | ✅ **done — 7/15 subcommands flipped** |
 | Extraction lifecycle (composites & LLM tail) | `conversation-logger` remainder | 8/8‡ | DS7.US10 | ✅ done (2026-09-07) — `repair-journeys --apply` route waits for TS1's `backup` |
-| Soul Mode | `soul` | 1/1 | DS7.US6 | ✅ done — flipped 2026-09-08; `harvest save` replay-gated until DS8 |
+| Soul Mode | `soul` | 1/1 | DS7.US6 | ✅ done — flipped 2026-09-08; **`harvest save` flipped ungated 2026-09-12** with DS8.US3, which also gave it the provider the front door had never wired |
 | Explorer Mode | `explore` | 1/1 | DS7.US7 | ✅ done — flipped 2026-09-09; `story promote` on Python until US8; projection refresh delegated behind a DS10-owned seam |
 | Builder/Ariad | `build` | 0/1 | DS7.US8 | 🟡 planned |
 | Ops/utility tail | `backup`, `repair-encoding`, `extensions`, `ext`, `welcome` (+ `runtime` reads§) | 3/5‡ | DS7.TS1 / TS3 / TS4 | 🔵 in progress — TS1 `backup`+`repair-encoding` ✅ flipped 2026-09-07; TS3 `welcome` ✅ flipped 2026-09-08 (+ `runtime` reads as branch coverage); TS4 extension catalog (also takes `identity edit`). `journey-projection` left this row for DS10 on 2026-09-09 with TS5 |
@@ -199,46 +200,51 @@ the defect this ledger exists to prevent.
 
 ### Ported and graded — replay-gated, Python in production until DS8
 
-| Leaf | Ported by | Live traffic (llm_calls, this home) |
-|------|-----------|-------------------------------------|
-| `consult credits`, `consult ask` | DS5 | none recorded |
-| `mirror load --query` | DS7.US4 | no `reception` rows recorded |
-| `consolidate scan` | DS7.US3 | none recorded — **flip gated on DS8.TS2**† |
-| `consolidate apply` | DS7.US3 | none recorded |
-| `shadow scan` | DS7.US3 | none recorded — **flip gated on DS8.TS2**† |
-| `soul harvest save` | DS7.US6 | none recorded |
-| `journal` | DS7.US11 | none recorded |
-| `week plan` | DS7.US11 | none recorded |
-| `descriptor generate` | DS7.US11 | none recorded |
+| Leaf | Ported by | Why it is still here |
+|------|-----------|----------------------|
+| `consolidate scan` | DS7.US3 | flip gated on **DS8.TS2**† |
+| `shadow scan` | DS7.US3 | flip gated on **DS8.TS2**† |
 
-**Ten leaves** (sixteen at the start of DS8; `memories --search` left on
-2026-09-11 with US1, and all five close-tail subcommands the same day with
-US2). What remains is the low-traffic tail DS8.US3 owns: `consult`,
-`mirror load --query`, `consolidate`, `shadow`, `soul harvest save`,
-`journal`, `week plan`, and `descriptor generate`.
+**Two leaves** (sixteen at the start of DS8). Fourteen left on 2026-09-11 and
+2026-09-12: `memories --search` with US1, the five close-tail subcommands with
+US2, and eight with US3 — `consult credits|ask`, `mirror load --query`,
+`journal`, `week plan`, `descriptor generate`, `soul harvest save`, and
+`consolidate apply`.
 
-† **Two cultivation leaves cannot flip with the rest (2026-09-11).**
-TypeScript never ported `CONSOLIDATION_PROMPT` or `SHADOW_SCAN_PROMPT`:
-`propose.ts` sends a fenced Markdown dump of the memories — 121 and 209 bytes
-against Python's 2,247 and 1,598 — with no task statement, no untrusted-input
-guard, and no JSON output contract. Replay resolves by role and never reads a
-prompt, so nothing caught it; live, the model would answer a memory dump with
-prose, the parse would fail, and `consolidate scan` would report "no
-proposals" indefinitely while the ledger showed paid calls. Porting the two
-templates is
-[CV22.DS8.TS2](../cv22-ds8-live-provider-cutover/index.md#why-ts2-exists-2026-09-11);
-until it lands these two rows stay here, and DS8 cannot claim an empty table.
+† **The two scan leaves cannot flip yet (2026-09-11).** TypeScript never ported
+`CONSOLIDATION_PROMPT` or `SHADOW_SCAN_PROMPT`: `propose.ts` sends a fenced
+Markdown dump of the memories — 121 and 209 bytes against Python's 2,247 and
+1,598 — with no task statement, no untrusted-input guard, and no JSON output
+contract. Replay resolves by role and never reads a prompt, so nothing caught
+it; live, the model would answer a memory dump with prose, the parse would
+fail, and `consolidate scan` would report "no proposals" indefinitely while the
+ledger showed paid calls. Porting the two templates is
+[CV22.DS8.TS2](../cv22-ds8-live-provider-cutover/index.md#why-ts2-exists-2026-09-11).
 
-`consolidate apply` is NOT among them, corrected 2026-09-11 while wiring the
-family specs: it sends no prompt at all — a `merge` embeds the merged content
-and an `identity_update` makes no provider call — so nothing about it depends
-on the unported templates. It flips with the attended writes.
+Everything else the family needs already landed in US3 — the transport spec,
+the provider factory, the ledger rows, the outcome seam, and the
+`MIRROR_TS_CULTIVATION` revert. Only the route flip waits, and `routing.ts`
+refuses it BY NAME (`live blocked by DS8.TS2`) rather than silently, so the
+dependency cannot be forgotten. `consolidate apply` is not among them: it sends
+no prompt at all — a `merge` embeds the merged content, an `identity_update`
+makes no provider call — corrected 2026-09-11 while wiring the family specs,
+where the plan and this ledger had both said "three cultivation leaves".
+
+**This table is what "DS8 done = zero" is audited against.** It cannot be
+emptied before TS2 closes.
 
 ### Live in production — answered by TS against a real provider
 
 | Leaf | Cut over by | Revert control | Evidence |
 |------|-------------|----------------|----------|
 | `memories --search` | DS8.US1 (2026-09-11) | `MIRROR_TS_SEARCH=0` | vector-space parity `cos=1.000000` against a stored Python-era vector; ledger row identical to Python's for the same query (`11` tokens, `2.2e-07`); unconfigured install degrades with **zero** ledger rows and logs `kind=config` |
+| `consult credits\|ask` | DS8.US3 (2026-09-12) | `MIRROR_TS_CONSULT=0` | live `/credits` and `/generation` GETs on a new `getJson`; one priced `consult` row with the fetched cost, falling back to `computeCost` as Python's logger does; the two-message envelope reaches the model as an ARRAY, not as JSON text in one user turn |
+| `mirror load --query` | DS8.US3 (2026-09-12) | `MIRROR_TS_MIRROR_QUERY=0` (the deterministic `mirror load` is untouched) | reception bounded by its own 10s tier, not the 60s extraction one; row priced (it was written unpriced before); front-door log carries `reception calls=1 answered=1` |
+| `journal` | DS8.US3 (2026-09-12) | `MIRROR_TS_JOURNAL=0` | `journal_classification` + `embedding`, both priced; the embedding goes through `generateEmbeddingSafely` (CR075), so the retry, the AI-07 guard, and the ledger hook all apply |
+| `week plan` | DS8.US3 (2026-09-12) | `MIRROR_TS_WEEK=0` (`week view` stays outside the gate) | one priced `week_plan` row; two items parsed and journey-attributed on the real home |
+| `descriptor generate` | DS8.US3 (2026-09-12) | `MIRROR_TS_DESCRIPTOR=0` | one priced `descriptor` row per entity — a DELIBERATE divergence, since Python's `generate_descriptor` passes no `on_llm_call` and neither engine recorded this spend before; `calls=N` in the front-door log bounds the fan-out |
+| `soul harvest save` | DS8.US3 (2026-09-12) | `MIRROR_TS_SOUL=0` | the leaf had NO provider on the front-door path at all before this; now embeds through the wrapper, and the fruit is cleared only after a successful write |
+| `consolidate apply` | DS8.US3 (2026-09-12) | `MIRROR_TS_CULTIVATION=0` | a `merge` embeds through the wrapper with the ledger hook that had always existed and never been passed |
 | `conversation-logger switch\|session-end-pi\|session-end\|session-start (full)\|session-maintenance` | DS8.US2 (2026-09-11) | `MIRROR_TS_CONVERSATION_LLM_TAIL=0` (tail only; `MIRROR_TS_CONVERSATION_LOGGER=0` still reverts all fifteen) | live close tail on a real-DB copy: `extraction_status=ok`, 4 memories at 1536 dims, title/tags/summary within Python's caps, 10/10 ledger rows priced with bodies withheld, role sequence `extraction → task_extraction → embedding ×5 → conversation_title → conversation_summary → conversation_tags` |
 
 The first leaf in CV22 where TypeScript spends real money. `embedding` was the

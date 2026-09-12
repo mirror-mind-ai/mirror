@@ -65,4 +65,28 @@ case rather than designed ahead of them.
 
 ## Outcome
 
-Open.
+Done in **CV22.DS8.US3 plateau 1** (2026-09-11), as the story's first change —
+before any new family could copy the rule a fourth time.
+
+`ProviderTransportSpec.replayVar` became `replay`, a record naming a fixture
+variable per provider kind, and `incomplete_replay` became a transport MODE
+whose reason names both halves: which variable is set and which is missing.
+`routing.ts` and the runtime now read the same spec, so the route's recorded
+reason cannot contradict what happens one layer later.
+
+Keyed rather than the bare list the capture imagined: the provider factory has
+to know what each fixture IS, not only that it is required, and a list would
+have forced a second mapping somewhere — the drift shape this CR exists to
+close.
+
+The generalisation was driven by real cases rather than designed ahead of them,
+and one of them was a surprise the capture did not anticipate: `consult` is
+ASYMMETRIC. The credits fixture alone is a COMPLETE replay setup for `consult
+credits`, which needs no chat provider, and HALF a fixture for `consult ask`,
+which refuses. `mirror load --query` has a second such case —
+`MEMORY_RECEPTION=0` removes the classifier on both engines, after which the
+embedding fixture alone is complete. A single per-family rule could not have
+expressed either; per-leaf specs sharing one revert variable can.
+
+Verified 2026-09-12 by `ts/parity/route_matrix.ts`, which checks six
+replay-pair cases including both asymmetries, and by the hermetic suite.

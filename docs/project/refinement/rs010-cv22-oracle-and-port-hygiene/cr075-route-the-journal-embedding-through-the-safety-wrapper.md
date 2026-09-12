@@ -72,4 +72,31 @@ retry exist the first time the call is billable.
 
 ## Outcome
 
-Open.
+Done in **CV22.DS8.US3 plateau 4** (2026-09-11), landing with the flip exactly
+as the plan asked.
+
+`contentTailRoute` now embeds through `generateEmbeddingSafely` with
+`onAttempt: embeddingLedgerHook(db)`, so `journal` gets all three behaviors the
+bare call skipped: the bounded retry of a transient empty payload, the AI-07
+permanent dimension guard, and the ledger row.
+
+**The adjacent question is answered, and the answer was worse than the
+question.** `soul harvest save` did not merely share the bypass — it had no
+provider wired at all: `routing.ts` sent it to TypeScript and the route's
+default `embed` threw, so the leaf could not complete on the TypeScript path.
+`consolidate apply`'s merge half-shared it: the wrapper was already there and
+the `onEmbeddingAttempt` hook existed, but no caller had ever passed one. Both
+are fixed in the same plateau, and `saveHarvestedFruit` was split into
+plan/persist so the fruit is cleared only AFTER a successful embedding — a
+provider outage now leaves a harvest recoverable.
+
+Three tests pin what a fixture could not: a provider that returns one empty
+vector then a good one produces a memory and TWO ledger rows (the retry, and
+the paid round trip that failed); a wrong-dimension vector refuses the write
+with the attempt still ledgered; and a failing harvest leaves the fruit in
+place.
+
+Verified live on 2026-09-12 against a real provider — `journal` wrote
+`journal_classification` + `embedding`, both priced, on a database copy and
+then on the real home. See the
+[US3 validation evidence](../../roadmap/cv22-typescript-core-port/cv22-ds8-live-provider-cutover/cv22-ds8-us3-long-tail-cutover-and-gate-consolidation/validation.md).

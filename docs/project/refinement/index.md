@@ -59,10 +59,10 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 28 | [CR069](rs010-cv22-oracle-and-port-hygiene/cr069-fail-cleanly-when-soul-apply-is-given-an-unknown-id.md) | RS010 | Fail cleanly when `soul apply` is given an unknown id | captured | — | — |
 | 29 | [CR070](rs010-cv22-oracle-and-port-hygiene/cr070-render-or-remove-the-inert-listening-for-argument.md) | RS010 | Render or remove the inert `--listening-for` argument | captured | — | — |
 | 32 | [CR074](rs010-cv22-oracle-and-port-hygiene/cr074-harden-the-week-plan-pending-file.md) | RS010 | Harden the `week plan` pending file | captured | — | — |
-| 33 | [CR075](rs010-cv22-oracle-and-port-hygiene/cr075-route-the-journal-embedding-through-the-safety-wrapper.md) | RS010 | Route the journal embedding through the safety wrapper | captured | — | — |
 | 34 | [CR076](rs010-cv22-oracle-and-port-hygiene/cr076-collapse-the-three-close-tail-metadata-calls.md) | RS010 | Collapse the three close-tail metadata calls into one | captured | — | — |
-| 35 | [CR077](rs009-cv22-front-door-routing-correctness/cr077-route-and-runtime-disagree-on-a-half-replay-fixture.md) | RS009 | The route and the runtime disagree on a half-configured replay fixture | captured | — | — |
 | 36 | [CR078](rs010-cv22-oracle-and-port-hygiene/cr078-stop-spending-thirteen-seconds-polling-for-a-consult-cost.md) | RS010 | Stop spending thirteen seconds polling for a `consult` cost | captured | — | — |
+| — | [CR075](rs010-cv22-oracle-and-port-hygiene/cr075-route-the-journal-embedding-through-the-safety-wrapper.md) | RS010 | Route the journal embedding through the safety wrapper | done | @viniciusteles | `mirror-ts-core` |
+| — | [CR077](rs009-cv22-front-door-routing-correctness/cr077-route-and-runtime-disagree-on-a-half-replay-fixture.md) | RS009 | The route and the runtime disagree on a half-configured replay fixture | done | @viniciusteles | `mirror-ts-core` |
 | — | [CR072](rs009-cv22-front-door-routing-correctness/cr072-route-every-skill-through-the-front-door.md) | RS009 | Route every skill through the front door | done | @viniciusteles | `mirror-ts-core` |
 | — | [CR073](rs010-cv22-oracle-and-port-hygiene/cr073-refuse-a-mistyped-stdin-sentinel-in-journey-update.md) | RS010 | Refuse a mistyped stdin sentinel in `journey update` | done | @viniciusteles | `mirror-ts-core` |
 | — | [CR068](rs009-cv22-front-door-routing-correctness/cr068-stop-reporting-unported-llm-gated-leaves-as-burned-down.md) | RS009 | Stop reporting unported LLM-gated leaves as burned down | done | @viniciusteles | `mirror-ts-core` |

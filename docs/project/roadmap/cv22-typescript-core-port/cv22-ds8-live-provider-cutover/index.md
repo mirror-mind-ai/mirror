@@ -2,7 +2,7 @@
 
 # CV22.DS8 — Live-Provider Cutover
 
-**Status:** 🟢 In Progress — US1, US2 done (2/5)
+**Status:** 🟢 In Progress — US1, US2, US3 done (3/5); TS2 and TS1 remain
 **Type:** Delivery Story
 
 ---
@@ -39,7 +39,7 @@ tail of twelve low-traffic leaves flips last, in one review.
 |------|-------|------|---------|--------|
 | [CV22.DS8.US1](cv22-ds8-us1-live-provider-cutover/index.md) | Live transport substrate + live embeddings + `memories --search` cutover | User Story | A fresh semantic search from the real home answers from TS against a live OpenRouter embedding, with the ledger row priced like Python's; `MIRROR_TS_SEARCH=0` reverts | ✅ Done — 2026-09-11, vector-space parity `cos=1.000000` |
 | [CV22.DS8.US2](cv22-ds8-us2-live-chat-completions-conversation-close-tail-cutover/index.md) | Live chat completions + conversation close-tail cutover | User Story | `switch`, `session-end-pi`, `session-end`, `session-start` (full), `session-maintenance` answer from TS against live chat calls with extraction-tier timeout, cost authority on ledger rows, and a live chat smoke contract | ✅ Done — 2026-09-11, real unattended session close observed |
-| CV22.DS8.US3 | Long-tail cutover and gate consolidation | User Story | `consult credits\|ask`, `mirror load --query` (reception timeout), `soul harvest save`, `journal`, `week plan`, `descriptor generate` flip to live; `MIRROR_TS_EXTERNAL_ROUTES` retired as a required gate; the `descriptor` ledger-gap decision recorded. The cultivation leaves flip here too, but only once TS2 has landed their prompts | 🔵 In Progress — plateaus 1–2 done |
+| CV22.DS8.US3 | Long-tail cutover and gate consolidation | User Story | `consult credits\|ask`, `mirror load --query` (reception timeout), `soul harvest save`, `journal`, `week plan`, `descriptor generate` flip to live; `MIRROR_TS_EXTERNAL_ROUTES` retired as a required gate; the `descriptor` ledger-gap decision recorded. The cultivation leaves flip here too, but only once TS2 has landed their prompts | ✅ Done — 2026-09-12; eight leaves live, `MIRROR_TS_EXTERNAL_ROUTES` retired, two scan leaves handed to TS2 |
 | CV22.DS8.TS2 | Port the cultivation prompt templates | Technical Story | `consolidate scan` and `shadow scan` assemble Python's real `CONSOLIDATION_PROMPT` and `SHADOW_SCAN_PROMPT` — task statement, identity/dedup context, untrusted-input guard, JSON output contract — byte-identical to the oracle and digest-pinned, with `userName` and `identityContext` threaded from the route. Prompt-engineer review of the ported text before it reaches a live model | 🟡 Planned — blocks US3's cultivation flip |
 | CV22.DS8.TS1 | `eval` runner ownership decision | Technical Story | `python -m memory eval` (`evals/`, ~3.2k lines, developer-only) is either ported to a TS eval harness against the live transport or retired with a documented cutoff; decision recorded near the roadmap by the port owner | 🟡 Planned — decision open |
 

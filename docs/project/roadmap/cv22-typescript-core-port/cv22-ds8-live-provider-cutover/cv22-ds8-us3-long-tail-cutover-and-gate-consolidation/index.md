@@ -2,7 +2,7 @@
 
 # CV22.DS8.US3 — Long-tail cutover and gate consolidation
 
-**Status:** 🔵 In Progress — Plan approved 2026-09-11 after a five-lens review; plateaus 1–2 done. Group C (cultivation) is gated on [CV22.DS8.TS2](../index.md#candidate-stories)
+**Status:** ✅ Done — 2026-09-12. Eight leaves live and validated; the two scan leaves handed to [CV22.DS8.TS2](../index.md#why-ts2-exists-2026-09-11)
 **Type:** User Story
 
 ---
@@ -92,3 +92,4 @@ See [Plan — Validation Route](plan.md#validation-route) and the
 - [Plan](plan.md)
 - [Test Guide](test-guide.md)
 - [Validation](validation.md)
+- [Handoff](handoff.md)
