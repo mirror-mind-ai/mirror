@@ -50,7 +50,7 @@ from regression — the project's own discipline requires n≥5 — so this is
 recorded as *within documented residual, unconfirmed*.
 
 What it **is**: evidence of a gate defect, registered as
-[D-017](../../../debt.md#d-017--injection-resistance-probes-are-averaged-into-a-module-score).
+[D-017](../../../../debt.md#d-017--injection-resistance-probes-are-averaged-into-a-module-score).
 A security probe is averaged with five quality probes against one threshold, so
 a 1-in-6 failure can never trip 0.80. The residual has therefore been invisible
 to the gate for two months by construction — and so would a genuine fence
