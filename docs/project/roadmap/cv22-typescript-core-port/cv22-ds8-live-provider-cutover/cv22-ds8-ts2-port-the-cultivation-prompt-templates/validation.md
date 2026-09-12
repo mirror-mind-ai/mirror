@@ -144,3 +144,14 @@ The first cluster produced `prompt_tokens 1362` here as it did in smoke run 2
 Seven chat calls and two embeddings across the whole route, all on copies:
 about **$0.0024**. No real-home write was made. `tmp/parity/` is ignored and
 uncommitted.
+
+## Runtime checkpoint (2026-09-13)
+
+`build validate-item --navigator-accepted` recorded the checkpoint as
+`navigator accepted: yes`, `checks status: passed`, `e2e decision: required`,
+`missing evidence: none`, and advanced the cursor to Debt Review. The same
+command **overwrote this file** with its scaffold — 144 lines of authored
+evidence replaced by the flag values — as it did to US3 two days earlier and
+as CR079 describes. Restored from commit `adf3be90`; the runtime's fields are
+summarized in this section instead. `review-item` then did the same to
+`review.md`, which was re-authored from the Driver's draft.

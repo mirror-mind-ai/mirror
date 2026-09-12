@@ -58,16 +58,15 @@ reassigned there on 2026-09-09 because its publisher cannot land while both
 cores write; see History). Working denominator: **29** (30 until 2026-09-09;
 32 until the 2026-09-07 decision).
 
-**Production reality (2026-09-12, superseding the 2026-09-09 note).** The
-`MIRROR_TS_EXTERNAL_ROUTES` gate is retired — it was DS5's safety catch while
-replay was the PRODUCTION route, and after the live cutover replay is a test
-transport. Fourteen of the sixteen replay-gated leaves now answer from
+**Production reality (2026-09-13, superseding the 2026-09-12 note).** All
+sixteen leaves that were replay-gated at the start of DS8 answer from
 TypeScript against a real provider on an unconfigured install, each with a
-single-variable revert. **Two remain**: `consolidate scan` and `shadow scan`,
-refused live by name pending
-[DS8.TS2](../cv22-ds8-live-provider-cutover/index.md#why-ts2-exists-2026-09-11).
-The earlier note said thirteen leaves answered from Python in production; that
-was true when written and is now true of two.
+single-variable revert. The last two — `consolidate scan` and `shadow scan` —
+flipped with
+[DS8.TS2](../cv22-ds8-live-provider-cutover/cv22-ds8-ts2-port-the-cultivation-prompt-templates/index.md)
+once their prompts were ported and digest-pinned. The `MIRROR_TS_EXTERNAL_ROUTES`
+gate is retired (US3). No ported leaf answers from Python in production; the
+replay-gated section below is empty for the first time since DS5 created it.
 
 ---
 
@@ -80,7 +79,7 @@ was true when written and is now true of two.
 | External under replay | `memories --search`, `consult` | 1/1 (+`consult`) | DS5 / DS8.US1 | ✅ done — **`memories --search` flipped ungated 2026-09-11** (live provider; revert `MIRROR_TS_SEARCH=0`); **`consult credits|ask` flipped ungated 2026-09-12** with DS8.US3 (revert `MIRROR_TS_CONSULT=0`) |
 | Identity/journey reads & writes | `identity`, `journey`, `seed`, `init`, `descriptor`, `list`, `inspect`, `conversations`, `recall` | 9/9†‡ | DS7.US1 | ✅ done — **`descriptor generate` flipped ungated 2026-09-12** with DS8.US3 (revert `MIRROR_TS_DESCRIPTOR=0`) |
 | Content & planning writes | `journal`, `tasks`, `week` | 3/3¶ | DS7.US2 / US11 | ✅ done — US2 ported the deterministic core; US11 flipped 2026-09-09; **`journal` and `week plan` flipped ungated 2026-09-12** with DS8.US3 (reverts `MIRROR_TS_JOURNAL=0`, `MIRROR_TS_WEEK=0`). 13/13 leaves ported |
-| Memory cultivation | `consolidate`, `shadow` | 2/2 | DS7.US3 | ✅ done — **`consolidate apply` flipped ungated 2026-09-12** (DS8.US3, revert `MIRROR_TS_CULTIVATION=0`); `consolidate scan` and `shadow scan` refused live by name pending DS8.TS2 |
+| Memory cultivation | `consolidate`, `shadow` | 2/2 | DS7.US3 | ✅ done — **`consolidate apply` flipped ungated 2026-09-12** (DS8.US3); **`consolidate scan` and `shadow scan` flipped ungated 2026-09-13** (DS8.TS2); one revert for the tail, `MIRROR_TS_CULTIVATION=0` |
 | mirror-mode orchestration | `mirror`, `mode` | 2/2 | DS7.US4 | ✅ done — **`mirror load --query` flipped ungated 2026-09-12** with DS8.US3 (revert `MIRROR_TS_MIRROR_QUERY=0`; the deterministic `mirror load` is outside that gate) |
 | Extension context runtime | (`ext`/`extensions` context path) | — | DS7.TS2 | ✅ done |
 | **Extraction lifecycle (deterministic core)** | **`conversation-logger`** | **partial** | **DS7.US5** | ✅ **done — 7/15 subcommands flipped** |
@@ -202,33 +201,25 @@ the defect this ledger exists to prevent.
 
 | Leaf | Ported by | Why it is still here |
 |------|-----------|----------------------|
-| `consolidate scan` | DS7.US3 | flip gated on **DS8.TS2**† |
-| `shadow scan` | DS7.US3 | flip gated on **DS8.TS2**† |
+| _(none — DS8.TS2 emptied this section on 2026-09-13)_ | — | sixteen leaves at the start of DS8; every one now sits in the flipped table below with its revert variable |
 
-**Two leaves** (sixteen at the start of DS8). Fourteen left on 2026-09-11 and
-2026-09-12: `memories --search` with US1, the five close-tail subcommands with
-US2, and eight with US3 — `consult credits|ask`, `mirror load --query`,
-`journal`, `week plan`, `descriptor generate`, `soul harvest save`, and
-`consolidate apply`.
+How it emptied: `memories --search` with US1 (2026-09-11); the five close-tail
+subcommands with US2 (2026-09-11); eight with US3 (2026-09-12) — `consult
+credits|ask`, `mirror load --query`, `journal`, `week plan`, `descriptor
+generate`, `soul harvest save`, `consolidate apply`; and the last two,
+`consolidate scan` and `shadow scan`, with TS2 (2026-09-13).
 
-† **The two scan leaves cannot flip yet (2026-09-11).** TypeScript never ported
-`CONSOLIDATION_PROMPT` or `SHADOW_SCAN_PROMPT`: `propose.ts` sends a fenced
-Markdown dump of the memories — 121 and 209 bytes against Python's 2,247 and
-1,598 — with no task statement, no untrusted-input guard, and no JSON output
-contract. Replay resolves by role and never reads a prompt, so nothing caught
-it; live, the model would answer a memory dump with prose, the parse would
-fail, and `consolidate scan` would report "no proposals" indefinitely while the
-ledger showed paid calls. Porting the two templates is
-[CV22.DS8.TS2](../cv22-ds8-live-provider-cutover/index.md#why-ts2-exists-2026-09-11).
-
-Everything else the family needs already landed in US3 — the transport spec,
-the provider factory, the ledger rows, the outcome seam, and the
-`MIRROR_TS_CULTIVATION` revert. Only the route flip waits, and `routing.ts`
-refuses it BY NAME (`live blocked by DS8.TS2`) rather than silently, so the
-dependency cannot be forgotten. `consolidate apply` is not among them: it sends
-no prompt at all — a `merge` embeds the merged content, an `identity_update`
-makes no provider call — corrected 2026-09-11 while wiring the family specs,
-where the plan and this ledger had both said "three cultivation leaves".
+The two scan leaves were the only ones that could not flip with their family.
+TypeScript had never ported `CONSOLIDATION_PROMPT` or `SHADOW_SCAN_PROMPT`:
+until TS2, `propose.ts` sent a fenced Markdown dump of the memories — 121 and
+209 bytes against Python's 2,247 and 1,598 — with no task statement, no
+untrusted-input guard, and no JSON output contract. Replay resolves by role and
+never reads a prompt, so nothing caught it. US3 refused the two leaves live BY
+NAME (`live blocked by DS8.TS2`) so the dependency could not be forgotten, and
+TS2 ported the templates, pinned every assembled branch against bytes captured
+from the real Python builders, deleted the block, and proved the flip live —
+see that story's
+[validation](../cv22-ds8-live-provider-cutover/cv22-ds8-ts2-port-the-cultivation-prompt-templates/validation.md).
 
 **This table is what "DS8 done = zero" is audited against.** It cannot be
 emptied before TS2 closes.
@@ -245,6 +236,8 @@ emptied before TS2 closes.
 | `descriptor generate` | DS8.US3 (2026-09-12) | `MIRROR_TS_DESCRIPTOR=0` | one priced `descriptor` row per entity — a DELIBERATE divergence, since Python's `generate_descriptor` passes no `on_llm_call` and neither engine recorded this spend before; `calls=N` in the front-door log bounds the fan-out |
 | `soul harvest save` | DS8.US3 (2026-09-12) | `MIRROR_TS_SOUL=0` | the leaf had NO provider on the front-door path at all before this; now embeds through the wrapper, and the fruit is cleared only after a successful write |
 | `consolidate apply` | DS8.US3 (2026-09-12) | `MIRROR_TS_CULTIVATION=0` | a `merge` embeds through the wrapper with the ledger hook that had always existed and never been passed |
+| `consolidate scan` | DS8.TS2 (2026-09-13) | `MIRROR_TS_CULTIVATION=0` | Python's real `CONSOLIDATION_PROMPT` assembled through `pyFormat`, byte-identical and digest-pinned; `prompt_tokens` 1362/1232/1186 live on a copy where the dump it replaced was ~50 (the smoke now asserts a floor of 400); a merge it produced was consumed by TS's own `apply`; the first live run hit a slow-provider window (2 transport failures beside a 28 s answer) and cleared on re-run |
+| `shadow scan` | DS8.TS2 (2026-09-13) | `MIRROR_TS_CULTIVATION=0` | Python's real `SHADOW_SCAN_PROMPT`, same discipline; `prompt_tokens` 1251 (5 candidates) and 8285 (50 candidates) live; an observation it produced was applied by TS to `shadow/profile` |
 | `conversation-logger switch\|session-end-pi\|session-end\|session-start (full)\|session-maintenance` | DS8.US2 (2026-09-11) | `MIRROR_TS_CONVERSATION_LLM_TAIL=0` (tail only; `MIRROR_TS_CONVERSATION_LOGGER=0` still reverts all fifteen) | live close tail on a real-DB copy: `extraction_status=ok`, 4 memories at 1536 dims, title/tags/summary within Python's caps, 10/10 ledger rows priced with bodies withheld, role sequence `extraction → task_extraction → embedding ×5 → conversation_title → conversation_summary → conversation_tags` |
 
 The first leaf in CV22 where TypeScript spends real money. `embedding` was the
@@ -600,3 +593,4 @@ default route, and the `=0` steps prove the revert.
 | 2026-09-11 | **DS8.US1: the first live-provider cutover. `memories --search` answers from TS against a real OpenRouter call in an unconfigured install.** Sixteen replay-gated leaves → fifteen. The substrate the remaining fifteen reuse landed with it: a fetch-based OpenRouter client porting the OpenAI SDK's retry *policy* rather than the package (no SDK on the path of every paid call), the AI-18 taxonomy `timeout\|auth\|rate_limit\|malformed_output\|provider_error` with an error object whose enumerable surface is `kind/status/retryable` and nothing else, per-role timeouts under Python's env names, `compute_cost` ported at last (CR040 skipped it because consult fetches a real generation cost — an embedding call has no generation id, so Python prices that row from the static table and TS had to as well), and one `resolveProviderTransport` precedence (revert → replay → live) that US2/US3 consume instead of re-deriving per leaf. Replay stops requiring `MIRROR_TS_EXTERNAL_ROUTES` for this leaf: that gate was DS5's safety catch while replay was the *production* transport, and after the cutover replay is a test transport. **Navigator validation 2026-09-11:** vector-space parity `cos=1.000000` against a stored Python-era vector — the check that would have aborted the cutover had it failed; ledger rows identical to Python's for the same query (`11` tokens, `2.2e-07`, bodies withheld); unconfigured install degrades to lexical with **zero** ledger rows and logs `embedding_degraded kind=config`, so an expired key is now distinguishable from an outage without a re-run. Revert: `MIRROR_TS_SEARCH=0`. Two defects found were both in the *harness*, not the product — the cross-check embedded a null `context` where Python appends `Context: …` (it would have reported a low cosine and looked exactly like the failure whose documented response is to abort), and the smoke asserted ledger rows while calling the provider directly, bypassing the layer that writes them. Accepted known risk: Node's `fetch` ignores `HTTPS_PROXY` unless `NODE_USE_ENV_PROXY=1`, so a proxied install degrades where Python would not. |
 | 2026-09-11 | **DS8.US2 group 1 live: the conversation close tail answers from TS against a real model.** `switch`, `session-end-pi`, and `session-end` — the last of which fires **unattended from the Pi hook** — now reach a live provider on an install that configures nothing. Sixteen replay-gated leaves at the start of DS8 → twelve. Staged in US10's own dependency order: group 2 (`session-start` full, `session-maintenance`) keeps the replay transport until group 1 has been observed live on the real home, because those compose the close tail *with* backfill and orphan handling and can close several conversations in one run, multiplying any defect. Revert is tail-only (`MIRROR_TS_CONVERSATION_LLM_TAIL=0`), so the seven deterministic subcommands that have answered from TS since 2026-09-02 stay put during a live-provider scare. **Four defects surfaced during this story, none by the existing suite:** (1) the port had dropped Python's embed-all-then-insert ordering (AI-03/CV9.E2.S9), so a live embedding failure mid-extraction left partial memories the retry would duplicate — invisible under replay, where embeddings never fail; (2) extraction's embedding rows were never priced, because US1 priced the *search* hook only and pricing is a per-call-site decision; (3) the close-tail **metadata** roles (title/tags/summary) log through a different ledger than extraction and were still unpriced after (2) — found by the live smoke on real data, 7/10 rows priced; (4) a half-configured replay fixture used to fall back to Python, which is *not* safe once TS can go live, because Python has no replay transport and would spend on the live provider anyway — it now refuses by name. Also corrected: the conversation title cap is 160 (`_clean_title_suggestion`), not the 60 code points the plan claimed — that is the journal fallback from US11. |
 | 2026-09-11 | **DS8.US2 group 2 live: the whole close-tail family answers from TS.** `session-start` (full run) and `session-maintenance` follow group 1 after it was observed live on the real home. Sixteen replay-gated leaves at the start of DS8 → **ten**, all of them DS8.US3's low-traffic tail. Group 2 validated on a real-DB copy with the multi-conversation case its staging existed for: one `session-maintenance` run extracted two conversations, 11 ledger rows, every one priced with bodies withheld, both `extraction_status=ok`, and the per-conversation embedding counts matching the memory deltas exactly (1 summary + n memory embeddings → n new memories) — which is the plateau-1 atomicity contract holding under a real run rather than a fixture. Run cost: $0.0032. `session-start --fast` deliberately stays outside the revert: it makes no model call, so a close-tail scare must not drag it back, exactly as `week view` sits outside the `week` gate. A first maintenance run on an untouched copy was a no-op (no work due) and made zero live calls — worth recording because "exit 0" alone would have looked like evidence and was not. |
+| 2026-09-13 | **DS8.TS2: the replay-gated table is empty.** `consolidate scan` and `shadow scan` — the two leaves US3 refused live by name because TypeScript sent a fenced memory dump where Python sends a 2–3k-character instruction — now send Python's real `CONSOLIDATION_PROMPT` and `SHADOW_SCAN_PROMPT`, assembled through `pyFormat` and graded against bytes **captured** from the real Python builders (`send_to_model` stubbed) rather than re-composed. Three pins: raw template bytes, per-branch SHA-256, and replay fixtures that refuse one byte of drift for both roles. The owner-name and identity-context inputs `cmd_scan` resolves are ported with Unicode `\w` and code-point slicing; the `consolidate_cmd` hardcoded owner name is deliberately not ported (D1, CR014). A four-lens plan review added the live witness the hermetic pins cannot give — a `prompt_tokens` floor in the smoke — and a hard stop where the prompt engineer reads the assembled text before it spends. Live on copies: both leaves answered, rows they produced were consumed by TS's `apply`, the tail reverts with `MIRROR_TS_CULTIVATION=0`. Sixteen replay-gated leaves at the start of DS8 → **zero**. Captured: **CR080** (the consolidation prompt's identity-context block) and **CR081** (typecheck `ts/parity`). Remaining in DS8: TS1, the `eval` ownership decision. |

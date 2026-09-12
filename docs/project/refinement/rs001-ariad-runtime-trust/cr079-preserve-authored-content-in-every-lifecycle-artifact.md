@@ -85,6 +85,14 @@ Not planned. Two decisions belong to whoever takes it:
   hand-made version of the merge this CR asks the runtime to perform.
 - Commit `96c6991b` — the restoration, with the diff showing 235 lines replaced
   by 33.
+- **Second data point, 2026-09-13, CV22.DS8.TS2.** `validate-item` replaced
+  the authored `validation.md` (146 lines) with a 33-line scaffold of the
+  command's flags; `review-item` then replaced an authored, not-yet-committed
+  `review.md` with the same shape. Validation was restored from its commit
+  with the runtime's fields summarized in a closing section; the review was
+  re-authored from the Driver's draft. Same class, one story later — the
+  overwrite is a property of every lifecycle verb that names an artifact,
+  which is this CR's thesis.
 - [CR004](cr004-preserve-authored-story-index.md),
   [CR015](cr015-preserve-driver-authored-plan-before-approval.md) — the two
   earlier instances.

@@ -10,7 +10,7 @@ network.
 | # | Command | Pass | Fail |
 |---|---------|------|------|
 | 1 | `cd ts && npm run typecheck && npm run lint` | clean | any error, or a new lint warning |
-| 2 | `cd ts && npm test` | 0 failures; `test/cultivation/propose.test.ts` and `test/cultivation/promptContext.test.ts` include the new template, digest, fixture, and resolver tests | any failure |
+| 2 | `cd ts && npm test` | 0 failures; `test/cultivation/cultivationPrompts.test.ts` (templates, digests, fixture enforcement) and `test/cultivation/promptContext.test.ts` (resolvers) are present and green | any failure |
 | 3 | `uv run python ts/parity/generate_prompt_assembly_golden.py && git diff --exit-code ts/test/goldens/prompt-assembly.golden.json` | regeneration is a no-op; the corpus carries `system_prompts.consolidation`, `system_prompts.shadow_scan`, and scenarios for both surfaces | any diff |
 | 4 | `node ts/parity/route_matrix.ts --contracts-only` | exit 0; `consolidate scan` and `shadow scan` contracts read live, no `DS8.TS2` reason anywhere; the `soul harvest save` contract carries the swept reason string | non-zero exit |
 | 5 | `uv run pytest -m "not live"` | Python suite unchanged and green (the oracle is read, not edited) | any failure |

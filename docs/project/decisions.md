@@ -2319,3 +2319,51 @@ Reasons:
 TS2 lands, so DS8's done condition — an empty replay-gated table — cannot be
 claimed before TS2 closes. The dependency is recorded in the DS8 candidate
 table and in the burn-down ledger rather than left to sequencing memory.
+
+### The cultivation owner-name resolver ships without the hardcoded name
+
+**Date:** 2026-09-13 · **Context:** CV22.DS8.TS2, porting the inputs
+`consolidate scan` and `shadow scan` resolve before calling the model.
+
+Python resolves the owner's first name for these two leaves twice, differently.
+`shadow_cmd._user_name` searches `user/identity` for `speaking with (\w+)` and
+falls back to `"the user"`. `consolidate_cmd._user_name` first checks whether
+the literal string `"Vinícius"` appears anywhere in the content and returns it
+if so, then falls through to the same regex and fallback. The short-circuit is
+a distribution defect already captured as CR014: framework source that tests
+for one specific person.
+
+A parity story's contract is byte-identical prompts against the oracle, and
+`user_name` is the first substitution in both templates. The question was
+whether "byte-identical" obliges TypeScript to carry the hardcoded name.
+
+**The decision: port the regex form only.** `cultivationUserName` implements
+`shadow_cmd`'s lookup for both leaves — Unicode-correct, because Python's `\w`
+matches `í` and JavaScript's does not, so the seeded "speaking with Vinícius"
+must be read with `[\p{L}\p{N}_]+` and the `u` flag or it yields `Vin` — with
+the shared fallback. The `consolidate_cmd` short-circuit is not ported.
+
+Reasons:
+
+1. **The divergence has no shipped input.** The two Python forms disagree only
+   when identity content names the owner *without* the seed template's
+   "speaking with" line. Every identity the project's own templates produce
+   carries that line, so on real data the regex form returns the same name
+   the short-circuit would.
+2. **Parity is proven where it matters, independently.** The prompt-assembly
+   golden takes `user_name` as an input, so the assembled-bytes digests hold
+   regardless of how the name was resolved. The resolver is characterized
+   separately against Python outputs recorded in the golden's `resolvers`
+   section — which lists **both** Python forms over the same inputs, so the
+   one row where they differ is visible in the corpus and pinned by a test
+   that fails if a regeneration widens the disagreement.
+3. **TypeScript is the authority for a ported command.** Under the
+   moving-target rule, once a command answers from TS, Python is
+   compatibility-only there. Carrying a known defect into the authority so
+   the compatibility layer matches it would invert the rule.
+
+**What does not change.** CR014 still owns the unified resolver: the close
+tail's `resolveUserName` ports a third oracle (`You are talking to`), TS now
+has two resolvers where Python has three, and the fallbacks still disagree
+(`"User"` vs `"the user"`). TS2 removed the hardcoded name from the
+framework's TypeScript source and touched nothing else.

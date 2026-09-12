@@ -62,6 +62,8 @@ Open work is ordered intentionally. Terminal history follows open work.
 | 34 | [CR076](rs010-cv22-oracle-and-port-hygiene/cr076-collapse-the-three-close-tail-metadata-calls.md) | RS010 | Collapse the three close-tail metadata calls into one | captured | — | — |
 | 36 | [CR078](rs010-cv22-oracle-and-port-hygiene/cr078-stop-spending-thirteen-seconds-polling-for-a-consult-cost.md) | RS010 | Stop spending thirteen seconds polling for a `consult` cost | captured | — | — |
 | 37 | [CR079](rs001-ariad-runtime-trust/cr079-preserve-authored-content-in-every-lifecycle-artifact.md) | RS001 | Preserve authored content in every lifecycle artifact, not one at a time | captured | — | — |
+| 38 | [CR080](rs010-cv22-oracle-and-port-hygiene/cr080-give-the-consolidation-prompt-an-identity-context-it-can-act-on.md) | RS010 | Give the consolidation prompt an identity context it can act on | captured | — | — |
+| 39 | [CR081](rs010-cv22-oracle-and-port-hygiene/cr081-typecheck-the-parity-tools.md) | RS010 | Typecheck the parity tools | captured | — | — |
 | — | [CR075](rs010-cv22-oracle-and-port-hygiene/cr075-route-the-journal-embedding-through-the-safety-wrapper.md) | RS010 | Route the journal embedding through the safety wrapper | done | @viniciusteles | `mirror-ts-core` |
 | — | [CR077](rs009-cv22-front-door-routing-correctness/cr077-route-and-runtime-disagree-on-a-half-replay-fixture.md) | RS009 | The route and the runtime disagree on a half-configured replay fixture | done | @viniciusteles | `mirror-ts-core` |
 | — | [CR072](rs009-cv22-front-door-routing-correctness/cr072-route-every-skill-through-the-front-door.md) | RS009 | Route every skill through the front door | done | @viniciusteles | `mirror-ts-core` |

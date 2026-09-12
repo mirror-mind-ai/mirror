@@ -2,7 +2,7 @@
 
 # CV22.DS8 — Live-Provider Cutover
 
-**Status:** 🟢 In Progress — US1, US2, US3 done (3/5); TS2 and TS1 remain
+**Status:** 🟢 In Progress — US1, US2, US3, TS2 done (4/5); TS1 remains. All sixteen replay-gated leaves are live as of 2026-09-13
 **Type:** Delivery Story
 
 ---
@@ -40,7 +40,7 @@ tail of twelve low-traffic leaves flips last, in one review.
 | [CV22.DS8.US1](cv22-ds8-us1-live-provider-cutover/index.md) | Live transport substrate + live embeddings + `memories --search` cutover | User Story | A fresh semantic search from the real home answers from TS against a live OpenRouter embedding, with the ledger row priced like Python's; `MIRROR_TS_SEARCH=0` reverts | ✅ Done — 2026-09-11, vector-space parity `cos=1.000000` |
 | [CV22.DS8.US2](cv22-ds8-us2-live-chat-completions-conversation-close-tail-cutover/index.md) | Live chat completions + conversation close-tail cutover | User Story | `switch`, `session-end-pi`, `session-end`, `session-start` (full), `session-maintenance` answer from TS against live chat calls with extraction-tier timeout, cost authority on ledger rows, and a live chat smoke contract | ✅ Done — 2026-09-11, real unattended session close observed |
 | CV22.DS8.US3 | Long-tail cutover and gate consolidation | User Story | `consult credits\|ask`, `mirror load --query` (reception timeout), `soul harvest save`, `journal`, `week plan`, `descriptor generate` flip to live; `MIRROR_TS_EXTERNAL_ROUTES` retired as a required gate; the `descriptor` ledger-gap decision recorded. The cultivation leaves flip here too, but only once TS2 has landed their prompts | ✅ Done — 2026-09-12; eight leaves live, `MIRROR_TS_EXTERNAL_ROUTES` retired, two scan leaves handed to TS2 |
-| CV22.DS8.TS2 | Port the cultivation prompt templates | Technical Story | `consolidate scan` and `shadow scan` assemble Python's real `CONSOLIDATION_PROMPT` and `SHADOW_SCAN_PROMPT` — task statement, identity/dedup context, untrusted-input guard, JSON output contract — byte-identical to the oracle and digest-pinned, with `userName` and `identityContext` threaded from the route. Prompt-engineer review of the ported text before it reaches a live model | 🟡 Planned — blocks US3's cultivation flip |
+| [CV22.DS8.TS2](cv22-ds8-ts2-port-the-cultivation-prompt-templates/index.md) | Port the cultivation prompt templates | Technical Story | `consolidate scan` and `shadow scan` assemble Python's real `CONSOLIDATION_PROMPT` and `SHADOW_SCAN_PROMPT` — task statement, identity/dedup context, untrusted-input guard, JSON output contract — byte-identical to the oracle and digest-pinned, with `userName` and `identityContext` threaded from the route. Prompt-engineer review of the ported text before it reaches a live model | ✅ Done — 2026-09-13; both leaves live, `prompt_tokens` 1186–8285 against a ~50-token dump, rows consumed by TS `apply`; CR080 and CR081 captured |
 | CV22.DS8.TS1 | `eval` runner ownership decision | Technical Story | `python -m memory eval` (`evals/`, ~3.2k lines, developer-only) is either ported to a TS eval harness against the live transport or retired with a documented cutoff; decision recorded near the roadmap by the port owner | 🟡 Planned — decision open |
 
 US2 and US3 are authored as candidates; their packages materialize on pull.
@@ -75,9 +75,8 @@ line item inside a plateau labelled "pins". See
 - All sixteen replay-gated leaves in the burn-down ledger's "Ported and
   graded — replay-gated" table answer from TS with no replay configuration
   set and no `MIRROR_TS_EXTERNAL_ROUTES` requirement; the ledger section is
-  emptied and the leaves move to their family rows as flipped-ungated. The two
-  cultivation SCAN leaves among them are gated on TS2, so DS8 cannot close
-  before TS2 does; `consolidate apply` sends no prompt and is not.
+  emptied and the leaves move to their family rows as flipped-ungated.
+  **Met 2026-09-13** with TS2; the section reads `(none)`.
 - The `live` transport enforces per-role timeouts, bounded retries, and the
   `timeout | auth | rate_limit | malformed_output | provider_error` taxonomy,
   with a test per class and no test that reaches the network.

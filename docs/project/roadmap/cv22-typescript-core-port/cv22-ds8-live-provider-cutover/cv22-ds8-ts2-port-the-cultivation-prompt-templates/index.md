@@ -2,7 +2,7 @@
 
 # CV22.DS8.TS2 — Port the cultivation prompt templates
 
-**Status:** 🟡 Planned — plan reviewed by four lenses 2026-09-13, pending Navigator approval
+**Status:** ✅ Done — 2026-09-13. Both leaves live and validated on copies; the burn-down ledger's replay-gated table reads `(none)`; CR080 and CR081 captured
 **Type:** Technical Story
 
 ---
@@ -90,3 +90,7 @@ produces for the same inputs (byte-equality, per-scenario SHA-256, replay-fixtur
 
 - [Plan](plan.md)
 - [Test Guide](test-guide.md)
+- [Validation](validation.md)
+- [Debt Review](review.md)
+- [Coherence](coherence.md)
+- [Handoff](handoff.md)

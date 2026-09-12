@@ -12,6 +12,42 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-13 — CV22.DS8.TS2 cultivation prompts ported; the replay-gated table is empty
+
+**`consolidate scan` and `shadow scan` answer from TypeScript against a real
+provider**, the last two of the sixteen leaves DS8 set out to flip. Until
+this story TypeScript sent them a fenced memory dump — 121 and 209 bytes
+against Python's 2,247 and 1,598 — with no task statement, no
+untrusted-input guard, and no JSON contract; replay resolves by role and
+never reads a prompt, so nothing noticed. Live, the model would have answered
+prose, the parse would have failed, and every scan would have reported "no
+proposals" while the ledger showed paid calls.
+
+The port is graded against bytes **captured** from the real Python builders
+(`send_to_model` stubbed around `propose_consolidation` /
+`propose_shadow_observations`), not re-composed — ten synthetic scenarios,
+two raw templates, and replay fixtures that refuse one byte of drift for both
+roles. The inputs `cmd_scan` resolves are ported with the Unicode traps US10
+taught (`\w` and `[:600]`); the `consolidate_cmd` hardcoded owner name is
+deliberately not ported (decision recorded; CR014 keeps the unification).
+
+A four-lens plan review changed the plan before code: the acceptance claim
+about digests was hermetic-only, so the live smoke gained a `prompt_tokens`
+floor as its witness (1186–8285 observed against ~50 for the dump); the
+prompt engineer's reading of the assembled text became a hard stop before the
+first live call; the golden was ruled synthetic-only so no identity text
+reaches the repo; and the E2E was extended to `apply`, which proved a row
+these prompts produce is consumable by TS's own apply — after the Driver
+first pointed the Navigator at Python-produced rows by mistake and corrected
+the record.
+
+The first live run met a slow-provider window (two transport failures beside
+a 28 s answer); the smoke could not say which class, so it now does. Deferred
+with triggers: **CR080** (the consolidation prompt shows a 600-character
+fragment and asks for surgical replacement; the seeded H1s outrank the
+prompt's own sections) and **CR081** (`ts/parity` is outside `tsconfig`, with
+a latent type error nobody sees). DS8 is 4/5; TS1 (`eval`) remains.
+
 ### 2026-09-12 — CV22.DS8.US3 long-tail cutover completed
 
 **Nine provider-backed leaves now answer from TypeScript against a real

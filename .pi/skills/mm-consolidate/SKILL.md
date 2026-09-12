@@ -34,7 +34,7 @@ This is intentional — identity updates are meaningful acts.
 
 ## 1. Scan for proposals
 
-> Through the front door the scan has a 10-minute ceiling (`MIRROR_FRONTDOOR_PYTHON_TIMEOUT_MS`); a scan killed at the ceiling is spent but leaves no `llm_calls` row. Direct Python invocation had no bound (CR072).
+> The scan answers from TypeScript against the live provider (CV22.DS8.TS2). Each cluster is one model call bounded by the extraction timeout (`MEMORY_LLM_TIMEOUT_EXTRACTION`, 60 s) with bounded retries, and every successful call leaves a priced `llm_calls` row before its proposal is parsed. A call that fails is logged by class (`outcome=transport_failed kind=…`) in `front-door.log` beside the database. `MIRROR_TS_CULTIVATION=0` reverts the scan to Python, where the front door's 10-minute ceiling (`MIRROR_FRONTDOOR_PYTHON_TIMEOUT_MS`) applies instead and a scan killed at the ceiling is spent but leaves no row (CR072).
 
 ```bash
 NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts consolidate scan \
