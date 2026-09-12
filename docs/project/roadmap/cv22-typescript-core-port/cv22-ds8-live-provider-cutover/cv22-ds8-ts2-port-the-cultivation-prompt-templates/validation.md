@@ -10,6 +10,7 @@
 | 2 | `cd ts && npm test` | **2038 / 2038** — `cultivationPrompts.test.ts` (10 oracle scenarios, 2 template pins, replay enforcement for both roles, hostile-content survival) and `promptContext.test.ts` (7 name cases, 4 identity-context cases, the D1 guard, code-point slicing, section order) |
 | 3 | `uv run python ts/parity/generate_prompt_assembly_golden.py && git diff --exit-code …` | no-op on second run; corpus 37 → 47 scenarios, `system_prompts.consolidation` / `.shadow_scan`, `resolvers` section |
 | 4 | `node ts/parity/route_matrix.ts --contracts-only` | `PASS route matrix — every contract holds`; both scan leaves `ts` / `DS8.TS2 cultivation scan live`; revert `MIRROR_TS_CULTIVATION=0` → `python`; no story gate remains |
+| 5 | `uv run pytest -m "not live"` | **2841 passed**; `git diff HEAD~4 -- src/` is empty — the oracle was read, not edited. One pre-existing failure deselected: `test_server.py::test_operations_run_api_executes_runtime_diagnose_through_controlled_command` times out polling a runtime-diagnose run on this machine; identical at `HEAD~4` with `ts/` reverted, so environmental and not this story's |
 
 What the pins prove: raw template bytes equal Python's; every assembled branch
 hashes to the digest captured from the real `propose_*` with `send_to_model`
