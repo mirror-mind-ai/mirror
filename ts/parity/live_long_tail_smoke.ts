@@ -110,6 +110,7 @@ async function quietly<T>(run: () => Promise<T>): Promise<T> {
 interface LedgerRow {
   role: string;
   cost_usd: number | null;
+  prompt_tokens: number | null;
   p: number;
   r: number;
 }
@@ -117,7 +118,7 @@ interface LedgerRow {
 function ledgerSince(db: WritableDatabase, rowid: number): LedgerRow[] {
   return db
     .prepare(
-      `SELECT role, cost_usd, LENGTH(prompt) AS p, LENGTH(response) AS r
+      `SELECT role, cost_usd, prompt_tokens, LENGTH(prompt) AS p, LENGTH(response) AS r
          FROM llm_calls WHERE rowid > ? ORDER BY rowid`,
     )
     .all(rowid) as unknown as LedgerRow[];
@@ -129,6 +130,18 @@ function maxLedgerRowid(db: WritableDatabase): number {
 }
 
 /** Roles, pricing, and body withholding — the three ledger properties that matter. */
+/**
+ * The live witness that the INSTRUCTION TEXT reached the model, per role
+ * (CV22.DS8.TS2). The ledger withholds bodies, so the digest cannot be
+ * observed live; the token count can. The dump prompt these two leaves sent
+ * until TS2 was ~50 tokens; the real templates alone are ~550 and ~400 before
+ * any memory or identity text, so a row under the floor means a dump went out.
+ */
+const PROMPT_TOKEN_FLOORS: Readonly<Record<string, number>> = {
+  consolidation: 400,
+  shadow_scan: 300,
+};
+
 function checkLedger(rows: readonly LedgerRow[], expectedRoles: readonly string[]): void {
   note(`ledger: ${rows.map((row) => row.role).join(" -> ") || "(none)"}`);
   for (const role of expectedRoles) {
@@ -137,6 +150,15 @@ function checkLedger(rows: readonly LedgerRow[], expectedRoles: readonly string[
       `a ${role} row was written`,
       "Python writes one here too",
     );
+    const floor = PROMPT_TOKEN_FLOORS[role];
+    if (floor !== undefined) {
+      const tokens = rows.filter((row) => row.role === role).map((row) => row.prompt_tokens);
+      check(
+        tokens.length > 0 && tokens.every((n) => n !== null && n >= floor),
+        `${role} prompt_tokens >= ${floor}`,
+        `saw ${tokens.join(", ") || "(none)"}: the instruction text, not a memory dump, was sent`,
+      );
+    }
   }
   check(
     rows.every((row) => row.p === 0 && row.r === 0),
@@ -145,7 +167,14 @@ function checkLedger(rows: readonly LedgerRow[], expectedRoles: readonly string[
   );
   const priced = rows.filter((row) => row.cost_usd !== null).length;
   const spend = rows.reduce((sum, row) => sum + (row.cost_usd ?? 0), 0);
-  note(`priced ${priced}/${rows.length} rows, total $${spend.toFixed(6)}`);
+  note(`priced ${priced}/${rows.length} rows, total ${usd(spend)}`);
+}
+
+/** Sub-microcent totals are real (a `2.0e-07` apply embed); do not round them to `$0.000000`. */
+function usd(amount: number): string {
+  return amount !== 0 && Math.abs(amount) < 1e-6
+    ? `$${amount.toExponential(1)}`
+    : `$${amount.toFixed(6)}`;
 }
 
 function tallyOf(): { tally: CallOutcomeTally; onOutcome: (report: ProviderCallReport) => void } {
@@ -229,7 +258,7 @@ async function askProbe(db: WritableDatabase, question: string): Promise<void> {
   note(
     consultRow?.cost_usd === null
       ? "cost is null: the generation poll never exposed a figure (Python's behavior too)"
-      : `cost $${consultRow?.cost_usd?.toFixed(6)} fetched from /generation`,
+      : `cost ${usd(consultRow?.cost_usd ?? 0)} fetched from /generation`,
   );
 }
 
@@ -423,10 +452,10 @@ async function applyProbe(db: WritableDatabase, proposalId: string): Promise<voi
 }
 
 /**
- * The two scan leaves. Gated: `routing.ts` refuses them live until DS8.TS2
- * ports `CONSOLIDATION_PROMPT` and `SHADOW_SCAN_PROMPT`, so spending here would
- * only measure a stub prompt. The probe reads the ROUTE rather than hard-coding
- * the gate, so it starts working the day TS2 deletes `liveBlockedBy`.
+ * The two scan leaves. The probe reads the ROUTE rather than assuming it is
+ * live: from DS8.US3 until DS8.TS2 ported `CONSOLIDATION_PROMPT` and
+ * `SHADOW_SCAN_PROMPT`, `routing.ts` refused them by name and this probe
+ * printed SKIPPED without spending. It still would, should a revert be set.
  */
 async function scanProbe(db: WritableDatabase, which: "consolidate" | "shadow"): Promise<void> {
   const argv = which === "consolidate" ? ["consolidate", "scan"] : ["shadow", "scan"];
@@ -434,7 +463,7 @@ async function scanProbe(db: WritableDatabase, which: "consolidate" | "shadow"):
   if (decision.engine !== "ts") {
     say(`  --  SKIPPED: ${argv.join(" ")} does not route to TypeScript yet`);
     note(`route reason: ${decision.reason}`);
-    note("no call was made and nothing was spent; re-run this probe after DS8.TS2");
+    note("no call was made and nothing was spent");
     return;
   }
 

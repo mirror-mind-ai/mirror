@@ -47,6 +47,8 @@ const REVERTS: Expectation[] = [
   rev("descriptor generate", "descriptor generate", "MIRROR_TS_DESCRIPTOR"),
   rev("soul harvest save", "soul harvest save", "MIRROR_TS_SOUL"),
   rev("consolidate apply", "consolidate apply abc", "MIRROR_TS_CULTIVATION"),
+  rev("consolidate scan", "consolidate scan", "MIRROR_TS_CULTIVATION"),
+  rev("shadow scan", "shadow scan", "MIRROR_TS_CULTIVATION"),
   rev("memories --search", "memories --search q", "MIRROR_TS_SEARCH"),
 ];
 
@@ -116,25 +118,11 @@ const REPLAY_PAIRS: Expectation[] = [
   },
 ];
 
-/** A leaf a story still blocks must say WHICH story, not merely refuse. */
-const STORY_GATES: Expectation[] = [
-  {
-    label: "consolidate scan",
-    leaf: "consolidate scan",
-    env: {},
-    engine: "python",
-    reason: "live blocked by DS8.TS2",
-  },
-  {
-    label: "shadow scan",
-    leaf: "shadow scan",
-    env: {},
-    engine: "python",
-    reason: "live blocked by DS8.TS2",
-  },
-];
-
-/** Every leaf whose live default this story established. */
+/**
+ * Every leaf whose live default DS8 established. The last story gate
+ * (`live blocked by DS8.TS2` on the two scan leaves) closed with TS2; the
+ * `liveBlockedBy` mechanism stays in `transport.ts` for the next one.
+ */
 const LIVE_LEAVES = [
   "consult credits",
   "consult openai question",
@@ -144,8 +132,19 @@ const LIVE_LEAVES = [
   "descriptor generate",
   "soul harvest save",
   "consolidate apply abc",
+  "consolidate scan",
+  "shadow scan",
   "memories --search q",
 ];
+
+/** No leaf may still be refused by a story's name once that story closed. */
+const NO_STORY_GATE: Expectation[] = LIVE_LEAVES.map((leaf) => ({
+  label: leaf,
+  leaf,
+  env: {},
+  engine: "ts",
+  reason: "live",
+}));
 
 function rev(label: string, leaf: string, variable: string): Expectation {
   return { label, leaf, env: { [variable]: "0" }, engine: "python", reason: `${variable}=0` };
@@ -183,21 +182,17 @@ if (!contractsOnly) {
     const decision = routeMemoryCommand(leaf.split(" "));
     console.log(`  ${leaf.padEnd(30)} ${decision.engine.padEnd(7)} ${decision.reason}`);
   }
-  for (const leaf of ["consolidate scan", "shadow scan"]) {
-    const decision = routeMemoryCommand(leaf.split(" "));
-    console.log(`  ${leaf.padEnd(30)} ${decision.engine.padEnd(7)} ${decision.reason}`);
-  }
 }
 
 section("one variable reverts each family", REVERTS);
 section("and takes nothing else with it", BYSTANDERS);
 section("half a replay fixture refuses by name", REPLAY_PAIRS);
-section("a story-blocked leaf names the story", STORY_GATES);
+section("every DS8 leaf is live by default, none refused by a story's name", NO_STORY_GATE);
 
 // The retired DS5 gate: a leftover value must change NOTHING, in either
 // direction. Compared against a clean run rather than asserted line by line.
 console.log("\nthe retired MIRROR_TS_EXTERNAL_ROUTES gate is inert");
-for (const leaf of [...LIVE_LEAVES, "consolidate scan"]) {
+for (const leaf of LIVE_LEAVES) {
   const clean = routeMemoryCommand(leaf.split(" "), {});
   const staleOn = routeMemoryCommand(leaf.split(" "), { MIRROR_TS_EXTERNAL_ROUTES: "1" });
   const staleOff = routeMemoryCommand(leaf.split(" "), { MIRROR_TS_EXTERNAL_ROUTES: "0" });

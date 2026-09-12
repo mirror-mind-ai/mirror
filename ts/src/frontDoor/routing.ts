@@ -694,7 +694,9 @@ export function routeMemoryCommand(
       return {
         command,
         engine: "python",
-        reason: "soul TS route disabled by MIRROR_TS_SOUL=0",
+        // Same shape as every other family's revert (`<VAR>=0 revert to
+        // Python`); the odd one out was a US3 review finding, swept in TS2.
+        reason: "MIRROR_TS_SOUL=0 revert to Python",
       };
     }
     // `harvest save` is the one leaf that crosses the provider seam, through

@@ -268,13 +268,12 @@ export const MIRROR_QUERY_TRANSPORT: ProviderTransportSpec = {
 
 /**
  * `consolidate scan` and `shadow scan` -- the two cultivation leaves that send
- * a PROMPT (CV22.DS8.US3).
- *
- * Blocked from live by CV22.DS8.TS2: TypeScript never ported
- * `CONSOLIDATION_PROMPT` or `SHADOW_SCAN_PROMPT`, so these leaves currently
- * send a fenced Markdown dump of the memories with no task statement and no
- * JSON output contract. Under replay that is invisible -- the provider answers
- * by role and ignores the prompt -- which is why it survived to DS8.
+ * a PROMPT. Everything around the call landed in CV22.DS8.US3; the flip
+ * itself waited for CV22.DS8.TS2, because until then TypeScript sent a fenced
+ * Markdown dump of the memories with no task statement and no JSON output
+ * contract -- invisible under replay, which answers by role and never reads
+ * the prompt. The real templates now travel with the call and their assembled
+ * bytes are digest-pinned against the Python oracle (`cultivation/propose.ts`).
  *
  * The revert is tail-only: `consolidate list|reject|show` are deterministic and
  * have answered from TypeScript since DS7.US3.
@@ -282,8 +281,7 @@ export const MIRROR_QUERY_TRANSPORT: ProviderTransportSpec = {
 export const CULTIVATION_SCAN_TRANSPORT: ProviderTransportSpec = {
   revertVar: "MIRROR_TS_CULTIVATION",
   replay: { llm: "MIRROR_TS_CULTIVATION_LLM_REPLAY" },
-  liveReason: "DS8.US3 cultivation scan live",
-  liveBlockedBy: "DS8.TS2 (cultivation prompt templates not ported)",
+  liveReason: "DS8.TS2 cultivation scan live",
 };
 
 /**

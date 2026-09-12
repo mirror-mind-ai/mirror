@@ -226,21 +226,22 @@ test("routes `journey set-path`/`update`/status reads all to TS", () => {
   assert.equal(routeMemoryCommand(["journeys"]).engine, "ts");
 });
 
-test("consolidate apply is live, scan waits for DS8.TS2, and one variable reverts the tail", () => {
+test("consolidate apply and scan are live, and one variable reverts the tail", () => {
   for (const sub of ["list", "reject"]) {
     assert.equal(routeMemoryCommand(["consolidate", sub, "abc"]).engine, "ts");
   }
 
-  // `apply` sends NO prompt -- a merge only embeds -- so it is not blocked by
-  // TS2 and goes live with group B.
+  // `apply` sends NO prompt -- a merge only embeds -- so it went live with
+  // US3's group B, ahead of scan.
   assert.equal(routeMemoryCommand(["consolidate", "apply", "abc"]).engine, "ts");
 
-  // `scan` sends a prompt TypeScript never ported, so live is blocked by name
-  // rather than silently allowed.
+  // `scan` sends a prompt; it was refused by name (`live blocked by DS8.TS2`)
+  // until the templates were ported and digest-pinned, and is live since.
   const scan = routeMemoryCommand(["consolidate", "scan"]);
-  assert.equal(scan.engine, "python");
-  assert.match(scan.reason, /live blocked by DS8\.TS2/);
-  // ...but replay still reaches TS, which is what the goldens and the parity
+  assert.equal(scan.engine, "ts");
+  assert.match(scan.reason, /DS8\.TS2 cultivation scan live/);
+  assert.doesNotMatch(scan.reason, /blocked/);
+  // Replay still reaches TS, which is what the goldens and the parity
   // harness use.
   assert.equal(
     routeMemoryCommand(["consolidate", "scan"], {
@@ -250,10 +251,14 @@ test("consolidate apply is live, scan waits for DS8.TS2, and one variable revert
   );
 
   // Tail-only revert: the deterministic leaves stay on TypeScript.
-  assert.equal(
-    routeMemoryCommand(["consolidate", "apply", "abc"], { MIRROR_TS_CULTIVATION: "0" }).engine,
-    "python",
-  );
+  for (const argv of [
+    ["consolidate", "apply", "abc"],
+    ["consolidate", "scan"],
+  ]) {
+    const reverted = routeMemoryCommand(argv, { MIRROR_TS_CULTIVATION: "0" });
+    assert.equal(reverted.engine, "python");
+    assert.match(reverted.reason, /MIRROR_TS_CULTIVATION=0/);
+  }
   assert.equal(
     routeMemoryCommand(["consolidate", "list"], { MIRROR_TS_CULTIVATION: "0" }).engine,
     "ts",
@@ -266,7 +271,7 @@ test("consolidate apply is live, scan waits for DS8.TS2, and one variable revert
   });
 });
 
-test("shadow reads stay on TS, and `shadow scan` waits for DS8.TS2 with the others", () => {
+test("shadow reads stay on TS, and `shadow scan` is live with its cultivation sibling", () => {
   for (const sub of ["list", "show", "reject", "apply"]) {
     assert.deepEqual(routeMemoryCommand(["shadow", sub, "abc"]), {
       command: "shadow",
@@ -276,12 +281,16 @@ test("shadow reads stay on TS, and `shadow scan` waits for DS8.TS2 with the othe
   }
 
   const scan = routeMemoryCommand(["shadow", "scan"]);
-  assert.equal(scan.engine, "python");
-  assert.match(scan.reason, /live blocked by DS8\.TS2/);
+  assert.equal(scan.engine, "ts");
+  assert.match(scan.reason, /DS8\.TS2 cultivation scan live \(shadow scan\)/);
   assert.equal(
     routeMemoryCommand(["shadow", "scan"], { MIRROR_TS_CULTIVATION_LLM_REPLAY: "/tmp/llm.json" })
       .engine,
     "ts",
+  );
+  assert.equal(
+    routeMemoryCommand(["shadow", "scan"], { MIRROR_TS_CULTIVATION: "0" }).engine,
+    "python",
   );
 
   assert.deepEqual(routeMemoryCommand(["shadow", "unknown-sub"]), {
