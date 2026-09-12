@@ -2367,3 +2367,77 @@ tail's `resolveUserName` ports a third oracle (`You are talking to`), TS now
 has two resolvers where Python has three, and the fallbacks still disagree
 (`"User"` vs `"the user"`). TS2 removed the hardcoded name from the
 framework's TypeScript source and touched nothing else.
+
+### The eval harness transfers to TypeScript as a DS10 gate, not a DS8 port
+
+**Date:** 2026-09-13 · **Context:** CV22.DS8.TS1, the last DS8 child. DS8's
+candidate row asked whether `python -m memory eval` is "ported to a TS eval
+harness against the live transport or retired with a documented cutoff".
+
+Neither, as posed. The question assumed a file-move decision; the measurement
+found a different one.
+
+**The instrument's subject moved.** The evals were built to measure prompt
+behavior in the engine that answers users. Every live module imports a Python
+pipeline function directly — `extract_memories`, `reception`,
+`propose_consolidation`, `propose_shadow_observations`,
+`classify_journal_entry`, `generate_conversation_summary`,
+`generate_scene_synthesis` — and since DS8 that engine is **TypeScript** for
+eight of those nine surfaces. `scene` is the exception, reachable only through
+`web/server.py`, which DS10 cuts over.
+
+Measured 2026-09-13:
+
+| Fact | Value |
+|---|---|
+| Size | 13 modules, 3,691 lines incl. frozen fixtures; 12 in `--all` (9 live, 3 deterministic); `persistence` is infrastructure |
+| Gate status | Live and in writing — the [development guide](../process/development-guide.md#evals) model-behavior release gate and the [engineering-principles](../process/engineering-principles.md) definition-of-done checklist both require a green `eval --all` or a recorded waiver for any model-pin or `prompts.py` change |
+| Last run | 2026-07-23 (CV9.E2.S30). v0.31.13 and v0.31.14 did not trigger it; no `eval-history/` existed on the owner's home until this story |
+| Chronic state | `routing` has failed since v0.31.0 ([D-005](debt.md#d-005--evalsroutingpy-fixtures-are-stale-against-the-current-persona-catalog)); every recorded `--all` is 11/12 under a conscious waiver |
+| DS10's plan for it | None. DS10's index did not mention `eval`, so as written it would delete `evals/` with the Python core and make the release gate unenforceable — silently |
+
+**The decision: ownership transfers to TypeScript, and the transfer becomes a
+DS10 deletion gate.** Not DS8 work, and not a retirement.
+
+Reasons, in order of weight:
+
+1. **Retiring is not neutral.** It deletes the instrument that closed AI-16,
+   AI-22, AI-23, and AI-25, and against which those fences were tuned, with no
+   replacement — while [CR080](refinement/rs010-cv22-oracle-and-port-hygiene/cr080-give-the-consolidation-prompt-an-identity-context-it-can-act-on.md)
+   is already asking for a probe before a prompt rewrite.
+2. **DS10's own rule already demands it.** "Python deletion cannot begin merely
+   because the CLI command denominator reaches zero" — every non-command
+   runtime surface needs explicit TypeScript ownership first. The harness is
+   such a surface; the index simply never said so. A gate is therefore a
+   correction, not an addition.
+3. **Nothing before DS10 needs it.** No model-pin or prompt change is
+   scheduled. CR080 is the only candidate and can pull the story forward if it
+   is planned first.
+4. **The interim gate is valid, with a nameable blind spot.** The prompts are
+   byte-identical across engines and digest-pinned (DS7.US10, DS7.US11,
+   DS8.US3, DS8.TS2), so a Python probe still measures the prompt text a
+   TypeScript command sends. What it cannot see is TypeScript-side parsing,
+   coercion, and orchestration — which goldens and unit tests cover, and evals
+   never did.
+
+**Shape of the transfer**, recorded so the DS10 story inherits a design rather
+than a question: a `ts/evals/` developer tool beside `ts/parity/`, same
+contract — one module per surface exposing `PROBES` and `THRESHOLD`, `--all`
+discovering modules by capability, JSONL run history, exit code from the
+threshold — against the live transport DS8 built. Fixture data becomes
+engine-neutral JSON so both harnesses read the same transcripts while Python
+still exists. It is developer tooling, not product surface, so it does not ship
+in the npm package.
+
+**What the transfer retires**, as open questions for that story rather than
+decisions taken here: `routing` is the obvious retirement (dead since v0.31.0,
+and TypeScript has deterministic `detect-persona` goldens from DS2); `scene`
+follows the web cutover it belongs to; `retrieval` may duplicate
+`ranker.test.ts`. The `--all` denominator shrinks with a reason per module
+rather than silently.
+
+**What does not change.** The gate keeps its force and its wording: a
+model-pin or prompt change needs a green `eval --all` or a consciously recorded
+waiver. Until the transfer lands, that run is the Python harness — proven still
+working by this story's own validation, which is the first `eval --all` on this
+home.

@@ -50,7 +50,8 @@ smoke; they became true of daily sessions on 2026-09-08.
 
 **Denominator.** The 35 top-level `python -m memory <command>` entries, minus
 the six explicitly owned by later Delivery Stories: `mcp` (DS9), `web`
-(DS10), `eval` (DS8, live provider), `runtime` (DS10 — its git-based
+(DS10), `eval` (DS10 — the harness transfers to `ts/evals/` as a retirement
+gate; DS8.TS1 decided ownership, DS8 never ported it), `runtime` (DS10 — its git-based
 update/release half is redesigned under npm, not ported; TS1 ports the read
 subcommands as branch coverage), `migrate-legacy` (DS10 — retired with a
 documented cutoff, not ported), and `journey-projection` (DS10 — TS5 was
@@ -90,7 +91,7 @@ replay-gated section below is empty for the first time since DS5 created it.
 | Ops/utility tail | `backup`, `repair-encoding`, `extensions`, `ext`, `welcome` (+ `runtime` reads§) | 3/5‡ | DS7.TS1 / TS3 / TS4 | 🔵 in progress — TS1 `backup`+`repair-encoding` ✅ flipped 2026-09-07; TS3 `welcome` ✅ flipped 2026-09-08 (+ `runtime` reads as branch coverage); TS4 extension catalog (also takes `identity edit`). `journey-projection` left this row for DS10 on 2026-09-09 with TS5 |
 
 Deferred to later Delivery Stories (excluded from the denominator): `mcp`
-(DS9), `web` (DS10), `eval` (DS8), `runtime` (DS10, mutating half; reads are
+(DS9), `web` (DS10), `eval` (DS10 — ownership decided by DS8.TS1), `runtime` (DS10, mutating half; reads are
 TS1 branch coverage), `migrate-legacy` (DS10 retirement with cutoff),
 `journey-projection` (DS10 — TS5, ported and cut over in the same act that
 retires the Python publisher, so the `fcntl.flock` dual-writer window never
@@ -249,7 +250,7 @@ by DS8.US2/US3 for the remaining fifteen leaves.
 
 ### Out of the denominator (owned elsewhere, unported by decision)
 
-`mcp` (DS9); `web` (DS10); `eval` (DS8); `runtime update|pull|stable|backup|release-doctor|release-promote` (DS10, redesigned under npm); `migrate-legacy` and `memory-rehearse-migration` (DS10, retired with cutoff); `journey-projection` (DS10, TS5).
+`mcp` (DS9); `web` (DS10); `eval` (DS10 — DS8.TS1 decided the harness transfers to `ts/evals/` as a deletion gate rather than being ported at parity or retired); `runtime update|pull|stable|backup|release-doctor|release-promote` (DS10, redesigned under npm); `migrate-legacy` and `memory-rehearse-migration` (DS10, retired with cutoff); `journey-projection` (DS10, TS5).
 
 ---
 

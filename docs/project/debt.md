@@ -22,7 +22,7 @@ Dropped   no longer relevant or replaced by another item
 | D-002 | Journey search silently returns `[]` on embedding failure | product | low | Carried | CV9.E2.S1 (AI-E4) | A "no journeys matched" report that is actually an embedding outage, or unifying journey degradation with memory-search's lexical fallback |
 | D-003 | Embedding calls bypass the `llm_calls` ledger (invisible spend, amplified by S1 retry) | observability | medium | Paid | CV9.E2.S1 (AI-E1, AI-09 tail) → CV9.E2.S18 | Paid by CV9.E2.S18 embedding call observability |
 | D-004 | Full test suite exhausts file descriptors under a low `ulimit -n` (macOS default) | testing | low | Paid | CV9.E2.S1 validation | Paid: conftest raises the soft fd limit at startup |
-| D-005 | `evals/routing.py` fixtures are stale against the current persona catalog | testing | low | Carried | CV9.E2.S19 validation | Update fixtures to the current catalog (treasurer → cfo/financial; add scholar coverage), or the next persona-catalog change |
+| D-005 | `evals/routing.py` fixtures are stale against the current persona catalog | testing | low | Carried | CV9.E2.S19 validation | Update fixtures to the current catalog (treasurer → cfo/financial; add scholar coverage), or the next persona-catalog change, or retirement with the eval harness transfer (CV22.DS8.TS1) |
 | D-006 | `mypy` is documented as a CI gate but is enforced in no workflow; `src/memory` carries 109 mypy errors | process | medium | Carried | CV9.E2.S20 QA audit | Wire `mypy` into CI (clear/baseline the 109 errors) so the claim becomes true, or correct §10/the checklist to mypy's real (review-only) status |
 | D-007 | `Consolidation.action` field comment doesn't list the `shadow_observation` value shadow.py actually writes | design | low | Carried | CV9.E2.S22 (database-architect review) | Reconcile the model's action-enum comment with the real value set, or the next time `Consolidation.action` is touched |
 | D-008 | `layer` domain constraint enforced inconsistently across write paths | data integrity | low | Carried | CV9.E2.S25 (AI-24) database-architect review | A new write path bypasses both existing coercions, `add_memory()` is touched for another reason, or a schema migration is already planned |
@@ -205,7 +205,13 @@ content).
 
 Before the routing eval is treated as a red/green release-gate signal, or the
 next time the persona catalog changes and the fixtures need re-verification
-anyway.
+anyway — **or when the eval harness transfers to TypeScript**, where this
+module is the obvious retirement rather than a port
+([CV22.DS8.TS1 decision](decisions.md#the-eval-harness-transfers-to-typescript-as-a-ds10-gate-not-a-ds8-port)):
+TypeScript has deterministic `detect-persona` goldens from CV22.DS2, so paying
+the fixture debt to port a live probe that duplicates them would be the
+expensive answer. That disposition belongs to the DS10 harness story, which
+must decide it explicitly.
 
 ### Closure condition
 

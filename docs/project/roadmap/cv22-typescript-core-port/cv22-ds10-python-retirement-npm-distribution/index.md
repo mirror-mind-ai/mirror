@@ -130,6 +130,50 @@ one flip, so the dual-writer window never opens. It cannot be pulled forward
 into the DS7 remainder without reintroducing that window. `journey-projection`
 left the DS7 command denominator with it (30 → 29).
 
+## Eval Harness Deletion Gate
+
+The model-behavior release gate is **not a command**, so the burn-down
+denominator never covered it and this document did not mention it until
+2026-09-13. As written, DS10 would have deleted `evals/` with the Python core
+and made the gate unenforceable without anyone deciding to drop it.
+
+The [DS8.TS1 decision](../../../decisions.md#the-eval-harness-transfers-to-typescript-as-a-ds10-gate-not-a-ds8-port)
+assigns the harness here. Its subject already moved: every live eval module
+imports a Python pipeline function directly, while TypeScript answers eight of
+those nine surfaces in production since DS8 (`scene` is the ninth, and reaches
+users only through the web process this Delivery Story cuts over). Until the
+transfer lands the Python harness remains a valid interim gate, because the
+prompts are byte-identical across engines and digest-pinned; its blind spot is
+TypeScript-side parsing, coercion, and orchestration, which goldens and unit
+tests cover instead.
+
+Before Python retirement or npm publication, DS10 must:
+
+1. land a TypeScript harness at `ts/evals/`, beside `ts/parity/`, carrying the
+   Python contract: one module per surface exposing `PROBES` and `THRESHOLD`,
+   `--all` discovering modules by capability rather than from a skip-list,
+   JSONL run history per eval, and an exit code set by the threshold;
+2. run it against the live transport DS8 built, with fixture data moved to
+   engine-neutral JSON so both harnesses read the same transcripts while
+   Python still exists;
+3. decide each module's disposition explicitly, so the `--all` denominator
+   shrinks with a reason rather than silently — `routing` is the obvious
+   retirement (failing since v0.31.0 on the stale persona fixtures of
+   [D-005](../../../debt.md#d-005--evalsroutingpy-fixtures-are-stale-against-the-current-persona-catalog),
+   and TypeScript has deterministic `detect-persona` goldens from DS2),
+   `scene` follows this story's web cutover, and `retrieval` may duplicate
+   `ts/test/search/ranker.test.ts`;
+4. update the [development guide](../../../../process/development-guide.md#evals)
+   and the [engineering principles](../../../../process/engineering-principles.md)
+   so the gate names the TypeScript harness as its subject; and
+5. delete `evals/` and the `python -m memory eval` entry point only after items
+   1–4 hold.
+
+The harness is developer tooling, not product surface: it does not ship in the
+npm package, and no user-facing command depends on it. That is why it can
+transfer at retirement time rather than during the burn-down — but it is also
+why nothing else would have caught its deletion.
+
 ## Command Surfaces Assigned From DS7 (decision 2026-09-07)
 
 The [DS7.TS1 ops-tail decision](../../../decisions.md#cv22ds7ts1-ops-tail-runtime-splits-rehearsal-and-legacy-migration-retire-in-ds10)
@@ -202,6 +246,10 @@ denominator (29) and served by Python fallback until DS10 acts on them:
 - No skill copy in any runtime invokes `uv run python -m memory`, and the skill parity
   check asserts the entry point is absent (CR072 brought the assertion forward; DS10
   verifies it holds for the packaged plugin).
+- The model-behavior release gate has a TypeScript owner: `ts/evals/` runs against the
+  live transport with each module's disposition recorded, the development guide and
+  engineering principles name it as the gate's subject, and `evals/` plus the
+  `python -m memory eval` entry point are removed only after that holds.
 - Python deletion, package rename, npm publication, stable promotion, tag, and release
   remain separate Navigator-authorized actions.
 

@@ -78,6 +78,12 @@ the `identity_update` proposals a prompt engineer would accept. The
 600-code-point cap was a token-budget guess when the extraction model was
 dearer; the number should come from the probe, not be inherited.
 
+**Which harness the probe runs on** ([CV22.DS8.TS1](../../decisions.md#the-eval-harness-transfers-to-typescript-as-a-ds10-gate-not-a-ds8-port)):
+`evals/consolidate.py` before the harness transfers, `ts/evals/` after. Either
+way the prompt change lands in TypeScript first (the command is ported and TS
+is its authority), and a prompt change re-arms the model-behavior release gate,
+so this CR carries a green `eval --all` or a recorded waiver.
+
 ## Evidence
 
 _Pending._

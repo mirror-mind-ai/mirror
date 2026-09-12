@@ -340,6 +340,26 @@ appends a JSONL record under `<mirror_home>/eval-history/` (a shared
 them and flags any probe that flipped. The gate writes only that history — never
 the product database. Investigate before shipping.
 
+**What the gate measures, and what it does not (2026-09-13).** Every live eval
+module imports a Python pipeline function directly, so the harness measures
+**Python's** pipeline — while TypeScript answers eight of those nine surfaces in
+production since CV22.DS8 (`scene` is the ninth and still Python, through the
+web process). The gate is nonetheless valid on both engines *for what it
+tests*: the prompts are byte-identical across cores and digest-pinned, so a
+probe measuring prompt behavior measures what a TypeScript command sends. Its
+blind spot is TypeScript-side parsing, coercion, and orchestration, which the
+assembled-prompt goldens and unit tests cover instead. Ownership transfers to a
+`ts/evals/` harness as a Python-retirement gate
+([CV22.DS8.TS1 decision](../project/decisions.md#the-eval-harness-transfers-to-typescript-as-a-ds10-gate-not-a-ds8-port));
+until then, a green run means the Python harness.
+
+**The standing `routing` waiver.** `eval --all` has reported **11/12** since
+v0.31.0: `routing` fails on stale persona fixtures
+([D-005](../project/debt.md#d-005--evalsroutingpy-fixtures-are-stale-against-the-current-persona-catalog)),
+unrelated to any shipped behavior. That is the expected result, not a new
+regression — a fresh reader should not spend a release investigating it. A
+failure in any *other* module is a real signal.
+
 ### Model upgrade playbook
 
 A model pin is a versioned dependency, and a model upgrade is a migration. When

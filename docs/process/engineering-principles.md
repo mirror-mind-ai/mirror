@@ -488,12 +488,18 @@ hiding it). Materialize runtime skill copies from one canonical source
 rather than hand-forking them per runtime — the same DRY discipline as
 [§3](#3-code), applied to prompt space.
 
-**Evals lock behavior; the cadence is a rule.** Eight probe modules live under
-[`evals/`](../../evals/) (`extraction`, `reception`, `retrieval`, `routing`,
-`proportionality`, `scene`, `shadow`, `consolidate`), run with
+**Evals lock behavior; the cadence is a rule.** Twelve probe modules live under
+[`evals/`](../../evals/) (`extraction`, `reception`, `retrieval`,
+`retrieval_relevance`, `routing`, `proportionality`, `scene`, `shadow`,
+`consolidate`, `journal`, `title_tags`, `conversation_summary`), run with
 `uv run python -m memory eval <name>` or as a suite with `eval --all`.
-They hit real model APIs, cost a few cents, and are non-deterministic by
-design — never added to CI. Run them before changing a prompt, before
+Most hit real model APIs, cost a few cents, and are non-deterministic by
+design — never added to CI; `retrieval`, `retrieval_relevance`, and `routing`
+are deterministic and keyless. The harness measures Python's pipeline and
+transfers to `ts/evals/` as a Python-retirement gate
+([CV22.DS8.TS1](../project/decisions.md#the-eval-harness-transfers-to-typescript-as-a-ds10-gate-not-a-ds8-port));
+see the [development guide](development-guide.md#evals) for what that gate does
+and does not measure today. Run them before changing a prompt, before
 shipping a change to extraction/routing/reception/consolidation/shadow
 logic, after a model change, and before closing a story that changes LLM
 behavior (see [Development Guide](development-guide.md#evals)). A failing
