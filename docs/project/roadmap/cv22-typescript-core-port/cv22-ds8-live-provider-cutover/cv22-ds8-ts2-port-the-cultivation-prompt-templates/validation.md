@@ -125,6 +125,22 @@ earlier claim here that the copy held "eleven merge rows produced by
 TypeScript's prompts" was wrong: TypeScript produced four merges and three
 shadow observations, all in `real-copy.db`.
 
-Corrected route: apply `bda674e8` (the TS-prompt merge from 8a) on
-`copy-home`; run `shadow scan` on `copy-home` through the front door and apply
-the row it produces. Evidence below when run.
+Corrected route, run 2026-09-13 (17:00 UTC) on `copy-home` — **PASS**:
+
+| Step | Row | Produced by | Result |
+|---|---|---|---|
+| 8b | `bda674e8` `merge` | 8a's live `consolidate scan` (TS prompt, `prompt_tokens 1362`) | `accepted`; merged memory created and embedded (`embedding` ledger row, 83 tokens, $0.000002); sources `integrated` |
+| 8c | `81d46826` `shadow_observation` | live `shadow scan` through the front door in the same database (TS prompt, `prompt_tokens 8285` over 50 candidates, 1,794 ms, $0.000983); three observations rendered in Python's shape | `accepted`; `shadow/profile` updated; source advanced to `acknowledged`; the two sibling observations remain `pending` |
+
+Proof queries on `copy-home/memory.db`: the four rows created after 16:00 UTC
+are `bda674e8 accepted`, `442590b4 pending`, `81d46826 accepted`,
+`cd6f20b0 pending`; every ledger row since 16:50 has `LENGTH(prompt) = 0`.
+
+The first cluster produced `prompt_tokens 1362` here as it did in smoke run 2
+— a third reading of the same bytes.
+
+### Totals
+
+Seven chat calls and two embeddings across the whole route, all on copies:
+about **$0.0024**. No real-home write was made. `tmp/parity/` is ignored and
+uncommitted.
