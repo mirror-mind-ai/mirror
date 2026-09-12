@@ -94,17 +94,18 @@ DS10 story. The E2E was included to falsify an assumption; it confirmed the
 assumption and produced a design requirement for the replacement harness, which
 is a better outcome than a green tick.
 
-## Navigator cold read (2026-09-13)
+## Navigator cold read and acceptance (2026-09-13)
 
-Requested on DS10's new **Eval Harness Deletion Gate** and the `decisions.md`
-entry it points at:
+The cold read was requested on DS10's new **Eval Harness Deletion Gate** (six
+items, the fourth added by this story's own eval run) and the `decisions.md`
+entry it points at, against four questions: whether a cold reader would know
+`evals/` may not be deleted yet; whether the gate is concrete enough to plan
+from; whether it explains why DS8 did not simply port the harness; and whether
+`routing` and `scene` carry named open questions rather than silent omission.
 
-| Question | Answer |
-|---|---|
-| Reading DS10's gates cold, would you know `evals/` may not be deleted yet? | pending Navigator confirmation |
-| Is the gate concrete enough to plan from (harness shape, fixtures, denominator, blocking probes)? | pending |
-| Does it explain why DS8 did not simply port it, without this conversation? | pending |
-| Do `routing` and `scene` have named open questions rather than silent omission? | pending |
+**Navigator verdict: accepted** — validation accepted as a whole, including the
+cold read. Recorded as an acceptance of the route rather than as four
+separately-attested answers, because that is what was given.
 
 ## Evidence index
 

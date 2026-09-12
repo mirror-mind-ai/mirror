@@ -2,7 +2,7 @@
 
 # CV22.DS8.TS1 — `eval` runner ownership decision
 
-**Status:** 🟡 Planned — plan pending Navigator approval
+**Status:** ✅ Done — 2026-09-13. Decision recorded; DS10 carries the Eval Harness Deletion Gate; D-017 registered
 **Type:** Technical Story — decision, documentation only
 
 ---
@@ -75,3 +75,7 @@ Navigator.
 
 - [Plan](plan.md)
 - [Test Guide](test-guide.md)
+- [Validation](validation.md)
+- [Debt Review](review.md)
+- [Coherence](coherence.md)
+- [Handoff](handoff.md)
