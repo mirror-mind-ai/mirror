@@ -8,6 +8,7 @@
 // hash-verified backup is required first.
 
 import { copyFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { logAssistantMessage, logUserMessage } from "#conversation/logger.ts";
 import { type BackupRecord, requireBackup } from "#db/backupGate.ts";
 import { assertCopyTarget } from "#db/copyGuard.ts";
@@ -18,7 +19,12 @@ import { updateIdentityMetadata } from "#identity/identityStore.ts";
 import { setIdentity } from "#identity/setIdentity.ts";
 import { createJourney, setProjectPath } from "#journey/journeyWrite.ts";
 import { logAccess, logUse } from "#memory/reinforcement.ts";
-import { type BuilderCursorProbeParams, builderCursorStateProbe } from "./builderProbes.ts";
+import {
+  type BuilderArtifactsProbeParams,
+  type BuilderCursorProbeParams,
+  builderArtifactsProbe,
+  builderCursorStateProbe,
+} from "./builderProbes.ts";
 import {
   type ExplorerHandoffProbeParams,
   type ExplorerStoryProbeParams,
@@ -120,6 +126,13 @@ export type WriteProbeFixture =
       probe_type: "builder_cursor_state";
       builder_cursor: BuilderCursorProbeParams;
     })
+  // CV22.DS7.US8 plateau 3: story-package materialization on a real-DB copy, graded
+  // as FILES. Its project tree is disposable and derived from `ts_copy_path`, so the
+  // probe can never write into the journey's real project.
+  | (WriteProbeBase & {
+      probe_type: "builder_artifacts";
+      builder_artifacts: BuilderArtifactsProbeParams;
+    })
   | (WriteProbeBase & { probe_type: "soul_state"; soul_state: SoulStateProbeParams })
   | (WriteProbeBase & { probe_type: "soul_apply"; soul_apply: SoulApplyProbeParams })
   | (WriteProbeBase & {
@@ -214,7 +227,12 @@ function assertNever(value: never): never {
  * requireX guards), and `assertNever` catches a malformed `probe_type` from
  * bad fixture JSON.
  */
-function buildWriteProbe(fixture: WriteProbeFixture): WriteProbe {
+/**
+ * `tsCopyPath` is passed separately because it belongs to the FIXTURE, not to a
+ * probe: only the artifacts probe needs it, to derive a disposable project tree
+ * beside its own database copy.
+ */
+function buildWriteProbe(fixture: WriteProbeFixture, tsCopyPath: string): WriteProbe {
   switch (fixture.probe_type) {
     case "reinforcement":
       return {
@@ -382,6 +400,17 @@ function buildWriteProbe(fixture: WriteProbeFixture): WriteProbe {
       return explorerHandoffProbe(fixture.label, fixture.explorer_handoff);
     case "builder_cursor_state":
       return builderCursorStateProbe(fixture.label, fixture.builder_cursor, fixture.now_iso);
+    case "builder_artifacts":
+      return builderArtifactsProbe(
+        fixture.label,
+        fixture.builder_artifacts,
+        fixture.now_iso,
+        // Beside the TypeScript database copy, mirroring the Python probe's
+        // `<copy>.parent/builder-artifacts-python/project`. Separate trees on
+        // purpose: one shared tree would make the second engine report `existing`
+        // where the first reported `created`.
+        join(dirname(tsCopyPath), "builder-artifacts-ts", "project"),
+      );
     case "soul_state":
       return soulStateProbe(fixture.label, fixture.soul_state, fixture.now_iso);
     case "soul_apply":
@@ -443,7 +472,7 @@ export async function verifyWriteFixture(
     ensureMigratedOnOpen(fixture.ts_copy_path);
     const db = openDatabaseCopyForWrite(fixture.ts_copy_path);
     try {
-      const tsState = await applyWriteProbe(db, buildWriteProbe(probe));
+      const tsState = await applyWriteProbe(db, buildWriteProbe(probe, fixture.ts_copy_path));
       // Grade the FTS side-effect of the write, not just the declared columns:
       // a memories mutation fires the memories_fts triggers (no-op if absent).
       assertFtsIntegrity(db);

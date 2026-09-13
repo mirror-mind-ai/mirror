@@ -15,7 +15,15 @@
 // cell before comparing, so the dialect is graded by the unit golden and this
 // probe grades the state a real database ends in.
 
+import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { dirname, join, relative, sep } from "node:path";
+import { getAriadMethod } from "#builder/ariadMethod.ts";
 import { clearDeliveryCursor, setDeliveryCursor } from "#builder/deliveryCursor.ts";
+import { expandDeliveryStory } from "#builder/expand.ts";
+import { planLifecycleItem } from "#builder/plan.ts";
+import { prepareLifecycleItem } from "#builder/prepare.ts";
+import { pullLifecycleItem } from "#builder/pull.ts";
+import { createStoryDirectory, resolveStoryDirectory } from "#builder/storyPaths.ts";
 import type { WritableDatabase } from "#db/database.ts";
 import type { MutatedRow } from "./writeParity.ts";
 import type { WriteProbe } from "./writeProbe.ts";
@@ -124,4 +132,132 @@ export function builderCursorStateProbe(
       return steps;
     },
   };
+}
+
+export interface BuilderArtifactsProbeParams {
+  readonly journey: string;
+  readonly session_id: string;
+  readonly delivery_story: string;
+  readonly delivery_story_title: string;
+  readonly child_code: string;
+  readonly child_title: string;
+  readonly authored_plan: string;
+  readonly starting_files: Record<string, string>;
+}
+
+/**
+ * Materialize a story package with the TypeScript core and record the files.
+ *
+ * The counterpart of `builder_artifacts_probe`. Files are reported as ordinary state
+ * rows (`id` = `file:<project-relative path>`, `cells.content` = its bytes), which is
+ * why this needs no harness change: `MutatedRow` is an identified cell bag, not a
+ * database row.
+ *
+ * Two properties this probe has that the golden corpus does not: the journey and the
+ * starting cursor come from a copy of a REAL database, and the lifecycle runs against
+ * it rather than against a synthetic store.
+ *
+ * It writes into its OWN disposable project, never the journey's real `project_path`
+ * — the same safety rule the Python probe states. Its tree is seeded from
+ * `starting_files` so both engines begin from identical bytes; sharing one directory
+ * would make the second engine report `existing` where the first reported `created`.
+ */
+export function builderArtifactsProbe(
+  label: string,
+  params: BuilderArtifactsProbeParams,
+  nowIso: string,
+  projectRoot: string,
+): WriteProbe {
+  return {
+    label,
+    snapshots: [
+      {
+        table: "runtime_sessions",
+        keyColumn: "session_id",
+        columns: ["interface", "journey", "active", "started_at", "closed_at", "metadata"],
+        selectorColumn: "session_id",
+        selectorValues: [params.session_id],
+      },
+    ],
+    apply(db: WritableDatabase): MutatedRow[] {
+      rmSync(projectRoot, { recursive: true, force: true });
+      for (const [relativePath, content] of Object.entries(params.starting_files)) {
+        const target = join(projectRoot, relativePath);
+        mkdirSync(dirname(target), { recursive: true });
+        writeFileSync(target, content, "utf8");
+      }
+
+      // No refresh callback: the projection seam is Python-owned and a probe must
+      // not spawn a subprocess.
+      const deps = { nowIso: () => nowIso };
+      setDeliveryCursor(
+        db,
+        {
+          journey: params.journey,
+          method: "ariad",
+          activeItem: params.delivery_story,
+          activeItemTitle: params.delivery_story_title,
+          activeItemLevel: "delivery_story",
+        },
+        deps,
+      );
+      expandDeliveryStory(
+        db,
+        { journey: params.journey, method: "ariad", projectPath: projectRoot },
+        deps,
+      );
+      pullLifecycleItem(
+        db,
+        {
+          journey: params.journey,
+          method: "ariad",
+          item: {
+            code: params.child_code,
+            title: params.child_title,
+            level: "user_story",
+            whyNow: "write parity materialization",
+          },
+        },
+        deps,
+      );
+      prepareLifecycleItem(
+        db,
+        { journey: params.journey, method: "ariad", projectPath: projectRoot },
+        deps,
+      );
+      const packagePath =
+        resolveStoryDirectory(projectRoot, params.child_code) ??
+        createStoryDirectory(projectRoot, params.child_code, params.child_title);
+      const planPath = join(packagePath, "plan.md");
+      mkdirSync(dirname(planPath), { recursive: true });
+      writeFileSync(planPath, params.authored_plan, "utf8");
+      planLifecycleItem(
+        db,
+        { journey: params.journey, method: getAriadMethod(), planArtifactPath: planPath },
+        deps,
+      );
+
+      return projectFileRows(projectRoot);
+    },
+  };
+}
+
+/** Every authored file as a state row, sorted so the two engines align positionally. */
+function projectFileRows(projectRoot: string): MutatedRow[] {
+  const paths: string[] = [];
+  const walk = (directory: string): void => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const absolute = join(directory, entry.name);
+      if (entry.isDirectory()) walk(absolute);
+      else paths.push(absolute);
+    }
+  };
+  walk(projectRoot);
+  return paths
+    .map((absolute) => relative(projectRoot, absolute).split(sep).join("/"))
+    .sort((a, b) => (a < b ? -1 : 1))
+    .map((relativePath) => ({
+      id: `file:${relativePath}`,
+      cells: { content: readFileSync(join(projectRoot, relativePath), "utf8") },
+    }));
 }

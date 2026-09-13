@@ -1,4 +1,29 @@
-"""Builder delivery-cursor write-parity probe (CV22.DS7.US8 plateau 2).
+"""Builder write-parity probes: the delivery cursor, and artifact materialization.
+
+Two probes live here. `builder_cursor_state` (plateau 2) grades database rows;
+`builder_artifacts` (plateau 3) grades FILES.
+
+The artifacts probe encodes each file as an ordinary `{id, cells}` state row --
+`id` is the project-relative path, `cells` is its content -- rather than adding a
+file-aware probe type to the harness. That is a deliberate choice between two real
+options. A new probe type would need its own diffing, its own redaction, and its own
+failure reporting: new harness surface whose only user is this probe, and a probe
+whose harness is buggy reports a false verdict, which is worse than having no probe
+(the CR044 lesson: green has to mean something). `python_state` was never row-shaped
+by contract -- it is a list of identified cell bags -- so a file maps onto it
+without stretching the abstraction.
+
+Safety property, stated because getting it wrong would be catastrophic rather than
+merely wrong: the artifacts probe NEVER writes into the journey's real
+`project_path`. It reads the journey and cursor from the database copy and
+materializes into a disposable project tree beside the copy, in the harness work
+dir. Pointing a lifecycle write at a Navigator's actual repository is the defect
+class CR065 tracks, and the one that fabricated a roadmap package inside this
+repository at plateau 3.
+
+Original plateau-2 docstring follows.
+
+Builder delivery-cursor write-parity probe (CV22.DS7.US8 plateau 2).
 
 The synthetic corpus already grades the cursor's bytes exhaustively. This probe
 answers a different question: does the sequence hold on a REAL database, starting
@@ -35,7 +60,9 @@ proof of the property the revert actually needs.
 
 from __future__ import annotations
 
+import shutil
 import sqlite3
+from pathlib import Path
 from typing import Any
 
 from memory.builder.delivery_cursor import (
@@ -43,6 +70,7 @@ from memory.builder.delivery_cursor import (
     get_delivery_cursor,
     set_delivery_cursor,
 )
+from memory.builder.story_paths import create_story_directory, resolve_story_directory
 from memory.storage.store import Store
 
 CURSOR_PREFIX = "__builder_delivery_cursor__:"
@@ -234,4 +262,171 @@ def get_connection_for(path) -> sqlite3.Connection:
     return connection
 
 
-PROBES = {"builder_cursor_state": builder_cursor_state_probe}
+# The authored Delivery Story the artifacts probe expands, and the authored plan.md
+# it must PRESERVE. Both are fixed text so the two engines materialize from the same
+# starting tree.
+_DS_CODE = "PARITY-DS1"
+_DS_TITLE = "Write parity delivery story"
+_DS_FOLDER = "docs/project/roadmap/parity-ds1-write-parity-delivery-story"
+_DS_INDEX = """# PARITY-DS1 \u2014 Write parity delivery story
+
+**Status:** \U0001f7e1 Planned
+**Type:** Delivery Story
+
+## Candidate Stories
+
+| Code | Story | Type | Status |
+|------|-------|------|--------|
+| PARITY-DS1.US-1 | Materialize the first slice | User Story | \U0001f7e1 Planned |
+| PARITY-DS1.TS-1 | Harden the materialization seam | Technical Story | \U0001f7e1 Planned |
+
+## Done Condition
+
+Done when the children deliver a coherent outcome.
+"""
+_AUTHORED_PLAN = "# Plan \u2014 authored by the Driver\n\nThis body must survive Plan.\n"
+
+
+def _write_project(project) -> None:
+    """The starting tree, identical for both engines."""
+    for relative, content in (
+        ("README.md", "# Parity project\n"),
+        ("docs/project/roadmap/index.md", "# Roadmap\n"),
+        (f"{_DS_FOLDER}/index.md", _DS_INDEX),
+    ):
+        target = project / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+
+
+def _project_files(project) -> list[dict[str, Any]]:
+    """Every authored file as a state row: id = project-relative path, cells = content.
+
+    Sorted by path so the two engines' lists align positionally, and
+    project-relative so the row ids do not carry the work dir -- the same reason the
+    lifecycle corpus records relative paths.
+    """
+    rows: list[dict[str, Any]] = []
+    for path in sorted(project.rglob("*")):
+        if not path.is_file():
+            continue
+        relative = path.relative_to(project).as_posix()
+        rows.append({"id": f"file:{relative}", "cells": {"content": path.read_text("utf-8")}})
+    return rows
+
+
+def builder_artifacts_probe(python_copy, frozen_datetime, now_iso: str) -> dict[str, Any]:
+    """Materialize a story package with Python and record the resulting files.
+
+    The lifecycle runs for real against the copy's own journey and cursor: Expand on
+    an authored Delivery Story, then Pull/Prepare/Plan on one of its children with an
+    authored `plan.md` already in place. So the probe grades three things the golden
+    grades synthetically, but here on a real database: the child folder derivation,
+    the generated artifact bytes, and the preservation rule.
+    """
+    import memory.models as models_mod
+
+    from memory.builder.ariad_method import get_ariad_method
+    from memory.builder.lifecycle import (
+        BuilderLifecycleItem,
+        expand_delivery_story,
+        plan_lifecycle_item,
+        prepare_lifecycle_item,
+        pull_lifecycle_item,
+    )
+
+    models_mod.datetime = frozen_datetime
+    project = python_copy.parent / "builder-artifacts-python" / "project"
+    if project.exists():
+        shutil.rmtree(project)
+    project.mkdir(parents=True, exist_ok=True)
+    _write_project(project)
+
+    conn = get_connection_for(python_copy)
+    try:
+        journey = _pick_journey(conn)
+        store = Store(conn)
+        store.configure_projection_refresh(None)
+
+        set_delivery_cursor(
+            store,
+            journey=journey,
+            method="ariad",
+            active_item=_DS_CODE,
+            active_item_title=_DS_TITLE,
+            active_item_level="delivery_story",
+        )
+        expand = expand_delivery_story(
+            store, journey=journey, method="ariad", project_path=project
+        )
+        child_code = expand.cursor.child_work_items[0]
+        child_title = expand.recommended_story_title
+        pull_lifecycle_item(
+            store,
+            journey=journey,
+            method="ariad",
+            item=BuilderLifecycleItem(
+                code=child_code,
+                title=child_title,
+                level="user_story",
+                why_now="write parity materialization",
+            ),
+        )
+        prepare_lifecycle_item(store, journey=journey, method="ariad", project_path=project)
+        package = resolve_story_directory(project, child_code) or create_story_directory(
+            project, child_code, child_title
+        )
+        plan_path = Path(package) / "plan.md"
+        plan_path.parent.mkdir(parents=True, exist_ok=True)
+        plan_path.write_text(_AUTHORED_PLAN, encoding="utf-8")
+        plan_lifecycle_item(
+            store,
+            journey=journey,
+            method=get_ariad_method(),
+            plan_artifact_path=plan_path,
+        )
+        files = _project_files(project)
+        cursor_row = _row(conn, f"{CURSOR_PREFIX}{journey}")
+        snapshot = {
+            "id": f"runtime_sessions:{CURSOR_PREFIX}{journey}",
+            "cells": {
+                column: (cursor_row or {}).get(column)
+                for column in (
+                    "interface",
+                    "journey",
+                    "active",
+                    "started_at",
+                    "closed_at",
+                    "metadata",
+                )
+            },
+        }
+    finally:
+        conn.close()
+
+    return {
+        "label": "builder_artifacts",
+        "probe_type": "builder_artifacts",
+        "now_iso": now_iso,
+        "builder_artifacts": {
+            "journey": journey,
+            "session_id": f"{CURSOR_PREFIX}{journey}",
+            "delivery_story": _DS_CODE,
+            "delivery_story_title": _DS_TITLE,
+            "child_code": child_code,
+            "child_title": child_title,
+            "authored_plan": _AUTHORED_PLAN,
+            "starting_files": {
+                "README.md": "# Parity project\n",
+                "docs/project/roadmap/index.md": "# Roadmap\n",
+                f"{_DS_FOLDER}/index.md": _DS_INDEX,
+            },
+        },
+        "python_state": [*files, snapshot],
+    }
+
+
+PROBES = {
+    "builder_cursor_state": builder_cursor_state_probe,
+    "builder_artifacts": builder_artifacts_probe,
+}

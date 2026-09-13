@@ -526,6 +526,8 @@ def main(argv: list[str] | None = None) -> int:
         # deriving the choices from the registry silently drops four of them --
         # including this argument's own default. Tried at CV22.DS7.US8 and caught
         # by reading the `--help` output.
+        # `*PROBES` now carries two Builder probes, so a new sibling probe reaches
+        # `--help` without another edit here; the four inline ones still cannot.
         choices=(
             "reinforcement",
             "journey",

@@ -132,24 +132,18 @@ Two plateau-3-specific rules already established:
 
 ## Open items carried forward
 
-**The `builder_artifacts` write probe is the one piece of plateau 3 still open, and
-it needs a decision first.** Every existing probe in `write_parity_builder.py`
-grades DATABASE rows: the harness compares `python_state` against the TypeScript
-state as a list of `{id, cells}`, and `builder_cursor_state` encodes an ordered
-sequence by putting the step index in the row id. Artifact materialization has no
-rows — its behavior is FILES in a scratch project. Encoding a file as
-`{id: <project-relative path>, cells: {content}}` fits the existing shape without
-changing the harness, which is the cheap option; the alternative is a file-aware
-probe type, which is more honest and touches `write_parity.py`, whose `--probe`
-choices are built inline and cannot be derived from `PROBES` (see the method notes
-below). Worth ten minutes of Navigator input rather than a guess.
+The `builder_artifacts` probe encodes each file as an ordinary `{id, cells}` state
+row rather than adding a file-aware probe type. `python_state` was never row-shaped
+by contract — it is a list of identified cell bags — so a file maps onto it without
+stretching the abstraction, and the harness needed no new diffing, redaction, or
+failure reporting whose only user would be this one probe. A probe whose harness is
+buggy reports a false verdict, which is worse than having no probe.
 
-What the probe would add beyond the corpus: the corpus already grades artifact bytes,
-folder derivation, and the preservation rule on a scratch project, in both engines.
-The probe's distinct value is running that against a copy of a REAL database, where
-the journey rows, cursors, and project paths are the Navigator's own rather than
-synthetic — the same reason `builder_cursor_state` exists even though the cursor
-golden already grades transitions.
+Its safety rule is stated in both halves and is the important part: the probe NEVER
+writes into the journey's real `project_path`. It reads the journey and cursor from
+the database copy and materializes into a disposable tree beside each engine's own
+copy — separate trees, because one shared tree would make the second engine report
+`existing` where the first reported `created`.
 
 Recorded in the plan's Debt / CRs section; none of the rest blocks plateau 4.
 
@@ -233,9 +227,12 @@ Navigator's project are the only US8 surface with a traversal shape.
      `cancel-plan-preauthorization` — plus `_roadmap_plan_context` and the CLI
      artifact helpers. **`PENDING_LEAVES` is empty: 11 of the 27 in-scope leaves
      answer from TypeScript, all 64 command cases graded.**
-   - **3c, remaining: the `builder_artifacts` write probe.** See
-     [Open items carried forward](#open-items-carried-forward) — it needs a design
-     decision, not a mechanical port.
+   - **3c, done: the `builder_artifacts` write probe.** Materializes a story package
+     on a copy of a real database and grades the resulting FILES. Green on the demo
+     database, and it goes red — removing `writeStoryPackage`'s existence guard
+     reports `match: false`.
+
+**Plateau 3 is complete.** 11 of the 27 in-scope leaves answer from TypeScript.
 
    Split because the module level reached a coherent, fully graded state and the
    command level is a separate failure mode (argv parsing, guard order, exit
