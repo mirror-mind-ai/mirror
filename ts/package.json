@@ -9,6 +9,7 @@
   },
   "imports": {
     "#backup/*": "./src/backup/*",
+    "#builder/*": "./src/builder/*",
     "#consult/*": "./src/consult/*",
     "#conversation/*": "./src/conversation/*",
     "#cultivation/*": "./src/cultivation/*",

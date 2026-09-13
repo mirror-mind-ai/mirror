@@ -1,0 +1,6353 @@
+{
+  "scenarios": [
+    {
+      "expected": [
+        "🟪 a chapter and 🟦 a story carried through one",
+        "Builder card"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "🟪 a chapter and 🟦 a story carried through one Builder card",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__astral__w52"
+    },
+    {
+      "expected": [
+        "🟪 a chapter and 🟦 a story carried through one Builder",
+        "card"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "🟪 a chapter and 🟦 a story carried through one Builder card",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__astral__w54"
+    },
+    {
+      "expected": [
+        "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__cjk__w52"
+    },
+    {
+      "expected": [
+        "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__cjk__w54"
+    },
+    {
+      "expected": [
+        "á é í combining acutes counting two code points",
+        "each"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "á é í combining acutes counting two code points each",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__combining__w52"
+    },
+    {
+      "expected": [
+        "á é í combining acutes counting two code points",
+        "each"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "á é í combining acutes counting two code points each",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__combining__w54"
+    },
+    {
+      "expected": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxxxx"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__unbroken_60__w52"
+    },
+    {
+      "expected": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxx"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__unbroken_60__w54"
+    },
+    {
+      "expected": [
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__unbroken_200__w52"
+    },
+    {
+      "expected": [
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__unbroken_200__w54"
+    },
+    {
+      "expected": [
+        "one two three separated by non-breaking spaces"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "one two three separated by non-breaking spaces",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__nbsp__w52"
+    },
+    {
+      "expected": [
+        "one two three separated by non-breaking spaces"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "one two three separated by non-breaking spaces",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__nbsp__w54"
+    },
+    {
+      "expected": [
+        "one two three separated by ideographic spaces"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "one　two　three separated by ideographic spaces",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__ideographic_space__w52"
+    },
+    {
+      "expected": [
+        "one two three separated by ideographic spaces"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "one　two　three separated by ideographic spaces",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__ideographic_space__w54"
+    },
+    {
+      "expected": [
+        "one two three separated by a unit separator"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "one\u001ftwo three separated by a unit separator",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__unit_separator__w52"
+    },
+    {
+      "expected": [
+        "one two three separated by a unit separator"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "one\u001ftwo three separated by a unit separator",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__unit_separator__w54"
+    },
+    {
+      "expected": [
+        "one﻿two three joined by a byte-order mark"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "one﻿two three joined by a byte-order mark",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__bom_joined__w52"
+    },
+    {
+      "expected": [
+        "one﻿two three joined by a byte-order mark"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "one﻿two three joined by a byte-order mark",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__bom_joined__w54"
+    },
+    {
+      "expected": [
+        "first block second block after a form feed"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "first block\fsecond block after a form feed",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__form_feed__w52"
+    },
+    {
+      "expected": [
+        "first block second block after a form feed"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "first block\fsecond block after a form feed",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__form_feed__w54"
+    },
+    {
+      "expected": [
+        "first paragraph second paragraph after blanks third"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "first paragraph\n\n\nsecond paragraph after blanks\n\nthird",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__multi_paragraph__w52"
+    },
+    {
+      "expected": [
+        "first paragraph second paragraph after blanks third"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "first paragraph\n\n\nsecond paragraph after blanks\n\nthird",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__multi_paragraph__w54"
+    },
+    {
+      "expected": [
+        "padded on both ends"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "\n\n  padded on both ends  \n\n",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__leading_blanks__w52"
+    },
+    {
+      "expected": [
+        "padded on both ends"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "\n\n  padded on both ends  \n\n",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__leading_blanks__w54"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__empty__w52"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__empty__w54"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "     ",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__only_spaces__w52"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "     ",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__only_spaces__w54"
+    },
+    {
+      "expected": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__at_52__w52"
+    },
+    {
+      "expected": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__at_52__w54"
+    },
+    {
+      "expected": [
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "b"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__at_53__w52"
+    },
+    {
+      "expected": [
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__at_53__w54"
+    },
+    {
+      "expected": [
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "cc"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "cccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__at_54__w52"
+    },
+    {
+      "expected": [
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "cccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__at_54__w54"
+    },
+    {
+      "expected": [
+        "dddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "ddd"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "ddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__at_55__w52"
+    },
+    {
+      "expected": [
+        "dddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "d"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "ddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__at_55__w54"
+    },
+    {
+      "expected": [
+        "docs/project/roadmap/cv22-typescript-core-port/cv22-",
+        "ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tre",
+        "e/index.md"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__long_path__w52"
+    },
+    {
+      "expected": [
+        "docs/project/roadmap/cv22-typescript-core-port/cv22-ds",
+        "7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/in",
+        "dex.md"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__long_path__w54"
+    },
+    {
+      "expected": [
+        "short lead",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxxxx",
+        "trailing words after"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "short lead xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx trailing words after",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__flush_then_chunk__w52"
+    },
+    {
+      "expected": [
+        "short lead",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxx",
+        "trailing words after"
+      ],
+      "input": {
+        "owner": "artifact_surfaces",
+        "text": "short lead xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx trailing words after",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__artifact_surfaces__flush_then_chunk__w54"
+    },
+    {
+      "expected": [
+        "🟪 a chapter and 🟦 a story carried through one",
+        "Builder card"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "🟪 a chapter and 🟦 a story carried through one Builder card",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__astral__w52"
+    },
+    {
+      "expected": [
+        "🟪 a chapter and 🟦 a story carried through one Builder",
+        "card"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "🟪 a chapter and 🟦 a story carried through one Builder card",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__astral__w54"
+    },
+    {
+      "expected": [
+        "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__cjk__w52"
+    },
+    {
+      "expected": [
+        "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__cjk__w54"
+    },
+    {
+      "expected": [
+        "á é í combining acutes counting two code points",
+        "each"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "á é í combining acutes counting two code points each",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__combining__w52"
+    },
+    {
+      "expected": [
+        "á é í combining acutes counting two code points",
+        "each"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "á é í combining acutes counting two code points each",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__combining__w54"
+    },
+    {
+      "expected": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxxxx"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__unbroken_60__w52"
+    },
+    {
+      "expected": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxx"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__unbroken_60__w54"
+    },
+    {
+      "expected": [
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__unbroken_200__w52"
+    },
+    {
+      "expected": [
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__unbroken_200__w54"
+    },
+    {
+      "expected": [
+        "one two three separated by non-breaking spaces"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "one two three separated by non-breaking spaces",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__nbsp__w52"
+    },
+    {
+      "expected": [
+        "one two three separated by non-breaking spaces"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "one two three separated by non-breaking spaces",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__nbsp__w54"
+    },
+    {
+      "expected": [
+        "one two three separated by ideographic spaces"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "one　two　three separated by ideographic spaces",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__ideographic_space__w52"
+    },
+    {
+      "expected": [
+        "one two three separated by ideographic spaces"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "one　two　three separated by ideographic spaces",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__ideographic_space__w54"
+    },
+    {
+      "expected": [
+        "one two three separated by a unit separator"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "one\u001ftwo three separated by a unit separator",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__unit_separator__w52"
+    },
+    {
+      "expected": [
+        "one two three separated by a unit separator"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "one\u001ftwo three separated by a unit separator",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__unit_separator__w54"
+    },
+    {
+      "expected": [
+        "one﻿two three joined by a byte-order mark"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "one﻿two three joined by a byte-order mark",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__bom_joined__w52"
+    },
+    {
+      "expected": [
+        "one﻿two three joined by a byte-order mark"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "one﻿two three joined by a byte-order mark",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__bom_joined__w54"
+    },
+    {
+      "expected": [
+        "first block second block after a form feed"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "first block\fsecond block after a form feed",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__form_feed__w52"
+    },
+    {
+      "expected": [
+        "first block second block after a form feed"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "first block\fsecond block after a form feed",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__form_feed__w54"
+    },
+    {
+      "expected": [
+        "first paragraph second paragraph after blanks third"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "first paragraph\n\n\nsecond paragraph after blanks\n\nthird",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__multi_paragraph__w52"
+    },
+    {
+      "expected": [
+        "first paragraph second paragraph after blanks third"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "first paragraph\n\n\nsecond paragraph after blanks\n\nthird",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__multi_paragraph__w54"
+    },
+    {
+      "expected": [
+        "padded on both ends"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "\n\n  padded on both ends  \n\n",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__leading_blanks__w52"
+    },
+    {
+      "expected": [
+        "padded on both ends"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "\n\n  padded on both ends  \n\n",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__leading_blanks__w54"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__empty__w52"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__empty__w54"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "     ",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__only_spaces__w52"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "     ",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__only_spaces__w54"
+    },
+    {
+      "expected": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__at_52__w52"
+    },
+    {
+      "expected": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__at_52__w54"
+    },
+    {
+      "expected": [
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "b"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__at_53__w52"
+    },
+    {
+      "expected": [
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__at_53__w54"
+    },
+    {
+      "expected": [
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "cc"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "cccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__at_54__w52"
+    },
+    {
+      "expected": [
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "cccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__at_54__w54"
+    },
+    {
+      "expected": [
+        "dddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "ddd"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "ddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__at_55__w52"
+    },
+    {
+      "expected": [
+        "dddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "d"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "ddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__at_55__w54"
+    },
+    {
+      "expected": [
+        "docs/project/roadmap/cv22-typescript-core-port/cv22-",
+        "ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tre",
+        "e/index.md"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__long_path__w52"
+    },
+    {
+      "expected": [
+        "docs/project/roadmap/cv22-typescript-core-port/cv22-ds",
+        "7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/in",
+        "dex.md"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__long_path__w54"
+    },
+    {
+      "expected": [
+        "short lead",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxxxx",
+        "trailing words after"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "short lead xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx trailing words after",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__flush_then_chunk__w52"
+    },
+    {
+      "expected": [
+        "short lead",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxx",
+        "trailing words after"
+      ],
+      "input": {
+        "owner": "delivery_story_closure",
+        "text": "short lead xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx trailing words after",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_closure__flush_then_chunk__w54"
+    },
+    {
+      "expected": [
+        "🟪 a chapter and 🟦 a story carried through one",
+        "Builder card"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "🟪 a chapter and 🟦 a story carried through one Builder card",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__astral__w52"
+    },
+    {
+      "expected": [
+        "🟪 a chapter and 🟦 a story carried through one Builder",
+        "card"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "🟪 a chapter and 🟦 a story carried through one Builder card",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__astral__w54"
+    },
+    {
+      "expected": [
+        "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__cjk__w52"
+    },
+    {
+      "expected": [
+        "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__cjk__w54"
+    },
+    {
+      "expected": [
+        "á é í combining acutes counting two code points",
+        "each"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "á é í combining acutes counting two code points each",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__combining__w52"
+    },
+    {
+      "expected": [
+        "á é í combining acutes counting two code points",
+        "each"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "á é í combining acutes counting two code points each",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__combining__w54"
+    },
+    {
+      "expected": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxxxx"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__unbroken_60__w52"
+    },
+    {
+      "expected": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxx"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__unbroken_60__w54"
+    },
+    {
+      "expected": [
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__unbroken_200__w52"
+    },
+    {
+      "expected": [
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__unbroken_200__w54"
+    },
+    {
+      "expected": [
+        "one two three separated by non-breaking spaces"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "one two three separated by non-breaking spaces",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__nbsp__w52"
+    },
+    {
+      "expected": [
+        "one two three separated by non-breaking spaces"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "one two three separated by non-breaking spaces",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__nbsp__w54"
+    },
+    {
+      "expected": [
+        "one two three separated by ideographic spaces"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "one　two　three separated by ideographic spaces",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__ideographic_space__w52"
+    },
+    {
+      "expected": [
+        "one two three separated by ideographic spaces"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "one　two　three separated by ideographic spaces",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__ideographic_space__w54"
+    },
+    {
+      "expected": [
+        "one two three separated by a unit separator"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "one\u001ftwo three separated by a unit separator",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__unit_separator__w52"
+    },
+    {
+      "expected": [
+        "one two three separated by a unit separator"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "one\u001ftwo three separated by a unit separator",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__unit_separator__w54"
+    },
+    {
+      "expected": [
+        "one﻿two three joined by a byte-order mark"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "one﻿two three joined by a byte-order mark",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__bom_joined__w52"
+    },
+    {
+      "expected": [
+        "one﻿two three joined by a byte-order mark"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "one﻿two three joined by a byte-order mark",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__bom_joined__w54"
+    },
+    {
+      "expected": [
+        "first block second block after a form feed"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "first block\fsecond block after a form feed",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__form_feed__w52"
+    },
+    {
+      "expected": [
+        "first block second block after a form feed"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "first block\fsecond block after a form feed",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__form_feed__w54"
+    },
+    {
+      "expected": [
+        "first paragraph second paragraph after blanks third"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "first paragraph\n\n\nsecond paragraph after blanks\n\nthird",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__multi_paragraph__w52"
+    },
+    {
+      "expected": [
+        "first paragraph second paragraph after blanks third"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "first paragraph\n\n\nsecond paragraph after blanks\n\nthird",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__multi_paragraph__w54"
+    },
+    {
+      "expected": [
+        "padded on both ends"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "\n\n  padded on both ends  \n\n",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__leading_blanks__w52"
+    },
+    {
+      "expected": [
+        "padded on both ends"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "\n\n  padded on both ends  \n\n",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__leading_blanks__w54"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__empty__w52"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__empty__w54"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "     ",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__only_spaces__w52"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "     ",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__only_spaces__w54"
+    },
+    {
+      "expected": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__at_52__w52"
+    },
+    {
+      "expected": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__at_52__w54"
+    },
+    {
+      "expected": [
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "b"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__at_53__w52"
+    },
+    {
+      "expected": [
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__at_53__w54"
+    },
+    {
+      "expected": [
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "cc"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "cccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__at_54__w52"
+    },
+    {
+      "expected": [
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "cccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__at_54__w54"
+    },
+    {
+      "expected": [
+        "dddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "ddd"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "ddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__at_55__w52"
+    },
+    {
+      "expected": [
+        "dddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "d"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "ddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__at_55__w54"
+    },
+    {
+      "expected": [
+        "docs/project/roadmap/cv22-typescript-core-port/cv22-",
+        "ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tre",
+        "e/index.md"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__long_path__w52"
+    },
+    {
+      "expected": [
+        "docs/project/roadmap/cv22-typescript-core-port/cv22-ds",
+        "7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/in",
+        "dex.md"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__long_path__w54"
+    },
+    {
+      "expected": [
+        "short lead",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxxxx",
+        "trailing words after"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "short lead xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx trailing words after",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__flush_then_chunk__w52"
+    },
+    {
+      "expected": [
+        "short lead",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxx",
+        "trailing words after"
+      ],
+      "input": {
+        "owner": "delivery_story_plan",
+        "text": "short lead xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx trailing words after",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__delivery_story_plan__flush_then_chunk__w54"
+    },
+    {
+      "expected": [
+        "🟪 a chapter and 🟦 a story carried through one",
+        "Builder card"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "🟪 a chapter and 🟦 a story carried through one Builder card",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__astral__w52"
+    },
+    {
+      "expected": [
+        "🟪 a chapter and 🟦 a story carried through one Builder",
+        "card"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "🟪 a chapter and 🟦 a story carried through one Builder card",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__astral__w54"
+    },
+    {
+      "expected": [
+        "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__cjk__w52"
+    },
+    {
+      "expected": [
+        "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__cjk__w54"
+    },
+    {
+      "expected": [
+        "á é í combining acutes counting two code points",
+        "each"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "á é í combining acutes counting two code points each",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__combining__w52"
+    },
+    {
+      "expected": [
+        "á é í combining acutes counting two code points",
+        "each"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "á é í combining acutes counting two code points each",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__combining__w54"
+    },
+    {
+      "expected": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxxxx"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__unbroken_60__w52"
+    },
+    {
+      "expected": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxx"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__unbroken_60__w54"
+    },
+    {
+      "expected": [
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__unbroken_200__w52"
+    },
+    {
+      "expected": [
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__unbroken_200__w54"
+    },
+    {
+      "expected": [
+        "one two three separated by non-breaking spaces"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "one two three separated by non-breaking spaces",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__nbsp__w52"
+    },
+    {
+      "expected": [
+        "one two three separated by non-breaking spaces"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "one two three separated by non-breaking spaces",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__nbsp__w54"
+    },
+    {
+      "expected": [
+        "one two three separated by ideographic spaces"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "one　two　three separated by ideographic spaces",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__ideographic_space__w52"
+    },
+    {
+      "expected": [
+        "one two three separated by ideographic spaces"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "one　two　three separated by ideographic spaces",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__ideographic_space__w54"
+    },
+    {
+      "expected": [
+        "one two three separated by a unit separator"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "one\u001ftwo three separated by a unit separator",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__unit_separator__w52"
+    },
+    {
+      "expected": [
+        "one two three separated by a unit separator"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "one\u001ftwo three separated by a unit separator",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__unit_separator__w54"
+    },
+    {
+      "expected": [
+        "one﻿two three joined by a byte-order mark"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "one﻿two three joined by a byte-order mark",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__bom_joined__w52"
+    },
+    {
+      "expected": [
+        "one﻿two three joined by a byte-order mark"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "one﻿two three joined by a byte-order mark",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__bom_joined__w54"
+    },
+    {
+      "expected": [
+        "first block second block after a form feed"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "first block\fsecond block after a form feed",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__form_feed__w52"
+    },
+    {
+      "expected": [
+        "first block second block after a form feed"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "first block\fsecond block after a form feed",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__form_feed__w54"
+    },
+    {
+      "expected": [
+        "first paragraph second paragraph after blanks third"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "first paragraph\n\n\nsecond paragraph after blanks\n\nthird",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__multi_paragraph__w52"
+    },
+    {
+      "expected": [
+        "first paragraph second paragraph after blanks third"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "first paragraph\n\n\nsecond paragraph after blanks\n\nthird",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__multi_paragraph__w54"
+    },
+    {
+      "expected": [
+        "padded on both ends"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "\n\n  padded on both ends  \n\n",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__leading_blanks__w52"
+    },
+    {
+      "expected": [
+        "padded on both ends"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "\n\n  padded on both ends  \n\n",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__leading_blanks__w54"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__empty__w52"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__empty__w54"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "     ",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__only_spaces__w52"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "     ",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__only_spaces__w54"
+    },
+    {
+      "expected": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__at_52__w52"
+    },
+    {
+      "expected": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__at_52__w54"
+    },
+    {
+      "expected": [
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "b"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__at_53__w52"
+    },
+    {
+      "expected": [
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__at_53__w54"
+    },
+    {
+      "expected": [
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "cc"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "cccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__at_54__w52"
+    },
+    {
+      "expected": [
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "cccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__at_54__w54"
+    },
+    {
+      "expected": [
+        "dddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "ddd"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "ddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__at_55__w52"
+    },
+    {
+      "expected": [
+        "dddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "d"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "ddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__at_55__w54"
+    },
+    {
+      "expected": [
+        "docs/project/roadmap/cv22-typescript-core-port/cv22-",
+        "ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tre",
+        "e/index.md"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__long_path__w52"
+    },
+    {
+      "expected": [
+        "docs/project/roadmap/cv22-typescript-core-port/cv22-ds",
+        "7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/in",
+        "dex.md"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__long_path__w54"
+    },
+    {
+      "expected": [
+        "short lead",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxxxx",
+        "trailing words after"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "short lead xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx trailing words after",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__flush_then_chunk__w52"
+    },
+    {
+      "expected": [
+        "short lead",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxx",
+        "trailing words after"
+      ],
+      "input": {
+        "owner": "flow_unit",
+        "text": "short lead xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx trailing words after",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__flow_unit__flush_then_chunk__w54"
+    },
+    {
+      "expected": [
+        "🟪 a chapter and 🟦 a story carried through one",
+        "Builder card"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "🟪 a chapter and 🟦 a story carried through one Builder card",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__astral__w52"
+    },
+    {
+      "expected": [
+        "🟪 a chapter and 🟦 a story carried through one Builder",
+        "card"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "🟪 a chapter and 🟦 a story carried through one Builder card",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__astral__w54"
+    },
+    {
+      "expected": [
+        "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__cjk__w52"
+    },
+    {
+      "expected": [
+        "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__cjk__w54"
+    },
+    {
+      "expected": [
+        "á é í combining acutes counting two code points",
+        "each"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "á é í combining acutes counting two code points each",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__combining__w52"
+    },
+    {
+      "expected": [
+        "á é í combining acutes counting two code points",
+        "each"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "á é í combining acutes counting two code points each",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__combining__w54"
+    },
+    {
+      "expected": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxxxx"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__unbroken_60__w52"
+    },
+    {
+      "expected": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxx"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__unbroken_60__w54"
+    },
+    {
+      "expected": [
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__unbroken_200__w52"
+    },
+    {
+      "expected": [
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__unbroken_200__w54"
+    },
+    {
+      "expected": [
+        "one two three separated by non-breaking spaces"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "one two three separated by non-breaking spaces",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__nbsp__w52"
+    },
+    {
+      "expected": [
+        "one two three separated by non-breaking spaces"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "one two three separated by non-breaking spaces",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__nbsp__w54"
+    },
+    {
+      "expected": [
+        "one two three separated by ideographic spaces"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "one　two　three separated by ideographic spaces",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__ideographic_space__w52"
+    },
+    {
+      "expected": [
+        "one two three separated by ideographic spaces"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "one　two　three separated by ideographic spaces",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__ideographic_space__w54"
+    },
+    {
+      "expected": [
+        "one two three separated by a unit separator"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "one\u001ftwo three separated by a unit separator",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__unit_separator__w52"
+    },
+    {
+      "expected": [
+        "one two three separated by a unit separator"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "one\u001ftwo three separated by a unit separator",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__unit_separator__w54"
+    },
+    {
+      "expected": [
+        "one﻿two three joined by a byte-order mark"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "one﻿two three joined by a byte-order mark",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__bom_joined__w52"
+    },
+    {
+      "expected": [
+        "one﻿two three joined by a byte-order mark"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "one﻿two three joined by a byte-order mark",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__bom_joined__w54"
+    },
+    {
+      "expected": [
+        "first block second block after a form feed"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "first block\fsecond block after a form feed",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__form_feed__w52"
+    },
+    {
+      "expected": [
+        "first block second block after a form feed"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "first block\fsecond block after a form feed",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__form_feed__w54"
+    },
+    {
+      "expected": [
+        "first paragraph second paragraph after blanks third"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "first paragraph\n\n\nsecond paragraph after blanks\n\nthird",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__multi_paragraph__w52"
+    },
+    {
+      "expected": [
+        "first paragraph second paragraph after blanks third"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "first paragraph\n\n\nsecond paragraph after blanks\n\nthird",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__multi_paragraph__w54"
+    },
+    {
+      "expected": [
+        "padded on both ends"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "\n\n  padded on both ends  \n\n",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__leading_blanks__w52"
+    },
+    {
+      "expected": [
+        "padded on both ends"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "\n\n  padded on both ends  \n\n",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__leading_blanks__w54"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__empty__w52"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__empty__w54"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "     ",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__only_spaces__w52"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "     ",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__only_spaces__w54"
+    },
+    {
+      "expected": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__at_52__w52"
+    },
+    {
+      "expected": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__at_52__w54"
+    },
+    {
+      "expected": [
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "b"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__at_53__w52"
+    },
+    {
+      "expected": [
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__at_53__w54"
+    },
+    {
+      "expected": [
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "cc"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "cccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__at_54__w52"
+    },
+    {
+      "expected": [
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "cccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__at_54__w54"
+    },
+    {
+      "expected": [
+        "dddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "ddd"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "ddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__at_55__w52"
+    },
+    {
+      "expected": [
+        "dddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "d"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "ddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__at_55__w54"
+    },
+    {
+      "expected": [
+        "docs/project/roadmap/cv22-typescript-core-port/cv22-",
+        "ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tre",
+        "e/index.md"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__long_path__w52"
+    },
+    {
+      "expected": [
+        "docs/project/roadmap/cv22-typescript-core-port/cv22-ds",
+        "7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/in",
+        "dex.md"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__long_path__w54"
+    },
+    {
+      "expected": [
+        "short lead",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxxxx",
+        "trailing words after"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "short lead xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx trailing words after",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__flush_then_chunk__w52"
+    },
+    {
+      "expected": [
+        "short lead",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxx",
+        "trailing words after"
+      ],
+      "input": {
+        "owner": "home_surface",
+        "text": "short lead xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx trailing words after",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__home_surface__flush_then_chunk__w54"
+    },
+    {
+      "expected": [
+        "🟪 a chapter and 🟦 a story carried through one",
+        "Builder card"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "🟪 a chapter and 🟦 a story carried through one Builder card",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__astral__w52"
+    },
+    {
+      "expected": [
+        "🟪 a chapter and 🟦 a story carried through one Builder",
+        "card"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "🟪 a chapter and 🟦 a story carried through one Builder card",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__astral__w54"
+    },
+    {
+      "expected": [
+        "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__cjk__w52"
+    },
+    {
+      "expected": [
+        "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__cjk__w54"
+    },
+    {
+      "expected": [
+        "á é í combining acutes counting two code points",
+        "each"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "á é í combining acutes counting two code points each",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__combining__w52"
+    },
+    {
+      "expected": [
+        "á é í combining acutes counting two code points",
+        "each"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "á é í combining acutes counting two code points each",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__combining__w54"
+    },
+    {
+      "expected": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxxxx"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__unbroken_60__w52"
+    },
+    {
+      "expected": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxx"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__unbroken_60__w54"
+    },
+    {
+      "expected": [
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__unbroken_200__w52"
+    },
+    {
+      "expected": [
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__unbroken_200__w54"
+    },
+    {
+      "expected": [
+        "one two three separated by non-breaking spaces"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "one two three separated by non-breaking spaces",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__nbsp__w52"
+    },
+    {
+      "expected": [
+        "one two three separated by non-breaking spaces"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "one two three separated by non-breaking spaces",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__nbsp__w54"
+    },
+    {
+      "expected": [
+        "one two three separated by ideographic spaces"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "one　two　three separated by ideographic spaces",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__ideographic_space__w52"
+    },
+    {
+      "expected": [
+        "one two three separated by ideographic spaces"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "one　two　three separated by ideographic spaces",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__ideographic_space__w54"
+    },
+    {
+      "expected": [
+        "one two three separated by a unit separator"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "one\u001ftwo three separated by a unit separator",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__unit_separator__w52"
+    },
+    {
+      "expected": [
+        "one two three separated by a unit separator"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "one\u001ftwo three separated by a unit separator",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__unit_separator__w54"
+    },
+    {
+      "expected": [
+        "one﻿two three joined by a byte-order mark"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "one﻿two three joined by a byte-order mark",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__bom_joined__w52"
+    },
+    {
+      "expected": [
+        "one﻿two three joined by a byte-order mark"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "one﻿two three joined by a byte-order mark",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__bom_joined__w54"
+    },
+    {
+      "expected": [
+        "first block second block after a form feed"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "first block\fsecond block after a form feed",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__form_feed__w52"
+    },
+    {
+      "expected": [
+        "first block second block after a form feed"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "first block\fsecond block after a form feed",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__form_feed__w54"
+    },
+    {
+      "expected": [
+        "first paragraph second paragraph after blanks third"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "first paragraph\n\n\nsecond paragraph after blanks\n\nthird",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__multi_paragraph__w52"
+    },
+    {
+      "expected": [
+        "first paragraph second paragraph after blanks third"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "first paragraph\n\n\nsecond paragraph after blanks\n\nthird",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__multi_paragraph__w54"
+    },
+    {
+      "expected": [
+        "padded on both ends"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "\n\n  padded on both ends  \n\n",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__leading_blanks__w52"
+    },
+    {
+      "expected": [
+        "padded on both ends"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "\n\n  padded on both ends  \n\n",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__leading_blanks__w54"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__empty__w52"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__empty__w54"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "     ",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__only_spaces__w52"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "     ",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__only_spaces__w54"
+    },
+    {
+      "expected": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__at_52__w52"
+    },
+    {
+      "expected": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__at_52__w54"
+    },
+    {
+      "expected": [
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "b"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__at_53__w52"
+    },
+    {
+      "expected": [
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__at_53__w54"
+    },
+    {
+      "expected": [
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "cc"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "cccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__at_54__w52"
+    },
+    {
+      "expected": [
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "cccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__at_54__w54"
+    },
+    {
+      "expected": [
+        "dddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "ddd"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "ddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__at_55__w52"
+    },
+    {
+      "expected": [
+        "dddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "d"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "ddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__at_55__w54"
+    },
+    {
+      "expected": [
+        "docs/project/roadmap/cv22-typescript-core-port/cv22-",
+        "ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tre",
+        "e/index.md"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__long_path__w52"
+    },
+    {
+      "expected": [
+        "docs/project/roadmap/cv22-typescript-core-port/cv22-ds",
+        "7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/in",
+        "dex.md"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__long_path__w54"
+    },
+    {
+      "expected": [
+        "short lead",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxxxx",
+        "trailing words after"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "short lead xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx trailing words after",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__flush_then_chunk__w52"
+    },
+    {
+      "expected": [
+        "short lead",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxx",
+        "trailing words after"
+      ],
+      "input": {
+        "owner": "lifecycle",
+        "text": "short lead xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx trailing words after",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__lifecycle__flush_then_chunk__w54"
+    },
+    {
+      "expected": [
+        "🟪 a chapter and 🟦 a story carried through one",
+        "Builder card"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "🟪 a chapter and 🟦 a story carried through one Builder card",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__astral__w52"
+    },
+    {
+      "expected": [
+        "🟪 a chapter and 🟦 a story carried through one Builder",
+        "card"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "🟪 a chapter and 🟦 a story carried through one Builder card",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__astral__w54"
+    },
+    {
+      "expected": [
+        "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__cjk__w52"
+    },
+    {
+      "expected": [
+        "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__cjk__w54"
+    },
+    {
+      "expected": [
+        "á é í combining acutes counting two code points",
+        "each"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "á é í combining acutes counting two code points each",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__combining__w52"
+    },
+    {
+      "expected": [
+        "á é í combining acutes counting two code points",
+        "each"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "á é í combining acutes counting two code points each",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__combining__w54"
+    },
+    {
+      "expected": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxxxx"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__unbroken_60__w52"
+    },
+    {
+      "expected": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxx"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__unbroken_60__w54"
+    },
+    {
+      "expected": [
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__unbroken_200__w52"
+    },
+    {
+      "expected": [
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__unbroken_200__w54"
+    },
+    {
+      "expected": [
+        "one two three separated by non-breaking spaces"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "one two three separated by non-breaking spaces",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__nbsp__w52"
+    },
+    {
+      "expected": [
+        "one two three separated by non-breaking spaces"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "one two three separated by non-breaking spaces",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__nbsp__w54"
+    },
+    {
+      "expected": [
+        "one two three separated by ideographic spaces"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "one　two　three separated by ideographic spaces",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__ideographic_space__w52"
+    },
+    {
+      "expected": [
+        "one two three separated by ideographic spaces"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "one　two　three separated by ideographic spaces",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__ideographic_space__w54"
+    },
+    {
+      "expected": [
+        "one two three separated by a unit separator"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "one\u001ftwo three separated by a unit separator",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__unit_separator__w52"
+    },
+    {
+      "expected": [
+        "one two three separated by a unit separator"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "one\u001ftwo three separated by a unit separator",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__unit_separator__w54"
+    },
+    {
+      "expected": [
+        "one﻿two three joined by a byte-order mark"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "one﻿two three joined by a byte-order mark",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__bom_joined__w52"
+    },
+    {
+      "expected": [
+        "one﻿two three joined by a byte-order mark"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "one﻿two three joined by a byte-order mark",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__bom_joined__w54"
+    },
+    {
+      "expected": [
+        "first block second block after a form feed"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "first block\fsecond block after a form feed",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__form_feed__w52"
+    },
+    {
+      "expected": [
+        "first block second block after a form feed"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "first block\fsecond block after a form feed",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__form_feed__w54"
+    },
+    {
+      "expected": [
+        "first paragraph second paragraph after blanks third"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "first paragraph\n\n\nsecond paragraph after blanks\n\nthird",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__multi_paragraph__w52"
+    },
+    {
+      "expected": [
+        "first paragraph second paragraph after blanks third"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "first paragraph\n\n\nsecond paragraph after blanks\n\nthird",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__multi_paragraph__w54"
+    },
+    {
+      "expected": [
+        "padded on both ends"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "\n\n  padded on both ends  \n\n",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__leading_blanks__w52"
+    },
+    {
+      "expected": [
+        "padded on both ends"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "\n\n  padded on both ends  \n\n",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__leading_blanks__w54"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__empty__w52"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__empty__w54"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "     ",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__only_spaces__w52"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "     ",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__only_spaces__w54"
+    },
+    {
+      "expected": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__at_52__w52"
+    },
+    {
+      "expected": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__at_52__w54"
+    },
+    {
+      "expected": [
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "b"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__at_53__w52"
+    },
+    {
+      "expected": [
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__at_53__w54"
+    },
+    {
+      "expected": [
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "cc"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "cccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__at_54__w52"
+    },
+    {
+      "expected": [
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "cccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__at_54__w54"
+    },
+    {
+      "expected": [
+        "dddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "ddd"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "ddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__at_55__w52"
+    },
+    {
+      "expected": [
+        "dddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "d"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "ddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__at_55__w54"
+    },
+    {
+      "expected": [
+        "docs/project/roadmap/cv22-typescript-core-port/cv22-",
+        "ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tre",
+        "e/index.md"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__long_path__w52"
+    },
+    {
+      "expected": [
+        "docs/project/roadmap/cv22-typescript-core-port/cv22-ds",
+        "7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/in",
+        "dex.md"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__long_path__w54"
+    },
+    {
+      "expected": [
+        "short lead",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxxxx",
+        "trailing words after"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "short lead xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx trailing words after",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__flush_then_chunk__w52"
+    },
+    {
+      "expected": [
+        "short lead",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxx",
+        "trailing words after"
+      ],
+      "input": {
+        "owner": "pull_candidates",
+        "text": "short lead xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx trailing words after",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__pull_candidates__flush_then_chunk__w54"
+    },
+    {
+      "expected": [
+        "🟪 a chapter and 🟦 a story carried through one",
+        "Builder card"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "🟪 a chapter and 🟦 a story carried through one Builder card",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__astral__w52"
+    },
+    {
+      "expected": [
+        "🟪 a chapter and 🟦 a story carried through one Builder",
+        "card"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "🟪 a chapter and 🟦 a story carried through one Builder card",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__astral__w54"
+    },
+    {
+      "expected": [
+        "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__cjk__w52"
+    },
+    {
+      "expected": [
+        "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__cjk__w54"
+    },
+    {
+      "expected": [
+        "á é í combining acutes counting two code points",
+        "each"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "á é í combining acutes counting two code points each",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__combining__w52"
+    },
+    {
+      "expected": [
+        "á é í combining acutes counting two code points",
+        "each"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "á é í combining acutes counting two code points each",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__combining__w54"
+    },
+    {
+      "expected": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__unbroken_60__w52"
+    },
+    {
+      "expected": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__unbroken_60__w54"
+    },
+    {
+      "expected": [
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__unbroken_200__w52"
+    },
+    {
+      "expected": [
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__unbroken_200__w54"
+    },
+    {
+      "expected": [
+        "one two three separated by non-breaking spaces"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "one two three separated by non-breaking spaces",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__nbsp__w52"
+    },
+    {
+      "expected": [
+        "one two three separated by non-breaking spaces"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "one two three separated by non-breaking spaces",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__nbsp__w54"
+    },
+    {
+      "expected": [
+        "one two three separated by ideographic spaces"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "one　two　three separated by ideographic spaces",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__ideographic_space__w52"
+    },
+    {
+      "expected": [
+        "one two three separated by ideographic spaces"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "one　two　three separated by ideographic spaces",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__ideographic_space__w54"
+    },
+    {
+      "expected": [
+        "one two three separated by a unit separator"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "one\u001ftwo three separated by a unit separator",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__unit_separator__w52"
+    },
+    {
+      "expected": [
+        "one two three separated by a unit separator"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "one\u001ftwo three separated by a unit separator",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__unit_separator__w54"
+    },
+    {
+      "expected": [
+        "one﻿two three joined by a byte-order mark"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "one﻿two three joined by a byte-order mark",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__bom_joined__w52"
+    },
+    {
+      "expected": [
+        "one﻿two three joined by a byte-order mark"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "one﻿two three joined by a byte-order mark",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__bom_joined__w54"
+    },
+    {
+      "expected": [
+        "first block second block after a form feed"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "first block\fsecond block after a form feed",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__form_feed__w52"
+    },
+    {
+      "expected": [
+        "first block second block after a form feed"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "first block\fsecond block after a form feed",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__form_feed__w54"
+    },
+    {
+      "expected": [
+        "first paragraph second paragraph after blanks third"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "first paragraph\n\n\nsecond paragraph after blanks\n\nthird",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__multi_paragraph__w52"
+    },
+    {
+      "expected": [
+        "first paragraph second paragraph after blanks third"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "first paragraph\n\n\nsecond paragraph after blanks\n\nthird",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__multi_paragraph__w54"
+    },
+    {
+      "expected": [
+        "padded on both ends"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "\n\n  padded on both ends  \n\n",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__leading_blanks__w52"
+    },
+    {
+      "expected": [
+        "padded on both ends"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "\n\n  padded on both ends  \n\n",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__leading_blanks__w54"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__empty__w52"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__empty__w54"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "     ",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__only_spaces__w52"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "     ",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__only_spaces__w54"
+    },
+    {
+      "expected": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__at_52__w52"
+    },
+    {
+      "expected": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__at_52__w54"
+    },
+    {
+      "expected": [
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__at_53__w52"
+    },
+    {
+      "expected": [
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__at_53__w54"
+    },
+    {
+      "expected": [
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "cccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__at_54__w52"
+    },
+    {
+      "expected": [
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "cccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__at_54__w54"
+    },
+    {
+      "expected": [
+        "ddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "ddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__at_55__w52"
+    },
+    {
+      "expected": [
+        "ddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "ddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__at_55__w54"
+    },
+    {
+      "expected": [
+        "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__long_path__w52"
+    },
+    {
+      "expected": [
+        "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__long_path__w54"
+    },
+    {
+      "expected": [
+        "short lead",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "trailing words after"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "short lead xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx trailing words after",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__flush_then_chunk__w52"
+    },
+    {
+      "expected": [
+        "short lead",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "trailing words after"
+      ],
+      "input": {
+        "owner": "release_intent",
+        "text": "short lead xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx trailing words after",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__release_intent__flush_then_chunk__w54"
+    },
+    {
+      "expected": [
+        "🟪 a chapter and 🟦 a story carried through one",
+        "Builder card"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "🟪 a chapter and 🟦 a story carried through one Builder card",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__astral__w52"
+    },
+    {
+      "expected": [
+        "🟪 a chapter and 🟦 a story carried through one Builder",
+        "card"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "🟪 a chapter and 🟦 a story carried through one Builder card",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__astral__w54"
+    },
+    {
+      "expected": [
+        "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__cjk__w52"
+    },
+    {
+      "expected": [
+        "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__cjk__w54"
+    },
+    {
+      "expected": [
+        "á é í combining acutes counting two code points",
+        "each"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "á é í combining acutes counting two code points each",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__combining__w52"
+    },
+    {
+      "expected": [
+        "á é í combining acutes counting two code points",
+        "each"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "á é í combining acutes counting two code points each",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__combining__w54"
+    },
+    {
+      "expected": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxxxx"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__unbroken_60__w52"
+    },
+    {
+      "expected": [
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxx"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__unbroken_60__w54"
+    },
+    {
+      "expected": [
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__unbroken_200__w52"
+    },
+    {
+      "expected": [
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__unbroken_200__w54"
+    },
+    {
+      "expected": [
+        "one two three separated by non-breaking spaces"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "one two three separated by non-breaking spaces",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__nbsp__w52"
+    },
+    {
+      "expected": [
+        "one two three separated by non-breaking spaces"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "one two three separated by non-breaking spaces",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__nbsp__w54"
+    },
+    {
+      "expected": [
+        "one two three separated by ideographic spaces"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "one　two　three separated by ideographic spaces",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__ideographic_space__w52"
+    },
+    {
+      "expected": [
+        "one two three separated by ideographic spaces"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "one　two　three separated by ideographic spaces",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__ideographic_space__w54"
+    },
+    {
+      "expected": [
+        "one two three separated by a unit separator"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "one\u001ftwo three separated by a unit separator",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__unit_separator__w52"
+    },
+    {
+      "expected": [
+        "one two three separated by a unit separator"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "one\u001ftwo three separated by a unit separator",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__unit_separator__w54"
+    },
+    {
+      "expected": [
+        "one﻿two three joined by a byte-order mark"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "one﻿two three joined by a byte-order mark",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__bom_joined__w52"
+    },
+    {
+      "expected": [
+        "one﻿two three joined by a byte-order mark"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "one﻿two three joined by a byte-order mark",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__bom_joined__w54"
+    },
+    {
+      "expected": [
+        "first block second block after a form feed"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "first block\fsecond block after a form feed",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__form_feed__w52"
+    },
+    {
+      "expected": [
+        "first block second block after a form feed"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "first block\fsecond block after a form feed",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__form_feed__w54"
+    },
+    {
+      "expected": [
+        "first paragraph second paragraph after blanks third"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "first paragraph\n\n\nsecond paragraph after blanks\n\nthird",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__multi_paragraph__w52"
+    },
+    {
+      "expected": [
+        "first paragraph second paragraph after blanks third"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "first paragraph\n\n\nsecond paragraph after blanks\n\nthird",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__multi_paragraph__w54"
+    },
+    {
+      "expected": [
+        "padded on both ends"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "\n\n  padded on both ends  \n\n",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__leading_blanks__w52"
+    },
+    {
+      "expected": [
+        "padded on both ends"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "\n\n  padded on both ends  \n\n",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__leading_blanks__w54"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__empty__w52"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__empty__w54"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "     ",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__only_spaces__w52"
+    },
+    {
+      "expected": [
+        "none"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "     ",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__only_spaces__w54"
+    },
+    {
+      "expected": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__at_52__w52"
+    },
+    {
+      "expected": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__at_52__w54"
+    },
+    {
+      "expected": [
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "b"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__at_53__w52"
+    },
+    {
+      "expected": [
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__at_53__w54"
+    },
+    {
+      "expected": [
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "cc"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "cccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__at_54__w52"
+    },
+    {
+      "expected": [
+        "cccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "cccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__at_54__w54"
+    },
+    {
+      "expected": [
+        "dddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "ddd"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "ddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__at_55__w52"
+    },
+    {
+      "expected": [
+        "dddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "d"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "ddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__at_55__w54"
+    },
+    {
+      "expected": [
+        "docs/project/roadmap/cv22-typescript-core-port/cv22-",
+        "ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tre",
+        "e/index.md"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__long_path__w52"
+    },
+    {
+      "expected": [
+        "docs/project/roadmap/cv22-typescript-core-port/cv22-ds",
+        "7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/in",
+        "dex.md"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__long_path__w54"
+    },
+    {
+      "expected": [
+        "short lead",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxxxx",
+        "trailing words after"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "short lead xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx trailing words after",
+        "width": 52
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__flush_then_chunk__w52"
+    },
+    {
+      "expected": [
+        "short lead",
+        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "xxxxxx",
+        "trailing words after"
+      ],
+      "input": {
+        "owner": "resume_surface",
+        "text": "short lead xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx trailing words after",
+        "width": 54
+      },
+      "kind": "wrap_plain_text",
+      "name": "wrap__resume_surface__flush_then_chunk__w54"
+    },
+    {
+      "expected": "│ 🟪 a chapter and 🟦 a story carried through one Builder  │",
+      "input": {
+        "text": "🟪 a chapter and 🟦 a story carried through one Builder card"
+      },
+      "kind": "card_text",
+      "name": "card_text__astral"
+    },
+    {
+      "expected": "│ 交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則                   │",
+      "input": {
+        "text": "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則"
+      },
+      "kind": "card_text",
+      "name": "card_text__cjk"
+    },
+    {
+      "expected": "│ á é í combining acutes counting two code points eac │",
+      "input": {
+        "text": "á é í combining acutes counting two code points each"
+      },
+      "kind": "card_text",
+      "name": "card_text__combining"
+    },
+    {
+      "expected": "│ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx │",
+      "input": {
+        "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      },
+      "kind": "card_text",
+      "name": "card_text__unbroken_60"
+    },
+    {
+      "expected": "│ yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy │",
+      "input": {
+        "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+      },
+      "kind": "card_text",
+      "name": "card_text__unbroken_200"
+    },
+    {
+      "expected": "│ one two three separated by non-breaking spaces         │",
+      "input": {
+        "text": "one two three separated by non-breaking spaces"
+      },
+      "kind": "card_text",
+      "name": "card_text__nbsp"
+    },
+    {
+      "expected": "│ one　two　three separated by ideographic spaces          │",
+      "input": {
+        "text": "one　two　three separated by ideographic spaces"
+      },
+      "kind": "card_text",
+      "name": "card_text__ideographic_space"
+    },
+    {
+      "expected": "│ one\u001ftwo three separated by a unit separator            │",
+      "input": {
+        "text": "one\u001ftwo three separated by a unit separator"
+      },
+      "kind": "card_text",
+      "name": "card_text__unit_separator"
+    },
+    {
+      "expected": "│ one﻿two three joined by a byte-order mark              │",
+      "input": {
+        "text": "one﻿two three joined by a byte-order mark"
+      },
+      "kind": "card_text",
+      "name": "card_text__bom_joined"
+    },
+    {
+      "expected": "│ first block\fsecond block after a form feed             │",
+      "input": {
+        "text": "first block\fsecond block after a form feed"
+      },
+      "kind": "card_text",
+      "name": "card_text__form_feed"
+    },
+    {
+      "expected": "│ first paragraph\n\n\nsecond paragraph after blanks\n\nthird │",
+      "input": {
+        "text": "first paragraph\n\n\nsecond paragraph after blanks\n\nthird"
+      },
+      "kind": "card_text",
+      "name": "card_text__multi_paragraph"
+    },
+    {
+      "expected": "│ \n\n  padded on both ends  \n\n                            │",
+      "input": {
+        "text": "\n\n  padded on both ends  \n\n"
+      },
+      "kind": "card_text",
+      "name": "card_text__leading_blanks"
+    },
+    {
+      "expected": "│                                                        │",
+      "input": {
+        "text": ""
+      },
+      "kind": "card_text",
+      "name": "card_text__empty"
+    },
+    {
+      "expected": "│                                                        │",
+      "input": {
+        "text": "     "
+      },
+      "kind": "card_text",
+      "name": "card_text__only_spaces"
+    },
+    {
+      "expected": "│ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa   │",
+      "input": {
+        "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "kind": "card_text",
+      "name": "card_text__at_52"
+    },
+    {
+      "expected": "│ bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb  │",
+      "input": {
+        "text": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "kind": "card_text",
+      "name": "card_text__at_53"
+    },
+    {
+      "expected": "│ cccccccccccccccccccccccccccccccccccccccccccccccccccccc │",
+      "input": {
+        "text": "cccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "kind": "card_text",
+      "name": "card_text__at_54"
+    },
+    {
+      "expected": "│ dddddddddddddddddddddddddddddddddddddddddddddddddddddd │",
+      "input": {
+        "text": "ddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "kind": "card_text",
+      "name": "card_text__at_55"
+    },
+    {
+      "expected": "│ docs/project/roadmap/cv22-typescript-core-port/cv22-ds │",
+      "input": {
+        "text": "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md"
+      },
+      "kind": "card_text",
+      "name": "card_text__long_path"
+    },
+    {
+      "expected": "│ short lead xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx │",
+      "input": {
+        "text": "short lead xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx trailing words after"
+      },
+      "kind": "card_text",
+      "name": "card_text__flush_then_chunk"
+    },
+    {
+      "expected": [
+        "│ 🟪 a chapter and 🟦 a story carried through one Builder  │",
+        "│ card                                                   │"
+      ],
+      "input": {
+        "text": "🟪 a chapter and 🟦 a story carried through one Builder card"
+      },
+      "kind": "card_wrapped",
+      "name": "card_wrapped__astral"
+    },
+    {
+      "expected": [
+        "│ 交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則                   │"
+      ],
+      "input": {
+        "text": "交付故事在被拉取之前必須先被展開否則計劃將指向一個不可實作的層級這是規則"
+      },
+      "kind": "card_wrapped",
+      "name": "card_wrapped__cjk"
+    },
+    {
+      "expected": [
+        "│ á é í combining acutes counting two code points     │",
+        "│ each                                                   │"
+      ],
+      "input": {
+        "text": "á é í combining acutes counting two code points each"
+      },
+      "kind": "card_wrapped",
+      "name": "card_wrapped__combining"
+    },
+    {
+      "expected": [
+        "│ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx │",
+        "│ xxxxxx                                                 │"
+      ],
+      "input": {
+        "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      },
+      "kind": "card_wrapped",
+      "name": "card_wrapped__unbroken_60"
+    },
+    {
+      "expected": [
+        "│ yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy │",
+        "│ yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy │",
+        "│ yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy │",
+        "│ yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy                 │"
+      ],
+      "input": {
+        "text": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+      },
+      "kind": "card_wrapped",
+      "name": "card_wrapped__unbroken_200"
+    },
+    {
+      "expected": [
+        "│ one two three separated by non-breaking spaces         │"
+      ],
+      "input": {
+        "text": "one two three separated by non-breaking spaces"
+      },
+      "kind": "card_wrapped",
+      "name": "card_wrapped__nbsp"
+    },
+    {
+      "expected": [
+        "│ one two three separated by ideographic spaces          │"
+      ],
+      "input": {
+        "text": "one　two　three separated by ideographic spaces"
+      },
+      "kind": "card_wrapped",
+      "name": "card_wrapped__ideographic_space"
+    },
+    {
+      "expected": [
+        "│ one two three separated by a unit separator            │"
+      ],
+      "input": {
+        "text": "one\u001ftwo three separated by a unit separator"
+      },
+      "kind": "card_wrapped",
+      "name": "card_wrapped__unit_separator"
+    },
+    {
+      "expected": [
+        "│ one﻿two three joined by a byte-order mark              │"
+      ],
+      "input": {
+        "text": "one﻿two three joined by a byte-order mark"
+      },
+      "kind": "card_wrapped",
+      "name": "card_wrapped__bom_joined"
+    },
+    {
+      "expected": [
+        "│ first block second block after a form feed             │"
+      ],
+      "input": {
+        "text": "first block\fsecond block after a form feed"
+      },
+      "kind": "card_wrapped",
+      "name": "card_wrapped__form_feed"
+    },
+    {
+      "expected": [
+        "│ first paragraph second paragraph after blanks third    │"
+      ],
+      "input": {
+        "text": "first paragraph\n\n\nsecond paragraph after blanks\n\nthird"
+      },
+      "kind": "card_wrapped",
+      "name": "card_wrapped__multi_paragraph"
+    },
+    {
+      "expected": [
+        "│ padded on both ends                                    │"
+      ],
+      "input": {
+        "text": "\n\n  padded on both ends  \n\n"
+      },
+      "kind": "card_wrapped",
+      "name": "card_wrapped__leading_blanks"
+    },
+    {
+      "expected": [
+        "│ none                                                   │"
+      ],
+      "input": {
+        "text": ""
+      },
+      "kind": "card_wrapped",
+      "name": "card_wrapped__empty"
+    },
+    {
+      "expected": [
+        "│ none                                                   │"
+      ],
+      "input": {
+        "text": "     "
+      },
+      "kind": "card_wrapped",
+      "name": "card_wrapped__only_spaces"
+    },
+    {
+      "expected": [
+        "│ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa   │"
+      ],
+      "input": {
+        "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "kind": "card_wrapped",
+      "name": "card_wrapped__at_52"
+    },
+    {
+      "expected": [
+        "│ bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb  │"
+      ],
+      "input": {
+        "text": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "kind": "card_wrapped",
+      "name": "card_wrapped__at_53"
+    },
+    {
+      "expected": [
+        "│ cccccccccccccccccccccccccccccccccccccccccccccccccccccc │"
+      ],
+      "input": {
+        "text": "cccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "kind": "card_wrapped",
+      "name": "card_wrapped__at_54"
+    },
+    {
+      "expected": [
+        "│ dddddddddddddddddddddddddddddddddddddddddddddddddddddd │",
+        "│ d                                                      │"
+      ],
+      "input": {
+        "text": "ddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "kind": "card_wrapped",
+      "name": "card_wrapped__at_55"
+    },
+    {
+      "expected": [
+        "│ docs/project/roadmap/cv22-typescript-core-port/cv22-ds │",
+        "│ 7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/in │",
+        "│ dex.md                                                 │"
+      ],
+      "input": {
+        "text": "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md"
+      },
+      "kind": "card_wrapped",
+      "name": "card_wrapped__long_path"
+    },
+    {
+      "expected": [
+        "│ short lead                                             │",
+        "│ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx │",
+        "│ xxxxxx                                                 │",
+        "│ trailing words after                                   │"
+      ],
+      "input": {
+        "text": "short lead xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx trailing words after"
+      },
+      "kind": "card_wrapped",
+      "name": "card_wrapped__flush_then_chunk"
+    },
+    {
+      "expected": [
+        "│ none                                                   │"
+      ],
+      "input": {
+        "items": [],
+        "owner": "delivery_story_closure",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__delivery_story_closure__empty_tuple"
+    },
+    {
+      "expected": [
+        "│ ✓ one finding                                          │"
+      ],
+      "input": {
+        "items": [
+          "one finding"
+        ],
+        "owner": "delivery_story_closure",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__delivery_story_closure__single"
+    },
+    {
+      "expected": [
+        "│ ✕ first finding                                        │",
+        "│ ✕ second finding                                       │"
+      ],
+      "input": {
+        "items": [
+          "first finding",
+          "second finding"
+        ],
+        "owner": "delivery_story_closure",
+        "prefix": "✕"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__delivery_story_closure__two"
+    },
+    {
+      "expected": [
+        "│ ✓ none                                                 │",
+        "│ ✓ none                                                 │"
+      ],
+      "input": {
+        "items": [
+          "",
+          ""
+        ],
+        "owner": "delivery_story_closure",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__delivery_story_closure__blank_strings"
+    },
+    {
+      "expected": [
+        "│ ✓ none                                                 │"
+      ],
+      "input": {
+        "items": [
+          "   "
+        ],
+        "owner": "delivery_story_closure",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__delivery_story_closure__only_spaces"
+    },
+    {
+      "expected": [
+        "│ ○ a bulleted finding                                   │",
+        "│ ○ another one                                          │"
+      ],
+      "input": {
+        "items": [
+          "- a bulleted finding",
+          "- another one"
+        ],
+        "owner": "delivery_story_closure",
+        "prefix": "○"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__delivery_story_closure__bulleted"
+    },
+    {
+      "expected": [
+        "│ ○ bulleted                                             │",
+        "│ ○ unbulleted                                           │"
+      ],
+      "input": {
+        "items": [
+          "- bulleted",
+          "unbulleted"
+        ],
+        "owner": "delivery_story_closure",
+        "prefix": "○"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__delivery_story_closure__mixed_bullets"
+    },
+    {
+      "expected": [
+        "│ ○ -not a bullet                                        │"
+      ],
+      "input": {
+        "items": [
+          "-not a bullet"
+        ],
+        "owner": "delivery_story_closure",
+        "prefix": "○"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__delivery_story_closure__dash_no_space"
+    },
+    {
+      "expected": [
+        "│ ✓ docs/project/roadmap/cv22-typescript-core-port/cv22- │",
+        "│   ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tre │",
+        "│   e/index.md                                           │"
+      ],
+      "input": {
+        "items": [
+          "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md"
+        ],
+        "owner": "delivery_story_closure",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__delivery_story_closure__wraps"
+    },
+    {
+      "expected": [
+        "│ ✓ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx │",
+        "│   xxxxxxxx                                             │"
+      ],
+      "input": {
+        "items": [
+          "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        ],
+        "owner": "delivery_story_closure",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__delivery_story_closure__chunks"
+    },
+    {
+      "expected": [
+        "│ 🧰 🟪 a chapter and 🟦 a story carried through one        │",
+        "│   Builder card                                         │"
+      ],
+      "input": {
+        "items": [
+          "🟪 a chapter and 🟦 a story carried through one Builder card"
+        ],
+        "owner": "delivery_story_closure",
+        "prefix": "🧰"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__delivery_story_closure__astral"
+    },
+    {
+      "expected": [
+        "│ ✓ first paragraph second paragraph after blanks third  │"
+      ],
+      "input": {
+        "items": [
+          "first paragraph\n\n\nsecond paragraph after blanks\n\nthird"
+        ],
+        "owner": "delivery_story_closure",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__delivery_story_closure__multi_paragraph"
+    },
+    {
+      "expected": [
+        "│ none                                                   │"
+      ],
+      "input": {
+        "items": [],
+        "owner": "delivery_story_plan",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__delivery_story_plan__empty_tuple"
+    },
+    {
+      "expected": [
+        "│ ✓ one finding                                          │"
+      ],
+      "input": {
+        "items": [
+          "one finding"
+        ],
+        "owner": "delivery_story_plan",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__delivery_story_plan__single"
+    },
+    {
+      "expected": [
+        "│ ✕ first finding                                        │",
+        "│ ✕ second finding                                       │"
+      ],
+      "input": {
+        "items": [
+          "first finding",
+          "second finding"
+        ],
+        "owner": "delivery_story_plan",
+        "prefix": "✕"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__delivery_story_plan__two"
+    },
+    {
+      "expected": [
+        "│ ✓ none                                                 │",
+        "│ ✓ none                                                 │"
+      ],
+      "input": {
+        "items": [
+          "",
+          ""
+        ],
+        "owner": "delivery_story_plan",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__delivery_story_plan__blank_strings"
+    },
+    {
+      "expected": [
+        "│ ✓ none                                                 │"
+      ],
+      "input": {
+        "items": [
+          "   "
+        ],
+        "owner": "delivery_story_plan",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__delivery_story_plan__only_spaces"
+    },
+    {
+      "expected": [
+        "│ ○ - a bulleted finding                                 │",
+        "│ ○ - another one                                        │"
+      ],
+      "input": {
+        "items": [
+          "- a bulleted finding",
+          "- another one"
+        ],
+        "owner": "delivery_story_plan",
+        "prefix": "○"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__delivery_story_plan__bulleted"
+    },
+    {
+      "expected": [
+        "│ ○ - bulleted                                           │",
+        "│ ○ unbulleted                                           │"
+      ],
+      "input": {
+        "items": [
+          "- bulleted",
+          "unbulleted"
+        ],
+        "owner": "delivery_story_plan",
+        "prefix": "○"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__delivery_story_plan__mixed_bullets"
+    },
+    {
+      "expected": [
+        "│ ○ -not a bullet                                        │"
+      ],
+      "input": {
+        "items": [
+          "-not a bullet"
+        ],
+        "owner": "delivery_story_plan",
+        "prefix": "○"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__delivery_story_plan__dash_no_space"
+    },
+    {
+      "expected": [
+        "│ ✓ docs/project/roadmap/cv22-typescript-core-port/cv22- │",
+        "│   ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tre │",
+        "│   e/index.md                                           │"
+      ],
+      "input": {
+        "items": [
+          "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md"
+        ],
+        "owner": "delivery_story_plan",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__delivery_story_plan__wraps"
+    },
+    {
+      "expected": [
+        "│ ✓ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx │",
+        "│   xxxxxxxx                                             │"
+      ],
+      "input": {
+        "items": [
+          "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        ],
+        "owner": "delivery_story_plan",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__delivery_story_plan__chunks"
+    },
+    {
+      "expected": [
+        "│ 🧰 🟪 a chapter and 🟦 a story carried through one        │",
+        "│   Builder card                                         │"
+      ],
+      "input": {
+        "items": [
+          "🟪 a chapter and 🟦 a story carried through one Builder card"
+        ],
+        "owner": "delivery_story_plan",
+        "prefix": "🧰"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__delivery_story_plan__astral"
+    },
+    {
+      "expected": [
+        "│ ✓ first paragraph second paragraph after blanks third  │"
+      ],
+      "input": {
+        "items": [
+          "first paragraph\n\n\nsecond paragraph after blanks\n\nthird"
+        ],
+        "owner": "delivery_story_plan",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__delivery_story_plan__multi_paragraph"
+    },
+    {
+      "expected": [
+        "│ none                                                   │"
+      ],
+      "input": {
+        "items": [],
+        "owner": "flow_unit",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__flow_unit__empty_tuple"
+    },
+    {
+      "expected": [
+        "│ ✓ one finding                                          │"
+      ],
+      "input": {
+        "items": [
+          "one finding"
+        ],
+        "owner": "flow_unit",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__flow_unit__single"
+    },
+    {
+      "expected": [
+        "│ ✕ first finding                                        │",
+        "│ ✕ second finding                                       │"
+      ],
+      "input": {
+        "items": [
+          "first finding",
+          "second finding"
+        ],
+        "owner": "flow_unit",
+        "prefix": "✕"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__flow_unit__two"
+    },
+    {
+      "expected": [
+        "│ ✓ none                                                 │",
+        "│ ✓ none                                                 │"
+      ],
+      "input": {
+        "items": [
+          "",
+          ""
+        ],
+        "owner": "flow_unit",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__flow_unit__blank_strings"
+    },
+    {
+      "expected": [
+        "│ ✓ none                                                 │"
+      ],
+      "input": {
+        "items": [
+          "   "
+        ],
+        "owner": "flow_unit",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__flow_unit__only_spaces"
+    },
+    {
+      "expected": [
+        "│ ○ - a bulleted finding                                 │",
+        "│ ○ - another one                                        │"
+      ],
+      "input": {
+        "items": [
+          "- a bulleted finding",
+          "- another one"
+        ],
+        "owner": "flow_unit",
+        "prefix": "○"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__flow_unit__bulleted"
+    },
+    {
+      "expected": [
+        "│ ○ - bulleted                                           │",
+        "│ ○ unbulleted                                           │"
+      ],
+      "input": {
+        "items": [
+          "- bulleted",
+          "unbulleted"
+        ],
+        "owner": "flow_unit",
+        "prefix": "○"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__flow_unit__mixed_bullets"
+    },
+    {
+      "expected": [
+        "│ ○ -not a bullet                                        │"
+      ],
+      "input": {
+        "items": [
+          "-not a bullet"
+        ],
+        "owner": "flow_unit",
+        "prefix": "○"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__flow_unit__dash_no_space"
+    },
+    {
+      "expected": [
+        "│ ✓ docs/project/roadmap/cv22-typescript-core-port/cv22- │",
+        "│   ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tre │",
+        "│   e/index.md                                           │"
+      ],
+      "input": {
+        "items": [
+          "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md"
+        ],
+        "owner": "flow_unit",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__flow_unit__wraps"
+    },
+    {
+      "expected": [
+        "│ ✓ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx │",
+        "│   xxxxxxxx                                             │"
+      ],
+      "input": {
+        "items": [
+          "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        ],
+        "owner": "flow_unit",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__flow_unit__chunks"
+    },
+    {
+      "expected": [
+        "│ 🧰 🟪 a chapter and 🟦 a story carried through one        │",
+        "│   Builder card                                         │"
+      ],
+      "input": {
+        "items": [
+          "🟪 a chapter and 🟦 a story carried through one Builder card"
+        ],
+        "owner": "flow_unit",
+        "prefix": "🧰"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__flow_unit__astral"
+    },
+    {
+      "expected": [
+        "│ ✓ first paragraph second paragraph after blanks third  │"
+      ],
+      "input": {
+        "items": [
+          "first paragraph\n\n\nsecond paragraph after blanks\n\nthird"
+        ],
+        "owner": "flow_unit",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__flow_unit__multi_paragraph"
+    },
+    {
+      "expected": [
+        "│ none                                                   │"
+      ],
+      "input": {
+        "items": [],
+        "owner": "home_surface",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__home_surface__empty_tuple"
+    },
+    {
+      "expected": [
+        "│ ✓ one finding                                          │"
+      ],
+      "input": {
+        "items": [
+          "one finding"
+        ],
+        "owner": "home_surface",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__home_surface__single"
+    },
+    {
+      "expected": [
+        "│ ✕ first finding                                        │",
+        "│ ✕ second finding                                       │"
+      ],
+      "input": {
+        "items": [
+          "first finding",
+          "second finding"
+        ],
+        "owner": "home_surface",
+        "prefix": "✕"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__home_surface__two"
+    },
+    {
+      "expected": [
+        "│ ✓ none                                                 │",
+        "│ ✓ none                                                 │"
+      ],
+      "input": {
+        "items": [
+          "",
+          ""
+        ],
+        "owner": "home_surface",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__home_surface__blank_strings"
+    },
+    {
+      "expected": [
+        "│ ✓ none                                                 │"
+      ],
+      "input": {
+        "items": [
+          "   "
+        ],
+        "owner": "home_surface",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__home_surface__only_spaces"
+    },
+    {
+      "expected": [
+        "│ ○ - a bulleted finding                                 │",
+        "│ ○ - another one                                        │"
+      ],
+      "input": {
+        "items": [
+          "- a bulleted finding",
+          "- another one"
+        ],
+        "owner": "home_surface",
+        "prefix": "○"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__home_surface__bulleted"
+    },
+    {
+      "expected": [
+        "│ ○ - bulleted                                           │",
+        "│ ○ unbulleted                                           │"
+      ],
+      "input": {
+        "items": [
+          "- bulleted",
+          "unbulleted"
+        ],
+        "owner": "home_surface",
+        "prefix": "○"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__home_surface__mixed_bullets"
+    },
+    {
+      "expected": [
+        "│ ○ -not a bullet                                        │"
+      ],
+      "input": {
+        "items": [
+          "-not a bullet"
+        ],
+        "owner": "home_surface",
+        "prefix": "○"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__home_surface__dash_no_space"
+    },
+    {
+      "expected": [
+        "│ ✓ docs/project/roadmap/cv22-typescript-core-port/cv22- │",
+        "│   ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tre │",
+        "│   e/index.md                                           │"
+      ],
+      "input": {
+        "items": [
+          "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md"
+        ],
+        "owner": "home_surface",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__home_surface__wraps"
+    },
+    {
+      "expected": [
+        "│ ✓ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx │",
+        "│   xxxxxxxx                                             │"
+      ],
+      "input": {
+        "items": [
+          "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        ],
+        "owner": "home_surface",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__home_surface__chunks"
+    },
+    {
+      "expected": [
+        "│ 🧰 🟪 a chapter and 🟦 a story carried through one        │",
+        "│   Builder card                                         │"
+      ],
+      "input": {
+        "items": [
+          "🟪 a chapter and 🟦 a story carried through one Builder card"
+        ],
+        "owner": "home_surface",
+        "prefix": "🧰"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__home_surface__astral"
+    },
+    {
+      "expected": [
+        "│ ✓ first paragraph second paragraph after blanks third  │"
+      ],
+      "input": {
+        "items": [
+          "first paragraph\n\n\nsecond paragraph after blanks\n\nthird"
+        ],
+        "owner": "home_surface",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__home_surface__multi_paragraph"
+    },
+    {
+      "expected": [
+        "│ none                                                   │"
+      ],
+      "input": {
+        "items": [],
+        "owner": "lifecycle",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__lifecycle__empty_tuple"
+    },
+    {
+      "expected": [
+        "│ ✓ one finding                                          │"
+      ],
+      "input": {
+        "items": [
+          "one finding"
+        ],
+        "owner": "lifecycle",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__lifecycle__single"
+    },
+    {
+      "expected": [
+        "│ ✕ first finding                                        │",
+        "│ ✕ second finding                                       │"
+      ],
+      "input": {
+        "items": [
+          "first finding",
+          "second finding"
+        ],
+        "owner": "lifecycle",
+        "prefix": "✕"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__lifecycle__two"
+    },
+    {
+      "expected": [
+        "│ ✓ none                                                 │",
+        "│ ✓ none                                                 │"
+      ],
+      "input": {
+        "items": [
+          "",
+          ""
+        ],
+        "owner": "lifecycle",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__lifecycle__blank_strings"
+    },
+    {
+      "expected": [
+        "│ ✓ none                                                 │"
+      ],
+      "input": {
+        "items": [
+          "   "
+        ],
+        "owner": "lifecycle",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__lifecycle__only_spaces"
+    },
+    {
+      "expected": [
+        "│ ○ - a bulleted finding                                 │",
+        "│ ○ - another one                                        │"
+      ],
+      "input": {
+        "items": [
+          "- a bulleted finding",
+          "- another one"
+        ],
+        "owner": "lifecycle",
+        "prefix": "○"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__lifecycle__bulleted"
+    },
+    {
+      "expected": [
+        "│ ○ - bulleted                                           │",
+        "│ ○ unbulleted                                           │"
+      ],
+      "input": {
+        "items": [
+          "- bulleted",
+          "unbulleted"
+        ],
+        "owner": "lifecycle",
+        "prefix": "○"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__lifecycle__mixed_bullets"
+    },
+    {
+      "expected": [
+        "│ ○ -not a bullet                                        │"
+      ],
+      "input": {
+        "items": [
+          "-not a bullet"
+        ],
+        "owner": "lifecycle",
+        "prefix": "○"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__lifecycle__dash_no_space"
+    },
+    {
+      "expected": [
+        "│ ✓ docs/project/roadmap/cv22-typescript-core-port/cv22- │",
+        "│   ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tre │",
+        "│   e/index.md                                           │"
+      ],
+      "input": {
+        "items": [
+          "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md"
+        ],
+        "owner": "lifecycle",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__lifecycle__wraps"
+    },
+    {
+      "expected": [
+        "│ ✓ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx │",
+        "│   xxxxxxxx                                             │"
+      ],
+      "input": {
+        "items": [
+          "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        ],
+        "owner": "lifecycle",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__lifecycle__chunks"
+    },
+    {
+      "expected": [
+        "│ 🧰 🟪 a chapter and 🟦 a story carried through one        │",
+        "│   Builder card                                         │"
+      ],
+      "input": {
+        "items": [
+          "🟪 a chapter and 🟦 a story carried through one Builder card"
+        ],
+        "owner": "lifecycle",
+        "prefix": "🧰"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__lifecycle__astral"
+    },
+    {
+      "expected": [
+        "│ ✓ first paragraph second paragraph after blanks third  │"
+      ],
+      "input": {
+        "items": [
+          "first paragraph\n\n\nsecond paragraph after blanks\n\nthird"
+        ],
+        "owner": "lifecycle",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__lifecycle__multi_paragraph"
+    },
+    {
+      "expected": [
+        "│ none                                                   │"
+      ],
+      "input": {
+        "items": [],
+        "owner": "pull_candidates",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__pull_candidates__empty_tuple"
+    },
+    {
+      "expected": [
+        "│ ✓ one finding                                          │"
+      ],
+      "input": {
+        "items": [
+          "one finding"
+        ],
+        "owner": "pull_candidates",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__pull_candidates__single"
+    },
+    {
+      "expected": [
+        "│ ✕ first finding                                        │",
+        "│ ✕ second finding                                       │"
+      ],
+      "input": {
+        "items": [
+          "first finding",
+          "second finding"
+        ],
+        "owner": "pull_candidates",
+        "prefix": "✕"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__pull_candidates__two"
+    },
+    {
+      "expected": [
+        "│ ✓ none                                                 │",
+        "│ ✓ none                                                 │"
+      ],
+      "input": {
+        "items": [
+          "",
+          ""
+        ],
+        "owner": "pull_candidates",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__pull_candidates__blank_strings"
+    },
+    {
+      "expected": [
+        "│ ✓ none                                                 │"
+      ],
+      "input": {
+        "items": [
+          "   "
+        ],
+        "owner": "pull_candidates",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__pull_candidates__only_spaces"
+    },
+    {
+      "expected": [
+        "│ ○ - a bulleted finding                                 │",
+        "│ ○ - another one                                        │"
+      ],
+      "input": {
+        "items": [
+          "- a bulleted finding",
+          "- another one"
+        ],
+        "owner": "pull_candidates",
+        "prefix": "○"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__pull_candidates__bulleted"
+    },
+    {
+      "expected": [
+        "│ ○ - bulleted                                           │",
+        "│ ○ unbulleted                                           │"
+      ],
+      "input": {
+        "items": [
+          "- bulleted",
+          "unbulleted"
+        ],
+        "owner": "pull_candidates",
+        "prefix": "○"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__pull_candidates__mixed_bullets"
+    },
+    {
+      "expected": [
+        "│ ○ -not a bullet                                        │"
+      ],
+      "input": {
+        "items": [
+          "-not a bullet"
+        ],
+        "owner": "pull_candidates",
+        "prefix": "○"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__pull_candidates__dash_no_space"
+    },
+    {
+      "expected": [
+        "│ ✓ docs/project/roadmap/cv22-typescript-core-port/cv22- │",
+        "│   ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tre │",
+        "│   e/index.md                                           │"
+      ],
+      "input": {
+        "items": [
+          "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md"
+        ],
+        "owner": "pull_candidates",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__pull_candidates__wraps"
+    },
+    {
+      "expected": [
+        "│ ✓ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx │",
+        "│   xxxxxxxx                                             │"
+      ],
+      "input": {
+        "items": [
+          "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        ],
+        "owner": "pull_candidates",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__pull_candidates__chunks"
+    },
+    {
+      "expected": [
+        "│ 🧰 🟪 a chapter and 🟦 a story carried through one        │",
+        "│   Builder card                                         │"
+      ],
+      "input": {
+        "items": [
+          "🟪 a chapter and 🟦 a story carried through one Builder card"
+        ],
+        "owner": "pull_candidates",
+        "prefix": "🧰"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__pull_candidates__astral"
+    },
+    {
+      "expected": [
+        "│ ✓ first paragraph second paragraph after blanks third  │"
+      ],
+      "input": {
+        "items": [
+          "first paragraph\n\n\nsecond paragraph after blanks\n\nthird"
+        ],
+        "owner": "pull_candidates",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__pull_candidates__multi_paragraph"
+    },
+    {
+      "expected": [
+        "│ none                                                   │"
+      ],
+      "input": {
+        "items": [],
+        "owner": "resume_surface",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__resume_surface__empty_tuple"
+    },
+    {
+      "expected": [
+        "│ ✓ one finding                                          │"
+      ],
+      "input": {
+        "items": [
+          "one finding"
+        ],
+        "owner": "resume_surface",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__resume_surface__single"
+    },
+    {
+      "expected": [
+        "│ ✕ first finding                                        │",
+        "│ ✕ second finding                                       │"
+      ],
+      "input": {
+        "items": [
+          "first finding",
+          "second finding"
+        ],
+        "owner": "resume_surface",
+        "prefix": "✕"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__resume_surface__two"
+    },
+    {
+      "expected": [
+        "│ ✓ none                                                 │",
+        "│ ✓ none                                                 │"
+      ],
+      "input": {
+        "items": [
+          "",
+          ""
+        ],
+        "owner": "resume_surface",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__resume_surface__blank_strings"
+    },
+    {
+      "expected": [
+        "│ ✓ none                                                 │"
+      ],
+      "input": {
+        "items": [
+          "   "
+        ],
+        "owner": "resume_surface",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__resume_surface__only_spaces"
+    },
+    {
+      "expected": [
+        "│ ○ - a bulleted finding                                 │",
+        "│ ○ - another one                                        │"
+      ],
+      "input": {
+        "items": [
+          "- a bulleted finding",
+          "- another one"
+        ],
+        "owner": "resume_surface",
+        "prefix": "○"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__resume_surface__bulleted"
+    },
+    {
+      "expected": [
+        "│ ○ - bulleted                                           │",
+        "│ ○ unbulleted                                           │"
+      ],
+      "input": {
+        "items": [
+          "- bulleted",
+          "unbulleted"
+        ],
+        "owner": "resume_surface",
+        "prefix": "○"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__resume_surface__mixed_bullets"
+    },
+    {
+      "expected": [
+        "│ ○ -not a bullet                                        │"
+      ],
+      "input": {
+        "items": [
+          "-not a bullet"
+        ],
+        "owner": "resume_surface",
+        "prefix": "○"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__resume_surface__dash_no_space"
+    },
+    {
+      "expected": [
+        "│ ✓ docs/project/roadmap/cv22-typescript-core-port/cv22- │",
+        "│   ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tre │",
+        "│   e/index.md                                           │"
+      ],
+      "input": {
+        "items": [
+          "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md"
+        ],
+        "owner": "resume_surface",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__resume_surface__wraps"
+    },
+    {
+      "expected": [
+        "│ ✓ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx │",
+        "│   xxxxxxxx                                             │"
+      ],
+      "input": {
+        "items": [
+          "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        ],
+        "owner": "resume_surface",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__resume_surface__chunks"
+    },
+    {
+      "expected": [
+        "│ 🧰 🟪 a chapter and 🟦 a story carried through one        │",
+        "│   Builder card                                         │"
+      ],
+      "input": {
+        "items": [
+          "🟪 a chapter and 🟦 a story carried through one Builder card"
+        ],
+        "owner": "resume_surface",
+        "prefix": "🧰"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__resume_surface__astral"
+    },
+    {
+      "expected": [
+        "│ ✓ first paragraph second paragraph after blanks third  │"
+      ],
+      "input": {
+        "items": [
+          "first paragraph\n\n\nsecond paragraph after blanks\n\nthird"
+        ],
+        "owner": "resume_surface",
+        "prefix": "✓"
+      },
+      "kind": "card_prefixed",
+      "name": "card_prefixed__resume_surface__multi_paragraph"
+    },
+    {
+      "expected": "│ left                                             right │",
+      "input": {
+        "left": "left",
+        "right": "right"
+      },
+      "kind": "card_line",
+      "name": "card_line__short"
+    },
+    {
+      "expected": "│ left                                                   │",
+      "input": {
+        "left": "left",
+        "right": ""
+      },
+      "kind": "card_line",
+      "name": "card_line__empty_right"
+    },
+    {
+      "expected": "│                                                        │",
+      "input": {
+        "left": "",
+        "right": ""
+      },
+      "kind": "card_line",
+      "name": "card_line__empty_both"
+    },
+    {
+      "expected": "│ cccccccccccccccccccccccccccccccccccccccccccccccc right │",
+      "input": {
+        "left": "cccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "right": "right"
+      },
+      "kind": "card_line",
+      "name": "card_line__overflow_left"
+    },
+    {
+      "expected": "│ 🟦 story                                         🟩 done │",
+      "input": {
+        "left": "🟦 story",
+        "right": "🟩 done"
+      },
+      "kind": "card_line",
+      "name": "card_line__astral"
+    },
+    {
+      "expected": [
+        "│ none                                                   │"
+      ],
+      "input": {
+        "items": []
+      },
+      "kind": "card_context_items",
+      "name": "card_context_items__empty_tuple"
+    },
+    {
+      "expected": [
+        "│ ○ one finding                                          │"
+      ],
+      "input": {
+        "items": [
+          "one finding"
+        ]
+      },
+      "kind": "card_context_items",
+      "name": "card_context_items__single"
+    },
+    {
+      "expected": [
+        "│ ○ first finding                                        │",
+        "│ ○ second finding                                       │"
+      ],
+      "input": {
+        "items": [
+          "first finding",
+          "second finding"
+        ]
+      },
+      "kind": "card_context_items",
+      "name": "card_context_items__two"
+    },
+    {
+      "expected": [
+        "│ ○                                                      │",
+        "│ ○                                                      │"
+      ],
+      "input": {
+        "items": [
+          "",
+          ""
+        ]
+      },
+      "kind": "card_context_items",
+      "name": "card_context_items__blank_strings"
+    },
+    {
+      "expected": [
+        "│ ○                                                      │"
+      ],
+      "input": {
+        "items": [
+          "   "
+        ]
+      },
+      "kind": "card_context_items",
+      "name": "card_context_items__only_spaces"
+    },
+    {
+      "expected": [
+        "│ ○ - a bulleted finding                                 │",
+        "│ ○ - another one                                        │"
+      ],
+      "input": {
+        "items": [
+          "- a bulleted finding",
+          "- another one"
+        ]
+      },
+      "kind": "card_context_items",
+      "name": "card_context_items__bulleted"
+    },
+    {
+      "expected": [
+        "│ ○ - bulleted                                           │",
+        "│ ○ unbulleted                                           │"
+      ],
+      "input": {
+        "items": [
+          "- bulleted",
+          "unbulleted"
+        ]
+      },
+      "kind": "card_context_items",
+      "name": "card_context_items__mixed_bullets"
+    },
+    {
+      "expected": [
+        "│ ○ -not a bullet                                        │"
+      ],
+      "input": {
+        "items": [
+          "-not a bullet"
+        ]
+      },
+      "kind": "card_context_items",
+      "name": "card_context_items__dash_no_space"
+    },
+    {
+      "expected": [
+        "│ ○ docs/project/roadmap/cv22-typescript-core-port/cv22- │"
+      ],
+      "input": {
+        "items": [
+          "docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-us8-builder-ariad-tree/index.md"
+        ]
+      },
+      "kind": "card_context_items",
+      "name": "card_context_items__wraps"
+    },
+    {
+      "expected": [
+        "│ ○ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx │"
+      ],
+      "input": {
+        "items": [
+          "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        ]
+      },
+      "kind": "card_context_items",
+      "name": "card_context_items__chunks"
+    },
+    {
+      "expected": [
+        "│ ○ 🟪 a chapter and 🟦 a story carried through one Builde │"
+      ],
+      "input": {
+        "items": [
+          "🟪 a chapter and 🟦 a story carried through one Builder card"
+        ]
+      },
+      "kind": "card_context_items",
+      "name": "card_context_items__astral"
+    },
+    {
+      "expected": [
+        "│ ○ first paragraph\n\n\nsecond paragraph after blanks\n\nthi │"
+      ],
+      "input": {
+        "items": [
+          "first paragraph\n\n\nsecond paragraph after blanks\n\nthird"
+        ]
+      },
+      "kind": "card_context_items",
+      "name": "card_context_items__multi_paragraph"
+    }
+  ]
+}
