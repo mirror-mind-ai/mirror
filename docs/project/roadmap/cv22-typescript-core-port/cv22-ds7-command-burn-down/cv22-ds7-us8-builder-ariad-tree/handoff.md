@@ -192,14 +192,20 @@ differently: surface rendering is cheap to grade, while writes into the
 Navigator's project are the only US8 surface with a traversal shape.
 
 1. **Oracle first — done.** `ts/parity/generate_builder_lifecycle_golden.py`
-   (51 sequences, 166 graded steps, 105 surfaces, 27 refusals) and 25 new
+   (53 sequences, 171 graded steps, 109 surfaces, 27 refusals) and 25 new
    command-level cases in `generate_builder_command_golden.py`. No TypeScript
    exists yet, which is the point: the corpus was generated from Python before
    the port could influence it.
-2. **`pull` + `expand`** — `pull.ts`, `expand.ts` over `cursorTransitions.ts`.
-3. **`prepare` + `plan` + `approve` + preauthorization** — renderers in
-   `builder/artifacts/`, the sha256 fingerprint, the five leaves, the
-   `builder_artifacts` probe.
+2. **`pull` + `expand` — done.** `pull.ts`, `expand.ts`, `cursorTransitions.ts`,
+   `artifacts/artifactSurfaces.ts`, `artifacts/storyIndex.ts`. **20 of 53
+   sequences now grade step for step** — every sequence whose lifecycle ops are
+   only `pull` and `expand` — comparing the cursor dump, the serialized metadata
+   cell, every surface, every file on disk, the artifact statuses, the projection
+   requests, and the refusal messages.
+3. **`prepare` + `plan` + `approve` + preauthorization** — the remaining
+   renderers, the sha256 fingerprint, the five leaves, the `builder_artifacts`
+   probe. This empties `PENDING_OPS` in `lifecycle.test.ts` and
+   `PENDING_LEAVES` in `commands.test.ts`.
 
 ### What commit 1 measured that a resuming session should not re-derive
 
@@ -244,3 +250,39 @@ Navigator's project are the only US8 surface with a traversal shape.
   nests under its parent coordinate), so Plan created all three artifacts and the
   corpus would have passed a port that overwrites authored work. It now authors two
   of three files and grades `existing / existing / created`.
+
+### What commit 2 measured
+
+- **Path-row normalization must be root-LENGTH invariant, and the marker is the
+  only stable signal.** The rule first opened a collapse run at any `/`-leading
+  row, since each absolute path starts with one. So does an arbitrary continuation
+  chunk: where a wrapped path splits depends on the prefix length. Under the
+  generator's repo-relative root, `materialized`'s four paths produced eight
+  `/`-leading rows and eight token rows; under the test's `/tmp` root, four. Runs
+  now open on `_card_prefixed`'s list marker and continue through its two-space
+  indent, which is structural rather than positional. The cross-check is free and
+  worth keeping in mind: **Python generates under one root length and the
+  TypeScript test replays under another, so the byte comparison itself proves the
+  invariance** — no separate test needed, and CI's Linux runner adds a third root.
+- **A wrapped path's last chunk can carry the sentence's punctuation.** Wrapping
+  splits on whitespace, so `<path>,` is one word and `dmap/cv9-ds1-duplicate-a,`
+  is not a substring of any recorded path. That row survived normalization into the
+  committed golden — a machine-dependent tail of a temp root. Found through
+  `expand_blocked`, whose reason embeds two paths.
+- **`_display_path` needs `relative_to`'s three outcomes, not two.** The first port
+  guarded with `!resolve(relation).startsWith("/")`, which is always false, so every
+  artifact path rendered absolute. Python raises only when the path is not under the
+  root and returns `.` when they are equal; the guard is a `..` prefix or an
+  absolute result, plus the empty-result case.
+- **Expand treats a `/` in a title two OPPOSITE ways**, and mutation testing is what
+  surfaced it: replacing `child.title` with `title_leaf(child.title)` survived the
+  entire corpus. A child's folder slugs its FULL title
+  (`ds-35-us-1-application-flow-review-step-parity`), while the Delivery Story's own
+  title goes through `title_leaf` and keeps only the tail
+  (`ds-77-application-admin-parity` from `"Delivery / Application & Admin Parity"`).
+  Fixed by adding two oracle cases rather than an assertion, which is the same
+  correction plateau 1 applied three times.
+- **Five other mutants died on the corpus as it stood**: never resetting stale
+  children, not advancing the generation, always preserving release intent,
+  recommending the first child regardless of `Done`, and overwriting an existing
+  child `index.md`.

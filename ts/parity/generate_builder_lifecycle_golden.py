@@ -197,6 +197,27 @@ TRAVERSAL_DS_INDEX = """# DS-35 — Application & Admin Parity
 Done.
 """
 
+# A `/` in a candidate Story cell. The two sides of Expand treat it OPPOSITELY: a
+# child's folder slugs its FULL title, while the Delivery Story's own title goes
+# through `title_leaf` and keeps only the tail. Added at plateau 3 after mutation
+# testing showed the asymmetry was unguarded -- replacing `child.title` with
+# `title_leaf(child.title)` in the port survived the whole corpus.
+SLASHED_CHILD_DS_INDEX = """# DS-35 — Application & Admin Parity
+
+**Status:** \U0001f7e1 Planned
+
+## Candidate Stories
+
+| Code | Story | Type | Status |
+|------|-------|------|--------|
+| DS-35.US-1 | Application flow / Review step parity | User Story | \U0001f7e1 Planned |
+| DS-35.TS-1 | Admin auth / Session parity | Technical Story | \U0001f7e1 Planned |
+
+## Done Condition
+
+Done.
+"""
+
 LONG_CHILD_DS_INDEX = """# DS-35 — Application & Admin Parity
 
 **Status:** 🟡 Planned
@@ -1165,6 +1186,23 @@ def _expand_scenarios() -> list[dict[str, Any]]:
     long_titles = ds_scenario("expand_handles_paragraph_length_child_titles", LONG_CHILD_DS_INDEX)
     long_titles.expand()
     scenarios.append(long_titles.finish())
+
+    slashed_children = ds_scenario("expand_slugs_the_full_child_title", SLASHED_CHILD_DS_INDEX)
+    slashed_children.expand()
+    scenarios.append(slashed_children.finish())
+
+    # The other half of the asymmetry: with no authored package, the DS's own title
+    # is routed through `title_leaf`, so only the tail reaches the synthetic child's
+    # folder and its rendered heading.
+    slashed_delivery_story = Scenario("expand_fallback_uses_the_delivery_story_title_leaf")
+    slashed_delivery_story.seed_cursor(
+        method="ariad",
+        active_item="DS-77",
+        active_item_title="Delivery / Application & Admin Parity",
+        active_item_level="delivery_story",
+    )
+    slashed_delivery_story.expand()
+    scenarios.append(slashed_delivery_story.finish())
 
     traversal = ds_scenario("expand_sanitizes_path_bearing_code_cell", TRAVERSAL_DS_INDEX)
     traversal.expand()

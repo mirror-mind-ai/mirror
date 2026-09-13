@@ -138,6 +138,31 @@ export function pyStr(value: unknown): string {
   return String(value);
 }
 
+/**
+ * Python `str.title()`: uppercase the first cased character of every run of
+ * letters, lowercase the rest.
+ *
+ * Not `capitalize()` and not a naive `[0].toUpperCase() + slice(1)`. Python breaks
+ * runs on any non-alphabetic character, so `"plan_approved".title()` is
+ * `"Plan_Approved"` and `"don't".title()` is `"Don'T"` -- the second is a famous
+ * Python wart, and a port that "fixes" it diverges on any surface that titles a
+ * value containing an apostrophe.
+ *
+ * Only lifecycle `next_event` values reach this today (`prepare`, `implement`),
+ * which are single lowercase words, so the wart is reproduced rather than
+ * exercised.
+ */
+export function pyTitle(text: string): string {
+  let previousIsAlpha = false;
+  let result = "";
+  for (const character of text) {
+    const isAlpha = /\p{L}/u.test(character);
+    result += previousIsAlpha ? character.toLowerCase() : character.toUpperCase();
+    previousIsAlpha = isAlpha;
+  }
+  return result;
+}
+
 /** Python `repr(value)` / an f-string's `!r`: strings gain single quotes. */
 export function pyRepr(value: unknown): string {
   if (typeof value !== "string") return pyStr(value);

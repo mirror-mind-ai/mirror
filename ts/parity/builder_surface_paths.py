@@ -36,6 +36,34 @@ is a substring of `/abs/prefix/project/docs/project/…`. It therefore collapsed
 must stay graded byte for byte. Only a row that begins the absolute path can open a
 run; relative rows are left exactly as Python printed them.
 
+Two further rules, and the second one was wrong on the first attempt in a way worth
+recording, because the requirement it violates is the whole point of this module:
+**the normalized output must not depend on the root's LENGTH.**
+
+- **A continuation row may carry trailing punctuation.** `_wrap_plain_text` splits
+  on whitespace, so `<path>,` is one word and its last chunk ends with the comma.
+  The comma is excluded from the path pattern, so that fragment is not a substring
+  of any recorded path and the row survived normalization -- leaving
+  `│ dmap/cv9-ds1-duplicate-a, │` in a golden, a machine-dependent tail of a temp
+  root that differs on every checkout. Found by `expand_blocked`, whose reason
+  embeds two paths separated by `", "`.
+- **A new run opens on the card's list MARKER, never on a leading `/`.** The first
+  attempt opened a run at any `/`-leading row, reasoning that each path starts with
+  one. It does -- but so does an arbitrary CONTINUATION chunk, because where a
+  wrapped path splits depends on the prefix's length. Under the repo-relative root
+  the `materialized` block split so that four paths produced eight `/`-leading rows
+  and normalized to eight token rows; under a shorter `/tmp` root the same four
+  paths normalized to four. The TypeScript comparison caught it: same code, same
+  paths, different row count.
+
+  `_card_prefixed` gives each item's first row the list marker (`✓`) and its
+  continuations a two-space indent, and that structure is root-independent. So a
+  content marker ends the previous run and may open a new one, while a continuation
+  or unmarked row can only extend the run it is already in. Paths inside one
+  `_card_wrapped` call therefore collapse to one token row, and each `_card_prefixed`
+  item keeps its own -- so the `materialized` block still shows HOW MANY files were
+  written, which is the information worth preserving.
+
 What remains graded, and why it is enough: the path CONTENT is graded exactly in
 each step's structured project-relative fields; the WRAPPING mechanism is graded
 exhaustively by `builder-card` (516 rows, including over-long words chunked at 52
@@ -62,6 +90,14 @@ _ABSOLUTE_PATH_RE = re.compile(r"/[^\s,'\"]+")
 # short final chunk of a wrapped path is captured by the run-continuation clause.
 _MIN_STANDALONE_FRAGMENT = 24
 
+# A wrapped path's final chunk can carry the punctuation that followed it in the
+# sentence, because wrapping splits on whitespace rather than on tokens.
+_TRAILING_PUNCTUATION = ",;:."
+
+# `_card_prefixed` indents an item's continuation rows by two spaces, which is the
+# root-independent signal that a row belongs to the item above it.
+_CONTINUATION_MARKER = "  "
+
 
 def absolute_paths_in(message: str) -> list[str]:
     """Absolute paths embedded in a message, longest first.
@@ -78,23 +114,39 @@ def normalize_path_rows(text: str, absolute_paths: list[str]) -> str:
     if not absolute_paths:
         return text
     normalized: list[str] = []
-    in_run = False
+    run_paths: list[str] | None = None
     for line in text.split("\n"):
         fragment, marker = _card_row_content(line)
         if not fragment:
-            in_run = False
+            run_paths = None
             normalized.append(line)
             continue
-        belongs = any(fragment in path for path in absolute_paths)
-        opens_run = (
-            fragment.startswith("/") and belongs and len(fragment) >= _MIN_STANDALONE_FRAGMENT
-        )
-        if opens_run or (in_run and belongs):
-            if not in_run:
-                normalized.append(f"│ {marker}{PATH_ROW_TOKEN}".ljust(57) + "│")
-            in_run = True
+        candidate = fragment.rstrip(_TRAILING_PUNCTUATION)
+        matches = [path for path in absolute_paths if candidate and candidate in path]
+        opens_allowed = True
+        if marker not in ("", _CONTINUATION_MARKER):
+            # A new list item always ends the previous item's run, whatever the
+            # wrapping did inside it.
+            run_paths = None
+        elif run_paths is not None and any(path in run_paths for path in matches):
+            # A continuation or unmarked row can only EXTEND the run it is already
+            # in, never start a new one: where a wrapped path splits depends on the
+            # prefix length, so opening on a `/`-leading continuation would make the
+            # row count depend on the root.
             continue
-        in_run = False
+        else:
+            opens_allowed = run_paths is None
+
+        if (
+            opens_allowed
+            and fragment.startswith("/")
+            and matches
+            and len(candidate) >= _MIN_STANDALONE_FRAGMENT
+        ):
+            normalized.append(f"\u2502 {marker}{PATH_ROW_TOKEN}".ljust(57) + "\u2502")
+            run_paths = matches
+            continue
+        run_paths = None
         normalized.append(line)
     return "\n".join(normalized)
 
