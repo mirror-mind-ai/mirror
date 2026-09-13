@@ -108,11 +108,11 @@ const PORTED_OPS: readonly string[] = [
 /**
  * Lifecycle operations the corpus grades and TypeScript cannot execute yet.
  *
- * Emptied by plateau 3, commit 3. It stays declared rather than deleted because
- * plateau 4 refills it with Validate, Review, Coherence, and Done, and the
- * staleness guard is what forces each one out again.
+ * Refilled by plateau 4's oracle, exactly as plateau 3 predicted: the corpus is
+ * generated from Python before the port exists, so for one commit it knows more than
+ * the code. `the pending list cannot go stale` forces each entry out again.
  */
-const PENDING_OPS: readonly string[] = [];
+const PENDING_OPS: readonly string[] = ["coherence", "done", "review", "validate"];
 
 const lifecycleOps = (step: Step): boolean => !(HARNESS_OPS as readonly string[]).includes(step.op);
 
@@ -155,18 +155,21 @@ test("the pending list cannot go stale", () => {
 
 test("every gradable sequence matches Python step for step", () => {
   const graded = sequences.filter(isGradable);
-  // Every sequence in the corpus is gradable now that Scope C is ported.
-  assert.equal(
-    graded.length,
-    sequences.length,
-    `plateau 3 grades the whole corpus: ${graded.length} of ${sequences.length}`,
+  // A RATCHET, not an equality: plateau 3 brought 53 sequences under grading, and no
+  // later plateau may reduce that while adding its own. Asserting `graded.length ===
+  // sequences.length` would be wrong the moment a plateau lands its oracle first, and
+  // asserting the count of sequences without pending ops would just restate
+  // `isGradable`.
+  assert.ok(
+    graded.length >= 53,
+    `coverage regressed: ${graded.length} of ${sequences.length} sequences graded`,
   );
   for (const sequence of graded) {
     replaySequence(sequence);
   }
 });
 
-test("the corpus covers the lifecycle shapes plateau 3 has to port", () => {
+test("the corpus covers the lifecycle shapes plateaus 3 and 4 have to port", () => {
   assert.ok(sequences.length >= 53, `expected the full sequence matrix, got ${sequences.length}`);
   const names = new Set(sequences.map((sequence) => sequence.name));
   for (const required of [
@@ -193,6 +196,15 @@ test("the corpus covers the lifecycle shapes plateau 3 has to port", () => {
     "authority_blocks_incomplete_plan_0",
     "authority_rejects_tampered_fingerprint",
     "navigator_cancels_pending_authority",
+    // Scope D. The pending/complete fork of each verb, the two exact-state
+    // re-entries, the closure Done accepts without Coherence, and CR079's overwrite.
+    "closure_happy_path",
+    "done_directly_after_review_complete",
+    "validate_pending_then_accepted",
+    "review_pending_then_answered",
+    "coherence_pending_then_corrected",
+    "done_blocks_pending_coherence_confirmation",
+    "closure_overwrites_authored_artifacts",
   ]) {
     assert.ok(names.has(required), `the corpus lost the ${required} sequence`);
   }

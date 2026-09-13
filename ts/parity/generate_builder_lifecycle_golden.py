@@ -74,17 +74,25 @@ from memory.builder.lifecycle import (
     BuilderLifecycleItem,
     ExpandBlockedError,
     approve_plan_checkpoint,
+    coherence_lifecycle_item,
+    done_lifecycle_item,
     expand_delivery_story,
     plan_lifecycle_item,
     prepare_lifecycle_item,
     pull_lifecycle_item,
+    render_coherence_checkpoint,
     render_delivery_story_ready_report,
+    render_done_checkpoint,
     render_expand_blocked,
     render_expand_report,
     render_plan_approval,
     render_plan_checkpoint,
     render_prepare_report,
     render_pull_report,
+    render_review_checkpoint,
+    render_validation_checkpoint,
+    review_lifecycle_item,
+    validate_lifecycle_item,
 )
 from memory.builder.plan_preauthorization import PlanPreauthorizationMismatch
 from memory.builder.story_paths import (
@@ -783,6 +791,203 @@ class Scenario:
                 )
             ],
         )
+
+
+    # -- closure operations (plateau 4) --------------------------------------
+    #
+    # All four write their artifact UNCONDITIONALLY -- no `if not path.exists()`,
+    # unlike Plan's story package. That is CR079: `validate-item` has already
+    # replaced a 235-line authored `validation.md` with a 33-line scaffold twice in
+    # this project's history. The corpus REPRODUCES it, deliberately, because
+    # reproducing current behavior is the port's job and changing it is the CR's.
+    # `closure_overwrites_authored_artifacts` exists so a future session cannot
+    # "fix" it inside the port and diverge silently.
+
+    def validate(
+        self,
+        *,
+        automated_checks: tuple[str, ...] = (),
+        checks_status: str = "not_run",
+        e2e_decision: str = "not_required",
+        e2e_evidence: str | None = None,
+        navigator_validation_route: str | None = None,
+        navigator_accepted: bool = False,
+        expected_observation: str | None = None,
+        pass_condition: str | None = None,
+        fail_condition: str | None = None,
+        implementation_complete: bool = False,
+        artifact: str | None = "validation.md",
+    ) -> None:
+        payload = {
+            "automated_checks": list(automated_checks),
+            "checks_status": checks_status,
+            "e2e_decision": e2e_decision,
+            "e2e_evidence": e2e_evidence,
+            "navigator_validation_route": navigator_validation_route,
+            "navigator_accepted": navigator_accepted,
+            "expected_observation": expected_observation,
+            "pass_condition": pass_condition,
+            "fail_condition": fail_condition,
+            "implementation_complete": implementation_complete,
+            "artifact": artifact,
+        }
+        path = self._closure_artifact_path(artifact)
+        try:
+            report = validate_lifecycle_item(
+                self.store,
+                journey=self.journey,
+                method=get_ariad_method(),
+                automated_checks=automated_checks,
+                checks_status=checks_status,
+                e2e_decision=e2e_decision,
+                e2e_evidence=e2e_evidence,
+                navigator_validation_route=navigator_validation_route,
+                navigator_accepted=navigator_accepted,
+                expected_observation=expected_observation,
+                pass_condition=pass_condition,
+                fail_condition=fail_condition,
+                implementation_complete=implementation_complete,
+                validation_artifact_path=path,
+            )
+        except ValueError as exc:
+            self.record("validate", input=payload, error=f"{type(exc).__name__}: {exc}")
+            return
+        self.record(
+            "validate",
+            input=payload,
+            surfaces=[("validation_checkpoint", render_validation_checkpoint(report))],
+            extra={"missing_evidence": list(report.missing_evidence)},
+        )
+
+    def review(
+        self,
+        *,
+        debt_findings: tuple[str, ...] = (),
+        debt_decision: str = "pending",
+        defer_reason: str | None = None,
+        revisit_trigger: str | None = None,
+        artifact: str | None = "review.md",
+    ) -> None:
+        payload = {
+            "debt_findings": list(debt_findings),
+            "debt_decision": debt_decision,
+            "defer_reason": defer_reason,
+            "revisit_trigger": revisit_trigger,
+            "artifact": artifact,
+        }
+        path = self._closure_artifact_path(artifact)
+        try:
+            report = review_lifecycle_item(
+                self.store,
+                journey=self.journey,
+                method=get_ariad_method(),
+                debt_findings=debt_findings,
+                debt_decision=debt_decision,
+                defer_reason=defer_reason,
+                revisit_trigger=revisit_trigger,
+                review_artifact_path=path,
+            )
+        except ValueError as exc:
+            self.record("review", input=payload, error=f"{type(exc).__name__}: {exc}")
+            return
+        self.record(
+            "review",
+            input=payload,
+            surfaces=[("debt_review_checkpoint", render_review_checkpoint(report))],
+            extra={"missing_decision": list(report.missing_decision)},
+        )
+
+    def coherence(
+        self,
+        *,
+        process_alignment: str | None = None,
+        project_alignment: str | None = None,
+        product_alignment: str | None = None,
+        local_differences: tuple[str, ...] = (),
+        artifact: str | None = "coherence.md",
+    ) -> None:
+        payload = {
+            "process_alignment": process_alignment,
+            "project_alignment": project_alignment,
+            "product_alignment": product_alignment,
+            "local_differences": list(local_differences),
+            "artifact": artifact,
+        }
+        path = self._closure_artifact_path(artifact)
+        try:
+            report = coherence_lifecycle_item(
+                self.store,
+                journey=self.journey,
+                method=get_ariad_method(),
+                process_alignment=process_alignment,
+                project_alignment=project_alignment,
+                product_alignment=product_alignment,
+                local_differences=local_differences,
+                coherence_artifact_path=path,
+            )
+        except ValueError as exc:
+            self.record("coherence", input=payload, error=f"{type(exc).__name__}: {exc}")
+            return
+        self.record(
+            "coherence",
+            input=payload,
+            surfaces=[("coherence_checkpoint", render_coherence_checkpoint(report))],
+            extra={"missing_coherence": list(report.missing_coherence)},
+        )
+
+    def done(
+        self,
+        *,
+        history_action: str | None = None,
+        roadmap_update: str | None = None,
+        next_recommendation: str | None = None,
+        artifact: str | None = "done.md",
+    ) -> None:
+        payload = {
+            "history_action": history_action,
+            "roadmap_update": roadmap_update,
+            "next_recommendation": next_recommendation,
+            "artifact": artifact,
+        }
+        path = self._closure_artifact_path(artifact)
+        try:
+            report = done_lifecycle_item(
+                self.store,
+                journey=self.journey,
+                method=get_ariad_method(),
+                history_action=history_action,
+                roadmap_update=roadmap_update,
+                next_recommendation=next_recommendation,
+                done_artifact_path=path,
+            )
+        except ValueError as exc:
+            self.record("done", input=payload, error=f"{type(exc).__name__}: {exc}")
+            return
+        self.record(
+            "done",
+            input=payload,
+            surfaces=[("done_checkpoint", render_done_checkpoint(report))],
+            extra={"missing_done": list(report.missing_done)},
+        )
+
+    def _closure_artifact_path(self, filename: str | None):
+        """The CLI's `_checkpoint_artifact_path`, rendered relative like Plan's.
+
+        Same reason as `_canonical_plan_path`: the closure surfaces print the path
+        they were handed, so a repo-relative one keeps the golden machine-independent.
+        """
+        if filename is None:
+            return None
+        cursor = get_delivery_cursor(self.store, self.journey)
+        active_item = getattr(cursor, "active_item", None)
+        if cursor is None or not active_item:
+            return None
+        resolved = resolve_story_directory(self.project, str(active_item))
+        if resolved is None:
+            resolved = create_story_directory(
+                self.project, str(active_item), cursor.active_item_title or str(active_item)
+            )
+        return _repo_relative(resolved) / filename
 
     # -- CLI-equivalent path derivation --------------------------------------
     #
@@ -1507,6 +1712,345 @@ def _repo_docs_fingerprint() -> frozenset[str]:
     return frozenset(str(path.relative_to(roadmap)) for path in roadmap.rglob("*"))
 
 
+
+def _closure_scenarios() -> list[dict[str, Any]]:
+    """Scope D: Validate, Debt Review, Coherence, Done.
+
+    Taken from the eighteen closure tests in `tests/unit/memory/cli/test_build.py`
+    plus `test_validation_accepts_approved_delivery_story_plan_with_implementation_evidence`.
+
+    The shape that dominates this scope is the PENDING/COMPLETE fork: each verb
+    computes its own missing-evidence tuple, and that tuple decides three cursor
+    fields at once (`active_checkpoint`, `pending_confirmation`,
+    `last_delivery_event`). Two of the verbs then allow EXACT-STATE RE-ENTRY to
+    answer their own pending confirmation, and one does not -- Done refuses any
+    pending confirmation, including the ones its predecessors left behind.
+    """
+    scenarios: list[dict[str, Any]] = []
+
+    def approved(name: str, **cursor: Any) -> Scenario:
+        """A story sitting at `plan_approved`, the state closure starts from."""
+        scenario = Scenario(name)
+        scenario.seed_cursor(
+            method="ariad",
+            active_item=cursor.pop("active_item", "CV1.DS1.US1"),
+            active_item_title="Closure story",
+            active_item_level="user_story",
+            last_delivery_event=cursor.pop("last_delivery_event", "plan_approved"),
+            navigator_flow_unit="story_by_story",
+            **cursor,
+        )
+        return scenario
+
+    def full_validation(scenario: Scenario) -> None:
+        scenario.validate(
+            automated_checks=("uv run pytest -q", "npm test"),
+            checks_status="passed",
+            e2e_decision="not_required",
+            navigator_validation_route="Run the command and read the surface.",
+            navigator_accepted=True,
+            expected_observation="The surface renders.",
+            pass_condition="Bytes match the oracle.",
+            fail_condition="Any byte differs.",
+            implementation_complete=True,
+        )
+
+    # The whole closure chain, artifacts and all.
+    happy = approved("closure_happy_path")
+    full_validation(happy)
+    happy.review(debt_findings=("No debt found.",), debt_decision="no_action")
+    happy.coherence(
+        process_alignment="Ariad lifecycle followed.",
+        project_alignment="Docs and roadmap updated.",
+        product_alignment="Behavior matches the accepted evidence.",
+    )
+    happy.done(
+        history_action="One commit, scoped to the story.",
+        roadmap_update="Story package marked done.",
+        next_recommendation="Pull the next story.",
+    )
+    scenarios.append(happy.finish())
+
+    # Done accepts `review_complete` DIRECTLY: Coherence is not a precondition, only
+    # an option. A port that requires `coherence_complete` blocks a legal closure.
+    skip_coherence = approved("done_directly_after_review_complete")
+    full_validation(skip_coherence)
+    skip_coherence.review(debt_decision="no_action")
+    skip_coherence.done(
+        history_action="Committed.",
+        roadmap_update="Roadmap updated.",
+        next_recommendation="Next pull.",
+    )
+    scenarios.append(skip_coherence.finish())
+
+    # Validation's pending fork, then the acceptance that resolves it.
+    pending = approved("validate_pending_then_accepted")
+    pending.validate(implementation_complete=True)
+    pending.validate(
+        automated_checks=("uv run pytest -q",),
+        checks_status="passed",
+        navigator_validation_route="Navigator ran it.",
+        navigator_accepted=True,
+        implementation_complete=True,
+    )
+    scenarios.append(pending.finish())
+
+    # Every missing-evidence branch of `_validation_missing_evidence`, one per case.
+    for name, kwargs in (
+        ("validate_missing_checks", {"implementation_complete": True}),
+        (
+            "validate_checks_failed",
+            {"automated_checks": ("pytest",), "checks_status": "failed", "implementation_complete": True},
+        ),
+        (
+            "validate_e2e_required_without_evidence",
+            {
+                "automated_checks": ("pytest",),
+                "checks_status": "passed",
+                "e2e_decision": "required",
+                "navigator_accepted": True,
+                "implementation_complete": True,
+            },
+        ),
+        (
+            "validate_e2e_skipped_without_reason",
+            {
+                "automated_checks": ("pytest",),
+                "checks_status": "passed",
+                "e2e_decision": "skipped",
+                "navigator_accepted": True,
+                "implementation_complete": True,
+            },
+        ),
+        (
+            "validate_route_present_but_not_accepted",
+            {
+                "automated_checks": ("pytest",),
+                "checks_status": "passed",
+                "navigator_validation_route": "Navigator runs the command.",
+                "implementation_complete": True,
+            },
+        ),
+    ):
+        scenario = approved(name)
+        scenario.validate(**kwargs)
+        scenarios.append(scenario.finish())
+
+    # Class B refusals: the choice vocabularies, and the guard chain.
+    for name, kwargs in (
+        ("validate_rejects_unknown_checks_status", {"checks_status": "green"}),
+        ("validate_rejects_unknown_e2e_decision", {"e2e_decision": "maybe"}),
+    ):
+        scenario = approved(name)
+        scenario.validate(implementation_complete=True, **kwargs)
+        scenarios.append(scenario.finish())
+
+    no_implementation = approved("validate_blocks_without_implementation_completion")
+    no_implementation.validate(
+        automated_checks=("pytest",), checks_status="passed", navigator_accepted=True
+    )
+    scenarios.append(no_implementation.finish())
+
+    wrong_event = approved("validate_requires_approved_plan", last_delivery_event="prepare")
+    wrong_event.validate(implementation_complete=True)
+    scenarios.append(wrong_event.finish())
+
+    foreign_pending = approved("validate_blocked_by_foreign_pending_confirmation")
+    foreign_pending.seed_cursor(
+        method="ariad",
+        active_item="CV1.DS1.US1",
+        active_item_title="Closure story",
+        active_item_level="user_story",
+        active_checkpoint="after_plan",
+        pending_confirmation="navigator_approval",
+        last_delivery_event="plan_approved",
+    )
+    foreign_pending.validate(implementation_complete=True)
+    scenarios.append(foreign_pending.finish())
+
+    validate_no_cursor = Scenario("validate_requires_existing_cursor")
+    validate_no_cursor.validate(implementation_complete=True)
+    scenarios.append(validate_no_cursor.finish())
+
+    validate_no_item = Scenario("validate_requires_active_item")
+    validate_no_item.seed_cursor(method="ariad", last_delivery_event="plan_approved")
+    validate_no_item.validate(implementation_complete=True)
+    scenarios.append(validate_no_item.finish())
+
+    # A Delivery Story's approved aggregate Plan also satisfies Validation.
+    ds_plan = Scenario("validate_accepts_approved_delivery_story_plan")
+    ds_plan.seed_cursor(
+        method="ariad",
+        active_item="CV1.DS1",
+        active_item_title="Aggregate delivery story",
+        active_item_level="delivery_story",
+        last_delivery_event="delivery_story_plan_approved",
+        navigator_flow_unit="delivery_story",
+        aggregate_checkpoint_status=("plan:approved",),
+    )
+    ds_plan.validate(
+        automated_checks=("pytest",),
+        checks_status="passed",
+        navigator_validation_route="Navigator validated the DS.",
+        navigator_accepted=True,
+        implementation_complete=True,
+    )
+    scenarios.append(ds_plan.finish())
+
+    # Debt Review: the pending decision, its re-entry, and the two decisions that
+    # cannot complete.
+    review_pending = approved("review_pending_then_answered")
+    full_validation(review_pending)
+    review_pending.review(debt_findings=("One deferred item.",))
+    review_pending.review(debt_findings=("One deferred item.",), debt_decision="no_action")
+    scenarios.append(review_pending.finish())
+
+    review_reentry_pending = approved("review_reentry_with_pending_stays_pending")
+    full_validation(review_reentry_pending)
+    review_reentry_pending.review()
+    review_reentry_pending.review()
+    scenarios.append(review_reentry_pending.finish())
+
+    review_defer = approved("review_defer_without_reason_or_trigger")
+    full_validation(review_defer)
+    review_defer.review(debt_decision="defer")
+    scenarios.append(review_defer.finish())
+
+    review_defer_complete = approved("review_defer_with_reason_and_trigger")
+    full_validation(review_defer_complete)
+    review_defer_complete.review(
+        debt_findings=("Allowlist staleness.",),
+        debt_decision="defer",
+        defer_reason="Out of this story's scope.",
+        revisit_trigger="When the last gated leaf lands.",
+    )
+    scenarios.append(review_defer_complete.finish())
+
+    review_pay_now = approved("review_pay_now_routes_through_refactor")
+    full_validation(review_pay_now)
+    review_pay_now.review(debt_decision="pay_now")
+    scenarios.append(review_pay_now.finish())
+
+    review_foreign = approved("review_blocked_by_foreign_pending_confirmation")
+    review_foreign.validate(implementation_complete=True)
+    review_foreign.review(debt_decision="no_action")
+    scenarios.append(review_foreign.finish())
+
+    review_early = approved("review_requires_validation_passed")
+    review_early.review(debt_decision="no_action")
+    scenarios.append(review_early.finish())
+
+    # Coherence: complete, re-entry after correcting evidence, and its refusals.
+    coherence_pending = approved("coherence_pending_then_corrected")
+    full_validation(coherence_pending)
+    coherence_pending.review(debt_decision="no_action")
+    coherence_pending.coherence(process_alignment="   ", project_alignment="Docs updated.")
+    coherence_pending.coherence(
+        process_alignment="Lifecycle followed.",
+        project_alignment="Docs updated.",
+        product_alignment="Behavior matches.",
+    )
+    scenarios.append(coherence_pending.finish())
+
+    coherence_differences = approved("coherence_records_local_differences")
+    full_validation(coherence_differences)
+    coherence_differences.review(debt_decision="no_action")
+    coherence_differences.coherence(
+        process_alignment="Followed.",
+        project_alignment="Updated.",
+        product_alignment="Matches.",
+        local_differences=("Python still owns the publisher.", "  ", "Gate defaults off."),
+    )
+    scenarios.append(coherence_differences.finish())
+
+    coherence_early = approved("coherence_requires_review_complete")
+    coherence_early.coherence(
+        process_alignment="Followed.", project_alignment="Updated.", product_alignment="Matches."
+    )
+    scenarios.append(coherence_early.finish())
+
+    coherence_foreign = approved("coherence_blocked_by_unrelated_pending")
+    coherence_foreign.validate(implementation_complete=True)
+    coherence_foreign.coherence(
+        process_alignment="Followed.", project_alignment="Updated.", product_alignment="Matches."
+    )
+    scenarios.append(coherence_foreign.finish())
+
+    # Done: its pending fork, and the pending confirmations it refuses.
+    done_pending = approved("done_pending_then_completed")
+    full_validation(done_pending)
+    done_pending.review(debt_decision="no_action")
+    done_pending.coherence(
+        process_alignment="Followed.", project_alignment="Updated.", product_alignment="Matches."
+    )
+    done_pending.done(history_action="  ")
+    scenarios.append(done_pending.finish())
+
+    done_blocked = approved("done_blocks_pending_coherence_confirmation")
+    full_validation(done_blocked)
+    done_blocked.review(debt_decision="no_action")
+    done_blocked.coherence(process_alignment="   ")
+    done_blocked.done(
+        history_action="Committed.", roadmap_update="Updated.", next_recommendation="Next."
+    )
+    scenarios.append(done_blocked.finish())
+
+    done_early = approved("done_requires_review_complete")
+    done_early.done(
+        history_action="Committed.", roadmap_update="Updated.", next_recommendation="Next."
+    )
+    scenarios.append(done_early.finish())
+
+    # CR079, pinned. Every closure verb replaces an authored artifact, and the files
+    # in this sequence are the evidence. Reproduced on purpose: the overwrite is
+    # current Python behavior, the CR owns changing it, and a port that "fixes" it
+    # here would diverge silently.
+    authored = approved("closure_overwrites_authored_artifacts")
+    package = "docs/project/roadmap/cv1/cv1-ds1/cv1-ds1-us1-closure-story"
+    for filename in ("validation.md", "review.md", "coherence.md", "done.md"):
+        authored.write_file(
+            f"{package}/{filename}",
+            f"# Authored {filename}\n\nHand-written evidence that Python replaces.\n",
+        )
+    full_validation(authored)
+    authored.review(debt_decision="no_action")
+    authored.coherence(
+        process_alignment="Followed.", project_alignment="Updated.", product_alignment="Matches."
+    )
+    authored.done(
+        history_action="Committed.", roadmap_update="Updated.", next_recommendation="Next."
+    )
+    scenarios.append(authored.finish())
+
+    # No artifact path at all: the surfaces must render their "not written" shapes
+    # rather than failing.
+    no_artifacts = approved("closure_without_artifact_paths")
+    no_artifacts.validate(
+        automated_checks=("pytest",),
+        checks_status="passed",
+        navigator_validation_route="Navigator ran it.",
+        navigator_accepted=True,
+        implementation_complete=True,
+        artifact=None,
+    )
+    no_artifacts.review(debt_decision="no_action", artifact=None)
+    no_artifacts.coherence(
+        process_alignment="Followed.",
+        project_alignment="Updated.",
+        product_alignment="Matches.",
+        artifact=None,
+    )
+    no_artifacts.done(
+        history_action="Committed.",
+        roadmap_update="Updated.",
+        next_recommendation="Next.",
+        artifact=None,
+    )
+    scenarios.append(no_artifacts.finish())
+
+    return scenarios
+
+
 def build_payload() -> dict[str, Any]:
     repo_docs_before = _repo_docs_fingerprint()
     sequences: list[dict[str, Any]] = [
@@ -1517,6 +2061,7 @@ def build_payload() -> dict[str, Any]:
         *_pull_state_carry(),
         *_expand_scenarios(),
         *_preauthorization_scenarios(),
+        *_closure_scenarios(),
     ]
     created = _repo_docs_fingerprint() - repo_docs_before
     if created:
