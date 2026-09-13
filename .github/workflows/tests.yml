@@ -100,6 +100,17 @@ jobs:
           git diff --exit-code ts/test/fixtures/builder-roadmap/
           git diff --exit-code ts/test/fixtures/builder-refinement/
           git diff --exit-code ts/test/fixtures/builder-command/
+          # `git diff` cannot see a file that is not tracked yet, and the damage
+          # this class produces is usually untracked: a generator that resolves a
+          # write target to the repository writes NEW files into it (CR065's fifth
+          # instance fabricated a roadmap package under a live code). Both times it
+          # was caught by a human running `git status`. This is that check.
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "A generator left the working tree dirty:"
+            git status --porcelain
+            echo "Generators must write only to their goldens, their fixtures, and tmp/."
+            exit 1
+          fi
         env:
           MEMORY_ENV: test
           ECONOMY_ENV: test

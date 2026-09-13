@@ -1439,7 +1439,26 @@ def _preauthorization_scenarios() -> list[dict[str, Any]]:
     return scenarios
 
 
+def _repo_docs_fingerprint() -> frozenset[str]:
+    """Every path under the REPOSITORY's own roadmap, so pollution is detectable.
+
+    The command generator grew this guard after a scenario there seeded an empty
+    project path, `Path("")` resolved to the process cwd, and `pull-item`
+    materialized a fabricated package inside this repository's real roadmap. This
+    generator resolves story directories under its own temp project and so has no
+    known route to the same defect -- which is exactly what was believed about the
+    other generator. CR065's record is that this class has appeared five times
+    across four stories and was caught by hand or by CI every time, so the guard is
+    cheap insurance rather than a response to a specific bug.
+    """
+    roadmap = Path.cwd() / "docs" / "project" / "roadmap"
+    if not roadmap.is_dir():
+        return frozenset()
+    return frozenset(str(path.relative_to(roadmap)) for path in roadmap.rglob("*"))
+
+
 def build_payload() -> dict[str, Any]:
+    repo_docs_before = _repo_docs_fingerprint()
     sequences: list[dict[str, Any]] = [
         _story_lifecycle_happy_path(),
         _plan_preserves_authored_plan(),
@@ -1449,6 +1468,13 @@ def build_payload() -> dict[str, Any]:
         *_expand_scenarios(),
         *_preauthorization_scenarios(),
     ]
+    created = _repo_docs_fingerprint() - repo_docs_before
+    if created:
+        raise SystemExit(
+            "a scenario wrote into the REPOSITORY's own roadmap: "
+            f"{sorted(created)[:5]}. Scenarios must only write under "
+            f"{PARITY_ROOT.as_posix()}/<scenario>/project."
+        )
     return {"sequences": sequences}
 
 
