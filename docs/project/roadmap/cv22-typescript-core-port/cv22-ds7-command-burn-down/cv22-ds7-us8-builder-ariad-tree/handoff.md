@@ -2,9 +2,10 @@
 
 # Handoff — CV22.DS7.US8 — Builder/Ariad tree (plateaus 1–2 complete)
 
-**Status:** plateaus 1 and 2 of 9 complete. **Nothing is routed.** `routing.ts` is
-untouched and every `build` invocation still reaches Python, which is the intended
-state until plateau 8 adds the gate and plateau 9 flips it.
+**Status:** plateaus 1 and 2 of 9 complete; **plateau 3 in progress** — see
+[Plateau 3 progress](#plateau-3-progress) at the end. **Nothing is routed.**
+`routing.ts` is untouched and every `build` invocation still reaches Python, which
+is the intended state until plateau 8 adds the gate and plateau 9 flips it.
 
 Written for the session that resumes this story — possibly a different session, a
 different Mirror, or a later collaborator. It assumes only the repository, and it
@@ -180,3 +181,66 @@ Recorded in the plan's Debt / CRs section; none blocks plateau 3.
 - **`uv run pytest` on this machine resolves a global pytest** from mise's Python
   3.14, not the project venv. `uv sync --extra dev --frozen` fixes it; CI was
   always correct.
+
+---
+
+## Plateau 3 progress
+
+Plateau 3 (Scope C — story lifecycle) is being delivered in **three commits**,
+because it is the largest plateau in the story and its two halves fail
+differently: surface rendering is cheap to grade, while writes into the
+Navigator's project are the only US8 surface with a traversal shape.
+
+1. **Oracle first — done.** `ts/parity/generate_builder_lifecycle_golden.py`
+   (51 sequences, 166 graded steps, 105 surfaces, 27 refusals) and 25 new
+   command-level cases in `generate_builder_command_golden.py`. No TypeScript
+   exists yet, which is the point: the corpus was generated from Python before
+   the port could influence it.
+2. **`pull` + `expand`** — `pull.ts`, `expand.ts` over `cursorTransitions.ts`.
+3. **`prepare` + `plan` + `approve` + preauthorization** — renderers in
+   `builder/artifacts/`, the sha256 fingerprint, the five leaves, the
+   `builder_artifacts` probe.
+
+### What commit 1 measured that a resuming session should not re-derive
+
+- **Token redaction and a truncating renderer are incompatible.** The first
+  corpus ran under `tempfile.mkdtemp()` and replaced the project root with
+  `<PROJECT>`, the pattern `generate_builder_roadmap_golden.py` uses. It cannot
+  work for Scope C: `_card_text` truncates at 54 code points, so the golden
+  recorded `│ /private/var/folders/5k/q6bjkgn95gzd_qss7_5flyzw0000gp │` — a
+  truncated PREFIX no full-string substitution can match. The module-level corpus
+  therefore runs under a repo-relative root and grades the bytes;
+  `ts/parity/builder_surface_paths.py` owns the command-level rule and explains
+  what stays graded.
+- **Only a `/`-leading row may open a path run.** The first version of that rule
+  asked whether a row's text was a fragment of some absolute path, which is also
+  true of every RELATIVIZED row (`docs/project/…` is a substring of
+  `/abs/prefix/project/docs/project/…`), so it collapsed the
+  `artifacts_materialized` rows too and erased content that is machine-independent
+  and must stay graded.
+- **`.mirror/projections` cannot be snapshotted.** Every cursor write requests a
+  Journey projection refresh, and the publisher names each receipt
+  `op-<uuid4>.json`; including that tree made `builder-command.golden.json` differ
+  between two consecutive runs on one machine. The corpus now grades the authored
+  files exactly and the projection seam as `{documents, receipts}` — the receipt
+  COUNT is the part that is behavior, and it already shows refused cases producing
+  no refresh.
+- **A generator must assert it did not touch the repository.** A scenario seeded an
+  EMPTY project path; `Path("")` resolves to the process cwd, which for a
+  subprocess launched from the repository root is the repository, so `pull-item`
+  materialized a fabricated `CV1.DS1 — A delivery story` package under this
+  project's real CV1 — a second package claiming a live code, which
+  `resolve_story_directory` would refuse as ambiguous. Found by `git status`, like
+  plateau 2's fixture pollution. `_repo_docs_fingerprint` now fails the generator
+  instead.
+- **Seed the state the guard under test actually needs.** Two refusal cases
+  initially hit the delivery-cursor guard instead of the guard they were written
+  for (`active item is required before prepare`, and the Delivery Story
+  project-path refusal), because both sit BEHIND the cursor guard. Scenario
+  `adopted_cursor_empty` exists for that reason.
+- **The preservation rule only bites at the derived path.** The authored-plan
+  scenario first wrote `plan.md` one level too high
+  (`roadmap/cv1-us1-…` instead of `roadmap/cv1/cv1-us1-…`, since a dotted code
+  nests under its parent coordinate), so Plan created all three artifacts and the
+  corpus would have passed a port that overwrites authored work. It now authors two
+  of three files and grades `existing / existing / created`.

@@ -60,6 +60,42 @@ interface Case {
 }
 
 const cases = (golden as unknown as { cases: Case[] }).cases;
+
+/**
+ * Leaves that answer from TypeScript today. Plateaus 1 and 2 ported these six.
+ */
+const PORTED_LEAVES = [
+  "adopt",
+  "check-implementation",
+  "inspect-method",
+  "prepare-templates",
+  "pull-candidates",
+  "sync-cursor",
+] as const;
+
+/**
+ * Leaves the CORPUS already grades but TypeScript cannot answer yet.
+ *
+ * The story's rule is that the golden is generated from Python BEFORE the port
+ * exists, so for one commit per plateau the corpus knows more than the code. That
+ * gap is declared here rather than hidden by filtering, and
+ * `the pending list cannot go stale` fails the moment one of these leaves becomes
+ * reachable — so implementing it forces the entry out of this list instead of
+ * leaving a case silently ungraded.
+ *
+ * Plateau 3 empties it: `pull-item` and `prepare-item` in commit 2, the rest in
+ * commit 3.
+ */
+const PENDING_LEAVES = [
+  "approve-plan",
+  "cancel-plan-preauthorization",
+  "plan-item",
+  "prepare-item",
+  "pull-item",
+] as const;
+
+const isPorted = (entry: Case): boolean =>
+  (PORTED_LEAVES as readonly string[]).includes(entry.argv[0] ?? "");
 const SESSION_ID = cases[0]?.session_id ?? "builder-command-session";
 const NOW = "2026-01-01T00:00:00Z";
 
@@ -241,26 +277,46 @@ function invoke(db: WritableDatabase, argv: readonly string[]) {
   }
 }
 
-test("the golden covers every plateau-2 leaf and its refusals", () => {
+test("the golden covers every graded leaf and its refusals", () => {
   assert.ok(cases.length >= 38, `expected the full case matrix, got ${cases.length}`);
   const commands = new Set(cases.map((entry) => entry.argv[0]));
   assert.deepEqual(
     [...commands].sort(),
-    [
-      "adopt",
-      "check-implementation",
-      "inspect-method",
-      "prepare-templates",
-      "pull-candidates",
-      "sync-cursor",
-    ],
-    "six leaves answer from TS after plateau 2",
+    [...PORTED_LEAVES, ...PENDING_LEAVES].sort(),
+    "every leaf in the corpus is declared either ported or pending",
+  );
+  assert.equal(
+    PORTED_LEAVES.filter((leaf) => (PENDING_LEAVES as readonly string[]).includes(leaf)).length,
+    0,
+    "a leaf cannot be both ported and pending",
   );
   assert.ok(cases.filter((entry) => entry.exit_code === 1).length >= 15);
 });
 
+test("the pending list cannot go stale", () => {
+  // Implementing a pending leaf must fail this test, which is what forces the
+  // entry out of PENDING_LEAVES and its cases into the graded loop above. Without
+  // this, a ported leaf could keep sitting in the pending list and never be
+  // compared against Python at all.
+  for (const leaf of PENDING_LEAVES) {
+    const entry = cases.find((candidate) => candidate.argv[0] === leaf);
+    assert.ok(entry, `${leaf} is declared pending but the corpus has no case for it`);
+    const db = seed("adopted");
+    try {
+      assert.throws(
+        () => invoke(db, entry.argv),
+        /unsupported argv/,
+        `${leaf} is reachable now — move it from PENDING_LEAVES to PORTED_LEAVES`,
+      );
+    } finally {
+      db.close();
+    }
+  }
+});
+
 test("every case matches Python's stdout, stderr, and exit code", () => {
   for (const entry of cases) {
+    if (!isPorted(entry)) continue;
     // The template leaf writes FILES, so it gets its own test against a scratch
     // copy. Running it here pointed the journey at the committed fixture and
     // created nine files inside it — caught by `git status`, and the reason the
@@ -282,7 +338,10 @@ test("prepare-templates writes Python's files and preserves authored ones", () =
   // The files ARE the behavior here: this is the only plateau-2 leaf that writes
   // into the user's repository, and the failure that matters is overwriting a
   // `plan.md` somebody wrote. The golden carries every project file and its bytes.
-  const templateCases = cases.filter((entry) => entry.project_files !== undefined);
+  // Filtered by LEAF, not by `project_files`: plateau 3 added file-writing cases
+  // for `pull-item` and `plan-item`, and selecting on the snapshot alone would
+  // have dragged those unported leaves into this test.
+  const templateCases = cases.filter((entry) => entry.argv[0] === "prepare-templates");
   assert.ok(templateCases.length >= 2, "the created and preserved cases must both be graded");
   for (const entry of templateCases) {
     const db = seed(entry.scenario);

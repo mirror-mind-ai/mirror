@@ -24,6 +24,18 @@ Journey resolution is exercised through the operating-mode row rather than
 invocation actually takes, and it must ignore a journey attached to any OTHER
 mode.
 
+Plateau 3 adds the five story-lifecycle leaves -- `pull-item`, `prepare-item`,
+`plan-item`, `approve-plan`, `cancel-plan-preauthorization` -- which are the first
+commands here that WRITE INTO THE NAVIGATOR'S PROJECT. Two consequences:
+
+- cases that materialize files record a `project_files` snapshot, because the
+  files are the behavior; `prepare_templates` already established the pattern and
+  the preservation rule (`if not path.exists()`) is what it protects;
+- `plan_checkpoint` and `expand_blocked` print ABSOLUTE paths, so those outputs
+  are routed through `builder_surface_paths`, which collapses wrapped path rows to
+  a stable token and rewrites untruncated paths as project-relative. That module
+  explains why a plain token substitution cannot work on a truncated card row.
+
 Run:  uv run python ts/parity/generate_builder_command_golden.py
 """
 
@@ -37,6 +49,8 @@ import sys
 import tempfile
 from pathlib import Path
 from typing import Any
+
+import builder_surface_paths as surface_paths
 
 HERE = Path(__file__).resolve().parent
 FIXTURES = HERE.parent / "test" / "fixtures" / "builder-command"
@@ -67,6 +81,58 @@ PROJECT_FILES: dict[str, str] = {
 
 SESSION_ID = "builder-command-session"
 
+# A Delivery Story package whose candidate table IS canonical, written only for the
+# scenarios that pull a Delivery Story. It is deliberately not part of
+# PROJECT_FILES: adding a second delivery story there would rewrite every recorded
+# `pull-candidates` output and bury the plateau-3 diff in unrelated churn.
+PULLABLE_DS_INDEX = """# CV1.DS2 \u2014 Pullable delivery story
+
+**Status:** \U0001f7e1 Planned
+**Type:** Delivery Story
+
+## Candidate Stories
+
+| Code | Story | Type | Status |
+|------|-------|------|--------|
+| CV1.DS2.US1 | Port the first slice | User Story | \U0001f7e1 Planned |
+| CV1.DS2.TS1 | Harden the seam | Technical Story | \U0001f7e1 Planned |
+
+## Done Condition
+
+Done when the children deliver a coherent outcome.
+"""
+
+# The complete authored Plan a preauthorization receipt requires before it can be
+# consumed: every section in STORY_PLAN_REQUIRED_SECTIONS present and non-empty.
+COMPLETE_PLAN = """# Plan \u2014 CV1.US1
+
+## Objective
+
+Deliver the slice.
+
+## Scope
+
+- Bind one active story structurally.
+
+## Non-Goals
+
+- No sibling scope.
+
+## Acceptance Behavior
+
+Given exact authority
+When approval is consumed
+Then implementation starts once.
+
+## Validation Route
+
+- Run focused tests and Navigator validation.
+
+## Implementation Contract
+
+- Use TDD and stop at Navigator Validation.
+"""
+
 
 def write_project(root: Path) -> None:
     for relative, content in PROJECT_FILES.items():
@@ -90,7 +156,13 @@ def _seed(home: Path, project: Path, *, scenario: str) -> None:
         # An earlier version of this generator "removed" it by deleting from a
         # `journey_path` layer, which was a silent no-op: the no-project-path case
         # ran with a project path and proved nothing.
-        if scenario != "adopted_no_project":
+        # `adopted_cursor_no_project` must reach `Delivery Story expansion requires
+        # project_path`, which sits AFTER the cursor guard, so it needs a cursor and
+        # no project path. Writing an EMPTY project path does not achieve that: the
+        # first attempt did exactly that, the row kept its earlier value, the case
+        # expanded successfully and proved nothing. The path row must never be
+        # written at all.
+        if scenario not in {"adopted_no_project", "adopted_cursor_no_project"}:
             mem.journeys.set_project_path("demo", str(project))
     if scenario in {
         "adopted",
@@ -131,6 +203,8 @@ def _seed(home: Path, project: Path, *, scenario: str) -> None:
             active_item="CV1.US1",
             last_delivery_event="plan_approved",
         )
+    if scenario in _LIFECYCLE_SCENARIOS:
+        _seed_lifecycle(mem, project, scenario=scenario)
 
     if scenario == "other_mode":
         # A journey attached to Mirror Mode must NOT resolve for Builder.
@@ -142,14 +216,132 @@ def _seed(home: Path, project: Path, *, scenario: str) -> None:
     mem.store.conn.commit()
 
 
+# Scenarios added at plateau 3 for the five story-lifecycle leaves. Each one seeds
+# the exact cursor state its leaf's guard requires, so the refusals are graded as
+# the guards Python actually runs rather than as a single generic error.
+_LIFECYCLE_SCENARIOS = {
+    "adopted_cursor_empty",
+    "adopted_cursor_no_project",
+    "adopted_ds_pullable",
+    "adopted_pulled",
+    "adopted_prepared",
+    "adopted_prepared_ds",
+    "adopted_plan_pending",
+    "adopted_preauthorized",
+}
+
+
+def _seed_lifecycle(mem: Any, project: Path, *, scenario: str) -> None:
+    """Seed adoption plus the delivery cursor state a lifecycle leaf expects."""
+    from memory.builder.ariad_method import get_ariad_method
+    from memory.builder.delivery_cursor import set_delivery_cursor
+    from memory.builder.lifecycle import plan_lifecycle_item
+    from memory.builder.method_adoption import set_adopted_method
+
+    set_adopted_method(mem.store, "demo", "ariad")
+    if scenario in {"adopted_cursor_empty", "adopted_cursor_no_project"}:
+        # A cursor with no active item: reaches the guards that sit BEHIND the
+        # cursor guard -- `active item is required before prepare`, and the
+        # project-path refusal for a Delivery Story pull.
+        set_delivery_cursor(mem.store, journey="demo", method="ariad")
+        return
+    if scenario == "adopted_ds_pullable":
+        target = project / "docs/project/roadmap/cv1-first/cv1-ds2-pullable/index.md"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(PULLABLE_DS_INDEX, encoding="utf-8")
+        set_delivery_cursor(mem.store, journey="demo", method="ariad")
+        return
+    if scenario == "adopted_pulled":
+        set_delivery_cursor(
+            mem.store,
+            journey="demo",
+            method="ariad",
+            active_item="CV1.DS1.US1",
+            active_item_title="A user story",
+            active_item_level="user_story",
+            last_delivery_event="pull",
+        )
+        return
+    if scenario in {"adopted_prepared", "adopted_prepared_ds"}:
+        delivery_story = scenario == "adopted_prepared_ds"
+        set_delivery_cursor(
+            mem.store,
+            journey="demo",
+            method="ariad",
+            active_item="CV1.DS1" if delivery_story else "CV1.DS1.US1",
+            active_item_title="A delivery story" if delivery_story else "A user story",
+            active_item_level="delivery_story" if delivery_story else "user_story",
+            last_delivery_event="prepare",
+            navigator_flow_unit="story_by_story",
+        )
+        return
+    # Both remaining scenarios need a real pending Plan checkpoint, so they run the
+    # real Plan through the library rather than hand-writing checkpoint fields: a
+    # hand-built receipt would not carry a fingerprint Python would accept.
+    set_delivery_cursor(
+        mem.store,
+        journey="demo",
+        method="ariad",
+        active_item="CV1.DS1.US1",
+        active_item_title="A user story",
+        active_item_level="user_story",
+        last_delivery_event="prepare",
+        navigator_flow_unit="story_by_story",
+    )
+    package = project / "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story"
+    package.mkdir(parents=True, exist_ok=True)
+    plan_path = package / "plan.md"
+    plan_path.write_text(COMPLETE_PLAN, encoding="utf-8")
+    plan_lifecycle_item(
+        mem.store,
+        journey="demo",
+        method=get_ariad_method(),
+        plan_artifact_path=plan_path,
+        preauthorize=scenario == "adopted_preauthorized",
+    )
+
+
 def _project_snapshot(project: Path) -> dict[str, str]:
-    """Every file under the project, project-relative, with its content."""
+    """Authored project files, project-relative, with their content.
+
+    `.mirror/projections` is deliberately excluded and summarized separately by
+    `_projection_summary`. Every Builder cursor write requests a Journey projection
+    refresh, and the publisher names each receipt `op-<uuid4>.json` and stamps it,
+    so including that tree made this golden differ between two consecutive runs on
+    one machine -- caught here rather than by CI's determinism gate. The publisher is
+    US7-owned and explicitly out of US8's scope (nothing in TypeScript writes under
+    `.mirror/projections`), and the story's evidence contract asserts the PUBLISHED
+    FILE in the lifecycle smoke, not in this corpus.
+    """
     snapshot: dict[str, str] = {}
     for path in sorted(project.rglob("*")):
         if not path.is_file():
             continue
-        snapshot[path.relative_to(project).as_posix()] = path.read_text(encoding="utf-8")
+        relative = path.relative_to(project).as_posix()
+        if relative.startswith(".mirror/"):
+            continue
+        snapshot[relative] = path.read_text(encoding="utf-8")
     return snapshot
+
+
+def _projection_summary(project: Path) -> dict[str, Any]:
+    """Projection-seam evidence that is stable: what was published, and how often.
+
+    The receipt COUNT is behavior -- it says the refresh fired at the expected call
+    sites, which is what a port can silently lose, since the delegation is
+    best-effort and a broken seam is silent. The receipt NAMES and digests are not
+    behavior; they are uuid4 and content stamps.
+    """
+    projections = project / ".mirror" / "projections"
+    if not projections.is_dir():
+        return {"documents": [], "receipts": 0}
+    documents = sorted(
+        path.relative_to(projections).as_posix()
+        for path in projections.rglob("*")
+        if path.is_file() and ".receipts" not in path.parts and path.name != ".publication.lock"
+    )
+    receipts = sum(1 for path in (projections / ".receipts").rglob("*") if path.is_file())
+    return {"documents": documents, "receipts": receipts}
 
 
 def _run(home: Path, argv: list[str]) -> dict[str, Any]:
@@ -185,6 +377,32 @@ def _run(home: Path, argv: list[str]) -> dict[str, Any]:
         "stdout": completed.stdout,
         "stderr": completed.stderr,
         "exit_code": completed.returncode,
+    }
+
+
+def _normalize_paths(outcome: dict[str, Any], project: Path) -> dict[str, Any]:
+    """Make absolute project paths in a recorded invocation machine-independent.
+
+    Card rows that WRAP a path collapse to one token row; the unwrapped `*_path=`
+    trailer lines and stderr messages are rewritten project-relative, so they stay
+    graded exactly. `builder_surface_paths` explains why the two need different
+    treatment. `repo_root=project` keeps the rewrite to paths inside the project, so
+    an unexpected leak from anywhere else still trips the machine-dependence guard
+    in `main`.
+    """
+    absolute = [str(project), str(project.resolve())]
+    for path in project.rglob("*"):
+        absolute.append(str(path))
+        absolute.append(str(path.resolve()))
+    absolute = sorted(set(absolute), key=len, reverse=True)
+    stdout = surface_paths.normalize_path_rows(outcome["stdout"], absolute)
+    stdout = surface_paths.normalize_trailer_paths(stdout, absolute, project)
+    return {
+        **outcome,
+        "stdout": stdout,
+        "stderr": surface_paths.scrub_message(
+            outcome["stderr"], project_root=project, repo_root=project
+        ),
     }
 
 
@@ -347,11 +565,220 @@ CASES: list[tuple[str, str, list[str]]] = [
         "unadopted",
         ["check-implementation", "--method", "ariad", "--journey", "demo"],
     ),
+    # --- plateau 3: the five story-lifecycle leaves ------------------------
+    # pull-item. The CLI runs Prepare automatically after Pull, so the happy path
+    # emits TWO surfaces; a port that stops at the Pull report is one surface short.
+    (
+        "pull_item_user_story",
+        "adopted_with_cursor",
+        [
+            "pull-item", "--method", "ariad", "--journey", "demo",
+            "--item-code", "CV1.DS1.US1", "--item-title", "A user story",
+            "--item-level", "user_story", "--why-now", "next implementable slice",
+        ],
+    ),
+    (
+        "pull_item_technical_story",
+        "adopted_with_cursor",
+        [
+            "pull-item", "--method", "ariad", "--journey", "demo",
+            "--item-code", "CV1.DS1.TS1", "--item-title", "Harden the seam",
+            "--item-level", "technical_story", "--why-now", "the seam is the risk",
+        ],
+    ),
+    # A Delivery Story pull also EXPANDS: delivery_story_ready plus the artifacts
+    # surface, and real child packages on disk.
+    (
+        "pull_item_delivery_story_expands",
+        "adopted_ds_pullable",
+        [
+            "pull-item", "--method", "ariad", "--journey", "demo",
+            "--item-code", "CV1.DS2", "--item-title", "Pullable delivery story",
+            "--item-level", "delivery_story", "--why-now", "the delivery story is next",
+        ],
+    ),
+    # The authored CV1.DS1 package has NO candidate table, so Expand must refuse
+    # rather than fabricate a generic US1 -- the CV22.DS7 secondary defect.
+    (
+        "pull_item_delivery_story_blocked",
+        "adopted_with_cursor",
+        [
+            "pull-item", "--method", "ariad", "--journey", "demo",
+            "--item-code", "CV1.DS1", "--item-title", "A delivery story",
+            "--item-level", "delivery_story", "--why-now", "expand it",
+        ],
+    ),
+    (
+        "pull_item_delivery_story_without_project_path",
+        "adopted_cursor_no_project",
+        [
+            "pull-item", "--method", "ariad", "--journey", "demo",
+            "--item-code", "CV1.DS1", "--item-title", "A delivery story",
+            "--item-level", "delivery_story", "--why-now", "expand it",
+        ],
+    ),
+    (
+        "pull_item_unknown_level",
+        "adopted_with_cursor",
+        [
+            "pull-item", "--method", "ariad", "--journey", "demo",
+            "--item-code", "CV1.DS1.US1", "--item-title", "A user story",
+            "--item-level", "epic", "--why-now", "wrong level",
+        ],
+    ),
+    (
+        "pull_item_no_cursor",
+        "adopted",
+        [
+            "pull-item", "--method", "ariad", "--journey", "demo",
+            "--item-code", "CV1.DS1.US1", "--item-title", "A user story",
+            "--item-level", "user_story", "--why-now", "no cursor yet",
+        ],
+    ),
+    (
+        "pull_item_not_adopted",
+        "unadopted",
+        [
+            "pull-item", "--method", "ariad", "--journey", "demo",
+            "--item-code", "CV1.DS1.US1", "--item-title", "A user story",
+            "--item-level", "user_story", "--why-now", "not adopted",
+        ],
+    ),
+    # prepare-item
+    (
+        "prepare_item_after_pull",
+        "adopted_pulled",
+        ["prepare-item", "--method", "ariad", "--journey", "demo"],
+    ),
+    (
+        "prepare_item_delivery_story",
+        "adopted_prepared_ds",
+        ["prepare-item", "--method", "ariad", "--journey", "demo"],
+    ),
+    (
+        "prepare_item_without_active_item",
+        "adopted_cursor_empty",
+        ["prepare-item", "--method", "ariad", "--journey", "demo"],
+    ),
+    (
+        "prepare_item_not_adopted",
+        "unadopted",
+        ["prepare-item", "--method", "ariad", "--journey", "demo"],
+    ),
+    # plan-item
+    (
+        "plan_item_after_prepare",
+        "adopted_prepared",
+        ["plan-item", "--method", "ariad", "--journey", "demo"],
+    ),
+    (
+        "plan_item_with_objective",
+        "adopted_prepared",
+        [
+            "plan-item", "--method", "ariad", "--journey", "demo",
+            "--objective", "Port the story lifecycle leaves.",
+        ],
+    ),
+    (
+        "plan_item_preauthorized",
+        "adopted_prepared",
+        [
+            "plan-item", "--method", "ariad", "--journey", "demo",
+            "--preauthorize-approval", "--stop-after", "navigator_validation",
+        ],
+    ),
+    (
+        "plan_item_requires_prepare",
+        "adopted_with_cursor",
+        ["plan-item", "--method", "ariad", "--journey", "demo"],
+    ),
+    (
+        "plan_item_refuses_delivery_story",
+        "adopted_prepared_ds",
+        ["plan-item", "--method", "ariad", "--journey", "demo"],
+    ),
+    (
+        "plan_item_not_adopted",
+        "unadopted",
+        ["plan-item", "--method", "ariad", "--journey", "demo"],
+    ),
+    # approve-plan
+    (
+        "approve_plan_pending_checkpoint",
+        "adopted_plan_pending",
+        ["approve-plan", "--method", "ariad", "--journey", "demo"],
+    ),
+    (
+        "approve_plan_without_checkpoint",
+        "adopted_with_cursor",
+        ["approve-plan", "--method", "ariad", "--journey", "demo"],
+    ),
+    # Consuming real authority emits PLAN APPROVED *and* IMPLEMENTATION STARTED.
+    (
+        "approve_plan_with_preauthorization",
+        "adopted_preauthorized",
+        ["approve-plan", "--method", "ariad", "--journey", "demo", "--use-preauthorization"],
+    ),
+    # No receipt: the bounded fallback surface, exit 0, ordinary approval still due.
+    (
+        "approve_plan_with_preauthorization_missing",
+        "adopted_plan_pending",
+        ["approve-plan", "--method", "ariad", "--journey", "demo", "--use-preauthorization"],
+    ),
+    (
+        "approve_plan_not_adopted",
+        "unadopted",
+        ["approve-plan", "--method", "ariad", "--journey", "demo"],
+    ),
+    # cancel-plan-preauthorization
+    (
+        "cancel_plan_preauthorization_pending",
+        "adopted_preauthorized",
+        ["cancel-plan-preauthorization", "--method", "ariad", "--journey", "demo"],
+    ),
+    (
+        "cancel_plan_preauthorization_without_pending",
+        "adopted_plan_pending",
+        ["cancel-plan-preauthorization", "--method", "ariad", "--journey", "demo"],
+    ),
+    (
+        "cancel_plan_preauthorization_no_cursor",
+        "adopted",
+        ["cancel-plan-preauthorization", "--method", "ariad", "--journey", "demo"],
+    ),
 ]
+
+# Leaves whose output can carry an absolute project path: `plan_checkpoint` prints
+# the package path and the `*_path=` trailer, `expand_blocked` embeds the resolved
+# directory in its reason.
+_PATH_BEARING = ("plan_item", "pull_item", "approve_plan")
+
+# Leaves that write into the project, so the files are part of the behavior.
+_FILE_WRITING = ("prepare_templates", "plan_item", "pull_item")
+
+
+def _repo_docs_fingerprint() -> frozenset[str]:
+    """Every path under the REPOSITORY's own roadmap, so pollution is detectable.
+
+    This guard exists because it was needed twice. At plateau 2 a generic case loop
+    pointed `prepare-templates` at the committed fixture and created nine files
+    inside it. At plateau 3 a scenario seeded an EMPTY project path; `Path("")`
+    resolves to the process cwd, which for a subprocess launched from the repository
+    root is the repository itself, so `pull-item` materialized a fabricated
+    `CV1.DS1 - A delivery story` package under this project's real CV1 -- a second
+    package claiming a live code, which `resolve_story_directory` would then refuse
+    as ambiguous and the roadmap-integrity check would fail on.
+
+    Both times the damage was found by `git status`, not by an assertion. This is the
+    assertion.
+    """
+    roadmap = HERE.parent.parent / "docs" / "project" / "roadmap"
+    return frozenset(str(path.relative_to(roadmap)) for path in roadmap.rglob("*"))
 
 
 def build_cases() -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
+    repo_docs_before = _repo_docs_fingerprint()
     for name, scenario, argv in CASES:
         tmp = Path(tempfile.mkdtemp(prefix="builder-command-"))
         try:
@@ -363,6 +790,8 @@ def build_cases() -> list[dict[str, Any]]:
             os.environ.pop("MIRROR_SESSION_ID", None)
             _seed(home, project, scenario=scenario)
             outcome = _run(home, argv)
+            if name.startswith(_PATH_BEARING):
+                outcome = _normalize_paths(outcome, project)
             entry: dict[str, Any] = {
                 "name": name,
                 "scenario": scenario,
@@ -370,12 +799,21 @@ def build_cases() -> list[dict[str, Any]]:
                 "session_id": SESSION_ID,
                 **outcome,
             }
-            # For the template leaf, the FILES are the behavior: their
+            # For file-writing leaves the FILES are the behavior: their
             # project-relative paths and the bytes of the ones that already
             # existed, so a port that overwrites an authored file fails.
-            if name.startswith("prepare_templates"):
+            if name.startswith(_FILE_WRITING):
                 entry["project_files"] = _project_snapshot(project)
+                entry["projection"] = _projection_summary(project)
             results.append(entry)
+            created = _repo_docs_fingerprint() - repo_docs_before
+            if created:
+                raise SystemExit(
+                    f"case {name!r} wrote into the REPOSITORY's own roadmap: "
+                    f"{sorted(created)[:5]}. A case must only ever write inside its "
+                    "disposable project. Check the scenario's project_path: an empty "
+                    "or missing value makes Path('') resolve to the process cwd."
+                )
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
     return results

@@ -961,6 +961,18 @@ validation step 2, and the loader-hook shape for the broken-core drill.
   `approved Plan is required before Implement.`, so a Navigator cannot tell
   which condition is missing. Parity-bound; a better message is a product
   change.
+- **Two Ariad surfaces print ABSOLUTE machine paths.** `plan_checkpoint` prints
+  the story package, the three artifact paths, and the four `*_path=` trailer
+  lines raw; `expand_decision` prints `materialized_paths` raw; `expand_blocked`
+  embeds the resolved directory in its reason. Every artifact surface, by
+  contrast, relativizes through `artifact_surfaces._display_path`, so the same
+  file is shown two different ways in one command's output — see
+  `plan-item`, where the checkpoint prints `/Users/…/cv1-ds1-us1-story/plan.md`
+  and `ARTIFACTS MATERIALIZED` prints `docs/project/roadmap/…/plan.md`. Found at
+  plateau 3 while building the corpus: it is why the golden cannot grade those
+  rows byte for byte on two machines (`ts/parity/builder_surface_paths.py`
+  records the compensating rule). Reproduced, not fixed — relativizing would be
+  a product change, and a Navigator-facing one. Worth a CR.
 
 ## Stop Conditions
 

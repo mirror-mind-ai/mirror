@@ -407,6 +407,10 @@
         "docs/project/roadmap/templates/test-guide.md": "[< Story](index.md)\n\n# Test Guide — <CODE> <Title>\n\n## Automated Validation\n\n```bash\n<commands>\n```\n\n## Navigator Validation\n\n<Manual validation route, expected observation, pass condition, and fail condition.>\n\n## Validation Evidence\n\n<Recorded evidence after validation runs.>\n",
         "docs/project/roadmap/templates/user-story-index.md": "[< Parent](../index.md)\n\n# <CODE> — <User Story Title>\n\n**Status:** 🟡 Planned\n**Type:** User Story\n\n---\n\n## User Story\n\nAs a [user persona],\nI want to [action/feature],\nSo that [benefit/value].\n\n## Outcome\n\n<Navigator-visible behavior or capability.>\n\n## Acceptance Behavior\n\n```text\nGiven <context>\nWhen <action>\nThen <observable result>\n```\n\n## Scope\n\n- <in scope>\n\n## Out Of Scope\n\n- <out of scope>\n\n## Validation\n\n<Navigator-facing validation route.>\n"
       },
+      "projection": {
+        "documents": [],
+        "receipts": 0
+      },
       "scenario": "adopted",
       "session_id": "builder-command-session",
       "stderr": "",
@@ -437,6 +441,10 @@
         "docs/project/roadmap/templates/test-guide.md": "[< Story](index.md)\n\n# Test Guide — <CODE> <Title>\n\n## Automated Validation\n\n```bash\n<commands>\n```\n\n## Navigator Validation\n\n<Manual validation route, expected observation, pass condition, and fail condition.>\n\n## Validation Evidence\n\n<Recorded evidence after validation runs.>\n",
         "docs/project/roadmap/templates/user-story-index.md": "[< Parent](../index.md)\n\n# <CODE> — <User Story Title>\n\n**Status:** 🟡 Planned\n**Type:** User Story\n\n---\n\n## User Story\n\nAs a [user persona],\nI want to [action/feature],\nSo that [benefit/value].\n\n## Outcome\n\n<Navigator-visible behavior or capability.>\n\n## Acceptance Behavior\n\n```text\nGiven <context>\nWhen <action>\nThen <observable result>\n```\n\n## Scope\n\n- <in scope>\n\n## Out Of Scope\n\n- <out of scope>\n\n## Validation\n\n<Navigator-facing validation route.>\n"
       },
+      "projection": {
+        "documents": [],
+        "receipts": 0
+      },
       "scenario": "adopted_with_templates",
       "session_id": "builder-command-session",
       "stderr": "",
@@ -458,6 +466,10 @@
         "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
+      "projection": {
+        "documents": [],
+        "receipts": 0
+      },
       "scenario": "adopted_no_project",
       "session_id": "builder-command-session",
       "stderr": "Error: journey 'demo' has no project_path configured. Set a project path before preparing Ariad templates.\n",
@@ -478,6 +490,10 @@
         "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
         "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "unadopted",
       "session_id": "builder-command-session",
@@ -587,6 +603,646 @@
       "scenario": "unadopted",
       "session_id": "builder-command-session",
       "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "pull-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--item-code",
+        "CV1.DS1.US1",
+        "--item-title",
+        "A user story",
+        "--item-level",
+        "user_story",
+        "--why-now",
+        "next implementable slice"
+      ],
+      "exit_code": 0,
+      "name": "pull_item_user_story",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 3
+      },
+      "scenario": "adopted_with_cursor",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:DELIVERY_STORY_IDENTIFIED>>>\nDelivery\nDelivery Flow: ◉ Pull → ○ Prepare → ○ Expand → ○ Plan → ○ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟪■  DELIVERY STORY ACTIVATED                   │\n│                                                        │\n│ A user story                                           │\n│                                                        │\n│ source                                                 │\n│ roadmap candidate                                      │\n│                                                        │\n│ roadmap placement                                      │\n│ 🟪[CV1] A user story                                    │\n│   └─ 🟦[US1] A user story                               │\n│                                                        │\n│ intent                                                 │\n│ next implementable slice                               │\n│                                                        │\n│ commitment                                             │\n│ pulled into active Delivery Work                       │\n│ active item: CV1.DS1.US1                               │\n│                                                        │\n│ next event                                             │\n│ Prepare                                                │\n│                                                        │\n│ boundary                                               │\n│ Prepare was not executed automatically.                │\n│ Plan and later lifecycle work were not executed.       │\n╰────────────────────────────────────────────────────────╯\n<<<END:DELIVERY_STORY_IDENTIFIED>>>\n\n<<<ARIAD:PREPARE_FIELD_READING>>>\nDelivery\nDelivery Flow: ✓ Pull → ◉ Prepare → ○ Expand → ○ Plan → ○ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PREPARE FIELD READING                       │\n│                                                        │\n│ active item                                            │\n│ 🟦[CV1.DS1.US1]                                         │\n│ level: user_story                                      │\n│ implementable: yes                                     │\n│                                                        │\n│ terrain read                                           │\n│ ○ README.md: missing                                   │\n│ ✓ docs/project/roadmap/index.md: present               │\n│ ○ docs/process/development-guide.md: missing           │\n│                                                        │\n│ story shape                                            │\n│ Pulled item is implementable by default. Plan may      │\n│ define the execution contract.                         │\n│                                                        │\n│ risks                                                  │\n│ ✕ Scope may expand during Plan if the item mixes       │\n│   product and technical work.                          │\n│ ✕ Implementation remains blocked until the Plan        │\n│   checkpoint is approved.                              │\n│                                                        │\n│ applicable rules                                       │\n│ ✓ Pull selects active work; Prepare reads terrain.     │\n│ ✓ Plan is the next event and requires Navigator        │\n│   approval before implementation.                      │\n│ ✓ No Plan, Implement, Validation, Review, Coherence,   │\n│   or Done work is executed here.                       │\n│                                                        │\n│ next event                                             │\n│ Plan                                                   │\n│                                                        │\n│ boundary                                               │\n│ Plan was not created.                                  │\n│ Implementation remains blocked.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:PREPARE_FIELD_READING>>>\n\n"
+    },
+    {
+      "argv": [
+        "pull-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--item-code",
+        "CV1.DS1.TS1",
+        "--item-title",
+        "Harden the seam",
+        "--item-level",
+        "technical_story",
+        "--why-now",
+        "the seam is the risk"
+      ],
+      "exit_code": 0,
+      "name": "pull_item_technical_story",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 3
+      },
+      "scenario": "adopted_with_cursor",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:DELIVERY_STORY_IDENTIFIED>>>\nDelivery\nDelivery Flow: ◉ Pull → ○ Prepare → ○ Expand → ○ Plan → ○ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟪■  DELIVERY STORY ACTIVATED                   │\n│                                                        │\n│ Harden the seam                                        │\n│                                                        │\n│ source                                                 │\n│ roadmap candidate                                      │\n│                                                        │\n│ roadmap placement                                      │\n│ 🟪[CV1] Harden the seam                                 │\n│   └─ 🟦[TS1] Harden the seam                            │\n│                                                        │\n│ intent                                                 │\n│ the seam is the risk                                   │\n│                                                        │\n│ commitment                                             │\n│ pulled into active Delivery Work                       │\n│ active item: CV1.DS1.TS1                               │\n│                                                        │\n│ next event                                             │\n│ Prepare                                                │\n│                                                        │\n│ boundary                                               │\n│ Prepare was not executed automatically.                │\n│ Plan and later lifecycle work were not executed.       │\n╰────────────────────────────────────────────────────────╯\n<<<END:DELIVERY_STORY_IDENTIFIED>>>\n\n<<<ARIAD:PREPARE_FIELD_READING>>>\nDelivery\nDelivery Flow: ✓ Pull → ◉ Prepare → ○ Expand → ○ Plan → ○ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PREPARE FIELD READING                       │\n│                                                        │\n│ active item                                            │\n│ 🟦[CV1.DS1.TS1]                                         │\n│ level: technical_story                                 │\n│ implementable: yes                                     │\n│                                                        │\n│ terrain read                                           │\n│ ○ README.md: missing                                   │\n│ ✓ docs/project/roadmap/index.md: present               │\n│ ○ docs/process/development-guide.md: missing           │\n│                                                        │\n│ story shape                                            │\n│ Pulled item is implementable by default. Plan may      │\n│ define the execution contract.                         │\n│                                                        │\n│ risks                                                  │\n│ ✕ Scope may expand during Plan if the item mixes       │\n│   product and technical work.                          │\n│ ✕ Implementation remains blocked until the Plan        │\n│   checkpoint is approved.                              │\n│                                                        │\n│ applicable rules                                       │\n│ ✓ Pull selects active work; Prepare reads terrain.     │\n│ ✓ Plan is the next event and requires Navigator        │\n│   approval before implementation.                      │\n│ ✓ No Plan, Implement, Validation, Review, Coherence,   │\n│   or Done work is executed here.                       │\n│                                                        │\n│ next event                                             │\n│ Plan                                                   │\n│                                                        │\n│ boundary                                               │\n│ Plan was not created.                                  │\n│ Implementation remains blocked.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:PREPARE_FIELD_READING>>>\n\n"
+    },
+    {
+      "argv": [
+        "pull-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--item-code",
+        "CV1.DS2",
+        "--item-title",
+        "Pullable delivery story",
+        "--item-level",
+        "delivery_story",
+        "--why-now",
+        "the delivery story is next"
+      ],
+      "exit_code": 0,
+      "name": "pull_item_delivery_story_expands",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds2-pullable/cv1-ds2-ts1-harden-the-seam/index.md": "[< Parent](../index.md)\n\n# CV1.DS2.TS1 — Harden the seam\n\n**Status:** 🟡 Planned\n**Type:** Technical Story\n\n---\n\n## Technical Story\n\nIn order to support the delivery capability,\nAs an engineering team/system component,\nI want to Harden the seam,\nSo that the expected technical outcome is available.\n\n## Outcome\n\nNavigator can validate Harden the seam as an observable behavior.\n\n## Acceptance Behavior\n\n```text\nGiven the system is ready for Harden the seam\nWhen the planned technical change is applied\nThen the expected technical outcome is observable\nAnd unrelated Delivery Story scope remains untouched\n```\n\n## Scope\n\n- Harden the seam\n\n## Out Of Scope\n\n- Sibling Delivery Story scope.\n\n## Validation\n\nNavigator-visible validation route plus automated checks.\n",
+        "docs/project/roadmap/cv1-first/cv1-ds2-pullable/cv1-ds2-us1-port-the-first-slice/index.md": "[< Parent](../index.md)\n\n# CV1.DS2.US1 — Port the first slice\n\n**Status:** 🟡 Planned\n**Type:** User Story\n\n---\n\n## User Story\n\nAs a user,\nI want to Port the first slice,\nSo that I can receive the value of this story.\n\n## Outcome\n\nNavigator can validate Port the first slice as an observable behavior.\n\n## Acceptance Behavior\n\n```text\nGiven the user is ready for Port the first slice\nWhen the user performs the planned action\nThen the expected observable behavior is visible\nAnd unrelated Delivery Story scope remains untouched\n```\n\n## Scope\n\n- Port the first slice\n\n## Out Of Scope\n\n- Sibling Delivery Story scope.\n\n## Validation\n\nNavigator-visible validation route plus automated checks.\n",
+        "docs/project/roadmap/cv1-first/cv1-ds2-pullable/index.md": "# CV1.DS2 — Pullable delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n\n## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n| CV1.DS2.US1 | Port the first slice | User Story | 🟡 Planned |\n| CV1.DS2.TS1 | Harden the seam | Technical Story | 🟡 Planned |\n\n## Done Condition\n\nDone when the children deliver a coherent outcome.\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 3
+      },
+      "scenario": "adopted_ds_pullable",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:DELIVERY_STORY_READY>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ◉ Expand → ○ DS Plan → ○ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│ 🧭 CV1.DS2 READY                                        │\n│                                                        │\n│ What was pulled?                                       │\n│ Pullable delivery story                                │\n│                                                        │\n│ Where are we in the roadmap?                           │\n│ 🟪[CV1] Pullable delivery story                         │\n│   └─ 🟦[DS2] Pullable delivery story                    │\n│                                                        │\n│ What did Prepare find?                                 │\n│ Delivery Story requires a granularity decision before  │\n│ implementation.                                        │\n│                                                        │\n│ What was materialized?                                 │\n│ ✓ DS package                                           │\n│                                                        │\n│ What is recommended next?                              │\n│ 🟩[US1] Port the first slice                            │\n│                                                        │\n│ Recommended flow unit                                  │\n│ delivery_story — recommended unless you want separate  │\n│ Navigator validation for each child story              │\n│                                                        │\n│ Why this recommendation?                               │\n│ The child work packages appear to support one Delivery │\n│ Story outcome. Use story_by_story only if each child   │\n│ needs separate Navigator checkpoints.                  │\n│                                                        │\n│ What can we do now?                                    │\n│ - confirm US1 and continue story_by_story              │\n│ - choose delivery_story as the flow unit               │\n│ - inspect generated story packages                     │\n│                                                        │\n│ Choose the next flow unit when ready.                  │\n╰────────────────────────────────────────────────────────╯\n<<<END:DELIVERY_STORY_READY>>>\n\n<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Expand — CV1.DS2                                       │\n│                                                        │\n│ ↻ existing DS package                                  │\n│ docs/project/roadmap/cv1-first/cv1-ds2-pullable/index. │\n│ md                                                     │\n│                                                        │\n│ ✓ created US1 package                                  │\n│ docs/project/roadmap/cv1-first/cv1-ds2-pullable/cv1-ds │\n│ 2-us1-port-the-first-slice/index.md                    │\n│                                                        │\n│ ✓ created TS1 package                                  │\n│ docs/project/roadmap/cv1-first/cv1-ds2-pullable/cv1-ds │\n│ 2-ts1-harden-the-seam/index.md                         │\n│                                                        │\n│ Files were materialized only. No Plan or               │\n│ implementation was executed.                           │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n\n"
+    },
+    {
+      "argv": [
+        "pull-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--item-code",
+        "CV1.DS1",
+        "--item-title",
+        "A delivery story",
+        "--item-level",
+        "delivery_story",
+        "--why-now",
+        "expand it"
+      ],
+      "exit_code": 1,
+      "name": "pull_item_delivery_story_blocked",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 3
+      },
+      "scenario": "adopted_with_cursor",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:EXPAND_BLOCKED>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ◉ Expand → ○ Plan → ○ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🧭◆  EXPAND BLOCKED                             │\n│                                                        │\n│ delivery story                                         │\n│ 🟦[CV1.DS1]                                             │\n│                                                        │\n│ why blocked                                            │\n│ authored package at                                    │\n│ <ABSOLUTE PATH>                                        │\n│ has no canonical candidate-stories table (a Markdown   │\n│ table header must include Code, Story, Type, and       │\n│ Status columns); refusing to fabricate a generic story │\n│                                                        │\n│ required Navigator action                              │\n│ Add a canonical candidate-stories table (Markdown      │\n│ table header including Code, Story, Type, and Status   │\n│ columns) to the resolved package's index.md, or        │\n│ resolve the duplicate heading, then Expand again.      │\n│                                                        │\n│ boundary                                               │\n│ No files were materialized. Expand refuses to          │\n│ fabricate a generic story.                             │\n╰────────────────────────────────────────────────────────╯\n<<<END:EXPAND_BLOCKED>>>\n\n"
+    },
+    {
+      "argv": [
+        "pull-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--item-code",
+        "CV1.DS1",
+        "--item-title",
+        "A delivery story",
+        "--item-level",
+        "delivery_story",
+        "--why-now",
+        "expand it"
+      ],
+      "exit_code": 1,
+      "name": "pull_item_delivery_story_without_project_path",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [],
+        "receipts": 0
+      },
+      "scenario": "adopted_cursor_no_project",
+      "session_id": "builder-command-session",
+      "stderr": "Operational projection refresh failed after source commit: code=unknown_journey\nOperational projection refresh failed after source commit: code=unknown_journey\nError: Delivery Story expansion requires project_path.\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "pull-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--item-code",
+        "CV1.DS1.US1",
+        "--item-title",
+        "A user story",
+        "--item-level",
+        "epic",
+        "--why-now",
+        "wrong level"
+      ],
+      "exit_code": 1,
+      "name": "pull_item_unknown_level",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 1
+      },
+      "scenario": "adopted_with_cursor",
+      "session_id": "builder-command-session",
+      "stderr": "Error: item level must be one of delivery_story, user_story, technical_story\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "pull-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--item-code",
+        "CV1.DS1.US1",
+        "--item-title",
+        "A user story",
+        "--item-level",
+        "user_story",
+        "--why-now",
+        "no cursor yet"
+      ],
+      "exit_code": 1,
+      "name": "pull_item_no_cursor",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [],
+        "receipts": 0
+      },
+      "scenario": "adopted",
+      "session_id": "builder-command-session",
+      "stderr": "Error: journey 'demo' has no Builder delivery cursor. Run: uv run python -m memory build sync-cursor --journey demo --method ariad\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "pull-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--item-code",
+        "CV1.DS1.US1",
+        "--item-title",
+        "A user story",
+        "--item-level",
+        "user_story",
+        "--why-now",
+        "not adopted"
+      ],
+      "exit_code": 1,
+      "name": "pull_item_not_adopted",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [],
+        "receipts": 0
+      },
+      "scenario": "unadopted",
+      "session_id": "builder-command-session",
+      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "prepare-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 0,
+      "name": "prepare_item_after_pull",
+      "scenario": "adopted_pulled",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:PREPARE_FIELD_READING>>>\nDelivery\nDelivery Flow: ✓ Pull → ◉ Prepare → ○ Expand → ○ Plan → ○ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PREPARE FIELD READING                       │\n│                                                        │\n│ active item                                            │\n│ 🟦[CV1.DS1.US1]                                         │\n│ level: user_story                                      │\n│ implementable: yes                                     │\n│                                                        │\n│ terrain read                                           │\n│ ○ README.md: missing                                   │\n│ ✓ docs/project/roadmap/index.md: present               │\n│ ○ docs/process/development-guide.md: missing           │\n│                                                        │\n│ story shape                                            │\n│ Pulled item is implementable by default. Plan may      │\n│ define the execution contract.                         │\n│                                                        │\n│ risks                                                  │\n│ ✕ Scope may expand during Plan if the item mixes       │\n│   product and technical work.                          │\n│ ✕ Implementation remains blocked until the Plan        │\n│   checkpoint is approved.                              │\n│                                                        │\n│ applicable rules                                       │\n│ ✓ Pull selects active work; Prepare reads terrain.     │\n│ ✓ Plan is the next event and requires Navigator        │\n│   approval before implementation.                      │\n│ ✓ No Plan, Implement, Validation, Review, Coherence,   │\n│   or Done work is executed here.                       │\n│                                                        │\n│ next event                                             │\n│ Plan                                                   │\n│                                                        │\n│ boundary                                               │\n│ Plan was not created.                                  │\n│ Implementation remains blocked.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:PREPARE_FIELD_READING>>>\n\n"
+    },
+    {
+      "argv": [
+        "prepare-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 0,
+      "name": "prepare_item_delivery_story",
+      "scenario": "adopted_prepared_ds",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:PREPARE_FIELD_READING>>>\nDelivery\nDelivery Flow: ✓ Pull → ◉ Prepare → ○ Expand → ○ Plan → ○ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PREPARE FIELD READING                       │\n│                                                        │\n│ active item                                            │\n│ 🟦[CV1.DS1]                                             │\n│ level: delivery_story                                  │\n│ implementable: requires granularity decision           │\n│                                                        │\n│ terrain read                                           │\n│ ○ README.md: missing                                   │\n│ ✓ docs/project/roadmap/index.md: present               │\n│ ○ docs/process/development-guide.md: missing           │\n│                                                        │\n│ story shape                                            │\n│ Pulled item is a Delivery Story. Ariad requires a      │\n│ granularity decision before implementation: expand     │\n│ into User/Technical Stories or approve this Delivery   │\n│ Story as one coherent implementable story.             │\n│                                                        │\n│ risks                                                  │\n│ ✕ Scope may expand during Plan if the item mixes       │\n│   product and technical work.                          │\n│ ✕ Implementation remains blocked until the Plan        │\n│   checkpoint is approved.                              │\n│                                                        │\n│ applicable rules                                       │\n│ ✓ Pull selects active work; Prepare reads terrain.     │\n│ ✓ Expand or explicit single-story approval is required │\n│   before implementation.                               │\n│ ✓ No Plan, Implement, Validation, Review, Coherence,   │\n│   or Done work is executed here.                       │\n│                                                        │\n│ next event                                             │\n│ Expand or Plan                                         │\n│                                                        │\n│ boundary                                               │\n│ Plan was not created.                                  │\n│ Implementation remains blocked.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:PREPARE_FIELD_READING>>>\n\n"
+    },
+    {
+      "argv": [
+        "prepare-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 1,
+      "name": "prepare_item_without_active_item",
+      "scenario": "adopted_cursor_empty",
+      "session_id": "builder-command-session",
+      "stderr": "Error: active item is required before prepare\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "prepare-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 1,
+      "name": "prepare_item_not_adopted",
+      "scenario": "unadopted",
+      "session_id": "builder-command-session",
+      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "plan-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 0,
+      "name": "plan_item_after_prepare",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/plan.md": "# Plan — CV1.DS1.US1\n\n## Objective\n\nPlan the smallest coherent, testable slice for A user story.\n\n## Scope\n\n- Deliver A user story as an observable slice.\n- Keep the implementation narrow enough to validate at the Plan-defined checkpoint.\n\n## Non-Goals\n\n- Do not implement sibling roadmap item: A delivery story.\n\n## Acceptance Behavior\n\n```text\nGiven the starting state needed for A user story\nWhen the Navigator exercises A user story\nThen the planned observable behavior is visible\nAnd out-of-scope sibling roadmap items remain untouched\n```\n\n## Validation Route\n\n- Run automated tests that cover the planned behavior.\n- Provide a Navigator-visible route with expected observation, pass condition, and fail condition.\n\nE2E decision: required unless Navigator explicitly accepts a narrower fixture-level validation route\n\n## Implementation Contract\n\n- Use TDD or characterization tests for behavior changes when testable.\n- Keep changes scoped to `CV1.DS1.US1`.\n- Use uv run for Python commands and tests.\n- Do not use git add .; commit only story-scoped files.\n- Use descriptive English commit messages explaining why.\n\n## Stop Conditions\n\n- scope_change_detected\n- plan_rule_conflict\n- failing_required_check_without_clear_fix\n- navigator_decision_needed\n\n## Approval Gate\n\n- active checkpoint: `after_plan`\n- pending confirmation: `navigator_approval`\n- implementation remains blocked until Navigator approval.\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/test-guide.md": "[< Story](index.md)\n\n# Test Guide — CV1.DS1.US1\n\n## Automated Validation\n\n- Run automated tests that cover the planned behavior.\n- Provide a Navigator-visible route with expected observation, pass condition, and fail condition.\n\n## E2E Decision\n\nrequired unless Navigator explicitly accepts a narrower fixture-level validation route\n\n## Navigator Validation\n\nProvide the Navigator-visible route with expected observation, pass condition, and fail condition before the story can pass Validation.\n\n## Validation Evidence\n\nPending implementation and validation.\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 2
+      },
+      "scenario": "adopted_prepared",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:PLAN_CHECKPOINT>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ◉ Plan → ○ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🧭■  PLAN CHECKPOINT                            │\n│                                                        │\n│ item                                                   │\n│ 🟦[CV1.DS1.US1]                                         │\n│ level: user_story                                      │\n│                                                        │\n│ story package                                          │\n│ <ABSOLUTE PATH>                                        │\n│                                                        │\n│ artifacts                                              │\n│ index:                                                 │\n│ <ABSOLUTE PATH>                                        │\n│ plan:                                                  │\n│ <ABSOLUTE PATH>                                        │\n│ test guide:                                            │\n│ <ABSOLUTE PATH>                                        │\n│                                                        │\n│ granularity                                            │\n│ user_story is implementable by default.                │\n│                                                        │\n│ plan                                                   │\n│ Plan the smallest coherent, testable slice for A user  │\n│ story.                                                 │\n│                                                        │\n│ scope                                                  │\n│ ✓ Deliver A user story as an observable slice.         │\n│ ✓ Keep the implementation narrow enough to validate at │\n│   the Plan-defined checkpoint.                         │\n│                                                        │\n│ non-goals                                              │\n│ ○ Do not implement sibling roadmap item: A delivery    │\n│   story.                                               │\n│                                                        │\n│ acceptance                                             │\n│ ✓ Given the starting state needed for A user story     │\n│ ✓ When the Navigator exercises A user story            │\n│ ✓ Then the planned observable behavior is visible      │\n│ ✓ And out-of-scope sibling roadmap items remain        │\n│   untouched                                            │\n│                                                        │\n│ validation                                             │\n│ ✓ Run automated tests that cover the planned behavior. │\n│ ✓ Provide a Navigator-visible route with expected      │\n│   observation, pass condition, and fail condition.     │\n│ E2E: required unless Navigator explicitly accepts a    │\n│ narrower fixture-level validation route                │\n│                                                        │\n│ implementation contract                                │\n│ TDD/characterization tests when behavior is testable.  │\n│ Keep changes scoped to the active story.               │\n│ ✓ Use uv run for Python commands and tests.            │\n│ ✓ Do not use git add .; commit only story-scoped       │\n│   files.                                               │\n│ ✓ Use descriptive English commit messages explaining   │\n│   why.                                                 │\n│                                                        │\n│ approval gate                                          │\n│ checkpoint: after_plan                                 │\n│ pending: navigator_approval                            │\n│                                                        │\n│ next action                                            │\n│ Navigator approves the Plan or requests changes.       │\n│                                                        │\n│ boundary                                               │\n│ Implementation remains blocked until approval.         │\n╰────────────────────────────────────────────────────────╯\nstory_package_path=docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story\nindex_artifact_path=docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md\nplan_artifact_path=docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/plan.md\ntest_guide_artifact_path=docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/test-guide.md\n<<<END:PLAN_CHECKPOINT>>>\n\n<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV1.DS1.US1                                     │\n│                                                        │\n│ ↻ existing story index                                 │\n│ docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds │\n│ 1-us1-story/index.md                                   │\n│                                                        │\n│ ✓ created plan                                         │\n│ docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds │\n│ 1-us1-story/plan.md                                    │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds │\n│ 1-us1-story/test-guide.md                              │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n\n"
+    },
+    {
+      "argv": [
+        "plan-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--objective",
+        "Port the story lifecycle leaves."
+      ],
+      "exit_code": 0,
+      "name": "plan_item_with_objective",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/plan.md": "# Plan — CV1.DS1.US1\n\n## Objective\n\nPort the story lifecycle leaves.\n\n## Scope\n\n- Deliver A user story as an observable slice.\n- Keep the implementation narrow enough to validate at the Plan-defined checkpoint.\n\n## Non-Goals\n\n- Do not implement sibling roadmap item: A delivery story.\n\n## Acceptance Behavior\n\n```text\nGiven the starting state needed for A user story\nWhen the Navigator exercises A user story\nThen the planned observable behavior is visible\nAnd out-of-scope sibling roadmap items remain untouched\n```\n\n## Validation Route\n\n- Run automated tests that cover the planned behavior.\n- Provide a Navigator-visible route with expected observation, pass condition, and fail condition.\n\nE2E decision: required unless Navigator explicitly accepts a narrower fixture-level validation route\n\n## Implementation Contract\n\n- Use TDD or characterization tests for behavior changes when testable.\n- Keep changes scoped to `CV1.DS1.US1`.\n- Use uv run for Python commands and tests.\n- Do not use git add .; commit only story-scoped files.\n- Use descriptive English commit messages explaining why.\n\n## Stop Conditions\n\n- scope_change_detected\n- plan_rule_conflict\n- failing_required_check_without_clear_fix\n- navigator_decision_needed\n\n## Approval Gate\n\n- active checkpoint: `after_plan`\n- pending confirmation: `navigator_approval`\n- implementation remains blocked until Navigator approval.\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/test-guide.md": "[< Story](index.md)\n\n# Test Guide — CV1.DS1.US1\n\n## Automated Validation\n\n- Run automated tests that cover the planned behavior.\n- Provide a Navigator-visible route with expected observation, pass condition, and fail condition.\n\n## E2E Decision\n\nrequired unless Navigator explicitly accepts a narrower fixture-level validation route\n\n## Navigator Validation\n\nProvide the Navigator-visible route with expected observation, pass condition, and fail condition before the story can pass Validation.\n\n## Validation Evidence\n\nPending implementation and validation.\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 2
+      },
+      "scenario": "adopted_prepared",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:PLAN_CHECKPOINT>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ◉ Plan → ○ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🧭■  PLAN CHECKPOINT                            │\n│                                                        │\n│ item                                                   │\n│ 🟦[CV1.DS1.US1]                                         │\n│ level: user_story                                      │\n│                                                        │\n│ story package                                          │\n│ <ABSOLUTE PATH>                                        │\n│                                                        │\n│ artifacts                                              │\n│ index:                                                 │\n│ <ABSOLUTE PATH>                                        │\n│ plan:                                                  │\n│ <ABSOLUTE PATH>                                        │\n│ test guide:                                            │\n│ <ABSOLUTE PATH>                                        │\n│                                                        │\n│ granularity                                            │\n│ user_story is implementable by default.                │\n│                                                        │\n│ plan                                                   │\n│ Port the story lifecycle leaves.                       │\n│                                                        │\n│ scope                                                  │\n│ ✓ Deliver A user story as an observable slice.         │\n│ ✓ Keep the implementation narrow enough to validate at │\n│   the Plan-defined checkpoint.                         │\n│                                                        │\n│ non-goals                                              │\n│ ○ Do not implement sibling roadmap item: A delivery    │\n│   story.                                               │\n│                                                        │\n│ acceptance                                             │\n│ ✓ Given the starting state needed for A user story     │\n│ ✓ When the Navigator exercises A user story            │\n│ ✓ Then the planned observable behavior is visible      │\n│ ✓ And out-of-scope sibling roadmap items remain        │\n│   untouched                                            │\n│                                                        │\n│ validation                                             │\n│ ✓ Run automated tests that cover the planned behavior. │\n│ ✓ Provide a Navigator-visible route with expected      │\n│   observation, pass condition, and fail condition.     │\n│ E2E: required unless Navigator explicitly accepts a    │\n│ narrower fixture-level validation route                │\n│                                                        │\n│ implementation contract                                │\n│ TDD/characterization tests when behavior is testable.  │\n│ Keep changes scoped to the active story.               │\n│ ✓ Use uv run for Python commands and tests.            │\n│ ✓ Do not use git add .; commit only story-scoped       │\n│   files.                                               │\n│ ✓ Use descriptive English commit messages explaining   │\n│   why.                                                 │\n│                                                        │\n│ approval gate                                          │\n│ checkpoint: after_plan                                 │\n│ pending: navigator_approval                            │\n│                                                        │\n│ next action                                            │\n│ Navigator approves the Plan or requests changes.       │\n│                                                        │\n│ boundary                                               │\n│ Implementation remains blocked until approval.         │\n╰────────────────────────────────────────────────────────╯\nstory_package_path=docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story\nindex_artifact_path=docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md\nplan_artifact_path=docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/plan.md\ntest_guide_artifact_path=docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/test-guide.md\n<<<END:PLAN_CHECKPOINT>>>\n\n<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV1.DS1.US1                                     │\n│                                                        │\n│ ↻ existing story index                                 │\n│ docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds │\n│ 1-us1-story/index.md                                   │\n│                                                        │\n│ ✓ created plan                                         │\n│ docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds │\n│ 1-us1-story/plan.md                                    │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds │\n│ 1-us1-story/test-guide.md                              │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n\n"
+    },
+    {
+      "argv": [
+        "plan-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--preauthorize-approval",
+        "--stop-after",
+        "navigator_validation"
+      ],
+      "exit_code": 0,
+      "name": "plan_item_preauthorized",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/plan.md": "# Plan — CV1.DS1.US1\n\n## Objective\n\nPlan the smallest coherent, testable slice for A user story.\n\n## Scope\n\n- Deliver A user story as an observable slice.\n- Keep the implementation narrow enough to validate at the Plan-defined checkpoint.\n\n## Non-Goals\n\n- Do not implement sibling roadmap item: A delivery story.\n\n## Acceptance Behavior\n\n```text\nGiven the starting state needed for A user story\nWhen the Navigator exercises A user story\nThen the planned observable behavior is visible\nAnd out-of-scope sibling roadmap items remain untouched\n```\n\n## Validation Route\n\n- Run automated tests that cover the planned behavior.\n- Provide a Navigator-visible route with expected observation, pass condition, and fail condition.\n\nE2E decision: required unless Navigator explicitly accepts a narrower fixture-level validation route\n\n## Implementation Contract\n\n- Use TDD or characterization tests for behavior changes when testable.\n- Keep changes scoped to `CV1.DS1.US1`.\n- Use uv run for Python commands and tests.\n- Do not use git add .; commit only story-scoped files.\n- Use descriptive English commit messages explaining why.\n\n## Stop Conditions\n\n- scope_change_detected\n- plan_rule_conflict\n- failing_required_check_without_clear_fix\n- navigator_decision_needed\n\n## Approval Gate\n\n- active checkpoint: `after_plan`\n- pending confirmation: `navigator_approval`\n- implementation remains blocked until Navigator approval.\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/test-guide.md": "[< Story](index.md)\n\n# Test Guide — CV1.DS1.US1\n\n## Automated Validation\n\n- Run automated tests that cover the planned behavior.\n- Provide a Navigator-visible route with expected observation, pass condition, and fail condition.\n\n## E2E Decision\n\nrequired unless Navigator explicitly accepts a narrower fixture-level validation route\n\n## Navigator Validation\n\nProvide the Navigator-visible route with expected observation, pass condition, and fail condition before the story can pass Validation.\n\n## Validation Evidence\n\nPending implementation and validation.\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 2
+      },
+      "scenario": "adopted_prepared",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:PLAN_CHECKPOINT>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ◉ Plan → ○ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🧭■  PLAN CHECKPOINT                            │\n│                                                        │\n│ item                                                   │\n│ 🟦[CV1.DS1.US1]                                         │\n│ level: user_story                                      │\n│                                                        │\n│ story package                                          │\n│ <ABSOLUTE PATH>                                        │\n│                                                        │\n│ artifacts                                              │\n│ index:                                                 │\n│ <ABSOLUTE PATH>                                        │\n│ plan:                                                  │\n│ <ABSOLUTE PATH>                                        │\n│ test guide:                                            │\n│ <ABSOLUTE PATH>                                        │\n│                                                        │\n│ granularity                                            │\n│ user_story is implementable by default.                │\n│                                                        │\n│ plan                                                   │\n│ Plan the smallest coherent, testable slice for A user  │\n│ story.                                                 │\n│                                                        │\n│ scope                                                  │\n│ ✓ Deliver A user story as an observable slice.         │\n│ ✓ Keep the implementation narrow enough to validate at │\n│   the Plan-defined checkpoint.                         │\n│                                                        │\n│ non-goals                                              │\n│ ○ Do not implement sibling roadmap item: A delivery    │\n│   story.                                               │\n│                                                        │\n│ acceptance                                             │\n│ ✓ Given the starting state needed for A user story     │\n│ ✓ When the Navigator exercises A user story            │\n│ ✓ Then the planned observable behavior is visible      │\n│ ✓ And out-of-scope sibling roadmap items remain        │\n│   untouched                                            │\n│                                                        │\n│ validation                                             │\n│ ✓ Run automated tests that cover the planned behavior. │\n│ ✓ Provide a Navigator-visible route with expected      │\n│   observation, pass condition, and fail condition.     │\n│ E2E: required unless Navigator explicitly accepts a    │\n│ narrower fixture-level validation route                │\n│                                                        │\n│ implementation contract                                │\n│ TDD/characterization tests when behavior is testable.  │\n│ Keep changes scoped to the active story.               │\n│ ✓ Use uv run for Python commands and tests.            │\n│ ✓ Do not use git add .; commit only story-scoped       │\n│   files.                                               │\n│ ✓ Use descriptive English commit messages explaining   │\n│   why.                                                 │\n│                                                        │\n│ approval gate                                          │\n│ checkpoint: after_plan                                 │\n│ pending: navigator_approval                            │\n│                                                        │\n│ next action                                            │\n│ Driver completes Plan and consumes bounded authority.  │\n│                                                        │\n│ boundary                                               │\n│ No additional Navigator approval turn is expected.     │\n╰────────────────────────────────────────────────────────╯\nstory_package_path=docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story\nindex_artifact_path=docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md\nplan_artifact_path=docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/plan.md\ntest_guide_artifact_path=docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/test-guide.md\n<<<END:PLAN_CHECKPOINT>>>\n\n<<<ARIAD:PLAN_PREAUTHORIZATION_RECORDED>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PLAN PREAUTHORIZATION RECORDED              │\n│                                                        │\n│ Authorized story                                       │\n│ CV1.DS1.US1                                            │\n│                                                        │\n│ Story level                                            │\n│ user_story                                             │\n│                                                        │\n│ Policy                                                 │\n│ exact_scope                                            │\n│                                                        │\n│ Fixed stop                                             │\n│ navigator_validation                                   │\n│                                                        │\n│ Boundary                                               │\n│ Single-use authority remains pending until the         │\n│ Driver completes the exact story Plan.                 │\n╰────────────────────────────────────────────────────────╯\n<<<END:PLAN_PREAUTHORIZATION_RECORDED>>>\n\n<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Plan — CV1.DS1.US1                                     │\n│                                                        │\n│ ↻ existing story index                                 │\n│ docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds │\n│ 1-us1-story/index.md                                   │\n│                                                        │\n│ ✓ created plan                                         │\n│ docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds │\n│ 1-us1-story/plan.md                                    │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds │\n│ 1-us1-story/test-guide.md                              │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n\n"
+    },
+    {
+      "argv": [
+        "plan-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 1,
+      "name": "plan_item_requires_prepare",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 1
+      },
+      "scenario": "adopted_with_cursor",
+      "session_id": "builder-command-session",
+      "stderr": "Error: Prepare must be completed before Plan\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "plan-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 1,
+      "name": "plan_item_refuses_delivery_story",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 1
+      },
+      "scenario": "adopted_prepared_ds",
+      "session_id": "builder-command-session",
+      "stderr": "Error: Plan requires a User Story or Technical Story; expand the Delivery Story first\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "plan-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 1,
+      "name": "plan_item_not_adopted",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [],
+        "receipts": 0
+      },
+      "scenario": "unadopted",
+      "session_id": "builder-command-session",
+      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "approve-plan",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 0,
+      "name": "approve_plan_pending_checkpoint",
+      "scenario": "adopted_plan_pending",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:PLAN_APPROVED>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ◉ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟩■  PLAN APPROVED                              │\n│                                                        │\n│ active item                                            │\n│ CV1.DS1.US1                                            │\n│                                                        │\n│ last delivery event                                    │\n│ plan_approved                                          │\n│                                                        │\n│ boundary                                               │\n│ Implementation may begin under the approved Plan       │\n│ contract.                                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:PLAN_APPROVED>>>\n\n"
+    },
+    {
+      "argv": [
+        "approve-plan",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 1,
+      "name": "approve_plan_without_checkpoint",
+      "scenario": "adopted_with_cursor",
+      "session_id": "builder-command-session",
+      "stderr": "Error: Plan approval requires a pending after_plan navigator_approval checkpoint\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "approve-plan",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--use-preauthorization"
+      ],
+      "exit_code": 0,
+      "name": "approve_plan_with_preauthorization",
+      "scenario": "adopted_preauthorized",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:PLAN_APPROVED>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ◉ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟩■  PLAN APPROVED                              │\n│                                                        │\n│ active item                                            │\n│ CV1.DS1.US1                                            │\n│                                                        │\n│ last delivery event                                    │\n│ plan_approved                                          │\n│                                                        │\n│ boundary                                               │\n│ Implementation may begin under the approved Plan       │\n│ contract.                                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:PLAN_APPROVED>>>\n\n<<<ARIAD:IMPLEMENTATION_STARTED>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🟧  IMPLEMENTATION STARTED                     │\n│                                                        │\n│ Active story                                           │\n│ CV1.DS1.US1                                            │\n│                                                        │\n│ Boundary                                               │\n│ Local implementation may proceed under the exact       │\n│ approved Plan and stops at Navigator Validation.       │\n╰────────────────────────────────────────────────────────╯\n<<<END:IMPLEMENTATION_STARTED>>>\n\n"
+    },
+    {
+      "argv": [
+        "approve-plan",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--use-preauthorization"
+      ],
+      "exit_code": 0,
+      "name": "approve_plan_with_preauthorization_missing",
+      "scenario": "adopted_plan_pending",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:PLAN_PREAUTHORIZATION_MISMATCH>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        ✕  PLAN PREAUTHORIZATION MISMATCH               │\n│                                                        │\n│ Active story                                           │\n│ CV1.DS1.US1                                            │\n│                                                        │\n│ Reason                                                 │\n│ authorization_missing                                  │\n│                                                        │\n│ Fallback                                               │\n│ Ordinary Navigator Plan approval remains required.     │\n╰────────────────────────────────────────────────────────╯\n<<<END:PLAN_PREAUTHORIZATION_MISMATCH>>>\n\n"
+    },
+    {
+      "argv": [
+        "approve-plan",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 1,
+      "name": "approve_plan_not_adopted",
+      "scenario": "unadopted",
+      "session_id": "builder-command-session",
+      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "cancel-plan-preauthorization",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 0,
+      "name": "cancel_plan_preauthorization_pending",
+      "scenario": "adopted_preauthorized",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:PLAN_PREAUTHORIZATION_MISMATCH>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        ✕  PLAN PREAUTHORIZATION MISMATCH               │\n│                                                        │\n│ Active story                                           │\n│ CV1.DS1.US1                                            │\n│                                                        │\n│ Reason                                                 │\n│ navigator_cancelled                                    │\n│                                                        │\n│ Fallback                                               │\n│ Ordinary Navigator Plan approval remains required.     │\n╰────────────────────────────────────────────────────────╯\n<<<END:PLAN_PREAUTHORIZATION_MISMATCH>>>\n\n"
+    },
+    {
+      "argv": [
+        "cancel-plan-preauthorization",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 1,
+      "name": "cancel_plan_preauthorization_without_pending",
+      "scenario": "adopted_plan_pending",
+      "session_id": "builder-command-session",
+      "stderr": "Error: pending Plan preauthorization is required before cancellation\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "cancel-plan-preauthorization",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 1,
+      "name": "cancel_plan_preauthorization_no_cursor",
+      "scenario": "adopted",
+      "session_id": "builder-command-session",
+      "stderr": "Error: delivery cursor is required before Plan preauthorization cancellation\n",
       "stdout": ""
     }
   ]
