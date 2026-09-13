@@ -1,11 +1,43 @@
 [< Story](index.md)
 
-# Handoff — CV22.DS7.US8 — Builder/Ariad tree (plateaus 1–2 complete)
+# Handoff — CV22.DS7.US8 — Builder/Ariad tree (plateaus 1–3 complete, 4 nearly)
 
-**Status:** plateaus 1 and 2 of 9 complete; **plateau 3 in progress** — see
-[Plateau 3 progress](#plateau-3-progress) at the end. **Nothing is routed.**
-`routing.ts` is untouched and every `build` invocation still reaches Python, which
-is the intended state until plateau 8 adds the gate and plateau 9 flips it.
+**Status:** plateaus 1, 2, and 3 of 9 complete; **plateau 4 complete except its
+smoke**. **15 of the 27 in-scope leaves answer from TypeScript.** **Nothing is
+routed** — `routing.ts` is untouched and every `build` invocation still reaches
+Python, which is the intended state until plateau 8 adds the gate and plateau 9
+flips it.
+
+## Resume here
+
+The next piece is **plateau 4's story-lifecycle smoke**: one unrouted run of the
+whole lifecycle (adopt → … → done) calling the TypeScript modules directly, with
+**no gate in the environment**, so it proves the shipped default rather than a
+configured one. It is the first thing in this story that exercises a whole lifecycle
+instead of grading a step, so expect it to find composition defects the per-step
+corpus cannot see.
+
+Two constraints that apply to it specifically:
+
+- the self-hosting protocol still holds — this story's OWN Ariad lifecycle runs on
+  Python (`MIRROR_TS_BUILD=0` by construction until plateau 9), so the smoke must
+  exercise the TypeScript modules without becoming the thing that records US8's
+  state;
+- it writes files, so it goes in a disposable project, and the repository-fingerprint
+  guard exists because that rule was broken twice already.
+
+Then plateaus 5–9: Delivery Story lifecycle, cadence and authority, `load` plus the
+provider seam (the one with real unknowns — `load` embeds its query twice and runs
+the previous conversation's close tail), front door with the gate off, and the flip.
+
+## Current state, verifiable without re-deriving it
+
+| Corpus | Coverage |
+|---|---|
+| `builder-lifecycle.golden.json` | 86 sequences / 274 steps / 161 surfaces / 40 refusals — all graded |
+| `builder-command.golden.json` | 80 cases across 15 leaves — all graded |
+| `PENDING_OPS` / `PENDING_LEAVES` | both empty; plateau 5 refills them |
+| Write probes | `builder_cursor_state`, `builder_artifacts` |
 
 Written for the session that resumes this story — possibly a different session, a
 different Mirror, or a later collaborator. It assumes only the repository, and it
