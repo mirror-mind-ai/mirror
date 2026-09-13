@@ -25,6 +25,7 @@ import { cardText, cardWrapped } from "./card.ts";
 import {
   ALLOWED_PULL_LEVELS,
   carriedForward,
+  cvTitle,
   deliveryStoryCodeForItem,
   normalizeRequired,
 } from "./cursorTransitions.ts";
@@ -125,11 +126,6 @@ export function pullLifecycleItem(
   );
 
   return { journey, method, item, cursor, nextEvent: "prepare" };
-}
-
-/** Python `_cv_title`: the HEAD of a `/`-chained title, where `title_leaf` takes the tail. */
-function cvTitle(title: string): string {
-  return (title.split("/")[0] ?? "").trim();
 }
 
 /** Python `render_pull_report`. */

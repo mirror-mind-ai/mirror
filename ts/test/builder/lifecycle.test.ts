@@ -18,10 +18,11 @@
 // PENDING_OPS to PORTED_OPS and the assertions here start comparing bytes.
 
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, join, relative, sep } from "node:path";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import test from "node:test";
-
+import { approvePlanCheckpoint, renderPlanApproval } from "#builder/approve.ts";
+import { getAriadMethod } from "#builder/ariadMethod.ts";
 import { renderArtifactsMaterializedSurface } from "#builder/artifacts/artifactSurfaces.ts";
 import {
   type BuilderDeliveryCursor,
@@ -30,14 +31,30 @@ import {
   setDeliveryCursor,
   setTo,
 } from "#builder/deliveryCursor.ts";
+import { renderDeliveryStoryReadyReport } from "#builder/deliveryStoryReady.ts";
 import {
   ExpandBlockedError,
   expandDeliveryStory,
   renderExpandBlocked,
   renderExpandReport,
 } from "#builder/expand.ts";
+import { planLifecycleItem, renderPlanCheckpoint } from "#builder/plan.ts";
+import { PlanPreauthorizationMismatch } from "#builder/planPreauthorization.ts";
+import { prepareLifecycleItem, renderPrepareReport } from "#builder/prepare.ts";
 import { pullLifecycleItem, renderPullReport } from "#builder/pull.ts";
-import { StoryPackageAmbiguityError } from "#builder/storyPaths.ts";
+import {
+  createStoryDirectory,
+  resolveStoryDirectory,
+  StoryPackageAmbiguityError,
+} from "#builder/storyPaths.ts";
+import {
+  approveStoryPlanWithPreauthorization,
+  cancelStoryPlanPreauthorization,
+  renderStoryImplementationStarted,
+  renderStoryPlanPreauthorizationMismatch,
+  renderStoryPlanPreauthorizationRecorded,
+  renderStoryPreauthorizationAlreadyConsumed,
+} from "#builder/storyPlanPreauthorization.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import golden from "#goldens/builder-lifecycle.golden.json" with { type: "json" };
 import { absolutePathsIn, normalizePathRows, scrubMessage } from "#helpers/builderSurfacePaths.ts";
@@ -60,6 +77,9 @@ interface Step {
   artifacts?: { kind: string; path: string; status: string }[];
   error?: string;
   materialized_paths?: string[];
+  status?: string;
+  implementation_started?: boolean;
+  unfilled_sections?: string[];
 }
 
 interface Sequence {
@@ -72,23 +92,27 @@ interface Sequence {
 const sequences = (golden as unknown as { sequences: Sequence[] }).sequences;
 
 /** Harness operations: they seed state, they are not leaves under port. */
-const HARNESS_OPS = ["seed_cursor", "seed_receipt", "write_file"] as const;
+const HARNESS_OPS = ["delete_file", "seed_cursor", "seed_receipt", "write_file"] as const;
 
 /** Lifecycle operations TypeScript can execute today. */
-const PORTED_OPS: readonly string[] = ["expand", "pull"];
+const PORTED_OPS: readonly string[] = [
+  "approve",
+  "approve_with_preauthorization",
+  "cancel_preauthorization",
+  "expand",
+  "plan",
+  "prepare",
+  "pull",
+];
 
 /**
  * Lifecycle operations the corpus grades and TypeScript cannot execute yet.
  *
- * Commit 3 empties this.
+ * Emptied by plateau 3, commit 3. It stays declared rather than deleted because
+ * plateau 4 refills it with Validate, Review, Coherence, and Done, and the
+ * staleness guard is what forces each one out again.
  */
-const PENDING_OPS = [
-  "approve",
-  "approve_with_preauthorization",
-  "cancel_preauthorization",
-  "plan",
-  "prepare",
-] as const;
+const PENDING_OPS: readonly string[] = [];
 
 const lifecycleOps = (step: Step): boolean => !(HARNESS_OPS as readonly string[]).includes(step.op);
 
@@ -116,7 +140,8 @@ test("the pending list cannot go stale", () => {
   // The declaration is checked against the replayer itself: a pending op must
   // still appear in the corpus, and must still be unreachable. Implementing one
   // without moving it here fails, which is what keeps its sequences from sitting
-  // ungraded.
+  // ungraded. Vacuous while the list is empty, which is the point of an emptied
+  // burn-down: plateau 4 refills it.
   for (const op of PENDING_OPS) {
     const used = sequences.some((sequence) => sequence.steps.some((step) => step.op === op));
     assert.ok(used, `${op} is declared pending but the corpus never exercises it`);
@@ -130,7 +155,12 @@ test("the pending list cannot go stale", () => {
 
 test("every gradable sequence matches Python step for step", () => {
   const graded = sequences.filter(isGradable);
-  assert.ok(graded.length >= 22, `expected the pull/expand sequences, got ${graded.length}`);
+  // Every sequence in the corpus is gradable now that Scope C is ported.
+  assert.equal(
+    graded.length,
+    sequences.length,
+    `plateau 3 grades the whole corpus: ${graded.length} of ${sequences.length}`,
+  );
   for (const sequence of graded) {
     replaySequence(sequence);
   }
@@ -305,10 +335,36 @@ const NOW = "2026-01-01T00:00:00+00:00";
 
 interface ReplayContext {
   readonly db: WritableDatabase;
+  /** Relative, because that is what the surfaces must RENDER. */
   readonly project: string;
+  /**
+   * Resolved, because that is what path MATH needs: `storyPaths` resolves, so
+   * refusal messages and Expand's materialized paths are absolute even when the
+   * project root is not.
+   */
+  readonly projectAbsolute: string;
   readonly journey: string;
   readonly deps: CursorWriteDeps;
   readonly projectionRequests: string[];
+  /**
+   * The reports a later step composes with, exactly as the CLI holds them.
+   * `delivery_story_ready` needs Pull, Prepare, AND Expand, so Expand renders it
+   * only when the same sequence pulled and prepared first — which is the CLI's own
+   * condition.
+   */
+  reports: {
+    pull?: ReturnType<typeof pullLifecycleItem>;
+    prepare?: ReturnType<typeof prepareLifecycleItem>;
+    plan?: ReturnType<typeof planLifecycleItem>;
+  };
+  /** The Plan artifact path this sequence used, which authority consumption re-reads. */
+  planPath: string | null;
+  /**
+   * Which package files existed BEFORE the step that is running, sampled the way the
+   * CLI samples it. Without this, a preserved file would report `created` and the
+   * preservation rule would look identical to an overwrite.
+   */
+  existedBefore: Map<string, boolean>;
 }
 
 function memoryDatabase(directory: string): WritableDatabase {
@@ -420,11 +476,58 @@ function seedCursor(context: ReplayContext, input: Record<string, unknown>): voi
   );
 }
 
+/**
+ * `seed_receipt`: rewrite the cursor carrying a MUTATED receipt, which is how the
+ * tamper scenarios reach a receipt whose fields no longer hash to its fingerprint.
+ */
+function seedReceipt(context: ReplayContext, input: Record<string, unknown>): void {
+  const current = getDeliveryCursor(context.db, context.journey);
+  assert.ok(current?.planPreauthorization, "seed_receipt needs an existing receipt");
+  const changes = (input.receipt_changes ?? {}) as Record<string, unknown>;
+  const camel = (key: string): string =>
+    key.replace(/_([a-z])/g, (_match, letter: string) => letter.toUpperCase());
+  const receipt = { ...current.planPreauthorization } as Record<string, unknown>;
+  for (const [key, value] of Object.entries(changes)) receipt[camel(key)] = value;
+  const value = <T>(key: string): T | undefined => input[key] as T | undefined;
+  setDeliveryCursor(
+    context.db,
+    {
+      journey: context.journey,
+      method: value<string>("method") ?? "ariad",
+      activeItem: value<string | null>("active_item") ?? null,
+      activeItemTitle: value<string | null>("active_item_title") ?? null,
+      activeItemLevel: value<string | null>("active_item_level") ?? null,
+      activeCheckpoint: value<string | null>("active_checkpoint") ?? null,
+      pendingConfirmation: value<string | null>("pending_confirmation") ?? null,
+      lastDeliveryEvent: value<string | null>("last_delivery_event") ?? null,
+      cadenceProfile: value<string | null>("cadence_profile") ?? null,
+      cadenceLimits: value<string[]>("cadence_limits") ?? [],
+      granularityDecision: value<string | null>("granularity_decision") ?? null,
+      navigatorFlowUnit: value<string | null>("navigator_flow_unit") ?? null,
+      childWorkItems: value<string[]>("child_work_items") ?? [],
+      aggregateCheckpointStatus: value<string[]>("aggregate_checkpoint_status") ?? [],
+      cursorGeneration: value<number | null>("cursor_generation") ?? null,
+      planPreauthorization: setTo(
+        receipt as unknown as NonNullable<BuilderDeliveryCursor["planPreauthorization"]>,
+      ),
+      releaseIntentDeliveryStory: setTo(
+        value<string | null>("release_intent_delivery_story") ?? null,
+      ),
+      releaseIntent: setTo(value<string | null>("release_intent") ?? null),
+    },
+    context.deps,
+  );
+}
+
 interface ReplayOutcome {
   readonly surfaces: { id: string; text: string }[];
   readonly artifacts?: { kind: string; path: string; status: string }[];
   readonly materializedPaths?: string[];
   readonly error?: string;
+  /** `approve_with_preauthorization` records these alongside its surfaces. */
+  readonly status?: string;
+  readonly implementationStarted?: boolean;
+  readonly unfilledSections?: string[];
 }
 
 /**
@@ -452,9 +555,10 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
           },
           context.deps,
         );
+        context.reports.pull = report;
         return { surfaces: [{ id: "delivery_story_identified", text: renderPullReport(report) }] };
       } catch (error) {
-        return { surfaces: [], error: pythonError(error, context.project) };
+        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
       }
     }
     case "expand": {
@@ -470,12 +574,26 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
           context.deps,
         );
         const absolute = [...report.materializedPaths];
+        const ready =
+          context.reports.pull !== undefined && context.reports.prepare !== undefined
+            ? [
+                {
+                  id: "delivery_story_ready",
+                  text: renderDeliveryStoryReadyReport({
+                    pull: context.reports.pull,
+                    prepare: context.reports.prepare,
+                    expand: report,
+                  }),
+                },
+              ]
+            : [];
         return {
           surfaces: [
             {
               id: "expand_decision",
               text: normalizePathRows(renderExpandReport(report), absolute),
             },
+            ...ready,
             {
               id: "artifacts_materialized",
               text: renderArtifactsMaterializedSurface({
@@ -488,11 +606,11 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
           ],
           artifacts: report.materializedArtifacts.map((artifact) => ({
             kind: artifact.kind,
-            path: projectRelativePath(artifact.path, context.project),
+            path: projectRelativePath(artifact.path, context.projectAbsolute),
             status: artifact.status,
           })),
           materializedPaths: report.materializedPaths.map((path) =>
-            projectRelativePath(path, context.project),
+            projectRelativePath(path, context.projectAbsolute),
           ),
         };
       } catch (error) {
@@ -508,10 +626,214 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
                 ),
               },
             ],
-            error: pythonError(error, context.project),
+            error: pythonError(error, context.projectAbsolute),
           };
         }
-        return { surfaces: [], error: pythonError(error, context.project) };
+        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+      }
+    }
+    case "prepare": {
+      const input = step.input as { method?: string; with_project?: boolean };
+      try {
+        const report = prepareLifecycleItem(
+          context.db,
+          {
+            journey: context.journey,
+            method: input.method ?? "ariad",
+            projectPath: input.with_project === false ? null : context.project,
+          },
+          context.deps,
+        );
+        context.reports.prepare = report;
+        return { surfaces: [{ id: "prepare_field_reading", text: renderPrepareReport(report) }] };
+      } catch (error) {
+        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+      }
+    }
+    case "plan": {
+      const input = step.input as {
+        objective?: string | null;
+        scope?: string[];
+        non_goals?: string[];
+        acceptance_behavior?: string[];
+        validation_route?: string[];
+        e2e_decision?: string | null;
+        local_rules?: string[];
+        preauthorize?: boolean;
+        stop_boundary?: string;
+        artifact?: boolean;
+        plan_relative?: string | null;
+      };
+      // The generator derives the Plan artifact path the way `cli/build.py` does:
+      // an explicit relative path when the scenario names one, otherwise resolve or
+      // create the canonical package.
+      let planPath: string | null = null;
+      if (input.plan_relative != null) {
+        planPath = join(context.project, input.plan_relative);
+      } else if (input.artifact !== false) {
+        planPath = canonicalPlanPath(context);
+      }
+      context.planPath = planPath;
+      if (planPath !== null) {
+        const directory = dirname(planPath);
+        for (const path of [
+          join(directory, "index.md"),
+          planPath,
+          join(directory, "test-guide.md"),
+        ]) {
+          context.existedBefore.set(path, existsSync(path));
+        }
+      }
+      try {
+        const report = planLifecycleItem(
+          context.db,
+          {
+            journey: context.journey,
+            method: getAriadMethod(),
+            objective: input.objective ?? null,
+            scope: input.scope ?? [],
+            nonGoals: input.non_goals ?? [],
+            acceptanceBehavior: input.acceptance_behavior ?? [],
+            validationRoute: input.validation_route ?? [],
+            e2eDecision: input.e2e_decision ?? null,
+            localRules: input.local_rules ?? [],
+            planArtifactPath: planPath,
+            preauthorize: input.preauthorize ?? false,
+            stopBoundary: input.stop_boundary ?? "navigator_validation",
+          },
+          context.deps,
+        );
+        context.reports.plan = report;
+        const surfaces = [
+          {
+            id: "plan_checkpoint",
+            text: normalizeTrailerAndRows(renderPlanCheckpoint(report), context.projectAbsolute),
+          },
+        ];
+        if (report.preauthorizationRecorded) {
+          surfaces.push({
+            id: "plan_preauthorization_recorded",
+            text: renderStoryPlanPreauthorizationRecorded(report.cursor),
+          });
+        }
+        const artifacts = planPackageArtifacts(planPath, context);
+        if (artifacts.length > 0) {
+          surfaces.push({
+            id: "artifacts_materialized",
+            text: renderArtifactsMaterializedSurface({
+              context: `Plan — ${report.activeItem}`,
+              artifacts,
+              projectPath: context.project,
+              boundary:
+                "Plan artifacts were materialized. Implementation remains blocked until approval.",
+            }),
+          });
+        }
+        return {
+          surfaces,
+          artifacts: artifacts.map((artifact) => ({
+            kind: artifact.kind,
+            path: projectRelativePath(artifact.path, context.projectAbsolute),
+            status: artifact.status,
+          })),
+        };
+      } catch (error) {
+        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+      }
+    }
+    case "approve": {
+      try {
+        const cursor = approvePlanCheckpoint(
+          context.db,
+          {
+            journey: context.journey,
+            method: (step.input as { method?: string }).method ?? "ariad",
+          },
+          context.deps,
+        );
+        return { surfaces: [{ id: "plan_approved", text: renderPlanApproval(cursor) }] };
+      } catch (error) {
+        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+      }
+    }
+    case "approve_with_preauthorization": {
+      try {
+        const report = approveStoryPlanWithPreauthorization(
+          context.db,
+          {
+            journey: context.journey,
+            method: (step.input as { method?: string }).method ?? "ariad",
+            planArtifactPath: context.planPath,
+          },
+          context.deps,
+        );
+        if (report.status === "already_approved") {
+          return {
+            surfaces: [
+              {
+                id: "plan_preauthorization_already_consumed",
+                text: renderStoryPreauthorizationAlreadyConsumed(report.cursor),
+              },
+            ],
+            status: report.status,
+            implementationStarted: report.implementationStarted,
+            unfilledSections: [...report.unfilledSections],
+          };
+        }
+        return {
+          surfaces: [
+            { id: "plan_approved", text: renderPlanApproval(report.cursor) },
+            {
+              id: "implementation_started",
+              text: renderStoryImplementationStarted(report.cursor),
+            },
+          ],
+          status: report.status,
+          implementationStarted: report.implementationStarted,
+          unfilledSections: [...report.unfilledSections],
+        };
+      } catch (error) {
+        if (error instanceof PlanPreauthorizationMismatch) {
+          const cursor = getDeliveryCursor(context.db, context.journey);
+          return {
+            surfaces: [
+              {
+                id: "plan_preauthorization_mismatch",
+                text: renderStoryPlanPreauthorizationMismatch({
+                  activeItem: cursor?.activeItem ?? null,
+                  reason: error.reason,
+                }),
+              },
+            ],
+            error: `PlanPreauthorizationMismatch: ${error.reason}`,
+          };
+        }
+        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+      }
+    }
+    case "cancel_preauthorization": {
+      try {
+        const cursor = cancelStoryPlanPreauthorization(
+          context.db,
+          {
+            journey: context.journey,
+            method: (step.input as { method?: string }).method ?? "ariad",
+          },
+          context.deps,
+        );
+        return {
+          surfaces: [
+            {
+              id: "plan_preauthorization_mismatch",
+              text: renderStoryPlanPreauthorizationMismatch({
+                activeItem: cursor.activeItem,
+                reason: "navigator_cancelled",
+              }),
+            },
+          ],
+        };
+      } catch (error) {
+        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
       }
     }
     default:
@@ -519,8 +841,72 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
   }
 }
 
-function projectRelativePath(path: string, project: string): string {
-  return relative(project, path).split(sep).join("/");
+/**
+ * The CLI's `_canonical_package_path` + `_plan_artifact_path`, then the generator's
+ * `_repo_relative`.
+ *
+ * `storyPaths` resolves absolute, by design — its confinement guard needs that — and
+ * the generator re-expresses the result relative to the process cwd before handing it
+ * to Plan, so the surface's package rows are machine-independent. The test mirrors
+ * both halves: resolve through the real resolver, render through the relative form.
+ */
+function canonicalPlanPath(context: ReplayContext): string | null {
+  const cursor = getDeliveryCursor(context.db, context.journey);
+  if (cursor === null || !cursor.activeItem) return null;
+  const resolved =
+    resolveStoryDirectory(context.project, cursor.activeItem) ??
+    createStoryDirectory(
+      context.project,
+      cursor.activeItem,
+      cursor.activeItemTitle ?? cursor.activeItem,
+    );
+  return join(relative(process.cwd(), resolved), "plan.md");
+}
+
+/**
+ * The CLI's `_plan_package_artifacts` over `_artifact_existence`: existence is
+ * sampled BEFORE Plan writes, so a file Plan created reports `created` and one the
+ * Driver authored reports `existing`.
+ */
+function planPackageArtifacts(
+  planPath: string | null,
+  context: ReplayContext,
+): { kind: string; path: string; status: string }[] {
+  if (planPath === null) return [];
+  const directory = dirname(planPath);
+  const triple: [string, string][] = [
+    ["story index", join(directory, "index.md")],
+    ["plan", planPath],
+    ["test guide", join(directory, "test-guide.md")],
+  ];
+  return triple.map(([kind, path]) => ({
+    kind,
+    path,
+    status: context.existedBefore.get(path) === true ? "existing" : "created",
+  }));
+}
+
+/**
+ * `plan_checkpoint` carries paths in two forms: WRAPPED card rows, which collapse to
+ * a token, and unwrapped `*_path=` trailer lines, which the generator rewrites
+ * project-relative because they can be substituted exactly.
+ */
+function normalizeTrailerAndRows(text: string, projectAbsolute: string): string {
+  const absolute = absolutePathsIn(text).filter((path) => path.startsWith(projectAbsolute));
+  let normalized = normalizePathRows(text, absolute);
+  for (const path of absolute.slice().sort((a, b) => b.length - a.length)) {
+    normalized = normalized.replaceAll(path, projectRelativePath(path, projectAbsolute));
+  }
+  return normalized;
+}
+
+/**
+ * Project-relative, from either form of input: Expand's paths are absolute and
+ * Plan's are the relative ones the generator handed it, so both are resolved before
+ * the comparison.
+ */
+function projectRelativePath(path: string, projectAbsolute: string): string {
+  return relative(projectAbsolute, resolve(path)).split(sep).join("/");
 }
 
 /** Python's `f"{type(exc).__name__}: {exc}"`, with paths scrubbed as the generator scrubbed them. */
@@ -535,8 +921,17 @@ function pythonError(error: unknown, project: string): string {
 }
 
 function replaySequence(sequence: Sequence): void {
-  const root = mkdtempSync("/tmp/builder-lifecycle-");
-  const project = join(root, "project");
+  // The sequence's OWN recorded project root, relative like the generator's, not a
+  // `mkdtemp` directory. `plan_checkpoint` prints its package path with no
+  // relativization (CR082), and the generator therefore hands Plan a repo-relative
+  // path so those rows are byte-stable. Replaying under an absolute temp root would
+  // force the rows through path normalization and stop grading them, so the test
+  // stages the same relative directory instead. It resolves under `ts/` here and the
+  // repository root there; both are gitignored `tmp/`, which also satisfies the
+  // database copy guard.
+  const project = sequence.project_root;
+  const root = dirname(project);
+  rmSync(root, { recursive: true, force: true });
   mkdirSync(project, { recursive: true });
   const db = memoryDatabase(root);
   const projectionRequests: string[] = [];
@@ -548,7 +943,11 @@ function replaySequence(sequence: Sequence): void {
       nowIso: () => NOW,
       requestProjectionRefresh: (journey) => projectionRequests.push(journey),
     },
+    projectAbsolute: resolve(project),
     projectionRequests,
+    reports: {},
+    planPath: null,
+    existedBefore: new Map(),
   };
 
   try {
@@ -567,8 +966,14 @@ function replaySequence(sequence: Sequence): void {
           writeFileSync(target, content, "utf8");
           break;
         }
+        case "delete_file":
+          rmSync(join(project, (step.input as { path: string }).path));
+          break;
         case "seed_cursor":
           seedCursor(context, step.input as Record<string, unknown>);
+          break;
+        case "seed_receipt":
+          seedReceipt(context, step.input as Record<string, unknown>);
           break;
         default:
           outcome = replayLifecycleStep(context, step);
@@ -590,6 +995,19 @@ function replaySequence(sequence: Sequence): void {
       assert.deepEqual(projectionRequests, step.projection_requests, `${where}: projection seam`);
       if (step.artifacts !== undefined) {
         assert.deepEqual(outcome.artifacts, step.artifacts, `${where}: artifacts`);
+      }
+      if (step.status !== undefined) {
+        assert.equal(outcome.status, step.status, `${where}: authority status`);
+        assert.equal(
+          outcome.implementationStarted,
+          step.implementation_started,
+          `${where}: implementation started`,
+        );
+        assert.deepEqual(
+          outcome.unfilledSections,
+          step.unfilled_sections,
+          `${where}: unfilled sections`,
+        );
       }
       if (step.materialized_paths !== undefined) {
         assert.deepEqual(

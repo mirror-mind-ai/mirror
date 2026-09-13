@@ -202,10 +202,23 @@ Navigator's project are the only US8 surface with a traversal shape.
    only `pull` and `expand` — comparing the cursor dump, the serialized metadata
    cell, every surface, every file on disk, the artifact statuses, the projection
    requests, and the refusal messages.
-3. **`prepare` + `plan` + `approve` + preauthorization** — the remaining
-   renderers, the sha256 fingerprint, the five leaves, the `builder_artifacts`
-   probe. This empties `PENDING_OPS` in `lifecycle.test.ts` and
-   `PENDING_LEAVES` in `commands.test.ts`.
+3. **`prepare` + `plan` + `approve` + preauthorization — split in two.**
+   - **3a, done.** The module level: `prepare.ts`, `plan.ts`, `approve.ts`,
+     `planPreauthorization.ts`, `storyPlanPreauthorization.ts`,
+     `deliveryStoryReady.ts`, `flowUnit.ts` (read side), and
+     `artifacts/planArtifacts.ts`. **`PENDING_OPS` is empty and all 53 sequences /
+     172 steps grade step for step.**
+   - **3b, remaining.** The five command leaves in `commands.ts` — `pull-item`
+     (with the CLI's auto-Prepare and the Delivery Story Expand branch),
+     `prepare-item`, `plan-item`, `approve-plan`, `cancel-plan-preauthorization`
+     — plus `_roadmap_plan_context`, the CLI artifact helpers, moving
+     `PENDING_LEAVES` to ported in `commands.test.ts`, and the
+     `builder_artifacts` write probe. The 25 command-level golden cases for these
+     leaves already exist and are graded as pending.
+
+   Split because the module level reached a coherent, fully graded state and the
+   command level is a separate failure mode (argv parsing, guard order, exit
+   codes) that deserves its own review boundary.
 
 ### What commit 1 measured that a resuming session should not re-derive
 
@@ -286,3 +299,32 @@ Navigator's project are the only US8 surface with a traversal shape.
   children, not advancing the generation, always preserving release intent,
   recommending the first child regardless of `Done`, and overwriting an existing
   child `index.md`.
+
+### What commit 3a measured
+
+- **`resolveStoryDirectory` did not resolve the roadmap root, and Python always
+  does.** Latent since plateau 1, because every test and every real caller passes an
+  ABSOLUTE project path — the front door reads it from the journey row, where
+  `journey set-path` stores an absolute one. Under a relative project root Python
+  printed absolute package paths and TypeScript printed relative ones in the same
+  surface, and `createStoryDirectory`'s confinement guard would have compared a
+  relative candidate against a resolved root. Fixed in `storyPaths.ts`; found only
+  because the replay had to run under the generator's own relative root.
+- **The replay must use the sequence's recorded `project_root`, not a `mkdtemp`
+  directory.** `plan_checkpoint` prints its package path unrelativized (CR082), so
+  the generator hands Plan a repo-relative path to keep those rows byte-stable.
+  Replaying under an absolute temp root pushes the rows through path normalization
+  and stops grading them. Both sides now stage `tmp/parity/builder-lifecycle/<name>`,
+  gitignored, which also satisfies the database copy guard.
+- **A scenario deleted a file without recording a step.** The missing-Plan authority
+  scenario unlinked `plan.md` inline, so the snapshot showed it absent while nothing
+  in the sequence said so and the replay refused nothing. `delete_file` is a recorded
+  op now. The rule: every mutation a scenario performs is a step, or the sequence is
+  not replayable.
+- **Plan passes its receipt EXPLICITLY**, which bypasses the cursor's
+  coordinate-change invalidation — that is what lets a freshly recorded receipt
+  survive the write that records it. It also writes `refreshProjection: false` and
+  then requests the refresh itself, once, after the artifacts exist.
+- **Existence is sampled BEFORE Plan writes.** The CLI's `_artifact_existence` runs
+  first, so a preserved file reports `existing` and a created one `created`. Sampling
+  afterwards makes preservation and overwrite indistinguishable.

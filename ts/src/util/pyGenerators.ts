@@ -6,6 +6,7 @@
 // datetime.now(timezone.utc).isoformat().replace("+00:00","Z") (microsecond ISO-Z).
 
 import { randomUUID } from "node:crypto";
+import { compareByCodePoint } from "./pythonText.ts";
 
 /** Match Python `_uuid()` = uuid4().hex[:8]: 8 lowercase hex chars. */
 /**
@@ -58,6 +59,36 @@ export function pythonJsonDumpsEnsureAscii(value: unknown): string {
  */
 export function pythonJsonDumpsIndented(value: unknown, indent = 2): string {
   return escapeNonAscii(JSON.stringify(sortKeysDeep(value), null, indent));
+}
+
+/**
+ * Serialize like Python `json.dumps(value, ensure_ascii=True,
+ * separators=(",", ":"), sort_keys=True)` -- the canonical form a HASH is taken
+ * over.
+ *
+ * Separate from `pythonJsonDumpsIndented` because the bytes differ in three ways
+ * at once (no indent, no spaces after separators, escaped non-ASCII), and this one
+ * feeds `scope_fingerprint`. A fingerprint is an equality test on authority: if the
+ * two engines canonicalize differently, a receipt Python recorded cannot be
+ * consumed by TypeScript and the Navigator is asked to approve a Plan they already
+ * authorized.
+ *
+ * Keys are ordered by CODE POINT, not by JavaScript's default UTF-16 comparison.
+ * The fingerprint payload has fixed ASCII keys so the two orders coincide today;
+ * using the correct comparator means a future key cannot silently diverge.
+ */
+export function pythonJsonDumpsCanonical(value: unknown): string {
+  return escapeNonAscii(JSON.stringify(sortKeysByCodePoint(value)));
+}
+
+function sortKeysByCodePoint(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sortKeysByCodePoint);
+  if (typeof value !== "object" || value === null) return value;
+  const sorted: Record<string, unknown> = {};
+  for (const key of Object.keys(value as Record<string, unknown>).sort(compareByCodePoint)) {
+    sorted[key] = sortKeysByCodePoint((value as Record<string, unknown>)[key]);
+  }
+  return sorted;
 }
 
 /** Python's `sort_keys=True`, applied at every level. */

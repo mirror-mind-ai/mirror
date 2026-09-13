@@ -6461,6 +6461,56 @@
               "method": "ariad",
               "plan_contract_version": "story_plan@1",
               "policy": "exact_scope",
+              "reason": null,
+              "scope_fingerprint": "508e4eb1a8773b5356f6c2c77862ed02e6b8af3b0c8c02025cba8baa7d7ebc59",
+              "status": "pending",
+              "stop_boundary": "navigator_validation"
+            },
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "files": {
+            "docs/project/roadmap/story/index.md": "[< Parent](../index.md)\n\n# CV20.DS16.US1 — Conditional story orchestration\n\n**Status:** 🟡 Planned\n**Type:** User Story\n\n---\n\n## Outcome\n\nConfirm scope, validation route, and implementation contract.\n\n## Story Statement\n\nAs a user,\nI want to Conditional story orchestration,\nSo that I can receive the value of this story.\n\n## Acceptance Behavior\n\n```text\nGiven the relevant starting state\nWhen the Navigator exercises the planned behavior\nThen the expected observable outcome appears\nAnd important constraints still hold\n```\n\n## Scope\n\n- Implement the smallest coherent slice for the active item.\n\n## Out Of Scope\n\n- Do not silently absorb adjacent roadmap work.\n\n## Validation\n\n- Run automated checks required by the local guide.\n- Provide a Navigator-visible validation route with expected observation and pass/fail condition.\n\n---\n\n## Artifacts\n\n- [Plan](plan.md)\n- [Test Guide](test-guide.md)\n",
+            "docs/project/roadmap/story/test-guide.md": "[< Story](index.md)\n\n# Test Guide — CV20.DS16.US1\n\n## Automated Validation\n\n- Run automated checks required by the local guide.\n- Provide a Navigator-visible validation route with expected observation and pass/fail condition.\n\n## E2E Decision\n\nDecide explicitly before implementation whether E2E is required.\n\n## Navigator Validation\n\nProvide the Navigator-visible route with expected observation, pass condition, and fail condition before the story can pass Validation.\n\n## Validation Evidence\n\nPending implementation and validation.\n"
+          },
+          "index": 3,
+          "input": {
+            "path": "docs/project/roadmap/story/plan.md"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV20.DS16.US1\", \"active_item_title\": \"Conditional story orchestration\", \"active_item_level\": \"user_story\", \"active_checkpoint\": \"after_plan\", \"pending_confirmation\": \"navigator_approval\", \"last_delivery_event\": \"plan\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"story_by_story\", \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 7, \"plan_preauthorization\": {\"journey\": \"sandbox-pet-store\", \"method\": \"ariad\", \"cursor_generation\": 7, \"active_item\": \"CV20.DS16.US1\", \"active_item_level\": \"user_story\", \"flow_unit\": \"story_by_story\", \"child_work_items\": [], \"plan_contract_version\": \"story_plan@1\", \"policy\": \"exact_scope\", \"stop_boundary\": \"navigator_validation\", \"scope_fingerprint\": \"508e4eb1a8773b5356f6c2c77862ed02e6b8af3b0c8c02025cba8baa7d7ebc59\", \"status\": \"pending\", \"reason\": null}, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+          "op": "delete_file",
+          "projection_requests": [
+            "sandbox-pet-store",
+            "sandbox-pet-store"
+          ]
+        },
+        {
+          "cursor": {
+            "active_checkpoint": "after_plan",
+            "active_item": "CV20.DS16.US1",
+            "active_item_level": "user_story",
+            "active_item_title": "Conditional story orchestration",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 7,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "plan",
+            "method": "ariad",
+            "navigator_flow_unit": "story_by_story",
+            "pending_confirmation": "navigator_approval",
+            "plan_preauthorization": {
+              "active_item": "CV20.DS16.US1",
+              "active_item_level": "user_story",
+              "child_work_items": [],
+              "cursor_generation": 7,
+              "flow_unit": "story_by_story",
+              "journey": "sandbox-pet-store",
+              "method": "ariad",
+              "plan_contract_version": "story_plan@1",
+              "policy": "exact_scope",
               "reason": "plan_incomplete",
               "scope_fingerprint": "508e4eb1a8773b5356f6c2c77862ed02e6b8af3b0c8c02025cba8baa7d7ebc59",
               "status": "invalidated",
@@ -6474,7 +6524,7 @@
             "docs/project/roadmap/story/index.md": "[< Parent](../index.md)\n\n# CV20.DS16.US1 — Conditional story orchestration\n\n**Status:** 🟡 Planned\n**Type:** User Story\n\n---\n\n## Outcome\n\nConfirm scope, validation route, and implementation contract.\n\n## Story Statement\n\nAs a user,\nI want to Conditional story orchestration,\nSo that I can receive the value of this story.\n\n## Acceptance Behavior\n\n```text\nGiven the relevant starting state\nWhen the Navigator exercises the planned behavior\nThen the expected observable outcome appears\nAnd important constraints still hold\n```\n\n## Scope\n\n- Implement the smallest coherent slice for the active item.\n\n## Out Of Scope\n\n- Do not silently absorb adjacent roadmap work.\n\n## Validation\n\n- Run automated checks required by the local guide.\n- Provide a Navigator-visible validation route with expected observation and pass/fail condition.\n\n---\n\n## Artifacts\n\n- [Plan](plan.md)\n- [Test Guide](test-guide.md)\n",
             "docs/project/roadmap/story/test-guide.md": "[< Story](index.md)\n\n# Test Guide — CV20.DS16.US1\n\n## Automated Validation\n\n- Run automated checks required by the local guide.\n- Provide a Navigator-visible validation route with expected observation and pass/fail condition.\n\n## E2E Decision\n\nDecide explicitly before implementation whether E2E is required.\n\n## Navigator Validation\n\nProvide the Navigator-visible route with expected observation, pass condition, and fail condition before the story can pass Validation.\n\n## Validation Evidence\n\nPending implementation and validation.\n"
           },
-          "index": 3,
+          "index": 4,
           "input": {
             "method": "ariad"
           },

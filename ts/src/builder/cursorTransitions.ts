@@ -22,6 +22,17 @@ export function normalizeRequired(value: string | null | undefined, fieldName: s
   return normalized;
 }
 
+/**
+ * Python `_cv_title`: the HEAD of a `/`-chained title, where `title_leaf` takes the
+ * tail.
+ *
+ * Shared by the Pull surface and the Delivery-Story-ready surface, which render the
+ * same title at two coordinate levels in the same output.
+ */
+export function cvTitle(title: string): string {
+  return (title.split("/")[0] ?? "").trim();
+}
+
 /** Python `_is_implementable_by_default`: a Delivery Story is never implementable. */
 export function isImplementableByDefault(level: string | null): boolean {
   return level === "user_story" || level === "technical_story";

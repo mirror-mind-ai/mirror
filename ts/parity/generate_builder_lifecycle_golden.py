@@ -470,6 +470,18 @@ class Scenario:
         target.write_text(content, encoding="utf-8")
         self.record("write_file", input={"path": relative})
 
+    def delete_file(self, relative: str) -> None:
+        """Remove a file as a RECORDED step.
+
+        The missing-Plan scenario originally deleted the file inline, without a step.
+        The snapshot then showed it absent while nothing in the sequence said so, and
+        a replay could not reproduce the state the refusal depends on -- caught by
+        the TypeScript comparison, which refused nothing because the file was still
+        there. Every mutation a scenario performs has to be a step.
+        """
+        (self.project / relative).unlink()
+        self.record("delete_file", input={"path": relative})
+
     # -- lifecycle operations ------------------------------------------------
 
     def pull(self, *, code: str, title: str, level: str, why_now: str, method: str = "ariad") -> None:
@@ -1418,7 +1430,7 @@ def _preauthorization_scenarios() -> list[dict[str, Any]]:
         scenarios.append(incomplete.finish())
 
     missing_plan = planned("authority_blocks_missing_plan_file")
-    (missing_plan.project / plan_relative).unlink()
+    missing_plan.delete_file(plan_relative)
     missing_plan.approve_with_preauthorization()
     scenarios.append(missing_plan.finish())
 

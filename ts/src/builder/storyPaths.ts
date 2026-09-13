@@ -90,7 +90,15 @@ function groupRoadmapHeadings(roadmapRoot: string): Map<string, string[]> {
  * joined with `/`; callers that need an absolute path join it to the root.
  */
 export function resolveStoryDirectory(projectRoot: string, code: string): string | null {
-  const { roadmapRoot } = roadmapPaths(projectRoot);
+  // ABSOLUTE, like Python's `(project_path / … ).resolve()`. This was relative until
+  // CV22.DS7.US8 plateau 3, and the divergence was invisible because every test and
+  // every real caller passed an absolute project path: the front door reads it from
+  // the journey row, where `journey set-path` stores an absolute one. A
+  // project-relative path made Python print absolute package paths and TypeScript
+  // print relative ones in the same surface, and — worse — would have compared a
+  // relative candidate against a resolved root inside `createStoryDirectory`'s
+  // confinement guard.
+  const roadmapRoot = resolve(roadmapPaths(projectRoot).roadmapRoot);
   const matches = groupRoadmapHeadings(roadmapRoot).get(code) ?? [];
   if (matches.length === 0) return null;
   if (matches.length > 1) {
@@ -138,7 +146,9 @@ function snapshotTitle(projectRoot: string, code: string): string | null {
 function parentDirectory(projectRoot: string, code: string): string {
   const resolved = resolveStoryDirectory(projectRoot, code);
   if (resolved !== null) return resolved;
-  const { roadmapRoot } = roadmapPaths(projectRoot);
+  // Resolved for the same reason as above: Python's `_parent_directory` bases every
+  // derived path on the resolved roadmap root.
+  const roadmapRoot = resolve(roadmapPaths(projectRoot).roadmapRoot);
   const parent = parentCode(code);
   const base = parent === null ? roadmapRoot : parentDirectory(projectRoot, parent);
   const title = snapshotTitle(projectRoot, code);
