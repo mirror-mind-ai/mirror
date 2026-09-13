@@ -25,6 +25,16 @@ import { approvePlanCheckpoint, renderPlanApproval } from "#builder/approve.ts";
 import { getAriadMethod } from "#builder/ariadMethod.ts";
 import { renderArtifactsMaterializedSurface } from "#builder/artifacts/artifactSurfaces.ts";
 import {
+  coherenceLifecycleItem,
+  doneLifecycleItem,
+  renderCoherenceCheckpoint,
+  renderDoneCheckpoint,
+  renderReviewCheckpoint,
+  renderValidationCheckpoint,
+  reviewLifecycleItem,
+  validateLifecycleItem,
+} from "#builder/closure.ts";
+import {
   type BuilderDeliveryCursor,
   type CursorWriteDeps,
   getDeliveryCursor,
@@ -80,6 +90,10 @@ interface Step {
   status?: string;
   implementation_started?: boolean;
   unfilled_sections?: string[];
+  missing_evidence?: string[];
+  missing_decision?: string[];
+  missing_coherence?: string[];
+  missing_done?: string[];
 }
 
 interface Sequence {
@@ -97,6 +111,10 @@ const HARNESS_OPS = ["delete_file", "seed_cursor", "seed_receipt", "write_file"]
 /** Lifecycle operations TypeScript can execute today. */
 const PORTED_OPS: readonly string[] = [
   "approve",
+  "coherence",
+  "done",
+  "review",
+  "validate",
   "approve_with_preauthorization",
   "cancel_preauthorization",
   "expand",
@@ -112,7 +130,7 @@ const PORTED_OPS: readonly string[] = [
  * generated from Python before the port exists, so for one commit it knows more than
  * the code. `the pending list cannot go stale` forces each entry out again.
  */
-const PENDING_OPS: readonly string[] = ["coherence", "done", "review", "validate"];
+const PENDING_OPS: readonly string[] = [];
 
 const lifecycleOps = (step: Step): boolean => !(HARNESS_OPS as readonly string[]).includes(step.op);
 
@@ -540,6 +558,11 @@ interface ReplayOutcome {
   readonly status?: string;
   readonly implementationStarted?: boolean;
   readonly unfilledSections?: string[];
+  /** The closure verbs each record their own missing-evidence tuple. */
+  readonly missingEvidence?: string[];
+  readonly missingDecision?: string[];
+  readonly missingCoherence?: string[];
+  readonly missingDone?: string[];
 }
 
 /**
@@ -848,9 +871,130 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
         return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
       }
     }
+    case "validate": {
+      const input = step.input as Record<string, unknown>;
+      try {
+        const report = validateLifecycleItem(
+          context.db,
+          {
+            journey: context.journey,
+            method: getAriadMethod(),
+            automatedChecks: (input.automated_checks as string[]) ?? [],
+            checksStatus: (input.checks_status as string) ?? "not_run",
+            e2eDecision: (input.e2e_decision as string) ?? "not_required",
+            e2eEvidence: (input.e2e_evidence as string | null) ?? null,
+            navigatorValidationRoute: (input.navigator_validation_route as string | null) ?? null,
+            navigatorAccepted: (input.navigator_accepted as boolean) ?? false,
+            expectedObservation: (input.expected_observation as string | null) ?? null,
+            passCondition: (input.pass_condition as string | null) ?? null,
+            failCondition: (input.fail_condition as string | null) ?? null,
+            implementationComplete: (input.implementation_complete as boolean) ?? false,
+            validationArtifactPath: closureArtifactPath(context, input.artifact as string | null),
+          },
+          context.deps,
+        );
+        return {
+          surfaces: [{ id: "validation_checkpoint", text: renderValidationCheckpoint(report) }],
+          missingEvidence: [...report.missingEvidence],
+        };
+      } catch (error) {
+        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+      }
+    }
+    case "review": {
+      const input = step.input as Record<string, unknown>;
+      try {
+        const report = reviewLifecycleItem(
+          context.db,
+          {
+            journey: context.journey,
+            method: getAriadMethod(),
+            debtFindings: (input.debt_findings as string[]) ?? [],
+            debtDecision: (input.debt_decision as string) ?? "pending",
+            deferReason: (input.defer_reason as string | null) ?? null,
+            revisitTrigger: (input.revisit_trigger as string | null) ?? null,
+            reviewArtifactPath: closureArtifactPath(context, input.artifact as string | null),
+          },
+          context.deps,
+        );
+        return {
+          surfaces: [{ id: "debt_review_checkpoint", text: renderReviewCheckpoint(report) }],
+          missingDecision: [...report.missingDecision],
+        };
+      } catch (error) {
+        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+      }
+    }
+    case "coherence": {
+      const input = step.input as Record<string, unknown>;
+      try {
+        const report = coherenceLifecycleItem(
+          context.db,
+          {
+            journey: context.journey,
+            method: getAriadMethod(),
+            processAlignment: (input.process_alignment as string | null) ?? null,
+            projectAlignment: (input.project_alignment as string | null) ?? null,
+            productAlignment: (input.product_alignment as string | null) ?? null,
+            localDifferences: (input.local_differences as string[]) ?? [],
+            coherenceArtifactPath: closureArtifactPath(context, input.artifact as string | null),
+          },
+          context.deps,
+        );
+        return {
+          surfaces: [{ id: "coherence_checkpoint", text: renderCoherenceCheckpoint(report) }],
+          missingCoherence: [...report.missingCoherence],
+        };
+      } catch (error) {
+        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+      }
+    }
+    case "done": {
+      const input = step.input as Record<string, unknown>;
+      try {
+        const report = doneLifecycleItem(
+          context.db,
+          {
+            journey: context.journey,
+            method: getAriadMethod(),
+            historyAction: (input.history_action as string | null) ?? null,
+            roadmapUpdate: (input.roadmap_update as string | null) ?? null,
+            nextRecommendation: (input.next_recommendation as string | null) ?? null,
+            doneArtifactPath: closureArtifactPath(context, input.artifact as string | null),
+          },
+          context.deps,
+        );
+        return {
+          surfaces: [{ id: "done_checkpoint", text: renderDoneCheckpoint(report) }],
+          missingDone: [...report.missingDone],
+        };
+      } catch (error) {
+        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+      }
+    }
     default:
       throw new Error(`unsupported lifecycle op: ${step.op}`);
   }
+}
+
+/**
+ * The CLI's `_checkpoint_artifact_path`, rendered relative like the Plan path.
+ *
+ * The closure surfaces print the path they were handed, so the generator passes a
+ * repo-relative one and the rows stay byte-comparable.
+ */
+function closureArtifactPath(context: ReplayContext, filename: string | null): string | null {
+  if (filename === null) return null;
+  const cursor = getDeliveryCursor(context.db, context.journey);
+  if (cursor === null || !cursor.activeItem) return null;
+  const resolved =
+    resolveStoryDirectory(context.project, cursor.activeItem) ??
+    createStoryDirectory(
+      context.project,
+      cursor.activeItem,
+      cursor.activeItemTitle ?? cursor.activeItem,
+    );
+  return join(relative(process.cwd(), resolved), filename);
 }
 
 /**
@@ -1020,6 +1164,16 @@ function replaySequence(sequence: Sequence): void {
           step.unfilled_sections,
           `${where}: unfilled sections`,
         );
+      }
+      for (const [key, actualValue] of [
+        ["missing_evidence", outcome.missingEvidence],
+        ["missing_decision", outcome.missingDecision],
+        ["missing_coherence", outcome.missingCoherence],
+        ["missing_done", outcome.missingDone],
+      ] as const) {
+        if (step[key] !== undefined) {
+          assert.deepEqual(actualValue, step[key], `${where}: ${key}`);
+        }
       }
       if (step.materialized_paths !== undefined) {
         assert.deepEqual(

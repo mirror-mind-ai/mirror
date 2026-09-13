@@ -1836,6 +1836,21 @@ def _closure_scenarios() -> list[dict[str, Any]]:
         scenario.validate(**kwargs)
         scenarios.append(scenario.finish())
 
+    # A BLANK route reports only the route, never the acceptance alongside it: the
+    # two live in one `if/elif`, and the default route is non-empty, so the first
+    # branch is unreachable unless a caller passes whitespace. Added after mutation
+    # testing showed the `elif` was unguarded -- turning it into a second `if`
+    # survived the whole corpus.
+    blank_route = approved("validate_blank_route_reports_only_the_route")
+    blank_route.validate(
+        automated_checks=("pytest",),
+        checks_status="passed",
+        navigator_validation_route="   ",
+        navigator_accepted=False,
+        implementation_complete=True,
+    )
+    scenarios.append(blank_route.finish())
+
     # Class B refusals: the choice vocabularies, and the guard chain.
     for name, kwargs in (
         ("validate_rejects_unknown_checks_status", {"checks_status": "green"}),

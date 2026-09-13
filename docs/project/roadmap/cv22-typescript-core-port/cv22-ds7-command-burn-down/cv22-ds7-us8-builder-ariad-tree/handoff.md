@@ -234,6 +234,41 @@ Navigator's project are the only US8 surface with a traversal shape.
 
 **Plateau 3 is complete.** 11 of the 27 in-scope leaves answer from TypeScript.
 
+### Plateau 4 progress
+
+Scope D (story closure) at the module level is **done**: `closure.ts` and
+`artifacts/closureArtifacts.ts` port Validate, Debt Review, Coherence, and Done, and
+**all 86 sequences / 274 steps of the corpus grade step for step**. The four command
+leaves (`validate-item`, `review-item`, `coherence-item`, `done-item`), the two
+CLI-rendered surfaces (`debt_review_started`, `done_closure_confirmation`), and the
+unrouted story-lifecycle smoke remain.
+
+What commit 2 measured:
+
+- **The four verbs share one shape and it is the shape a port gets wrong.** Each
+  computes a missing-evidence tuple, and that tuple decides three cursor fields at
+  once (`activeCheckpoint`, `pendingConfirmation`, `lastDeliveryEvent`). So
+  "incomplete" is not an error and not a different surface -- it is the same surface
+  over different persisted state, and a port can render the right card while writing
+  the wrong three fields.
+- **Two verbs allow exact-state re-entry, one does not.** Review answers its own
+  `navigator_debt_decision` and Coherence its own `navigator_coherence`; Done refuses
+  every pending confirmation, including the ones its predecessors left. Removing
+  either re-entry deadlocks the lifecycle, which is why Python grew them after a live
+  failure on another project.
+- **Done accepts `review_complete` directly** -- Coherence is an option, not a
+  precondition.
+- **CR079 is reproduced, and pinned in both directions.** The closure verbs overwrite
+  authored artifacts; `closure_overwrites_authored_artifacts` records it, and adding
+  the "obvious" existence guard to `writeClosureArtifact` FAILS the corpus. A future
+  session cannot fix it inside the port without the test objecting.
+- **Mutation testing earned its keep again.** Five of six mutants died on the corpus
+  as generated -- Done's precondition, both re-entries, `pay_now`, and the CR079
+  guard -- but turning validation's `if/elif` into two `if`s SURVIVED, because the
+  default route is non-empty and no scenario passed whitespace. Fixed by adding
+  `validate_blank_route_reports_only_the_route`, an oracle case, which is the same
+  correction plateaus 1 and 3 each needed.
+
    Split because the module level reached a coherent, fully graded state and the
    command level is a separate failure mode (argv parsing, guard order, exit
    codes) that deserves its own review boundary.

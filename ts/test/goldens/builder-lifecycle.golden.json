@@ -8824,6 +8824,106 @@
     },
     {
       "journey": "sandbox-pet-store",
+      "name": "validate_blank_route_reports_only_the_route",
+      "project_root": "tmp/parity/builder-lifecycle/validate_blank_route_reports_only_the_route/project",
+      "steps": [
+        {
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1.DS1.US1",
+            "active_item_level": "user_story",
+            "active_item_title": "Closure story",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "plan_approved",
+            "method": "ariad",
+            "navigator_flow_unit": "story_by_story",
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "files": {},
+          "index": 0,
+          "input": {
+            "active_item": "CV1.DS1.US1",
+            "active_item_level": "user_story",
+            "active_item_title": "Closure story",
+            "last_delivery_event": "plan_approved",
+            "method": "ariad",
+            "navigator_flow_unit": "story_by_story"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1.US1\", \"active_item_title\": \"Closure story\", \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"plan_approved\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"story_by_story\", \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+          "op": "seed_cursor",
+          "projection_requests": [
+            "sandbox-pet-store"
+          ]
+        },
+        {
+          "cursor": {
+            "active_checkpoint": "after_validation",
+            "active_item": "CV1.DS1.US1",
+            "active_item_level": "user_story",
+            "active_item_title": "Closure story",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "validate",
+            "method": "ariad",
+            "navigator_flow_unit": "story_by_story",
+            "pending_confirmation": "navigator_validation",
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "files": {
+            "docs/project/roadmap/cv1/cv1-ds1/cv1-ds1-us1-closure-story/validation.md": "# Validation — CV1.DS1.US1\n\n## Status\n\nBlocked\n\n## Automated Checks\n\n- pytest\n\nChecks status: passed\n\n## E2E\n\nDecision: not_required\n\nEvidence: none\n\n## Navigator Validation\n\nRoute: \n\nNavigator accepted: no\n\nExpected observation: Expected behavior from the Plan is observable.\n\nPass condition: Navigator accepts the observed behavior.\n\nFail condition: Navigator cannot observe the planned behavior.\n\n## Missing Evidence\n\n- Navigator validation route is missing\n"
+          },
+          "index": 1,
+          "input": {
+            "artifact": "validation.md",
+            "automated_checks": [
+              "pytest"
+            ],
+            "checks_status": "passed",
+            "e2e_decision": "not_required",
+            "e2e_evidence": null,
+            "expected_observation": null,
+            "fail_condition": null,
+            "implementation_complete": true,
+            "navigator_accepted": false,
+            "navigator_validation_route": "   ",
+            "pass_condition": null
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1.US1\", \"active_item_title\": \"Closure story\", \"active_item_level\": \"user_story\", \"active_checkpoint\": \"after_validation\", \"pending_confirmation\": \"navigator_validation\", \"last_delivery_event\": \"validate\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"story_by_story\", \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+          "missing_evidence": [
+            "Navigator validation route is missing"
+          ],
+          "op": "validate",
+          "projection_requests": [
+            "sandbox-pet-store",
+            "sandbox-pet-store"
+          ],
+          "surfaces": [
+            {
+              "id": "validation_checkpoint",
+              "text": "<<<ARIAD:VALIDATION_CHECKPOINT>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ✓ Implement → ◉ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🧪■  VALIDATION CHECKPOINT                      │\n│                                                        │\n│ active item                                            │\n│ CV1.DS1.US1                                            │\n│                                                        │\n│ status                                                 │\n│ pending_navigator_validation                           │\n│                                                        │\n│ automated checks                                       │\n│ ✓ pytest                                               │\n│                                                        │\n│ checks status                                          │\n│ passed                                                 │\n│                                                        │\n│ e2e decision                                           │\n│ not_required                                           │\n│                                                        │\n│ e2e evidence                                           │\n│ none                                                   │\n│                                                        │\n│ navigator validation route                             │\n│ none                                                   │\n│                                                        │\n│ navigator accepted                                     │\n│ no                                                     │\n│                                                        │\n│ expected observation                                   │\n│ Expected behavior from the Plan is observable.         │\n│                                                        │\n│ pass condition                                         │\n│ Navigator accepts the observed behavior.               │\n│                                                        │\n│ fail condition                                         │\n│ Navigator cannot observe the planned behavior.         │\n│                                                        │\n│ missing evidence                                       │\n│ ✕ Navigator validation route is missing                │\n│                                                        │\n│ validation contract                                    │\n│ ✓ run automated checks required by the Plan and local  │\n│   guide                                                │\n│ ✓ run E2E tests required by the approved Plan or local │\n│   guide                                                │\n│ ✓ provide Navigator validation route with expected     │\n│   observation, pass condition, and fail condition      │\n│ ✓ record validation evidence before Review             │\n│                                                        │\n│ validation artifact                                    │\n│ tmp/parity/builder-lifecycle/validate_blank_route_repo │\n│ rts_only_the_route/project/docs/project/roadmap/cv1/cv │\n│ 1-ds1/cv1-ds1-us1-closure-story/validation.md          │\n│                                                        │\n│ boundary                                               │\n│ Do not move past Validation until missing evidence is  │\n│ resolved.                                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:VALIDATION_CHECKPOINT>>>\n"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "journey": "sandbox-pet-store",
       "name": "validate_rejects_unknown_checks_status",
       "project_root": "tmp/parity/builder-lifecycle/validate_rejects_unknown_checks_status/project",
       "steps": [
