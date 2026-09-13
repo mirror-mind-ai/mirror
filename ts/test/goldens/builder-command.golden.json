@@ -1,0 +1,281 @@
+{
+  "cases": [
+    {
+      "argv": [
+        "inspect-method",
+        "ariad"
+      ],
+      "exit_code": 0,
+      "name": "inspect_method_ariad",
+      "scenario": "adopted",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "■ Builder Method Available\n\nmethod\nAriad\n\nid\nariad\n\nsource\nbuilt-in method definition\n\nresolution layers\n- method_default\n- project_config\n- journey_config\n- navigator_override\n\nlifecycle\n- Pull escolhe o foco\n- Prepare lê o terreno\n- Expand desdobra granularidade\n- Plan firma o contrato\n- Implement muda o sistema\n- Validation prova comportamento\n- Review encara a dívida\n- Coherence integra os rastros\n- Done registra e fecha\n\nwork item levels\n- delivery_story: Delivery Story\n  implementable by default: no\n  expands to: user_story, technical_story\n- user_story: User Story\n  implementable by default: yes\n- technical_story: Technical Story\n  implementable by default: yes\n\ncadence profiles\n- stepwise: stop_after_every_phase; plan=navigator_approval (active)\n- checkpoint: continue_until_next_method_checkpoint; plan=navigator_approval (active)\n- accelerated: continue_through_story_plan_to_navigator_validation; plan=bounded_story_authority (active)\n- autonomous: continue_until_hard_constraint_with_explicit_limits; plan=navigator_approval (active)\n\ncheckpoints\n- after_plan\n  occurs after: plan\n  blocks: implement\n  requires artifacts: plan\n  requires confirmations: navigator_approval\n- navigator_validation\n  occurs after: validation\n  blocks: done\n  requires artifacts: validation_route, validation_evidence\n  requires confirmations: navigator_validation\n- review_decision\n  occurs after: review\n  blocks: coherence\n  requires artifacts: review_report\n  requires confirmations: navigator_debt_decision\n\ncontracts\n- pull_contract: pull\n  rules: 4\n  required outputs: selected_item, pull_level, why_this_level_now\n- prepare_contract: prepare\n  rules: 5\n  required outputs: context_summary, story_shape_assessment, risk_summary, applicable_rules\n- expand_contract: expand\n  rules: 3\n  required outputs: granularity_decision, child_story_candidates\n- plan_contract: plan\n  rules: 5\n  stop conditions: navigator_approval_required\n  required outputs: scope, non_goals, acceptance_behavior, validation_route, implementation_contract\n- implement_contract: implement\n  rules: 5\n  stop conditions: scope_change_detected, plan_rule_conflict, failing_required_check_without_clear_fix, navigator_decision_needed\n- validation_contract: validation\n  rules: 4\n  required outputs: automated_evidence, navigator_validation_route, validation_evidence\n- debt_review_contract: review\n  rules: 3\n  required outputs: review_report, debt_decision\n- coherence_contract: coherence\n  rules: 4\n  required outputs: coherence_result\n- done_contract: done\n  rules: 4\n  required outputs: closure_summary, history_action, next_recommendation\n\npolicies\n- history.commit\n  mode: propose_and_wait\n  granularity: coherent_story\n  message_style: descriptive_why\n- push\n  mode: ask_before_push\n  allowed_after: story_done, release_publish, manual_request\n  requires: clean_worktree, commits_present, remote_configured, navigator_confirmation\n- release\n  modes: planned_release, emergent_release\n\nsurfaces\n- adoption_report: adoption\n- builder_resume: on_builder_load\n- roadmap_snapshot: roadmap_inspection\n- pull_candidates: roadmap_inspection\n- pull_report: pull\n- prepare_report: prepare\n- plan_checkpoint: plan; stops for: navigator_approval\n- validation_checkpoint: validation; stops for: navigator_validation\n- debt_review_checkpoint: review; stops for: navigator_debt_decision\n- coherence_checkpoint: coherence\n- done_checkpoint: done\n\nsurface routes\n- show_roadmap: roadmap_snapshot, pull_candidates\n\ntemplates\n- ariad_adoption: docs/project/roadmap/ariad-adoption.md\n- technical_debt_ledger: docs/project/roadmap/technical-debt-ledger.md\n- delivery_story_index: docs/project/roadmap/templates/delivery-story-index.md\n- user_story_index: docs/project/roadmap/templates/user-story-index.md\n- technical_story_index: docs/project/roadmap/templates/technical-story-index.md\n- plan: docs/project/roadmap/templates/plan.md\n- test_guide: docs/project/roadmap/templates/test-guide.md\n- review: docs/project/roadmap/templates/review.md\n- coherence: docs/project/roadmap/templates/coherence.md\n\nopen questions\n- maintenance_and_operational_updates [open]\n  Do not overdesign upfront. Model when real cases appear.\n- final_surface_content [open]\n  Use Ariad visual grammar during implementation.\n- final_dsl_file_format [open]\n  YAML is the exploration notation, not yet a committed parser format.\n\n"
+    },
+    {
+      "argv": [
+        "inspect-method",
+        "bogus"
+      ],
+      "exit_code": 1,
+      "name": "inspect_method_unknown",
+      "scenario": "adopted",
+      "session_id": "builder-command-session",
+      "stderr": "Error: Builder method 'bogus' not found. Available methods: ariad\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "inspect-method",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 0,
+      "name": "inspect_method_journey_adopted",
+      "scenario": "adopted",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "■ Builder Method\n\njourney\ndemo\n\nadopted method\nariad\n\navailable methods\nariad\n\nstatus\nAriad is adopted for this journey.\n\n"
+    },
+    {
+      "argv": [
+        "inspect-method",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 0,
+      "name": "inspect_method_journey_unadopted",
+      "scenario": "unadopted",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "■ Builder Method\n\njourney\ndemo\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nThis journey has not adopted a Builder method yet.\n\nwhat can be inspected\nbuilt-in method defaults\n\nwhat cannot be inspected yet\neffective journey configuration\nruntime delivery cursor\nactive checkpoint\npending confirmations\n\nnext action\nuv run python -m memory build adopt --journey demo --method ariad\n\n"
+    },
+    {
+      "argv": [
+        "inspect-method",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 0,
+      "name": "inspect_method_journey_other_method",
+      "scenario": "adopted_other_method",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "■ Builder Method\n\njourney\ndemo\n\nadopted method\nscrumban\n\navailable methods\nariad\n\nstatus\nscrumban is adopted for this journey.\n\n"
+    },
+    {
+      "argv": [
+        "inspect-method",
+        "--journey",
+        "nope"
+      ],
+      "exit_code": 1,
+      "name": "inspect_method_journey_missing",
+      "scenario": "unadopted",
+      "session_id": "builder-command-session",
+      "stderr": "Error: journey 'nope' not found.\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "inspect-method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 0,
+      "name": "inspect_method_both_method_and_journey",
+      "scenario": "adopted",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "■ Builder Method\n\njourney\ndemo\n\nadopted method\nariad\n\navailable methods\nariad\n\nstatus\nAriad is adopted for this journey.\n\n"
+    },
+    {
+      "argv": [
+        "inspect-method",
+        "--session-id",
+        "builder-command-session"
+      ],
+      "exit_code": 0,
+      "name": "inspect_method_active_builder_journey",
+      "scenario": "adopted",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "■ Builder Method\n\njourney\ndemo\n\nadopted method\nariad\n\navailable methods\nariad\n\nstatus\nAriad is adopted for this journey.\n\n"
+    },
+    {
+      "argv": [
+        "inspect-method",
+        "--session-id",
+        "absent"
+      ],
+      "exit_code": 0,
+      "name": "inspect_method_no_active_mode",
+      "scenario": "no_active_mode",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "■ Builder Method\n\nactive journey\nnone\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nNo Builder journey is active yet.\n\nnext action\nActivate Builder Mode for a journey or ask about a specific journey.\n\nexample\nuv run python -m memory build load <journey>\n\n"
+    },
+    {
+      "argv": [
+        "inspect-method",
+        "--session-id",
+        "builder-command-session"
+      ],
+      "exit_code": 0,
+      "name": "inspect_method_other_mode",
+      "scenario": "other_mode",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "■ Builder Method\n\nactive journey\nnone\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nNo Builder journey is active yet.\n\nnext action\nActivate Builder Mode for a journey or ask about a specific journey.\n\nexample\nuv run python -m memory build load <journey>\n\n"
+    },
+    {
+      "argv": [
+        "inspect-method",
+        "--session-id",
+        "builder-command-session"
+      ],
+      "exit_code": 0,
+      "name": "inspect_method_mode_without_journey",
+      "scenario": "mode_without_journey",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "■ Builder Method\n\nactive journey\nnone\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nNo Builder journey is active yet.\n\nnext action\nActivate Builder Mode for a journey or ask about a specific journey.\n\nexample\nuv run python -m memory build load <journey>\n\n"
+    },
+    {
+      "argv": [
+        "pull-candidates",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 0,
+      "name": "pull_candidates_explicit_journey",
+      "scenario": "adopted",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:ROADMAP_SNAPSHOT>>>\nROADMAP SNAPSHOT\nDelivery field overview\n\nview                         overview\nresult of roadmap-snapshot      ready to pull\n\n╭────────────────────────────────────────────────────────╮\n│ 🟪[CV1]  First value                           ◉ active │\n│ value: First value                                     │\n│                                                        │\n│    └─ 🟦[US1] A user story                    ◉ current │\n│       progress: not started                            │\n│                                                        │\n│       Backlog                                          │\n│       ○ 🟦[CV1.DS1.US1] A user story                    │\n│       ○ 🟦[CV1.DS1] A delivery story                    │\n│                                                        │\n│       Recently promoted from Exploration               │\n│       none                                             │\n│                                                        │\n│       Active constraints                               │\n│       ✕ do not start candidates automatically          │\n│       ✓ Navigator explicitly chooses Pull              │\n╰────────────────────────────────────────────────────────╯\n\nsource\ndocs/project/roadmap/index.md\n\nboundary\nRoadmap was inspected only. No item was pulled. No lifecycle work was executed.\n<<<END:ROADMAP_SNAPSHOT>>>\n<<<ARIAD:PULL_CANDIDATES>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🟪■  PULL CANDIDATES                            │\n│                                                        │\n│ journey                                                │\n│ demo                                                   │\n│                                                        │\n│ method                                                 │\n│ ariad                                                  │\n│                                                        │\n│ available candidates                                   │\n│ - CV1.DS1.US1 — A user story [user_story] 🟡 Planned    │\n│   (docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1 │\n│   -ds1-us1-story/index.md)                             │\n│ - CV1.DS1 — A delivery story [delivery_story] 🟡        │\n│   Planned                                              │\n│   (docs/project/roadmap/cv1-first/cv1-ds1-delivery/ind │\n│   ex.md)                                               │\n│ - CV1 — First value [cv] 🟢 Active                      │\n│   (docs/project/roadmap/cv1-first/index.md)            │\n│                                                        │\n│ recommended pull                                       │\n│ CV1.DS1.US1 — A user story [user_story] 🟡 Planned      │\n│ (docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-d │\n│ s1-us1-story/index.md)                                 │\n│                                                        │\n│ boundary                                               │\n│ No item was pulled. No lifecycle work was executed.    │\n╰────────────────────────────────────────────────────────╯\n<<<END:PULL_CANDIDATES>>>\n\n"
+    },
+    {
+      "argv": [
+        "pull-candidates",
+        "--method",
+        "ariad",
+        "--session-id",
+        "builder-command-session"
+      ],
+      "exit_code": 0,
+      "name": "pull_candidates_via_active_mode",
+      "scenario": "adopted",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:ROADMAP_SNAPSHOT>>>\nROADMAP SNAPSHOT\nDelivery field overview\n\nview                         overview\nresult of roadmap-snapshot      ready to pull\n\n╭────────────────────────────────────────────────────────╮\n│ 🟪[CV1]  First value                           ◉ active │\n│ value: First value                                     │\n│                                                        │\n│    └─ 🟦[US1] A user story                    ◉ current │\n│       progress: not started                            │\n│                                                        │\n│       Backlog                                          │\n│       ○ 🟦[CV1.DS1.US1] A user story                    │\n│       ○ 🟦[CV1.DS1] A delivery story                    │\n│                                                        │\n│       Recently promoted from Exploration               │\n│       none                                             │\n│                                                        │\n│       Active constraints                               │\n│       ✕ do not start candidates automatically          │\n│       ✓ Navigator explicitly chooses Pull              │\n╰────────────────────────────────────────────────────────╯\n\nsource\ndocs/project/roadmap/index.md\n\nboundary\nRoadmap was inspected only. No item was pulled. No lifecycle work was executed.\n<<<END:ROADMAP_SNAPSHOT>>>\n<<<ARIAD:PULL_CANDIDATES>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🟪■  PULL CANDIDATES                            │\n│                                                        │\n│ journey                                                │\n│ demo                                                   │\n│                                                        │\n│ method                                                 │\n│ ariad                                                  │\n│                                                        │\n│ available candidates                                   │\n│ - CV1.DS1.US1 — A user story [user_story] 🟡 Planned    │\n│   (docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1 │\n│   -ds1-us1-story/index.md)                             │\n│ - CV1.DS1 — A delivery story [delivery_story] 🟡        │\n│   Planned                                              │\n│   (docs/project/roadmap/cv1-first/cv1-ds1-delivery/ind │\n│   ex.md)                                               │\n│ - CV1 — First value [cv] 🟢 Active                      │\n│   (docs/project/roadmap/cv1-first/index.md)            │\n│                                                        │\n│ recommended pull                                       │\n│ CV1.DS1.US1 — A user story [user_story] 🟡 Planned      │\n│ (docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-d │\n│ s1-us1-story/index.md)                                 │\n│                                                        │\n│ boundary                                               │\n│ No item was pulled. No lifecycle work was executed.    │\n╰────────────────────────────────────────────────────────╯\n<<<END:PULL_CANDIDATES>>>\n\n"
+    },
+    {
+      "argv": [
+        "pull-candidates",
+        "--method",
+        "bogus",
+        "--session-id",
+        "absent"
+      ],
+      "exit_code": 1,
+      "name": "pull_candidates_unknown_method_no_journey",
+      "scenario": "no_active_mode",
+      "session_id": "builder-command-session",
+      "stderr": "Error: Builder method 'bogus' not found. Available methods: ariad\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "pull-candidates",
+        "--method",
+        "ariad",
+        "--session-id",
+        "absent"
+      ],
+      "exit_code": 1,
+      "name": "pull_candidates_no_journey",
+      "scenario": "no_active_mode",
+      "session_id": "builder-command-session",
+      "stderr": "Error: Builder method pull candidates inspection requires a journey. Activate Builder Mode for a journey or pass --journey.\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "pull-candidates",
+        "--method",
+        "ariad",
+        "--journey",
+        "nope"
+      ],
+      "exit_code": 1,
+      "name": "pull_candidates_journey_missing",
+      "scenario": "unadopted",
+      "session_id": "builder-command-session",
+      "stderr": "Error: journey 'nope' not found.\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "pull-candidates",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 1,
+      "name": "pull_candidates_not_adopted",
+      "scenario": "unadopted",
+      "session_id": "builder-command-session",
+      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "pull-candidates",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 1,
+      "name": "pull_candidates_adopted_other_method",
+      "scenario": "adopted_other_method",
+      "session_id": "builder-command-session",
+      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "pull-candidates",
+        "--method",
+        "ariad",
+        "--session-id",
+        "builder-command-session"
+      ],
+      "exit_code": 1,
+      "name": "pull_candidates_other_mode",
+      "scenario": "other_mode",
+      "session_id": "builder-command-session",
+      "stderr": "Error: Builder method pull candidates inspection requires a journey. Activate Builder Mode for a journey or pass --journey.\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "pull-candidates",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 0,
+      "name": "pull_candidates_no_project_path",
+      "scenario": "adopted_no_project",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:ROADMAP_SNAPSHOT>>>\nROADMAP SNAPSHOT\nDelivery field overview\n\nview                         overview\nresult of roadmap-snapshot      no pull candidates\n\n╭────────────────────────────────────────────────────────╮\n│ roadmap field                                      none │\n│                                                        │\n│   Backlog                                           none │\n╰────────────────────────────────────────────────────────╯\n\nsource\nnone\n\nboundary\nRoadmap was inspected only. No item was pulled. No lifecycle work was executed.\n<<<END:ROADMAP_SNAPSHOT>>>\n<<<ARIAD:PULL_CANDIDATES>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🟪■  PULL CANDIDATES                            │\n│                                                        │\n│ journey                                                │\n│ demo                                                   │\n│                                                        │\n│ method                                                 │\n│ ariad                                                  │\n│                                                        │\n│ available candidates                                   │\n│ none                                                   │\n│                                                        │\n│ recommended pull                                       │\n│ none                                                   │\n│                                                        │\n│ boundary                                               │\n│ No item was pulled. No lifecycle work was executed.    │\n╰────────────────────────────────────────────────────────╯\n<<<END:PULL_CANDIDATES>>>\n\n"
+    }
+  ]
+}

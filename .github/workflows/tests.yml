@@ -89,12 +89,14 @@ jobs:
           uv run python ts/parity/generate_builder_roadmap_golden.py
           uv run python ts/parity/generate_builder_method_golden.py
           uv run python ts/parity/generate_builder_orientation_golden.py
+          uv run python ts/parity/generate_builder_command_golden.py
           git diff --exit-code ts/test/goldens/
           # Two Builder generators also rewrite their committed fixture trees, so
           # drift there has to fail the gate too -- a golden that agrees with
           # silently changed fixtures proves nothing.
           git diff --exit-code ts/test/fixtures/builder-roadmap/
           git diff --exit-code ts/test/fixtures/builder-refinement/
+          git diff --exit-code ts/test/fixtures/builder-command/
         env:
           MEMORY_ENV: test
           ECONOMY_ENV: test

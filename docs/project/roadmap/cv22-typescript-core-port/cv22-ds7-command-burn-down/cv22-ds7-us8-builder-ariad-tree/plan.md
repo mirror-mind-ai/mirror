@@ -358,9 +358,21 @@ Python tests DS10 deletes.
    pure: the three renderers, graded on synthetic states, and the pure
    allowed-next-actions selection. Same split US7 used (plateau 1 renderers,
    plateau 2 state).
-5. `inspect-method`, `pull-candidates`, `check-implementation` end to end
-   (argument parsing, journey resolution through the active operating mode,
-   exit codes) — no route wiring.
+5. `inspect-method` and `pull-candidates` end to end (argument parsing, journey
+   resolution through the active operating mode, exit codes, Class A/B
+   refusals) — no route wiring. Requires `methodAdoption.ts`, pulled forward
+   from Scope B item 6: get/set/clear land together to keep a serializer with
+   its parser, but that row is one JSON key with no CAS, no generation, and no
+   receipt, so it does not carry the cursor's coupling. Without it plateau 1
+   would deliver no observable leaf at all, only internal modules.
+
+   **`check-implementation` moves to plateau 2** (recorded at plateau 1): it
+   calls `assert_implementation_allowed`, which reads the delivery cursor and
+   inspects `last_delivery_event`, `pending_confirmation`,
+   `aggregate_checkpoint_status`, and the DS-plan approval combination. It is a
+   cursor consumer, not an orientation leaf, and half-porting it here would
+   mean porting the cursor read a plateau early — the same coupling that moved
+   `resumeState`.
 
 **B. Method and cursor state.**
 6. `methodAdoption.ts` (`get/set/clear_adopted_method`), `deliveryCursor.ts`
@@ -460,7 +472,12 @@ Python tests DS10 deletes.
     engines: nothing is written outside `docs/project/roadmap/`. Python's
     behavior is the contract; the port must not broaden it.
 22. Goldens generated from Python, joining the determinism gate under 3.10
-    and 3.12: (i) a **surface corpus** for every wrapped and unwrapped render
+    and 3.12. **Command-level goldens run the real CLI in a SUBPROCESS**, one
+    per case: `memory.config` resolves `DB_PATH` once at import, so an
+    in-process oracle silently reuses the first case's database (measured at
+    plateau 1 — fifteen correctly seeded cases recorded `journey not found`),
+    and only a subprocess grades `print()` semantics, the stream split, and the
+    exit code as a shell sees them. The corpora: (i) a **surface corpus** for every wrapped and unwrapped render
     × empty/absent optionals × over-long tokens × CJK, combining marks, NBSP,
     ideographic space × the `body`-vs-`body + "\n"` call-site split; (ii) a
     **cursor transition corpus** graded as ordered sequences of serialized
