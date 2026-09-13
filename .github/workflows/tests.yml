@@ -87,6 +87,7 @@ jobs:
           uv run python ts/parity/generate_cost_golden.py
           uv run python ts/parity/generate_builder_card_golden.py
           uv run python ts/parity/generate_builder_roadmap_golden.py
+          uv run python ts/parity/generate_builder_method_golden.py
           git diff --exit-code ts/test/goldens/
           # The Builder roadmap generator also rewrites its committed fixture
           # tree, so drift there has to fail the gate too -- a golden that agrees

@@ -1,0 +1,921 @@
+{
+  "available_methods": [
+    "ariad"
+  ],
+  "definition": {
+    "cadence_profiles": [
+      {
+        "active": true,
+        "id": "stepwise",
+        "label": "Stepwise",
+        "plan_approval_policy": "navigator_approval",
+        "stop_policy": "stop_after_every_phase"
+      },
+      {
+        "active": true,
+        "id": "checkpoint",
+        "label": "Checkpoint",
+        "plan_approval_policy": "navigator_approval",
+        "stop_policy": "continue_until_next_method_checkpoint"
+      },
+      {
+        "active": true,
+        "id": "accelerated",
+        "label": "Accelerated",
+        "plan_approval_policy": "bounded_story_authority",
+        "stop_policy": "continue_through_story_plan_to_navigator_validation"
+      },
+      {
+        "active": true,
+        "id": "autonomous",
+        "label": "Autonomous",
+        "plan_approval_policy": "navigator_approval",
+        "stop_policy": "continue_until_hard_constraint_with_explicit_limits"
+      }
+    ],
+    "checkpoints": [
+      {
+        "blocks": [
+          "implement"
+        ],
+        "id": "after_plan",
+        "occurs_after": "plan",
+        "required_artifacts": [
+          "plan"
+        ],
+        "required_confirmations": [
+          "navigator_approval"
+        ]
+      },
+      {
+        "blocks": [
+          "done"
+        ],
+        "id": "navigator_validation",
+        "occurs_after": "validation",
+        "required_artifacts": [
+          "validation_route",
+          "validation_evidence"
+        ],
+        "required_confirmations": [
+          "navigator_validation"
+        ]
+      },
+      {
+        "blocks": [
+          "coherence"
+        ],
+        "id": "review_decision",
+        "occurs_after": "review",
+        "required_artifacts": [
+          "review_report"
+        ],
+        "required_confirmations": [
+          "navigator_debt_decision"
+        ]
+      }
+    ],
+    "contracts": [
+      {
+        "applies_at": "pull",
+        "id": "pull_contract",
+        "required_outputs": [
+          "selected_item",
+          "pull_level",
+          "why_this_level_now"
+        ],
+        "rules": [
+          "choose an explicit focus before delivery work begins",
+          "classify the pulled work as delivery_story, user_story, technical_story, task, or maintenance",
+          "do not start roadmap candidates automatically",
+          "preserve Navigator choice as the commitment boundary"
+        ],
+        "stop_conditions": []
+      },
+      {
+        "applies_at": "prepare",
+        "id": "prepare_contract",
+        "required_outputs": [
+          "context_summary",
+          "story_shape_assessment",
+          "risk_summary",
+          "applicable_rules"
+        ],
+        "rules": [
+          "read relevant story, project, code, tests, decisions, and local guide context",
+          "identify story shape, risks, applicable rules, and local guide overrides",
+          "decide whether expand or collapse is needed before Plan",
+          "identify whether the active item is implementable by default or requires a granularity decision",
+          "do not create a Plan or start implementation during Prepare"
+        ],
+        "stop_conditions": []
+      },
+      {
+        "applies_at": "expand",
+        "id": "expand_contract",
+        "required_outputs": [
+          "granularity_decision",
+          "child_story_candidates"
+        ],
+        "rules": [
+          "expand Delivery Stories into User Stories and Technical Stories when they are not implementable as one coherent unit",
+          "Delivery Stories always expand before implementation and are never planned as the implementable unit",
+          "materialize child User Story and Technical Story packages during expansion"
+        ],
+        "stop_conditions": []
+      },
+      {
+        "applies_at": "plan",
+        "id": "plan_contract",
+        "required_outputs": [
+          "scope",
+          "non_goals",
+          "acceptance_behavior",
+          "validation_route",
+          "implementation_contract"
+        ],
+        "rules": [
+          "plan only implementable User Stories or Technical Stories",
+          "define scope, non-goals, acceptance behavior, validation route, documentation impact, and implementation contract",
+          "express User Story acceptance behavior with Given/When/Then/And when practical",
+          "decide whether E2E validation is required for user-visible flows or cross-system behavior",
+          "block implementation until Navigator approves the Plan checkpoint"
+        ],
+        "stop_conditions": [
+          "navigator_approval_required"
+        ]
+      },
+      {
+        "applies_at": "implement",
+        "id": "implement_contract",
+        "required_outputs": [],
+        "rules": [
+          "follow the approved Plan",
+          "use TDD or characterization tests for behavior changes when testable",
+          "keep changes scoped to the active story",
+          "add or update E2E tests when required by the approved Plan",
+          "do not silently absorb new scope into implementation"
+        ],
+        "stop_conditions": [
+          "scope_change_detected",
+          "plan_rule_conflict",
+          "failing_required_check_without_clear_fix",
+          "navigator_decision_needed"
+        ]
+      },
+      {
+        "applies_at": "validation",
+        "id": "validation_contract",
+        "required_outputs": [
+          "automated_evidence",
+          "navigator_validation_route",
+          "validation_evidence"
+        ],
+        "rules": [
+          "run automated checks required by the Plan and local guide",
+          "run E2E tests required by the approved Plan or local guide",
+          "provide Navigator validation route with expected observation, pass condition, and fail condition",
+          "record validation evidence before Review"
+        ],
+        "stop_conditions": []
+      },
+      {
+        "applies_at": "review",
+        "id": "debt_review_contract",
+        "required_outputs": [
+          "review_report",
+          "debt_decision"
+        ],
+        "rules": [
+          "name debt paid, debt introduced, and debt carried forward",
+          "record revisit trigger for carried debt",
+          "decide whether a durable debt ledger entry is required"
+        ],
+        "stop_conditions": []
+      },
+      {
+        "applies_at": "coherence",
+        "id": "coherence_contract",
+        "required_outputs": [
+          "coherence_result"
+        ],
+        "rules": [
+          "verify Process, Project, and Product alignment",
+          "surface differences between Ariad defaults and the local development guide",
+          "verify docs, roadmap, worklog, decisions, and runtime state match actual behavior",
+          "verify lifecycle contract compliance before Done"
+        ],
+        "stop_conditions": []
+      },
+      {
+        "applies_at": "done",
+        "id": "done_contract",
+        "required_outputs": [
+          "closure_summary",
+          "history_action",
+          "next_recommendation"
+        ],
+        "rules": [
+          "close the story only after validation, review, and coherence are satisfied",
+          "record history at coherent story boundaries unless local policy overrides",
+          "update worklog for meaningful milestones",
+          "recommend next pull, parent collapse, or release boundary when relevant"
+        ],
+        "stop_conditions": []
+      }
+    ],
+    "id": "ariad",
+    "label": "Ariad",
+    "lifecycle": [
+      {
+        "id": "pull",
+        "meaning": "escolhe o foco"
+      },
+      {
+        "id": "prepare",
+        "meaning": "lê o terreno"
+      },
+      {
+        "id": "expand",
+        "meaning": "desdobra granularidade"
+      },
+      {
+        "id": "plan",
+        "meaning": "firma o contrato"
+      },
+      {
+        "id": "implement",
+        "meaning": "muda o sistema"
+      },
+      {
+        "id": "validation",
+        "meaning": "prova comportamento"
+      },
+      {
+        "id": "review",
+        "meaning": "encara a dívida"
+      },
+      {
+        "id": "coherence",
+        "meaning": "integra os rastros"
+      },
+      {
+        "id": "done",
+        "meaning": "registra e fecha"
+      }
+    ],
+    "open_questions": {
+      "final_dsl_file_format": {
+        "note": "YAML is the exploration notation, not yet a committed parser format.",
+        "status": "open"
+      },
+      "final_surface_content": {
+        "note": "Use Ariad visual grammar during implementation.",
+        "status": "open"
+      },
+      "maintenance_and_operational_updates": {
+        "note": "Do not overdesign upfront. Model when real cases appear.",
+        "status": "open"
+      }
+    },
+    "policies": {
+      "history": {
+        "commit": {
+          "granularity": "coherent_story",
+          "message_style": "descriptive_why",
+          "mode": "propose_and_wait"
+        },
+        "decision_records": {
+          "mode": "when_architectural_or_process_decision_changes"
+        },
+        "worklog": {
+          "mode": "meaningful_milestones"
+        }
+      },
+      "push": {
+        "allowed_after": [
+          "story_done",
+          "release_publish",
+          "manual_request"
+        ],
+        "mode": "ask_before_push",
+        "requires": [
+          "clean_worktree",
+          "commits_present",
+          "remote_configured",
+          "navigator_confirmation"
+        ]
+      },
+      "release": {
+        "modes": [
+          "planned_release",
+          "emergent_release"
+        ]
+      }
+    },
+    "resolution": {
+      "audit": true,
+      "conflict_policy": "explicit_override",
+      "layers": [
+        "method_default",
+        "project_config",
+        "journey_config",
+        "navigator_override"
+      ]
+    },
+    "surface_routes": [
+      {
+        "intents": [
+          "show roadmap",
+          "inspect roadmap",
+          "see pull candidates",
+          "what can I pull now"
+        ],
+        "surfaces": [
+          "roadmap_snapshot",
+          "pull_candidates"
+        ],
+        "trigger": "show_roadmap"
+      }
+    ],
+    "surfaces": [
+      {
+        "event": "adoption",
+        "id": "adoption_report",
+        "interpretation_policy": "after_block_only",
+        "marker_protocol": "ariad_compact",
+        "stops_for": null,
+        "transport": "verbatim"
+      },
+      {
+        "event": "on_builder_load",
+        "id": "builder_resume",
+        "interpretation_policy": "after_block_only",
+        "marker_protocol": "ariad_compact",
+        "stops_for": null,
+        "transport": "verbatim"
+      },
+      {
+        "event": "roadmap_inspection",
+        "id": "roadmap_snapshot",
+        "interpretation_policy": "after_block_only",
+        "marker_protocol": "ariad_compact",
+        "stops_for": null,
+        "transport": "verbatim"
+      },
+      {
+        "event": "roadmap_inspection",
+        "id": "pull_candidates",
+        "interpretation_policy": "after_block_only",
+        "marker_protocol": "ariad_compact",
+        "stops_for": null,
+        "transport": "verbatim"
+      },
+      {
+        "event": "pull",
+        "id": "pull_report",
+        "interpretation_policy": "after_block_only",
+        "marker_protocol": "ariad_compact",
+        "stops_for": null,
+        "transport": "verbatim"
+      },
+      {
+        "event": "prepare",
+        "id": "prepare_report",
+        "interpretation_policy": "after_block_only",
+        "marker_protocol": "ariad_compact",
+        "stops_for": null,
+        "transport": "verbatim"
+      },
+      {
+        "event": "plan",
+        "id": "plan_checkpoint",
+        "interpretation_policy": "after_block_only",
+        "marker_protocol": "ariad_compact",
+        "stops_for": "navigator_approval",
+        "transport": "verbatim"
+      },
+      {
+        "event": "validation",
+        "id": "validation_checkpoint",
+        "interpretation_policy": "after_block_only",
+        "marker_protocol": "ariad_compact",
+        "stops_for": "navigator_validation",
+        "transport": "verbatim"
+      },
+      {
+        "event": "review",
+        "id": "debt_review_checkpoint",
+        "interpretation_policy": "after_block_only",
+        "marker_protocol": "ariad_compact",
+        "stops_for": "navigator_debt_decision",
+        "transport": "verbatim"
+      },
+      {
+        "event": "coherence",
+        "id": "coherence_checkpoint",
+        "interpretation_policy": "after_block_only",
+        "marker_protocol": "ariad_compact",
+        "stops_for": null,
+        "transport": "verbatim"
+      },
+      {
+        "event": "done",
+        "id": "done_checkpoint",
+        "interpretation_policy": "after_block_only",
+        "marker_protocol": "ariad_compact",
+        "stops_for": null,
+        "transport": "verbatim"
+      }
+    ],
+    "taxonomy": {
+      "levels": [
+        {
+          "allowed_states": [
+            "Planned",
+            "Active",
+            "Blocked",
+            "Done",
+            "Deferred",
+            "Dropped"
+          ],
+          "contains": [
+            "delivery_story"
+          ],
+          "id": "cv",
+          "label": "Capability Value",
+          "state_semantics": {
+            "Done": "the project reached the value boundary named by this CV"
+          }
+        },
+        {
+          "allowed_states": [
+            "Planned",
+            "Active",
+            "Blocked",
+            "Validated",
+            "Done",
+            "Deferred",
+            "Dropped"
+          ],
+          "contains": [
+            "user_story",
+            "technical_story"
+          ],
+          "id": "delivery_story",
+          "label": "Delivery Story",
+          "state_semantics": {
+            "Done": "child stories produced a coherent delivery outcome and the project history reflects that outcome",
+            "Validated": "child stories passed their relevant validation, but delivery story closure may still be pending"
+          }
+        },
+        {
+          "allowed_states": [
+            "Planned",
+            "Active",
+            "Blocked",
+            "Validated",
+            "Done",
+            "Deferred",
+            "Dropped"
+          ],
+          "contains": [
+            "task"
+          ],
+          "id": "user_story",
+          "label": "User Story",
+          "state_semantics": {
+            "Done": "validated behavior is coherent, reviewed, recorded, and absorbed into its parent delivery arc",
+            "Validated": "observable behavior or capability passed automated evidence and Navigator-facing validation"
+          }
+        },
+        {
+          "allowed_states": [
+            "Planned",
+            "Active",
+            "Blocked",
+            "Validated",
+            "Done",
+            "Deferred",
+            "Dropped"
+          ],
+          "contains": [
+            "task"
+          ],
+          "id": "technical_story",
+          "label": "Technical Story",
+          "state_semantics": {
+            "Done": "technical substrate is coherent, reviewed, recorded, and ready for its parent delivery arc",
+            "Validated": "internal capability passed automated or internal evidence sufficient for the delivery story"
+          }
+        },
+        {
+          "allowed_states": [
+            "Planned",
+            "Active",
+            "Blocked",
+            "Done"
+          ],
+          "contains": [],
+          "id": "task",
+          "label": "Task",
+          "state_semantics": {
+            "Done": "concrete local work is complete inside its parent story"
+          }
+        }
+      ],
+      "state_vocabulary": [
+        "Planned",
+        "Active",
+        "Blocked",
+        "Validated",
+        "Done",
+        "Deferred",
+        "Dropped"
+      ]
+    },
+    "templates": [
+      {
+        "content": "# Ariad Adoption\n\nThis project is prepared for Ariad-governed Builder Mode.\n\n## Method\n\n- adopted method: ariad\n- adoption prepares documentation templates only\n- delivery cursor sync is handled by a later Builder story\n\n## Boundaries\n\nTemplate preparation does not execute story lifecycle work, change story status,\ncommit, push, or release.\n",
+        "description": "Records Ariad adoption readiness for this project.",
+        "id": "ariad_adoption",
+        "path": "docs/project/roadmap/ariad-adoption.md"
+      },
+      {
+        "content": "# Technical Debt Ledger\n\nAriad Review records technical debt here when debt should be paid now or deferred.\n\n| ID | Source Story | Location | Kind | Description | Impact | Recommendation | Navigator Decision | Status |\n|----|--------------|----------|------|-------------|--------|----------------|--------------------|--------|\n\n## Deferred Debt Requirements\n\nWhen debt is deferred, record the defer reason and revisit trigger.\n",
+        "description": "Versioned debt ledger used by Ariad Review and Refactor.",
+        "id": "technical_debt_ledger",
+        "path": "docs/project/roadmap/technical-debt-ledger.md"
+      },
+      {
+        "content": "[< Parent](../index.md)\n\n# <CODE> — <Delivery Story Title>\n\n**Status:** 🟡 Planned\n\n---\n\n## Outcome\n\n<Coherent delivery outcome this story creates.>\n\n## Candidate Stories\n\n| Code | Story | Type | Outcome | Status |\n|------|-------|------|---------|--------|\n\n## Done Condition\n\n<Condition that closes this delivery story.>\n",
+        "description": "Template for an Ariad Delivery Story index.",
+        "id": "delivery_story_index",
+        "path": "docs/project/roadmap/templates/delivery-story-index.md"
+      },
+      {
+        "content": "[< Parent](../index.md)\n\n# <CODE> — <User Story Title>\n\n**Status:** 🟡 Planned\n**Type:** User Story\n\n---\n\n## User Story\n\nAs a [user persona],\nI want to [action/feature],\nSo that [benefit/value].\n\n## Outcome\n\n<Navigator-visible behavior or capability.>\n\n## Acceptance Behavior\n\n```text\nGiven <context>\nWhen <action>\nThen <observable result>\n```\n\n## Scope\n\n- <in scope>\n\n## Out Of Scope\n\n- <out of scope>\n\n## Validation\n\n<Navigator-facing validation route.>\n",
+        "description": "Template for an Ariad User Story index.",
+        "id": "user_story_index",
+        "path": "docs/project/roadmap/templates/user-story-index.md"
+      },
+      {
+        "content": "[< Parent](../index.md)\n\n# <CODE> — <Technical Story Title>\n\n**Status:** 🟡 Planned\n**Type:** Technical Story\n\n---\n\n## Technical Story\n\nIn order to [achieve a technical benefit/business capability],\nAs [an engineering team/system component],\nI want to [perform a technical action],\nSo that [expected technical outcome].\n\n## Outcome\n\n<Internal capability or substrate.>\n\n## Acceptance Behavior\n\n```text\nGiven <technical context>\nWhen <operation runs>\nThen <internal behavior or invariant holds>\n```\n\n## Scope\n\n- <in scope>\n\n## Out Of Scope\n\n- <out of scope>\n\n## Validation\n\n<Automated or internal validation route.>\n",
+        "description": "Template for an Ariad Technical Story index.",
+        "id": "technical_story_index",
+        "path": "docs/project/roadmap/templates/technical-story-index.md"
+      },
+      {
+        "content": "[< Story](index.md)\n\n# Plan — <CODE> <Title>\n\n## Pull\n\n<Pulled item and why this level now.>\n\n## Prepare\n\n<Context summary, story shape, risks, and applicable rules.>\n\n## Scope\n\n- <in scope>\n\n## Non-Goals\n\n- <out of scope>\n\n## Implementation Approach\n\n<How implementation will proceed.>\n\n## Test Strategy\n\n<Automated and manual tests.>\n\n## Validation Route\n\n<How the Navigator validates observable behavior, when applicable.>\n\n## Checkpoint\n\nImplementation must not start until the Navigator approves this plan.\n",
+        "description": "Template for the Ariad Plan checkpoint artifact.",
+        "id": "plan",
+        "path": "docs/project/roadmap/templates/plan.md"
+      },
+      {
+        "content": "[< Story](index.md)\n\n# Test Guide — <CODE> <Title>\n\n## Automated Validation\n\n```bash\n<commands>\n```\n\n## Navigator Validation\n\n<Manual validation route, expected observation, pass condition, and fail condition.>\n\n## Validation Evidence\n\n<Recorded evidence after validation runs.>\n",
+        "description": "Template for Ariad validation evidence and Navigator validation.",
+        "id": "test_guide",
+        "path": "docs/project/roadmap/templates/test-guide.md"
+      },
+      {
+        "content": "[< Story](index.md)\n\n# Review — <CODE> <Title>\n\n## Changed Surface\n\n<Files, modules, docs, and behaviors changed.>\n\n## Debt Scan\n\n<Design, test, documentation, duplication, complexity, naming, coupling, or migration debt.>\n\n## Recommendation\n\n<No action, defer, or pay now.>\n\n## Navigator Decision\n\n<Decision and rationale.>\n",
+        "description": "Template for Ariad Review debt scan.",
+        "id": "review",
+        "path": "docs/project/roadmap/templates/review.md"
+      },
+      {
+        "content": "[< Story](index.md)\n\n# Coherence — <CODE> <Title>\n\n## Process\n\n<Lifecycle and checkpoint alignment.>\n\n## Project\n\n<Roadmap, docs, and runtime state alignment.>\n\n## Product\n\n<Behavior and product boundary alignment.>\n\n## Result\n\n<Coherent or incoherent, with next action.>\n",
+        "description": "Template for Ariad Coherence integration check.",
+        "id": "coherence",
+        "path": "docs/project/roadmap/templates/coherence.md"
+      }
+    ],
+    "work_item_levels": [
+      {
+        "expands_to": [
+          "user_story",
+          "technical_story"
+        ],
+        "id": "delivery_story",
+        "implementable_by_default": false,
+        "label": "Delivery Story"
+      },
+      {
+        "expands_to": [],
+        "id": "user_story",
+        "implementable_by_default": true,
+        "label": "User Story"
+      },
+      {
+        "expands_to": [],
+        "id": "technical_story",
+        "implementable_by_default": true,
+        "label": "Technical Story"
+      }
+    ]
+  },
+  "empty_definition": {
+    "cadence_profiles": [],
+    "checkpoints": [],
+    "contracts": [],
+    "id": "empty",
+    "label": "Empty method",
+    "lifecycle": [],
+    "open_questions": null,
+    "policies": null,
+    "resolution": {
+      "audit": true,
+      "conflict_policy": "explicit_override",
+      "layers": [
+        "method_default"
+      ]
+    },
+    "surface_routes": [],
+    "surfaces": [],
+    "taxonomy": {
+      "levels": [],
+      "state_vocabulary": []
+    },
+    "templates": [],
+    "work_item_levels": []
+  },
+  "surfaces": [
+    {
+      "expected": "■ Builder Method Available\n\nmethod\nAriad\n\nid\nariad\n\nsource\nbuilt-in method definition\n\nresolution layers\n- method_default\n- project_config\n- journey_config\n- navigator_override\n\nlifecycle\n- Pull escolhe o foco\n- Prepare lê o terreno\n- Expand desdobra granularidade\n- Plan firma o contrato\n- Implement muda o sistema\n- Validation prova comportamento\n- Review encara a dívida\n- Coherence integra os rastros\n- Done registra e fecha\n\nwork item levels\n- delivery_story: Delivery Story\n  implementable by default: no\n  expands to: user_story, technical_story\n- user_story: User Story\n  implementable by default: yes\n- technical_story: Technical Story\n  implementable by default: yes\n\ncadence profiles\n- stepwise: stop_after_every_phase; plan=navigator_approval (active)\n- checkpoint: continue_until_next_method_checkpoint; plan=navigator_approval (active)\n- accelerated: continue_through_story_plan_to_navigator_validation; plan=bounded_story_authority (active)\n- autonomous: continue_until_hard_constraint_with_explicit_limits; plan=navigator_approval (active)\n\ncheckpoints\n- after_plan\n  occurs after: plan\n  blocks: implement\n  requires artifacts: plan\n  requires confirmations: navigator_approval\n- navigator_validation\n  occurs after: validation\n  blocks: done\n  requires artifacts: validation_route, validation_evidence\n  requires confirmations: navigator_validation\n- review_decision\n  occurs after: review\n  blocks: coherence\n  requires artifacts: review_report\n  requires confirmations: navigator_debt_decision\n\ncontracts\n- pull_contract: pull\n  rules: 4\n  required outputs: selected_item, pull_level, why_this_level_now\n- prepare_contract: prepare\n  rules: 5\n  required outputs: context_summary, story_shape_assessment, risk_summary, applicable_rules\n- expand_contract: expand\n  rules: 3\n  required outputs: granularity_decision, child_story_candidates\n- plan_contract: plan\n  rules: 5\n  stop conditions: navigator_approval_required\n  required outputs: scope, non_goals, acceptance_behavior, validation_route, implementation_contract\n- implement_contract: implement\n  rules: 5\n  stop conditions: scope_change_detected, plan_rule_conflict, failing_required_check_without_clear_fix, navigator_decision_needed\n- validation_contract: validation\n  rules: 4\n  required outputs: automated_evidence, navigator_validation_route, validation_evidence\n- debt_review_contract: review\n  rules: 3\n  required outputs: review_report, debt_decision\n- coherence_contract: coherence\n  rules: 4\n  required outputs: coherence_result\n- done_contract: done\n  rules: 4\n  required outputs: closure_summary, history_action, next_recommendation\n\npolicies\n- history.commit\n  mode: propose_and_wait\n  granularity: coherent_story\n  message_style: descriptive_why\n- push\n  mode: ask_before_push\n  allowed_after: story_done, release_publish, manual_request\n  requires: clean_worktree, commits_present, remote_configured, navigator_confirmation\n- release\n  modes: planned_release, emergent_release\n\nsurfaces\n- adoption_report: adoption\n- builder_resume: on_builder_load\n- roadmap_snapshot: roadmap_inspection\n- pull_candidates: roadmap_inspection\n- pull_report: pull\n- prepare_report: prepare\n- plan_checkpoint: plan; stops for: navigator_approval\n- validation_checkpoint: validation; stops for: navigator_validation\n- debt_review_checkpoint: review; stops for: navigator_debt_decision\n- coherence_checkpoint: coherence\n- done_checkpoint: done\n\nsurface routes\n- show_roadmap: roadmap_snapshot, pull_candidates\n\ntemplates\n- ariad_adoption: docs/project/roadmap/ariad-adoption.md\n- technical_debt_ledger: docs/project/roadmap/technical-debt-ledger.md\n- delivery_story_index: docs/project/roadmap/templates/delivery-story-index.md\n- user_story_index: docs/project/roadmap/templates/user-story-index.md\n- technical_story_index: docs/project/roadmap/templates/technical-story-index.md\n- plan: docs/project/roadmap/templates/plan.md\n- test_guide: docs/project/roadmap/templates/test-guide.md\n- review: docs/project/roadmap/templates/review.md\n- coherence: docs/project/roadmap/templates/coherence.md\n\nopen questions\n- maintenance_and_operational_updates [open]\n  Do not overdesign upfront. Model when real cases appear.\n- final_surface_content [open]\n  Use Ariad visual grammar during implementation.\n- final_dsl_file_format [open]\n  YAML is the exploration notation, not yet a committed parser format.\n",
+      "name": "available_method"
+    },
+    {
+      "expected": "■ Builder Method\n\nactive journey\nnone\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nNo Builder journey is active yet.\n\nnext action\nActivate Builder Mode for a journey or ask about a specific journey.\n\nexample\nuv run python -m memory build load <journey>\n",
+      "name": "no_active_journey"
+    },
+    {
+      "expected": "■ Builder Method\n\njourney\nmirror-ts-core\n\nadopted method\nariad\n\navailable methods\nariad\n\nstatus\nAriad is adopted for this journey.\n",
+      "input": {
+        "adopted_method": "ariad",
+        "journey": "mirror-ts-core"
+      },
+      "name": "journey_with_ariad"
+    },
+    {
+      "expected": "■ Builder Method\n\njourney\nmirror-ts-core\n\nadopted method\nscrumban\n\navailable methods\nariad\n\nstatus\nscrumban is adopted for this journey.\n",
+      "input": {
+        "adopted_method": "scrumban",
+        "journey": "mirror-ts-core"
+      },
+      "name": "journey_with_other_method"
+    },
+    {
+      "expected": "■ Builder Method\n\njourney\nmirror-ts-core\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nThis journey has not adopted a Builder method yet.\n\nwhat can be inspected\nbuilt-in method defaults\n\nwhat cannot be inspected yet\neffective journey configuration\nruntime delivery cursor\nactive checkpoint\npending confirmations\n\nnext action\nuv run python -m memory build adopt --journey mirror-ts-core --method ariad\n",
+      "input": {
+        "adopted_method": null,
+        "journey": "mirror-ts-core"
+      },
+      "name": "journey_with_none"
+    },
+    {
+      "expected": "■ Builder Method\n\njourney\nmirror-ts-core\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nThis journey has not adopted a Builder method yet.\n\nwhat can be inspected\nbuilt-in method defaults\n\nwhat cannot be inspected yet\neffective journey configuration\nruntime delivery cursor\nactive checkpoint\npending confirmations\n\nnext action\nuv run python -m memory build adopt --journey mirror-ts-core --method ariad\n",
+      "input": {
+        "journey": "mirror-ts-core"
+      },
+      "name": "journey_without_adopted_method"
+    },
+    {
+      "expected": "■ Builder Method Adopted\n\njourney\nj\n\nadopted method\nariad\n\nstatus\nAriad is now adopted for this journey.\n\nnot performed yet\nroadmap template generation\nruntime delivery cursor sync\nstory lifecycle execution\n",
+      "input": {
+        "already_adopted": false,
+        "journey": "j",
+        "method": "ariad"
+      },
+      "name": "adoption_new_ariad"
+    },
+    {
+      "expected": "■ Builder Method Adopted\n\njourney\nj\n\nadopted method\nariad\n\nstatus\nAriad was already adopted for this journey.\n\nnot performed yet\nroadmap template generation\nruntime delivery cursor sync\nstory lifecycle execution\n",
+      "input": {
+        "already_adopted": true,
+        "journey": "j",
+        "method": "ariad"
+      },
+      "name": "adoption_already_ariad"
+    },
+    {
+      "expected": "■ Builder Method Adopted\n\njourney\nj\n\nadopted method\nscrumban\n\nstatus\nscrumban is now adopted for this journey.\n\nnot performed yet\nroadmap template generation\nruntime delivery cursor sync\nstory lifecycle execution\n",
+      "input": {
+        "already_adopted": false,
+        "journey": "j",
+        "method": "scrumban"
+      },
+      "name": "adoption_new_other"
+    },
+    {
+      "expected": "■ Builder Method Adopted\n\njourney\nj\n\nadopted method\nscrumban\n\nstatus\nscrumban is now adopted for this journey.\n\nnot performed yet\nroadmap template generation\nruntime delivery cursor sync\nstory lifecycle execution\n",
+      "input": {
+        "already_adopted": true,
+        "journey": "j",
+        "method": "scrumban"
+      },
+      "name": "adoption_already_other"
+    },
+    {
+      "expected": "■ Builder Method\n\njourney\njornada-ação-🟦\n\nadopted method\nariad\n\navailable methods\nariad\n\nstatus\nAriad is adopted for this journey.\n",
+      "input": {
+        "adopted_method": "ariad",
+        "journey": "jornada-ação-🟦"
+      },
+      "name": "journey_unicode"
+    },
+    {
+      "expected": "■ Builder Method\n\njourney\n\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nThis journey has not adopted a Builder method yet.\n\nwhat can be inspected\nbuilt-in method defaults\n\nwhat cannot be inspected yet\neffective journey configuration\nruntime delivery cursor\nactive checkpoint\npending confirmations\n\nnext action\nuv run python -m memory build adopt --journey  --method ariad\n",
+      "input": {
+        "adopted_method": null,
+        "journey": ""
+      },
+      "name": "journey_empty"
+    },
+    {
+      "expected": "■ Builder Method Available\n\nmethod\nEmpty method\n\nid\nempty\n\nsource\nbuilt-in method definition\n\nresolution layers\n- method_default\n\nlifecycle\n\nwork item levels\nnone\n\ncadence profiles\nnone\n\ncheckpoints\nnone\n\ncontracts\nnone\n\npolicies\nnone\n\nsurfaces\nnone\n\nsurface routes\nnone\n\ntemplates\nnone\n\nopen questions\nnone\n",
+      "name": "available_method_empty_sections"
+    }
+  ],
+  "validations": [
+    {
+      "expected": "ok",
+      "name": "valid"
+    },
+    {
+      "expected_error": "MethodDefinitionError: method id must not be empty",
+      "name": "empty_id"
+    },
+    {
+      "expected_error": "MethodDefinitionError: method id must not be empty",
+      "name": "blank_id"
+    },
+    {
+      "expected_error": "MethodDefinitionError: method label must not be empty",
+      "name": "empty_label"
+    },
+    {
+      "expected_error": "MethodDefinitionError: dsl resolution must declare at least one layer",
+      "name": "no_resolution_layers"
+    },
+    {
+      "expected_error": "MethodDefinitionError: duplicate dsl resolution layer: a",
+      "name": "duplicate_resolution_layer"
+    },
+    {
+      "expected_error": "MethodDefinitionError: dsl conflict policy must not be empty",
+      "name": "empty_conflict_policy"
+    },
+    {
+      "expected_error": "MethodDefinitionError: duplicate taxonomy state: s",
+      "name": "duplicate_taxonomy_state"
+    },
+    {
+      "expected_error": "MethodDefinitionError: duplicate taxonomy level: cv",
+      "name": "duplicate_taxonomy_level"
+    },
+    {
+      "expected_error": "MethodDefinitionError: taxonomy level cv references unknown taxonomy level nope",
+      "name": "taxonomy_unknown_child"
+    },
+    {
+      "expected_error": "MethodDefinitionError: taxonomy level cv references unknown taxonomy level delivery_story",
+      "name": "taxonomy_unknown_state"
+    },
+    {
+      "expected_error": "MethodDefinitionError: taxonomy level cv declares state semantics for disallowed state nope",
+      "name": "taxonomy_semantics_for_disallowed_state"
+    },
+    {
+      "expected_error": "MethodDefinitionError: taxonomy level lvl label must not be empty",
+      "name": "taxonomy_empty_level_label"
+    },
+    {
+      "expected_error": "MethodDefinitionError: duplicate lifecycle event: pull",
+      "name": "duplicate_lifecycle_event"
+    },
+    {
+      "expected_error": "MethodDefinitionError: lifecycle event e meaning must not be empty",
+      "name": "empty_lifecycle_meaning"
+    },
+    {
+      "expected_error": "MethodDefinitionError: duplicate work item level: delivery_story",
+      "name": "duplicate_work_item_level"
+    },
+    {
+      "expected_error": "MethodDefinitionError: work item level a expands to unknown level nope",
+      "name": "work_item_unknown_expansion"
+    },
+    {
+      "expected_error": "MethodDefinitionError: duplicate cadence profile: stepwise",
+      "name": "duplicate_cadence_profile"
+    },
+    {
+      "expected_error": "MethodDefinitionError: cadence profile c stop policy must not be empty",
+      "name": "empty_stop_policy"
+    },
+    {
+      "expected_error": "MethodDefinitionError: cadence profile c has unknown plan approval policy nope",
+      "name": "unknown_plan_approval_policy"
+    },
+    {
+      "expected_error": "MethodDefinitionError: duplicate checkpoint: after_plan",
+      "name": "duplicate_checkpoint"
+    },
+    {
+      "expected_error": "MethodDefinitionError: checkpoint c references unknown lifecycle event nope",
+      "name": "checkpoint_unknown_occurs_after"
+    },
+    {
+      "expected_error": "MethodDefinitionError: checkpoint c references unknown lifecycle event nope",
+      "name": "checkpoint_unknown_blocks"
+    },
+    {
+      "expected_error": "MethodDefinitionError: duplicate contract: pull_contract",
+      "name": "duplicate_contract"
+    },
+    {
+      "expected_error": "MethodDefinitionError: contract c references unknown lifecycle event nope",
+      "name": "contract_unknown_applies_at"
+    },
+    {
+      "expected_error": "MethodDefinitionError: duplicate contract c rule: same",
+      "name": "contract_duplicate_rule"
+    },
+    {
+      "expected_error": "MethodDefinitionError: duplicate surface: adoption_report",
+      "name": "duplicate_surface"
+    },
+    {
+      "expected_error": "MethodDefinitionError: surface s transport must be one of verbatim",
+      "name": "surface_unknown_transport"
+    },
+    {
+      "expected_error": "MethodDefinitionError: surface s marker_protocol must be one of ariad_compact",
+      "name": "surface_unknown_marker_protocol"
+    },
+    {
+      "expected_error": "MethodDefinitionError: surface s interpretation_policy must be one of after_block_only",
+      "name": "surface_unknown_interpretation_policy"
+    },
+    {
+      "expected_error": "MethodDefinitionError: surface s references unknown lifecycle event nope",
+      "name": "surface_unknown_event"
+    },
+    {
+      "expected": "ok",
+      "name": "surface_adoption_pseudo_event"
+    },
+    {
+      "expected": "ok",
+      "name": "surface_on_builder_load_pseudo_event"
+    },
+    {
+      "expected": "ok",
+      "name": "surface_roadmap_inspection_pseudo_event"
+    },
+    {
+      "expected_error": "MethodDefinitionError: duplicate surface route: show_roadmap",
+      "name": "duplicate_surface_route"
+    },
+    {
+      "expected_error": "MethodDefinitionError: surface route t must declare at least one surface",
+      "name": "route_without_surfaces"
+    },
+    {
+      "expected_error": "MethodDefinitionError: surface route t references unknown surface nope",
+      "name": "route_unknown_surface"
+    },
+    {
+      "expected_error": "MethodDefinitionError: duplicate template: ariad_adoption",
+      "name": "duplicate_template"
+    },
+    {
+      "expected_error": "MethodDefinitionError: duplicate template path: docs/project/roadmap/ariad-adoption.md",
+      "name": "duplicate_template_path"
+    },
+    {
+      "expected_error": "MethodDefinitionError: template t path must be relative and stay inside project root",
+      "name": "template_absolute_path"
+    },
+    {
+      "expected_error": "MethodDefinitionError: template t path must be relative and stay inside project root",
+      "name": "template_traversal_path"
+    },
+    {
+      "expected_error": "MethodDefinitionError: template t path must be relative and stay inside project root",
+      "name": "template_nested_traversal_path"
+    },
+    {
+      "expected": "ok",
+      "name": "template_dotdot_substring_is_allowed"
+    },
+    {
+      "expected_error": "MethodDefinitionError: template t content must not be empty",
+      "name": "template_empty_content"
+    },
+    {
+      "expected_error": "MethodDefinitionError: template t description must not be empty",
+      "name": "template_blank_description"
+    }
+  ]
+}
