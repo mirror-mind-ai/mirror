@@ -341,12 +341,23 @@ Python tests DS10 deletes.
    carrying both grammars, a `legacy/` archive, a duplicate heading, 4- and
    5-column candidate tables, a malformed table, Markdown-link cells,
    `/`-chained titles, and every status glyph the parser recognizes.
-4. `resumeState.ts` + `resumeSurface.ts` + `homeSurface.ts`
-   (`find_canonical_refinement_index`, `inspect_refinement_field` including
-   the hard-coded seed path, `render_builder_orientation_surface`,
-   `render_builder_home_surface`), and the **read-only** Workbench snapshot
-   (`workbenchSnapshot.ts`: `get_workbench_snapshot` and nothing else from
-   `workbench.py`).
+4. `resumeSurface.ts` + `homeSurface.ts` (`render_builder_resume_surface`,
+   `render_builder_orientation_surface`, `render_builder_home_surface`) and
+   the filesystem half of the Refinement field
+   (`find_canonical_refinement_index`, the hard-coded seed-CR scan,
+   `_refinement_snapshot`).
+
+   **Boundary moved at plateau 1 (recorded, not silent):** the DB-backed
+   composition — `read_builder_resume_state` and
+   `inspect_refinement_field`'s Workbench branch, i.e. the **read-only**
+   `get_workbench_snapshot` — moves to **plateau 2**. Reason: it needs
+   `get_delivery_cursor` and `get_adopted_method`, and the cursor's reader and
+   writer share one serialization. D2's revert argument is precisely that TS
+   cursor bytes equal Python's, so reading a plateau ahead of writing would
+   split the pair that has to be proven together. What stays here is what is
+   pure: the three renderers, graded on synthetic states, and the pure
+   allowed-next-actions selection. Same split US7 used (plateau 1 renderers,
+   plateau 2 state).
 5. `inspect-method`, `pull-candidates`, `check-implementation` end to end
    (argument parsing, journey resolution through the active operating mode,
    exit codes) — no route wiring.
@@ -906,6 +917,15 @@ validation step 2, and the loader-hook shape for the broken-core drill.
   one US7 recorded twice.
 - **Python's `build` refuses `--mirror-home`** where TS accepts it; the same
   recorded divergence as Soul and Explorer.
+- **`resume_surface._resume_phase` is dead code** — a seven-branch function no
+  caller reaches. Deliberately **not** ported: unreachable code is not parity
+  surface, and carrying it into TS would import a maintenance obligation with
+  no observable behavior. Its deletion belongs to Python, which is
+  compatibility-only here, so it is recorded rather than removed.
+- **`inspect_refinement_field` counts seed CRs from a hard-coded CV20 path**
+  inside the *user's* project, so Mirror Mind's own roadmap layout leaks into
+  product code. Any other project reports zero and behaves correctly by
+  accident.
 
 ## Stop Conditions
 
