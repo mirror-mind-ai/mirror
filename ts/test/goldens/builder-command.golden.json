@@ -276,6 +276,318 @@
       "session_id": "builder-command-session",
       "stderr": "",
       "stdout": "<<<ARIAD:ROADMAP_SNAPSHOT>>>\nROADMAP SNAPSHOT\nDelivery field overview\n\nview                         overview\nresult of roadmap-snapshot      no pull candidates\n\n╭────────────────────────────────────────────────────────╮\n│ roadmap field                                      none │\n│                                                        │\n│   Backlog                                           none │\n╰────────────────────────────────────────────────────────╯\n\nsource\nnone\n\nboundary\nRoadmap was inspected only. No item was pulled. No lifecycle work was executed.\n<<<END:ROADMAP_SNAPSHOT>>>\n<<<ARIAD:PULL_CANDIDATES>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🟪■  PULL CANDIDATES                            │\n│                                                        │\n│ journey                                                │\n│ demo                                                   │\n│                                                        │\n│ method                                                 │\n│ ariad                                                  │\n│                                                        │\n│ available candidates                                   │\n│ none                                                   │\n│                                                        │\n│ recommended pull                                       │\n│ none                                                   │\n│                                                        │\n│ boundary                                               │\n│ No item was pulled. No lifecycle work was executed.    │\n╰────────────────────────────────────────────────────────╯\n<<<END:PULL_CANDIDATES>>>\n\n"
+    },
+    {
+      "argv": [
+        "adopt",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 0,
+      "name": "adopt_first_time",
+      "scenario": "unadopted",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "■ Builder Method Adopted\n\njourney\ndemo\n\nadopted method\nariad\n\nstatus\nAriad is now adopted for this journey.\n\nnot performed yet\nroadmap template generation\nruntime delivery cursor sync\nstory lifecycle execution\n\n"
+    },
+    {
+      "argv": [
+        "adopt",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 0,
+      "name": "adopt_again",
+      "scenario": "adopted",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "■ Builder Method Adopted\n\njourney\ndemo\n\nadopted method\nariad\n\nstatus\nAriad was already adopted for this journey.\n\nnot performed yet\nroadmap template generation\nruntime delivery cursor sync\nstory lifecycle execution\n\n"
+    },
+    {
+      "argv": [
+        "adopt",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 0,
+      "name": "adopt_over_other_method",
+      "scenario": "adopted_other_method",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "■ Builder Method Adopted\n\njourney\ndemo\n\nadopted method\nariad\n\nstatus\nAriad is now adopted for this journey.\n\nnot performed yet\nroadmap template generation\nruntime delivery cursor sync\nstory lifecycle execution\n\n"
+    },
+    {
+      "argv": [
+        "adopt",
+        "--method",
+        "bogus",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 1,
+      "name": "adopt_unknown_method",
+      "scenario": "unadopted",
+      "session_id": "builder-command-session",
+      "stderr": "Error: Builder method 'bogus' not found. Available methods: ariad\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "adopt",
+        "--method",
+        "ariad",
+        "--journey",
+        "nope"
+      ],
+      "exit_code": 1,
+      "name": "adopt_journey_missing",
+      "scenario": "unadopted",
+      "session_id": "builder-command-session",
+      "stderr": "Error: journey 'nope' not found.\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "adopt",
+        "--method",
+        "ariad",
+        "--session-id",
+        "absent"
+      ],
+      "exit_code": 1,
+      "name": "adopt_no_journey",
+      "scenario": "no_active_mode",
+      "session_id": "builder-command-session",
+      "stderr": "Error: Builder method adoption requires a journey. Activate Builder Mode for a journey or pass --journey.\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "adopt",
+        "--method",
+        "ariad",
+        "--session-id",
+        "builder-command-session"
+      ],
+      "exit_code": 0,
+      "name": "adopt_via_active_mode",
+      "scenario": "unadopted",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "■ Builder Method Adopted\n\njourney\ndemo\n\nadopted method\nariad\n\nstatus\nAriad is now adopted for this journey.\n\nnot performed yet\nroadmap template generation\nruntime delivery cursor sync\nstory lifecycle execution\n\n"
+    },
+    {
+      "argv": [
+        "prepare-templates",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 0,
+      "name": "prepare_templates_creates",
+      "project_files": {
+        "docs/project/roadmap/ariad-adoption.md": "# Ariad Adoption\n\nThis project is prepared for Ariad-governed Builder Mode.\n\n## Method\n\n- adopted method: ariad\n- adoption prepares documentation templates only\n- delivery cursor sync is handled by a later Builder story\n\n## Boundaries\n\nTemplate preparation does not execute story lifecycle work, change story status,\ncommit, push, or release.\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n",
+        "docs/project/roadmap/technical-debt-ledger.md": "# Technical Debt Ledger\n\nAriad Review records technical debt here when debt should be paid now or deferred.\n\n| ID | Source Story | Location | Kind | Description | Impact | Recommendation | Navigator Decision | Status |\n|----|--------------|----------|------|-------------|--------|----------------|--------------------|--------|\n\n## Deferred Debt Requirements\n\nWhen debt is deferred, record the defer reason and revisit trigger.\n",
+        "docs/project/roadmap/templates/coherence.md": "[< Story](index.md)\n\n# Coherence — <CODE> <Title>\n\n## Process\n\n<Lifecycle and checkpoint alignment.>\n\n## Project\n\n<Roadmap, docs, and runtime state alignment.>\n\n## Product\n\n<Behavior and product boundary alignment.>\n\n## Result\n\n<Coherent or incoherent, with next action.>\n",
+        "docs/project/roadmap/templates/delivery-story-index.md": "[< Parent](../index.md)\n\n# <CODE> — <Delivery Story Title>\n\n**Status:** 🟡 Planned\n\n---\n\n## Outcome\n\n<Coherent delivery outcome this story creates.>\n\n## Candidate Stories\n\n| Code | Story | Type | Outcome | Status |\n|------|-------|------|---------|--------|\n\n## Done Condition\n\n<Condition that closes this delivery story.>\n",
+        "docs/project/roadmap/templates/plan.md": "[< Story](index.md)\n\n# Plan — <CODE> <Title>\n\n## Pull\n\n<Pulled item and why this level now.>\n\n## Prepare\n\n<Context summary, story shape, risks, and applicable rules.>\n\n## Scope\n\n- <in scope>\n\n## Non-Goals\n\n- <out of scope>\n\n## Implementation Approach\n\n<How implementation will proceed.>\n\n## Test Strategy\n\n<Automated and manual tests.>\n\n## Validation Route\n\n<How the Navigator validates observable behavior, when applicable.>\n\n## Checkpoint\n\nImplementation must not start until the Navigator approves this plan.\n",
+        "docs/project/roadmap/templates/review.md": "[< Story](index.md)\n\n# Review — <CODE> <Title>\n\n## Changed Surface\n\n<Files, modules, docs, and behaviors changed.>\n\n## Debt Scan\n\n<Design, test, documentation, duplication, complexity, naming, coupling, or migration debt.>\n\n## Recommendation\n\n<No action, defer, or pay now.>\n\n## Navigator Decision\n\n<Decision and rationale.>\n",
+        "docs/project/roadmap/templates/technical-story-index.md": "[< Parent](../index.md)\n\n# <CODE> — <Technical Story Title>\n\n**Status:** 🟡 Planned\n**Type:** Technical Story\n\n---\n\n## Technical Story\n\nIn order to [achieve a technical benefit/business capability],\nAs [an engineering team/system component],\nI want to [perform a technical action],\nSo that [expected technical outcome].\n\n## Outcome\n\n<Internal capability or substrate.>\n\n## Acceptance Behavior\n\n```text\nGiven <technical context>\nWhen <operation runs>\nThen <internal behavior or invariant holds>\n```\n\n## Scope\n\n- <in scope>\n\n## Out Of Scope\n\n- <out of scope>\n\n## Validation\n\n<Automated or internal validation route.>\n",
+        "docs/project/roadmap/templates/test-guide.md": "[< Story](index.md)\n\n# Test Guide — <CODE> <Title>\n\n## Automated Validation\n\n```bash\n<commands>\n```\n\n## Navigator Validation\n\n<Manual validation route, expected observation, pass condition, and fail condition.>\n\n## Validation Evidence\n\n<Recorded evidence after validation runs.>\n",
+        "docs/project/roadmap/templates/user-story-index.md": "[< Parent](../index.md)\n\n# <CODE> — <User Story Title>\n\n**Status:** 🟡 Planned\n**Type:** User Story\n\n---\n\n## User Story\n\nAs a [user persona],\nI want to [action/feature],\nSo that [benefit/value].\n\n## Outcome\n\n<Navigator-visible behavior or capability.>\n\n## Acceptance Behavior\n\n```text\nGiven <context>\nWhen <action>\nThen <observable result>\n```\n\n## Scope\n\n- <in scope>\n\n## Out Of Scope\n\n- <out of scope>\n\n## Validation\n\n<Navigator-facing validation route.>\n"
+      },
+      "scenario": "adopted",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "■ Ariad Template Preparation\n\njourney\ndemo\n\nmethod\nariad\n\nchecked\ndocs/project/roadmap/ariad-adoption.md\ndocs/project/roadmap/technical-debt-ledger.md\ndocs/project/roadmap/templates/delivery-story-index.md\ndocs/project/roadmap/templates/user-story-index.md\ndocs/project/roadmap/templates/technical-story-index.md\ndocs/project/roadmap/templates/plan.md\ndocs/project/roadmap/templates/test-guide.md\ndocs/project/roadmap/templates/review.md\ndocs/project/roadmap/templates/coherence.md\n\ncreated\ndocs/project/roadmap/ariad-adoption.md\ndocs/project/roadmap/technical-debt-ledger.md\ndocs/project/roadmap/templates/delivery-story-index.md\ndocs/project/roadmap/templates/user-story-index.md\ndocs/project/roadmap/templates/technical-story-index.md\ndocs/project/roadmap/templates/plan.md\ndocs/project/roadmap/templates/test-guide.md\ndocs/project/roadmap/templates/review.md\ndocs/project/roadmap/templates/coherence.md\n\npreserved\nnone\n\npending\nruntime delivery cursor sync\nactive roadmap item resolution\nstory lifecycle execution\nproject/journey override merge\nrelease and push policy enforcement\n\nboundary\nNo story lifecycle work was executed.\n\n"
+    },
+    {
+      "argv": [
+        "prepare-templates",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 0,
+      "name": "prepare_templates_preserves",
+      "project_files": {
+        "docs/project/roadmap/ariad-adoption.md": "# Authored by a human, must survive\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n",
+        "docs/project/roadmap/technical-debt-ledger.md": "# Technical Debt Ledger\n\nAriad Review records technical debt here when debt should be paid now or deferred.\n\n| ID | Source Story | Location | Kind | Description | Impact | Recommendation | Navigator Decision | Status |\n|----|--------------|----------|------|-------------|--------|----------------|--------------------|--------|\n\n## Deferred Debt Requirements\n\nWhen debt is deferred, record the defer reason and revisit trigger.\n",
+        "docs/project/roadmap/templates/coherence.md": "[< Story](index.md)\n\n# Coherence — <CODE> <Title>\n\n## Process\n\n<Lifecycle and checkpoint alignment.>\n\n## Project\n\n<Roadmap, docs, and runtime state alignment.>\n\n## Product\n\n<Behavior and product boundary alignment.>\n\n## Result\n\n<Coherent or incoherent, with next action.>\n",
+        "docs/project/roadmap/templates/delivery-story-index.md": "[< Parent](../index.md)\n\n# <CODE> — <Delivery Story Title>\n\n**Status:** 🟡 Planned\n\n---\n\n## Outcome\n\n<Coherent delivery outcome this story creates.>\n\n## Candidate Stories\n\n| Code | Story | Type | Outcome | Status |\n|------|-------|------|---------|--------|\n\n## Done Condition\n\n<Condition that closes this delivery story.>\n",
+        "docs/project/roadmap/templates/plan.md": "# Authored by a human, must survive\n",
+        "docs/project/roadmap/templates/review.md": "[< Story](index.md)\n\n# Review — <CODE> <Title>\n\n## Changed Surface\n\n<Files, modules, docs, and behaviors changed.>\n\n## Debt Scan\n\n<Design, test, documentation, duplication, complexity, naming, coupling, or migration debt.>\n\n## Recommendation\n\n<No action, defer, or pay now.>\n\n## Navigator Decision\n\n<Decision and rationale.>\n",
+        "docs/project/roadmap/templates/technical-story-index.md": "[< Parent](../index.md)\n\n# <CODE> — <Technical Story Title>\n\n**Status:** 🟡 Planned\n**Type:** Technical Story\n\n---\n\n## Technical Story\n\nIn order to [achieve a technical benefit/business capability],\nAs [an engineering team/system component],\nI want to [perform a technical action],\nSo that [expected technical outcome].\n\n## Outcome\n\n<Internal capability or substrate.>\n\n## Acceptance Behavior\n\n```text\nGiven <technical context>\nWhen <operation runs>\nThen <internal behavior or invariant holds>\n```\n\n## Scope\n\n- <in scope>\n\n## Out Of Scope\n\n- <out of scope>\n\n## Validation\n\n<Automated or internal validation route.>\n",
+        "docs/project/roadmap/templates/test-guide.md": "[< Story](index.md)\n\n# Test Guide — <CODE> <Title>\n\n## Automated Validation\n\n```bash\n<commands>\n```\n\n## Navigator Validation\n\n<Manual validation route, expected observation, pass condition, and fail condition.>\n\n## Validation Evidence\n\n<Recorded evidence after validation runs.>\n",
+        "docs/project/roadmap/templates/user-story-index.md": "[< Parent](../index.md)\n\n# <CODE> — <User Story Title>\n\n**Status:** 🟡 Planned\n**Type:** User Story\n\n---\n\n## User Story\n\nAs a [user persona],\nI want to [action/feature],\nSo that [benefit/value].\n\n## Outcome\n\n<Navigator-visible behavior or capability.>\n\n## Acceptance Behavior\n\n```text\nGiven <context>\nWhen <action>\nThen <observable result>\n```\n\n## Scope\n\n- <in scope>\n\n## Out Of Scope\n\n- <out of scope>\n\n## Validation\n\n<Navigator-facing validation route.>\n"
+      },
+      "scenario": "adopted_with_templates",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "■ Ariad Template Preparation\n\njourney\ndemo\n\nmethod\nariad\n\nchecked\ndocs/project/roadmap/ariad-adoption.md\ndocs/project/roadmap/technical-debt-ledger.md\ndocs/project/roadmap/templates/delivery-story-index.md\ndocs/project/roadmap/templates/user-story-index.md\ndocs/project/roadmap/templates/technical-story-index.md\ndocs/project/roadmap/templates/plan.md\ndocs/project/roadmap/templates/test-guide.md\ndocs/project/roadmap/templates/review.md\ndocs/project/roadmap/templates/coherence.md\n\ncreated\ndocs/project/roadmap/technical-debt-ledger.md\ndocs/project/roadmap/templates/delivery-story-index.md\ndocs/project/roadmap/templates/user-story-index.md\ndocs/project/roadmap/templates/technical-story-index.md\ndocs/project/roadmap/templates/test-guide.md\ndocs/project/roadmap/templates/review.md\ndocs/project/roadmap/templates/coherence.md\n\npreserved\ndocs/project/roadmap/ariad-adoption.md\ndocs/project/roadmap/templates/plan.md\n\npending\nruntime delivery cursor sync\nactive roadmap item resolution\nstory lifecycle execution\nproject/journey override merge\nrelease and push policy enforcement\n\nboundary\nNo story lifecycle work was executed.\n\n"
+    },
+    {
+      "argv": [
+        "prepare-templates",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 1,
+      "name": "prepare_templates_no_project_path",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "scenario": "adopted_no_project",
+      "session_id": "builder-command-session",
+      "stderr": "Error: journey 'demo' has no project_path configured. Set a project path before preparing Ariad templates.\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "prepare-templates",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 1,
+      "name": "prepare_templates_not_adopted",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "scenario": "unadopted",
+      "session_id": "builder-command-session",
+      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "sync-cursor",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 0,
+      "name": "sync_cursor_first",
+      "scenario": "adopted",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "■ Builder Delivery Cursor Synced\n\njourney\ndemo\n\nmethod\nariad\n\nactive item\nnone\n\nactive item title\nnone\n\nactive item level\nnone\n\ncadence profile\nstepwise\n\ncadence limits\nnone\n\nnavigator flow unit\nstory_by_story\n\nchild work items\nnone\n\naggregate checkpoint status\nnone\n\nactive checkpoint\nnone\n\npending confirmation\nnone\n\nlast delivery event\ntemplate_preparation\n\nboundary\nNo story lifecycle work was executed.\n\n"
+    },
+    {
+      "argv": [
+        "sync-cursor",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 0,
+      "name": "sync_cursor_over_existing",
+      "scenario": "adopted_with_cursor",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "■ Builder Delivery Cursor Synced\n\njourney\ndemo\n\nmethod\nariad\n\nactive item\nnone\n\nactive item title\nnone\n\nactive item level\nnone\n\ncadence profile\nstepwise\n\ncadence limits\nnone\n\nnavigator flow unit\nstory_by_story\n\nchild work items\nnone\n\naggregate checkpoint status\nnone\n\nactive checkpoint\nnone\n\npending confirmation\nnone\n\nlast delivery event\ntemplate_preparation\n\nboundary\nNo story lifecycle work was executed.\n\n"
+    },
+    {
+      "argv": [
+        "sync-cursor",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 1,
+      "name": "sync_cursor_not_adopted",
+      "scenario": "unadopted",
+      "session_id": "builder-command-session",
+      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "check-implementation",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 1,
+      "name": "check_implementation_no_cursor",
+      "scenario": "adopted",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:IMPLEMENTATION_GUARD>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ◉ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟧■  IMPLEMENTATION GUARD                       │\n│                                                        │\n│ status                                                 │\n│ blocked                                                │\n│                                                        │\n│ missing checkpoint                                     │\n│ Implementation requires a Builder delivery cursor      │\n│                                                        │\n│ boundary                                               │\n│ No implementation files may be mutated until the guard │\n│ allows Implement.                                      │\n╰────────────────────────────────────────────────────────╯\n<<<END:IMPLEMENTATION_GUARD>>>\n\n"
+    },
+    {
+      "argv": [
+        "check-implementation",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 1,
+      "name": "check_implementation_blocked",
+      "scenario": "adopted_with_cursor",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:IMPLEMENTATION_GUARD>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ◉ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟧■  IMPLEMENTATION GUARD                       │\n│                                                        │\n│ status                                                 │\n│ blocked                                                │\n│                                                        │\n│ missing checkpoint                                     │\n│ Implementation is blocked: approved Plan is required   │\n│ before Implement.                                      │\n│                                                        │\n│ boundary                                               │\n│ No implementation files may be mutated until the guard │\n│ allows Implement.                                      │\n╰────────────────────────────────────────────────────────╯\n<<<END:IMPLEMENTATION_GUARD>>>\n\n"
+    },
+    {
+      "argv": [
+        "check-implementation",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 0,
+      "name": "check_implementation_allowed",
+      "scenario": "adopted_plan_approved",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:IMPLEMENTATION_GUARD>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ◉ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟧■  IMPLEMENTATION GUARD                       │\n│                                                        │\n│ status                                                 │\n│ allowed                                                │\n│                                                        │\n│ active item                                            │\n│ CV1.US1                                                │\n│                                                        │\n│ last delivery event                                    │\n│ plan_approved                                          │\n│                                                        │\n│ boundary                                               │\n│ Implementation may begin under the approved Plan       │\n│ contract.                                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:IMPLEMENTATION_GUARD>>>\n\n"
+    },
+    {
+      "argv": [
+        "check-implementation",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 1,
+      "name": "check_implementation_not_adopted",
+      "scenario": "unadopted",
+      "session_id": "builder-command-session",
+      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
+      "stdout": ""
     }
   ]
 }

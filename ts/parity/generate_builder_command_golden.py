@@ -77,6 +77,7 @@ def write_project(root: Path) -> None:
 
 def _seed(home: Path, project: Path, *, scenario: str) -> None:
     """Seed a disposable mirror home for one scenario."""
+    from memory.builder.delivery_cursor import set_delivery_cursor
     from memory.builder.method_adoption import set_adopted_method
     from memory.client import MemoryClient
     from memory.services.operating_mode import activate_mode
@@ -101,6 +102,35 @@ def _seed(home: Path, project: Path, *, scenario: str) -> None:
         set_adopted_method(mem.store, "demo", "ariad")
     if scenario == "adopted_other_method":
         set_adopted_method(mem.store, "demo", "scrumban")
+    if scenario in {"adopted_with_templates", "adopted_with_cursor", "adopted_plan_approved"}:
+        set_adopted_method(mem.store, "demo", "ariad")
+    if scenario == "adopted_with_templates":
+        # Two of the nine templates already exist, with content a Navigator
+        # authored. `prepare-templates` must PRESERVE them and create the rest.
+        for relative in (
+            "docs/project/roadmap/ariad-adoption.md",
+            "docs/project/roadmap/templates/plan.md",
+        ):
+            target = project / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text("# Authored by a human, must survive\n", encoding="utf-8")
+    if scenario == "adopted_with_cursor":
+        set_delivery_cursor(
+            mem.store,
+            journey="demo",
+            method="ariad",
+            active_item="CV1.US1",
+            last_delivery_event="pulled",
+            cursor_generation=4,
+        )
+    if scenario == "adopted_plan_approved":
+        set_delivery_cursor(
+            mem.store,
+            journey="demo",
+            method="ariad",
+            active_item="CV1.US1",
+            last_delivery_event="plan_approved",
+        )
 
     if scenario == "other_mode":
         # A journey attached to Mirror Mode must NOT resolve for Builder.
@@ -110,6 +140,16 @@ def _seed(home: Path, project: Path, *, scenario: str) -> None:
     elif scenario != "no_active_mode":
         activate_mode(mem.store, mode="Builder Mode", journey="demo", session_id=SESSION_ID)
     mem.store.conn.commit()
+
+
+def _project_snapshot(project: Path) -> dict[str, str]:
+    """Every file under the project, project-relative, with its content."""
+    snapshot: dict[str, str] = {}
+    for path in sorted(project.rglob("*")):
+        if not path.is_file():
+            continue
+        snapshot[path.relative_to(project).as_posix()] = path.read_text(encoding="utf-8")
+    return snapshot
 
 
 def _run(home: Path, argv: list[str]) -> dict[str, Any]:
@@ -232,6 +272,81 @@ CASES: list[tuple[str, str, list[str]]] = [
         "adopted_no_project",
         ["pull-candidates", "--method", "ariad", "--journey", "demo"],
     ),
+    # adopt
+    ("adopt_first_time", "unadopted", ["adopt", "--method", "ariad", "--journey", "demo"]),
+    ("adopt_again", "adopted", ["adopt", "--method", "ariad", "--journey", "demo"]),
+    (
+        "adopt_over_other_method",
+        "adopted_other_method",
+        ["adopt", "--method", "ariad", "--journey", "demo"],
+    ),
+    ("adopt_unknown_method", "unadopted", ["adopt", "--method", "bogus", "--journey", "demo"]),
+    ("adopt_journey_missing", "unadopted", ["adopt", "--method", "ariad", "--journey", "nope"]),
+    (
+        "adopt_no_journey",
+        "no_active_mode",
+        ["adopt", "--method", "ariad", "--session-id", "absent"],
+    ),
+    # `adopt` deliberately has NO adoption guard -- it is the command that adopts.
+    (
+        "adopt_via_active_mode",
+        "unadopted",
+        ["adopt", "--method", "ariad", "--session-id", SESSION_ID],
+    ),
+    # prepare-templates
+    (
+        "prepare_templates_creates",
+        "adopted",
+        ["prepare-templates", "--method", "ariad", "--journey", "demo"],
+    ),
+    (
+        "prepare_templates_preserves",
+        "adopted_with_templates",
+        ["prepare-templates", "--method", "ariad", "--journey", "demo"],
+    ),
+    (
+        "prepare_templates_no_project_path",
+        "adopted_no_project",
+        ["prepare-templates", "--method", "ariad", "--journey", "demo"],
+    ),
+    (
+        "prepare_templates_not_adopted",
+        "unadopted",
+        ["prepare-templates", "--method", "ariad", "--journey", "demo"],
+    ),
+    # sync-cursor
+    ("sync_cursor_first", "adopted", ["sync-cursor", "--method", "ariad", "--journey", "demo"]),
+    (
+        "sync_cursor_over_existing",
+        "adopted_with_cursor",
+        ["sync-cursor", "--method", "ariad", "--journey", "demo"],
+    ),
+    (
+        "sync_cursor_not_adopted",
+        "unadopted",
+        ["sync-cursor", "--method", "ariad", "--journey", "demo"],
+    ),
+    # check-implementation
+    (
+        "check_implementation_no_cursor",
+        "adopted",
+        ["check-implementation", "--method", "ariad", "--journey", "demo"],
+    ),
+    (
+        "check_implementation_blocked",
+        "adopted_with_cursor",
+        ["check-implementation", "--method", "ariad", "--journey", "demo"],
+    ),
+    (
+        "check_implementation_allowed",
+        "adopted_plan_approved",
+        ["check-implementation", "--method", "ariad", "--journey", "demo"],
+    ),
+    (
+        "check_implementation_not_adopted",
+        "unadopted",
+        ["check-implementation", "--method", "ariad", "--journey", "demo"],
+    ),
 ]
 
 
@@ -248,15 +363,19 @@ def build_cases() -> list[dict[str, Any]]:
             os.environ.pop("MIRROR_SESSION_ID", None)
             _seed(home, project, scenario=scenario)
             outcome = _run(home, argv)
-            results.append(
-                {
-                    "name": name,
-                    "scenario": scenario,
-                    "argv": argv,
-                    "session_id": SESSION_ID,
-                    **outcome,
-                }
-            )
+            entry: dict[str, Any] = {
+                "name": name,
+                "scenario": scenario,
+                "argv": argv,
+                "session_id": SESSION_ID,
+                **outcome,
+            }
+            # For the template leaf, the FILES are the behavior: their
+            # project-relative paths and the bytes of the ones that already
+            # existed, so a port that overwrites an authored file fails.
+            if name.startswith("prepare_templates"):
+                entry["project_files"] = _project_snapshot(project)
+            results.append(entry)
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
     return results

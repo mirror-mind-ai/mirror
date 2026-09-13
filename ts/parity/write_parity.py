@@ -19,6 +19,7 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
+import write_parity_builder as builder
 import write_parity_explorer as explorer
 import write_parity_lifecycle as lifecycle
 import write_parity_safety_tools as safety_tools
@@ -81,7 +82,13 @@ class _FrozenDateTime(datetime):
 
 # Operation probes: seed the shared start state, then grade an operation on it.
 SEEDERS = {**lifecycle.SEEDERS, **safety_tools.SEEDERS, **soul.SEEDERS, **explorer.SEEDERS}
-PROBES = {**lifecycle.PROBES, **safety_tools.PROBES, **soul.PROBES, **explorer.PROBES}
+PROBES = {
+    **lifecycle.PROBES,
+    **safety_tools.PROBES,
+    **soul.PROBES,
+    **explorer.PROBES,
+    **builder.PROBES,
+}
 
 
 def _sha256_file(path: Path) -> str:
@@ -513,20 +520,18 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--probe",
         default="reinforcement",
+        # Deliberately a literal, not `tuple(PROBES)`. `PROBES` holds only the
+        # probes the sibling modules register; `reinforcement`, `journey`,
+        # `identity`, and `conversation_logger` are built inline in this file, so
+        # deriving the choices from the registry silently drops four of them --
+        # including this argument's own default. Tried at CV22.DS7.US8 and caught
+        # by reading the `--help` output.
         choices=(
             "reinforcement",
             "journey",
             "identity",
             "conversation_logger",
-            "close_tail",
-            "session_composites",
-            "journey_repair_apply",
-            "repair_encoding",
-            "soul_state",
-            "soul_apply",
-            "soul_harvest_save",
-            "explorer_story",
-            "explorer_handoff",
+            *PROBES,
         ),
     )
     parser.add_argument("--targets", default=3, type=int)

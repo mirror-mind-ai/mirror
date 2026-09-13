@@ -18,6 +18,7 @@ import { updateIdentityMetadata } from "#identity/identityStore.ts";
 import { setIdentity } from "#identity/setIdentity.ts";
 import { createJourney, setProjectPath } from "#journey/journeyWrite.ts";
 import { logAccess, logUse } from "#memory/reinforcement.ts";
+import { type BuilderCursorProbeParams, builderCursorStateProbe } from "./builderProbes.ts";
 import {
   type ExplorerHandoffProbeParams,
   type ExplorerStoryProbeParams,
@@ -115,6 +116,10 @@ export type WriteProbeFixture =
       repair_encoding: RepairEncodingProbeParams;
     })
   // CV22.DS7.US6: the Soul ritual's session state, graded step by step.
+  | (WriteProbeBase & {
+      probe_type: "builder_cursor_state";
+      builder_cursor: BuilderCursorProbeParams;
+    })
   | (WriteProbeBase & { probe_type: "soul_state"; soul_state: SoulStateProbeParams })
   | (WriteProbeBase & { probe_type: "soul_apply"; soul_apply: SoulApplyProbeParams })
   | (WriteProbeBase & {
@@ -375,6 +380,8 @@ function buildWriteProbe(fixture: WriteProbeFixture): WriteProbe {
       return explorerStoryProbe(fixture.label, fixture.explorer_story, fixture.now_iso);
     case "explorer_handoff":
       return explorerHandoffProbe(fixture.label, fixture.explorer_handoff);
+    case "builder_cursor_state":
+      return builderCursorStateProbe(fixture.label, fixture.builder_cursor, fixture.now_iso);
     case "soul_state":
       return soulStateProbe(fixture.label, fixture.soul_state, fixture.now_iso);
     case "soul_apply":

@@ -25,22 +25,35 @@
 // journey reports the JOURNEY error. A port that resolves the journey first
 // reports the wrong one.
 
-import type { Database } from "#db/database.ts";
+import type { Database, WritableDatabase } from "#db/database.ts";
 import { getIdentityContent } from "#identity/identityRead.ts";
 import { getProjectPath } from "#journey/journeyStatus.ts";
 import { resolveRuntimeSessionId } from "#mirror/runtimeSession.ts";
 import { getActiveOperatingMode } from "#mode/operatingMode.ts";
 import { pyRStrip } from "#util/pythonText.ts";
 import { getAriadMethod } from "./ariadMethod.ts";
-import { getAdoptedMethod } from "./methodAdoption.ts";
+import {
+  type CursorWriteDeps,
+  renderDeliveryCursorSyncReport,
+  setDeliveryCursor,
+} from "./deliveryCursor.ts";
+import {
+  assertImplementationAllowed,
+  ImplementationBlockedError,
+  renderImplementationGuardAllowed,
+  renderImplementationGuardBlocked,
+} from "./implementationGuard.ts";
+import { getAdoptedMethod, setAdoptedMethod } from "./methodAdoption.ts";
 import {
   AVAILABLE_METHODS,
   renderAvailableMethod,
   renderJourneyMethodState,
+  renderMethodAdoptionReport,
   renderNoActiveJourney,
 } from "./methodInspection.ts";
 import { inspectPullCandidates, inspectRoadmapSnapshot } from "./pullCandidates.ts";
 import { renderPullCandidatesReport, renderRoadmapSnapshotReport } from "./pullCandidatesRender.ts";
+import { prepareMethodTemplates, renderTemplatePreparationReport } from "./templateGeneration.ts";
 
 /** What a `build` leaf produced, without touching the process. */
 export interface CommandResult {
@@ -68,6 +81,13 @@ export interface BuilderCommandContext {
   readonly db: Database;
   /** `MIRROR_SESSION_ID`, passed in rather than read, as every TS route does. */
   readonly environmentSessionId?: string | null;
+}
+
+/** The context the writing leaves need: a writable handle and a clock. */
+export interface BuilderWriteContext {
+  readonly db: WritableDatabase;
+  readonly environmentSessionId?: string | null;
+  readonly deps: CursorWriteDeps;
 }
 
 /** Python's `print(message, file=sys.stderr); sys.exit(1)` pair. */
@@ -245,4 +265,167 @@ export function runPullCandidates(
     stderr: "",
     exitCode: 0,
   };
+}
+
+/**
+ * Python `cmd_adopt_method`.
+ *
+ * `already_adopted` is computed BEFORE the write, so re-adopting Ariad reports
+ * "was already adopted" while a first adoption reports "is now adopted" — and
+ * switching from another method reports "is now", because the comparison is
+ * against the method being adopted rather than against any adoption at all.
+ */
+export function runAdoptMethod(
+  context: BuilderWriteContext,
+  options: { method: string; journey?: string | null; sessionId?: string | null },
+): CommandResult {
+  const unknown = rejectUnknownMethod(options.method);
+  if (unknown) return unknown;
+
+  const resolved = resolveBuilderJourney(context, {
+    journey: options.journey ?? null,
+    sessionId: options.sessionId ?? null,
+    action: "adoption",
+  });
+  if (isCommandResult(resolved)) return resolved;
+  const journey = resolved.journey;
+
+  const missing = requireJourney(context.db, journey);
+  if (missing) return missing;
+
+  const alreadyAdopted = getAdoptedMethod(context.db, journey) === options.method;
+  const adoption = setAdoptedMethod(context.db, journey, options.method, context.deps.nowIso);
+  return {
+    stdout: printed(
+      renderMethodAdoptionReport(adoption.journey, adoption.method, { alreadyAdopted }),
+    ),
+    stderr: "",
+    exitCode: 0,
+  };
+}
+
+/**
+ * Python `cmd_prepare_templates`.
+ *
+ * The only leaf in this plateau that writes into the user's repository, and the
+ * only one with a fifth guard: a journey with no `project_path` is refused rather
+ * than defaulted, because there is nowhere safe to write.
+ */
+export function runPrepareTemplates(
+  context: BuilderWriteContext,
+  options: { method: string; journey?: string | null; sessionId?: string | null },
+): CommandResult {
+  const unknown = rejectUnknownMethod(options.method);
+  if (unknown) return unknown;
+
+  const resolved = resolveBuilderJourney(context, {
+    journey: options.journey ?? null,
+    sessionId: options.sessionId ?? null,
+    action: "template preparation",
+  });
+  if (isCommandResult(resolved)) return resolved;
+  const journey = resolved.journey;
+
+  const missing = requireJourney(context.db, journey);
+  if (missing) return missing;
+  const notAdopted = requireAdoptedMethod(context.db, journey, options.method);
+  if (notAdopted) return notAdopted;
+
+  const projectPath = getProjectPath(context.db, journey);
+  if (!projectPath) {
+    return refuse(
+      `Error: journey '${journey}' has no project_path configured. ` +
+        "Set a project path before preparing Ariad templates.",
+    );
+  }
+
+  const report = prepareMethodTemplates(projectPath, { journey, method: getAriadMethod() });
+  return { stdout: printed(renderTemplatePreparationReport(report)), stderr: "", exitCode: 0 };
+}
+
+/**
+ * Python `cmd_sync_cursor`.
+ *
+ * The written cursor is fixed, not derived: `last_delivery_event` is always
+ * `template_preparation` and `cadence_profile` always `stepwise`, and no active
+ * item is inferred. Running it on a journey that already has a cursor therefore
+ * RESETS those two fields while carrying the generation forward — which is the
+ * cursor's own carry-forward rule, not something this command decides.
+ */
+export function runSyncCursor(
+  context: BuilderWriteContext,
+  options: { method: string; journey?: string | null; sessionId?: string | null },
+): CommandResult {
+  const unknown = rejectUnknownMethod(options.method);
+  if (unknown) return unknown;
+
+  const resolved = resolveBuilderJourney(context, {
+    journey: options.journey ?? null,
+    sessionId: options.sessionId ?? null,
+    action: "cursor sync",
+  });
+  if (isCommandResult(resolved)) return resolved;
+  const journey = resolved.journey;
+
+  const missing = requireJourney(context.db, journey);
+  if (missing) return missing;
+  const notAdopted = requireAdoptedMethod(context.db, journey, options.method);
+  if (notAdopted) return notAdopted;
+
+  const cursor = setDeliveryCursor(
+    context.db,
+    {
+      journey,
+      method: options.method,
+      lastDeliveryEvent: "template_preparation",
+      cadenceProfile: "stepwise",
+    },
+    context.deps,
+  );
+  return { stdout: printed(renderDeliveryCursorSyncReport(cursor)), stderr: "", exitCode: 0 };
+}
+
+/**
+ * Python `cmd_check_implementation`.
+ *
+ * The only leaf whose REFUSAL prints a surface on stdout rather than a message on
+ * stderr: a blocked guard renders `IMPLEMENTATION_GUARD` to stdout and still exits
+ * 1. A port that routes the block through the ordinary `refuse` helper loses the
+ * surface the transport protocol requires to be rendered verbatim.
+ */
+export function runCheckImplementation(
+  context: BuilderCommandContext,
+  options: { method: string; journey?: string | null; sessionId?: string | null },
+): CommandResult {
+  const unknown = rejectUnknownMethod(options.method);
+  if (unknown) return unknown;
+
+  const resolved = resolveBuilderJourney(context, {
+    journey: options.journey ?? null,
+    sessionId: options.sessionId ?? null,
+    action: "implementation check",
+  });
+  if (isCommandResult(resolved)) return resolved;
+  const journey = resolved.journey;
+
+  const missing = requireJourney(context.db, journey);
+  if (missing) return missing;
+  const notAdopted = requireAdoptedMethod(context.db, journey, options.method);
+  if (notAdopted) return notAdopted;
+
+  try {
+    const cursor = assertImplementationAllowed(context.db, journey);
+    return {
+      stdout: printed(renderImplementationGuardAllowed(cursor)),
+      stderr: "",
+      exitCode: 0,
+    };
+  } catch (error) {
+    if (!(error instanceof ImplementationBlockedError)) throw error;
+    return {
+      stdout: printed(renderImplementationGuardBlocked(error.message)),
+      stderr: "",
+      exitCode: 1,
+    };
+  }
 }

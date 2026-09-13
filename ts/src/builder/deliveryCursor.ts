@@ -488,6 +488,64 @@ export function clearDeliveryCursor(
 }
 
 /**
+ * Python `render_delivery_cursor_sync_report`: plain text, no card frame.
+ *
+ * Note the DEFAULTS shown for two fields that are `None` on the cursor:
+ * `cadence profile` prints `stepwise` and `navigator flow unit` prints
+ * `story_by_story` when unset, so the report shows the effective value rather
+ * than the stored one. Every other absent field prints `none`.
+ */
+export function renderDeliveryCursorSyncReport(cursor: BuilderDeliveryCursor): string {
+  return `${[
+    "■ Builder Delivery Cursor Synced",
+    "",
+    "journey",
+    cursor.journey,
+    "",
+    "method",
+    cursor.method,
+    "",
+    "active item",
+    cursor.activeItem || "none",
+    "",
+    "active item title",
+    cursor.activeItemTitle || "none",
+    "",
+    "active item level",
+    cursor.activeItemLevel || "none",
+    "",
+    "cadence profile",
+    cursor.cadenceProfile || "stepwise",
+    "",
+    "cadence limits",
+    cursor.cadenceLimits.length > 0 ? cursor.cadenceLimits.join(", ") : "none",
+    "",
+    "navigator flow unit",
+    cursor.navigatorFlowUnit || "story_by_story",
+    "",
+    "child work items",
+    cursor.childWorkItems.length > 0 ? cursor.childWorkItems.join(", ") : "none",
+    "",
+    "aggregate checkpoint status",
+    cursor.aggregateCheckpointStatus.length > 0
+      ? cursor.aggregateCheckpointStatus.join(", ")
+      : "none",
+    "",
+    "active checkpoint",
+    cursor.activeCheckpoint || "none",
+    "",
+    "pending confirmation",
+    cursor.pendingConfirmation || "none",
+    "",
+    "last delivery event",
+    cursor.lastDeliveryEvent || "none",
+    "",
+    "boundary",
+    "No story lifecycle work was executed.",
+  ].join("\n")}\n`;
+}
+
+/**
  * Python `_projected_active_work`: the four fields the Journey projection
  * actually shows. `None` when there is no active item, so a cursor without one
  * never requests a refresh — and note the `or "active"` default, which makes a
