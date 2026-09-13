@@ -10,7 +10,7 @@
 ## Problem
 
 Every parity generator and probe hand-rolls its own environment hygiene, and
-the same class of defect has now appeared four times across three stories.
+the same class of defect has now appeared five times across four stories.
 
 `memory.config` walks upward for a `.env` and applies it with
 `os.environ.setdefault` **at import time**. A generator that clears ambient
@@ -38,6 +38,22 @@ Observed instances:
   the two cores answered about different files. It passed locally, where
   nothing was set and both fell into production by accident, and **failed in
   CI**, which is the only reason it was caught.
+- **CV22.DS7.US8 plateau 3 (2026-09-13).** A scenario in
+  `generate_builder_command_golden.py` seeded an **empty project path** to reach a
+  refusal that sits behind the delivery-cursor guard. `Path("")` resolves to the
+  process cwd, and the generator launches the real CLI as a subprocess from the
+  repository root, so `pull-item` materialized a fabricated
+  `CV1.DS1 — A delivery story` package inside **this repository's own roadmap**,
+  nested under the real CV1 — a second package claiming a live heading code, which
+  `resolve_story_directory` would then refuse as ambiguous and the
+  duplicate-heading check would fail on. The same run also produced a
+  non-deterministic golden, because snapshotting the project captured
+  `.mirror/projections`, whose refresh receipts are named `op-<uuid4>`. Caught by
+  `git status`, not by an assertion.
+
+  This instance widens the class: the leak vector was a **write target**, not an
+  environment variable, so a helper that only clears and re-checks ambient keys
+  would not have caught it.
 
 Each was fixed where it was found. The pattern was not.
 
@@ -64,8 +80,10 @@ network produces a corpus nobody can reproduce, and turns an offline
 determinism gate into a lie. A probe that overrides the environment reports
 `match: true` for a comparison that was never made.
 
-Three of the four were caught by hand. The fourth escaped to CI. Nothing
-guarantees the fifth is caught at all.
+Four of the five were caught by hand. One escaped to CI. Nothing guarantees the
+sixth is caught at all — and the fifth showed the blast radius is not limited to
+committed artifacts: a generator can write into the repository's own authored
+documents, where the damage looks like project content rather than test output.
 
 ## Plan Or Decision
 
@@ -83,7 +101,16 @@ visible at write time.
 
 ## Evidence
 
-_Pending._
+- **Plateau-3 local guard, 2026-09-13.** `generate_builder_command_golden.py`
+  gained `_repo_docs_fingerprint`: it snapshots the repository's own
+  `docs/project/roadmap` before the case loop and refuses, naming the case, when a
+  case creates anything there. `_project_snapshot` now excludes
+  `.mirror/projections` and records the seam as `{documents, receipts}` instead,
+  keeping the receipt count — which is behavior — without the uuid names.
+  Both are exactly the hand-rolled, per-generator hygiene this CR exists to
+  replace, so they are evidence of the pattern, not its resolution.
+- Commit `2dff5adb` — the plateau-3 oracle, including the guard and the removal of
+  the fabricated package the incident created.
 
 ## Outcome
 

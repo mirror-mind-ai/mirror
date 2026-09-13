@@ -40,3 +40,4 @@ cannot choose safely.
 - [CR020 — No read-only way to re-render the active checkpoint, and the refusals name the wrong reason](cr020-no-read-only-way-to-re-render-the-active-checkpoint.md)
 - [CR067 — Render the refused checkpoint, not a hardcoded Implement stage](cr067-render-the-refused-checkpoint-not-a-hardcoded-implement-stage.md)
 - [CR079 — Preserve authored content in every lifecycle artifact, not one at a time](cr079-preserve-authored-content-in-every-lifecycle-artifact.md)
+- [CR082 — Plan and Expand surfaces print absolute filesystem paths where their artifact surface prints project-relative ones](cr082-lifecycle-surfaces-print-absolute-paths.md)
