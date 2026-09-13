@@ -50,9 +50,14 @@ What remains is size, and the answer to size is slicing, not sequencing.
 ## Surface Inventory
 
 `src/memory/cli/build.py` declares **29 subcommands**, two of which are nested
-groups, for **42 leaves**. The implementation is `src/memory/builder/` — 27
+groups, for **47 leaves**. The implementation is `src/memory/builder/` — 27
 modules, 9,703 lines — plus the 3,156-line CLI, plus shared surface helpers
 under `src/memory/surfaces/`.
+
+*(Leaf count corrected 2026-09-13 at plateau 1. This section said 42, from
+reading rather than from enumerating the subparsers: group 7 below listed 4 + 11
+where `build.py` declares 7 + 13. The 27 in-scope leaves are unchanged and were
+re-verified by enumeration.)*
 
 | # | Group | Leaves | Count | Principal Python modules |
 |---|-------|--------|------:|--------------------------|
@@ -62,10 +67,12 @@ under `src/memory/surfaces/`.
 | 4 | Delivery Story lifecycle | `plan-delivery-story`, `approve-delivery-story-plan`, `validate-delivery-story`, `review-delivery-story`, `coherence-delivery-story`, `done-delivery-story` | 6 | `delivery_story_plan.py`, `delivery_story_closure.py`, `delivery_story_roadmap_closure.py` |
 | 5 | Cadence, flow, and authority | `set-cadence`, `set-flow-unit`, `release-intent`, `cancel-plan-preauthorization`, `cancel-delivery-story-plan-preauthorization` | 5 | `flow_unit.py`, `release_intent.py`, `plan_preauthorization.py`, `story_plan_preauthorization.py` |
 | 6 | Continuation | `continue-lifecycle` | 1 | `lifecycle.py`, `lifecycle_ribbon.py` |
-| 7 | Refinement Workbench (legacy SQLite) | `refinement-story create\|overview\|park\|pull`; `change-request attach\|capture\|discard\|done\|mark-implemented\|park\|plan\|promote\|reject\|resume\|validate` | 15 | `workbench.py`, `workbench_surfaces.py` |
+| 7 | Refinement Workbench (legacy SQLite) | `refinement-story create\|overview\|pull\|review\|coherence\|close\|park` (7); `change-request capture\|attach\|discard\|select\|confirm\|resume\|plan\|mark-implemented\|validate\|done\|park\|reject\|promote` (13) | 20 | `workbench.py`, `workbench_surfaces.py` |
 
-Groups 1–6 are **27 leaves** and are this story's scope. Group 7 is **15 leaves**
-and is **retired in DS10** (D1, resolved 2026-09-09 — see below).
+Groups 1–6 are **27 leaves** and are this story's scope. Group 7 is **20 leaves**
+and is **retired in DS10** (D1, resolved 2026-09-09 — see below). The earlier
+count of 15 omitted `refinement-story review|coherence|close` and
+`change-request select|confirm`; all twenty are refused by name.
 
 ## Open Decisions For Plan Review
 
@@ -74,7 +81,7 @@ argues about them instead of discovering them. The single-owner rule applies:
 they are taken at plan time and written down, because nobody else will confirm
 them.
 
-### D1 — Port or retire the SQLite Refinement Workbench (15 of 42 leaves) — **RESOLVED: retire**
+### D1 — Port or retire the SQLite Refinement Workbench (20 of 47 leaves) — **RESOLVED: retire**
 
 CV20.DS6 delivered the SQLite Workbench. **CV20.DS12 (done) delivered the
 document-first Workbench and made one project index the canonical RS/CR
@@ -83,18 +90,29 @@ authority.** `mm-build` routes accordingly: file-first when
 This project itself moved to the file-first authority — `docs/project/refinement/index.md`
 is the record CR068 and CR071 live in.
 
-So group 7 was 15 leaves of a **superseded** storage model, and porting it would
+So group 7 was 20 leaves of a **superseded** storage model, and porting it would
 have meant paying full parity cost for a legacy path. Options weighed: port at
 parity; retire in DS10 with a documented cutoff; port a read-only subset.
 
 **Navigator decision, 2026-09-09: retire in DS10 with a documented cutoff**,
 recorded in the [DS10 package](../../cv22-ds10-python-retirement-npm-distribution/index.md#command-surfaces-assigned-from-ds7-decision-2026-09-07)
 (item 5) and in [decisions.md](../../../../decisions.md#cv22-makes-the-ported-work-real-before-porting-more).
-US8 is **27 leaves**. The routing entry for `build` must refuse the fifteen
+US8 is **27 leaves**. The routing entry for `build` must refuse the **twenty**
 Workbench leaves **by name** (Python by explicit refusal, never by inheritance),
 so the retired path stays visible in the Remainder until DS10 deletes it. The
 `mm-build` skill's legacy-SQLite section stays as documentation of the
 compatibility path and is removed with DS10.
+
+**Amended 2026-09-13 at plateau 1: the leaves are retired, the read is not.**
+`read_builder_resume_state(include_refinement=…)` and
+`home_surface.inspect_refinement_field` call `get_workbench_snapshot` whenever
+the project has no `docs/project/refinement/index.md`, so every `build load` on
+a legacy-store project renders its `🧰 Refinement field` from the SQLite
+Workbench tables. US8 ports that **read-only snapshot** and nothing else from
+`workbench.py`; DS10 deletes it with the twenty verbs. All three tables
+(`builder_refinement_stories`, `builder_change_requests`,
+`builder_refinement_cursors`) are already in `ts/src/db/schema.ts` with their
+indexes, so this adds no schema work.
 
 ### D2 — Cursor state authority during the transition
 

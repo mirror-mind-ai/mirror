@@ -179,8 +179,8 @@ the defect this ledger exists to prevent.
 
 | Leaf | Owner | Note |
 |------|-------|------|
-| `build` — 27 in-scope leaves (29 subcommands, 42 leaves in Python) | DS7.US8 | Self-hosting story; see the [US8 package](cv22-ds7-us8-builder-ariad-tree/index.md) |
-| `build refinement-story create\|overview\|park\|pull`, `build change-request` × 11 | DS10 (retire, cutoff) | The SQLite Refinement Workbench, superseded by CV20.DS12's document-first Workbench (US8 D1, decided 2026-09-09) |
+| `build` — 27 in-scope leaves (29 subcommands, **47** leaves in Python) | DS7.US8 | Self-hosting story; see the [US8 package](cv22-ds7-us8-builder-ariad-tree/index.md). Leaf count corrected 2026-09-13 at plateau 1 by enumerating the subparsers (was 42) |
+| `build refinement-story create\|overview\|pull\|review\|coherence\|close\|park` (7), `build change-request` × 13 | DS10 (retire, cutoff) | The SQLite Refinement Workbench, superseded by CV20.DS12's document-first Workbench (US8 D1, decided 2026-09-09). **Twenty** leaves, not fifteen — `refinement-story review\|coherence\|close` and `change-request select\|confirm` were omitted from the earlier count. US8 refuses all twenty by name; `load`'s read-only `get_workbench_snapshot` is ported by US8 and deleted here |
 | `explore story promote` | DS7.US8 | Renderer ported in US7; the tail is Builder `load`. Flips as a route entry with US8 |
 | `extensions install\|uninstall\|expose-claude\|clean-claude` | DS7.TS4 | Mutates skill directories |
 | `ext list`, `ext <id>`, `ext <id> bind\|unbind\|bindings\|migrate` | DS7.TS4 | Catalog and bindings |

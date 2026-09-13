@@ -73,6 +73,13 @@ was not unported code but **ported code that production never reaches**:
    cutoff — fifteen of the Builder tree's 42 leaves. CV20.DS12 superseded it;
    this project runs file-first; nobody should adopt the legacy path now. US8
    ports 27 leaves and refuses the fifteen by name.
+   *(Count corrected 2026-09-13 at US8 plateau 1: the Workbench is **twenty**
+   leaves of **47**, not fifteen of 42 — `refinement-story
+   review|coherence|close` and `change-request select|confirm` were missing from
+   the enumeration. The decision is unchanged and the in-scope 27 is unchanged;
+   only the retired denominator moves. `build load`'s read-only
+   `get_workbench_snapshot`, which every legacy-store project still renders, is
+   ported by US8 rather than retired with the verbs.)*
 4. **Orphan dispositions.** `descriptor generate` → US11. `identity edit` →
    TS4, as a `spawnSync($EDITOR)` port. ES-001 lifecycle
    dry-run/demo/preview/apply faces → US11 (engine exists); the one-shot

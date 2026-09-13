@@ -221,15 +221,26 @@ denominator (29) and served by Python fallback until DS10 acts on them:
    subsystem — CV22.DS7.TS5, reassigned here. Ported and cut over as DS10's
    first act; see the seam deletion gate above.
 5. **The SQLite Refinement Workbench** — `build refinement-story
-   create|overview|park|pull` and the eleven `build change-request` verbs
-   (fifteen of the Builder tree's 42 leaves). CV20.DS12 delivered the
-   document-first Workbench and made `docs/project/refinement/index.md` the
-   canonical RS/CR authority; `mm-build` reaches the SQLite path only when that
-   index is absent. Retired unported with a documented cutoff (US8 decision D1,
-   2026-09-09): a journey still carrying SQLite Workbench rows must adopt the
-   document-first index with a pre-DS10 release. Existing rows stay readable
-   through the last Python-bearing release. DS7.US8 ports the remaining 27
-   leaves and must not spend parity effort on these fifteen.
+   create|overview|pull|review|coherence|close|park` (7) and the `build
+   change-request` verbs `capture|attach|discard|select|confirm|resume|plan|
+   mark-implemented|validate|done|park|reject|promote` (13): **twenty** of the
+   Builder tree's **47** leaves. *(Corrected 2026-09-13 at US8 plateau 1, by
+   enumerating `cli/build.py`'s subparsers rather than reading the prose: the
+   earlier count of fifteen of 42 omitted `refinement-story
+   review|coherence|close` and `change-request select|confirm`.)* CV20.DS12
+   delivered the document-first Workbench and made
+   `docs/project/refinement/index.md` the canonical RS/CR authority; `mm-build`
+   reaches the SQLite path only when that index is absent. Retired unported
+   with a documented cutoff (US8 decision D1, 2026-09-09): a journey still
+   carrying SQLite Workbench rows must adopt the document-first index with a
+   pre-DS10 release. Existing rows stay readable through the last
+   Python-bearing release. DS7.US8 ports the remaining 27 leaves, refuses these
+   twenty **by name**, and must not spend parity effort on them.
+
+   One read survives the retirement and belongs to US8, not here: `build load`'s
+   resume and home surfaces render the `🧰 Refinement field` from
+   `get_workbench_snapshot` whenever a project has no canonical refinement
+   index, so US8 ports that read-only snapshot. DS10 deletes it with the rest.
 6. **`conversations --metadata-backfill-preview|-apply`** — the one-shot
    backfill of pre-ES-001 conversation rows (CV9.DS7). Retired unported: the
    lifecycle *engine* is on TS (DS7.US10) and its operator faces are wired by
