@@ -943,6 +943,24 @@ validation step 2, and the loader-hook shape for the broken-core drill.
   inside the *user's* project, so Mirror Mind's own roadmap layout leaks into
   product code. Any other project reports zero and behaves correctly by
   accident.
+- **The Workbench read is guarded on one path and not the other.**
+  `home_surface._safe_workbench_snapshot` swallows `sqlite3.OperationalError`,
+  but `read_builder_resume_state` calls `get_workbench_snapshot` directly — so a
+  database predating CV20.DS6 (no `builder_refinement_stories`) makes Builder
+  Home degrade and `■ BUILDER RESUME` **raise**. Found at plateau 2 and
+  reproduced in both halves, because guarding it in TS would diverge from the
+  engine being replaced. The escape hatch is real but accidental: a project with
+  a canonical refinement index passes `include_refinement=False` and never
+  performs the read. Worth a CR — the asymmetry means the same install is
+  resumable or not depending on which surface renders first.
+- **`assert_implementation_allowed` does not require an active item.** A cursor
+  whose `last_delivery_event` is `plan_approved` with `active_item=None` is
+  ALLOWED, and the guard surface prints `active item / none`. Reproduced.
+- **Four distinct DS-plan failures share one message.** Wrong level, wrong flow
+  unit, absent aggregate status, and a different aggregate status all print
+  `approved Plan is required before Implement.`, so a Navigator cannot tell
+  which condition is missing. Parity-bound; a better message is a product
+  change.
 
 ## Stop Conditions
 
