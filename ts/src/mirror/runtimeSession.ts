@@ -107,6 +107,35 @@ export function upsertRuntimeSession(
   return row;
 }
 
+/**
+ * Python `compare_and_swap_runtime_session_metadata` (CV22.DS7.US8 plateau 2).
+ *
+ * Replace `metadata` only while it still equals the caller's observed value, and
+ * report whether the swap happened. The match is STRING EQUALITY on the stored
+ * metadata, which is what makes the delivery cursor's serialization a contract
+ * rather than a detail: a cursor written with different bytes for the same state
+ * cannot be swapped by the other engine, so a `MIRROR_TS_BUILD=0` revert would
+ * fail on its first write instead of falling back cleanly.
+ *
+ * The WHERE clause also requires `active = 1`, so a cleared row can never be
+ * swapped back into place.
+ */
+export function compareAndSwapRuntimeSessionMetadata(
+  db: WritableDatabase,
+  sessionId: string,
+  options: { expectedMetadata: string; metadata: string },
+  nowIso: string,
+): boolean {
+  const result = db
+    .prepare(
+      `UPDATE runtime_sessions
+          SET metadata = ?, updated_at = ?
+        WHERE session_id = ? AND active = 1 AND metadata = ?`,
+    )
+    .run(options.metadata, nowIso, sessionId, options.expectedMetadata);
+  return Number(result.changes) === 1;
+}
+
 export function resolveRuntimeSessionId(
   db: Database,
   explicitSessionId: string | null,

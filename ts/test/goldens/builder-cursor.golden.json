@@ -1,0 +1,3106 @@
+{
+  "clears": [
+    {
+      "cursor": null,
+      "name": "clear_with_active_item",
+      "projection_requests": [
+        "demo"
+      ],
+      "row": {
+        "active": 0,
+        "closed_at": null,
+        "conversation_id": null,
+        "hook_injected": 0,
+        "interface": "builder_delivery_cursor",
+        "journey": "demo",
+        "metadata": null,
+        "mirror_active": 0,
+        "persona": null,
+        "session_id": "__builder_delivery_cursor__:demo",
+        "started_at": "2026-01-01T00:00:00+00:00",
+        "updated_at": "2026-01-01T00:00:00+00:00"
+      }
+    },
+    {
+      "cursor": null,
+      "name": "clear_without_active_item",
+      "projection_requests": [],
+      "row": {
+        "active": 0,
+        "closed_at": null,
+        "conversation_id": null,
+        "hook_injected": 0,
+        "interface": "builder_delivery_cursor",
+        "journey": "demo",
+        "metadata": null,
+        "mirror_active": 0,
+        "persona": null,
+        "session_id": "__builder_delivery_cursor__:demo",
+        "started_at": "2026-01-01T00:00:00+00:00",
+        "updated_at": "2026-01-01T00:00:00+00:00"
+      }
+    },
+    {
+      "cursor": null,
+      "name": "clear_absent",
+      "projection_requests": [],
+      "row": {
+        "active": 0,
+        "closed_at": null,
+        "conversation_id": null,
+        "hook_injected": 0,
+        "interface": "builder_delivery_cursor",
+        "journey": "demo",
+        "metadata": null,
+        "mirror_active": 0,
+        "persona": null,
+        "session_id": "__builder_delivery_cursor__:demo",
+        "started_at": "2026-01-01T00:00:00+00:00",
+        "updated_at": "2026-01-01T00:00:00+00:00"
+      }
+    }
+  ],
+  "compare_and_swap": [
+    {
+      "cursor": {
+        "active_checkpoint": null,
+        "active_item": "CV1",
+        "active_item_level": null,
+        "active_item_title": null,
+        "aggregate_checkpoint_status": [],
+        "cadence_limits": [],
+        "cadence_profile": null,
+        "child_work_items": [],
+        "cursor_generation": 0,
+        "granularity_decision": null,
+        "journey": "demo",
+        "last_delivery_event": "prepared",
+        "method": "ariad",
+        "navigator_flow_unit": null,
+        "pending_confirmation": null,
+        "plan_preauthorization": null,
+        "release_intent": null,
+        "release_intent_delivery_story": null
+      },
+      "name": "swap_succeeds",
+      "projection_requests": [
+        "demo",
+        "demo"
+      ],
+      "row": {
+        "active": 1,
+        "closed_at": null,
+        "conversation_id": null,
+        "hook_injected": 0,
+        "interface": "builder_delivery_cursor",
+        "journey": "demo",
+        "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1\", \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"prepared\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+        "mirror_active": 0,
+        "persona": null,
+        "session_id": "__builder_delivery_cursor__:demo",
+        "started_at": "2026-01-01T00:00:00+00:00",
+        "updated_at": "2026-01-01T00:00:00+00:00"
+      }
+    },
+    {
+      "expected_error": "DeliveryCursorConflict: delivery cursor changed before atomic update",
+      "name": "swap_conflicts",
+      "row_after": {
+        "active": 1,
+        "closed_at": null,
+        "conversation_id": null,
+        "hook_injected": 0,
+        "interface": "builder_delivery_cursor",
+        "journey": "demo",
+        "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1\", \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"someone_else\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+        "mirror_active": 0,
+        "persona": null,
+        "session_id": "__builder_delivery_cursor__:demo",
+        "started_at": "2026-01-01T00:00:00+00:00",
+        "updated_at": "2026-01-01T00:00:00+00:00"
+      }
+    },
+    {
+      "expected_error": "ValueError: expected cursor journey does not match",
+      "name": "expected_journey_mismatch"
+    },
+    {
+      "expected_error": "DeliveryCursorConflict: delivery cursor changed before atomic update",
+      "name": "swap_against_cleared_row"
+    }
+  ],
+  "frozen_now": "2026-01-01T00:00:00+00:00",
+  "journey": "demo",
+  "reads": [
+    {
+      "active": true,
+      "cursor": null,
+      "metadata": null,
+      "name": "absent_row"
+    },
+    {
+      "active": false,
+      "cursor": null,
+      "metadata": "{\"method\": \"ariad\"}",
+      "name": "inactive_row"
+    },
+    {
+      "active": true,
+      "cursor": null,
+      "metadata": "",
+      "name": "empty_metadata"
+    },
+    {
+      "active": true,
+      "cursor": null,
+      "metadata": "{not json",
+      "name": "invalid_json"
+    },
+    {
+      "active": true,
+      "cursor": null,
+      "metadata": "[1, 2, 3]",
+      "name": "json_array"
+    },
+    {
+      "active": true,
+      "cursor": null,
+      "metadata": "\"ariad\"",
+      "name": "json_string"
+    },
+    {
+      "active": true,
+      "cursor": null,
+      "metadata": "null",
+      "name": "json_null"
+    },
+    {
+      "active": true,
+      "cursor": null,
+      "metadata": "{\"active_item\": \"CV1\"}",
+      "name": "no_method"
+    },
+    {
+      "active": true,
+      "cursor": null,
+      "metadata": "{\"method\": \"   \"}",
+      "name": "blank_method"
+    },
+    {
+      "active": true,
+      "cursor": null,
+      "metadata": "{\"method\": 7}",
+      "name": "method_not_string"
+    },
+    {
+      "active": true,
+      "cursor": {
+        "active_checkpoint": null,
+        "active_item": null,
+        "active_item_level": null,
+        "active_item_title": null,
+        "aggregate_checkpoint_status": [],
+        "cadence_limits": [],
+        "cadence_profile": null,
+        "child_work_items": [],
+        "cursor_generation": 0,
+        "granularity_decision": null,
+        "journey": "demo",
+        "last_delivery_event": null,
+        "method": "ariad",
+        "navigator_flow_unit": null,
+        "pending_confirmation": null,
+        "plan_preauthorization": null,
+        "release_intent": null,
+        "release_intent_delivery_story": null
+      },
+      "metadata": "{\"method\": \"ariad\"}",
+      "name": "minimal_valid"
+    },
+    {
+      "active": true,
+      "cursor": {
+        "active_checkpoint": null,
+        "active_item": null,
+        "active_item_level": null,
+        "active_item_title": null,
+        "aggregate_checkpoint_status": [],
+        "cadence_limits": [],
+        "cadence_profile": null,
+        "child_work_items": [],
+        "cursor_generation": 0,
+        "granularity_decision": null,
+        "journey": "demo",
+        "last_delivery_event": null,
+        "method": "ariad",
+        "navigator_flow_unit": null,
+        "pending_confirmation": null,
+        "plan_preauthorization": null,
+        "release_intent": null,
+        "release_intent_delivery_story": null
+      },
+      "metadata": "{\"method\": \"ariad\", \"active_item\": 7}",
+      "name": "active_item_not_string"
+    },
+    {
+      "active": true,
+      "cursor": {
+        "active_checkpoint": null,
+        "active_item": null,
+        "active_item_level": null,
+        "active_item_title": null,
+        "aggregate_checkpoint_status": [],
+        "cadence_limits": [],
+        "cadence_profile": null,
+        "child_work_items": [],
+        "cursor_generation": 0,
+        "granularity_decision": null,
+        "journey": "demo",
+        "last_delivery_event": null,
+        "method": "ariad",
+        "navigator_flow_unit": null,
+        "pending_confirmation": null,
+        "plan_preauthorization": null,
+        "release_intent": null,
+        "release_intent_delivery_story": null
+      },
+      "metadata": "{\"method\": \"ariad\", \"cursor_generation\": -5}",
+      "name": "generation_negative"
+    },
+    {
+      "active": true,
+      "cursor": {
+        "active_checkpoint": null,
+        "active_item": null,
+        "active_item_level": null,
+        "active_item_title": null,
+        "aggregate_checkpoint_status": [],
+        "cadence_limits": [],
+        "cadence_profile": null,
+        "child_work_items": [],
+        "cursor_generation": 0,
+        "granularity_decision": null,
+        "journey": "demo",
+        "last_delivery_event": null,
+        "method": "ariad",
+        "navigator_flow_unit": null,
+        "pending_confirmation": null,
+        "plan_preauthorization": null,
+        "release_intent": null,
+        "release_intent_delivery_story": null
+      },
+      "metadata": "{\"method\": \"ariad\", \"cursor_generation\": true}",
+      "name": "generation_bool"
+    },
+    {
+      "active": true,
+      "cursor": {
+        "active_checkpoint": null,
+        "active_item": null,
+        "active_item_level": null,
+        "active_item_title": null,
+        "aggregate_checkpoint_status": [],
+        "cadence_limits": [],
+        "cadence_profile": null,
+        "child_work_items": [],
+        "cursor_generation": 0,
+        "granularity_decision": null,
+        "journey": "demo",
+        "last_delivery_event": null,
+        "method": "ariad",
+        "navigator_flow_unit": null,
+        "pending_confirmation": null,
+        "plan_preauthorization": null,
+        "release_intent": null,
+        "release_intent_delivery_story": null
+      },
+      "metadata": "{\"method\": \"ariad\", \"cursor_generation\": 3.5}",
+      "name": "generation_float"
+    },
+    {
+      "active": true,
+      "cursor": {
+        "active_checkpoint": null,
+        "active_item": null,
+        "active_item_level": null,
+        "active_item_title": null,
+        "aggregate_checkpoint_status": [],
+        "cadence_limits": [],
+        "cadence_profile": null,
+        "child_work_items": [],
+        "cursor_generation": 0,
+        "granularity_decision": null,
+        "journey": "demo",
+        "last_delivery_event": null,
+        "method": "ariad",
+        "navigator_flow_unit": null,
+        "pending_confirmation": null,
+        "plan_preauthorization": null,
+        "release_intent": null,
+        "release_intent_delivery_story": null
+      },
+      "metadata": "{\"method\": \"ariad\", \"cursor_generation\": \"3\"}",
+      "name": "generation_string"
+    },
+    {
+      "active": true,
+      "cursor": {
+        "active_checkpoint": null,
+        "active_item": null,
+        "active_item_level": null,
+        "active_item_title": null,
+        "aggregate_checkpoint_status": [],
+        "cadence_limits": [],
+        "cadence_profile": null,
+        "child_work_items": [],
+        "cursor_generation": 0,
+        "granularity_decision": null,
+        "journey": "demo",
+        "last_delivery_event": null,
+        "method": "ariad",
+        "navigator_flow_unit": null,
+        "pending_confirmation": null,
+        "plan_preauthorization": null,
+        "release_intent": null,
+        "release_intent_delivery_story": null
+      },
+      "metadata": "{\"method\": \"ariad\", \"cadence_limits\": \"a,b\"}",
+      "name": "limits_not_list"
+    },
+    {
+      "active": true,
+      "cursor": {
+        "active_checkpoint": null,
+        "active_item": null,
+        "active_item_level": null,
+        "active_item_title": null,
+        "aggregate_checkpoint_status": [],
+        "cadence_limits": [
+          "a",
+          "b"
+        ],
+        "cadence_profile": null,
+        "child_work_items": [],
+        "cursor_generation": 0,
+        "granularity_decision": null,
+        "journey": "demo",
+        "last_delivery_event": null,
+        "method": "ariad",
+        "navigator_flow_unit": null,
+        "pending_confirmation": null,
+        "plan_preauthorization": null,
+        "release_intent": null,
+        "release_intent_delivery_story": null
+      },
+      "metadata": "{\"method\": \"ariad\", \"cadence_limits\": [\"a\", 7, \"\", \"  \", \"b\"]}",
+      "name": "limits_mixed_types"
+    },
+    {
+      "active": true,
+      "cursor": {
+        "active_checkpoint": null,
+        "active_item": null,
+        "active_item_level": null,
+        "active_item_title": null,
+        "aggregate_checkpoint_status": [],
+        "cadence_limits": [],
+        "cadence_profile": null,
+        "child_work_items": [],
+        "cursor_generation": 0,
+        "granularity_decision": null,
+        "journey": "demo",
+        "last_delivery_event": null,
+        "method": "ariad",
+        "navigator_flow_unit": null,
+        "pending_confirmation": null,
+        "plan_preauthorization": null,
+        "release_intent": null,
+        "release_intent_delivery_story": null
+      },
+      "metadata": "{\"method\": \"ariad\", \"release_intent\": \"maybe\"}",
+      "name": "release_intent_unknown"
+    },
+    {
+      "active": true,
+      "cursor": {
+        "active_checkpoint": null,
+        "active_item": null,
+        "active_item_level": null,
+        "active_item_title": null,
+        "aggregate_checkpoint_status": [],
+        "cadence_limits": [],
+        "cadence_profile": null,
+        "child_work_items": [],
+        "cursor_generation": 0,
+        "granularity_decision": null,
+        "journey": "demo",
+        "last_delivery_event": null,
+        "method": "ariad",
+        "navigator_flow_unit": null,
+        "pending_confirmation": null,
+        "plan_preauthorization": null,
+        "release_intent": null,
+        "release_intent_delivery_story": null
+      },
+      "metadata": "{\"method\": \"ariad\", \"plan_preauthorization\": \"x\"}",
+      "name": "receipt_not_dict"
+    },
+    {
+      "active": true,
+      "cursor": {
+        "active_checkpoint": null,
+        "active_item": null,
+        "active_item_level": null,
+        "active_item_title": null,
+        "aggregate_checkpoint_status": [],
+        "cadence_limits": [],
+        "cadence_profile": null,
+        "child_work_items": [],
+        "cursor_generation": 0,
+        "granularity_decision": null,
+        "journey": "demo",
+        "last_delivery_event": null,
+        "method": "ariad",
+        "navigator_flow_unit": null,
+        "pending_confirmation": null,
+        "plan_preauthorization": null,
+        "release_intent": null,
+        "release_intent_delivery_story": null
+      },
+      "metadata": "{\"method\": \"ariad\", \"plan_preauthorization\": {\"journey\": \"demo\"}}",
+      "name": "receipt_missing_field"
+    },
+    {
+      "active": true,
+      "cursor": {
+        "active_checkpoint": null,
+        "active_item": null,
+        "active_item_level": null,
+        "active_item_title": null,
+        "aggregate_checkpoint_status": [],
+        "cadence_limits": [],
+        "cadence_profile": null,
+        "child_work_items": [],
+        "cursor_generation": 0,
+        "granularity_decision": null,
+        "journey": "demo",
+        "last_delivery_event": null,
+        "method": "ariad",
+        "navigator_flow_unit": null,
+        "pending_confirmation": null,
+        "plan_preauthorization": null,
+        "release_intent": null,
+        "release_intent_delivery_story": null
+      },
+      "metadata": "{\"method\": \"ariad\", \"plan_preauthorization\": {\"journey\": \"demo\", \"method\": \"ariad\", \"cursor_generation\": 1, \"active_item\": \"CV1\", \"active_item_level\": \"user_story\", \"flow_unit\": \"story_by_story\", \"child_work_items\": [], \"plan_contract_version\": \"story_plan@1\", \"policy\": \"p\", \"stop_boundary\": \"navigator_validation\", \"scope_fingerprint\": \"f\", \"status\": \"bogus\"}}",
+      "name": "receipt_bad_status"
+    },
+    {
+      "active": true,
+      "cursor": {
+        "active_checkpoint": null,
+        "active_item": null,
+        "active_item_level": null,
+        "active_item_title": null,
+        "aggregate_checkpoint_status": [],
+        "cadence_limits": [],
+        "cadence_profile": null,
+        "child_work_items": [],
+        "cursor_generation": 0,
+        "granularity_decision": null,
+        "journey": "demo",
+        "last_delivery_event": null,
+        "method": "ariad",
+        "navigator_flow_unit": null,
+        "pending_confirmation": null,
+        "plan_preauthorization": null,
+        "release_intent": null,
+        "release_intent_delivery_story": null
+      },
+      "metadata": "{\"method\": \"ariad\", \"plan_preauthorization\": {\"journey\": \"demo\", \"method\": \"ariad\", \"cursor_generation\": 1, \"active_item\": \"CV1\", \"active_item_level\": \"delivery_story\", \"flow_unit\": \"delivery_story\", \"child_work_items\": [], \"plan_contract_version\": \"delivery_story_plan@1\", \"policy\": \"p\", \"stop_boundary\": \"navigator_validation\", \"scope_fingerprint\": \"f\", \"status\": \"pending\"}}",
+      "name": "receipt_delivery_story_without_children"
+    },
+    {
+      "active": true,
+      "cursor": {
+        "active_checkpoint": null,
+        "active_item": null,
+        "active_item_level": null,
+        "active_item_title": null,
+        "aggregate_checkpoint_status": [],
+        "cadence_limits": [],
+        "cadence_profile": null,
+        "child_work_items": [],
+        "cursor_generation": 1,
+        "granularity_decision": null,
+        "journey": "demo",
+        "last_delivery_event": null,
+        "method": "ariad",
+        "navigator_flow_unit": null,
+        "pending_confirmation": null,
+        "plan_preauthorization": {
+          "active_item": "CV1",
+          "active_item_level": "user_story",
+          "child_work_items": [],
+          "cursor_generation": 1,
+          "flow_unit": "story_by_story",
+          "journey": "demo",
+          "method": "ariad",
+          "plan_contract_version": "story_plan@1",
+          "policy": "p",
+          "reason": null,
+          "scope_fingerprint": "f",
+          "status": "pending",
+          "stop_boundary": "navigator_validation"
+        },
+        "release_intent": null,
+        "release_intent_delivery_story": null
+      },
+      "metadata": "{\"method\": \"ariad\", \"cursor_generation\": 1, \"plan_preauthorization\": {\"journey\": \"demo\", \"method\": \"ariad\", \"cursor_generation\": 1, \"active_item\": \"CV1\", \"active_item_level\": \"user_story\", \"flow_unit\": \"story_by_story\", \"child_work_items\": [], \"plan_contract_version\": \"story_plan@1\", \"policy\": \"p\", \"stop_boundary\": \"navigator_validation\", \"scope_fingerprint\": \"f\", \"status\": \"pending\", \"reason\": null}}",
+      "name": "receipt_valid"
+    },
+    {
+      "active": true,
+      "cursor": {
+        "active_checkpoint": null,
+        "active_item": null,
+        "active_item_level": null,
+        "active_item_title": null,
+        "aggregate_checkpoint_status": [],
+        "cadence_limits": [],
+        "cadence_profile": null,
+        "child_work_items": [],
+        "cursor_generation": 0,
+        "granularity_decision": null,
+        "journey": "demo",
+        "last_delivery_event": null,
+        "method": "ariad",
+        "navigator_flow_unit": null,
+        "pending_confirmation": null,
+        "plan_preauthorization": null,
+        "release_intent": null,
+        "release_intent_delivery_story": null
+      },
+      "metadata": "{\"method\": \"ariad\", \"future_field\": {\"a\": 1}}",
+      "name": "unknown_keys"
+    }
+  ],
+  "refused_writes": [
+    {
+      "expected_error": "ValueError: journey must not be empty",
+      "name": "empty_journey"
+    },
+    {
+      "expected_error": "ValueError: journey must not be empty",
+      "name": "blank_journey"
+    },
+    {
+      "expected_error": "ValueError: method must not be empty",
+      "name": "empty_method"
+    },
+    {
+      "expected_error": "ValueError: cursor_generation must be a non-negative integer",
+      "name": "negative_generation"
+    },
+    {
+      "expected_error": "ValueError: cursor_generation must be a non-negative integer",
+      "name": "boolean_generation"
+    },
+    {
+      "expected_error": "ValueError: release_intent must be planned, none, or undecided",
+      "name": "unknown_release_intent"
+    }
+  ],
+  "sequences": [
+    {
+      "name": "story_lifecycle",
+      "steps": [
+        {
+          "changes": {
+            "cadence_profile": "stepwise"
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": null,
+            "active_item_level": null,
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": "stepwise",
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": null,
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "sync",
+          "projection_requests": [],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": null, \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": \"stepwise\", \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        },
+        {
+          "changes": {
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "active_item_title": "Builder/Ariad tree",
+            "cadence_profile": "stepwise",
+            "last_delivery_event": "pulled"
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "active_item_title": "Builder/Ariad tree",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": "stepwise",
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": "pulled",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "pull",
+          "projection_requests": [
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV22.DS7.US8\", \"active_item_title\": \"Builder/Ariad tree\", \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"pulled\", \"cadence_profile\": \"stepwise\", \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        },
+        {
+          "changes": {
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "cadence_profile": "stepwise",
+            "last_delivery_event": "prepared"
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": "stepwise",
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": "prepared",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "prepare",
+          "projection_requests": [
+            "demo",
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV22.DS7.US8\", \"active_item_title\": null, \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"prepared\", \"cadence_profile\": \"stepwise\", \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        },
+        {
+          "changes": {
+            "active_checkpoint": "after_plan",
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "cadence_profile": "stepwise",
+            "last_delivery_event": "plan_checkpoint",
+            "pending_confirmation": "navigator_approval"
+          },
+          "cursor": {
+            "active_checkpoint": "after_plan",
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": "stepwise",
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": "plan_checkpoint",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": "navigator_approval",
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "plan",
+          "projection_requests": [
+            "demo",
+            "demo",
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV22.DS7.US8\", \"active_item_title\": null, \"active_item_level\": \"user_story\", \"active_checkpoint\": \"after_plan\", \"pending_confirmation\": \"navigator_approval\", \"last_delivery_event\": \"plan_checkpoint\", \"cadence_profile\": \"stepwise\", \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        },
+        {
+          "changes": {
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "cadence_profile": "stepwise",
+            "last_delivery_event": "plan_approved"
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": "stepwise",
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": "plan_approved",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "approve",
+          "projection_requests": [
+            "demo",
+            "demo",
+            "demo",
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV22.DS7.US8\", \"active_item_title\": null, \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"plan_approved\", \"cadence_profile\": \"stepwise\", \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        }
+      ]
+    },
+    {
+      "name": "receipt_invalidated_by__cursor_generation_changed",
+      "steps": [
+        {
+          "changes": {
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "cursor_generation": 3,
+            "navigator_flow_unit": "story_by_story",
+            "plan_preauthorization": "<receipt>"
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 3,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": null,
+            "method": "ariad",
+            "navigator_flow_unit": "story_by_story",
+            "pending_confirmation": null,
+            "plan_preauthorization": {
+              "active_item": "CV22.DS7.US8",
+              "active_item_level": "user_story",
+              "child_work_items": [],
+              "cursor_generation": 3,
+              "flow_unit": "story_by_story",
+              "journey": "demo",
+              "method": "ariad",
+              "plan_contract_version": "story_plan@1",
+              "policy": "single_use_exact_scope",
+              "reason": null,
+              "scope_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              "status": "pending",
+              "stop_boundary": "navigator_validation"
+            },
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "record_receipt",
+          "projection_requests": [
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV22.DS7.US8\", \"active_item_title\": null, \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"story_by_story\", \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 3, \"plan_preauthorization\": {\"journey\": \"demo\", \"method\": \"ariad\", \"cursor_generation\": 3, \"active_item\": \"CV22.DS7.US8\", \"active_item_level\": \"user_story\", \"flow_unit\": \"story_by_story\", \"child_work_items\": [], \"plan_contract_version\": \"story_plan@1\", \"policy\": \"single_use_exact_scope\", \"stop_boundary\": \"navigator_validation\", \"scope_fingerprint\": \"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\", \"status\": \"pending\", \"reason\": null}, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        },
+        {
+          "changes": {
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "cursor_generation": 3,
+            "last_delivery_event": "noted",
+            "navigator_flow_unit": "story_by_story"
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 3,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": "noted",
+            "method": "ariad",
+            "navigator_flow_unit": "story_by_story",
+            "pending_confirmation": null,
+            "plan_preauthorization": {
+              "active_item": "CV22.DS7.US8",
+              "active_item_level": "user_story",
+              "child_work_items": [],
+              "cursor_generation": 3,
+              "flow_unit": "story_by_story",
+              "journey": "demo",
+              "method": "ariad",
+              "plan_contract_version": "story_plan@1",
+              "policy": "single_use_exact_scope",
+              "reason": null,
+              "scope_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              "status": "pending",
+              "stop_boundary": "navigator_validation"
+            },
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "unrelated_write",
+          "projection_requests": [
+            "demo",
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV22.DS7.US8\", \"active_item_title\": null, \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"noted\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"story_by_story\", \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 3, \"plan_preauthorization\": {\"journey\": \"demo\", \"method\": \"ariad\", \"cursor_generation\": 3, \"active_item\": \"CV22.DS7.US8\", \"active_item_level\": \"user_story\", \"flow_unit\": \"story_by_story\", \"child_work_items\": [], \"plan_contract_version\": \"story_plan@1\", \"policy\": \"single_use_exact_scope\", \"stop_boundary\": \"navigator_validation\", \"scope_fingerprint\": \"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\", \"status\": \"pending\", \"reason\": null}, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        },
+        {
+          "changes": {
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "cursor_generation": 4,
+            "navigator_flow_unit": "story_by_story"
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 4,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": null,
+            "method": "ariad",
+            "navigator_flow_unit": "story_by_story",
+            "pending_confirmation": null,
+            "plan_preauthorization": {
+              "active_item": "CV22.DS7.US8",
+              "active_item_level": "user_story",
+              "child_work_items": [],
+              "cursor_generation": 3,
+              "flow_unit": "story_by_story",
+              "journey": "demo",
+              "method": "ariad",
+              "plan_contract_version": "story_plan@1",
+              "policy": "single_use_exact_scope",
+              "reason": "cursor_generation_changed",
+              "scope_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              "status": "invalidated",
+              "stop_boundary": "navigator_validation"
+            },
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "coordinate_change",
+          "projection_requests": [
+            "demo",
+            "demo",
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV22.DS7.US8\", \"active_item_title\": null, \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"story_by_story\", \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 4, \"plan_preauthorization\": {\"journey\": \"demo\", \"method\": \"ariad\", \"cursor_generation\": 3, \"active_item\": \"CV22.DS7.US8\", \"active_item_level\": \"user_story\", \"flow_unit\": \"story_by_story\", \"child_work_items\": [], \"plan_contract_version\": \"story_plan@1\", \"policy\": \"single_use_exact_scope\", \"stop_boundary\": \"navigator_validation\", \"scope_fingerprint\": \"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\", \"status\": \"invalidated\", \"reason\": \"cursor_generation_changed\"}, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        }
+      ]
+    },
+    {
+      "name": "receipt_invalidated_by__active_item_changed",
+      "steps": [
+        {
+          "changes": {
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "cursor_generation": 3,
+            "navigator_flow_unit": "story_by_story",
+            "plan_preauthorization": "<receipt>"
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 3,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": null,
+            "method": "ariad",
+            "navigator_flow_unit": "story_by_story",
+            "pending_confirmation": null,
+            "plan_preauthorization": {
+              "active_item": "CV22.DS7.US8",
+              "active_item_level": "user_story",
+              "child_work_items": [],
+              "cursor_generation": 3,
+              "flow_unit": "story_by_story",
+              "journey": "demo",
+              "method": "ariad",
+              "plan_contract_version": "story_plan@1",
+              "policy": "single_use_exact_scope",
+              "reason": null,
+              "scope_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              "status": "pending",
+              "stop_boundary": "navigator_validation"
+            },
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "record_receipt",
+          "projection_requests": [
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV22.DS7.US8\", \"active_item_title\": null, \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"story_by_story\", \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 3, \"plan_preauthorization\": {\"journey\": \"demo\", \"method\": \"ariad\", \"cursor_generation\": 3, \"active_item\": \"CV22.DS7.US8\", \"active_item_level\": \"user_story\", \"flow_unit\": \"story_by_story\", \"child_work_items\": [], \"plan_contract_version\": \"story_plan@1\", \"policy\": \"single_use_exact_scope\", \"stop_boundary\": \"navigator_validation\", \"scope_fingerprint\": \"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\", \"status\": \"pending\", \"reason\": null}, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        },
+        {
+          "changes": {
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "cursor_generation": 3,
+            "last_delivery_event": "noted",
+            "navigator_flow_unit": "story_by_story"
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 3,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": "noted",
+            "method": "ariad",
+            "navigator_flow_unit": "story_by_story",
+            "pending_confirmation": null,
+            "plan_preauthorization": {
+              "active_item": "CV22.DS7.US8",
+              "active_item_level": "user_story",
+              "child_work_items": [],
+              "cursor_generation": 3,
+              "flow_unit": "story_by_story",
+              "journey": "demo",
+              "method": "ariad",
+              "plan_contract_version": "story_plan@1",
+              "policy": "single_use_exact_scope",
+              "reason": null,
+              "scope_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              "status": "pending",
+              "stop_boundary": "navigator_validation"
+            },
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "unrelated_write",
+          "projection_requests": [
+            "demo",
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV22.DS7.US8\", \"active_item_title\": null, \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"noted\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"story_by_story\", \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 3, \"plan_preauthorization\": {\"journey\": \"demo\", \"method\": \"ariad\", \"cursor_generation\": 3, \"active_item\": \"CV22.DS7.US8\", \"active_item_level\": \"user_story\", \"flow_unit\": \"story_by_story\", \"child_work_items\": [], \"plan_contract_version\": \"story_plan@1\", \"policy\": \"single_use_exact_scope\", \"stop_boundary\": \"navigator_validation\", \"scope_fingerprint\": \"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\", \"status\": \"pending\", \"reason\": null}, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        },
+        {
+          "changes": {
+            "active_item": "CV22.DS7.US9",
+            "active_item_level": "user_story",
+            "cursor_generation": 3,
+            "navigator_flow_unit": "story_by_story"
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV22.DS7.US9",
+            "active_item_level": "user_story",
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 3,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": null,
+            "method": "ariad",
+            "navigator_flow_unit": "story_by_story",
+            "pending_confirmation": null,
+            "plan_preauthorization": {
+              "active_item": "CV22.DS7.US8",
+              "active_item_level": "user_story",
+              "child_work_items": [],
+              "cursor_generation": 3,
+              "flow_unit": "story_by_story",
+              "journey": "demo",
+              "method": "ariad",
+              "plan_contract_version": "story_plan@1",
+              "policy": "single_use_exact_scope",
+              "reason": "active_item_changed",
+              "scope_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              "status": "invalidated",
+              "stop_boundary": "navigator_validation"
+            },
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "coordinate_change",
+          "projection_requests": [
+            "demo",
+            "demo",
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV22.DS7.US9\", \"active_item_title\": null, \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"story_by_story\", \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 3, \"plan_preauthorization\": {\"journey\": \"demo\", \"method\": \"ariad\", \"cursor_generation\": 3, \"active_item\": \"CV22.DS7.US8\", \"active_item_level\": \"user_story\", \"flow_unit\": \"story_by_story\", \"child_work_items\": [], \"plan_contract_version\": \"story_plan@1\", \"policy\": \"single_use_exact_scope\", \"stop_boundary\": \"navigator_validation\", \"scope_fingerprint\": \"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\", \"status\": \"invalidated\", \"reason\": \"active_item_changed\"}, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        }
+      ]
+    },
+    {
+      "name": "receipt_invalidated_by__active_item_level_changed",
+      "steps": [
+        {
+          "changes": {
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "cursor_generation": 3,
+            "navigator_flow_unit": "story_by_story",
+            "plan_preauthorization": "<receipt>"
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 3,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": null,
+            "method": "ariad",
+            "navigator_flow_unit": "story_by_story",
+            "pending_confirmation": null,
+            "plan_preauthorization": {
+              "active_item": "CV22.DS7.US8",
+              "active_item_level": "user_story",
+              "child_work_items": [],
+              "cursor_generation": 3,
+              "flow_unit": "story_by_story",
+              "journey": "demo",
+              "method": "ariad",
+              "plan_contract_version": "story_plan@1",
+              "policy": "single_use_exact_scope",
+              "reason": null,
+              "scope_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              "status": "pending",
+              "stop_boundary": "navigator_validation"
+            },
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "record_receipt",
+          "projection_requests": [
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV22.DS7.US8\", \"active_item_title\": null, \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"story_by_story\", \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 3, \"plan_preauthorization\": {\"journey\": \"demo\", \"method\": \"ariad\", \"cursor_generation\": 3, \"active_item\": \"CV22.DS7.US8\", \"active_item_level\": \"user_story\", \"flow_unit\": \"story_by_story\", \"child_work_items\": [], \"plan_contract_version\": \"story_plan@1\", \"policy\": \"single_use_exact_scope\", \"stop_boundary\": \"navigator_validation\", \"scope_fingerprint\": \"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\", \"status\": \"pending\", \"reason\": null}, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        },
+        {
+          "changes": {
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "cursor_generation": 3,
+            "last_delivery_event": "noted",
+            "navigator_flow_unit": "story_by_story"
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 3,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": "noted",
+            "method": "ariad",
+            "navigator_flow_unit": "story_by_story",
+            "pending_confirmation": null,
+            "plan_preauthorization": {
+              "active_item": "CV22.DS7.US8",
+              "active_item_level": "user_story",
+              "child_work_items": [],
+              "cursor_generation": 3,
+              "flow_unit": "story_by_story",
+              "journey": "demo",
+              "method": "ariad",
+              "plan_contract_version": "story_plan@1",
+              "policy": "single_use_exact_scope",
+              "reason": null,
+              "scope_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              "status": "pending",
+              "stop_boundary": "navigator_validation"
+            },
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "unrelated_write",
+          "projection_requests": [
+            "demo",
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV22.DS7.US8\", \"active_item_title\": null, \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"noted\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"story_by_story\", \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 3, \"plan_preauthorization\": {\"journey\": \"demo\", \"method\": \"ariad\", \"cursor_generation\": 3, \"active_item\": \"CV22.DS7.US8\", \"active_item_level\": \"user_story\", \"flow_unit\": \"story_by_story\", \"child_work_items\": [], \"plan_contract_version\": \"story_plan@1\", \"policy\": \"single_use_exact_scope\", \"stop_boundary\": \"navigator_validation\", \"scope_fingerprint\": \"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\", \"status\": \"pending\", \"reason\": null}, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        },
+        {
+          "changes": {
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "technical_story",
+            "cursor_generation": 3,
+            "navigator_flow_unit": "story_by_story"
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "technical_story",
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 3,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": null,
+            "method": "ariad",
+            "navigator_flow_unit": "story_by_story",
+            "pending_confirmation": null,
+            "plan_preauthorization": {
+              "active_item": "CV22.DS7.US8",
+              "active_item_level": "user_story",
+              "child_work_items": [],
+              "cursor_generation": 3,
+              "flow_unit": "story_by_story",
+              "journey": "demo",
+              "method": "ariad",
+              "plan_contract_version": "story_plan@1",
+              "policy": "single_use_exact_scope",
+              "reason": "active_item_level_changed",
+              "scope_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              "status": "invalidated",
+              "stop_boundary": "navigator_validation"
+            },
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "coordinate_change",
+          "projection_requests": [
+            "demo",
+            "demo",
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV22.DS7.US8\", \"active_item_title\": null, \"active_item_level\": \"technical_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"story_by_story\", \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 3, \"plan_preauthorization\": {\"journey\": \"demo\", \"method\": \"ariad\", \"cursor_generation\": 3, \"active_item\": \"CV22.DS7.US8\", \"active_item_level\": \"user_story\", \"flow_unit\": \"story_by_story\", \"child_work_items\": [], \"plan_contract_version\": \"story_plan@1\", \"policy\": \"single_use_exact_scope\", \"stop_boundary\": \"navigator_validation\", \"scope_fingerprint\": \"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\", \"status\": \"invalidated\", \"reason\": \"active_item_level_changed\"}, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        }
+      ]
+    },
+    {
+      "name": "receipt_invalidated_by__flow_unit_changed",
+      "steps": [
+        {
+          "changes": {
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "cursor_generation": 3,
+            "navigator_flow_unit": "story_by_story",
+            "plan_preauthorization": "<receipt>"
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 3,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": null,
+            "method": "ariad",
+            "navigator_flow_unit": "story_by_story",
+            "pending_confirmation": null,
+            "plan_preauthorization": {
+              "active_item": "CV22.DS7.US8",
+              "active_item_level": "user_story",
+              "child_work_items": [],
+              "cursor_generation": 3,
+              "flow_unit": "story_by_story",
+              "journey": "demo",
+              "method": "ariad",
+              "plan_contract_version": "story_plan@1",
+              "policy": "single_use_exact_scope",
+              "reason": null,
+              "scope_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              "status": "pending",
+              "stop_boundary": "navigator_validation"
+            },
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "record_receipt",
+          "projection_requests": [
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV22.DS7.US8\", \"active_item_title\": null, \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"story_by_story\", \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 3, \"plan_preauthorization\": {\"journey\": \"demo\", \"method\": \"ariad\", \"cursor_generation\": 3, \"active_item\": \"CV22.DS7.US8\", \"active_item_level\": \"user_story\", \"flow_unit\": \"story_by_story\", \"child_work_items\": [], \"plan_contract_version\": \"story_plan@1\", \"policy\": \"single_use_exact_scope\", \"stop_boundary\": \"navigator_validation\", \"scope_fingerprint\": \"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\", \"status\": \"pending\", \"reason\": null}, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        },
+        {
+          "changes": {
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "cursor_generation": 3,
+            "last_delivery_event": "noted",
+            "navigator_flow_unit": "story_by_story"
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 3,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": "noted",
+            "method": "ariad",
+            "navigator_flow_unit": "story_by_story",
+            "pending_confirmation": null,
+            "plan_preauthorization": {
+              "active_item": "CV22.DS7.US8",
+              "active_item_level": "user_story",
+              "child_work_items": [],
+              "cursor_generation": 3,
+              "flow_unit": "story_by_story",
+              "journey": "demo",
+              "method": "ariad",
+              "plan_contract_version": "story_plan@1",
+              "policy": "single_use_exact_scope",
+              "reason": null,
+              "scope_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              "status": "pending",
+              "stop_boundary": "navigator_validation"
+            },
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "unrelated_write",
+          "projection_requests": [
+            "demo",
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV22.DS7.US8\", \"active_item_title\": null, \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"noted\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"story_by_story\", \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 3, \"plan_preauthorization\": {\"journey\": \"demo\", \"method\": \"ariad\", \"cursor_generation\": 3, \"active_item\": \"CV22.DS7.US8\", \"active_item_level\": \"user_story\", \"flow_unit\": \"story_by_story\", \"child_work_items\": [], \"plan_contract_version\": \"story_plan@1\", \"policy\": \"single_use_exact_scope\", \"stop_boundary\": \"navigator_validation\", \"scope_fingerprint\": \"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\", \"status\": \"pending\", \"reason\": null}, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        },
+        {
+          "changes": {
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "cursor_generation": 3,
+            "navigator_flow_unit": "delivery_story"
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 3,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": null,
+            "method": "ariad",
+            "navigator_flow_unit": "delivery_story",
+            "pending_confirmation": null,
+            "plan_preauthorization": {
+              "active_item": "CV22.DS7.US8",
+              "active_item_level": "user_story",
+              "child_work_items": [],
+              "cursor_generation": 3,
+              "flow_unit": "story_by_story",
+              "journey": "demo",
+              "method": "ariad",
+              "plan_contract_version": "story_plan@1",
+              "policy": "single_use_exact_scope",
+              "reason": "flow_unit_changed",
+              "scope_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              "status": "invalidated",
+              "stop_boundary": "navigator_validation"
+            },
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "coordinate_change",
+          "projection_requests": [
+            "demo",
+            "demo",
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV22.DS7.US8\", \"active_item_title\": null, \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"delivery_story\", \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 3, \"plan_preauthorization\": {\"journey\": \"demo\", \"method\": \"ariad\", \"cursor_generation\": 3, \"active_item\": \"CV22.DS7.US8\", \"active_item_level\": \"user_story\", \"flow_unit\": \"story_by_story\", \"child_work_items\": [], \"plan_contract_version\": \"story_plan@1\", \"policy\": \"single_use_exact_scope\", \"stop_boundary\": \"navigator_validation\", \"scope_fingerprint\": \"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\", \"status\": \"invalidated\", \"reason\": \"flow_unit_changed\"}, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        }
+      ]
+    },
+    {
+      "name": "receipt_invalidated_by__child_scope_changed",
+      "steps": [
+        {
+          "changes": {
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "cursor_generation": 3,
+            "navigator_flow_unit": "story_by_story",
+            "plan_preauthorization": "<receipt>"
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 3,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": null,
+            "method": "ariad",
+            "navigator_flow_unit": "story_by_story",
+            "pending_confirmation": null,
+            "plan_preauthorization": {
+              "active_item": "CV22.DS7.US8",
+              "active_item_level": "user_story",
+              "child_work_items": [],
+              "cursor_generation": 3,
+              "flow_unit": "story_by_story",
+              "journey": "demo",
+              "method": "ariad",
+              "plan_contract_version": "story_plan@1",
+              "policy": "single_use_exact_scope",
+              "reason": null,
+              "scope_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              "status": "pending",
+              "stop_boundary": "navigator_validation"
+            },
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "record_receipt",
+          "projection_requests": [
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV22.DS7.US8\", \"active_item_title\": null, \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"story_by_story\", \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 3, \"plan_preauthorization\": {\"journey\": \"demo\", \"method\": \"ariad\", \"cursor_generation\": 3, \"active_item\": \"CV22.DS7.US8\", \"active_item_level\": \"user_story\", \"flow_unit\": \"story_by_story\", \"child_work_items\": [], \"plan_contract_version\": \"story_plan@1\", \"policy\": \"single_use_exact_scope\", \"stop_boundary\": \"navigator_validation\", \"scope_fingerprint\": \"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\", \"status\": \"pending\", \"reason\": null}, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        },
+        {
+          "changes": {
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "cursor_generation": 3,
+            "last_delivery_event": "noted",
+            "navigator_flow_unit": "story_by_story"
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 3,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": "noted",
+            "method": "ariad",
+            "navigator_flow_unit": "story_by_story",
+            "pending_confirmation": null,
+            "plan_preauthorization": {
+              "active_item": "CV22.DS7.US8",
+              "active_item_level": "user_story",
+              "child_work_items": [],
+              "cursor_generation": 3,
+              "flow_unit": "story_by_story",
+              "journey": "demo",
+              "method": "ariad",
+              "plan_contract_version": "story_plan@1",
+              "policy": "single_use_exact_scope",
+              "reason": null,
+              "scope_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              "status": "pending",
+              "stop_boundary": "navigator_validation"
+            },
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "unrelated_write",
+          "projection_requests": [
+            "demo",
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV22.DS7.US8\", \"active_item_title\": null, \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"noted\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"story_by_story\", \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 3, \"plan_preauthorization\": {\"journey\": \"demo\", \"method\": \"ariad\", \"cursor_generation\": 3, \"active_item\": \"CV22.DS7.US8\", \"active_item_level\": \"user_story\", \"flow_unit\": \"story_by_story\", \"child_work_items\": [], \"plan_contract_version\": \"story_plan@1\", \"policy\": \"single_use_exact_scope\", \"stop_boundary\": \"navigator_validation\", \"scope_fingerprint\": \"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\", \"status\": \"pending\", \"reason\": null}, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        },
+        {
+          "changes": {
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "child_work_items": [
+              "A"
+            ],
+            "cursor_generation": 3,
+            "navigator_flow_unit": "story_by_story"
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [
+              "A"
+            ],
+            "cursor_generation": 3,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": null,
+            "method": "ariad",
+            "navigator_flow_unit": "story_by_story",
+            "pending_confirmation": null,
+            "plan_preauthorization": {
+              "active_item": "CV22.DS7.US8",
+              "active_item_level": "user_story",
+              "child_work_items": [],
+              "cursor_generation": 3,
+              "flow_unit": "story_by_story",
+              "journey": "demo",
+              "method": "ariad",
+              "plan_contract_version": "story_plan@1",
+              "policy": "single_use_exact_scope",
+              "reason": "child_scope_changed",
+              "scope_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              "status": "invalidated",
+              "stop_boundary": "navigator_validation"
+            },
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "coordinate_change",
+          "projection_requests": [
+            "demo",
+            "demo",
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV22.DS7.US8\", \"active_item_title\": null, \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"story_by_story\", \"child_work_items\": [\"A\"], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 3, \"plan_preauthorization\": {\"journey\": \"demo\", \"method\": \"ariad\", \"cursor_generation\": 3, \"active_item\": \"CV22.DS7.US8\", \"active_item_level\": \"user_story\", \"flow_unit\": \"story_by_story\", \"child_work_items\": [], \"plan_contract_version\": \"story_plan@1\", \"policy\": \"single_use_exact_scope\", \"stop_boundary\": \"navigator_validation\", \"scope_fingerprint\": \"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\", \"status\": \"invalidated\", \"reason\": \"child_scope_changed\"}, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        }
+      ]
+    },
+    {
+      "name": "consumed_receipt_survives_coordinate_change",
+      "steps": [
+        {
+          "changes": {
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "cursor_generation": 3,
+            "plan_preauthorization": "<receipt>"
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 3,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": null,
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": {
+              "active_item": "CV22.DS7.US8",
+              "active_item_level": "user_story",
+              "child_work_items": [],
+              "cursor_generation": 3,
+              "flow_unit": "story_by_story",
+              "journey": "demo",
+              "method": "ariad",
+              "plan_contract_version": "story_plan@1",
+              "policy": "single_use_exact_scope",
+              "reason": null,
+              "scope_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              "status": "consumed",
+              "stop_boundary": "navigator_validation"
+            },
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "record_consumed",
+          "projection_requests": [
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV22.DS7.US8\", \"active_item_title\": null, \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 3, \"plan_preauthorization\": {\"journey\": \"demo\", \"method\": \"ariad\", \"cursor_generation\": 3, \"active_item\": \"CV22.DS7.US8\", \"active_item_level\": \"user_story\", \"flow_unit\": \"story_by_story\", \"child_work_items\": [], \"plan_contract_version\": \"story_plan@1\", \"policy\": \"single_use_exact_scope\", \"stop_boundary\": \"navigator_validation\", \"scope_fingerprint\": \"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\", \"status\": \"consumed\", \"reason\": null}, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        },
+        {
+          "changes": {
+            "active_item": "CV22.DS7.US9",
+            "active_item_level": "user_story",
+            "cursor_generation": 3
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV22.DS7.US9",
+            "active_item_level": "user_story",
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 3,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": null,
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": {
+              "active_item": "CV22.DS7.US8",
+              "active_item_level": "user_story",
+              "child_work_items": [],
+              "cursor_generation": 3,
+              "flow_unit": "story_by_story",
+              "journey": "demo",
+              "method": "ariad",
+              "plan_contract_version": "story_plan@1",
+              "policy": "single_use_exact_scope",
+              "reason": null,
+              "scope_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              "status": "consumed",
+              "stop_boundary": "navigator_validation"
+            },
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "coordinate_change",
+          "projection_requests": [
+            "demo",
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV22.DS7.US9\", \"active_item_title\": null, \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 3, \"plan_preauthorization\": {\"journey\": \"demo\", \"method\": \"ariad\", \"cursor_generation\": 3, \"active_item\": \"CV22.DS7.US8\", \"active_item_level\": \"user_story\", \"flow_unit\": \"story_by_story\", \"child_work_items\": [], \"plan_contract_version\": \"story_plan@1\", \"policy\": \"single_use_exact_scope\", \"stop_boundary\": \"navigator_validation\", \"scope_fingerprint\": \"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\", \"status\": \"consumed\", \"reason\": null}, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        }
+      ]
+    },
+    {
+      "name": "explicit_none_clears_receipt",
+      "steps": [
+        {
+          "changes": {
+            "active_item": "CV1",
+            "cursor_generation": 3,
+            "plan_preauthorization": "<receipt>"
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1",
+            "active_item_level": null,
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 3,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": null,
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": {
+              "active_item": "CV22.DS7.US8",
+              "active_item_level": "user_story",
+              "child_work_items": [],
+              "cursor_generation": 3,
+              "flow_unit": "story_by_story",
+              "journey": "demo",
+              "method": "ariad",
+              "plan_contract_version": "story_plan@1",
+              "policy": "single_use_exact_scope",
+              "reason": null,
+              "scope_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              "status": "pending",
+              "stop_boundary": "navigator_validation"
+            },
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "record",
+          "projection_requests": [
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1\", \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 3, \"plan_preauthorization\": {\"journey\": \"demo\", \"method\": \"ariad\", \"cursor_generation\": 3, \"active_item\": \"CV22.DS7.US8\", \"active_item_level\": \"user_story\", \"flow_unit\": \"story_by_story\", \"child_work_items\": [], \"plan_contract_version\": \"story_plan@1\", \"policy\": \"single_use_exact_scope\", \"stop_boundary\": \"navigator_validation\", \"scope_fingerprint\": \"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\", \"status\": \"pending\", \"reason\": null}, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        },
+        {
+          "changes": {
+            "active_item": "CV1",
+            "cursor_generation": 3,
+            "plan_preauthorization": null
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1",
+            "active_item_level": null,
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 3,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": null,
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "explicit_none",
+          "projection_requests": [
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1\", \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 3, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        }
+      ]
+    },
+    {
+      "name": "projection_refresh_change_detection",
+      "steps": [
+        {
+          "changes": {},
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": null,
+            "active_item_level": null,
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": null,
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "no_active_item",
+          "projection_requests": [],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": null, \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        },
+        {
+          "changes": {
+            "active_item": "CV1",
+            "last_delivery_event": "pulled"
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1",
+            "active_item_level": null,
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": "pulled",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "active_item_appears",
+          "projection_requests": [
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1\", \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"pulled\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        },
+        {
+          "changes": {
+            "active_item": "CV1",
+            "cadence_profile": "checkpoint",
+            "last_delivery_event": "pulled"
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1",
+            "active_item_level": null,
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": "checkpoint",
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": "pulled",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "unprojected_field_changes",
+          "projection_requests": [
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1\", \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"pulled\", \"cadence_profile\": \"checkpoint\", \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        },
+        {
+          "changes": {
+            "active_item": "CV1",
+            "last_delivery_event": "prepared"
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1",
+            "active_item_level": null,
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": "prepared",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "projected_field_changes",
+          "projection_requests": [
+            "demo",
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1\", \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"prepared\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        },
+        {
+          "changes": {
+            "active_checkpoint": "after_plan",
+            "active_item": "CV1",
+            "last_delivery_event": "prepared"
+          },
+          "cursor": {
+            "active_checkpoint": "after_plan",
+            "active_item": "CV1",
+            "active_item_level": null,
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": "prepared",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "checkpoint_appears",
+          "projection_requests": [
+            "demo",
+            "demo",
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1\", \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": \"after_plan\", \"pending_confirmation\": null, \"last_delivery_event\": \"prepared\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        },
+        {
+          "changes": {
+            "last_delivery_event": "prepared"
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": null,
+            "active_item_level": null,
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": "prepared",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "active_item_disappears",
+          "projection_requests": [
+            "demo",
+            "demo",
+            "demo",
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": null, \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"prepared\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        }
+      ]
+    },
+    {
+      "name": "projected_event_default_collides_with_literal_active",
+      "steps": [
+        {
+          "changes": {
+            "active_item": "CV1"
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1",
+            "active_item_level": null,
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": null,
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "item_without_event",
+          "projection_requests": [
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1\", \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        },
+        {
+          "changes": {
+            "active_item": "CV1",
+            "last_delivery_event": "active"
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1",
+            "active_item_level": null,
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": "active",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "event_becomes_literal_active",
+          "projection_requests": [
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1\", \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"active\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        },
+        {
+          "changes": {
+            "active_item": "CV1",
+            "last_delivery_event": "pulled"
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1",
+            "active_item_level": null,
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": "pulled",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "event_becomes_something_else",
+          "projection_requests": [
+            "demo",
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1\", \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"pulled\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        },
+        {
+          "changes": {
+            "active_item": "CV1"
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1",
+            "active_item_level": null,
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": null,
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "event_returns_to_absent",
+          "projection_requests": [
+            "demo",
+            "demo",
+            "demo"
+          ],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1\", \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        }
+      ]
+    },
+    {
+      "name": "refresh_projection_disabled",
+      "steps": [
+        {
+          "changes": {
+            "active_item": "CV1",
+            "last_delivery_event": "pulled",
+            "refresh_projection": false
+          },
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1",
+            "active_item_level": null,
+            "active_item_title": null,
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "demo",
+            "last_delivery_event": "pulled",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "label": "write",
+          "projection_requests": [],
+          "row": {
+            "active": 1,
+            "closed_at": null,
+            "conversation_id": null,
+            "hook_injected": 0,
+            "interface": "builder_delivery_cursor",
+            "journey": "demo",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1\", \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"pulled\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "mirror_active": 0,
+            "persona": null,
+            "session_id": "__builder_delivery_cursor__:demo",
+            "started_at": "2026-01-01T00:00:00+00:00",
+            "updated_at": "2026-01-01T00:00:00+00:00"
+          }
+        }
+      ]
+    }
+  ],
+  "session_id": "__builder_delivery_cursor__:demo",
+  "writes": [
+    {
+      "cursor": {
+        "active_checkpoint": null,
+        "active_item": null,
+        "active_item_level": null,
+        "active_item_title": null,
+        "aggregate_checkpoint_status": [],
+        "cadence_limits": [],
+        "cadence_profile": null,
+        "child_work_items": [],
+        "cursor_generation": 0,
+        "granularity_decision": null,
+        "journey": "demo",
+        "last_delivery_event": null,
+        "method": "ariad",
+        "navigator_flow_unit": null,
+        "pending_confirmation": null,
+        "plan_preauthorization": null,
+        "release_intent": null,
+        "release_intent_delivery_story": null
+      },
+      "name": "minimal",
+      "projection_requests": [],
+      "row": {
+        "active": 1,
+        "closed_at": null,
+        "conversation_id": null,
+        "hook_injected": 0,
+        "interface": "builder_delivery_cursor",
+        "journey": "demo",
+        "metadata": "{\"method\": \"ariad\", \"active_item\": null, \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+        "mirror_active": 0,
+        "persona": null,
+        "session_id": "__builder_delivery_cursor__:demo",
+        "started_at": "2026-01-01T00:00:00+00:00",
+        "updated_at": "2026-01-01T00:00:00+00:00"
+      }
+    },
+    {
+      "cursor": {
+        "active_checkpoint": "after_plan",
+        "active_item": "CV22.DS7.US8",
+        "active_item_level": "user_story",
+        "active_item_title": "Builder/Ariad tree",
+        "aggregate_checkpoint_status": [
+          "plan:approved"
+        ],
+        "cadence_limits": [
+          "stop before push",
+          "stop on scope change"
+        ],
+        "cadence_profile": "stepwise",
+        "child_work_items": [
+          "CV22.DS7.US8.A",
+          "CV22.DS7.US8.B"
+        ],
+        "cursor_generation": 7,
+        "granularity_decision": "implementable",
+        "journey": "demo",
+        "last_delivery_event": "plan_checkpoint",
+        "method": "ariad",
+        "navigator_flow_unit": "story_by_story",
+        "pending_confirmation": "navigator_approval",
+        "plan_preauthorization": null,
+        "release_intent": null,
+        "release_intent_delivery_story": null
+      },
+      "name": "full",
+      "projection_requests": [
+        "demo"
+      ],
+      "row": {
+        "active": 1,
+        "closed_at": null,
+        "conversation_id": null,
+        "hook_injected": 0,
+        "interface": "builder_delivery_cursor",
+        "journey": "demo",
+        "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV22.DS7.US8\", \"active_item_title\": \"Builder/Ariad tree\", \"active_item_level\": \"user_story\", \"active_checkpoint\": \"after_plan\", \"pending_confirmation\": \"navigator_approval\", \"last_delivery_event\": \"plan_checkpoint\", \"cadence_profile\": \"stepwise\", \"cadence_limits\": [\"stop before push\", \"stop on scope change\"], \"granularity_decision\": \"implementable\", \"navigator_flow_unit\": \"story_by_story\", \"child_work_items\": [\"CV22.DS7.US8.A\", \"CV22.DS7.US8.B\"], \"aggregate_checkpoint_status\": [\"plan:approved\"], \"cursor_generation\": 7, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+        "mirror_active": 0,
+        "persona": null,
+        "session_id": "__builder_delivery_cursor__:demo",
+        "started_at": "2026-01-01T00:00:00+00:00",
+        "updated_at": "2026-01-01T00:00:00+00:00"
+      }
+    },
+    {
+      "cursor": {
+        "active_checkpoint": null,
+        "active_item": null,
+        "active_item_level": null,
+        "active_item_title": null,
+        "aggregate_checkpoint_status": [],
+        "cadence_limits": [
+          "kept"
+        ],
+        "cadence_profile": null,
+        "child_work_items": [],
+        "cursor_generation": 0,
+        "granularity_decision": null,
+        "journey": "demo",
+        "last_delivery_event": null,
+        "method": "ariad",
+        "navigator_flow_unit": null,
+        "pending_confirmation": null,
+        "plan_preauthorization": null,
+        "release_intent": null,
+        "release_intent_delivery_story": null
+      },
+      "name": "blank_strings_become_none",
+      "projection_requests": [],
+      "row": {
+        "active": 1,
+        "closed_at": null,
+        "conversation_id": null,
+        "hook_injected": 0,
+        "interface": "builder_delivery_cursor",
+        "journey": "demo",
+        "metadata": "{\"method\": \"ariad\", \"active_item\": null, \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [\"kept\"], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+        "mirror_active": 0,
+        "persona": null,
+        "session_id": "__builder_delivery_cursor__:demo",
+        "started_at": "2026-01-01T00:00:00+00:00",
+        "updated_at": "2026-01-01T00:00:00+00:00"
+      }
+    },
+    {
+      "cursor": {
+        "active_checkpoint": null,
+        "active_item": "CV1.DS1",
+        "active_item_level": null,
+        "active_item_title": null,
+        "aggregate_checkpoint_status": [],
+        "cadence_limits": [],
+        "cadence_profile": null,
+        "child_work_items": [],
+        "cursor_generation": 0,
+        "granularity_decision": null,
+        "journey": "demo",
+        "last_delivery_event": "pulled",
+        "method": "ariad",
+        "navigator_flow_unit": null,
+        "pending_confirmation": null,
+        "plan_preauthorization": null,
+        "release_intent": null,
+        "release_intent_delivery_story": null
+      },
+      "name": "padded_values",
+      "projection_requests": [
+        "demo"
+      ],
+      "row": {
+        "active": 1,
+        "closed_at": null,
+        "conversation_id": null,
+        "hook_injected": 0,
+        "interface": "builder_delivery_cursor",
+        "journey": "demo",
+        "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1\", \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"pulled\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+        "mirror_active": 0,
+        "persona": null,
+        "session_id": "__builder_delivery_cursor__:demo",
+        "started_at": "2026-01-01T00:00:00+00:00",
+        "updated_at": "2026-01-01T00:00:00+00:00"
+      }
+    },
+    {
+      "cursor": {
+        "active_checkpoint": null,
+        "active_item": null,
+        "active_item_level": null,
+        "active_item_title": "jornada de ação 🟦",
+        "aggregate_checkpoint_status": [],
+        "cadence_limits": [
+          "não empurrar"
+        ],
+        "cadence_profile": null,
+        "child_work_items": [],
+        "cursor_generation": 0,
+        "granularity_decision": null,
+        "journey": "demo",
+        "last_delivery_event": null,
+        "method": "ariad",
+        "navigator_flow_unit": null,
+        "pending_confirmation": null,
+        "plan_preauthorization": null,
+        "release_intent": null,
+        "release_intent_delivery_story": null
+      },
+      "name": "unicode_values",
+      "projection_requests": [],
+      "row": {
+        "active": 1,
+        "closed_at": null,
+        "conversation_id": null,
+        "hook_injected": 0,
+        "interface": "builder_delivery_cursor",
+        "journey": "demo",
+        "metadata": "{\"method\": \"ariad\", \"active_item\": null, \"active_item_title\": \"jornada de ação 🟦\", \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [\"não empurrar\"], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+        "mirror_active": 0,
+        "persona": null,
+        "session_id": "__builder_delivery_cursor__:demo",
+        "started_at": "2026-01-01T00:00:00+00:00",
+        "updated_at": "2026-01-01T00:00:00+00:00"
+      }
+    },
+    {
+      "cursor": {
+        "active_checkpoint": null,
+        "active_item": null,
+        "active_item_level": null,
+        "active_item_title": null,
+        "aggregate_checkpoint_status": [],
+        "cadence_limits": [],
+        "cadence_profile": null,
+        "child_work_items": [],
+        "cursor_generation": 0,
+        "granularity_decision": null,
+        "journey": "demo",
+        "last_delivery_event": null,
+        "method": "ariad",
+        "navigator_flow_unit": null,
+        "pending_confirmation": null,
+        "plan_preauthorization": null,
+        "release_intent": null,
+        "release_intent_delivery_story": null
+      },
+      "name": "generation_zero",
+      "projection_requests": [],
+      "row": {
+        "active": 1,
+        "closed_at": null,
+        "conversation_id": null,
+        "hook_injected": 0,
+        "interface": "builder_delivery_cursor",
+        "journey": "demo",
+        "metadata": "{\"method\": \"ariad\", \"active_item\": null, \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+        "mirror_active": 0,
+        "persona": null,
+        "session_id": "__builder_delivery_cursor__:demo",
+        "started_at": "2026-01-01T00:00:00+00:00",
+        "updated_at": "2026-01-01T00:00:00+00:00"
+      }
+    },
+    {
+      "cursor": {
+        "active_checkpoint": null,
+        "active_item": null,
+        "active_item_level": null,
+        "active_item_title": null,
+        "aggregate_checkpoint_status": [],
+        "cadence_limits": [],
+        "cadence_profile": null,
+        "child_work_items": [],
+        "cursor_generation": 987654321,
+        "granularity_decision": null,
+        "journey": "demo",
+        "last_delivery_event": null,
+        "method": "ariad",
+        "navigator_flow_unit": null,
+        "pending_confirmation": null,
+        "plan_preauthorization": null,
+        "release_intent": null,
+        "release_intent_delivery_story": null
+      },
+      "name": "generation_large",
+      "projection_requests": [],
+      "row": {
+        "active": 1,
+        "closed_at": null,
+        "conversation_id": null,
+        "hook_injected": 0,
+        "interface": "builder_delivery_cursor",
+        "journey": "demo",
+        "metadata": "{\"method\": \"ariad\", \"active_item\": null, \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 987654321, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+        "mirror_active": 0,
+        "persona": null,
+        "session_id": "__builder_delivery_cursor__:demo",
+        "started_at": "2026-01-01T00:00:00+00:00",
+        "updated_at": "2026-01-01T00:00:00+00:00"
+      }
+    },
+    {
+      "cursor": {
+        "active_checkpoint": null,
+        "active_item": null,
+        "active_item_level": null,
+        "active_item_title": null,
+        "aggregate_checkpoint_status": [],
+        "cadence_limits": [],
+        "cadence_profile": null,
+        "child_work_items": [],
+        "cursor_generation": 0,
+        "granularity_decision": null,
+        "journey": "demo",
+        "last_delivery_event": null,
+        "method": "ariad",
+        "navigator_flow_unit": null,
+        "pending_confirmation": null,
+        "plan_preauthorization": null,
+        "release_intent": "planned",
+        "release_intent_delivery_story": "CV22.DS8"
+      },
+      "name": "release_intent_planned",
+      "projection_requests": [],
+      "row": {
+        "active": 1,
+        "closed_at": null,
+        "conversation_id": null,
+        "hook_injected": 0,
+        "interface": "builder_delivery_cursor",
+        "journey": "demo",
+        "metadata": "{\"method\": \"ariad\", \"active_item\": null, \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": \"CV22.DS8\", \"release_intent\": \"planned\"}",
+        "mirror_active": 0,
+        "persona": null,
+        "session_id": "__builder_delivery_cursor__:demo",
+        "started_at": "2026-01-01T00:00:00+00:00",
+        "updated_at": "2026-01-01T00:00:00+00:00"
+      }
+    },
+    {
+      "cursor": {
+        "active_checkpoint": null,
+        "active_item": null,
+        "active_item_level": null,
+        "active_item_title": null,
+        "aggregate_checkpoint_status": [],
+        "cadence_limits": [],
+        "cadence_profile": null,
+        "child_work_items": [],
+        "cursor_generation": 0,
+        "granularity_decision": null,
+        "journey": "demo",
+        "last_delivery_event": null,
+        "method": "ariad",
+        "navigator_flow_unit": null,
+        "pending_confirmation": null,
+        "plan_preauthorization": null,
+        "release_intent": "none",
+        "release_intent_delivery_story": "CV22.DS8"
+      },
+      "name": "release_intent_none_word",
+      "projection_requests": [],
+      "row": {
+        "active": 1,
+        "closed_at": null,
+        "conversation_id": null,
+        "hook_injected": 0,
+        "interface": "builder_delivery_cursor",
+        "journey": "demo",
+        "metadata": "{\"method\": \"ariad\", \"active_item\": null, \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": \"CV22.DS8\", \"release_intent\": \"none\"}",
+        "mirror_active": 0,
+        "persona": null,
+        "session_id": "__builder_delivery_cursor__:demo",
+        "started_at": "2026-01-01T00:00:00+00:00",
+        "updated_at": "2026-01-01T00:00:00+00:00"
+      }
+    },
+    {
+      "cursor": {
+        "active_checkpoint": null,
+        "active_item": null,
+        "active_item_level": null,
+        "active_item_title": null,
+        "aggregate_checkpoint_status": [],
+        "cadence_limits": [],
+        "cadence_profile": null,
+        "child_work_items": [],
+        "cursor_generation": 0,
+        "granularity_decision": null,
+        "journey": "demo",
+        "last_delivery_event": null,
+        "method": "ariad",
+        "navigator_flow_unit": null,
+        "pending_confirmation": null,
+        "plan_preauthorization": null,
+        "release_intent": "undecided",
+        "release_intent_delivery_story": null
+      },
+      "name": "release_intent_undecided",
+      "projection_requests": [],
+      "row": {
+        "active": 1,
+        "closed_at": null,
+        "conversation_id": null,
+        "hook_injected": 0,
+        "interface": "builder_delivery_cursor",
+        "journey": "demo",
+        "metadata": "{\"method\": \"ariad\", \"active_item\": null, \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": \"undecided\"}",
+        "mirror_active": 0,
+        "persona": null,
+        "session_id": "__builder_delivery_cursor__:demo",
+        "started_at": "2026-01-01T00:00:00+00:00",
+        "updated_at": "2026-01-01T00:00:00+00:00"
+      }
+    },
+    {
+      "cursor": {
+        "active_checkpoint": null,
+        "active_item": null,
+        "active_item_level": null,
+        "active_item_title": null,
+        "aggregate_checkpoint_status": [],
+        "cadence_limits": [],
+        "cadence_profile": null,
+        "child_work_items": [],
+        "cursor_generation": 3,
+        "granularity_decision": null,
+        "journey": "demo",
+        "last_delivery_event": null,
+        "method": "ariad",
+        "navigator_flow_unit": null,
+        "pending_confirmation": null,
+        "plan_preauthorization": {
+          "active_item": "CV22.DS7.US8",
+          "active_item_level": "user_story",
+          "child_work_items": [],
+          "cursor_generation": 3,
+          "flow_unit": "story_by_story",
+          "journey": "demo",
+          "method": "ariad",
+          "plan_contract_version": "story_plan@1",
+          "policy": "single_use_exact_scope",
+          "reason": null,
+          "scope_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "status": "pending",
+          "stop_boundary": "navigator_validation"
+        },
+        "release_intent": null,
+        "release_intent_delivery_story": null
+      },
+      "name": "receipt_pending",
+      "projection_requests": [],
+      "row": {
+        "active": 1,
+        "closed_at": null,
+        "conversation_id": null,
+        "hook_injected": 0,
+        "interface": "builder_delivery_cursor",
+        "journey": "demo",
+        "metadata": "{\"method\": \"ariad\", \"active_item\": null, \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 3, \"plan_preauthorization\": {\"journey\": \"demo\", \"method\": \"ariad\", \"cursor_generation\": 3, \"active_item\": \"CV22.DS7.US8\", \"active_item_level\": \"user_story\", \"flow_unit\": \"story_by_story\", \"child_work_items\": [], \"plan_contract_version\": \"story_plan@1\", \"policy\": \"single_use_exact_scope\", \"stop_boundary\": \"navigator_validation\", \"scope_fingerprint\": \"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\", \"status\": \"pending\", \"reason\": null}, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+        "mirror_active": 0,
+        "persona": null,
+        "session_id": "__builder_delivery_cursor__:demo",
+        "started_at": "2026-01-01T00:00:00+00:00",
+        "updated_at": "2026-01-01T00:00:00+00:00"
+      }
+    },
+    {
+      "cursor": {
+        "active_checkpoint": null,
+        "active_item": null,
+        "active_item_level": null,
+        "active_item_title": null,
+        "aggregate_checkpoint_status": [],
+        "cadence_limits": [],
+        "cadence_profile": null,
+        "child_work_items": [],
+        "cursor_generation": 3,
+        "granularity_decision": null,
+        "journey": "demo",
+        "last_delivery_event": null,
+        "method": "ariad",
+        "navigator_flow_unit": null,
+        "pending_confirmation": null,
+        "plan_preauthorization": {
+          "active_item": "CV22.DS7.US8",
+          "active_item_level": "user_story",
+          "child_work_items": [],
+          "cursor_generation": 3,
+          "flow_unit": "story_by_story",
+          "journey": "demo",
+          "method": "ariad",
+          "plan_contract_version": "story_plan@1",
+          "policy": "single_use_exact_scope",
+          "reason": null,
+          "scope_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "status": "consumed",
+          "stop_boundary": "navigator_validation"
+        },
+        "release_intent": null,
+        "release_intent_delivery_story": null
+      },
+      "name": "receipt_consumed",
+      "projection_requests": [],
+      "row": {
+        "active": 1,
+        "closed_at": null,
+        "conversation_id": null,
+        "hook_injected": 0,
+        "interface": "builder_delivery_cursor",
+        "journey": "demo",
+        "metadata": "{\"method\": \"ariad\", \"active_item\": null, \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 3, \"plan_preauthorization\": {\"journey\": \"demo\", \"method\": \"ariad\", \"cursor_generation\": 3, \"active_item\": \"CV22.DS7.US8\", \"active_item_level\": \"user_story\", \"flow_unit\": \"story_by_story\", \"child_work_items\": [], \"plan_contract_version\": \"story_plan@1\", \"policy\": \"single_use_exact_scope\", \"stop_boundary\": \"navigator_validation\", \"scope_fingerprint\": \"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\", \"status\": \"consumed\", \"reason\": null}, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+        "mirror_active": 0,
+        "persona": null,
+        "session_id": "__builder_delivery_cursor__:demo",
+        "started_at": "2026-01-01T00:00:00+00:00",
+        "updated_at": "2026-01-01T00:00:00+00:00"
+      }
+    },
+    {
+      "cursor": {
+        "active_checkpoint": null,
+        "active_item": null,
+        "active_item_level": null,
+        "active_item_title": null,
+        "aggregate_checkpoint_status": [],
+        "cadence_limits": [],
+        "cadence_profile": null,
+        "child_work_items": [
+          "A",
+          "B"
+        ],
+        "cursor_generation": 3,
+        "granularity_decision": null,
+        "journey": "demo",
+        "last_delivery_event": null,
+        "method": "ariad",
+        "navigator_flow_unit": "delivery_story",
+        "pending_confirmation": null,
+        "plan_preauthorization": {
+          "active_item": "CV22.DS7.US8",
+          "active_item_level": "user_story",
+          "child_work_items": [
+            "A",
+            "B"
+          ],
+          "cursor_generation": 3,
+          "flow_unit": "delivery_story",
+          "journey": "demo",
+          "method": "ariad",
+          "plan_contract_version": "delivery_story_plan@1",
+          "policy": "single_use_exact_scope",
+          "reason": null,
+          "scope_fingerprint": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "status": "pending",
+          "stop_boundary": "navigator_validation"
+        },
+        "release_intent": null,
+        "release_intent_delivery_story": null
+      },
+      "name": "receipt_with_children",
+      "projection_requests": [],
+      "row": {
+        "active": 1,
+        "closed_at": null,
+        "conversation_id": null,
+        "hook_injected": 0,
+        "interface": "builder_delivery_cursor",
+        "journey": "demo",
+        "metadata": "{\"method\": \"ariad\", \"active_item\": null, \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"delivery_story\", \"child_work_items\": [\"A\", \"B\"], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 3, \"plan_preauthorization\": {\"journey\": \"demo\", \"method\": \"ariad\", \"cursor_generation\": 3, \"active_item\": \"CV22.DS7.US8\", \"active_item_level\": \"user_story\", \"flow_unit\": \"delivery_story\", \"child_work_items\": [\"A\", \"B\"], \"plan_contract_version\": \"delivery_story_plan@1\", \"policy\": \"single_use_exact_scope\", \"stop_boundary\": \"navigator_validation\", \"scope_fingerprint\": \"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff\", \"status\": \"pending\", \"reason\": null}, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+        "mirror_active": 0,
+        "persona": null,
+        "session_id": "__builder_delivery_cursor__:demo",
+        "started_at": "2026-01-01T00:00:00+00:00",
+        "updated_at": "2026-01-01T00:00:00+00:00"
+      }
+    }
+  ]
+}

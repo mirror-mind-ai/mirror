@@ -81,8 +81,23 @@ export function openDatabaseReadOnly(path: string, options: OpenOptions = {}): D
 }
 
 /** A prepared query that can also execute a write. */
+/** What a write reports back. `node:sqlite` returns bigint counts. */
+export interface RunResult {
+  readonly changes: number | bigint;
+  readonly lastInsertRowid: number | bigint;
+}
+
 export interface WritablePreparedQuery extends PreparedQuery {
-  run(...params: SqlValue[]): void;
+  /**
+   * Returns the driver's result rather than `void` (CV22.DS7.US8 plateau 2).
+   *
+   * The delivery cursor's compare-and-swap is a conditional `UPDATE … WHERE
+   * metadata = ?`, and whether it applied is only observable through
+   * `changes` — Python reads `cursor.rowcount` for exactly this. Existing
+   * callers that ignore the value are unaffected; widening a return type is
+   * not a breaking change.
+   */
+  run(...params: SqlValue[]): RunResult;
 }
 
 /** A writable handle over a SQLite *copy*. */
@@ -98,9 +113,7 @@ function writableHandle(driver: DatabaseSync): WritableDatabase {
       const statement = driver.prepare(sql);
       return {
         ...readableStatement(statement),
-        run: (...params: SqlValue[]): void => {
-          statement.run(...params);
-        },
+        run: (...params: SqlValue[]): RunResult => statement.run(...params),
       };
     },
     exec: (sql: string): void => {
