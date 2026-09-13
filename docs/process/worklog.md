@@ -12,6 +12,36 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-13 — CV22.DS8 closed: every LLM-crossing command answers from TypeScript
+
+**The Delivery Story is done at 5/5, and the strangler's provider seam is
+finished.** Sixteen leaves were replay-gated when DS8 opened — ported and
+graded, but answering from Python in production because replay was their
+transport. All sixteen now answer from TypeScript against real providers on an
+unconfigured install, each behind one variable that reverts it: US1 the search
+embedding, US2 the conversation close tail, US3 eight long-tail leaves with
+`MIRROR_TS_EXTERNAL_ROUTES` retired, TS2 the two cultivation scans US3 had to
+refuse by name, TS1 the `eval` ownership decision.
+
+What DS8 proved beyond routing: the live transport enforces per-role timeouts,
+bounded retries, and the `timeout | auth | rate_limit | malformed_output |
+provider_error` taxonomy; keys come only from env/config and reach no log,
+ledger row, or error message; every live surface has a Navigator-run smoke
+contract on a database copy rather than a CI test that spends money. Total live
+spend across the whole Delivery Story's validation: a few cents.
+
+**Release intent: `none`.** DS8 is the most user-visible thing CV22 has shipped,
+and it deliberately does not ship. The Navigator's decision is that CV22
+releases once, when the migration is complete including the Ariad tree —
+recorded in [Decisions](../project/decisions.md#cv22-releases-once-when-the-migration-is-complete)
+so DS9 and DS10 inherit the answer instead of re-asking. `mm-build` still
+invokes Python directly, so the runtime a Navigator actually types is not yet on
+the TS core; a release before that would advertise a migration the Builder
+surface contradicts.
+
+Next: **DS7.US8**, the Builder/Ariad tree — 27 leaves, and the only story in the
+port that ports the machinery executing its own lifecycle.
+
 ### 2026-09-13 — CV22.DS8.TS1 eval harness ownership decided; DS8 complete at 5/5
 
 **The `eval` harness transfers to TypeScript as a DS10 deletion gate** — not a

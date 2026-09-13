@@ -2441,3 +2441,47 @@ model-pin or prompt change needs a green `eval --all` or a consciously recorded
 waiver. Until the transfer lands, that run is the Python harness — proven still
 working by this story's own validation, which is the first `eval --all` on this
 home.
+
+### CV22 releases once, when the migration is complete
+
+**Date:** 2026-09-13 · **Context:** CV22.DS8 closed at 5/5 and the Navigator was
+asked whether it creates a release boundary.
+
+**The decision: no CV22 Delivery Story creates a release boundary. The release
+comes once, when the whole migration is complete — including the Ariad tree.**
+DS8's release intent is recorded as `none`, and the same answer applies in
+advance to DS9 and DS10 unless the Navigator revisits it.
+
+The question was worth asking, because DS8 is the most user-visible thing the
+port has shipped: an unconfigured install now answers every LLM- and
+embedding-crossing command from TypeScript against real providers. Under a
+per-Delivery-Story release habit, that would have been a release.
+
+Reasons for holding:
+
+1. **A half-migrated core is not a product story.** "Some commands answer from
+   TypeScript" is an implementation state, not a user benefit. The benefit —
+   one language, one install, npm distribution — arrives with DS10 and cannot
+   be released in fractions.
+2. **The Ariad tree is the honest bar.** `mm-build` still invokes Python
+   directly (DS7.US8), so the runtime a Navigator actually types is not yet on
+   the TS core. Releasing before that would advertise a migration that the
+   most-used Builder surface contradicts.
+3. **Every family still carries a revert.** `MIRROR_TS_*=0` exists on each
+   flipped family precisely because these cutovers are young. A release
+   boundary drawn while the reverts are still load-bearing would publish a
+   state the project itself hedges.
+4. **Release cost is not free.** Version, release note, stable promotion, tag,
+   and the model-behavior gate are real work per boundary. Spending it four
+   times for one user-visible outcome is waste; spending it once, at the end,
+   is proportionate.
+
+**What this does not mean.** Work is still pushed continuously and CI must stay
+green — the policy concerns release boundaries, not integration. Dogfooding on
+the owner's home continues to be the real validation, which is what makes
+deferring the release affordable in the first place: the port is exercised
+daily without being published.
+
+**Revisit trigger.** A DS10 scope change that separates npm distribution from
+Python deletion, or a user-facing need that arrives before the migration
+finishes.

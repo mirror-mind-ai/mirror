@@ -2,7 +2,7 @@
 
 # CV22.DS8 — Live-Provider Cutover
 
-**Status:** 🟢 In Progress — all five children done (5/5) as of 2026-09-13; every done condition met. Parent collapse and release intent are Navigator decisions
+**Status:** ✅ Done — 2026-09-13 (5/5). Every done condition met; closed by Navigator decision. Release intent **`none`**: CV22 [releases once, when the migration is complete](../../../decisions.md#cv22-releases-once-when-the-migration-is-complete), including the Ariad tree
 **Type:** Delivery Story
 
 ---
