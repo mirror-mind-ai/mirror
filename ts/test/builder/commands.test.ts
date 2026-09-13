@@ -26,21 +26,28 @@ import {
 import { dirname, join, relative, sep } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-
+import { getAriadMethod } from "#builder/ariadMethod.ts";
 import { cardText } from "#builder/card.ts";
 import {
   runAdoptMethod,
+  runApprovePlan,
+  runCancelPlanPreauthorization,
   runCheckImplementation,
   runInspectMethod,
+  runPlanItem,
+  runPrepareItem,
   runPrepareTemplates,
   runPullCandidates,
+  runPullItem,
   runSyncCursor,
   surfacesForTrigger,
 } from "#builder/commands.ts";
 import { setDeliveryCursor } from "#builder/deliveryCursor.ts";
 import { setAdoptedMethod } from "#builder/methodAdoption.ts";
+import { planLifecycleItem } from "#builder/plan.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import golden from "#goldens/builder-command.golden.json" with { type: "json" };
+import { normalizePathRows, projectRelative, scrubMessage } from "#helpers/builderSurfacePaths.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
 import { activateOperatingMode } from "#mode/operatingMode.ts";
@@ -66,15 +73,20 @@ const cases = (golden as unknown as { cases: Case[] }).cases;
  */
 const PORTED_LEAVES = [
   "adopt",
+  "approve-plan",
+  "cancel-plan-preauthorization",
   "check-implementation",
   "inspect-method",
+  "plan-item",
+  "prepare-item",
   "prepare-templates",
   "pull-candidates",
+  "pull-item",
   "sync-cursor",
 ] as const;
 
 /**
- * Leaves the CORPUS already grades but TypeScript cannot answer yet.
+ * Leaves the CORPUS grades but TypeScript cannot answer yet — empty as of plateau 3.
  *
  * The story's rule is that the golden is generated from Python BEFORE the port
  * exists, so for one commit per plateau the corpus knows more than the code. That
@@ -86,13 +98,7 @@ const PORTED_LEAVES = [
  * Plateau 3 empties it: `pull-item` and `prepare-item` in commit 2, the rest in
  * commit 3.
  */
-const PENDING_LEAVES = [
-  "approve-plan",
-  "cancel-plan-preauthorization",
-  "plan-item",
-  "prepare-item",
-  "pull-item",
-] as const;
+const PENDING_LEAVES: readonly string[] = [];
 
 const isPorted = (entry: Case): boolean =>
   (PORTED_LEAVES as readonly string[]).includes(entry.argv[0] ?? "");
@@ -121,8 +127,69 @@ function memoryDatabase(): WritableDatabase {
 }
 
 /** Recreate the generator's `_seed` for one scenario. */
-function seed(scenario: string): WritableDatabase {
+/** Scenarios added at plateau 3, mirroring the generator's `_seed_lifecycle`. */
+const LIFECYCLE_SCENARIOS = new Set([
+  "adopted_cursor_empty",
+  "adopted_cursor_no_project",
+  "adopted_ds_pullable",
+  "adopted_pulled",
+  "adopted_prepared",
+  "adopted_prepared_ds",
+  "adopted_plan_pending",
+  "adopted_preauthorized",
+]);
+
+/** The generator's `PULLABLE_DS_INDEX`, written only for the DS-pull scenario. */
+const PULLABLE_DS_INDEX = `# CV1.DS2 — Pullable delivery story
+
+**Status:** 🟡 Planned
+**Type:** Delivery Story
+
+## Candidate Stories
+
+| Code | Story | Type | Status |
+|------|-------|------|--------|
+| CV1.DS2.US1 | Port the first slice | User Story | 🟡 Planned |
+| CV1.DS2.TS1 | Harden the seam | Technical Story | 🟡 Planned |
+
+## Done Condition
+
+Done when the children deliver a coherent outcome.
+`;
+
+/** The generator's `COMPLETE_PLAN`: every required section present and non-empty. */
+const COMPLETE_PLAN = `# Plan — CV1.US1
+
+## Objective
+
+Deliver the slice.
+
+## Scope
+
+- Bind one active story structurally.
+
+## Non-Goals
+
+- No sibling scope.
+
+## Acceptance Behavior
+
+Given exact authority
+When approval is consumed
+Then implementation starts once.
+
+## Validation Route
+
+- Run focused tests and Navigator validation.
+
+## Implementation Contract
+
+- Use TDD and stop at Navigator Validation.
+`;
+
+function seed(scenario: string, projectOverride?: string): WritableDatabase {
   const db = memoryDatabase();
+  const project = projectOverride ?? PROJECT;
   const insertIdentity = (layer: string, key: string, content: string, metadata?: string) => {
     db.prepare(
       `INSERT INTO identity (id, layer, key, content, created_at, updated_at, metadata)
@@ -135,8 +202,12 @@ function seed(scenario: string): WritableDatabase {
     // `JourneyService.set_project_path` writes it — not a separate
     // `journey_path` row. Writing the wrong row made an earlier version of this
     // test agree with an equally wrong generator.
+    // `adopted_cursor_no_project` must reach the Delivery Story project-path
+    // refusal, which sits BEHIND the cursor guard, so it needs a cursor and no path.
     const metadata =
-      scenario === "adopted_no_project" ? null : JSON.stringify({ project_path: PROJECT });
+      scenario === "adopted_no_project" || scenario === "adopted_cursor_no_project"
+        ? null
+        : JSON.stringify({ project_path: project });
     insertIdentity(
       "journey",
       "demo",
@@ -160,6 +231,9 @@ function seed(scenario: string): WritableDatabase {
   }
   if (scenario === "adopted_other_method") {
     setAdoptedMethod(db, "demo", "scrumban", () => NOW);
+  }
+  if (LIFECYCLE_SCENARIOS.has(scenario)) {
+    seedLifecycle(db, project, scenario);
   }
   if (scenario === "adopted_with_cursor") {
     setDeliveryCursor(
@@ -206,6 +280,92 @@ function seed(scenario: string): WritableDatabase {
  * somewhere throwaway instead of mutating the fixture the golden was generated
  * from — which would make the determinism gate fail for the wrong reason.
  */
+/**
+ * Mirror of the generator's `_seed_lifecycle`.
+ *
+ * The two authority scenarios run the REAL `planLifecycleItem` rather than
+ * hand-writing checkpoint fields: a hand-built receipt would not carry a
+ * fingerprint the consume path accepts, so the scenario would prove the wrong
+ * thing.
+ */
+function seedLifecycle(db: WritableDatabase, project: string, scenario: string): void {
+  setAdoptedMethod(db, "demo", "ariad", () => NOW);
+  const deps = { nowIso: () => NOW };
+  if (scenario === "adopted_cursor_empty" || scenario === "adopted_cursor_no_project") {
+    setDeliveryCursor(db, { journey: "demo", method: "ariad" }, deps);
+    return;
+  }
+  if (scenario === "adopted_ds_pullable") {
+    const target = join(project, "docs/project/roadmap/cv1-first/cv1-ds2-pullable/index.md");
+    mkdirSync(dirname(target), { recursive: true });
+    writeFileSync(target, PULLABLE_DS_INDEX, "utf8");
+    setDeliveryCursor(db, { journey: "demo", method: "ariad" }, deps);
+    return;
+  }
+  if (scenario === "adopted_pulled") {
+    setDeliveryCursor(
+      db,
+      {
+        journey: "demo",
+        method: "ariad",
+        activeItem: "CV1.DS1.US1",
+        activeItemTitle: "A user story",
+        activeItemLevel: "user_story",
+        lastDeliveryEvent: "pull",
+      },
+      deps,
+    );
+    return;
+  }
+  if (scenario === "adopted_prepared" || scenario === "adopted_prepared_ds") {
+    const deliveryStory = scenario === "adopted_prepared_ds";
+    setDeliveryCursor(
+      db,
+      {
+        journey: "demo",
+        method: "ariad",
+        activeItem: deliveryStory ? "CV1.DS1" : "CV1.DS1.US1",
+        activeItemTitle: deliveryStory ? "A delivery story" : "A user story",
+        activeItemLevel: deliveryStory ? "delivery_story" : "user_story",
+        lastDeliveryEvent: "prepare",
+        navigatorFlowUnit: "story_by_story",
+      },
+      deps,
+    );
+    return;
+  }
+  setDeliveryCursor(
+    db,
+    {
+      journey: "demo",
+      method: "ariad",
+      activeItem: "CV1.DS1.US1",
+      activeItemTitle: "A user story",
+      activeItemLevel: "user_story",
+      lastDeliveryEvent: "prepare",
+      navigatorFlowUnit: "story_by_story",
+    },
+    deps,
+  );
+  const packagePath = join(
+    project,
+    "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story",
+  );
+  mkdirSync(packagePath, { recursive: true });
+  const planPath = join(packagePath, "plan.md");
+  writeFileSync(planPath, COMPLETE_PLAN, "utf8");
+  planLifecycleItem(
+    db,
+    {
+      journey: "demo",
+      method: getAriadMethod(),
+      planArtifactPath: planPath,
+      preauthorize: scenario === "adopted_preauthorized",
+    },
+    deps,
+  );
+}
+
 function scratchProject(seedAuthored: boolean): string {
   const directory = mkdtempSync("/tmp/builder-command-project-");
   temporaryDirectories.push(directory);
@@ -223,6 +383,12 @@ function scratchProject(seedAuthored: boolean): string {
   return directory;
 }
 
+/**
+ * The generator's `_project_snapshot`, shared by the template and lifecycle write
+ * tests. `.mirror/projections` never appears here because the TypeScript seam is a
+ * callback rather than the publisher — the generator excludes that tree for the
+ * same reason, since its receipts are named `op-<uuid4>`.
+ */
 function projectSnapshot(root: string): Record<string, string> {
   const snapshot: Record<string, string> = {};
   const walk = (directory: string): void => {
@@ -272,6 +438,32 @@ function invoke(db: WritableDatabase, argv: readonly string[]) {
       return runSyncCursor(writeContext, shared);
     case "check-implementation":
       return runCheckImplementation(context, shared);
+    case "pull-item":
+      return runPullItem(writeContext, {
+        ...shared,
+        itemCode: option("--item-code") ?? "",
+        itemTitle: option("--item-title") ?? "",
+        itemLevel: option("--item-level") ?? "",
+        whyNow: option("--why-now") ?? "",
+      });
+    case "prepare-item":
+      return runPrepareItem(writeContext, shared);
+    case "plan-item":
+      return runPlanItem(writeContext, {
+        ...shared,
+        objective: option("--objective"),
+        // `action="store_true"`, so the flag's PRESENCE is the value; reading it as
+        // an option would swallow the next token.
+        preauthorizeApproval: argv.includes("--preauthorize-approval"),
+        stopAfter: option("--stop-after") ?? "navigator_validation",
+      });
+    case "approve-plan":
+      return runApprovePlan(writeContext, {
+        ...shared,
+        usePreauthorization: argv.includes("--use-preauthorization"),
+      });
+    case "cancel-plan-preauthorization":
+      return runCancelPlanPreauthorization(writeContext, shared);
     default:
       throw new Error(`unsupported argv: ${argv.join(" ")}`);
   }
@@ -322,7 +514,11 @@ test("every case matches Python's stdout, stderr, and exit code", () => {
     // created nine files inside it — caught by `git status`, and the reason the
     // scratch copy is mandatory rather than tidy.
     if (entry.project_files !== undefined) continue;
-    const db = seed(entry.scenario);
+    // A lifecycle scenario may WRITE while seeding (the authority scenarios run the
+    // real Plan), so it never points at the committed fixture — the plateau-2 lesson.
+    const db = LIFECYCLE_SCENARIOS.has(entry.scenario)
+      ? seed(entry.scenario, scratchProject(false))
+      : seed(entry.scenario);
     try {
       const actual = invoke(db, entry.argv);
       assert.equal(actual.stdout, entry.stdout, `${entry.name} stdout`);
@@ -514,3 +710,99 @@ test("which surfaces appear is decided by the DSL surface route", () => {
   );
   assert.deepEqual([...surfacesForTrigger("no_such_trigger")], []);
 });
+
+test("the file-writing lifecycle leaves match Python's streams and its files", () => {
+  // `pull-item` and `plan-item` write into the user's repository, so they get the
+  // same treatment `prepare-templates` gets: a scratch copy of the fixture, and the
+  // FILES compared as part of the behavior. Running them in the generic loop would
+  // point the journey at the committed fixture — caught by `git status` at plateau 2,
+  // and the reason the scratch copy is mandatory rather than tidy.
+  const cases_ = cases.filter(
+    (entry) => entry.project_files !== undefined && entry.argv[0] !== "prepare-templates",
+  );
+  assert.ok(cases_.length >= 14, `expected the lifecycle write cases, got ${cases_.length}`);
+  for (const entry of cases_) {
+    const project = scratchProject(false);
+    const db = seed(entry.scenario, project);
+    try {
+      const actual = invoke(db, entry.argv);
+      assert.equal(
+        normalizeCommandPaths(actual.stdout, project),
+        entry.stdout,
+        `${entry.name} stdout`,
+      );
+      assert.equal(
+        scrubMessage(actual.stderr, project),
+        withoutSeamWarnings(entry.stderr, entry.name),
+        `${entry.name} stderr`,
+      );
+      assert.equal(actual.exitCode, entry.exit_code, `${entry.name} exit code`);
+      assert.deepEqual(
+        projectSnapshot(project),
+        entry.project_files,
+        `${entry.name} project files`,
+      );
+    } finally {
+      db.close();
+    }
+  }
+});
+
+/**
+ * Drop the Journey projection seam's own warnings from Python's recorded stderr.
+ *
+ * Every Builder cursor write requests a projection refresh, and in the oracle that
+ * request reaches Python's publisher, which warns when it cannot publish. TypeScript
+ * never publishes: US7 decided the publisher stays Python-owned until TS5 retires the
+ * `fcntl.flock` dual-writer window, so the TS modules only REQUEST a refresh — the
+ * same boundary `explorer/story.ts` documents. The request itself is graded exactly,
+ * per step, in `lifecycle.test.ts`'s `projection_requests`.
+ *
+ * The filter is bounded on purpose: only this one known line is dropped, and any
+ * OTHER stderr content in a Python case fails rather than being smoothed away.
+ */
+function withoutSeamWarnings(stderr: string, caseName: string): string {
+  const lines = stderr.split("\n");
+  const kept: string[] = [];
+  for (const line of lines) {
+    if (line.startsWith("Operational projection refresh failed")) continue;
+    kept.push(line);
+  }
+  const dropped = lines.length - kept.length;
+  if (dropped > 0) {
+    assert.ok(
+      stderr.includes("code=unknown_journey"),
+      `${caseName}: an unrecognized seam warning was dropped instead of graded`,
+    );
+  }
+  return kept.join("\n");
+}
+
+/**
+ * The generator's `_normalize_paths`, for stdout.
+ *
+ * Wrapped card rows carrying an absolute path collapse to one token; the unwrapped
+ * `*_path=` trailer lines are rewritten project-relative. `builder_surface_paths.py`
+ * owns the rule and explains why the two halves need different treatment.
+ */
+function normalizeCommandPaths(stdout: string, project: string): string {
+  const absolute = [project, ...walkPaths(project)].sort((a, b) => b.length - a.length);
+  let normalized = normalizePathRows(stdout, absolute);
+  for (const path of absolute) {
+    normalized = normalized.replaceAll(path, projectRelative(path, project));
+  }
+  return normalized;
+}
+
+function walkPaths(root: string): string[] {
+  const found: string[] = [];
+  const walk = (directory: string): void => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const absolute = join(directory, entry.name);
+      found.push(absolute);
+      if (entry.isDirectory()) walk(absolute);
+    }
+  };
+  walk(root);
+  return found;
+}

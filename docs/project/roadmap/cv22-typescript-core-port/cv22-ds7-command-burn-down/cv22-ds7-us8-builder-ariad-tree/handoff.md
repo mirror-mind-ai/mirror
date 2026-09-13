@@ -132,7 +132,26 @@ Two plateau-3-specific rules already established:
 
 ## Open items carried forward
 
-Recorded in the plan's Debt / CRs section; none blocks plateau 3.
+**The `builder_artifacts` write probe is the one piece of plateau 3 still open, and
+it needs a decision first.** Every existing probe in `write_parity_builder.py`
+grades DATABASE rows: the harness compares `python_state` against the TypeScript
+state as a list of `{id, cells}`, and `builder_cursor_state` encodes an ordered
+sequence by putting the step index in the row id. Artifact materialization has no
+rows — its behavior is FILES in a scratch project. Encoding a file as
+`{id: <project-relative path>, cells: {content}}` fits the existing shape without
+changing the harness, which is the cheap option; the alternative is a file-aware
+probe type, which is more honest and touches `write_parity.py`, whose `--probe`
+choices are built inline and cannot be derived from `PROBES` (see the method notes
+below). Worth ten minutes of Navigator input rather than a guess.
+
+What the probe would add beyond the corpus: the corpus already grades artifact bytes,
+folder derivation, and the preservation rule on a scratch project, in both engines.
+The probe's distinct value is running that against a copy of a REAL database, where
+the journey rows, cursors, and project paths are the Navigator's own rather than
+synthetic — the same reason `builder_cursor_state` exists even though the cursor
+golden already grades transitions.
+
+Recorded in the plan's Debt / CRs section; none of the rest blocks plateau 4.
 
 - **Python's Workbench-read asymmetry.** `home_surface._safe_workbench_snapshot`
   swallows `sqlite3.OperationalError`; `read_builder_resume_state` does not. On a
@@ -208,13 +227,15 @@ Navigator's project are the only US8 surface with a traversal shape.
      `deliveryStoryReady.ts`, `flowUnit.ts` (read side), and
      `artifacts/planArtifacts.ts`. **`PENDING_OPS` is empty and all 53 sequences /
      172 steps grade step for step.**
-   - **3b, remaining.** The five command leaves in `commands.ts` — `pull-item`
-     (with the CLI's auto-Prepare and the Delivery Story Expand branch),
-     `prepare-item`, `plan-item`, `approve-plan`, `cancel-plan-preauthorization`
-     — plus `_roadmap_plan_context`, the CLI artifact helpers, moving
-     `PENDING_LEAVES` to ported in `commands.test.ts`, and the
-     `builder_artifacts` write probe. The 25 command-level golden cases for these
-     leaves already exist and are graded as pending.
+   - **3b, done except the probe.** The five command leaves in `commands.ts` —
+     `pull-item` (with the CLI's auto-Prepare and the Delivery Story Expand
+     branch), `prepare-item`, `plan-item`, `approve-plan`,
+     `cancel-plan-preauthorization` — plus `_roadmap_plan_context` and the CLI
+     artifact helpers. **`PENDING_LEAVES` is empty: 11 of the 27 in-scope leaves
+     answer from TypeScript, all 64 command cases graded.**
+   - **3c, remaining: the `builder_artifacts` write probe.** See
+     [Open items carried forward](#open-items-carried-forward) — it needs a design
+     decision, not a mechanical port.
 
    Split because the module level reached a coherent, fully graded state and the
    command level is a separate failure mode (argv parsing, guard order, exit

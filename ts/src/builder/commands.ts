@@ -25,18 +25,30 @@
 // journey reports the JOURNEY error. A port that resolves the journey first
 // reports the wrong one.
 
+import { existsSync } from "node:fs";
+import { dirname, join } from "node:path";
 import type { Database, WritableDatabase } from "#db/database.ts";
 import { getIdentityContent } from "#identity/identityRead.ts";
 import { getProjectPath } from "#journey/journeyStatus.ts";
 import { resolveRuntimeSessionId } from "#mirror/runtimeSession.ts";
 import { getActiveOperatingMode } from "#mode/operatingMode.ts";
 import { pyRStrip } from "#util/pythonText.ts";
+import { approvePlanCheckpoint, renderPlanApproval } from "./approve.ts";
 import { getAriadMethod } from "./ariadMethod.ts";
 import {
+  existingArtifact,
+  type MaterializedArtifact,
+  materializedArtifact,
+  renderArtifactsMaterializedSurface,
+} from "./artifacts/artifactSurfaces.ts";
+import {
   type CursorWriteDeps,
+  getDeliveryCursor,
   renderDeliveryCursorSyncReport,
   setDeliveryCursor,
 } from "./deliveryCursor.ts";
+import { renderDeliveryStoryReadyReport } from "./deliveryStoryReady.ts";
+import { ExpandBlockedError, expandDeliveryStory, renderExpandBlocked } from "./expand.ts";
 import {
   assertImplementationAllowed,
   ImplementationBlockedError,
@@ -51,8 +63,25 @@ import {
   renderMethodAdoptionReport,
   renderNoActiveJourney,
 } from "./methodInspection.ts";
+import { planLifecycleItem, renderPlanCheckpoint } from "./plan.ts";
+import { PlanPreauthorizationMismatch } from "./planPreauthorization.ts";
+import { prepareLifecycleItem, renderPrepareReport } from "./prepare.ts";
+import { pullLifecycleItem, renderPullReport } from "./pull.ts";
 import { inspectPullCandidates, inspectRoadmapSnapshot } from "./pullCandidates.ts";
 import { renderPullCandidatesReport, renderRoadmapSnapshotReport } from "./pullCandidatesRender.ts";
+import {
+  createStoryDirectory,
+  resolveStoryDirectory,
+  StoryPackageAmbiguityError,
+} from "./storyPaths.ts";
+import {
+  approveStoryPlanWithPreauthorization,
+  cancelStoryPlanPreauthorization,
+  renderStoryImplementationStarted,
+  renderStoryPlanPreauthorizationMismatch,
+  renderStoryPlanPreauthorizationRecorded,
+  renderStoryPreauthorizationAlreadyConsumed,
+} from "./storyPlanPreauthorization.ts";
 import { prepareMethodTemplates, renderTemplatePreparationReport } from "./templateGeneration.ts";
 
 /** What a `build` leaf produced, without touching the process. */
@@ -427,5 +456,512 @@ export function runCheckImplementation(
       stderr: "",
       exitCode: 1,
     };
+  }
+}
+
+// --- plateau 3: the story-lifecycle leaves ---------------------------------
+//
+// Port of `cmd_pull_item`, `cmd_prepare_item`, `cmd_plan_item`, `cmd_approve_plan`,
+// and `cmd_cancel_story_plan_preauthorization`.
+//
+// These are the first leaves whose guard chain has a FIFTH link: after method,
+// journey resolution, journey existence, and adoption comes
+// `_require_delivery_cursor`. Its position matters — two refusals that look like
+// they belong to the lifecycle (`active item is required before prepare`, the
+// Delivery Story project-path error) sit BEHIND it, so a port that checks the
+// cursor last reports the wrong refusal for a journey that never ran `sync-cursor`.
+//
+// `pull-item` is also the only leaf here that composes: it runs Pull, then Prepare
+// unconditionally, then for a Delivery Story it runs Expand and renders the
+// composite `DELIVERY_STORY_READY` surface INSTEAD of the Pull and Prepare
+// surfaces. Emitting all three is a duplicate-surface defect no renderer-level test
+// can see.
+
+/** Python `_require_delivery_cursor`. */
+function requireDeliveryCursor(db: Database, journey: string): CommandResult | null {
+  if (getDeliveryCursor(db, journey) !== null) return null;
+  return refuse(
+    `Error: journey '${journey}' has no Builder delivery cursor. ` +
+      `Run: uv run python -m memory build sync-cursor --journey ${journey} --method ariad`,
+  );
+}
+
+/** The four guards every lifecycle leaf runs, in Python's order. */
+function lifecycleGuards(
+  context: BuilderCommandContext,
+  options: {
+    method: string;
+    journey?: string | null;
+    sessionId?: string | null;
+    action: string;
+    requireCursor: boolean;
+  },
+): { journey: string } | CommandResult {
+  const unknown = rejectUnknownMethod(options.method);
+  if (unknown) return unknown;
+
+  const resolved = resolveBuilderJourney(context, {
+    journey: options.journey ?? null,
+    sessionId: options.sessionId ?? null,
+    action: options.action,
+  });
+  if (isCommandResult(resolved)) return resolved;
+  const journey = resolved.journey;
+
+  const missing = requireJourney(context.db, journey);
+  if (missing) return missing;
+  const notAdopted = requireAdoptedMethod(context.db, journey, options.method);
+  if (notAdopted) return notAdopted;
+  if (options.requireCursor) {
+    const noCursor = requireDeliveryCursor(context.db, journey);
+    if (noCursor) return noCursor;
+  }
+  return { journey };
+}
+
+/** Python's `except ValueError as exc: print(f"Error: {exc}", file=sys.stderr)`. */
+function refuseValueError(error: unknown): CommandResult {
+  if (error instanceof StoryPackageAmbiguityError || error instanceof ExpandBlockedError)
+    throw error;
+  return refuse(`Error: ${(error as Error).message}`);
+}
+
+/** Python `_canonical_package_path`: resolve the authored package, else create it. */
+function canonicalPackagePath(
+  projectPath: string | null,
+  cursor: { activeItem: string | null; activeItemTitle: string | null } | null,
+): string | null {
+  const activeItem = cursor?.activeItem ?? null;
+  if (!projectPath || !activeItem) return null;
+  const resolved = resolveStoryDirectory(projectPath, activeItem);
+  if (resolved !== null) return resolved;
+  return createStoryDirectory(projectPath, activeItem, cursor?.activeItemTitle || activeItem);
+}
+
+/** Python `_artifact_existence`: sampled BEFORE the write, or preservation is invisible. */
+function artifactExistence(planPath: string | null): Map<string, boolean> {
+  const existence = new Map<string, boolean>();
+  if (planPath === null) return existence;
+  const directory = dirname(planPath);
+  for (const path of [join(directory, "index.md"), planPath, join(directory, "test-guide.md")]) {
+    existence.set(path, existsSync(path));
+  }
+  return existence;
+}
+
+/** Python `_plan_package_artifacts`. */
+function planPackageArtifacts(
+  planPath: string | null,
+  existedBefore: Map<string, boolean>,
+): MaterializedArtifact[] {
+  if (planPath === null) return [];
+  const directory = dirname(planPath);
+  const triple: [string, string][] = [
+    ["story index", join(directory, "index.md")],
+    ["plan", planPath],
+    ["test guide", join(directory, "test-guide.md")],
+  ];
+  return triple.map(([kind, path]) =>
+    existedBefore.get(path) === true
+      ? existingArtifact(kind, path)
+      : materializedArtifact(kind, path, { existedBefore: false }),
+  );
+}
+
+/** Python `_print_artifacts_materialized`: no artifacts means NO surface, not an empty one. */
+function artifactsSurface(options: {
+  context: string;
+  artifacts: readonly MaterializedArtifact[];
+  projectPath: string | null;
+  boundary: string;
+}): string {
+  if (options.artifacts.length === 0) return "";
+  return printed(
+    renderArtifactsMaterializedSurface({
+      context: options.context,
+      artifacts: options.artifacts,
+      projectPath: options.projectPath,
+      boundary: options.boundary,
+    }),
+  );
+}
+
+/**
+ * Python `_MIRROR_LOCAL_IMPLEMENTATION_RULES`.
+ *
+ * Mirror Mind's own conventions, injected into every generated Plan — including
+ * plans for other projects, where `uv run` is false. Reproduced; CR019 owns it.
+ */
+const MIRROR_LOCAL_IMPLEMENTATION_RULES = [
+  "Use uv run for Python commands and tests.",
+  "Do not use git add .; commit only story-scoped files.",
+  "Use descriptive English commit messages explaining why.",
+] as const;
+
+/**
+ * Python `_roadmap_plan_context`.
+ *
+ * Derives the Plan's default prose from the roadmap: the active candidate's own
+ * title leaf, and SIBLING titles as explicit non-goals. The sibling query is
+ * prefix-based on the code's first segment, which is why a Delivery Story's own
+ * parent can appear among them (CR019).
+ */
+function roadmapPlanContext(
+  projectPath: string | null,
+  cursor: { activeItem: string | null } | null,
+): {
+  objective: string;
+  scope: string[];
+  nonGoals: string[];
+  acceptanceBehavior: string[];
+  validationRoute: string[];
+  e2eDecision: string;
+} {
+  const activeItem = cursor?.activeItem ?? null;
+  let titleParts: string[] = [];
+  let siblings: string[] = [];
+  if (projectPath && activeItem) {
+    const candidates = inspectPullCandidates(projectPath, {
+      journey: "",
+      method: "ariad",
+    }).candidates;
+    const active = candidates.find((candidate) => candidate.code === activeItem);
+    if (active) {
+      titleParts = active.title
+        .split("/")
+        .map((part) => part.trim())
+        .filter((part) => part !== "");
+      const prefix = String(activeItem).split(".")[0] ?? "";
+      siblings = candidates
+        .filter(
+          (candidate) => candidate.code !== activeItem && candidate.code.startsWith(`${prefix}.`),
+        )
+        .map((candidate) => (candidate.title.split("/").at(-1) ?? "").trim());
+    }
+  }
+  const title = titleParts.at(-1) ?? String(activeItem ?? "the active item");
+  const siblingNonGoals = siblings.map(
+    (sibling) => `Do not implement sibling roadmap item: ${sibling}.`,
+  );
+  return {
+    objective: `Plan the smallest coherent, testable slice for ${title}.`,
+    scope: [
+      `Deliver ${title} as an observable slice.`,
+      "Keep the implementation narrow enough to validate at the Plan-defined checkpoint.",
+    ],
+    nonGoals:
+      siblingNonGoals.length > 0
+        ? siblingNonGoals
+        : ["Do not silently absorb adjacent roadmap work."],
+    acceptanceBehavior: [
+      `Given the starting state needed for ${title}`,
+      `When the Navigator exercises ${title}`,
+      "Then the planned observable behavior is visible",
+      "And out-of-scope sibling roadmap items remain untouched",
+    ],
+    validationRoute: [
+      "Run automated tests that cover the planned behavior.",
+      "Provide a Navigator-visible route with expected observation, pass condition, and fail condition.",
+    ],
+    e2eDecision:
+      "required unless Navigator explicitly accepts a narrower fixture-level validation route",
+  };
+}
+
+/** Python `cmd_pull_item`. */
+export function runPullItem(
+  context: BuilderWriteContext,
+  options: {
+    method: string;
+    journey?: string | null;
+    sessionId?: string | null;
+    itemCode: string;
+    itemTitle: string;
+    itemLevel: string;
+    whyNow: string;
+  },
+): CommandResult {
+  const guarded = lifecycleGuards(context, { ...options, action: "pull", requireCursor: true });
+  if (isCommandResult(guarded)) return guarded;
+  const journey = guarded.journey;
+
+  let pullReport: ReturnType<typeof pullLifecycleItem>;
+  try {
+    pullReport = pullLifecycleItem(
+      context.db,
+      {
+        journey,
+        method: options.method,
+        item: {
+          code: options.itemCode,
+          title: options.itemTitle,
+          level: options.itemLevel,
+          whyNow: options.whyNow,
+        },
+      },
+      context.deps,
+    );
+  } catch (error) {
+    return refuseValueError(error);
+  }
+
+  const projectPath = getProjectPath(context.db, journey);
+  // Prepare runs unconditionally, and OUTSIDE the try above: Python lets a Prepare
+  // failure raise rather than reporting it as a Pull refusal.
+  const prepareReport = prepareLifecycleItem(
+    context.db,
+    { journey, method: options.method, projectPath },
+    context.deps,
+  );
+
+  if (options.itemLevel === "delivery_story") {
+    if (!projectPath) {
+      return refuse("Error: Delivery Story expansion requires project_path.");
+    }
+    let expandReport: ReturnType<typeof expandDeliveryStory>;
+    try {
+      expandReport = expandDeliveryStory(
+        context.db,
+        { journey, method: options.method, projectPath },
+        context.deps,
+      );
+    } catch (error) {
+      if (error instanceof ExpandBlockedError || error instanceof StoryPackageAmbiguityError) {
+        // The refusal renders a SURFACE on stdout and still exits 1.
+        return {
+          stdout: printed(renderExpandBlocked(options.itemCode, error.message)),
+          stderr: "",
+          exitCode: 1,
+        };
+      }
+      return refuseValueError(error);
+    }
+    const stdout =
+      printed(
+        renderDeliveryStoryReadyReport({
+          pull: pullReport,
+          prepare: prepareReport,
+          expand: expandReport,
+        }),
+      ) +
+      artifactsSurface({
+        context: `Expand — ${expandReport.deliveryStory}`,
+        artifacts: expandReport.materializedArtifacts,
+        projectPath,
+        boundary: "Files were materialized only. No Plan or implementation was executed.",
+      });
+    return { stdout, stderr: "", exitCode: 0 };
+  }
+
+  return {
+    stdout: printed(renderPullReport(pullReport)) + printed(renderPrepareReport(prepareReport)),
+    stderr: "",
+    exitCode: 0,
+  };
+}
+
+/** Python `cmd_prepare_item`. */
+export function runPrepareItem(
+  context: BuilderWriteContext,
+  options: { method: string; journey?: string | null; sessionId?: string | null },
+): CommandResult {
+  const guarded = lifecycleGuards(context, { ...options, action: "prepare", requireCursor: true });
+  if (isCommandResult(guarded)) return guarded;
+  const journey = guarded.journey;
+
+  const projectPath = getProjectPath(context.db, journey);
+  try {
+    const report = prepareLifecycleItem(
+      context.db,
+      { journey, method: options.method, projectPath },
+      context.deps,
+    );
+    return { stdout: printed(renderPrepareReport(report)), stderr: "", exitCode: 0 };
+  } catch (error) {
+    return refuseValueError(error);
+  }
+}
+
+/** Python `cmd_plan_item`. */
+export function runPlanItem(
+  context: BuilderWriteContext,
+  options: {
+    method: string;
+    journey?: string | null;
+    sessionId?: string | null;
+    objective?: string | null;
+    preauthorizeApproval?: boolean;
+    stopAfter?: string;
+  },
+): CommandResult {
+  const guarded = lifecycleGuards(context, { ...options, action: "plan", requireCursor: true });
+  if (isCommandResult(guarded)) return guarded;
+  const journey = guarded.journey;
+
+  const projectPath = getProjectPath(context.db, journey);
+  const cursor = getDeliveryCursor(context.db, journey);
+  const planPath = canonicalPackagePath(projectPath, cursor);
+  const planArtifactPath = planPath === null ? null : join(planPath, "plan.md");
+  const existedBefore = artifactExistence(planArtifactPath);
+  const planContext = roadmapPlanContext(projectPath, cursor);
+
+  try {
+    const report = planLifecycleItem(
+      context.db,
+      {
+        journey,
+        method: getAriadMethod(),
+        objective: options.objective || planContext.objective,
+        scope: planContext.scope,
+        nonGoals: planContext.nonGoals,
+        acceptanceBehavior: planContext.acceptanceBehavior,
+        validationRoute: planContext.validationRoute,
+        e2eDecision: planContext.e2eDecision,
+        localRules: [...MIRROR_LOCAL_IMPLEMENTATION_RULES],
+        planArtifactPath,
+        preauthorize: options.preauthorizeApproval ?? false,
+        stopBoundary: options.stopAfter ?? "navigator_validation",
+      },
+      context.deps,
+    );
+    const authority = report.preauthorizationRecorded
+      ? printed(renderStoryPlanPreauthorizationRecorded(report.cursor))
+      : "";
+    const stdout =
+      printed(renderPlanCheckpoint(report)) +
+      authority +
+      artifactsSurface({
+        context: `Plan — ${report.activeItem}`,
+        artifacts: planPackageArtifacts(report.planArtifactPath, existedBefore),
+        projectPath,
+        boundary:
+          "Plan artifacts were materialized. Implementation remains blocked until approval.",
+      });
+    return { stdout, stderr: "", exitCode: 0 };
+  } catch (error) {
+    return refuseValueError(error);
+  }
+}
+
+/**
+ * Python `cmd_approve_plan`.
+ *
+ * Note the guard chain: approval does NOT require a delivery cursor up front — the
+ * lifecycle call reports that itself — so a journey with no cursor reports
+ * `delivery cursor is required before plan approval`, not the `sync-cursor` hint.
+ */
+export function runApprovePlan(
+  context: BuilderWriteContext,
+  options: {
+    method: string;
+    journey?: string | null;
+    sessionId?: string | null;
+    usePreauthorization?: boolean;
+  },
+): CommandResult {
+  const guarded = lifecycleGuards(context, {
+    ...options,
+    action: "plan approval",
+    requireCursor: false,
+  });
+  if (isCommandResult(guarded)) return guarded;
+  const journey = guarded.journey;
+
+  try {
+    if (options.usePreauthorization === true) {
+      const cursor = getDeliveryCursor(context.db, journey);
+      const projectPath = getProjectPath(context.db, journey);
+      const packagePath = canonicalPackagePath(projectPath, cursor);
+      const report = approveStoryPlanWithPreauthorization(
+        context.db,
+        {
+          journey,
+          method: options.method,
+          planArtifactPath: packagePath === null ? null : join(packagePath, "plan.md"),
+        },
+        context.deps,
+      );
+      if (report.status === "already_approved") {
+        return {
+          stdout: printed(renderStoryPreauthorizationAlreadyConsumed(report.cursor)),
+          stderr: "",
+          exitCode: 0,
+        };
+      }
+      return {
+        stdout:
+          printed(renderPlanApproval(report.cursor)) +
+          printed(renderStoryImplementationStarted(report.cursor)),
+        stderr: "",
+        exitCode: 0,
+      };
+    }
+    const cursor = approvePlanCheckpoint(
+      context.db,
+      { journey, method: options.method },
+      context.deps,
+    );
+    return { stdout: printed(renderPlanApproval(cursor)), stderr: "", exitCode: 0 };
+  } catch (error) {
+    if (error instanceof PlanPreauthorizationMismatch) {
+      // Exit 0, not 1: a mismatch is a bounded fallback to ordinary approval, and
+      // the surface says so. Treating it as a failure would tell the Navigator the
+      // command broke.
+      const cursor = getDeliveryCursor(context.db, journey);
+      return {
+        stdout: printed(
+          renderStoryPlanPreauthorizationMismatch({
+            activeItem: cursor?.activeItem ?? null,
+            reason: error.reason,
+          }),
+        ),
+        stderr: "",
+        exitCode: 0,
+      };
+    }
+    return refuseValueError(error);
+  }
+}
+
+/**
+ * Python `cmd_cancel_story_plan_preauthorization`.
+ *
+ * The one leaf that skips the journey-existence check: Python's version never calls
+ * `get_identity`, so a nonexistent journey reaches the adoption guard instead.
+ */
+export function runCancelPlanPreauthorization(
+  context: BuilderWriteContext,
+  options: { method: string; journey?: string | null; sessionId?: string | null },
+): CommandResult {
+  const unknown = rejectUnknownMethod(options.method);
+  if (unknown) return unknown;
+  const resolved = resolveBuilderJourney(context, {
+    journey: options.journey ?? null,
+    sessionId: options.sessionId ?? null,
+    action: "story Plan preauthorization cancellation",
+  });
+  if (isCommandResult(resolved)) return resolved;
+  const journey = resolved.journey;
+  const notAdopted = requireAdoptedMethod(context.db, journey, options.method);
+  if (notAdopted) return notAdopted;
+
+  try {
+    const cursor = cancelStoryPlanPreauthorization(
+      context.db,
+      { journey, method: options.method },
+      context.deps,
+    );
+    return {
+      stdout: printed(
+        renderStoryPlanPreauthorizationMismatch({
+          activeItem: cursor.activeItem,
+          reason: "navigator_cancelled",
+        }),
+      ),
+      stderr: "",
+      exitCode: 0,
+    };
+  } catch (error) {
+    return refuseValueError(error);
   }
 }
