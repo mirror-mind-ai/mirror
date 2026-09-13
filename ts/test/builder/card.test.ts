@@ -20,6 +20,7 @@ import {
   cardWrapped,
   wrapPlainText,
 } from "#builder/card.ts";
+import { wrapAriadSurface } from "#builder/surfaceProtocol.ts";
 import golden from "#goldens/builder-card.golden.json" with { type: "json" };
 
 interface Scenario {
@@ -81,6 +82,7 @@ test("every golden scenario is exercised by a known kind", () => {
       "card_prefixed",
       "card_text",
       "card_wrapped",
+      "wrap_ariad_surface",
       "wrap_plain_text",
     ],
     "a new golden kind needs a case in this test, not a silent skip",
@@ -191,6 +193,26 @@ test("cardLine matches Python, including the max(1, …) floor", () => {
       scenario.name,
     );
   }
+});
+
+test("wrapAriadSurface matches Python, markers and rstrip included", () => {
+  const rows = scenarios.filter((s) => s.kind === "wrap_ariad_surface");
+  assert.ok(rows.length > 0);
+  for (const scenario of rows) {
+    assert.equal(
+      wrapAriadSurface(scenario.input.surface_id as string, scenario.input.body as string),
+      scenario.expected,
+      scenario.name,
+    );
+  }
+});
+
+test("both call-site body styles produce identical transport", () => {
+  // Most of `builder/` passes `body + "\n"`; three places in `lifecycle.py` pass
+  // bare `body`. The rstrip is what makes those equivalent, so a port that drops
+  // it looks correct against one style and breaks on the other.
+  assert.equal(wrapAriadSurface("x", "body"), wrapAriadSurface("x", "body\n"));
+  assert.equal(wrapAriadSurface("x", "body"), wrapAriadSurface("x", "body\n\n\n"));
 });
 
 test("cardContextItems matches Python's substring glyph rule", () => {

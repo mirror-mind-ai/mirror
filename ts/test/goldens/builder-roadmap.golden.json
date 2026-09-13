@@ -1,0 +1,1609 @@
+{
+  "scenarios": [
+    {
+      "expected": {
+        "items": [
+          {
+            "code": "CV1",
+            "status": "✅ Done",
+            "title": "First value"
+          },
+          {
+            "code": "CV2",
+            "status": "🟢 Active",
+            "title": "Second value"
+          },
+          {
+            "code": "CV3",
+            "status": "🟡 Planned",
+            "title": "Third value"
+          }
+        ],
+        "journey": "j",
+        "method": "ariad",
+        "source": "docs/project/roadmap/index.md"
+      },
+      "input": {
+        "project": "main"
+      },
+      "kind": "roadmap_snapshot",
+      "name": "snapshot__main"
+    },
+    {
+      "expected": {
+        "candidates": [
+          {
+            "code": "CV2.DS1.US1",
+            "level": "user_story",
+            "path": "docs/project/roadmap/cv2-second-value/cv2-ds1-alpha/cv2-ds1-us1-child/index.md",
+            "status": "🟡 Planned",
+            "title": "Child user story"
+          },
+          {
+            "code": "CV2.DS1",
+            "level": "delivery_story",
+            "path": "docs/project/roadmap/cv2-second-value/cv2-ds1-alpha/index.md",
+            "status": "🟡 Planned",
+            "title": "Alpha delivery"
+          },
+          {
+            "code": "CV2.DS2",
+            "level": "technical_story",
+            "path": "docs/project/roadmap/cv2-second-value/cv2-ds1-alpha-extra/index.md",
+            "status": "🟡 Planned",
+            "title": "Alpha extra, sorts differently as a string"
+          },
+          {
+            "code": "CV2.DS3",
+            "level": "user_story",
+            "path": "docs/project/roadmap/cv2-second-value/cv2-ds3-hyphen/index.md",
+            "status": "🟡 Planned",
+            "title": "Hyphen separator in the heading"
+          },
+          {
+            "code": "CV2.DS4",
+            "level": "delivery_story",
+            "path": "docs/project/roadmap/cv2-second-value/cv2-ds4-blocked/index.md",
+            "status": "🔴 Blocked on an external decision",
+            "title": "Blocked delivery"
+          },
+          {
+            "code": "CV2",
+            "level": "cv",
+            "path": "docs/project/roadmap/cv2-second-value/index.md",
+            "status": "🟢 Active",
+            "title": "Second value"
+          }
+        ],
+        "journey": "j",
+        "method": "ariad",
+        "recommended": {
+          "code": "CV2.DS1.US1",
+          "level": "user_story",
+          "path": "docs/project/roadmap/cv2-second-value/cv2-ds1-alpha/cv2-ds1-us1-child/index.md",
+          "status": "🟡 Planned",
+          "title": "Child user story"
+        }
+      },
+      "input": {
+        "project": "main"
+      },
+      "kind": "pull_candidates",
+      "name": "candidates__main"
+    },
+    {
+      "expected": {
+        "code": "CV2",
+        "path": "docs/project/roadmap/cv2-second-value/index.md",
+        "status": "🟢 Active",
+        "title": "Second value"
+      },
+      "input": {
+        "project": "main"
+      },
+      "kind": "roadmap_position",
+      "name": "position__main"
+    },
+    {
+      "expected": {},
+      "input": {
+        "project": "main"
+      },
+      "kind": "duplicate_headings",
+      "name": "duplicates__main"
+    },
+    {
+      "expected": "<<<ARIAD:ROADMAP_SNAPSHOT>>>\nROADMAP SNAPSHOT\nDelivery field overview\n\nview                         overview\nresult of roadmap-snapshot      ready to pull\n\n╭────────────────────────────────────────────────────────╮\n│ 🟪[CV2]  Second value                          ◉ active │\n│ value: Second value                                    │\n│                                                        │\n│    └─ 🟦[US1] Child user story                ◉ current │\n│       progress: not started                            │\n│                                                        │\n│       Backlog                                          │\n│       ○ 🟦[CV2.DS1.US1] Child user story                │\n│       ○ 🟦[CV2.DS1] Alpha delivery                      │\n│       ○ 🟦[CV2.DS2] Alpha extra, sorts differently as a │\n│       ○ 🟦[CV2.DS3] Hyphen separator in the heading     │\n│       ○ 🟦[CV2.DS4] Blocked delivery                    │\n│                                                        │\n│       Recently promoted from Exploration               │\n│       none                                             │\n│                                                        │\n│       Active constraints                               │\n│       ✕ do not start candidates automatically          │\n│       ✓ Navigator explicitly chooses Pull              │\n╰────────────────────────────────────────────────────────╯\n\nsource\ndocs/project/roadmap/index.md\n\nboundary\nRoadmap was inspected only. No item was pulled. No lifecycle work was executed.\n<<<END:ROADMAP_SNAPSHOT>>>\n",
+      "input": {
+        "project": "main"
+      },
+      "kind": "render_roadmap_snapshot",
+      "name": "render_snapshot__main"
+    },
+    {
+      "expected": "<<<ARIAD:PULL_CANDIDATES>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🟪■  PULL CANDIDATES                            │\n│                                                        │\n│ journey                                                │\n│ j                                                      │\n│                                                        │\n│ method                                                 │\n│ ariad                                                  │\n│                                                        │\n│ available candidates                                   │\n│ - CV2.DS1.US1 — Child user story [user_story] 🟡        │\n│   Planned                                              │\n│   (docs/project/roadmap/cv2-second-value/cv2-ds1-alpha │\n│   /cv2-ds1-us1-child/index.md)                         │\n│ - CV2.DS1 — Alpha delivery [delivery_story] 🟡 Planned  │\n│   (docs/project/roadmap/cv2-second-value/cv2-ds1-alpha │\n│   /index.md)                                           │\n│ - CV2.DS2 — Alpha extra, sorts differently as a string │\n│   [technical_story] 🟡 Planned                          │\n│   (docs/project/roadmap/cv2-second-value/cv2-ds1-alpha │\n│   -extra/index.md)                                     │\n│ - CV2.DS3 — Hyphen separator in the heading            │\n│   [user_story] 🟡 Planned                               │\n│   (docs/project/roadmap/cv2-second-value/cv2-ds3-hyphe │\n│   n/index.md)                                          │\n│ - CV2.DS4 — Blocked delivery [delivery_story] 🔴        │\n│   Blocked on an external decision                      │\n│   (docs/project/roadmap/cv2-second-value/cv2-ds4-block │\n│   ed/index.md)                                         │\n│ - CV2 — Second value [cv] 🟢 Active                     │\n│   (docs/project/roadmap/cv2-second-value/index.md)     │\n│                                                        │\n│ recommended pull                                       │\n│ CV2.DS1.US1 — Child user story [user_story] 🟡 Planned  │\n│ (docs/project/roadmap/cv2-second-value/cv2-ds1-alpha/c │\n│ v2-ds1-us1-child/index.md)                             │\n│                                                        │\n│ boundary                                               │\n│ No item was pulled. No lifecycle work was executed.    │\n╰────────────────────────────────────────────────────────╯\n<<<END:PULL_CANDIDATES>>>\n",
+      "input": {
+        "project": "main"
+      },
+      "kind": "render_pull_candidates",
+      "name": "render_candidates__main"
+    },
+    {
+      "expected": "<<<ARIAD:PROJECT_POSITION>>>\nRoadmap\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PROJECT POSITION                           │\n│                                                        │\n│ Where are we now?                                      │\n│ 🟪[CV2] Second value                                    │\n│ progress: active                                       │\n│                                                        │\n│ What looks next?                                       │\n│ 🟦[CV2.DS1.US1] Child user story — recommended next     │\n│ pull                                                   │\n│                                                        │\n│ Available path                                         │\n│ - CV2.DS1.US1 — Child user story [user_story] 🟡        │\n│   Planned                                              │\n│   (docs/project/roadmap/cv2-second-value/cv2-ds1-alpha │\n│   /cv2-ds1-us1-child/index.md)                         │\n│ - CV2.DS1 — Alpha delivery [delivery_story] 🟡 Planned  │\n│   (docs/project/roadmap/cv2-second-value/cv2-ds1-alpha │\n│   /index.md)                                           │\n│ - CV2.DS2 — Alpha extra, sorts differently as a string │\n│   [technical_story] 🟡 Planned                          │\n│   (docs/project/roadmap/cv2-second-value/cv2-ds1-alpha │\n│   -extra/index.md)                                     │\n│ - CV2.DS3 — Hyphen separator in the heading            │\n│   [user_story] 🟡 Planned                               │\n│   (docs/project/roadmap/cv2-second-value/cv2-ds3-hyphe │\n│   n/index.md)                                          │\n│ - CV2.DS4 — Blocked delivery [delivery_story] 🔴        │\n│   Blocked on an external decision                      │\n│   (docs/project/roadmap/cv2-second-value/cv2-ds4-block │\n│   ed/index.md)                                         │\n│ - CV2 — Second value [cv] 🟢 Active                     │\n│   (docs/project/roadmap/cv2-second-value/index.md)     │\n│                                                        │\n│ Choose a pull when ready.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:PROJECT_POSITION>>>\n",
+      "input": {
+        "just_moved": null,
+        "project": "main"
+      },
+      "kind": "render_project_position",
+      "name": "render_position__main"
+    },
+    {
+      "expected": "<<<ARIAD:PROJECT_POSITION>>>\nRoadmap\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PROJECT POSITION                           │\n│                                                        │\n│ Where are we now?                                      │\n│ 🟪[CV2] Second value                                    │\n│ progress: active                                       │\n│                                                        │\n│ What just moved?                                       │\n│ CV2.DS1 reached Done                                   │\n│                                                        │\n│ What looks next?                                       │\n│ 🟦[CV2.DS1.US1] Child user story — recommended next     │\n│ pull                                                   │\n│                                                        │\n│ Available path                                         │\n│ - CV2.DS1.US1 — Child user story [user_story] 🟡        │\n│   Planned                                              │\n│   (docs/project/roadmap/cv2-second-value/cv2-ds1-alpha │\n│   /cv2-ds1-us1-child/index.md)                         │\n│ - CV2.DS1 — Alpha delivery [delivery_story] 🟡 Planned  │\n│   (docs/project/roadmap/cv2-second-value/cv2-ds1-alpha │\n│   /index.md)                                           │\n│ - CV2.DS2 — Alpha extra, sorts differently as a string │\n│   [technical_story] 🟡 Planned                          │\n│   (docs/project/roadmap/cv2-second-value/cv2-ds1-alpha │\n│   -extra/index.md)                                     │\n│ - CV2.DS3 — Hyphen separator in the heading            │\n│   [user_story] 🟡 Planned                               │\n│   (docs/project/roadmap/cv2-second-value/cv2-ds3-hyphe │\n│   n/index.md)                                          │\n│ - CV2.DS4 — Blocked delivery [delivery_story] 🔴        │\n│   Blocked on an external decision                      │\n│   (docs/project/roadmap/cv2-second-value/cv2-ds4-block │\n│   ed/index.md)                                         │\n│ - CV2 — Second value [cv] 🟢 Active                     │\n│   (docs/project/roadmap/cv2-second-value/index.md)     │\n│                                                        │\n│ Choose a pull when ready.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:PROJECT_POSITION>>>\n",
+      "input": {
+        "just_moved": "CV2.DS1 reached Done",
+        "project": "main"
+      },
+      "kind": "render_project_position",
+      "name": "render_position_moved__main"
+    },
+    {
+      "expected": {
+        "items": [
+          {
+            "code": "DS-1",
+            "status": "✅ Done",
+            "title": "Bootstrap"
+          },
+          {
+            "code": "DS-2",
+            "status": "🟢 Active",
+            "title": "Second story"
+          },
+          {
+            "code": "DS-35",
+            "status": "🟡 Planned",
+            "title": "Bare top-level DS code"
+          },
+          {
+            "code": "DS-35.US-1",
+            "status": "🟡 Planned",
+            "title": "Hyphenated child code"
+          }
+        ],
+        "journey": "j",
+        "method": "ariad",
+        "source": "docs/project/roadmap/index.md"
+      },
+      "input": {
+        "project": "ds_grammar"
+      },
+      "kind": "roadmap_snapshot",
+      "name": "snapshot__ds_grammar"
+    },
+    {
+      "expected": {
+        "candidates": [
+          {
+            "code": "DS-35",
+            "level": "delivery_story",
+            "path": "docs/project/roadmap/ds-35-bare/index.md",
+            "status": "🟡 Planned",
+            "title": "Bare top-level DS code"
+          }
+        ],
+        "journey": "j",
+        "method": "ariad",
+        "recommended": {
+          "code": "DS-35",
+          "level": "delivery_story",
+          "path": "docs/project/roadmap/ds-35-bare/index.md",
+          "status": "🟡 Planned",
+          "title": "Bare top-level DS code"
+        }
+      },
+      "input": {
+        "project": "ds_grammar"
+      },
+      "kind": "pull_candidates",
+      "name": "candidates__ds_grammar"
+    },
+    {
+      "expected": null,
+      "input": {
+        "project": "ds_grammar"
+      },
+      "kind": "roadmap_position",
+      "name": "position__ds_grammar"
+    },
+    {
+      "expected": {},
+      "input": {
+        "project": "ds_grammar"
+      },
+      "kind": "duplicate_headings",
+      "name": "duplicates__ds_grammar"
+    },
+    {
+      "expected": "<<<ARIAD:ROADMAP_SNAPSHOT>>>\nROADMAP SNAPSHOT\nDelivery field overview\n\nview                         overview\nresult of roadmap-snapshot      ready to pull\n\n╭────────────────────────────────────────────────────────╮\n│ 🟪[DS-35]  Bare top-level DS code             ○ planned │\n│ value: Bare top-level DS code                          │\n│                                                        │\n│       Backlog                                          │\n│       none                                             │\n│                                                        │\n│       Recently promoted from Exploration               │\n│       none                                             │\n│                                                        │\n│       Active constraints                               │\n│       ✕ do not start candidates automatically          │\n│       ✓ Navigator explicitly chooses Pull              │\n╰────────────────────────────────────────────────────────╯\n\nsource\ndocs/project/roadmap/index.md\n\nboundary\nRoadmap was inspected only. No item was pulled. No lifecycle work was executed.\n<<<END:ROADMAP_SNAPSHOT>>>\n",
+      "input": {
+        "project": "ds_grammar"
+      },
+      "kind": "render_roadmap_snapshot",
+      "name": "render_snapshot__ds_grammar"
+    },
+    {
+      "expected": "<<<ARIAD:PULL_CANDIDATES>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🟪■  PULL CANDIDATES                            │\n│                                                        │\n│ journey                                                │\n│ j                                                      │\n│                                                        │\n│ method                                                 │\n│ ariad                                                  │\n│                                                        │\n│ available candidates                                   │\n│ - DS-35 — Bare top-level DS code [delivery_story] 🟡    │\n│   Planned (docs/project/roadmap/ds-35-bare/index.md)   │\n│                                                        │\n│ recommended pull                                       │\n│ DS-35 — Bare top-level DS code [delivery_story] 🟡      │\n│ Planned (docs/project/roadmap/ds-35-bare/index.md)     │\n│                                                        │\n│ boundary                                               │\n│ No item was pulled. No lifecycle work was executed.    │\n╰────────────────────────────────────────────────────────╯\n<<<END:PULL_CANDIDATES>>>\n",
+      "input": {
+        "project": "ds_grammar"
+      },
+      "kind": "render_pull_candidates",
+      "name": "render_candidates__ds_grammar"
+    },
+    {
+      "expected": "<<<ARIAD:PROJECT_POSITION>>>\nRoadmap\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PROJECT POSITION                           │\n│                                                        │\n│ Where are we now?                                      │\n│ 🟪[DS-35] Bare top-level DS code                        │\n│ progress: planned                                      │\n│                                                        │\n│ What looks next?                                       │\n│ 🟦[DS-35] Bare top-level DS code — recommended next     │\n│ pull                                                   │\n│                                                        │\n│ Available path                                         │\n│ - DS-35 — Bare top-level DS code [delivery_story] 🟡    │\n│   Planned (docs/project/roadmap/ds-35-bare/index.md)   │\n│                                                        │\n│ Choose a pull when ready.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:PROJECT_POSITION>>>\n",
+      "input": {
+        "just_moved": null,
+        "project": "ds_grammar"
+      },
+      "kind": "render_project_position",
+      "name": "render_position__ds_grammar"
+    },
+    {
+      "expected": "<<<ARIAD:PROJECT_POSITION>>>\nRoadmap\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PROJECT POSITION                           │\n│                                                        │\n│ Where are we now?                                      │\n│ 🟪[DS-35] Bare top-level DS code                        │\n│ progress: planned                                      │\n│                                                        │\n│ What just moved?                                       │\n│ CV2.DS1 reached Done                                   │\n│                                                        │\n│ What looks next?                                       │\n│ 🟦[DS-35] Bare top-level DS code — recommended next     │\n│ pull                                                   │\n│                                                        │\n│ Available path                                         │\n│ - DS-35 — Bare top-level DS code [delivery_story] 🟡    │\n│   Planned (docs/project/roadmap/ds-35-bare/index.md)   │\n│                                                        │\n│ Choose a pull when ready.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:PROJECT_POSITION>>>\n",
+      "input": {
+        "just_moved": "CV2.DS1 reached Done",
+        "project": "ds_grammar"
+      },
+      "kind": "render_project_position",
+      "name": "render_position_moved__ds_grammar"
+    },
+    {
+      "expected": {
+        "items": [
+          {
+            "code": "CV1",
+            "status": "🟢 Active",
+            "title": "Heading grammar value"
+          },
+          {
+            "code": "CV2",
+            "status": "💤 Dormant",
+            "title": "Dormant value"
+          }
+        ],
+        "journey": "j",
+        "method": "ariad",
+        "source": "docs/project/roadmap/index.md"
+      },
+      "input": {
+        "project": "heading_grammar"
+      },
+      "kind": "roadmap_snapshot",
+      "name": "snapshot__heading_grammar"
+    },
+    {
+      "expected": {
+        "candidates": [
+          {
+            "code": "CV1.DS1",
+            "level": "delivery_story",
+            "path": "docs/project/roadmap/index.md",
+            "status": "🟢 Active",
+            "title": "Heading grammar value / First candidate from a bullet"
+          },
+          {
+            "code": "CV1.DS2",
+            "level": "delivery_story",
+            "path": "docs/project/roadmap/index.md",
+            "status": "🟢 Active",
+            "title": "Heading grammar value / Second candidate with a trailing period"
+          },
+          {
+            "code": "CV1.DS3",
+            "level": "delivery_story",
+            "path": "docs/project/roadmap/index.md",
+            "status": "🟢 Active",
+            "title": "Heading grammar value / Third candidate"
+          }
+        ],
+        "journey": "j",
+        "method": "ariad",
+        "recommended": {
+          "code": "CV1.DS1",
+          "level": "delivery_story",
+          "path": "docs/project/roadmap/index.md",
+          "status": "🟢 Active",
+          "title": "Heading grammar value / First candidate from a bullet"
+        }
+      },
+      "input": {
+        "project": "heading_grammar"
+      },
+      "kind": "pull_candidates",
+      "name": "candidates__heading_grammar"
+    },
+    {
+      "expected": null,
+      "input": {
+        "project": "heading_grammar"
+      },
+      "kind": "roadmap_position",
+      "name": "position__heading_grammar"
+    },
+    {
+      "expected": {},
+      "input": {
+        "project": "heading_grammar"
+      },
+      "kind": "duplicate_headings",
+      "name": "duplicates__heading_grammar"
+    },
+    {
+      "expected": "<<<ARIAD:ROADMAP_SNAPSHOT>>>\nROADMAP SNAPSHOT\nDelivery field overview\n\nview                         overview\nresult of roadmap-snapshot      ready to pull\n\n╭────────────────────────────────────────────────────────╮\n│ 🟪[CV1]  Heading grammar value                 ◉ active │\n│ value: Heading grammar value                           │\n│                                                        │\n│    └─ 🟦[DS1] First candidate from a bullet   ◉ current │\n│       progress: not started                            │\n│                                                        │\n│       Backlog                                          │\n│       ○ 🟦[CV1.DS1] First candidate from a bullet       │\n│       ○ 🟦[CV1.DS2] Second candidate with a trailing pe │\n│       ○ 🟦[CV1.DS3] Third candidate                     │\n│                                                        │\n│       Recently promoted from Exploration               │\n│       none                                             │\n│                                                        │\n│       Active constraints                               │\n│       ✕ do not start candidates automatically          │\n│       ✓ Navigator explicitly chooses Pull              │\n╰────────────────────────────────────────────────────────╯\n\nsource\ndocs/project/roadmap/index.md\n\nboundary\nRoadmap was inspected only. No item was pulled. No lifecycle work was executed.\n<<<END:ROADMAP_SNAPSHOT>>>\n",
+      "input": {
+        "project": "heading_grammar"
+      },
+      "kind": "render_roadmap_snapshot",
+      "name": "render_snapshot__heading_grammar"
+    },
+    {
+      "expected": "<<<ARIAD:PULL_CANDIDATES>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🟪■  PULL CANDIDATES                            │\n│                                                        │\n│ journey                                                │\n│ j                                                      │\n│                                                        │\n│ method                                                 │\n│ ariad                                                  │\n│                                                        │\n│ available candidates                                   │\n│ - CV1.DS1 — Heading grammar value / First candidate    │\n│   from a bullet [delivery_story] 🟢 Active              │\n│   (docs/project/roadmap/index.md)                      │\n│ - CV1.DS2 — Heading grammar value / Second candidate   │\n│   with a trailing period [delivery_story] 🟢 Active     │\n│   (docs/project/roadmap/index.md)                      │\n│ - CV1.DS3 — Heading grammar value / Third candidate    │\n│   [delivery_story] 🟢 Active                            │\n│   (docs/project/roadmap/index.md)                      │\n│                                                        │\n│ recommended pull                                       │\n│ CV1.DS1 — Heading grammar value / First candidate from │\n│ a bullet [delivery_story] 🟢 Active                     │\n│ (docs/project/roadmap/index.md)                        │\n│                                                        │\n│ boundary                                               │\n│ No item was pulled. No lifecycle work was executed.    │\n╰────────────────────────────────────────────────────────╯\n<<<END:PULL_CANDIDATES>>>\n",
+      "input": {
+        "project": "heading_grammar"
+      },
+      "kind": "render_pull_candidates",
+      "name": "render_candidates__heading_grammar"
+    },
+    {
+      "expected": "<<<ARIAD:PROJECT_POSITION>>>\nRoadmap\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PROJECT POSITION                           │\n│                                                        │\n│ Where are we now?                                      │\n│ 🟪[CV1] Heading grammar value                           │\n│ progress: active                                       │\n│                                                        │\n│ What looks next?                                       │\n│ 🟦[CV1.DS1] First candidate from a bullet — recommended │\n│ next pull                                              │\n│                                                        │\n│ Available path                                         │\n│ - CV1.DS1 — Heading grammar value / First candidate    │\n│   from a bullet [delivery_story] 🟢 Active              │\n│   (docs/project/roadmap/index.md)                      │\n│ - CV1.DS2 — Heading grammar value / Second candidate   │\n│   with a trailing period [delivery_story] 🟢 Active     │\n│   (docs/project/roadmap/index.md)                      │\n│ - CV1.DS3 — Heading grammar value / Third candidate    │\n│   [delivery_story] 🟢 Active                            │\n│   (docs/project/roadmap/index.md)                      │\n│                                                        │\n│ Choose a pull when ready.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:PROJECT_POSITION>>>\n",
+      "input": {
+        "just_moved": null,
+        "project": "heading_grammar"
+      },
+      "kind": "render_project_position",
+      "name": "render_position__heading_grammar"
+    },
+    {
+      "expected": "<<<ARIAD:PROJECT_POSITION>>>\nRoadmap\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PROJECT POSITION                           │\n│                                                        │\n│ Where are we now?                                      │\n│ 🟪[CV1] Heading grammar value                           │\n│ progress: active                                       │\n│                                                        │\n│ What just moved?                                       │\n│ CV2.DS1 reached Done                                   │\n│                                                        │\n│ What looks next?                                       │\n│ 🟦[CV1.DS1] First candidate from a bullet — recommended │\n│ next pull                                              │\n│                                                        │\n│ Available path                                         │\n│ - CV1.DS1 — Heading grammar value / First candidate    │\n│   from a bullet [delivery_story] 🟢 Active              │\n│   (docs/project/roadmap/index.md)                      │\n│ - CV1.DS2 — Heading grammar value / Second candidate   │\n│   with a trailing period [delivery_story] 🟢 Active     │\n│   (docs/project/roadmap/index.md)                      │\n│ - CV1.DS3 — Heading grammar value / Third candidate    │\n│   [delivery_story] 🟢 Active                            │\n│   (docs/project/roadmap/index.md)                      │\n│                                                        │\n│ Choose a pull when ready.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:PROJECT_POSITION>>>\n",
+      "input": {
+        "just_moved": "CV2.DS1 reached Done",
+        "project": "heading_grammar"
+      },
+      "kind": "render_project_position",
+      "name": "render_position_moved__heading_grammar"
+    },
+    {
+      "expected": {
+        "items": [],
+        "journey": "j",
+        "method": "ariad",
+        "source": "docs/project/roadmap/index.md"
+      },
+      "input": {
+        "project": "ambiguous"
+      },
+      "kind": "roadmap_snapshot",
+      "name": "snapshot__ambiguous"
+    },
+    {
+      "expected": {
+        "candidates": [
+          {
+            "code": "CV5.DS1",
+            "level": "delivery_story",
+            "path": "docs/project/roadmap/first-claim/index.md",
+            "status": "🟡 Planned",
+            "title": "First claim"
+          },
+          {
+            "code": "CV5.DS1",
+            "level": "delivery_story",
+            "path": "docs/project/roadmap/second-claim/index.md",
+            "status": "🟡 Planned",
+            "title": "Second claim"
+          }
+        ],
+        "journey": "j",
+        "method": "ariad",
+        "recommended": {
+          "code": "CV5.DS1",
+          "level": "delivery_story",
+          "path": "docs/project/roadmap/first-claim/index.md",
+          "status": "🟡 Planned",
+          "title": "First claim"
+        }
+      },
+      "input": {
+        "project": "ambiguous"
+      },
+      "kind": "pull_candidates",
+      "name": "candidates__ambiguous"
+    },
+    {
+      "expected": null,
+      "input": {
+        "project": "ambiguous"
+      },
+      "kind": "roadmap_position",
+      "name": "position__ambiguous"
+    },
+    {
+      "expected": {
+        "CV5.DS1": [
+          "docs/project/roadmap/first-claim",
+          "docs/project/roadmap/second-claim"
+        ]
+      },
+      "input": {
+        "project": "ambiguous"
+      },
+      "kind": "duplicate_headings",
+      "name": "duplicates__ambiguous"
+    },
+    {
+      "expected": "<<<ARIAD:ROADMAP_SNAPSHOT>>>\nROADMAP SNAPSHOT\nDelivery field overview\n\nview                         overview\nresult of roadmap-snapshot      ready to pull\n\n╭────────────────────────────────────────────────────────╮\n│ roadmap field                                      none │\n│                                                        │\n│   Backlog                                           none │\n╰────────────────────────────────────────────────────────╯\n\nsource\ndocs/project/roadmap/index.md\n\nboundary\nRoadmap was inspected only. No item was pulled. No lifecycle work was executed.\n<<<END:ROADMAP_SNAPSHOT>>>\n",
+      "input": {
+        "project": "ambiguous"
+      },
+      "kind": "render_roadmap_snapshot",
+      "name": "render_snapshot__ambiguous"
+    },
+    {
+      "expected": "<<<ARIAD:PULL_CANDIDATES>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🟪■  PULL CANDIDATES                            │\n│                                                        │\n│ journey                                                │\n│ j                                                      │\n│                                                        │\n│ method                                                 │\n│ ariad                                                  │\n│                                                        │\n│ available candidates                                   │\n│ - CV5.DS1 — First claim [delivery_story] 🟡 Planned     │\n│   (docs/project/roadmap/first-claim/index.md)          │\n│ - CV5.DS1 — Second claim [delivery_story] 🟡 Planned    │\n│   (docs/project/roadmap/second-claim/index.md)         │\n│                                                        │\n│ recommended pull                                       │\n│ CV5.DS1 — First claim [delivery_story] 🟡 Planned       │\n│ (docs/project/roadmap/first-claim/index.md)            │\n│                                                        │\n│ boundary                                               │\n│ No item was pulled. No lifecycle work was executed.    │\n╰────────────────────────────────────────────────────────╯\n<<<END:PULL_CANDIDATES>>>\n",
+      "input": {
+        "project": "ambiguous"
+      },
+      "kind": "render_pull_candidates",
+      "name": "render_candidates__ambiguous"
+    },
+    {
+      "expected": "<<<ARIAD:PROJECT_POSITION>>>\nRoadmap\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PROJECT POSITION                           │\n│                                                        │\n│ Where are we now?                                      │\n│ no roadmap focus                                       │\n│                                                        │\n│ What looks next?                                       │\n│ 🟦[CV5.DS1] First claim — recommended next pull         │\n│                                                        │\n│ Available path                                         │\n│ - CV5.DS1 — First claim [delivery_story] 🟡 Planned     │\n│   (docs/project/roadmap/first-claim/index.md)          │\n│ - CV5.DS1 — Second claim [delivery_story] 🟡 Planned    │\n│   (docs/project/roadmap/second-claim/index.md)         │\n│                                                        │\n│ Choose a pull when ready.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:PROJECT_POSITION>>>\n",
+      "input": {
+        "just_moved": null,
+        "project": "ambiguous"
+      },
+      "kind": "render_project_position",
+      "name": "render_position__ambiguous"
+    },
+    {
+      "expected": "<<<ARIAD:PROJECT_POSITION>>>\nRoadmap\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PROJECT POSITION                           │\n│                                                        │\n│ Where are we now?                                      │\n│ no roadmap focus                                       │\n│                                                        │\n│ What just moved?                                       │\n│ CV2.DS1 reached Done                                   │\n│                                                        │\n│ What looks next?                                       │\n│ 🟦[CV5.DS1] First claim — recommended next pull         │\n│                                                        │\n│ Available path                                         │\n│ - CV5.DS1 — First claim [delivery_story] 🟡 Planned     │\n│   (docs/project/roadmap/first-claim/index.md)          │\n│ - CV5.DS1 — Second claim [delivery_story] 🟡 Planned    │\n│   (docs/project/roadmap/second-claim/index.md)         │\n│                                                        │\n│ Choose a pull when ready.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:PROJECT_POSITION>>>\n",
+      "input": {
+        "just_moved": "CV2.DS1 reached Done",
+        "project": "ambiguous"
+      },
+      "kind": "render_project_position",
+      "name": "render_position_moved__ambiguous"
+    },
+    {
+      "expected": {
+        "items": [],
+        "journey": "j",
+        "method": "ariad",
+        "source": "docs/project/roadmap/index.md"
+      },
+      "input": {
+        "project": "empty"
+      },
+      "kind": "roadmap_snapshot",
+      "name": "snapshot__empty"
+    },
+    {
+      "expected": {
+        "candidates": [],
+        "journey": "j",
+        "method": "ariad",
+        "recommended": null
+      },
+      "input": {
+        "project": "empty"
+      },
+      "kind": "pull_candidates",
+      "name": "candidates__empty"
+    },
+    {
+      "expected": null,
+      "input": {
+        "project": "empty"
+      },
+      "kind": "roadmap_position",
+      "name": "position__empty"
+    },
+    {
+      "expected": {},
+      "input": {
+        "project": "empty"
+      },
+      "kind": "duplicate_headings",
+      "name": "duplicates__empty"
+    },
+    {
+      "expected": "<<<ARIAD:ROADMAP_SNAPSHOT>>>\nROADMAP SNAPSHOT\nDelivery field overview\n\nview                         overview\nresult of roadmap-snapshot      no pull candidates\n\n╭────────────────────────────────────────────────────────╮\n│ roadmap field                                      none │\n│                                                        │\n│   Backlog                                           none │\n╰────────────────────────────────────────────────────────╯\n\nsource\ndocs/project/roadmap/index.md\n\nboundary\nRoadmap was inspected only. No item was pulled. No lifecycle work was executed.\n<<<END:ROADMAP_SNAPSHOT>>>\n",
+      "input": {
+        "project": "empty"
+      },
+      "kind": "render_roadmap_snapshot",
+      "name": "render_snapshot__empty"
+    },
+    {
+      "expected": "<<<ARIAD:PULL_CANDIDATES>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🟪■  PULL CANDIDATES                            │\n│                                                        │\n│ journey                                                │\n│ j                                                      │\n│                                                        │\n│ method                                                 │\n│ ariad                                                  │\n│                                                        │\n│ available candidates                                   │\n│ none                                                   │\n│                                                        │\n│ recommended pull                                       │\n│ none                                                   │\n│                                                        │\n│ boundary                                               │\n│ No item was pulled. No lifecycle work was executed.    │\n╰────────────────────────────────────────────────────────╯\n<<<END:PULL_CANDIDATES>>>\n",
+      "input": {
+        "project": "empty"
+      },
+      "kind": "render_pull_candidates",
+      "name": "render_candidates__empty"
+    },
+    {
+      "expected": "<<<ARIAD:PROJECT_POSITION>>>\nRoadmap\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PROJECT POSITION                           │\n│                                                        │\n│ Where are we now?                                      │\n│ no roadmap focus                                       │\n│                                                        │\n│ What looks next?                                       │\n│ No pull candidate is available.                        │\n│                                                        │\n│ Available path                                         │\n│ none                                                   │\n│                                                        │\n│ Choose a pull when ready.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:PROJECT_POSITION>>>\n",
+      "input": {
+        "just_moved": null,
+        "project": "empty"
+      },
+      "kind": "render_project_position",
+      "name": "render_position__empty"
+    },
+    {
+      "expected": "<<<ARIAD:PROJECT_POSITION>>>\nRoadmap\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PROJECT POSITION                           │\n│                                                        │\n│ Where are we now?                                      │\n│ no roadmap focus                                       │\n│                                                        │\n│ What just moved?                                       │\n│ CV2.DS1 reached Done                                   │\n│                                                        │\n│ What looks next?                                       │\n│ No pull candidate is available.                        │\n│                                                        │\n│ Available path                                         │\n│ none                                                   │\n│                                                        │\n│ Choose a pull when ready.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:PROJECT_POSITION>>>\n",
+      "input": {
+        "just_moved": "CV2.DS1 reached Done",
+        "project": "empty"
+      },
+      "kind": "render_project_position",
+      "name": "render_position_moved__empty"
+    },
+    {
+      "expected": {
+        "items": [
+          {
+            "code": "CV1",
+            "status": "🟢 Active",
+            "title": "First table value"
+          }
+        ],
+        "journey": "j",
+        "method": "ariad",
+        "source": "docs/project/roadmap/index.md"
+      },
+      "input": {
+        "project": "precedence"
+      },
+      "kind": "roadmap_snapshot",
+      "name": "snapshot__precedence"
+    },
+    {
+      "expected": {
+        "candidates": [
+          {
+            "code": "CV1.US1",
+            "level": "user_story",
+            "path": "docs/project/roadmap/cv1-candidate-user-story/index.md",
+            "status": "Candidate",
+            "title": "Candidate user story"
+          },
+          {
+            "code": "CV1.DS1",
+            "level": "delivery_story",
+            "path": "docs/project/roadmap/cv1-planned-delivery/index.md",
+            "status": "🟡 Planned",
+            "title": "Planned delivery story"
+          }
+        ],
+        "journey": "j",
+        "method": "ariad",
+        "recommended": {
+          "code": "CV1.DS1",
+          "level": "delivery_story",
+          "path": "docs/project/roadmap/cv1-planned-delivery/index.md",
+          "status": "🟡 Planned",
+          "title": "Planned delivery story"
+        }
+      },
+      "input": {
+        "project": "precedence"
+      },
+      "kind": "pull_candidates",
+      "name": "candidates__precedence"
+    },
+    {
+      "expected": null,
+      "input": {
+        "project": "precedence"
+      },
+      "kind": "roadmap_position",
+      "name": "position__precedence"
+    },
+    {
+      "expected": {},
+      "input": {
+        "project": "precedence"
+      },
+      "kind": "duplicate_headings",
+      "name": "duplicates__precedence"
+    },
+    {
+      "expected": "<<<ARIAD:ROADMAP_SNAPSHOT>>>\nROADMAP SNAPSHOT\nDelivery field overview\n\nview                         overview\nresult of roadmap-snapshot      ready to pull\n\n╭────────────────────────────────────────────────────────╮\n│ 🟪[CV1]  First table value                     ◉ active │\n│ value: First table value                               │\n│                                                        │\n│    └─ 🟦[DS1] Planned delivery story          ◉ current │\n│       progress: not started                            │\n│                                                        │\n│       Backlog                                          │\n│       ○ 🟦[CV1.US1] Candidate user story                │\n│       ○ 🟦[CV1.DS1] Planned delivery story              │\n│                                                        │\n│       Recently promoted from Exploration               │\n│       none                                             │\n│                                                        │\n│       Active constraints                               │\n│       ✕ do not start candidates automatically          │\n│       ✓ Navigator explicitly chooses Pull              │\n╰────────────────────────────────────────────────────────╯\n\nsource\ndocs/project/roadmap/index.md\n\nboundary\nRoadmap was inspected only. No item was pulled. No lifecycle work was executed.\n<<<END:ROADMAP_SNAPSHOT>>>\n",
+      "input": {
+        "project": "precedence"
+      },
+      "kind": "render_roadmap_snapshot",
+      "name": "render_snapshot__precedence"
+    },
+    {
+      "expected": "<<<ARIAD:PULL_CANDIDATES>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🟪■  PULL CANDIDATES                            │\n│                                                        │\n│ journey                                                │\n│ j                                                      │\n│                                                        │\n│ method                                                 │\n│ ariad                                                  │\n│                                                        │\n│ available candidates                                   │\n│ - CV1.US1 — Candidate user story [user_story]          │\n│   Candidate                                            │\n│   (docs/project/roadmap/cv1-candidate-user-story/index │\n│   .md)                                                 │\n│ - CV1.DS1 — Planned delivery story [delivery_story] 🟡  │\n│   Planned                                              │\n│   (docs/project/roadmap/cv1-planned-delivery/index.md) │\n│                                                        │\n│ recommended pull                                       │\n│ CV1.DS1 — Planned delivery story [delivery_story] 🟡    │\n│ Planned                                                │\n│ (docs/project/roadmap/cv1-planned-delivery/index.md)   │\n│                                                        │\n│ boundary                                               │\n│ No item was pulled. No lifecycle work was executed.    │\n╰────────────────────────────────────────────────────────╯\n<<<END:PULL_CANDIDATES>>>\n",
+      "input": {
+        "project": "precedence"
+      },
+      "kind": "render_pull_candidates",
+      "name": "render_candidates__precedence"
+    },
+    {
+      "expected": "<<<ARIAD:PROJECT_POSITION>>>\nRoadmap\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PROJECT POSITION                           │\n│                                                        │\n│ Where are we now?                                      │\n│ 🟪[CV1] First table value                               │\n│ progress: active                                       │\n│                                                        │\n│ What looks next?                                       │\n│ 🟦[CV1.DS1] Planned delivery story — recommended next   │\n│ pull                                                   │\n│                                                        │\n│ Available path                                         │\n│ - CV1.US1 — Candidate user story [user_story]          │\n│   Candidate                                            │\n│   (docs/project/roadmap/cv1-candidate-user-story/index │\n│   .md)                                                 │\n│ - CV1.DS1 — Planned delivery story [delivery_story] 🟡  │\n│   Planned                                              │\n│   (docs/project/roadmap/cv1-planned-delivery/index.md) │\n│                                                        │\n│ Choose a pull when ready.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:PROJECT_POSITION>>>\n",
+      "input": {
+        "just_moved": null,
+        "project": "precedence"
+      },
+      "kind": "render_project_position",
+      "name": "render_position__precedence"
+    },
+    {
+      "expected": "<<<ARIAD:PROJECT_POSITION>>>\nRoadmap\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PROJECT POSITION                           │\n│                                                        │\n│ Where are we now?                                      │\n│ 🟪[CV1] First table value                               │\n│ progress: active                                       │\n│                                                        │\n│ What just moved?                                       │\n│ CV2.DS1 reached Done                                   │\n│                                                        │\n│ What looks next?                                       │\n│ 🟦[CV1.DS1] Planned delivery story — recommended next   │\n│ pull                                                   │\n│                                                        │\n│ Available path                                         │\n│ - CV1.US1 — Candidate user story [user_story]          │\n│   Candidate                                            │\n│   (docs/project/roadmap/cv1-candidate-user-story/index │\n│   .md)                                                 │\n│ - CV1.DS1 — Planned delivery story [delivery_story] 🟡  │\n│   Planned                                              │\n│   (docs/project/roadmap/cv1-planned-delivery/index.md) │\n│                                                        │\n│ Choose a pull when ready.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:PROJECT_POSITION>>>\n",
+      "input": {
+        "just_moved": "CV2.DS1 reached Done",
+        "project": "precedence"
+      },
+      "kind": "render_project_position",
+      "name": "render_position_moved__precedence"
+    },
+    {
+      "expected": {
+        "items": [],
+        "journey": "j",
+        "method": "ariad",
+        "source": "docs/project/roadmap/index.md"
+      },
+      "input": {
+        "project": "dialect"
+      },
+      "kind": "roadmap_snapshot",
+      "name": "snapshot__dialect"
+    },
+    {
+      "expected": {
+        "candidates": [
+          {
+            "code": "CV7.DS3",
+            "level": "delivery_story",
+            "path": "docs/project/roadmap/bom/index.md",
+            "status": "🟡 Planned",
+            "title": "Title with a﻿byte order mark"
+          },
+          {
+            "code": "CV7.DS8",
+            "level": "delivery_story",
+            "path": "docs/project/roadmap/crlf/index.md",
+            "status": "🟡 Planned",
+            "title": "CRLF endings"
+          },
+          {
+            "code": "CV7.DS6",
+            "level": "delivery_story",
+            "path": "docs/project/roadmap/ideographic/index.md",
+            "status": "🟡 Planned",
+            "title": "Ideographic padding"
+          },
+          {
+            "code": "CV7.DS4",
+            "level": "delivery_story",
+            "path": "docs/project/roadmap/line-separator/index.md",
+            "status": "🟡 Planned",
+            "title": "Title with a line separator"
+          },
+          {
+            "code": "CV7.DS7",
+            "level": "delivery_story",
+            "path": "docs/project/roadmap/linked/index.md",
+            "status": "**🟡 Planned** with emphasis",
+            "title": "[Linked title](../index.md)"
+          },
+          {
+            "code": "CV7.DS5",
+            "level": "delivery_story",
+            "path": "docs/project/roadmap/nbsp/index.md",
+            "status": "🟡 Planned",
+            "title": "Title with a non breaking space"
+          },
+          {
+            "code": "CV7.DS2",
+            "level": "delivery_story",
+            "path": "docs/project/roadmap/nel/index.md",
+            "status": "🟡 Planned",
+            "title": "Title then a next-line chartrailing"
+          },
+          {
+            "code": "CV7.DS1",
+            "level": "delivery_story",
+            "path": "docs/project/roadmap/us-separator/index.md",
+            "status": "🟡 Planned",
+            "title": "Unit separator around the dash"
+          }
+        ],
+        "journey": "j",
+        "method": "ariad",
+        "recommended": {
+          "code": "CV7.DS3",
+          "level": "delivery_story",
+          "path": "docs/project/roadmap/bom/index.md",
+          "status": "🟡 Planned",
+          "title": "Title with a﻿byte order mark"
+        }
+      },
+      "input": {
+        "project": "dialect"
+      },
+      "kind": "pull_candidates",
+      "name": "candidates__dialect"
+    },
+    {
+      "expected": null,
+      "input": {
+        "project": "dialect"
+      },
+      "kind": "roadmap_position",
+      "name": "position__dialect"
+    },
+    {
+      "expected": {},
+      "input": {
+        "project": "dialect"
+      },
+      "kind": "duplicate_headings",
+      "name": "duplicates__dialect"
+    },
+    {
+      "expected": "<<<ARIAD:ROADMAP_SNAPSHOT>>>\nROADMAP SNAPSHOT\nDelivery field overview\n\nview                         overview\nresult of roadmap-snapshot      ready to pull\n\n╭────────────────────────────────────────────────────────╮\n│ roadmap field                                      none │\n│                                                        │\n│   Backlog                                           none │\n╰────────────────────────────────────────────────────────╯\n\nsource\ndocs/project/roadmap/index.md\n\nboundary\nRoadmap was inspected only. No item was pulled. No lifecycle work was executed.\n<<<END:ROADMAP_SNAPSHOT>>>\n",
+      "input": {
+        "project": "dialect"
+      },
+      "kind": "render_roadmap_snapshot",
+      "name": "render_snapshot__dialect"
+    },
+    {
+      "expected": "<<<ARIAD:PULL_CANDIDATES>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🟪■  PULL CANDIDATES                            │\n│                                                        │\n│ journey                                                │\n│ j                                                      │\n│                                                        │\n│ method                                                 │\n│ ariad                                                  │\n│                                                        │\n│ available candidates                                   │\n│ - CV7.DS3 — Title with a﻿byte order mark               │\n│   [delivery_story] 🟡 Planned                           │\n│   (docs/project/roadmap/bom/index.md)                  │\n│ - CV7.DS8 — CRLF endings [delivery_story] 🟡 Planned    │\n│   (docs/project/roadmap/crlf/index.md)                 │\n│ - CV7.DS6 — Ideographic padding [delivery_story] 🟡     │\n│   Planned (docs/project/roadmap/ideographic/index.md)  │\n│ - CV7.DS4 — Title with a line separator                │\n│   [delivery_story] 🟡 Planned                           │\n│   (docs/project/roadmap/line-separator/index.md)       │\n│ - CV7.DS7 — [Linked title](../index.md)                │\n│   [delivery_story] **🟡 Planned** with emphasis         │\n│   (docs/project/roadmap/linked/index.md)               │\n│ - CV7.DS5 — Title with a non breaking space            │\n│   [delivery_story] 🟡 Planned                           │\n│   (docs/project/roadmap/nbsp/index.md)                 │\n│ - CV7.DS2 — Title then a next-line char trailing       │\n│   [delivery_story] 🟡 Planned                           │\n│   (docs/project/roadmap/nel/index.md)                  │\n│ - CV7.DS1 — Unit separator around the dash             │\n│   [delivery_story] 🟡 Planned                           │\n│   (docs/project/roadmap/us-separator/index.md)         │\n│                                                        │\n│ recommended pull                                       │\n│ CV7.DS3 — Title with a﻿byte order mark                 │\n│ [delivery_story] 🟡 Planned                             │\n│ (docs/project/roadmap/bom/index.md)                    │\n│                                                        │\n│ boundary                                               │\n│ No item was pulled. No lifecycle work was executed.    │\n╰────────────────────────────────────────────────────────╯\n<<<END:PULL_CANDIDATES>>>\n",
+      "input": {
+        "project": "dialect"
+      },
+      "kind": "render_pull_candidates",
+      "name": "render_candidates__dialect"
+    },
+    {
+      "expected": "<<<ARIAD:PROJECT_POSITION>>>\nRoadmap\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PROJECT POSITION                           │\n│                                                        │\n│ Where are we now?                                      │\n│ no roadmap focus                                       │\n│                                                        │\n│ What looks next?                                       │\n│ 🟦[CV7.DS3] Title with a﻿byte order mark — recommended  │\n│ next pull                                              │\n│                                                        │\n│ Available path                                         │\n│ - CV7.DS3 — Title with a﻿byte order mark               │\n│   [delivery_story] 🟡 Planned                           │\n│   (docs/project/roadmap/bom/index.md)                  │\n│ - CV7.DS8 — CRLF endings [delivery_story] 🟡 Planned    │\n│   (docs/project/roadmap/crlf/index.md)                 │\n│ - CV7.DS6 — Ideographic padding [delivery_story] 🟡     │\n│   Planned (docs/project/roadmap/ideographic/index.md)  │\n│ - CV7.DS4 — Title with a line separator                │\n│   [delivery_story] 🟡 Planned                           │\n│   (docs/project/roadmap/line-separator/index.md)       │\n│ - CV7.DS7 — [Linked title](../index.md)                │\n│   [delivery_story] **🟡 Planned** with emphasis         │\n│   (docs/project/roadmap/linked/index.md)               │\n│ - CV7.DS5 — Title with a non breaking space            │\n│   [delivery_story] 🟡 Planned                           │\n│   (docs/project/roadmap/nbsp/index.md)                 │\n│ - CV7.DS2 — Title then a next-line char trailing       │\n│   [delivery_story] 🟡 Planned                           │\n│   (docs/project/roadmap/nel/index.md)                  │\n│ - CV7.DS1 — Unit separator around the dash             │\n│   [delivery_story] 🟡 Planned                           │\n│   (docs/project/roadmap/us-separator/index.md)         │\n│                                                        │\n│ Choose a pull when ready.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:PROJECT_POSITION>>>\n",
+      "input": {
+        "just_moved": null,
+        "project": "dialect"
+      },
+      "kind": "render_project_position",
+      "name": "render_position__dialect"
+    },
+    {
+      "expected": "<<<ARIAD:PROJECT_POSITION>>>\nRoadmap\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PROJECT POSITION                           │\n│                                                        │\n│ Where are we now?                                      │\n│ no roadmap focus                                       │\n│                                                        │\n│ What just moved?                                       │\n│ CV2.DS1 reached Done                                   │\n│                                                        │\n│ What looks next?                                       │\n│ 🟦[CV7.DS3] Title with a﻿byte order mark — recommended  │\n│ next pull                                              │\n│                                                        │\n│ Available path                                         │\n│ - CV7.DS3 — Title with a﻿byte order mark               │\n│   [delivery_story] 🟡 Planned                           │\n│   (docs/project/roadmap/bom/index.md)                  │\n│ - CV7.DS8 — CRLF endings [delivery_story] 🟡 Planned    │\n│   (docs/project/roadmap/crlf/index.md)                 │\n│ - CV7.DS6 — Ideographic padding [delivery_story] 🟡     │\n│   Planned (docs/project/roadmap/ideographic/index.md)  │\n│ - CV7.DS4 — Title with a line separator                │\n│   [delivery_story] 🟡 Planned                           │\n│   (docs/project/roadmap/line-separator/index.md)       │\n│ - CV7.DS7 — [Linked title](../index.md)                │\n│   [delivery_story] **🟡 Planned** with emphasis         │\n│   (docs/project/roadmap/linked/index.md)               │\n│ - CV7.DS5 — Title with a non breaking space            │\n│   [delivery_story] 🟡 Planned                           │\n│   (docs/project/roadmap/nbsp/index.md)                 │\n│ - CV7.DS2 — Title then a next-line char trailing       │\n│   [delivery_story] 🟡 Planned                           │\n│   (docs/project/roadmap/nel/index.md)                  │\n│ - CV7.DS1 — Unit separator around the dash             │\n│   [delivery_story] 🟡 Planned                           │\n│   (docs/project/roadmap/us-separator/index.md)         │\n│                                                        │\n│ Choose a pull when ready.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:PROJECT_POSITION>>>\n",
+      "input": {
+        "just_moved": "CV2.DS1 reached Done",
+        "project": "dialect"
+      },
+      "kind": "render_project_position",
+      "name": "render_position_moved__dialect"
+    },
+    {
+      "expected": {
+        "items": [],
+        "journey": "j",
+        "method": "ariad",
+        "source": null
+      },
+      "input": {
+        "project": "no_roadmap"
+      },
+      "kind": "roadmap_snapshot",
+      "name": "snapshot__no_roadmap"
+    },
+    {
+      "expected": {
+        "candidates": [],
+        "journey": "j",
+        "method": "ariad",
+        "recommended": null
+      },
+      "input": {
+        "project": "no_roadmap"
+      },
+      "kind": "pull_candidates",
+      "name": "candidates__no_roadmap"
+    },
+    {
+      "expected": null,
+      "input": {
+        "project": "no_roadmap"
+      },
+      "kind": "roadmap_position",
+      "name": "position__no_roadmap"
+    },
+    {
+      "expected": {},
+      "input": {
+        "project": "no_roadmap"
+      },
+      "kind": "duplicate_headings",
+      "name": "duplicates__no_roadmap"
+    },
+    {
+      "expected": "<<<ARIAD:ROADMAP_SNAPSHOT>>>\nROADMAP SNAPSHOT\nDelivery field overview\n\nview                         overview\nresult of roadmap-snapshot      no pull candidates\n\n╭────────────────────────────────────────────────────────╮\n│ roadmap field                                      none │\n│                                                        │\n│   Backlog                                           none │\n╰────────────────────────────────────────────────────────╯\n\nsource\nnone\n\nboundary\nRoadmap was inspected only. No item was pulled. No lifecycle work was executed.\n<<<END:ROADMAP_SNAPSHOT>>>\n",
+      "input": {
+        "project": "no_roadmap"
+      },
+      "kind": "render_roadmap_snapshot",
+      "name": "render_snapshot__no_roadmap"
+    },
+    {
+      "expected": "<<<ARIAD:PULL_CANDIDATES>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🟪■  PULL CANDIDATES                            │\n│                                                        │\n│ journey                                                │\n│ j                                                      │\n│                                                        │\n│ method                                                 │\n│ ariad                                                  │\n│                                                        │\n│ available candidates                                   │\n│ none                                                   │\n│                                                        │\n│ recommended pull                                       │\n│ none                                                   │\n│                                                        │\n│ boundary                                               │\n│ No item was pulled. No lifecycle work was executed.    │\n╰────────────────────────────────────────────────────────╯\n<<<END:PULL_CANDIDATES>>>\n",
+      "input": {
+        "project": "no_roadmap"
+      },
+      "kind": "render_pull_candidates",
+      "name": "render_candidates__no_roadmap"
+    },
+    {
+      "expected": "<<<ARIAD:PROJECT_POSITION>>>\nRoadmap\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PROJECT POSITION                           │\n│                                                        │\n│ Where are we now?                                      │\n│ no roadmap focus                                       │\n│                                                        │\n│ What looks next?                                       │\n│ No pull candidate is available.                        │\n│                                                        │\n│ Available path                                         │\n│ none                                                   │\n│                                                        │\n│ Choose a pull when ready.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:PROJECT_POSITION>>>\n",
+      "input": {
+        "just_moved": null,
+        "project": "no_roadmap"
+      },
+      "kind": "render_project_position",
+      "name": "render_position__no_roadmap"
+    },
+    {
+      "expected": "<<<ARIAD:PROJECT_POSITION>>>\nRoadmap\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PROJECT POSITION                           │\n│                                                        │\n│ Where are we now?                                      │\n│ no roadmap focus                                       │\n│                                                        │\n│ What just moved?                                       │\n│ CV2.DS1 reached Done                                   │\n│                                                        │\n│ What looks next?                                       │\n│ No pull candidate is available.                        │\n│                                                        │\n│ Available path                                         │\n│ none                                                   │\n│                                                        │\n│ Choose a pull when ready.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:PROJECT_POSITION>>>\n",
+      "input": {
+        "just_moved": "CV2.DS1 reached Done",
+        "project": "no_roadmap"
+      },
+      "kind": "render_project_position",
+      "name": "render_position_moved__no_roadmap"
+    },
+    {
+      "expected": {
+        "items": [],
+        "journey": "j",
+        "method": "ariad",
+        "source": null
+      },
+      "input": {
+        "project": "missing_entirely"
+      },
+      "kind": "roadmap_snapshot",
+      "name": "snapshot__missing_entirely"
+    },
+    {
+      "expected": {
+        "candidates": [],
+        "journey": "j",
+        "method": "ariad",
+        "recommended": null
+      },
+      "input": {
+        "project": "missing_entirely"
+      },
+      "kind": "pull_candidates",
+      "name": "candidates__missing_entirely"
+    },
+    {
+      "expected": null,
+      "input": {
+        "project": "missing_entirely"
+      },
+      "kind": "roadmap_position",
+      "name": "position__missing_entirely"
+    },
+    {
+      "expected": {},
+      "input": {
+        "project": "missing_entirely"
+      },
+      "kind": "duplicate_headings",
+      "name": "duplicates__missing_entirely"
+    },
+    {
+      "expected": "<<<ARIAD:ROADMAP_SNAPSHOT>>>\nROADMAP SNAPSHOT\nDelivery field overview\n\nview                         overview\nresult of roadmap-snapshot      no pull candidates\n\n╭────────────────────────────────────────────────────────╮\n│ roadmap field                                      none │\n│                                                        │\n│   Backlog                                           none │\n╰────────────────────────────────────────────────────────╯\n\nsource\nnone\n\nboundary\nRoadmap was inspected only. No item was pulled. No lifecycle work was executed.\n<<<END:ROADMAP_SNAPSHOT>>>\n",
+      "input": {
+        "project": "missing_entirely"
+      },
+      "kind": "render_roadmap_snapshot",
+      "name": "render_snapshot__missing_entirely"
+    },
+    {
+      "expected": "<<<ARIAD:PULL_CANDIDATES>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🟪■  PULL CANDIDATES                            │\n│                                                        │\n│ journey                                                │\n│ j                                                      │\n│                                                        │\n│ method                                                 │\n│ ariad                                                  │\n│                                                        │\n│ available candidates                                   │\n│ none                                                   │\n│                                                        │\n│ recommended pull                                       │\n│ none                                                   │\n│                                                        │\n│ boundary                                               │\n│ No item was pulled. No lifecycle work was executed.    │\n╰────────────────────────────────────────────────────────╯\n<<<END:PULL_CANDIDATES>>>\n",
+      "input": {
+        "project": "missing_entirely"
+      },
+      "kind": "render_pull_candidates",
+      "name": "render_candidates__missing_entirely"
+    },
+    {
+      "expected": "<<<ARIAD:PROJECT_POSITION>>>\nRoadmap\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PROJECT POSITION                           │\n│                                                        │\n│ Where are we now?                                      │\n│ no roadmap focus                                       │\n│                                                        │\n│ What looks next?                                       │\n│ No pull candidate is available.                        │\n│                                                        │\n│ Available path                                         │\n│ none                                                   │\n│                                                        │\n│ Choose a pull when ready.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:PROJECT_POSITION>>>\n",
+      "input": {
+        "just_moved": null,
+        "project": "missing_entirely"
+      },
+      "kind": "render_project_position",
+      "name": "render_position__missing_entirely"
+    },
+    {
+      "expected": "<<<ARIAD:PROJECT_POSITION>>>\nRoadmap\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PROJECT POSITION                           │\n│                                                        │\n│ Where are we now?                                      │\n│ no roadmap focus                                       │\n│                                                        │\n│ What just moved?                                       │\n│ CV2.DS1 reached Done                                   │\n│                                                        │\n│ What looks next?                                       │\n│ No pull candidate is available.                        │\n│                                                        │\n│ Available path                                         │\n│ none                                                   │\n│                                                        │\n│ Choose a pull when ready.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:PROJECT_POSITION>>>\n",
+      "input": {
+        "just_moved": "CV2.DS1 reached Done",
+        "project": "missing_entirely"
+      },
+      "kind": "render_project_position",
+      "name": "render_position_moved__missing_entirely"
+    },
+    {
+      "expected": "docs/project/roadmap/cv2-second-value/cv2-ds1-alpha",
+      "input": {
+        "code": "CV2.DS1",
+        "project": "main"
+      },
+      "kind": "resolve_story_directory",
+      "name": "resolve__main__CV2.DS1"
+    },
+    {
+      "expected": "docs/project/roadmap/cv2-second-value/cv2-ds1-alpha/cv2-ds1-us1-child",
+      "input": {
+        "code": "CV2.DS1.US1",
+        "project": "main"
+      },
+      "kind": "resolve_story_directory",
+      "name": "resolve__main__CV2.DS1.US1"
+    },
+    {
+      "expected": "docs/project/roadmap/cv2-second-value/cv2-ds1-alpha-extra",
+      "input": {
+        "code": "CV2.DS2",
+        "project": "main"
+      },
+      "kind": "resolve_story_directory",
+      "name": "resolve__main__CV2.DS2"
+    },
+    {
+      "expected": "docs/project/roadmap/cv1-first-value",
+      "input": {
+        "code": "CV1",
+        "project": "main"
+      },
+      "kind": "resolve_story_directory",
+      "name": "resolve__main__CV1"
+    },
+    {
+      "expected": null,
+      "input": {
+        "code": "CV0",
+        "project": "main"
+      },
+      "kind": "resolve_story_directory",
+      "name": "resolve__main__CV0"
+    },
+    {
+      "expected": null,
+      "input": {
+        "code": "NOPE.1",
+        "project": "main"
+      },
+      "kind": "resolve_story_directory",
+      "name": "resolve__main__NOPE.1"
+    },
+    {
+      "expected_error": "StoryPackageAmbiguityError: 2 roadmap packages claim code 'CV5.DS1': /Users/vinicius/dev/workspace/mirror-ts-core/ts/test/fixtures/builder-roadmap/ambiguous/docs/project/roadmap/first-claim, /Users/vinicius/dev/workspace/mirror-ts-core/ts/test/fixtures/builder-roadmap/ambiguous/docs/project/roadmap/second-claim",
+      "input": {
+        "code": "CV5.DS1",
+        "project": "ambiguous"
+      },
+      "kind": "resolve_story_directory",
+      "name": "resolve__ambiguous__CV5.DS1"
+    },
+    {
+      "expected": null,
+      "input": {
+        "code": "CV1",
+        "project": "no_roadmap"
+      },
+      "kind": "resolve_story_directory",
+      "name": "resolve__no_roadmap__CV1"
+    },
+    {
+      "expected": "docs/project/roadmap/cv2-second-value/cv2-ds1-alpha/cv2-ds1-us2-a-brand-new-user-story",
+      "input": {
+        "code": "CV2.DS1.US2",
+        "leaf_title": "A brand new user story",
+        "project": "main"
+      },
+      "kind": "create_story_directory",
+      "name": "create__main__CV2.DS1.US2__A brand new user story"
+    },
+    {
+      "expected": "docs/project/roadmap/cv2-second-value/cv2-ds5-new-delivery-under-an-active-cv",
+      "input": {
+        "code": "CV2.DS5",
+        "leaf_title": "New delivery under an active CV",
+        "project": "main"
+      },
+      "kind": "create_story_directory",
+      "name": "create__main__CV2.DS5__New delivery under an active CV"
+    },
+    {
+      "expected": "docs/project/roadmap/cv4/cv4-ds1-parent-cv-has-no-package-at-all",
+      "input": {
+        "code": "CV4.DS1",
+        "leaf_title": "Parent CV has no package at all",
+        "project": "main"
+      },
+      "kind": "create_story_directory",
+      "name": "create__main__CV4.DS1__Parent CV has no package at all"
+    },
+    {
+      "expected": "docs/project/roadmap/cv2-second-value/cv2-ds1-alpha/cv2-ds1-us3-with-a-leaf-segment",
+      "input": {
+        "code": "CV2.DS1.US3",
+        "leaf_title": "Chained title / with a leaf segment",
+        "project": "main"
+      },
+      "kind": "create_story_directory",
+      "name": "create__main__CV2.DS1.US3__Chained title / with a leaf segment"
+    },
+    {
+      "expected": "docs/project/roadmap/cv2-second-value/cv2-ds1-alpha/cv2-ds1-us4",
+      "input": {
+        "code": "CV2.DS1.US4",
+        "leaf_title": "   ",
+        "project": "main"
+      },
+      "kind": "create_story_directory",
+      "name": "create__main__CV2.DS1.US4__blank"
+    },
+    {
+      "expected": "docs/project/roadmap/cv2-second-value/cv2-ds1-alpha/cv2-ds1-us5",
+      "input": {
+        "code": "CV2.DS1.US5",
+        "leaf_title": "/",
+        "project": "main"
+      },
+      "kind": "create_story_directory",
+      "name": "create__main__CV2.DS1.US5__/"
+    },
+    {
+      "expected": "docs/project/roadmap/escape-escaping-code",
+      "input": {
+        "code": "../escape",
+        "leaf_title": "Escaping code",
+        "project": "main"
+      },
+      "kind": "create_story_directory",
+      "name": "create__main__../escape__Escaping code"
+    },
+    {
+      "expected": "docs/project/roadmap/cv2-second-value/cv2-ds1-alpha/cv2-ds1-us6-escape",
+      "input": {
+        "code": "CV2.DS1.US6",
+        "leaf_title": "../../escape",
+        "project": "main"
+      },
+      "kind": "create_story_directory",
+      "name": "create__main__CV2.DS1.US6__../../escape"
+    },
+    {
+      "expected": "docs/project/roadmap/cv2-second-value/cv2-ds1-alpha/cv2-ds1-us7-passwd",
+      "input": {
+        "code": "CV2.DS1.US7",
+        "leaf_title": "/etc/passwd",
+        "project": "main"
+      },
+      "kind": "create_story_directory",
+      "name": "create__main__CV2.DS1.US7__/etc/passwd"
+    },
+    {
+      "expected": "docs/project/roadmap/-bare-dotdot-code",
+      "input": {
+        "code": "..",
+        "leaf_title": "Bare dotdot code",
+        "project": "main"
+      },
+      "kind": "create_story_directory",
+      "name": "create__main__..__Bare dotdot code"
+    },
+    {
+      "expected": "docs/project/roadmap/cv2-ds9-slash-inside-the-code",
+      "input": {
+        "code": "CV2/DS9",
+        "leaf_title": "Slash inside the code",
+        "project": "main"
+      },
+      "kind": "create_story_directory",
+      "name": "create__main__CV2/DS9__Slash inside the code"
+    },
+    {
+      "expected": "docs/project/roadmap/cv1/cv1-ds1-first-package-in-an-empty-roadmap",
+      "input": {
+        "code": "CV1.DS1",
+        "leaf_title": "First package in an empty roadmap",
+        "project": "empty"
+      },
+      "kind": "create_story_directory",
+      "name": "create__empty__CV1.DS1__First package in an empty roadmap"
+    },
+    {
+      "expected": {
+        "code": "CV1.DS1",
+        "title": "Title"
+      },
+      "input": {
+        "content": "# CV1.DS1 — Title\n"
+      },
+      "kind": "match_heading",
+      "name": "heading__em_dash"
+    },
+    {
+      "expected": {
+        "code": "CV1.DS1",
+        "title": "Title"
+      },
+      "input": {
+        "content": "# CV1.DS1 - Title\n"
+      },
+      "kind": "match_heading",
+      "name": "heading__hyphen"
+    },
+    {
+      "expected": null,
+      "input": {
+        "content": "# CV1.DS1 – Title\n"
+      },
+      "kind": "match_heading",
+      "name": "heading__en_dash_unsupported"
+    },
+    {
+      "expected": {
+        "code": "CV21.E2.S1b",
+        "title": "Split story"
+      },
+      "input": {
+        "content": "# CV21.E2.S1b — Split story\n"
+      },
+      "kind": "match_heading",
+      "name": "heading__suffix_letter"
+    },
+    {
+      "expected": {
+        "code": "DS-35.US-1",
+        "title": "Child"
+      },
+      "input": {
+        "content": "# DS-35.US-1 — Child\n"
+      },
+      "kind": "match_heading",
+      "name": "heading__hyphenated_child"
+    },
+    {
+      "expected": {
+        "code": "CV1.DS1",
+        "title": "Title"
+      },
+      "input": {
+        "content": "# CV1.DS1\u001f—\u001fTitle\n"
+      },
+      "kind": "match_heading",
+      "name": "heading__unit_separator"
+    },
+    {
+      "expected": {
+        "code": "CV1.DS1",
+        "title": "Titlemore"
+      },
+      "input": {
+        "content": "# CV1.DS1 — Titlemore\n"
+      },
+      "kind": "match_heading",
+      "name": "heading__next_line_char"
+    },
+    {
+      "expected": {
+        "code": "CV1.DS1",
+        "title": "Title﻿more"
+      },
+      "input": {
+        "content": "# CV1.DS1 — Title﻿more\n"
+      },
+      "kind": "match_heading",
+      "name": "heading__bom_in_title"
+    },
+    {
+      "expected": {
+        "code": "CV1.DS1",
+        "title": "Title more"
+      },
+      "input": {
+        "content": "# CV1.DS1 — Title more\n"
+      },
+      "kind": "match_heading",
+      "name": "heading__line_separator"
+    },
+    {
+      "expected": {
+        "code": "CV1.DS1",
+        "title": "Title more"
+      },
+      "input": {
+        "content": "# CV1.DS1 — Title more\n"
+      },
+      "kind": "match_heading",
+      "name": "heading__nbsp"
+    },
+    {
+      "expected": {
+        "code": "CV1.DS1",
+        "title": "Title"
+      },
+      "input": {
+        "content": "# CV1.DS1 — Title\r\n"
+      },
+      "kind": "match_heading",
+      "name": "heading__crlf"
+    },
+    {
+      "expected": {
+        "code": "CV1.DS1",
+        "title": "Title"
+      },
+      "input": {
+        "content": "Prose\n\n# CV1.DS1 — Title\n"
+      },
+      "kind": "match_heading",
+      "name": "heading__not_first_line"
+    },
+    {
+      "expected": {
+        "code": "CV1",
+        "title": "First"
+      },
+      "input": {
+        "content": "# CV1 — First\n\n# CV2 — Second\n"
+      },
+      "kind": "match_heading",
+      "name": "heading__two_headings"
+    },
+    {
+      "expected": null,
+      "input": {
+        "content": "## CV1.DS1 — Not a level one heading\n"
+      },
+      "kind": "match_heading",
+      "name": "heading__deeper_hash"
+    },
+    {
+      "expected": null,
+      "input": {
+        "content": "Just prose.\n"
+      },
+      "kind": "match_heading",
+      "name": "heading__no_heading"
+    },
+    {
+      "expected": "🟡 Planned",
+      "input": {
+        "content": "**Status:** 🟡 Planned\n"
+      },
+      "kind": "match_status",
+      "name": "status__plain"
+    },
+    {
+      "expected": "**🟡 Planned** with emphasis",
+      "input": {
+        "content": "**Status:** **🟡 Planned** with emphasis\n"
+      },
+      "kind": "match_status",
+      "name": "status__emphasis"
+    },
+    {
+      "expected": "🟡 Planned",
+      "input": {
+        "content": "**Status:**　🟡 Planned　\n"
+      },
+      "kind": "match_status",
+      "name": "status__ideographic_padding"
+    },
+    {
+      "expected": "🟡 Planned",
+      "input": {
+        "content": "**Status:**\u001f🟡 Planned\u001f\n"
+      },
+      "kind": "match_status",
+      "name": "status__unit_separator"
+    },
+    {
+      "expected": "﻿🟡 Planned﻿",
+      "input": {
+        "content": "**Status:**﻿🟡 Planned﻿\n"
+      },
+      "kind": "match_status",
+      "name": "status__bom_padding"
+    },
+    {
+      "expected": "Planned Active",
+      "input": {
+        "content": "**Status:** Planned Active\n"
+      },
+      "kind": "match_status",
+      "name": "status__line_separator"
+    },
+    {
+      "expected": "🟡 Planned",
+      "input": {
+        "content": "**Status:** 🟡 Planned\r\n"
+      },
+      "kind": "match_status",
+      "name": "status__crlf"
+    },
+    {
+      "expected": "First",
+      "input": {
+        "content": "**Status:** First\n**Status:** Second\n"
+      },
+      "kind": "match_status",
+      "name": "status__multiline_first_wins"
+    },
+    {
+      "expected": null,
+      "input": {
+        "content": "No status here.\n"
+      },
+      "kind": "match_status",
+      "name": "status__absent"
+    },
+    {
+      "expected": "label",
+      "input": {
+        "value": "[label](target.md)"
+      },
+      "kind": "strip_markdown_link",
+      "name": "link__[label](target.md)"
+    },
+    {
+      "expected": "padded",
+      "input": {
+        "value": "  [padded](target.md)  "
+      },
+      "kind": "strip_markdown_link",
+      "name": "link__[padded](target.md)"
+    },
+    {
+      "expected": "prose [label](target.md) prose",
+      "input": {
+        "value": "prose [label](target.md) prose"
+      },
+      "kind": "strip_markdown_link",
+      "name": "link__prose [label](target.md) prose"
+    },
+    {
+      "expected": "[label](target.md) trailing",
+      "input": {
+        "value": "[label](target.md) trailing"
+      },
+      "kind": "strip_markdown_link",
+      "name": "link__[label](target.md) trailing"
+    },
+    {
+      "expected": "[](empty-label.md)",
+      "input": {
+        "value": "[](empty-label.md)"
+      },
+      "kind": "strip_markdown_link",
+      "name": "link__[](empty-label.md)"
+    },
+    {
+      "expected": "label",
+      "input": {
+        "value": "[label]()"
+      },
+      "kind": "strip_markdown_link",
+      "name": "link__[label]()"
+    },
+    {
+      "expected": "[nested [brackets]](t.md)",
+      "input": {
+        "value": "[nested [brackets]](t.md)"
+      },
+      "kind": "strip_markdown_link",
+      "name": "link__[nested [brackets]](t.md)"
+    },
+    {
+      "expected": "plain value",
+      "input": {
+        "value": "plain value"
+      },
+      "kind": "strip_markdown_link",
+      "name": "link__plain value"
+    },
+    {
+      "expected": "",
+      "input": {
+        "value": ""
+      },
+      "kind": "strip_markdown_link",
+      "name": "link__blank"
+    },
+    {
+      "expected": "ideographic padded",
+      "input": {
+        "value": "　[ideographic padded](t.md)　"
+      },
+      "kind": "strip_markdown_link",
+      "name": "link__[ideographic padded](t.md)"
+    },
+    {
+      "expected": "﻿[bom padded](t.md)﻿",
+      "input": {
+        "value": "﻿[bom padded](t.md)﻿"
+      },
+      "kind": "strip_markdown_link",
+      "name": "link__﻿[bom padded](t.md)﻿"
+    },
+    {
+      "expected": "plain title",
+      "input": {
+        "title": "plain title"
+      },
+      "kind": "title_leaf",
+      "name": "title_leaf__plain title"
+    },
+    {
+      "expected": "DS title",
+      "input": {
+        "title": "CV title / DS title"
+      },
+      "kind": "title_leaf",
+      "name": "title_leaf__CV title / DS title"
+    },
+    {
+      "expected": "Ariad tree",
+      "input": {
+        "title": "Builder/Ariad tree"
+      },
+      "kind": "title_leaf",
+      "name": "title_leaf__Builder/Ariad tree"
+    },
+    {
+      "expected": "c",
+      "input": {
+        "title": "a / b / c"
+      },
+      "kind": "title_leaf",
+      "name": "title_leaf__a / b / c"
+    },
+    {
+      "expected": "padded",
+      "input": {
+        "title": "  padded  "
+      },
+      "kind": "title_leaf",
+      "name": "title_leaf__padded"
+    },
+    {
+      "expected": "",
+      "input": {
+        "title": "/"
+      },
+      "kind": "title_leaf",
+      "name": "title_leaf__/"
+    },
+    {
+      "expected": "",
+      "input": {
+        "title": ""
+      },
+      "kind": "title_leaf",
+      "name": "title_leaf__blank"
+    },
+    {
+      "expected": "",
+      "input": {
+        "title": "trailing/"
+      },
+      "kind": "title_leaf",
+      "name": "title_leaf__trailing/"
+    },
+    {
+      "expected": "leading",
+      "input": {
+        "title": "/leading"
+      },
+      "kind": "title_leaf",
+      "name": "title_leaf__/leading"
+    },
+    {
+      "expected": "cv2-ds1-us1-a-user-story",
+      "input": {
+        "code": "CV2.DS1.US1",
+        "title": "A user story"
+      },
+      "kind": "story_folder_name",
+      "name": "folder__CV2.DS1.US1__A user story"
+    },
+    {
+      "expected": "ds-35-hyphenated-code",
+      "input": {
+        "code": "DS-35",
+        "title": "Hyphenated code"
+      },
+      "kind": "story_folder_name",
+      "name": "folder__DS-35__Hyphenated code"
+    },
+    {
+      "expected": "cv2-ds1",
+      "input": {
+        "code": "CV2.DS1",
+        "title": ""
+      },
+      "kind": "story_folder_name",
+      "name": "folder__CV2.DS1__blank"
+    },
+    {
+      "expected": "cv2-ds1",
+      "input": {
+        "code": "CV2.DS1",
+        "title": "   "
+      },
+      "kind": "story_folder_name",
+      "name": "folder__CV2.DS1__blank"
+    },
+    {
+      "expected": "escape-escaping",
+      "input": {
+        "code": "../escape",
+        "title": "Escaping"
+      },
+      "kind": "story_folder_name",
+      "name": "folder__../escape__Escaping"
+    },
+    {
+      "expected": "cv2-ds9-slashed-code",
+      "input": {
+        "code": "CV2/DS9",
+        "title": "Slashed code"
+      },
+      "kind": "story_folder_name",
+      "name": "folder__CV2/DS9__Slashed code"
+    },
+    {
+      "expected": "-dotdot",
+      "input": {
+        "code": "..",
+        "title": "Dotdot"
+      },
+      "kind": "story_folder_name",
+      "name": "folder__..__Dotdot"
+    },
+    {
+      "expected": "cv1-titulo-com-acentuacao-e-emoji",
+      "input": {
+        "code": "CV1",
+        "title": "Título com acentuação e emoji 🟦"
+      },
+      "kind": "story_folder_name",
+      "name": "folder__CV1__Título com acentuação e emoji 🟦"
+    },
+    {
+      "expected": "cv1-punctuation-colons-commas-and-dashes",
+      "input": {
+        "code": "CV1",
+        "title": "Punctuation: colons, commas — and dashes!"
+      },
+      "kind": "story_folder_name",
+      "name": "folder__CV1__Punctuation: colons, commas — and dashes!"
+    }
+  ]
+}

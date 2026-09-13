@@ -41,6 +41,15 @@ _SLUG_STRIP_RE = re.compile(r"[^a-z0-9 _\-]")
 
 _EXCLUDED_DIR_NAMES = {"node_modules", ".venv", "__pycache__"}
 
+# Parity fixture trees (``ts/test/fixtures/**``) are test INPUT, not documentation.
+# They exist to carry authored-Markdown edge cases an oracle must be graded on --
+# dangling links, duplicate heading codes, malformed tables -- so linting them as
+# docs would force the fixtures to stop being fixtures. Narrow on purpose: a
+# directory named ``fixtures`` is skipped only beneath a ``test``/``tests``
+# directory, so a real ``docs/**/fixtures/`` tree is still checked.
+_TEST_DIR_NAMES = {"test", "tests"}
+_FIXTURE_DIR_NAME = "fixtures"
+
 # roadmap/templates/*.md link to a bare `index.md` as a breadcrumb meant to
 # resolve once the template is copied into a real story folder -- templates/
 # itself has no index.md, by design. Not a broken link.
@@ -116,11 +125,23 @@ def _is_template_placeholder(source_file: Path, target_path: str) -> bool:
     return _TEMPLATE_DIR_MARKER in source_file.as_posix() and target_path == "index.md"
 
 
+def _is_test_fixture_path(path: Path) -> bool:
+    """True for a ``fixtures`` directory nested under a ``test``/``tests`` one."""
+    parts = path.parts
+    for index, part in enumerate(parts):
+        if part == _FIXTURE_DIR_NAME and any(
+            earlier in _TEST_DIR_NAMES for earlier in parts[:index]
+        ):
+            return True
+    return False
+
+
 def _iter_markdown_files(repo_root: Path) -> list[Path]:
     files = [
         path
         for path in repo_root.rglob("*.md")
         if not any(part in _EXCLUDED_DIR_NAMES for part in path.parts)
+        and not _is_test_fixture_path(path)
     ]
     return sorted(files)
 

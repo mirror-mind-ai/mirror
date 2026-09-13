@@ -67,6 +67,7 @@ from memory.builder import (
     release_intent,
     resume_surface,
 )
+from memory.builder.surface_protocol import wrap_ariad_surface
 
 HERE = Path(__file__).resolve().parent
 OUT_PATH = HERE.parent / "test" / "goldens" / "builder-card.golden.json"
@@ -172,7 +173,7 @@ def _scenario(name: str, kind: str, payload: dict[str, Any], render: Callable[[]
     scenario: dict[str, Any] = {"name": name, "kind": kind, "input": payload}
     try:
         scenario["expected"] = render()
-    except Exception as exc:  # noqa: BLE001 - the refusal itself is the record
+    except Exception as exc:
         scenario["expected_error"] = f"{type(exc).__name__}: {exc}"
     return scenario
 
@@ -180,11 +181,11 @@ def _scenario(name: str, kind: str, payload: dict[str, Any], render: Callable[[]
 def build_scenarios() -> list[dict[str, Any]]:
     scenarios: list[dict[str, Any]] = []
 
-    # --- _wrap_plain_text, every owner × every corpus row × both widths ----
+    # --- _wrap_plain_text, every owner x every corpus row x both widths ----
     # Nine owners are recorded even though only two behaviors exist, because
     # "which modules agree" is the fact a future refactor would break.
     for owner_name, module in WRAP_OWNERS.items():
-        wrap = getattr(module, "_wrap_plain_text")
+        wrap = module._wrap_plain_text
         for corpus_name, text in WRAP_CORPUS:
             for width in WRAP_WIDTHS:
                 scenarios.append(
@@ -197,7 +198,7 @@ def build_scenarios() -> list[dict[str, Any]]:
                 )
 
     # --- _card_text, the truncate-then-pad rule ---------------------------
-    card_text = getattr(lifecycle, "_card_text")
+    card_text = lifecycle._card_text
     for corpus_name, text in WRAP_CORPUS:
         scenarios.append(
             _scenario(
@@ -209,7 +210,7 @@ def build_scenarios() -> list[dict[str, Any]]:
         )
 
     # --- _card_wrapped, the composition of the two -------------------------
-    card_wrapped = getattr(lifecycle, "_card_wrapped")
+    card_wrapped = lifecycle._card_wrapped
     for corpus_name, text in WRAP_CORPUS:
         scenarios.append(
             _scenario(
@@ -222,7 +223,7 @@ def build_scenarios() -> list[dict[str, Any]]:
 
     # --- _card_prefixed, all three variants --------------------------------
     for owner_name, module in PREFIX_OWNERS.items():
-        prefixed = getattr(module, "_card_prefixed")
+        prefixed = module._card_prefixed
         for corpus_name, items, prefix in PREFIX_CORPUS:
             scenarios.append(
                 _scenario(
@@ -252,6 +253,37 @@ def build_scenarios() -> list[dict[str, Any]]:
                     lambda a=left, b=right: card_line(a, b),
                 )
             )
+
+    # --- wrap_ariad_surface, the transport boundary -------------------------
+    # Every Ariad surface passes through this, and the runtime harness parses
+    # the markers, so the normalization and the rstrip are protocol.
+    wrap_cases = [
+        ("lower", "plan_checkpoint", "body\n"),
+        ("upper", "PLAN_CHECKPOINT", "body\n"),
+        ("spaces", "Plan Checkpoint", "body\n"),
+        ("padded_id", "  plan_checkpoint  ", "body\n"),
+        ("ideographic_padded_id", "\u3000plan_checkpoint\u3000", "body\n"),
+        # The two call-site styles: `body + "\n"` and bare `body`.
+        ("body_no_newline", "plan_checkpoint", "body"),
+        ("body_two_newlines", "plan_checkpoint", "body\n\n"),
+        ("body_trailing_spaces", "plan_checkpoint", "body   \n"),
+        ("body_trailing_ideographic", "plan_checkpoint", "body\u3000"),
+        ("body_trailing_bom", "plan_checkpoint", "body\ufeff"),
+        ("body_empty", "plan_checkpoint", ""),
+        ("body_only_newlines", "plan_checkpoint", "\n\n\n"),
+        ("body_leading_newline", "plan_checkpoint", "\nbody\n"),
+        ("multiline_body", "plan_checkpoint", "one\ntwo\nthree\n"),
+        ("tab_in_id", "plan\tcheckpoint", "body\n"),
+    ]
+    for name, surface_id, body in wrap_cases:
+        scenarios.append(
+            _scenario(
+                f"wrap_surface__{name}",
+                "wrap_ariad_surface",
+                {"surface_id": surface_id, "body": body},
+                lambda i=surface_id, b=body: wrap_ariad_surface(i, b),
+            )
+        )
 
     # --- _card_context_items, lifecycle only -------------------------------
     context_items = getattr(lifecycle, "_card_context_items", None)

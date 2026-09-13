@@ -6200,6 +6200,141 @@
       "name": "card_line__astral"
     },
     {
+      "expected": "<<<ARIAD:PLAN_CHECKPOINT>>>\nbody\n<<<END:PLAN_CHECKPOINT>>>\n",
+      "input": {
+        "body": "body\n",
+        "surface_id": "plan_checkpoint"
+      },
+      "kind": "wrap_ariad_surface",
+      "name": "wrap_surface__lower"
+    },
+    {
+      "expected": "<<<ARIAD:PLAN_CHECKPOINT>>>\nbody\n<<<END:PLAN_CHECKPOINT>>>\n",
+      "input": {
+        "body": "body\n",
+        "surface_id": "PLAN_CHECKPOINT"
+      },
+      "kind": "wrap_ariad_surface",
+      "name": "wrap_surface__upper"
+    },
+    {
+      "expected": "<<<ARIAD:PLAN_CHECKPOINT>>>\nbody\n<<<END:PLAN_CHECKPOINT>>>\n",
+      "input": {
+        "body": "body\n",
+        "surface_id": "Plan Checkpoint"
+      },
+      "kind": "wrap_ariad_surface",
+      "name": "wrap_surface__spaces"
+    },
+    {
+      "expected": "<<<ARIAD:PLAN_CHECKPOINT>>>\nbody\n<<<END:PLAN_CHECKPOINT>>>\n",
+      "input": {
+        "body": "body\n",
+        "surface_id": "  plan_checkpoint  "
+      },
+      "kind": "wrap_ariad_surface",
+      "name": "wrap_surface__padded_id"
+    },
+    {
+      "expected": "<<<ARIAD:PLAN_CHECKPOINT>>>\nbody\n<<<END:PLAN_CHECKPOINT>>>\n",
+      "input": {
+        "body": "body\n",
+        "surface_id": "　plan_checkpoint　"
+      },
+      "kind": "wrap_ariad_surface",
+      "name": "wrap_surface__ideographic_padded_id"
+    },
+    {
+      "expected": "<<<ARIAD:PLAN_CHECKPOINT>>>\nbody\n<<<END:PLAN_CHECKPOINT>>>\n",
+      "input": {
+        "body": "body",
+        "surface_id": "plan_checkpoint"
+      },
+      "kind": "wrap_ariad_surface",
+      "name": "wrap_surface__body_no_newline"
+    },
+    {
+      "expected": "<<<ARIAD:PLAN_CHECKPOINT>>>\nbody\n<<<END:PLAN_CHECKPOINT>>>\n",
+      "input": {
+        "body": "body\n\n",
+        "surface_id": "plan_checkpoint"
+      },
+      "kind": "wrap_ariad_surface",
+      "name": "wrap_surface__body_two_newlines"
+    },
+    {
+      "expected": "<<<ARIAD:PLAN_CHECKPOINT>>>\nbody\n<<<END:PLAN_CHECKPOINT>>>\n",
+      "input": {
+        "body": "body   \n",
+        "surface_id": "plan_checkpoint"
+      },
+      "kind": "wrap_ariad_surface",
+      "name": "wrap_surface__body_trailing_spaces"
+    },
+    {
+      "expected": "<<<ARIAD:PLAN_CHECKPOINT>>>\nbody\n<<<END:PLAN_CHECKPOINT>>>\n",
+      "input": {
+        "body": "body　",
+        "surface_id": "plan_checkpoint"
+      },
+      "kind": "wrap_ariad_surface",
+      "name": "wrap_surface__body_trailing_ideographic"
+    },
+    {
+      "expected": "<<<ARIAD:PLAN_CHECKPOINT>>>\nbody﻿\n<<<END:PLAN_CHECKPOINT>>>\n",
+      "input": {
+        "body": "body﻿",
+        "surface_id": "plan_checkpoint"
+      },
+      "kind": "wrap_ariad_surface",
+      "name": "wrap_surface__body_trailing_bom"
+    },
+    {
+      "expected": "<<<ARIAD:PLAN_CHECKPOINT>>>\n\n<<<END:PLAN_CHECKPOINT>>>\n",
+      "input": {
+        "body": "",
+        "surface_id": "plan_checkpoint"
+      },
+      "kind": "wrap_ariad_surface",
+      "name": "wrap_surface__body_empty"
+    },
+    {
+      "expected": "<<<ARIAD:PLAN_CHECKPOINT>>>\n\n<<<END:PLAN_CHECKPOINT>>>\n",
+      "input": {
+        "body": "\n\n\n",
+        "surface_id": "plan_checkpoint"
+      },
+      "kind": "wrap_ariad_surface",
+      "name": "wrap_surface__body_only_newlines"
+    },
+    {
+      "expected": "<<<ARIAD:PLAN_CHECKPOINT>>>\n\nbody\n<<<END:PLAN_CHECKPOINT>>>\n",
+      "input": {
+        "body": "\nbody\n",
+        "surface_id": "plan_checkpoint"
+      },
+      "kind": "wrap_ariad_surface",
+      "name": "wrap_surface__body_leading_newline"
+    },
+    {
+      "expected": "<<<ARIAD:PLAN_CHECKPOINT>>>\none\ntwo\nthree\n<<<END:PLAN_CHECKPOINT>>>\n",
+      "input": {
+        "body": "one\ntwo\nthree\n",
+        "surface_id": "plan_checkpoint"
+      },
+      "kind": "wrap_ariad_surface",
+      "name": "wrap_surface__multiline_body"
+    },
+    {
+      "expected": "<<<ARIAD:PLAN\tCHECKPOINT>>>\nbody\n<<<END:PLAN\tCHECKPOINT>>>\n",
+      "input": {
+        "body": "body\n",
+        "surface_id": "plan\tcheckpoint"
+      },
+      "kind": "wrap_ariad_surface",
+      "name": "wrap_surface__tab_in_id"
+    },
+    {
       "expected": [
         "│ none                                                   │"
       ],

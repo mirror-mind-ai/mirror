@@ -86,7 +86,12 @@ jobs:
           uv run python ts/parity/generate_lifecycle_faces_golden.py
           uv run python ts/parity/generate_cost_golden.py
           uv run python ts/parity/generate_builder_card_golden.py
+          uv run python ts/parity/generate_builder_roadmap_golden.py
           git diff --exit-code ts/test/goldens/
+          # The Builder roadmap generator also rewrites its committed fixture
+          # tree, so drift there has to fail the gate too -- a golden that agrees
+          # with silently changed fixtures proves nothing.
+          git diff --exit-code ts/test/fixtures/builder-roadmap/
         env:
           MEMORY_ENV: test
           ECONOMY_ENV: test

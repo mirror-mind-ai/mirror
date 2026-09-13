@@ -11,6 +11,14 @@
 
 *.sh    text eol=lf
 
+# Parity fixture trees are graded BYTE for byte against a Python oracle, and the
+# goldens are generated from these exact bytes. One of them deliberately carries
+# CRLF endings to prove the roadmap parser handles them, so `text=auto eol=lf`
+# would rewrite the fixture on checkout and make the committed golden wrong on a
+# clean clone — green locally, red in CI, for a reason nobody would look for.
+# `-text` disables all end-of-line conversion here.
+ts/test/fixtures/**  -text
+
 # Binary assets — never touch.
 *.ico   binary
 *.png   binary

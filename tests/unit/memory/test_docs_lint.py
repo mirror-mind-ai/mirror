@@ -162,6 +162,29 @@ class TestCheckRepo:
 
         assert check_repo(tmp_path) == []
 
+    def test_skips_parity_fixture_trees(self, tmp_path: Path) -> None:
+        # CV22.DS7.US8: `ts/test/fixtures/**` carries authored-Markdown edge
+        # cases an oracle is graded on -- dangling links and duplicate heading
+        # codes among them. Linting them as docs would force the fixtures to
+        # stop being fixtures.
+        fixture = tmp_path / "ts/test/fixtures/builder-roadmap/docs/project/roadmap"
+        fixture.mkdir(parents=True)
+        (fixture / "index.md").write_text("# Roadmap\n\n[dangling](does-not-exist.md)\n")
+
+        assert check_repo(tmp_path) == []
+
+    def test_still_checks_a_real_docs_fixtures_directory(self, tmp_path: Path) -> None:
+        # The skip is narrow: `fixtures` counts only beneath `test`/`tests`, so a
+        # documentation tree that happens to use the word is still linted.
+        docs_fixtures = tmp_path / "docs/reference/fixtures"
+        docs_fixtures.mkdir(parents=True)
+        (docs_fixtures / "index.md").write_text("# Fixtures\n\n[dead](nowhere.md)\n")
+
+        problems = check_repo(tmp_path)
+
+        assert len(problems) == 1
+        assert problems[0].source_file == "docs/reference/fixtures/index.md"
+
 
 class TestCheckRoadmapDuplicateHeadings:
     # This is the CI guard for the class of defect fixed by
