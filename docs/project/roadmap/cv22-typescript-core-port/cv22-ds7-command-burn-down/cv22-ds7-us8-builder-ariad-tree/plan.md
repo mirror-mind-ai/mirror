@@ -638,6 +638,17 @@ Then every surface renders as before and front-door.log shows `build ts`
   trailing space, a status with Markdown emphasis.
 - **Timestamps and ids.** `_now()` and `_uuid()` injected as in US6/US7 so
   the cursor rows and conversation rows are deterministic.
+- **Absolute paths are machine-dependent golden content.** Several Builder
+  messages name filesystem paths — `StoryPackageAmbiguityError` lists the
+  claiming packages, the DS Done preflight names non-Done files, and the
+  artifact surfaces print package paths. A golden that records them raw is
+  byte-stable on one machine and wrong on every other, which a
+  regenerate-twice check on one machine cannot detect (found in CI at plateau
+  1, after local determinism passed). **Rule for every generator in this
+  story:** redact the fixture/project root to a stable token, apply the same
+  substitution in the TS test so the message shape stays fully graded, and fail
+  the generator if any absolute path survives into the payload. Plateau 3's
+  artifact corpus and plateau 5's closure preflight carry the most exposure.
 - **stderr.** Banner ANSI bytes (`\033[38;5;117m…\033[0m`), the override
   banner, and error lines are graded as bytes; exit codes are graded.
 - **Argument acceptance.** Python refuses `--mirror-home` on `build` with

@@ -999,7 +999,7 @@
       "name": "resolve__main__NOPE.1"
     },
     {
-      "expected_error": "StoryPackageAmbiguityError: 2 roadmap packages claim code 'CV5.DS1': /Users/vinicius/dev/workspace/mirror-ts-core/ts/test/fixtures/builder-roadmap/ambiguous/docs/project/roadmap/first-claim, /Users/vinicius/dev/workspace/mirror-ts-core/ts/test/fixtures/builder-roadmap/ambiguous/docs/project/roadmap/second-claim",
+      "expected_error": "StoryPackageAmbiguityError: 2 roadmap packages claim code 'CV5.DS1': <FIXTURES>/ambiguous/docs/project/roadmap/first-claim, <FIXTURES>/ambiguous/docs/project/roadmap/second-claim",
       "input": {
         "code": "CV5.DS1",
         "project": "ambiguous"

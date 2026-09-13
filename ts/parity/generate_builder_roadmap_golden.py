@@ -345,12 +345,45 @@ def _plain(value: Any) -> Any:
     return value
 
 
+# `StoryPackageAmbiguityError` names the claiming packages by ABSOLUTE path, so
+# the raw message carries whatever checkout the generator ran in: a developer
+# path on a laptop, `/home/runner/work/...` in CI. The message SHAPE is still
+# worth grading -- the count, the quoting, the separator, the order -- so the
+# fixture root is replaced by a stable token and the TypeScript test applies the
+# same substitution before comparing. `_assert_no_absolute_paths` then refuses to
+# write a golden that still carries one, so this cannot regress quietly.
+#
+# Found by CI, not locally: the golden was byte-stable across repeated runs on one
+# machine, which is exactly what a determinism check on one machine cannot catch.
+FIXTURE_ROOT_TOKEN = "<FIXTURES>"
+
+
+def _redact_paths(text: str) -> str:
+    return text.replace(str(FIXTURES.resolve()), FIXTURE_ROOT_TOKEN).replace(
+        str(FIXTURES), FIXTURE_ROOT_TOKEN
+    )
+
+
+def _assert_no_absolute_paths(payload: str) -> None:
+    """Refuse to write a golden that would differ between two checkouts."""
+    leaks = [
+        marker
+        for marker in (str(FIXTURES.resolve()), str(FIXTURES), str(HERE.parent.parent))
+        if marker in payload
+    ]
+    if leaks:
+        raise SystemExit(
+            "refusing to write a machine-dependent golden: it still contains an "
+            f"absolute path ({leaks[0]}). Route the value through _redact_paths."
+        )
+
+
 def _record(name: str, kind: str, payload: dict[str, Any], produce) -> dict[str, Any]:
     scenario: dict[str, Any] = {"name": name, "kind": kind, "input": payload}
     try:
         scenario["expected"] = _plain(produce())
     except Exception as exc:
-        scenario["expected_error"] = f"{type(exc).__name__}: {exc}"
+        scenario["expected_error"] = _redact_paths(f"{type(exc).__name__}: {exc}")
     return scenario
 
 
@@ -618,11 +651,10 @@ def build_scenarios() -> list[dict[str, Any]]:
 def main() -> None:
     write_fixtures()
     scenarios = build_scenarios()
+    payload = json.dumps({"scenarios": scenarios}, indent=2, sort_keys=True, ensure_ascii=False)
+    _assert_no_absolute_paths(payload)
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    OUT_PATH.write_text(
-        json.dumps({"scenarios": scenarios}, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
-        encoding="utf-8",
-    )
+    OUT_PATH.write_text(payload + "\n", encoding="utf-8")
     produced = sum(1 for s in scenarios if "expected" in s)
     refused = sum(1 for s in scenarios if "expected_error" in s)
     files = sum(len(files) for files in PROJECTS.values())

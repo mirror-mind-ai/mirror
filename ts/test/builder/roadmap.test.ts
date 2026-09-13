@@ -203,10 +203,13 @@ test("resolveStoryDirectory matches Python, ambiguity included", () => {
         () => resolveStoryDirectory(root, code),
         (error: unknown) => {
           assert.ok(error instanceof StoryPackageAmbiguityError, scenario.name);
-          // Python's message names the count and every claiming path.
-          assert.match(error.message, /^2 roadmap packages claim code 'CV5\.DS1': /u);
-          assert.match(error.message, /first-claim/u);
-          assert.match(error.message, /second-claim/u);
+          // The golden redacts the fixture root to `<FIXTURES>` because Python's
+          // message names the claiming packages by ABSOLUTE path, which differs
+          // between a laptop and a CI runner. Applying the same substitution here
+          // keeps the whole message shape graded — count, quoting, separator, and
+          // order — instead of degrading to a loose regex match.
+          const actual = `${error.name}: ${error.message}`.replaceAll(FIXTURES, "<FIXTURES>");
+          assert.equal(actual, scenario.expected_error, scenario.name);
           return true;
         },
         scenario.name,
