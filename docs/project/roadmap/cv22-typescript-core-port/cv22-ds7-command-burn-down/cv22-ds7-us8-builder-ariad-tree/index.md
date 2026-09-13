@@ -2,7 +2,7 @@
 
 # CV22.DS7.US8 — Builder/Ariad tree
 
-**Status:** 🟡 Planned — authored, not pulled. Sequenced after CR072, US11, and DS8 (decision 2026-09-09); D1 resolved the same day
+**Status:** 🟡 Planned — **in flight since 2026-09-13**: plateaus 1–4 of 9 landed, 15 of 27 leaves ported, nothing routed (the gate arrives at plateau 8, the flip at plateau 9). Sequenced after CR072, US11, and DS8 (decision 2026-09-09); D1 resolved the same day. Resume from [handoff.md](handoff.md)
 **Type:** User Story
 **Owner:** CV22.DS7 for the whole `build` command surface and the Builder runtime state it writes
 **Depends on:** [CV22.DS7.US1](../cv22-ds7-us1-remaining-identity-journey-reads-writes/index.md)

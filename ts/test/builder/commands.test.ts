@@ -28,29 +28,13 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { getAriadMethod } from "#builder/ariadMethod.ts";
 import { cardText } from "#builder/card.ts";
-import {
-  runAdoptMethod,
-  runApprovePlan,
-  runCancelPlanPreauthorization,
-  runCheckImplementation,
-  runCoherenceItem,
-  runDoneItem,
-  runInspectMethod,
-  runPlanItem,
-  runPrepareItem,
-  runPrepareTemplates,
-  runPullCandidates,
-  runPullItem,
-  runReviewItem,
-  runSyncCursor,
-  runValidateItem,
-  surfacesForTrigger,
-} from "#builder/commands.ts";
+import { surfacesForTrigger } from "#builder/commands.ts";
 import { setDeliveryCursor } from "#builder/deliveryCursor.ts";
 import { setAdoptedMethod } from "#builder/methodAdoption.ts";
 import { planLifecycleItem } from "#builder/plan.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import golden from "#goldens/builder-command.golden.json" with { type: "json" };
+import { invokeBuilderArgv } from "#helpers/builderInvoke.ts";
 import { normalizePathRows, projectRelative, scrubMessage } from "#helpers/builderSurfacePaths.ts";
 import { createIdentityTable } from "#helpers/identitySchema.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
@@ -445,112 +429,15 @@ function projectSnapshot(root: string): Record<string, string> {
   return Object.fromEntries(Object.entries(snapshot).sort(([a], [b]) => (a < b ? -1 : 1)));
 }
 
-/** Parse the golden's argv the way the front door will. */
+/**
+ * Parse the golden's argv the way the front door will.
+ *
+ * Shared with the plateau-4 lifecycle smoke (`#helpers/builderInvoke.ts`) so both
+ * replays enter the leaves through one mapping. The clock is pinned here and real
+ * there; the projection seam is absent here, because this corpus must not spawn.
+ */
 function invoke(db: WritableDatabase, argv: readonly string[]) {
-  const option = (name: string): string | null => {
-    const index = argv.indexOf(name);
-    return index === -1 ? null : (argv[index + 1] ?? null);
-  };
-  const positionals = argv.filter(
-    (token, index) => index > 0 && !token.startsWith("--") && !argv[index - 1]?.startsWith("--"),
-  );
-  const context = { db, environmentSessionId: null };
-  const writeContext = { db, environmentSessionId: null, deps: { nowIso: () => NOW } };
-  const shared = {
-    method: option("--method") ?? "",
-    journey: option("--journey"),
-    sessionId: option("--session-id"),
-  };
-  switch (argv[0]) {
-    case "inspect-method":
-      return runInspectMethod(context, {
-        method: positionals[0] ?? null,
-        journey: shared.journey,
-        sessionId: shared.sessionId,
-      });
-    case "pull-candidates":
-      return runPullCandidates(context, shared);
-    case "adopt":
-      return runAdoptMethod(writeContext, shared);
-    case "prepare-templates":
-      return runPrepareTemplates(writeContext, shared);
-    case "sync-cursor":
-      return runSyncCursor(writeContext, shared);
-    case "check-implementation":
-      return runCheckImplementation(context, shared);
-    case "pull-item":
-      return runPullItem(writeContext, {
-        ...shared,
-        itemCode: option("--item-code") ?? "",
-        itemTitle: option("--item-title") ?? "",
-        itemLevel: option("--item-level") ?? "",
-        whyNow: option("--why-now") ?? "",
-      });
-    case "prepare-item":
-      return runPrepareItem(writeContext, shared);
-    case "plan-item":
-      return runPlanItem(writeContext, {
-        ...shared,
-        objective: option("--objective"),
-        // `action="store_true"`, so the flag's PRESENCE is the value; reading it as
-        // an option would swallow the next token.
-        preauthorizeApproval: argv.includes("--preauthorize-approval"),
-        stopAfter: option("--stop-after") ?? "navigator_validation",
-      });
-    case "approve-plan":
-      return runApprovePlan(writeContext, {
-        ...shared,
-        usePreauthorization: argv.includes("--use-preauthorization"),
-      });
-    case "cancel-plan-preauthorization":
-      return runCancelPlanPreauthorization(writeContext, shared);
-    case "validate-item":
-      return runValidateItem(writeContext, {
-        ...shared,
-        // `--check` is `action="append"`, so every occurrence contributes.
-        checks: argv.flatMap((token, index) =>
-          token === "--check" ? [argv[index + 1] ?? ""] : [],
-        ),
-        checksStatus: option("--checks-status") ?? "not_run",
-        e2eDecision: option("--e2e-decision") ?? "not_required",
-        e2eEvidence: option("--e2e-evidence"),
-        navigatorRoute: option("--navigator-route"),
-        navigatorAccepted: argv.includes("--navigator-accepted"),
-        expectedObservation: option("--expected-observation"),
-        passCondition: option("--pass-condition"),
-        failCondition: option("--fail-condition"),
-        implementationComplete: argv.includes("--implementation-complete"),
-      });
-    case "review-item":
-      return runReviewItem(writeContext, {
-        ...shared,
-        debtFindings: argv.flatMap((token, index) =>
-          token === "--debt" ? [argv[index + 1] ?? ""] : [],
-        ),
-        debtDecision: option("--decision") ?? "pending",
-        deferReason: option("--defer-reason"),
-        revisitTrigger: option("--revisit-trigger"),
-      });
-    case "coherence-item":
-      return runCoherenceItem(writeContext, {
-        ...shared,
-        processAlignment: option("--process"),
-        projectAlignment: option("--project"),
-        productAlignment: option("--product"),
-        localDifferences: argv.flatMap((token, index) =>
-          token === "--difference" ? [argv[index + 1] ?? ""] : [],
-        ),
-      });
-    case "done-item":
-      return runDoneItem(writeContext, {
-        ...shared,
-        historyAction: option("--history-action"),
-        roadmapUpdate: option("--roadmap-update"),
-        nextRecommendation: option("--next-recommendation"),
-      });
-    default:
-      throw new Error(`unsupported argv: ${argv.join(" ")}`);
-  }
+  return invokeBuilderArgv(db, argv, { nowIso: () => NOW });
 }
 
 test("the golden covers every graded leaf and its refusals", () => {

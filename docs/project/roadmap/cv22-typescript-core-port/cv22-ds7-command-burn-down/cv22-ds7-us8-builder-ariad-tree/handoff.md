@@ -1,34 +1,37 @@
 [< Story](index.md)
 
-# Handoff — CV22.DS7.US8 — Builder/Ariad tree (plateaus 1–3 complete, 4 nearly)
+# Handoff — CV22.DS7.US8 — Builder/Ariad tree (plateaus 1–4 complete)
 
-**Status:** plateaus 1, 2, and 3 of 9 complete; **plateau 4 complete except its
-smoke**. **15 of the 27 in-scope leaves answer from TypeScript.** **Nothing is
-routed** — `routing.ts` is untouched and every `build` invocation still reaches
-Python, which is the intended state until plateau 8 adds the gate and plateau 9
-flips it.
+**Status:** plateaus 1–4 of 9 complete. **15 of the 27 in-scope leaves answer from
+TypeScript**, and a whole Ariad story lifecycle — adopt through done — now runs on
+both engines and agrees after every step. **Nothing is routed** — `routing.ts` is
+untouched and every `build` invocation still reaches Python, which is the intended
+state until plateau 8 adds the gate and plateau 9 flips it.
 
 ## Resume here
 
-The next piece is **plateau 4's story-lifecycle smoke**: one unrouted run of the
-whole lifecycle (adopt → … → done) calling the TypeScript modules directly, with
-**no gate in the environment**, so it proves the shipped default rather than a
-configured one. It is the first thing in this story that exercises a whole lifecycle
-instead of grading a step, so expect it to find composition defects the per-step
-corpus cannot see.
+The next piece is **plateau 5, Scope E — the Delivery Story lifecycle**: the six DS
+leaves (`plan-delivery-story`, `approve-delivery-story-plan`,
+`validate-delivery-story`, `review-delivery-story`, `coherence-delivery-story`,
+`done-delivery-story`) and the **authored roadmap closure preflight**, which is the
+first behavior in this story that refuses on the CONTENT of the Navigator's roadmap
+rather than on cursor state. It refills `PENDING_OPS` / `PENDING_LEAVES` (both empty
+today) and ends with the DS smoke — a second sequence through
+`builder_lifecycle_smoke.ts`'s harness covering `set-flow-unit` → DS Plan → approve
+→ validate → review → `done-delivery-story` (preflight refusal, then success).
 
-Two constraints that apply to it specifically:
+Two constraints carried forward:
 
 - the self-hosting protocol still holds — this story's OWN Ariad lifecycle runs on
-  Python (`MIRROR_TS_BUILD=0` by construction until plateau 9), so the smoke must
-  exercise the TypeScript modules without becoming the thing that records US8's
-  state;
-- it writes files, so it goes in a disposable project, and the repository-fingerprint
-  guard exists because that rule was broken twice already.
+  Python (by construction until plateau 9), so no smoke may become the thing that
+  records US8's state;
+- a step that writes goes in a disposable project, and the repository-fingerprint
+  guard exists because that rule was broken twice already. The lifecycle smoke
+  asserts the repository's `docs/` tree is unchanged for exactly that reason.
 
-Then plateaus 5–9: Delivery Story lifecycle, cadence and authority, `load` plus the
-provider seam (the one with real unknowns — `load` embeds its query twice and runs
-the previous conversation's close tail), front door with the gate off, and the flip.
+Then plateaus 6–9: cadence and authority, `load` plus the provider seam (the one
+with real unknowns — `load` embeds its query twice and runs the previous
+conversation's close tail), front door with the gate off, and the flip.
 
 ## Current state, verifiable without re-deriving it
 
@@ -38,6 +41,7 @@ the previous conversation's close tail), front door with the gate off, and the f
 | `builder-command.golden.json` | 80 cases across 15 leaves — all graded |
 | `PENDING_OPS` / `PENDING_LEAVES` | both empty; plateau 5 refills them |
 | Write probes | `builder_cursor_state`, `builder_artifacts` |
+| `builder_lifecycle_smoke.ts` | 18 steps × both engines, **131 checks**, in CI |
 
 Written for the session that resumes this story — possibly a different session, a
 different Mirror, or a later collaborator. It assumes only the repository, and it
@@ -47,9 +51,19 @@ exists so a resuming session does not have to re-derive the measurements below.
 
 ## What is now true
 
-Six of the 27 in-scope leaves answer from TypeScript end to end, behind no route:
-`inspect-method`, `pull-candidates`, `adopt`, `prepare-templates`, `sync-cursor`,
-`check-implementation`.
+Fifteen of the 27 in-scope leaves answer from TypeScript end to end, behind no
+route: `inspect-method`, `pull-candidates`, `adopt`, `prepare-templates`,
+`sync-cursor`, `check-implementation`, `pull-item`, `prepare-item`, `plan-item`,
+`approve-plan`, `cancel-plan-preauthorization`, `validate-item`, `review-item`,
+`coherence-item`, `done-item`.
+
+The ten commits below carried plateaus 1–2. Plateaus 3 and 4 added, oldest first:
+`2dff5adb` (lifecycle oracle before any TypeScript), `e98554aa` / `9cb44cd8`
+(CR082, CR065's fifth instance, corpus readability), `da3f3e3a` (Pull and Expand),
+`314758ef` (Prepare, Plan, Approve, story authority), `3149fac5` (CR083),
+`f614c361` (the five story-lifecycle leaves), `25570ca9` (the `builder_artifacts`
+probe), `437f3c19` / `b898b06f` (the closure oracle, then closure with CR079 pinned
+both ways), `6f1cbeb9` (the four closure leaves), and the plateau-4 smoke.
 
 Ten commits, oldest first:
 
@@ -268,12 +282,12 @@ Navigator's project are the only US8 surface with a traversal shape.
 
 ### Plateau 4 progress
 
-Scope D (story closure) at the module level is **done**: `closure.ts` and
-`artifacts/closureArtifacts.ts` port Validate, Debt Review, Coherence, and Done, and
-**all 86 sequences / 274 steps of the corpus grade step for step**. The four command
-leaves (`validate-item`, `review-item`, `coherence-item`, `done-item`), the two
-CLI-rendered surfaces (`debt_review_started`, `done_closure_confirmation`), and the
-unrouted story-lifecycle smoke remain.
+**Plateau 4 is complete.** Scope D (story closure) is ported: `closure.ts` and
+`artifacts/closureArtifacts.ts` carry Validate, Debt Review, Coherence, and Done,
+**all 86 sequences / 274 steps of the corpus grade step for step**, the four command
+leaves and the two CLI-rendered surfaces (`debt_review_started`,
+`done_closure_confirmation`) answer from TypeScript, and the unrouted story-lifecycle
+smoke closes it.
 
 What commit 2 measured:
 
@@ -330,6 +344,55 @@ What commit 3 measured (the four closure leaves):
 - **A complete `defer` offers no closure.** Dropping the `no_action` check survived
   until `review_item_defer_complete_offers_no_closure` existed, because every other
   complete decision in the corpus WAS `no_action`. Oracle case, not assertion.
+
+### What the lifecycle smoke measured (`ts/parity/builder_lifecycle_smoke.ts`)
+
+Eighteen steps — `inspect-method`, `adopt`, `prepare-templates`, `sync-cursor`,
+`pull-candidates`, `pull-item`, `prepare-item`, a blocked `check-implementation`,
+`plan-item`, a premature `done-item`, `approve-plan`, an allowed
+`check-implementation`, `validate-item`, `review-item`, `coherence-item`,
+`done-item`, and two post-closure reads — on **two disposable worlds**, 131 checks,
+~10s, wired into the determinism job in `tests.yml`. It **found no composition
+defect**, which is worth stating plainly: the per-step corpora had already closed
+the gaps, and the smoke's value now is that a future plateau cannot reopen one.
+
+Decisions a resuming session should not re-litigate:
+
+- **The TypeScript side is invoked in process**, through the shared
+  `#helpers/builderInvoke.ts` argv mapping the command corpus also uses — one parse,
+  not two front doors. The consequence is stated in the file: the smoke does NOT
+  grade TypeScript's stream mechanics or the exit status a shell sees. Plateau 8 owns
+  that when the route exists; the command corpus already pins the bytes against
+  Python's real subprocess. Building a throwaway CLI to buy it early was considered
+  and rejected — it would be a second front door to delete at plateau 8.
+- **`MIRROR_USER` must be pinned, not deleted.** `memory.config` re-applies the
+  repository `.env` at import with `setdefault`, so a deleted `MIRROR_USER` comes
+  back as the developer's real user — and `resolve_mirror_home` REFUSES the pair
+  when `MIRROR_HOME`'s basename disagrees. Measured, not reasoned: on the first run
+  every Python step exited 2 with `Mirror home is not configured` and the smoke was
+  comparing TypeScript against nothing while reporting a clean Python side. Both
+  worlds' homes are therefore named `home`. This is the same class the TS3 status
+  generator hit, and it fails as a PASS, which is why it is recorded here.
+- **The two project roots are the same length** (`.../py/project`,
+  `.../ts/project`), asserted by a check. `cardPrefixed` wraps at a fixed code-point
+  count, so root length decides where a wrapped path splits; unequal roots would
+  produce a diff that is an artifact of the harness. CI's Linux runner supplies a
+  third root length for free.
+- **The projection seam is the real one.** The smoke injects
+  `createPythonProjectionRefresh`, so each TypeScript cursor write spawns Python's
+  publisher exactly as production will, and both worlds' `.mirror/projections` trees
+  are compared as `{documents, receipts}` — the receipt COUNT is the behavior, the
+  names are uuid4. Using `noProjectionRefresh` would have made the smoke fast and
+  blind, and US7 already shipped a silently dead seam once.
+- **`metadata` is compared byte for byte**, unlike the write probe, which
+  canonicalizes that cell. Compare-and-swap matches on that exact string, so this is
+  the D2 revert contract under a whole lifecycle rather than per transition.
+
+The smoke was verified to fail before it was trusted — three mutants, each killed in
+its own dimension: reordering two keys in `serializeCursor` (cursor bytes, from
+`sync-cursor` onward), lowercasing a closure-artifact heading (`done.md` bytes), and
+dropping Done's `requestProjectionRefresh` call (receipt count). A green smoke that
+has never been red is a belief, not evidence.
 
    Split because the module level reached a coherent, fully graded state and the
    command level is a separate failure mode (argv parsing, guard order, exit

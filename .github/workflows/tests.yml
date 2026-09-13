@@ -265,3 +265,14 @@ jobs:
       # file (backup archives read by Python's zipfile; repair-encoding).
       - name: Conversation-logger lifecycle smoke (replay transport, must pass)
         run: node --no-warnings ts/parity/conversation_lifecycle_smoke.ts
+
+      # The Ariad story lifecycle — adopt through done — run on BOTH engines over
+      # two disposable worlds and compared after every step: streams, the Builder
+      # runtime rows with `metadata` byte for byte, every authored artifact, and the
+      # Journey projection the seam published (CV22.DS7.US8 plateau 4). Unrouted by
+      # construction: `build` reaches Python in production until the plateau-9 flip,
+      # so the smoke refuses to run with MIRROR_TS_BUILD set and proves the shipped
+      # default rather than a configured one. Linux is also a third root length for
+      # the path-normalization invariant the artifact rows depend on.
+      - name: Builder Ariad lifecycle smoke (both engines, no gate, must pass)
+        run: node --no-warnings ts/parity/builder_lifecycle_smoke.ts
