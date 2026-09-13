@@ -269,6 +269,36 @@ What commit 2 measured:
   `validate_blank_route_reports_only_the_route`, an oracle case, which is the same
   correction plateaus 1 and 3 each needed.
 
+What commit 3 measured (the four closure leaves):
+
+- **Their refusal shape is not the ordinary one.** A blocked lifecycle call renders
+  `IMPLEMENTATION_GUARD` on STDOUT and exits 1, rather than printing `Error: …` to
+  stderr — the same trap `check-implementation` set at plateau 2. Routing them through
+  the ordinary refusal helper loses a surface the transport protocol requires verbatim,
+  and the mutant that does so dies.
+- **Two leaves emit a second, CLI-only surface** that `lifecycle.py` does not have and
+  the module corpus therefore cannot see: `debt_review_started` after a passed
+  Validation, `done_closure_confirmation` after a `no_action` Debt Review with nothing
+  missing. `done-item` also prints the project position, reading the roadmap a second
+  time after the write.
+- **Seeding must target the guard under test.** Three `validate-item` cases first used
+  `adopted_prepared`, and all three refused with `Validation requires an approved Plan
+  and completed implementation` — a real guard, but one case already covers it and the
+  other two proved nothing about the behavior they were written for. Validation starts
+  from `plan_approved`, so `adopted_closure_plan_approved` exists; the wrong-event
+  refusal is now its own case.
+- **One mutant is UNREACHABLE, and is recorded rather than counted as a kill.**
+  `miniCardWrapped` uses Python's NON-chunking wrapper, and flipping it to chunk
+  survives the whole corpus — correctly, because every string those two surfaces wrap
+  is a fixed literal with no word over 54 code points, and the one variable field
+  (`activeItem`) goes through the truncating `miniCardText` instead. So the flag has no
+  observable behavior today. It is set to match Python anyway, so a future surface that
+  wraps variable text through this helper inherits the right behavior instead of
+  discovering it. Same treatment plateau 1 gave its three equivalent mutants.
+- **A complete `defer` offers no closure.** Dropping the `no_action` check survived
+  until `review_item_defer_complete_offers_no_closure` existed, because every other
+  complete decision in the corpus WAS `no_action`. Oracle case, not assertion.
+
    Split because the module level reached a coherent, fully graded state and the
    command level is a separate failure mode (argv parsing, guard order, exit
    codes) that deserves its own review boundary.

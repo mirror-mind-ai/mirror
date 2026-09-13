@@ -41,6 +41,17 @@ import {
   materializedArtifact,
   renderArtifactsMaterializedSurface,
 } from "./artifacts/artifactSurfaces.ts";
+import { CARD_WIDTH, cardText, wrapPlainText } from "./card.ts";
+import {
+  coherenceLifecycleItem,
+  doneLifecycleItem,
+  renderCoherenceCheckpoint,
+  renderDoneCheckpoint,
+  renderReviewCheckpoint,
+  renderValidationCheckpoint,
+  reviewLifecycleItem,
+  validateLifecycleItem,
+} from "./closure.ts";
 import {
   type CursorWriteDeps,
   getDeliveryCursor,
@@ -68,7 +79,11 @@ import { PlanPreauthorizationMismatch } from "./planPreauthorization.ts";
 import { prepareLifecycleItem, renderPrepareReport } from "./prepare.ts";
 import { pullLifecycleItem, renderPullReport } from "./pull.ts";
 import { inspectPullCandidates, inspectRoadmapSnapshot } from "./pullCandidates.ts";
-import { renderPullCandidatesReport, renderRoadmapSnapshotReport } from "./pullCandidatesRender.ts";
+import {
+  renderProjectPositionReport,
+  renderPullCandidatesReport,
+  renderRoadmapSnapshotReport,
+} from "./pullCandidatesRender.ts";
 import {
   createStoryDirectory,
   resolveStoryDirectory,
@@ -82,6 +97,7 @@ import {
   renderStoryPlanPreauthorizationRecorded,
   renderStoryPreauthorizationAlreadyConsumed,
 } from "./storyPlanPreauthorization.ts";
+import { wrapAriadSurface } from "./surfaceProtocol.ts";
 import { prepareMethodTemplates, renderTemplatePreparationReport } from "./templateGeneration.ts";
 
 /** What a `build` leaf produced, without touching the process. */
@@ -963,5 +979,321 @@ export function runCancelPlanPreauthorization(
     };
   } catch (error) {
     return refuseValueError(error);
+  }
+}
+
+// --- plateau 4: the closure leaves -----------------------------------------
+//
+// Port of `cmd_validate_item`, `cmd_review_item`, `cmd_coherence_item`, and
+// `cmd_done_item`.
+//
+// Their refusal shape differs from every other lifecycle leaf: a blocked lifecycle
+// call renders IMPLEMENTATION_GUARD on STDOUT and exits 1, rather than printing
+// `Error: …` to stderr. Routing these through `refuse` would lose a surface the
+// transport protocol requires to be rendered verbatim — the same trap
+// `check-implementation` set at plateau 2.
+//
+// Two of them emit a SECOND, CLI-only surface on the complete path:
+// `debt_review_started` after a passed Validation, and `done_closure_confirmation`
+// after a `no_action` Debt Review with nothing missing. Those two exist only here, not
+// in `lifecycle.py`, so the module-level corpus cannot see them.
+//
+// `done-item` additionally prints the project position after its checkpoint, which is
+// the Navigator's "where are we now" view and reads the roadmap a second time.
+
+/** Python `_mini_card_text`. */
+function miniCardText(text: string): string {
+  return cardText(text);
+}
+
+/**
+ * Python `_mini_card_wrapped`.
+ *
+ * The NON-chunking wrapper: an over-long word overflows its row instead of being
+ * split, unlike `cardWrapped`. Python keeps two `_wrap_plain_text` behaviors across
+ * ten modules and this is one of the non-chunking ones, so the flag is explicit.
+ */
+function miniCardWrapped(text: string): string[] {
+  return wrapPlainText(text, { width: CARD_WIDTH, chunkLongWords: false }).map(cardText);
+}
+
+/** Python `_render_debt_review_handoff`: a CLI-only surface with its own ribbon literal. */
+function renderDebtReviewHandoff(activeItem: string | null): string {
+  const body = `${[
+    "Delivery",
+    "Delivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ✓ Implement → ✓ Validate → ◉ Debt Review → ○ Done",
+    "",
+    "╭────────────────────────────────────────────────────────╮",
+    "│        🔎  DEBT REVIEW STARTED                        │",
+    "│                                                        │",
+    miniCardText("What changed?"),
+    ...miniCardWrapped(
+      "Validation was accepted. Before closure, review whether any relevant technical debt remains.",
+    ),
+    "│                                                        │",
+    miniCardText("Active item"),
+    miniCardText(activeItem || "active item"),
+    "│                                                        │",
+    miniCardText("Navigator check"),
+    // The Portuguese fragment is Python's, in an otherwise English surface.
+    // Reproduced, not corrected: changing it is a product change.
+    ...miniCardWrapped(
+      "If there is no relevant debt to address now, I can record this as sem ação necessária and continue toward closure.",
+    ),
+    "╰────────────────────────────────────────────────────────╯",
+  ].join("\n")}\n`;
+  return wrapAriadSurface("debt_review_started", body);
+}
+
+/** Python `_render_done_closure_confirmation`. */
+function renderDoneClosureConfirmation(activeItem: string | null): string {
+  const body = `${[
+    "Delivery",
+    "Delivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ✓ Implement → ✓ Validate → ✓ Debt Review → ◉ Done",
+    "",
+    "╭────────────────────────────────────────────────────────╮",
+    "│        🧭  DONE CLOSURE CONFIRMATION                  │",
+    "│                                                        │",
+    miniCardText("My understanding"),
+    ...miniCardWrapped(
+      "Debt review found no relevant action to take now. The story is ready to close.",
+    ),
+    "│                                                        │",
+    miniCardText("Active item"),
+    miniCardText(activeItem || "active item"),
+    "│                                                        │",
+    miniCardText("Before I close"),
+    ...miniCardWrapped("Is there anything else to do in this story before Done?"),
+    "╰────────────────────────────────────────────────────────╯",
+  ].join("\n")}\n`;
+  return wrapAriadSurface("done_closure_confirmation", body);
+}
+
+/** Python's `except ValueError: print(render_implementation_guard_blocked(...)); sys.exit(1)`. */
+function blockedSurface(error: unknown): CommandResult {
+  return {
+    stdout: printed(renderImplementationGuardBlocked((error as Error).message)),
+    stderr: "",
+    exitCode: 1,
+  };
+}
+
+/** The closure leaves' shared artifact path: the Plan package's sibling file. */
+function closureArtifactPath(
+  projectPath: string | null,
+  cursor: { activeItem: string | null; activeItemTitle: string | null } | null,
+  filename: string,
+): string | null {
+  const packagePath = canonicalPackagePath(projectPath, cursor);
+  return packagePath === null ? null : join(packagePath, filename);
+}
+
+/** Python `cmd_validate_item`. */
+export function runValidateItem(
+  context: BuilderWriteContext,
+  options: {
+    method: string;
+    journey?: string | null;
+    sessionId?: string | null;
+    checks?: readonly string[];
+    checksStatus?: string;
+    e2eDecision?: string;
+    e2eEvidence?: string | null;
+    navigatorRoute?: string | null;
+    navigatorAccepted?: boolean;
+    expectedObservation?: string | null;
+    passCondition?: string | null;
+    failCondition?: string | null;
+    implementationComplete?: boolean;
+  },
+): CommandResult {
+  const guarded = lifecycleGuards(context, {
+    ...options,
+    action: "validation",
+    requireCursor: true,
+  });
+  if (isCommandResult(guarded)) return guarded;
+  const journey = guarded.journey;
+
+  const cursor = getDeliveryCursor(context.db, journey);
+  const projectPath = getProjectPath(context.db, journey);
+  try {
+    const report = validateLifecycleItem(
+      context.db,
+      {
+        journey,
+        method: getAriadMethod(),
+        automatedChecks: options.checks ?? [],
+        checksStatus: options.checksStatus ?? "not_run",
+        e2eDecision: options.e2eDecision ?? "not_required",
+        e2eEvidence: options.e2eEvidence ?? null,
+        navigatorValidationRoute: options.navigatorRoute ?? null,
+        navigatorAccepted: options.navigatorAccepted ?? false,
+        expectedObservation: options.expectedObservation ?? null,
+        passCondition: options.passCondition ?? null,
+        failCondition: options.failCondition ?? null,
+        implementationComplete: options.implementationComplete ?? false,
+        validationArtifactPath: closureArtifactPath(projectPath, cursor, "validation.md"),
+      },
+      context.deps,
+    );
+    const handoff =
+      report.missingEvidence.length === 0
+        ? printed(renderDebtReviewHandoff(report.cursor.activeItem))
+        : "";
+    return {
+      stdout: printed(renderValidationCheckpoint(report)) + handoff,
+      stderr: "",
+      exitCode: 0,
+    };
+  } catch (error) {
+    return blockedSurface(error);
+  }
+}
+
+/** Python `cmd_review_item`. */
+export function runReviewItem(
+  context: BuilderWriteContext,
+  options: {
+    method: string;
+    journey?: string | null;
+    sessionId?: string | null;
+    debtFindings?: readonly string[];
+    debtDecision?: string;
+    deferReason?: string | null;
+    revisitTrigger?: string | null;
+  },
+): CommandResult {
+  const guarded = lifecycleGuards(context, {
+    ...options,
+    action: "debt review",
+    requireCursor: true,
+  });
+  if (isCommandResult(guarded)) return guarded;
+  const journey = guarded.journey;
+
+  const cursor = getDeliveryCursor(context.db, journey);
+  const projectPath = getProjectPath(context.db, journey);
+  try {
+    const report = reviewLifecycleItem(
+      context.db,
+      {
+        journey,
+        method: getAriadMethod(),
+        debtFindings: options.debtFindings ?? [],
+        debtDecision: options.debtDecision ?? "pending",
+        deferReason: options.deferReason ?? null,
+        revisitTrigger: options.revisitTrigger ?? null,
+        reviewArtifactPath: closureArtifactPath(projectPath, cursor, "review.md"),
+      },
+      context.deps,
+    );
+    // Only `no_action` WITH nothing missing offers closure. A completed `defer` does
+    // not, which is the distinction the second surface carries.
+    const confirmation =
+      report.debtDecision === "no_action" && report.missingDecision.length === 0
+        ? printed(renderDoneClosureConfirmation(report.cursor.activeItem))
+        : "";
+    return {
+      stdout: printed(renderReviewCheckpoint(report)) + confirmation,
+      stderr: "",
+      exitCode: 0,
+    };
+  } catch (error) {
+    return blockedSurface(error);
+  }
+}
+
+/** Python `cmd_coherence_item`. */
+export function runCoherenceItem(
+  context: BuilderWriteContext,
+  options: {
+    method: string;
+    journey?: string | null;
+    sessionId?: string | null;
+    processAlignment?: string | null;
+    projectAlignment?: string | null;
+    productAlignment?: string | null;
+    localDifferences?: readonly string[];
+  },
+): CommandResult {
+  const guarded = lifecycleGuards(context, {
+    ...options,
+    action: "coherence",
+    requireCursor: true,
+  });
+  if (isCommandResult(guarded)) return guarded;
+  const journey = guarded.journey;
+
+  const cursor = getDeliveryCursor(context.db, journey);
+  const projectPath = getProjectPath(context.db, journey);
+  try {
+    const report = coherenceLifecycleItem(
+      context.db,
+      {
+        journey,
+        method: getAriadMethod(),
+        processAlignment: options.processAlignment ?? null,
+        projectAlignment: options.projectAlignment ?? null,
+        productAlignment: options.productAlignment ?? null,
+        localDifferences: options.localDifferences ?? [],
+        coherenceArtifactPath: closureArtifactPath(projectPath, cursor, "coherence.md"),
+      },
+      context.deps,
+    );
+    return { stdout: printed(renderCoherenceCheckpoint(report)), stderr: "", exitCode: 0 };
+  } catch (error) {
+    return blockedSurface(error);
+  }
+}
+
+/** Python `cmd_done_item`, including the project position it prints afterwards. */
+export function runDoneItem(
+  context: BuilderWriteContext,
+  options: {
+    method: string;
+    journey?: string | null;
+    sessionId?: string | null;
+    historyAction?: string | null;
+    roadmapUpdate?: string | null;
+    nextRecommendation?: string | null;
+  },
+): CommandResult {
+  const guarded = lifecycleGuards(context, { ...options, action: "done", requireCursor: true });
+  if (isCommandResult(guarded)) return guarded;
+  const journey = guarded.journey;
+
+  const cursor = getDeliveryCursor(context.db, journey);
+  const projectPath = getProjectPath(context.db, journey);
+  try {
+    const report = doneLifecycleItem(
+      context.db,
+      {
+        journey,
+        method: getAriadMethod(),
+        historyAction: options.historyAction ?? null,
+        roadmapUpdate: options.roadmapUpdate ?? null,
+        nextRecommendation: options.nextRecommendation ?? null,
+        doneArtifactPath: closureArtifactPath(projectPath, cursor, "done.md"),
+      },
+      context.deps,
+    );
+    // Python `_print_roadmap_snapshot_at_done_end`: the roadmap is read again, after
+    // the write, so the position reflects the story that just closed.
+    const position = renderProjectPositionReport(
+      inspectRoadmapSnapshot(projectPath, { journey, method: options.method }),
+      {
+        candidates: inspectPullCandidates(projectPath, { journey, method: options.method })
+          .candidates,
+        justMoved: `🟩[${report.activeItem}] ${report.activeItemTitle || "Story"} closed`,
+      },
+    );
+    return {
+      stdout: printed(renderDoneCheckpoint(report)) + printed(position),
+      stderr: "",
+      exitCode: 0,
+    };
+  } catch (error) {
+    return blockedSurface(error);
   }
 }

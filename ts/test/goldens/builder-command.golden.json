@@ -1244,6 +1244,556 @@
       "session_id": "builder-command-session",
       "stderr": "Error: delivery cursor is required before Plan preauthorization cancellation\n",
       "stdout": ""
+    },
+    {
+      "argv": [
+        "validate-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--implementation-complete",
+        "--check",
+        "uv run pytest -q",
+        "--checks-status",
+        "passed",
+        "--e2e-decision",
+        "not_required",
+        "--navigator-route",
+        "Run the command and read the surface.",
+        "--navigator-accepted",
+        "--expected-observation",
+        "The surface renders.",
+        "--pass-condition",
+        "Bytes match.",
+        "--fail-condition",
+        "Any byte differs."
+      ],
+      "exit_code": 0,
+      "name": "validate_item_passes_with_full_evidence",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/validation.md": "# Validation — CV1.DS1.US1\n\n## Status\n\nPassed\n\n## Automated Checks\n\n- uv run pytest -q\n\nChecks status: passed\n\n## E2E\n\nDecision: not_required\n\nEvidence: none\n\n## Navigator Validation\n\nRoute: Run the command and read the surface.\n\nNavigator accepted: yes\n\nExpected observation: The surface renders.\n\nPass condition: Bytes match.\n\nFail condition: Any byte differs.\n\n## Missing Evidence\n\n- none\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 2
+      },
+      "scenario": "adopted_closure_plan_approved",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:VALIDATION_CHECKPOINT>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ✓ Implement → ◉ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🧪■  VALIDATION CHECKPOINT                      │\n│                                                        │\n│ active item                                            │\n│ CV1.DS1.US1                                            │\n│                                                        │\n│ status                                                 │\n│ passed                                                 │\n│                                                        │\n│ automated checks                                       │\n│ ✓ uv run pytest -q                                     │\n│                                                        │\n│ checks status                                          │\n│ passed                                                 │\n│                                                        │\n│ e2e decision                                           │\n│ not_required                                           │\n│                                                        │\n│ e2e evidence                                           │\n│ none                                                   │\n│                                                        │\n│ navigator validation route                             │\n│ Run the command and read the surface.                  │\n│                                                        │\n│ navigator accepted                                     │\n│ yes                                                    │\n│                                                        │\n│ expected observation                                   │\n│ The surface renders.                                   │\n│                                                        │\n│ pass condition                                         │\n│ Bytes match.                                           │\n│                                                        │\n│ fail condition                                         │\n│ Any byte differs.                                      │\n│                                                        │\n│ missing evidence                                       │\n│ ✓ none                                                 │\n│                                                        │\n│ validation contract                                    │\n│ ✓ run automated checks required by the Plan and local  │\n│   guide                                                │\n│ ✓ run E2E tests required by the approved Plan or local │\n│   guide                                                │\n│ ✓ provide Navigator validation route with expected     │\n│   observation, pass condition, and fail condition      │\n│ ✓ record validation evidence before Review             │\n│                                                        │\n│ validation artifact                                    │\n│ <ABSOLUTE PATH>                                        │\n│                                                        │\n│ boundary                                               │\n│ Validation is complete; Builder may proceed to Debt    │\n│ Review.                                                │\n╰────────────────────────────────────────────────────────╯\n<<<END:VALIDATION_CHECKPOINT>>>\n\n<<<ARIAD:DEBT_REVIEW_STARTED>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ✓ Implement → ✓ Validate → ◉ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🔎  DEBT REVIEW STARTED                        │\n│                                                        │\n│ What changed?                                          │\n│ Validation was accepted. Before closure, review        │\n│ whether any relevant technical debt remains.           │\n│                                                        │\n│ Active item                                            │\n│ CV1.DS1.US1                                            │\n│                                                        │\n│ Navigator check                                        │\n│ If there is no relevant debt to address now, I can     │\n│ record this as sem ação necessária and continue toward │\n│ closure.                                               │\n╰────────────────────────────────────────────────────────╯\n<<<END:DEBT_REVIEW_STARTED>>>\n\n"
+    },
+    {
+      "argv": [
+        "validate-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--implementation-complete"
+      ],
+      "exit_code": 0,
+      "name": "validate_item_records_pending_navigator_validation",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/validation.md": "# Validation — CV1.DS1.US1\n\n## Status\n\nBlocked\n\n## Automated Checks\n\n- No automated checks declared.\n\nChecks status: not_run\n\n## E2E\n\nDecision: not_required\n\nEvidence: none\n\n## Navigator Validation\n\nRoute: Navigator validates the behavior described by the Plan.\n\nNavigator accepted: no\n\nExpected observation: Expected behavior from the Plan is observable.\n\nPass condition: Navigator accepts the observed behavior.\n\nFail condition: Navigator cannot observe the planned behavior.\n\n## Missing Evidence\n\n- automated checks are not declared\n- automated checks status is not_run\n- Navigator validation has not been accepted\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 2
+      },
+      "scenario": "adopted_closure_plan_approved",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:VALIDATION_CHECKPOINT>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ✓ Implement → ◉ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🧪■  VALIDATION CHECKPOINT                      │\n│                                                        │\n│ active item                                            │\n│ CV1.DS1.US1                                            │\n│                                                        │\n│ status                                                 │\n│ pending_navigator_validation                           │\n│                                                        │\n│ automated checks                                       │\n│ ✓ No automated checks declared.                        │\n│                                                        │\n│ checks status                                          │\n│ not_run                                                │\n│                                                        │\n│ e2e decision                                           │\n│ not_required                                           │\n│                                                        │\n│ e2e evidence                                           │\n│ none                                                   │\n│                                                        │\n│ navigator validation route                             │\n│ Navigator validates the behavior described by the      │\n│ Plan.                                                  │\n│                                                        │\n│ navigator accepted                                     │\n│ no                                                     │\n│                                                        │\n│ expected observation                                   │\n│ Expected behavior from the Plan is observable.         │\n│                                                        │\n│ pass condition                                         │\n│ Navigator accepts the observed behavior.               │\n│                                                        │\n│ fail condition                                         │\n│ Navigator cannot observe the planned behavior.         │\n│                                                        │\n│ missing evidence                                       │\n│ ✕ automated checks are not declared                    │\n│ ✕ automated checks status is not_run                   │\n│ ✕ Navigator validation has not been accepted           │\n│                                                        │\n│ validation contract                                    │\n│ ✓ run automated checks required by the Plan and local  │\n│   guide                                                │\n│ ✓ run E2E tests required by the approved Plan or local │\n│   guide                                                │\n│ ✓ provide Navigator validation route with expected     │\n│   observation, pass condition, and fail condition      │\n│ ✓ record validation evidence before Review             │\n│                                                        │\n│ validation artifact                                    │\n│ <ABSOLUTE PATH>                                        │\n│                                                        │\n│ boundary                                               │\n│ Do not move past Validation until missing evidence is  │\n│ resolved.                                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:VALIDATION_CHECKPOINT>>>\n\n"
+    },
+    {
+      "argv": [
+        "validate-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--check",
+        "uv run pytest -q",
+        "--checks-status",
+        "passed",
+        "--navigator-route",
+        "Navigator ran it.",
+        "--navigator-accepted"
+      ],
+      "exit_code": 0,
+      "name": "validate_item_accepts_pending_navigator_validation",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/validation.md": "# Validation — CV1.DS1.US1\n\n## Status\n\nPassed\n\n## Automated Checks\n\n- uv run pytest -q\n\nChecks status: passed\n\n## E2E\n\nDecision: not_required\n\nEvidence: none\n\n## Navigator Validation\n\nRoute: Navigator ran it.\n\nNavigator accepted: yes\n\nExpected observation: Expected behavior from the Plan is observable.\n\nPass condition: Navigator accepts the observed behavior.\n\nFail condition: Navigator cannot observe the planned behavior.\n\n## Missing Evidence\n\n- none\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 2
+      },
+      "scenario": "adopted_closure_pending_validation",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:VALIDATION_CHECKPOINT>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ✓ Implement → ◉ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🧪■  VALIDATION CHECKPOINT                      │\n│                                                        │\n│ active item                                            │\n│ CV1.DS1.US1                                            │\n│                                                        │\n│ status                                                 │\n│ passed                                                 │\n│                                                        │\n│ automated checks                                       │\n│ ✓ uv run pytest -q                                     │\n│                                                        │\n│ checks status                                          │\n│ passed                                                 │\n│                                                        │\n│ e2e decision                                           │\n│ not_required                                           │\n│                                                        │\n│ e2e evidence                                           │\n│ none                                                   │\n│                                                        │\n│ navigator validation route                             │\n│ Navigator ran it.                                      │\n│                                                        │\n│ navigator accepted                                     │\n│ yes                                                    │\n│                                                        │\n│ expected observation                                   │\n│ Expected behavior from the Plan is observable.         │\n│                                                        │\n│ pass condition                                         │\n│ Navigator accepts the observed behavior.               │\n│                                                        │\n│ fail condition                                         │\n│ Navigator cannot observe the planned behavior.         │\n│                                                        │\n│ missing evidence                                       │\n│ ✓ none                                                 │\n│                                                        │\n│ validation contract                                    │\n│ ✓ run automated checks required by the Plan and local  │\n│   guide                                                │\n│ ✓ run E2E tests required by the approved Plan or local │\n│   guide                                                │\n│ ✓ provide Navigator validation route with expected     │\n│   observation, pass condition, and fail condition      │\n│ ✓ record validation evidence before Review             │\n│                                                        │\n│ validation artifact                                    │\n│ <ABSOLUTE PATH>                                        │\n│                                                        │\n│ boundary                                               │\n│ Validation is complete; Builder may proceed to Debt    │\n│ Review.                                                │\n╰────────────────────────────────────────────────────────╯\n<<<END:VALIDATION_CHECKPOINT>>>\n\n<<<ARIAD:DEBT_REVIEW_STARTED>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ✓ Implement → ✓ Validate → ◉ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🔎  DEBT REVIEW STARTED                        │\n│                                                        │\n│ What changed?                                          │\n│ Validation was accepted. Before closure, review        │\n│ whether any relevant technical debt remains.           │\n│                                                        │\n│ Active item                                            │\n│ CV1.DS1.US1                                            │\n│                                                        │\n│ Navigator check                                        │\n│ If there is no relevant debt to address now, I can     │\n│ record this as sem ação necessária and continue toward │\n│ closure.                                               │\n╰────────────────────────────────────────────────────────╯\n<<<END:DEBT_REVIEW_STARTED>>>\n\n"
+    },
+    {
+      "argv": [
+        "validate-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--check",
+        "pytest",
+        "--checks-status",
+        "passed",
+        "--navigator-route",
+        "Navigator ran it.",
+        "--navigator-accepted"
+      ],
+      "exit_code": 1,
+      "name": "validate_item_blocks_without_implementation_completion",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 1
+      },
+      "scenario": "adopted_closure_plan_approved",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:IMPLEMENTATION_GUARD>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ◉ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟧■  IMPLEMENTATION GUARD                       │\n│                                                        │\n│ status                                                 │\n│ blocked                                                │\n│                                                        │\n│ missing checkpoint                                     │\n│ Validation requires implementation completion evidence │\n│                                                        │\n│ boundary                                               │\n│ No implementation files may be mutated until the guard │\n│ allows Implement.                                      │\n╰────────────────────────────────────────────────────────╯\n<<<END:IMPLEMENTATION_GUARD>>>\n\n"
+    },
+    {
+      "argv": [
+        "validate-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--implementation-complete"
+      ],
+      "exit_code": 1,
+      "name": "validate_item_requires_approved_plan",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 1
+      },
+      "scenario": "adopted_prepared",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:IMPLEMENTATION_GUARD>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ◉ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟧■  IMPLEMENTATION GUARD                       │\n│                                                        │\n│ status                                                 │\n│ blocked                                                │\n│                                                        │\n│ missing checkpoint                                     │\n│ Validation requires an approved Plan and completed     │\n│ implementation                                         │\n│                                                        │\n│ boundary                                               │\n│ No implementation files may be mutated until the guard │\n│ allows Implement.                                      │\n╰────────────────────────────────────────────────────────╯\n<<<END:IMPLEMENTATION_GUARD>>>\n\n"
+    },
+    {
+      "argv": [
+        "validate-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 1,
+      "name": "validate_item_no_cursor",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [],
+        "receipts": 0
+      },
+      "scenario": "adopted",
+      "session_id": "builder-command-session",
+      "stderr": "Error: journey 'demo' has no Builder delivery cursor. Run: uv run python -m memory build sync-cursor --journey demo --method ariad\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "validate-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 1,
+      "name": "validate_item_not_adopted",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [],
+        "receipts": 0
+      },
+      "scenario": "unadopted",
+      "session_id": "builder-command-session",
+      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "review-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--debt",
+        "No debt found.",
+        "--decision",
+        "no_action"
+      ],
+      "exit_code": 0,
+      "name": "review_item_completes_no_action",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/review.md": "# Review — CV1.DS1.US1\n\n## Status\n\nReviewed\n\n## Debt Findings\n\n- No debt found.\n\n## Debt Decision\n\nno_action\n\n## Defer Reason\n\nnone\n\n## Revisit Trigger\n\nnone\n\n## Missing Decision\n\n- none\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 2
+      },
+      "scenario": "adopted_closure_validated",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:DEBT_REVIEW_CHECKPOINT>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ✓ Implement → ✓ Validate → ◉ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🔎■  DEBT REVIEW CHECKPOINT                     │\n│                                                        │\n│ active item                                            │\n│ CV1.DS1.US1                                            │\n│                                                        │\n│ status                                                 │\n│ reviewed                                               │\n│                                                        │\n│ debt findings                                          │\n│ △ No debt found.                                       │\n│                                                        │\n│ debt decision                                          │\n│ no_action                                              │\n│                                                        │\n│ defer reason                                           │\n│ none                                                   │\n│                                                        │\n│ revisit trigger                                        │\n│ none                                                   │\n│                                                        │\n│ missing decision                                       │\n│ ✓ none                                                 │\n│                                                        │\n│ debt review contract                                   │\n│ ✓ name debt paid, debt introduced, and debt carried    │\n│   forward                                              │\n│ ✓ record revisit trigger for carried debt              │\n│ ✓ decide whether a durable debt ledger entry is        │\n│   required                                             │\n│                                                        │\n│ review artifact                                        │\n│ <ABSOLUTE PATH>                                        │\n│                                                        │\n│ boundary                                               │\n│ Debt Review is complete; Builder may proceed to Done.  │\n╰────────────────────────────────────────────────────────╯\n<<<END:DEBT_REVIEW_CHECKPOINT>>>\n\n<<<ARIAD:DONE_CLOSURE_CONFIRMATION>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ✓ Implement → ✓ Validate → ✓ Debt Review → ◉ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  DONE CLOSURE CONFIRMATION                  │\n│                                                        │\n│ My understanding                                       │\n│ Debt review found no relevant action to take now. The  │\n│ story is ready to close.                               │\n│                                                        │\n│ Active item                                            │\n│ CV1.DS1.US1                                            │\n│                                                        │\n│ Before I close                                         │\n│ Is there anything else to do in this story before      │\n│ Done?                                                  │\n╰────────────────────────────────────────────────────────╯\n<<<END:DONE_CLOSURE_CONFIRMATION>>>\n\n"
+    },
+    {
+      "argv": [
+        "review-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--decision",
+        "pending"
+      ],
+      "exit_code": 0,
+      "name": "review_item_renders_pending_debt_decision",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/review.md": "# Review — CV1.DS1.US1\n\n## Status\n\nPending debt decision\n\n## Debt Findings\n\n- No debt findings declared.\n\n## Debt Decision\n\npending\n\n## Defer Reason\n\nnone\n\n## Revisit Trigger\n\nnone\n\n## Missing Decision\n\n- Navigator debt decision is required\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 2
+      },
+      "scenario": "adopted_closure_validated",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:DEBT_REVIEW_CHECKPOINT>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ✓ Implement → ✓ Validate → ◉ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🔎■  DEBT REVIEW CHECKPOINT                     │\n│                                                        │\n│ active item                                            │\n│ CV1.DS1.US1                                            │\n│                                                        │\n│ status                                                 │\n│ pending_debt_decision                                  │\n│                                                        │\n│ debt findings                                          │\n│ △ No debt findings declared.                           │\n│                                                        │\n│ debt decision                                          │\n│ pending                                                │\n│                                                        │\n│ defer reason                                           │\n│ none                                                   │\n│                                                        │\n│ revisit trigger                                        │\n│ none                                                   │\n│                                                        │\n│ missing decision                                       │\n│ ✕ Navigator debt decision is required                  │\n│                                                        │\n│ debt review contract                                   │\n│ ✓ name debt paid, debt introduced, and debt carried    │\n│   forward                                              │\n│ ✓ record revisit trigger for carried debt              │\n│ ✓ decide whether a durable debt ledger entry is        │\n│   required                                             │\n│                                                        │\n│ review artifact                                        │\n│ <ABSOLUTE PATH>                                        │\n│                                                        │\n│ boundary                                               │\n│ Do not move past Debt Review until the Navigator debt  │\n│ decision is resolved.                                  │\n╰────────────────────────────────────────────────────────╯\n<<<END:DEBT_REVIEW_CHECKPOINT>>>\n\n"
+    },
+    {
+      "argv": [
+        "review-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--debt",
+        "Allowlist staleness.",
+        "--decision",
+        "defer",
+        "--defer-reason",
+        "Out of this story's scope.",
+        "--revisit-trigger",
+        "When the last gated leaf lands."
+      ],
+      "exit_code": 0,
+      "name": "review_item_defer_complete_offers_no_closure",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/review.md": "# Review — CV1.DS1.US1\n\n## Status\n\nReviewed\n\n## Debt Findings\n\n- Allowlist staleness.\n\n## Debt Decision\n\ndefer\n\n## Defer Reason\n\nOut of this story's scope.\n\n## Revisit Trigger\n\nWhen the last gated leaf lands.\n\n## Missing Decision\n\n- none\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 2
+      },
+      "scenario": "adopted_closure_validated",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:DEBT_REVIEW_CHECKPOINT>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ✓ Implement → ✓ Validate → ◉ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🔎■  DEBT REVIEW CHECKPOINT                     │\n│                                                        │\n│ active item                                            │\n│ CV1.DS1.US1                                            │\n│                                                        │\n│ status                                                 │\n│ reviewed                                               │\n│                                                        │\n│ debt findings                                          │\n│ △ Allowlist staleness.                                 │\n│                                                        │\n│ debt decision                                          │\n│ defer                                                  │\n│                                                        │\n│ defer reason                                           │\n│ Out of this story's scope.                             │\n│                                                        │\n│ revisit trigger                                        │\n│ When the last gated leaf lands.                        │\n│                                                        │\n│ missing decision                                       │\n│ ✓ none                                                 │\n│                                                        │\n│ debt review contract                                   │\n│ ✓ name debt paid, debt introduced, and debt carried    │\n│   forward                                              │\n│ ✓ record revisit trigger for carried debt              │\n│ ✓ decide whether a durable debt ledger entry is        │\n│   required                                             │\n│                                                        │\n│ review artifact                                        │\n│ <ABSOLUTE PATH>                                        │\n│                                                        │\n│ boundary                                               │\n│ Debt Review is complete; Builder may proceed to Done.  │\n╰────────────────────────────────────────────────────────╯\n<<<END:DEBT_REVIEW_CHECKPOINT>>>\n\n"
+    },
+    {
+      "argv": [
+        "review-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--decision",
+        "defer"
+      ],
+      "exit_code": 0,
+      "name": "review_item_defer_without_reason",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/review.md": "# Review — CV1.DS1.US1\n\n## Status\n\nPending debt decision\n\n## Debt Findings\n\n- No debt findings declared.\n\n## Debt Decision\n\ndefer\n\n## Defer Reason\n\nnone\n\n## Revisit Trigger\n\nnone\n\n## Missing Decision\n\n- deferred debt requires a reason\n- deferred debt requires a revisit trigger\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 2
+      },
+      "scenario": "adopted_closure_validated",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:DEBT_REVIEW_CHECKPOINT>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ✓ Implement → ✓ Validate → ◉ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🔎■  DEBT REVIEW CHECKPOINT                     │\n│                                                        │\n│ active item                                            │\n│ CV1.DS1.US1                                            │\n│                                                        │\n│ status                                                 │\n│ pending_debt_decision                                  │\n│                                                        │\n│ debt findings                                          │\n│ △ No debt findings declared.                           │\n│                                                        │\n│ debt decision                                          │\n│ defer                                                  │\n│                                                        │\n│ defer reason                                           │\n│ none                                                   │\n│                                                        │\n│ revisit trigger                                        │\n│ none                                                   │\n│                                                        │\n│ missing decision                                       │\n│ ✕ deferred debt requires a reason                      │\n│ ✕ deferred debt requires a revisit trigger             │\n│                                                        │\n│ debt review contract                                   │\n│ ✓ name debt paid, debt introduced, and debt carried    │\n│   forward                                              │\n│ ✓ record revisit trigger for carried debt              │\n│ ✓ decide whether a durable debt ledger entry is        │\n│   required                                             │\n│                                                        │\n│ review artifact                                        │\n│ <ABSOLUTE PATH>                                        │\n│                                                        │\n│ boundary                                               │\n│ Do not move past Debt Review until the Navigator debt  │\n│ decision is resolved.                                  │\n╰────────────────────────────────────────────────────────╯\n<<<END:DEBT_REVIEW_CHECKPOINT>>>\n\n"
+    },
+    {
+      "argv": [
+        "review-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--decision",
+        "no_action"
+      ],
+      "exit_code": 1,
+      "name": "review_item_requires_validation_passed",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 1
+      },
+      "scenario": "adopted_prepared",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:IMPLEMENTATION_GUARD>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ◉ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟧■  IMPLEMENTATION GUARD                       │\n│                                                        │\n│ status                                                 │\n│ blocked                                                │\n│                                                        │\n│ missing checkpoint                                     │\n│ Debt Review requires passed Validation                 │\n│                                                        │\n│ boundary                                               │\n│ No implementation files may be mutated until the guard │\n│ allows Implement.                                      │\n╰────────────────────────────────────────────────────────╯\n<<<END:IMPLEMENTATION_GUARD>>>\n\n"
+    },
+    {
+      "argv": [
+        "coherence-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--process",
+        "Lifecycle followed.",
+        "--project",
+        "Docs updated.",
+        "--product",
+        "Behavior matches."
+      ],
+      "exit_code": 0,
+      "name": "coherence_item_completes_after_review",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/coherence.md": "# Coherence — CV1.DS1.US1\n\n## Status\n\nCoherent\n\n## Process Alignment\n\nLifecycle followed.\n\n## Project Alignment\n\nDocs updated.\n\n## Product Alignment\n\nBehavior matches.\n\n## Local Guide Differences\n\n- none\n\n## Missing Coherence\n\n- none\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 2
+      },
+      "scenario": "adopted_closure_reviewed",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:COHERENCE_CHECKPOINT>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ✓ Implement → ✓ Validate → ✓ Debt Review → ◉ Done\n\n╭────────────────────────────────────────────────────────╮\n│        ◉■  COHERENCE CHECKPOINT                        │\n│                                                        │\n│ active item                                            │\n│ CV1.DS1.US1                                            │\n│                                                        │\n│ status                                                 │\n│ coherent                                               │\n│                                                        │\n│ process alignment                                      │\n│ Lifecycle followed.                                    │\n│                                                        │\n│ project alignment                                      │\n│ Docs updated.                                          │\n│                                                        │\n│ product alignment                                      │\n│ Behavior matches.                                      │\n│                                                        │\n│ local guide differences                                │\n│ △ none                                                 │\n│                                                        │\n│ missing coherence                                      │\n│ ✓ none                                                 │\n│                                                        │\n│ coherence contract                                     │\n│ ✓ verify Process, Project, and Product alignment       │\n│ ✓ surface differences between Ariad defaults and the   │\n│   local development guide                              │\n│ ✓ verify docs, roadmap, worklog, decisions, and        │\n│   runtime state match actual behavior                  │\n│ ✓ verify lifecycle contract compliance before Done     │\n│                                                        │\n│ coherence artifact                                     │\n│ <ABSOLUTE PATH>                                        │\n│                                                        │\n│ boundary                                               │\n│ Coherence is complete; Builder may proceed to Done.    │\n╰────────────────────────────────────────────────────────╯\n<<<END:COHERENCE_CHECKPOINT>>>\n\n"
+    },
+    {
+      "argv": [
+        "coherence-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--process",
+        "Followed.",
+        "--project",
+        "Updated.",
+        "--product",
+        "Matches."
+      ],
+      "exit_code": 1,
+      "name": "coherence_item_requires_review_complete",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 1
+      },
+      "scenario": "adopted_closure_validated",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:IMPLEMENTATION_GUARD>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ◉ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟧■  IMPLEMENTATION GUARD                       │\n│                                                        │\n│ status                                                 │\n│ blocked                                                │\n│                                                        │\n│ missing checkpoint                                     │\n│ Coherence requires completed Debt Review               │\n│                                                        │\n│ boundary                                               │\n│ No implementation files may be mutated until the guard │\n│ allows Implement.                                      │\n╰────────────────────────────────────────────────────────╯\n<<<END:IMPLEMENTATION_GUARD>>>\n\n"
+    },
+    {
+      "argv": [
+        "done-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--history-action",
+        "One scoped commit.",
+        "--roadmap-update",
+        "Package marked done.",
+        "--next-recommendation",
+        "Pull the next story."
+      ],
+      "exit_code": 0,
+      "name": "done_item_completes_after_review",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/done.md": "# Done — CV1.DS1.US1\n\n## Status\n\nDone\n\n## History Action\n\nOne scoped commit.\n\n## Roadmap Update\n\nPackage marked done.\n\n## Next Recommendation\n\nPull the next story.\n\n## Missing Done\n\n- none\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 2
+      },
+      "scenario": "adopted_closure_reviewed",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:DONE_CHECKPOINT>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ✓ Implement → ✓ Validate → ✓ Debt Review → ◉ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟩■  DONE CHECKPOINT                             │\n│                                                        │\n│ active item                                            │\n│ CV1.DS1.US1                                            │\n│                                                        │\n│ status                                                 │\n│ done                                                   │\n│                                                        │\n│ history action                                         │\n│ One scoped commit.                                     │\n│                                                        │\n│ roadmap update                                         │\n│ Package marked done.                                   │\n│                                                        │\n│ next recommendation                                    │\n│ Pull the next story.                                   │\n│                                                        │\n│ missing done                                           │\n│ ✓ none                                                 │\n│                                                        │\n│ done contract                                          │\n│ ✓ close the story only after validation, review, and   │\n│   coherence are satisfied                              │\n│ ✓ record history at coherent story boundaries unless   │\n│   local policy overrides                               │\n│ ✓ update worklog for meaningful milestones             │\n│ ✓ recommend next pull, parent collapse, or release     │\n│   boundary when relevant                               │\n│                                                        │\n│ done artifact                                          │\n│ <ABSOLUTE PATH>                                        │\n│                                                        │\n│ boundary                                               │\n│ Story closure is complete; Builder may recommend the   │\n│ next Pull.                                             │\n╰────────────────────────────────────────────────────────╯\n<<<END:DONE_CHECKPOINT>>>\n\n<<<ARIAD:PROJECT_POSITION>>>\nRoadmap\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PROJECT POSITION                           │\n│                                                        │\n│ Where are we now?                                      │\n│ 🟪[CV1] First value                                     │\n│ progress: active                                       │\n│                                                        │\n│ What just moved?                                       │\n│ 🟩[CV1.DS1.US1] A user story closed                     │\n│                                                        │\n│ What looks next?                                       │\n│ 🟦[CV1.DS1] A delivery story — recommended next pull    │\n│                                                        │\n│ Available path                                         │\n│ - CV1.DS1 — A delivery story [delivery_story] 🟡        │\n│   Planned                                              │\n│   (docs/project/roadmap/cv1-first/cv1-ds1-delivery/ind │\n│   ex.md)                                               │\n│ - CV1 — First value [cv] 🟢 Active                      │\n│   (docs/project/roadmap/cv1-first/index.md)            │\n│                                                        │\n│ Choose a pull when ready.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:PROJECT_POSITION>>>\n\n"
+    },
+    {
+      "argv": [
+        "done-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--history-action",
+        "Committed.",
+        "--roadmap-update",
+        "Updated.",
+        "--next-recommendation",
+        "Next."
+      ],
+      "exit_code": 1,
+      "name": "done_item_requires_review_complete",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 1
+      },
+      "scenario": "adopted_prepared",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:IMPLEMENTATION_GUARD>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ◉ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟧■  IMPLEMENTATION GUARD                       │\n│                                                        │\n│ status                                                 │\n│ blocked                                                │\n│                                                        │\n│ missing checkpoint                                     │\n│ Done requires completed Debt Review                    │\n│                                                        │\n│ boundary                                               │\n│ No implementation files may be mutated until the guard │\n│ allows Implement.                                      │\n╰────────────────────────────────────────────────────────╯\n<<<END:IMPLEMENTATION_GUARD>>>\n\n"
+    },
+    {
+      "argv": [
+        "done-item",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 1,
+      "name": "done_item_not_adopted",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [],
+        "receipts": 0
+      },
+      "scenario": "unadopted",
+      "session_id": "builder-command-session",
+      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
+      "stdout": ""
     }
   ]
 }

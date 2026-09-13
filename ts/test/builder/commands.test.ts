@@ -33,13 +33,17 @@ import {
   runApprovePlan,
   runCancelPlanPreauthorization,
   runCheckImplementation,
+  runCoherenceItem,
+  runDoneItem,
   runInspectMethod,
   runPlanItem,
   runPrepareItem,
   runPrepareTemplates,
   runPullCandidates,
   runPullItem,
+  runReviewItem,
   runSyncCursor,
+  runValidateItem,
   surfacesForTrigger,
 } from "#builder/commands.ts";
 import { setDeliveryCursor } from "#builder/deliveryCursor.ts";
@@ -73,6 +77,10 @@ const cases = (golden as unknown as { cases: Case[] }).cases;
  */
 const PORTED_LEAVES = [
   "adopt",
+  "coherence-item",
+  "done-item",
+  "review-item",
+  "validate-item",
   "approve-plan",
   "cancel-plan-preauthorization",
   "check-implementation",
@@ -129,6 +137,10 @@ function memoryDatabase(): WritableDatabase {
 /** Recreate the generator's `_seed` for one scenario. */
 /** Scenarios added at plateau 3, mirroring the generator's `_seed_lifecycle`. */
 const LIFECYCLE_SCENARIOS = new Set([
+  "adopted_closure_plan_approved",
+  "adopted_closure_validated",
+  "adopted_closure_reviewed",
+  "adopted_closure_pending_validation",
   "adopted_cursor_empty",
   "adopted_cursor_no_project",
   "adopted_ds_pullable",
@@ -302,6 +314,34 @@ function seedLifecycle(db: WritableDatabase, project: string, scenario: string):
     setDeliveryCursor(db, { journey: "demo", method: "ariad" }, deps);
     return;
   }
+  // The closure leaves start mid-closure. Seeded as raw cursor states, mirroring the
+  // generator: the states are the guards' inputs, so reaching them by replaying the
+  // verbs would make the seed depend on the behavior under test.
+  const closureEvents: Record<string, string> = {
+    adopted_closure_plan_approved: "plan_approved",
+    adopted_closure_validated: "validation_passed",
+    adopted_closure_reviewed: "review_complete",
+    adopted_closure_pending_validation: "validate",
+  };
+  const closureEvent = closureEvents[scenario];
+  if (closureEvent !== undefined) {
+    setDeliveryCursor(
+      db,
+      {
+        journey: "demo",
+        method: "ariad",
+        activeItem: "CV1.DS1.US1",
+        activeItemTitle: "A user story",
+        activeItemLevel: "user_story",
+        activeCheckpoint: closureEvent === "validate" ? "after_validation" : null,
+        pendingConfirmation: closureEvent === "validate" ? "navigator_validation" : null,
+        lastDeliveryEvent: closureEvent,
+        navigatorFlowUnit: "story_by_story",
+      },
+      deps,
+    );
+    return;
+  }
   if (scenario === "adopted_pulled") {
     setDeliveryCursor(
       db,
@@ -464,6 +504,50 @@ function invoke(db: WritableDatabase, argv: readonly string[]) {
       });
     case "cancel-plan-preauthorization":
       return runCancelPlanPreauthorization(writeContext, shared);
+    case "validate-item":
+      return runValidateItem(writeContext, {
+        ...shared,
+        // `--check` is `action="append"`, so every occurrence contributes.
+        checks: argv.flatMap((token, index) =>
+          token === "--check" ? [argv[index + 1] ?? ""] : [],
+        ),
+        checksStatus: option("--checks-status") ?? "not_run",
+        e2eDecision: option("--e2e-decision") ?? "not_required",
+        e2eEvidence: option("--e2e-evidence"),
+        navigatorRoute: option("--navigator-route"),
+        navigatorAccepted: argv.includes("--navigator-accepted"),
+        expectedObservation: option("--expected-observation"),
+        passCondition: option("--pass-condition"),
+        failCondition: option("--fail-condition"),
+        implementationComplete: argv.includes("--implementation-complete"),
+      });
+    case "review-item":
+      return runReviewItem(writeContext, {
+        ...shared,
+        debtFindings: argv.flatMap((token, index) =>
+          token === "--debt" ? [argv[index + 1] ?? ""] : [],
+        ),
+        debtDecision: option("--decision") ?? "pending",
+        deferReason: option("--defer-reason"),
+        revisitTrigger: option("--revisit-trigger"),
+      });
+    case "coherence-item":
+      return runCoherenceItem(writeContext, {
+        ...shared,
+        processAlignment: option("--process"),
+        projectAlignment: option("--project"),
+        productAlignment: option("--product"),
+        localDifferences: argv.flatMap((token, index) =>
+          token === "--difference" ? [argv[index + 1] ?? ""] : [],
+        ),
+      });
+    case "done-item":
+      return runDoneItem(writeContext, {
+        ...shared,
+        historyAction: option("--history-action"),
+        roadmapUpdate: option("--roadmap-update"),
+        nextRecommendation: option("--next-recommendation"),
+      });
     default:
       throw new Error(`unsupported argv: ${argv.join(" ")}`);
   }

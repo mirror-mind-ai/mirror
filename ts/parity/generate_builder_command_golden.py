@@ -220,6 +220,10 @@ def _seed(home: Path, project: Path, *, scenario: str) -> None:
 # the exact cursor state its leaf's guard requires, so the refusals are graded as
 # the guards Python actually runs rather than as a single generic error.
 _LIFECYCLE_SCENARIOS = {
+    "adopted_closure_plan_approved",
+    "adopted_closure_validated",
+    "adopted_closure_reviewed",
+    "adopted_closure_pending_validation",
     "adopted_cursor_empty",
     "adopted_cursor_no_project",
     "adopted_ds_pullable",
@@ -260,6 +264,40 @@ def _seed_lifecycle(mem: Any, project: Path, *, scenario: str) -> None:
             active_item_title="A user story",
             active_item_level="user_story",
             last_delivery_event="pull",
+        )
+        return
+    if scenario in {
+        "adopted_closure_plan_approved",
+        "adopted_closure_validated",
+        "adopted_closure_reviewed",
+        "adopted_closure_pending_validation",
+    }:
+        # The closure leaves start from a cursor mid-closure. Seeded as raw cursor
+        # states rather than by replaying the lifecycle: the states are the guards'
+        # inputs, and reaching them through the verbs would make the seed depend on
+        # the very behavior the case grades.
+        event = {
+            # Validation starts from an APPROVED PLAN. Using `adopted_prepared` here
+            # was the first attempt, and all three validate cases refused with
+            # `Validation requires an approved Plan and completed implementation` --
+            # a real guard, but one case already covers it, and the other two proved
+            # nothing about the behavior they were written for.
+            "adopted_closure_plan_approved": "plan_approved",
+            "adopted_closure_validated": "validation_passed",
+            "adopted_closure_reviewed": "review_complete",
+            "adopted_closure_pending_validation": "validate",
+        }[scenario]
+        set_delivery_cursor(
+            mem.store,
+            journey="demo",
+            method="ariad",
+            active_item="CV1.DS1.US1",
+            active_item_title="A user story",
+            active_item_level="user_story",
+            active_checkpoint="after_validation" if event == "validate" else None,
+            pending_confirmation="navigator_validation" if event == "validate" else None,
+            last_delivery_event=event,
+            navigator_flow_unit="story_by_story",
         )
         return
     if scenario in {"adopted_prepared", "adopted_prepared_ds"}:
@@ -746,15 +784,166 @@ CASES: list[tuple[str, str, list[str]]] = [
         "adopted",
         ["cancel-plan-preauthorization", "--method", "ariad", "--journey", "demo"],
     ),
+    # --- plateau 4: the four closure leaves --------------------------------
+    # Their refusals are NOT the ordinary stderr shape: a blocked lifecycle call
+    # renders IMPLEMENTATION_GUARD on stdout and still exits 1, like
+    # `check-implementation`. And two of them emit a SECOND, CLI-only surface on the
+    # complete path -- `debt_review_started` after a passed Validation,
+    # `done_closure_confirmation` after a `no_action` Debt Review.
+    (
+        "validate_item_passes_with_full_evidence",
+        "adopted_closure_plan_approved",
+        [
+            "validate-item", "--method", "ariad", "--journey", "demo",
+            "--implementation-complete", "--check", "uv run pytest -q",
+            "--checks-status", "passed", "--e2e-decision", "not_required",
+            "--navigator-route", "Run the command and read the surface.",
+            "--navigator-accepted", "--expected-observation", "The surface renders.",
+            "--pass-condition", "Bytes match.", "--fail-condition", "Any byte differs.",
+        ],
+    ),
+    (
+        "validate_item_records_pending_navigator_validation",
+        "adopted_closure_plan_approved",
+        ["validate-item", "--method", "ariad", "--journey", "demo", "--implementation-complete"],
+    ),
+    (
+        "validate_item_accepts_pending_navigator_validation",
+        "adopted_closure_pending_validation",
+        [
+            "validate-item", "--method", "ariad", "--journey", "demo",
+            "--check", "uv run pytest -q", "--checks-status", "passed",
+            "--navigator-route", "Navigator ran it.", "--navigator-accepted",
+        ],
+    ),
+    (
+        "validate_item_blocks_without_implementation_completion",
+        "adopted_closure_plan_approved",
+        [
+            "validate-item", "--method", "ariad", "--journey", "demo",
+            "--check", "pytest", "--checks-status", "passed",
+            "--navigator-route", "Navigator ran it.", "--navigator-accepted",
+        ],
+    ),
+    (
+        "validate_item_requires_approved_plan",
+        "adopted_prepared",
+        ["validate-item", "--method", "ariad", "--journey", "demo", "--implementation-complete"],
+    ),
+    (
+        "validate_item_no_cursor",
+        "adopted",
+        ["validate-item", "--method", "ariad", "--journey", "demo"],
+    ),
+    (
+        "validate_item_not_adopted",
+        "unadopted",
+        ["validate-item", "--method", "ariad", "--journey", "demo"],
+    ),
+    (
+        "review_item_completes_no_action",
+        "adopted_closure_validated",
+        [
+            "review-item", "--method", "ariad", "--journey", "demo",
+            "--debt", "No debt found.", "--decision", "no_action",
+        ],
+    ),
+    (
+        "review_item_renders_pending_debt_decision",
+        "adopted_closure_validated",
+        ["review-item", "--method", "ariad", "--journey", "demo", "--decision", "pending"],
+    ),
+    # A COMPLETE decision that is not `no_action`: the only case that distinguishes
+    # "offer closure when nothing is missing" from "offer closure when the decision was
+    # no_action and nothing is missing". Added after mutation testing showed dropping
+    # the decision check survived the whole corpus.
+    (
+        "review_item_defer_complete_offers_no_closure",
+        "adopted_closure_validated",
+        [
+            "review-item", "--method", "ariad", "--journey", "demo",
+            "--debt", "Allowlist staleness.", "--decision", "defer",
+            "--defer-reason", "Out of this story's scope.",
+            "--revisit-trigger", "When the last gated leaf lands.",
+        ],
+    ),
+    (
+        "review_item_defer_without_reason",
+        "adopted_closure_validated",
+        ["review-item", "--method", "ariad", "--journey", "demo", "--decision", "defer"],
+    ),
+    (
+        "review_item_requires_validation_passed",
+        "adopted_prepared",
+        ["review-item", "--method", "ariad", "--journey", "demo", "--decision", "no_action"],
+    ),
+    (
+        "coherence_item_completes_after_review",
+        "adopted_closure_reviewed",
+        [
+            "coherence-item", "--method", "ariad", "--journey", "demo",
+            "--process", "Lifecycle followed.", "--project", "Docs updated.",
+            "--product", "Behavior matches.",
+        ],
+    ),
+    (
+        "coherence_item_requires_review_complete",
+        "adopted_closure_validated",
+        [
+            "coherence-item", "--method", "ariad", "--journey", "demo",
+            "--process", "Followed.", "--project", "Updated.", "--product", "Matches.",
+        ],
+    ),
+    (
+        "done_item_completes_after_review",
+        "adopted_closure_reviewed",
+        [
+            "done-item", "--method", "ariad", "--journey", "demo",
+            "--history-action", "One scoped commit.", "--roadmap-update", "Package marked done.",
+            "--next-recommendation", "Pull the next story.",
+        ],
+    ),
+    (
+        "done_item_requires_review_complete",
+        "adopted_prepared",
+        [
+            "done-item", "--method", "ariad", "--journey", "demo",
+            "--history-action", "Committed.", "--roadmap-update", "Updated.",
+            "--next-recommendation", "Next.",
+        ],
+    ),
+    (
+        "done_item_not_adopted",
+        "unadopted",
+        ["done-item", "--method", "ariad", "--journey", "demo"],
+    ),
 ]
 
 # Leaves whose output can carry an absolute project path: `plan_checkpoint` prints
 # the package path and the `*_path=` trailer, `expand_blocked` embeds the resolved
 # directory in its reason.
-_PATH_BEARING = ("plan_item", "pull_item", "approve_plan")
+_PATH_BEARING = (
+    "plan_item",
+    "pull_item",
+    "approve_plan",
+    # The closure surfaces print their artifact path the same way `plan_checkpoint`
+    # prints its package path: raw, absolute, wrapped (CR082).
+    "validate_item",
+    "review_item",
+    "coherence_item",
+    "done_item",
+)
 
 # Leaves that write into the project, so the files are part of the behavior.
-_FILE_WRITING = ("prepare_templates", "plan_item", "pull_item")
+_FILE_WRITING = (
+    "prepare_templates",
+    "plan_item",
+    "pull_item",
+    "validate_item",
+    "review_item",
+    "coherence_item",
+    "done_item",
+)
 
 
 def _repo_docs_fingerprint() -> frozenset[str]:
