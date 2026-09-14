@@ -13,7 +13,7 @@
 // network, no spend.
 
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import test from "node:test";
@@ -52,6 +52,16 @@ const NO_PYTHON = { PATH: "/nonexistent-path-for-test" };
 function makeHome(options: { withHandoff: boolean }): { home: string; slug: string } {
   const home = mkdtempSync(join(tmpdir(), "promote-"));
   const slug = "promote-journey";
+  // A NEUTRAL project directory, and the guard this plateau ported is the reason.
+  //
+  // Without a project path, `_check_clone_role_guard` judges the SHELL's
+  // directory — which for the test runner is this repository: a Mirror Mind
+  // checkout, and on a CI runner one with no `.mirror-clone-role` marker, so the
+  // default is `production` and promote is refused with exit 2. Correct product
+  // behavior, and caught by CI rather than here, which is the plateau-1 lesson
+  // in a third place: a test must stage its inputs, never inherit the machine's.
+  const project = join(home, "project");
+  mkdirSync(project, { recursive: true });
   const db: WritableDatabase = bootstrapDatabase(join(home, DB_NAME));
   try {
     createJourney(
@@ -60,6 +70,7 @@ function makeHome(options: { withHandoff: boolean }): { home: string; slug: stri
         id: "j-promote",
         slug,
         content: "# Promote journey\n\n## Description\n\nStrangler parity oracle\n",
+        projectPath: project,
       },
       CLOCK.now(),
     );
