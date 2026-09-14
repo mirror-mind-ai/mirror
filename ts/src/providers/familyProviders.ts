@@ -27,12 +27,31 @@ import {
 } from "#providers/embedding.ts";
 import { LiveLlmProvider, type LlmProvider, loadReplayLlmProvider } from "#providers/llm.ts";
 import {
+  type ComposedProviderTransportSpec,
   type ProviderTransportDecision,
   type ProviderTransportEnv,
   type ProviderTransportSpec,
   ReplayFixtureIncompleteError,
+  resolveComposedProviderTransport,
   resolveProviderTransport,
 } from "#providers/transport.ts";
+
+/**
+ * What a family can be: one spec, or a command that composes several
+ * (CV22.DS7.US8 item 18b).
+ *
+ * The factory accepts both because the ROUTE and the RUNTIME must reach the
+ * same decision for the same invocation. Leaving the composition to the router
+ * and handing this function the owning spec alone would reintroduce CR077 one
+ * level up: `MIRROR_TS_SEARCH=0` would route `build load` to Python while this
+ * factory cheerfully constructed a live embedding provider for it.
+ */
+export type FamilyTransport = ProviderTransportSpec | ComposedProviderTransportSpec;
+
+/** A composition names its owner; a plain spec names its revert variable. */
+function isComposed(spec: FamilyTransport): spec is ComposedProviderTransportSpec {
+  return "owner" in spec;
+}
 
 export interface FamilyProviders {
   /** Which transport answered. `python` never reaches here -- it returns null. */
@@ -75,15 +94,22 @@ export interface FamilyProviderOverrides {
  */
 export async function resolveFamilyProviders(
   env: ProviderTransportEnv,
-  spec: ProviderTransportSpec,
+  spec: FamilyTransport,
   overrides: FamilyProviderOverrides = {},
 ): Promise<FamilyProviders | null> {
-  const decision = resolveProviderTransport(env, spec);
+  // A composed command's PROVIDERS come from its owning family: the fixtures
+  // the other families declare answer for their own commands, never for this
+  // one. The composition changes which transport is chosen, not whose
+  // manifest is built.
+  const owner = isComposed(spec) ? spec.owner : spec;
+  const decision = isComposed(spec)
+    ? resolveComposedProviderTransport(env, spec)
+    : resolveProviderTransport(env, spec);
   if (decision.mode === "python") return null;
   if (decision.mode === "incomplete_replay") throw new ReplayFixtureIncompleteError(decision);
   return decision.mode === "replay"
     ? replayProviders(decision, overrides)
-    : liveProviders(env, spec, decision, overrides);
+    : liveProviders(env, owner, decision, overrides);
 }
 
 async function replayProviders(

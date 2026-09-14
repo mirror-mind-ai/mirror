@@ -5,6 +5,7 @@ import { LiveEmbeddingProvider } from "#providers/embedding.ts";
 import { resolveFamilyProviders } from "#providers/familyProviders.ts";
 import { LiveLlmProvider } from "#providers/llm.ts";
 import {
+  BUILD_LOAD_COMPOSITION,
   CONVERSATION_TAIL_TRANSPORT,
   type ProviderTransportSpec,
   ReplayFixtureIncompleteError,
@@ -147,4 +148,84 @@ test("the decision's reason travels with the providers, for the front-door log",
 
   assert.equal(live?.reason, "DS8.US3 example live");
   assert.equal(replayed?.reason, "MIRROR_TS_EXAMPLE_LLM_REPLAY replay transport");
+});
+
+// --- CV22.DS7.US8 item 18b: a COMPOSED family's providers ---------------------
+//
+// The factory has to accept the composition, not only the owning spec. If the
+// route decided `build load` with three specs and the runtime then built
+// providers from one, they could disagree about the transport for the same
+// invocation -- CR077's defect exactly, one level up: `MIRROR_TS_SEARCH=0`
+// would route to Python while the runtime happily constructed a live embedding
+// provider.
+
+test("a composed family reverted by a family it merely composes yields null", async () => {
+  for (const variable of ["MIRROR_TS_BUILD", "MIRROR_TS_SEARCH", "MIRROR_TS_CONVERSATION_LLM_TAIL"])
+    assert.equal(
+      await resolveFamilyProviders({ [variable]: "0" }, BUILD_LOAD_COMPOSITION, trackingLoaders()),
+      null,
+      `${variable}=0 must leave build load with no providers`,
+    );
+});
+
+test("a composed family replays from the OWNER's fixtures", async () => {
+  // Every seam inside `load` -- both searches and the previous conversation's
+  // close tail -- is built from these two variables, so the search family's own
+  // fixture must not be read here.
+  const seam = trackingLoaders();
+  const family = await resolveFamilyProviders(
+    {
+      MIRROR_TS_BUILD_LLM_REPLAY: "/tmp/build-llm.json",
+      MIRROR_TS_BUILD_EMBEDDING_REPLAY: "/tmp/build-emb.json",
+      MIRROR_TS_SEARCH_EMBEDDING_REPLAY: "/tmp/search-emb.json",
+    },
+    BUILD_LOAD_COMPOSITION,
+    seam,
+  );
+
+  assert.equal(family?.mode, "replay");
+  assert.deepEqual(seam.loaded, {
+    llm: ["/tmp/build-llm.json"],
+    embedding: ["/tmp/build-emb.json"],
+  });
+});
+
+test("a composed family goes live only when nothing in the composition replays", async () => {
+  const live = await resolveFamilyProviders({}, BUILD_LOAD_COMPOSITION);
+
+  assert.equal(live?.mode, "live");
+  assert.ok(live?.llm instanceof LiveLlmProvider);
+  assert.ok(live?.embedding instanceof LiveEmbeddingProvider);
+  assert.match(live?.reason ?? "", /DS7\.US8 build load live/);
+
+  await assert.rejects(
+    () =>
+      resolveFamilyProviders(
+        { MIRROR_TS_SEARCH_EMBEDDING_REPLAY: "/tmp/search-emb.json" },
+        BUILD_LOAD_COMPOSITION,
+        trackingLoaders(),
+      ),
+    (error: unknown) => {
+      assert.ok(error instanceof ReplayFixtureIncompleteError);
+      assert.match(error.message, /MIRROR_TS_BUILD_LLM_REPLAY/);
+      assert.match(error.message, /MIRROR_TS_BUILD_EMBEDDING_REPLAY/);
+      return true;
+    },
+  );
+});
+
+test("the composed reason travels with the providers, naming the family that reverted", async () => {
+  const replayed = await resolveFamilyProviders(
+    {
+      MIRROR_TS_BUILD_LLM_REPLAY: "/tmp/llm.json",
+      MIRROR_TS_BUILD_EMBEDDING_REPLAY: "/tmp/emb.json",
+    },
+    BUILD_LOAD_COMPOSITION,
+    trackingLoaders(),
+  );
+
+  assert.equal(
+    replayed?.reason,
+    "MIRROR_TS_BUILD_LLM_REPLAY + MIRROR_TS_BUILD_EMBEDDING_REPLAY replay transport",
+  );
 });

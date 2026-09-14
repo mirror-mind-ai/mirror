@@ -143,6 +143,105 @@ function declaredReplayVars(spec: ProviderTransportSpec): [ProviderKind, string]
 }
 
 /**
+ * A command whose provider work belongs to families it does not own
+ * (CV22.DS7.US8 item 18b).
+ *
+ * `build load` is the case that forced this. It owns no provider seam: its two
+ * embeddings ARE the search family, and the previous conversation's close tail
+ * IS the conversation-tail family -- both already live in production since DS8.
+ * A private gate would make `MIRROR_TS_SEARCH=0` mean two different things in
+ * two commands: `memories --search` back on Python while `build load` keeps
+ * calling the same provider.
+ */
+export interface ComposedProviderTransportSpec {
+  /** Named in every composed reason, so the log says which command composed. */
+  readonly label: string;
+  /**
+   * The family whose fixtures the command's providers are actually built from,
+   * and whose revert variable is the command's own kill switch.
+   */
+  readonly owner: ProviderTransportSpec;
+  /**
+   * Families whose work this command performs. Consulted for their REVERTS and
+   * for replay intent -- never for fixtures, because a composing command runs
+   * every seam off the owner's.
+   */
+  readonly composes: readonly ProviderTransportSpec[];
+}
+
+/**
+ * Resolve one transport decision for a command that composes several families.
+ *
+ * Precedence, extending `resolveProviderTransport` rather than replacing it:
+ *
+ * 1. **any revert wins** -- the owner's or a composed family's. D2's argument
+ *    one level down: a half-flipped session start cannot be reviewed, and
+ *    whoever turns off fresh search must not find `build load` still calling
+ *    the provider they just turned off.
+ * 2. **any incomplete fixture refuses** -- including a composed family's. Its
+ *    own pair rule cannot be honoured by a runtime that never sees it.
+ * 3. **replay intent anywhere requires the OWNER's complete fixture set.** A
+ *    harness that configured the search family for replay and then ran `build
+ *    load` would reach the live provider through fixtures nobody set. Live
+ *    would be a silent charge and Python would charge too, on the other
+ *    engine, so the only honest answer names the fixtures missing here.
+ * 4. otherwise the owner's decision stands, unchanged.
+ *
+ * With an empty `composes` the result is byte-identical to the single-family
+ * decision: the composition is data, not a second precedence to drift from.
+ */
+export function resolveComposedProviderTransport(
+  env: ProviderTransportEnv,
+  spec: ComposedProviderTransportSpec,
+): ProviderTransportDecision {
+  const owner = resolveProviderTransport(env, spec.owner);
+  const composed = spec.composes.map((family) => resolveProviderTransport(env, family));
+
+  if (owner.mode === "python") return owner;
+  const reverted = composed.find((decision) => decision.mode === "python");
+  if (reverted) return composedReason(reverted, spec.label);
+
+  if (owner.mode === "incomplete_replay") return owner;
+  const incomplete = composed.find((decision) => decision.mode === "incomplete_replay");
+  if (incomplete) return composedReason(incomplete, spec.label);
+
+  const replaying = spec.composes.filter((_, index) => composed[index]?.mode === "replay");
+  if (owner.mode === "live" && replaying.length > 0) {
+    const missingReplayVars = declaredReplayVars(spec.owner).map(([, variable]) => variable);
+    // A composition whose owner declares no fixture has nothing to name, and
+    // nothing of its own to replay either: the owner's decision stands.
+    if (missingReplayVars.length > 0) {
+      const presentReplayVars = replaying.flatMap((family) =>
+        declaredReplayVars(family)
+          .map(([, variable]) => variable)
+          .filter((variable) => Boolean(env[variable])),
+      );
+      return composedReason(
+        {
+          mode: "incomplete_replay",
+          reason:
+            `incomplete replay fixture: ${presentReplayVars.join(", ")} set, ` +
+            `${missingReplayVars.join(", ")} missing`,
+          missingReplayVars,
+          presentReplayVars,
+        },
+        spec.label,
+      );
+    }
+  }
+
+  return owner;
+}
+
+/** Same decision, with the composing command named for the front-door log. */
+function composedReason(
+  decision: ProviderTransportDecision,
+  label: string,
+): ProviderTransportDecision {
+  return { ...decision, reason: `${decision.reason} (composed by ${label})` };
+}
+
+/**
  * Exactly one half of a multi-fixture family's replay configuration is set.
  *
  * Deliberately NOT the Python fallback: that would be no safer, because Python
@@ -328,4 +427,47 @@ export const DESCRIPTOR_TRANSPORT: ProviderTransportSpec = {
   revertVar: "MIRROR_TS_DESCRIPTOR",
   replay: { llm: "MIRROR_TS_DESCRIPTOR_LLM_REPLAY" },
   liveReason: "DS8.US3 descriptor generate live",
+};
+
+/**
+ * `build load` (CV22.DS7.US8) -- the one leaf of the 27 that crosses the
+ * provider seam, and the only family here that owns no seam of its own.
+ *
+ * Two fixtures, because `load` reaches the model twice over: the embedding for
+ * its two searches (scoped and global, the same query), and the LLM plus
+ * embedding of the previous conversation's close tail, which `switchConversation`
+ * runs on the way in. Every seam inside the command is built from THESE
+ * variables, which is why an incomplete set here refuses even when another
+ * family's fixtures are present.
+ *
+ * `MIRROR_TS_BUILD=0` stays the family's kill switch -- it reverts all 27
+ * leaves, cursor writes included (D2: all-or-nothing) -- and this spec adds the
+ * replay fixtures the parity harness needs. It does NOT replace the two reverts
+ * below; see `BUILD_LOAD_COMPOSITION`.
+ */
+export const BUILD_LOAD_TRANSPORT: ProviderTransportSpec = {
+  revertVar: "MIRROR_TS_BUILD",
+  replay: {
+    llm: "MIRROR_TS_BUILD_LLM_REPLAY",
+    embedding: "MIRROR_TS_BUILD_EMBEDDING_REPLAY",
+  },
+  liveReason: "DS7.US8 build load live",
+};
+
+/**
+ * The three specs `build load` resolves BEFORE it prints a byte (item 18b).
+ *
+ * Four surfaces -- transition card, entry surface, identity context, and the
+ * banner on stderr -- print ahead of the first provider call, so a fallback
+ * decided later would duplicate all of them in the Navigator's terminal.
+ *
+ * The composed pair is not decoration: `MIRROR_TS_SEARCH=0` and
+ * `MIRROR_TS_CONVERSATION_LLM_TAIL=0` each send the whole command to Python,
+ * because one family must not answer differently depending on which command
+ * asked.
+ */
+export const BUILD_LOAD_COMPOSITION: ComposedProviderTransportSpec = {
+  label: "build load",
+  owner: BUILD_LOAD_TRANSPORT,
+  composes: [SEARCH_TRANSPORT, CONVERSATION_TAIL_TRANSPORT],
 };

@@ -29,23 +29,28 @@ What already landed:
   reads through `replay-embedding.json`, behind a socket tripwire that makes a
   live call impossible;
 - nine mutants killed, including one that forced `mergeRankedResults` out into a
-  pure exported function (see below).
+  pure exported function (see below);
+- **the composed transport decision** (plan item 18b) — `BUILD_LOAD_TRANSPORT`
+  and `BUILD_LOAD_COMPOSITION` in `providers/transport.ts`,
+  `resolveComposedProviderTransport`, and `resolveFamilyProviders` accepting a
+  composition. Six mutants killed; see the rules below.
 
 **Next, in order:**
 
-1. **the composed transport decision** (plan item 18b) — resolve
-   `MIRROR_TS_BUILD`, `MIRROR_TS_SEARCH`, and `MIRROR_TS_CONVERSATION_LLM_TAIL`
-   together, **before the banner**, and fall back to Python unless all three
-   agree. `load` prints four surfaces before its first provider call, so a
-   decision taken later would duplicate them;
-2. **the degraded case** — provider failure → FTS-only block, mode row still
+1. **the degraded case** — provider failure → FTS-only block, mode row still
    written, degraded kind in the front-door log as metadata (never a message,
    never the query);
-3. **the `builder_load` probe** on a real-DB copy, **the provider-isolation test**
+2. **the `builder_load` probe** on a real-DB copy, **the provider-isolation test**
    (the other 26 leaves never reach `resolveFamilyProviders` — asserted on the
    seam, not on "no call happened"), and **cost per `load`** measured from the
    ledger (plan item 18d);
-4. **the `explore story promote` tail**, waiting since US7 for Builder `load`.
+3. **the `explore story promote` tail**, waiting since US7 for Builder `load`.
+
+The composed decision exists but is **not consumed yet**: `buildRoute.ts` calls
+it before the banner at plateau 8 (item 21), which is also where
+`MIRROR_TS_BUILD_LLM_REPLAY` / `MIRROR_TS_BUILD_EMBEDDING_REPLAY` and the two
+composed reverts become documentable in `docs/reference/configuration.md` — they
+steer nothing while `build` still reaches Python.
 
 Then plateau 8 (front door, gate off) and plateau 9 (the flip).
 
@@ -68,6 +73,25 @@ Then plateau 8 (front door, gate off) and plateau 9 (the flip).
 - **`mergeRankedResults` is graded directly.** Its first-occurrence rule is not
   observable through the command in any case the corpus could hold — declared,
   not implied.
+- **A composing command owns no fixtures, and that is the whole rule.** `load`'s
+  two embeddings ARE the search family and its close tail IS the conversation
+  tail family, so three specs resolve together: any revert among
+  `MIRROR_TS_BUILD`, `MIRROR_TS_SEARCH`, `MIRROR_TS_CONVERSATION_LLM_TAIL` sends
+  the whole command to Python, and any incomplete fixture — the owner's OR a
+  composed family's — refuses by name instead of going live. Reverts are checked
+  across the composition **before** any fixture is, or a shell that asked for
+  Python would get a refusal instead.
+- **Replay intent anywhere requires THIS family's fixtures.** A harness that sets
+  `MIRROR_TS_SEARCH_EMBEDDING_REPLAY` and then runs `build load` would reach the
+  live provider through fixtures nobody set, because every seam inside `load` is
+  built from `MIRROR_TS_BUILD_*`. It refuses, naming the two missing variables.
+  Python is not the safer answer there — it has no replay transport, so it spends
+  too, on the other engine and silently (CR077's argument, one level up).
+- **The factory takes the composition, not the owning spec.** `resolveFamilyProviders`
+  resolving `BUILD_LOAD_TRANSPORT` alone would build a live embedding provider
+  for an invocation the router had already sent to Python under
+  `MIRROR_TS_SEARCH=0` — router and runtime disagreeing about one invocation,
+  which is the defect CR077 was written about.
 
 Two constraints carried forward:
 

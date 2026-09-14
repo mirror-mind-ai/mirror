@@ -2,9 +2,12 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  BUILD_LOAD_COMPOSITION,
+  BUILD_LOAD_TRANSPORT,
   CONVERSATION_TAIL_TRANSPORT,
   type ProviderTransportSpec,
   ReplayFixtureIncompleteError,
+  resolveComposedProviderTransport,
   resolveProviderTransport,
 } from "#providers/transport.ts";
 
@@ -177,4 +180,183 @@ test("a single-fixture family's replay reason is unchanged, so the log reads the
   );
 
   assert.equal(decision.reason, "MIRROR_TS_SEARCH_EMBEDDING_REPLAY replay transport");
+});
+
+// --- CV22.DS7.US8 item 18b: the COMPOSED decision -----------------------------
+//
+// `build load` does not own a provider seam. It composes two families that are
+// already live in production: its two embeddings ARE the search family, and the
+// previous conversation's close tail IS the conversation-tail family. A private
+// gate would make `MIRROR_TS_SEARCH=0` mean two different things in two
+// commands -- `memories --search` back on Python while `build load` keeps
+// calling the same provider.
+//
+// So all three specs resolve BEFORE the first byte: `load` prints four surfaces
+// ahead of its first provider call, and a fallback decided later would duplicate
+// every one of them.
+
+test("nothing configured composes to live -- the shipped default a fresh install gets", () => {
+  const decision = resolveComposedProviderTransport({}, BUILD_LOAD_COMPOSITION);
+
+  assert.equal(decision.mode, "live");
+  assert.equal(decision.reason, "DS7.US8 build load live");
+});
+
+test("the family's own revert sends the whole command to Python", () => {
+  const decision = resolveComposedProviderTransport(
+    { MIRROR_TS_BUILD: "0" },
+    BUILD_LOAD_COMPOSITION,
+  );
+
+  assert.equal(decision.mode, "python");
+  assert.match(decision.reason, /MIRROR_TS_BUILD=0/);
+});
+
+test("a COMPOSED family's revert also sends the whole command to Python", () => {
+  // D2's argument, one level down: a half-flipped session start cannot be
+  // reviewed. Whoever reverts fresh search or the close tail must not find
+  // `build load` still calling the provider they just turned off.
+  for (const variable of ["MIRROR_TS_SEARCH", "MIRROR_TS_CONVERSATION_LLM_TAIL"]) {
+    const decision = resolveComposedProviderTransport({ [variable]: "0" }, BUILD_LOAD_COMPOSITION);
+
+    assert.equal(decision.mode, "python", `${variable}=0 must revert build load`);
+    assert.match(decision.reason, new RegExp(`${variable}=0`));
+    // The log has to say the revert arrived from a family this command merely
+    // composes, or the next operator reads it as a `build` gate that is not set.
+    assert.match(decision.reason, /build load/);
+  }
+});
+
+test("a revert wins over every replay fixture in the composition", () => {
+  // The escape hatch must be reachable from the shell most likely to need it:
+  // one in the middle of being configured for replay.
+  const decision = resolveComposedProviderTransport(
+    {
+      MIRROR_TS_SEARCH: "0",
+      MIRROR_TS_BUILD_LLM_REPLAY: "/tmp/llm.json",
+      MIRROR_TS_BUILD_EMBEDDING_REPLAY: "/tmp/emb.json",
+    },
+    BUILD_LOAD_COMPOSITION,
+  );
+
+  assert.equal(decision.mode, "python");
+  assert.match(decision.reason, /MIRROR_TS_SEARCH=0/);
+});
+
+test("a revert outranks a HALF-configured fixture in the composition too", () => {
+  // Order matters between the two refusal rules: reverts are checked across the
+  // whole composition BEFORE any incomplete fixture is. Checking the owner's
+  // fixtures first would answer `incomplete_replay` here -- a refusal -- to a
+  // shell that had already asked for Python.
+  const decision = resolveComposedProviderTransport(
+    { MIRROR_TS_CONVERSATION_LLM_TAIL: "0", MIRROR_TS_BUILD_EMBEDDING_REPLAY: "/tmp/emb.json" },
+    BUILD_LOAD_COMPOSITION,
+  );
+
+  assert.equal(decision.mode, "python");
+  assert.match(decision.reason, /MIRROR_TS_CONVERSATION_LLM_TAIL=0/);
+});
+
+test("a fully configured harness replays, composed fixtures and all", () => {
+  // The parity harness sets every family's fixture. Replay intent elsewhere is
+  // only a hazard when THIS family has nothing to replay from; here it has, so
+  // the run is deterministic and nothing is refused.
+  const decision = resolveComposedProviderTransport(
+    {
+      MIRROR_TS_BUILD_LLM_REPLAY: "/tmp/llm.json",
+      MIRROR_TS_BUILD_EMBEDDING_REPLAY: "/tmp/emb.json",
+      MIRROR_TS_SEARCH_EMBEDDING_REPLAY: "/tmp/search.json",
+      MIRROR_TS_CONVERSATION_LLM_REPLAY: "/tmp/tail-llm.json",
+      MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY: "/tmp/tail-emb.json",
+    },
+    BUILD_LOAD_COMPOSITION,
+  );
+
+  assert.equal(decision.mode, "replay");
+  assert.deepEqual(decision.replayPaths, { llm: "/tmp/llm.json", embedding: "/tmp/emb.json" });
+});
+
+test("the owner's fixtures answer every seam inside load", () => {
+  // `load` embeds its query twice AND runs the previous conversation's close
+  // tail, so one family's two fixtures cover both seams. The composed families
+  // being live is not a hazard: no call escapes the fixtures named here.
+  const decision = resolveComposedProviderTransport(
+    {
+      MIRROR_TS_BUILD_LLM_REPLAY: "/tmp/llm.json",
+      MIRROR_TS_BUILD_EMBEDDING_REPLAY: "/tmp/emb.json",
+    },
+    BUILD_LOAD_COMPOSITION,
+  );
+
+  assert.equal(decision.mode, "replay");
+  assert.deepEqual(decision.replayPaths, { llm: "/tmp/llm.json", embedding: "/tmp/emb.json" });
+});
+
+test("half the owner's fixture is incomplete_replay, exactly as for one family", () => {
+  const decision = resolveComposedProviderTransport(
+    { MIRROR_TS_BUILD_EMBEDDING_REPLAY: "/tmp/emb.json" },
+    BUILD_LOAD_COMPOSITION,
+  );
+
+  assert.equal(decision.mode, "incomplete_replay");
+  assert.deepEqual(decision.missingReplayVars, ["MIRROR_TS_BUILD_LLM_REPLAY"]);
+  assert.deepEqual(decision.presentReplayVars, ["MIRROR_TS_BUILD_EMBEDDING_REPLAY"]);
+});
+
+test("half a COMPOSED family's fixture refuses too, instead of going live", () => {
+  // CR077's rule, propagated: the close tail's own pair rule cannot be honoured
+  // by a runtime that never sees it, and going live here would spend money in a
+  // shell that was being configured for replay.
+  const decision = resolveComposedProviderTransport(
+    { MIRROR_TS_CONVERSATION_LLM_REPLAY: "/tmp/half.json" },
+    BUILD_LOAD_COMPOSITION,
+  );
+
+  assert.equal(decision.mode, "incomplete_replay");
+  assert.match(decision.reason, /MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY/);
+  assert.match(decision.reason, /build load/);
+});
+
+test("a composed family fully in replay while this one is live refuses by name", () => {
+  // The hazard the composition exists for: a harness that configures the search
+  // family for replay, expecting no spend, then runs `build load` -- whose
+  // providers are built from THIS family's fixtures, which nobody set. Live
+  // would be a silent charge; Python would charge too, on the other engine. The
+  // only honest answer names the fixtures that are missing here.
+  const decision = resolveComposedProviderTransport(
+    { MIRROR_TS_SEARCH_EMBEDDING_REPLAY: "/tmp/search.json" },
+    BUILD_LOAD_COMPOSITION,
+  );
+
+  assert.equal(decision.mode, "incomplete_replay");
+  assert.deepEqual(decision.presentReplayVars, ["MIRROR_TS_SEARCH_EMBEDDING_REPLAY"]);
+  assert.deepEqual(decision.missingReplayVars, [
+    "MIRROR_TS_BUILD_LLM_REPLAY",
+    "MIRROR_TS_BUILD_EMBEDDING_REPLAY",
+  ]);
+  // And the refusal reads as an instruction, not as a diagnosis.
+  const error = new ReplayFixtureIncompleteError(decision);
+  assert.match(error.message, /MIRROR_TS_BUILD_LLM_REPLAY/);
+  assert.match(error.message, /spend real money/);
+});
+
+test("the composed decision reduces to the single-family one when nothing composes", () => {
+  // The composition is data, not a second precedence: with no composed family
+  // the answer is byte-identical to `resolveProviderTransport`, so there is one
+  // rule to reason about rather than two that can drift (the US11 lesson).
+  for (const env of [
+    {},
+    { MIRROR_TS_BUILD: "0" },
+    { MIRROR_TS_BUILD_LLM_REPLAY: "/tmp/l.json", MIRROR_TS_BUILD_EMBEDDING_REPLAY: "/tmp/e.json" },
+    { MIRROR_TS_BUILD_LLM_REPLAY: "/tmp/l.json" },
+  ]) {
+    assert.deepEqual(
+      resolveComposedProviderTransport(env, {
+        label: "build load",
+        owner: BUILD_LOAD_TRANSPORT,
+        composes: [],
+      }),
+      resolveProviderTransport(env, BUILD_LOAD_TRANSPORT),
+    );
+  }
 });
