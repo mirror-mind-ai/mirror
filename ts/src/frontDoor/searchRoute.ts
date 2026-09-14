@@ -119,7 +119,18 @@ export function formatSearchResults(
   return `${lines.join("\n")}\n`;
 }
 
-function memoriesById(db: WritableDatabase, ids: readonly string[]): Map<string, SearchMemoryRow> {
+/**
+ * The row reader both search faces share.
+ *
+ * Exported for `build load` (CV22.DS7.US8 plateau 7), which renders the same
+ * memories from the same ranked ids: the ranker returns `{id, score}` only, so a
+ * second copy of this query is a second chance for the two blocks to disagree
+ * about what a memory says.
+ */
+export function memoriesById(
+  db: WritableDatabase,
+  ids: readonly string[],
+): Map<string, SearchMemoryRow> {
   if (ids.length === 0) return new Map();
   const placeholders = ids.map(() => "?").join(", ");
   const rows = db

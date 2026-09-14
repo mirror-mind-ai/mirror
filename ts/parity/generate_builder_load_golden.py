@@ -225,7 +225,42 @@ def _query_cases() -> list[dict[str, Any]]:
     return cases
 
 
+# The fixture BOTH engines read: Python through `build_load_oracle.py`'s patched
+# seam, TypeScript through its replay embedding provider. One file, so the two
+# sides cannot disagree about the query vector and therefore about the ranking.
+#
+# A constant vector is the right shape here and not a shortcut: the search corpus
+# already grades the ranker against a frozen query vector, and what `load` adds is
+# COMPOSITION -- two searches, a merge, a dedupe, a stable sort, a slice of six.
+EMBEDDING_DIMENSIONS = 1536
+LOAD_FIXTURE = {
+    "embedding": [0.0125] * EMBEDDING_DIMENSIONS,
+    "llm": {"default": "[]"},
+}
+
+# What the TypeScript replay provider expects, from the same numbers.
+TS_EMBEDDING_FIXTURE = {
+    "kind": "embedding",
+    "response": {"embedding": LOAD_FIXTURE["embedding"]},
+}
+
+FIXTURE_DIR = HERE.parent / "test" / "fixtures" / "builder-load"
+
+
+def _write_fixtures() -> Path:
+    FIXTURE_DIR.mkdir(parents=True, exist_ok=True)
+    oracle_path = FIXTURE_DIR / "oracle-seam.json"
+    oracle_path.write_text(
+        json.dumps(LOAD_FIXTURE, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    (FIXTURE_DIR / "replay-embedding.json").write_text(
+        json.dumps(TS_EMBEDDING_FIXTURE, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    return oracle_path
+
+
 def build_payload() -> dict[str, Any]:
+    _write_fixtures()
     return {"transitions": _transition_cases(), "queries": _query_cases()}
 
 
@@ -238,6 +273,7 @@ def main() -> None:
         f"{len(payload['transitions'])} transition cases, {len(payload['queries'])} query cases"
     )
     print(f"wrote {OUT_PATH.relative_to(HERE.parent.parent)}")
+    print(f"wrote {FIXTURE_DIR.relative_to(HERE.parent.parent)}/")
 
 
 if __name__ == "__main__":
