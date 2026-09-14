@@ -667,6 +667,90 @@ const PULLABLE_DS_INDEX = `# CV1.DS2 — Pullable delivery story
 Done when the children deliver a coherent outcome.
 `;
 
+/**
+ * Cadence and authority: the paths that decide what may happen WITHOUT asking.
+ *
+ * It ends at a Plan checkpoint rather than at Done, because that is the honest end
+ * of this sequence — conditional authority exists to cross the Plan gate, and the
+ * gate it must never cross is Navigator Validation.
+ */
+const CADENCE_STEPS: readonly Step[] = [
+  command("adopt", ["adopt", ...ARIAD]),
+  command("sync-cursor", ["sync-cursor", ...ARIAD]),
+  command("pull-item", [
+    "pull-item",
+    ...ARIAD,
+    "--item-code",
+    "CV1.DS1.US1",
+    "--item-title",
+    "A user story",
+    "--item-level",
+    "user_story",
+    "--why-now",
+    "The cadence smoke needs an implementable story.",
+  ]),
+  command("prepare-item", ["prepare-item", ...ARIAD]),
+  // Release intent belongs to the Delivery Story ANCESTOR, so it is readable from
+  // a child story and reports `not_recorded` before anything is decided.
+  command("release-intent (inspect)", ["release-intent", ...ARIAD]),
+  command("release-intent planned", ["release-intent", ...ARIAD, "--intent", "planned"]),
+  command("release-intent (inspect again)", ["release-intent", ...ARIAD]),
+  // `sync-cursor` leaves cadence at stepwise, which refuses to continue at all.
+  command(
+    "continue-lifecycle refuses under stepwise",
+    [
+      "continue-lifecycle",
+      ...ARIAD,
+      "--history-action",
+      "none",
+      "--roadmap-update",
+      "none",
+      "--next-recommendation",
+      "none",
+    ],
+    1,
+  ),
+  command(
+    "set-cadence autonomous without limits",
+    ["set-cadence", ...ARIAD, "--profile", "autonomous"],
+    1,
+  ),
+  command("set-cadence checkpoint", ["set-cadence", ...ARIAD, "--profile", "checkpoint"]),
+  // Under checkpoint the cadence guard passes and the LIFECYCLE guard refuses
+  // instead: a prepared story has no bypassable continuation.
+  command(
+    "continue-lifecycle refuses an unbypassable event",
+    [
+      "continue-lifecycle",
+      ...ARIAD,
+      "--history-action",
+      "none",
+      "--roadmap-update",
+      "none",
+      "--next-recommendation",
+      "none",
+    ],
+    1,
+  ),
+  // Bounded story authority: recorded, then withdrawn, leaving the ordinary gate.
+  command("plan-item --preauthorize-approval", [
+    "plan-item",
+    ...ARIAD,
+    "--preauthorize-approval",
+    "--stop-after",
+    "navigator_validation",
+  ]),
+  command("cancel-plan-preauthorization", ["cancel-plan-preauthorization", ...ARIAD]),
+  command(
+    "cancel-plan-preauthorization again",
+    ["cancel-plan-preauthorization", ...ARIAD],
+    1,
+  ),
+  // The withdrawal did not consume the Plan gate: ordinary approval still works.
+  command("approve-plan", ["approve-plan", ...ARIAD]),
+  command("check-implementation after approval", ["check-implementation", ...ARIAD]),
+];
+
 function runSequence(name: string, steps: readonly Step[], seed?: (project: string) => void): void {
   const { python, typescript } = createWorldPair(name);
   for (const world of [python, typescript]) seed?.(world.project);
@@ -756,7 +840,12 @@ function compareFiles(where: string, expected: Observation, actual: Observation)
  * two engines agreeing on a refusal.
  */
 function sequenceOutcome(name: string, python: World, typescript: World): void {
-  const event = name === "ds" ? "delivery_story_done_complete" : "done_complete";
+  const event =
+    name === "ds"
+      ? "delivery_story_done_complete"
+      : name === "cd"
+        ? "plan_approved"
+        : "done_complete";
   const marker = `"last_delivery_event": "${event}"`;
   for (const world of [python, typescript]) {
     check(
@@ -778,6 +867,8 @@ runSequence("ds", DS_STEPS, (project) => {
   mkdirSync(dirname(target), { recursive: true });
   writeFileSync(target, PULLABLE_DS_INDEX, "utf8");
 });
+// `cd`, two characters like the others: the project roots must stay equal-length.
+runSequence("cd", CADENCE_STEPS);
 
 check(
   JSON.stringify(fingerprintBefore) === JSON.stringify(repositoryFingerprint()),

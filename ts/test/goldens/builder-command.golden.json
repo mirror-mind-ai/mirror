@@ -2476,16 +2476,33 @@
         "set-cadence",
         "--method",
         "ariad",
-        "--journey",
-        "nope",
         "--profile",
-        "yolo"
+        "yolo",
+        "--session-id",
+        "builder-command-session"
       ],
       "exit_code": 1,
       "name": "set_cadence_profile_guard_precedes_journey",
-      "scenario": "unadopted",
+      "scenario": "mode_without_journey",
       "session_id": "builder-command-session",
       "stderr": "Error: cadence profile must be one of stepwise, checkpoint, accelerated, autonomous\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "set-cadence",
+        "--method",
+        "ariad",
+        "--profile",
+        "checkpoint",
+        "--session-id",
+        "builder-command-session"
+      ],
+      "exit_code": 1,
+      "name": "set_cadence_valid_profile_reaches_journey_guard",
+      "scenario": "mode_without_journey",
+      "session_id": "builder-command-session",
+      "stderr": "Error: Builder method cadence profile update requires a journey. Activate Builder Mode for a journey or pass --journey.\n",
       "stdout": ""
     },
     {

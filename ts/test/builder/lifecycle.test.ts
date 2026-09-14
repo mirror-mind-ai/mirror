@@ -77,6 +77,11 @@ import { PlanPreauthorizationMismatch } from "#builder/planPreauthorization.ts";
 import { prepareLifecycleItem, renderPrepareReport } from "#builder/prepare.ts";
 import { pullLifecycleItem, renderPullReport } from "#builder/pull.ts";
 import {
+  inspectReleaseIntent,
+  renderReleaseIntentReport,
+  setReleaseIntent,
+} from "#builder/releaseIntent.ts";
+import {
   createStoryDirectory,
   resolveStoryDirectory,
   StoryPackageAmbiguityError,
@@ -125,6 +130,9 @@ interface Step {
   checkpoint?: string;
   authored_ready?: boolean;
   authored_issues?: string[];
+  release_intent?: string;
+  release_delivery_story?: string;
+  release_changed?: boolean;
 }
 
 interface Sequence {
@@ -142,6 +150,7 @@ const HARNESS_OPS = ["delete_file", "seed_cursor", "seed_receipt", "write_file"]
 /** Lifecycle operations TypeScript can execute today. */
 const PORTED_OPS: readonly string[] = [
   "approve",
+  "release_intent",
   "approve_delivery_story",
   "authored_closure",
   "cancel_delivery_story_preauthorization",
@@ -176,7 +185,7 @@ const PORTED_OPS: readonly string[] = [
  * `cmd_done_delivery_story`, graded here as its own step because its refusals are
  * the safety property the whole plateau turns on.
  */
-const PENDING_OPS: readonly string[] = ["release_intent"];
+const PENDING_OPS: readonly string[] = [];
 
 const lifecycleOps = (step: Step): boolean => !(HARNESS_OPS as readonly string[]).includes(step.op);
 
@@ -541,12 +550,22 @@ function seedCursor(context: ReplayContext, input: Record<string, unknown>): voi
       childWorkItems: value<string[]>("child_work_items") ?? [],
       aggregateCheckpointStatus: value<string[]>("aggregate_checkpoint_status") ?? [],
       cursorGeneration: value<number | null>("cursor_generation") ?? null,
-      // Python's seeds pass these positionally as real values, so they are
-      // explicit sets rather than the KEEP sentinel.
-      releaseIntentDeliveryStory: setTo(
-        value<string | null>("release_intent_delivery_story") ?? null,
-      ),
-      releaseIntent: setTo(value<string | null>("release_intent") ?? null),
+      // KEEP when the seed does not mention them, SET when it does.
+      //
+      // Python's `set_delivery_cursor` defaults both to its `_KEEP` sentinel, so a
+      // seed that names neither PRESERVES whatever the row already carried. This
+      // replay set them to `null` instead, which is invisible until a scenario
+      // records an intent and then seeds a new cursor — exactly what plateau 6's
+      // `release_intent_is_scoped_to_its_delivery_story` does, and how the bug was
+      // found. An absent key is not the value `null`.
+      releaseIntentDeliveryStory:
+        "release_intent_delivery_story" in input
+          ? setTo(value<string | null>("release_intent_delivery_story") ?? null)
+          : { kind: "keep" as const },
+      releaseIntent:
+        "release_intent" in input
+          ? setTo(value<string | null>("release_intent") ?? null)
+          : { kind: "keep" as const },
     },
     context.deps,
   );
@@ -617,6 +636,10 @@ interface ReplayOutcome {
   /** The Done preflight records its verdict and its project-relative evidence. */
   readonly authoredReady?: boolean;
   readonly authoredIssues?: string[];
+  /** Release intent records the pair it resolved, and whether it changed anything. */
+  readonly releaseIntent?: string;
+  readonly releaseDeliveryStory?: string;
+  readonly releaseChanged?: boolean;
 }
 
 /**
@@ -1224,6 +1247,28 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
     case "coherence_delivery_story":
     case "done_delivery_story":
       return replayDeliveryStoryClosure(context, step);
+    case "release_intent": {
+      const input = step.input as Record<string, string | null>;
+      const method = input.method ?? "ariad";
+      try {
+        const report =
+          input.intent === null || input.intent === undefined
+            ? inspectReleaseIntent(context.db, { journey: context.journey, method })
+            : setReleaseIntent(
+                context.db,
+                { journey: context.journey, method, intent: input.intent },
+                context.deps,
+              );
+        return {
+          surfaces: [{ id: "release_intent", text: renderReleaseIntentReport(report) }],
+          releaseIntent: report.intent,
+          releaseDeliveryStory: report.deliveryStory,
+          releaseChanged: report.changed,
+        };
+      } catch (error) {
+        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+      }
+    }
     case "authored_closure": {
       const cursor = getDeliveryCursor(context.db, context.journey);
       try {
@@ -1537,6 +1582,9 @@ function replaySequence(sequence: Sequence): void {
         ["source", outcome.source],
         ["checkpoint", outcome.checkpoint],
         ["authored_ready", outcome.authoredReady],
+        ["release_intent", outcome.releaseIntent],
+        ["release_delivery_story", outcome.releaseDeliveryStory],
+        ["release_changed", outcome.releaseChanged],
       ] as const) {
         if (step[key] !== undefined) {
           assert.equal(actualValue, step[key], `${where}: ${key}`);

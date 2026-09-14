@@ -28,6 +28,7 @@ import {
   runCheckImplementation,
   runCoherenceDeliveryStory,
   runCoherenceItem,
+  runContinueLifecycle,
   runDoneDeliveryStory,
   runDoneItem,
   runInspectMethod,
@@ -37,8 +38,10 @@ import {
   runPrepareTemplates,
   runPullCandidates,
   runPullItem,
+  runReleaseIntent,
   runReviewDeliveryStory,
   runReviewItem,
+  runSetCadence,
   runSetFlowUnit,
   runSyncCursor,
   runValidateDeliveryStory,
@@ -206,6 +209,24 @@ export function invokeBuilderArgv(
       return runCoherenceDeliveryStory(writeContext, { ...shared, summary: option("--summary") });
     case "done-delivery-story":
       return runDoneDeliveryStory(writeContext, { ...shared, summary: option("--summary") });
+    // -- cadence, release intent, continuation (plateau 6) ------------------
+    case "set-cadence":
+      return runSetCadence(writeContext, {
+        ...shared,
+        profile: option("--profile"),
+        // `action="append"`, like `--check` and `--debt`.
+        limits: appended("--limit"),
+      });
+    case "release-intent":
+      // Absent `--intent` is the inspect face, so it stays `null` rather than "".
+      return runReleaseIntent(writeContext, { ...shared, intent: option("--intent") });
+    case "continue-lifecycle":
+      return runContinueLifecycle(writeContext, {
+        ...shared,
+        historyAction: option("--history-action"),
+        roadmapUpdate: option("--roadmap-update"),
+        nextRecommendation: option("--next-recommendation"),
+      });
     default:
       throw new UnsupportedBuilderArgvError(`unsupported argv: ${argv.join(" ")}`);
   }

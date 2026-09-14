@@ -110,6 +110,11 @@ import {
   renderRoadmapSnapshotReport,
 } from "./pullCandidatesRender.ts";
 import {
+  inspectReleaseIntent,
+  renderReleaseIntentReport,
+  setReleaseIntent,
+} from "./releaseIntent.ts";
+import {
   createStoryDirectory,
   resolveStoryDirectory,
   StoryPackageAmbiguityError,
@@ -1043,6 +1048,191 @@ function miniCardWrapped(text: string): string[] {
 }
 
 /** Python `_render_debt_review_handoff`: a CLI-only surface with its own ribbon literal. */
+// --- cadence, release intent, continuation (plateau 6) ----------------------
+
+/** Python `cmd_set_cadence`'s allowed set, checked in the CLI rather than the DSL. */
+const CADENCE_PROFILES = ["stepwise", "checkpoint", "accelerated", "autonomous"];
+
+/**
+ * Python `cmd_set_cadence`.
+ *
+ * No module: the whole leaf is the CLI function, and its guard ORDER is unlike
+ * every other leaf here — method, then the PROFILE, then the autonomous-limits
+ * rule, and only then journey resolution and adoption. So an unknown profile
+ * against a journey that cannot be resolved reports the profile, not the journey.
+ * The corpus pins that with `set_cadence_profile_guard_precedes_journey`.
+ *
+ * It also writes the cursor directly rather than through a lifecycle verb, which
+ * is why it carries every other field forward by hand: cadence is a Navigator
+ * preference, not a lifecycle transition.
+ */
+export function runSetCadence(
+  context: BuilderWriteContext,
+  options: {
+    method: string;
+    journey?: string | null;
+    sessionId?: string | null;
+    profile?: string | null;
+    limits?: readonly string[];
+  },
+): CommandResult {
+  const unknown = rejectUnknownMethod(options.method);
+  if (unknown) return unknown;
+  const profile = options.profile ?? "";
+  const limits = options.limits ?? [];
+  if (!CADENCE_PROFILES.includes(profile)) {
+    return refuse(
+      "Error: cadence profile must be one of stepwise, checkpoint, accelerated, autonomous",
+    );
+  }
+  if (profile === "autonomous" && limits.length === 0) {
+    return refuse("Error: autonomous cadence requires at least one --limit");
+  }
+  const resolved = resolveBuilderJourney(context, {
+    journey: options.journey ?? null,
+    sessionId: options.sessionId ?? null,
+    action: "cadence profile update",
+  });
+  if (isCommandResult(resolved)) return resolved;
+  const journey = resolved.journey;
+  const notAdopted = requireAdoptedMethod(context.db, journey, options.method);
+  if (notAdopted) return notAdopted;
+  const cursor = getDeliveryCursor(context.db, journey);
+  if (cursor === null) {
+    // Its own message, not `_require_delivery_cursor`'s.
+    return refuse(`Error: journey '${journey}' has no Builder delivery cursor.`);
+  }
+  const updated = setDeliveryCursor(
+    context.db,
+    {
+      journey,
+      method: options.method,
+      activeItem: cursor.activeItem,
+      activeItemTitle: cursor.activeItemTitle,
+      activeItemLevel: cursor.activeItemLevel,
+      activeCheckpoint: cursor.activeCheckpoint,
+      pendingConfirmation: cursor.pendingConfirmation,
+      lastDeliveryEvent: cursor.lastDeliveryEvent,
+      cadenceProfile: profile,
+      cadenceLimits: limits,
+      granularityDecision: cursor.granularityDecision,
+      navigatorFlowUnit: cursor.navigatorFlowUnit,
+      childWorkItems: cursor.childWorkItems,
+      aggregateCheckpointStatus: cursor.aggregateCheckpointStatus,
+    },
+    context.deps,
+  );
+  return { stdout: printed(renderDeliveryCursorSyncReport(updated)), stderr: "", exitCode: 0 };
+}
+
+/** Python `cmd_release_intent`: set with `--intent`, inspect without it. */
+export function runReleaseIntent(
+  context: BuilderWriteContext,
+  options: {
+    method: string;
+    journey?: string | null;
+    sessionId?: string | null;
+    intent?: string | null;
+  },
+): CommandResult {
+  const guarded = lifecycleGuards(context, {
+    ...options,
+    action: "Delivery Story release intent",
+    requireCursor: false,
+  });
+  if (isCommandResult(guarded)) return guarded;
+  const intent = options.intent ?? null;
+  try {
+    const report =
+      intent === null
+        ? inspectReleaseIntent(context.db, { journey: guarded.journey, method: options.method })
+        : setReleaseIntent(
+            context.db,
+            { journey: guarded.journey, method: options.method, intent },
+            context.deps,
+          );
+    return { stdout: printed(renderReleaseIntentReport(report)), stderr: "", exitCode: 0 };
+  } catch (error) {
+    return refuseValueError(error);
+  }
+}
+
+/**
+ * Python `cmd_continue_lifecycle`.
+ *
+ * Also CLI-only, and narrower than its name suggests: the ONLY continuation it can
+ * perform is crossing Done from a completed Debt Review or Coherence. Everything
+ * else is one of five refusals, each rendering IMPLEMENTATION_GUARD on stdout with
+ * exit 1 rather than an `Error:` line on stderr.
+ *
+ * Two shapes reproduced deliberately. It accepts `--process`, `--project`,
+ * `--product`, and `--difference` and IGNORES all four — it never runs Coherence,
+ * despite taking Coherence's evidence. And unlike `done-item`, which prints the
+ * roadmap snapshot after closing, it prints its checkpoint and stops. Both are
+ * parity-bound; both have cases.
+ */
+export function runContinueLifecycle(
+  context: BuilderWriteContext,
+  options: {
+    method: string;
+    journey?: string | null;
+    sessionId?: string | null;
+    historyAction?: string | null;
+    roadmapUpdate?: string | null;
+    nextRecommendation?: string | null;
+  },
+): CommandResult {
+  const guarded = lifecycleGuards(context, {
+    ...options,
+    action: "lifecycle continuation",
+    requireCursor: true,
+  });
+  if (isCommandResult(guarded)) return guarded;
+  const journey = guarded.journey;
+  const cursor = getDeliveryCursor(context.db, journey);
+  if (cursor === null) {
+    return refuse("Error: delivery cursor is required before continuation");
+  }
+  const blocked = (reason: string): CommandResult => ({
+    stdout: printed(renderImplementationGuardBlocked(reason)),
+    stderr: "",
+    exitCode: 1,
+  });
+  const profile = cursor.cadenceProfile || "stepwise";
+  if (profile === "stepwise") {
+    return blocked("Stepwise cadence does not continue automatically.");
+  }
+  if (profile === "autonomous" && cursor.cadenceLimits.length === 0) {
+    return blocked("Autonomous cadence requires explicit limits.");
+  }
+  if (cursor.pendingConfirmation) {
+    return blocked(`Continuation is blocked: pending confirmation ${cursor.pendingConfirmation}.`);
+  }
+  const projectPath = getProjectPath(context.db, journey);
+  const planPath = closureArtifactPath(projectPath, cursor, "plan.md");
+  if (!["review_complete", "coherence_complete"].includes(cursor.lastDeliveryEvent ?? "")) {
+    return blocked(
+      `No bypassable continuation is available after ${cursor.lastDeliveryEvent || "none"}.`,
+    );
+  }
+  if (!(options.historyAction && options.roadmapUpdate && options.nextRecommendation)) {
+    return blocked("Done requires history, roadmap, and next-step evidence.");
+  }
+  const report = doneLifecycleItem(
+    context.db,
+    {
+      journey,
+      method: getAriadMethod(),
+      historyAction: options.historyAction,
+      roadmapUpdate: options.roadmapUpdate,
+      nextRecommendation: options.nextRecommendation,
+      doneArtifactPath: planPath === null ? null : join(dirname(planPath), "done.md"),
+    },
+    context.deps,
+  );
+  return { stdout: printed(renderDoneCheckpoint(report)), stderr: "", exitCode: 0 };
+}
+
 // --- Delivery Story leaves (plateau 5) --------------------------------------
 //
 // The aggregate leaves differ from their story-level twins in three CLI-visible

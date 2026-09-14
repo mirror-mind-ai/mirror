@@ -62,6 +62,9 @@ const cases = (golden as unknown as { cases: Case[] }).cases;
  */
 const PORTED_LEAVES = [
   "adopt",
+  "continue-lifecycle",
+  "release-intent",
+  "set-cadence",
   "approve-delivery-story-plan",
   "cancel-delivery-story-plan-preauthorization",
   "coherence-delivery-story",
@@ -102,11 +105,7 @@ const PORTED_LEAVES = [
  * panel (the smoke opens with `set-flow-unit`, and seeding the flow unit by a raw
  * cursor write instead would be the unrecorded mutation plateau 3a ruled out).
  */
-const PENDING_LEAVES: readonly string[] = [
-  "continue-lifecycle",
-  "release-intent",
-  "set-cadence",
-];
+const PENDING_LEAVES: readonly string[] = [];
 
 /**
  * Cases Python would refuse at the ARGPARSE layer, before any leaf runs.
@@ -186,7 +185,34 @@ const LIFECYCLE_SCENARIOS = new Set([
   "adopted_agg_reviewed",
   "adopted_agg_children_unfinished",
   "adopted_agg_story_by_story",
+  // Plateau 6: a cursor mid-closure carrying a cadence profile, which is what
+  // `continue-lifecycle` reads before deciding whether anything is bypassable.
+  "adopted_cadence_checkpoint_reviewed",
+  "adopted_cadence_checkpoint_pending",
+  "adopted_cadence_autonomous_unlimited",
+  "adopted_cadence_checkpoint_prepared",
 ]);
+
+/** The generator's cadence branch of `_seed_lifecycle`. */
+function seedCadence(db: WritableDatabase, scenario: string): void {
+  const pending = scenario.endsWith("checkpoint_pending");
+  setDeliveryCursor(
+    db,
+    {
+      journey: "demo",
+      method: "ariad",
+      activeItem: "CV1.DS1.US1",
+      activeItemTitle: "A user story",
+      activeItemLevel: "user_story",
+      activeCheckpoint: pending ? "after_validation" : null,
+      pendingConfirmation: pending ? "navigator_debt_decision" : null,
+      lastDeliveryEvent: scenario.endsWith("checkpoint_prepared") ? "prepare" : "review_complete",
+      cadenceProfile: scenario.endsWith("autonomous_unlimited") ? "autonomous" : "checkpoint",
+      navigatorFlowUnit: "story_by_story",
+    },
+    { nowIso: () => NOW },
+  );
+}
 
 /** The generator's `_write_delivery_story_package`. */
 function writeAggregatePackage(project: string, childrenDone: boolean): void {
@@ -416,6 +442,10 @@ function seedLifecycle(db: WritableDatabase, project: string, scenario: string):
   setAdoptedMethod(db, "demo", "ariad", () => NOW);
   if (scenario.startsWith("adopted_agg_")) {
     seedAggregate(db, project, scenario);
+    return;
+  }
+  if (scenario.startsWith("adopted_cadence_")) {
+    seedCadence(db, scenario);
     return;
   }
   const deps = { nowIso: () => NOW };

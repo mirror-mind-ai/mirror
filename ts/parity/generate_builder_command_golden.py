@@ -1250,12 +1250,24 @@ CASES: list[tuple[str, str, list[str]]] = [
         "adopted_with_cursor",
         ["set-cadence", "--method", "ariad", "--journey", "demo", "--profile", "yolo"],
     ),
-    # The profile guard runs BEFORE journey resolution: an unknown profile on a
-    # journey that does not exist still reports the profile.
+    # The profile guard runs BEFORE journey resolution, and the only way to SEE
+    # that is a journey that cannot be resolved at all -- an explicit `--journey`
+    # always resolves, because existence is checked later and `set-cadence` never
+    # checks it. So: no `--journey`, and an active mode carrying no journey. Python
+    # reports the PROFILE; a port that resolves first reports the missing journey.
+    # (Found by mutation testing: the first version of this case passed
+    # `--journey nope` and could not distinguish the two orders.)
     (
         "set_cadence_profile_guard_precedes_journey",
-        "unadopted",
-        ["set-cadence", "--method", "ariad", "--journey", "nope", "--profile", "yolo"],
+        "mode_without_journey",
+        ["set-cadence", "--method", "ariad", "--profile", "yolo", "--session-id", SESSION_ID],
+    ),
+    # The same shape with a VALID profile reaches the journey guard, which is what
+    # makes the pair above a comparison rather than an assertion.
+    (
+        "set_cadence_valid_profile_reaches_journey_guard",
+        "mode_without_journey",
+        ["set-cadence", "--method", "ariad", "--profile", "checkpoint", "--session-id", SESSION_ID],
     ),
     (
         "set_cadence_requires_a_cursor",

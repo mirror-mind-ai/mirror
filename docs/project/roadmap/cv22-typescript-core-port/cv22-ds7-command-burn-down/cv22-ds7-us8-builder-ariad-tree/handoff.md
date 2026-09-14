@@ -1,24 +1,30 @@
 [< Story](index.md)
 
-# Handoff — CV22.DS7.US8 — Builder/Ariad tree (plateaus 1–5 complete)
+# Handoff — CV22.DS7.US8 — Builder/Ariad tree (plateaus 1–6 complete)
 
-**Status:** plateaus 1–5 of 9 complete. **23 of the 27 in-scope leaves answer from
-TypeScript**, and both Ariad lifecycles — the story one and the aggregate Delivery
-Story one — run on both engines and agree after every step. **Nothing is routed** —
-`routing.ts` is untouched and every `build` invocation still reaches Python, which
-is the intended state until plateau 8 adds the gate and plateau 9 flips it.
+**Status:** plateaus 1–6 of 9 complete. **26 of the 27 in-scope leaves answer from
+TypeScript**, and all three Ariad flows — the story lifecycle, the aggregate
+Delivery Story lifecycle, and the cadence/authority paths — run on both engines and
+agree after every step. **Nothing is routed** — `routing.ts` is untouched and every
+`build` invocation still reaches Python, which is the intended state until plateau 8
+adds the gate and plateau 9 flips it.
 
 ## Resume here
 
-The next piece is **plateau 6, Scope F — cadence, authority, and continuation**:
-`set-cadence` with its profiles and limits, `release-intent`, and
-`continue-lifecycle` with the soft-stop / hard-gate matrix per cadence and its
-MULTI-SURFACE output — the first leaf in this story that emits several wrapped
-blocks from one invocation, so their ORDER is behavior. (`set-flow-unit` and the DS
-preauthorization cancel were re-sequenced into plateau 5 by the panel and are
-already done.)
+**One leaf is left, and it is the one with real unknowns: `load` (plateau 7,
+Scope G).** Everything else in the story is ported.
 
-Four leaves remain after it: those three plus `load`, which is plateau 7.
+`build load` is not provider-free — the correction that reshaped this plan. It
+embeds its query TWICE (scoped and global search), runs the previous conversation's
+close tail, and writes the operating-mode row. So plateau 7 needs
+`BUILD_LOAD_TRANSPORT` in `providers/transport.ts`, replay fixtures generated from
+the demo database only, the degraded-search scenario, the `llm_calls` ledger
+scenario, and the `builder_load` probe — plus the provider-isolation test asserting
+the other 26 leaves never reach `resolveFamilyProviders`. It also carries the
+`explore story promote` tail, which has waited since US7 for Builder `load`.
+
+Start from the plan's Scope G (items 17–20) and the D3.16 `load` scenario list in
+the test guide.
 
 Two constraints carried forward:
 
@@ -41,7 +47,7 @@ front door with the gate off, and the flip.
 | `builder-command.golden.json` | 80 cases across 15 leaves — all graded |
 | `PENDING_OPS` / `PENDING_LEAVES` | both empty; plateau 5 refills them |
 | Write probes | `builder_cursor_state`, `builder_artifacts` |
-| `builder_lifecycle_smoke.ts` | two sequences (story + Delivery Story), 30 steps × both engines, **215 checks**, in CI |
+| `builder_lifecycle_smoke.ts` | three sequences (story, Delivery Story, cadence), 47 steps × both engines, **331 checks**, in CI |
 
 Written for the session that resumes this story — possibly a different session, a
 different Mirror, or a later collaborator. It assumes only the repository, and it
@@ -60,8 +66,9 @@ route: `inspect-method`, `pull-candidates`, `adopt`, `prepare-templates`,
 `validate-delivery-story`, `review-delivery-story`, `coherence-delivery-story`,
 `done-delivery-story`.
 
-**Remaining: four.** `set-cadence`, `release-intent`, `continue-lifecycle`
-(plateau 6), and `load` (plateau 7).
+… plus `set-cadence`, `release-intent`, and `continue-lifecycle`.
+
+**Remaining: one.** `load` (plateau 7).
 
 The ten commits below carried plateaus 1–2. Plateaus 3 and 4 added, oldest first:
 `2dff5adb` (lifecycle oracle before any TypeScript), `e98554aa` / `9cb44cd8`
@@ -461,6 +468,70 @@ call leaves the module corpus **green** — the preflight lives in the CLI, not 
 `delivery_story_closure.py`, so no module sequence can see it — while the smoke goes
 **red** on the first Done. That is the composition defect class the smoke exists
 for, demonstrated rather than asserted.
+
+### Plateau 6 — cadence, authority, continuation (Scope F)
+
+**Complete.** `set-cadence`, `release-intent`, and `continue-lifecycle` answer from
+TypeScript. Corpus at 112 sequences / 494 steps and 121 command cases; the smoke
+gained a third sequence (331 checks).
+
+**No Plan-stage panel for this plateau — a recorded decision, not a default.** The
+collaboration strategy requires one for every story above a small slice, and
+defines a small slice as one bounded family with an existing pattern to copy. After
+reading the terrain that is what this was: two of the three leaves have no module at
+all, the third is 197 lines, and every renderer, guard idiom, and cursor-write shape
+they need was already ported and graded. The plateau-5 panel's findings still
+applied and were reused. If plateau 7 looks like this, it will still get a panel —
+`load` crosses the provider seam, which is precisely the boundary the panel exists
+for.
+
+**Two plan corrections came out of the terrain read**, both of the "written from
+reading rather than from code" class the story has now hit three times:
+
+- `set-cadence` and `continue-lifecycle` have **no module**. Both are implemented
+  entirely in `cli/build.py`, so the module corpus cannot see them at all and the
+  command corpus is their only oracle.
+- `continue-lifecycle` has **no multi-surface output**. The plan called it "its
+  multi-surface output" and the skill documentation says it "may emit multiple Ariad
+  surfaces"; every path in the code prints exactly one — IMPLEMENTATION_GUARD with
+  exit 1, or DONE_CHECKPOINT with exit 0.
+
+**Three behaviors pinned because a port would guess them wrong:**
+
+1. **`set-cadence` validates the profile BEFORE resolving the journey**, unlike
+   every other leaf. So an unknown profile with an unresolvable journey reports the
+   profile.
+2. **`continue-lifecycle` accepts four arguments it ignores.** `--process`,
+   `--project`, `--product`, and `--difference` are parsed and never read: it takes
+   Coherence's evidence and never runs Coherence.
+3. **It crosses Done and prints nothing after its checkpoint**, where `done-item`
+   crossing the same boundary prints the roadmap snapshot.
+
+**Release intent is a PAIR** — the intent and the Delivery Story code it belongs to
+— so moving to a story under another Delivery Story makes the inspect face report
+`not_recorded` rather than inheriting the previous decision. `not_recorded` is
+rendered, never stored, and is deliberately distinct from the explicit decision
+`none`.
+
+#### What mutation testing bought this time
+
+Eight mutants, seven killed immediately. The survivor was the interesting one: the
+case written for "the profile guard precedes journey resolution" passed an explicit
+`--journey`, which ALWAYS resolves — `set-cadence` never checks journey existence —
+so the case could not distinguish the two orders at all. It now runs with no
+`--journey` under an active mode carrying none, paired with a valid-profile case
+that reaches the journey guard, so the two orders produce different messages. A
+case that cannot fail is not coverage.
+
+#### A harness bug the new scenarios exposed
+
+The replay's `seed_cursor` set `release_intent` and
+`release_intent_delivery_story` to `null` whenever the seed did not mention them.
+Python's `set_delivery_cursor` defaults both to its `_KEEP` sentinel, so an absent
+key PRESERVES the stored value. Invisible until a scenario records an intent and
+then seeds a new cursor — which is exactly what
+`release_intent_is_scoped_to_its_delivery_story` does. **An absent key is not the
+value `null`**, and the replay now distinguishes them.
 
 #### The harness lesson worth more than the plateau
 
