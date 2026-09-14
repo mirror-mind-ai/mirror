@@ -1,0 +1,233 @@
+{
+  "queries": [
+    {
+      "fell_back_to_slug": false,
+      "journey_content": "# Mirror TypeScript Core Port\n**Status:** active\n**Stage:** DS7 — Command Burn-Down (26/27) — next: load\n\n## Description\n\nDedicated journey to implement CV22, the TypeScript Core Port. Ports Mirror\nMind's Python core to TypeScript via a database-seam strangler.\n\n## Scope\n\nThis heading terminates the capture, so nothing here reaches the query.\n",
+      "name": "query_full",
+      "query": "Dedicated journey to implement CV22, the TypeScript Core Port. Ports Mirror Mind's Python core to TypeScript via a database-seam strangler.",
+      "query_code_points": 139,
+      "slug": "demo-journey"
+    },
+    {
+      "fell_back_to_slug": false,
+      "journey_content": "# Jornada em português\n**Stage:** Fase 2\n\n## Descrição\n\nUma jornada cuja abertura está em português.\n\n## Outra seção\n\nIsto não deve entrar na consulta.\n",
+      "name": "query_portuguese_nfc",
+      "query": "Uma jornada cuja abertura está em português.",
+      "query_code_points": 44,
+      "slug": "demo-journey"
+    },
+    {
+      "fell_back_to_slug": true,
+      "journey_content": "# Jornada em português\n**Stage:** Fase 2\n\n## Descrição\n\nUma jornada cuja abertura está em português.\n\n## Outra seção\n\nIsto não deve entrar na consulta.\n",
+      "name": "query_portuguese_nfd",
+      "query": "demo-journey",
+      "query_code_points": 12,
+      "slug": "demo-journey"
+    },
+    {
+      "fell_back_to_slug": false,
+      "journey_content": "# A journey whose prose mentions the magic words\n\n## Description\n\nThis first sentence is kept.\nThe next line explains the context in which the work happens.\nThis line is kept too; only the line above it disappears.\n\n## Scope\n\nNot captured.\n",
+      "name": "query_body_mention",
+      "query": "This first sentence is kept. This line is kept too; only the line above it disappears.",
+      "query_code_points": 86,
+      "slug": "demo-journey"
+    },
+    {
+      "fell_back_to_slug": true,
+      "journey_content": "# A journey with one line of prose\n\n## Description\n\nThe whole description is about the context of this work.\n",
+      "name": "query_single_body_mention",
+      "query": "demo-journey",
+      "query_code_points": 12,
+      "slug": "demo-journey"
+    },
+    {
+      "fell_back_to_slug": true,
+      "journey_content": "# A journey with no described section\n\nJust a paragraph that belongs to no section.\nAnd a second line of it.\n",
+      "name": "query_no_section",
+      "query": "demo-journey",
+      "query_code_points": 12,
+      "slug": "demo-journey"
+    },
+    {
+      "fell_back_to_slug": false,
+      "journey_content": "# Astral journey\n**Stage:** 🟩 staged\n\n## Description\n\n🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦 tail words that fall past the five hundredth code point\n",
+      "name": "query_astral",
+      "query": "🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦",
+      "query_code_points": 500,
+      "slug": "demo-journey"
+    },
+    {
+      "fell_back_to_slug": false,
+      "journey_content": "# Long word journey\n\n## Description\n\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx and a short tail\n",
+      "name": "query_long_word",
+      "query": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx and a short tail",
+      "query_code_points": 137,
+      "slug": "demo-journey"
+    },
+    {
+      "fell_back_to_slug": true,
+      "journey_content": "",
+      "name": "query_empty",
+      "query": "demo-journey",
+      "query_code_points": 12,
+      "slug": "demo-journey"
+    },
+    {
+      "fell_back_to_slug": true,
+      "journey_content": "# One\n## Two\n### Three\n",
+      "name": "query_headings_only",
+      "query": "demo-journey",
+      "query_code_points": 12,
+      "slug": "demo-journey"
+    }
+  ],
+  "transitions": [
+    {
+      "journey": "demo-journey",
+      "journey_content": "# Mirror TypeScript Core Port\n**Status:** active\n**Stage:** DS7 — Command Burn-Down (26/27) — next: load\n\n## Description\n\nDedicated journey to implement CV22, the TypeScript Core Port. Ports Mirror\nMind's Python core to TypeScript via a database-seam strangler.\n\n## Scope\n\nThis heading terminates the capture, so nothing here reaches the query.\n",
+      "name": "transition_full_with_project",
+      "project_path": "/projects/mirror",
+      "surface": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER MODE ACTIVE                          │\n│                                                        │\n│  active journey                                        │\n│  demo-journey                                          │\n│                                                        │\n│  journey path                                          │\n│  DS7 — Command Burn-Down (26/27) — next: load          │\n│                                                        │\n│  project path                                          │\n│  /projects/mirror                                      │\n│                                                        │\n│  briefing                                              │\n│  Dedicated journey to implement CV22, the TypeScript   │\n│  Core Port. Ports Mirror Mind's Python core to         │\n│  TypeScript via a database-seam strangler.             │\n│                                                        │\n│  boundary                                              │\n│  Builder executes commitment.                          │\n╰────────────────────────────────────────────────────────╯"
+    },
+    {
+      "journey": "demo-journey",
+      "journey_content": "# Mirror TypeScript Core Port\n**Status:** active\n**Stage:** DS7 — Command Burn-Down (26/27) — next: load\n\n## Description\n\nDedicated journey to implement CV22, the TypeScript Core Port. Ports Mirror\nMind's Python core to TypeScript via a database-seam strangler.\n\n## Scope\n\nThis heading terminates the capture, so nothing here reaches the query.\n",
+      "name": "transition_full_no_project",
+      "project_path": null,
+      "surface": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER MODE ACTIVE                          │\n│                                                        │\n│  active journey                                        │\n│  demo-journey                                          │\n│                                                        │\n│  journey path                                          │\n│  DS7 — Command Burn-Down (26/27) — next: load          │\n│                                                        │\n│  briefing                                              │\n│  Dedicated journey to implement CV22, the TypeScript   │\n│  Core Port. Ports Mirror Mind's Python core to         │\n│  TypeScript via a database-seam strangler.             │\n│                                                        │\n│  boundary                                              │\n│  Builder executes commitment.                          │\n╰────────────────────────────────────────────────────────╯"
+    },
+    {
+      "journey": "demo-journey",
+      "journey_content": "# Jornada em português\n**Stage:** Fase 2\n\n## Descrição\n\nUma jornada cuja abertura está em português.\n\n## Outra seção\n\nIsto não deve entrar na consulta.\n",
+      "name": "transition_portuguese_nfc_with_project",
+      "project_path": "/projects/mirror",
+      "surface": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER MODE ACTIVE                          │\n│                                                        │\n│  active journey                                        │\n│  demo-journey                                          │\n│                                                        │\n│  journey path                                          │\n│  Fase 2                                                │\n│                                                        │\n│  project path                                          │\n│  /projects/mirror                                      │\n│                                                        │\n│  briefing                                              │\n│  **Stage:** Fase 2 Uma jornada cuja abertura está em   │\n│  português. Isto não deve entrar na consulta.          │\n│                                                        │\n│  boundary                                              │\n│  Builder executes commitment.                          │\n╰────────────────────────────────────────────────────────╯"
+    },
+    {
+      "journey": "demo-journey",
+      "journey_content": "# Jornada em português\n**Stage:** Fase 2\n\n## Descrição\n\nUma jornada cuja abertura está em português.\n\n## Outra seção\n\nIsto não deve entrar na consulta.\n",
+      "name": "transition_portuguese_nfc_no_project",
+      "project_path": null,
+      "surface": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER MODE ACTIVE                          │\n│                                                        │\n│  active journey                                        │\n│  demo-journey                                          │\n│                                                        │\n│  journey path                                          │\n│  Fase 2                                                │\n│                                                        │\n│  briefing                                              │\n│  **Stage:** Fase 2 Uma jornada cuja abertura está em   │\n│  português. Isto não deve entrar na consulta.          │\n│                                                        │\n│  boundary                                              │\n│  Builder executes commitment.                          │\n╰────────────────────────────────────────────────────────╯"
+    },
+    {
+      "journey": "demo-journey",
+      "journey_content": "# Jornada em português\n**Stage:** Fase 2\n\n## Descrição\n\nUma jornada cuja abertura está em português.\n\n## Outra seção\n\nIsto não deve entrar na consulta.\n",
+      "name": "transition_portuguese_nfd_with_project",
+      "project_path": "/projects/mirror",
+      "surface": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER MODE ACTIVE                          │\n│                                                        │\n│  active journey                                        │\n│  demo-journey                                          │\n│                                                        │\n│  journey path                                          │\n│  Fase 2                                                │\n│                                                        │\n│  project path                                          │\n│  /projects/mirror                                      │\n│                                                        │\n│  briefing                                              │\n│  **Stage:** Fase 2 Uma jornada cuja abertura está em   │\n│  português. Isto não deve entrar na consulta.          │\n│                                                        │\n│  boundary                                              │\n│  Builder executes commitment.                          │\n╰────────────────────────────────────────────────────────╯"
+    },
+    {
+      "journey": "demo-journey",
+      "journey_content": "# Jornada em português\n**Stage:** Fase 2\n\n## Descrição\n\nUma jornada cuja abertura está em português.\n\n## Outra seção\n\nIsto não deve entrar na consulta.\n",
+      "name": "transition_portuguese_nfd_no_project",
+      "project_path": null,
+      "surface": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER MODE ACTIVE                          │\n│                                                        │\n│  active journey                                        │\n│  demo-journey                                          │\n│                                                        │\n│  journey path                                          │\n│  Fase 2                                                │\n│                                                        │\n│  briefing                                              │\n│  **Stage:** Fase 2 Uma jornada cuja abertura está em   │\n│  português. Isto não deve entrar na consulta.          │\n│                                                        │\n│  boundary                                              │\n│  Builder executes commitment.                          │\n╰────────────────────────────────────────────────────────╯"
+    },
+    {
+      "journey": "demo-journey",
+      "journey_content": "# A journey whose prose mentions the magic words\n\n## Description\n\nThis first sentence is kept.\nThe next line explains the context in which the work happens.\nThis line is kept too; only the line above it disappears.\n\n## Scope\n\nNot captured.\n",
+      "name": "transition_body_mention_with_project",
+      "project_path": "/projects/mirror",
+      "surface": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER MODE ACTIVE                          │\n│                                                        │\n│  active journey                                        │\n│  demo-journey                                          │\n│                                                        │\n│  project path                                          │\n│  /projects/mirror                                      │\n│                                                        │\n│  briefing                                              │\n│  This first sentence is kept. The next line explains   │\n│  the context in which the work happens. This line is   │\n│  kept too; only the line above it disappears.          │\n│                                                        │\n│  boundary                                              │\n│  Builder executes commitment.                          │\n╰────────────────────────────────────────────────────────╯"
+    },
+    {
+      "journey": "demo-journey",
+      "journey_content": "# A journey whose prose mentions the magic words\n\n## Description\n\nThis first sentence is kept.\nThe next line explains the context in which the work happens.\nThis line is kept too; only the line above it disappears.\n\n## Scope\n\nNot captured.\n",
+      "name": "transition_body_mention_no_project",
+      "project_path": null,
+      "surface": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER MODE ACTIVE                          │\n│                                                        │\n│  active journey                                        │\n│  demo-journey                                          │\n│                                                        │\n│  briefing                                              │\n│  This first sentence is kept. The next line explains   │\n│  the context in which the work happens. This line is   │\n│  kept too; only the line above it disappears.          │\n│                                                        │\n│  boundary                                              │\n│  Builder executes commitment.                          │\n╰────────────────────────────────────────────────────────╯"
+    },
+    {
+      "journey": "demo-journey",
+      "journey_content": "# A journey with one line of prose\n\n## Description\n\nThe whole description is about the context of this work.\n",
+      "name": "transition_single_body_mention_with_project",
+      "project_path": "/projects/mirror",
+      "surface": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER MODE ACTIVE                          │\n│                                                        │\n│  active journey                                        │\n│  demo-journey                                          │\n│                                                        │\n│  project path                                          │\n│  /projects/mirror                                      │\n│                                                        │\n│  briefing                                              │\n│  The whole description is about the context of this    │\n│  work.                                                 │\n│                                                        │\n│  boundary                                              │\n│  Builder executes commitment.                          │\n╰────────────────────────────────────────────────────────╯"
+    },
+    {
+      "journey": "demo-journey",
+      "journey_content": "# A journey with one line of prose\n\n## Description\n\nThe whole description is about the context of this work.\n",
+      "name": "transition_single_body_mention_no_project",
+      "project_path": null,
+      "surface": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER MODE ACTIVE                          │\n│                                                        │\n│  active journey                                        │\n│  demo-journey                                          │\n│                                                        │\n│  briefing                                              │\n│  The whole description is about the context of this    │\n│  work.                                                 │\n│                                                        │\n│  boundary                                              │\n│  Builder executes commitment.                          │\n╰────────────────────────────────────────────────────────╯"
+    },
+    {
+      "journey": "demo-journey",
+      "journey_content": "# A journey with no described section\n\nJust a paragraph that belongs to no section.\nAnd a second line of it.\n",
+      "name": "transition_no_section_with_project",
+      "project_path": "/projects/mirror",
+      "surface": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER MODE ACTIVE                          │\n│                                                        │\n│  active journey                                        │\n│  demo-journey                                          │\n│                                                        │\n│  project path                                          │\n│  /projects/mirror                                      │\n│                                                        │\n│  briefing                                              │\n│  Just a paragraph that belongs to no section. And a    │\n│  second line of it.                                    │\n│                                                        │\n│  boundary                                              │\n│  Builder executes commitment.                          │\n╰────────────────────────────────────────────────────────╯"
+    },
+    {
+      "journey": "demo-journey",
+      "journey_content": "# A journey with no described section\n\nJust a paragraph that belongs to no section.\nAnd a second line of it.\n",
+      "name": "transition_no_section_no_project",
+      "project_path": null,
+      "surface": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER MODE ACTIVE                          │\n│                                                        │\n│  active journey                                        │\n│  demo-journey                                          │\n│                                                        │\n│  briefing                                              │\n│  Just a paragraph that belongs to no section. And a    │\n│  second line of it.                                    │\n│                                                        │\n│  boundary                                              │\n│  Builder executes commitment.                          │\n╰────────────────────────────────────────────────────────╯"
+    },
+    {
+      "journey": "demo-journey",
+      "journey_content": "# Astral journey\n**Stage:** 🟩 staged\n\n## Description\n\n🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦 tail words that fall past the five hundredth code point\n",
+      "name": "transition_astral_with_project",
+      "project_path": "/projects/mirror",
+      "surface": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER MODE ACTIVE                          │\n│                                                        │\n│  active journey                                        │\n│  demo-journey                                          │\n│                                                        │\n│  journey path                                          │\n│  🟩 staged                                              │\n│                                                        │\n│  project path                                          │\n│  /projects/mirror                                      │\n│                                                        │\n│  briefing                                              │\n│  🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦│\n│  tail words that fall past the five hundredth code     │\n│  point                                                 │\n│                                                        │\n│  boundary                                              │\n│  Builder executes commitment.                          │\n╰────────────────────────────────────────────────────────╯"
+    },
+    {
+      "journey": "demo-journey",
+      "journey_content": "# Astral journey\n**Stage:** 🟩 staged\n\n## Description\n\n🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦 tail words that fall past the five hundredth code point\n",
+      "name": "transition_astral_no_project",
+      "project_path": null,
+      "surface": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER MODE ACTIVE                          │\n│                                                        │\n│  active journey                                        │\n│  demo-journey                                          │\n│                                                        │\n│  journey path                                          │\n│  🟩 staged                                              │\n│                                                        │\n│  briefing                                              │\n│  🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦🟦│\n│  tail words that fall past the five hundredth code     │\n│  point                                                 │\n│                                                        │\n│  boundary                                              │\n│  Builder executes commitment.                          │\n╰────────────────────────────────────────────────────────╯"
+    },
+    {
+      "journey": "demo-journey",
+      "journey_content": "# Long word journey\n\n## Description\n\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx and a short tail\n",
+      "name": "transition_long_word_with_project",
+      "project_path": "/projects/mirror",
+      "surface": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER MODE ACTIVE                          │\n│                                                        │\n│  active journey                                        │\n│  demo-journey                                          │\n│                                                        │\n│  project path                                          │\n│  /projects/mirror                                      │\n│                                                        │\n│  briefing                                              │\n│  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx│\n│  and a short tail                                      │\n│                                                        │\n│  boundary                                              │\n│  Builder executes commitment.                          │\n╰────────────────────────────────────────────────────────╯"
+    },
+    {
+      "journey": "demo-journey",
+      "journey_content": "# Long word journey\n\n## Description\n\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx and a short tail\n",
+      "name": "transition_long_word_no_project",
+      "project_path": null,
+      "surface": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER MODE ACTIVE                          │\n│                                                        │\n│  active journey                                        │\n│  demo-journey                                          │\n│                                                        │\n│  briefing                                              │\n│  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx│\n│  and a short tail                                      │\n│                                                        │\n│  boundary                                              │\n│  Builder executes commitment.                          │\n╰────────────────────────────────────────────────────────╯"
+    },
+    {
+      "journey": "demo-journey",
+      "journey_content": "",
+      "name": "transition_empty_with_project",
+      "project_path": "/projects/mirror",
+      "surface": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER MODE ACTIVE                          │\n│                                                        │\n│  active journey                                        │\n│  demo-journey                                          │\n│                                                        │\n│  project path                                          │\n│  /projects/mirror                                      │\n│                                                        │\n│  boundary                                              │\n│  Builder executes commitment.                          │\n╰────────────────────────────────────────────────────────╯"
+    },
+    {
+      "journey": "demo-journey",
+      "journey_content": "",
+      "name": "transition_empty_no_project",
+      "project_path": null,
+      "surface": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER MODE ACTIVE                          │\n│                                                        │\n│  active journey                                        │\n│  demo-journey                                          │\n│                                                        │\n│  boundary                                              │\n│  Builder executes commitment.                          │\n╰────────────────────────────────────────────────────────╯"
+    },
+    {
+      "journey": "demo-journey",
+      "journey_content": "# One\n## Two\n### Three\n",
+      "name": "transition_headings_only_with_project",
+      "project_path": "/projects/mirror",
+      "surface": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER MODE ACTIVE                          │\n│                                                        │\n│  active journey                                        │\n│  demo-journey                                          │\n│                                                        │\n│  project path                                          │\n│  /projects/mirror                                      │\n│                                                        │\n│  boundary                                              │\n│  Builder executes commitment.                          │\n╰────────────────────────────────────────────────────────╯"
+    },
+    {
+      "journey": "demo-journey",
+      "journey_content": "# One\n## Two\n### Three\n",
+      "name": "transition_headings_only_no_project",
+      "project_path": null,
+      "surface": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER MODE ACTIVE                          │\n│                                                        │\n│  active journey                                        │\n│  demo-journey                                          │\n│                                                        │\n│  boundary                                              │\n│  Builder executes commitment.                          │\n╰────────────────────────────────────────────────────────╯"
+    },
+    {
+      "journey": "a-journey-slug-that-is-far-longer-than-the-fifty-six-column-card",
+      "journey_content": "# Mirror TypeScript Core Port\n**Status:** active\n**Stage:** DS7 — Command Burn-Down (26/27) — next: load\n\n## Description\n\nDedicated journey to implement CV22, the TypeScript Core Port. Ports Mirror\nMind's Python core to TypeScript via a database-seam strangler.\n\n## Scope\n\nThis heading terminates the capture, so nothing here reaches the query.\n",
+      "name": "transition_long_slug",
+      "project_path": "/projects/mirror",
+      "surface": "Mirror\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER MODE ACTIVE                          │\n│                                                        │\n│  active journey                                        │\n│  a-journey-slug-that-is-far-longer-than-the-fifty-six-c│\n│                                                        │\n│  journey path                                          │\n│  DS7 — Command Burn-Down (26/27) — next: load          │\n│                                                        │\n│  project path                                          │\n│  /projects/mirror                                      │\n│                                                        │\n│  briefing                                              │\n│  Dedicated journey to implement CV22, the TypeScript   │\n│  Core Port. Ports Mirror Mind's Python core to         │\n│  TypeScript via a database-seam strangler.             │\n│                                                        │\n│  boundary                                              │\n│  Builder executes commitment.                          │\n╰────────────────────────────────────────────────────────╯"
+    }
+  ]
+}
