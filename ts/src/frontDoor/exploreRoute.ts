@@ -11,11 +11,13 @@
 // `conversations append` defect (RS009/CR055), which exited 0 and discarded the
 // caller's data.
 //
-// `story promote` is deliberately NOT here. Python's `cmd_story_promote` ends
-// by calling Builder `load`, which is US8's, so the leaf stays on Python by
-// name until the Builder tree is ported. Recorded in the burn-down ledger, not
-// only in this comment.
+// `story promote` arrived here at US8 plateau 7, having waited on Python by name
+// since US7: `cmd_story_promote` ends by calling Builder `load`, which US8 owns.
+// Its tail is therefore a real session start — providers, close tail, clone-role
+// guard — wired by `buildLoadRuntime.ts`, which plateau 8's `build` route reuses
+// so the two cannot disagree about which transport answered.
 
+import { runBuildLoad } from "#builder/load.ts";
 import type { WritableDatabase } from "#db/database.ts";
 import {
   type HandoffConversationSource,
@@ -36,10 +38,7 @@ import {
   renderExplorerStoryList,
   renderMissingExploratoryStory,
   renderNarrativeFieldSnapshot,
-  // `renderNoBuilderHandoff` is deliberately NOT imported: its only caller is
-  // `story promote`, which stays on Python until US8 owns Builder load. The
-  // renderer is ported and graded by the surface golden, so the flip needs no
-  // new rendering work — only the route entry.
+  renderNoBuilderHandoff,
   renderStoryThickened,
 } from "#explorer/render.ts";
 import {
@@ -49,6 +48,7 @@ import {
   ExplorerStoryError,
   getExplorerStory,
   listExplorerStories,
+  markExplorerStoryPromoted,
   renderExplorerStoryContext,
   type Settable,
   type StoryClock,
@@ -69,6 +69,7 @@ import { resolveRuntimeSessionId } from "#mirror/runtimeSession.ts";
 import { activateOperatingMode, deactivateOperatingMode } from "#mode/operatingMode.ts";
 import { newId, nowIso } from "#util/pyGenerators.ts";
 import { optionValue, stripOptionWithValue } from "./args.ts";
+import type { BuildLoadRuntime } from "./buildLoadRuntime.ts";
 
 /** Python's argparse subcommands for `explore`, by name. */
 export const EXPLORE_SUBCOMMANDS = ["load", "deactivate", "story"] as const;
@@ -86,7 +87,7 @@ export const EXPLORE_STORY_ACTIONS = [
   "attractors",
   "experiment",
   "handoff",
-  // `promote` is absent on purpose: its tail is Builder `load` (US8).
+  "promote",
 ] as const;
 
 const OPTIONS_WITH_VALUES = [
@@ -168,6 +169,15 @@ export interface ExploreRouteDeps {
   clock: StoryClock;
   projectionRefresh: ProjectionRefreshSeam;
   readMessages: (db: WritableDatabase, conversationId: string) => HandoffSourceMessage[];
+  /**
+   * `story promote`'s Builder tail, or null when the composition reverts to
+   * Python (`MIRROR_TS_BUILD=0`, `MIRROR_TS_SEARCH=0`,
+   * `MIRROR_TS_CONVERSATION_LLM_TAIL=0`).
+   *
+   * Injected rather than built here so this route stays free of the provider
+   * seam, and so the promote tests can run a session start without one.
+   */
+  buildLoadRuntime?: () => Promise<BuildLoadRuntime | null>;
 }
 
 export function defaultExploreRouteDeps(mirrorHome: string | null): ExploreRouteDeps {
@@ -221,8 +231,11 @@ export async function runExploreRoute(
         deactivateOperatingMode(db, resolveRuntimeSessionId(db, option("--session-id")), nowIso());
         return write(EXPLORER_DEACTIVATED_SURFACE);
       }
+      // Awaited for the same reason `load` is: `story promote` runs a Builder
+      // session start, and an unawaited rejection would sail past the catch
+      // below that turns ExplorerStoryError into exit 1.
       case "story":
-        return runStory(db, args, option, rawArgs, deps);
+        return await runStory(db, args, option, rawArgs, deps);
       default:
         return usageError(`explore: unknown subcommand ${sub ?? ""}`);
     }
@@ -269,13 +282,13 @@ async function runLoad(
   return 0;
 }
 
-function runStory(
+async function runStory(
   db: WritableDatabase,
   args: readonly string[],
   option: (name: string) => string | null,
   rawArgs: readonly string[],
   deps: ExploreRouteDeps,
-): number {
+): Promise<number> {
   const action = args[1];
   const slug = args[2];
   if (!action) return usageError("explore story requires an action");
@@ -375,9 +388,81 @@ function runStory(
     }
     case "handoff":
       return runHandoff(db, slug, option, rawArgs, deps);
+    case "promote":
+      return runPromote(db, slug, deps);
     default:
       return usageError(`explore story: unknown action ${action}`);
   }
+}
+
+/**
+ * Python `cmd_story_promote`: confirm the handoff, mark the story promoted, and
+ * enter Builder.
+ *
+ * The ORDER is the behavior, and one detail decides whether a half-run is
+ * recoverable: the Builder tail is resolved BEFORE either write. Python's
+ * promote is not idempotent — once the story is promoted it is no longer
+ * active, so a second run finds no story and renders `no_builder_handoff` — so
+ * a port that mutated first and only then discovered it could not finish would
+ * leave the journey in a state neither engine can complete.
+ */
+async function runPromote(
+  db: WritableDatabase,
+  slug: string,
+  deps: ExploreRouteDeps,
+): Promise<number> {
+  // The read comes first, and the refusal needs no provider at all: Python's
+  // `cmd_story_promote` returns before `cmd_load` when there is no handoff.
+  const story = getExplorerStory(db, slug);
+  if (!story?.builderHandoff) {
+    return write(requiredSurface("no_builder_handoff", renderNoBuilderHandoff(slug)));
+  }
+
+  const runtime = await deps.buildLoadRuntime?.();
+  if (!runtime) {
+    // Unreachable through the front door: `routing.ts` resolves the same
+    // composed decision and sends this leaf to Python when it reverts. Loud
+    // rather than silent, because the alternative is the CR077 defect — a route
+    // and a runtime disagreeing about one invocation — and here it would strand
+    // a half-promoted story.
+    throw new Error(
+      "explore story promote reached the TypeScript route with no Builder load " +
+        "runtime: the route and the transport decision disagree",
+    );
+  }
+
+  // Field by field, as Python rebuilds it: only `readiness` changes, and every
+  // artifact path the handoff recorded survives the confirmation.
+  const handoff = story.builderHandoff;
+  afterMutation(
+    setExplorerBuilderHandoff(db, slug, deps.clock, {
+      title: handoff.title,
+      summary: handoff.summary,
+      readiness: "confirmed",
+      artifactDir: handoff.artifactDir,
+      indexPath: handoff.indexPath,
+      exploratoryStoryPath: handoff.exploratoryStoryPath,
+      handoffInfoPath: handoff.handoffInfoPath,
+      productDesignProposalPath: handoff.productDesignProposalPath,
+      fullConversationPath: handoff.fullConversationPath,
+    }),
+    slug,
+    deps,
+  );
+  const promoted = markExplorerStoryPromoted(db, slug, deps.clock);
+  if (promoted.refreshRequested) deps.projectionRefresh.request(slug);
+
+  // Python calls `cmd_load(slug)` with no session id, so the session comes from
+  // the environment or the active runtime row — never from `explore`'s own
+  // `--session-id`, which its promote parser does not even accept.
+  const result = await runBuildLoad(
+    db,
+    { slug, environmentSessionId: process.env.MIRROR_SESSION_ID ?? null },
+    runtime.deps,
+  );
+  process.stderr.write(result.stderr);
+  process.stdout.write(result.stdout);
+  return result.exitCode;
 }
 
 function updateStory(

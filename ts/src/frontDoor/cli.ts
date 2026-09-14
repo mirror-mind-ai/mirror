@@ -78,6 +78,7 @@ import { computeWeekRange } from "#tasks/weekView.ts";
 import { expandHome } from "#util/paths.ts";
 import { newId, nowIso } from "#util/pyGenerators.ts";
 import { hasOption, optionValue, stripOptionWithValue } from "./args.ts";
+import { createBuildLoadRuntime } from "./buildLoadRuntime.ts";
 import { runConsultRoute } from "./consultRoute.ts";
 import {
   runDescriptorGenerateRoute,
@@ -1341,8 +1342,15 @@ function runExploreWrite(argv: readonly string[]): Promise<number> {
   // because it delegates to a separate Python process that resolves its own
   // database from that home rather than inheriting this one.
   const mirrorHome = optionValue(argv.slice(1), "--mirror-home");
-  return withMirrorWriteDb(argv, (db) =>
-    runExploreRoute(db, argv, defaultExploreRouteDeps(mirrorHome)),
+  return withMirrorWriteDb(argv, (db, dbPath) =>
+    runExploreRoute(db, argv, {
+      ...defaultExploreRouteDeps(mirrorHome),
+      // `story promote` ends in a Builder session start, so it needs the same
+      // wiring plateau 8's `build` route will use: the composed transport, the
+      // close tail, and the clone-role guard. Lazy, so the other eleven story
+      // actions never touch the provider seam.
+      buildLoadRuntime: () => createBuildLoadRuntime({ db, dbPath }),
+    }),
   );
 }
 

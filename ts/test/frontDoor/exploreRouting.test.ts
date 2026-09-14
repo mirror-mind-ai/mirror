@@ -49,12 +49,44 @@ test("MIRROR_TS_EXPLORE=0 keeps the whole family on Python", () => {
   assert.match(route.reason, /MIRROR_TS_EXPLORE=0/);
 });
 
-test("story promote is refused BY NAME after the flip — its tail is Builder load (US8)", () => {
-  // The dangerous direction, now that the gate is on by default: a leaf missing
-  // from the allowlist would otherwise be claimed along with the family.
+test("story promote answers from TS now that Builder load is ported (US8 plateau 7)", () => {
   const route = routeMemoryCommand(["explore", "story", "promote", "a-journey"]);
+  assert.equal(route.engine, "ts");
+  assert.match(route.reason, /story promote/);
+});
+
+test("story promote follows the COMPOSED Builder reverts, not just the Explorer gate", () => {
+  // Its tail is a Builder session start, so the leaf answers to the same three
+  // variables `build load` does. A promote that kept calling the provider after
+  // `MIRROR_TS_SEARCH=0` would make one family mean two things.
+  for (const variable of [
+    "MIRROR_TS_BUILD",
+    "MIRROR_TS_SEARCH",
+    "MIRROR_TS_CONVERSATION_LLM_TAIL",
+  ]) {
+    const route = routeMemoryCommand(["explore", "story", "promote", "a-journey"], {
+      [variable]: "0",
+    });
+    assert.equal(route.engine, "python", `${variable}=0 must revert promote`);
+    assert.match(route.reason, new RegExp(`${variable}=0`));
+  }
+  // And the Explorer family's own gate still reverts it, before any of that.
+  const gated = routeMemoryCommand(["explore", "story", "promote", "a-journey"], {
+    MIRROR_TS_EXPLORE: "0",
+  });
+  assert.equal(gated.engine, "python");
+  assert.match(gated.reason, /MIRROR_TS_EXPLORE=0/);
+});
+
+test("half a replay fixture refuses promote by name instead of spending", () => {
+  // The decision is taken BEFORE promote's first write, because promote is not
+  // idempotent: once the story is promoted, a second run finds none.
+  const route = routeMemoryCommand(["explore", "story", "promote", "a-journey"], {
+    MIRROR_TS_BUILD_LLM_REPLAY: "/tmp/half.json",
+  });
   assert.equal(route.engine, "python");
-  assert.match(route.reason, /explore story action not ported to TS: promote/);
+  assert.match(route.reason, /incomplete replay fixture/);
+  assert.match(route.reason, /MIRROR_TS_BUILD_EMBEDDING_REPLAY/);
 });
 
 test("an unknown explore subcommand is refused by name, not inherited", () => {
@@ -101,8 +133,14 @@ test("the allowlist and the route's own dispatch table agree", () => {
   // allowlist it is unreachable; the reverse is the dangerous direction — the
   // route would be asked for an argv shape it does not implement.
   assert.deepEqual([...EXPLORE_SUBCOMMANDS].sort(), ["deactivate", "load", "story"]);
-  assert.ok(
-    !(EXPLORE_STORY_ACTIONS as readonly string[]).includes("promote"),
-    "promote must not be in the route's action list while Builder load is unported",
-  );
+  // `promote` is now in BOTH lists. Held on Python by name since US7, it joined
+  // at US8 plateau 7 with the leaf its tail depends on.
+  assert.ok((EXPLORE_STORY_ACTIONS as readonly string[]).includes("promote"));
+  for (const action of EXPLORE_STORY_ACTIONS) {
+    assert.equal(
+      routeMemoryCommand(["explore", "story", action, "a-journey"]).engine,
+      "ts",
+      `${action} is in the route's table but unreachable through routing`,
+    );
+  }
 });

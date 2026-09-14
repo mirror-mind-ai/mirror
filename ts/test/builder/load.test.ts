@@ -369,11 +369,16 @@ test("the clone-role guard refuses before any surface is printed", async () => {
       {
         nowIso: () => FROZEN_NOW,
         newId: () => "00000001",
-        cloneRoleRefusal: () =>
-          "Builder Mode refused: the journey project clone is marked 'production'.\n",
+        cloneRoleGuard: () => ({
+          stderr: "Builder Mode refused: the journey project clone is marked 'production'.\n",
+          // Python's `sys.exit(2)`. This test asserted 1 until the guard itself
+          // was ported: the unknown-journey refusal above DOES exit 1, and the
+          // two branches are one `if` apart.
+          exitCode: 2,
+        }),
       },
     );
-    assert.equal(result.exitCode, 1);
+    assert.equal(result.exitCode, 2);
     assert.equal(result.stdout, "", "a refused load prints no surface");
     assert.match(result.stderr, /marked 'production'/u);
     assert.equal(result.providerCalls, 0, "a refused load reaches no provider");

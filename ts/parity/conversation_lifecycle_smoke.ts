@@ -80,6 +80,23 @@ const baseEnv: Record<string, string> = {
   MEMORY_ENV: "test",
   MIRROR_TS_CONVERSATION_LLM_REPLAY: llmFixture,
   MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY: embeddingFixture,
+  // The BUILD family's fixtures, because `explore story promote` ends in a
+  // Builder session start and its seams are built from THESE variables.
+  //
+  // Not optional, and the first run without them proved why: with only the
+  // conversation family configured, the composed decision reports an incomplete
+  // replay fixture and sends promote to Python — refusing by name rather than
+  // replaying two searches and sending the close tail to a live provider. A
+  // harness that configures one family and exercises another gets the refusal,
+  // which is the behavior CV22.DS7.US8 item 18b specifies.
+  MIRROR_TS_BUILD_LLM_REPLAY: join(TS_ROOT, "test", "fixtures", "builder-load", "replay-llm.json"),
+  MIRROR_TS_BUILD_EMBEDDING_REPLAY: join(
+    TS_ROOT,
+    "test",
+    "fixtures",
+    "builder-load",
+    "replay-embedding.json",
+  ),
   PI_SESSIONS_DIR: join(home, "absent-pi-sessions"),
   MIRROR_FRONTDOOR_PYTHON_TIMEOUT_MS: "120000",
 };
@@ -91,6 +108,7 @@ delete baseEnv.MIRROR_TS_WELCOME;
 delete baseEnv.MIRROR_TS_RUNTIME_READS;
 delete baseEnv.MIRROR_TS_SOUL;
 delete baseEnv.MIRROR_TS_EXPLORE;
+delete baseEnv.MIRROR_TS_BUILD;
 // Empty, not deleted: `memory.config` re-applies a repo `.env` with
 // `os.environ.setdefault` at import, so a DELETED key comes back and
 // `runtime diagnose` would make a live OpenRouter call on the Python side --
@@ -1057,12 +1075,37 @@ check(
   exploreLoad.stdout.slice(-200),
 );
 
-// `story promote` is refused BY NAME: its tail is Builder load, which is US8's.
+// `story promote` answers from TypeScript since US8 plateau 7, when the leaf its
+// tail depends on — Builder `load` — was ported.
+//
+// The story was ARCHIVED two steps above, so this exercises the refusal path:
+// no active story means no handoff, which Python renders and returns from BEFORE
+// reaching `cmd_load`. That is deliberate here — the session-start path spends
+// on a provider, and this smoke runs with no key by contract. The promotion that
+// does enter Builder is graded under replay in `test/frontDoor/explorePromote.test.ts`.
 const explorePromote = runExplore(["explore", "story", "promote", exploreJourney], EXPLORE_ON);
 check(
-  explorePromote.route === "python",
-  "explore story promote stays on Python until US8 owns Builder load",
+  explorePromote.route === "ts",
+  "explore story promote is answered by TypeScript (US8 plateau 7)",
   explorePromote.route,
+);
+check(
+  explorePromote.status === 0 &&
+    explorePromote.stdout.includes("[[MIRROR_REQUIRED_SURFACE_BEGIN:no_builder_handoff]]"),
+  "promote with no active story renders the no-handoff surface and exits 0",
+  `exit=${explorePromote.status} ${explorePromote.stdout.slice(0, 120)}`,
+);
+
+// And the composed revert reaches Python, because promote's tail is a Builder
+// session start: one family must not mean two things.
+const explorePromoteReverted = runExplore(["explore", "story", "promote", exploreJourney], {
+  ...EXPLORE_ON,
+  MIRROR_TS_BUILD: "0",
+});
+check(
+  explorePromoteReverted.route === "python",
+  "MIRROR_TS_BUILD=0 reverts explore story promote to Python",
+  explorePromoteReverted.route,
 );
 
 // An unallowlisted action reaches Python by name, never by inheritance.

@@ -86,7 +86,7 @@ replay-gated section below is empty for the first time since DS5 created it.
 | **Extraction lifecycle (deterministic core)** | **`conversation-logger`** | **partial** | **DS7.US5** | ✅ **done — 7/15 subcommands flipped** |
 | Extraction lifecycle (composites & LLM tail) | `conversation-logger` remainder | 8/8‡ | DS7.US10 | ✅ done (2026-09-07) — `repair-journeys --apply` route waits for TS1's `backup` |
 | Soul Mode | `soul` | 1/1 | DS7.US6 | ✅ done — flipped 2026-09-08; **`harvest save` flipped ungated 2026-09-12** with DS8.US3, which also gave it the provider the front door had never wired |
-| Explorer Mode | `explore` | 1/1 | DS7.US7 | ✅ done — flipped 2026-09-09; `story promote` on Python until US8; projection refresh delegated behind a DS10-owned seam |
+| Explorer Mode | `explore` | 1/1 | DS7.US7 | ✅ done — flipped 2026-09-09; **`story promote` flipped 2026-09-14** with DS7.US8 plateau 7, following the composed Builder revert; projection refresh delegated behind a DS10-owned seam |
 | Builder/Ariad | `build` | 0/1 | DS7.US8 | 🟡 planned |
 | Ops/utility tail | `backup`, `repair-encoding`, `extensions`, `ext`, `welcome` (+ `runtime` reads§) | 3/5‡ | DS7.TS1 / TS3 / TS4 | 🔵 in progress — TS1 `backup`+`repair-encoding` ✅ flipped 2026-09-07; TS3 `welcome` ✅ flipped 2026-09-08 (+ `runtime` reads as branch coverage); TS4 extension catalog (also takes `identity edit`). `journey-projection` left this row for DS10 on 2026-09-09 with TS5 |
 
@@ -181,7 +181,7 @@ the defect this ledger exists to prevent.
 |------|-------|------|
 | `build` — 27 in-scope leaves (29 subcommands, **47** leaves in Python) | DS7.US8 | Self-hosting story; see the [US8 package](cv22-ds7-us8-builder-ariad-tree/index.md). Leaf count corrected 2026-09-13 at plateau 1 by enumerating the subparsers (was 42). **In progress, nothing routed:** plateaus 1–7 have ported **all 27 leaves** behind no route at all — the fifteen story-level ones (`inspect-method`, `pull-candidates`, `adopt`, `prepare-templates`, `sync-cursor`, `check-implementation`, `pull-item`, `prepare-item`, `plan-item`, `approve-plan`, `cancel-plan-preauthorization`, `validate-item`, `review-item`, `coherence-item`, `done-item`) plus the eight aggregate ones (`set-flow-unit`, `plan-delivery-story`, `approve-delivery-story-plan`, `cancel-delivery-story-plan-preauthorization`, `validate-delivery-story`, `review-delivery-story`, `coherence-delivery-story`, `done-delivery-story`) and the three cadence/authority ones (`set-cadence`, `release-intent`, `continue-lifecycle`) — with the cursor, the method DSL, every activation surface, story and Delivery Story artifact materialization, both Plan authorities, and the authored-roadmap Done preflight. All three flows run on both engines and agree after every step. `load`, the only leaf that crosses the provider seam, is ported and graded against six recorded invocations under a patched Python seam; what remains in plateau 7 is the seam AROUND it — the composed transport decision, the degraded case, the `builder_load` probe, the provider-isolation test, and the `explore story promote` tail. `routing.ts` still sends **all** of `build` to Python; the gate arrives at plateau 8 and the flip at plateau 9 |
 | `build refinement-story create\|overview\|pull\|review\|coherence\|close\|park` (7), `build change-request` × 13 | DS10 (retire, cutoff) | The SQLite Refinement Workbench, superseded by CV20.DS12's document-first Workbench (US8 D1, decided 2026-09-09). **Twenty** leaves, not fifteen — `refinement-story review\|coherence\|close` and `change-request select\|confirm` were omitted from the earlier count. US8 refuses all twenty by name; `load`'s read-only `get_workbench_snapshot` is ported by US8 and deleted here |
-| `explore story promote` | DS7.US8 | Renderer ported in US7; the tail is Builder `load`. Flips as a route entry with US8 |
+| ~~`explore story promote`~~ | DS7.US8 | ✅ **Answered by TS since 2026-09-14** (plateau 7). Renderer ported in US7; the tail is Builder `load`, wired through `buildLoadRuntime.ts`, which plateau 8's `build` route reuses |
 | `extensions install\|uninstall\|expose-claude\|clean-claude` | DS7.TS4 | Mutates skill directories |
 | `ext list`, `ext <id>`, `ext <id> bind\|unbind\|bindings\|migrate` | DS7.TS4 | Catalog and bindings |
 | `ext <id> <extension-subcommand>` | DS7.TS4 — **plan input** | Dynamic dispatch into an extension's own Python entry point. TS4 must decide: finite compat host (TS2's shape) or a TS extension-command contract. Not a silent port |
@@ -442,13 +442,19 @@ reviewed in a live session.
 | `story attractors` | ✅ | ✅ flipped | — |
 | `story experiment` | ✅ | ✅ flipped | — |
 | `story handoff` | ✅ | ✅ flipped | writes five documents into the user's project |
-| `story promote` | ❌ | ❌ **Python, by name** | its tail is Builder `load` — **blocked on US8** |
+| `story promote` | ✅ | ✅ **flipped 2026-09-14** (DS7.US8 plateau 7) | the one leaf whose engine follows the COMPOSED Builder decision |
 
-**11 of 14 leaves answer from TS.** `story promote` is not a
-missing port: `cmd_story_promote` ends by calling `build_cli.cmd_load`, so it
-cannot leave Python before the Builder tree does. Its surface renderer
-(`render_no_builder_handoff`) IS ported and graded, so the flip after US8 is a
-route entry and nothing else.
+**12 of 14 leaves answer from TS.** `story promote` was never a missing port:
+`cmd_story_promote` ends by calling `build_cli.cmd_load`, so it could not leave
+Python before the Builder tree did, and its surface renderer
+(`render_no_builder_handoff`) was ported and graded in US7. It flipped at US8
+plateau 7 with the leaf its tail depends on — as a route entry, plus the one
+thing the earlier note did not anticipate: because the tail is a Builder session
+start, `MIRROR_TS_BUILD=0`, `MIRROR_TS_SEARCH=0`, and
+`MIRROR_TS_CONVERSATION_LLM_TAIL=0` each send this leaf back to Python too. The
+decision is taken in `routing.ts`, **before** the route's first write, because
+promote is not idempotent: promoting ends the story's activeness, so a second
+run finds none and renders `no_builder_handoff`.
 
 **Two-level allowlist.** `explore` is the first family with a nested subparser,
 so `routing.ts` refuses an unknown `explore <sub>` and an unknown `explore story

@@ -1,4 +1,110 @@
 {
+  "clone_role": [
+    {
+      "exit_code": null,
+      "ignore_production_role": false,
+      "name": "not_a_checkout",
+      "stderr": "",
+      "tree": {
+        "git": true,
+        "marker": "production",
+        "pyproject": null,
+        "src_memory": false
+      },
+      "with_project": true
+    },
+    {
+      "exit_code": null,
+      "ignore_production_role": false,
+      "name": "pyproject_is_another_project",
+      "stderr": "",
+      "tree": {
+        "git": true,
+        "marker": "production",
+        "pyproject": "[project]\nname = \"something-else\"\n",
+        "src_memory": true
+      },
+      "with_project": true
+    },
+    {
+      "exit_code": null,
+      "ignore_production_role": false,
+      "name": "checkout_marked_dev",
+      "stderr": "",
+      "tree": {
+        "git": true,
+        "marker": "dev",
+        "pyproject": null,
+        "src_memory": true
+      },
+      "with_project": true
+    },
+    {
+      "exit_code": 2,
+      "ignore_production_role": false,
+      "name": "checkout_marked_production",
+      "stderr": "Builder Mode refused: the journey project clone is marked 'production'.\n  Project path: <ROOT>\n  Clone role source: <ROOT>/.mirror-clone-role\n  Development should happen in a clone marked 'dev'.\n  To proceed here anyway, pass --ignore-production-role.\n",
+      "tree": {
+        "git": true,
+        "marker": "production",
+        "pyproject": null,
+        "src_memory": true
+      },
+      "with_project": true
+    },
+    {
+      "exit_code": 2,
+      "ignore_production_role": false,
+      "name": "checkout_unknown_role",
+      "stderr": "Builder Mode refused: the journey project clone is marked 'production'.\n  Project path: <ROOT>\n  Clone role source: <ROOT>/.mirror-clone-role\n  Development should happen in a clone marked 'dev'.\n  To proceed here anyway, pass --ignore-production-role.\n",
+      "tree": {
+        "git": true,
+        "marker": "staging",
+        "pyproject": null,
+        "src_memory": true
+      },
+      "with_project": true
+    },
+    {
+      "exit_code": 2,
+      "ignore_production_role": false,
+      "name": "checkout_without_repository",
+      "stderr": "Builder Mode refused: the journey project clone is marked 'production'.\n  Project path: <ROOT>\n  Clone role source: <default: missing marker>\n  Development should happen in a clone marked 'dev'.\n  To proceed here anyway, pass --ignore-production-role.\n",
+      "tree": {
+        "git": false,
+        "marker": null,
+        "pyproject": null,
+        "src_memory": true
+      },
+      "with_project": true
+    },
+    {
+      "exit_code": null,
+      "ignore_production_role": true,
+      "name": "production_with_override",
+      "stderr": "\u001b[38;5;208m⚠️  Production clone override: --ignore-production-role passed.\u001b[0m\n",
+      "tree": {
+        "git": true,
+        "marker": "production",
+        "pyproject": null,
+        "src_memory": true
+      },
+      "with_project": true
+    },
+    {
+      "exit_code": 2,
+      "ignore_production_role": false,
+      "name": "no_project_path_uses_cwd",
+      "stderr": "Builder Mode refused: the journey project clone is marked 'production'.\n  Project path: <current directory>\n  Clone role source: <ROOT>/.mirror-clone-role\n  Development should happen in a clone marked 'dev'.\n  To proceed here anyway, pass --ignore-production-role.\n",
+      "tree": {
+        "git": true,
+        "marker": "production",
+        "pyproject": null,
+        "src_memory": true
+      },
+      "with_project": false
+    }
+  ],
   "invocations": [
     {
       "exit_code": 0,

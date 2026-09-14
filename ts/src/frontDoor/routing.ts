@@ -1,13 +1,16 @@
 import {
+  BUILD_LOAD_COMPOSITION,
   CONSULT_ASK_TRANSPORT,
   CONSULT_CREDITS_TRANSPORT,
   CONVERSATION_TAIL_TRANSPORT,
+  type ComposedProviderTransportSpec,
   CULTIVATION_APPLY_TRANSPORT,
   CULTIVATION_SCAN_TRANSPORT,
   DESCRIPTOR_TRANSPORT,
   JOURNAL_TRANSPORT,
   MIRROR_QUERY_TRANSPORT,
   type ProviderTransportSpec,
+  resolveComposedProviderTransport,
   resolveProviderTransport,
   SEARCH_TRANSPORT,
   SOUL_HARVEST_TRANSPORT,
@@ -87,6 +90,16 @@ export type RouteEnvironment = {
   MIRROR_TS_SOUL?: string;
   MIRROR_TS_SOUL_EMBEDDING_REPLAY?: string;
   MIRROR_TS_EXPLORE?: string;
+  /**
+   * CV22.DS7.US8: the Builder family's revert and its replay fixtures.
+   *
+   * They reach routing through `explore story promote`, whose tail is a Builder
+   * session start, and through the `build` route at plateau 8. Declared here so
+   * a caller cannot pass one under a typo'd name and silently get the default.
+   */
+  MIRROR_TS_BUILD?: string;
+  MIRROR_TS_BUILD_LLM_REPLAY?: string;
+  MIRROR_TS_BUILD_EMBEDDING_REPLAY?: string;
   MIRROR_TS_WEEK?: string;
   MIRROR_TS_JOURNAL?: string;
   MIRROR_TS_JOURNAL_LLM_REPLAY?: string;
@@ -207,10 +220,16 @@ function conversationLoggerSubcommand(argv: readonly string[]): string | undefin
 function providerRoute(
   command: string | null,
   env: RouteEnvironment,
-  spec: ProviderTransportSpec,
+  spec: ProviderTransportSpec | ComposedProviderTransportSpec,
   leaf?: string,
 ): RouteDecision {
-  const transport = resolveProviderTransport(env, spec);
+  // A composition resolves three specs at once (`build load` and the one leaf
+  // whose tail it is, `explore story promote`); a plain spec resolves one. Both
+  // yield the same decision shape, so the engine rule below is written once.
+  const transport =
+    "owner" in spec
+      ? resolveComposedProviderTransport(env, spec)
+      : resolveProviderTransport(env, spec);
   const reason = leaf ? `${transport.reason} (${leaf})` : transport.reason;
   return {
     command,
@@ -737,6 +756,16 @@ export function routeMemoryCommand(
         reason: "explore TS route disabled by MIRROR_TS_EXPLORE=0",
       };
     }
+    // `story promote` ends in a Builder session start (`cmd_story_promote`
+    // calls `cmd_load`), so it answers to the SAME composed decision `build
+    // load` does: `MIRROR_TS_BUILD=0`, `MIRROR_TS_SEARCH=0`, or
+    // `MIRROR_TS_CONVERSATION_LLM_TAIL=0` each send it to Python. Resolved here
+    // rather than inside the route because promote's writes are not idempotent
+    // -- once the story is promoted a second run finds none -- so the engine
+    // must be decided before the first mutation, not after.
+    if (subcommand === "story" && exploreStoryAction(argv) === "promote") {
+      return providerRoute(command, env, BUILD_LOAD_COMPOSITION, "story promote");
+    }
     return { command, engine: "ts", reason: `DS7.US7 explore ${subcommand} ported to TS` };
   }
 
@@ -790,11 +819,12 @@ const TS_EXPLORE_SUBCOMMANDS = new Set(["load", "deactivate", "story"]);
 
 // Python's `explore story` actions, by name.
 //
-// `promote` is absent DELIBERATELY, not by oversight: `cmd_story_promote` ends
-// by calling Builder `load`, which US8 owns. The leaf stays on Python until the
-// Builder tree is ported, and the burn-down ledger carries the dependency so it
-// cannot be forgotten when the gate flips.
+// `promote` joined at CV22.DS7.US8 plateau 7, having waited on Python by name
+// since US7 because `cmd_story_promote` ends by calling Builder `load`. It is
+// the one action here whose engine also depends on the provider composition;
+// see the decision above.
 const TS_EXPLORE_STORY_ACTIONS = new Set([
+  "promote",
   "show",
   "list",
   "archive",

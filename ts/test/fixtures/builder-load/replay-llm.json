@@ -1,0 +1,10 @@
+{
+  "kind": "llm",
+  "responses": {
+    "conversation_summary": "",
+    "conversation_tags": "[]",
+    "conversation_title": "Builder session",
+    "extraction": "[]",
+    "task_extraction": "[]"
+  }
+}

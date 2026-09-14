@@ -1,20 +1,24 @@
 [< Story](index.md)
 
-# Handoff — CV22.DS7.US8 — Builder/Ariad tree (plateaus 1–6 complete, 7 in flight)
+# Handoff — CV22.DS7.US8 — Builder/Ariad tree (plateaus 1–7 complete)
 
-**Status:** plateaus 1–6 of 9 complete, plateau 7 in flight. **All 27 in-scope
-leaves answer from TypeScript**, `load` included and graded, and all three Ariad flows — the story lifecycle, the aggregate
-Delivery Story lifecycle, and the cadence/authority paths — run on both engines and
-agree after every step. **Nothing is routed** — `routing.ts` is untouched and every
-`build` invocation still reaches Python, which is the intended state until plateau 8
-adds the gate and plateau 9 flips it.
+**Status:** plateaus 1–7 of 9 complete. **All 27 in-scope leaves answer from
+TypeScript**, `load` included and graded on a real corpus, and all three Ariad
+flows — the story lifecycle, the aggregate Delivery Story lifecycle, and the
+cadence/authority paths — run on both engines and agree after every step.
+**No `build` invocation is routed** — `routing.ts` still sends the whole family
+to Python, which is the intended state until plateau 8 adds the gate and plateau
+9 flips it. The one routing change plateau 7 did make is `explore story promote`
+(US7's held leaf), whose tail is a Builder session start.
 
 ## Resume here
 
-**Plateau 7 is in flight. `load` is ported AND graded; what remains is the
-seam around it.** Every leaf in the story now answers from TypeScript.
+**Plateau 7 is complete.** Every leaf is ported and graded, `load` included, and
+one of them — `explore story promote`, whose tail is a Builder session start —
+already answers from TypeScript. The `build` family itself is still entirely
+unrouted: the gate arrives at plateau 8 and the flip at plateau 9.
 
-What already landed:
+What landed in plateau 7:
 
 - **the pure half** — `builder/transition.ts` (the `■ BUILDER MODE ACTIVE` card,
   `extractStage`/`extractSection`/`truncateWords`, `extractQuery`), 21 transition
@@ -42,13 +46,18 @@ What already landed:
 - **the `builder_load` probe, the provider-isolation test, and the cost
   measurement** (plan items 18d, 23) — a whole session start replayed on a copy
   of the REAL database, 25 graded rows, matching first run and proven to bite by
-  two killed mutants. See the three entries below.
+  two killed mutants. See the three entries below;
+- **the `explore story promote` tail** (plan item 20) — **plateau 7 is
+  complete**. The leaf that waited on Python by name since US7 now answers from
+  TypeScript, with the clone-role guard ported and graded, and with
+  `frontDoor/buildLoadRuntime.ts` — the composed transport, the close tail, and
+  the guard — which plateau 8's `build` route reuses unchanged.
 
-**Next, in order:**
+**Next: plateau 8** (front door, gate off), then plateau 9 (the flip).
 
-1. **the `explore story promote` tail**, waiting since US7 for Builder `load`.
-
-Then plateau 8 (front door, gate off) and plateau 9 (the flip).
+Plateau 8 inherits more than it was planned to: the route only has to parse
+argv, pick a leaf, and call `createBuildLoadRuntime` — the provider wiring,
+the guard, and the composed decision are done and exercised by a flipped leaf.
 
 The composed decision exists but is **not consumed yet**: `buildRoute.ts` calls
 it before the banner at plateau 8 (item 21), which is also where
@@ -154,6 +163,44 @@ Then plateau 8 (front door, gate off) and plateau 9 (the flip).
   reach `familyProviders.ts` (so the property cannot pass vacuously), and pins
   that the walker walked. Both mutants — a planted value import and a planted
   TYPE-only import — are killed.
+- **The clone-role guard exits 2, and this port exited 1.** Found by porting it:
+  `_check_clone_role_guard` ends in `sys.exit(2)` — a usage-level refusal, the
+  class argparse uses — while `load`'s unknown-journey refusal exits 1, and the
+  two branches are one `if` apart. The corpus could not catch it (it stages a
+  neutral checkout so the guard stays silent) and the unit test asserted the
+  wrong number because it injected the refusal. Now graded against Python over
+  eight staged trees, bytes and exit code.
+- **`--ignore-production-role` DOWNGRADES the guard, it does not skip it.** An
+  orange warning on stderr, before the banner, and the session start continues.
+  A port that read the flag as "do not look" would lose the only trace that
+  someone worked in a production clone on purpose.
+- **The guard's cases stage a git repo in a temp dir OUTSIDE this checkout.**
+  `inspect_clone_role` resolves the repo root with `git rev-parse
+  --show-toplevel`, so a tree staged under `tmp/` inherits THIS repository's
+  `.mirror-clone-role` — the plateau-1 trap in a new place. And the TS side must
+  `realpathSync` its temp root: on macOS `/var` is a symlink to `/private/var`,
+  so git answers with the resolved path and the recorded `<ROOT>` substitution
+  misses by a prefix.
+- **`promote` decides its engine before it writes.** Promotion ends the story's
+  activeness, so a second run finds no active story and renders
+  `no_builder_handoff`: not idempotent, therefore not recoverable by retry. The
+  composed decision is resolved in `routing.ts`, and the route resolves the
+  Builder runtime only AFTER the no-handoff refusal (which needs no provider at
+  all) and BEFORE either mutation.
+- **A harness that configures one family and exercises another gets the
+  refusal.** The conversation smoke sets the conversation fixtures and never set
+  the build ones, so its first promote run reported an incomplete replay fixture
+  and went to Python — the composed rule biting in the first harness that met it,
+  rather than replaying two searches while the close tail went live. The smoke
+  now carries `MIRROR_TS_BUILD_*_REPLAY`, and the episode is the evidence that
+  the rule is not theoretical.
+- **Under replay, the close tail reads the BUILD family's fixtures.**
+  `createLoggerRuntime` resolves `CONVERSATION_TAIL_TRANSPORT` itself, so a shell
+  holding only `MIRROR_TS_BUILD_*_REPLAY` would replay the two searches and send
+  the close tail live — real money inside a command configured to be
+  deterministic. `buildLoadRuntime.ts` overlays the tail's variables, which is
+  the composition's promise ("every seam inside `load` answers to the owner's
+  fixtures") made true at the one place it could have leaked.
 - **The per-session cost floor is the close tail, not the double embedding.**
   Measured from the real ledger and written into the plan's Debt section: the two
   query embeddings cost a median **$0.0000046** per session start, of which half

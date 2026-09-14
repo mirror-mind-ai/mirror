@@ -89,8 +89,18 @@ export interface BuildLoadDeps {
   readonly embeddingProvider?: EmbeddingProvider;
   /** Python's `switch_conversation`, injected because it carries the close tail. */
   readonly switchConversation?: (journey: string, sessionId: string | null) => Promise<void>;
-  /** `inspect_clone_role`'s refusal, injected so the pure composition stays testable. */
-  readonly cloneRoleRefusal?: (projectPath: string | null) => string | null;
+  /**
+   * `_check_clone_role_guard`'s outcome, injected because its inputs are the
+   * MACHINE's -- a git root and a marker file -- and this module is graded as a
+   * pure port over a database. `frontDoor/cloneRoleGuard.ts` supplies the real
+   * one; the corpus stages a neutral checkout so the guard stays silent.
+   *
+   * `exitCode: null` is the `--ignore-production-role` case: the warning prints
+   * and the session start CONTINUES.
+   */
+  readonly cloneRoleGuard?: (
+    projectPath: string | null,
+  ) => { readonly stderr: string; readonly exitCode: number | null } | null;
 }
 
 /**
@@ -220,13 +230,18 @@ export async function runBuildLoad(
 
   // The clone-role guard runs BEFORE the banner: refusing after it would print a
   // session start the command then abandons.
-  const refusal = deps.cloneRoleRefusal?.(projectPath) ?? null;
-  if (refusal !== null) {
-    return { stdout: "", stderr: refusal, exitCode: 1, providerCalls: 0 };
+  //
+  // It exits **2**, not 1 -- a usage-level refusal, the class argparse uses --
+  // while the unknown-journey refusal above exits 1. The two are one `if` apart
+  // and were the same code until the guard was ported and graded.
+  const guard = deps.cloneRoleGuard?.(projectPath) ?? null;
+  if (guard !== null && guard.exitCode !== null) {
+    return { stdout: "", stderr: guard.stderr, exitCode: guard.exitCode, providerCalls: 0 };
   }
 
   let stdout = printed(renderBuilderModeTransition({ journey: slug, journeyContent, projectPath }));
-  const stderr = banner(slug, projectPath);
+  // The override warning precedes the banner, as Python's two `print`s do.
+  const stderr = `${guard?.stderr ?? ""}${banner(slug, projectPath)}`;
 
   if (getAdoptedMethod(db, slug) === "ariad") {
     stdout += printed(renderEntrySurface(db, slug, projectPath));

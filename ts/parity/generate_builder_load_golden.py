@@ -258,6 +258,26 @@ TS_EMBEDDING_FIXTURE = {
     "response": {"embedding": LOAD_FIXTURE["embedding"]},
 }
 
+# The family's LLM fixture, which exists so `MIRROR_TS_BUILD_*_REPLAY` is a
+# COMPLETE replay configuration.
+#
+# `load` itself sends no prompt. The roles below belong to the previous
+# conversation's close tail, which `switch_conversation` runs on the way in, and
+# a replay run must be able to answer them rather than reaching the provider for
+# the one path that happens to have a conversation open. The values are neutral
+# on purpose: a test that depends on what they SAY is testing the close tail,
+# which has its own corpus (CV22.DS7.US5).
+TS_LLM_FIXTURE = {
+    "kind": "llm",
+    "responses": {
+        "conversation_title": "Builder session",
+        "conversation_tags": "[]",
+        "conversation_summary": "",
+        "extraction": "[]",
+        "task_extraction": "[]",
+    },
+}
+
 FIXTURE_DIR = HERE.parent / "test" / "fixtures" / "builder-load"
 
 
@@ -269,6 +289,9 @@ def _write_fixtures() -> Path:
     )
     (FIXTURE_DIR / "replay-embedding.json").write_text(
         json.dumps(TS_EMBEDDING_FIXTURE, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    (FIXTURE_DIR / "replay-llm.json").write_text(
+        json.dumps(TS_LLM_FIXTURE, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
     return oracle_path
 
@@ -856,11 +879,151 @@ def _load_invocations(oracle_fixture: Path) -> list[dict[str, Any]]:
     return [_run_case(case, oracle_fixture) for case in LOAD_CASES]
 
 
+# --- the production-clone guard ---------------------------------------------
+#
+# `_check_clone_role_guard` runs BEFORE the banner, and its inputs are the
+# machine's: a git root, a `.mirror-clone-role` marker, and a `pyproject.toml`
+# declaring Mirror Mind. So its cases stage whole trees under a temp root
+# OUTSIDE this checkout -- inside it, `git rev-parse --show-toplevel` would walk
+# up to this repository and read the developer's own marker, which is how the
+# plateau-1 corpus ended up encoding one machine's `dev`.
+#
+# The recorded messages carry `<ROOT>` where the staged path appears; the
+# TypeScript side stages the same tree and substitutes its own.
+CLONE_ROLE_TREES: list[dict[str, Any]] = [
+    {
+        "name": "not_a_checkout",
+        "tree": {"pyproject": None, "src_memory": False, "git": True, "marker": "production"},
+        "with_project": True,
+        "ignore": False,
+    },
+    {
+        "name": "pyproject_is_another_project",
+        "tree": {
+            "pyproject": '[project]\nname = "something-else"\n',
+            "src_memory": True,
+            "git": True,
+            "marker": "production",
+        },
+        "with_project": True,
+        "ignore": False,
+    },
+    {
+        "name": "checkout_marked_dev",
+        "tree": {"pyproject": None, "src_memory": True, "git": True, "marker": "dev"},
+        "with_project": True,
+        "ignore": False,
+    },
+    {
+        "name": "checkout_marked_production",
+        "tree": {"pyproject": None, "src_memory": True, "git": True, "marker": "production"},
+        "with_project": True,
+        "ignore": False,
+    },
+    {
+        # An unknown role DEFAULTS to production, and the marker path is still
+        # the source -- the message must not claim the marker was missing.
+        "name": "checkout_unknown_role",
+        "tree": {"pyproject": None, "src_memory": True, "git": True, "marker": "staging"},
+        "with_project": True,
+        "ignore": False,
+    },
+    {
+        # No git root: `inspect_clone_role` returns the default with NO source,
+        # which is the branch that renders `<default: missing marker>`.
+        "name": "checkout_without_repository",
+        "tree": {"pyproject": None, "src_memory": True, "git": False, "marker": None},
+        "with_project": True,
+        "ignore": False,
+    },
+    {
+        # The override DOWNGRADES the guard; it does not skip it. The session
+        # start continues, and the warning is the only trace it happened.
+        "name": "production_with_override",
+        "tree": {"pyproject": None, "src_memory": True, "git": True, "marker": "production"},
+        "with_project": True,
+        "ignore": True,
+    },
+    {
+        # A journey with no project path is judged by the SHELL's directory, and
+        # the message says so.
+        "name": "no_project_path_uses_cwd",
+        "tree": {"pyproject": None, "src_memory": True, "git": True, "marker": "production"},
+        "with_project": False,
+        "ignore": False,
+    },
+]
+
+MIRROR_PYPROJECT = '[project]\nname = "mirror"\nversion = "0.0.0"\n'
+
+
+def _stage_clone_role_tree(root: Path, spec: dict[str, Any]) -> None:
+    root.mkdir(parents=True, exist_ok=True)
+    pyproject = spec.get("pyproject")
+    if pyproject is not False and pyproject is not None:
+        (root / "pyproject.toml").write_text(pyproject, encoding="utf-8")
+    elif pyproject is None and spec.get("src_memory"):
+        (root / "pyproject.toml").write_text(MIRROR_PYPROJECT, encoding="utf-8")
+    if spec.get("src_memory"):
+        (root / "src" / "memory").mkdir(parents=True, exist_ok=True)
+    if spec.get("git"):
+        subprocess.run(
+            ["git", "init", "--quiet"], cwd=root, check=True, capture_output=True, text=True
+        )
+    marker = spec.get("marker")
+    if marker:
+        (root / ".mirror-clone-role").write_text(f"{marker}\n", encoding="utf-8")
+
+
+def _clone_role_cases() -> list[dict[str, Any]]:
+    import contextlib
+    import io
+    import tempfile
+
+    from memory.cli.build import _check_clone_role_guard
+
+    cases: list[dict[str, Any]] = []
+    for case in CLONE_ROLE_TREES:
+        # A temp root OUTSIDE the repository: see the note above CLONE_ROLE_TREES.
+        with tempfile.TemporaryDirectory(prefix="clone-role-") as raw:
+            root = Path(raw).resolve()
+            _stage_clone_role_tree(root, case["tree"])
+            project_path = str(root) if case["with_project"] else None
+            stderr = io.StringIO()
+            exit_code: int | None = None
+            previous = os.getcwd()
+            # Python reads `Path.cwd()` when there is no project path, so the
+            # no-project case has to be judged from the staged directory.
+            os.chdir(root if project_path is None else previous)
+            try:
+                with contextlib.redirect_stderr(stderr):
+                    _check_clone_role_guard(
+                        ignore_production_role=case["ignore"],
+                        project_path=project_path,
+                    )
+            except SystemExit as exit_signal:
+                exit_code = int(exit_signal.code or 0)
+            finally:
+                os.chdir(previous)
+            cases.append(
+                {
+                    "name": case["name"],
+                    "tree": case["tree"],
+                    "with_project": case["with_project"],
+                    "ignore_production_role": case["ignore"],
+                    "stderr": stderr.getvalue().replace(str(root), "<ROOT>"),
+                    "exit_code": exit_code,
+                }
+            )
+    return cases
+
+
 def build_payload() -> dict[str, Any]:
     oracle_fixture = _write_fixtures()
     return {
         "transitions": _transition_cases(),
         "queries": _query_cases(),
+        "clone_role": _clone_role_cases(),
         "invocations": _load_invocations(oracle_fixture),
     }
 
@@ -895,6 +1058,7 @@ def main() -> None:
     print(
         f"{len(payload['transitions'])} transition cases, "
         f"{len(payload['queries'])} query cases, "
+        f"{len(payload['clone_role'])} clone-role cases, "
         f"{len(payload['invocations'])} invocations"
     )
     print(f"wrote {OUT_PATH.relative_to(HERE.parent.parent)}")
