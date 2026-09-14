@@ -706,9 +706,7 @@ test("the file-writing lifecycle leaves match Python's streams and its files", (
   // leaf was still replayed.
   const cases_ = cases.filter(
     (entry) =>
-      entry.project_files !== undefined &&
-      entry.argv[0] !== "prepare-templates" &&
-      isPorted(entry),
+      entry.project_files !== undefined && entry.argv[0] !== "prepare-templates" && isPorted(entry),
   );
   assert.ok(cases_.length >= 14, `expected the lifecycle write cases, got ${cases_.length}`);
   for (const entry of cases_) {

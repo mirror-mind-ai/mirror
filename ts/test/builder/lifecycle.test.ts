@@ -41,13 +41,37 @@ import {
   setDeliveryCursor,
   setTo,
 } from "#builder/deliveryCursor.ts";
+import {
+  closureArtifactManifest,
+  coherenceDeliveryStory,
+  doneDeliveryStory,
+  renderDeliveryStoryClosureReport,
+  reviewDeliveryStory,
+  validateDeliveryStory,
+} from "#builder/deliveryStoryClosure.ts";
+import {
+  approveDeliveryStoryPlan,
+  cancelDeliveryStoryPlanPreauthorization,
+  planDeliveryStoryCheckpoint,
+  renderDeliveryStoryImplementationStarted,
+  renderDeliveryStoryPlanReport,
+  renderPlanPreauthorizationMismatch,
+  renderPlanPreauthorizationRecorded,
+} from "#builder/deliveryStoryPlan.ts";
 import { renderDeliveryStoryReadyReport } from "#builder/deliveryStoryReady.ts";
+import { inspectAuthoredClosure } from "#builder/deliveryStoryRoadmapClosure.ts";
 import {
   ExpandBlockedError,
   expandDeliveryStory,
   renderExpandBlocked,
   renderExpandReport,
 } from "#builder/expand.ts";
+import {
+  inspectNavigatorFlowUnit,
+  renderFlowUnitScopeConfirmationReport,
+  renderNavigatorFlowUnitReport,
+  setNavigatorFlowUnit,
+} from "#builder/flowUnit.ts";
 import { planLifecycleItem, renderPlanCheckpoint } from "#builder/plan.ts";
 import { PlanPreauthorizationMismatch } from "#builder/planPreauthorization.ts";
 import { prepareLifecycleItem, renderPrepareReport } from "#builder/prepare.ts";
@@ -69,6 +93,7 @@ import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts
 import golden from "#goldens/builder-lifecycle.golden.json" with { type: "json" };
 import { absolutePathsIn, normalizePathRows, scrubMessage } from "#helpers/builderSurfacePaths.ts";
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
+import { pyTitle } from "#util/pythonText.ts";
 
 interface Surface {
   id: string;
@@ -94,6 +119,12 @@ interface Step {
   missing_decision?: string[];
   missing_coherence?: string[];
   missing_done?: string[];
+  /** Plateau 5: the aggregate extras. Every one of them is asserted below. */
+  flow_unit?: string;
+  source?: string;
+  checkpoint?: string;
+  authored_ready?: boolean;
+  authored_issues?: string[];
 }
 
 interface Sequence {
@@ -111,6 +142,16 @@ const HARNESS_OPS = ["delete_file", "seed_cursor", "seed_receipt", "write_file"]
 /** Lifecycle operations TypeScript can execute today. */
 const PORTED_OPS: readonly string[] = [
   "approve",
+  "approve_delivery_story",
+  "authored_closure",
+  "cancel_delivery_story_preauthorization",
+  "coherence_delivery_story",
+  "done_delivery_story",
+  "inspect_flow_unit",
+  "plan_delivery_story",
+  "review_delivery_story",
+  "set_flow_unit",
+  "validate_delivery_story",
   "coherence",
   "done",
   "review",
@@ -135,18 +176,7 @@ const PORTED_OPS: readonly string[] = [
  * `cmd_done_delivery_story`, graded here as its own step because its refusals are
  * the safety property the whole plateau turns on.
  */
-const PENDING_OPS: readonly string[] = [
-  "approve_delivery_story",
-  "authored_closure",
-  "cancel_delivery_story_preauthorization",
-  "coherence_delivery_story",
-  "done_delivery_story",
-  "inspect_flow_unit",
-  "plan_delivery_story",
-  "review_delivery_story",
-  "set_flow_unit",
-  "validate_delivery_story",
-];
+const PENDING_OPS: readonly string[] = [];
 
 const lifecycleOps = (step: Step): boolean => !(HARNESS_OPS as readonly string[]).includes(step.op);
 
@@ -579,6 +609,14 @@ interface ReplayOutcome {
   readonly missingDecision?: string[];
   readonly missingCoherence?: string[];
   readonly missingDone?: string[];
+  /** The flow-unit faces record the effective unit and where it came from. */
+  readonly flowUnit?: string;
+  readonly source?: string;
+  /** The aggregate closure verbs record their checkpoint alongside the status. */
+  readonly checkpoint?: string;
+  /** The Done preflight records its verdict and its project-relative evidence. */
+  readonly authoredReady?: boolean;
+  readonly authoredIssues?: string[];
 }
 
 /**
@@ -988,8 +1026,303 @@ function replayLifecycleStep(context: ReplayContext, step: Step): ReplayOutcome 
         return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
       }
     }
+    // -- Delivery Story ops (plateau 5) ------------------------------------
+    case "inspect_flow_unit": {
+      try {
+        const report = inspectNavigatorFlowUnit(context.db, {
+          journey: context.journey,
+          method: (step.input as Record<string, string>).method ?? "ariad",
+        });
+        return {
+          surfaces: [{ id: "navigator_flow_unit", text: renderNavigatorFlowUnitReport(report) }],
+          flowUnit: report.flowUnit,
+          source: report.source,
+        };
+      } catch (error) {
+        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+      }
+    }
+    case "set_flow_unit": {
+      const input = step.input as Record<string, string>;
+      try {
+        const report = setNavigatorFlowUnit(
+          context.db,
+          {
+            journey: context.journey,
+            method: input.method ?? "ariad",
+            flowUnit: input.flow_unit ?? "",
+          },
+          context.deps,
+        );
+        // The id follows the UNIT, exactly as Python's renderer chooses it.
+        return {
+          surfaces: [
+            {
+              id:
+                report.flowUnit === "delivery_story"
+                  ? "delivery_story_scope_confirmation"
+                  : "next_story_confirmation",
+              text: renderFlowUnitScopeConfirmationReport(report),
+            },
+          ],
+          flowUnit: report.flowUnit,
+          source: report.source,
+        };
+      } catch (error) {
+        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+      }
+    }
+    case "plan_delivery_story": {
+      const input = step.input as Record<string, unknown>;
+      const planPath = input.artifact === false ? null : canonicalPlanPath(context);
+      try {
+        const report = planDeliveryStoryCheckpoint(
+          context.db,
+          {
+            journey: context.journey,
+            method: (input.method as string) ?? "ariad",
+            objective: (input.objective as string) ?? "",
+            childWorkItems: (input.child_work_items as string[]) ?? [],
+            planArtifactPath: planPath,
+            preauthorize: (input.preauthorize as boolean) ?? false,
+            stopBoundary: (input.stop_boundary as string) ?? "navigator_validation",
+          },
+          context.deps,
+        );
+        const surfaces = [
+          {
+            id: "delivery_story_plan_checkpoint",
+            text: renderDeliveryStoryPlanReport(report),
+          },
+        ];
+        if (input.preauthorize === true) {
+          surfaces.push({
+            id: "plan_preauthorization_recorded",
+            text: renderPlanPreauthorizationRecorded(report),
+          });
+        }
+        surfaces.push({
+          id: "artifacts_materialized",
+          text: renderArtifactsMaterializedSurface({
+            context: `Delivery Story Plan — ${report.cursor.activeItem ?? "active item"}`,
+            artifacts: report.materializedArtifacts,
+            projectPath: context.project,
+            boundary:
+              "Plan artifacts were materialized. Implementation remains blocked until approval.",
+          }),
+        });
+        return {
+          surfaces,
+          artifacts: report.materializedArtifacts.map((artifact) => ({
+            kind: artifact.kind,
+            path: projectRelativePath(artifact.path, context.projectAbsolute),
+            status: artifact.status,
+          })),
+          status: report.status,
+        };
+      } catch (error) {
+        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+      }
+    }
+    case "approve_delivery_story": {
+      const input = step.input as Record<string, unknown>;
+      const before = getDeliveryCursor(context.db, context.journey);
+      try {
+        const report = approveDeliveryStoryPlan(
+          context.db,
+          {
+            journey: context.journey,
+            method: (input.method as string) ?? "ariad",
+            planArtifactPath: canonicalPlanPath(context),
+            usePreauthorization: (input.use_preauthorization as boolean) ?? false,
+          },
+          context.deps,
+        );
+        const surfaces = [
+          {
+            id: "delivery_story_plan_checkpoint",
+            text: renderDeliveryStoryPlanReport(report),
+          },
+        ];
+        if (report.status !== "already_approved") {
+          surfaces.push({
+            id: "artifacts_materialized",
+            text: renderArtifactsMaterializedSurface({
+              context: `Delivery Story Plan Approval — ${report.cursor.activeItem ?? "active item"}`,
+              artifacts: report.materializedArtifacts,
+              projectPath: context.project,
+              boundary:
+                "Plan approval artifacts were materialized. Implementation may proceed under the approved plan.",
+            }),
+          });
+          if (report.implementationStarted) {
+            surfaces.push({
+              id: "implementation_started",
+              text: renderDeliveryStoryImplementationStarted(report),
+            });
+          }
+        }
+        return {
+          surfaces,
+          artifacts:
+            report.status === "already_approved"
+              ? []
+              : report.materializedArtifacts.map((artifact) => ({
+                  kind: artifact.kind,
+                  path: projectRelativePath(artifact.path, context.projectAbsolute),
+                  status: artifact.status,
+                })),
+          status: report.status,
+          implementationStarted: report.implementationStarted,
+          unfilledSections: [...report.unfilledSections],
+        };
+      } catch (error) {
+        if (error instanceof PlanPreauthorizationMismatch) {
+          return {
+            surfaces: [
+              {
+                id: "plan_preauthorization_mismatch",
+                text: renderPlanPreauthorizationMismatch({
+                  activeItem: before?.activeItem ?? null,
+                  reason: error.reason,
+                }),
+              },
+            ],
+            error: `PlanPreauthorizationMismatch: ${error.reason}`,
+          };
+        }
+        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+      }
+    }
+    case "cancel_delivery_story_preauthorization": {
+      try {
+        const cursor = cancelDeliveryStoryPlanPreauthorization(
+          context.db,
+          {
+            journey: context.journey,
+            method: (step.input as Record<string, string>).method ?? "ariad",
+          },
+          context.deps,
+        );
+        return {
+          surfaces: [
+            {
+              id: "plan_preauthorization_mismatch",
+              text: renderPlanPreauthorizationMismatch({
+                activeItem: cursor.activeItem,
+                reason: "navigator_cancelled",
+              }),
+            },
+          ],
+        };
+      } catch (error) {
+        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+      }
+    }
+    case "validate_delivery_story":
+    case "review_delivery_story":
+    case "coherence_delivery_story":
+    case "done_delivery_story":
+      return replayDeliveryStoryClosure(context, step);
+    case "authored_closure": {
+      const cursor = getDeliveryCursor(context.db, context.journey);
+      try {
+        const report = inspectAuthoredClosure(context.project, {
+          deliveryStory: cursor?.activeItem ?? "",
+          childWorkItems: cursor?.childWorkItems ?? [],
+        });
+        return {
+          surfaces: [],
+          authoredReady: report.ready,
+          authoredIssues: [...report.issues],
+        };
+      } catch (error) {
+        return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
+      }
+    }
     default:
       throw new Error(`unsupported lifecycle op: ${step.op}`);
+  }
+}
+
+/**
+ * The four aggregate closure verbs, which differ only in the call and the artifact
+ * name — the surface, the manifest, and the recorded extras are one shape.
+ */
+function replayDeliveryStoryClosure(context: ReplayContext, step: Step): ReplayOutcome {
+  const input = step.input as Record<string, unknown>;
+  const method = (input.method as string) ?? "ariad";
+  const path = closureArtifactPath(context, (input.artifact as string | null) ?? null);
+  const existedBefore = path !== null && existsSync(path);
+  const kind = step.op.replace("_delivery_story", "");
+  try {
+    const report = (() => {
+      const shared = { journey: context.journey, method, artifactPath: path };
+      switch (step.op) {
+        case "validate_delivery_story":
+          return validateDeliveryStory(
+            context.db,
+            {
+              ...shared,
+              summary: (input.summary as string) ?? "",
+              navigatorAccepted: (input.navigator_accepted as boolean) ?? false,
+            },
+            context.deps,
+          );
+        case "review_delivery_story":
+          return reviewDeliveryStory(
+            context.db,
+            {
+              ...shared,
+              decision: (input.decision as string) ?? "",
+              summary: (input.summary as string) ?? "",
+            },
+            context.deps,
+          );
+        case "coherence_delivery_story":
+          return coherenceDeliveryStory(
+            context.db,
+            { ...shared, summary: (input.summary as string) ?? "" },
+            context.deps,
+          );
+        default:
+          return doneDeliveryStory(
+            context.db,
+            { ...shared, summary: (input.summary as string) ?? "" },
+            context.deps,
+          );
+      }
+    })();
+    const surfaces = [
+      {
+        id: "delivery_story_closure_checkpoint",
+        text: renderDeliveryStoryClosureReport(report),
+      },
+    ];
+    const artifacts = closureArtifactManifest(kind, path, existedBefore);
+    if (path !== null) {
+      surfaces.push({
+        id: "artifacts_materialized",
+        text: renderArtifactsMaterializedSurface({
+          context: `Delivery Story ${pyTitle(kind)} — ${report.cursor.activeItem ?? "active item"}`,
+          artifacts,
+          projectPath: context.project,
+          boundary: `${pyTitle(kind)} artifact was materialized.`,
+        }),
+      });
+    }
+    return {
+      surfaces,
+      artifacts: artifacts.map((artifact) => ({
+        kind: artifact.kind,
+        path: projectRelativePath(artifact.path, context.projectAbsolute),
+        status: artifact.status,
+      })),
+      status: report.status,
+      checkpoint: report.checkpoint,
+    };
+  } catch (error) {
+    return { surfaces: [], error: pythonError(error, context.projectAbsolute) };
   }
 }
 
@@ -1181,14 +1514,32 @@ function replaySequence(sequence: Sequence): void {
           `${where}: unfilled sections`,
         );
       }
+      // Every recorded extra is compared here. `authored_issues` is the one that
+      // matters most and the one that was briefly recorded without being asserted:
+      // the DS Done preflight emits NO surface, so its whole observable behavior is
+      // this list, and a mutant that stops reading `legacy/` survived until this
+      // loop knew about it. Recording without asserting is the same false green the
+      // plateau-3 harness lesson names — extended here from "assert the file
+      // changed" to "assert every field you record".
       for (const [key, actualValue] of [
         ["missing_evidence", outcome.missingEvidence],
         ["missing_decision", outcome.missingDecision],
         ["missing_coherence", outcome.missingCoherence],
         ["missing_done", outcome.missingDone],
+        ["authored_issues", outcome.authoredIssues],
       ] as const) {
         if (step[key] !== undefined) {
           assert.deepEqual(actualValue, step[key], `${where}: ${key}`);
+        }
+      }
+      for (const [key, actualValue] of [
+        ["flow_unit", outcome.flowUnit],
+        ["source", outcome.source],
+        ["checkpoint", outcome.checkpoint],
+        ["authored_ready", outcome.authoredReady],
+      ] as const) {
+        if (step[key] !== undefined) {
+          assert.equal(actualValue, step[key], `${where}: ${key}`);
         }
       }
       if (step.materialized_paths !== undefined) {

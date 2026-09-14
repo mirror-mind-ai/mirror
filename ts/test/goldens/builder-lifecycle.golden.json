@@ -17303,6 +17303,375 @@
     },
     {
       "journey": "sandbox-pet-store",
+      "name": "delivery_story_preauthorization_refuses_prose_placeholder",
+      "project_root": "tmp/parity/builder-lifecycle/delivery_story_preauthorization_refuses_prose_placeholder/project",
+      "steps": [
+        {
+          "cursor": null,
+          "files": {
+            "docs/project/roadmap/index.md": "# Roadmap\n"
+          },
+          "index": 0,
+          "input": {
+            "path": "docs/project/roadmap/index.md"
+          },
+          "metadata": null,
+          "op": "write_file",
+          "projection_requests": []
+        },
+        {
+          "cursor": null,
+          "files": {
+            "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n",
+            "docs/project/roadmap/index.md": "# Roadmap\n"
+          },
+          "index": 1,
+          "input": {
+            "path": "docs/project/roadmap/cv1-first/index.md"
+          },
+          "metadata": null,
+          "op": "write_file",
+          "projection_requests": []
+        },
+        {
+          "cursor": null,
+          "files": {
+            "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/index.md": "# CV1.DS1 — Aggregate delivery\n\n**Status:** ✅ Done\n**Type:** Delivery Story\n\n## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n| CV1.DS1.US1 | First child | User Story | ✅ Done |\n| CV1.DS1.TS1 | Second child | Technical Story | ✅ Done |\n\n## Done Condition\n\nDone when the children deliver a coherent outcome.\n",
+            "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n",
+            "docs/project/roadmap/index.md": "# Roadmap\n"
+          },
+          "index": 2,
+          "input": {
+            "path": "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/index.md"
+          },
+          "metadata": null,
+          "op": "write_file",
+          "projection_requests": []
+        },
+        {
+          "cursor": null,
+          "files": {
+            "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/cv1-ds1-us1-child/index.md": "# CV1.DS1.US1 — First child\n\n**Status:** ✅ Done\n**Type:** User Story\n",
+            "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/index.md": "# CV1.DS1 — Aggregate delivery\n\n**Status:** ✅ Done\n**Type:** Delivery Story\n\n## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n| CV1.DS1.US1 | First child | User Story | ✅ Done |\n| CV1.DS1.TS1 | Second child | Technical Story | ✅ Done |\n\n## Done Condition\n\nDone when the children deliver a coherent outcome.\n",
+            "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n",
+            "docs/project/roadmap/index.md": "# Roadmap\n"
+          },
+          "index": 3,
+          "input": {
+            "path": "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/cv1-ds1-us1-child/index.md"
+          },
+          "metadata": null,
+          "op": "write_file",
+          "projection_requests": []
+        },
+        {
+          "cursor": null,
+          "files": {
+            "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/cv1-ds1-ts1-child/index.md": "# CV1.DS1.TS1 — Second child\n\n**Status:** ✅ Done\n**Type:** Technical Story\n",
+            "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/cv1-ds1-us1-child/index.md": "# CV1.DS1.US1 — First child\n\n**Status:** ✅ Done\n**Type:** User Story\n",
+            "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/index.md": "# CV1.DS1 — Aggregate delivery\n\n**Status:** ✅ Done\n**Type:** Delivery Story\n\n## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n| CV1.DS1.US1 | First child | User Story | ✅ Done |\n| CV1.DS1.TS1 | Second child | Technical Story | ✅ Done |\n\n## Done Condition\n\nDone when the children deliver a coherent outcome.\n",
+            "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n",
+            "docs/project/roadmap/index.md": "# Roadmap\n"
+          },
+          "index": 4,
+          "input": {
+            "path": "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/cv1-ds1-ts1-child/index.md"
+          },
+          "metadata": null,
+          "op": "write_file",
+          "projection_requests": []
+        },
+        {
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1.DS1",
+            "active_item_level": "delivery_story",
+            "active_item_title": "Aggregate delivery",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [
+              "CV1.DS1.US1",
+              "CV1.DS1.TS1"
+            ],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "prepare",
+            "method": "ariad",
+            "navigator_flow_unit": "delivery_story",
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "files": {
+            "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/cv1-ds1-ts1-child/index.md": "# CV1.DS1.TS1 — Second child\n\n**Status:** ✅ Done\n**Type:** Technical Story\n",
+            "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/cv1-ds1-us1-child/index.md": "# CV1.DS1.US1 — First child\n\n**Status:** ✅ Done\n**Type:** User Story\n",
+            "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/index.md": "# CV1.DS1 — Aggregate delivery\n\n**Status:** ✅ Done\n**Type:** Delivery Story\n\n## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n| CV1.DS1.US1 | First child | User Story | ✅ Done |\n| CV1.DS1.TS1 | Second child | Technical Story | ✅ Done |\n\n## Done Condition\n\nDone when the children deliver a coherent outcome.\n",
+            "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n",
+            "docs/project/roadmap/index.md": "# Roadmap\n"
+          },
+          "index": 5,
+          "input": {
+            "active_item": "CV1.DS1",
+            "active_item_level": "delivery_story",
+            "active_item_title": "Aggregate delivery",
+            "child_work_items": [
+              "CV1.DS1.US1",
+              "CV1.DS1.TS1"
+            ],
+            "last_delivery_event": "prepare",
+            "method": "ariad",
+            "navigator_flow_unit": "delivery_story"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1\", \"active_item_title\": \"Aggregate delivery\", \"active_item_level\": \"delivery_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"prepare\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"delivery_story\", \"child_work_items\": [\"CV1.DS1.US1\", \"CV1.DS1.TS1\"], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+          "op": "seed_cursor",
+          "projection_requests": [
+            "sandbox-pet-store"
+          ]
+        },
+        {
+          "artifacts": [
+            {
+              "kind": "story index",
+              "path": "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/index.md",
+              "status": "existing"
+            },
+            {
+              "kind": "plan",
+              "path": "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/plan.md",
+              "status": "created"
+            },
+            {
+              "kind": "test guide",
+              "path": "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/test-guide.md",
+              "status": "created"
+            }
+          ],
+          "cursor": {
+            "active_checkpoint": "after_delivery_story_plan",
+            "active_item": "CV1.DS1",
+            "active_item_level": "delivery_story",
+            "active_item_title": "Aggregate delivery",
+            "aggregate_checkpoint_status": [
+              "plan:pending"
+            ],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [
+              "CV1.DS1.US1",
+              "CV1.DS1.TS1"
+            ],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "delivery_story_plan",
+            "method": "ariad",
+            "navigator_flow_unit": "delivery_story",
+            "pending_confirmation": "navigator_delivery_story_plan_approval",
+            "plan_preauthorization": {
+              "active_item": "CV1.DS1",
+              "active_item_level": "delivery_story",
+              "child_work_items": [
+                "CV1.DS1.TS1",
+                "CV1.DS1.US1"
+              ],
+              "cursor_generation": 0,
+              "flow_unit": "delivery_story",
+              "journey": "sandbox-pet-store",
+              "method": "ariad",
+              "plan_contract_version": "delivery_story_plan@1",
+              "policy": "exact_scope",
+              "reason": null,
+              "scope_fingerprint": "48894b1e817a7cd67d423c62fc8ca352ec9cf0f61e45926b8315b4a0887ea888",
+              "status": "pending",
+              "stop_boundary": "navigator_validation"
+            },
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "files": {
+            "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/cv1-ds1-ts1-child/index.md": "# CV1.DS1.TS1 — Second child\n\n**Status:** ✅ Done\n**Type:** Technical Story\n",
+            "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/cv1-ds1-us1-child/index.md": "# CV1.DS1.US1 — First child\n\n**Status:** ✅ Done\n**Type:** User Story\n",
+            "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/index.md": "# CV1.DS1 — Aggregate delivery\n\n**Status:** ✅ Done\n**Type:** Delivery Story\n\n## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n| CV1.DS1.US1 | First child | User Story | ✅ Done |\n| CV1.DS1.TS1 | Second child | Technical Story | ✅ Done |\n\n## Done Condition\n\nDone when the children deliver a coherent outcome.\n",
+            "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/plan.md": "# Delivery Story Plan — CV1.DS1\n\n**Journey:** sandbox-pet-store\n**Method:** ariad\n**Navigator Flow Unit:** delivery_story\n\n## Delivery Story\n\nAggregate delivery\n\n## Objective\n\nDeliver both children as one coherent outcome.\n\n## Child Work Packages\n\n- CV1.DS1.US1\n- CV1.DS1.TS1\n\n## Scope\n\nPending — name what this Delivery Story delivers across its child work packages.\n\n## Non-Goals\n\nPending — name what is explicitly out of scope for this Delivery Story.\n\n## Acceptance Behavior\n\nPending — describe the aggregate observable outcome, using Given/When/Then when practical.\n\n## Validation Route\n\nPending — describe how the aggregate delivery is validated, including whether E2E is required.\n\n## Implementation Contract\n\nPending — record the constraints for child work: TDD for behavior changes, changes scoped to this Delivery Story's children, and no silent scope absorption.\n\n---\n\n_Approval and lifecycle state are tracked by the Builder runtime, not duplicated in this plan._\n",
+            "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/test-guide.md": "[< Story](index.md)\n\n# Test Guide — CV1.DS1\n\n## Aggregate Validation\n\nPending aggregate Delivery Story validation across child work packages.\n\n## Child Work Packages\n\n- CV1.DS1.US1\n- CV1.DS1.TS1\n\n## Navigator Validation\n\nProvide the Navigator-visible route with expected observation, pass condition, and fail condition before the Delivery Story can pass aggregate Validation.\n\n## Validation Evidence\n\nPending implementation and validation.\n",
+            "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n",
+            "docs/project/roadmap/index.md": "# Roadmap\n"
+          },
+          "index": 6,
+          "input": {
+            "artifact": true,
+            "child_work_items": [
+              "CV1.DS1.US1",
+              "CV1.DS1.TS1"
+            ],
+            "method": "ariad",
+            "objective": "Deliver both children as one coherent outcome.",
+            "preauthorize": true,
+            "stop_boundary": "navigator_validation"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1\", \"active_item_title\": \"Aggregate delivery\", \"active_item_level\": \"delivery_story\", \"active_checkpoint\": \"after_delivery_story_plan\", \"pending_confirmation\": \"navigator_delivery_story_plan_approval\", \"last_delivery_event\": \"delivery_story_plan\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"delivery_story\", \"child_work_items\": [\"CV1.DS1.US1\", \"CV1.DS1.TS1\"], \"aggregate_checkpoint_status\": [\"plan:pending\"], \"cursor_generation\": 0, \"plan_preauthorization\": {\"journey\": \"sandbox-pet-store\", \"method\": \"ariad\", \"cursor_generation\": 0, \"active_item\": \"CV1.DS1\", \"active_item_level\": \"delivery_story\", \"flow_unit\": \"delivery_story\", \"child_work_items\": [\"CV1.DS1.TS1\", \"CV1.DS1.US1\"], \"plan_contract_version\": \"delivery_story_plan@1\", \"policy\": \"exact_scope\", \"stop_boundary\": \"navigator_validation\", \"scope_fingerprint\": \"48894b1e817a7cd67d423c62fc8ca352ec9cf0f61e45926b8315b4a0887ea888\", \"status\": \"pending\", \"reason\": null}, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+          "op": "plan_delivery_story",
+          "projection_requests": [
+            "sandbox-pet-store",
+            "sandbox-pet-store"
+          ],
+          "status": "pending_approval",
+          "surfaces": [
+            {
+              "id": "delivery_story_plan_checkpoint",
+              "text": "<<<ARIAD:DELIVERY_STORY_PLAN_CHECKPOINT>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ◉ DS Plan → ○ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  DELIVERY STORY PLAN                          │\n│                                                        │\n│ What is being planned?                                 │\n│ 🟦[CV1.DS1] — Aggregate delivery                        │\n│                                                        │\n│ Plan objective                                         │\n│ Deliver both children as one coherent outcome.         │\n│                                                        │\n│ Work packages                                          │\n│ - CV1.DS1.US1                                          │\n│ - CV1.DS1.TS1                                          │\n│                                                        │\n│ Next movement                                          │\n│ Review the plan artifact, then approve or revise.      │\n│                                                        │\n│ Choose the next move when ready.                       │\n╰────────────────────────────────────────────────────────╯\n<<<END:DELIVERY_STORY_PLAN_CHECKPOINT>>>\n"
+            },
+            {
+              "id": "plan_preauthorization_recorded",
+              "text": "<<<ARIAD:PLAN_PREAUTHORIZATION_RECORDED>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PLAN PREAUTHORIZATION RECORDED              │\n│                                                        │\n│ Authorized delivery                                    │\n│ CV1.DS1                                                │\n│                                                        │\n│ Policy                                                 │\n│ exact_scope                                            │\n│                                                        │\n│ Exact child set                                        │\n│ - CV1.DS1.TS1                                          │\n│ - CV1.DS1.US1                                          │\n│                                                        │\n│ Fixed stop                                             │\n│ navigator_validation                                   │\n│                                                        │\n│ Boundary                                               │\n│ Single-use authority remains pending until the Driver  │\n│ completes the Plan and every structural coordinate     │\n│ matches.                                               │\n╰────────────────────────────────────────────────────────╯\n<<<END:PLAN_PREAUTHORIZATION_RECORDED>>>\n"
+            },
+            {
+              "id": "artifacts_materialized",
+              "text": "<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Delivery Story Plan — CV1.DS1                          │\n│                                                        │\n│ ↻ existing story index                                 │\n│ docs/project/roadmap/cv1-first/cv1-ds1-aggregate/index │\n│ .md                                                    │\n│                                                        │\n│ ✓ created plan                                         │\n│ docs/project/roadmap/cv1-first/cv1-ds1-aggregate/plan. │\n│ md                                                     │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/cv1-first/cv1-ds1-aggregate/test- │\n│ guide.md                                               │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n"
+            }
+          ]
+        },
+        {
+          "cursor": {
+            "active_checkpoint": "after_delivery_story_plan",
+            "active_item": "CV1.DS1",
+            "active_item_level": "delivery_story",
+            "active_item_title": "Aggregate delivery",
+            "aggregate_checkpoint_status": [
+              "plan:pending"
+            ],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [
+              "CV1.DS1.US1",
+              "CV1.DS1.TS1"
+            ],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "delivery_story_plan",
+            "method": "ariad",
+            "navigator_flow_unit": "delivery_story",
+            "pending_confirmation": "navigator_delivery_story_plan_approval",
+            "plan_preauthorization": {
+              "active_item": "CV1.DS1",
+              "active_item_level": "delivery_story",
+              "child_work_items": [
+                "CV1.DS1.TS1",
+                "CV1.DS1.US1"
+              ],
+              "cursor_generation": 0,
+              "flow_unit": "delivery_story",
+              "journey": "sandbox-pet-store",
+              "method": "ariad",
+              "plan_contract_version": "delivery_story_plan@1",
+              "policy": "exact_scope",
+              "reason": null,
+              "scope_fingerprint": "48894b1e817a7cd67d423c62fc8ca352ec9cf0f61e45926b8315b4a0887ea888",
+              "status": "pending",
+              "stop_boundary": "navigator_validation"
+            },
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "files": {
+            "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/cv1-ds1-ts1-child/index.md": "# CV1.DS1.TS1 — Second child\n\n**Status:** ✅ Done\n**Type:** Technical Story\n",
+            "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/cv1-ds1-us1-child/index.md": "# CV1.DS1.US1 — First child\n\n**Status:** ✅ Done\n**Type:** User Story\n",
+            "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/index.md": "# CV1.DS1 — Aggregate delivery\n\n**Status:** ✅ Done\n**Type:** Delivery Story\n\n## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n| CV1.DS1.US1 | First child | User Story | ✅ Done |\n| CV1.DS1.TS1 | Second child | Technical Story | ✅ Done |\n\n## Done Condition\n\nDone when the children deliver a coherent outcome.\n",
+            "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/plan.md": "# Plan — CV20.DS16.US1\n\n## Objective\n\nDeliver exact story authority.\n\n## Scope\n\n- Bind one active story structurally, replacing the placeholder wiring.\n\n## Non-Goals\n\n- No sibling scope.\n\n## Acceptance Behavior\n\nGiven exact authority\nWhen approval is consumed\nThen implementation starts once.\n\n## Validation Route\n\n- Run focused tests and Navigator validation.\n\n## Implementation Contract\n\n- Use TDD and stop at Navigator Validation.\n",
+            "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/test-guide.md": "[< Story](index.md)\n\n# Test Guide — CV1.DS1\n\n## Aggregate Validation\n\nPending aggregate Delivery Story validation across child work packages.\n\n## Child Work Packages\n\n- CV1.DS1.US1\n- CV1.DS1.TS1\n\n## Navigator Validation\n\nProvide the Navigator-visible route with expected observation, pass condition, and fail condition before the Delivery Story can pass aggregate Validation.\n\n## Validation Evidence\n\nPending implementation and validation.\n",
+            "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n",
+            "docs/project/roadmap/index.md": "# Roadmap\n"
+          },
+          "index": 7,
+          "input": {
+            "path": "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/plan.md"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1\", \"active_item_title\": \"Aggregate delivery\", \"active_item_level\": \"delivery_story\", \"active_checkpoint\": \"after_delivery_story_plan\", \"pending_confirmation\": \"navigator_delivery_story_plan_approval\", \"last_delivery_event\": \"delivery_story_plan\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"delivery_story\", \"child_work_items\": [\"CV1.DS1.US1\", \"CV1.DS1.TS1\"], \"aggregate_checkpoint_status\": [\"plan:pending\"], \"cursor_generation\": 0, \"plan_preauthorization\": {\"journey\": \"sandbox-pet-store\", \"method\": \"ariad\", \"cursor_generation\": 0, \"active_item\": \"CV1.DS1\", \"active_item_level\": \"delivery_story\", \"flow_unit\": \"delivery_story\", \"child_work_items\": [\"CV1.DS1.TS1\", \"CV1.DS1.US1\"], \"plan_contract_version\": \"delivery_story_plan@1\", \"policy\": \"exact_scope\", \"stop_boundary\": \"navigator_validation\", \"scope_fingerprint\": \"48894b1e817a7cd67d423c62fc8ca352ec9cf0f61e45926b8315b4a0887ea888\", \"status\": \"pending\", \"reason\": null}, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+          "op": "write_file",
+          "projection_requests": [
+            "sandbox-pet-store",
+            "sandbox-pet-store"
+          ]
+        },
+        {
+          "cursor": {
+            "active_checkpoint": "after_delivery_story_plan",
+            "active_item": "CV1.DS1",
+            "active_item_level": "delivery_story",
+            "active_item_title": "Aggregate delivery",
+            "aggregate_checkpoint_status": [
+              "plan:pending"
+            ],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [
+              "CV1.DS1.US1",
+              "CV1.DS1.TS1"
+            ],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "delivery_story_plan",
+            "method": "ariad",
+            "navigator_flow_unit": "delivery_story",
+            "pending_confirmation": "navigator_delivery_story_plan_approval",
+            "plan_preauthorization": {
+              "active_item": "CV1.DS1",
+              "active_item_level": "delivery_story",
+              "child_work_items": [
+                "CV1.DS1.TS1",
+                "CV1.DS1.US1"
+              ],
+              "cursor_generation": 0,
+              "flow_unit": "delivery_story",
+              "journey": "sandbox-pet-store",
+              "method": "ariad",
+              "plan_contract_version": "delivery_story_plan@1",
+              "policy": "exact_scope",
+              "reason": "plan_incomplete",
+              "scope_fingerprint": "48894b1e817a7cd67d423c62fc8ca352ec9cf0f61e45926b8315b4a0887ea888",
+              "status": "invalidated",
+              "stop_boundary": "navigator_validation"
+            },
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "error": "PlanPreauthorizationMismatch: plan_incomplete",
+          "files": {
+            "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/cv1-ds1-ts1-child/index.md": "# CV1.DS1.TS1 — Second child\n\n**Status:** ✅ Done\n**Type:** Technical Story\n",
+            "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/cv1-ds1-us1-child/index.md": "# CV1.DS1.US1 — First child\n\n**Status:** ✅ Done\n**Type:** User Story\n",
+            "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/index.md": "# CV1.DS1 — Aggregate delivery\n\n**Status:** ✅ Done\n**Type:** Delivery Story\n\n## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n| CV1.DS1.US1 | First child | User Story | ✅ Done |\n| CV1.DS1.TS1 | Second child | Technical Story | ✅ Done |\n\n## Done Condition\n\nDone when the children deliver a coherent outcome.\n",
+            "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/plan.md": "# Plan — CV20.DS16.US1\n\n## Objective\n\nDeliver exact story authority.\n\n## Scope\n\n- Bind one active story structurally, replacing the placeholder wiring.\n\n## Non-Goals\n\n- No sibling scope.\n\n## Acceptance Behavior\n\nGiven exact authority\nWhen approval is consumed\nThen implementation starts once.\n\n## Validation Route\n\n- Run focused tests and Navigator validation.\n\n## Implementation Contract\n\n- Use TDD and stop at Navigator Validation.\n",
+            "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/test-guide.md": "[< Story](index.md)\n\n# Test Guide — CV1.DS1\n\n## Aggregate Validation\n\nPending aggregate Delivery Story validation across child work packages.\n\n## Child Work Packages\n\n- CV1.DS1.US1\n- CV1.DS1.TS1\n\n## Navigator Validation\n\nProvide the Navigator-visible route with expected observation, pass condition, and fail condition before the Delivery Story can pass aggregate Validation.\n\n## Validation Evidence\n\nPending implementation and validation.\n",
+            "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n",
+            "docs/project/roadmap/index.md": "# Roadmap\n"
+          },
+          "index": 8,
+          "input": {
+            "method": "ariad",
+            "use_preauthorization": true
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1\", \"active_item_title\": \"Aggregate delivery\", \"active_item_level\": \"delivery_story\", \"active_checkpoint\": \"after_delivery_story_plan\", \"pending_confirmation\": \"navigator_delivery_story_plan_approval\", \"last_delivery_event\": \"delivery_story_plan\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": \"delivery_story\", \"child_work_items\": [\"CV1.DS1.US1\", \"CV1.DS1.TS1\"], \"aggregate_checkpoint_status\": [\"plan:pending\"], \"cursor_generation\": 0, \"plan_preauthorization\": {\"journey\": \"sandbox-pet-store\", \"method\": \"ariad\", \"cursor_generation\": 0, \"active_item\": \"CV1.DS1\", \"active_item_level\": \"delivery_story\", \"flow_unit\": \"delivery_story\", \"child_work_items\": [\"CV1.DS1.TS1\", \"CV1.DS1.US1\"], \"plan_contract_version\": \"delivery_story_plan@1\", \"policy\": \"exact_scope\", \"stop_boundary\": \"navigator_validation\", \"scope_fingerprint\": \"48894b1e817a7cd67d423c62fc8ca352ec9cf0f61e45926b8315b4a0887ea888\", \"status\": \"invalidated\", \"reason\": \"plan_incomplete\"}, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+          "op": "approve_delivery_story",
+          "projection_requests": [
+            "sandbox-pet-store",
+            "sandbox-pet-store"
+          ],
+          "surfaces": [
+            {
+              "id": "plan_preauthorization_mismatch",
+              "text": "<<<ARIAD:PLAN_PREAUTHORIZATION_MISMATCH>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        ⛔  PLAN PREAUTHORIZATION NOT CONSUMED          │\n│                                                        │\n│ Active delivery                                        │\n│ CV1.DS1                                                │\n│                                                        │\n│ Bounded reason                                         │\n│ plan_incomplete                                        │\n│                                                        │\n│ Result                                                 │\n│ Plan approval remains blocked; ordinary Navigator      │\n│ approval is available.                                 │\n╰────────────────────────────────────────────────────────╯\n<<<END:PLAN_PREAUTHORIZATION_MISMATCH>>>\n"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "journey": "sandbox-pet-store",
       "name": "delivery_story_preauthorization_cancelled",
       "project_root": "tmp/parity/builder-lifecycle/delivery_story_preauthorization_cancelled/project",
       "steps": [

@@ -2768,6 +2768,26 @@ def _delivery_story_scenarios() -> list[dict[str, Any]]:
     unfilled.approve_delivery_story(use_preauthorization=True)
     scenarios.append(unfilled.finish())
 
+    # The Delivery Story's unfilled-section rule is NOT the story-level one. Python
+    # has two: `plan_preauthorization.unfilled_plan_sections_for` matches
+    # `placeholder` only at the START of a line, while `delivery_story_plan`'s own
+    # copy also refuses a body CONTAINING `placeholder` anywhere, or containing this
+    # section's exact scaffold line. A port that reuses the story helper consumes a
+    # receipt Python would refuse -- authority granted where Python withholds it --
+    # so this Plan is complete by the story rule and unfilled by the DS one.
+    prose = _delivery_story_ready(
+        "delivery_story_preauthorization_refuses_prose_placeholder", preauthorize=True
+    )
+    prose.write_file(
+        "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/plan.md",
+        COMPLETE_PLAN.replace(
+            "- Bind one active story structurally.",
+            "- Bind one active story structurally, replacing the placeholder wiring.",
+        ),
+    )
+    prose.approve_delivery_story(use_preauthorization=True)
+    scenarios.append(prose.finish())
+
     # Navigator withdrawal: cancel leaves the ordinary gate in place, and a second
     # cancel has nothing to cancel.
     cancelled = _delivery_story_ready(

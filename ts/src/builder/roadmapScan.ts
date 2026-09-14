@@ -31,13 +31,33 @@ export interface RoadmapFile {
   absolutePath: string;
 }
 
+export interface RoadmapScanOptions {
+  /**
+   * Keep `legacy/` in the result. Default `false`, which is what the three
+   * grammar call sites need.
+   *
+   * It is an OPTION rather than a second function because Python has a fourth
+   * call site that does the same walk and does NOT skip the archive:
+   * `delivery_story_roadmap_closure.inspect_authored_closure`, whose status scan
+   * reads every `index.md` under the roadmap. So an archived table row for a known
+   * code blocks a Delivery Story's Done. Reusing this scan with its default would
+   * let TypeScript close a Delivery Story that Python refuses — the exact defect
+   * shape the plateau-5 panel stopped, and `authored_closure_reads_legacy_rows`
+   * fails a port that does it.
+   */
+  readonly includeLegacy?: boolean;
+}
+
 /**
- * Python `sorted(roadmap_root.rglob("index.md"))`, minus `legacy/`.
+ * Python `sorted(roadmap_root.rglob("index.md"))`, minus `legacy/` unless asked.
  *
  * A missing or unreadable root yields an empty list, matching Python's
  * `is_dir()` guard at every call site.
  */
-export function scanRoadmapIndexFiles(roadmapRoot: string): RoadmapFile[] {
+export function scanRoadmapIndexFiles(
+  roadmapRoot: string,
+  options: RoadmapScanOptions = {},
+): RoadmapFile[] {
   let entries: Dirent<string>[];
   try {
     entries = readdirSync(roadmapRoot, { recursive: true, withFileTypes: true });
@@ -53,7 +73,7 @@ export function scanRoadmapIndexFiles(roadmapRoot: string): RoadmapFile[] {
   }
   found.sort(comparePathComponents);
   return found
-    .filter((components) => !isLegacyPath(components))
+    .filter((components) => options.includeLegacy === true || !isLegacyPath(components))
     .map((components) => ({
       components,
       relativePath: components.join("/"),
