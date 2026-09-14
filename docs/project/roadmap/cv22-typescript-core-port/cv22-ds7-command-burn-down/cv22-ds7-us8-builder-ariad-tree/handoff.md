@@ -11,20 +11,42 @@ adds the gate and plateau 9 flips it.
 
 ## Resume here
 
-**One leaf is left, and it is the one with real unknowns: `load` (plateau 7,
-Scope G).** Everything else in the story is ported.
+**Plateau 7 is in flight and its next step is exact: the `load` INVOCATION
+corpus.** Everything else in the story is ported.
 
-`build load` is not provider-free — the correction that reshaped this plan. It
-embeds its query TWICE (scoped and global search), runs the previous conversation's
-close tail, and writes the operating-mode row. So plateau 7 needs
-`BUILD_LOAD_TRANSPORT` in `providers/transport.ts`, replay fixtures generated from
-the demo database only, the degraded-search scenario, the `llm_calls` ledger
-scenario, and the `builder_load` probe — plus the provider-isolation test asserting
-the other 26 leaves never reach `resolveFamilyProviders`. It also carries the
-`explore story promote` tail, which has waited since US7 for Builder `load`.
+What already landed:
 
-Start from the plan's Scope G (items 17–20) and the D3.16 `load` scenario list in
-the test guide.
+- the **pure half** — `builder/transition.ts` (the `■ BUILDER MODE ACTIVE` card,
+  `extractStage`/`extractSection`/`truncateWords`, and `extractQuery`), graded by
+  21 transition cases and 10 query cases in `builder-load.golden.json`;
+- the **composition** — `builder/load.ts`'s `runBuildLoad`, which orders the
+  effects Python orders and reuses already-graded parts for the rest;
+- the **oracle seam** — `ts/parity/build_load_oracle.py`, which runs the real
+  `cmd_load` in a subprocess with the provider entry points patched to
+  `ts/test/fixtures/builder-load/oracle-seam.json`, the same numbers TypeScript
+  reads through `replay-embedding.json`.
+
+**`runBuildLoad` is NOT graded against Python yet.** That is the next commit, and
+it is why `load` appears in no `PORTED_LEAVES` list. Concretely:
+
+1. add `_load_invocations` to `generate_builder_load_golden.py`: seed a disposable
+   home per case (journey identity, project path, a handful of memories with
+   DISTINCT embeddings so the ranking is not a tie, optionally a previous
+   conversation), run the driver, record stdout/stderr/exit plus the
+   `runtime_sessions` rows and the `llm_calls` rows;
+2. replay each case through `runBuildLoad` on a copy, comparing the same four
+   faces — the memories block is where a composition defect will show;
+3. then the remaining Scope G items: the composed transport decision (item 18b —
+   `MIRROR_TS_BUILD` / `MIRROR_TS_SEARCH` / `MIRROR_TS_CONVERSATION_LLM_TAIL`
+   resolved before the banner), the degraded case, the `builder_load` probe, the
+   provider-isolation test, and the `explore story promote` tail that has waited
+   since US7.
+
+**Grading rule for every one of those (panel, database-architect):** `load` writes
+while it reads — `log_access` bumps `access_count` on what it returns, and the
+ranker reads that back. **One `load` per database copy**, or replay with frozen
+scores. A case that runs `load` twice in one world and expects the same block is
+flaky for a correct reason.
 
 Two constraints carried forward:
 
