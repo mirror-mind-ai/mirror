@@ -592,12 +592,36 @@ def _run_case(case: dict[str, Any], oracle_fixture: Path) -> dict[str, Any]:
         (project / "docs" / "project" / "roadmap" / "index.md").write_text(
             "# Roadmap\n", encoding="utf-8"
         )
+        # A NEUTRAL checkout marker, so the clone-role guard's input is staged
+        # rather than inherited.
+        #
+        # `_is_mirror_mind_checkout` walks up from the project path and stops at the
+        # first directory holding `pyproject.toml` and `src/memory`, then asks
+        # whether that pyproject declares `name = "mirror"`. The staging directory
+        # lives inside THIS checkout, so without these two files the walk finds
+        # Mirror Mind's own pyproject, the guard proceeds, and the outcome depends on
+        # the developer's `.mirror-clone-role` -- `dev` on this machine, ABSENT in
+        # CI, where the default is `production` and every case refused. Found by CI,
+        # which is the environment that did not share the assumption.
+        #
+        # The guard itself is graded in TypeScript with an injected refusal: its real
+        # inputs are a git root and a marker file, both properties of the machine
+        # rather than of the command.
+        (project / "src" / "memory").mkdir(parents=True)
+        (project / "pyproject.toml").write_text(
+            '[project]\nname = "builder-load-fixture"\n', encoding="utf-8"
+        )
         db_path = home / "memory.db"
         _seed_database(db_path, project, case=case)
 
         environment = dict(os.environ)
-        environment["DB_PATH"] = str(db_path)
-        environment["MIRROR_HOME"] = str(home)
+        # ABSOLUTE, because one case runs from a different working directory and a
+        # relative `DB_PATH` would silently resolve against it -- creating a fresh
+        # empty database and reporting `journey 'demo' not found`. The PROJECT path
+        # stays relative on purpose: it is recorded in the journey row and rendered
+        # into the card, where an absolute root would be machine-dependent.
+        environment["DB_PATH"] = str(db_path.resolve())
+        environment["MIRROR_HOME"] = str(home.resolve())
         environment["MEMORY_ENV"] = "test"
         environment["PYTHONPATH"] = str(HERE.parent.parent / "src")
         environment.pop("MIRROR_SESSION_ID", None)
@@ -613,7 +637,17 @@ def _run_case(case: dict[str, Any], oracle_fixture: Path) -> dict[str, Any]:
             capture_output=True,
             text=True,
             env=environment,
-            cwd=str(HERE.parent.parent),
+            # A journey with NO project path makes the clone-role guard inspect the
+            # CURRENT DIRECTORY instead -- so that case runs from its own staged
+            # root, whose neutral pyproject short-circuits the guard. Every other
+            # case runs from the repository root, because their project paths are
+            # recorded relative to it.
+            #
+            # Worth stating as behavior rather than as harness trivia: a Navigator
+            # running `build load` for a path-less journey is judged by wherever the
+            # shell happens to be, which inside a production-marked clone is a
+            # refusal.
+            cwd=str(project if not case.get("with_project", True) else HERE.parent.parent),
             check=False,
         )
         return {

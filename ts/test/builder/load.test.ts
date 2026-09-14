@@ -111,7 +111,9 @@ function seedDatabase(entry: Invocation): { db: WritableDatabase; project: strin
     // float32 little-endian, exactly what `embedding_to_bytes` writes.
     const buffer = new ArrayBuffer(memory.embedding.length * 4);
     const view = new DataView(buffer);
-    memory.embedding.forEach((value, index) => view.setFloat32(index * 4, value, true));
+    memory.embedding.forEach((value, index) => {
+      view.setFloat32(index * 4, value, true);
+    });
     db.prepare(
       "INSERT INTO memories (id, memory_type, layer, title, content, journey, created_at, " +
         "relevance_score, embedding, use_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -187,7 +189,7 @@ test("every recorded load matches Python on all four faces", async () => {
   assert.ok(invocations.length >= 5, "expected the recorded load matrix");
   const provider = await loadReplayEmbeddingProvider(FIXTURE.pathname);
   for (const entry of invocations) {
-    const { db, project } = seedDatabase(entry);
+    const { db } = seedDatabase(entry);
     try {
       const result = await runBuildLoad(
         db,
@@ -290,4 +292,39 @@ test("the merge takes six, and equal scores keep scoped before global", () => {
     merged.map((entry) => entry.id),
     ["s0", "s1", "s2", "s3", "s4", "g0"],
   );
+});
+
+test("the clone-role guard refuses before any surface is printed", async () => {
+  // Graded here rather than in the corpus, because the guard's real inputs are a
+  // git root and a `.mirror-clone-role` marker — properties of the machine, not of
+  // the command. CI proved that the hard way: the staging directory lives inside
+  // this checkout, so the first corpus inherited the developer's `dev` marker and
+  // every case refused on a runner that has none, where the default is
+  // `production`.
+  //
+  // What must hold is the ORDER: a refusal leaves no banner, no card, and no mode
+  // row, because Python checks the role before it prints anything.
+  const entry = invocations.find((candidate) => candidate.name === "load_adopted_with_memories");
+  assert.ok(entry);
+  const { db } = seedDatabase({ ...entry, name: "clone_role_refusal" });
+  try {
+    const result = await runBuildLoad(
+      db,
+      { slug: entry.slug, sessionId: SESSION_ID },
+      {
+        nowIso: () => FROZEN_NOW,
+        newId: () => "00000001",
+        cloneRoleRefusal: () =>
+          "Builder Mode refused: the journey project clone is marked 'production'.\n",
+      },
+    );
+    assert.equal(result.exitCode, 1);
+    assert.equal(result.stdout, "", "a refused load prints no surface");
+    assert.match(result.stderr, /marked 'production'/u);
+    assert.equal(result.providerCalls, 0, "a refused load reaches no provider");
+    const rows = runtimeRows(db).filter((row) => row.session_id === SESSION_ID);
+    assert.deepEqual(rows, [], "a refused load writes no operating-mode row");
+  } finally {
+    db.close();
+  }
 });
