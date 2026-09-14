@@ -2,7 +2,7 @@
 
 # CV22.DS7.US8 — Builder/Ariad tree
 
-**Status:** 🟡 Planned — **in flight since 2026-09-13**: plateaus 1–6 of 9 landed, 26 of 27 leaves ported, nothing routed (the gate arrives at plateau 8, the flip at plateau 9). Sequenced after CR072, US11, and DS8 (decision 2026-09-09); D1 resolved the same day. Resume from [handoff.md](handoff.md)
+**Status:** 🟡 Planned — **in flight since 2026-09-13**: plateaus 1–7 of 9 landed, **all 27 leaves ported and graded**, `load` included and proven on a copy of a real corpus. The `build` family is still entirely unrouted (the gate arrives at plateau 8, the flip at plateau 9); the one routing change so far is `explore story promote`, US7's held leaf, flipped 2026-09-14 with the Builder session start its tail depends on. Sequenced after CR072, US11, and DS8 (decision 2026-09-09); D1 resolved the same day. Resume from [handoff.md](handoff.md)
 **Type:** User Story
 **Owner:** CV22.DS7 for the whole `build` command surface and the Builder runtime state it writes
 **Depends on:** [CV22.DS7.US1](../cv22-ds7-us1-remaining-identity-journey-reads-writes/index.md)
