@@ -31,6 +31,11 @@ Run:  uv run python ts/parity/generate_builder_load_golden.py
 from __future__ import annotations
 
 import json
+import os
+import shutil
+import struct
+import subprocess
+import sys
 import unicodedata
 from pathlib import Path
 from typing import Any
@@ -40,6 +45,11 @@ from memory.surfaces.mode_transition import render_builder_mode_transition
 
 HERE = Path(__file__).resolve().parent
 OUT_PATH = HERE.parent / "test" / "goldens" / "builder-load.golden.json"
+# Resolved against the repository root, which is both the generator's cwd and the
+# TypeScript test's. Gitignored, like every other parity staging directory.
+PARITY_ROOT = Path("tmp") / "parity" / "builder-load"
+FROZEN_NOW = "2026-01-01T00:00:00+00:00"
+SESSION_ID = "builder-load-session"
 
 # A journey document with every feature the extractors look at: a Stage line, a
 # Description section, and a heading that terminates capture.
@@ -236,6 +246,10 @@ EMBEDDING_DIMENSIONS = 1536
 LOAD_FIXTURE = {
     "embedding": [0.0125] * EMBEDDING_DIMENSIONS,
     "llm": {"default": "[]"},
+    "now": FROZEN_NOW,
+    # The pinned model name, recorded so the ledger row is graded rather than
+    # normalized: both engines must write the same `model` for a replayed call.
+    "embedding_model": "openai/text-embedding-3-small",
 }
 
 # What the TypeScript replay provider expects, from the same numbers.
@@ -259,18 +273,415 @@ def _write_fixtures() -> Path:
     return oracle_path
 
 
+# --- the invocation half ----------------------------------------------------
+#
+# The seed is DATA in the corpus, not code in two languages. The command golden
+# mirrors its `_seed` by hand in TypeScript and that duplication has broken twice
+# already -- once per plateau that added scenarios. Here each case carries its rows
+# explicitly, so both engines build the same database from the same numbers and a
+# divergence in the insert mechanics fails the comparison instead of hiding in it.
+
+ROW_COLUMNS = (
+    "session_id",
+    "interface",
+    "journey",
+    "persona",
+    "conversation_id",
+    "active",
+    "started_at",
+    "updated_at",
+    "closed_at",
+    "metadata",
+)
+
+
+def _embedding(spike_index: int, spike: float, base: float = 0.0125) -> list[float]:
+    """A vector that is the query's, with ONE dimension moved.
+
+    Cosine is scale invariant, so scaling the query vector would make every memory
+    tie at 1.0 and the ranking would be decided by insertion order -- which grades
+    nothing about the merge. Moving a single dimension gives each memory its own
+    deterministic score, and the spread is what the corpus is for.
+    """
+    vector = [base] * EMBEDDING_DIMENSIONS
+    vector[spike_index] = spike
+    return vector
+
+
+# Six memories, so the top-6 slice has something to cut, with scores that are
+# distinct by construction. Three carry the journey, three do not: the scoped
+# search sees the first three and the global search sees all six, which is what
+# makes the merge and the dedupe observable.
+SEED_MEMORIES: list[dict[str, Any]] = [
+    {
+        "id": f"mem-{index:02d}",
+        "memory_type": "insight",
+        "layer": layer,
+        "title": title,
+        "content": content,
+        "journey": journey,
+        "created_at": FROZEN_NOW,
+        "use_count": use_count,
+        "relevance_score": 1.0,
+        "embedding": _embedding(index, spike),
+    }
+    for index, (layer, title, content, journey, spike, use_count) in enumerate(
+        [
+            ("ego", "Scoped insight one", "The strangler ports one command at a time.", "demo", 0.9, 3),
+            ("ego", "Scoped insight two", "Parity is proven against a Python oracle.", "demo", 0.7, 1),
+            ("shadow", "Scoped insight three", "A green test that never failed is a belief.", "demo", 0.5, 0),
+            ("ego", "Global insight one", "Journeys carry their own project path.", None, 0.8, 5),
+            ("user", "Global insight two", "The Navigator validates on the real home.", None, 0.6, 2),
+            ("ego", "Global insight three", "Cadence decides what may happen unasked.", None, 0.4, 0),
+        ]
+    )
+]
+
+LOAD_JOURNEY = """# Demo journey
+**Stage:** Plateau 7 — load
+
+## Description
+
+A journey whose briefing becomes the search query for the memories block.
+"""
+
+
+def _freeze_now() -> None:
+    """Freeze the clock in THIS process too.
+
+    `upsert_runtime_session` imports `_now` inside the function, so patching
+    `memory.models._now` reaches it -- but only in the process that patches. The
+    driver freezes its own; without this the rows the GENERATOR seeds carry a real
+    timestamp while the rows the driver writes carry the frozen one, and the corpus
+    records a mixture that no replay can reproduce.
+    """
+    from memory import models
+
+    models._now = lambda: FROZEN_NOW
+
+
+def _seed_database(db_path: Path, project: Path, *, case: dict[str, Any]) -> None:
+    """Build one case's database, using the same rows the corpus records."""
+    from memory.builder.delivery_cursor import set_delivery_cursor
+    from memory.builder.method_adoption import set_adopted_method
+    from memory.client import MemoryClient
+
+    mem = MemoryClient(env="test", db_path=db_path)
+    if case.get("journey_content") is not None:
+        mem.set_identity("journey", case["slug"], case["journey_content"])
+        if case.get("with_project", True):
+            # Written DIRECTLY, not through `set_project_path`, which resolves to an
+            # absolute path. The transition card truncates that row at 56 columns and
+            # the trailer prints it whole, so an absolute root puts a machine path in
+            # the corpus -- half of it unrecoverable by substitution. A repo-relative
+            # path is what the lifecycle corpus hands its renderers for the same
+            # reason, and both engines run from the repository root.
+            mem.store.conn.execute(
+                "UPDATE identity SET metadata = ? WHERE layer = 'journey' AND key = ?",
+                (json.dumps({"project_path": project.as_posix()}), case["slug"]),
+            )
+    for memory in case.get("memories", []):
+        mem.store.conn.execute(
+            "INSERT INTO memories (id, memory_type, layer, title, content, journey, "
+            "created_at, relevance_score, embedding, use_count) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                memory["id"],
+                memory["memory_type"],
+                memory["layer"],
+                memory["title"],
+                memory["content"],
+                memory["journey"],
+                memory["created_at"],
+                memory["relevance_score"],
+                struct.pack(f"<{len(memory['embedding'])}f", *memory["embedding"]),
+                memory["use_count"],
+            ),
+        )
+    if case.get("adopted_method"):
+        set_adopted_method(mem.store, case["slug"], case["adopted_method"])
+    if case.get("cursor"):
+        set_delivery_cursor(mem.store, journey=case["slug"], **case["cursor"])
+    mem.store.conn.commit()
+    mem.store.conn.close()
+
+
+def _runtime_rows(db_path: Path) -> list[dict[str, Any]]:
+    import sqlite3
+
+    connection = sqlite3.connect(db_path)
+    connection.row_factory = sqlite3.Row
+    try:
+        rows = connection.execute(
+            f"SELECT {', '.join(ROW_COLUMNS)} FROM runtime_sessions ORDER BY session_id"
+        ).fetchall()
+        return [{column: row[column] for column in ROW_COLUMNS} for row in rows]
+    finally:
+        connection.close()
+
+
+def _memory_access(db_path: Path) -> list[dict[str, Any]]:
+    """`log_access` is why `load` is a MUTATING read: this is the mutation.
+
+    What is graded and what is not, deliberately. `log_access` stamps
+    `datetime.now(timezone.utc)` directly -- not `models._now` -- so its VALUE
+    cannot be frozen from outside and pinning it would make the corpus depend on a
+    wall clock. What matters is WHICH memories were touched and HOW OFTEN, so the
+    row records the access-log count and the presence of the cached timestamp.
+
+    `use_count` is recorded too, and it must NOT move: retrieval calls
+    `log_access`, while `log_use` is the separate, stronger signal for a memory the
+    model actually drew on. A port that bumps `use_count` here inflates the
+    reinforcement term for anything a Navigator merely loaded.
+    """
+    import sqlite3
+
+    connection = sqlite3.connect(db_path)
+    connection.row_factory = sqlite3.Row
+    try:
+        rows = connection.execute(
+            "SELECT m.id, m.use_count, m.last_accessed_at IS NOT NULL AS accessed, "
+            "(SELECT COUNT(*) FROM memory_access_log a WHERE a.memory_id = m.id) AS access_rows "
+            "FROM memories m ORDER BY m.id"
+        ).fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        connection.close()
+
+
+def _llm_calls(db_path: Path) -> list[dict[str, Any]]:
+    import sqlite3
+
+    connection = sqlite3.connect(db_path)
+    connection.row_factory = sqlite3.Row
+    try:
+        rows = connection.execute(
+            "SELECT role, model, prompt_tokens, completion_tokens FROM llm_calls ORDER BY id"
+        ).fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        connection.close()
+
+
+# Nine memories, five of them in the journey, with spikes close enough that MMR's
+# diversity penalty differs between the two candidate sets. That is what makes the
+# DEDUPE observable: the same memory is ranked twice, with a different score each
+# time, so keeping the first occurrence and keeping the last produce different
+# blocks. With well-separated scores the two rules agree and the corpus grades
+# nothing -- which is exactly what mutation testing reported before this case
+# existed.
+OVERLAPPING_MEMORIES: list[dict[str, Any]] = [
+    # Three journey memories, mutually DISTINCT, and three near-duplicates of them
+    # that are NOT in the journey. The scoped search ranks the first three alone;
+    # the global search ranks them beside their twins, where MMR's diversity
+    # penalty applies. So the same memory is scored twice, differently -- which is
+    # the only condition under which keeping the FIRST occurrence of a duplicate id
+    # differs from keeping the last. Mutation testing reported the rule ungraded
+    # until this shape existed.
+    *[
+        {
+            "id": f"ovl-scoped-{index}",
+            "memory_type": "insight",
+            "layer": "ego",
+            "title": f"Scoped twin {index}",
+            "content": f"Strangler prose variant {index} about parity and oracles.",
+            "journey": "demo",
+            "created_at": FROZEN_NOW,
+            "use_count": 0,
+            "relevance_score": 1.0,
+            # Distinct per memory: see the note on the global twins below.
+            "embedding": _embedding(10 + index * 20, 0.60 - index * 0.04),
+        }
+        for index in range(3)
+    ],
+    *[
+        {
+            "id": f"ovl-global-{index}",
+            "memory_type": "insight",
+            "layer": "user",
+            "title": f"Global twin {index}",
+            "content": f"Strangler prose variant {index} about parity and oracles.",
+            "journey": None,
+            "created_at": FROZEN_NOW,
+            "use_count": 0,
+            "relevance_score": 1.0,
+            # Near its scoped twin so MMR treats them as redundant, and DISTINCT
+            # from its siblings so no two candidates tie.
+            #
+            # Two measured reasons, both found here. First, a hair's difference
+            # (0.599 against 0.600) left scores equal to six decimals, and the
+            # rendered order then hung on the RECENCY term -- which reads a live
+            # clock, so the block reordered between runs and the test failed only
+            # when the suite ran long enough to shift the decay. Second, perfectly
+            # SYMMETRIC embeddings made three candidates tie exactly, and the two
+            # engines then emitted them in different order: under an exact tie the
+            # MMR selection order differs between numpy's argmax and the
+            # TypeScript loop. That is a real divergence in the shared ranker
+            # rather than in `load`, it belongs to the search family, and it is
+            # recorded as a CR instead of being pinned by a case engineered to
+            # provoke it.
+            "embedding": _embedding(10 + index * 20, 0.44 - index * 0.03),
+        }
+        for index in range(3)
+    ],
+]
+
+LOAD_CASES: list[dict[str, Any]] = [
+    {
+        "name": "load_overlapping_scores",
+        "slug": "demo",
+        "journey_content": LOAD_JOURNEY,
+        "memories": OVERLAPPING_MEMORIES,
+    },
+    {
+        "name": "load_adopted_with_memories",
+        "slug": "demo",
+        "journey_content": LOAD_JOURNEY,
+        "memories": SEED_MEMORIES,
+        "adopted_method": "ariad",
+        "cursor": {
+            "method": "ariad",
+            "active_item": "CV1.DS1.US1",
+            "active_item_title": "A user story",
+            "active_item_level": "user_story",
+            "last_delivery_event": "plan_approved",
+        },
+    },
+    {
+        "name": "load_unadopted",
+        "slug": "demo",
+        "journey_content": LOAD_JOURNEY,
+        "memories": SEED_MEMORIES,
+    },
+    {
+        "name": "load_without_memories",
+        "slug": "demo",
+        "journey_content": LOAD_JOURNEY,
+        "memories": [],
+    },
+    {
+        "name": "load_without_project_path",
+        "slug": "demo",
+        "journey_content": LOAD_JOURNEY,
+        "memories": SEED_MEMORIES[:2],
+        "with_project": False,
+    },
+    {
+        "name": "load_unknown_journey",
+        "slug": "missing",
+        "journey_content": None,
+        "memories": [],
+    },
+]
+
+
+def _run_case(case: dict[str, Any], oracle_fixture: Path) -> dict[str, Any]:
+    # A REPO-RELATIVE root, like the lifecycle corpus, and for the same reason
+    # (CR082): the transition card truncates the project-path row at 56 columns, so
+    # an absolute temp root leaves a truncated PREFIX in the golden -- machine
+    # dependent, and unfixable by substitution because half the path is gone. Under
+    # `tmp/parity/builder-load/<case>` the row is byte-stable by construction and
+    # stays fully graded; the TypeScript replay stages the same relative directory.
+    tmp = PARITY_ROOT / case["name"]
+    shutil.rmtree(tmp, ignore_errors=True)
+    try:
+        home = tmp / "home"
+        home.mkdir(parents=True)
+        project = tmp / "project"
+        (project / "docs" / "project" / "roadmap").mkdir(parents=True)
+        (project / "docs" / "project" / "roadmap" / "index.md").write_text(
+            "# Roadmap\n", encoding="utf-8"
+        )
+        db_path = home / "memory.db"
+        _seed_database(db_path, project, case=case)
+
+        environment = dict(os.environ)
+        environment["DB_PATH"] = str(db_path)
+        environment["MIRROR_HOME"] = str(home)
+        environment["MEMORY_ENV"] = "test"
+        environment["PYTHONPATH"] = str(HERE.parent.parent / "src")
+        environment.pop("MIRROR_SESSION_ID", None)
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(HERE / "build_load_oracle.py"),
+                case["slug"],
+                str(oracle_fixture),
+                "--session-id",
+                SESSION_ID,
+            ],
+            capture_output=True,
+            text=True,
+            env=environment,
+            cwd=str(HERE.parent.parent),
+            check=False,
+        )
+        return {
+            "name": case["name"],
+            "slug": case["slug"],
+            "project_root": project.as_posix(),
+            "seed": {
+                "journey_content": case.get("journey_content"),
+                "with_project": case.get("with_project", True),
+                "memories": case.get("memories", []),
+                "adopted_method": case.get("adopted_method"),
+                "cursor": case.get("cursor"),
+            },
+            "stdout": completed.stdout,
+            "stderr": completed.stderr,
+            "exit_code": completed.returncode,
+            "runtime_sessions": _runtime_rows(db_path),
+            "memory_access": _memory_access(db_path),
+            "llm_calls": _llm_calls(db_path),
+        }
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def _load_invocations(oracle_fixture: Path) -> list[dict[str, Any]]:
+    return [_run_case(case, oracle_fixture) for case in LOAD_CASES]
+
+
 def build_payload() -> dict[str, Any]:
-    _write_fixtures()
-    return {"transitions": _transition_cases(), "queries": _query_cases()}
+    oracle_fixture = _write_fixtures()
+    return {
+        "transitions": _transition_cases(),
+        "queries": _query_cases(),
+        "invocations": _load_invocations(oracle_fixture),
+    }
+
+
+def _assert_no_absolute_paths(payload: str) -> None:
+    """Refuse a golden that would differ between two checkouts.
+
+    The same guard every generator in this story carries, added here after an
+    absolute project root reached the corpus through `set_project_path`.
+    """
+    leaks = [
+        marker
+        for marker in ("/Users/", "/home/runner", "/private/var", "/var/folders")
+        if marker in payload
+    ]
+    if leaks:
+        raise SystemExit(
+            f"refusing to write a machine-dependent golden: it contains {leaks[0]!r}. "
+            "Seed the project path repo-relative rather than substituting the text -- "
+            "the transition card truncates that row, and a truncated prefix cannot be "
+            "redacted."
+        )
 
 
 def main() -> None:
+    _freeze_now()
     payload = build_payload()
     text = json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False)
+    _assert_no_absolute_paths(text)
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     OUT_PATH.write_text(text + "\n", encoding="utf-8")
     print(
-        f"{len(payload['transitions'])} transition cases, {len(payload['queries'])} query cases"
+        f"{len(payload['transitions'])} transition cases, "
+        f"{len(payload['queries'])} query cases, "
+        f"{len(payload['invocations'])} invocations"
     )
     print(f"wrote {OUT_PATH.relative_to(HERE.parent.parent)}")
     print(f"wrote {FIXTURE_DIR.relative_to(HERE.parent.parent)}/")

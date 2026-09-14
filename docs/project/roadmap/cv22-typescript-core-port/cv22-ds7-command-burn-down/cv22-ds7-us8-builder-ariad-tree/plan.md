@@ -1074,6 +1074,23 @@ CR** (marking it is a product change that belongs after the flip).
 
 ## Debt / CRs To Capture At Debt Review (candidates)
 
+- **Exactly tied search scores are ordered differently by the two engines.** Found
+  at plateau 7 while building a `load` case with symmetric embeddings: three
+  candidates scored identically to six decimals, and Python emitted them in one
+  order while TypeScript emitted another — numpy's `argmax` and the TypeScript
+  selection loop break an MMR tie differently. It belongs to the SEARCH family
+  (`memories --search` has the same ranker), not to `load`, and the DS2 corpus
+  never exercised an exact tie. Not pinned by a US8 case, because a case
+  engineered to provoke a tie would be describing the test rather than the
+  product; recorded here so the search owner can decide whether ties should be
+  broken deterministically (by id, say) in both engines.
+- **`load`'s ordering depends on a live clock.** The ranker's recency term reads
+  `now`, so two candidates whose scores differ in the sixth decimal can swap
+  between one run and the next. Harmless for real corpora, fatal for a golden: it
+  made a plateau-7 case pass alone and fail inside the suite, where the elapsed
+  time differed. Corpus cases must keep scores off the knife edge — recorded as a
+  harness rule in the handoff, and as a CR here because a Navigator comparing two
+  sessions sees the same instability.
 - **A degraded `load` is indistinguishable from a healthy one.** When the provider
   fails, the memories block falls back to FTS-only and renders in a card with no
   marker, in the one surface a Navigator reads to decide what to work on.

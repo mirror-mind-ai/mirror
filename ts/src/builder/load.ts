@@ -37,8 +37,16 @@ import { resolveRuntimeSessionId } from "#mirror/runtimeSession.ts";
 import { activateOperatingMode } from "#mode/operatingMode.ts";
 import type { EmbeddingProvider } from "#providers/embedding.ts";
 import { searchMemoriesWithStatus } from "#search/memorySearch.ts";
+import { renderBuilderOrientationSurface } from "./homeSurface.ts";
 import { getAdoptedMethod } from "./methodAdoption.ts";
+import { inspectPullCandidates, inspectRoadmapSnapshot } from "./pullCandidates.ts";
+import { renderProjectPositionReport } from "./pullCandidatesRender.ts";
+import { findCanonicalRefinementIndex, inspectRefinementField } from "./refinementField.ts";
+import { readBuilderResumeState } from "./resumeState.ts";
+import { renderBuilderResumeSurface } from "./resumeSurface.ts";
+import { resolveRoadmapPosition } from "./roadmapPosition.ts";
 import { extractQuery, renderBuilderModeTransition } from "./transition.ts";
+import { getWorkbenchSnapshot } from "./workbenchSnapshot.ts";
 
 export interface BuildLoadResult {
   readonly stdout: string;
@@ -59,8 +67,92 @@ export interface BuildLoadDeps {
   readonly switchConversation?: (journey: string, sessionId: string | null) => Promise<void>;
   /** `inspect_clone_role`'s refusal, injected so the pure composition stays testable. */
   readonly cloneRoleRefusal?: (projectPath: string | null) => string | null;
-  /** The `■ Builder Home` / `■ BUILDER RESUME` block, which plateaus 1–2 already own. */
-  readonly renderEntrySurface?: (journey: string, projectPath: string | null) => string;
+}
+
+/**
+ * Python `_print_builder_entry_surface`.
+ *
+ * Which surface appears is decided by the CURSOR, not by adoption: an adopted
+ * journey whose cursor has neither an active item nor a pending confirmation gets
+ * the position report plus `■ Builder Home`; anything else gets `■ BUILDER
+ * RESUME`. Both blocks were ported at plateaus 1–2; this is the branch that picks
+ * between them.
+ *
+ * The Refinement field is read from the WORKBENCH only when the project has no
+ * canonical index — `include_refinement` is `canonical is None`, which is also the
+ * reason a legacy-store project can make `■ BUILDER RESUME` raise where Builder
+ * Home degrades (the asymmetry recorded at plateau 2).
+ */
+function renderEntrySurface(
+  db: WritableDatabase,
+  slug: string,
+  projectPath: string | null,
+): string {
+  const canonicalRefinementIndex = findCanonicalRefinementIndex(projectPath);
+  const resumeState = readBuilderResumeState(db, slug, {
+    includeRefinement: canonicalRefinementIndex === null,
+  });
+  const cursor = resumeState.cursor;
+  if (cursor && !cursor.activeItem && !cursor.pendingConfirmation) {
+    const candidates = inspectPullCandidates(projectPath, { journey: slug, method: "ariad" });
+    const roadmap = inspectRoadmapSnapshot(projectPath, { journey: slug, method: "ariad" });
+    return `${printed(
+      renderProjectPositionReport(roadmap, { candidates: candidates.candidates }),
+    )}${renderBuilderOrientationSurface({
+      roadmap,
+      candidatesReport: candidates,
+      // The Workbench read happens only when there is no canonical index — and it
+      // is passed IN, because `inspectRefinementField` is a pure reader over a
+      // snapshot the caller took. Python reads it unguarded here, which is the
+      // asymmetry plateau 2 recorded: Builder Home degrades where BUILDER RESUME
+      // raises on a database predating CV20.DS6.
+      refinement: inspectRefinementField(projectPath, {
+        workbench: getWorkbenchSnapshot(db, slug),
+      }),
+    })}`;
+  }
+  return renderBuilderResumeSurface(resumeState, {
+    roadmapPosition: projectPath ? resolveRoadmapPosition(projectPath) : null,
+    canonicalRefinementIndex,
+  });
+}
+
+/**
+ * Python's merge of the two searches: dedupe by id, sort by score, take six.
+ *
+ * Exported and pure because the FIRST-occurrence rule is not observable through
+ * the command in any case the corpus could hold. The same memory is ranked in both
+ * searches, but its two scores differ only when MMR's diversity penalty differs
+ * between the candidate sets, AND the difference has to invert the relative order
+ * of two duplicated ids before the rendered block changes. Mutation testing
+ * reported the rule ungraded, two corpus shapes failed to expose it, and inventing
+ * a third would have been engineering a case to satisfy a mutant rather than to
+ * describe behavior.
+ *
+ * So it is graded here instead, with hand-built inputs, and the limitation is
+ * declared rather than implied — the same treatment plateau 5 gave the CAS
+ * conflict branch.
+ *
+ * Keeping the FIRST occurrence means a duplicated memory carries its SCOPED score,
+ * which is the one computed among the journey's own memories.
+ */
+export function mergeRankedResults(
+  scoped: readonly { id: string; score: number }[],
+  global: readonly { id: string; score: number }[],
+  limit = 6,
+): { id: string; score: number }[] {
+  const seen = new Set<string>();
+  const merged: { id: string; score: number }[] = [];
+  for (const result of [...scoped, ...global]) {
+    if (seen.has(result.id)) continue;
+    seen.add(result.id);
+    merged.push({ id: result.id, score: result.score });
+  }
+  // Python sorts by score DESCENDING with a stable sort, so equal scores keep the
+  // scoped-before-global order the merge produced. JavaScript's sort is stable by
+  // specification since ES2019, so the comparator alone reproduces it.
+  merged.sort((left, right) => right.score - left.score);
+  return merged.slice(0, limit);
 }
 
 /** Python's `print(...)`: the value plus the newline `print` adds. */
@@ -112,8 +204,8 @@ export async function runBuildLoad(
   let stdout = printed(renderBuilderModeTransition({ journey: slug, journeyContent, projectPath }));
   const stderr = banner(slug, projectPath);
 
-  if (getAdoptedMethod(db, slug) === "ariad" && deps.renderEntrySurface) {
-    stdout += printed(deps.renderEntrySurface(slug, projectPath));
+  if (getAdoptedMethod(db, slug) === "ariad") {
+    stdout += printed(renderEntrySurface(db, slug, projectPath));
   }
 
   stdout += printed(await loadMirrorContext(db, { persona: "engineer", journey: slug }));
@@ -141,18 +233,7 @@ export async function runBuildLoad(
   // Merge, dedupe by id keeping the FIRST occurrence, then sort by score
   // descending and take six. Python's `sort` is STABLE, so equal scores keep the
   // scoped-before-global order the merge produced.
-  const seen = new Set<string>();
-  const merged: { id: string; score: number }[] = [];
-  for (const result of [...scoped.results, ...global.results]) {
-    if (seen.has(result.id)) continue;
-    seen.add(result.id);
-    merged.push({ id: result.id, score: result.score });
-  }
-  // Python sorts by score DESCENDING with a stable sort, so equal scores keep the
-  // scoped-before-global order the merge produced. JavaScript's sort is stable by
-  // specification since ES2019, so the comparator alone reproduces it.
-  merged.sort((left, right) => right.score - left.score);
-  const relevant = merged.slice(0, 6);
+  const relevant = mergeRankedResults(scoped.results, global.results);
   if (relevant.length > 0) {
     // The ranker returns ids and scores; the rendered block needs the rows, read
     // through the same helper `memories --search` uses.

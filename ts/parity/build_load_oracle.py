@@ -45,23 +45,86 @@ class _EmbeddingResponse:
         self.latency_ms = 3
 
 
+def _freeze_generators(fixture: dict[str, Any]) -> None:
+    """Freeze the clock and the id source, in the SUBPROCESS where they are read.
+
+    The other generators freeze `models._now` in their own process; this one
+    cannot, because the command under test runs in a child. Both are frozen here so
+    the recorded `runtime_sessions` and `llm_calls` rows are graded as values rather
+    than normalized away -- `_uuid` is 8 hex characters and appears in conversation
+    ids, which the corpus then compares exactly.
+    """
+    from memory import models
+
+    models._now = lambda: fixture["now"]
+    counter = iter(range(1, 1000))
+    models._uuid = lambda: f"{next(counter):08x}"
+
+
+def _forbid_network() -> None:
+    """Make a live call IMPOSSIBLE, not merely unlikely.
+
+    The first version of this driver patched two modules and missed the one that
+    matters: `intelligence/search.py` imports `generate_embedding` by name, so the
+    searches went to the real provider. A repository `.env` supplies a key, so the
+    generator quietly made live embedding calls and wrote their token counts into
+    the corpus -- a golden that depended on the network and on someone's balance.
+
+    Patching more call sites fixes today's defect; this fixes the CLASS. Any socket
+    the oracle opens raises, so a future import site added upstream fails the
+    generator instead of spending money on it.
+    """
+    import socket
+
+    class _RefusedSocket(socket.socket):
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            raise RuntimeError(
+                "the load oracle attempted a network call: a provider entry point "
+                "is unpatched. Patch it in `_install_seam` rather than relaxing "
+                "this guard -- the corpus must never depend on a live model."
+            )
+
+    socket.socket = _RefusedSocket  # type: ignore[misc]
+
+
 def _install_seam(fixture: dict[str, Any]) -> None:
     """Replace every provider entry point with the fixture's fixed answers."""
-    vector = np.array(fixture["embedding"], dtype=np.float32)
+    from memory.intelligence.llm_router import LLMResponse
 
-    def fake_generate_embedding(text: str, **kwargs: Any) -> np.ndarray:
-        # The `on_llm_call` logger is deliberately NOT invoked: a replayed call
-        # cost nothing, and pricing it would put fiction in `llm_calls`. The
-        # TypeScript replay provider reports `promptTokens: null` for the same
-        # reason, so the two ledgers agree on silence.
+    vector = np.array(fixture["embedding"], dtype=np.float32)
+    embedding_model = fixture["embedding_model"]
+
+    def fake_generate_embedding(
+        text: str, on_llm_call: Any = None, **kwargs: Any
+    ) -> np.ndarray:
+        # The ledger row IS behavior: `build load` writes two of them, and the
+        # panel asked for that count to be graded. So the logger is invoked, with
+        # the token count the TypeScript replay provider reports -- `null` -- so
+        # the two ledgers agree rather than one inventing a price.
+        if on_llm_call is not None:
+            on_llm_call(
+                LLMResponse(
+                    model=embedding_model,
+                    content="",
+                    prompt=text,
+                    prompt_tokens=None,
+                    completion_tokens=None,
+                    latency_ms=None,
+                )
+            )
         return vector
 
-    # Patched per MODULE, because each imported the name directly.
+    # Patched per MODULE, because each imported the name directly. `search` is the
+    # one `load` actually reaches; the others are here so no path can escape.
+    import memory.intelligence.search as search_module
+    import memory.services.attachment as attachment_module
     import memory.services.conversation as conversation_module
     import memory.services.memory as memory_module
 
+    search_module.generate_embedding = fake_generate_embedding
     memory_module.generate_embedding = fake_generate_embedding
     conversation_module.generate_embedding = fake_generate_embedding
+    attachment_module.generate_embedding = fake_generate_embedding
 
     responses: dict[str, str] = fixture.get("llm", {})
 
@@ -88,7 +151,9 @@ def main() -> None:
         session_id = sys.argv[sys.argv.index("--session-id") + 1]
 
     fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+    _freeze_generators(fixture)
     _install_seam(fixture)
+    _forbid_network()
 
     from memory.cli.build import cmd_load
 

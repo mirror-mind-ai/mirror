@@ -1537,7 +1537,9 @@
     0.0125,
     0.0125
   ],
+  "embedding_model": "openai/text-embedding-3-small",
   "llm": {
     "default": "[]"
-  }
+  },
+  "now": "2026-01-01T00:00:00+00:00"
 }
