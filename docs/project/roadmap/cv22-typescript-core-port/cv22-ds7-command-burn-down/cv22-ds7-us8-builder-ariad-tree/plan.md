@@ -1102,11 +1102,24 @@ CR** (marking it is a product change that belongs after the flip).
   whose corpus is full. Both shapes are recorded
   (`load_lexical_offline` ranks lexically, `load_degraded_briefing_query` renders
   nothing); reproduced rather than fixed, because marking it is a product change.
-- **`build load` is Mirror's per-session cost floor.** Two embeddings for the same
-  query (scoped and global) plus the previous conversation's close tail, on every
-  Builder session start. The double embedding is parity-bound; the CR carries the
-  measured per-`load` ledger cost so the number exists before anyone argues about
-  it.
+- **`build load` is Mirror's per-session cost floor — and the floor is the close
+  tail, not the double embedding.** Two embeddings for the same query (scoped and
+  global) plus the previous conversation's close tail, on every Builder session
+  start. Measured at plateau 7 from the real ledger (31 identical-prompt embedding
+  pairs, the `build load` signature, on `openai/text-embedding-3-small`):
+
+  | | per session start |
+  |---|---|
+  | the two query embeddings | median **$0.0000046**, mean $0.0000061 (67–595 prompt tokens) |
+  | of which the duplicate call | **half** — about $0.000003 |
+  | the close tail `load` triggers | median **$0.0011**, mean $0.0030, max $0.024 per conversation |
+
+  So the duplicate embedding is roughly **0.3%** of what a Builder session start
+  costs, and the close tail is the other ~99.7%: `conversation_title` alone is the
+  largest line in the whole ledger (181 calls, $0.19). The double embedding stays
+  parity-bound and is worth fixing for latency and honesty, not for spend; the
+  cost argument belongs to CR076 and CR057, which already target the close tail.
+  Recording the number here so nobody re-opens the question from intuition.
 
 - **The DS Done preflight would refuse this repository's own roadmap.** `_is_done`
   is `strip().casefold().endswith("done")`, so `Done` and `✅ DONE` pass while

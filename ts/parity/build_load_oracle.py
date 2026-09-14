@@ -30,6 +30,13 @@ Usage (invoked by `generate_builder_load_golden.py`):
 
     python build_load_oracle.py <slug> <fixture.json> [--session-id ID]
                                 [--fail-embedding] [--fail-embedding-calls 1,2]
+                                [--now ISO] [--ignore-clone-role]
+
+`--now` overrides the fixture's frozen clock, so the write-parity harness can run
+this driver under ITS frozen now and compare rows with the TypeScript side.
+`--ignore-clone-role` skips the production-clone guard, whose real inputs are a
+git root and a marker file on the machine — properties of the environment rather
+than of the command, graded separately in the corpus.
 
 `--fail-embedding-calls` names WHICH round-trips fail, one-based. `load` embeds
 twice and both engines catch per search, so `2` is the rate limit that arrives
@@ -181,6 +188,8 @@ def main() -> None:
         session_id = sys.argv[sys.argv.index("--session-id") + 1]
 
     fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+    if "--now" in sys.argv:
+        fixture["now"] = sys.argv[sys.argv.index("--now") + 1]
     _freeze_generators(fixture)
     # `None` is a healthy seam; an EMPTY set fails every call. The distinction is
     # deliberate -- "no failing calls named" and "no failures" are different
@@ -197,7 +206,11 @@ def main() -> None:
 
     from memory.cli.build import cmd_load
 
-    cmd_load(slug, session_id=session_id)
+    cmd_load(
+        slug,
+        session_id=session_id,
+        ignore_production_role="--ignore-clone-role" in sys.argv,
+    )
 
 
 if __name__ == "__main__":

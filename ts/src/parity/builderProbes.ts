@@ -15,16 +15,20 @@
 // cell before comparing, so the dialect is graded by the unit golden and this
 // probe grades the state a real database ends in.
 
+import { createHash } from "node:crypto";
 import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, sep } from "node:path";
 import { getAriadMethod } from "#builder/ariadMethod.ts";
 import { clearDeliveryCursor, setDeliveryCursor } from "#builder/deliveryCursor.ts";
 import { expandDeliveryStory } from "#builder/expand.ts";
+import { runBuildLoad } from "#builder/load.ts";
 import { planLifecycleItem } from "#builder/plan.ts";
 import { prepareLifecycleItem } from "#builder/prepare.ts";
 import { pullLifecycleItem } from "#builder/pull.ts";
 import { createStoryDirectory, resolveStoryDirectory } from "#builder/storyPaths.ts";
+import { switchConversation } from "#conversation/logger.ts";
 import type { WritableDatabase } from "#db/database.ts";
+import { loadReplayEmbeddingProvider } from "#providers/embedding.ts";
 import type { MutatedRow } from "./writeParity.ts";
 import type { WriteProbe } from "./writeProbe.ts";
 
@@ -260,4 +264,193 @@ function projectFileRows(projectRoot: string): MutatedRow[] {
       id: `file:${relativePath}`,
       cells: { content: readFileSync(join(projectRoot, relativePath), "utf8") },
     }));
+}
+
+// --- CV22.DS7.US8 plateau 7 — `build load` on a real corpus ------------------
+
+export interface BuilderLoadProbeParams {
+  readonly journey: string;
+  readonly session_id: string;
+  readonly sticky_session_id: string;
+  readonly replay_embedding_path: string;
+  readonly base_access_log_id: number;
+  readonly conversation_id: string | null;
+  readonly touched_memory_ids: readonly string[];
+}
+
+/**
+ * Run a whole session start against a copy of a REAL database.
+ *
+ * What this adds over `builder-load.golden.json`, whose nine cases seed at most
+ * nine memories: the ranker runs over the Navigator's actual corpus, with real
+ * vectors, real access history feeding the reinforcement term, and genuine
+ * near-ties for the merge to break. The composition is the same; the data is the
+ * part a synthetic case cannot imitate.
+ *
+ * Everything graded is content-free by construction — opaque memory ids, counts,
+ * ledger roles, and DIGESTS of the rendered surfaces. A digest still fails when
+ * the engines disagree; `--debug-sensitive-output` stays the deliberate way to
+ * find out why.
+ *
+ * Both engines read the SAME embedding fixture (Python through the patched seam
+ * in `build_load_oracle.py`, TypeScript through its replay provider), so a
+ * ranking difference is a ranking difference and never a different query vector.
+ */
+export function builderLoadProbe(
+  label: string,
+  params: BuilderLoadProbeParams,
+  nowIso: string,
+): WriteProbe {
+  return {
+    label,
+    snapshots: [
+      {
+        table: "runtime_sessions",
+        keyColumn: "session_id",
+        columns: [
+          "conversation_id",
+          "interface",
+          "persona",
+          "journey",
+          "active",
+          "started_at",
+          "closed_at",
+          "metadata",
+        ],
+        selectorColumn: "session_id",
+        selectorValues: [params.session_id, params.sticky_session_id],
+      },
+      {
+        table: "conversations",
+        keyColumn: "id",
+        columns: ["started_at", "ended_at", "interface", "persona", "journey"],
+        selectorColumn: "id",
+        selectorValues: params.conversation_id ? [params.conversation_id] : [],
+      },
+      {
+        // Retrieval logs ACCESS, never USE: `use_count` feeds the reinforcement
+        // term, so a port that bumped it here would re-rank the whole corpus.
+        table: "memories",
+        keyColumn: "id",
+        columns: ["use_count"],
+        selectorColumn: "id",
+        selectorValues: [...params.touched_memory_ids],
+      },
+    ],
+    async apply(db: WritableDatabase): Promise<MutatedRow[]> {
+      const baseAccessId = maxAccessLogId(db);
+      if (baseAccessId !== params.base_access_log_id) {
+        // The two copies must come from one seed. If they do not, every row below
+        // is a comparison between different databases, and a green verdict would
+        // mean nothing at all.
+        throw new Error(
+          `builder_load: the TS copy starts at memory_access_log id ${baseAccessId} ` +
+            `but the oracle recorded ${params.base_access_log_id}; the copies are not ` +
+            "the same seed",
+        );
+      }
+      const provider = await loadReplayEmbeddingProvider(params.replay_embedding_path);
+      // Python's frozen `_uuid` is a hex counter, and `load` consumes it for the
+      // conversation the switch creates. `log_llm_call` imports the name directly
+      // so the ledger's own ids never reach the counter -- which is why the
+      // conversation id is `00000001` on both engines and the ledger ids are
+      // graded by role, not by value.
+      let generated = 0;
+      const newId = (): string => (++generated).toString(16).padStart(8, "0");
+      const result = await runBuildLoad(
+        db,
+        { slug: params.journey, sessionId: params.session_id },
+        {
+          nowIso: () => nowIso,
+          newId,
+          embeddingProvider: provider,
+          switchConversation: async (journey, sessionId) => {
+            await switchConversation(
+              db,
+              sessionId,
+              { persona: "engineer", journey },
+              { nowIso: () => nowIso, newId },
+            );
+          },
+        },
+      );
+
+      const accessed = db
+        .prepare("SELECT memory_id FROM memory_access_log WHERE id > ? ORDER BY id")
+        .all(baseAccessId) as { memory_id: string }[];
+      const ledger = db
+        .prepare(
+          "SELECT role, model, prompt_tokens, completion_tokens, cost_usd " +
+            "FROM llm_calls WHERE called_at = ? ORDER BY rowid",
+        )
+        .all(nowIso) as Record<string, unknown>[];
+      const conversationId = (
+        db
+          .prepare("SELECT conversation_id FROM runtime_sessions WHERE session_id = ?")
+          .get(params.session_id) as { conversation_id: string | null } | undefined
+      )?.conversation_id;
+      const flags = conversationId
+        ? (db
+            .prepare(
+              "SELECT (title IS NOT NULL) AS has_title, (summary IS NOT NULL) AS has_summary, " +
+                "(SELECT COUNT(*) FROM messages m WHERE m.conversation_id = c.id) AS messages " +
+                "FROM conversations c WHERE c.id = ?",
+            )
+            .get(conversationId) as Record<string, number> | undefined)
+        : undefined;
+
+      return [
+        ...accessed.map((row, index) => ({
+          id: `access:${String(index).padStart(3, "0")}`,
+          cells: { memory_id: row.memory_id },
+        })),
+        ...ledger.map((row, index) => ({
+          id: `llm:${String(index).padStart(3, "0")}`,
+          cells: {
+            role: row.role as string,
+            model: row.model as string,
+            prompt_tokens: (row.prompt_tokens ?? null) as number | null,
+            completion_tokens: (row.completion_tokens ?? null) as number | null,
+            cost_usd: (row.cost_usd ?? null) as number | null,
+          },
+        })),
+        {
+          id: "stdout:sha256",
+          cells: {
+            stdout: digest(result.stdout),
+            stderr: digest(result.stderr),
+            memories_block: digest(memoriesBlock(result.stdout)),
+            memories_rendered: memoriesBlock(result.stdout).split("\n[").length - 1,
+          },
+        },
+        {
+          id: "conversation:flags",
+          cells: {
+            has_title: flags ? Number(flags.has_title) : -1,
+            has_summary: flags ? Number(flags.has_summary) : -1,
+            messages: flags ? Number(flags.messages) : -1,
+          },
+        },
+      ];
+    },
+  };
+}
+
+const MEMORIES_HEADING = "=== recent memories ===";
+
+/** The rendered block alone, so its digest fails independently of the cards. */
+function memoriesBlock(stdout: string): string {
+  const index = stdout.indexOf(MEMORIES_HEADING);
+  return index === -1 ? "" : stdout.slice(index + MEMORIES_HEADING.length);
+}
+
+function digest(text: string): string {
+  return createHash("sha256").update(text, "utf8").digest("hex");
+}
+
+function maxAccessLogId(db: WritableDatabase): number {
+  const row = db.prepare("SELECT COALESCE(MAX(id), 0) AS id FROM memory_access_log").get() as {
+    id: number | bigint;
+  };
+  return Number(row.id);
 }

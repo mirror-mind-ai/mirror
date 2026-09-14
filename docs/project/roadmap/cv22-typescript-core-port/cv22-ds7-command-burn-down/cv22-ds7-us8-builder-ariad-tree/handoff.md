@@ -38,15 +38,17 @@ What already landed:
   (`load_lexical_offline`, `load_partial_outage`, `load_first_call_outage`,
   `load_degraded_briefing_query`) graded on all four faces against Python, whose
   seam now fails the way `generate_embedding` fails. Eight mutants killed, and
-  one real defect fixed (the absent-provider branch, below).
+  one real defect fixed (the absent-provider branch, below);
+- **the `builder_load` probe, the provider-isolation test, and the cost
+  measurement** (plan items 18d, 23) — a whole session start replayed on a copy
+  of the REAL database, 25 graded rows, matching first run and proven to bite by
+  two killed mutants. See the three entries below.
 
 **Next, in order:**
 
-1. **the `builder_load` probe** on a real-DB copy, **the provider-isolation test**
-   (the other 26 leaves never reach `resolveFamilyProviders` — asserted on the
-   seam, not on "no call happened"), and **cost per `load`** measured from the
-   ledger (plan item 18d);
-2. **the `explore story promote` tail**, waiting since US7 for Builder `load`.
+1. **the `explore story promote` tail**, waiting since US7 for Builder `load`.
+
+Then plateau 8 (front door, gate off) and plateau 9 (the flip).
 
 The composed decision exists but is **not consumed yet**: `buildRoute.ts` calls
 it before the banner at plateau 8 (item 21), which is also where
@@ -126,6 +128,38 @@ Then plateau 8 (front door, gate off) and plateau 9 (the flip).
   `tmp/parity/builder-load/<name>/project` into a card row padded to 56 columns:
   a one-character rename puts one space of difference inside the card and the
   comparison stops being possible.
+- **The `builder_load` probe runs the oracle in a SUBPROCESS, and that is a
+  safety property.** `cmd_load` builds its own `MemoryClient()` and
+  `switch_conversation` opens its own connection, both resolving `DB_PATH` from
+  config at import. An in-process probe would have to patch every one of those
+  seams correctly to avoid writing into the Navigator's real database; a child
+  process with `DB_PATH` on the copy cannot reach it at all, whatever the command
+  does internally. Two new oracle flags serve it: `--now` (the harness's frozen
+  clock) and `--ignore-clone-role` (a guard whose inputs are the machine's).
+- **Everything the probe grades is content-free by construction** — opaque memory
+  ids in access order, ledger roles and token counts, row counts, and DIGESTS of
+  stdout, stderr, and the memories block. The block's ORDER is not derivable from
+  the access log (access is logged per search; the block is the merged, re-sorted
+  six), so its digest is the only thing that grades the merge on real data.
+- **The probe refuses a corpus that is not at the pinned width.** Python's search
+  dots the 1536-wide query vector against each stored embedding with no width
+  check of its own, so the synthetic demo database (8 floats wide) dies four
+  frames deep inside numpy and the probe looks broken rather than inapplicable.
+  It now names the precondition instead — the CR044 rule, applied to a harness.
+- **The 26 leaves are isolated by REACHABILITY, not by observation.** A test that
+  runs a leaf and sees no network call proves nothing about the leaf that stops
+  being deterministic tomorrow. `test/builder/providerIsolation.test.ts` computes
+  the import closure of every `builder/` module except `load.ts` over the real
+  source tree and asserts no `providers/` module is in it, asserts `load.ts` DOES
+  reach `familyProviders.ts` (so the property cannot pass vacuously), and pins
+  that the walker walked. Both mutants — a planted value import and a planted
+  TYPE-only import — are killed.
+- **The per-session cost floor is the close tail, not the double embedding.**
+  Measured from the real ledger and written into the plan's Debt section: the two
+  query embeddings cost a median **$0.0000046** per session start, of which half
+  is the duplicate call, while the close tail `load` triggers costs a median
+  **$0.0011** per conversation — roughly 240× more. The double embedding is worth
+  fixing for latency and honesty; the spend argument belongs to CR076/CR057.
 
 Two constraints carried forward:
 
@@ -147,7 +181,7 @@ front door with the gate off, and the flip.
 | `builder-lifecycle.golden.json` | 86 sequences / 274 steps / 161 surfaces / 40 refusals — all graded |
 | `builder-command.golden.json` | 80 cases across 15 leaves — all graded |
 | `PENDING_OPS` / `PENDING_LEAVES` | both empty; plateau 5 refills them |
-| Write probes | `builder_cursor_state`, `builder_artifacts` |
+| Write probes | `builder_cursor_state`, `builder_artifacts`, `builder_load` (25 rows, real corpus) |
 | `builder_lifecycle_smoke.ts` | three sequences (story, Delivery Story, cadence), 47 steps × both engines, **331 checks**, in CI |
 
 Written for the session that resumes this story — possibly a different session, a

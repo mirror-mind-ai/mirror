@@ -22,8 +22,10 @@ import { logAccess, logUse } from "#memory/reinforcement.ts";
 import {
   type BuilderArtifactsProbeParams,
   type BuilderCursorProbeParams,
+  type BuilderLoadProbeParams,
   builderArtifactsProbe,
   builderCursorStateProbe,
+  builderLoadProbe,
 } from "./builderProbes.ts";
 import {
   type ExplorerHandoffProbeParams,
@@ -132,6 +134,12 @@ export type WriteProbeFixture =
   | (WriteProbeBase & {
       probe_type: "builder_artifacts";
       builder_artifacts: BuilderArtifactsProbeParams;
+    })
+  // CV22.DS7.US8 plateau 7: a whole session start on a real corpus, graded as
+  // opaque ids, counts, and surface digests — never a title, a body, or the query.
+  | (WriteProbeBase & {
+      probe_type: "builder_load";
+      builder_load: BuilderLoadProbeParams;
     })
   | (WriteProbeBase & { probe_type: "soul_state"; soul_state: SoulStateProbeParams })
   | (WriteProbeBase & { probe_type: "soul_apply"; soul_apply: SoulApplyProbeParams })
@@ -411,6 +419,8 @@ function buildWriteProbe(fixture: WriteProbeFixture, tsCopyPath: string): WriteP
         // where the first reported `created`.
         join(dirname(tsCopyPath), "builder-artifacts-ts", "project"),
       );
+    case "builder_load":
+      return builderLoadProbe(fixture.label, fixture.builder_load, fixture.now_iso);
     case "soul_state":
       return soulStateProbe(fixture.label, fixture.soul_state, fixture.now_iso);
     case "soul_apply":

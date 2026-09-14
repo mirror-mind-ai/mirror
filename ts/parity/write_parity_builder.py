@@ -1,7 +1,8 @@
-"""Builder write-parity probes: the delivery cursor, and artifact materialization.
+"""Builder write-parity probes: the delivery cursor, artifacts, and `load`.
 
-Two probes live here. `builder_cursor_state` (plateau 2) grades database rows;
-`builder_artifacts` (plateau 3) grades FILES.
+Three probes live here. `builder_cursor_state` (plateau 2) grades database rows;
+`builder_artifacts` (plateau 3) grades FILES; `builder_load` (plateau 7) grades
+what a session start LEAVES BEHIND on a real corpus.
 
 The artifacts probe encodes each file as an ordinary `{id, cells}` state row --
 `id` is the project-relative path, `cells` is its content -- rather than adding a
@@ -60,8 +61,13 @@ proof of the property the revert actually needs.
 
 from __future__ import annotations
 
+import hashlib
+import json
+import os
 import shutil
 import sqlite3
+import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -426,7 +432,318 @@ def builder_artifacts_probe(python_copy, frozen_datetime, now_iso: str) -> dict[
     }
 
 
+# --- `build load` on a real corpus (plateau 7) -------------------------------
+#
+# The synthetic corpus grades `load` against Python on nine seeded databases with
+# at most nine memories. This probe answers the question those cannot: does the
+# composition hold on a REAL corpus, where the ranker runs over thousands of
+# stored vectors and the merge has genuine near-ties to break?
+#
+# Everything it grades is content-free by construction. Memory ids (opaque), row
+# counts, ledger roles, and DIGESTS of the rendered surfaces -- never a title, a
+# body, or the query. A digest still fails when the engines disagree, and the
+# harness's `--debug-sensitive-output` remains the deliberate way to see why.
+
+HERE = Path(__file__).resolve().parent
+LOAD_SESSION_ID = "__builder_load_probe__"
+STICKY_SESSION_ID = "__global_sticky_defaults__"
+LOAD_FIXTURE = HERE.parent / "test" / "fixtures" / "builder-load" / "oracle-seam.json"
+TS_LOAD_FIXTURE = HERE.parent / "test" / "fixtures" / "builder-load" / "replay-embedding.json"
+MEMORIES_HEADING = "=== recent memories ==="
+# The runtime-session cells a session start writes: the mode row's binding, the
+# conversation it bound, and the sticky defaults. `updated_at` is excluded for the
+# reason the cursor probe excludes it -- both engines stamp the frozen now, so it
+# grades the harness rather than the port.
+LOAD_SESSION_COLUMNS = (
+    "conversation_id",
+    "interface",
+    "persona",
+    "journey",
+    "active",
+    "started_at",
+    "closed_at",
+    "metadata",
+)
+LOAD_CONVERSATION_COLUMNS = ("started_at", "ended_at", "interface", "persona", "journey")
+
+
+def _pick_load_journey(conn: sqlite3.Connection) -> str:
+    """The journey with the most memories, then alphabetical.
+
+    Deterministic, and chosen for SIZE on purpose: the scoped search must have a
+    real candidate set to rank, or the probe grades an empty block and proves
+    nothing the synthetic corpus did not already prove.
+    """
+    row = conn.execute(
+        """SELECT i.key AS key, COUNT(m.id) AS memories
+             FROM identity i
+             LEFT JOIN memories m ON m.journey = i.key
+            WHERE i.layer = 'journey'
+            GROUP BY i.key
+            ORDER BY memories DESC, i.key
+            LIMIT 1"""
+    ).fetchone()
+    return str(row["key"]) if row else "parity-journey"
+
+
+def _require_pinned_dimension(conn: sqlite3.Connection) -> None:
+    """Refuse a corpus whose vectors are not the pinned width.
+
+    The fixture's query vector is 1536-dimensional, and Python's `search` takes the
+    dot product against each stored embedding with no width check of its own -- so
+    a corpus at another width dies inside numpy with `shapes (1536,) and (8,) not
+    aligned`, four frames deep, and the probe looks broken rather than
+    inapplicable. The synthetic demo database is exactly that corpus: its vectors
+    are eight floats wide.
+
+    This is a precondition of the probe, not a defect in either engine. Naming it
+    here is the CR044 rule -- a harness whose failure is unreadable teaches people
+    to ignore it.
+    """
+    fixture_width = len(json.loads(LOAD_FIXTURE.read_text(encoding="utf-8"))["embedding"])
+    row = conn.execute(
+        "SELECT LENGTH(embedding) AS bytes FROM memories WHERE embedding IS NOT NULL LIMIT 1"
+    ).fetchone()
+    if row is None:
+        raise SystemExit(
+            "the builder_load probe needs a corpus with stored embeddings: this "
+            "database has none, so both engines would render an empty memories block "
+            "and the probe would grade nothing."
+        )
+    width = int(row["bytes"]) // 4  # float32
+    if width != fixture_width:
+        raise SystemExit(
+            f"the builder_load probe needs a corpus embedded at the pinned width "
+            f"({fixture_width}); this database stores {width}-dimensional vectors. "
+            "The synthetic demo database is 8-wide by construction -- run this probe "
+            "against a real mirror home, which is the corpus it exists to grade."
+        )
+
+
+def _digest(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _memories_block(stdout: str) -> str:
+    """The rendered block alone, so its digest fails independently of the cards."""
+    _, separator, block = stdout.partition(MEMORIES_HEADING)
+    return block if separator else ""
+
+
+def builder_load_probe(python_copy, frozen_datetime, now_iso: str) -> dict[str, Any]:
+    """Run the real `cmd_load` against the COPY, in a subprocess, and snapshot it.
+
+    A subprocess rather than an in-process call, and that is a safety property
+    rather than a style choice. `cmd_load` builds its own `MemoryClient()` and
+    `switch_conversation` opens its own connection, both resolving `DB_PATH` from
+    config at import time -- so an in-process probe would have to patch every one
+    of those seams correctly to avoid writing into the Navigator's REAL database.
+    A child process with `DB_PATH` pointing at the copy cannot reach it at all,
+    whatever the command does internally.
+
+    The seam is `build_load_oracle.py`: the same patched providers, reading the
+    same fixture the TypeScript replay provider reads, behind the same socket
+    tripwire that makes a live call impossible.
+    """
+    conn = get_connection_for(python_copy)
+    try:
+        _require_pinned_dimension(conn)
+        journey = _pick_load_journey(conn)
+        base_access_id = int(
+            conn.execute("SELECT COALESCE(MAX(id), 0) AS id FROM memory_access_log").fetchone()[
+                "id"
+            ]
+        )
+    finally:
+        conn.close()
+
+    home = Path(python_copy).parent / "builder-load-home"
+    shutil.rmtree(home, ignore_errors=True)
+    home.mkdir(parents=True)
+
+    environment = dict(os.environ)
+    environment["DB_PATH"] = str(Path(python_copy).resolve())
+    environment["MIRROR_HOME"] = str(home.resolve())
+    environment["MEMORY_ENV"] = "test"
+    environment["PYTHONPATH"] = str(HERE.parent.parent / "src")
+    environment.pop("MIRROR_SESSION_ID", None)
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(HERE / "build_load_oracle.py"),
+            journey,
+            str(LOAD_FIXTURE),
+            "--session-id",
+            LOAD_SESSION_ID,
+            "--now",
+            now_iso,
+            # The guard's inputs are the machine's, not the command's: a git root
+            # and a marker file. Graded in the corpus with an injected refusal.
+            "--ignore-clone-role",
+        ],
+        capture_output=True,
+        text=True,
+        env=environment,
+        cwd=str(HERE.parent.parent),
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise SystemExit(
+            "the builder_load probe's oracle failed "
+            f"(exit {completed.returncode}): {completed.stderr[-2000:]}"
+        )
+
+    conn = get_connection_for(python_copy)
+    try:
+        accessed = [
+            {"id": f"access:{index:03d}", "cells": {"memory_id": row["memory_id"]}}
+            for index, row in enumerate(
+                conn.execute(
+                    "SELECT memory_id FROM memory_access_log WHERE id > ? ORDER BY id",
+                    (base_access_id,),
+                ).fetchall()
+            )
+        ]
+        # Selected by the FROZEN clock rather than by id: `llm_calls.id` is a
+        # uuid, and `log_llm_call` imports `_uuid` by name so the oracle's frozen
+        # counter never reaches it. `called_at` is `_now()`, which is frozen.
+        ledger = [
+            {
+                "id": f"llm:{index:03d}",
+                "cells": {
+                    "role": row["role"],
+                    "model": row["model"],
+                    "prompt_tokens": row["prompt_tokens"],
+                    "completion_tokens": row["completion_tokens"],
+                    "cost_usd": row["cost_usd"],
+                },
+            }
+            for index, row in enumerate(
+                conn.execute(
+                    "SELECT role, model, prompt_tokens, completion_tokens, cost_usd "
+                    "FROM llm_calls WHERE called_at = ? ORDER BY rowid",
+                    (now_iso,),
+                ).fetchall()
+            )
+        ]
+        touched = [str(entry["cells"]["memory_id"]) for entry in accessed]
+        sessions = [
+            {
+                "id": f"runtime_sessions:{row['session_id']}",
+                "cells": {column: row[column] for column in LOAD_SESSION_COLUMNS},
+            }
+            for row in conn.execute(
+                "SELECT session_id, "
+                + ", ".join(LOAD_SESSION_COLUMNS)
+                + " FROM runtime_sessions WHERE session_id IN (?, ?) ORDER BY session_id",
+                (LOAD_SESSION_ID, STICKY_SESSION_ID),
+            ).fetchall()
+        ]
+        conversation_id = conn.execute(
+            "SELECT conversation_id FROM runtime_sessions WHERE session_id = ?",
+            (LOAD_SESSION_ID,),
+        ).fetchone()
+        conversation_id = None if conversation_id is None else conversation_id["conversation_id"]
+        conversations = [
+            {
+                "id": f"conversations:{row['id']}",
+                "cells": {column: row[column] for column in LOAD_CONVERSATION_COLUMNS},
+            }
+            for row in (
+                conn.execute(
+                    "SELECT id, "
+                    + ", ".join(LOAD_CONVERSATION_COLUMNS)
+                    + " FROM conversations WHERE id = ?",
+                    (conversation_id,),
+                ).fetchall()
+                if conversation_id
+                else []
+            )
+        ]
+        # `title` and `summary` are deliberately absent from the graded columns
+        # and present here as PRESENCE flags: a session start creates an empty
+        # conversation, so the only signal they carry is "still empty", and
+        # grading their text would put conversation prose in a fixture file for
+        # no extra evidence.
+        flags = conn.execute(
+            "SELECT (title IS NOT NULL) AS has_title, (summary IS NOT NULL) AS has_summary, "
+            "(SELECT COUNT(*) FROM messages m WHERE m.conversation_id = c.id) AS messages "
+            "FROM conversations c WHERE c.id = ?",
+            (conversation_id,),
+        ).fetchone()
+        conversation_flags = [
+            {
+                "id": "conversation:flags",
+                "cells": {
+                    "has_title": int(flags["has_title"]) if flags else -1,
+                    "has_summary": int(flags["has_summary"]) if flags else -1,
+                    "messages": int(flags["messages"]) if flags else -1,
+                },
+            }
+        ]
+        # Retrieval logs ACCESS, never USE. On a real corpus the distinction is
+        # load-bearing: `use_count` feeds the reinforcement term, so a port that
+        # bumped it here would quietly re-rank the Navigator's whole memory.
+        memories = [
+            {"id": f"memories:{row['id']}", "cells": {"use_count": row["use_count"]}}
+            for row in (
+                conn.execute(
+                    "SELECT id, use_count FROM memories WHERE id IN "
+                    f"({', '.join('?' for _ in touched)}) ORDER BY id",
+                    touched,
+                ).fetchall()
+                if touched
+                else []
+            )
+        ]
+    finally:
+        conn.close()
+    shutil.rmtree(home, ignore_errors=True)
+
+    surfaces = [
+        {
+            "id": "stdout:sha256",
+            "cells": {
+                "stdout": _digest(completed.stdout),
+                "stderr": _digest(completed.stderr),
+                "memories_block": _digest(_memories_block(completed.stdout)),
+                # The block's ORDER is not derivable from the access log -- access
+                # is logged per search, the block is the merged, re-sorted six --
+                # so its digest is the only thing that grades the merge on real
+                # data. The count is recorded beside it to make a mismatch
+                # readable without revealing anything.
+                "memories_rendered": _memories_block(completed.stdout).count("\n["),
+            },
+        }
+    ]
+
+    return {
+        "label": "builder_load",
+        "probe_type": "builder_load",
+        "now_iso": now_iso,
+        "builder_load": {
+            "journey": journey,
+            "session_id": LOAD_SESSION_ID,
+            "sticky_session_id": STICKY_SESSION_ID,
+            "replay_embedding_path": str(TS_LOAD_FIXTURE),
+            "base_access_log_id": base_access_id,
+            "conversation_id": conversation_id,
+            "touched_memory_ids": touched,
+        },
+        "python_state": [
+            *accessed,
+            *ledger,
+            *surfaces,
+            *sessions,
+            *conversations,
+            *conversation_flags,
+            *memories,
+        ],
+    }
+
+
 PROBES = {
     "builder_cursor_state": builder_cursor_state_probe,
     "builder_artifacts": builder_artifacts_probe,
+    "builder_load": builder_load_probe,
 }
