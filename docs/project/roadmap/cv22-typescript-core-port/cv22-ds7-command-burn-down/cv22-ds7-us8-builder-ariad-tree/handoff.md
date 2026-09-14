@@ -1,9 +1,9 @@
 [< Story](index.md)
 
-# Handoff — CV22.DS7.US8 — Builder/Ariad tree (plateaus 1–6 complete)
+# Handoff — CV22.DS7.US8 — Builder/Ariad tree (plateaus 1–6 complete, 7 in flight)
 
-**Status:** plateaus 1–6 of 9 complete. **26 of the 27 in-scope leaves answer from
-TypeScript**, and all three Ariad flows — the story lifecycle, the aggregate
+**Status:** plateaus 1–6 of 9 complete, plateau 7 in flight. **All 27 in-scope
+leaves answer from TypeScript**, `load` included and graded, and all three Ariad flows — the story lifecycle, the aggregate
 Delivery Story lifecycle, and the cadence/authority paths — run on both engines and
 agree after every step. **Nothing is routed** — `routing.ts` is untouched and every
 `build` invocation still reaches Python, which is the intended state until plateau 8
@@ -11,42 +11,63 @@ adds the gate and plateau 9 flips it.
 
 ## Resume here
 
-**Plateau 7 is in flight and its next step is exact: the `load` INVOCATION
-corpus.** Everything else in the story is ported.
+**Plateau 7 is in flight. `load` is ported AND graded; what remains is the
+seam around it.** Every leaf in the story now answers from TypeScript.
 
 What already landed:
 
-- the **pure half** — `builder/transition.ts` (the `■ BUILDER MODE ACTIVE` card,
-  `extractStage`/`extractSection`/`truncateWords`, and `extractQuery`), graded by
-  21 transition cases and 10 query cases in `builder-load.golden.json`;
-- the **composition** — `builder/load.ts`'s `runBuildLoad`, which orders the
-  effects Python orders and reuses already-graded parts for the rest;
-- the **oracle seam** — `ts/parity/build_load_oracle.py`, which runs the real
-  `cmd_load` in a subprocess with the provider entry points patched to
+- **the pure half** — `builder/transition.ts` (the `■ BUILDER MODE ACTIVE` card,
+  `extractStage`/`extractSection`/`truncateWords`, `extractQuery`), 21 transition
+  and 10 query cases;
+- **the composition, graded** — `builder/load.ts`'s `runBuildLoad`, compared
+  against Python on six recorded invocations × four faces: streams and exit code,
+  the `runtime_sessions` rows, the access the read left behind, and the
+  `llm_calls` ledger;
+- **the oracle seam** — `ts/parity/build_load_oracle.py` runs the real `cmd_load`
+  in a subprocess with every provider entry point patched to
   `ts/test/fixtures/builder-load/oracle-seam.json`, the same numbers TypeScript
-  reads through `replay-embedding.json`.
+  reads through `replay-embedding.json`, behind a socket tripwire that makes a
+  live call impossible;
+- nine mutants killed, including one that forced `mergeRankedResults` out into a
+  pure exported function (see below).
 
-**`runBuildLoad` is NOT graded against Python yet.** That is the next commit, and
-it is why `load` appears in no `PORTED_LEAVES` list. Concretely:
+**Next, in order:**
 
-1. add `_load_invocations` to `generate_builder_load_golden.py`: seed a disposable
-   home per case (journey identity, project path, a handful of memories with
-   DISTINCT embeddings so the ranking is not a tie, optionally a previous
-   conversation), run the driver, record stdout/stderr/exit plus the
-   `runtime_sessions` rows and the `llm_calls` rows;
-2. replay each case through `runBuildLoad` on a copy, comparing the same four
-   faces — the memories block is where a composition defect will show;
-3. then the remaining Scope G items: the composed transport decision (item 18b —
-   `MIRROR_TS_BUILD` / `MIRROR_TS_SEARCH` / `MIRROR_TS_CONVERSATION_LLM_TAIL`
-   resolved before the banner), the degraded case, the `builder_load` probe, the
-   provider-isolation test, and the `explore story promote` tail that has waited
-   since US7.
+1. **the composed transport decision** (plan item 18b) — resolve
+   `MIRROR_TS_BUILD`, `MIRROR_TS_SEARCH`, and `MIRROR_TS_CONVERSATION_LLM_TAIL`
+   together, **before the banner**, and fall back to Python unless all three
+   agree. `load` prints four surfaces before its first provider call, so a
+   decision taken later would duplicate them;
+2. **the degraded case** — provider failure → FTS-only block, mode row still
+   written, degraded kind in the front-door log as metadata (never a message,
+   never the query);
+3. **the `builder_load` probe** on a real-DB copy, **the provider-isolation test**
+   (the other 26 leaves never reach `resolveFamilyProviders` — asserted on the
+   seam, not on "no call happened"), and **cost per `load`** measured from the
+   ledger (plan item 18d);
+4. **the `explore story promote` tail**, waiting since US7 for Builder `load`.
 
-**Grading rule for every one of those (panel, database-architect):** `load` writes
-while it reads — `log_access` bumps `access_count` on what it returns, and the
-ranker reads that back. **One `load` per database copy**, or replay with frozen
-scores. A case that runs `load` twice in one world and expects the same block is
-flaky for a correct reason.
+Then plateau 8 (front door, gate off) and plateau 9 (the flip).
+
+### Rules this plateau paid for — do not rediscover them
+
+- **`load` writes while it reads.** `log_access` stamps the memories it returned,
+  and the ranker reads that back. **One `load` per database copy**, or replay with
+  frozen scores. It does NOT touch `use_count` — retrieval logs access, `log_use`
+  logs use, and conflating them inflates reinforcement for anything a Navigator
+  merely loaded.
+- **Keep corpus scores off the knife edge.** The ranker's recency term reads a
+  live clock, so scores equal to six decimals reorder between runs — one case
+  passed alone and failed inside the suite. And perfectly symmetric embeddings tie
+  EXACTLY, where the two engines disagree about order (a search-family CR, not a
+  `load` defect).
+- **The corpus must not inherit the machine.** Cases stage a neutral
+  `pyproject.toml` + `src/memory/` so the clone-role guard reads staged input;
+  without it the golden encoded the developer's `.mirror-clone-role` and CI
+  refused everything. Environment paths absolute, the project path relative.
+- **`mergeRankedResults` is graded directly.** Its first-occurrence rule is not
+  observable through the command in any case the corpus could hold — declared,
+  not implied.
 
 Two constraints carried forward:
 
@@ -90,7 +111,11 @@ route: `inspect-method`, `pull-candidates`, `adopt`, `prepare-templates`,
 
 … plus `set-cadence`, `release-intent`, and `continue-lifecycle`.
 
-**Remaining: one.** `load` (plateau 7).
+… plus `load`, graded at plateau 7 against six recorded invocations.
+
+**Remaining: none.** What is left in the story is the seam around `load` (the
+composed transport, the degraded case, the probe, the isolation test, the
+`promote` tail), then the front door and the flip.
 
 The ten commits below carried plateaus 1–2. Plateaus 3 and 4 added, oldest first:
 `2dff5adb` (lifecycle oracle before any TypeScript), `e98554aa` / `9cb44cd8`
