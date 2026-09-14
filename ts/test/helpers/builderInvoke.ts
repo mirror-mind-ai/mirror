@@ -21,19 +21,27 @@
 import {
   type CommandResult,
   runAdoptMethod,
+  runApproveDeliveryStoryPlan,
   runApprovePlan,
+  runCancelDeliveryStoryPlanPreauthorization,
   runCancelPlanPreauthorization,
   runCheckImplementation,
+  runCoherenceDeliveryStory,
   runCoherenceItem,
+  runDoneDeliveryStory,
   runDoneItem,
   runInspectMethod,
+  runPlanDeliveryStory,
   runPlanItem,
   runPrepareItem,
   runPrepareTemplates,
   runPullCandidates,
   runPullItem,
+  runReviewDeliveryStory,
   runReviewItem,
+  runSetFlowUnit,
   runSyncCursor,
+  runValidateDeliveryStory,
   runValidateItem,
 } from "#builder/commands.ts";
 import type { WritableDatabase } from "#db/database.ts";
@@ -163,6 +171,41 @@ export function invokeBuilderArgv(
         roadmapUpdate: option("--roadmap-update"),
         nextRecommendation: option("--next-recommendation"),
       });
+    // -- the aggregate leaves (plateau 5) ----------------------------------
+    case "set-flow-unit":
+      // `--unit` ABSENT is the inspect face, so it stays `null` rather than "".
+      return runSetFlowUnit(writeContext, { ...shared, unit: option("--unit") });
+    case "plan-delivery-story":
+      return runPlanDeliveryStory(writeContext, {
+        ...shared,
+        objective: option("--objective"),
+        children: appended("--child"),
+        preauthorizeApproval: argv.includes("--preauthorize-approval"),
+        stopAfter: option("--stop-after") ?? "navigator_validation",
+      });
+    case "approve-delivery-story-plan":
+      return runApproveDeliveryStoryPlan(writeContext, {
+        ...shared,
+        usePreauthorization: argv.includes("--use-preauthorization"),
+      });
+    case "cancel-delivery-story-plan-preauthorization":
+      return runCancelDeliveryStoryPlanPreauthorization(writeContext, shared);
+    case "validate-delivery-story":
+      return runValidateDeliveryStory(writeContext, {
+        ...shared,
+        summary: option("--summary"),
+        navigatorAccepted: argv.includes("--navigator-accepted"),
+      });
+    case "review-delivery-story":
+      return runReviewDeliveryStory(writeContext, {
+        ...shared,
+        decision: option("--decision"),
+        summary: option("--summary"),
+      });
+    case "coherence-delivery-story":
+      return runCoherenceDeliveryStory(writeContext, { ...shared, summary: option("--summary") });
+    case "done-delivery-story":
+      return runDoneDeliveryStory(writeContext, { ...shared, summary: option("--summary") });
     default:
       throw new UnsupportedBuilderArgvError(`unsupported argv: ${argv.join(" ")}`);
   }

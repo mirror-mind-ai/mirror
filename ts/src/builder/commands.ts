@@ -58,8 +58,33 @@ import {
   renderDeliveryCursorSyncReport,
   setDeliveryCursor,
 } from "./deliveryCursor.ts";
+import {
+  closureArtifactManifest,
+  coherenceDeliveryStory,
+  type DeliveryStoryClosureReport,
+  doneDeliveryStory,
+  renderDeliveryStoryClosureReport,
+  reviewDeliveryStory,
+  validateDeliveryStory,
+} from "./deliveryStoryClosure.ts";
+import {
+  approveDeliveryStoryPlan,
+  cancelDeliveryStoryPlanPreauthorization,
+  planDeliveryStoryCheckpoint,
+  renderDeliveryStoryImplementationStarted,
+  renderDeliveryStoryPlanReport,
+  renderPlanPreauthorizationMismatch,
+  renderPlanPreauthorizationRecorded,
+} from "./deliveryStoryPlan.ts";
 import { renderDeliveryStoryReadyReport } from "./deliveryStoryReady.ts";
+import { inspectAuthoredClosure } from "./deliveryStoryRoadmapClosure.ts";
 import { ExpandBlockedError, expandDeliveryStory, renderExpandBlocked } from "./expand.ts";
+import {
+  inspectNavigatorFlowUnit,
+  renderFlowUnitScopeConfirmationReport,
+  renderNavigatorFlowUnitReport,
+  setNavigatorFlowUnit,
+} from "./flowUnit.ts";
 import {
   assertImplementationAllowed,
   ImplementationBlockedError,
@@ -1018,6 +1043,427 @@ function miniCardWrapped(text: string): string[] {
 }
 
 /** Python `_render_debt_review_handoff`: a CLI-only surface with its own ribbon literal. */
+// --- Delivery Story leaves (plateau 5) --------------------------------------
+//
+// The aggregate leaves differ from their story-level twins in three CLI-visible
+// ways, all reproduced here:
+//
+//   * no CLI cursor guard — `lifecycleGuards` runs with `requireCursor: false`,
+//     so a missing cursor surfaces the MODULE's message, not the CLI's;
+//   * refusals are ordinary stderr lines (`Error: …`, exit 1), never the
+//     IMPLEMENTATION_GUARD surface the story closure leaves print on stdout;
+//   * `approve-delivery-story-plan` prints the mismatch surface and exits **0**,
+//     because a refused authority is a normal Navigator-facing outcome rather than
+//     a failure — the ordinary Plan gate is still there.
+
+/** Python `cmd_set_flow_unit`: inspect with no `--unit`, select with one. */
+export function runSetFlowUnit(
+  context: BuilderWriteContext,
+  options: {
+    method: string;
+    journey?: string | null;
+    sessionId?: string | null;
+    unit?: string | null;
+  },
+): CommandResult {
+  const guarded = lifecycleGuards(context, {
+    ...options,
+    action: "navigator flow unit",
+    requireCursor: false,
+  });
+  if (isCommandResult(guarded)) return guarded;
+  const unit = options.unit ?? null;
+  try {
+    if (unit === null) {
+      const report = inspectNavigatorFlowUnit(context.db, {
+        journey: guarded.journey,
+        method: options.method,
+      });
+      return { stdout: printed(renderNavigatorFlowUnitReport(report)), stderr: "", exitCode: 0 };
+    }
+    const report = setNavigatorFlowUnit(
+      context.db,
+      { journey: guarded.journey, method: options.method, flowUnit: unit },
+      context.deps,
+    );
+    return {
+      stdout: printed(renderFlowUnitScopeConfirmationReport(report)),
+      stderr: "",
+      exitCode: 0,
+    };
+  } catch (error) {
+    return refuseValueError(error);
+  }
+}
+
+/** Python `cmd_plan_delivery_story`. */
+export function runPlanDeliveryStory(
+  context: BuilderWriteContext,
+  options: {
+    method: string;
+    journey?: string | null;
+    sessionId?: string | null;
+    objective?: string | null;
+    children?: readonly string[];
+    preauthorizeApproval?: boolean;
+    stopAfter?: string;
+  },
+): CommandResult {
+  const guarded = lifecycleGuards(context, {
+    ...options,
+    action: "Delivery Story Plan",
+    requireCursor: false,
+  });
+  if (isCommandResult(guarded)) return guarded;
+  const journey = guarded.journey;
+  const cursor = getDeliveryCursor(context.db, journey);
+  const projectPath = getProjectPath(context.db, journey);
+  const planPath = closureArtifactPath(projectPath, cursor, "plan.md");
+  try {
+    const report = planDeliveryStoryCheckpoint(
+      context.db,
+      {
+        journey,
+        method: options.method,
+        objective: options.objective ?? "",
+        childWorkItems: options.children ?? [],
+        planArtifactPath: planPath,
+        preauthorize: options.preauthorizeApproval ?? false,
+        stopBoundary: options.stopAfter ?? "navigator_validation",
+      },
+      context.deps,
+    );
+    const receipt = options.preauthorizeApproval
+      ? printed(renderPlanPreauthorizationRecorded(report))
+      : "";
+    return {
+      stdout:
+        printed(renderDeliveryStoryPlanReport(report)) +
+        receipt +
+        artifactsSurface({
+          context: `Delivery Story Plan — ${report.cursor.activeItem || "active item"}`,
+          artifacts: report.materializedArtifacts,
+          projectPath,
+          boundary:
+            "Plan artifacts were materialized. Implementation remains blocked until approval.",
+        }),
+      stderr: "",
+      exitCode: 0,
+    };
+  } catch (error) {
+    return refuseValueError(error);
+  }
+}
+
+/** Python `cmd_approve_delivery_story_plan`. */
+export function runApproveDeliveryStoryPlan(
+  context: BuilderWriteContext,
+  options: {
+    method: string;
+    journey?: string | null;
+    sessionId?: string | null;
+    usePreauthorization?: boolean;
+  },
+): CommandResult {
+  const guarded = lifecycleGuards(context, {
+    ...options,
+    action: "Delivery Story Plan approval",
+    requireCursor: false,
+  });
+  if (isCommandResult(guarded)) return guarded;
+  const journey = guarded.journey;
+  const cursor = getDeliveryCursor(context.db, journey);
+  const projectPath = getProjectPath(context.db, journey);
+  try {
+    const report = approveDeliveryStoryPlan(
+      context.db,
+      {
+        journey,
+        method: options.method,
+        planArtifactPath: closureArtifactPath(projectPath, cursor, "plan.md"),
+        usePreauthorization: options.usePreauthorization ?? false,
+      },
+      context.deps,
+    );
+    // A repeat consumption returns after the card: no artifacts, no handoff.
+    if (report.status === "already_approved") {
+      return { stdout: printed(renderDeliveryStoryPlanReport(report)), stderr: "", exitCode: 0 };
+    }
+    const started = report.implementationStarted
+      ? printed(renderDeliveryStoryImplementationStarted(report))
+      : "";
+    return {
+      stdout:
+        printed(renderDeliveryStoryPlanReport(report)) +
+        artifactsSurface({
+          context: `Delivery Story Plan Approval — ${report.cursor.activeItem || "active item"}`,
+          artifacts: report.materializedArtifacts,
+          projectPath,
+          boundary:
+            "Plan approval artifacts were materialized. Implementation may proceed under the approved plan.",
+        }) +
+        started,
+      stderr: "",
+      exitCode: 0,
+    };
+  } catch (error) {
+    if (error instanceof PlanPreauthorizationMismatch) {
+      // Re-read: the mismatch path invalidated the receipt, so the card reports the
+      // cursor as it stands now.
+      const current = getDeliveryCursor(context.db, journey);
+      return {
+        stdout: printed(
+          renderPlanPreauthorizationMismatch({
+            activeItem: current?.activeItem ?? null,
+            reason: error.reason,
+          }),
+        ),
+        stderr: "",
+        exitCode: 0,
+      };
+    }
+    return refuseValueError(error);
+  }
+}
+
+/** Python `cmd_cancel_delivery_story_plan_preauthorization`. */
+export function runCancelDeliveryStoryPlanPreauthorization(
+  context: BuilderWriteContext,
+  options: { method: string; journey?: string | null; sessionId?: string | null },
+): CommandResult {
+  const guarded = lifecycleGuards(context, {
+    ...options,
+    action: "Delivery Story Plan preauthorization cancellation",
+    requireCursor: false,
+  });
+  if (isCommandResult(guarded)) return guarded;
+  try {
+    const cursor = cancelDeliveryStoryPlanPreauthorization(
+      context.db,
+      { journey: guarded.journey, method: options.method },
+      context.deps,
+    );
+    return {
+      stdout: printed(
+        renderPlanPreauthorizationMismatch({
+          activeItem: cursor.activeItem,
+          reason: "navigator_cancelled",
+        }),
+      ),
+      stderr: "",
+      exitCode: 0,
+    };
+  } catch (error) {
+    return refuseValueError(error);
+  }
+}
+
+/** The four aggregate closure leaves share everything but their call and artifact. */
+function runDeliveryStoryClosure(
+  context: BuilderWriteContext,
+  options: { method: string; journey?: string | null; sessionId?: string | null },
+  spec: {
+    action: string;
+    kind: string;
+    filename: string;
+    label: string;
+    run: (journey: string, artifactPath: string | null) => DeliveryStoryClosureReport;
+    preflight?: (journey: string, projectPath: string | null) => CommandResult | null;
+    trailer?: (report: DeliveryStoryClosureReport, projectPath: string | null) => string;
+  },
+): CommandResult {
+  const guarded = lifecycleGuards(context, {
+    ...options,
+    action: spec.action,
+    requireCursor: false,
+  });
+  if (isCommandResult(guarded)) return guarded;
+  const journey = guarded.journey;
+  const projectPath = getProjectPath(context.db, journey);
+  try {
+    const refusal = spec.preflight?.(journey, projectPath) ?? null;
+    if (refusal !== null) return refusal;
+    const cursor = getDeliveryCursor(context.db, journey);
+    const artifactPath = closureArtifactPath(projectPath, cursor, spec.filename);
+    const existedBefore = artifactPath !== null && existsSync(artifactPath);
+    const report = spec.run(journey, artifactPath);
+    return {
+      stdout:
+        printed(renderDeliveryStoryClosureReport(report)) +
+        artifactsSurface({
+          context: `Delivery Story ${spec.label} — ${report.cursor.activeItem || "active item"}`,
+          artifacts: closureArtifactManifest(spec.kind, artifactPath, existedBefore),
+          projectPath,
+          boundary: `${spec.label} artifact was materialized.`,
+        }) +
+        (spec.trailer?.(report, projectPath) ?? ""),
+      stderr: "",
+      exitCode: 0,
+    };
+  } catch (error) {
+    return refuseValueError(error);
+  }
+}
+
+/** Python `cmd_validate_delivery_story`. */
+export function runValidateDeliveryStory(
+  context: BuilderWriteContext,
+  options: {
+    method: string;
+    journey?: string | null;
+    sessionId?: string | null;
+    summary?: string | null;
+    navigatorAccepted?: boolean;
+  },
+): CommandResult {
+  return runDeliveryStoryClosure(context, options, {
+    action: "Delivery Story validation",
+    kind: "validation",
+    filename: "validation.md",
+    label: "Validation",
+    run: (journey, artifactPath) =>
+      validateDeliveryStory(
+        context.db,
+        {
+          journey,
+          method: options.method,
+          summary: options.summary ?? "",
+          navigatorAccepted: options.navigatorAccepted ?? false,
+          artifactPath,
+        },
+        context.deps,
+      ),
+    // Same CLI-only mini-card the story-level Validate prints, on the same
+    // condition: a passed validation offers Debt Review.
+    trailer: (report) =>
+      report.status === "passed" ? printed(renderDebtReviewHandoff(report.cursor.activeItem)) : "",
+  });
+}
+
+/** Python `cmd_review_delivery_story`. */
+export function runReviewDeliveryStory(
+  context: BuilderWriteContext,
+  options: {
+    method: string;
+    journey?: string | null;
+    sessionId?: string | null;
+    decision?: string | null;
+    summary?: string | null;
+  },
+): CommandResult {
+  return runDeliveryStoryClosure(context, options, {
+    action: "Delivery Story debt review",
+    kind: "review",
+    filename: "review.md",
+    label: "Review",
+    run: (journey, artifactPath) =>
+      reviewDeliveryStory(
+        context.db,
+        {
+          journey,
+          method: options.method,
+          decision: options.decision ?? "",
+          summary: options.summary ?? "",
+          artifactPath,
+        },
+        context.deps,
+      ),
+    // Keyed off the REQUESTED decision, as Python is — not off the report.
+    trailer: (report) =>
+      options.decision === "no_action"
+        ? printed(renderDoneClosureConfirmation(report.cursor.activeItem))
+        : "",
+  });
+}
+
+/** Python `cmd_coherence_delivery_story`. */
+export function runCoherenceDeliveryStory(
+  context: BuilderWriteContext,
+  options: {
+    method: string;
+    journey?: string | null;
+    sessionId?: string | null;
+    summary?: string | null;
+  },
+): CommandResult {
+  return runDeliveryStoryClosure(context, options, {
+    action: "Delivery Story coherence",
+    kind: "coherence",
+    filename: "coherence.md",
+    label: "Coherence",
+    run: (journey, artifactPath) =>
+      coherenceDeliveryStory(
+        context.db,
+        { journey, method: options.method, summary: options.summary ?? "", artifactPath },
+        context.deps,
+      ),
+  });
+}
+
+/**
+ * Python `cmd_done_delivery_story`.
+ *
+ * The preflight runs BEFORE any artifact path is derived or any cursor is written,
+ * so a refused Done leaves the project exactly as it was. Its message is the `; `
+ * join of the issues, which is why the preflight's ORDER is behavior.
+ */
+export function runDoneDeliveryStory(
+  context: BuilderWriteContext,
+  options: {
+    method: string;
+    journey?: string | null;
+    sessionId?: string | null;
+    summary?: string | null;
+  },
+): CommandResult {
+  return runDeliveryStoryClosure(context, options, {
+    action: "Delivery Story Done",
+    kind: "done",
+    filename: "done.md",
+    label: "Done",
+    preflight: (journey, projectPath) => {
+      if (!projectPath) {
+        return refuse("Error: project path is required before Delivery Story Done");
+      }
+      const cursor = getDeliveryCursor(context.db, journey);
+      if (cursor === null || !cursor.activeItem) {
+        return refuse("Error: active Delivery Story is required before Done");
+      }
+      const authored = inspectAuthoredClosure(projectPath, {
+        deliveryStory: cursor.activeItem,
+        childWorkItems: cursor.childWorkItems,
+      });
+      if (!authored.ready) {
+        return refuse(
+          `Error: authored roadmap is not ready for Delivery Story Done: ${authored.issues.join("; ")}`,
+        );
+      }
+      return null;
+    },
+    run: (journey, artifactPath) =>
+      doneDeliveryStory(
+        context.db,
+        { journey, method: options.method, summary: options.summary ?? "", artifactPath },
+        context.deps,
+      ),
+    // Python `_print_roadmap_snapshot_at_done_end`: the roadmap is read AGAIN, after
+    // the write, so the position reflects the Delivery Story that just closed.
+    trailer: (report, projectPath) =>
+      printed(
+        renderProjectPositionReport(
+          inspectRoadmapSnapshot(projectPath, { journey: report.journey, method: options.method }),
+          {
+            candidates: inspectPullCandidates(projectPath, {
+              journey: report.journey,
+              method: options.method,
+            }).candidates,
+            justMoved: `🟩[${report.deliveryStory}] ${report.deliveryStoryTitle || "Delivery Story"} closed`,
+          },
+        ),
+      ),
+  });
+}
+
 function renderDebtReviewHandoff(activeItem: string | null): string {
   const body = `${[
     "Delivery",

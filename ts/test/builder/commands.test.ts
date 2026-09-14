@@ -30,6 +30,7 @@ import { getAriadMethod } from "#builder/ariadMethod.ts";
 import { cardText } from "#builder/card.ts";
 import { surfacesForTrigger } from "#builder/commands.ts";
 import { setDeliveryCursor } from "#builder/deliveryCursor.ts";
+import { planDeliveryStoryCheckpoint } from "#builder/deliveryStoryPlan.ts";
 import { setAdoptedMethod } from "#builder/methodAdoption.ts";
 import { planLifecycleItem } from "#builder/plan.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
@@ -61,6 +62,14 @@ const cases = (golden as unknown as { cases: Case[] }).cases;
  */
 const PORTED_LEAVES = [
   "adopt",
+  "approve-delivery-story-plan",
+  "cancel-delivery-story-plan-preauthorization",
+  "coherence-delivery-story",
+  "done-delivery-story",
+  "plan-delivery-story",
+  "review-delivery-story",
+  "set-flow-unit",
+  "validate-delivery-story",
   "coherence-item",
   "done-item",
   "review-item",
@@ -93,19 +102,23 @@ const PORTED_LEAVES = [
  * panel (the smoke opens with `set-flow-unit`, and seeding the flow unit by a raw
  * cursor write instead would be the unrecorded mutation plateau 3a ruled out).
  */
-const PENDING_LEAVES: readonly string[] = [
-  "approve-delivery-story-plan",
-  "cancel-delivery-story-plan-preauthorization",
-  "coherence-delivery-story",
-  "done-delivery-story",
-  "plan-delivery-story",
-  "review-delivery-story",
-  "set-flow-unit",
-  "validate-delivery-story",
-];
+const PENDING_LEAVES: readonly string[] = [];
+
+/**
+ * Cases Python refuses at the ARGPARSE layer, before any leaf runs.
+ *
+ * `--decision maybe` never reaches `review-delivery-story`: argparse rejects the
+ * choice, prints a usage block, and exits 2. That layer is plateau 8's, where the
+ * route gains the D3.17 refusal matrix; `builderInvoke` is deliberately not a
+ * production parser and must not grow a second, divergent copy of argparse's
+ * messages. The case stays in the corpus because it records real behavior the
+ * route will have to reproduce — it is graded structurally here and behaviorally
+ * there.
+ */
+const isArgparseRefusal = (entry: Case): boolean => entry.exit_code === 2;
 
 const isPorted = (entry: Case): boolean =>
-  (PORTED_LEAVES as readonly string[]).includes(entry.argv[0] ?? "");
+  (PORTED_LEAVES as readonly string[]).includes(entry.argv[0] ?? "") && !isArgparseRefusal(entry);
 const SESSION_ID = cases[0]?.session_id ?? "builder-command-session";
 const NOW = "2026-01-01T00:00:00Z";
 
@@ -131,6 +144,26 @@ function memoryDatabase(): WritableDatabase {
 }
 
 /** Recreate the generator's `_seed` for one scenario. */
+/** The aggregate package the plateau-5 scenarios work on, mirroring the generator. */
+const DS_AGGREGATE_INDEX = `# CV1.DS3 — Aggregate delivery
+
+**Status:** ✅ Done
+**Type:** Delivery Story
+
+## Candidate Stories
+
+| Code | Story | Type | Status |
+|------|-------|------|--------|
+| CV1.DS3.US1 | First child | User Story | ✅ Done |
+| CV1.DS3.TS1 | Second child | Technical Story | ✅ Done |
+
+## Done Condition
+
+Done when the children deliver a coherent outcome.
+`;
+
+const DS_AGGREGATE_CHILDREN = ["CV1.DS3.US1", "CV1.DS3.TS1"] as const;
+
 /** Scenarios added at plateau 3, mirroring the generator's `_seed_lifecycle`. */
 const LIFECYCLE_SCENARIOS = new Set([
   "adopted_closure_plan_approved",
@@ -145,7 +178,91 @@ const LIFECYCLE_SCENARIOS = new Set([
   "adopted_prepared_ds",
   "adopted_plan_pending",
   "adopted_preauthorized",
+  // Plateau 5. `adopted_agg_`, never `adopted_ds_`: `adopted_ds_pullable` already
+  // exists and means something else.
+  "adopted_agg_planned",
+  "adopted_agg_pending_approval",
+  "adopted_agg_approved",
+  "adopted_agg_validated",
+  "adopted_agg_reviewed",
+  "adopted_agg_children_unfinished",
+  "adopted_agg_story_by_story",
 ]);
+
+/** The generator's `_write_delivery_story_package`. */
+function writeAggregatePackage(project: string, childrenDone: boolean): void {
+  const packagePath = join(project, "docs/project/roadmap/cv1-first/cv1-ds3-aggregate");
+  mkdirSync(packagePath, { recursive: true });
+  writeFileSync(join(packagePath, "index.md"), DS_AGGREGATE_INDEX, "utf8");
+  const status = childrenDone ? "✅ Done" : "🟡 Planned";
+  for (const [code, title, kind] of [
+    ["CV1.DS3.US1", "First child", "User Story"],
+    ["CV1.DS3.TS1", "Second child", "Technical Story"],
+  ] as const) {
+    const child = join(packagePath, `${code.toLowerCase().replaceAll(".", "-")}-child`);
+    mkdirSync(child, { recursive: true });
+    writeFileSync(
+      join(child, "index.md"),
+      `# ${code} — ${title}\n\n**Status:** ${status}\n**Type:** ${kind}\n`,
+      "utf8",
+    );
+  }
+}
+
+/** The generator's aggregate branch of `_seed_lifecycle`. */
+function seedAggregate(db: WritableDatabase, project: string, scenario: string): void {
+  writeAggregatePackage(project, scenario !== "adopted_agg_children_unfinished");
+  const deps = { nowIso: () => NOW };
+  const base = {
+    journey: "demo",
+    method: "ariad",
+    activeItem: "CV1.DS3",
+    activeItemTitle: "Aggregate delivery",
+    activeItemLevel: "delivery_story",
+    navigatorFlowUnit:
+      scenario === "adopted_agg_story_by_story" ? "story_by_story" : "delivery_story",
+    childWorkItems: [...DS_AGGREGATE_CHILDREN],
+  };
+  if (scenario === "adopted_agg_pending_approval") {
+    // A real pending checkpoint from the real Plan, for the same reason the story
+    // authority scenarios run the real `planLifecycleItem`: a hand-built receipt
+    // would not survive the consume path.
+    setDeliveryCursor(db, { ...base, lastDeliveryEvent: "prepare" }, deps);
+    planDeliveryStoryCheckpoint(
+      db,
+      {
+        journey: "demo",
+        method: "ariad",
+        objective: "Deliver both children as one coherent outcome.",
+        childWorkItems: [...DS_AGGREGATE_CHILDREN],
+        planArtifactPath: join(project, "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/plan.md"),
+      },
+      deps,
+    );
+    return;
+  }
+  const statuses: Record<string, string[]> = {
+    adopted_agg_planned: [],
+    adopted_agg_story_by_story: [],
+    adopted_agg_approved: ["plan:approved"],
+    adopted_agg_validated: ["plan:approved", "validation:passed"],
+    adopted_agg_reviewed: ["plan:approved", "validation:passed", "debt_review:review:no_action"],
+    adopted_agg_children_unfinished: [
+      "plan:approved",
+      "validation:passed",
+      "debt_review:review:no_action",
+    ],
+  };
+  setDeliveryCursor(
+    db,
+    {
+      ...base,
+      lastDeliveryEvent: "prepare",
+      aggregateCheckpointStatus: statuses[scenario] ?? [],
+    },
+    deps,
+  );
+}
 
 /** The generator's `PULLABLE_DS_INDEX`, written only for the DS-pull scenario. */
 const PULLABLE_DS_INDEX = `# CV1.DS2 — Pullable delivery story
@@ -298,6 +415,10 @@ function seed(scenario: string, projectOverride?: string): WritableDatabase {
  */
 function seedLifecycle(db: WritableDatabase, project: string, scenario: string): void {
   setAdoptedMethod(db, "demo", "ariad", () => NOW);
+  if (scenario.startsWith("adopted_agg_")) {
+    seedAggregate(db, project, scenario);
+    return;
+  }
   const deps = { nowIso: () => NOW };
   if (scenario === "adopted_cursor_empty" || scenario === "adopted_cursor_no_project") {
     setDeliveryCursor(db, { journey: "demo", method: "ariad" }, deps);
@@ -558,6 +679,33 @@ test("an authored template survives, byte for byte", () => {
   );
   // And the report says so, rather than silently reporting nine creations.
   assert.match(entry.stdout, /preserved\ndocs\/project\/roadmap\/ariad-adoption\.md/u);
+});
+
+test("argparse refusals are recorded for plateau 8, not replayed here", () => {
+  const argparse = cases.filter(isArgparseRefusal);
+  assert.ok(argparse.length >= 1, "the corpus must carry at least one argparse refusal");
+  for (const entry of argparse) {
+    assert.equal(entry.stdout, "", `${entry.name}: argparse writes nothing to stdout`);
+    assert.match(entry.stderr, /^usage: /u, `${entry.name}: argparse prints a usage block`);
+    assert.match(
+      entry.stderr,
+      /invalid choice/u,
+      `${entry.name}: the refusal names the rejected choice`,
+    );
+    // And it is unreachable through the mapping, which is what keeps the two
+    // layers from quietly merging.
+    const db = seed("adopted");
+    try {
+      const actual = invoke(db, entry.argv);
+      assert.notEqual(
+        actual.exitCode,
+        2,
+        `${entry.name}: exit 2 is argparse's, and the mapping must not imitate it`,
+      );
+    } finally {
+      db.close();
+    }
+  }
 });
 
 test("a blocked guard prints its surface on stdout and still exits 1", () => {
