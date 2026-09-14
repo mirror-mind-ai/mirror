@@ -232,17 +232,128 @@ _LIFECYCLE_SCENARIOS = {
     "adopted_prepared_ds",
     "adopted_plan_pending",
     "adopted_preauthorized",
+    # Plateau 5, the aggregate scenarios. `adopted_agg_`, not `adopted_ds_`:
+    # `adopted_ds_pullable` already means "a Delivery Story that can be pulled",
+    # and a prefix that swallowed it would have re-seeded an existing case.
+    "adopted_agg_planned",
+    "adopted_agg_pending_approval",
+    "adopted_agg_approved",
+    "adopted_agg_validated",
+    "adopted_agg_reviewed",
+    "adopted_agg_children_unfinished",
+    "adopted_agg_story_by_story",
 }
+
+
+# The Delivery Story package the aggregate leaves work on, with the two children
+# the Done preflight insists on. Authored Done, so the preflight PASSES; the
+# refusal case rewrites one status line.
+DS_AGGREGATE_INDEX = """# CV1.DS3 \u2014 Aggregate delivery
+
+**Status:** \u2705 Done
+**Type:** Delivery Story
+
+## Candidate Stories
+
+| Code | Story | Type | Status |
+|------|-------|------|--------|
+| CV1.DS3.US1 | First child | User Story | \u2705 Done |
+| CV1.DS3.TS1 | Second child | Technical Story | \u2705 Done |
+
+## Done Condition
+
+Done when the children deliver a coherent outcome.
+"""
+
+DS_AGGREGATE_CHILDREN = ("CV1.DS3.US1", "CV1.DS3.TS1")
+
+
+def _write_delivery_story_package(project: Path, *, children_done: bool = True) -> None:
+    """Author the aggregate package and its children under the disposable project."""
+    package = project / "docs/project/roadmap/cv1-first/cv1-ds3-aggregate"
+    package.mkdir(parents=True, exist_ok=True)
+    (package / "index.md").write_text(DS_AGGREGATE_INDEX, encoding="utf-8")
+    status = "\u2705 Done" if children_done else "\U0001f7e1 Planned"
+    for code, title, kind in (
+        ("CV1.DS3.US1", "First child", "User Story"),
+        ("CV1.DS3.TS1", "Second child", "Technical Story"),
+    ):
+        child = package / f"{code.lower().replace('.', '-')}-child"
+        child.mkdir(parents=True, exist_ok=True)
+        (child / "index.md").write_text(
+            f"# {code} \u2014 {title}\n\n**Status:** {status}\n**Type:** {kind}\n",
+            encoding="utf-8",
+        )
 
 
 def _seed_lifecycle(mem: Any, project: Path, *, scenario: str) -> None:
     """Seed adoption plus the delivery cursor state a lifecycle leaf expects."""
     from memory.builder.ariad_method import get_ariad_method
     from memory.builder.delivery_cursor import set_delivery_cursor
+    from memory.builder.delivery_story_plan import plan_delivery_story_checkpoint
     from memory.builder.lifecycle import plan_lifecycle_item
     from memory.builder.method_adoption import set_adopted_method
 
     set_adopted_method(mem.store, "demo", "ariad")
+    if scenario.startswith("adopted_agg_"):
+        # The aggregate scenarios (plateau 5). Every one of them authors the package
+        # tree first, because the Done preflight reads authored CONTENT rather than
+        # cursor state -- it is the only Builder guard whose input is the
+        # Navigator's repository.
+        _write_delivery_story_package(
+            project, children_done=scenario != "adopted_agg_children_unfinished"
+        )
+        flow_unit = (
+            "story_by_story" if scenario == "adopted_agg_story_by_story" else "delivery_story"
+        )
+        base = {
+            "journey": "demo",
+            "method": "ariad",
+            "active_item": "CV1.DS3",
+            "active_item_title": "Aggregate delivery",
+            "active_item_level": "delivery_story",
+            "navigator_flow_unit": flow_unit,
+            "child_work_items": DS_AGGREGATE_CHILDREN,
+        }
+        status_by_scenario: dict[str, tuple[str, ...]] = {
+            "adopted_agg_planned": (),
+            "adopted_agg_story_by_story": (),
+            "adopted_agg_approved": ("plan:approved",),
+            "adopted_agg_validated": ("plan:approved", "validation:passed"),
+            "adopted_agg_reviewed": (
+                "plan:approved",
+                "validation:passed",
+                "debt_review:review:no_action",
+            ),
+            "adopted_agg_children_unfinished": (
+                "plan:approved",
+                "validation:passed",
+                "debt_review:review:no_action",
+            ),
+        }
+        if scenario == "adopted_agg_pending_approval":
+            # A real pending DS Plan checkpoint, created by the real Plan: a
+            # hand-written checkpoint would not carry a receipt Python accepts.
+            set_delivery_cursor(mem.store, last_delivery_event="prepare", **base)
+            plan_delivery_story_checkpoint(
+                mem.store,
+                journey="demo",
+                method="ariad",
+                objective="Deliver both children as one coherent outcome.",
+                child_work_items=DS_AGGREGATE_CHILDREN,
+                plan_artifact_path=(
+                    project
+                    / "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/plan.md"
+                ),
+            )
+            return
+        set_delivery_cursor(
+            mem.store,
+            last_delivery_event="prepare",
+            aggregate_checkpoint_status=status_by_scenario[scenario],
+            **base,
+        )
+        return
     if scenario in {"adopted_cursor_empty", "adopted_cursor_no_project"}:
         # A cursor with no active item: reaches the guards that sit BEHIND the
         # cursor guard -- `active item is required before prepare`, and the
@@ -917,6 +1028,163 @@ CASES: list[tuple[str, str, list[str]]] = [
         "unadopted",
         ["done-item", "--method", "ariad", "--journey", "demo"],
     ),
+    # -- plateau 5: the Delivery Story lifecycle -----------------------------
+    (
+        "set_flow_unit_inspects_by_default",
+        "adopted_agg_planned",
+        ["set-flow-unit", "--method", "ariad", "--journey", "demo"],
+    ),
+    (
+        "set_flow_unit_selects_delivery_story",
+        "adopted_prepared_ds",
+        ["set-flow-unit", "--method", "ariad", "--journey", "demo", "--unit", "delivery_story"],
+    ),
+    (
+        "set_flow_unit_selects_story_by_story",
+        "adopted_agg_planned",
+        ["set-flow-unit", "--method", "ariad", "--journey", "demo", "--unit", "story_by_story"],
+    ),
+    (
+        "set_flow_unit_requires_a_cursor",
+        "adopted",
+        ["set-flow-unit", "--method", "ariad", "--journey", "demo", "--unit", "delivery_story"],
+    ),
+    (
+        "plan_delivery_story_creates_checkpoint",
+        "adopted_agg_planned",
+        [
+            "plan-delivery-story", "--method", "ariad", "--journey", "demo",
+            "--objective", "Deliver both children as one coherent outcome.",
+            "--child", "CV1.DS3.US1", "--child", "CV1.DS3.TS1",
+        ],
+    ),
+    (
+        "plan_delivery_story_refuses_story_by_story",
+        "adopted_agg_story_by_story",
+        [
+            "plan-delivery-story", "--method", "ariad", "--journey", "demo",
+            "--objective", "Deliver both children.", "--child", "CV1.DS3.US1",
+        ],
+    ),
+    (
+        "plan_delivery_story_records_preauthorization",
+        "adopted_agg_planned",
+        [
+            "plan-delivery-story", "--method", "ariad", "--journey", "demo",
+            "--objective", "Deliver both children as one coherent outcome.",
+            "--child", "CV1.DS3.US1", "--child", "CV1.DS3.TS1",
+            "--preauthorize-approval", "--stop-after", "navigator_validation",
+        ],
+    ),
+    (
+        "approve_delivery_story_plan_starts_implementation",
+        "adopted_agg_pending_approval",
+        ["approve-delivery-story-plan", "--method", "ariad", "--journey", "demo"],
+    ),
+    (
+        "approve_delivery_story_plan_requires_checkpoint",
+        "adopted_agg_planned",
+        ["approve-delivery-story-plan", "--method", "ariad", "--journey", "demo"],
+    ),
+    (
+        "cancel_delivery_story_preauthorization_without_receipt",
+        "adopted_agg_pending_approval",
+        [
+            "cancel-delivery-story-plan-preauthorization",
+            "--method", "ariad", "--journey", "demo",
+        ],
+    ),
+    (
+        "validate_delivery_story_passes",
+        "adopted_agg_approved",
+        [
+            "validate-delivery-story", "--method", "ariad", "--journey", "demo",
+            "--summary", "Aggregate validation evidence.", "--navigator-accepted",
+        ],
+    ),
+    (
+        "validate_delivery_story_pending_navigator",
+        "adopted_agg_approved",
+        [
+            "validate-delivery-story", "--method", "ariad", "--journey", "demo",
+            "--summary", "Route provided, acceptance not given.",
+        ],
+    ),
+    (
+        "validate_delivery_story_requires_plan_approved",
+        "adopted_agg_planned",
+        [
+            "validate-delivery-story", "--method", "ariad", "--journey", "demo",
+            "--summary", "Too early.", "--navigator-accepted",
+        ],
+    ),
+    (
+        "review_delivery_story_no_action",
+        "adopted_agg_validated",
+        [
+            "review-delivery-story", "--method", "ariad", "--journey", "demo",
+            "--decision", "no_action", "--summary", "No debt found.",
+        ],
+    ),
+    (
+        "review_delivery_story_defer",
+        "adopted_agg_validated",
+        [
+            "review-delivery-story", "--method", "ariad", "--journey", "demo",
+            "--decision", "defer", "--summary", "Deferred with a trigger.",
+        ],
+    ),
+    (
+        "review_delivery_story_rejects_unknown_decision",
+        "adopted_agg_validated",
+        [
+            "review-delivery-story", "--method", "ariad", "--journey", "demo",
+            "--decision", "maybe", "--summary", "Unknown.",
+        ],
+    ),
+    (
+        "coherence_delivery_story_completes",
+        "adopted_agg_reviewed",
+        [
+            "coherence-delivery-story", "--method", "ariad", "--journey", "demo",
+            "--summary", "Process, project, and product align.",
+        ],
+    ),
+    (
+        "done_delivery_story_closes_after_review",
+        "adopted_agg_reviewed",
+        [
+            "done-delivery-story", "--method", "ariad", "--journey", "demo",
+            "--summary", "Aggregate closure recorded.",
+        ],
+    ),
+    # The preflight refusal, end to end: authored children still Planned. This is
+    # the composition the module corpus cannot grade -- the `; ` join, the exit
+    # code, and the fact that the guard runs BEFORE any cursor or artifact write.
+    (
+        "done_delivery_story_refuses_unfinished_roadmap",
+        "adopted_agg_children_unfinished",
+        [
+            "done-delivery-story", "--method", "ariad", "--journey", "demo",
+            "--summary", "Premature.",
+        ],
+    ),
+    (
+        "done_delivery_story_requires_review",
+        "adopted_agg_approved",
+        [
+            "done-delivery-story", "--method", "ariad", "--journey", "demo",
+            "--summary", "Too early.",
+        ],
+    ),
+    (
+        "delivery_story_leaves_not_adopted",
+        "unadopted",
+        [
+            "done-delivery-story", "--method", "ariad", "--journey", "demo",
+            "--summary", "Unadopted.",
+        ],
+    ),
 ]
 
 # Leaves whose output can carry an absolute project path: `plan_checkpoint` prints
@@ -932,6 +1200,15 @@ _PATH_BEARING = (
     "review_item",
     "coherence_item",
     "done_item",
+    # The aggregate leaves print artifact paths the same way, and the Done preflight
+    # names the files it refused on -- project-relative by construction, but the
+    # ambiguity path can still carry absolutes.
+    "plan_delivery_story",
+    "approve_delivery_story",
+    "validate_delivery_story",
+    "review_delivery_story",
+    "coherence_delivery_story",
+    "done_delivery_story",
 )
 
 # Leaves that write into the project, so the files are part of the behavior.
@@ -943,6 +1220,12 @@ _FILE_WRITING = (
     "review_item",
     "coherence_item",
     "done_item",
+    "plan_delivery_story",
+    "approve_delivery_story",
+    "validate_delivery_story",
+    "review_delivery_story",
+    "coherence_delivery_story",
+    "done_delivery_story",
 )
 
 

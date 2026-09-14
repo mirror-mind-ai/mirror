@@ -70,6 +70,28 @@ from memory.builder.delivery_cursor import (
     get_delivery_cursor,
     set_delivery_cursor,
 )
+from memory.builder.delivery_story_closure import (
+    coherence_delivery_story,
+    done_delivery_story,
+    render_delivery_story_closure_report,
+    review_delivery_story,
+    validate_delivery_story,
+)
+from memory.builder.delivery_story_plan import (
+    approve_delivery_story_plan,
+    cancel_delivery_story_plan_preauthorization,
+    plan_delivery_story_checkpoint,
+    render_delivery_story_implementation_started,
+    render_delivery_story_plan_report,
+    render_plan_preauthorization_mismatch,
+    render_plan_preauthorization_recorded,
+)
+from memory.builder.delivery_story_roadmap_closure import inspect_authored_closure
+from memory.builder.flow_unit import (
+    render_flow_unit_scope_confirmation_report,
+    render_navigator_flow_unit_report,
+    set_navigator_flow_unit,
+)
 from memory.builder.lifecycle import (
     BuilderLifecycleItem,
     ExpandBlockedError,
@@ -792,6 +814,418 @@ class Scenario:
             ],
         )
 
+
+    # -- Delivery Story operations (plateau 5) --------------------------------
+    #
+    # Scope E works on the AGGREGATE: one cursor carrying `child_work_items` and
+    # `aggregate_checkpoint_status`, two ordered list cells that enter the byte
+    # contract here. `_replace_status` removes every `<checkpoint>:*` entry and
+    # APPENDS the new one, so replacing a status REORDERS the list -- two engines
+    # can hold the same set and different bytes, and the compare-and-swap the
+    # revert depends on matches bytes. `delivery_story_revalidation_reorders_status`
+    # exists for exactly that, replacing an entry that is not last.
+
+    def set_flow_unit(self, *, flow_unit: str, method: str = "ariad") -> None:
+        payload = {"flow_unit": flow_unit, "method": method}
+        try:
+            report = set_navigator_flow_unit(
+                self.store, journey=self.journey, method=method, flow_unit=flow_unit
+            )
+        except ValueError as exc:
+            self.record("set_flow_unit", input=payload, error=f"{type(exc).__name__}: {exc}")
+            return
+        # The confirmation surface is CHOSEN by the unit, not fixed: selecting
+        # `delivery_story` renders DELIVERY_STORY_SCOPE_CONFIRMATION over the child
+        # work items, selecting `story_by_story` renders NEXT_STORY_CONFIRMATION
+        # over the recommended story. Both branches are graded below.
+        surface_id = (
+            "delivery_story_scope_confirmation"
+            if report.flow_unit == "delivery_story"
+            else "next_story_confirmation"
+        )
+        self.record(
+            "set_flow_unit",
+            input=payload,
+            surfaces=[(surface_id, render_flow_unit_scope_confirmation_report(report))],
+            extra={"flow_unit": report.flow_unit, "source": report.source},
+        )
+
+    def inspect_flow_unit(self, *, method: str = "ariad") -> None:
+        """The read face: `set-flow-unit` with no `--unit` renders a different card."""
+        from memory.builder.flow_unit import inspect_navigator_flow_unit
+
+        payload = {"method": method}
+        try:
+            report = inspect_navigator_flow_unit(
+                self.store, journey=self.journey, method=method
+            )
+        except ValueError as exc:
+            self.record("inspect_flow_unit", input=payload, error=f"{type(exc).__name__}: {exc}")
+            return
+        self.record(
+            "inspect_flow_unit",
+            input=payload,
+            surfaces=[("navigator_flow_unit", render_navigator_flow_unit_report(report))],
+            extra={"flow_unit": report.flow_unit, "source": report.source},
+        )
+
+    def plan_delivery_story(
+        self,
+        *,
+        objective: str = "Deliver the aggregate outcome.",
+        child_work_items: tuple[str, ...] = (),
+        preauthorize: bool = False,
+        stop_boundary: str = "navigator_validation",
+        artifact: bool = True,
+        method: str = "ariad",
+    ) -> None:
+        payload = {
+            "objective": objective,
+            "child_work_items": list(child_work_items),
+            "preauthorize": preauthorize,
+            "stop_boundary": stop_boundary,
+            "artifact": artifact,
+            "method": method,
+        }
+        self.plan_path = self._canonical_plan_path() if artifact else None
+        try:
+            report = plan_delivery_story_checkpoint(
+                self.store,
+                journey=self.journey,
+                method=method,
+                objective=objective,
+                child_work_items=child_work_items,
+                plan_artifact_path=self.plan_path,
+                preauthorize=preauthorize,
+                stop_boundary=stop_boundary,
+            )
+        except ValueError as exc:
+            self.record(
+                "plan_delivery_story", input=payload, error=f"{type(exc).__name__}: {exc}"
+            )
+            return
+        self.plan_report = report
+        surfaces = [
+            ("delivery_story_plan_checkpoint", render_delivery_story_plan_report(report))
+        ]
+        if preauthorize:
+            surfaces.append(
+                (
+                    "plan_preauthorization_recorded",
+                    render_plan_preauthorization_recorded(report),
+                )
+            )
+        surfaces.append(
+            (
+                "artifacts_materialized",
+                render_artifacts_materialized_surface(
+                    context=f"Delivery Story Plan — {report.cursor.active_item or 'active item'}",
+                    artifacts=report.materialized_artifacts,
+                    project_path=self.project,
+                    boundary=(
+                        "Plan artifacts were materialized. Implementation remains "
+                        "blocked until approval."
+                    ),
+                ),
+            )
+        )
+        self.record(
+            "plan_delivery_story",
+            input=payload,
+            surfaces=surfaces,
+            artifacts=report.materialized_artifacts,
+            extra={"status": report.status},
+        )
+
+    def approve_delivery_story(
+        self, *, use_preauthorization: bool = False, method: str = "ariad"
+    ) -> None:
+        payload = {"use_preauthorization": use_preauthorization, "method": method}
+        plan_path = self._canonical_plan_path()
+        try:
+            report = approve_delivery_story_plan(
+                self.store,
+                journey=self.journey,
+                method=method,
+                plan_artifact_path=plan_path,
+                use_preauthorization=use_preauthorization,
+            )
+        except PlanPreauthorizationMismatch as exc:
+            cursor = get_delivery_cursor(self.store, self.journey)
+            self.record(
+                "approve_delivery_story",
+                input=payload,
+                surfaces=[
+                    (
+                        "plan_preauthorization_mismatch",
+                        render_plan_preauthorization_mismatch(
+                            active_item=cursor.active_item if cursor else None,
+                            reason=exc.reason,
+                        ),
+                    )
+                ],
+                error=f"PlanPreauthorizationMismatch: {exc.reason}",
+            )
+            return
+        except ValueError as exc:
+            self.record(
+                "approve_delivery_story", input=payload, error=f"{type(exc).__name__}: {exc}"
+            )
+            return
+        surfaces = [
+            ("delivery_story_plan_checkpoint", render_delivery_story_plan_report(report))
+        ]
+        # `already_approved` returns BEFORE the artifact surface and before
+        # IMPLEMENTATION_STARTED: the CLI returns early, so a repeat consumption is
+        # one card and nothing else.
+        if report.status != "already_approved":
+            surfaces.append(
+                (
+                    "artifacts_materialized",
+                    render_artifacts_materialized_surface(
+                        context=(
+                            "Delivery Story Plan Approval — "
+                            f"{report.cursor.active_item or 'active item'}"
+                        ),
+                        artifacts=report.materialized_artifacts,
+                        project_path=self.project,
+                        boundary=(
+                            "Plan approval artifacts were materialized. Implementation "
+                            "may proceed under the approved plan."
+                        ),
+                    ),
+                )
+            )
+            if report.implementation_started:
+                surfaces.append(
+                    (
+                        "implementation_started",
+                        render_delivery_story_implementation_started(report),
+                    )
+                )
+        self.record(
+            "approve_delivery_story",
+            input=payload,
+            surfaces=surfaces,
+            artifacts=report.materialized_artifacts
+            if report.status != "already_approved"
+            else (),
+            extra={
+                "status": report.status,
+                "implementation_started": report.implementation_started,
+                "unfilled_sections": list(report.unfilled_sections),
+            },
+        )
+
+    def cancel_delivery_story_preauthorization(self, *, method: str = "ariad") -> None:
+        payload = {"method": method}
+        try:
+            cursor = cancel_delivery_story_plan_preauthorization(
+                self.store, journey=self.journey, method=method
+            )
+        except ValueError as exc:
+            self.record(
+                "cancel_delivery_story_preauthorization",
+                input=payload,
+                error=f"{type(exc).__name__}: {exc}",
+            )
+            return
+        self.record(
+            "cancel_delivery_story_preauthorization",
+            input=payload,
+            surfaces=[
+                (
+                    "plan_preauthorization_mismatch",
+                    render_plan_preauthorization_mismatch(
+                        active_item=cursor.active_item, reason="navigator_cancelled"
+                    ),
+                )
+            ],
+        )
+
+    def _delivery_story_closure(
+        self,
+        op: str,
+        call: Any,
+        payload: dict[str, Any],
+        *,
+        artifact: str | None,
+    ) -> None:
+        path = self._closure_artifact_path(artifact)
+        existed_before = path.exists() if path else False
+        try:
+            report = call(path)
+        except ValueError as exc:
+            self.record(op, input=payload, error=f"{type(exc).__name__}: {exc}")
+            return
+        kind = op.replace("_delivery_story", "")
+        surfaces = [
+            (
+                "delivery_story_closure_checkpoint",
+                render_delivery_story_closure_report(report),
+            )
+        ]
+        artifacts: tuple[MaterializedArtifact, ...] = ()
+        if path is not None:
+            artifacts = (
+                existing_artifact(kind, path)
+                if existed_before
+                else materialized_artifact(kind, path, existed_before=False),
+            )
+            surfaces.append(
+                (
+                    "artifacts_materialized",
+                    render_artifacts_materialized_surface(
+                        context=(
+                            f"Delivery Story {kind.title()} — "
+                            f"{report.cursor.active_item or 'active item'}"
+                        ),
+                        artifacts=artifacts,
+                        project_path=self.project,
+                        boundary=f"{kind.title()} artifact was materialized.",
+                    ),
+                )
+            )
+        self.record(
+            op,
+            input=payload,
+            surfaces=surfaces,
+            artifacts=artifacts,
+            extra={"status": report.status, "checkpoint": report.checkpoint},
+        )
+
+    def validate_delivery_story(
+        self,
+        *,
+        summary: str = "Aggregate validation evidence.",
+        navigator_accepted: bool = False,
+        artifact: str | None = "validation.md",
+        method: str = "ariad",
+    ) -> None:
+        self._delivery_story_closure(
+            "validate_delivery_story",
+            lambda path: validate_delivery_story(
+                self.store,
+                journey=self.journey,
+                method=method,
+                summary=summary,
+                navigator_accepted=navigator_accepted,
+                artifact_path=path,
+            ),
+            {
+                "summary": summary,
+                "navigator_accepted": navigator_accepted,
+                "artifact": artifact,
+                "method": method,
+            },
+            artifact=artifact,
+        )
+
+    def review_delivery_story(
+        self,
+        *,
+        decision: str = "no_action",
+        summary: str = "No debt found.",
+        artifact: str | None = "review.md",
+        method: str = "ariad",
+    ) -> None:
+        self._delivery_story_closure(
+            "review_delivery_story",
+            lambda path: review_delivery_story(
+                self.store,
+                journey=self.journey,
+                method=method,
+                decision=decision,
+                summary=summary,
+                artifact_path=path,
+            ),
+            {
+                "decision": decision,
+                "summary": summary,
+                "artifact": artifact,
+                "method": method,
+            },
+            artifact=artifact,
+        )
+
+    def coherence_delivery_story(
+        self,
+        *,
+        summary: str = "Process, project, and product align.",
+        artifact: str | None = "coherence.md",
+        method: str = "ariad",
+    ) -> None:
+        self._delivery_story_closure(
+            "coherence_delivery_story",
+            lambda path: coherence_delivery_story(
+                self.store,
+                journey=self.journey,
+                method=method,
+                summary=summary,
+                artifact_path=path,
+            ),
+            {"summary": summary, "artifact": artifact, "method": method},
+            artifact=artifact,
+        )
+
+    def done_delivery_story(
+        self,
+        *,
+        summary: str = "Aggregate closure recorded.",
+        artifact: str | None = "done.md",
+        method: str = "ariad",
+    ) -> None:
+        self._delivery_story_closure(
+            "done_delivery_story",
+            lambda path: done_delivery_story(
+                self.store,
+                journey=self.journey,
+                method=method,
+                summary=summary,
+                artifact_path=path,
+            ),
+            {"summary": summary, "artifact": artifact, "method": method},
+            artifact=artifact,
+        )
+
+    def authored_closure(self) -> None:
+        """The read-only DS Done preflight, graded as its own step.
+
+        `inspect_authored_closure` lives in the CLI's Done path, not in the closure
+        module, so the aggregate corpus grades it directly: it is a pure read over
+        the Navigator's authored roadmap, and its refusals are the safety property
+        the whole plateau turns on. The command corpus grades the composition --
+        the `; ` join, the exit code, and where the guard sits relative to the
+        cursor guards.
+
+        Its issue strings are already project-relative (`_relative`), so they are
+        recorded as-is; `scrub` still runs over the ambiguity case, which embeds
+        absolute claimant paths.
+        """
+        cursor = get_delivery_cursor(self.store, self.journey)
+        payload = {
+            "delivery_story": cursor.active_item if cursor else None,
+            "child_work_items": list(cursor.child_work_items) if cursor else [],
+        }
+        try:
+            report = inspect_authored_closure(
+                self.project,
+                delivery_story=(cursor.active_item if cursor else "") or "",
+                child_work_items=cursor.child_work_items if cursor else (),
+            )
+        except (StoryPackageAmbiguityError, ValueError) as exc:
+            self.record(
+                "authored_closure", input=payload, error=f"{type(exc).__name__}: {exc}"
+            )
+            return
+        self.record(
+            "authored_closure",
+            input=payload,
+            extra={
+                "authored_ready": report.ready,
+                "authored_issues": [self.scrub(issue) for issue in report.issues],
+            },
+        )
 
     # -- closure operations (plateau 4) --------------------------------------
     #
@@ -2066,6 +2500,391 @@ def _closure_scenarios() -> list[dict[str, Any]]:
     return scenarios
 
 
+# ---------------------------------------------------------------------------
+# Delivery Story scenarios (plateau 5, Scope E)
+# ---------------------------------------------------------------------------
+
+# A Delivery Story package whose authored statuses are all Done, plus the two
+# child packages the preflight insists on. Written by the scenarios that need the
+# preflight to PASS; every other preflight scenario mutates one line of it, so the
+# difference between ready and refused is one authored word.
+DS_PACKAGE_INDEX = """# CV1.DS1 — Aggregate delivery
+
+**Status:** ✅ Done
+**Type:** Delivery Story
+
+## Candidate Stories
+
+| Code | Story | Type | Status |
+|------|-------|------|--------|
+| CV1.DS1.US1 | First child | User Story | ✅ Done |
+| CV1.DS1.TS1 | Second child | Technical Story | ✅ Done |
+
+## Done Condition
+
+Done when the children deliver a coherent outcome.
+"""
+
+DS_CHILD_INDEX = """# {code} — {title}
+
+**Status:** {status}
+**Type:** {kind}
+"""
+
+DS_CHILDREN = ("CV1.DS1.US1", "CV1.DS1.TS1")
+
+
+def _delivery_story_project(scenario: Scenario, *, ds_status: str = "✅ Done",
+                           child_statuses: tuple[str, str] = ("✅ Done", "✅ Done"),
+                           table_statuses: tuple[str, str] | None = None) -> None:
+    """Author a Delivery Story package with its two children, statuses as given."""
+    index = DS_PACKAGE_INDEX.replace("**Status:** ✅ Done", f"**Status:** {ds_status}", 1)
+    if table_statuses is not None:
+        index = index.replace(
+            "| CV1.DS1.US1 | First child | User Story | ✅ Done |",
+            f"| CV1.DS1.US1 | First child | User Story | {table_statuses[0]} |",
+        ).replace(
+            "| CV1.DS1.TS1 | Second child | Technical Story | ✅ Done |",
+            f"| CV1.DS1.TS1 | Second child | Technical Story | {table_statuses[1]} |",
+        )
+    scenario.write_file("docs/project/roadmap/index.md", "# Roadmap\n")
+    scenario.write_file("docs/project/roadmap/cv1-first/index.md", "# CV1 — First value\n")
+    scenario.write_file("docs/project/roadmap/cv1-first/cv1-ds1-aggregate/index.md", index)
+    for (code, title, kind), status in zip(
+        (
+            ("CV1.DS1.US1", "First child", "User Story"),
+            ("CV1.DS1.TS1", "Second child", "Technical Story"),
+        ),
+        child_statuses,
+        strict=True,
+    ):
+        slug = code.lower().replace(".", "-")
+        scenario.write_file(
+            f"docs/project/roadmap/cv1-first/cv1-ds1-aggregate/{slug}-child/index.md",
+            DS_CHILD_INDEX.format(code=code, title=title, status=status, kind=kind),
+        )
+
+
+def _delivery_story_ready(name: str, *, preauthorize: bool = False) -> Scenario:
+    """A journey sitting at an approved Delivery Story Plan, authored roadmap Done."""
+    scenario = Scenario(name)
+    _delivery_story_project(scenario)
+    scenario.seed_cursor(
+        method="ariad",
+        active_item="CV1.DS1",
+        active_item_title="Aggregate delivery",
+        active_item_level="delivery_story",
+        last_delivery_event="prepare",
+        navigator_flow_unit="delivery_story",
+        child_work_items=DS_CHILDREN,
+    )
+    scenario.plan_delivery_story(
+        objective="Deliver both children as one coherent outcome.",
+        child_work_items=DS_CHILDREN,
+        preauthorize=preauthorize,
+    )
+    if not preauthorize:
+        scenario.approve_delivery_story()
+    return scenario
+
+
+def _delivery_story_scenarios() -> list[dict[str, Any]]:
+    scenarios: list[dict[str, Any]] = []
+
+    # The whole aggregate journey, from choosing the flow unit to Done.
+    happy = Scenario("delivery_story_flow_happy_path")
+    _delivery_story_project(happy)
+    happy.seed_cursor(
+        method="ariad",
+        active_item="CV1.DS1",
+        active_item_title="Aggregate delivery",
+        active_item_level="delivery_story",
+        last_delivery_event="prepare",
+        child_work_items=DS_CHILDREN,
+    )
+    happy.inspect_flow_unit()
+    happy.set_flow_unit(flow_unit="delivery_story")
+    happy.plan_delivery_story(
+        objective="Deliver both children as one coherent outcome.",
+        child_work_items=DS_CHILDREN,
+    )
+    happy.approve_delivery_story()
+    happy.validate_delivery_story(navigator_accepted=True)
+    happy.review_delivery_story(decision="no_action")
+    happy.coherence_delivery_story()
+    happy.authored_closure()
+    happy.done_delivery_story()
+    scenarios.append(happy.finish())
+
+    # The flow unit's own faces: the default read, both set branches, and the
+    # refusals. `story_by_story` renders a different surface over a different scope
+    # list, so selecting it is not "the same card with another word".
+    flow = Scenario("navigator_flow_unit_faces")
+    _delivery_story_project(flow)
+    flow.set_flow_unit(flow_unit="delivery_story")
+    flow.seed_cursor(
+        method="ariad",
+        active_item="CV1.DS1",
+        active_item_title="Aggregate delivery",
+        active_item_level="delivery_story",
+        last_delivery_event="prepare",
+        child_work_items=DS_CHILDREN,
+    )
+    flow.inspect_flow_unit()
+    flow.set_flow_unit(flow_unit="delivery_story")
+    flow.inspect_flow_unit()
+    flow.set_flow_unit(flow_unit="story_by_story")
+    flow.set_flow_unit(flow_unit="epic")
+    scenarios.append(flow.finish())
+
+    # Validation that the Navigator has NOT accepted leaves a pending confirmation,
+    # and a second call replaces the status rather than appending a duplicate.
+    pending = _delivery_story_ready("delivery_story_validation_pending_then_accepted")
+    pending.validate_delivery_story(navigator_accepted=False)
+    pending.validate_delivery_story(navigator_accepted=True)
+    scenarios.append(pending.finish())
+
+    # The order case the panel asked for: re-validating AFTER the debt review moves
+    # `validation:passed` to the END of `aggregate_checkpoint_status`. The set is
+    # unchanged and the bytes are not, and the cursor's compare-and-swap matches on
+    # bytes -- so an in-place replace passes every set-wise assertion and breaks the
+    # revert.
+    reorder = _delivery_story_ready("delivery_story_revalidation_reorders_status")
+    reorder.validate_delivery_story(navigator_accepted=True)
+    reorder.review_delivery_story(decision="no_action")
+    reorder.validate_delivery_story(navigator_accepted=True)
+    scenarios.append(reorder.finish())
+
+    # Aggregate closure refusals, each seeded at the state whose guard it tests.
+    unapproved = Scenario("delivery_story_closure_refuses_without_plan_approved")
+    _delivery_story_project(unapproved)
+    unapproved.seed_cursor(
+        method="ariad",
+        active_item="CV1.DS1",
+        active_item_title="Aggregate delivery",
+        active_item_level="delivery_story",
+        last_delivery_event="prepare",
+        navigator_flow_unit="delivery_story",
+        child_work_items=DS_CHILDREN,
+    )
+    unapproved.validate_delivery_story(navigator_accepted=True)
+    unapproved.review_delivery_story()
+    unapproved.coherence_delivery_story()
+    unapproved.done_delivery_story()
+    scenarios.append(unapproved.finish())
+
+    # Done accepts a `review:*` status DIRECTLY -- Coherence is an option at DS
+    # level too, exactly as at story level.
+    skip_coherence = _delivery_story_ready("delivery_story_done_accepts_review_directly")
+    skip_coherence.validate_delivery_story(navigator_accepted=True)
+    skip_coherence.review_delivery_story(decision="defer")
+    skip_coherence.done_delivery_story()
+    scenarios.append(skip_coherence.finish())
+
+    # Every DS verb refuses under story_by_story, which is the default when the
+    # Navigator never chose. The flow unit is the gate, not the item level.
+    story_flow = Scenario("delivery_story_verbs_refuse_under_story_by_story")
+    _delivery_story_project(story_flow)
+    story_flow.seed_cursor(
+        method="ariad",
+        active_item="CV1.DS1",
+        active_item_title="Aggregate delivery",
+        active_item_level="delivery_story",
+        last_delivery_event="prepare",
+        navigator_flow_unit="story_by_story",
+        child_work_items=DS_CHILDREN,
+    )
+    story_flow.plan_delivery_story(child_work_items=DS_CHILDREN)
+    story_flow.validate_delivery_story(navigator_accepted=True)
+    story_flow.review_delivery_story()
+    story_flow.coherence_delivery_story()
+    story_flow.done_delivery_story()
+    scenarios.append(story_flow.finish())
+
+    # Wrong level, no children, empty objective: the three Plan guards in order.
+    plan_guards = Scenario("delivery_story_plan_guards")
+    _delivery_story_project(plan_guards)
+    plan_guards.seed_cursor(
+        method="ariad",
+        active_item="CV1.DS1.US1",
+        active_item_title="First child",
+        active_item_level="user_story",
+        last_delivery_event="prepare",
+        navigator_flow_unit="delivery_story",
+    )
+    plan_guards.plan_delivery_story(child_work_items=DS_CHILDREN)
+    plan_guards.seed_cursor(
+        method="ariad",
+        active_item="CV1.DS1",
+        active_item_title="Aggregate delivery",
+        active_item_level="delivery_story",
+        last_delivery_event="prepare",
+        navigator_flow_unit="delivery_story",
+    )
+    plan_guards.plan_delivery_story(child_work_items=())
+    plan_guards.plan_delivery_story(objective="   ", child_work_items=DS_CHILDREN)
+    scenarios.append(plan_guards.finish())
+
+    # The preservation rule at DS level. `_write_delivery_story_package`'s docstring
+    # says `plan.md` is "upserted on every call"; the CODE preserves it in both
+    # branches. The corpus pins the code -- an authored plan survives Plan AND
+    # approval -- so a port that believes the docstring fails here.
+    authored = Scenario("delivery_story_plan_preserves_authored_plan")
+    _delivery_story_project(authored)
+    authored.write_file(
+        "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/plan.md",
+        AUTHORED_PLAN,
+    )
+    authored.seed_cursor(
+        method="ariad",
+        active_item="CV1.DS1",
+        active_item_title="Aggregate delivery",
+        active_item_level="delivery_story",
+        last_delivery_event="prepare",
+        navigator_flow_unit="delivery_story",
+        child_work_items=DS_CHILDREN,
+    )
+    authored.plan_delivery_story(child_work_items=DS_CHILDREN)
+    authored.approve_delivery_story()
+    scenarios.append(authored.finish())
+
+    # DS-level conditional authority: recorded, then consumed under CAS, then a
+    # repeat that must report `already_approved` and materialize nothing.
+    consumed = _delivery_story_ready(
+        "delivery_story_preauthorization_consumed", preauthorize=True
+    )
+    consumed.write_file(
+        "docs/project/roadmap/cv1-first/cv1-ds1-aggregate/plan.md", COMPLETE_PLAN
+    )
+    consumed.approve_delivery_story(use_preauthorization=True)
+    consumed.approve_delivery_story(use_preauthorization=True)
+    scenarios.append(consumed.finish())
+
+    # An unfilled Plan is a mismatch, not an approval: the receipt is invalidated
+    # and the ordinary gate survives.
+    unfilled = _delivery_story_ready(
+        "delivery_story_preauthorization_refuses_unfilled_plan", preauthorize=True
+    )
+    unfilled.approve_delivery_story(use_preauthorization=True)
+    scenarios.append(unfilled.finish())
+
+    # Navigator withdrawal: cancel leaves the ordinary gate in place, and a second
+    # cancel has nothing to cancel.
+    cancelled = _delivery_story_ready(
+        "delivery_story_preauthorization_cancelled", preauthorize=True
+    )
+    cancelled.cancel_delivery_story_preauthorization()
+    cancelled.cancel_delivery_story_preauthorization()
+    cancelled.approve_delivery_story()
+    scenarios.append(cancelled.finish())
+
+    # Ordinary approval over a pending receipt invalidates it with its own reason,
+    # rather than leaving authority alive after the gate it was meant to bypass.
+    ordinary = _delivery_story_ready(
+        "delivery_story_ordinary_approval_invalidates_receipt", preauthorize=True
+    )
+    ordinary.approve_delivery_story()
+    scenarios.append(ordinary.finish())
+
+    scenarios.extend(_authored_closure_scenarios())
+    return scenarios
+
+
+def _authored_closure_scenarios() -> list[dict[str, Any]]:
+    """The DS Done preflight: the first Builder guard that reads authored content.
+
+    Each scenario changes ONE authored word from the ready case, so the corpus says
+    precisely which evidence blocks a close.
+    """
+    scenarios: list[dict[str, Any]] = []
+
+    def preflight(name: str, **project: Any) -> Scenario:
+        scenario = Scenario(name)
+        _delivery_story_project(scenario, **project)
+        scenario.seed_cursor(
+            method="ariad",
+            active_item="CV1.DS1",
+            active_item_title="Aggregate delivery",
+            active_item_level="delivery_story",
+            last_delivery_event="delivery_story_review_complete",
+            navigator_flow_unit="delivery_story",
+            child_work_items=DS_CHILDREN,
+            aggregate_checkpoint_status=(
+                "plan:approved",
+                "validation:passed",
+                "debt_review:review:no_action",
+            ),
+        )
+        scenario.authored_closure()
+        return scenario
+
+    scenarios.append(preflight("authored_closure_ready").finish())
+    # The runtime's own DS scaffold writes `🟡 Planned`, so a Delivery Story planned
+    # by Ariad refuses its own Done until a human edits the status. That is the
+    # intended asymmetry: Python verifies explicit evidence and never invents
+    # project meaning.
+    scenarios.append(
+        preflight("authored_closure_refuses_planned_delivery_story", ds_status="🟡 Planned")
+        .finish()
+    )
+    scenarios.append(
+        preflight(
+            "authored_closure_refuses_unfinished_child",
+            child_statuses=("✅ Done", "🟡 Planned"),
+        ).finish()
+    )
+    scenarios.append(
+        preflight(
+            "authored_closure_refuses_table_row",
+            table_statuses=("✅ Done", "🔵 In Progress"),
+        ).finish()
+    )
+
+    # `_is_done` is `casefold().endswith("done")`, so a plain `Done`, a glyph-led
+    # `✅ Done`, and a dated `✅ Done (2026-09-14)` are NOT the same answer: the
+    # last one does not end with "done" and blocks.
+    scenarios.append(
+        preflight(
+            "authored_closure_status_suffix_rule",
+            ds_status="Done",
+            child_statuses=("✅ DONE", "✅ Done (2026-09-14)"),
+        ).finish()
+    )
+
+    # The `legacy/` case (panel, engineer). `roadmapScan` is "sorted rglob MINUS
+    # legacy/"; the preflight has no such exclusion, so an ARCHIVED table row for a
+    # known code blocks Done. A port that reuses the scanner passes every other
+    # scenario here and fails this one -- which is the whole point of it existing.
+    legacy = preflight("authored_closure_reads_legacy_rows")
+    legacy.write_file(
+        "docs/project/roadmap/legacy/index.md",
+        "# Archived roadmap\n\n"
+        "| Code | Story | Status |\n"
+        "|------|-------|--------|\n"
+        "| CV1.DS1.US1 | First child | 🟡 Planned |\n",
+    )
+    legacy.authored_closure()
+    scenarios.append(legacy.finish())
+
+    # A child the cursor names and the roadmap does not have.
+    missing = Scenario("authored_closure_refuses_missing_package")
+    _delivery_story_project(missing)
+    missing.seed_cursor(
+        method="ariad",
+        active_item="CV1.DS1",
+        active_item_title="Aggregate delivery",
+        active_item_level="delivery_story",
+        last_delivery_event="delivery_story_review_complete",
+        navigator_flow_unit="delivery_story",
+        child_work_items=(*DS_CHILDREN, "CV1.DS1.US9"),
+        aggregate_checkpoint_status=("plan:approved", "validation:passed", "debt_review:review:no_action"),
+    )
+    missing.authored_closure()
+    scenarios.append(missing.finish())
+
+    return scenarios
+
+
 def build_payload() -> dict[str, Any]:
     repo_docs_before = _repo_docs_fingerprint()
     sequences: list[dict[str, Any]] = [
@@ -2077,6 +2896,7 @@ def build_payload() -> dict[str, Any]:
         *_expand_scenarios(),
         *_preauthorization_scenarios(),
         *_closure_scenarios(),
+        *_delivery_story_scenarios(),
     ]
     created = _repo_docs_fingerprint() - repo_docs_before
     if created:

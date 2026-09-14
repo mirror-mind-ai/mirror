@@ -87,10 +87,22 @@ const PORTED_LEAVES = [
  * reachable — so implementing it forces the entry out of this list instead of
  * leaving a case silently ungraded.
  *
- * Plateau 3 empties it: `pull-item` and `prepare-item` in commit 2, the rest in
- * commit 3.
+ * Plateau 3 emptied it; plateau 5's oracle refills it with the aggregate face of
+ * the lifecycle — the six Delivery Story leaves, plus `set-flow-unit` and the DS
+ * preauthorization cancel, both re-sequenced into Scope E after the plateau-5
+ * panel (the smoke opens with `set-flow-unit`, and seeding the flow unit by a raw
+ * cursor write instead would be the unrecorded mutation plateau 3a ruled out).
  */
-const PENDING_LEAVES: readonly string[] = [];
+const PENDING_LEAVES: readonly string[] = [
+  "approve-delivery-story-plan",
+  "cancel-delivery-story-plan-preauthorization",
+  "coherence-delivery-story",
+  "done-delivery-story",
+  "plan-delivery-story",
+  "review-delivery-story",
+  "set-flow-unit",
+  "validate-delivery-story",
+];
 
 const isPorted = (entry: Case): boolean =>
   (PORTED_LEAVES as readonly string[]).includes(entry.argv[0] ?? "");
@@ -688,8 +700,15 @@ test("the file-writing lifecycle leaves match Python's streams and its files", (
   // FILES compared as part of the behavior. Running them in the generic loop would
   // point the journey at the committed fixture — caught by `git status` at plateau 2,
   // and the reason the scratch copy is mandatory rather than tidy.
+  // Filtered by PORTEDNESS as well as by snapshot: plateau 5's aggregate leaves
+  // write files too, and they are declared pending for the commit that lands their
+  // oracle. Selecting on the snapshot alone made this test the one place a pending
+  // leaf was still replayed.
   const cases_ = cases.filter(
-    (entry) => entry.project_files !== undefined && entry.argv[0] !== "prepare-templates",
+    (entry) =>
+      entry.project_files !== undefined &&
+      entry.argv[0] !== "prepare-templates" &&
+      isPorted(entry),
   );
   assert.ok(cases_.length >= 14, `expected the lifecycle write cases, got ${cases_.length}`);
   for (const entry of cases_) {

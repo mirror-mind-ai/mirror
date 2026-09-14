@@ -1794,6 +1794,628 @@
       "session_id": "builder-command-session",
       "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
       "stdout": ""
+    },
+    {
+      "argv": [
+        "set-flow-unit",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 0,
+      "name": "set_flow_unit_inspects_by_default",
+      "scenario": "adopted_agg_planned",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:NAVIGATOR_FLOW_UNIT>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  FLOW UNIT SELECTED                         │\n│                                                        │\n│ What changed?                                          │\n│ Navigator-facing lifecycle will continue at Delivery   │\n│ Story level.                                           │\n│                                                        │\n│ Active delivery                                        │\n│ 🟦[CV1.DS3] — Aggregate delivery                        │\n│                                                        │\n│ Selected flow unit                                     │\n│ delivery_story                                         │\n│ the Delivery Story becomes the lifecycle unit; child   │\n│ stories remain traceable work packages                 │\n│                                                        │\n│ Next movement                                          │\n│ Plan the Delivery Story as the Navigator-facing unit.  │\n│                                                        │\n│ Choose the next move when ready.                       │\n╰────────────────────────────────────────────────────────╯\n<<<END:NAVIGATOR_FLOW_UNIT>>>\n\n"
+    },
+    {
+      "argv": [
+        "set-flow-unit",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--unit",
+        "delivery_story"
+      ],
+      "exit_code": 0,
+      "name": "set_flow_unit_selects_delivery_story",
+      "scenario": "adopted_prepared_ds",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:DELIVERY_STORY_SCOPE_CONFIRMATION>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  DELIVERY STORY SCOPE CONFIRMATION            │\n│                                                        │\n│ My understanding                                       │\n│ This Delivery Story should deliver the scope implied   │\n│ by: A delivery story.                                  │\n│                                                        │\n│ Active delivery                                        │\n│ 🟦[CV1.DS1] — A delivery story                          │\n│                                                        │\n│ Before I create the DS Plan, correct or add anything:  │\n│ 1. Is this the right scope?                            │\n│                                                        │\n│ Choose the next move when ready.                       │\n╰────────────────────────────────────────────────────────╯\n<<<END:DELIVERY_STORY_SCOPE_CONFIRMATION>>>\n\n"
+    },
+    {
+      "argv": [
+        "set-flow-unit",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--unit",
+        "story_by_story"
+      ],
+      "exit_code": 0,
+      "name": "set_flow_unit_selects_story_by_story",
+      "scenario": "adopted_agg_planned",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:NEXT_STORY_CONFIRMATION>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  NEXT STORY CONFIRMATION                      │\n│                                                        │\n│ My understanding                                       │\n│ We will continue story by story. The next step is to   │\n│ confirm which child story becomes the next             │\n│ Navigator-facing lifecycle unit.                       │\n│                                                        │\n│ Active delivery                                        │\n│ 🟦[CV1.DS3] — Aggregate delivery                        │\n│                                                        │\n│ Recommended story                                      │\n│ - CV1.DS3.US1                                          │\n│                                                        │\n│ Before I create the Story Plan, correct or add         │\n│ anything:                                              │\n│ 1. Is this the right next story?                       │\n│                                                        │\n│ Choose the next move when ready.                       │\n╰────────────────────────────────────────────────────────╯\n<<<END:NEXT_STORY_CONFIRMATION>>>\n\n"
+    },
+    {
+      "argv": [
+        "set-flow-unit",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--unit",
+        "delivery_story"
+      ],
+      "exit_code": 1,
+      "name": "set_flow_unit_requires_a_cursor",
+      "scenario": "adopted",
+      "session_id": "builder-command-session",
+      "stderr": "Error: delivery cursor is required before choosing navigator flow unit\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "plan-delivery-story",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--objective",
+        "Deliver both children as one coherent outcome.",
+        "--child",
+        "CV1.DS3.US1",
+        "--child",
+        "CV1.DS3.TS1"
+      ],
+      "exit_code": 0,
+      "name": "plan_delivery_story_creates_checkpoint",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-ts1-child/index.md": "# CV1.DS3.TS1 — Second child\n\n**Status:** ✅ Done\n**Type:** Technical Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-us1-child/index.md": "# CV1.DS3.US1 — First child\n\n**Status:** ✅ Done\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/index.md": "# CV1.DS3 — Aggregate delivery\n\n**Status:** ✅ Done\n**Type:** Delivery Story\n\n## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n| CV1.DS3.US1 | First child | User Story | ✅ Done |\n| CV1.DS3.TS1 | Second child | Technical Story | ✅ Done |\n\n## Done Condition\n\nDone when the children deliver a coherent outcome.\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/plan.md": "# Delivery Story Plan — CV1.DS3\n\n**Journey:** demo\n**Method:** ariad\n**Navigator Flow Unit:** delivery_story\n\n## Delivery Story\n\nAggregate delivery\n\n## Objective\n\nDeliver both children as one coherent outcome.\n\n## Child Work Packages\n\n- CV1.DS3.US1\n- CV1.DS3.TS1\n\n## Scope\n\nPending — name what this Delivery Story delivers across its child work packages.\n\n## Non-Goals\n\nPending — name what is explicitly out of scope for this Delivery Story.\n\n## Acceptance Behavior\n\nPending — describe the aggregate observable outcome, using Given/When/Then when practical.\n\n## Validation Route\n\nPending — describe how the aggregate delivery is validated, including whether E2E is required.\n\n## Implementation Contract\n\nPending — record the constraints for child work: TDD for behavior changes, changes scoped to this Delivery Story's children, and no silent scope absorption.\n\n---\n\n_Approval and lifecycle state are tracked by the Builder runtime, not duplicated in this plan._\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/test-guide.md": "[< Story](index.md)\n\n# Test Guide — CV1.DS3\n\n## Aggregate Validation\n\nPending aggregate Delivery Story validation across child work packages.\n\n## Child Work Packages\n\n- CV1.DS3.US1\n- CV1.DS3.TS1\n\n## Navigator Validation\n\nProvide the Navigator-visible route with expected observation, pass condition, and fail condition before the Delivery Story can pass aggregate Validation.\n\n## Validation Evidence\n\nPending implementation and validation.\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 2
+      },
+      "scenario": "adopted_agg_planned",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:DELIVERY_STORY_PLAN_CHECKPOINT>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ◉ DS Plan → ○ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  DELIVERY STORY PLAN                          │\n│                                                        │\n│ What is being planned?                                 │\n│ 🟦[CV1.DS3] — Aggregate delivery                        │\n│                                                        │\n│ Plan objective                                         │\n│ Deliver both children as one coherent outcome.         │\n│                                                        │\n│ Work packages                                          │\n│ - CV1.DS3.US1                                          │\n│ - CV1.DS3.TS1                                          │\n│                                                        │\n│ Next movement                                          │\n│ Review the plan artifact, then approve or revise.      │\n│                                                        │\n│ Choose the next move when ready.                       │\n╰────────────────────────────────────────────────────────╯\n<<<END:DELIVERY_STORY_PLAN_CHECKPOINT>>>\n\n<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Delivery Story Plan — CV1.DS3                          │\n│                                                        │\n│ ↻ existing story index                                 │\n│ docs/project/roadmap/cv1-first/cv1-ds3-aggregate/index │\n│ .md                                                    │\n│                                                        │\n│ ✓ created plan                                         │\n│ docs/project/roadmap/cv1-first/cv1-ds3-aggregate/plan. │\n│ md                                                     │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/cv1-first/cv1-ds3-aggregate/test- │\n│ guide.md                                               │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n\n"
+    },
+    {
+      "argv": [
+        "plan-delivery-story",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--objective",
+        "Deliver both children.",
+        "--child",
+        "CV1.DS3.US1"
+      ],
+      "exit_code": 1,
+      "name": "plan_delivery_story_refuses_story_by_story",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-ts1-child/index.md": "# CV1.DS3.TS1 — Second child\n\n**Status:** ✅ Done\n**Type:** Technical Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-us1-child/index.md": "# CV1.DS3.US1 — First child\n\n**Status:** ✅ Done\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/index.md": "# CV1.DS3 — Aggregate delivery\n\n**Status:** ✅ Done\n**Type:** Delivery Story\n\n## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n| CV1.DS3.US1 | First child | User Story | ✅ Done |\n| CV1.DS3.TS1 | Second child | Technical Story | ✅ Done |\n\n## Done Condition\n\nDone when the children deliver a coherent outcome.\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 1
+      },
+      "scenario": "adopted_agg_story_by_story",
+      "session_id": "builder-command-session",
+      "stderr": "Error: Delivery Story Plan requires navigator_flow_unit=delivery_story\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "plan-delivery-story",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--objective",
+        "Deliver both children as one coherent outcome.",
+        "--child",
+        "CV1.DS3.US1",
+        "--child",
+        "CV1.DS3.TS1",
+        "--preauthorize-approval",
+        "--stop-after",
+        "navigator_validation"
+      ],
+      "exit_code": 0,
+      "name": "plan_delivery_story_records_preauthorization",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-ts1-child/index.md": "# CV1.DS3.TS1 — Second child\n\n**Status:** ✅ Done\n**Type:** Technical Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-us1-child/index.md": "# CV1.DS3.US1 — First child\n\n**Status:** ✅ Done\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/index.md": "# CV1.DS3 — Aggregate delivery\n\n**Status:** ✅ Done\n**Type:** Delivery Story\n\n## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n| CV1.DS3.US1 | First child | User Story | ✅ Done |\n| CV1.DS3.TS1 | Second child | Technical Story | ✅ Done |\n\n## Done Condition\n\nDone when the children deliver a coherent outcome.\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/plan.md": "# Delivery Story Plan — CV1.DS3\n\n**Journey:** demo\n**Method:** ariad\n**Navigator Flow Unit:** delivery_story\n\n## Delivery Story\n\nAggregate delivery\n\n## Objective\n\nDeliver both children as one coherent outcome.\n\n## Child Work Packages\n\n- CV1.DS3.US1\n- CV1.DS3.TS1\n\n## Scope\n\nPending — name what this Delivery Story delivers across its child work packages.\n\n## Non-Goals\n\nPending — name what is explicitly out of scope for this Delivery Story.\n\n## Acceptance Behavior\n\nPending — describe the aggregate observable outcome, using Given/When/Then when practical.\n\n## Validation Route\n\nPending — describe how the aggregate delivery is validated, including whether E2E is required.\n\n## Implementation Contract\n\nPending — record the constraints for child work: TDD for behavior changes, changes scoped to this Delivery Story's children, and no silent scope absorption.\n\n---\n\n_Approval and lifecycle state are tracked by the Builder runtime, not duplicated in this plan._\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/test-guide.md": "[< Story](index.md)\n\n# Test Guide — CV1.DS3\n\n## Aggregate Validation\n\nPending aggregate Delivery Story validation across child work packages.\n\n## Child Work Packages\n\n- CV1.DS3.US1\n- CV1.DS3.TS1\n\n## Navigator Validation\n\nProvide the Navigator-visible route with expected observation, pass condition, and fail condition before the Delivery Story can pass aggregate Validation.\n\n## Validation Evidence\n\nPending implementation and validation.\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 2
+      },
+      "scenario": "adopted_agg_planned",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:DELIVERY_STORY_PLAN_CHECKPOINT>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ◉ DS Plan → ○ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  DELIVERY STORY PLAN                          │\n│                                                        │\n│ What is being planned?                                 │\n│ 🟦[CV1.DS3] — Aggregate delivery                        │\n│                                                        │\n│ Plan objective                                         │\n│ Deliver both children as one coherent outcome.         │\n│                                                        │\n│ Work packages                                          │\n│ - CV1.DS3.US1                                          │\n│ - CV1.DS3.TS1                                          │\n│                                                        │\n│ Next movement                                          │\n│ Review the plan artifact, then approve or revise.      │\n│                                                        │\n│ Choose the next move when ready.                       │\n╰────────────────────────────────────────────────────────╯\n<<<END:DELIVERY_STORY_PLAN_CHECKPOINT>>>\n\n<<<ARIAD:PLAN_PREAUTHORIZATION_RECORDED>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PLAN PREAUTHORIZATION RECORDED              │\n│                                                        │\n│ Authorized delivery                                    │\n│ CV1.DS3                                                │\n│                                                        │\n│ Policy                                                 │\n│ exact_scope                                            │\n│                                                        │\n│ Exact child set                                        │\n│ - CV1.DS3.TS1                                          │\n│ - CV1.DS3.US1                                          │\n│                                                        │\n│ Fixed stop                                             │\n│ navigator_validation                                   │\n│                                                        │\n│ Boundary                                               │\n│ Single-use authority remains pending until the Driver  │\n│ completes the Plan and every structural coordinate     │\n│ matches.                                               │\n╰────────────────────────────────────────────────────────╯\n<<<END:PLAN_PREAUTHORIZATION_RECORDED>>>\n\n<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Delivery Story Plan — CV1.DS3                          │\n│                                                        │\n│ ↻ existing story index                                 │\n│ docs/project/roadmap/cv1-first/cv1-ds3-aggregate/index │\n│ .md                                                    │\n│                                                        │\n│ ✓ created plan                                         │\n│ docs/project/roadmap/cv1-first/cv1-ds3-aggregate/plan. │\n│ md                                                     │\n│                                                        │\n│ ✓ created test guide                                   │\n│ docs/project/roadmap/cv1-first/cv1-ds3-aggregate/test- │\n│ guide.md                                               │\n│                                                        │\n│ Plan artifacts were materialized. Implementation       │\n│ remains blocked until approval.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n\n"
+    },
+    {
+      "argv": [
+        "approve-delivery-story-plan",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 0,
+      "name": "approve_delivery_story_plan_starts_implementation",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-ts1-child/index.md": "# CV1.DS3.TS1 — Second child\n\n**Status:** ✅ Done\n**Type:** Technical Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-us1-child/index.md": "# CV1.DS3.US1 — First child\n\n**Status:** ✅ Done\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/index.md": "# CV1.DS3 — Aggregate delivery\n\n**Status:** ✅ Done\n**Type:** Delivery Story\n\n## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n| CV1.DS3.US1 | First child | User Story | ✅ Done |\n| CV1.DS3.TS1 | Second child | Technical Story | ✅ Done |\n\n## Done Condition\n\nDone when the children deliver a coherent outcome.\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/plan.md": "# Delivery Story Plan — CV1.DS3\n\n**Journey:** demo\n**Method:** ariad\n**Navigator Flow Unit:** delivery_story\n\n## Delivery Story\n\nAggregate delivery\n\n## Objective\n\nDeliver both children as one coherent outcome.\n\n## Child Work Packages\n\n- CV1.DS3.US1\n- CV1.DS3.TS1\n\n## Scope\n\nPending — name what this Delivery Story delivers across its child work packages.\n\n## Non-Goals\n\nPending — name what is explicitly out of scope for this Delivery Story.\n\n## Acceptance Behavior\n\nPending — describe the aggregate observable outcome, using Given/When/Then when practical.\n\n## Validation Route\n\nPending — describe how the aggregate delivery is validated, including whether E2E is required.\n\n## Implementation Contract\n\nPending — record the constraints for child work: TDD for behavior changes, changes scoped to this Delivery Story's children, and no silent scope absorption.\n\n---\n\n_Approval and lifecycle state are tracked by the Builder runtime, not duplicated in this plan._\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/test-guide.md": "[< Story](index.md)\n\n# Test Guide — CV1.DS3\n\n## Aggregate Validation\n\nPending aggregate Delivery Story validation across child work packages.\n\n## Child Work Packages\n\n- CV1.DS3.US1\n- CV1.DS3.TS1\n\n## Navigator Validation\n\nProvide the Navigator-visible route with expected observation, pass condition, and fail condition before the Delivery Story can pass aggregate Validation.\n\n## Validation Evidence\n\nPending implementation and validation.\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 3
+      },
+      "scenario": "adopted_agg_pending_approval",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:DELIVERY_STORY_PLAN_CHECKPOINT>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ DS Plan → ◉ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  DELIVERY STORY PLAN APPROVED                 │\n│                                                        │\n│ What was approved?                                     │\n│ 🟦[CV1.DS3] — Aggregate delivery                        │\n│                                                        │\n│ Approved work packages                                 │\n│ - CV1.DS3.US1                                          │\n│ - CV1.DS3.TS1                                          │\n│                                                        │\n│ Sections still pending                                 │\n│ - Scope                                                │\n│ - Non-Goals                                            │\n│ - Acceptance Behavior                                  │\n│ - Validation Route                                     │\n│ - Implementation Contract                              │\n│                                                        │\n│ Next movement                                          │\n│ Begin implementation under the approved plan.          │\n╰────────────────────────────────────────────────────────╯\n<<<END:DELIVERY_STORY_PLAN_CHECKPOINT>>>\n\n<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Delivery Story Plan Approval — CV1.DS3                 │\n│                                                        │\n│ ↻ existing story index                                 │\n│ docs/project/roadmap/cv1-first/cv1-ds3-aggregate/index │\n│ .md                                                    │\n│                                                        │\n│ ↻ existing plan                                        │\n│ docs/project/roadmap/cv1-first/cv1-ds3-aggregate/plan. │\n│ md                                                     │\n│                                                        │\n│ ↻ existing test guide                                  │\n│ docs/project/roadmap/cv1-first/cv1-ds3-aggregate/test- │\n│ guide.md                                               │\n│                                                        │\n│ Plan approval artifacts were materialized.             │\n│ Implementation may proceed under the approved plan.    │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n\n<<<ARIAD:IMPLEMENTATION_STARTED>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ DS Plan → ◉ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟧  IMPLEMENTATION STARTED                     │\n│                                                        │\n│ What changed?                                          │\n│ The approved Delivery Story Plan now authorizes        │\n│ implementation work.                                   │\n│                                                        │\n│ Active delivery                                        │\n│ 🟦[CV1.DS3] — Aggregate delivery                        │\n│                                                        │\n│ Work packages                                          │\n│ - CV1.DS3.US1                                          │\n│ - CV1.DS3.TS1                                          │\n│                                                        │\n│ Boundary                                               │\n│ Implementation may mutate local project files under    │\n│ the approved plan. Push, release, deploy, purchase, or │\n│ externally irreversible actions still require explicit │\n│ Navigator authorization.                               │\n│                                                        │\n│ Driver action                                          │\n│ Begin implementing the approved plan now.              │\n╰────────────────────────────────────────────────────────╯\n<<<END:IMPLEMENTATION_STARTED>>>\n\n"
+    },
+    {
+      "argv": [
+        "approve-delivery-story-plan",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 1,
+      "name": "approve_delivery_story_plan_requires_checkpoint",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-ts1-child/index.md": "# CV1.DS3.TS1 — Second child\n\n**Status:** ✅ Done\n**Type:** Technical Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-us1-child/index.md": "# CV1.DS3.US1 — First child\n\n**Status:** ✅ Done\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/index.md": "# CV1.DS3 — Aggregate delivery\n\n**Status:** ✅ Done\n**Type:** Delivery Story\n\n## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n| CV1.DS3.US1 | First child | User Story | ✅ Done |\n| CV1.DS3.TS1 | Second child | Technical Story | ✅ Done |\n\n## Done Condition\n\nDone when the children deliver a coherent outcome.\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 1
+      },
+      "scenario": "adopted_agg_planned",
+      "session_id": "builder-command-session",
+      "stderr": "Error: Delivery Story Plan approval requires an after_delivery_story_plan checkpoint\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "cancel-delivery-story-plan-preauthorization",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 1,
+      "name": "cancel_delivery_story_preauthorization_without_receipt",
+      "scenario": "adopted_agg_pending_approval",
+      "session_id": "builder-command-session",
+      "stderr": "Error: pending Plan preauthorization is required before cancellation\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "validate-delivery-story",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--summary",
+        "Aggregate validation evidence.",
+        "--navigator-accepted"
+      ],
+      "exit_code": 0,
+      "name": "validate_delivery_story_passes",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-ts1-child/index.md": "# CV1.DS3.TS1 — Second child\n\n**Status:** ✅ Done\n**Type:** Technical Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-us1-child/index.md": "# CV1.DS3.US1 — First child\n\n**Status:** ✅ Done\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/index.md": "# CV1.DS3 — Aggregate delivery\n\n**Status:** ✅ Done\n**Type:** Delivery Story\n\n## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n| CV1.DS3.US1 | First child | User Story | ✅ Done |\n| CV1.DS3.TS1 | Second child | Technical Story | ✅ Done |\n\n## Done Condition\n\nDone when the children deliver a coherent outcome.\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/validation.md": "# Validation — CV1.DS3\n\n## Status\n\npassed\n\n## Summary\n\nAggregate validation evidence.\n\n## Child Work Packages\n\n- CV1.DS3.US1\n- CV1.DS3.TS1\n\n## Boundary\n\nNo push or release action is authorized by this checkpoint.\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 2
+      },
+      "scenario": "adopted_agg_approved",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:DELIVERY_STORY_CLOSURE_CHECKPOINT>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ DS Plan → ✓ Implement → ◉ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🧪  DELIVERY STORY VALIDATION                    │\n│                                                        │\n│ What was validated?                                    │\n│ 🟦[CV1.DS3] — Aggregate delivery                        │\n│                                                        │\n│ Evidence summary                                       │\n│ Aggregate validation evidence.                         │\n│                                                        │\n│ Navigator validation                                   │\n│ Navigator accepted validation.                         │\n│                                                        │\n│ Next movement                                          │\n│ Proceed to DS-level Debt Review.                       │\n╰────────────────────────────────────────────────────────╯\n<<<END:DELIVERY_STORY_CLOSURE_CHECKPOINT>>>\n\n<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Delivery Story Validation — CV1.DS3                    │\n│                                                        │\n│ ✓ created validation                                   │\n│ docs/project/roadmap/cv1-first/cv1-ds3-aggregate/valid │\n│ ation.md                                               │\n│                                                        │\n│ Validation artifact was materialized.                  │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n\n<<<ARIAD:DEBT_REVIEW_STARTED>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ✓ Implement → ✓ Validate → ◉ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🔎  DEBT REVIEW STARTED                        │\n│                                                        │\n│ What changed?                                          │\n│ Validation was accepted. Before closure, review        │\n│ whether any relevant technical debt remains.           │\n│                                                        │\n│ Active item                                            │\n│ CV1.DS3                                                │\n│                                                        │\n│ Navigator check                                        │\n│ If there is no relevant debt to address now, I can     │\n│ record this as sem ação necessária and continue toward │\n│ closure.                                               │\n╰────────────────────────────────────────────────────────╯\n<<<END:DEBT_REVIEW_STARTED>>>\n\n"
+    },
+    {
+      "argv": [
+        "validate-delivery-story",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--summary",
+        "Route provided, acceptance not given."
+      ],
+      "exit_code": 0,
+      "name": "validate_delivery_story_pending_navigator",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-ts1-child/index.md": "# CV1.DS3.TS1 — Second child\n\n**Status:** ✅ Done\n**Type:** Technical Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-us1-child/index.md": "# CV1.DS3.US1 — First child\n\n**Status:** ✅ Done\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/index.md": "# CV1.DS3 — Aggregate delivery\n\n**Status:** ✅ Done\n**Type:** Delivery Story\n\n## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n| CV1.DS3.US1 | First child | User Story | ✅ Done |\n| CV1.DS3.TS1 | Second child | Technical Story | ✅ Done |\n\n## Done Condition\n\nDone when the children deliver a coherent outcome.\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/validation.md": "# Validation — CV1.DS3\n\n## Status\n\npending_navigator_validation\n\n## Summary\n\nRoute provided, acceptance not given.\n\n## Child Work Packages\n\n- CV1.DS3.US1\n- CV1.DS3.TS1\n\n## Boundary\n\nDo not proceed to DS-level Debt Review until Navigator validation is accepted.\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 2
+      },
+      "scenario": "adopted_agg_approved",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:DELIVERY_STORY_CLOSURE_CHECKPOINT>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ DS Plan → ✓ Implement → ◉ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🧪  DELIVERY STORY VALIDATION                    │\n│                                                        │\n│ What was validated?                                    │\n│ 🟦[CV1.DS3] — Aggregate delivery                        │\n│                                                        │\n│ Evidence summary                                       │\n│ Route provided, acceptance not given.                  │\n│                                                        │\n│ Navigator validation                                   │\n│ Awaiting Navigator validation acceptance.              │\n│                                                        │\n│ Next movement                                          │\n│ Accept validation before DS-level Debt Review.         │\n╰────────────────────────────────────────────────────────╯\n<<<END:DELIVERY_STORY_CLOSURE_CHECKPOINT>>>\n\n<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Delivery Story Validation — CV1.DS3                    │\n│                                                        │\n│ ✓ created validation                                   │\n│ docs/project/roadmap/cv1-first/cv1-ds3-aggregate/valid │\n│ ation.md                                               │\n│                                                        │\n│ Validation artifact was materialized.                  │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n\n"
+    },
+    {
+      "argv": [
+        "validate-delivery-story",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--summary",
+        "Too early.",
+        "--navigator-accepted"
+      ],
+      "exit_code": 1,
+      "name": "validate_delivery_story_requires_plan_approved",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-ts1-child/index.md": "# CV1.DS3.TS1 — Second child\n\n**Status:** ✅ Done\n**Type:** Technical Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-us1-child/index.md": "# CV1.DS3.US1 — First child\n\n**Status:** ✅ Done\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/index.md": "# CV1.DS3 — Aggregate delivery\n\n**Status:** ✅ Done\n**Type:** Delivery Story\n\n## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n| CV1.DS3.US1 | First child | User Story | ✅ Done |\n| CV1.DS3.TS1 | Second child | Technical Story | ✅ Done |\n\n## Done Condition\n\nDone when the children deliver a coherent outcome.\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 1
+      },
+      "scenario": "adopted_agg_planned",
+      "session_id": "builder-command-session",
+      "stderr": "Error: Delivery Story plan requires aggregate status plan:approved\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "review-delivery-story",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--decision",
+        "no_action",
+        "--summary",
+        "No debt found."
+      ],
+      "exit_code": 0,
+      "name": "review_delivery_story_no_action",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-ts1-child/index.md": "# CV1.DS3.TS1 — Second child\n\n**Status:** ✅ Done\n**Type:** Technical Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-us1-child/index.md": "# CV1.DS3.US1 — First child\n\n**Status:** ✅ Done\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/index.md": "# CV1.DS3 — Aggregate delivery\n\n**Status:** ✅ Done\n**Type:** Delivery Story\n\n## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n| CV1.DS3.US1 | First child | User Story | ✅ Done |\n| CV1.DS3.TS1 | Second child | Technical Story | ✅ Done |\n\n## Done Condition\n\nDone when the children deliver a coherent outcome.\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/review.md": "# Debt Review — CV1.DS3\n\n## Status\n\nreview:no_action\n\n## Summary\n\nNo debt found.\n\n## Child Work Packages\n\n- CV1.DS3.US1\n- CV1.DS3.TS1\n\n## Boundary\n\nNo push or release action is authorized by this checkpoint.\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 2
+      },
+      "scenario": "adopted_agg_validated",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:DELIVERY_STORY_CLOSURE_CHECKPOINT>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ DS Plan → ✓ Implement → ✓ Validate → ◉ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🧪  DELIVERY STORY DEBT REVIEW                   │\n│                                                        │\n│ What was reviewed?                                     │\n│ 🟦[CV1.DS3] — Aggregate delivery                        │\n│                                                        │\n│ Evidence summary                                       │\n│ No debt found.                                         │\n│                                                        │\n│ Debt decision                                          │\n│ no_action                                              │\n│                                                        │\n│ Next movement                                          │\n│ Proceed to DS-level Done.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:DELIVERY_STORY_CLOSURE_CHECKPOINT>>>\n\n<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Delivery Story Review — CV1.DS3                        │\n│                                                        │\n│ ✓ created review                                       │\n│ docs/project/roadmap/cv1-first/cv1-ds3-aggregate/revie │\n│ w.md                                                   │\n│                                                        │\n│ Review artifact was materialized.                      │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n\n<<<ARIAD:DONE_CLOSURE_CONFIRMATION>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ✓ Implement → ✓ Validate → ✓ Debt Review → ◉ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  DONE CLOSURE CONFIRMATION                  │\n│                                                        │\n│ My understanding                                       │\n│ Debt review found no relevant action to take now. The  │\n│ story is ready to close.                               │\n│                                                        │\n│ Active item                                            │\n│ CV1.DS3                                                │\n│                                                        │\n│ Before I close                                         │\n│ Is there anything else to do in this story before      │\n│ Done?                                                  │\n╰────────────────────────────────────────────────────────╯\n<<<END:DONE_CLOSURE_CONFIRMATION>>>\n\n"
+    },
+    {
+      "argv": [
+        "review-delivery-story",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--decision",
+        "defer",
+        "--summary",
+        "Deferred with a trigger."
+      ],
+      "exit_code": 0,
+      "name": "review_delivery_story_defer",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-ts1-child/index.md": "# CV1.DS3.TS1 — Second child\n\n**Status:** ✅ Done\n**Type:** Technical Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-us1-child/index.md": "# CV1.DS3.US1 — First child\n\n**Status:** ✅ Done\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/index.md": "# CV1.DS3 — Aggregate delivery\n\n**Status:** ✅ Done\n**Type:** Delivery Story\n\n## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n| CV1.DS3.US1 | First child | User Story | ✅ Done |\n| CV1.DS3.TS1 | Second child | Technical Story | ✅ Done |\n\n## Done Condition\n\nDone when the children deliver a coherent outcome.\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/review.md": "# Debt Review — CV1.DS3\n\n## Status\n\nreview:defer\n\n## Summary\n\nDeferred with a trigger.\n\n## Child Work Packages\n\n- CV1.DS3.US1\n- CV1.DS3.TS1\n\n## Boundary\n\nNo push or release action is authorized by this checkpoint.\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 2
+      },
+      "scenario": "adopted_agg_validated",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:DELIVERY_STORY_CLOSURE_CHECKPOINT>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ DS Plan → ✓ Implement → ✓ Validate → ◉ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🧪  DELIVERY STORY DEBT REVIEW                   │\n│                                                        │\n│ What was reviewed?                                     │\n│ 🟦[CV1.DS3] — Aggregate delivery                        │\n│                                                        │\n│ Evidence summary                                       │\n│ Deferred with a trigger.                               │\n│                                                        │\n│ Debt decision                                          │\n│ defer                                                  │\n│                                                        │\n│ Next movement                                          │\n│ Proceed to DS-level Done.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:DELIVERY_STORY_CLOSURE_CHECKPOINT>>>\n\n<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Delivery Story Review — CV1.DS3                        │\n│                                                        │\n│ ✓ created review                                       │\n│ docs/project/roadmap/cv1-first/cv1-ds3-aggregate/revie │\n│ w.md                                                   │\n│                                                        │\n│ Review artifact was materialized.                      │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n\n"
+    },
+    {
+      "argv": [
+        "review-delivery-story",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--decision",
+        "maybe",
+        "--summary",
+        "Unknown."
+      ],
+      "exit_code": 2,
+      "name": "review_delivery_story_rejects_unknown_decision",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-ts1-child/index.md": "# CV1.DS3.TS1 — Second child\n\n**Status:** ✅ Done\n**Type:** Technical Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-us1-child/index.md": "# CV1.DS3.US1 — First child\n\n**Status:** ✅ Done\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/index.md": "# CV1.DS3 — Aggregate delivery\n\n**Status:** ✅ Done\n**Type:** Delivery Story\n\n## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n| CV1.DS3.US1 | First child | User Story | ✅ Done |\n| CV1.DS3.TS1 | Second child | Technical Story | ✅ Done |\n\n## Done Condition\n\nDone when the children deliver a coherent outcome.\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 1
+      },
+      "scenario": "adopted_agg_validated",
+      "session_id": "builder-command-session",
+      "stderr": "usage: __main__.py review-delivery-story [-h] --method METHOD\n                                         [--journey JOURNEY]\n                                         [--session-id SESSION_ID] --decision\n                                         {no_action,defer,pay_now} --summary\n                                         SUMMARY\n__main__.py review-delivery-story: error: argument --decision: invalid choice: 'maybe' (choose from no_action, defer, pay_now)\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "coherence-delivery-story",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--summary",
+        "Process, project, and product align."
+      ],
+      "exit_code": 0,
+      "name": "coherence_delivery_story_completes",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/coherence.md": "# Coherence — CV1.DS3\n\n## Status\n\ncoherent\n\n## Summary\n\nProcess, project, and product align.\n\n## Child Work Packages\n\n- CV1.DS3.US1\n- CV1.DS3.TS1\n\n## Boundary\n\nNo push or release action is authorized by this checkpoint.\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-ts1-child/index.md": "# CV1.DS3.TS1 — Second child\n\n**Status:** ✅ Done\n**Type:** Technical Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-us1-child/index.md": "# CV1.DS3.US1 — First child\n\n**Status:** ✅ Done\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/index.md": "# CV1.DS3 — Aggregate delivery\n\n**Status:** ✅ Done\n**Type:** Delivery Story\n\n## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n| CV1.DS3.US1 | First child | User Story | ✅ Done |\n| CV1.DS3.TS1 | Second child | Technical Story | ✅ Done |\n\n## Done Condition\n\nDone when the children deliver a coherent outcome.\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 2
+      },
+      "scenario": "adopted_agg_reviewed",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:DELIVERY_STORY_CLOSURE_CHECKPOINT>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ DS Plan → ✓ Implement → ✓ Validate → ✓ Debt Review → ◉ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🧪  DELIVERY STORY COHERENCE                     │\n│                                                        │\n│ What was checked?                                      │\n│ 🟦[CV1.DS3] — Aggregate delivery                        │\n│                                                        │\n│ Evidence summary                                       │\n│ Process, project, and product align.                   │\n│                                                        │\n│ Coherence state                                        │\n│ coherent                                               │\n│                                                        │\n│ Next movement                                          │\n│ Coherence is now checked inside Done for DS-level      │\n│ flow.                                                  │\n╰────────────────────────────────────────────────────────╯\n<<<END:DELIVERY_STORY_CLOSURE_CHECKPOINT>>>\n\n<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Delivery Story Coherence — CV1.DS3                     │\n│                                                        │\n│ ✓ created coherence                                    │\n│ docs/project/roadmap/cv1-first/cv1-ds3-aggregate/coher │\n│ ence.md                                                │\n│                                                        │\n│ Coherence artifact was materialized.                   │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n\n"
+    },
+    {
+      "argv": [
+        "done-delivery-story",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--summary",
+        "Aggregate closure recorded."
+      ],
+      "exit_code": 0,
+      "name": "done_delivery_story_closes_after_review",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-ts1-child/index.md": "# CV1.DS3.TS1 — Second child\n\n**Status:** ✅ Done\n**Type:** Technical Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-us1-child/index.md": "# CV1.DS3.US1 — First child\n\n**Status:** ✅ Done\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/done.md": "# Done — CV1.DS3\n\n## Status\n\ndone\n\n## Summary\n\nAggregate closure recorded.\n\n## Child Work Packages\n\n- CV1.DS3.US1\n- CV1.DS3.TS1\n\n## Boundary\n\nDelivery Story closure is complete; push and release remain separate hard gates.\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/index.md": "# CV1.DS3 — Aggregate delivery\n\n**Status:** ✅ Done\n**Type:** Delivery Story\n\n## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n| CV1.DS3.US1 | First child | User Story | ✅ Done |\n| CV1.DS3.TS1 | Second child | Technical Story | ✅ Done |\n\n## Done Condition\n\nDone when the children deliver a coherent outcome.\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 2
+      },
+      "scenario": "adopted_agg_reviewed",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:DELIVERY_STORY_CLOSURE_CHECKPOINT>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ DS Plan → ✓ Implement → ✓ Validate → ✓ Debt Review → ◉ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🧪  DELIVERY STORY DONE                          │\n│                                                        │\n│ What was completed?                                    │\n│ 🟦[CV1.DS3] — Aggregate delivery                        │\n│                                                        │\n│ Evidence summary                                       │\n│ Aggregate closure recorded.                            │\n│                                                        │\n│ Done state                                             │\n│ done                                                   │\n│                                                        │\n│                                                        │\n│ Coherence check                                        │\n│ Closure coherence passed: Done materialization,        │\n│ roadmap state, artifacts, and next-pull readiness were │\n│ checked as part of Done.                               │\n│                                                        │\n│ Next movement                                          │\n│ Delivery Story closure is complete.                    │\n╰────────────────────────────────────────────────────────╯\n<<<END:DELIVERY_STORY_CLOSURE_CHECKPOINT>>>\n\n<<<ARIAD:ARTIFACTS_MATERIALIZED>>>\nArtifacts\n\n╭────────────────────────────────────────────────────────╮\n│        ✎  ARTIFACTS MATERIALIZED                      │\n│                                                        │\n│ Delivery Story Done — CV1.DS3                          │\n│                                                        │\n│ ✓ created done                                         │\n│ docs/project/roadmap/cv1-first/cv1-ds3-aggregate/done. │\n│ md                                                     │\n│                                                        │\n│ Done artifact was materialized.                        │\n╰────────────────────────────────────────────────────────╯\n<<<END:ARTIFACTS_MATERIALIZED>>>\n\n<<<ARIAD:PROJECT_POSITION>>>\nRoadmap\n\n╭────────────────────────────────────────────────────────╮\n│        🧭  PROJECT POSITION                           │\n│                                                        │\n│ Where are we now?                                      │\n│ 🟪[CV1] First value                                     │\n│ progress: active                                       │\n│                                                        │\n│ What just moved?                                       │\n│ 🟩[CV1.DS3] Aggregate delivery closed                   │\n│                                                        │\n│ What looks next?                                       │\n│ 🟦[CV1.DS1.US1] A user story — recommended next pull    │\n│                                                        │\n│ Available path                                         │\n│ - CV1.DS1.US1 — A user story [user_story] 🟡 Planned    │\n│   (docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1 │\n│   -ds1-us1-story/index.md)                             │\n│ - CV1.DS1 — A delivery story [delivery_story] 🟡        │\n│   Planned                                              │\n│   (docs/project/roadmap/cv1-first/cv1-ds1-delivery/ind │\n│   ex.md)                                               │\n│ - CV1 — First value [cv] 🟢 Active                      │\n│   (docs/project/roadmap/cv1-first/index.md)            │\n│                                                        │\n│ Choose a pull when ready.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:PROJECT_POSITION>>>\n\n"
+    },
+    {
+      "argv": [
+        "done-delivery-story",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--summary",
+        "Premature."
+      ],
+      "exit_code": 1,
+      "name": "done_delivery_story_refuses_unfinished_roadmap",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-ts1-child/index.md": "# CV1.DS3.TS1 — Second child\n\n**Status:** 🟡 Planned\n**Type:** Technical Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-us1-child/index.md": "# CV1.DS3.US1 — First child\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/index.md": "# CV1.DS3 — Aggregate delivery\n\n**Status:** ✅ Done\n**Type:** Delivery Story\n\n## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n| CV1.DS3.US1 | First child | User Story | ✅ Done |\n| CV1.DS3.TS1 | Second child | Technical Story | ✅ Done |\n\n## Done Condition\n\nDone when the children deliver a coherent outcome.\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 1
+      },
+      "scenario": "adopted_agg_children_unfinished",
+      "session_id": "builder-command-session",
+      "stderr": "Error: authored roadmap is not ready for Delivery Story Done: docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-us1-child/index.md: package status is not Done; docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-ts1-child/index.md: package status is not Done\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "done-delivery-story",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--summary",
+        "Too early."
+      ],
+      "exit_code": 1,
+      "name": "done_delivery_story_requires_review",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-ts1-child/index.md": "# CV1.DS3.TS1 — Second child\n\n**Status:** ✅ Done\n**Type:** Technical Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-us1-child/index.md": "# CV1.DS3.US1 — First child\n\n**Status:** ✅ Done\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/index.md": "# CV1.DS3 — Aggregate delivery\n\n**Status:** ✅ Done\n**Type:** Delivery Story\n\n## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n| CV1.DS3.US1 | First child | User Story | ✅ Done |\n| CV1.DS3.TS1 | Second child | Technical Story | ✅ Done |\n\n## Done Condition\n\nDone when the children deliver a coherent outcome.\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 1
+      },
+      "scenario": "adopted_agg_approved",
+      "session_id": "builder-command-session",
+      "stderr": "Error: Delivery Story debt_review requires aggregate status starting debt_review:review:\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "done-delivery-story",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--summary",
+        "Unadopted."
+      ],
+      "exit_code": 1,
+      "name": "delivery_story_leaves_not_adopted",
+      "scenario": "unadopted",
+      "session_id": "builder-command-session",
+      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
+      "stdout": ""
     }
   ]
 }

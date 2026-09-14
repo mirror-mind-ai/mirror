@@ -126,11 +126,27 @@ const PORTED_OPS: readonly string[] = [
 /**
  * Lifecycle operations the corpus grades and TypeScript cannot execute yet.
  *
- * Refilled by plateau 4's oracle, exactly as plateau 3 predicted: the corpus is
+ * Refilled by plateau 5's oracle, exactly as plateaus 3 and 4 did: the corpus is
  * generated from Python before the port exists, so for one commit it knows more than
  * the code. `the pending list cannot go stale` forces each entry out again.
+ *
+ * The Delivery Story face of the lifecycle. `authored_closure` is the odd one: it
+ * is not a cursor transition at all but the read-only preflight Python runs inside
+ * `cmd_done_delivery_story`, graded here as its own step because its refusals are
+ * the safety property the whole plateau turns on.
  */
-const PENDING_OPS: readonly string[] = [];
+const PENDING_OPS: readonly string[] = [
+  "approve_delivery_story",
+  "authored_closure",
+  "cancel_delivery_story_preauthorization",
+  "coherence_delivery_story",
+  "done_delivery_story",
+  "inspect_flow_unit",
+  "plan_delivery_story",
+  "review_delivery_story",
+  "set_flow_unit",
+  "validate_delivery_story",
+];
 
 const lifecycleOps = (step: Step): boolean => !(HARNESS_OPS as readonly string[]).includes(step.op);
 
