@@ -50,7 +50,16 @@
 //     assertion is the published FILE, never a log line.
 
 import { spawnSync } from "node:child_process";
-import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
@@ -164,9 +173,15 @@ interface World {
 mkdirSync(join(TS_ROOT, "tmp"), { recursive: true });
 const root = mkdtempSync(join(TS_ROOT, "tmp", "smoke-builder-"));
 
-function createWorld(name: "py" | "ts"): World {
-  const home = join(root, name, HOME_BASENAME);
-  const project = join(root, name, "project");
+/**
+ * One pair of worlds per SEQUENCE, under a two-character directory so the two
+ * project roots stay the same length. Sequences do not share worlds: the DS flow
+ * drives the same cursor row through a different state machine, and a shared world
+ * would make the second sequence grade the first one's leftovers.
+ */
+function createWorld(sequence: string, name: "py" | "ts"): World {
+  const home = join(root, sequence, name, HOME_BASENAME);
+  const project = join(root, sequence, name, "project");
   mkdirSync(home, { recursive: true });
   cpSync(FIXTURE_PROJECT, project, { recursive: true });
   const dbPath = join(home, "memory_test.db");
@@ -197,14 +212,23 @@ function createWorld(name: "py" | "ts"): World {
   return { name, home, project, dbPath };
 }
 
-const python = createWorld("py");
-const typescript = createWorld("ts");
+interface WorldPair {
+  readonly python: World;
+  readonly typescript: World;
+}
 
-check(
-  python.project.length === typescript.project.length,
-  "the two project roots are the same length",
-  `py=${python.project} ts=${typescript.project}`,
-);
+function createWorldPair(sequence: string): WorldPair {
+  const pair = {
+    python: createWorld(sequence, "py"),
+    typescript: createWorld(sequence, "ts"),
+  };
+  check(
+    pair.python.project.length === pair.typescript.project.length,
+    `${sequence}: the two project roots are the same length`,
+    `py=${pair.python.project} ts=${pair.typescript.project}`,
+  );
+  return pair;
+}
 
 // --- observation --------------------------------------------------------------
 
@@ -332,68 +356,98 @@ interface Observation {
 
 // --- the two engines ----------------------------------------------------------
 
-function runPython(argv: readonly string[]): Observation {
-  const result = spawnSync("uv", ["run", "python", "-m", "memory", "build", ...argv], {
-    cwd: REPO_ROOT,
-    encoding: "utf8",
-    env: pythonEnvironment(python.home),
-  });
+function observe(world: World, outcome: { stdout: string; stderr: string; exitCode: number | null }): Observation {
   return {
-    stdout: normalize(result.stdout ?? "", python),
-    stderr: normalize(result.stderr ?? "", python),
-    exitCode: result.status,
-    rows: runtimeRows(python),
-    files: projectFiles(python),
-    projections: projections(python),
+    stdout: normalize(outcome.stdout, world),
+    stderr: normalize(outcome.stderr, world),
+    exitCode: outcome.exitCode,
+    rows: runtimeRows(world),
+    files: projectFiles(world),
+    projections: projections(world),
   };
 }
 
-const projectionSeam = createPythonProjectionRefresh({ mirrorHome: typescript.home });
+function runPython(world: World, argv: readonly string[]): Observation {
+  const result = spawnSync("uv", ["run", "python", "-m", "memory", "build", ...argv], {
+    cwd: REPO_ROOT,
+    encoding: "utf8",
+    env: pythonEnvironment(world.home),
+  });
+  return observe(world, {
+    stdout: result.stdout ?? "",
+    stderr: result.stderr ?? "",
+    exitCode: result.status,
+  });
+}
 
-function runTypeScript(argv: readonly string[]): Observation {
+/** One seam per world: it spawns Python with that world's home. */
+const projectionSeams = new Map<string, ReturnType<typeof createPythonProjectionRefresh>>();
+function projectionSeamFor(world: World) {
+  const existing = projectionSeams.get(world.home);
+  if (existing !== undefined) return existing;
+  const seam = createPythonProjectionRefresh({ mirrorHome: world.home });
+  projectionSeams.set(world.home, seam);
+  return seam;
+}
+
+function runTypeScript(world: World, argv: readonly string[]): Observation {
   // A connection per invocation, closed before the state is read: the real front
   // door is one process per command, and a long-lived handle would let this smoke
   // pass on a cache Python never sees.
-  const db = openDatabaseCopyForWrite(typescript.dbPath);
+  const seam = projectionSeamFor(world);
+  const db = openDatabaseCopyForWrite(world.dbPath);
   let outcome: { stdout: string; stderr: string; exitCode: number };
   try {
     outcome = invokeBuilderArgv(db, argv, {
       nowIso: () => new Date().toISOString(),
-      requestProjectionRefresh: (journey) => projectionSeam.request(journey),
+      requestProjectionRefresh: (journey) => seam.request(journey),
     });
   } finally {
     db.close();
   }
-  return {
-    stdout: normalize(outcome.stdout, typescript),
-    stderr: normalize(outcome.stderr, typescript),
-    exitCode: outcome.exitCode,
-    rows: runtimeRows(typescript),
-    files: projectFiles(typescript),
-    projections: projections(typescript),
-  };
+  return observe(world, outcome);
 }
 
 // --- the lifecycle ------------------------------------------------------------
 
 const ARIAD = ["--journey", JOURNEY, "--method", "ariad"] as const;
 
-/** `exit` is the expected status on BOTH engines: a refusal is behavior, not a gap. */
-interface Step {
-  readonly label: string;
-  readonly argv: readonly string[];
-  readonly exit: number;
+/**
+ * A step is either an invocation or an AUTHORED EDIT.
+ *
+ * The edit exists because `done-delivery-story` refuses on the content of the
+ * Navigator's roadmap: the Delivery Story package Ariad itself scaffolds says
+ * `🟡 Planned`, so closing it requires a human to mark the work Done. Replaying
+ * that as a `writeFileSync` between two invocations would hide the one thing worth
+ * grading — that the same edit lands identically in both worlds — so it is a step
+ * with the same comparison as any other, plus one of its own: an authored edit is
+ * not a cursor write, so it must produce ZERO new projection receipts.
+ */
+type Step =
+  | {
+      readonly kind: "command";
+      readonly label: string;
+      readonly argv: readonly string[];
+      /** The expected status on BOTH engines: a refusal is behavior, not a gap. */
+      readonly exit: number;
+    }
+  | {
+      readonly kind: "edit";
+      readonly label: string;
+      readonly edit: (project: string) => void;
+    };
+
+function command(label: string, argv: readonly string[], exit = 0): Step {
+  return { kind: "command", label, argv, exit };
 }
 
-const STEPS: readonly Step[] = [
-  { label: "inspect-method before adoption", argv: ["inspect-method", "--journey", JOURNEY], exit: 0 },
-  { label: "adopt", argv: ["adopt", ...ARIAD], exit: 0 },
-  { label: "prepare-templates", argv: ["prepare-templates", ...ARIAD], exit: 0 },
-  { label: "sync-cursor", argv: ["sync-cursor", ...ARIAD], exit: 0 },
-  { label: "pull-candidates", argv: ["pull-candidates", ...ARIAD], exit: 0 },
-  {
-    label: "pull-item",
-    argv: [
+const STORY_STEPS: readonly Step[] = [
+  command("inspect-method before adoption", ["inspect-method", "--journey", JOURNEY], 0),
+  command("adopt", ["adopt", ...ARIAD], 0),
+  command("prepare-templates", ["prepare-templates", ...ARIAD], 0),
+  command("sync-cursor", ["sync-cursor", ...ARIAD], 0),
+  command("pull-candidates", ["pull-candidates", ...ARIAD], 0),
+  command("pull-item", [
       "pull-item",
       ...ARIAD,
       "--item-code",
@@ -404,18 +458,14 @@ const STEPS: readonly Step[] = [
       "user_story",
       "--why-now",
       "The lifecycle smoke needs one implementable story.",
-    ],
-    exit: 0,
-  },
-  { label: "prepare-item", argv: ["prepare-item", ...ARIAD], exit: 0 },
+    ], 0),
+  command("prepare-item", ["prepare-item", ...ARIAD], 0),
   // A refusal INSIDE the sequence, not a seeded one: implementation before a Plan
   // exists is blocked, and the guard renders a surface on stdout while exiting 1.
-  { label: "check-implementation before a plan", argv: ["check-implementation", ...ARIAD], exit: 1 },
-  { label: "plan-item", argv: ["plan-item", ...ARIAD], exit: 0 },
+  command("check-implementation before a plan", ["check-implementation", ...ARIAD], 1),
+  command("plan-item", ["plan-item", ...ARIAD], 0),
   // The second refusal: closure cannot skip the pending Plan approval.
-  {
-    label: "done-item while the plan checkpoint is pending",
-    argv: [
+  command("done-item while the plan checkpoint is pending", [
       "done-item",
       ...ARIAD,
       "--history-action",
@@ -424,14 +474,10 @@ const STEPS: readonly Step[] = [
       "premature",
       "--next-recommendation",
       "premature",
-    ],
-    exit: 1,
-  },
-  { label: "approve-plan", argv: ["approve-plan", ...ARIAD], exit: 0 },
-  { label: "check-implementation after approval", argv: ["check-implementation", ...ARIAD], exit: 0 },
-  {
-    label: "validate-item",
-    argv: [
+    ], 1),
+  command("approve-plan", ["approve-plan", ...ARIAD], 0),
+  command("check-implementation after approval", ["check-implementation", ...ARIAD], 0),
+  command("validate-item", [
       "validate-item",
       ...ARIAD,
       "--implementation-complete",
@@ -452,17 +498,9 @@ const STEPS: readonly Step[] = [
       "No difference is reported.",
       "--fail-condition",
       "Any difference is reported.",
-    ],
-    exit: 0,
-  },
-  {
-    label: "review-item",
-    argv: ["review-item", ...ARIAD, "--debt", "No debt found", "--decision", "no_action"],
-    exit: 0,
-  },
-  {
-    label: "coherence-item",
-    argv: [
+    ], 0),
+  command("review-item", ["review-item", ...ARIAD, "--debt", "No debt found", "--decision", "no_action"], 0),
+  command("coherence-item", [
       "coherence-item",
       ...ARIAD,
       "--process",
@@ -471,12 +509,8 @@ const STEPS: readonly Step[] = [
       "The story package carries the plan and the closure artifacts.",
       "--product",
       "Ariad behavior is unchanged.",
-    ],
-    exit: 0,
-  },
-  {
-    label: "done-item",
-    argv: [
+    ], 0),
+  command("done-item", [
       "done-item",
       ...ARIAD,
       "--history-action",
@@ -485,12 +519,10 @@ const STEPS: readonly Step[] = [
       "The story package records the closure.",
       "--next-recommendation",
       "Pull the next story.",
-    ],
-    exit: 0,
-  },
+    ], 0),
   // Reads after closure: the state the lifecycle left is the state orientation sees.
-  { label: "pull-candidates after done", argv: ["pull-candidates", ...ARIAD], exit: 0 },
-  { label: "inspect-method after done", argv: ["inspect-method", "--journey", JOURNEY], exit: 0 },
+  command("pull-candidates after done", ["pull-candidates", ...ARIAD], 0),
+  command("inspect-method after done", ["inspect-method", "--journey", JOURNEY], 0),
 ];
 
 /** The plateau-3 lesson: a run that writes into THIS repository must fail loudly. */
@@ -513,81 +545,243 @@ function repositoryFingerprint(): string[] {
 
 const fingerprintBefore = repositoryFingerprint();
 
-for (const step of STEPS) {
-  const expected = runPython(step.argv);
-  const actual = runTypeScript(step.argv);
+/**
+ * The Delivery Story flow: choose the aggregate unit, pull a Delivery Story (which
+ * expands it into children), plan and approve at DS level, close it — and get
+ * REFUSED by the authored preflight, because Ariad's own scaffold writes
+ * `🟡 Planned` and only a human may say the work is Done. Then the edit, then the
+ * close that succeeds.
+ */
+const PLANNED = "**Status:** 🟡 Planned";
+const DONE = "**Status:** ✅ Done";
 
-  check(
-    expected.exitCode === step.exit,
-    `${step.label}: python exits ${step.exit}`,
-    `exit=${expected.exitCode} stderr=${expected.stderr.trim()}`,
-  );
-  check(
-    actual.exitCode === step.exit,
-    `${step.label}: typescript exits ${step.exit}`,
-    `exit=${actual.exitCode} stderr=${actual.stderr.trim()}`,
-  );
-  check(
-    expected.stdout === actual.stdout,
-    `${step.label}: stdout is identical`,
-    firstDifference(expected.stdout, actual.stdout),
-  );
-  check(
-    expected.stderr === actual.stderr,
-    `${step.label}: stderr is identical`,
-    firstDifference(expected.stderr, actual.stderr),
-  );
-  check(
-    JSON.stringify(expected.rows) === JSON.stringify(actual.rows),
-    `${step.label}: the Builder runtime rows are identical, metadata byte for byte`,
-    firstDifference(
-      JSON.stringify(expected.rows, null, 2),
-      JSON.stringify(actual.rows, null, 2),
-    ),
-  );
+/** The authored edit: mark the package, its children, and the table rows Done. */
+function markDeliveryStoryDone(project: string): void {
+  const packageRoot = join(project, "docs/project/roadmap/cv1-first/cv1-ds2-pullable");
+  const touch = (path: string): void => {
+    if (!existsSync(path)) return;
+    const before = readFileSync(path, "utf8");
+    const after = before
+      .replaceAll(PLANNED, DONE)
+      .replaceAll("| 🟡 Planned |", "| ✅ Done |");
+    if (after !== before) writeFileSync(path, after, "utf8");
+  };
+  touch(join(packageRoot, "index.md"));
+  for (const entry of readdirSync(packageRoot, { withFileTypes: true })) {
+    if (entry.isDirectory()) touch(join(packageRoot, entry.name, "index.md"));
+  }
+}
+
+const DS_STEPS: readonly Step[] = [
+  command("adopt", ["adopt", ...ARIAD]),
+  command("sync-cursor", ["sync-cursor", ...ARIAD]),
+  // Pulling a Delivery Story also EXPANDS it, so this one step exercises the
+  // candidate-table grammar and materializes both child packages.
+  command("pull-item (delivery story, expands)", [
+    "pull-item",
+    ...ARIAD,
+    "--item-code",
+    "CV1.DS2",
+    "--item-title",
+    "Pullable delivery story",
+    "--item-level",
+    "delivery_story",
+    "--why-now",
+    "The aggregate smoke needs a Delivery Story with children.",
+  ]),
+  // Before the flow unit is chosen, the DS verbs must refuse: the default is
+  // story_by_story, and the flow unit is the gate rather than the item level.
+  command(
+    "plan-delivery-story before the flow unit is chosen",
+    [
+      "plan-delivery-story",
+      ...ARIAD,
+      "--objective",
+      "Too early.",
+      "--child",
+      "CV1.DS2.US1",
+    ],
+    1,
+  ),
+  command("set-flow-unit delivery_story", ["set-flow-unit", ...ARIAD, "--unit", "delivery_story"]),
+  command("plan-delivery-story", [
+    "plan-delivery-story",
+    ...ARIAD,
+    "--objective",
+    "Deliver both children as one coherent outcome.",
+    "--child",
+    "CV1.DS2.US1",
+    "--child",
+    "CV1.DS2.TS1",
+  ]),
+  command("approve-delivery-story-plan", ["approve-delivery-story-plan", ...ARIAD]),
+  command("validate-delivery-story", [
+    "validate-delivery-story",
+    ...ARIAD,
+    "--summary",
+    "Both children behave as one delivery.",
+    "--navigator-accepted",
+  ]),
+  command("review-delivery-story", [
+    "review-delivery-story",
+    ...ARIAD,
+    "--decision",
+    "no_action",
+    "--summary",
+    "No aggregate debt found.",
+  ]),
+  // The preflight refusal: the authored roadmap still says Planned.
+  command(
+    "done-delivery-story refused by the authored preflight",
+    ["done-delivery-story", ...ARIAD, "--summary", "Too early."],
+    1,
+  ),
+  {
+    kind: "edit",
+    label: "a human marks the Delivery Story and its children Done",
+    edit: markDeliveryStoryDone,
+  },
+  command("done-delivery-story", [
+    "done-delivery-story",
+    ...ARIAD,
+    "--summary",
+    "Aggregate closure recorded.",
+  ]),
+];
+
+/** A Delivery Story package with a canonical candidate table, for Expand to read. */
+const PULLABLE_DS_INDEX = `# CV1.DS2 — Pullable delivery story
+
+**Status:** 🟡 Planned
+**Type:** Delivery Story
+
+## Candidate Stories
+
+| Code | Story | Type | Status |
+|------|-------|------|--------|
+| CV1.DS2.US1 | Port the first slice | User Story | 🟡 Planned |
+| CV1.DS2.TS1 | Harden the seam | Technical Story | 🟡 Planned |
+
+## Done Condition
+
+Done when the children deliver a coherent outcome.
+`;
+
+function runSequence(name: string, steps: readonly Step[], seed?: (project: string) => void): void {
+  const { python, typescript } = createWorldPair(name);
+  for (const world of [python, typescript]) seed?.(world.project);
+
+  for (const step of steps) {
+    if (step.kind === "edit") {
+      const before = { python: projections(python), typescript: projections(typescript) };
+      for (const world of [python, typescript]) step.edit(world.project);
+      const expected = observe(python, { stdout: "", stderr: "", exitCode: 0 });
+      const actual = observe(typescript, { stdout: "", stderr: "", exitCode: 0 });
+      compareFiles(`${name} / ${step.label}`, expected, actual);
+      // An authored edit is not a cursor write, so nothing may be published by it.
+      check(
+        expected.projections.receipts === before.python.receipts &&
+          actual.projections.receipts === before.typescript.receipts,
+        `${name} / ${step.label}: the edit published nothing`,
+        `python ${before.python.receipts}→${expected.projections.receipts}, ` +
+          `ts ${before.typescript.receipts}→${actual.projections.receipts}`,
+      );
+      check(
+        Object.values(expected.files).some((content) => content.includes(DONE)),
+        `${name} / ${step.label}: the edit actually changed the authored status`,
+      );
+      continue;
+    }
+    const expected = runPython(python, step.argv);
+    const actual = runTypeScript(typescript, step.argv);
+    const where = `${name} / ${step.label}`;
+
+    check(
+      expected.exitCode === step.exit,
+      `${where}: python exits ${step.exit}`,
+      `exit=${expected.exitCode} stderr=${expected.stderr.trim()}`,
+    );
+    check(
+      actual.exitCode === step.exit,
+      `${where}: typescript exits ${step.exit}`,
+      `exit=${actual.exitCode} stderr=${actual.stderr.trim()}`,
+    );
+    check(
+      expected.stdout === actual.stdout,
+      `${where}: stdout is identical`,
+      firstDifference(expected.stdout, actual.stdout),
+    );
+    check(
+      expected.stderr === actual.stderr,
+      `${where}: stderr is identical`,
+      firstDifference(expected.stderr, actual.stderr),
+    );
+    check(
+      JSON.stringify(expected.rows) === JSON.stringify(actual.rows),
+      `${where}: the Builder runtime rows are identical, metadata byte for byte`,
+      firstDifference(
+        JSON.stringify(expected.rows, null, 2),
+        JSON.stringify(actual.rows, null, 2),
+      ),
+    );
+    compareFiles(where, expected, actual);
+    check(
+      JSON.stringify(expected.projections) === JSON.stringify(actual.projections),
+      `${where}: the projection seam published the same documents and receipts`,
+      `python=${JSON.stringify(expected.projections)} ts=${JSON.stringify(actual.projections)}`,
+    );
+  }
+
+  return sequenceOutcome(name, python, typescript);
+}
+
+function compareFiles(where: string, expected: Observation, actual: Observation): void {
   check(
     JSON.stringify(Object.keys(expected.files)) === JSON.stringify(Object.keys(actual.files)),
-    `${step.label}: the same project files exist`,
+    `${where}: the same project files exist`,
     `python=${Object.keys(expected.files).length} ts=${Object.keys(actual.files).length}`,
   );
   for (const [path, content] of Object.entries(expected.files)) {
     if (actual.files[path] === content) continue;
     check(
       false,
-      `${step.label}: ${path} is byte-identical`,
+      `${where}: ${path} is byte-identical`,
       firstDifference(content, actual.files[path] ?? "<absent>"),
     );
   }
+}
+
+/**
+ * A sequence must actually REACH its end, or every comparison above could have been
+ * two engines agreeing on a refusal.
+ */
+function sequenceOutcome(name: string, python: World, typescript: World): void {
+  const event = name === "ds" ? "delivery_story_done_complete" : "done_complete";
+  const marker = `"last_delivery_event": "${event}"`;
+  for (const world of [python, typescript]) {
+    check(
+      (runtimeRows(world)[CURSOR_SESSION]?.metadata ?? "").includes(marker),
+      `${name}: the lifecycle reached ${event} on the ${world.name} engine`,
+      runtimeRows(world)[CURSOR_SESSION]?.metadata ?? "<no cursor>",
+    );
+  }
   check(
-    JSON.stringify(expected.projections) === JSON.stringify(actual.projections),
-    `${step.label}: the projection seam published the same documents and receipts`,
-    `python=${JSON.stringify(expected.projections)} ts=${JSON.stringify(actual.projections)}`,
+    projections(typescript).documents.some((document) => document.endsWith("operational.json")),
+    `${name}: the TypeScript run published an operational projection through the Python seam`,
+    JSON.stringify(projections(typescript)),
   );
 }
+
+runSequence("story", STORY_STEPS);
+runSequence("ds", DS_STEPS, (project) => {
+  const target = join(project, "docs/project/roadmap/cv1-first/cv1-ds2-pullable/index.md");
+  mkdirSync(dirname(target), { recursive: true });
+  writeFileSync(target, PULLABLE_DS_INDEX, "utf8");
+});
 
 check(
   JSON.stringify(fingerprintBefore) === JSON.stringify(repositoryFingerprint()),
   "the smoke wrote nothing into this repository's docs tree",
-);
-
-// The lifecycle must actually have reached its end, or every comparison above
-// could have been two engines agreeing on a refusal.
-const finalRows = runtimeRows(typescript);
-const finalCursor = finalRows[CURSOR_SESSION]?.metadata ?? "";
-const DONE_EVENT = '"last_delivery_event": "done_complete"';
-check(
-  finalCursor.includes(DONE_EVENT),
-  "the lifecycle reached done on the TypeScript engine",
-  finalCursor,
-);
-check(
-  (runtimeRows(python)[CURSOR_SESSION]?.metadata ?? "").includes(DONE_EVENT),
-  "the lifecycle reached done on the Python engine",
-);
-check(
-  projections(typescript).documents.some((document) => document.endsWith("operational.json")),
-  "the TypeScript run published an operational projection through the Python seam",
-  JSON.stringify(projections(typescript)),
 );
 
 // --- report -------------------------------------------------------------------

@@ -1,24 +1,24 @@
 [< Story](index.md)
 
-# Handoff — CV22.DS7.US8 — Builder/Ariad tree (plateaus 1–4 complete)
+# Handoff — CV22.DS7.US8 — Builder/Ariad tree (plateaus 1–5 complete)
 
-**Status:** plateaus 1–4 of 9 complete. **15 of the 27 in-scope leaves answer from
-TypeScript**, and a whole Ariad story lifecycle — adopt through done — now runs on
-both engines and agrees after every step. **Nothing is routed** — `routing.ts` is
-untouched and every `build` invocation still reaches Python, which is the intended
-state until plateau 8 adds the gate and plateau 9 flips it.
+**Status:** plateaus 1–5 of 9 complete. **23 of the 27 in-scope leaves answer from
+TypeScript**, and both Ariad lifecycles — the story one and the aggregate Delivery
+Story one — run on both engines and agree after every step. **Nothing is routed** —
+`routing.ts` is untouched and every `build` invocation still reaches Python, which
+is the intended state until plateau 8 adds the gate and plateau 9 flips it.
 
 ## Resume here
 
-The next piece is **plateau 5, Scope E — the Delivery Story lifecycle**: the six DS
-leaves (`plan-delivery-story`, `approve-delivery-story-plan`,
-`validate-delivery-story`, `review-delivery-story`, `coherence-delivery-story`,
-`done-delivery-story`) and the **authored roadmap closure preflight**, which is the
-first behavior in this story that refuses on the CONTENT of the Navigator's roadmap
-rather than on cursor state. It refills `PENDING_OPS` / `PENDING_LEAVES` (both empty
-today) and ends with the DS smoke — a second sequence through
-`builder_lifecycle_smoke.ts`'s harness covering `set-flow-unit` → DS Plan → approve
-→ validate → review → `done-delivery-story` (preflight refusal, then success).
+The next piece is **plateau 6, Scope F — cadence, authority, and continuation**:
+`set-cadence` with its profiles and limits, `release-intent`, and
+`continue-lifecycle` with the soft-stop / hard-gate matrix per cadence and its
+MULTI-SURFACE output — the first leaf in this story that emits several wrapped
+blocks from one invocation, so their ORDER is behavior. (`set-flow-unit` and the DS
+preauthorization cancel were re-sequenced into plateau 5 by the panel and are
+already done.)
+
+Four leaves remain after it: those three plus `load`, which is plateau 7.
 
 Two constraints carried forward:
 
@@ -29,9 +29,9 @@ Two constraints carried forward:
   guard exists because that rule was broken twice already. The lifecycle smoke
   asserts the repository's `docs/` tree is unchanged for exactly that reason.
 
-Then plateaus 6–9: cadence and authority, `load` plus the provider seam (the one
-with real unknowns — `load` embeds its query twice and runs the previous
-conversation's close tail), front door with the gate off, and the flip.
+Then plateaus 7–9: `load` plus the provider seam (the one with real unknowns —
+`load` embeds its query twice and runs the previous conversation's close tail),
+front door with the gate off, and the flip.
 
 ## Current state, verifiable without re-deriving it
 
@@ -41,7 +41,7 @@ conversation's close tail), front door with the gate off, and the flip.
 | `builder-command.golden.json` | 80 cases across 15 leaves — all graded |
 | `PENDING_OPS` / `PENDING_LEAVES` | both empty; plateau 5 refills them |
 | Write probes | `builder_cursor_state`, `builder_artifacts` |
-| `builder_lifecycle_smoke.ts` | 18 steps × both engines, **131 checks**, in CI |
+| `builder_lifecycle_smoke.ts` | two sequences (story + Delivery Story), 30 steps × both engines, **215 checks**, in CI |
 
 Written for the session that resumes this story — possibly a different session, a
 different Mirror, or a later collaborator. It assumes only the repository, and it
@@ -51,11 +51,17 @@ exists so a resuming session does not have to re-derive the measurements below.
 
 ## What is now true
 
-Fifteen of the 27 in-scope leaves answer from TypeScript end to end, behind no
+Twenty-three of the 27 in-scope leaves answer from TypeScript end to end, behind no
 route: `inspect-method`, `pull-candidates`, `adopt`, `prepare-templates`,
 `sync-cursor`, `check-implementation`, `pull-item`, `prepare-item`, `plan-item`,
 `approve-plan`, `cancel-plan-preauthorization`, `validate-item`, `review-item`,
-`coherence-item`, `done-item`.
+`coherence-item`, `done-item`, `set-flow-unit`, `plan-delivery-story`,
+`approve-delivery-story-plan`, `cancel-delivery-story-plan-preauthorization`,
+`validate-delivery-story`, `review-delivery-story`, `coherence-delivery-story`,
+`done-delivery-story`.
+
+**Remaining: four.** `set-cadence`, `release-intent`, `continue-lifecycle`
+(plateau 6), and `load` (plateau 7).
 
 The ten commits below carried plateaus 1–2. Plateaus 3 and 4 added, oldest first:
 `2dff5adb` (lifecycle oracle before any TypeScript), `e98554aa` / `9cb44cd8`
@@ -393,6 +399,88 @@ its own dimension: reordering two keys in `serializeCursor` (cursor bytes, from
 `sync-cursor` onward), lowercasing a closure-artifact heading (`done.md` bytes), and
 dropping Done's `requestProjectionRefresh` call (receipt count). A green smoke that
 has never been red is a belief, not evidence.
+
+### Plateau 5 — the Delivery Story lifecycle (Scope E)
+
+**Complete.** The aggregate face of the lifecycle is ported: `deliveryStoryPlan.ts`,
+`deliveryStoryClosure.ts`, `deliveryStoryRoadmapClosure.ts`,
+`artifacts/deliveryStoryArtifacts.ts`, and the write side of `flowUnit.ts`. The
+corpus grew to **107 sequences / 469 steps / 244 surfaces / 57 refusals** and 102
+command cases; `PENDING_OPS` and `PENDING_LEAVES` are empty again.
+
+The plateau ran a Plan-stage persona panel first (recorded in `plan.md`), and all
+four dissents changed the plan rather than the code. Two moved work between
+plateaus: `set-flow-unit` and the DS preauthorization cancel came forward into
+Scope E, because the DS smoke opens with `set-flow-unit` and seeding the flow unit
+by a raw cursor write would have been the unrecorded mutation plateau 3a ruled out.
+
+**Three near-duplicates in Python decide whether the port refuses what Python
+refuses.** Each is a separate implementation here, with a case that fails the merged
+version:
+
+1. **The Done preflight's walk includes `legacy/`.** Every other roadmap reader is
+   "sorted rglob MINUS `legacy/`", so `roadmapScan` now takes the exclusion as a
+   parameter. An archived table row for a known code blocks a Delivery Story's
+   Done, and `authored_closure_reads_legacy_rows` fails a port that reuses the
+   default.
+2. **The DS unfilled-section rule is not the story one.** It also refuses a body
+   containing this section's exact scaffold line, or the word `placeholder`
+   ANYWHERE rather than at line start. Reusing the story helper consumes a
+   preauthorization receipt against a Plan Python still calls unfilled — authority
+   granted where Python withholds it. Found by reading both copies, then pinned by
+   `delivery_story_preauthorization_refuses_prose_placeholder`, whose Plan is
+   complete by one rule and unfilled by the other.
+3. **`_replace_status` appends.** Replacing a status REORDERS
+   `aggregate_checkpoint_status`: same set, different bytes, and compare-and-swap
+   matches bytes. `delivery_story_revalidation_reorders_status` re-validates after
+   the debt review to stage it.
+
+**Two inherited shapes reproduced, not repaired**, each with a mutant that dies: the
+Coherence surface renders the DONE ribbon by fall-through (Python has no `coherence`
+branch), and the aggregate closure artifacts overwrite authored files (CR079).
+
+**`_is_done` is a suffix test** — `strip().casefold().endswith("done")` — so `Done`
+and `✅ DONE` pass while `✅ Done (2026-09-14)` does not. That dated form is what
+THIS repository's roadmap uses, so a DS Done preflight here would refuse on our own
+packages. Parity-bound; carried to Debt Review as a CR candidate.
+
+#### What the DS smoke measured
+
+The smoke now runs two sequences over separate world pairs — 215 checks, ~40s. The
+DS one is the interesting one: `pull-item` at Delivery Story level (which expands
+it), a DS verb refused before the flow unit is chosen, DS Plan → approve → validate
+→ review, `done-delivery-story` **refused by the authored preflight**, a graded
+authored edit, then the close that succeeds.
+
+The edit is a first-class step, not a `writeFileSync` between invocations: it is
+applied to both worlds, its files are compared like any other step's, and it must
+produce **zero** new projection receipts — an authored edit is not a cursor write.
+
+And it earned its keep immediately, unlike plateau 4's. Removing the CLI's preflight
+call leaves the module corpus **green** — the preflight lives in the CLI, not in
+`delivery_story_closure.py`, so no module sequence can see it — while the smoke goes
+**red** on the first Done. That is the composition defect class the smoke exists
+for, demonstrated rather than asserted.
+
+#### The harness lesson worth more than the plateau
+
+The first mutation run reported two SURVIVED verdicts that were both false.
+`git checkout -- src/builder/` cannot revert an **untracked** file, so a plateau's
+own new modules kept their mutants while the tracked files were silently reverted —
+which also wiped half the work in progress. One mutant "survived" because it was
+never applied to a clean tree; the next "survived" because the previous one was
+still in place; and every later KILLED verdict was meaningless because the suite was
+already red for an unrelated reason.
+
+The rule this project had — *a mutation harness must assert the file changed* — now
+reads: **assert it changed back**. The driver snapshots bytes and restores from that
+snapshot, and verifies the restore.
+
+The replay had a matching gap. `authored_closure` emits no surface, so its whole
+observable behavior is a list of issues — which the comparison loop recorded and
+never asserted. A mutant that stopped reading `legacy/` passed cleanly. Every
+recorded extra is compared now; recording without asserting is the same false green,
+one level up.
 
    Split because the module level reached a coherent, fully graded state and the
    command level is a separate failure mode (argv parsing, guard order, exit

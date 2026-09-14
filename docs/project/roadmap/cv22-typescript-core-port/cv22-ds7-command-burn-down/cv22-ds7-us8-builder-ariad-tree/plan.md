@@ -1003,6 +1003,23 @@ plateau the work lands.
 
 ## Debt / CRs To Capture At Debt Review (candidates)
 
+- **The DS Done preflight would refuse this repository's own roadmap.** `_is_done`
+  is `strip().casefold().endswith("done")`, so `Done` and `✅ DONE` pass while
+  `✅ Done (2026-09-08)` and `✅ Done — flipped and validated 2026-09-09` do not —
+  and the dated form is the convention CV22's own packages use. A Delivery Story
+  closed here through `done-delivery-story` would be blocked by its own history.
+  Found at plateau 5 while writing the preflight corpus, reproduced
+  (`authored_closure_status_suffix_rule`), and NOT repaired: widening the test is a
+  product change to a guard whose whole value is refusing on explicit evidence.
+- **Python keeps two different unfilled-Plan rules.**
+  `plan_preauthorization.unfilled_plan_sections_for` matches `placeholder` only at
+  line start; `delivery_story_plan._unfilled_plan_sections` also refuses a body
+  containing the section's exact scaffold line, or `placeholder` anywhere. The DS
+  rule is strictly broader, so the same Plan can be complete at story level and
+  unfilled at DS level. Ported as two functions because that is what Python does;
+  converging them is a product decision about how much authority a Driver's prose
+  can buy.
+
 - **The front door loads every route module eagerly**, so no family's
   `MIRROR_TS_<X>=0` revert survives a TS core that fails to load. Fixed for
   `build` here by lazy import; the general case is a CR under RS009.
