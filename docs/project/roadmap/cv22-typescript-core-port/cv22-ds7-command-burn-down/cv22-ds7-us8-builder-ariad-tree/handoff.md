@@ -332,6 +332,14 @@ Recorded in the plan's Debt / CRs section; none of the rest blocks plateau 4.
 - **`--probe`'s choices cannot be derived from `PROBES`** — four probes are built
   inline in `write_parity.py`, including the default. Tried and reverted; the
   comment in that file names why.
+- **The bootstrap lock is not exclusive while it is being written** — captured as
+  [CR084](../../../../refinement/rs010-cv22-oracle-and-port-hygiene/cr084-the-bootstrap-lock-is-not-exclusive-while-it-is-being-written.md).
+  Surfaced here as one full-suite failure in thirteen runs
+  (`migrateOnOpenConcurrency`, a worker hitting `disk I/O error` inside
+  `takeBackup`), then reproduced deterministically: a lock created but not yet
+  written reads as abandoned, so a waiter reclaims it and two processes hold it
+  at once. Not this story's seam — it belongs to DS6 schema custody — and not a
+  test flake either, so it is a CR rather than a line in a plan.
 
 ---
 
