@@ -2233,41 +2233,6 @@
     },
     {
       "argv": [
-        "review-delivery-story",
-        "--method",
-        "ariad",
-        "--journey",
-        "demo",
-        "--decision",
-        "maybe",
-        "--summary",
-        "Unknown."
-      ],
-      "exit_code": 2,
-      "name": "review_delivery_story_rejects_unknown_decision",
-      "project_files": {
-        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
-        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
-        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-ts1-child/index.md": "# CV1.DS3.TS1 — Second child\n\n**Status:** ✅ Done\n**Type:** Technical Story\n",
-        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/cv1-ds3-us1-child/index.md": "# CV1.DS3.US1 — First child\n\n**Status:** ✅ Done\n**Type:** User Story\n",
-        "docs/project/roadmap/cv1-first/cv1-ds3-aggregate/index.md": "# CV1.DS3 — Aggregate delivery\n\n**Status:** ✅ Done\n**Type:** Delivery Story\n\n## Candidate Stories\n\n| Code | Story | Type | Status |\n|------|-------|------|--------|\n| CV1.DS3.US1 | First child | User Story | ✅ Done |\n| CV1.DS3.TS1 | Second child | Technical Story | ✅ Done |\n\n## Done Condition\n\nDone when the children deliver a coherent outcome.\n",
-        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
-        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
-      },
-      "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 1
-      },
-      "scenario": "adopted_agg_validated",
-      "session_id": "builder-command-session",
-      "stderr": "usage: __main__.py review-delivery-story [-h] --method METHOD\n                                         [--journey JOURNEY]\n                                         [--session-id SESSION_ID] --decision\n                                         {no_action,defer,pay_now} --summary\n                                         SUMMARY\n__main__.py review-delivery-story: error: argument --decision: invalid choice: 'maybe' (choose from no_action, defer, pay_now)\n",
-      "stdout": ""
-    },
-    {
-      "argv": [
         "coherence-delivery-story",
         "--method",
         "ariad",

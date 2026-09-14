@@ -1134,14 +1134,15 @@ CASES: list[tuple[str, str, list[str]]] = [
             "--decision", "defer", "--summary", "Deferred with a trigger.",
         ],
     ),
-    (
-        "review_delivery_story_rejects_unknown_decision",
-        "adopted_agg_validated",
-        [
-            "review-delivery-story", "--method", "ariad", "--journey", "demo",
-            "--decision", "maybe", "--summary", "Unknown.",
-        ],
-    ),
+    # NO argparse-level case here, deliberately. `--decision maybe` is refused by
+    # argparse before the leaf runs, and its message is INTERPRETER text that
+    # changes between supported versions: 3.10 prints
+    # `choose from 'no_action', 'defer', 'pay_now'` and 3.12 prints the same list
+    # unquoted. Recording it made the determinism gate fail on 3.10 while passing on
+    # 3.12 -- the corpus would have pinned a CPython release, not Mirror behavior.
+    # The choice constraint is real and belongs to plateau 8's refusal matrix, which
+    # asserts STRUCTURE (exit 2, a usage block, the offending option) rather than
+    # bytes.
     (
         "coherence_delivery_story_completes",
         "adopted_agg_reviewed",

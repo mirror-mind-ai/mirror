@@ -105,15 +105,10 @@ const PORTED_LEAVES = [
 const PENDING_LEAVES: readonly string[] = [];
 
 /**
- * Cases Python refuses at the ARGPARSE layer, before any leaf runs.
+ * Cases Python would refuse at the ARGPARSE layer, before any leaf runs.
  *
- * `--decision maybe` never reaches `review-delivery-story`: argparse rejects the
- * choice, prints a usage block, and exits 2. That layer is plateau 8's, where the
- * route gains the D3.17 refusal matrix; `builderInvoke` is deliberately not a
- * production parser and must not grow a second, divergent copy of argparse's
- * messages. The case stays in the corpus because it records real behavior the
- * route will have to reproduce — it is graded structurally here and behaviorally
- * there.
+ * There are none, and that is a decision rather than an omission — see the test
+ * below. The predicate stays so a replay loop cannot silently start grading one.
  */
 const isArgparseRefusal = (entry: Case): boolean => entry.exit_code === 2;
 
@@ -681,30 +676,40 @@ test("an authored template survives, byte for byte", () => {
   assert.match(entry.stdout, /preserved\ndocs\/project\/roadmap\/ariad-adoption\.md/u);
 });
 
-test("argparse refusals are recorded for plateau 8, not replayed here", () => {
-  const argparse = cases.filter(isArgparseRefusal);
-  assert.ok(argparse.length >= 1, "the corpus must carry at least one argparse refusal");
-  for (const entry of argparse) {
-    assert.equal(entry.stdout, "", `${entry.name}: argparse writes nothing to stdout`);
-    assert.match(entry.stderr, /^usage: /u, `${entry.name}: argparse prints a usage block`);
-    assert.match(
-      entry.stderr,
-      /invalid choice/u,
-      `${entry.name}: the refusal names the rejected choice`,
-    );
-    // And it is unreachable through the mapping, which is what keeps the two
-    // layers from quietly merging.
-    const db = seed("adopted");
-    try {
-      const actual = invoke(db, entry.argv);
-      assert.notEqual(
-        actual.exitCode,
-        2,
-        `${entry.name}: exit 2 is argparse's, and the mapping must not imitate it`,
-      );
-    } finally {
-      db.close();
-    }
+test("the corpus records no argparse refusal, because its text is CPython's", () => {
+  // Plateau 5 briefly recorded `--decision maybe`, which argparse refuses with a
+  // usage block and exit 2 before `review-delivery-story` ever runs. CI killed it:
+  // 3.10 prints `choose from 'no_action', 'defer', 'pay_now'` and 3.12 prints the
+  // same list UNQUOTED, so the golden pinned a CPython release rather than Mirror
+  // behavior — green on one supported version, red on the other.
+  //
+  // The choice constraint is real and belongs to plateau 8's refusal matrix, which
+  // asserts STRUCTURE (exit 2, a usage block, the offending option) rather than
+  // bytes. Until then the mapping must not imitate exit 2, or the two layers merge
+  // in the one place where an interpreter's prose is the observable behavior.
+  assert.deepEqual(
+    cases.filter(isArgparseRefusal).map((entry) => entry.name),
+    [],
+    "argparse text is version-dependent and cannot be a byte-graded oracle",
+  );
+  // The LEAF's own guard is Mirror's and is graded normally.
+  const db = seed("adopted_agg_validated", scratchProject(false));
+  try {
+    const actual = invoke(db, [
+      "review-delivery-story",
+      "--method",
+      "ariad",
+      "--journey",
+      "demo",
+      "--decision",
+      "maybe",
+      "--summary",
+      "Unknown.",
+    ]);
+    assert.equal(actual.exitCode, 1, "the leaf refuses an unknown decision itself");
+    assert.match(actual.stderr, /must be no_action, defer, or pay_now/u);
+  } finally {
+    db.close();
   }
 });
 
