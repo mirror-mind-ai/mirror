@@ -34,17 +34,19 @@ What already landed:
   and `BUILD_LOAD_COMPOSITION` in `providers/transport.ts`,
   `resolveComposedProviderTransport`, and `resolveFamilyProviders` accepting a
   composition. Six mutants killed; see the rules below.
+- **the degraded case** (plan items 18a/18c) — four recorded outages
+  (`load_lexical_offline`, `load_partial_outage`, `load_first_call_outage`,
+  `load_degraded_briefing_query`) graded on all four faces against Python, whose
+  seam now fails the way `generate_embedding` fails. Eight mutants killed, and
+  one real defect fixed (the absent-provider branch, below).
 
 **Next, in order:**
 
-1. **the degraded case** — provider failure → FTS-only block, mode row still
-   written, degraded kind in the front-door log as metadata (never a message,
-   never the query);
-2. **the `builder_load` probe** on a real-DB copy, **the provider-isolation test**
+1. **the `builder_load` probe** on a real-DB copy, **the provider-isolation test**
    (the other 26 leaves never reach `resolveFamilyProviders` — asserted on the
    seam, not on "no call happened"), and **cost per `load`** measured from the
    ledger (plan item 18d);
-3. **the `explore story promote` tail**, waiting since US7 for Builder `load`.
+2. **the `explore story promote` tail**, waiting since US7 for Builder `load`.
 
 The composed decision exists but is **not consumed yet**: `buildRoute.ts` calls
 it before the banner at plateau 8 (item 21), which is also where
@@ -92,6 +94,38 @@ Then plateau 8 (front door, gate off) and plateau 9 (the flip).
   for an invocation the router had already sent to Python under
   `MIRROR_TS_SEARCH=0` — router and runtime disagreeing about one invocation,
   which is the defect CR077 was written about.
+- **A failed round-trip is logged, THEN raised.** Python's `generate_embedding`
+  calls `_log_embedding_call(on_llm_call, None, …)` before raising, so a failed
+  embedding lands as an unpriced ledger row rather than vanishing — failed calls
+  are still billable traffic. The oracle seam reproduces that order; a seam that
+  raised without logging would have graded a port that undercounts spend.
+- **Degradation is per SEARCH, not per command.** `load` embeds twice and each
+  search catches its own failure, so the command is degraded if EITHER fails.
+  One partial case proves only half the rule — with the second call failing,
+  "report the second status" looks correct — so both directions are recorded and
+  they render different blocks.
+- **A degraded `load` on a real journey shows NOTHING.** `_fts_query` ANDs every
+  whitespace word, and the query is a briefing cut at 500 code points, so during
+  an outage the memories block disappears on a machine whose corpus is full.
+  Reproduced (`load_degraded_briefing_query`), not repaired: it strengthens the
+  18c CR from "no marker" to "no marker and no content".
+- **The degraded filter is HARD.** Python drops non-FTS candidates outright, so
+  the memory with the best embedding vanishes with the provider — and, since the
+  block is what `log_access` stamps, it is not even recorded as read.
+- **An absent provider is not an empty result** — the one defect this scenario
+  found. `runBuildLoad` returned `results: []` when no provider was injected,
+  which renders an EMPTY memories block on an unconfigured install with a full
+  corpus. Python has no such state: a missing key raises inside
+  `generate_embedding`, the search catches it, and FTS-only still renders. Fixed
+  with a `ProviderConfigError`-throwing stub — the one failure class that fires
+  no ledger hook, which is how Python prices a missing key too. `calls=` counts
+  round-trips that REACHED a provider, so an unconfigured `load` reports zero
+  rather than claiming two calls no ledger row backs.
+- **Twin case names must stay the SAME LENGTH.** The healthy/offline pair is what
+  proves an outage changes only the memories block, and each case stages
+  `tmp/parity/builder-load/<name>/project` into a card row padded to 56 columns:
+  a one-character rename puts one space of difference inside the card and the
+  comparison stops being possible.
 
 Two constraints carried forward:
 

@@ -29,7 +29,46 @@ import { bootstrapDatabase } from "#db/bootstrap.ts";
 import type { WritableDatabase } from "#db/database.ts";
 import golden from "#goldens/builder-load.golden.json" with { type: "json" };
 import { createJourney } from "#journey/journeyWrite.ts";
-import { loadReplayEmbeddingProvider } from "#providers/embedding.ts";
+import { type EmbeddingProvider, loadReplayEmbeddingProvider } from "#providers/embedding.ts";
+
+/**
+ * The outage the oracle ran under: a provider EXCEPTION, not a missing key.
+ *
+ * The distinction is the whole ledger contract. Python logs an unpriced row for
+ * a failed round-trip (`_log_embedding_call(on_llm_call, None, ...)` and then
+ * raises) because a failed call is still billable traffic, and logs nothing at
+ * all for a missing key, which never reaches the wire.
+ */
+const FAILING_PROVIDER: EmbeddingProvider = {
+  embed: async () => {
+    throw new Error("parity outage");
+  },
+};
+
+/**
+ * The seam each case was recorded under: the fixture, a dead provider, or one
+ * that dies partway.
+ *
+ * `load` embeds twice, and both engines catch per SEARCH, so a provider that
+ * fails on the second call leaves one semantic ranking and one lexical fallback
+ * inside a single command. With a provider that either always works or always
+ * fails, nothing distinguishes "the command degraded" from "the first search
+ * degraded" -- mutation testing reported that rule ungraded, and this is what
+ * grades it.
+ */
+function providerFor(entry: Invocation, replay: EmbeddingProvider): EmbeddingProvider {
+  if (entry.fail_embedding) return FAILING_PROVIDER;
+  if (entry.fail_embedding_calls.length === 0) return replay;
+  const failing = new Set(entry.fail_embedding_calls);
+  let calls = 0;
+  return {
+    embed: async (text: string) => {
+      calls += 1;
+      if (failing.has(calls)) throw new Error("parity outage");
+      return replay.embed(text);
+    },
+  };
+}
 
 const FIXTURE = new URL("../fixtures/builder-load/replay-embedding.json", import.meta.url);
 const FROZEN_NOW = "2026-01-01T00:00:00+00:00";
@@ -52,6 +91,10 @@ interface Invocation {
   name: string;
   slug: string;
   project_root: string;
+  /** The transport the oracle ran under: a failing embedding seam, or the fixture. */
+  fail_embedding: boolean;
+  /** Which round-trips failed, one-based. Empty with `fail_embedding` = all of them. */
+  fail_embedding_calls: number[];
   seed: {
     journey_content: string | null;
     with_project: boolean;
@@ -187,6 +230,18 @@ function llmCalls(db: WritableDatabase): Record<string, unknown>[] {
 
 test("every recorded load matches Python on all four faces", async () => {
   assert.ok(invocations.length >= 5, "expected the recorded load matrix");
+  assert.ok(
+    invocations.some((entry) => entry.fail_embedding),
+    "the matrix must include the provider outage, or the degraded path is ungraded",
+  );
+  // Both directions: the rule is that EITHER search degrading degrades the
+  // command, and a single partial case can only ever prove half of it.
+  for (const call of [1, 2]) {
+    assert.ok(
+      invocations.some((entry) => entry.fail_embedding_calls.includes(call)),
+      `and the partial outage where call ${call} fails`,
+    );
+  }
   const provider = await loadReplayEmbeddingProvider(FIXTURE.pathname);
   for (const entry of invocations) {
     const { db } = seedDatabase(entry);
@@ -199,7 +254,7 @@ test("every recorded load matches Python on all four faces", async () => {
           // Python's frozen `_uuid` counts from one, and `load` creates exactly
           // one conversation.
           newId: () => "00000001",
-          embeddingProvider: provider,
+          embeddingProvider: providerFor(entry, provider),
           // The real switch, with NO close hooks: these cases seed no previous
           // conversation, so no close tail runs and the corpus stays provider-free
           // on that seam. The route supplies the hooks (and the tail's own
@@ -327,4 +382,190 @@ test("the clone-role guard refuses before any surface is printed", async () => {
   } finally {
     db.close();
   }
+});
+
+// --- the provider outage (plan items 18a, 18c, and the devops dissent) --------
+//
+// The four faces above already grade the degraded runs against Python. What
+// these add is what the corpus RECORDS but nothing asserted: that the outage
+// changes the memories block and nothing else, that the filter is hard rather
+// than soft, and that the surface says nothing about any of it.
+
+/** Run one recorded case on a fresh copy, with the transport it was recorded under. */
+async function runRecorded(entry: Invocation, options: { provider?: EmbeddingProvider } = {}) {
+  const { db } = seedDatabase(entry);
+  try {
+    const result = await runBuildLoad(
+      db,
+      { slug: entry.slug, sessionId: SESSION_ID },
+      {
+        nowIso: () => FROZEN_NOW,
+        newId: () => "00000001",
+        ...(options.provider === undefined ? {} : { embeddingProvider: options.provider }),
+        // The same real switch the four-face comparison injects. Without it the
+        // conversation the session start binds would be missing, and the outage
+        // assertions below would be reading a session `load` never finished.
+        switchConversation: async (journey, sessionId) => {
+          await switchConversation(
+            db,
+            sessionId,
+            { persona: "engineer", journey },
+            { nowIso: () => FROZEN_NOW, newId: () => "00000001" },
+          );
+        },
+      },
+    );
+    return { result, runtime: runtimeRows(db), access: memoryAccess(db), calls: llmCalls(db) };
+  } finally {
+    db.close();
+  }
+}
+
+function recorded(name: string): Invocation {
+  const entry = invocations.find((candidate) => candidate.name === name);
+  assert.ok(entry, `the corpus must carry ${name}`);
+  return entry;
+}
+
+/** Each twin stages its own root; the case name is the only difference. */
+function withoutRoot(entry: Invocation, text: string): string {
+  return text.replaceAll(entry.project_root, "<PROJECT>");
+}
+
+test("an outage changes the memories block and nothing else about the session start", async () => {
+  // The devops dissent as an assertion: four surfaces print before the first
+  // provider call, so an outage must not leave a half-written session. Python
+  // simply continues -- sticky defaults, mode row, conversation switch, exit 0 --
+  // and a port that raised instead would strand a Navigator mid-start.
+  const healthy = recorded("load_lexical_healthy");
+  const offline = recorded("load_lexical_offline");
+  const good = await runRecorded(healthy, {
+    provider: await loadReplayEmbeddingProvider(FIXTURE.pathname),
+  });
+  const bad = await runRecorded(offline, { provider: FAILING_PROVIDER });
+
+  const split = (entry: Invocation, stdout: string) =>
+    withoutRoot(entry, stdout).split("=== recent memories ===");
+  const [goodPrefix, goodBlock] = split(healthy, good.result.stdout);
+  const [badPrefix, badBlock] = split(offline, bad.result.stdout);
+
+  assert.equal(bad.result.exitCode, 0, "an outage is not a failed command");
+  assert.equal(badPrefix, goodPrefix, "everything before the block is byte-identical");
+  assert.notEqual(badBlock, goodBlock, "the block is the part that degrades");
+  assert.equal(
+    withoutRoot(offline, bad.result.stderr),
+    withoutRoot(healthy, good.result.stderr),
+    "the banner is identical too -- stderr carries no warning either",
+  );
+  // The state the command exists to write is still written.
+  assert.deepEqual(
+    bad.runtime.map((row) => row.session_id),
+    good.runtime.map((row) => row.session_id),
+  );
+  const modeRow = bad.runtime.find((row) => row.session_id === SESSION_ID);
+  assert.ok(modeRow, "the operating-mode row survives the outage");
+  assert.ok(modeRow.conversation_id, "and so does the conversation the switch bound");
+});
+
+test("a degraded search is a HARD filter: the unmatched memory is never touched", async () => {
+  // Python drops non-FTS candidates outright (`mem.id not in fts_lookup: continue`)
+  // rather than scoring them lower, so the memory with the best embedding vanishes
+  // when the provider does -- and, because the block is what `log_access` stamps,
+  // it is not even marked as read.
+  const healthy = recorded("load_lexical_healthy");
+  const offline = recorded("load_lexical_offline");
+
+  assert.match(healthy.stdout, /Cadence decides what may happen unasked\./u);
+  assert.doesNotMatch(offline.stdout, /Cadence decides what may happen unasked\./u);
+  const touched = (entry: Invocation) =>
+    entry.memory_access.filter((row) => row.accessed === 1).map((row) => row.id);
+  assert.deepEqual(touched(healthy), ["lex-global", "lex-scoped", "lex-semantic-only"]);
+  assert.deepEqual(touched(offline), ["lex-global", "lex-scoped"]);
+});
+
+test("a real briefing query matches nothing at all when the provider is down", async () => {
+  // The shape a Navigator actually meets. `_fts_query` ANDs every whitespace word
+  // of the query, and `load`'s query is a briefing paragraph cut at 500 code
+  // points, so in degraded mode the block disappears entirely -- on a machine
+  // whose corpus is full. Reproduced, not repaired: the memories block silently
+  // becomes an empty section, which is the CR.
+  const entry = recorded("load_degraded_briefing_query");
+  const outage = await runRecorded(entry, { provider: FAILING_PROVIDER });
+
+  assert.equal(outage.result.exitCode, 0);
+  assert.doesNotMatch(outage.result.stdout, /=== recent memories ===/u);
+  assert.deepEqual(
+    outage.access.filter((row) => row.accessed === 1),
+    [],
+    "nothing was returned, so nothing was stamped",
+  );
+  assert.equal(outage.runtime.filter((row) => row.session_id === SESSION_ID).length, 1);
+  // A failed round-trip is still billable traffic: Python logs it unpriced, and
+  // so must this. Two searches, two rows, no invented price.
+  assert.equal(outage.calls.length, 2);
+  for (const row of outage.calls) {
+    assert.equal(row.role, "embedding");
+    assert.equal(row.prompt_tokens, null);
+  }
+  assert.equal(outage.result.providerCalls, 2);
+});
+
+test("the degraded kind is a category, never the query or the provider's words", async () => {
+  // It travels to the front-door log, where a payload is forbidden. The class is
+  // the diagnosis an operator needs; the query is the Navigator's own briefing
+  // prose and must not leave the process.
+  const entry = recorded("load_lexical_offline");
+  const outage = await runRecorded(entry, { provider: FAILING_PROVIDER });
+  const kind = outage.result.degradedKind;
+
+  assert.ok(kind, "an outage must be diagnosable");
+  assert.match(kind, /^[a-z_]+$/u, "a short, content-free category");
+  assert.doesNotMatch(kind, /parity outage/u, "not the provider's message");
+  for (const word of ["Strangler", "parity", "oracle"]) {
+    assert.doesNotMatch(kind, new RegExp(word, "iu"), `the query word ${word} must not travel`);
+  }
+});
+
+test("an unconfigured install degrades exactly like an outage, and prices nothing", async () => {
+  // Python has no absent-provider state: a missing key raises inside
+  // `generate_embedding`, the search catches it, and the FTS-only block still
+  // renders. Returning no results instead -- which this did until the outage
+  // scenario measured it -- shows an EMPTY memories block on a machine with a
+  // full corpus, silently, in the surface a Navigator reads to pick the day's
+  // work.
+  const entry = recorded("load_lexical_offline");
+  const unconfigured = await runRecorded(entry);
+
+  // Byte for byte what Python recorded under a FAILING provider: the two failure
+  // modes differ in the ledger, never in the surface.
+  assert.equal(unconfigured.result.stdout, entry.stdout, "the same block an outage renders");
+  assert.equal(unconfigured.result.degradedKind, "config");
+  // A key that was never configured reaches no provider, so Python writes no
+  // ledger row -- and `calls=` must not claim one either.
+  assert.deepEqual(unconfigured.calls, []);
+  assert.equal(unconfigured.result.providerCalls, 0);
+});
+
+test("either search failing degrades the command, whichever one it was", async () => {
+  // A rate limit that arrives between `load`'s two embeddings, and the transient
+  // failure that recovers before the second. Both engines catch per search, so
+  // one ranking is semantic and the other lexical inside a single command -- and
+  // the two cases render DIFFERENT blocks, which is what makes "report the first
+  // status" and "report the second" both wrong.
+  const replay = await loadReplayEmbeddingProvider(FIXTURE.pathname);
+  const blocks: string[] = [];
+  for (const name of ["load_partial_outage", "load_first_call_outage"]) {
+    const entry = recorded(name);
+    const partial = await runRecorded(entry, { provider: providerFor(entry, replay) });
+
+    assert.equal(partial.result.exitCode, 0, `${name} is not a failed command`);
+    assert.ok(partial.result.degradedKind, `${name}: the failure must reach the log`);
+    assert.equal(partial.result.providerCalls, 2, `${name}: both searches called`);
+    // One succeeded and one failed, and BOTH are in the ledger: a failed
+    // round-trip is unpriced, never absent.
+    assert.equal(partial.calls.length, 2, `${name}: two ledger rows`);
+    assert.equal(partial.result.stdout, entry.stdout, `${name} stdout`);
+    blocks.push(partial.result.stdout.split("=== recent memories ===")[1] ?? "");
+  }
+  assert.notEqual(blocks[0], blocks[1], "which search degraded changes what is rendered");
 });

@@ -35,6 +35,7 @@ import { loadMirrorContext } from "#mirror/context.ts";
 import { persistStickyDefaults } from "#mirror/orchestration.ts";
 import { resolveRuntimeSessionId } from "#mirror/runtimeSession.ts";
 import { activateOperatingMode } from "#mode/operatingMode.ts";
+import { ProviderConfigError } from "#providers/config.ts";
 import type { EmbeddingProvider } from "#providers/embedding.ts";
 import { searchMemoriesWithStatus } from "#search/memorySearch.ts";
 import { renderBuilderOrientationSurface } from "./homeSurface.ts";
@@ -58,10 +59,33 @@ export interface BuildLoadResult {
   readonly providerCalls: number;
 }
 
+/**
+ * What an unconfigured install has instead of a provider.
+ *
+ * Python has no "absent provider" state: `generate_embedding` raises
+ * `RuntimeError` when the key is missing, the search catches it, and the block
+ * still renders FTS-only. Returning no results here instead -- which this did
+ * until the degraded scenario measured it -- renders an EMPTY memories block on
+ * a machine with a working corpus and no key, and does it silently, in the
+ * surface a Navigator reads to choose the day's work.
+ *
+ * `ProviderConfigError` is the right class, not a convenience: it is the one
+ * failure that fires no ledger hook, which is how Python prices a missing key
+ * too (no call was made, so no row).
+ */
+const MISSING_EMBEDDING_PROVIDER: EmbeddingProvider = {
+  embed: async () => {
+    throw new ProviderConfigError(
+      "No embedding provider was supplied to `build load`; the memories block " +
+        "degrades to the local FTS index.",
+    );
+  },
+};
+
 export interface BuildLoadDeps {
   readonly nowIso: () => string;
   readonly newId: () => string;
-  /** Absent means no provider: the searches degrade to FTS-only. */
+  /** Absent means no provider: the searches degrade to FTS-only, as Python's do. */
   readonly embeddingProvider?: EmbeddingProvider;
   /** Python's `switch_conversation`, injected because it carries the close tail. */
   readonly switchConversation?: (journey: string, sessionId: string | null) => Promise<void>;
@@ -215,10 +239,14 @@ export async function runBuildLoad(
   // why a second `load` against the same database legitimately reorders the block.
   const query = extractQuery(journeyContent, slug);
   let providerCalls = 0;
-  const provider = deps.embeddingProvider;
+  // `calls=` counts round-trips that REACHED a provider. A missing provider is a
+  // configuration failure rather than a call -- Python raises before its attempt
+  // loop and writes no ledger row -- so counting it would put a call in the
+  // front-door log that no ledger row backs.
+  const configured = deps.embeddingProvider !== undefined;
+  const provider = deps.embeddingProvider ?? MISSING_EMBEDDING_PROVIDER;
   const runSearch = async (journey?: string) => {
-    if (provider === undefined) return { results: [], degraded: true, degradedKind: "config" };
-    providerCalls += 1;
+    if (configured) providerCalls += 1;
     return searchMemoriesWithStatus(db, {
       query,
       limit: 5,

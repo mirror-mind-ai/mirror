@@ -345,6 +345,70 @@ LOAD_JOURNEY = """# Demo journey
 A journey whose briefing becomes the search query for the memories block.
 """
 
+# A journey whose whole Description is three words, which is the ONLY shape under
+# which a degraded `load` can render anything at all.
+#
+# `_fts_query` quotes each whitespace-delimited word and joins them, so the MATCH
+# expression is an AND over EVERY word of the query -- and `load`'s query is a
+# briefing paragraph cut at 500 code points. In degraded mode the semantic term is
+# gone and non-matching memories are dropped outright (`mem.id not in fts_lookup:
+# continue`), so a real journey's briefing matches nothing and the memories block
+# disappears silently. Both shapes are recorded: this one to grade the lexical-only
+# RANKING, and `load_degraded_briefing_query` to grade what a Navigator actually
+# meets during an outage.
+LEXICAL_JOURNEY = """# Lexical journey
+**Stage:** Plateau 7 — degraded
+
+## Description
+
+Strangler parity oracle
+"""
+
+# Two memories carrying all three query words and one carrying none. The third is
+# what makes the degraded filter observable: it ranks in the healthy twin (its
+# embedding is closest to the query's) and vanishes when the provider fails, which
+# is a HARD filter rather than a lower score.
+LEXICAL_MEMORIES: list[dict[str, Any]] = [
+    {
+        "id": "lex-scoped",
+        "memory_type": "insight",
+        "layer": "ego",
+        "title": "Strangler parity",
+        "content": "The strangler keeps parity with the oracle on every ported leaf.",
+        "journey": "demo",
+        "created_at": FROZEN_NOW,
+        "use_count": 0,
+        "relevance_score": 1.0,
+        "embedding": _embedding(40, 0.42),
+    },
+    {
+        "id": "lex-global",
+        "memory_type": "insight",
+        "layer": "user",
+        "title": "Oracle parity",
+        "content": "Parity against the oracle is what the strangler proves.",
+        "journey": None,
+        "created_at": FROZEN_NOW,
+        "use_count": 0,
+        "relevance_score": 1.0,
+        "embedding": _embedding(80, 0.30),
+    },
+    {
+        "id": "lex-semantic-only",
+        "memory_type": "insight",
+        "layer": "shadow",
+        "title": "Cadence",
+        "content": "Cadence decides what may happen unasked.",
+        "journey": None,
+        "created_at": FROZEN_NOW,
+        "use_count": 0,
+        "relevance_score": 1.0,
+        # The HIGHEST semantic score of the three, so a healthy run ranks it first
+        # and the degraded run drops it entirely.
+        "embedding": _embedding(120, 0.95),
+    },
+]
+
 
 def _freeze_now() -> None:
     """Freeze the clock in THIS process too.
@@ -572,6 +636,105 @@ LOAD_CASES: list[dict[str, Any]] = [
         "journey_content": None,
         "memories": [],
     },
+    # --- the provider outage, in the two shapes it takes -------------------
+    #
+    # A TWIN PAIR: identical seed, identical cursor, one healthy and one with the
+    # embedding seam raising. Everything a surface golden can see is the same
+    # except the memories block, which is the whole finding -- the card carries no
+    # marker, so a Navigator cannot tell an outage from a quiet corpus (item 18c,
+    # carried to Debt Review as a CR rather than marked here).
+    #
+    # The two names are the SAME LENGTH on purpose, and must stay that way. Each
+    # case stages `tmp/parity/builder-load/<name>/project` and the transition card
+    # PADS that row to 56 columns, so twins whose names differ by one character
+    # differ by one space inside the card -- and the test that proves the outage
+    # changes nothing but the memories block could no longer compare them.
+    {
+        "name": "load_lexical_healthy",
+        "slug": "demo",
+        "journey_content": LEXICAL_JOURNEY,
+        "memories": LEXICAL_MEMORIES,
+        "adopted_method": "ariad",
+        "cursor": {
+            "method": "ariad",
+            "active_item": "CV1.DS1.US1",
+            "active_item_title": "A user story",
+            "active_item_level": "user_story",
+            "last_delivery_event": "plan_approved",
+        },
+    },
+    {
+        "name": "load_lexical_offline",
+        "slug": "demo",
+        "journey_content": LEXICAL_JOURNEY,
+        "memories": LEXICAL_MEMORIES,
+        "adopted_method": "ariad",
+        "cursor": {
+            "method": "ariad",
+            "active_item": "CV1.DS1.US1",
+            "active_item_title": "A user story",
+            "active_item_level": "user_story",
+            "last_delivery_event": "plan_approved",
+        },
+        "fail_embedding": True,
+    },
+    # The PARTIAL outages, in both directions. `load` embeds twice and each search
+    # catches its own failure, so a rate limit that arrives between the two calls
+    # leaves one ranking semantic and the other lexical inside a single command.
+    #
+    # BOTH directions are recorded because the rule is "either search degrading
+    # degrades the command", and one case can only prove half of it: with the
+    # second call failing, reporting only the second status looks correct; with
+    # the first failing, reporting only the first does. Mutation testing surfaced
+    # each half in turn.
+    {
+        "name": "load_partial_outage",
+        "slug": "demo",
+        "journey_content": LEXICAL_JOURNEY,
+        "memories": LEXICAL_MEMORIES,
+        "adopted_method": "ariad",
+        "cursor": {
+            "method": "ariad",
+            "active_item": "CV1.DS1.US1",
+            "active_item_title": "A user story",
+            "active_item_level": "user_story",
+            "last_delivery_event": "plan_approved",
+        },
+        "fail_embedding_calls": [2],
+    },
+    {
+        "name": "load_first_call_outage",
+        "slug": "demo",
+        "journey_content": LEXICAL_JOURNEY,
+        "memories": LEXICAL_MEMORIES,
+        "adopted_method": "ariad",
+        "cursor": {
+            "method": "ariad",
+            "active_item": "CV1.DS1.US1",
+            "active_item_title": "A user story",
+            "active_item_level": "user_story",
+            "last_delivery_event": "plan_approved",
+        },
+        "fail_embedding_calls": [1],
+    },
+    # The realistic outage: a briefing-length query, ANDed word by word against
+    # FTS5, matching nothing. The block vanishes and the lifecycle continues --
+    # sticky defaults, mode row, conversation switch, exit 0.
+    {
+        "name": "load_degraded_briefing_query",
+        "slug": "demo",
+        "journey_content": LOAD_JOURNEY,
+        "memories": SEED_MEMORIES,
+        "adopted_method": "ariad",
+        "cursor": {
+            "method": "ariad",
+            "active_item": "CV1.DS1.US1",
+            "active_item_title": "A user story",
+            "active_item_level": "user_story",
+            "last_delivery_event": "plan_approved",
+        },
+        "fail_embedding": True,
+    },
 ]
 
 
@@ -633,6 +796,15 @@ def _run_case(case: dict[str, Any], oracle_fixture: Path) -> dict[str, Any]:
                 str(oracle_fixture),
                 "--session-id",
                 SESSION_ID,
+                *(["--fail-embedding"] if case.get("fail_embedding") else []),
+                *(
+                    [
+                        "--fail-embedding-calls",
+                        ",".join(str(call) for call in case["fail_embedding_calls"]),
+                    ]
+                    if case.get("fail_embedding_calls")
+                    else []
+                ),
             ],
             capture_output=True,
             text=True,
@@ -654,6 +826,14 @@ def _run_case(case: dict[str, Any], oracle_fixture: Path) -> dict[str, Any]:
             "name": case["name"],
             "slug": case["slug"],
             "project_root": project.as_posix(),
+            # The TRANSPORT the oracle ran under, so the replay injects the same
+            # one. Recorded per case rather than inferred from the name: a replay
+            # that guesses its own transport grades whatever it guessed.
+            "fail_embedding": bool(case.get("fail_embedding")),
+            # Which round-trips failed, one-based. Empty with `fail_embedding` set
+            # means every call failed; `[2]` is the rate limit that arrives
+            # mid-command.
+            "fail_embedding_calls": list(case.get("fail_embedding_calls", [])),
             "seed": {
                 "journey_content": case.get("journey_content"),
                 "with_project": case.get("with_project", True),

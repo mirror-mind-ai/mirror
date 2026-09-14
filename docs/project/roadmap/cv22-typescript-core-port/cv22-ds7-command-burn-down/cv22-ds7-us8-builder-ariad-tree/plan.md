@@ -1091,10 +1091,17 @@ CR** (marking it is a product change that belongs after the flip).
   time differed. Corpus cases must keep scores off the knife edge — recorded as a
   harness rule in the handoff, and as a CR here because a Navigator comparing two
   sessions sees the same instability.
-- **A degraded `load` is indistinguishable from a healthy one.** When the provider
-  fails, the memories block falls back to FTS-only and renders in a card with no
-  marker, in the one surface a Navigator reads to decide what to work on.
-  Reproduced at plateau 7 rather than fixed; marking it is a product change.
+- **A degraded `load` is indistinguishable from a healthy one — and usually
+  empty.** When the provider fails, the memories block falls back to FTS-only and
+  renders in a card with no marker, in the one surface a Navigator reads to decide
+  what to work on. Measured at plateau 7, it is worse than "differently ordered":
+  `_fts_query` ANDs every whitespace word of the query, and `load`'s query is a
+  briefing paragraph cut at 500 code points, so on a real journey the AND matches
+  nothing and the block DISAPPEARS. A Navigator opening Builder Mode during an
+  outage sees a session start with no memories and no reason given, on a machine
+  whose corpus is full. Both shapes are recorded
+  (`load_lexical_offline` ranks lexically, `load_degraded_briefing_query` renders
+  nothing); reproduced rather than fixed, because marking it is a product change.
 - **`build load` is Mirror's per-session cost floor.** Two embeddings for the same
   query (scoped and global) plus the previous conversation's close tail, on every
   Builder session start. The double embedding is parity-bound; the CR carries the

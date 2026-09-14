@@ -18,9 +18,24 @@ is the contract: this driver returns the vector the fixture carries, and the
 TypeScript side loads the identical file through its replay embedding provider.
 One fixture, two engines, no network on either side.
 
+**Why a failure is a MODE of this driver.** `load` is where a provider outage
+meets a session start, and Python's answer is not "stop": the search degrades to
+FTS-only and the lifecycle continues, writing the mode row and switching the
+conversation exactly as a healthy run does. Reproducing that needs the seam to
+fail the way `generate_embedding` fails -- log the unpriced ledger row, then
+raise `EmbeddingError` -- because a fake that merely returns nothing would grade
+a path neither engine has.
+
 Usage (invoked by `generate_builder_load_golden.py`):
 
     python build_load_oracle.py <slug> <fixture.json> [--session-id ID]
+                                [--fail-embedding] [--fail-embedding-calls 1,2]
+
+`--fail-embedding-calls` names WHICH round-trips fail, one-based. `load` embeds
+twice and both engines catch per search, so `2` is the rate limit that arrives
+mid-command and `1` is the transient failure that recovers -- two different
+surfaces, and the only shapes that prove degradation is reported per command
+rather than per first search.
 """
 
 from __future__ import annotations
@@ -87,16 +102,21 @@ def _forbid_network() -> None:
     socket.socket = _RefusedSocket  # type: ignore[misc]
 
 
-def _install_seam(fixture: dict[str, Any]) -> None:
+def _install_seam(
+    fixture: dict[str, Any], *, failing_calls: frozenset[int] | None = None
+) -> None:
     """Replace every provider entry point with the fixture's fixed answers."""
+    from memory.intelligence.embeddings import EmbeddingError
     from memory.intelligence.llm_router import LLMResponse
 
     vector = np.array(fixture["embedding"], dtype=np.float32)
     embedding_model = fixture["embedding_model"]
+    calls = {"count": 0}
 
     def fake_generate_embedding(
         text: str, on_llm_call: Any = None, **kwargs: Any
     ) -> np.ndarray:
+        calls["count"] += 1
         # The ledger row IS behavior: `build load` writes two of them, and the
         # panel asked for that count to be graded. So the logger is invoked, with
         # the token count the TypeScript replay provider reports -- `null` -- so
@@ -112,6 +132,16 @@ def _install_seam(fixture: dict[str, Any]) -> None:
                     latency_ms=None,
                 )
             )
+        if failing_calls is not None and (
+            not failing_calls or calls["count"] in failing_calls
+        ):
+            # `generate_embedding`'s provider-exception path, reproduced rather
+            # than approximated: the round-trip IS logged (unpriced, because a
+            # failed call has no usage) and THEN the error is raised. A seam that
+            # raised without logging would record an empty ledger, and the port
+            # would look correct while under-counting real, billable spend --
+            # which is the one thing the ledger exists to prevent.
+            raise EmbeddingError("Embedding provider call failed: parity outage")
         return vector
 
     # Patched per MODULE, because each imported the name directly. `search` is the
@@ -152,7 +182,17 @@ def main() -> None:
 
     fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
     _freeze_generators(fixture)
-    _install_seam(fixture)
+    # `None` is a healthy seam; an EMPTY set fails every call. The distinction is
+    # deliberate -- "no failing calls named" and "no failures" are different
+    # instructions, and collapsing them is how a degraded case silently runs
+    # healthy.
+    failing_calls: frozenset[int] | None = None
+    if "--fail-embedding-calls" in sys.argv:
+        named = sys.argv[sys.argv.index("--fail-embedding-calls") + 1]
+        failing_calls = frozenset(int(part) for part in named.split(",") if part)
+    elif "--fail-embedding" in sys.argv:
+        failing_calls = frozenset()
+    _install_seam(fixture, failing_calls=failing_calls)
     _forbid_network()
 
     from memory.cli.build import cmd_load
