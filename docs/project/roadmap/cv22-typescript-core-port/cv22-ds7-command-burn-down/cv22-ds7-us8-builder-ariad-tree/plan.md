@@ -420,13 +420,44 @@ Python tests DS10 deletes.
     (validate / review / coherence / done, `delivery_story_closure_checkpoint`),
     `deliveryStoryRoadmapClosure.ts` (`inspect_authored_closure` and the
     `**Status:**` preflight naming project-relative files).
-15. The six DS leaves end to end, refused under `story_by_story`.
+14a. **The preflight owns its own walk** (panel, engineer). Python's
+    `inspect_authored_closure` walks `sorted(rglob("index.md"))` with **no
+    `legacy/` exclusion**, while `roadmapScan.ts` is defined as that walk
+    MINUS `legacy/`. Reusing the scanner would silently let TypeScript close a
+    Delivery Story Python refuses. The shared helper takes the exclusion as a
+    parameter, or the preflight walks separately; either way a corpus case
+    exists whose ONLY blocking evidence is a row under `legacy/`.
+14b. Corpus cases the panel named, each pinning a behavior a tidier port would
+    "fix": `_replace_status` **moves the replaced entry to the end** of
+    `aggregate_checkpoint_status` (so a sequence must reach ≥2 entries and
+    replace a MIDDLE one — same set, different bytes, and CAS compares bytes);
+    `_ribbon("coherence")` falls through to the **Done** ribbon; `plan.md` is
+    **preserved** on both Plan and approval despite
+    `_write_delivery_story_package`'s docstring claiming an upsert (the
+    docstring is wrong about its own code, and the corpus pins the code); the
+    runtime's own `index.md` scaffold is `🟡 Planned`, so DS Done refuses until
+    a human edits it.
+14c. The DS approval's `DeliveryCursorConflict` recovery needs a write between
+    the read and the CAS, which the corpus cannot interpose (panel,
+    database-architect). Graded by a TypeScript test with an injected
+    conflict, and **declared as corpus-unreachable** in the pending-list
+    comment so a green corpus cannot imply it was covered.
+15. The six DS leaves end to end, refused under `story_by_story`, plus
+    `set-flow-unit` and `cancel-delivery-story-plan-preauthorization` — both
+    **pulled forward from Scope F** (panel, engineer). `set-flow-unit` is the
+    write side of a module whose read side already exists and is the FIRST step
+    of the DS smoke; seeding the flow unit by a raw cursor write instead would
+    repeat plateau 3a's lesson that an unrecorded mutation is not replayable.
+    The cancel leaf is a wrapper over a function item 14 writes anyway, and
+    splitting a module from its only caller across two plateaus is how a
+    serializer drifts from its parser.
 
-**F. Cadence, flow, authority, continuation.**
-16. `flowUnit.ts` (`ALLOWED_FLOW_UNITS`, inspect/set, both surfaces),
-    `releaseIntent.ts`, `set-cadence` with profiles and limits,
-    `continue-lifecycle` with the soft-stop / hard-gate matrix per cadence
-    and its multi-surface output, `cancel-delivery-story-plan-preauthorization`.
+**F. Cadence, authority, continuation.**
+16. `releaseIntent.ts`, `set-cadence` with profiles and limits, and
+    `continue-lifecycle` with the soft-stop / hard-gate matrix per cadence and
+    its multi-surface output. (`flowUnit.ts`'s write side and the DS
+    preauthorization cancel moved to Scope E; what remains here is the part
+    with behavior of its own.)
 
 **G. `load` and the provider seam.**
 17. `builder/transition.ts` (`render_builder_mode_transition`, the
@@ -499,11 +530,26 @@ Python tests DS10 deletes.
     stderr, exit code, the cursor row bytes after every step, the written
     artifacts, and the published `operational.json` (never a log line), with
     **no gate in the environment**. A second run exercises the DS flow
-    (set-flow-unit → plan-delivery-story → approve → validate → review →
-    done-delivery-story) and a third the preauthorization and cadence paths.
+    (set-flow-unit → pull-item as a Delivery Story with Expand →
+    plan-delivery-story → approve → validate → review → done-delivery-story
+    REFUSED by the authored preflight → a graded edit → done-delivery-story)
+    and a third the preauthorization and cadence paths.
+23a. The DS smoke needs a step type the harness does not have: an **edit
+    between two commands**, flipping authored `**Status:**` lines so the second
+    `done-delivery-story` succeeds (panel, devops). It is a first-class
+    recorded step — declared, applied identically to both worlds, and graded
+    like any other (the file comparison after it proves the edit landed the
+    same way), never a `writeFileSync` slipped between two invocations. Its
+    receipt delta must be **zero** on both sides: an authored edit is not a
+    cursor write. Expect the smoke to roughly double in wall time (~10s →
+    ~20s) because every DS write spawns the projection seam; recorded here so a
+    later "CI is slow" does not begin by deleting the smoke.
 24. Front-door redaction check: `build` argv carries `--why-now`,
-    `--objective`, `--summary`, `--evidence`, `--debt`, `--limit`, review and
-    validation prose; a test asserts none of it reaches `front-door.log`.
+    `--objective`, `--summary`, `--evidence`, `--debt`, `--limit`, `--child`,
+    review and validation prose; a test asserts none of it reaches
+    `front-door.log`. `--child` is nominally a work-item code and practically
+    whatever the Navigator typed (panel, security), so the list is complete
+    here rather than remembered at plateau 8.
 25. The **broken-core revert drill**: a Node loader hook
     (`NODE_OPTIONS=--import=<hook>` registering a resolver that answers
     `#builder/index.ts` with a throwing module — no copy of the checkout, no
@@ -682,6 +728,20 @@ Then every surface renders as before and front-door.log shows `build ts`
 - **Argument acceptance.** Python refuses `--mirror-home` on `build` with
   argparse's exit 2 where the TS front door accepts it — the same recorded
   divergence Soul and Explorer carry.
+- **Ordered list cells in the cursor.** `aggregate_checkpoint_status` and
+  `child_work_items` enter the byte contract at plateau 5.
+  `_replace_status` removes every `checkpoint:*` entry and APPENDS the new
+  one, so two engines can hold the same set and different bytes — and
+  compare-and-swap compares bytes, not sets. Pinned by sequences that replace
+  a middle entry.
+- **The DS Done preflight's path escape.** `_relative()` calls
+  `resolve().relative_to(project_root)` and RAISES when a roadmap file
+  resolves outside the project (a symlinked package). Python's CLI catches the
+  `ValueError` and prints the interpreter's own prose
+  (`'…' is not in the subpath of '…'`). **Recorded divergence, not
+  reproduced** (panel, security): TypeScript says what happened in its own
+  words rather than copying CPython's error text. Confinement itself is
+  already proven by the plateau-3 path matrix.
 
 ## Validation Route
 
@@ -753,7 +813,11 @@ defaults off until the flip:
    two, the `builder_artifacts` probe.
 4. **Story closure.** Scope D. Transition corpus part three, the story
    lifecycle smoke (unrouted, calling the TS module directly).
-5. **Delivery Story lifecycle.** Scope E. The DS smoke.
+5. **Delivery Story lifecycle.** Scope E — the six DS leaves plus
+   `set-flow-unit` and `cancel-delivery-story-plan-preauthorization`,
+   re-sequenced from F after the plateau-5 panel. Transition corpus part four
+   (aggregate status as ordered bytes), the authored-closure preflight corpus,
+   the DS smoke with its graded edit step.
 6. **Cadence and authority.** Scope F. The preauthorization/cadence smoke;
    `continue-lifecycle`'s multi-surface ordering.
 7. **`load` and the provider seam.** Scope G. The `load` corpus under
@@ -907,6 +971,35 @@ ledger scenarios; the provider-isolation test for the 26 other leaves; the
 path-confinement matrix. Before the flip: the restore drill, the regression
 smokes in the checklist, `leaf=` in the log, the two-copies rule for
 validation step 2, and the loader-hook shape for the broken-core drill.
+
+## Persona Review — Plateau 5 (Scope E, before implementation)
+
+Run 2026-09-14 against a QA-drafted slice plan for the Delivery Story
+lifecycle, per the collaboration strategy's standing rule that every story
+above a small slice gets a Plan-stage panel. Four lenses dissented; the design
+and model-in-the-loop lenses stayed silent, correctly — this plateau changes no
+Navigator-facing semantics and makes no model call.
+
+- **engineer** — the preflight's walk is *almost* `roadmapScan.ts` and differs
+  on the one thing that decides a refusal (`legacy/`); and the Implementation
+  Contract had `set-flow-unit` in plateau 6 while the plateau-5 smoke opens
+  with it. Both resolved in Scope E above (items 14a, 15). Also: pin the
+  coherence ribbon's fall-through before porting it.
+- **database-architect** — ordered list cells enter the byte contract here, and
+  `_replace_status` is move-to-end; the story-level corpus never exercised
+  `aggregate_checkpoint_status` at all. Resolved by item 14b. The DS approval's
+  CAS-conflict recovery is corpus-unreachable and must be declared, not implied
+  (item 14c).
+- **devops-engineer** — the DS smoke needs a graded edit step between two
+  `done-delivery-story` calls, with a zero receipt delta, and the smoke's wall
+  time roughly doubles. Resolved by item 23a.
+- **security-engineer** — `--child` was missing from the plateau-8 redaction
+  list (item 24, corrected), and the preflight's symlink escape should be a
+  recorded divergence rather than a copied CPython message (Parity Contract).
+
+No dissent argued for changing Ariad semantics, and none was accepted that
+would have: every amendment above is about what the corpus GRADES and in which
+plateau the work lands.
 
 ## Debt / CRs To Capture At Debt Review (candidates)
 
