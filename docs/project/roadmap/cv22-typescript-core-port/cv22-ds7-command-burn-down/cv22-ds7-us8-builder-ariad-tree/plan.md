@@ -473,11 +473,52 @@ Python tests DS10 deletes.
     assertion is on the seam, not on "no call happened"). The route refuses
     by name on an incomplete fixture (CR077 rule). Replay fixtures are
     generated from the demo database only, never from a real home.
+18b. **Amended 2026-09-14 after the plateau-7 panel: the transport is
+    COMPOSED, not private.** Item 18 was written while replay was still the
+    production route for these seams. DS8 changed that: `load` does not own a
+    provider seam, it composes two families that are **already live in
+    production** — its two embeddings ARE the search family, and its close tail
+    IS the conversation-tail family. A private transport would mean
+    `MIRROR_TS_SEARCH=0` reverts `memories --search` while `build load` keeps
+    calling the same provider: one family, two answers.
+
+    So the route resolves **all three** specs before printing any byte, and
+    falls back to Python unless all three agree — `MIRROR_TS_BUILD=0`,
+    `MIRROR_TS_SEARCH=0`, or `MIRROR_TS_CONVERSATION_LLM_TAIL=0` each send the
+    whole command to Python. `BUILD_LOAD_TRANSPORT` survives as the family's
+    own kill switch and as the owner of `load`'s replay fixtures, not as a
+    replacement for the other two. This is D2's own argument applied one level
+    down: a half-flipped session start cannot be reviewed.
+
+    The decision is resolved **before the banner**, because `load` prints four
+    surfaces before it reaches a provider and a fallback decided later would
+    duplicate all of them.
 18a. The `load` corpus carries the degraded scenario (provider failure →
     FTS-only block, identical rows, mode row written, degraded kind in the
     front-door log as metadata) and the ledger scenario (two embedding rows
     for the two searches plus the close-tail rows, count/role/bodies-withheld
     equal to Python's).
+18c. **Degraded visibility stays a CR, not a liberty** (panel, ai-engineer).
+    A degraded `load` renders a card indistinguishable from a healthy one, in
+    the surface whose whole job is orienting a human about to choose a day's
+    work. Reproduced as Python behaves and captured as a CR, so marking it
+    lands as a product decision after the flip rather than as a change made
+    inside a port.
+18d. **Cost per `load` is measured before the flip** (panel, ai-engineer).
+    `build load` is the only command in this story whose spend is scheduled by
+    how often a human opens Builder Mode rather than by what they asked for,
+    and after the flip its ledger cost becomes Mirror's per-session floor.
+    Record count, role, and measured cost from `llm_calls` for one real `load`
+    in the ledger entry, and attach that number to the double-embedding CR
+    instead of describing it as a curiosity.
+18e. **`log_access` makes `load` a mutating read** (panel,
+    database-architect). It bumps `access_count` / `last_accessed_at` on the
+    six returned memories, and the ranker's reinforcement term reads them — so
+    a second `load` against the same database legitimately returns a different
+    order. Grading rule for every artifact in this plateau: **one `load` per
+    database copy**, or replay with a frozen clock and frozen scores. A smoke
+    that runs `load` twice in one world and expects identical output is flaky
+    for a correct reason.
 19. `runBuildLoad` composition: identity read → clone-role guard
     (`inspectCloneRole`) → banner → transition → adopted-method branch (home +
     roadmap + candidates, or resume) → `loadMirrorContext(persona=engineer)`
@@ -547,7 +588,11 @@ Python tests DS10 deletes.
 24. Front-door redaction check: `build` argv carries `--why-now`,
     `--objective`, `--summary`, `--evidence`, `--debt`, `--limit`, `--child`,
     review and validation prose; a test asserts none of it reaches
-    `front-door.log`. `--child` is nominally a work-item code and practically
+    `front-door.log`. **Plus a `load` case** (panel, security): `load` takes no
+    prose argument, but it DERIVES its query from the journey briefing — the
+    Navigator's own words, up to 500 code points, sent to an embedding provider
+    on every session start. The case seeds a recognizable sentinel in the
+    briefing and asserts it never reaches the log; `leaf=` and `calls=` do. `--child` is nominally a work-item code and practically
     whatever the Navigator typed (panel, security), so the list is complete
     here rather than remembered at plateau 8.
 25. The **broken-core revert drill**: a Node loader hook
@@ -1001,7 +1046,43 @@ No dissent argued for changing Ariad semantics, and none was accepted that
 would have: every amendment above is about what the corpus GRADES and in which
 plateau the work lands.
 
+## Persona Review — Plateau 7 (Scope G, before implementation)
+
+Run 2026-09-14 against a QA-drafted slice plan for `load` and the provider seam.
+Five lenses dissented, including ai-engineer, which stayed silent at plateau 5 and
+speaks here because this is the only `build` leaf that crosses the model.
+
+- **engineer** — item 18's private transport predates DS8. `load` composes two
+  families that are already live, so a private gate makes `MIRROR_TS_SEARCH=0`
+  mean two different things in two commands. Resolved by item 18b: a composed
+  decision over three revert variables, taken before the first byte.
+- **ai-engineer** — `load` spends on a schedule set by how often a human opens
+  Builder Mode, and nobody has measured it (item 18d); and the degraded card is
+  indistinguishable from the healthy one in the surface whose job is orientation
+  (item 18c, reproduced and captured as a CR).
+- **database-architect** — `log_access` makes this read mutate the ranking inputs,
+  so "run it twice, expect the same block" is wrong by construction (item 18e).
+- **devops-engineer** — four surfaces print before the first provider call, so an
+  outage leaves a half-written session; reproduce Python's ordering and pin it
+  with an injected provider failure rather than discovering it during an incident.
+- **security-engineer** — the query is the Navigator's own briefing prose; the
+  plateau-8 redaction case must carry a `load` sentinel (item 24).
+
+Navigator decisions taken the same day: **compose the revert** (a half-flipped
+session start cannot be reviewed) and **reproduce degraded rendering, capture the
+CR** (marking it is a product change that belongs after the flip).
+
 ## Debt / CRs To Capture At Debt Review (candidates)
+
+- **A degraded `load` is indistinguishable from a healthy one.** When the provider
+  fails, the memories block falls back to FTS-only and renders in a card with no
+  marker, in the one surface a Navigator reads to decide what to work on.
+  Reproduced at plateau 7 rather than fixed; marking it is a product change.
+- **`build load` is Mirror's per-session cost floor.** Two embeddings for the same
+  query (scoped and global) plus the previous conversation's close tail, on every
+  Builder session start. The double embedding is parity-bound; the CR carries the
+  measured per-`load` ledger cost so the number exists before anyone argues about
+  it.
 
 - **The DS Done preflight would refuse this repository's own roadmap.** `_is_done`
   is `strip().casefold().endswith("done")`, so `Done` and `✅ DONE` pass while
