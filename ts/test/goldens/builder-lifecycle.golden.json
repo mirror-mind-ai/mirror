@@ -19940,6 +19940,985 @@
           ]
         }
       ]
+    },
+    {
+      "journey": "sandbox-pet-store",
+      "name": "release_intent_faces",
+      "project_root": "tmp/parity/builder-lifecycle/release_intent_faces/project",
+      "steps": [
+        {
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1.DS1.US1",
+            "active_item_level": "user_story",
+            "active_item_title": "A story",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "prepare",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "files": {},
+          "index": 0,
+          "input": {
+            "active_item": "CV1.DS1.US1",
+            "active_item_level": "user_story",
+            "active_item_title": "A story",
+            "last_delivery_event": "prepare",
+            "method": "ariad"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1.US1\", \"active_item_title\": \"A story\", \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"prepare\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+          "op": "seed_cursor",
+          "projection_requests": [
+            "sandbox-pet-store"
+          ]
+        },
+        {
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1.DS1.US1",
+            "active_item_level": "user_story",
+            "active_item_title": "A story",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "prepare",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "files": {},
+          "index": 1,
+          "input": {
+            "intent": null,
+            "method": "ariad"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1.US1\", \"active_item_title\": \"A story\", \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"prepare\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+          "op": "release_intent",
+          "projection_requests": [
+            "sandbox-pet-store"
+          ],
+          "release_changed": false,
+          "release_delivery_story": "CV1.DS1",
+          "release_intent": "not_recorded",
+          "surfaces": [
+            {
+              "id": "release_intent",
+              "text": "<<<ARIAD:RELEASE_INTENT>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🚦  DELIVERY STORY RELEASE INTENT               │\n│                                                        │\n│ Delivery Story                                         │\n│ CV1.DS1                                                │\n│                                                        │\n│ Intent                                                 │\n│ not_recorded                                           │\n│                                                        │\n│ Meaning                                                │\n│ No release intent has been recorded for this Delivery  │\n│ Story.                                                 │\n│                                                        │\n│ Action                                                 │\n│ inspected                                              │\n│                                                        │\n│ Authority boundary                                     │\n│ Release intent does not authorize commit, push, tag    │\n│ creation, stable promotion, release publication, or    │\n│ remote mutation.                                       │\n╰────────────────────────────────────────────────────────╯\n<<<END:RELEASE_INTENT>>>\n"
+            }
+          ]
+        },
+        {
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1.DS1.US1",
+            "active_item_level": "user_story",
+            "active_item_title": "A story",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "prepare",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": "planned",
+            "release_intent_delivery_story": "CV1.DS1"
+          },
+          "files": {},
+          "index": 2,
+          "input": {
+            "intent": "planned",
+            "method": "ariad"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1.US1\", \"active_item_title\": \"A story\", \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"prepare\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": \"CV1.DS1\", \"release_intent\": \"planned\"}",
+          "op": "release_intent",
+          "projection_requests": [
+            "sandbox-pet-store"
+          ],
+          "release_changed": true,
+          "release_delivery_story": "CV1.DS1",
+          "release_intent": "planned",
+          "surfaces": [
+            {
+              "id": "release_intent",
+              "text": "<<<ARIAD:RELEASE_INTENT>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🚦  DELIVERY STORY RELEASE INTENT               │\n│                                                        │\n│ Delivery Story                                         │\n│ CV1.DS1                                                │\n│                                                        │\n│ Intent                                                 │\n│ planned                                                │\n│                                                        │\n│ Meaning                                                │\n│ This Delivery Story is expected to create a release    │\n│ boundary if completed coherently.                      │\n│                                                        │\n│ Action                                                 │\n│ recorded                                               │\n│                                                        │\n│ Authority boundary                                     │\n│ Release intent does not authorize commit, push, tag    │\n│ creation, stable promotion, release publication, or    │\n│ remote mutation.                                       │\n╰────────────────────────────────────────────────────────╯\n<<<END:RELEASE_INTENT>>>\n"
+            }
+          ]
+        },
+        {
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1.DS1.US1",
+            "active_item_level": "user_story",
+            "active_item_title": "A story",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "prepare",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": "planned",
+            "release_intent_delivery_story": "CV1.DS1"
+          },
+          "files": {},
+          "index": 3,
+          "input": {
+            "intent": "planned",
+            "method": "ariad"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1.US1\", \"active_item_title\": \"A story\", \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"prepare\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": \"CV1.DS1\", \"release_intent\": \"planned\"}",
+          "op": "release_intent",
+          "projection_requests": [
+            "sandbox-pet-store"
+          ],
+          "release_changed": false,
+          "release_delivery_story": "CV1.DS1",
+          "release_intent": "planned",
+          "surfaces": [
+            {
+              "id": "release_intent",
+              "text": "<<<ARIAD:RELEASE_INTENT>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🚦  DELIVERY STORY RELEASE INTENT               │\n│                                                        │\n│ Delivery Story                                         │\n│ CV1.DS1                                                │\n│                                                        │\n│ Intent                                                 │\n│ planned                                                │\n│                                                        │\n│ Meaning                                                │\n│ This Delivery Story is expected to create a release    │\n│ boundary if completed coherently.                      │\n│                                                        │\n│ Action                                                 │\n│ inspected                                              │\n│                                                        │\n│ Authority boundary                                     │\n│ Release intent does not authorize commit, push, tag    │\n│ creation, stable promotion, release publication, or    │\n│ remote mutation.                                       │\n╰────────────────────────────────────────────────────────╯\n<<<END:RELEASE_INTENT>>>\n"
+            }
+          ]
+        },
+        {
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1.DS1.US1",
+            "active_item_level": "user_story",
+            "active_item_title": "A story",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "prepare",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": "none",
+            "release_intent_delivery_story": "CV1.DS1"
+          },
+          "files": {},
+          "index": 4,
+          "input": {
+            "intent": "none",
+            "method": "ariad"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1.US1\", \"active_item_title\": \"A story\", \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"prepare\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": \"CV1.DS1\", \"release_intent\": \"none\"}",
+          "op": "release_intent",
+          "projection_requests": [
+            "sandbox-pet-store"
+          ],
+          "release_changed": true,
+          "release_delivery_story": "CV1.DS1",
+          "release_intent": "none",
+          "surfaces": [
+            {
+              "id": "release_intent",
+              "text": "<<<ARIAD:RELEASE_INTENT>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🚦  DELIVERY STORY RELEASE INTENT               │\n│                                                        │\n│ Delivery Story                                         │\n│ CV1.DS1                                                │\n│                                                        │\n│ Intent                                                 │\n│ none                                                   │\n│                                                        │\n│ Meaning                                                │\n│ This Delivery Story is not expected to create a        │\n│ release boundary.                                      │\n│                                                        │\n│ Action                                                 │\n│ recorded                                               │\n│                                                        │\n│ Authority boundary                                     │\n│ Release intent does not authorize commit, push, tag    │\n│ creation, stable promotion, release publication, or    │\n│ remote mutation.                                       │\n╰────────────────────────────────────────────────────────╯\n<<<END:RELEASE_INTENT>>>\n"
+            }
+          ]
+        },
+        {
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1.DS1.US1",
+            "active_item_level": "user_story",
+            "active_item_title": "A story",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "prepare",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": "undecided",
+            "release_intent_delivery_story": "CV1.DS1"
+          },
+          "files": {},
+          "index": 5,
+          "input": {
+            "intent": "undecided",
+            "method": "ariad"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1.US1\", \"active_item_title\": \"A story\", \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"prepare\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": \"CV1.DS1\", \"release_intent\": \"undecided\"}",
+          "op": "release_intent",
+          "projection_requests": [
+            "sandbox-pet-store"
+          ],
+          "release_changed": true,
+          "release_delivery_story": "CV1.DS1",
+          "release_intent": "undecided",
+          "surfaces": [
+            {
+              "id": "release_intent",
+              "text": "<<<ARIAD:RELEASE_INTENT>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🚦  DELIVERY STORY RELEASE INTENT               │\n│                                                        │\n│ Delivery Story                                         │\n│ CV1.DS1                                                │\n│                                                        │\n│ Intent                                                 │\n│ undecided                                              │\n│                                                        │\n│ Meaning                                                │\n│ Release intent is intentionally unresolved and may be  │\n│ revisited later.                                       │\n│                                                        │\n│ Action                                                 │\n│ recorded                                               │\n│                                                        │\n│ Authority boundary                                     │\n│ Release intent does not authorize commit, push, tag    │\n│ creation, stable promotion, release publication, or    │\n│ remote mutation.                                       │\n╰────────────────────────────────────────────────────────╯\n<<<END:RELEASE_INTENT>>>\n"
+            }
+          ]
+        },
+        {
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1.DS1.US1",
+            "active_item_level": "user_story",
+            "active_item_title": "A story",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "prepare",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": "undecided",
+            "release_intent_delivery_story": "CV1.DS1"
+          },
+          "files": {},
+          "index": 6,
+          "input": {
+            "intent": null,
+            "method": "ariad"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1.US1\", \"active_item_title\": \"A story\", \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"prepare\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": \"CV1.DS1\", \"release_intent\": \"undecided\"}",
+          "op": "release_intent",
+          "projection_requests": [
+            "sandbox-pet-store"
+          ],
+          "release_changed": false,
+          "release_delivery_story": "CV1.DS1",
+          "release_intent": "undecided",
+          "surfaces": [
+            {
+              "id": "release_intent",
+              "text": "<<<ARIAD:RELEASE_INTENT>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🚦  DELIVERY STORY RELEASE INTENT               │\n│                                                        │\n│ Delivery Story                                         │\n│ CV1.DS1                                                │\n│                                                        │\n│ Intent                                                 │\n│ undecided                                              │\n│                                                        │\n│ Meaning                                                │\n│ Release intent is intentionally unresolved and may be  │\n│ revisited later.                                       │\n│                                                        │\n│ Action                                                 │\n│ inspected                                              │\n│                                                        │\n│ Authority boundary                                     │\n│ Release intent does not authorize commit, push, tag    │\n│ creation, stable promotion, release publication, or    │\n│ remote mutation.                                       │\n╰────────────────────────────────────────────────────────╯\n<<<END:RELEASE_INTENT>>>\n"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "journey": "sandbox-pet-store",
+      "name": "release_intent_value_rules",
+      "project_root": "tmp/parity/builder-lifecycle/release_intent_value_rules/project",
+      "steps": [
+        {
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1.DS1.US1",
+            "active_item_level": "user_story",
+            "active_item_title": "A story",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "prepare",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "files": {},
+          "index": 0,
+          "input": {
+            "active_item": "CV1.DS1.US1",
+            "active_item_level": "user_story",
+            "active_item_title": "A story",
+            "last_delivery_event": "prepare",
+            "method": "ariad"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1.US1\", \"active_item_title\": \"A story\", \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"prepare\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+          "op": "seed_cursor",
+          "projection_requests": [
+            "sandbox-pet-store"
+          ]
+        },
+        {
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1.DS1.US1",
+            "active_item_level": "user_story",
+            "active_item_title": "A story",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "prepare",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": "planned",
+            "release_intent_delivery_story": "CV1.DS1"
+          },
+          "files": {},
+          "index": 1,
+          "input": {
+            "intent": "  PLANNED ",
+            "method": "ariad"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1.US1\", \"active_item_title\": \"A story\", \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"prepare\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": \"CV1.DS1\", \"release_intent\": \"planned\"}",
+          "op": "release_intent",
+          "projection_requests": [
+            "sandbox-pet-store"
+          ],
+          "release_changed": true,
+          "release_delivery_story": "CV1.DS1",
+          "release_intent": "planned",
+          "surfaces": [
+            {
+              "id": "release_intent",
+              "text": "<<<ARIAD:RELEASE_INTENT>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🚦  DELIVERY STORY RELEASE INTENT               │\n│                                                        │\n│ Delivery Story                                         │\n│ CV1.DS1                                                │\n│                                                        │\n│ Intent                                                 │\n│ planned                                                │\n│                                                        │\n│ Meaning                                                │\n│ This Delivery Story is expected to create a release    │\n│ boundary if completed coherently.                      │\n│                                                        │\n│ Action                                                 │\n│ recorded                                               │\n│                                                        │\n│ Authority boundary                                     │\n│ Release intent does not authorize commit, push, tag    │\n│ creation, stable promotion, release publication, or    │\n│ remote mutation.                                       │\n╰────────────────────────────────────────────────────────╯\n<<<END:RELEASE_INTENT>>>\n"
+            }
+          ]
+        },
+        {
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1.DS1.US1",
+            "active_item_level": "user_story",
+            "active_item_title": "A story",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "prepare",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": "planned",
+            "release_intent_delivery_story": "CV1.DS1"
+          },
+          "error": "ValueError: release intent must be planned, none, or undecided",
+          "files": {},
+          "index": 2,
+          "input": {
+            "intent": "maybe",
+            "method": "ariad"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1.US1\", \"active_item_title\": \"A story\", \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"prepare\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": \"CV1.DS1\", \"release_intent\": \"planned\"}",
+          "op": "release_intent",
+          "projection_requests": [
+            "sandbox-pet-store"
+          ]
+        },
+        {
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1.DS1.US1",
+            "active_item_level": "user_story",
+            "active_item_title": "A story",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "prepare",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": "planned",
+            "release_intent_delivery_story": "CV1.DS1"
+          },
+          "error": "ValueError: release intent must be planned, none, or undecided",
+          "files": {},
+          "index": 3,
+          "input": {
+            "intent": "",
+            "method": "ariad"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1.US1\", \"active_item_title\": \"A story\", \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"prepare\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": \"CV1.DS1\", \"release_intent\": \"planned\"}",
+          "op": "release_intent",
+          "projection_requests": [
+            "sandbox-pet-store"
+          ]
+        }
+      ]
+    },
+    {
+      "journey": "sandbox-pet-store",
+      "name": "release_intent_is_scoped_to_its_delivery_story",
+      "project_root": "tmp/parity/builder-lifecycle/release_intent_is_scoped_to_its_delivery_story/project",
+      "steps": [
+        {
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1.DS1.US1",
+            "active_item_level": "user_story",
+            "active_item_title": "A story",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "prepare",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "files": {},
+          "index": 0,
+          "input": {
+            "active_item": "CV1.DS1.US1",
+            "active_item_level": "user_story",
+            "active_item_title": "A story",
+            "last_delivery_event": "prepare",
+            "method": "ariad"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1.US1\", \"active_item_title\": \"A story\", \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"prepare\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+          "op": "seed_cursor",
+          "projection_requests": [
+            "sandbox-pet-store"
+          ]
+        },
+        {
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1.DS1.US1",
+            "active_item_level": "user_story",
+            "active_item_title": "A story",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "prepare",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": "planned",
+            "release_intent_delivery_story": "CV1.DS1"
+          },
+          "files": {},
+          "index": 1,
+          "input": {
+            "intent": "planned",
+            "method": "ariad"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS1.US1\", \"active_item_title\": \"A story\", \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"prepare\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": \"CV1.DS1\", \"release_intent\": \"planned\"}",
+          "op": "release_intent",
+          "projection_requests": [
+            "sandbox-pet-store"
+          ],
+          "release_changed": true,
+          "release_delivery_story": "CV1.DS1",
+          "release_intent": "planned",
+          "surfaces": [
+            {
+              "id": "release_intent",
+              "text": "<<<ARIAD:RELEASE_INTENT>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🚦  DELIVERY STORY RELEASE INTENT               │\n│                                                        │\n│ Delivery Story                                         │\n│ CV1.DS1                                                │\n│                                                        │\n│ Intent                                                 │\n│ planned                                                │\n│                                                        │\n│ Meaning                                                │\n│ This Delivery Story is expected to create a release    │\n│ boundary if completed coherently.                      │\n│                                                        │\n│ Action                                                 │\n│ recorded                                               │\n│                                                        │\n│ Authority boundary                                     │\n│ Release intent does not authorize commit, push, tag    │\n│ creation, stable promotion, release publication, or    │\n│ remote mutation.                                       │\n╰────────────────────────────────────────────────────────╯\n<<<END:RELEASE_INTENT>>>\n"
+            }
+          ]
+        },
+        {
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1.DS2.US1",
+            "active_item_level": "user_story",
+            "active_item_title": "Another story",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "prepare",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": "planned",
+            "release_intent_delivery_story": "CV1.DS1"
+          },
+          "files": {},
+          "index": 2,
+          "input": {
+            "active_item": "CV1.DS2.US1",
+            "active_item_level": "user_story",
+            "active_item_title": "Another story",
+            "last_delivery_event": "prepare",
+            "method": "ariad"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS2.US1\", \"active_item_title\": \"Another story\", \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"prepare\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": \"CV1.DS1\", \"release_intent\": \"planned\"}",
+          "op": "seed_cursor",
+          "projection_requests": [
+            "sandbox-pet-store",
+            "sandbox-pet-store"
+          ]
+        },
+        {
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1.DS2.US1",
+            "active_item_level": "user_story",
+            "active_item_title": "Another story",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "prepare",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": "planned",
+            "release_intent_delivery_story": "CV1.DS1"
+          },
+          "files": {},
+          "index": 3,
+          "input": {
+            "intent": null,
+            "method": "ariad"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS2.US1\", \"active_item_title\": \"Another story\", \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"prepare\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": \"CV1.DS1\", \"release_intent\": \"planned\"}",
+          "op": "release_intent",
+          "projection_requests": [
+            "sandbox-pet-store",
+            "sandbox-pet-store"
+          ],
+          "release_changed": false,
+          "release_delivery_story": "CV1.DS2",
+          "release_intent": "not_recorded",
+          "surfaces": [
+            {
+              "id": "release_intent",
+              "text": "<<<ARIAD:RELEASE_INTENT>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🚦  DELIVERY STORY RELEASE INTENT               │\n│                                                        │\n│ Delivery Story                                         │\n│ CV1.DS2                                                │\n│                                                        │\n│ Intent                                                 │\n│ not_recorded                                           │\n│                                                        │\n│ Meaning                                                │\n│ No release intent has been recorded for this Delivery  │\n│ Story.                                                 │\n│                                                        │\n│ Action                                                 │\n│ inspected                                              │\n│                                                        │\n│ Authority boundary                                     │\n│ Release intent does not authorize commit, push, tag    │\n│ creation, stable promotion, release publication, or    │\n│ remote mutation.                                       │\n╰────────────────────────────────────────────────────────╯\n<<<END:RELEASE_INTENT>>>\n"
+            }
+          ]
+        },
+        {
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1.DS2.US1",
+            "active_item_level": "user_story",
+            "active_item_title": "Another story",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "prepare",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": "none",
+            "release_intent_delivery_story": "CV1.DS2"
+          },
+          "files": {},
+          "index": 4,
+          "input": {
+            "intent": "none",
+            "method": "ariad"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.DS2.US1\", \"active_item_title\": \"Another story\", \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"prepare\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": \"CV1.DS2\", \"release_intent\": \"none\"}",
+          "op": "release_intent",
+          "projection_requests": [
+            "sandbox-pet-store",
+            "sandbox-pet-store"
+          ],
+          "release_changed": true,
+          "release_delivery_story": "CV1.DS2",
+          "release_intent": "none",
+          "surfaces": [
+            {
+              "id": "release_intent",
+              "text": "<<<ARIAD:RELEASE_INTENT>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🚦  DELIVERY STORY RELEASE INTENT               │\n│                                                        │\n│ Delivery Story                                         │\n│ CV1.DS2                                                │\n│                                                        │\n│ Intent                                                 │\n│ none                                                   │\n│                                                        │\n│ Meaning                                                │\n│ This Delivery Story is not expected to create a        │\n│ release boundary.                                      │\n│                                                        │\n│ Action                                                 │\n│ recorded                                               │\n│                                                        │\n│ Authority boundary                                     │\n│ Release intent does not authorize commit, push, tag    │\n│ creation, stable promotion, release publication, or    │\n│ remote mutation.                                       │\n╰────────────────────────────────────────────────────────╯\n<<<END:RELEASE_INTENT>>>\n"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "journey": "sandbox-pet-store",
+      "name": "release_intent_refusals",
+      "project_root": "tmp/parity/builder-lifecycle/release_intent_refusals/project",
+      "steps": [
+        {
+          "cursor": null,
+          "error": "ValueError: delivery cursor is required before release intent",
+          "files": {},
+          "index": 0,
+          "input": {
+            "intent": "planned",
+            "method": "ariad"
+          },
+          "metadata": null,
+          "op": "release_intent",
+          "projection_requests": []
+        },
+        {
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1.US1",
+            "active_item_level": "user_story",
+            "active_item_title": "A story with no delivery story ancestor",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "prepare",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "files": {},
+          "index": 1,
+          "input": {
+            "active_item": "CV1.US1",
+            "active_item_level": "user_story",
+            "active_item_title": "A story with no delivery story ancestor",
+            "last_delivery_event": "prepare",
+            "method": "ariad"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.US1\", \"active_item_title\": \"A story with no delivery story ancestor\", \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"prepare\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+          "op": "seed_cursor",
+          "projection_requests": [
+            "sandbox-pet-store"
+          ]
+        },
+        {
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1.US1",
+            "active_item_level": "user_story",
+            "active_item_title": "A story with no delivery story ancestor",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "prepare",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "error": "ValueError: active Delivery Story boundary is required for release intent",
+          "files": {},
+          "index": 2,
+          "input": {
+            "intent": "planned",
+            "method": "ariad"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.US1\", \"active_item_title\": \"A story with no delivery story ancestor\", \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"prepare\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+          "op": "release_intent",
+          "projection_requests": [
+            "sandbox-pet-store"
+          ]
+        },
+        {
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1.US1",
+            "active_item_level": "user_story",
+            "active_item_title": "A story with no delivery story ancestor",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "prepare",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "error": "ValueError: active Delivery Story boundary is required for release intent",
+          "files": {},
+          "index": 3,
+          "input": {
+            "intent": null,
+            "method": "ariad"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.US1\", \"active_item_title\": \"A story with no delivery story ancestor\", \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"prepare\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+          "op": "release_intent",
+          "projection_requests": [
+            "sandbox-pet-store"
+          ]
+        },
+        {
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV1.US1",
+            "active_item_level": "user_story",
+            "active_item_title": "A story with no delivery story ancestor",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "prepare",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "error": "ValueError: active Builder method does not match release intent method",
+          "files": {},
+          "index": 4,
+          "input": {
+            "intent": "planned",
+            "method": "scrumban"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1.US1\", \"active_item_title\": \"A story with no delivery story ancestor\", \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"prepare\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+          "op": "release_intent",
+          "projection_requests": [
+            "sandbox-pet-store"
+          ]
+        }
+      ]
+    },
+    {
+      "journey": "sandbox-pet-store",
+      "name": "release_intent_boundary_codes",
+      "project_root": "tmp/parity/builder-lifecycle/release_intent_boundary_codes/project",
+      "steps": [
+        {
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "DS-35.US-1",
+            "active_item_level": "user_story",
+            "active_item_title": "A story",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "prepare",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": null,
+            "release_intent_delivery_story": null
+          },
+          "files": {},
+          "index": 0,
+          "input": {
+            "active_item": "DS-35.US-1",
+            "active_item_level": "user_story",
+            "active_item_title": "A story",
+            "last_delivery_event": "prepare",
+            "method": "ariad"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"DS-35.US-1\", \"active_item_title\": \"A story\", \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"prepare\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+          "op": "seed_cursor",
+          "projection_requests": [
+            "sandbox-pet-store"
+          ]
+        },
+        {
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "DS-35.US-1",
+            "active_item_level": "user_story",
+            "active_item_title": "A story",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "prepare",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": "planned",
+            "release_intent_delivery_story": "DS-35"
+          },
+          "files": {},
+          "index": 1,
+          "input": {
+            "intent": "planned",
+            "method": "ariad"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"DS-35.US-1\", \"active_item_title\": \"A story\", \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"prepare\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": \"DS-35\", \"release_intent\": \"planned\"}",
+          "op": "release_intent",
+          "projection_requests": [
+            "sandbox-pet-store"
+          ],
+          "release_changed": true,
+          "release_delivery_story": "DS-35",
+          "release_intent": "planned",
+          "surfaces": [
+            {
+              "id": "release_intent",
+              "text": "<<<ARIAD:RELEASE_INTENT>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🚦  DELIVERY STORY RELEASE INTENT               │\n│                                                        │\n│ Delivery Story                                         │\n│ DS-35                                                  │\n│                                                        │\n│ Intent                                                 │\n│ planned                                                │\n│                                                        │\n│ Meaning                                                │\n│ This Delivery Story is expected to create a release    │\n│ boundary if completed coherently.                      │\n│                                                        │\n│ Action                                                 │\n│ recorded                                               │\n│                                                        │\n│ Authority boundary                                     │\n│ Release intent does not authorize commit, push, tag    │\n│ creation, stable promotion, release publication, or    │\n│ remote mutation.                                       │\n╰────────────────────────────────────────────────────────╯\n<<<END:RELEASE_INTENT>>>\n"
+            }
+          ]
+        },
+        {
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "active_item_title": "Nested",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "prepare",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": "planned",
+            "release_intent_delivery_story": "DS-35"
+          },
+          "files": {},
+          "index": 2,
+          "input": {
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "active_item_title": "Nested",
+            "last_delivery_event": "prepare",
+            "method": "ariad"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV22.DS7.US8\", \"active_item_title\": \"Nested\", \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"prepare\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": \"DS-35\", \"release_intent\": \"planned\"}",
+          "op": "seed_cursor",
+          "projection_requests": [
+            "sandbox-pet-store",
+            "sandbox-pet-store"
+          ]
+        },
+        {
+          "cursor": {
+            "active_checkpoint": null,
+            "active_item": "CV22.DS7.US8",
+            "active_item_level": "user_story",
+            "active_item_title": "Nested",
+            "aggregate_checkpoint_status": [],
+            "cadence_limits": [],
+            "cadence_profile": null,
+            "child_work_items": [],
+            "cursor_generation": 0,
+            "granularity_decision": null,
+            "journey": "sandbox-pet-store",
+            "last_delivery_event": "prepare",
+            "method": "ariad",
+            "navigator_flow_unit": null,
+            "pending_confirmation": null,
+            "plan_preauthorization": null,
+            "release_intent": "undecided",
+            "release_intent_delivery_story": "CV22.DS7"
+          },
+          "files": {},
+          "index": 3,
+          "input": {
+            "intent": "undecided",
+            "method": "ariad"
+          },
+          "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV22.DS7.US8\", \"active_item_title\": \"Nested\", \"active_item_level\": \"user_story\", \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"prepare\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": \"CV22.DS7\", \"release_intent\": \"undecided\"}",
+          "op": "release_intent",
+          "projection_requests": [
+            "sandbox-pet-store",
+            "sandbox-pet-store"
+          ],
+          "release_changed": true,
+          "release_delivery_story": "CV22.DS7",
+          "release_intent": "undecided",
+          "surfaces": [
+            {
+              "id": "release_intent",
+              "text": "<<<ARIAD:RELEASE_INTENT>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🚦  DELIVERY STORY RELEASE INTENT               │\n│                                                        │\n│ Delivery Story                                         │\n│ CV22.DS7                                               │\n│                                                        │\n│ Intent                                                 │\n│ undecided                                              │\n│                                                        │\n│ Meaning                                                │\n│ Release intent is intentionally unresolved and may be  │\n│ revisited later.                                       │\n│                                                        │\n│ Action                                                 │\n│ recorded                                               │\n│                                                        │\n│ Authority boundary                                     │\n│ Release intent does not authorize commit, push, tag    │\n│ creation, stable promotion, release publication, or    │\n│ remote mutation.                                       │\n╰────────────────────────────────────────────────────────╯\n<<<END:RELEASE_INTENT>>>\n"
+            }
+          ]
+        }
+      ]
     }
   ]
 }

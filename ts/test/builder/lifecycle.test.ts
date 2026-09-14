@@ -176,7 +176,7 @@ const PORTED_OPS: readonly string[] = [
  * `cmd_done_delivery_story`, graded here as its own step because its refusals are
  * the safety property the whole plateau turns on.
  */
-const PENDING_OPS: readonly string[] = [];
+const PENDING_OPS: readonly string[] = ["release_intent"];
 
 const lifecycleOps = (step: Step): boolean => !(HARNESS_OPS as readonly string[]).includes(step.op);
 

@@ -92,6 +92,11 @@ from memory.builder.flow_unit import (
     render_navigator_flow_unit_report,
     set_navigator_flow_unit,
 )
+from memory.builder.release_intent import (
+    inspect_release_intent,
+    render_release_intent_report,
+    set_release_intent,
+)
 from memory.builder.lifecycle import (
     BuilderLifecycleItem,
     ExpandBlockedError,
@@ -1186,6 +1191,37 @@ class Scenario:
             ),
             {"summary": summary, "artifact": artifact, "method": method},
             artifact=artifact,
+        )
+
+    def release_intent(self, *, intent: str | None = None, method: str = "ariad") -> None:
+        """`release-intent`: set with a value, inspect without one.
+
+        The two faces render the SAME surface with a different `Action` row, and the
+        inspect face reports `not_recorded` where the cursor carries an intent for a
+        DIFFERENT Delivery Story -- which is the whole point of storing the story
+        code beside the intent.
+        """
+        payload = {"intent": intent, "method": method}
+        try:
+            report = (
+                set_release_intent(
+                    self.store, journey=self.journey, method=method, intent=intent
+                )
+                if intent is not None
+                else inspect_release_intent(self.store, journey=self.journey, method=method)
+            )
+        except ValueError as exc:
+            self.record("release_intent", input=payload, error=f"{type(exc).__name__}: {exc}")
+            return
+        self.record(
+            "release_intent",
+            input=payload,
+            surfaces=[("release_intent", render_release_intent_report(report))],
+            extra={
+                "release_intent": report.intent,
+                "release_delivery_story": report.delivery_story,
+                "release_changed": report.changed,
+            },
         )
 
     def authored_closure(self) -> None:
@@ -2905,6 +2941,97 @@ def _authored_closure_scenarios() -> list[dict[str, Any]]:
     return scenarios
 
 
+def _release_intent_scenarios() -> list[dict[str, Any]]:
+    """Plateau 6, Scope F. Release intent is informational state with real rules.
+
+    It is stored as a PAIR -- the intent and the Delivery Story it belongs to -- so
+    moving to another Delivery Story makes the inspect face report `not_recorded`
+    rather than inheriting the previous story's decision. And the boundary is
+    derived from the ACTIVE ITEM's code by `delivery_story_code_for_item`, so a
+    story whose code carries no `DS<n>` segment has no boundary to record against.
+    """
+    scenarios: list[dict[str, Any]] = []
+
+    def seeded(name: str, *, active_item: str, **cursor: Any) -> Scenario:
+        scenario = Scenario(name)
+        scenario.seed_cursor(
+            method="ariad",
+            active_item=active_item,
+            active_item_title="A story",
+            active_item_level="user_story",
+            last_delivery_event="prepare",
+            **cursor,
+        )
+        return scenario
+
+    # The whole face: inspect before anything is recorded, set each of the three
+    # values, and re-set the same value (which reports `inspected`, not `recorded`,
+    # because nothing changed).
+    faces = seeded("release_intent_faces", active_item="CV1.DS1.US1")
+    faces.release_intent()
+    faces.release_intent(intent="planned")
+    faces.release_intent(intent="planned")
+    faces.release_intent(intent="none")
+    faces.release_intent(intent="undecided")
+    faces.release_intent()
+    scenarios.append(faces.finish())
+
+    # Case and whitespace are normalized before the membership test; anything else
+    # is refused with the same message.
+    values = seeded("release_intent_value_rules", active_item="CV1.DS1.US1")
+    values.release_intent(intent="  PLANNED ")
+    values.release_intent(intent="maybe")
+    values.release_intent(intent="")
+    scenarios.append(values.finish())
+
+    # The intent belongs to a Delivery Story, not to the cursor: pulling a story
+    # under a DIFFERENT Delivery Story makes the inspect face report `not_recorded`
+    # while the stored pair stays on the row.
+    moved = seeded("release_intent_is_scoped_to_its_delivery_story", active_item="CV1.DS1.US1")
+    moved.release_intent(intent="planned")
+    moved.seed_cursor(
+        method="ariad",
+        active_item="CV1.DS2.US1",
+        active_item_title="Another story",
+        active_item_level="user_story",
+        last_delivery_event="prepare",
+    )
+    moved.release_intent()
+    moved.release_intent(intent="none")
+    scenarios.append(moved.finish())
+
+    # No Delivery Story ancestor in the code, a method that does not match, and no
+    # cursor at all: the three refusals, in the order their guards run.
+    refusals = Scenario("release_intent_refusals")
+    refusals.release_intent(intent="planned")
+    refusals.seed_cursor(
+        method="ariad",
+        active_item="CV1.US1",
+        active_item_title="A story with no delivery story ancestor",
+        active_item_level="user_story",
+        last_delivery_event="prepare",
+    )
+    refusals.release_intent(intent="planned")
+    refusals.release_intent()
+    refusals.release_intent(intent="planned", method="scrumban")
+    scenarios.append(refusals.finish())
+
+    # `DS-35` and `DS35`, at any depth, with the FIRST match winning.
+    codes = seeded("release_intent_boundary_codes", active_item="DS-35.US-1")
+    codes.release_intent(intent="planned")
+    codes.seed_cursor(
+        method="ariad",
+        active_item="CV22.DS7.US8",
+        active_item_title="Nested",
+        active_item_level="user_story",
+        last_delivery_event="prepare",
+    )
+    codes.release_intent(intent="undecided")
+    scenarios.append(codes.finish())
+
+    return scenarios
+
+
 def build_payload() -> dict[str, Any]:
     repo_docs_before = _repo_docs_fingerprint()
     sequences: list[dict[str, Any]] = [
@@ -2917,6 +3044,7 @@ def build_payload() -> dict[str, Any]:
         *_preauthorization_scenarios(),
         *_closure_scenarios(),
         *_delivery_story_scenarios(),
+        *_release_intent_scenarios(),
     ]
     created = _repo_docs_fingerprint() - repo_docs_before
     if created:

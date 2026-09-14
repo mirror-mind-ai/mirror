@@ -232,6 +232,13 @@ _LIFECYCLE_SCENARIOS = {
     "adopted_prepared_ds",
     "adopted_plan_pending",
     "adopted_preauthorized",
+    # Plateau 6, the cadence scenarios: a cursor mid-closure carrying a cadence
+    # profile, which is what `continue-lifecycle` reads before deciding whether
+    # any continuation is bypassable at all.
+    "adopted_cadence_checkpoint_reviewed",
+    "adopted_cadence_checkpoint_pending",
+    "adopted_cadence_autonomous_unlimited",
+    "adopted_cadence_checkpoint_prepared",
     # Plateau 5, the aggregate scenarios. `adopted_agg_`, not `adopted_ds_`:
     # `adopted_ds_pullable` already means "a Delivery Story that can be pulled",
     # and a prefix that swallowed it would have re-seeded an existing case.
@@ -295,6 +302,27 @@ def _seed_lifecycle(mem: Any, project: Path, *, scenario: str) -> None:
     from memory.builder.method_adoption import set_adopted_method
 
     set_adopted_method(mem.store, "demo", "ariad")
+    if scenario.startswith("adopted_cadence_"):
+        # Same states the closure scenarios use, plus the cadence fields. Seeded
+        # raw for the same reason: they are the guards' INPUTS, and reaching them
+        # through `set-cadence` would make the case depend on another leaf.
+        profile = "autonomous" if scenario.endswith("autonomous_unlimited") else "checkpoint"
+        pending = scenario.endswith("checkpoint_pending")
+        event = "prepare" if scenario.endswith("checkpoint_prepared") else "review_complete"
+        set_delivery_cursor(
+            mem.store,
+            journey="demo",
+            method="ariad",
+            active_item="CV1.DS1.US1",
+            active_item_title="A user story",
+            active_item_level="user_story",
+            active_checkpoint="after_validation" if pending else None,
+            pending_confirmation="navigator_debt_decision" if pending else None,
+            last_delivery_event=event,
+            cadence_profile=profile,
+            navigator_flow_unit="story_by_story",
+        )
+        return
     if scenario.startswith("adopted_agg_"):
         # The aggregate scenarios (plateau 5). Every one of them authors the package
         # tree first, because the Done preflight reads authored CONTENT rather than
@@ -1186,6 +1214,157 @@ CASES: list[tuple[str, str, list[str]]] = [
             "--summary", "Unadopted.",
         ],
     ),
+    # -- plateau 6: cadence, release intent, continuation ---------------------
+    #
+    # `set-cadence` has NO module: the whole leaf is `cmd_set_cadence`, and its
+    # guard order differs from every other leaf -- the profile and the
+    # autonomous-limits rule are checked BEFORE the journey is resolved, so a bad
+    # profile with an unresolvable journey reports the PROFILE.
+    (
+        "set_cadence_checkpoint",
+        "adopted_with_cursor",
+        ["set-cadence", "--method", "ariad", "--journey", "demo", "--profile", "checkpoint"],
+    ),
+    (
+        "set_cadence_accelerated",
+        "adopted_with_cursor",
+        ["set-cadence", "--method", "ariad", "--journey", "demo", "--profile", "accelerated"],
+    ),
+    (
+        "set_cadence_autonomous_with_limits",
+        "adopted_with_cursor",
+        [
+            "set-cadence", "--method", "ariad", "--journey", "demo",
+            "--profile", "autonomous",
+            "--limit", "stop before push or release",
+            "--limit", "stop on failing checks",
+        ],
+    ),
+    (
+        "set_cadence_autonomous_requires_limits",
+        "adopted_with_cursor",
+        ["set-cadence", "--method", "ariad", "--journey", "demo", "--profile", "autonomous"],
+    ),
+    (
+        "set_cadence_rejects_unknown_profile",
+        "adopted_with_cursor",
+        ["set-cadence", "--method", "ariad", "--journey", "demo", "--profile", "yolo"],
+    ),
+    # The profile guard runs BEFORE journey resolution: an unknown profile on a
+    # journey that does not exist still reports the profile.
+    (
+        "set_cadence_profile_guard_precedes_journey",
+        "unadopted",
+        ["set-cadence", "--method", "ariad", "--journey", "nope", "--profile", "yolo"],
+    ),
+    (
+        "set_cadence_requires_a_cursor",
+        "adopted",
+        ["set-cadence", "--method", "ariad", "--journey", "demo", "--profile", "checkpoint"],
+    ),
+    (
+        "set_cadence_not_adopted",
+        "unadopted",
+        ["set-cadence", "--method", "ariad", "--journey", "demo", "--profile", "checkpoint"],
+    ),
+    (
+        "release_intent_inspects_not_recorded",
+        "adopted_prepared",
+        ["release-intent", "--method", "ariad", "--journey", "demo"],
+    ),
+    # `adopted_with_cursor`'s active item is `CV1.US1`, which carries no `DS<n>`
+    # segment — so there is no Delivery Story boundary to record an intent against.
+    (
+        "release_intent_requires_a_delivery_story_boundary",
+        "adopted_with_cursor",
+        ["release-intent", "--method", "ariad", "--journey", "demo"],
+    ),
+    (
+        "release_intent_records_planned",
+        "adopted_prepared",
+        ["release-intent", "--method", "ariad", "--journey", "demo", "--intent", "planned"],
+    ),
+    # NO case for `--intent maybe`: argparse declares `choices`, so it refuses with
+    # version-dependent text before the leaf runs -- the same reason
+    # `--decision maybe` is absent. The consequence is worth naming: the module's
+    # own `release intent must be planned, none, or undecided` guard is UNREACHABLE
+    # through the CLI, and is graded at module level by
+    # `release_intent_value_rules` instead.
+    (
+        "release_intent_requires_a_cursor",
+        "adopted",
+        ["release-intent", "--method", "ariad", "--journey", "demo", "--intent", "planned"],
+    ),
+    # `continue-lifecycle` is also CLI-only, and its five guards each render the
+    # IMPLEMENTATION_GUARD surface on STDOUT while exiting 1 -- the same
+    # stdout-refusal shape `check-implementation` and the closure leaves use.
+    (
+        "continue_refuses_stepwise",
+        "adopted_closure_reviewed",
+        [
+            "continue-lifecycle", "--method", "ariad", "--journey", "demo",
+            "--history-action", "Committed.", "--roadmap-update", "Updated.",
+            "--next-recommendation", "Next.",
+        ],
+    ),
+    (
+        "continue_refuses_pending_confirmation",
+        "adopted_cadence_checkpoint_pending",
+        [
+            "continue-lifecycle", "--method", "ariad", "--journey", "demo",
+            "--history-action", "Committed.", "--roadmap-update", "Updated.",
+            "--next-recommendation", "Next.",
+        ],
+    ),
+    (
+        "continue_refuses_autonomous_without_limits",
+        "adopted_cadence_autonomous_unlimited",
+        [
+            "continue-lifecycle", "--method", "ariad", "--journey", "demo",
+            "--history-action", "Committed.", "--roadmap-update", "Updated.",
+            "--next-recommendation", "Next.",
+        ],
+    ),
+    (
+        "continue_refuses_unbypassable_event",
+        "adopted_cadence_checkpoint_prepared",
+        [
+            "continue-lifecycle", "--method", "ariad", "--journey", "demo",
+            "--history-action", "Committed.", "--roadmap-update", "Updated.",
+            "--next-recommendation", "Next.",
+        ],
+    ),
+    (
+        "continue_refuses_missing_done_evidence",
+        "adopted_cadence_checkpoint_reviewed",
+        [
+            "continue-lifecycle", "--method", "ariad", "--journey", "demo",
+            "--history-action", "Committed.", "--roadmap-update", "Updated.",
+        ],
+    ),
+    # The one continuation that proceeds: it crosses the Done boundary itself and
+    # prints DONE_CHECKPOINT. The four alignment arguments it accepts are IGNORED
+    # by Python, which the case records by passing them.
+    (
+        "continue_crosses_done",
+        "adopted_cadence_checkpoint_reviewed",
+        [
+            "continue-lifecycle", "--method", "ariad", "--journey", "demo",
+            "--process", "Followed.", "--project", "Updated.", "--product", "Matches.",
+            "--history-action", "One scoped commit.",
+            "--roadmap-update", "Package marked done.",
+            "--next-recommendation", "Pull the next story.",
+        ],
+    ),
+    (
+        "continue_not_adopted",
+        "unadopted",
+        [
+            "continue-lifecycle", "--method", "ariad", "--journey", "demo",
+            "--history-action", "Committed.", "--roadmap-update", "Updated.",
+            "--next-recommendation", "Next.",
+        ],
+    ),
 ]
 
 # Leaves whose output can carry an absolute project path: `plan_checkpoint` prints
@@ -1210,10 +1389,13 @@ _PATH_BEARING = (
     "review_delivery_story",
     "coherence_delivery_story",
     "done_delivery_story",
+    # `continue-lifecycle` crosses Done, so it prints the same paths Done prints.
+    "continue_",
 )
 
 # Leaves that write into the project, so the files are part of the behavior.
 _FILE_WRITING = (
+    "continue_",
     "prepare_templates",
     "plan_item",
     "pull_item",

@@ -2381,6 +2381,450 @@
       "session_id": "builder-command-session",
       "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
       "stdout": ""
+    },
+    {
+      "argv": [
+        "set-cadence",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--profile",
+        "checkpoint"
+      ],
+      "exit_code": 0,
+      "name": "set_cadence_checkpoint",
+      "scenario": "adopted_with_cursor",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "■ Builder Delivery Cursor Synced\n\njourney\ndemo\n\nmethod\nariad\n\nactive item\nCV1.US1\n\nactive item title\nnone\n\nactive item level\nnone\n\ncadence profile\ncheckpoint\n\ncadence limits\nnone\n\nnavigator flow unit\nstory_by_story\n\nchild work items\nnone\n\naggregate checkpoint status\nnone\n\nactive checkpoint\nnone\n\npending confirmation\nnone\n\nlast delivery event\npulled\n\nboundary\nNo story lifecycle work was executed.\n\n"
+    },
+    {
+      "argv": [
+        "set-cadence",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--profile",
+        "accelerated"
+      ],
+      "exit_code": 0,
+      "name": "set_cadence_accelerated",
+      "scenario": "adopted_with_cursor",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "■ Builder Delivery Cursor Synced\n\njourney\ndemo\n\nmethod\nariad\n\nactive item\nCV1.US1\n\nactive item title\nnone\n\nactive item level\nnone\n\ncadence profile\naccelerated\n\ncadence limits\nnone\n\nnavigator flow unit\nstory_by_story\n\nchild work items\nnone\n\naggregate checkpoint status\nnone\n\nactive checkpoint\nnone\n\npending confirmation\nnone\n\nlast delivery event\npulled\n\nboundary\nNo story lifecycle work was executed.\n\n"
+    },
+    {
+      "argv": [
+        "set-cadence",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--profile",
+        "autonomous",
+        "--limit",
+        "stop before push or release",
+        "--limit",
+        "stop on failing checks"
+      ],
+      "exit_code": 0,
+      "name": "set_cadence_autonomous_with_limits",
+      "scenario": "adopted_with_cursor",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "■ Builder Delivery Cursor Synced\n\njourney\ndemo\n\nmethod\nariad\n\nactive item\nCV1.US1\n\nactive item title\nnone\n\nactive item level\nnone\n\ncadence profile\nautonomous\n\ncadence limits\nstop before push or release, stop on failing checks\n\nnavigator flow unit\nstory_by_story\n\nchild work items\nnone\n\naggregate checkpoint status\nnone\n\nactive checkpoint\nnone\n\npending confirmation\nnone\n\nlast delivery event\npulled\n\nboundary\nNo story lifecycle work was executed.\n\n"
+    },
+    {
+      "argv": [
+        "set-cadence",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--profile",
+        "autonomous"
+      ],
+      "exit_code": 1,
+      "name": "set_cadence_autonomous_requires_limits",
+      "scenario": "adopted_with_cursor",
+      "session_id": "builder-command-session",
+      "stderr": "Error: autonomous cadence requires at least one --limit\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "set-cadence",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--profile",
+        "yolo"
+      ],
+      "exit_code": 1,
+      "name": "set_cadence_rejects_unknown_profile",
+      "scenario": "adopted_with_cursor",
+      "session_id": "builder-command-session",
+      "stderr": "Error: cadence profile must be one of stepwise, checkpoint, accelerated, autonomous\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "set-cadence",
+        "--method",
+        "ariad",
+        "--journey",
+        "nope",
+        "--profile",
+        "yolo"
+      ],
+      "exit_code": 1,
+      "name": "set_cadence_profile_guard_precedes_journey",
+      "scenario": "unadopted",
+      "session_id": "builder-command-session",
+      "stderr": "Error: cadence profile must be one of stepwise, checkpoint, accelerated, autonomous\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "set-cadence",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--profile",
+        "checkpoint"
+      ],
+      "exit_code": 1,
+      "name": "set_cadence_requires_a_cursor",
+      "scenario": "adopted",
+      "session_id": "builder-command-session",
+      "stderr": "Error: journey 'demo' has no Builder delivery cursor.\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "set-cadence",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--profile",
+        "checkpoint"
+      ],
+      "exit_code": 1,
+      "name": "set_cadence_not_adopted",
+      "scenario": "unadopted",
+      "session_id": "builder-command-session",
+      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "release-intent",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 0,
+      "name": "release_intent_inspects_not_recorded",
+      "scenario": "adopted_prepared",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:RELEASE_INTENT>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🚦  DELIVERY STORY RELEASE INTENT               │\n│                                                        │\n│ Delivery Story                                         │\n│ CV1.DS1                                                │\n│                                                        │\n│ Intent                                                 │\n│ not_recorded                                           │\n│                                                        │\n│ Meaning                                                │\n│ No release intent has been recorded for this Delivery  │\n│ Story.                                                 │\n│                                                        │\n│ Action                                                 │\n│ inspected                                              │\n│                                                        │\n│ Authority boundary                                     │\n│ Release intent does not authorize commit, push, tag    │\n│ creation, stable promotion, release publication, or    │\n│ remote mutation.                                       │\n╰────────────────────────────────────────────────────────╯\n<<<END:RELEASE_INTENT>>>\n\n"
+    },
+    {
+      "argv": [
+        "release-intent",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo"
+      ],
+      "exit_code": 1,
+      "name": "release_intent_requires_a_delivery_story_boundary",
+      "scenario": "adopted_with_cursor",
+      "session_id": "builder-command-session",
+      "stderr": "Error: active Delivery Story boundary is required for release intent\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "release-intent",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--intent",
+        "planned"
+      ],
+      "exit_code": 0,
+      "name": "release_intent_records_planned",
+      "scenario": "adopted_prepared",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:RELEASE_INTENT>>>\nDelivery\n\n╭────────────────────────────────────────────────────────╮\n│        🚦  DELIVERY STORY RELEASE INTENT               │\n│                                                        │\n│ Delivery Story                                         │\n│ CV1.DS1                                                │\n│                                                        │\n│ Intent                                                 │\n│ planned                                                │\n│                                                        │\n│ Meaning                                                │\n│ This Delivery Story is expected to create a release    │\n│ boundary if completed coherently.                      │\n│                                                        │\n│ Action                                                 │\n│ recorded                                               │\n│                                                        │\n│ Authority boundary                                     │\n│ Release intent does not authorize commit, push, tag    │\n│ creation, stable promotion, release publication, or    │\n│ remote mutation.                                       │\n╰────────────────────────────────────────────────────────╯\n<<<END:RELEASE_INTENT>>>\n\n"
+    },
+    {
+      "argv": [
+        "release-intent",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--intent",
+        "planned"
+      ],
+      "exit_code": 1,
+      "name": "release_intent_requires_a_cursor",
+      "scenario": "adopted",
+      "session_id": "builder-command-session",
+      "stderr": "Error: delivery cursor is required before release intent\n",
+      "stdout": ""
+    },
+    {
+      "argv": [
+        "continue-lifecycle",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--history-action",
+        "Committed.",
+        "--roadmap-update",
+        "Updated.",
+        "--next-recommendation",
+        "Next."
+      ],
+      "exit_code": 1,
+      "name": "continue_refuses_stepwise",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 1
+      },
+      "scenario": "adopted_closure_reviewed",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:IMPLEMENTATION_GUARD>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ◉ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟧■  IMPLEMENTATION GUARD                       │\n│                                                        │\n│ status                                                 │\n│ blocked                                                │\n│                                                        │\n│ missing checkpoint                                     │\n│ Stepwise cadence does not continue automatically.      │\n│                                                        │\n│ boundary                                               │\n│ No implementation files may be mutated until the guard │\n│ allows Implement.                                      │\n╰────────────────────────────────────────────────────────╯\n<<<END:IMPLEMENTATION_GUARD>>>\n\n"
+    },
+    {
+      "argv": [
+        "continue-lifecycle",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--history-action",
+        "Committed.",
+        "--roadmap-update",
+        "Updated.",
+        "--next-recommendation",
+        "Next."
+      ],
+      "exit_code": 1,
+      "name": "continue_refuses_pending_confirmation",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 1
+      },
+      "scenario": "adopted_cadence_checkpoint_pending",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:IMPLEMENTATION_GUARD>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ◉ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟧■  IMPLEMENTATION GUARD                       │\n│                                                        │\n│ status                                                 │\n│ blocked                                                │\n│                                                        │\n│ missing checkpoint                                     │\n│ Continuation is blocked: pending confirmation          │\n│ navigator_debt_decision.                               │\n│                                                        │\n│ boundary                                               │\n│ No implementation files may be mutated until the guard │\n│ allows Implement.                                      │\n╰────────────────────────────────────────────────────────╯\n<<<END:IMPLEMENTATION_GUARD>>>\n\n"
+    },
+    {
+      "argv": [
+        "continue-lifecycle",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--history-action",
+        "Committed.",
+        "--roadmap-update",
+        "Updated.",
+        "--next-recommendation",
+        "Next."
+      ],
+      "exit_code": 1,
+      "name": "continue_refuses_autonomous_without_limits",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 1
+      },
+      "scenario": "adopted_cadence_autonomous_unlimited",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:IMPLEMENTATION_GUARD>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ◉ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟧■  IMPLEMENTATION GUARD                       │\n│                                                        │\n│ status                                                 │\n│ blocked                                                │\n│                                                        │\n│ missing checkpoint                                     │\n│ Autonomous cadence requires explicit limits.           │\n│                                                        │\n│ boundary                                               │\n│ No implementation files may be mutated until the guard │\n│ allows Implement.                                      │\n╰────────────────────────────────────────────────────────╯\n<<<END:IMPLEMENTATION_GUARD>>>\n\n"
+    },
+    {
+      "argv": [
+        "continue-lifecycle",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--history-action",
+        "Committed.",
+        "--roadmap-update",
+        "Updated.",
+        "--next-recommendation",
+        "Next."
+      ],
+      "exit_code": 1,
+      "name": "continue_refuses_unbypassable_event",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 1
+      },
+      "scenario": "adopted_cadence_checkpoint_prepared",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:IMPLEMENTATION_GUARD>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ◉ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟧■  IMPLEMENTATION GUARD                       │\n│                                                        │\n│ status                                                 │\n│ blocked                                                │\n│                                                        │\n│ missing checkpoint                                     │\n│ No bypassable continuation is available after prepare. │\n│                                                        │\n│ boundary                                               │\n│ No implementation files may be mutated until the guard │\n│ allows Implement.                                      │\n╰────────────────────────────────────────────────────────╯\n<<<END:IMPLEMENTATION_GUARD>>>\n\n"
+    },
+    {
+      "argv": [
+        "continue-lifecycle",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--history-action",
+        "Committed.",
+        "--roadmap-update",
+        "Updated."
+      ],
+      "exit_code": 1,
+      "name": "continue_refuses_missing_done_evidence",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 1
+      },
+      "scenario": "adopted_cadence_checkpoint_reviewed",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:IMPLEMENTATION_GUARD>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ◉ Implement → ○ Validate → ○ Debt Review → ○ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟧■  IMPLEMENTATION GUARD                       │\n│                                                        │\n│ status                                                 │\n│ blocked                                                │\n│                                                        │\n│ missing checkpoint                                     │\n│ Done requires history, roadmap, and next-step          │\n│ evidence.                                              │\n│                                                        │\n│ boundary                                               │\n│ No implementation files may be mutated until the guard │\n│ allows Implement.                                      │\n╰────────────────────────────────────────────────────────╯\n<<<END:IMPLEMENTATION_GUARD>>>\n\n"
+    },
+    {
+      "argv": [
+        "continue-lifecycle",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--process",
+        "Followed.",
+        "--project",
+        "Updated.",
+        "--product",
+        "Matches.",
+        "--history-action",
+        "One scoped commit.",
+        "--roadmap-update",
+        "Package marked done.",
+        "--next-recommendation",
+        "Pull the next story."
+      ],
+      "exit_code": 0,
+      "name": "continue_crosses_done",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/done.md": "# Done — CV1.DS1.US1\n\n## Status\n\nDone\n\n## History Action\n\nOne scoped commit.\n\n## Roadmap Update\n\nPackage marked done.\n\n## Next Recommendation\n\nPull the next story.\n\n## Missing Done\n\n- none\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [
+          "ariad/operational.json",
+          "current.json"
+        ],
+        "receipts": 2
+      },
+      "scenario": "adopted_cadence_checkpoint_reviewed",
+      "session_id": "builder-command-session",
+      "stderr": "",
+      "stdout": "<<<ARIAD:DONE_CHECKPOINT>>>\nDelivery\nDelivery Flow: ✓ Pull → ✓ Prepare → ✓ Expand → ✓ Plan → ✓ Implement → ✓ Validate → ✓ Debt Review → ◉ Done\n\n╭────────────────────────────────────────────────────────╮\n│        🟩■  DONE CHECKPOINT                             │\n│                                                        │\n│ active item                                            │\n│ CV1.DS1.US1                                            │\n│                                                        │\n│ status                                                 │\n│ done                                                   │\n│                                                        │\n│ history action                                         │\n│ One scoped commit.                                     │\n│                                                        │\n│ roadmap update                                         │\n│ Package marked done.                                   │\n│                                                        │\n│ next recommendation                                    │\n│ Pull the next story.                                   │\n│                                                        │\n│ missing done                                           │\n│ ✓ none                                                 │\n│                                                        │\n│ done contract                                          │\n│ ✓ close the story only after validation, review, and   │\n│   coherence are satisfied                              │\n│ ✓ record history at coherent story boundaries unless   │\n│   local policy overrides                               │\n│ ✓ update worklog for meaningful milestones             │\n│ ✓ recommend next pull, parent collapse, or release     │\n│   boundary when relevant                               │\n│                                                        │\n│ done artifact                                          │\n│ <ABSOLUTE PATH>                                        │\n│                                                        │\n│ boundary                                               │\n│ Story closure is complete; Builder may recommend the   │\n│ next Pull.                                             │\n╰────────────────────────────────────────────────────────╯\n<<<END:DONE_CHECKPOINT>>>\n\n"
+    },
+    {
+      "argv": [
+        "continue-lifecycle",
+        "--method",
+        "ariad",
+        "--journey",
+        "demo",
+        "--history-action",
+        "Committed.",
+        "--roadmap-update",
+        "Updated.",
+        "--next-recommendation",
+        "Next."
+      ],
+      "exit_code": 1,
+      "name": "continue_not_adopted",
+      "project_files": {
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/cv1-ds1-us1-story/index.md": "# CV1.DS1.US1 — A user story\n\n**Status:** 🟡 Planned\n**Type:** User Story\n",
+        "docs/project/roadmap/cv1-first/cv1-ds1-delivery/index.md": "# CV1.DS1 — A delivery story\n\n**Status:** 🟡 Planned\n**Type:** Delivery Story\n",
+        "docs/project/roadmap/cv1-first/index.md": "# CV1 — First value\n\n**Status:** 🟢 Active\n",
+        "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
+      },
+      "projection": {
+        "documents": [],
+        "receipts": 0
+      },
+      "scenario": "unadopted",
+      "session_id": "builder-command-session",
+      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
+      "stdout": ""
     }
   ]
 }

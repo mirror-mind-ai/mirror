@@ -102,7 +102,11 @@ const PORTED_LEAVES = [
  * panel (the smoke opens with `set-flow-unit`, and seeding the flow unit by a raw
  * cursor write instead would be the unrecorded mutation plateau 3a ruled out).
  */
-const PENDING_LEAVES: readonly string[] = [];
+const PENDING_LEAVES: readonly string[] = [
+  "continue-lifecycle",
+  "release-intent",
+  "set-cadence",
+];
 
 /**
  * Cases Python would refuse at the ARGPARSE layer, before any leaf runs.
