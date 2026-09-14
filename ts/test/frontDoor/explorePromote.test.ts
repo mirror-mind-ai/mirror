@@ -15,7 +15,7 @@
 import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 import test from "node:test";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import type { WritableDatabase } from "#db/database.ts";
@@ -24,6 +24,7 @@ import {
   setExplorerBuilderHandoff,
   updateExplorerStory,
 } from "#explorer/story.ts";
+import { dbNameForEnv } from "#frontDoor/dbPath.ts";
 import { spawnFrontDoor } from "#helpers/frontDoor.ts";
 import { createJourney } from "#journey/journeyWrite.ts";
 
@@ -31,11 +32,27 @@ const TS_ROOT = resolve(import.meta.dirname, "..", "..");
 const FIXTURES = join(TS_ROOT, "test", "fixtures", "builder-load");
 const CLOCK = { now: () => "2026-01-01T00:00:00+00:00", uuid: () => "00000001" };
 
+/**
+ * The database name the FRONT DOOR will resolve, not a hard-coded `memory.db`.
+ *
+ * The environment selects the name (`memory_test.db` under `MEMORY_ENV=test`),
+ * and CI runs the suite with exactly that. Seeding the wrong file made every
+ * assertion here pass locally and fail on the runner, where the command
+ * bootstrapped an empty database and rendered `no_builder_handoff` — a green
+ * local run describing a database the command never opened.
+ */
+// `||`, not `??`: the resolver reads `env.MEMORY_ENV || "production"`, so an
+// exported-but-empty variable is production there and must be here too.
+const DB_NAME = dbNameForEnv(process.env.MEMORY_ENV || "production");
+
+/** No Python on PATH: a route that falls back cannot then do the work itself. */
+const NO_PYTHON = { PATH: "/nonexistent-path-for-test" };
+
 /** A mirror home with one journey and, optionally, a story carrying a handoff. */
 function makeHome(options: { withHandoff: boolean }): { home: string; slug: string } {
   const home = mkdtempSync(join(tmpdir(), "promote-"));
   const slug = "promote-journey";
-  const db: WritableDatabase = bootstrapDatabase(join(home, "memory.db"));
+  const db: WritableDatabase = bootstrapDatabase(join(home, DB_NAME));
   try {
     createJourney(
       db,
@@ -73,7 +90,7 @@ function makeHome(options: { withHandoff: boolean }): { home: string; slug: stri
  * promoted story became.
  */
 function read(home: string, slug: string) {
-  const db = bootstrapDatabase(join(home, "memory.db"));
+  const db = bootstrapDatabase(join(home, DB_NAME));
   try {
     const row = db
       .prepare(
@@ -116,6 +133,7 @@ test("promote confirms the handoff, promotes the story, and enters Builder", () 
 
     const result = spawnFrontDoor(["explore", "story", "promote", slug], {
       MIRROR_HOME: home,
+      MIRROR_USER: basename(home),
       ...REPLAY,
     });
 
@@ -157,7 +175,10 @@ test("promote without a handoff renders the refusal surface and mutates nothing"
   // touch the network.
   const { home, slug } = makeHome({ withHandoff: false });
   try {
-    const result = spawnFrontDoor(["explore", "story", "promote", slug], { MIRROR_HOME: home });
+    const result = spawnFrontDoor(["explore", "story", "promote", slug], {
+      MIRROR_HOME: home,
+      MIRROR_USER: basename(home),
+    });
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /\[\[MIRROR_REQUIRED_SURFACE_BEGIN:no_builder_handoff\]\]/u);
@@ -175,18 +196,24 @@ test("promote without a handoff renders the refusal surface and mutates nothing"
 test("a reverted Builder family sends promote to Python, before it writes anything", () => {
   // The important half is the SECOND assertion. Promote is not idempotent —
   // once the story is promoted a second run finds none — so a revert discovered
-  // after the writes would leave a journey neither engine can finish. The
-  // fallback here reaches Python, which is absent in this environment, so the
-  // command fails; what must hold is that the story is untouched.
+  // after the writes would leave a journey neither engine can finish.
+  //
+  // Python is made UNREACHABLE on purpose. With it available the fallback would
+  // promote the story itself and the assertion could no longer tell "TypeScript
+  // wrote nothing" from "TypeScript wrote everything": both end with a promoted
+  // story. This is the environment where only one of them does.
   const { home, slug } = makeHome({ withHandoff: true });
   try {
     const result = spawnFrontDoor(["explore", "story", "promote", slug], {
       MIRROR_HOME: home,
+      MIRROR_USER: basename(home),
       MIRROR_TS_SEARCH: "0",
       ...REPLAY,
+      ...NO_PYTHON,
     });
 
     assert.notEqual(result.status, 0, "the TS route did not answer");
+    assert.match(result.stderr, /could not spawn `uv`/u, "it fell back to Python");
     const after = read(home, slug);
     assert.equal(after.row?.status, "active");
     assert.equal(after.handoff?.readiness, "proposed");
@@ -200,7 +227,9 @@ test("half a replay fixture refuses instead of reaching the live provider", () =
   try {
     const result = spawnFrontDoor(["explore", "story", "promote", slug], {
       MIRROR_HOME: home,
+      MIRROR_USER: basename(home),
       MIRROR_TS_BUILD_EMBEDDING_REPLAY: REPLAY.MIRROR_TS_BUILD_EMBEDDING_REPLAY,
+      ...NO_PYTHON,
     });
 
     assert.notEqual(result.status, 0);
