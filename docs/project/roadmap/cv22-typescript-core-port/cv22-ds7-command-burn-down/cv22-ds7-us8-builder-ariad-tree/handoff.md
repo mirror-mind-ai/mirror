@@ -1,17 +1,16 @@
 [< Story](index.md)
 
-# Handoff — CV22.DS7.US8 — Builder/Ariad tree (flipped; closure in flight)
+# Handoff — CV22.DS7.US8 — Builder/Ariad tree (closed 2026-09-16)
 
-**Status:** plateaus 1–9 of 9 complete. **All 27 in-scope leaves answer from
-TypeScript by default through the production front door** since 2026-09-16;
-`MIRROR_TS_BUILD=0` reverts the whole family. All three Ariad flows — the
-story lifecycle, the aggregate Delivery Story lifecycle, and the
-cadence/authority paths — run through both real process boundaries and agree
-after every step, with no gate in the environment. The twenty legacy SQLite
+**Status:** **done.** All 27 in-scope leaves answer from TypeScript by default
+through the production front door since 2026-09-16; `MIRROR_TS_BUILD=0`
+reverts the whole family. The story closed the same day through the route it
+validates: `plan-item`, `approve-plan`, `validate-item`, `review-item`,
+`coherence-item`, and `done-item` ran on the real cursor through the TS front
+door, and the cursor reads `done_complete / gen 16`. The twenty legacy SQLite
 Workbench leaves remain on Python by name for DS10 retirement. `explore story
-promote`, whose tail is a Builder session start, remains on TypeScript. What
-is left is the story's own closure on the flipped route: validation step 4
-(the self-hosting closure) and step 5 (a live Pi Builder session).
+promote`, whose tail is a Builder session start, is on TypeScript. Nothing in
+this package is a resume instruction any more; it is the evidence record.
 
 ## Resume here
 
@@ -60,23 +59,13 @@ argparse's `--option=value` and prefix spellings (parity, not a divergence).
 - `docs/reference/configuration.md` documents the temporary plateau-8 opt-in,
   composed reverts, replay pair, and redacted log shape.
 
-**Next: the closure events.** Steps 1–3 and 6 accepted 2026-09-16; the flip
-landed (`2a597fc5`); step 4's backup, restore drill, dry run, `plan-item`, and
-`approve-plan` are done; step 5 was run by the Navigator in a fresh Pi session
-and verified in the log (evidence in `test-guide.md`: `leaf=load calls=2`,
-`leaf=pull-candidates`, a `build python` line for a read-only Workbench leaf,
-no `fell_back`, no argument text). The real cursor reads **`plan_approved /
-gen 16`**. Remaining, through the TS front door, each already dry-run on a
-copy by `scripts/smoke_builder_real_copy.sh`:
-
-1. a fresh `backup`, then `validate-item --navigator-accepted
-   --implementation-complete …` with the checks and the E2E evidence;
-2. `review-item` with the debt findings from `plan.md` and the Navigator's
-   decision;
-3. `coherence-item`;
-4. `done-item`, which publishes the Journey projection and prints the roadmap
-   snapshot; then the index status moves to Done and the ledger's family row
-   drops "closure in flight".
+**Closed.** Steps 1–3 and 6 accepted 2026-09-16; the flip landed
+(`2a597fc5`); step 4's backup, restore drill, dry run, and the six real
+lifecycle events ran through the TS front door; step 5 was run by the
+Navigator in a fresh Pi session and verified in the log (`test-guide.md`).
+Debt deferred with a revisit trigger (`review.md`). The next pull the Done
+surface recommended is **CV22.DS7.TS4** (extension catalog + `identity
+edit`), with US9 the other remaining DS7 story.
 
 **Cursor finding, resolved.** The real cursor read `prepare / gen 16` on
 2026-09-16 because a resume session's `prepare-item` on 2026-09-15 had demoted

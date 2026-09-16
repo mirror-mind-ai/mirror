@@ -12,6 +12,14 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-16 — CV22.DS7.US8 Builder/Ariad tree completed
+
+**The `build` family — 27 in-scope leaves — answers from TypeScript by default**, `MIRROR_TS_BUILD=0` reverting it in one move, and the story closed **through the route it validates**: after the flip, this story's own `plan-item`, `approve-plan`, `validate-item`, `review-item`, `coherence-item`, and `done-item` ran on the real cursor through the TS front door, with Python reading every cursor state identically. The twenty SQLite Workbench leaves stay on Python by explicit refusal until DS10 retires them; `explore story promote`, whose tail is a Builder session start, had already moved with plateau 7. **DS7 progress 12/15 → 13/15.**
+
+Nine plateaus, one commit each, nothing routed until plateau 8 and the gate off until plateau 9. What the corpora had to reproduce: the cursor's serialized BYTES (compare-and-swap matches the string, so a divergent key order would corrupt exactly when `MIRROR_TS_BUILD=0` is needed), Python's regex and `str` dialects, `sorted(rglob)`'s component order, two helpers with two behaviors each, ragged frame literals, and `load` — the only leaf that crosses the provider seam — graded against a Python oracle patched behind a socket tripwire after its first version made live calls. The route resolves `load`'s composed transport (`MIRROR_TS_BUILD`, `MIRROR_TS_SEARCH`, `MIRROR_TS_CONVERSATION_LLM_TAIL`) before any byte, imports the Builder tree lazily so a broken core cannot destroy its own revert, refuses all twenty Workbench leaves by name, logs only `leaf=` and `calls=`, and — since the plateau-8 panel — accepts argparse's `--option=value` and prefix spellings.
+
+Navigator validation on the real home: four read-only leaves byte-identical; a live `load` on two real-database copies identical on all four faces including the ranked block; a full lifecycle on real-database copies and scratch clones diff-clean at every step (`scripts/smoke_builder_real_copy.sh`, proven to bite by a mutant); the revert identical with Python in the log; a backup restored into a scratch home and loaded; and a live Pi Builder session read directly from `front-door.log`. Found on the way and recorded rather than fixed: a resume session's `prepare-item` had silently demoted this story's approved Plan (Python's Prepare overwrites the event unconditionally), and every session start since 2026-09-11 loses its first user prompt to a race between the detached `session-maintenance` process and the `log-user` hook on the single pre-write backup file. Debt deferred with a revisit trigger.
+
 ### 2026-09-13 — CV22.DS8 closed: every LLM-crossing command answers from TypeScript
 
 **The Delivery Story is done at 5/5, and the strangler's provider seam is
