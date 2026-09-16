@@ -2,7 +2,7 @@
 
 # CV22.DS7.TS4 — Ops/utility tail 3: extension catalog
 
-**Status:** 🟢 In Progress — **all 8 plateaus complete, flipped 2026-09-16** (catalog reads, ledger reads, the binding/migration writes, the `ext <id> <subcommand>` dispatch — both halves: the declared `mirror-cli-v1` command executed directly, everything else through the compat host's new `cli` mode — and the catalog writes graded by the file trees they leave in a disposable home and target root, `identity edit`, and the ES-001 metadata-lifecycle write faces — ported and graded, and the front door flipped on accepted Navigator validation: all seventeen leaves answer from TypeScript by default, with three independent reverts — see [Validation](validation.md) and the [burn-down ledger](../burn-down-ledger.md#extension-catalog--per-leaf-detail-ds7ts4)); pulled 2026-09-16 through the TS front door (the first Ariad Pull answered by TypeScript in production); **Plan approved 2026-09-16** with D1 answered (c): a TS dispatcher, a declared `mirror-cli-v1` contract, and a `cli` mode of the existing temporary compat host under DS10's deletion gate
+**Status:** ✅ Done — flipped 2026-09-16 after Navigator validation on the real home (read diff, the dispatch through the compat host with a leaf-only log line, and `identity edit` through the Navigator's own editor), accepted the same day. All 17 leaves answer from TypeScript by default: `extensions` ×7, `ext` ×5 including the dynamic `<id> <subcommand>`, `list extensions|all`, `inspect extension|runtime-catalog|llm-calls|embedding-provenance`, `identity edit`, and the two ES-001 write faces. Three independent reverts (`MIRROR_TS_EXTENSIONS=0`, `MIRROR_TS_IDENTITY_EDIT=0`, `MIRROR_TS_CONVERSATIONS_LIFECYCLE=0`). Debt deferred with a revisit trigger; evidence in [validation.md](validation.md) and [test-guide.md](test-guide.md); history in [handoff.md](handoff.md)
 **Type:** Technical Story
 
 ---
@@ -71,6 +71,9 @@ And front-door.log carries leaf names only, never an extension argument
 ## Artifacts
 
 - [Plan](plan.md)
-- [Validation](validation.md)
 - [Test Guide](test-guide.md)
+- [Validation](validation.md)
+- [Review](review.md)
+- [Coherence](coherence.md)
+- [Done](done.md)
 - [Handoff](handoff.md)
