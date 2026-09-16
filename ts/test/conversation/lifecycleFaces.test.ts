@@ -29,6 +29,8 @@ interface GoldenCase {
   error: string | null;
 }
 interface ConversationRow {
+  summary: string | null;
+  tags: string | null;
   id: string;
   title: string | null;
   started_at: string;
@@ -70,8 +72,11 @@ function seedWorld(): { dbPath: string; cleanup: () => void } {
   for (const seed of Object.values(golden.seeds)) {
     const row = seed.conversation_row;
     db.prepare(
-      "INSERT INTO conversations (id, interface, title, started_at, metadata) VALUES (?, 'cli', ?, ?, ?)",
-    ).run(row.id, row.title, row.started_at, row.metadata);
+      "INSERT INTO conversations (id, interface, title, started_at, summary, tags, metadata) " +
+        "VALUES (?, 'cli', ?, ?, ?, ?, ?)",
+      // `summary` and `tags` are seeded because the ENGINE reads them: a world
+      // built without them let the face drop both columns and still pass.
+    ).run(row.id, row.title, row.started_at, row.summary, row.tags, row.metadata);
     for (const message of seed.message_rows) {
       db.prepare(
         "INSERT INTO messages (id, conversation_id, role, content, created_at) VALUES (?, ?, ?, ?, ?)",

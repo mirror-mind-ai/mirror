@@ -28,9 +28,22 @@ import type { Database } from "#db/database.ts";
 /** Python raises `ValueError`; the CLI renders its text. */
 export class LifecycleFaceError extends Error {}
 
+/**
+ * Every column the ENGINE reads, not just the ones the title decision reads.
+ *
+ * The first version of this face selected `id, title, metadata`, and the
+ * summary and tags decisions silently answered as if the conversation had
+ * neither: a conversation with a stored summary reported `summary: defer` where
+ * Python reports `keep`, and the title decision moved with it, because
+ * refinement evidence is drawn from the summary. Measured at CV22.DS7.TS4
+ * plateau 6 against the real CLI; the US11 corpus could not see it because no
+ * seeded conversation had a summary or tags to lose.
+ */
 interface ConversationRow {
   id: string;
   title: string | null;
+  summary: string | null;
+  tags: string | null;
   metadata: string | null;
 }
 
@@ -43,12 +56,13 @@ export function resolveConversation(db: Database, conversationId: string): Conve
     throw new LifecycleFaceError("conversationId is required");
   }
   const exact = db
-    .prepare("SELECT id, title, metadata FROM conversations WHERE id = ?")
+    .prepare("SELECT id, title, summary, tags, metadata FROM conversations WHERE id = ?")
     .get(conversationId) as unknown as ConversationRow | undefined;
   if (exact) return exact;
   const prefixed = db
     .prepare(
-      "SELECT id, title, metadata FROM conversations WHERE id LIKE ? ORDER BY started_at LIMIT 1",
+      "SELECT id, title, summary, tags, metadata FROM conversations WHERE id LIKE ? " +
+        "ORDER BY started_at LIMIT 1",
     )
     .get(`${conversationId}%`) as unknown as ConversationRow | undefined;
   if (prefixed) return prefixed;
@@ -92,7 +106,13 @@ export function metadataDict(conversation: ConversationRow): Record<string, unkn
  * The cast is gone: the row already satisfies the interface structurally.
  */
 function asConversationLike(row: ConversationRow): ConversationLike {
-  return { id: row.id, title: row.title, metadata: row.metadata };
+  return {
+    id: row.id,
+    title: row.title,
+    summary: row.summary,
+    tags: row.tags,
+    metadata: row.metadata,
+  };
 }
 
 /** `conversations --metadata-lifecycle-dry-run <conversation-id>`. */

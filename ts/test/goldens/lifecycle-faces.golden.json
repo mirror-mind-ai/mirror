@@ -109,6 +109,42 @@
       }
     },
     {
+      "argument": "<conversation-stored>",
+      "error": null,
+      "face": "dry_run",
+      "label": "stored summary and tags",
+      "report": {
+        "conversation_id": "<conversation-stored>",
+        "fields": {
+          "summary": {
+            "current_value": "Editorial workflow for a manuscript. Scrivener import, cover briefing, Kindle export, EPUB validation, chapter cleanup, raw text hygiene.",
+            "decision": "keep",
+            "provenance": "stored",
+            "readiness": "ready",
+            "reason": "summary already exists"
+          },
+          "tags": {
+            "current_value": "[\"editorial\", \"workflow\"]",
+            "decision": "keep",
+            "provenance": "stored",
+            "readiness": "ready",
+            "reason": "tags already exist"
+          },
+          "title": {
+            "current_value": "Initial editorial session",
+            "decision": "repair",
+            "lock_state": "unlocked",
+            "provenance": "first_user",
+            "readiness": "ready",
+            "reason": "current title is provisional or weak"
+          }
+        },
+        "metadata_lifecycle_version": 1,
+        "mode": "dry_run",
+        "mutated": false
+      }
+    },
+    {
       "argument": "<conversation-provisional>",
       "error": null,
       "face": "dry_run",
@@ -355,6 +391,8 @@
         "id": "<conversation-empty>",
         "metadata": null,
         "started_at": "2026-09-09T12:00:09.000000Z",
+        "summary": null,
+        "tags": null,
         "title": null
       },
       "message_rows": []
@@ -364,6 +402,8 @@
         "id": "<conversation-manual>",
         "metadata": "{\"title_source\": \"manual\", \"title_status\": \"manual\"}",
         "started_at": "2026-09-09T12:00:06.000000Z",
+        "summary": null,
+        "tags": null,
         "title": "Manual conversation title"
       },
       "message_rows": [
@@ -386,6 +426,8 @@
         "id": "<conversation-provisional>",
         "metadata": "{\"title_source\": \"first_user\", \"title_status\": \"provisional\"}",
         "started_at": "2026-09-09T12:00:01.000000Z",
+        "summary": null,
+        "tags": null,
         "title": "vamos trabalhar no maestro"
       },
       "message_rows": [
@@ -411,6 +453,30 @@
           "content": "Mensagem 3 sobre o checkpoint do plano.",
           "created_at": "2026-09-09T12:00:05.000000Z",
           "id": "<provisional-message-4>",
+          "role": "assistant"
+        }
+      ]
+    },
+    "stored": {
+      "conversation_row": {
+        "id": "<conversation-stored>",
+        "metadata": "{\"title_source\": \"first_user\", \"title_status\": \"provisional\"}",
+        "started_at": "2026-09-09T12:00:10.000000Z",
+        "summary": "Editorial workflow for a manuscript. Scrivener import, cover briefing, Kindle export, EPUB validation, chapter cleanup, raw text hygiene.",
+        "tags": "[\"editorial\", \"workflow\"]",
+        "title": "Initial editorial session"
+      },
+      "message_rows": [
+        {
+          "content": "Mensagem 0 sobre o checkpoint do plano.",
+          "created_at": "2026-09-09T12:00:11.000000Z",
+          "id": "<stored-message-1>",
+          "role": "user"
+        },
+        {
+          "content": "Mensagem 1 sobre o checkpoint do plano.",
+          "created_at": "2026-09-09T12:00:12.000000Z",
+          "id": "<stored-message-2>",
           "role": "assistant"
         }
       ]

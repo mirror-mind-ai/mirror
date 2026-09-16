@@ -19,6 +19,10 @@ provider stub -- only the key popped, so an unexpected network path raises.
 
 Branches exercised:
   - a conversation with a provisional title and messages -> the full report;
+  - a conversation with a STORED SUMMARY and TAGS -> the keep/refine decisions
+    that only exist when those columns are read. The first version of this
+    corpus seeded neither, so the TypeScript face could drop both columns and
+    still pass;
   - a conversation whose title is MANUAL -> the preserve decision;
   - a conversation with no messages -> the untitleable path;
   - an id PREFIX rather than a full id -> `find_conversation_by_id_prefix`;
@@ -44,13 +48,27 @@ HERE = Path(__file__).resolve().parent
 OUT_PATH = HERE.parent / "test" / "goldens" / "lifecycle-faces.golden.json"
 
 
-def _seed(mem, *, title: str | None, manual: bool, message_count: int) -> dict:
+def _seed(
+    mem,
+    *,
+    title: str | None,
+    manual: bool,
+    message_count: int,
+    summary: str | None = None,
+    tags: str | None = None,
+) -> dict:
     conversation = mem.conversations.start_conversation("cli")
     if title is not None:
         if manual:
             mem.conversations.update_title(conversation.id, title)
         else:
             mem.conversations.set_provisional_title(conversation.id, title)
+    if summary is not None or tags is not None:
+        mem.store.update_conversation(
+            conversation.id,
+            **({"summary": summary} if summary is not None else {}),
+            **({"tags": tags} if tags is not None else {}),
+        )
     message_ids = []
     for index in range(message_count):
         role = "user" if index % 2 == 0 else "assistant"
@@ -59,7 +77,7 @@ def _seed(mem, *, title: str | None, manual: bool, message_count: int) -> dict:
         )
         message_ids.append(message.id)
     row = mem.store.conn.execute(
-        "SELECT id, title, started_at, metadata FROM conversations WHERE id = ?",
+        "SELECT id, title, started_at, summary, tags, metadata FROM conversations WHERE id = ?",
         (conversation.id,),
     ).fetchone()
     messages = [
@@ -108,12 +126,34 @@ def main() -> None:
         manual = _seed(mem, title="Manual conversation title", manual=True, message_count=2)
         empty = _seed(mem, title=None, manual=False, message_count=0)
 
-        seeds = {"provisional": provisional, "manual": manual, "empty": empty}
+        # The case the first corpus could not see: a conversation that already
+        # HAS a summary and tags. Every field's decision moves when those two
+        # columns are read -- including the title's, because refinement evidence
+        # is drawn from the summary.
+        stored = _seed(
+            mem,
+            title="Initial editorial session",
+            manual=False,
+            message_count=2,
+            summary=(
+                "Editorial workflow for a manuscript. Scrivener import, cover briefing, "
+                "Kindle export, EPUB validation, chapter cleanup, raw text hygiene."
+            ),
+            tags='["editorial", "workflow"]',
+        )
+
+        seeds = {
+            "provisional": provisional,
+            "manual": manual,
+            "empty": empty,
+            "stored": stored,
+        }
 
         dry_run_cases = [
             ("provisional title, four messages", provisional["conversation_id"]),
             ("manual title is preserved", manual["conversation_id"]),
             ("no messages", empty["conversation_id"]),
+            ("stored summary and tags", stored["conversation_id"]),
             ("id prefix resolves", provisional["conversation_id"][:8]),
             ("unknown conversation id", "does-not-exist"),
             ("empty conversation id", ""),
