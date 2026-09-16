@@ -42,7 +42,7 @@ mkdir -p "$ROOT"
 SNAP="$ROOT/snapshot.db"
 CURSOR_KEY="__builder_delivery_cursor__:$JOURNEY"
 
-cd "$REPO"
+cd "$REPO" || exit 1
 rm -rf "$ROOT/py" "$ROOT/ts" "$ROOT/steps"
 mkdir -p "$ROOT/steps"
 # A consistent snapshot, taken once, so both worlds start from the same bytes.
