@@ -21,6 +21,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { Database, WritableDatabase } from "#db/database.ts";
 import type { RenderedCommand } from "./catalog.ts";
+import { extensionNotInstalled, installedExtensionDir } from "./dispatch.ts";
 import { ExtensionError } from "./errors.ts";
 import { runMigrations } from "./migrations.ts";
 
@@ -106,10 +107,12 @@ export function runMigrate(
   extensionId: string,
   deps: BindingDeps,
 ): RenderedCommand {
-  const extensionDir = join(mirrorHome, "extensions", extensionId);
-  if (!existsSync(extensionDir)) {
-    return out(`extension not installed: ${extensionDir}\n`, 1);
-  }
+  // `installedExtensionDir`, not `join`: Python builds this path without
+  // normalizing it and then PRINTS it, so `ext ../../etc migrate` must answer
+  // with the traversal intact. Plateau 3 shipped `join` here and plateau 4's
+  // measurement caught it -- the bindings golden only ever passed a plain id.
+  const extensionDir = installedExtensionDir(mirrorHome, extensionId);
+  if (!existsSync(extensionDir)) return extensionNotInstalled(mirrorHome, extensionId);
   try {
     const applied = runMigrations(db, extensionId, join(extensionDir, "migrations"), deps);
     return out(`applied ${applied} migration(s) for extension/${extensionId}\n`);

@@ -21,6 +21,7 @@ import {
   runListCommand,
   UnsupportedCatalogCommandError,
 } from "#extensions/catalogCommands.ts";
+import { isExtensionDispatch } from "#extensions/dispatch.ts";
 
 interface GoldenCase {
   label: string;
@@ -55,6 +56,16 @@ function withHome<T>(run: (home: string) => T): T {
 }
 
 function invoke(home: string, argv: readonly string[]) {
+  const answer = decide(home, argv);
+  if (isExtensionDispatch(answer)) {
+    // This corpus is the catalog READS. A dispatch decision here would mean a
+    // read quietly became "load the extension and run its code".
+    throw new Error(`catalog golden reached the dispatch path: ${argv.join(" ")}`);
+  }
+  return answer;
+}
+
+function decide(home: string, argv: readonly string[]) {
   const context = { mirrorHome: home };
   const resolved = argv.map((token) => token.replace(golden.home_token, home));
   const [command, ...rest] = resolved;
@@ -143,9 +154,14 @@ test("a write verb that passes its refusals fails loudly instead of printing not
       () => runExtensionsCommand(context, ["install", "ext-alpha", "--extensions-root", home]),
       UnsupportedCatalogCommandError,
     );
-    assert.throws(
-      () => runExtCommand(context, ["ext-beta", "echo"]),
-      UnsupportedCatalogCommandError,
+    // `ext <id> <subcommand>` stopped throwing at plateau 4: it now DECIDES,
+    // and the decision is executed by a caller allowed to spawn. Deciding is
+    // still not executing -- nothing here loads extension code.
+    const decision = runExtCommand(context, ["ext-beta", "echo", "--loud"]);
+    assert.ok(isExtensionDispatch(decision));
+    assert.deepEqual(
+      { subcommand: decision.subcommand, argv: decision.argv },
+      { subcommand: "echo", argv: ["--loud"] },
     );
   });
 });

@@ -7,12 +7,15 @@
 // door is plateau 7.
 //
 // The write verbs (`sync`, `install`, `uninstall`, `expose-claude`,
-// `clean-claude`) are plateau 4. Their REFUSALS live here already, because
-// they are produced by this parser before any write is attempted, and a
-// validated write argv raises `UnsupportedCatalogCommandError` rather than
-// pretending: an unimplemented path must fail loudly, not silently print
-// nothing.
+// `clean-claude`) are plateau 5 -- the plan's amendment swapped them with the
+// dispatch, because installing a command-skill calls the extension's own
+// `register(api)` and so DEPENDS on the host this plateau lands. Their
+// REFUSALS live here already, because they are produced by this parser before
+// any write is attempted, and a validated write argv raises
+// `UnsupportedCatalogCommandError` rather than pretending: an unimplemented
+// path must fail loudly, not silently print nothing.
 
+import { existsSync } from "node:fs";
 import type { WritableDatabase } from "#db/database.ts";
 import {
   type BindingDeps,
@@ -33,6 +36,11 @@ import {
   renderInspectRuntimeCatalog,
   runtimeSkillsRootForHome,
 } from "./catalog.ts";
+import {
+  type ExtensionDispatch,
+  extensionNotInstalled,
+  installedExtensionDir,
+} from "./dispatch.ts";
 
 export class UnsupportedCatalogCommandError extends Error {}
 
@@ -217,8 +225,20 @@ export function runExtensionsCommand(
   throw new UnsupportedCatalogCommandError("extensions sync is CV22.DS7.TS4 plateau 4");
 }
 
-/** Port of `ext._cmd_list`, `_print_top_help`, and their exit codes. */
-export function runExtCommand(context: CatalogContext, argv: readonly string[]): RenderedCommand {
+/**
+ * Port of `cmd_ext`: the top-level parse, `_cmd_list`, `_print_top_help`, the
+ * built-in verbs, and the DECISION to dispatch into an extension.
+ *
+ * It answers with bytes for everything it can decide alone, and with an
+ * `ExtensionDispatch` for `ext <id>` and `ext <id> <subcommand>` -- the two
+ * leaves that must load extension code. Deciding and executing are separate on
+ * purpose: this layer stays pure and testable, and only the caller that is
+ * allowed to spawn a process runs the decision.
+ */
+export function runExtCommand(
+  context: CatalogContext,
+  argv: readonly string[],
+): RenderedCommand | ExtensionDispatch {
   const args: string[] = [];
   let mirrorHome: string | null = null;
   for (let index = 0; index < argv.length; index += 1) {
@@ -246,11 +266,9 @@ export function runExtCommand(context: CatalogContext, argv: readonly string[]):
   const extensionId = head;
   const rest = args.slice(1);
   const verb = rest[0];
-  if (verb === undefined) {
-    // `ext <id>` lists the extension's subcommands, which means LOADING the
-    // extension -- plateau 5's dispatch, not this one's.
-    throw new UnsupportedCatalogCommandError("ext <id> help is CV22.DS7.TS4 plateau 5");
-  }
+  // `ext <id>` lists the extension's subcommands, and Python models that as a
+  // dispatch of `--help` rather than as a command of its own.
+  if (verb === undefined) return dispatchOrNotInstalled(home, extensionId, "--help", []);
   const tail = rest.slice(1);
 
   // Describe, never execute: this guard is a fix `cli/ext.py` carries, and
@@ -260,9 +278,7 @@ export function runExtCommand(context: CatalogContext, argv: readonly string[]):
     return out(`Usage:\n  python -m memory ext ${extensionId} ${usage}\n\n${description}\n`);
   }
 
-  if (!BUILTIN_VERBS.has(verb)) {
-    throw new UnsupportedCatalogCommandError("ext dispatch is CV22.DS7.TS4 plateau 5");
-  }
+  if (!BUILTIN_VERBS.has(verb)) return dispatchOrNotInstalled(home, extensionId, verb, tail);
   if (!isWriteContext(context)) {
     throw new UnsupportedCatalogCommandError(`ext ${verb} needs a writable database`);
   }
@@ -279,6 +295,30 @@ export function runExtCommand(context: CatalogContext, argv: readonly string[]):
 
 function isWriteContext(context: CatalogContext): context is ExtWriteContext {
   return "db" in context;
+}
+
+/**
+ * The installed check `_dispatch_subcommand` runs before loading anything.
+ *
+ * The refusal prints the path Python BUILT, not the path it would resolve --
+ * see `installedExtensionDir` for why that distinction is observable.
+ */
+function dispatchOrNotInstalled(
+  mirrorHome: string,
+  extensionId: string,
+  subcommand: string,
+  argv: readonly string[],
+): RenderedCommand | ExtensionDispatch {
+  const extensionRoot = installedExtensionDir(mirrorHome, extensionId);
+  if (!existsSync(extensionRoot)) return extensionNotInstalled(mirrorHome, extensionId);
+  return {
+    kind: "extension-subcommand",
+    extensionId,
+    subcommand,
+    argv: [...argv],
+    mirrorHome,
+    extensionRoot,
+  };
 }
 
 /** Port of `cmd_list`'s extension branch and its usage refusal. */

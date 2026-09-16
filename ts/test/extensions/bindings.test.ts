@@ -18,6 +18,7 @@ import { bootstrapDatabase } from "#db/bootstrap.ts";
 import type { WritableDatabase } from "#db/database.ts";
 import { pythonUtcIsoformat } from "#extensions/bindings.ts";
 import { type ExtWriteContext, runExtCommand } from "#extensions/catalogCommands.ts";
+import { isExtensionDispatch } from "#extensions/dispatch.ts";
 
 interface GoldenCase {
   label: string;
@@ -101,6 +102,11 @@ function stateOf(world: World) {
 
 function invoke(world: World, argv: readonly string[]) {
   const result = runExtCommand(contextFor(world), argv);
+  if (isExtensionDispatch(result)) {
+    // The built-in verbs never load extension code. A dispatch decision here
+    // would mean `bind` or `migrate` had started executing an extension.
+    throw new Error(`bindings golden reached the dispatch path: ${argv.join(" ")}`);
+  }
   return {
     ...result,
     stdout: result.stdout.split(world.home).join("<HOME>").replace(ISO_UTC, TOKEN),

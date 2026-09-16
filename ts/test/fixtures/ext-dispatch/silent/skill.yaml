@@ -1,0 +1,15 @@
+id: silent
+name: Silent Extension
+category: extension
+kind: command-skill
+summary: A valid command-skill that registers no CLI subcommand at all
+table_prefix: ext_silent_
+
+entrypoint:
+  module: extension
+  function: register
+
+runtimes:
+  pi:
+    command_name: ext-silent
+    skill_file: SKILL.md

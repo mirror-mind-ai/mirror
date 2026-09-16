@@ -1,0 +1,15 @@
+id: tools
+name: Dispatch Tools
+category: extension
+kind: command-skill
+summary: Fixture extension whose handlers pin every `ext <id> <subcommand>` outcome
+table_prefix: ext_tools_
+
+entrypoint:
+  module: extension
+  function: register
+
+runtimes:
+  pi:
+    command_name: ext-tools
+    skill_file: SKILL.md

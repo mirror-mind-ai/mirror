@@ -2,7 +2,8 @@
 
 # Handoff — CV22.DS7.TS4 — Ops/utility tail 3: extension catalog
 
-**Status:** plateaus 1-3 of 8 complete. The **catalog reads** answer from
+**Status:** plateaus 1-3 and the legacy half of plateau 4 complete. The
+**catalog reads** answer from
 TypeScript — `extensions list|validate` (with the runtime filter and every
 usage refusal), `ext list`, `list extensions`, `inspect extension`, and
 `inspect runtime-catalog` — graded against 32 recorded Python invocations, and
@@ -10,35 +11,59 @@ the **ledger reads** (`inspect llm-calls` rows and `--summary`, `inspect
 embedding-provenance`) against 21 more. Plateau 3 adds the family's first
 WRITES — `ext <id> bind|unbind|bindings|migrate`, including the migration
 runner's write half — graded by 24 recorded cases and by the `ext_bindings`
-write probe on a copy of a real database.
+write probe on a copy of a real database. Plateau 4 adds the **dispatch** —
+`ext <id>` and `ext <id> <subcommand>` through the TypeScript dispatcher and
+the compat host's new `cli` mode — graded by 32 recorded Python invocations
+that carry the rows each one leaves behind as well as its streams.
 **Nothing is routed:** `routing.ts` still sends the whole family to Python,
 which is the intended state until plateau 7 adds the routes and plateau 8
 flips the gates.
 
 ## Resume here
 
-**Next: the DISPATCH (D1's host), not the catalog writes — the two plateaus
-swapped.** Measured before writing plateau-4 code: `extensions install` of a
-command-skill calls `_post_install_command_skill`, which runs the migrations
-and then **loads the extension's Python module and calls `register(api)`**; a
-broken `register` fails the install with exit 1. TypeScript cannot complete
-that install without the D1 host, so the host lands first and the writes
-consume it. The amendment, its measurement, and two further facts for the
-writes plateau are recorded in `plan.md`.
+**Open Navigator decision before plateau 4 can close: WHERE the declared
+command runtime lives in the manifest.** The Plan and the recorded decision say
+`commands[].runtime.command`. Measured since: every installed extension already
+carries a `cli.subcommands[]` block (`name` + `summary`) that no core code
+reads — it is documented in
+`docs/product/extensions/template/skill.yaml.template` and consumed nowhere.
+Adding `runtime:` to those existing entries keeps ONE authoring surface; a new
+top-level `commands[]` array creates a second list of subcommand names and
+summaries beside it. This is a manifest-schema choice the Plan's stop
+conditions reserve for the Navigator, so the contract half was not written on a
+guess. Everything else in plateau 4 is done and green.
 
-What the host plateau owes: the `cli` mode of `memory.extensions.compat_host`
-(a second request kind of the host TS2 already ships — never a second host),
-the `commands[].runtime` manifest contract executed directly when declared, the
-`ext <id>` help listing, `ext <id> <subcommand>` with argv passed verbatim and
-the handler's exit code preserved, and fixtures of both kinds.
+When that is answered, the contract half owes: the manifest field, one branch
+in the dispatcher that executes a declared argv directly (no shell, the
+`provider_runtime` shape), a fixture extension that declares a command AND
+registers the Python twin so one golden grades both paths, and the rule for a
+subcommand declared nowhere — recommended: fall back to the host
+per-SUBCOMMAND, never per-extension, so a mixed extension cannot lose a
+handler.
 
-Then catalog writes: `extensions sync|install|uninstall|expose-claude|
-clean-claude`, graded like `builder_artifacts` — file trees compared byte for
-byte in a disposable home AND a disposable target root, never the developer's
-`.pi`, which the plan-stage panel named explicitly. Two traps already measured
-and waiting there: `install_extension` uses the DIRECTORY NAME as the extension
-id (the repository's own `ext-hello` fixture fails its own prefix check because
-of it), and an install failure escapes as an uncaught traceback.
+Then plateau 5, catalog writes: `extensions sync|install|uninstall|
+expose-claude|clean-claude`, graded like `builder_artifacts` — file trees
+compared byte for byte in a disposable home AND a disposable target root, never
+the developer's `.pi`, which the plan-stage panel named explicitly. Two traps
+already measured and waiting there: `install_extension` uses the DIRECTORY NAME
+as the extension id (the repository's own `ext-hello` fixture fails its own
+prefix check because of it), and an install failure escapes as an uncaught
+traceback.
+
+What landed in plateau 4:
+
+- `src/memory/extensions/compat_host.py` — the `mirror-cli-v1` request kind:
+  validation (id, root, and a database that must equal the home's env-aware
+  path) separated from execution, so a malformed REQUEST is one host line while
+  a handler's own traceback escapes exactly as `python -m memory ext` lets it;
+- `ts/src/extensions/dispatch.ts` — `pythonPathJoin`, `installedExtensionDir`,
+  the `ExtensionDispatch` decision, and `runExtensionSubcommand`, which spawns
+  the host with `["pipe", "inherit", "inherit"]` and no shell;
+- `ts/src/extensions/catalogCommands.ts` — `runExtCommand` now returns
+  `RenderedCommand | ExtensionDispatch`: it DECIDES, and only a caller allowed
+  to spawn executes;
+- `ts/parity/generate_ext_dispatch_golden.py` and its four fixture extensions,
+  in the CI determinism gate with their own `git diff` check.
 
 What landed in plateau 3:
 
@@ -88,7 +113,42 @@ What landed in plateau 1:
 - `ts/parity/generate_extension_catalog_golden.py` and its fixture tree, in the
   CI determinism gate with their own `git diff` check.
 
-## Rules this plateau paid for — do not rediscover them
+## Rules plateau 4 paid for — do not rediscover them
+
+- **`Path.__truediv__` is not `join`, and the result is PRINTED.**
+  `_installed_extension_dir` never normalizes, so `ext ../../etc ping` answers
+  `extension not installed: <home>/extensions/../../etc`, an ABSOLUTE id
+  discards the extensions root entirely (`ext /etc ping` reads
+  `/etc/skill.yaml`), and `.`, `''`, and a trailing slash each have their own
+  answer. Plateau 3 had shipped `join` in `runMigrate`; this measurement caught
+  it, because the bindings golden had only ever passed a plain id.
+- **Two exception classes share one name.** `memory.cli.extensions` defines
+  `ExtensionValidationError(ValueError)`, unrelated to the `ExtensionError`
+  family in `memory.extensions.errors` that `_dispatch_subcommand` catches. A
+  failing `register` is a printed line at exit 1; a bad or missing MANIFEST is
+  an uncaught traceback at the same exit code. One command, two refusal shapes
+  — the same trap class as plateau 1's usage refusals.
+- **`--mirror-home <value>` is eaten from anywhere in argv**, including the
+  extension's own tail, so a handler can never receive it — but a trailing
+  `--mirror-home` with no value is not a pair and reaches the handler intact.
+- **The handler's return value IS the exit code**, through `int()`: `3` exits
+  3, `"7"` exits 7, and `None` raises inside the dispatcher after the handler
+  has already printed.
+- **Streams are the product.** The context mode redirects a provider's streams
+  because its text is a payload inside an envelope; the command mode must
+  inherit them. One host, two opposite stream rules, on purpose.
+- **Validate resolved, dispatch raw.** The host resolves the home to refuse an
+  escape, then hands the ORIGINAL string to the dispatcher. Dispatching the
+  resolved path rewrote every message on macOS, where a home under `/var` is
+  really `/private/var`. The corpus caught it; review had not.
+- **A refused id never reaches a process.** Id validation runs in TypeScript
+  before the spawn, so `ext /etc ping` cannot make Python open `/etc`.
+- **Equivalent mutant, recorded:** replacing the listing's `"--help"` with
+  `"help"` survives, because `_dispatch_subcommand` treats `--help`, `-h`, and
+  `help` identically before any registry lookup. A gap in the code's
+  distinctions, not in the corpus.
+
+## Rules plateaus 1-3 paid for — do not rediscover them
 
 - **This family does not use argparse.** Every refusal prints usage to
   **stdout** and exits **1**, and `stderr` is empty. A port that sends usage to

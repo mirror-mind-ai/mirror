@@ -2,7 +2,7 @@
 
 # CV22.DS7.TS4 — Ops/utility tail 3: extension catalog
 
-**Status:** 🟢 In Progress — **plateaus 1-3 of 8 complete** (catalog reads, ledger reads, and the binding/migration writes ported and graded, nothing routed); pulled 2026-09-16 through the TS front door (the first Ariad Pull answered by TypeScript in production); **Plan approved 2026-09-16** with D1 answered (c): a TS dispatcher, a declared `commands[].runtime` contract, and a `cli` mode of the existing temporary compat host under DS10's deletion gate
+**Status:** 🟢 In Progress — **plateaus 1-3 of 8 complete, plateau 4 complete except its contract half** (catalog reads, ledger reads, the binding/migration writes, and the `ext <id> <subcommand>` dispatch through the compat host's new `cli` mode ported and graded, nothing routed; the declared-runtime manifest field waits on one Navigator decision recorded in the [Handoff](handoff.md#resume-here)); pulled 2026-09-16 through the TS front door (the first Ariad Pull answered by TypeScript in production); **Plan approved 2026-09-16** with D1 answered (c): a TS dispatcher, a declared `commands[].runtime` contract, and a `cli` mode of the existing temporary compat host under DS10's deletion gate
 **Type:** Technical Story
 
 ---

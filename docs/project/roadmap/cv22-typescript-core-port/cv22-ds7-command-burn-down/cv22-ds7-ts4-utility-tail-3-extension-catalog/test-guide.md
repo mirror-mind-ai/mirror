@@ -175,3 +175,55 @@ failure path's rollback IS graded. Recorded rather than left implicit.
 with the extension listing this plateau ports. The composition needs a
 database, so it is graded at the front-door plateau rather than in this
 golden; the extension half is graded here through `list extensions`.
+
+### Plateau 4 — the dispatch
+
+32 recorded cases in `ext-dispatch.golden.json`, each carrying the streams, the
+exit code, AND the `ext_tools_notes` rows that exist afterwards — a dispatch
+that prints the right line while the handler's write lands in a different
+database is the defect this bridge could introduce, and no stream comparison
+would see it. Four fixture extensions stage the branches: handlers that pin
+each outcome, an extension that registers nothing, one whose `register` raises,
+and one whose manifest fails validation.
+
+| Fact | Measured |
+|---|---|
+| The installed path | `Path.__truediv__`, never normalized, and then PRINTED: `ext ../../etc ping` keeps its dots, an ABSOLUTE id discards the extensions root (`ext /etc ping` reads `/etc/skill.yaml`), `.` and `''` are the root itself, a trailing slash is dropped |
+| Two exception classes, one name | `memory.cli.extensions.ExtensionValidationError(ValueError)` is unrelated to `memory.extensions.errors.ExtensionError`; a failing `register` is a printed line at exit 1, a bad MANIFEST is an uncaught traceback at the same exit code |
+| `--mirror-home` | consumed as a pair from ANY position, including the extension's own tail; a trailing one with no value is not a pair and reaches the handler |
+| Exit code | the handler's return value through `int()`: `3` exits 3, `"7"` exits 7, `None` raises after the handler printed |
+| The listing | sorted; the docstring's FIRST line wins over the registered summary; a handler with neither is just a name; an empty registry prints `(none registered)` |
+| `ext <id>` with no subcommand | is a dispatch of `--help`, not a separate command — it loads the extension like any other subcommand, so a broken `register` fails the LISTING too |
+| Streams | inherited, not captured: stdout and stderr both reach the caller, interleaved as the handler produced them |
+
+Recorded divergences, graded by class (input, stream, exit code) rather than by
+bytes: a CPython traceback cannot be reproduced in TypeScript. Which shape
+applies is decided by WHO refuses — the host still IS Python, so a failure it
+reaches reproduces Python's traceback down to its last line (the test grades
+that line); a refusal TypeScript makes before spawning is one line on stderr at
+the same exit code with stdout untouched.
+
+**Checks:** 32/32 cases equal, rows included; **nine mutants killed** (a
+normalizing `join`, captured streams, a flattened exit code, id validation
+dropped, argv truncated, the installed check removed, the host swallowing
+handler streams, the database straddle guard removed, and the host dispatching
+a resolved home), each asserted to have changed the file before its verdict was
+believed. One mutant SURVIVED and is equivalent: the listing's `"--help"`
+replaced by `"help"`, which `_dispatch_subcommand` treats identically. TS suite
+2,230 pass; typecheck clean; biome clean except the pre-existing `routing.ts`
+warning; Python extension suite green; golden regeneration is a no-op and joins
+the CI determinism gate with its own `git diff`.
+
+**The corpus caught two defects in code that was already green:**
+
+1. `runMigrate` (plateau 3) built its path with `join`, which normalizes, so
+   `ext ../../etc migrate` would have printed a repaired path. The bindings
+   golden had only ever passed a plain id.
+2. The host's first version dispatched a RESOLVED mirror home, which rewrote
+   every path Python prints on macOS (`/var` → `/private/var`). It now
+   validates resolved and dispatches raw, with a Python test pinning it.
+
+**Known limit, recorded:** the request travels on the host's stdin, so a legacy
+handler cannot read the user's stdin through the bridge. Measured before
+choosing it — no CLI handler in any installed extension reads stdin — and the
+declared-runtime path is free to define stdin passthrough when it lands.

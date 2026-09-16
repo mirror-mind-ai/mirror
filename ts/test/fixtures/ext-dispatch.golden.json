@@ -1,0 +1,459 @@
+{
+  "_generated_by": "ts/parity/generate_ext_dispatch_golden.py",
+  "_semantics": "Python's answer for `ext <id>` and `ext <id> <subcommand> [args...]`: streams, exit code, and the ext_tools_notes rows that exist afterwards. Cases carrying a `divergence` field are graded by class (input, stream, exit code), not by bytes: TypeScript cannot reproduce a CPython traceback.",
+  "extensions": [
+    "tools",
+    "silent",
+    "broken",
+    "malformed"
+  ],
+  "cases": [
+    {
+      "label": "listing_bare_id",
+      "argv": [
+        "tools"
+      ],
+      "stdout": "=== subcommands of extension/tools ===\n  bare\n  boom — Raise an ExtensionError\n  crash — Raise an unhandled exception\n  documented — First line of the docstring.\n  echo — Print the argv it received\n  fail — Exit with code 3\n  nothing — Return None\n  streams — Write to stdout and to stderr\n  stringy — Return its exit code as a string\n  write — Insert a row in its own table\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home_flag": "suffix",
+      "notes": []
+    },
+    {
+      "label": "listing_long_help_flag",
+      "argv": [
+        "tools",
+        "--help"
+      ],
+      "stdout": "=== subcommands of extension/tools ===\n  bare\n  boom — Raise an ExtensionError\n  crash — Raise an unhandled exception\n  documented — First line of the docstring.\n  echo — Print the argv it received\n  fail — Exit with code 3\n  nothing — Return None\n  streams — Write to stdout and to stderr\n  stringy — Return its exit code as a string\n  write — Insert a row in its own table\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home_flag": "suffix",
+      "notes": []
+    },
+    {
+      "label": "listing_short_help_flag",
+      "argv": [
+        "tools",
+        "-h"
+      ],
+      "stdout": "=== subcommands of extension/tools ===\n  bare\n  boom — Raise an ExtensionError\n  crash — Raise an unhandled exception\n  documented — First line of the docstring.\n  echo — Print the argv it received\n  fail — Exit with code 3\n  nothing — Return None\n  streams — Write to stdout and to stderr\n  stringy — Return its exit code as a string\n  write — Insert a row in its own table\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home_flag": "suffix",
+      "notes": []
+    },
+    {
+      "label": "listing_help_word",
+      "argv": [
+        "tools",
+        "help"
+      ],
+      "stdout": "=== subcommands of extension/tools ===\n  bare\n  boom — Raise an ExtensionError\n  crash — Raise an unhandled exception\n  documented — First line of the docstring.\n  echo — Print the argv it received\n  fail — Exit with code 3\n  nothing — Return None\n  streams — Write to stdout and to stderr\n  stringy — Return its exit code as a string\n  write — Insert a row in its own table\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home_flag": "suffix",
+      "notes": []
+    },
+    {
+      "label": "listing_empty_registry",
+      "argv": [
+        "silent"
+      ],
+      "stdout": "=== subcommands of extension/silent ===\n  (none registered)\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home_flag": "suffix",
+      "notes": []
+    },
+    {
+      "label": "echo_argv_verbatim",
+      "argv": [
+        "tools",
+        "echo",
+        "alpha",
+        "beta gamma"
+      ],
+      "stdout": "argv[2]: alpha beta gamma\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home_flag": "suffix",
+      "notes": []
+    },
+    {
+      "label": "echo_no_argv",
+      "argv": [
+        "tools",
+        "echo"
+      ],
+      "stdout": "argv[0]: \n",
+      "stderr": "",
+      "exit_code": 0,
+      "home_flag": "suffix",
+      "notes": []
+    },
+    {
+      "label": "echo_keeps_flags_and_double_dash",
+      "argv": [
+        "tools",
+        "echo",
+        "--flag",
+        "-x",
+        "--",
+        "a b"
+      ],
+      "stdout": "argv[4]: --flag -x -- a b\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home_flag": "suffix",
+      "notes": []
+    },
+    {
+      "label": "echo_keeps_unicode_and_quotes",
+      "argv": [
+        "tools",
+        "echo",
+        "café 'quoted'",
+        "—em"
+      ],
+      "stdout": "argv[2]: café 'quoted' —em\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home_flag": "suffix",
+      "notes": []
+    },
+    {
+      "label": "echo_loses_the_mirror_home_pair",
+      "argv": [
+        "tools",
+        "echo",
+        "--mirror-home",
+        "/tmp/x",
+        "tail"
+      ],
+      "stdout": "argv[1]: tail\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home_flag": "suffix",
+      "notes": []
+    },
+    {
+      "label": "echo_keeps_a_valueless_mirror_home",
+      "argv": [
+        "tools",
+        "echo",
+        "tail",
+        "--mirror-home"
+      ],
+      "stdout": "argv[2]: tail --mirror-home\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home_flag": "prefix",
+      "notes": []
+    },
+    {
+      "label": "exit_code_is_preserved",
+      "argv": [
+        "tools",
+        "fail"
+      ],
+      "stdout": "failing on purpose\n",
+      "stderr": "",
+      "exit_code": 3,
+      "home_flag": "suffix",
+      "notes": []
+    },
+    {
+      "label": "string_exit_code_is_coerced",
+      "argv": [
+        "tools",
+        "stringy"
+      ],
+      "stdout": "returning '7'\n",
+      "stderr": "",
+      "exit_code": 7,
+      "home_flag": "suffix",
+      "notes": []
+    },
+    {
+      "label": "extension_error_is_a_printed_line",
+      "argv": [
+        "tools",
+        "boom"
+      ],
+      "stdout": "[extension/tools] deliberate extension error\n",
+      "stderr": "",
+      "exit_code": 1,
+      "home_flag": "suffix",
+      "notes": []
+    },
+    {
+      "label": "unhandled_exception_escapes",
+      "argv": [
+        "tools",
+        "crash"
+      ],
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/vinicius/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/runpy.py\", line 196, in _run_module_as_main\n    return _run_code(code, main_globals, None,\n  File \"/Users/vinicius/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/runpy.py\", line 86, in _run_code\n    exec(code, run_globals)\n  File \"<REPO>/src/memory/__main__.py\", line 350, in <module>\n    main()\n  File \"<REPO>/src/memory/__main__.py\", line 144, in main\n    _dispatch()\n  File \"<REPO>/src/memory/__main__.py\", line 195, in _dispatch\n    sys.exit(cmd_ext(sys.argv[2:]))\n  File \"<REPO>/src/memory/cli/ext.py\", line 324, in cmd_ext\n    return _dispatch_subcommand(\n  File \"<REPO>/src/memory/cli/ext.py\", line 239, in _dispatch_subcommand\n    return int(handler(api, rest))\n  File \"<HOME>/extensions/tools/extension.py\", line 47, in _cmd_crash\n    raise RuntimeError(\"deliberate unhandled crash\")\nRuntimeError: deliberate unhandled crash\n",
+      "exit_code": 1,
+      "home_flag": "suffix",
+      "notes": [],
+      "divergence": "python_traceback"
+    },
+    {
+      "label": "none_return_escapes",
+      "argv": [
+        "tools",
+        "nothing"
+      ],
+      "stdout": "returning None\n",
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/vinicius/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/runpy.py\", line 196, in _run_module_as_main\n    return _run_code(code, main_globals, None,\n  File \"/Users/vinicius/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/runpy.py\", line 86, in _run_code\n    exec(code, run_globals)\n  File \"<REPO>/src/memory/__main__.py\", line 350, in <module>\n    main()\n  File \"<REPO>/src/memory/__main__.py\", line 144, in main\n    _dispatch()\n  File \"<REPO>/src/memory/__main__.py\", line 195, in _dispatch\n    sys.exit(cmd_ext(sys.argv[2:]))\n  File \"<REPO>/src/memory/cli/ext.py\", line 324, in cmd_ext\n    return _dispatch_subcommand(\n  File \"<REPO>/src/memory/cli/ext.py\", line 239, in _dispatch_subcommand\n    return int(handler(api, rest))\nTypeError: int() argument must be a string, a bytes-like object or a real number, not 'NoneType'\n",
+      "exit_code": 1,
+      "home_flag": "suffix",
+      "notes": [],
+      "divergence": "python_traceback"
+    },
+    {
+      "label": "both_streams_reach_the_caller",
+      "argv": [
+        "tools",
+        "streams"
+      ],
+      "stdout": "on stdout\n",
+      "stderr": "on stderr\n",
+      "exit_code": 0,
+      "home_flag": "suffix",
+      "notes": []
+    },
+    {
+      "label": "write_reaches_the_dispatcher_database",
+      "argv": [
+        "tools",
+        "write",
+        "first note"
+      ],
+      "stdout": "wrote: first note\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home_flag": "suffix",
+      "notes": [
+        "first note"
+      ]
+    },
+    {
+      "label": "write_again",
+      "argv": [
+        "tools",
+        "write",
+        "second note"
+      ],
+      "stdout": "wrote: second note\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home_flag": "suffix",
+      "notes": [
+        "first note",
+        "second note"
+      ]
+    },
+    {
+      "label": "unknown_subcommand_lists_what_exists",
+      "argv": [
+        "tools",
+        "nope"
+      ],
+      "stdout": "unknown subcommand 'nope' for extension/tools\n=== subcommands of extension/tools ===\n  bare\n  boom — Raise an ExtensionError\n  crash — Raise an unhandled exception\n  documented — First line of the docstring.\n  echo — Print the argv it received\n  fail — Exit with code 3\n  nothing — Return None\n  streams — Write to stdout and to stderr\n  stringy — Return its exit code as a string\n  write — Insert a row in its own table\n",
+      "stderr": "",
+      "exit_code": 1,
+      "home_flag": "suffix",
+      "notes": [
+        "first note",
+        "second note"
+      ]
+    },
+    {
+      "label": "unknown_subcommand_on_empty_registry",
+      "argv": [
+        "silent",
+        "anything"
+      ],
+      "stdout": "unknown subcommand 'anything' for extension/silent\n=== subcommands of extension/silent ===\n  (none registered)\n",
+      "stderr": "",
+      "exit_code": 1,
+      "home_flag": "suffix",
+      "notes": [
+        "first note",
+        "second note"
+      ]
+    },
+    {
+      "label": "load_failure_on_dispatch",
+      "argv": [
+        "broken",
+        "anything"
+      ],
+      "stdout": "[extension/broken] register(register) raised: BOOM\n",
+      "stderr": "",
+      "exit_code": 1,
+      "home_flag": "suffix",
+      "notes": [
+        "first note",
+        "second note"
+      ]
+    },
+    {
+      "label": "load_failure_on_listing",
+      "argv": [
+        "broken"
+      ],
+      "stdout": "[extension/broken] register(register) raised: BOOM\n",
+      "stderr": "",
+      "exit_code": 1,
+      "home_flag": "suffix",
+      "notes": [
+        "first note",
+        "second note"
+      ]
+    },
+    {
+      "label": "extension_not_installed",
+      "argv": [
+        "ghost",
+        "ping"
+      ],
+      "stdout": "extension not installed: <HOME>/extensions/ghost\n",
+      "stderr": "",
+      "exit_code": 1,
+      "home_flag": "suffix",
+      "notes": [
+        "first note",
+        "second note"
+      ]
+    },
+    {
+      "label": "extension_not_installed_listing",
+      "argv": [
+        "ghost"
+      ],
+      "stdout": "extension not installed: <HOME>/extensions/ghost\n",
+      "stderr": "",
+      "exit_code": 1,
+      "home_flag": "suffix",
+      "notes": [
+        "first note",
+        "second note"
+      ]
+    },
+    {
+      "label": "traversal_id_is_printed_unnormalized",
+      "argv": [
+        "../../etc",
+        "ping"
+      ],
+      "stdout": "extension not installed: <HOME>/extensions/../../etc\n",
+      "stderr": "",
+      "exit_code": 1,
+      "home_flag": "suffix",
+      "notes": [
+        "first note",
+        "second note"
+      ],
+      "divergence": "python_path_display"
+    },
+    {
+      "label": "absolute_id_discards_the_extensions_root",
+      "argv": [
+        "/etc",
+        "ping"
+      ],
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"<REPO>/src/memory/cli/extensions.py\", line 63, in _load_yaml\n    data = yaml.safe_load(path.read_text(encoding=\"utf-8\"))\n  File \"/Users/vinicius/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/pathlib.py\", line 1134, in read_text\n    with self.open(mode='r', encoding=encoding, errors=errors) as f:\n  File \"/Users/vinicius/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/pathlib.py\", line 1119, in open\n    return self._accessor.open(self, mode, buffering, encoding, errors,\nFileNotFoundError: [Errno 2] No such file or directory: '/etc/skill.yaml'\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/Users/vinicius/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/runpy.py\", line 196, in _run_module_as_main\n    return _run_code(code, main_globals, None,\n  File \"/Users/vinicius/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/runpy.py\", line 86, in _run_code\n    exec(code, run_globals)\n  File \"<REPO>/src/memory/__main__.py\", line 350, in <module>\n    main()\n  File \"<REPO>/src/memory/__main__.py\", line 144, in main\n    _dispatch()\n  File \"<REPO>/src/memory/__main__.py\", line 195, in _dispatch\n    sys.exit(cmd_ext(sys.argv[2:]))\n  File \"<REPO>/src/memory/cli/ext.py\", line 324, in cmd_ext\n    return _dispatch_subcommand(\n  File \"<REPO>/src/memory/cli/ext.py\", line 224, in _dispatch_subcommand\n    api = load_extension(ext_dir, connection=conn, reload=True)\n  File \"<REPO>/src/memory/extensions/loader.py\", line 123, in load_extension\n    manifest = load_extension_manifest(Path(extension_dir))\n  File \"<REPO>/src/memory/cli/extensions.py\", line 203, in load_extension_manifest\n    data = _load_yaml(manifest_path)\n  File \"<REPO>/src/memory/cli/extensions.py\", line 65, in _load_yaml\n    raise ExtensionValidationError(f\"missing manifest: {path}\") from exc\nmemory.cli.extensions.ExtensionValidationError: missing manifest: /etc/skill.yaml\n",
+      "exit_code": 1,
+      "home_flag": "suffix",
+      "notes": [
+        "first note",
+        "second note"
+      ],
+      "divergence": "python_traceback"
+    },
+    {
+      "label": "dot_id_is_the_extensions_root",
+      "argv": [
+        ".",
+        "ping"
+      ],
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"<REPO>/src/memory/cli/extensions.py\", line 63, in _load_yaml\n    data = yaml.safe_load(path.read_text(encoding=\"utf-8\"))\n  File \"/Users/vinicius/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/pathlib.py\", line 1134, in read_text\n    with self.open(mode='r', encoding=encoding, errors=errors) as f:\n  File \"/Users/vinicius/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/pathlib.py\", line 1119, in open\n    return self._accessor.open(self, mode, buffering, encoding, errors,\nFileNotFoundError: [Errno 2] No such file or directory: '<HOME>/extensions/skill.yaml'\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/Users/vinicius/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/runpy.py\", line 196, in _run_module_as_main\n    return _run_code(code, main_globals, None,\n  File \"/Users/vinicius/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/runpy.py\", line 86, in _run_code\n    exec(code, run_globals)\n  File \"<REPO>/src/memory/__main__.py\", line 350, in <module>\n    main()\n  File \"<REPO>/src/memory/__main__.py\", line 144, in main\n    _dispatch()\n  File \"<REPO>/src/memory/__main__.py\", line 195, in _dispatch\n    sys.exit(cmd_ext(sys.argv[2:]))\n  File \"<REPO>/src/memory/cli/ext.py\", line 324, in cmd_ext\n    return _dispatch_subcommand(\n  File \"<REPO>/src/memory/cli/ext.py\", line 224, in _dispatch_subcommand\n    api = load_extension(ext_dir, connection=conn, reload=True)\n  File \"<REPO>/src/memory/extensions/loader.py\", line 123, in load_extension\n    manifest = load_extension_manifest(Path(extension_dir))\n  File \"<REPO>/src/memory/cli/extensions.py\", line 203, in load_extension_manifest\n    data = _load_yaml(manifest_path)\n  File \"<REPO>/src/memory/cli/extensions.py\", line 65, in _load_yaml\n    raise ExtensionValidationError(f\"missing manifest: {path}\") from exc\nmemory.cli.extensions.ExtensionValidationError: missing manifest: <HOME>/extensions/skill.yaml\n",
+      "exit_code": 1,
+      "home_flag": "suffix",
+      "notes": [
+        "first note",
+        "second note"
+      ],
+      "divergence": "python_traceback"
+    },
+    {
+      "label": "trailing_slash_id_loses_the_slash",
+      "argv": [
+        "ghost/",
+        "ping"
+      ],
+      "stdout": "extension not installed: <HOME>/extensions/ghost\n",
+      "stderr": "",
+      "exit_code": 1,
+      "home_flag": "suffix",
+      "notes": [
+        "first note",
+        "second note"
+      ],
+      "divergence": "python_path_display"
+    },
+    {
+      "label": "empty_id_reads_the_extensions_dir_itself",
+      "argv": [
+        "",
+        "ping"
+      ],
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"<REPO>/src/memory/cli/extensions.py\", line 63, in _load_yaml\n    data = yaml.safe_load(path.read_text(encoding=\"utf-8\"))\n  File \"/Users/vinicius/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/pathlib.py\", line 1134, in read_text\n    with self.open(mode='r', encoding=encoding, errors=errors) as f:\n  File \"/Users/vinicius/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/pathlib.py\", line 1119, in open\n    return self._accessor.open(self, mode, buffering, encoding, errors,\nFileNotFoundError: [Errno 2] No such file or directory: '<HOME>/extensions/skill.yaml'\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/Users/vinicius/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/runpy.py\", line 196, in _run_module_as_main\n    return _run_code(code, main_globals, None,\n  File \"/Users/vinicius/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/runpy.py\", line 86, in _run_code\n    exec(code, run_globals)\n  File \"<REPO>/src/memory/__main__.py\", line 350, in <module>\n    main()\n  File \"<REPO>/src/memory/__main__.py\", line 144, in main\n    _dispatch()\n  File \"<REPO>/src/memory/__main__.py\", line 195, in _dispatch\n    sys.exit(cmd_ext(sys.argv[2:]))\n  File \"<REPO>/src/memory/cli/ext.py\", line 324, in cmd_ext\n    return _dispatch_subcommand(\n  File \"<REPO>/src/memory/cli/ext.py\", line 224, in _dispatch_subcommand\n    api = load_extension(ext_dir, connection=conn, reload=True)\n  File \"<REPO>/src/memory/extensions/loader.py\", line 123, in load_extension\n    manifest = load_extension_manifest(Path(extension_dir))\n  File \"<REPO>/src/memory/cli/extensions.py\", line 203, in load_extension_manifest\n    data = _load_yaml(manifest_path)\n  File \"<REPO>/src/memory/cli/extensions.py\", line 65, in _load_yaml\n    raise ExtensionValidationError(f\"missing manifest: {path}\") from exc\nmemory.cli.extensions.ExtensionValidationError: missing manifest: <HOME>/extensions/skill.yaml\n",
+      "exit_code": 1,
+      "home_flag": "suffix",
+      "notes": [
+        "first note",
+        "second note"
+      ],
+      "divergence": "python_traceback"
+    },
+    {
+      "label": "malformed_manifest_escapes",
+      "argv": [
+        "malformed",
+        "ping"
+      ],
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/vinicius/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/runpy.py\", line 196, in _run_module_as_main\n    return _run_code(code, main_globals, None,\n  File \"/Users/vinicius/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/runpy.py\", line 86, in _run_code\n    exec(code, run_globals)\n  File \"<REPO>/src/memory/__main__.py\", line 350, in <module>\n    main()\n  File \"<REPO>/src/memory/__main__.py\", line 144, in main\n    _dispatch()\n  File \"<REPO>/src/memory/__main__.py\", line 195, in _dispatch\n    sys.exit(cmd_ext(sys.argv[2:]))\n  File \"<REPO>/src/memory/cli/ext.py\", line 324, in cmd_ext\n    return _dispatch_subcommand(\n  File \"<REPO>/src/memory/cli/ext.py\", line 224, in _dispatch_subcommand\n    api = load_extension(ext_dir, connection=conn, reload=True)\n  File \"<REPO>/src/memory/extensions/loader.py\", line 123, in load_extension\n    manifest = load_extension_manifest(Path(extension_dir))\n  File \"<REPO>/src/memory/cli/extensions.py\", line 207, in load_extension_manifest\n    raise ExtensionValidationError(f\"missing required field '{field}' in {manifest_path}\")\nmemory.cli.extensions.ExtensionValidationError: missing required field 'summary' in <HOME>/extensions/malformed/skill.yaml\n",
+      "exit_code": 1,
+      "home_flag": "suffix",
+      "notes": [
+        "first note",
+        "second note"
+      ],
+      "divergence": "python_traceback"
+    },
+    {
+      "label": "malformed_manifest_escapes_on_listing",
+      "argv": [
+        "malformed"
+      ],
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/vinicius/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/runpy.py\", line 196, in _run_module_as_main\n    return _run_code(code, main_globals, None,\n  File \"/Users/vinicius/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/runpy.py\", line 86, in _run_code\n    exec(code, run_globals)\n  File \"<REPO>/src/memory/__main__.py\", line 350, in <module>\n    main()\n  File \"<REPO>/src/memory/__main__.py\", line 144, in main\n    _dispatch()\n  File \"<REPO>/src/memory/__main__.py\", line 195, in _dispatch\n    sys.exit(cmd_ext(sys.argv[2:]))\n  File \"<REPO>/src/memory/cli/ext.py\", line 287, in cmd_ext\n    return _dispatch_subcommand(\n  File \"<REPO>/src/memory/cli/ext.py\", line 224, in _dispatch_subcommand\n    api = load_extension(ext_dir, connection=conn, reload=True)\n  File \"<REPO>/src/memory/extensions/loader.py\", line 123, in load_extension\n    manifest = load_extension_manifest(Path(extension_dir))\n  File \"<REPO>/src/memory/cli/extensions.py\", line 207, in load_extension_manifest\n    raise ExtensionValidationError(f\"missing required field '{field}' in {manifest_path}\")\nmemory.cli.extensions.ExtensionValidationError: missing required field 'summary' in <HOME>/extensions/malformed/skill.yaml\n",
+      "exit_code": 1,
+      "home_flag": "suffix",
+      "notes": [
+        "first note",
+        "second note"
+      ],
+      "divergence": "python_traceback"
+    }
+  ]
+}
