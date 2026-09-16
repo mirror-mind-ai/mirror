@@ -35,15 +35,40 @@ const SKILL_ID_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const REQUIRED_FIELDS = ["id", "name", "category", "kind", "summary", "runtimes"] as const;
 const PATH_LIKE_SUFFIXES = new Set([".js", ".mjs", ".cjs", ".py"]);
 
+/** One runtime's validated entry, in the shape the catalog renderers print. */
+export interface ExtensionRuntimeEntry {
+  commandName: string;
+  /** The declared relative path, as written in the manifest. */
+  skillFile: string | null;
+  /** The resolved absolute path, present only when `skillFile` is. */
+  skillPath: string | null;
+}
+
 /**
- * The validated manifest. Deliberately narrow: `runtime status` reads the id
- * and the kind, and nothing else here has a consumer yet. TS4 widens this when
- * the catalog commands give the remaining fields somewhere to go -- an unread
- * `data` blob would be scaffolding, not API.
+ * The validated manifest.
+ *
+ * TS3 returned `{id, kind}` -- all `runtime status` reads -- and said TS4
+ * would widen it "when the catalog commands give the remaining fields
+ * somewhere to go". They do now: every field below is printed by `extensions
+ * list`, `ext list`, or `inspect extension`, and none is here for its own
+ * sake.
+ *
+ * `entrypoint` is an ORDERED pair list rather than an object because
+ * `inspect extension` prints it by iterating the mapping, and Python appends
+ * the resolved `module_path` to the dict it parsed -- so insertion order is
+ * observable output, not an implementation detail.
  */
 export interface ExtensionManifest {
   id: string;
   kind: string;
+  name: string;
+  category: string;
+  summary: string;
+  /** Absolute path of the extension directory, as Python's `root`. */
+  root: string;
+  manifestPath: string;
+  runtimes: Record<string, ExtensionRuntimeEntry>;
+  entrypoint: ReadonlyArray<readonly [string, string]>;
 }
 
 function isMapping(value: unknown): value is Record<string, unknown> {
@@ -212,8 +237,16 @@ export function loadExtensionManifest(extensionDir: string): ExtensionManifest {
     throw new ExtensionValidationError(`runtimes must be a non-empty mapping in ${manifestPath}`);
   }
 
-  const entrypoint = data.entrypoint;
+  // Python mutates the parsed `entrypoint` dict, appending `module_path` after
+  // the keys the author wrote; `inspect extension` prints that order.
+  const entrypointPairs: [string, string][] = isMapping(data.entrypoint)
+    ? Object.entries(data.entrypoint).map(([key, value]) => [key, pyStr(value)])
+    : [];
+  const entrypoint: ReadonlyArray<readonly [string, string]> = entrypointPairs;
+  const validatedRuntimes: Record<string, ExtensionRuntimeEntry> = {};
+
   if (kind === "command-skill") {
+    const entrypoint = data.entrypoint;
     if (!isMapping(entrypoint) || !pyTruthy(entrypoint.module)) {
       throw new ExtensionValidationError(
         "command-skill requires entrypoint.module (a Python module " +
@@ -232,6 +265,7 @@ export function loadExtensionManifest(extensionDir: string): ExtensionManifest {
         `entrypoint.module '${moduleName}' not found at ${modulePath}`,
       );
     }
+    entrypointPairs.push(["module_path", modulePath]);
 
     const expectedPrefix = tablePrefixFor(skillId);
     const declaredPrefix = data.table_prefix;
@@ -267,17 +301,33 @@ export function loadExtensionManifest(extensionDir: string): ExtensionManifest {
         `prompt-skill runtime '${runtimeName}' missing skill_file in ${manifestPath}`,
       );
     }
+    let skillPath: string | null = null;
     if (typeof skillFile === "string" && skillFile.length > 0) {
-      const skillPath = join(extensionDir, skillFile);
+      skillPath = join(extensionDir, skillFile);
       if (!existsSync(skillPath)) {
         throw new ExtensionValidationError(
           `runtime '${runtimeName}' skill_file not found: ${skillPath}`,
         );
       }
     }
+    validatedRuntimes[runtimeName] = {
+      commandName,
+      skillFile: typeof skillFile === "string" && skillFile.length > 0 ? skillFile : null,
+      skillPath,
+    };
   }
 
   validateContextProviders(data, extensionDir, manifestPath);
 
-  return { id: skillId, kind };
+  return {
+    id: skillId,
+    kind,
+    name: pyStr(data.name),
+    category: pyStr(data.category),
+    summary: pyStr(data.summary),
+    root: extensionDir,
+    manifestPath,
+    runtimes: validatedRuntimes,
+    entrypoint,
+  };
 }

@@ -1,0 +1,351 @@
+{
+  "_generated_by": "ts/parity/generate_extension_catalog_golden.py",
+  "_semantics": "Python's answer for the extension-catalog reads, one subprocess per case. stdout, stderr, and exit_code are all contract: this family's refusals print usage to STDOUT and exit 1, unlike the argparse leaves.",
+  "home_token": "<HOME>",
+  "cases": [
+    {
+      "label": "extensions_bare_defaults_to_list",
+      "argv": [
+        "extensions"
+      ],
+      "stdout": "Extensions root: <HOME>/extensions\n=== EXTENSIONS ===\n  ext-alpha [prompt-skill]\n    name: Alpha Prompt Skill\n    runtimes: claude=ext:alpha, pi=ext-alpha\n  ext-beta [command-skill]\n    name: Beta Command Skill\n    runtimes: pi=ext-beta\n  ext-claude-only [prompt-skill]\n    name: Claude Only Skill\n    runtimes: claude=ext:claude-only\n\n=== INVALID EXTENSIONS ===\n  ext-broken: missing required field 'summary' in <HOME>/extensions/ext-broken/skill.yaml\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "extensions_list",
+      "argv": [
+        "extensions",
+        "list"
+      ],
+      "stdout": "Extensions root: <HOME>/extensions\n=== EXTENSIONS ===\n  ext-alpha [prompt-skill]\n    name: Alpha Prompt Skill\n    runtimes: claude=ext:alpha, pi=ext-alpha\n  ext-beta [command-skill]\n    name: Beta Command Skill\n    runtimes: pi=ext-beta\n  ext-claude-only [prompt-skill]\n    name: Claude Only Skill\n    runtimes: claude=ext:claude-only\n\n=== INVALID EXTENSIONS ===\n  ext-broken: missing required field 'summary' in <HOME>/extensions/ext-broken/skill.yaml\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "extensions_list_runtime_pi",
+      "argv": [
+        "extensions",
+        "list",
+        "--runtime",
+        "pi"
+      ],
+      "stdout": "Runtime filter: pi\nExtensions root: <HOME>/extensions\n=== EXTENSIONS ===\n  ext-alpha [prompt-skill]\n    name: Alpha Prompt Skill\n    runtimes: claude=ext:alpha, pi=ext-alpha\n  ext-beta [command-skill]\n    name: Beta Command Skill\n    runtimes: pi=ext-beta\n\n=== INVALID EXTENSIONS ===\n  ext-broken: missing required field 'summary' in <HOME>/extensions/ext-broken/skill.yaml\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "extensions_list_runtime_claude",
+      "argv": [
+        "extensions",
+        "list",
+        "--runtime",
+        "claude"
+      ],
+      "stdout": "Runtime filter: claude\nExtensions root: <HOME>/extensions\n=== EXTENSIONS ===\n  ext-alpha [prompt-skill]\n    name: Alpha Prompt Skill\n    runtimes: claude=ext:alpha, pi=ext-alpha\n  ext-claude-only [prompt-skill]\n    name: Claude Only Skill\n    runtimes: claude=ext:claude-only\n\n=== INVALID EXTENSIONS ===\n  ext-broken: missing required field 'summary' in <HOME>/extensions/ext-broken/skill.yaml\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "extensions_list_runtime_unknown",
+      "argv": [
+        "extensions",
+        "list",
+        "--runtime",
+        "zed"
+      ],
+      "stdout": "Runtime filter: zed\nExtensions root: <HOME>/extensions\n=== EXTENSIONS ===\n  (none)\n\n=== INVALID EXTENSIONS ===\n  ext-broken: missing required field 'summary' in <HOME>/extensions/ext-broken/skill.yaml\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "extensions_list_explicit_root",
+      "argv": [
+        "extensions",
+        "list",
+        "--extensions-root",
+        "<HOME>/extensions"
+      ],
+      "stdout": "Extensions root: <HOME>/extensions\n=== EXTENSIONS ===\n  ext-alpha [prompt-skill]\n    name: Alpha Prompt Skill\n    runtimes: claude=ext:alpha, pi=ext-alpha\n  ext-beta [command-skill]\n    name: Beta Command Skill\n    runtimes: pi=ext-beta\n  ext-claude-only [prompt-skill]\n    name: Claude Only Skill\n    runtimes: claude=ext:claude-only\n\n=== INVALID EXTENSIONS ===\n  ext-broken: missing required field 'summary' in <HOME>/extensions/ext-broken/skill.yaml\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "extensions_list_missing_root",
+      "argv": [
+        "extensions",
+        "list",
+        "--extensions-root",
+        "<HOME>/nope"
+      ],
+      "stdout": "Extensions root: <HOME>/nope\n=== EXTENSIONS ===\n  (none)\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "extensions_validate_with_invalid",
+      "argv": [
+        "extensions",
+        "validate"
+      ],
+      "stdout": "Extensions root: <HOME>/extensions\n=== INVALID EXTENSIONS ===\n  ext-broken: missing required field 'summary' in <HOME>/extensions/ext-broken/skill.yaml\n",
+      "stderr": "",
+      "exit_code": 1
+    },
+    {
+      "label": "extensions_validate_runtime_pi",
+      "argv": [
+        "extensions",
+        "validate",
+        "--runtime",
+        "pi"
+      ],
+      "stdout": "Extensions root: <HOME>/extensions\nRuntime filter: pi\n=== INVALID EXTENSIONS ===\n  ext-broken: missing required field 'summary' in <HOME>/extensions/ext-broken/skill.yaml\n",
+      "stderr": "",
+      "exit_code": 1
+    },
+    {
+      "label": "extensions_unknown_subcommand",
+      "argv": [
+        "extensions",
+        "bogus"
+      ],
+      "stdout": "Usage: python -m memory extensions [list|validate|sync|install|uninstall|expose-claude|clean-claude] [--mirror-home PATH] [--extensions-root PATH] [--runtime NAME] [--target-root PATH]\n",
+      "stderr": "",
+      "exit_code": 1
+    },
+    {
+      "label": "extensions_install_without_positional",
+      "argv": [
+        "extensions",
+        "install"
+      ],
+      "stdout": "Usage: python -m memory extensions install <id> [--extensions-root PATH] [--mirror-home PATH] [--runtime NAME]\n",
+      "stderr": "",
+      "exit_code": 1
+    },
+    {
+      "label": "extensions_install_without_root",
+      "argv": [
+        "extensions",
+        "install",
+        "ext-alpha"
+      ],
+      "stdout": "install requires --extensions-root PATH\n",
+      "stderr": "",
+      "exit_code": 1
+    },
+    {
+      "label": "extensions_sync_without_runtime",
+      "argv": [
+        "extensions",
+        "sync"
+      ],
+      "stdout": "Extensions root: <HOME>/extensions\n=== INVALID EXTENSIONS ===\n  ext-broken: missing required field 'summary' in <HOME>/extensions/ext-broken/skill.yaml\n",
+      "stderr": "",
+      "exit_code": 1
+    },
+    {
+      "label": "extensions_sync_without_target_root",
+      "argv": [
+        "extensions",
+        "sync",
+        "--runtime",
+        "pi"
+      ],
+      "stdout": "Extensions root: <HOME>/extensions\nRuntime filter: pi\n=== INVALID EXTENSIONS ===\n  ext-broken: missing required field 'summary' in <HOME>/extensions/ext-broken/skill.yaml\n",
+      "stderr": "",
+      "exit_code": 1
+    },
+    {
+      "label": "extensions_expose_claude_without_target",
+      "argv": [
+        "extensions",
+        "expose-claude"
+      ],
+      "stdout": "expose-claude requires --target-root PATH\n",
+      "stderr": "",
+      "exit_code": 1
+    },
+    {
+      "label": "extensions_clean_claude_without_target",
+      "argv": [
+        "extensions",
+        "clean-claude"
+      ],
+      "stdout": "clean-claude requires --target-root PATH\n",
+      "stderr": "",
+      "exit_code": 1
+    },
+    {
+      "label": "ext_list",
+      "argv": [
+        "ext",
+        "list"
+      ],
+      "stdout": "Extensions root: <HOME>/extensions\n=== COMMAND-SKILL EXTENSIONS ===\n  ext-beta: A command skill with an entrypoint module and one runtime.\n\n=== INVALID EXTENSIONS ===\n  ext-broken: missing required field 'summary' in <HOME>/extensions/ext-broken/skill.yaml\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "ext_bare_help",
+      "argv": [
+        "ext"
+      ],
+      "stdout": "Usage:\n  python -m memory ext list\n  python -m memory ext <id> [--help]\n  python -m memory ext <id> <subcommand> [args...]\n  python -m memory ext <id> bind <capability> (--persona <id> | --journey <id> | --global)\n  python -m memory ext <id> unbind <capability> (--persona <id> | --journey <id> | --global)\n  python -m memory ext <id> bindings\n  python -m memory ext <id> migrate\n",
+      "stderr": "",
+      "exit_code": 1
+    },
+    {
+      "label": "ext_help_flag",
+      "argv": [
+        "ext",
+        "--help"
+      ],
+      "stdout": "Usage:\n  python -m memory ext list\n  python -m memory ext <id> [--help]\n  python -m memory ext <id> <subcommand> [args...]\n  python -m memory ext <id> bind <capability> (--persona <id> | --journey <id> | --global)\n  python -m memory ext <id> unbind <capability> (--persona <id> | --journey <id> | --global)\n  python -m memory ext <id> bindings\n  python -m memory ext <id> migrate\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "list_extensions",
+      "argv": [
+        "list",
+        "extensions"
+      ],
+      "stdout": "Extensions root: <HOME>/extensions\n=== EXTENSIONS ===\n  ext-alpha [prompt-skill]\n    name: Alpha Prompt Skill\n    runtimes: claude=ext:alpha, pi=ext-alpha\n  ext-beta [command-skill]\n    name: Beta Command Skill\n    runtimes: pi=ext-beta\n  ext-claude-only [prompt-skill]\n    name: Claude Only Skill\n    runtimes: claude=ext:claude-only\n\n=== INVALID EXTENSIONS ===\n  ext-broken: missing required field 'summary' in <HOME>/extensions/ext-broken/skill.yaml\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "list_extensions_runtime_pi",
+      "argv": [
+        "list",
+        "extensions",
+        "--runtime",
+        "pi"
+      ],
+      "stdout": "Runtime filter: pi\nExtensions root: <HOME>/extensions\n=== EXTENSIONS ===\n  ext-alpha [prompt-skill]\n    name: Alpha Prompt Skill\n    runtimes: claude=ext:alpha, pi=ext-alpha\n  ext-beta [command-skill]\n    name: Beta Command Skill\n    runtimes: pi=ext-beta\n\n=== INVALID EXTENSIONS ===\n  ext-broken: missing required field 'summary' in <HOME>/extensions/ext-broken/skill.yaml\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "list_extensions_explicit_root",
+      "argv": [
+        "list",
+        "extensions",
+        "--extensions-root",
+        "<HOME>/extensions"
+      ],
+      "stdout": "Extensions root: <HOME>/extensions\n=== EXTENSIONS ===\n  ext-alpha [prompt-skill]\n    name: Alpha Prompt Skill\n    runtimes: claude=ext:alpha, pi=ext-alpha\n  ext-beta [command-skill]\n    name: Beta Command Skill\n    runtimes: pi=ext-beta\n  ext-claude-only [prompt-skill]\n    name: Claude Only Skill\n    runtimes: claude=ext:claude-only\n\n=== INVALID EXTENSIONS ===\n  ext-broken: missing required field 'summary' in <HOME>/extensions/ext-broken/skill.yaml\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "list_unknown_target",
+      "argv": [
+        "list",
+        "bogus"
+      ],
+      "stdout": "Usage: python -m memory list [personas|journeys|extensions|all] [--mirror-home PATH] [--verbose] [--extensions-root PATH] [--runtime NAME]\n",
+      "stderr": "",
+      "exit_code": 1
+    },
+    {
+      "label": "inspect_extension_prompt_skill",
+      "argv": [
+        "inspect",
+        "extension",
+        "ext-alpha"
+      ],
+      "stdout": "=== extension/ext-alpha ===\nname: Alpha Prompt Skill\ncategory: extension\nkind: prompt-skill\nsummary: A prompt skill exercised by the catalog golden.\nroot: <HOME>/extensions/ext-alpha\nmanifest_path: <HOME>/extensions/ext-alpha/skill.yaml\nruntimes:\n  claude:\n    command_name: ext:alpha\n    skill_file: skills/claude/SKILL.md\n    skill_path: <HOME>/extensions/ext-alpha/skills/claude/SKILL.md\n  pi:\n    command_name: ext-alpha\n    skill_file: skills/pi/SKILL.md\n    skill_path: <HOME>/extensions/ext-alpha/skills/pi/SKILL.md\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "inspect_extension_command_skill",
+      "argv": [
+        "inspect",
+        "extension",
+        "ext-beta"
+      ],
+      "stdout": "=== extension/ext-beta ===\nname: Beta Command Skill\ncategory: extension\nkind: command-skill\nsummary: A command skill with an entrypoint module and one runtime.\nroot: <HOME>/extensions/ext-beta\nmanifest_path: <HOME>/extensions/ext-beta/skill.yaml\nentrypoint:\n  module: extension\n  module_path: <HOME>/extensions/ext-beta/extension.py\nruntimes:\n  pi:\n    command_name: ext-beta\n    skill_file: skills/pi/SKILL.md\n    skill_path: <HOME>/extensions/ext-beta/skills/pi/SKILL.md\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "inspect_extension_invalid",
+      "argv": [
+        "inspect",
+        "extension",
+        "ext-broken"
+      ],
+      "stdout": "extension/ext-broken not found or invalid\nreason: missing required field 'summary' in <HOME>/extensions/ext-broken/skill.yaml\n",
+      "stderr": "",
+      "exit_code": 1
+    },
+    {
+      "label": "inspect_extension_missing",
+      "argv": [
+        "inspect",
+        "extension",
+        "ext-nope"
+      ],
+      "stdout": "extension/ext-nope not found or invalid\nreason: missing manifest: <HOME>/extensions/ext-nope/skill.yaml\n",
+      "stderr": "",
+      "exit_code": 1
+    },
+    {
+      "label": "inspect_runtime_catalog_pi",
+      "argv": [
+        "inspect",
+        "runtime-catalog",
+        "pi"
+      ],
+      "stdout": "=== runtime-catalog/pi ===\nruntime_root: <HOME>/runtime/skills/pi\ncatalog_path: <HOME>/runtime/skills/pi/extensions.json\nschema_version: 1\ngenerated_at: 2026-01-01T00:00:00+00:00\nextensions:\n  ext-alpha -> ext-alpha\n    kind: prompt-skill\n    installed_skill_path: <HOME>/runtime/skills/pi/ext-alpha/SKILL.md\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "inspect_runtime_catalog_missing",
+      "argv": [
+        "inspect",
+        "runtime-catalog",
+        "zed"
+      ],
+      "stdout": "=== runtime-catalog/zed ===\nruntime_root: <HOME>/runtime/skills/zed\ncatalog_path: <HOME>/runtime/skills/zed/extensions.json\nschema_version: 1\ngenerated_at: (unknown)\nextensions:\n  (none)\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "inspect_runtime_catalog_corrupt",
+      "argv": [
+        "inspect",
+        "runtime-catalog",
+        "corrupt"
+      ],
+      "stdout": "=== runtime-catalog/corrupt ===\nruntime_root: <HOME>/runtime/skills/corrupt\ncatalog_path: <HOME>/runtime/skills/corrupt/extensions.json\nschema_version: 1\ngenerated_at: (unknown)\nextensions:\n  (none)\n",
+      "stderr": "",
+      "exit_code": 0
+    },
+    {
+      "label": "inspect_bare",
+      "argv": [
+        "inspect"
+      ],
+      "stdout": "Usage: python -m memory inspect persona|extension|runtime-catalog|llm-calls|embedding-provenance <id> [--mirror-home PATH] [--extensions-root PATH]\n",
+      "stderr": "",
+      "exit_code": 1
+    },
+    {
+      "label": "inspect_unknown_target",
+      "argv": [
+        "inspect",
+        "bogus",
+        "x"
+      ],
+      "stdout": "Usage: python -m memory inspect persona|extension|runtime-catalog|llm-calls|embedding-provenance <id> [--mirror-home PATH] [--extensions-root PATH]\n",
+      "stderr": "",
+      "exit_code": 1
+    }
+  ]
+}

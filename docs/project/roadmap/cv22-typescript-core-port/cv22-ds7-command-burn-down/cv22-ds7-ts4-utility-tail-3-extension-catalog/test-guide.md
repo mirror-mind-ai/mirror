@@ -55,4 +55,46 @@ Navigator has run steps 1–7 and accepted them explicitly.
 
 ## Validation Evidence
 
-Pending implementation and validation.
+### Plateau 1 — the refusal matrix, measured
+
+The plan's first act was to run the real CLI rather than read it. All 32 cases
+in `ts/test/fixtures/extension-catalog.golden.json` were recorded from
+`python -m memory …`, one subprocess each, over a disposable copy of the
+fixture home. What the measurement settled:
+
+| Fact | Measured |
+|---|---|
+| Refusal class for this whole family | usage on **stdout**, exit **1**, `stderr` **empty** — including `list bogus`, `inspect` bare, and `inspect extension <missing>`; no case in the family reaches argparse |
+| `extensions validate` / `sync` with an invalid extension | exit 1 from the shared prelude **before** the command's own missing-option message (`sync requires --runtime` is never printed when an extension is invalid) |
+| The two INVALID blocks differ | `print_extension_list`'s block has a leading blank line; the validate/sync prelude's does not |
+| `ext` bare vs `ext --help` | identical bytes, exit **1** vs **0** |
+| Missing or corrupt runtime catalog | rendered as an **empty catalog at exit 0** — `_load_catalog` swallows both |
+| Discovery | non-directories and directories without `skill.yaml` are skipped silently; only a present-but-invalid manifest becomes a row |
+| `inspect extension` entrypoint order | the keys the author wrote, then the resolved `module_path` Python appends — insertion order is output |
+
+### Plateau 1 — checks
+
+- `ts/test/extensions/catalog.test.ts`: 32 recorded cases replayed through the
+  TypeScript composition, all three faces (stdout, stderr, exit code) equal.
+- **Five mutants killed** from a green baseline: unsorted runtime parts, a bare
+  `ext` exiting 0, a corrupt catalog throwing instead of rendering empty, a
+  blank line added to the validate-path INVALID block, and discovery no longer
+  skipping directories without a manifest.
+- One mutant first reported SURVIVED and was **fiction**: the escaping in the
+  mutation script made the replacement a no-op, so nothing was mutated. Re-run
+  with the mutation verified as applied, it was killed. Same false-green class
+  US8 recorded twice; the lesson is to assert the mutation changed the file.
+- TS suite 2,218 pass; `tsc --noEmit` clean; biome clean except the
+  pre-existing `routing.ts` warning; golden regeneration is a no-op and joins
+  the CI determinism gate with its own `git diff` (it lives beside its fixture,
+  not under `ts/test/goldens/`).
+
+Nothing is routed: `routing.ts` still sends every one of these commands to
+Python.
+
+### Scope note recorded at plateau 1
+
+`list all` composes the persona and journey renderers DS7.US1 already ported
+with the extension listing this plateau ports. The composition needs a
+database, so it is graded at the front-door plateau rather than in this
+golden; the extension half is graded here through `list extensions`.
