@@ -269,7 +269,63 @@ export function buildSubcommandRequest(
  * with a manifest traceback; TypeScript answers with one line on stderr at the
  * same exit code -- the recorded divergence class for this family.
  */
-/** The legacy bridge: the request on stdin, the user's streams inherited. */
+/**
+ * Ask the host to load an installed command-skill and call `register(api)`.
+ *
+ * The one thing `extensions install` still cannot do without an interpreter.
+ * Migrations are the TypeScript port's; this is the entrypoint import, and it
+ * has to happen at install time for the reason Python does it there: an
+ * extension whose `register` raises must fail the INSTALL, not the first
+ * command someone runs a week later.
+ *
+ * A mode of the same `mirror-cli-v1` request kind, not a new protocol and not
+ * a second host -- it dies with the rest of the bridge at DS10. Unlike a
+ * dispatch, streams are captured: a registration is not a command, so its
+ * output is diagnostics rather than product.
+ */
+export function validateExtensionRegister(
+  extensionId: string,
+  mirrorHome: string,
+  extensionRoot: string,
+  options: DispatchOptions,
+): { ok: true } | { ok: false; message: string } {
+  const command = options.hostCommand ?? DEFAULT_HOST_COMMAND;
+  const spawn = options.spawn ?? spawnSync;
+  const request = {
+    protocol: MIRROR_CLI_PROTOCOL,
+    mode: "validate_register",
+    extension_id: extensionId,
+    argv: [],
+    mirror_home: mirrorHome,
+    extension_root: extensionRoot,
+    database_path: options.databasePath,
+  };
+  const result = spawn(command[0] as string, command.slice(1), {
+    cwd: options.hostCwd ?? process.cwd(),
+    env: options.environment ?? process.env,
+    encoding: "utf8",
+    input: `${JSON.stringify(request)}\n`,
+    timeout: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+    windowsHide: true,
+    shell: false,
+  });
+  if (result.error) {
+    return {
+      ok: false,
+      message: `register(api) could not be validated for extension/${extensionId}: the Python host could not be started`,
+    };
+  }
+  if (result.status === 0) return { ok: true };
+  const reported = String(result.stderr ?? "")
+    .trimEnd()
+    .split("\n")
+    .at(-1);
+  return {
+    ok: false,
+    message: reported || `register(api) failed for extension/${extensionId}`,
+  };
+}
+
 function spawnHost(
   dispatch: ExtensionDispatch,
   options: DispatchOptions,

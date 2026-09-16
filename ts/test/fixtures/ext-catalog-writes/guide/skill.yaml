@@ -1,0 +1,10 @@
+id: guide
+name: Guide
+category: extension
+summary: Fixture prompt-skill, which install must NOT migrate or load
+kind: prompt-skill
+
+runtimes:
+  pi:
+    command_name: ext-guide
+    skill_file: SKILL.md

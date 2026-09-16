@@ -62,6 +62,20 @@ export function pythonJsonDumpsIndented(value: unknown, indent = 2): string {
 }
 
 /**
+ * Serialize like Python `json.dumps(value, indent=2)` -- indented and
+ * ASCII-escaped, but in INSERTION order.
+ *
+ * Separate from `pythonJsonDumpsIndented` because that one carries
+ * `sort_keys=True`, and this call site does not: the extension runtime catalog
+ * is written key by key as `schema_version, runtime, target_root,
+ * generated_at, extensions`. Sorting would hoist `extensions` to the top and
+ * change every byte of a file both cores read and rewrite.
+ */
+export function pythonJsonDumpsIndentedOrdered(value: unknown, indent = 2): string {
+  return escapeNonAscii(JSON.stringify(value, null, indent));
+}
+
+/**
  * Serialize like Python `json.dumps(value, ensure_ascii=True,
  * separators=(",", ":"), sort_keys=True)` -- the canonical form a HASH is taken
  * over.

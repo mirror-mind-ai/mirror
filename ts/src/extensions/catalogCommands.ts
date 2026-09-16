@@ -16,6 +16,8 @@
 // path must fail loudly, not silently print nothing.
 
 import { existsSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import type { WritableDatabase } from "#db/database.ts";
 import {
   type BindingDeps,
@@ -37,10 +39,22 @@ import {
   runtimeSkillsRootForHome,
 } from "./catalog.ts";
 import {
+  cleanupClaudeRuntimeSkills,
+  exposeClaudeRuntimeSkills,
+  installExtension,
+  loadRuntimeCatalog,
+  type RegisterValidator,
+  renderInstallReport,
+  renderUninstallReport,
+  syncExtensionsForRuntime,
+  uninstallExtension,
+} from "./catalogWrites.ts";
+import {
   type ExtensionDispatch,
   extensionNotInstalled,
   installedExtensionDir,
 } from "./dispatch.ts";
+import { ExtensionValidationError } from "./errors.ts";
 
 export class UnsupportedCatalogCommandError extends Error {}
 
@@ -86,6 +100,17 @@ export interface CatalogContext {
 export interface ExtWriteContext extends CatalogContext {
   readonly db: WritableDatabase;
   readonly deps: BindingDeps;
+}
+
+/**
+ * The catalog WRITE half. It adds one capability the others do not need:
+ * validating an installed command-skill's `register(api)`, which still runs
+ * through the temporary Python host and so must be injected rather than
+ * reached for -- a write context assembled without it cannot silently skip
+ * the check and report a successful install of a broken extension.
+ */
+export interface CatalogWriteContext extends ExtWriteContext {
+  readonly validateRegister: RegisterValidator;
 }
 
 const BUILTIN_VERBS = new Set(["bind", "unbind", "bindings", "migrate"]);
@@ -163,6 +188,35 @@ function resolveRoot(context: CatalogContext, explicit: string | null): string {
   return explicit ?? extensionsRootForHome(context.mirrorHome);
 }
 
+/** Python's `Path(p).expanduser()`, which the two `--target-root` verbs apply. */
+function expandHomePath(path: string): string {
+  if (path === "~") return homedir();
+  if (path.startsWith("~/")) return join(homedir(), path.slice(2));
+  return path;
+}
+
+function writeContext(context: CatalogContext, command: string): CatalogWriteContext {
+  if (!isWriteContext(context) || !("validateRegister" in context)) {
+    throw new UnsupportedCatalogCommandError(`extensions ${command} needs a write context`);
+  }
+  return context as CatalogWriteContext;
+}
+
+/**
+ * Python lets `install`'s validation errors escape as a traceback: exit 1,
+ * nothing on stdout. TypeScript cannot reproduce those bytes, so it answers
+ * the recorded divergence shape -- the same exit code, one line on stderr --
+ * and, like Python, writes nothing to stdout.
+ */
+function failLoudly(run: () => RenderedCommand): RenderedCommand {
+  try {
+    return run();
+  } catch (error) {
+    if (!(error instanceof ExtensionValidationError)) throw error;
+    return { stdout: "", stderr: `${error.message}\n`, exitCode: 1 };
+  }
+}
+
 /** Port of the read half of `cmd_extensions`. */
 export function runExtensionsCommand(
   context: CatalogContext,
@@ -180,7 +234,20 @@ export function runExtensionsCommand(
       );
     }
     if (options.extensionsRoot === null) return usage("install requires --extensions-root PATH");
-    throw new UnsupportedCatalogCommandError("extensions install is CV22.DS7.TS4 plateau 4");
+    const write = writeContext(context, "install");
+    return failLoudly(() =>
+      renderInstallReport(
+        installExtension({
+          extensionId: options.positional[1] as string,
+          sourceRoot: options.extensionsRoot as string,
+          mirrorHome: write.mirrorHome,
+          runtime: options.runtime,
+          db: write.db,
+          deps: write.deps,
+          validateRegister: write.validateRegister,
+        }),
+      ),
+    );
   }
   if (command === "uninstall") {
     if (options.positional.length !== 2) {
@@ -188,11 +255,52 @@ export function runExtensionsCommand(
         "Usage: python -m memory extensions uninstall <id> [--mirror-home PATH] [--runtime NAME]",
       );
     }
-    throw new UnsupportedCatalogCommandError("extensions uninstall is CV22.DS7.TS4 plateau 4");
+    const write = writeContext(context, "uninstall");
+    // Python CATCHES the validation error here and prints it as a line, where
+    // `install` lets the same class escape as a traceback. Same command, two
+    // refusal shapes, measured rather than unified.
+    try {
+      return renderUninstallReport(
+        uninstallExtension({
+          extensionId: options.positional[1] as string,
+          mirrorHome: write.mirrorHome,
+          runtime: options.runtime,
+          db: write.db,
+          deps: write.deps,
+        }),
+      );
+    } catch (error) {
+      if (!(error instanceof ExtensionValidationError)) throw error;
+      return out(`${error.message}\n`, 1);
+    }
   }
   if (command === "expose-claude" || command === "clean-claude") {
     if (options.targetRoot === null) return usage(`${command} requires --target-root PATH`);
-    throw new UnsupportedCatalogCommandError(`extensions ${command} is CV22.DS7.TS4 plateau 4`);
+    const write = writeContext(context, command);
+    const projectRoot = expandHomePath(options.targetRoot);
+    if (command === "clean-claude") {
+      const report = cleanupClaudeRuntimeSkills(projectRoot);
+      const lines = [
+        `Removed Claude external skills from ${report.claudeSkillsRoot}`,
+        `  overlay catalog: ${report.overlayCatalogPath}`,
+        ...report.removed.map((path) => `  removed ${path}`),
+      ];
+      return out(`${lines.join("\n")}\n`);
+    }
+    try {
+      const catalog = loadRuntimeCatalog("claude", write.mirrorHome);
+      const report = exposeClaudeRuntimeSkills(projectRoot, catalog);
+      const lines = [
+        `Exposed Claude external skills into ${report.claudeSkillsRoot}`,
+        `  overlay catalog: ${report.overlayCatalogPath}`,
+        ...report.removed.map((path) => `  pruned ${path}`),
+        ...report.exposed.map((item) => `  ${item.commandName} -> ${item.targetSkillPath}`),
+      ];
+      return out(`${lines.join("\n")}\n`);
+    } catch (error) {
+      if (!(error instanceof ExtensionValidationError)) throw error;
+      return out(`${error.message}\n`, 1);
+    }
   }
 
   const root = resolveRoot(context, options.extensionsRoot);
@@ -222,7 +330,22 @@ export function runExtensionsCommand(
   }
   if (options.runtime === null) return out(`${stdout}sync requires --runtime\n`, 1);
   if (options.targetRoot === null) return out(`${stdout}sync requires --target-root PATH\n`, 1);
-  throw new UnsupportedCatalogCommandError("extensions sync is CV22.DS7.TS4 plateau 4");
+
+  // `sync` writes files but never the database, so it needs the clock seam and
+  // nothing else. Note the target root is used RAW, not expanded: only
+  // `expose-claude` and `clean-claude` call `expanduser` on theirs.
+  const write = writeContext(context, "sync");
+  const synced = syncExtensionsForRuntime(
+    manifests,
+    options.runtime,
+    options.targetRoot,
+    write.deps,
+  );
+  const lines = [
+    `${stdout}Synced ${synced.length} extension(s) to ${options.targetRoot}`,
+    ...synced.map((item) => `  ${item.command_name} -> ${item.installed_skill_path}`),
+  ];
+  return out(`${lines.join("\n")}\n`);
 }
 
 /**

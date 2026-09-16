@@ -7,7 +7,7 @@
 // starts from the pristine seed, opened through the copy-only guard, and a
 // hash-verified backup is required first.
 
-import { copyFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { logAssistantMessage, logUserMessage } from "#conversation/logger.ts";
 import { type BackupRecord, requireBackup } from "#db/backupGate.ts";
@@ -15,6 +15,7 @@ import { assertCopyTarget } from "#db/copyGuard.ts";
 import { openDatabaseCopyForWrite } from "#db/database.ts";
 import { assertFtsIntegrity } from "#db/ftsIntegrity.ts";
 import { ensureMigratedOnOpen } from "#db/migrateOnOpen.ts";
+import { validateExtensionRegister } from "#extensions/dispatch.ts";
 import { updateIdentityMetadata } from "#identity/identityStore.ts";
 import { setIdentity } from "#identity/setIdentity.ts";
 import { createJourney, setProjectPath } from "#journey/journeyWrite.ts";
@@ -33,7 +34,12 @@ import {
   explorerHandoffProbe,
   explorerStoryProbe,
 } from "./explorerProbes.ts";
-import { type ExtBindingsProbeParams, extBindingsProbe } from "./extensionProbes.ts";
+import {
+  type ExtBindingsProbeParams,
+  type ExtensionInstallProbeParams,
+  extBindingsProbe,
+  extensionInstallProbe,
+} from "./extensionProbes.ts";
 import {
   type CloseTailProbeParams,
   closeTailProbe,
@@ -135,6 +141,14 @@ export type WriteProbeFixture =
   | (WriteProbeBase & {
       probe_type: "ext_bindings";
       ext_bindings: ExtBindingsProbeParams;
+    })
+  // CV22.DS7.TS4 plateau 5: `extensions install` graded as FILES on a real-DB
+  // copy. Its home is disposable and derived from `ts_copy_path`, the same rule
+  // the artifacts probe follows: an install probe must never be able to write
+  // into a real mirror home.
+  | (WriteProbeBase & {
+      probe_type: "extension_install";
+      extension_install: ExtensionInstallProbeParams;
     })
   // CV22.DS7.US8 plateau 3: story-package materialization on a real-DB copy, graded
   // as FILES. Its project tree is disposable and derived from `ts_copy_path`, so the
@@ -418,6 +432,36 @@ function buildWriteProbe(fixture: WriteProbeFixture, tsCopyPath: string): WriteP
       return builderCursorStateProbe(fixture.label, fixture.builder_cursor, fixture.now_iso);
     case "ext_bindings":
       return extBindingsProbe(fixture.label, fixture.ext_bindings, fixture.now_iso);
+    case "extension_install": {
+      // Beside the TypeScript database copy, mirroring the Python probe's
+      // `<copy>.parent/extension-install-python`. Separate homes on purpose:
+      // one shared home would make the second engine install over the first's
+      // tree and report a different `copytree` outcome.
+      const home = join(dirname(tsCopyPath), "extension-install-ts");
+      rmSync(home, { recursive: true, force: true });
+      mkdirSync(home, { recursive: true });
+      // The database has to carry the name the home resolves to, or `install`
+      // creates an empty one beside it and the probe grades a fresh corpus
+      // while claiming a real one. The name is the Python half's, passed
+      // through the fixture rather than recomputed here.
+      const homeDatabasePath = join(home, fixture.extension_install.database_name);
+      copyFileSync(tsCopyPath, homeDatabasePath);
+      const homeDatabase = openDatabaseCopyForWrite(homeDatabasePath);
+      return extensionInstallProbe(
+        fixture.label,
+        fixture.extension_install,
+        fixture.now_iso,
+        home,
+        homeDatabase,
+        (extensionId, extensionDir) => {
+          const outcome = validateExtensionRegister(extensionId, home, extensionDir, {
+            databasePath: homeDatabasePath,
+            hostCwd: process.cwd(),
+          });
+          if (!outcome.ok) throw new Error(outcome.message);
+        },
+      );
+    }
     case "builder_artifacts":
       return builderArtifactsProbe(
         fixture.label,

@@ -107,7 +107,9 @@ def invoke(request_value: object) -> str | None:
         connection.close()
 
 
-def _validated_cli_request(request_value: object) -> dict[str, Any]:
+def _validated_cli_request(
+    request_value: object, *, require_subcommand: bool = True
+) -> dict[str, Any]:
     """Validate a ``mirror-cli-v1`` request without running anything yet.
 
     Separated from execution on purpose: a malformed request is the host's
@@ -124,7 +126,7 @@ def _validated_cli_request(request_value: object) -> dict[str, Any]:
     extension_id = _required_string(request, "extension_id")
     if not _EXTENSION_ID.fullmatch(extension_id):
         raise ValueError("invalid extension id")
-    subcommand = _required_string(request, "subcommand")
+    subcommand = _required_string(request, "subcommand") if require_subcommand else ""
 
     argv = request.get("argv", [])
     if not isinstance(argv, list) or not all(isinstance(item, str) for item in argv):
@@ -157,6 +159,40 @@ def _validated_cli_request(request_value: object) -> dict[str, Any]:
     }
 
 
+def validate_register(request_value: object) -> int:
+    """Load an installed command-skill and call its ``register(api)``.
+
+    The other half of what `extensions install` needs from Python. Migrations
+    are applied by the TypeScript port; only the entrypoint import can still
+    require an interpreter, and it must run for the same reason Python runs it:
+    an extension whose `register` raises has to fail the INSTALL, not the first
+    command the user tries afterwards.
+
+    Streams are redirected here, unlike the dispatch mode: a registration is
+    not a command, and an extension that prints a banner from `register` must
+    not be able to pollute the install report. The failure MESSAGE is the
+    payload, and it is written as one line on stderr.
+    """
+    from memory.config import db_path_for_home
+    from memory.db.connection import get_connection
+    from memory.extensions.errors import ExtensionError
+    from memory.extensions.loader import load_extension
+
+    call = _validated_cli_request(request_value, require_subcommand=False)
+    mirror_home = Path(call["mirror_home"])
+    extension_dir = mirror_home / "extensions" / call["extension_id"]
+    connection = get_connection(db_path_for_home(mirror_home))
+    try:
+        with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+            load_extension(extension_dir, connection=connection, reload=True)
+    except ExtensionError as exc:
+        sys.stderr.write(f"register(api) failed for extension/{call['extension_id']}: {exc}\n")
+        return 1
+    finally:
+        connection.close()
+    return 0
+
+
 def invoke_cli(request_value: object) -> int:
     """Run one registered extension subcommand and return its exit code.
 
@@ -177,6 +213,12 @@ def main() -> int:
         return 1
 
     if isinstance(request, dict) and request.get("protocol") == _CLI_PROTOCOL:
+        if request.get("mode") == "validate_register":
+            try:
+                return validate_register(request)
+            except Exception:
+                sys.stderr.write("legacy extension command host rejected the request\n")
+                return 1
         try:
             call = _validated_cli_request(request)
         except Exception:

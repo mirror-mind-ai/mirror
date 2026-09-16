@@ -258,3 +258,60 @@ choosing it — no CLI handler in any installed extension reads stdin — and th
 declared path removes the limit rather than inheriting it: a declared command
 inherits all three streams, which is one more reason for an author to migrate
 before DS10.
+
+### Plateau 5 — the catalog writes
+
+26 recorded cases in `ext-catalog-writes.golden.json`. These commands are
+graded by what they leave ON DISK, so each case carries the complete file tree
+of the mirror home, the runtime target root, and the Claude project root — every
+file by sha256, with the two catalog documents carried verbatim because their
+bytes are the contract — plus the `_ext_migrations` / `_ext_bindings` rows and
+the extension tables. Every case runs in a disposable home AND a disposable
+target root under the system temp directory, the constraint the plan-stage panel
+named: a corpus for `install` and `uninstall` must never be able to reach the
+developer's own `.pi`.
+
+| Fact | Measured |
+|---|---|
+| Catalog bytes | Python's `json.dumps(indent=2)`: non-ASCII ESCAPED (`Caf\u00e9 notes \u2014 …`) and keys in INSERTION order, not sorted |
+| A Claude command name | keeps `:` in the catalog, loses it on disk (`ext:notes` → `ext-notes/`), because `:` is illegal in a Windows path segment |
+| Install's identity | the DIRECTORY name, never the manifest id, so `ext-mismatch/` with `id: mismatch` fails its own prefix check against `ext_ext_mismatch_` |
+| Install's catalog rebuild | from EVERY installed extension, while the report names only the one installed |
+| The installed `__pycache__` | was NOT copied — it is what the post-install import leaves behind, which is why the tree records a marker instead of interpreter-specific bytes |
+| A prompt-skill | skips migrations and `register` entirely |
+| Refusal shapes | `install` lets its validation error escape as a traceback; `uninstall` catches the same class and prints one line at exit 1 |
+| Full uninstall | removes the tree and the extension's bindings, KEEPS its data tables (D4), and leaves another extension's bindings untouched |
+| Single-runtime uninstall | keeps both the source tree and the bindings |
+| `expose-claude` | prunes what it exposed before re-exposing, so a second run reports `pruned` then the same target |
+| `clean-claude` | removes only an EMPTY parent: a skills directory holding a file a human put there keeps both |
+
+**Live both-engine probe:** `extension_install` joins `ext_bindings` on the demo
+copy in CI. Both halves install the same fixture into their OWN home, whose
+database is a copy of a real one placed at the name the home resolves to, and
+the file trees and migration rows are compared. It runs the production
+`installExtension`, not a reimplementation — the lesson plateau 3 paid for.
+
+**Checks:** 26/26 cases equal, trees and rows included; the probe matches on a
+real-database copy; **twelve mutants killed** (unescaped catalog JSON, sorted
+catalog keys, a `:` reaching the filesystem, a catalog rebuilt from one
+manifest, caches copied, the register validation skipped, a prompt-skill
+migrated, an over-broad binding delete, a single-runtime uninstall removing the
+source, `expose-claude` not pruning, `clean-claude` deleting a non-empty parent,
+and uninstall not pruning the catalog), each asserted to have changed the file
+first. The corpus is verified to regenerate identically under both CI
+interpreters. TS suite 2,237 pass; typecheck clean; biome clean except the
+pre-existing `routing.ts` warning; Python extension suite green.
+
+**The corpus grew a case because a mutant survived.** `clean-claude` removes
+only an empty parent, and nothing exercised that: every exposed directory held
+exactly one file. The corpus now writes a human's file into an exposed
+directory before cleaning, and the mutant that deletes the parent
+unconditionally is killed.
+
+**The probe caught itself twice, both times claiming more than it graded.** Its
+first version copied the database BESIDE the name `install` resolves, so
+`install` created an empty database and applied its migration there — a probe
+advertising a real corpus while grading a fresh one. Its second version froze
+only the catalog's clock, leaving the migration ledger's `applied_at` live, so
+it produced a different hash on every run. A probe that cannot repeat itself
+cannot grade anything.

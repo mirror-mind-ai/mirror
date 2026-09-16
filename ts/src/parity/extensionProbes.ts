@@ -7,8 +7,11 @@
 // reaches the same end state through different intermediate rows fails here
 // rather than passing on the last row alone.
 
+import { readdirSync, readFileSync } from "node:fs";
+import { join, relative, sep } from "node:path";
 import type { WritableDatabase } from "#db/database.ts";
 import { runBind, runUnbind } from "#extensions/bindings.ts";
+import { installExtension } from "#extensions/catalogWrites.ts";
 import { runMigrations } from "#extensions/migrations.ts";
 import type { MutatedRow } from "./writeParity.ts";
 import type { WriteProbe } from "./writeProbe.ts";
@@ -115,4 +118,117 @@ export function extBindingsProbe(
       return steps;
     },
   };
+}
+
+// --- `extensions install` as a FILE probe (plateau 5) ------------------------
+
+export interface ExtensionInstallProbeParams {
+  readonly extension_id: string;
+  readonly source_root: string;
+  readonly database_name: string;
+}
+
+/**
+ * Install a command-skill for real, into a home whose database is a copy of a
+ * REAL one.
+ *
+ * The golden grades these writes on a home this repository built from nothing.
+ * This probe grades them where the migration half meets a real schema, and it
+ * runs the PRODUCTION `installExtension` rather than reimplementing the copy —
+ * plateau 3 recorded what happens when a probe reimplements the write it
+ * grades: it survives a mutant that breaks production and proves only itself.
+ */
+export function extensionInstallProbe(
+  label: string,
+  params: ExtensionInstallProbeParams,
+  nowIso: string,
+  home: string,
+  homeDatabase: WritableDatabase,
+  validateRegister: (extensionId: string, extensionDir: string) => void,
+): WriteProbe {
+  return {
+    label,
+    snapshots: [],
+    // The harness copy is not the database written here: `install` resolves its
+    // database from the HOME, so each half installs against its own copy placed
+    // at exactly that resolved name, and reports the rows from it. Every graded
+    // cell is returned below, so nothing depends on the harness's own snapshot.
+    apply(): MutatedRow[] {
+      const db = homeDatabase;
+      const frozen = nowIso.replace("Z", "+00:00");
+      installExtension({
+        extensionId: params.extension_id,
+        sourceRoot: params.source_root,
+        mirrorHome: home,
+        runtime: null,
+        db,
+        deps: { nowIso: () => frozen },
+        validateRegister,
+      });
+      const migrations = db
+        .prepare(
+          "SELECT extension_id, filename, checksum, applied_at FROM _ext_migrations " +
+            "WHERE extension_id = ? ORDER BY filename",
+        )
+        .all(params.extension_id)
+        .map(
+          (row) =>
+            `${String(row.extension_id)}/${String(row.filename)}:${String(row.checksum)}@${String(row.applied_at)}`,
+        );
+      const tables = db
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'ext_notes_%' " +
+            "ORDER BY name",
+        )
+        .all()
+        .map((row) => String(row.name));
+      return [
+        ...installedFiles(home, params.source_root),
+        { id: "rows", cells: { migrations: migrations.join("|"), tables: tables.join(",") } },
+      ];
+    },
+  };
+}
+
+/** The Python half's `_install_files`, normalisations included. */
+function installedFiles(home: string, sourceRoot: string): MutatedRow[] {
+  const rows: MutatedRow[] = [];
+  const caches = new Set<string>();
+  for (const path of walkFiles(home)) {
+    const parts = relative(home, path).split(sep);
+    const cacheIndex = parts.indexOf("__pycache__");
+    if (cacheIndex >= 0) {
+      caches.add([...parts.slice(0, cacheIndex), "__pycache__"].join("/"));
+      continue;
+    }
+    const name = parts[parts.length - 1] as string;
+    if (name.endsWith(".db") || name.endsWith("-wal") || name.endsWith("-shm")) continue;
+    rows.push({
+      id: `file:${parts.join("/")}`,
+      // The home and the source root are tokenised: the two halves install
+      // into separate trees on purpose, and those absolute paths are embedded
+      // in the catalog documents. Every other byte is compared as written.
+      cells: {
+        content: readFileSync(path, "utf8")
+          .split(home)
+          .join("<HOME>")
+          .split(sourceRoot)
+          .join("<SRC>"),
+      },
+    });
+  }
+  for (const cache of [...caches].sort()) {
+    rows.push({ id: `cache:${cache}`, cells: { content: "<bytecode>" } });
+  }
+  return rows.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+}
+
+function walkFiles(root: string): string[] {
+  const found: string[] = [];
+  for (const entry of readdirSync(root, { withFileTypes: true })) {
+    const path = join(root, entry.name);
+    if (entry.isDirectory()) found.push(...walkFiles(path));
+    else if (entry.isFile()) found.push(path);
+  }
+  return found.sort();
 }

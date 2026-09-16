@@ -1,0 +1,22 @@
+id: notes
+name: Notes
+category: extension
+# A non-ASCII summary on purpose: Python writes the catalog with
+# `json.dumps(..., indent=2)` and NO `ensure_ascii=False`, so it escapes this to
+# \uXXXX. JavaScript's JSON.stringify does not. The catalog bytes are the
+# contract, so the port has to escape too.
+summary: Café notes — a deterministic fixture
+kind: command-skill
+table_prefix: ext_notes_
+
+entrypoint:
+  module: extension
+  function: register
+
+runtimes:
+  pi:
+    command_name: ext-notes
+    skill_file: SKILL.md
+  claude:
+    command_name: "ext:notes"
+    skill_file: SKILL.md

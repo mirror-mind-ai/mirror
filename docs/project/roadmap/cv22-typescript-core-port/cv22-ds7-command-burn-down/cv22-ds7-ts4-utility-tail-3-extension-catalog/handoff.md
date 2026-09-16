@@ -2,8 +2,7 @@
 
 # Handoff — CV22.DS7.TS4 — Ops/utility tail 3: extension catalog
 
-**Status:** plateaus 1-4 of 8 complete. The
-**catalog reads** answer from
+**Status:** plateaus 1-5 of 8 complete. The **catalog reads** answer from
 TypeScript — `extensions list|validate` (with the runtime filter and every
 usage refusal), `ext list`, `list extensions`, `inspect extension`, and
 `inspect runtime-catalog` — graded against 32 recorded Python invocations, and
@@ -11,26 +10,53 @@ the **ledger reads** (`inspect llm-calls` rows and `--summary`, `inspect
 embedding-provenance`) against 21 more. Plateau 3 adds the family's first
 WRITES — `ext <id> bind|unbind|bindings|migrate`, including the migration
 runner's write half — graded by 24 recorded cases and by the `ext_bindings`
-write probe on a copy of a real database. Plateau 4 adds the **dispatch** —
-`ext <id>` and `ext <id> <subcommand>` through the TypeScript dispatcher and
-the compat host's new `cli` mode — graded by 32 recorded Python invocations
-that carry the rows each one leaves behind as well as its streams.
+write probe on a copy of a real database.
+
+Plateau 4 adds the **dispatch** — `ext <id>` and `ext <id> <subcommand>`
+through the TypeScript dispatcher, a declared `mirror-cli-v1` command executed
+directly, and the compat host's new `cli` mode for everything else — graded by
+40 recorded Python invocations that carry the rows each one leaves behind as
+well as its streams.
+
+Plateau 5 adds the **catalog writes** — `extensions sync|install|uninstall|
+expose-claude|clean-claude` — graded by what they leave ON DISK: 26 recorded
+cases carrying the complete file tree of the mirror home, the runtime target
+root, and the Claude project root, plus the rows, and a live both-engine
+`extension_install` probe on a copy of a real database.
+
 **Nothing is routed:** `routing.ts` still sends the whole family to Python,
 which is the intended state until plateau 7 adds the routes and plateau 8
 flips the gates.
 
 ## Resume here
 
-**Next: plateau 5, the catalog writes.** `extensions sync|install|uninstall|
-expose-claude|clean-claude`, graded like `builder_artifacts` — file trees
-compared byte for byte in a disposable home AND a disposable target root, never
-the developer's `.pi`, which the plan-stage panel named explicitly. It can now
-be written: a command-skill install calls the extension's own `register(api)`,
-and the host this plateau landed is what lets TypeScript complete that.
-Two traps already measured and waiting there: `install_extension` uses the
-DIRECTORY NAME as the extension id (the repository's own `ext-hello` fixture
-fails its own prefix check because of it), and an install failure escapes as an
-uncaught traceback.
+**Next: plateau 6 — `identity edit` (Scope F) and the ES-001 metadata-lifecycle
+write faces (Scope G).** Then plateau 7 wires the front door with the three D2
+gates, and plateau 8 flips them. Nothing in this family is routed yet.
+
+What plateau 6 owes: `spawnSync($EDITOR)` with a 0600 temp file removed on every
+path, the empty-content refusal, the save through the ported identity write;
+then `applyMetadataLifecycle` over the existing `dryRunMetadataLifecycle`, every
+decision branch from `test_conversation_metadata_lifecycle.py`, the `demo`
+report byte-identical, and the `metadata_lifecycle_apply` write probe. The
+quality-assurance panel named the corpus it needs: a copy holding a manually
+locked title, a refine candidate, and a deferred-tags conversation, or the
+branches are theory.
+
+What landed in plateau 5:
+
+- `ts/src/extensions/catalogWrites.ts` — the five write verbs, the catalog
+  document, the legacy-directory pruning, and the Windows-safe directory
+  mapping;
+- `ts/src/util/pyGenerators.ts` — `pythonJsonDumpsIndentedOrdered`, because the
+  catalog is written with `json.dumps(indent=2)` and the existing indented
+  helper carries `sort_keys=True`;
+- `src/memory/extensions/compat_host.py` — a `validate_register` mode of the
+  same `mirror-cli-v1` request kind: migrations are the TypeScript port's, but
+  the entrypoint import still needs an interpreter, and it has to run at
+  INSTALL time or a broken `register` fails a week later instead;
+- `ts/parity/generate_ext_catalog_writes_golden.py` + its five source
+  extensions, and the `extension_install` write probe in both halves.
 
 What landed in plateau 4:
 
@@ -100,6 +126,38 @@ What landed in plateau 1:
   fields the renderers print, exactly where TS3 said TS4 would extend it;
 - `ts/parity/generate_extension_catalog_golden.py` and its fixture tree, in the
   CI determinism gate with their own `git diff` check.
+
+## Rules plateau 5 paid for — do not rediscover them
+
+- **The catalog is `json.dumps(indent=2)`: non-ASCII ESCAPED, keys in INSERTION
+  order.** A summary reading `Café notes — a fixture` lands as
+  `Caf\u00e9 notes \u2014 a fixture`. `JSON.stringify` writes raw UTF-8, and
+  the existing `pythonJsonDumpsIndented` sorts keys — both silently rewrite a
+  file the two cores read and rewrite in turn.
+- **A Claude command keeps its `:` in the catalog and loses it on disk.**
+  `ext:notes` is the runtime command; `ext-notes/` is the directory, because
+  `:` is illegal in a Windows path segment. Trailing dots and spaces are
+  stripped for the same reason, and a name that is nothing but illegal
+  characters still has to produce a directory: `extension`.
+- **Install rebuilds each runtime catalog from EVERY installed extension**,
+  while the report names only the one installed. Feeding the writer a single
+  manifest drops every other extension from the catalog Pi and Claude discover
+  through, leaving their SKILL.md files orphaned on disk.
+- **The `__pycache__` in an installed tree was not copied.** `__pycache__` is in
+  the ignore patterns; it appears because the post-install step IMPORTS the
+  extension to validate `register`. Its bytes and its `cpython-3XY` filename
+  are interpreter-specific, so the corpus records a marker.
+- **`install` lets its validation errors escape as a traceback while
+  `uninstall` catches the same class and prints one line.** Same command, two
+  refusal shapes, again.
+- **`clean-claude` removes only an EMPTY parent directory.** A skills directory
+  holding a file a human put there keeps both. Nothing graded that until a
+  mutant survived and the corpus grew the case.
+- **A probe that grades a fresh corpus while claiming a real one proves
+  nothing.** The install probe's first version copied the database beside the
+  name `install` resolves, so `install` created an empty database and migrated
+  THAT. Two clocks had to be frozen, in two modules, before the probe could
+  even repeat itself.
 
 ## Rules plateau 4 paid for — do not rediscover them
 

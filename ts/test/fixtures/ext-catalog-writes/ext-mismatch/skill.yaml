@@ -1,0 +1,19 @@
+# The manifest id is `mismatch`; the DIRECTORY is `ext-mismatch`. `install` uses
+# the directory name as the extension id, so the migration below is checked
+# against the prefix `ext_ext_mismatch_` and fails — exactly how the
+# repository's own `ext-hello` fixture fails its own prefix check.
+id: mismatch
+name: Mismatch
+category: extension
+summary: Fixture where the directory name and the manifest id disagree
+kind: command-skill
+table_prefix: ext_mismatch_
+
+entrypoint:
+  module: extension
+  function: register
+
+runtimes:
+  pi:
+    command_name: ext-mismatch
+    skill_file: SKILL.md

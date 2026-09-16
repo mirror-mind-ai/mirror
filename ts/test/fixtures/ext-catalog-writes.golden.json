@@ -1,0 +1,1854 @@
+{
+  "_generated_by": "ts/parity/generate_ext_catalog_writes_golden.py",
+  "_semantics": "Python's answer for `extensions sync|install|uninstall|expose-claude|clean-claude`: streams and exit code, plus the complete file tree of the mirror home, the runtime target root, and the Claude project root after each step, plus the extension rows and tables. Files are sha256-prefixed; the catalog documents carry their text, because their bytes are the contract. Cases carrying a `divergence` field record `stderr` as null and keep `stderr_final_line`: a CPython traceback is not portable.",
+  "timestamp_token": "<TIMESTAMP>",
+  "cases": [
+    {
+      "label": "sync_requires_a_runtime",
+      "prepare": [],
+      "argv": [
+        "sync",
+        "--extensions-root",
+        "<SRC>"
+      ],
+      "stdout": "Extensions root: <SRC>\nsync requires --runtime\n",
+      "stderr": "",
+      "exit_code": 1,
+      "home": {
+        "memory_test.db": "<database, graded by its rows>"
+      },
+      "target": {},
+      "project": {},
+      "database": {
+        "migrations": [],
+        "bindings": [
+          {
+            "extension_id": "notes",
+            "capability_id": "recent",
+            "target_kind": "persona",
+            "target_id": "engineer",
+            "created_at": "<TIMESTAMP>"
+          },
+          {
+            "extension_id": "other",
+            "capability_id": "keep",
+            "target_kind": "global",
+            "target_id": null,
+            "created_at": "<TIMESTAMP>"
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "label": "sync_requires_a_target_root",
+      "prepare": [],
+      "argv": [
+        "sync",
+        "--extensions-root",
+        "<SRC>",
+        "--runtime",
+        "pi"
+      ],
+      "stdout": "Extensions root: <SRC>\nRuntime filter: pi\nsync requires --target-root PATH\n",
+      "stderr": "",
+      "exit_code": 1,
+      "home": {
+        "memory_test.db": "<database, graded by its rows>"
+      },
+      "target": {},
+      "project": {},
+      "database": {
+        "migrations": [],
+        "bindings": [
+          {
+            "extension_id": "notes",
+            "capability_id": "recent",
+            "target_kind": "persona",
+            "target_id": "engineer",
+            "created_at": "<TIMESTAMP>"
+          },
+          {
+            "extension_id": "other",
+            "capability_id": "keep",
+            "target_kind": "global",
+            "target_id": null,
+            "created_at": "<TIMESTAMP>"
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "label": "sync_pi_from_the_source_root",
+      "prepare": [],
+      "argv": [
+        "sync",
+        "--extensions-root",
+        "<SRC>",
+        "--runtime",
+        "pi",
+        "--target-root",
+        "<TARGET>"
+      ],
+      "stdout": "Extensions root: <SRC>\nRuntime filter: pi\nSynced 4 extension(s) to <TARGET>\n  ext-mismatch -> <TARGET>/ext-mismatch/SKILL.md\n  ext-guide -> <TARGET>/ext-guide/SKILL.md\n  ext-noisy -> <TARGET>/ext-noisy/SKILL.md\n  ext-notes -> <TARGET>/ext-notes/SKILL.md\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home": {
+        "memory_test.db": "<database, graded by its rows>"
+      },
+      "target": {
+        "ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"pi\",\n  \"target_root\": \"<TARGET>\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"mismatch\",\n      \"name\": \"Mismatch\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Fixture where the directory name and the manifest id disagree\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-mismatch\",\n      \"source_extension_dir\": \"<SRC>/ext-mismatch\",\n      \"manifest_path\": \"<SRC>/ext-mismatch/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/ext-mismatch/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-mismatch/SKILL.md\"\n    },\n    {\n      \"id\": \"guide\",\n      \"name\": \"Guide\",\n      \"category\": \"extension\",\n      \"kind\": \"prompt-skill\",\n      \"summary\": \"Fixture prompt-skill, which install must NOT migrate or load\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-guide\",\n      \"source_extension_dir\": \"<SRC>/guide\",\n      \"manifest_path\": \"<SRC>/guide/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/guide/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-guide/SKILL.md\"\n    },\n    {\n      \"id\": \"noisy\",\n      \"name\": \"Noisy\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Fixture whose source tree carries everything install must refuse to copy\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-noisy\",\n      \"source_extension_dir\": \"<SRC>/noisy\",\n      \"manifest_path\": \"<SRC>/noisy/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/noisy/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-noisy/SKILL.md\"\n    },\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-notes\",\n      \"source_extension_dir\": \"<SRC>/notes\",\n      \"manifest_path\": \"<SRC>/notes/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/notes/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "project": {},
+      "database": {
+        "migrations": [],
+        "bindings": [
+          {
+            "extension_id": "notes",
+            "capability_id": "recent",
+            "target_kind": "persona",
+            "target_id": "engineer",
+            "created_at": "<TIMESTAMP>"
+          },
+          {
+            "extension_id": "other",
+            "capability_id": "keep",
+            "target_kind": "global",
+            "target_id": null,
+            "created_at": "<TIMESTAMP>"
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "label": "sync_pi_again_is_stable",
+      "prepare": [],
+      "argv": [
+        "sync",
+        "--extensions-root",
+        "<SRC>",
+        "--runtime",
+        "pi",
+        "--target-root",
+        "<TARGET>"
+      ],
+      "stdout": "Extensions root: <SRC>\nRuntime filter: pi\nSynced 4 extension(s) to <TARGET>\n  ext-mismatch -> <TARGET>/ext-mismatch/SKILL.md\n  ext-guide -> <TARGET>/ext-guide/SKILL.md\n  ext-noisy -> <TARGET>/ext-noisy/SKILL.md\n  ext-notes -> <TARGET>/ext-notes/SKILL.md\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home": {
+        "memory_test.db": "<database, graded by its rows>"
+      },
+      "target": {
+        "ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"pi\",\n  \"target_root\": \"<TARGET>\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"mismatch\",\n      \"name\": \"Mismatch\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Fixture where the directory name and the manifest id disagree\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-mismatch\",\n      \"source_extension_dir\": \"<SRC>/ext-mismatch\",\n      \"manifest_path\": \"<SRC>/ext-mismatch/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/ext-mismatch/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-mismatch/SKILL.md\"\n    },\n    {\n      \"id\": \"guide\",\n      \"name\": \"Guide\",\n      \"category\": \"extension\",\n      \"kind\": \"prompt-skill\",\n      \"summary\": \"Fixture prompt-skill, which install must NOT migrate or load\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-guide\",\n      \"source_extension_dir\": \"<SRC>/guide\",\n      \"manifest_path\": \"<SRC>/guide/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/guide/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-guide/SKILL.md\"\n    },\n    {\n      \"id\": \"noisy\",\n      \"name\": \"Noisy\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Fixture whose source tree carries everything install must refuse to copy\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-noisy\",\n      \"source_extension_dir\": \"<SRC>/noisy\",\n      \"manifest_path\": \"<SRC>/noisy/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/noisy/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-noisy/SKILL.md\"\n    },\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-notes\",\n      \"source_extension_dir\": \"<SRC>/notes\",\n      \"manifest_path\": \"<SRC>/notes/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/notes/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "project": {},
+      "database": {
+        "migrations": [],
+        "bindings": [
+          {
+            "extension_id": "notes",
+            "capability_id": "recent",
+            "target_kind": "persona",
+            "target_id": "engineer",
+            "created_at": "<TIMESTAMP>"
+          },
+          {
+            "extension_id": "other",
+            "capability_id": "keep",
+            "target_kind": "global",
+            "target_id": null,
+            "created_at": "<TIMESTAMP>"
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "label": "sync_claude_maps_the_colon_command_to_a_safe_dir",
+      "prepare": [],
+      "argv": [
+        "sync",
+        "--extensions-root",
+        "<SRC>",
+        "--runtime",
+        "claude",
+        "--target-root",
+        "<TARGET>"
+      ],
+      "stdout": "Extensions root: <SRC>\nRuntime filter: claude\nSynced 1 extension(s) to <TARGET>\n  ext:notes -> <TARGET>/ext-notes/SKILL.md\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home": {
+        "memory_test.db": "<database, graded by its rows>"
+      },
+      "target": {
+        "ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<TARGET>\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<SRC>/notes\",\n      \"manifest_path\": \"<SRC>/notes/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/notes/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "project": {},
+      "database": {
+        "migrations": [],
+        "bindings": [
+          {
+            "extension_id": "notes",
+            "capability_id": "recent",
+            "target_kind": "persona",
+            "target_id": "engineer",
+            "created_at": "<TIMESTAMP>"
+          },
+          {
+            "extension_id": "other",
+            "capability_id": "keep",
+            "target_kind": "global",
+            "target_id": null,
+            "created_at": "<TIMESTAMP>"
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "label": "install_requires_an_extensions_root",
+      "prepare": [],
+      "argv": [
+        "install",
+        "notes"
+      ],
+      "stdout": "install requires --extensions-root PATH\n",
+      "stderr": "",
+      "exit_code": 1,
+      "home": {
+        "memory_test.db": "<database, graded by its rows>"
+      },
+      "target": {
+        "ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<TARGET>\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<SRC>/notes\",\n      \"manifest_path\": \"<SRC>/notes/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/notes/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "project": {},
+      "database": {
+        "migrations": [],
+        "bindings": [
+          {
+            "extension_id": "notes",
+            "capability_id": "recent",
+            "target_kind": "persona",
+            "target_id": "engineer",
+            "created_at": "<TIMESTAMP>"
+          },
+          {
+            "extension_id": "other",
+            "capability_id": "keep",
+            "target_kind": "global",
+            "target_id": null,
+            "created_at": "<TIMESTAMP>"
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "label": "install_requires_exactly_one_id",
+      "prepare": [],
+      "argv": [
+        "install",
+        "notes",
+        "extra"
+      ],
+      "stdout": "Usage: python -m memory extensions install <id> [--extensions-root PATH] [--mirror-home PATH] [--runtime NAME]\n",
+      "stderr": "",
+      "exit_code": 1,
+      "home": {
+        "memory_test.db": "<database, graded by its rows>"
+      },
+      "target": {
+        "ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<TARGET>\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<SRC>/notes\",\n      \"manifest_path\": \"<SRC>/notes/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/notes/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "project": {},
+      "database": {
+        "migrations": [],
+        "bindings": [
+          {
+            "extension_id": "notes",
+            "capability_id": "recent",
+            "target_kind": "persona",
+            "target_id": "engineer",
+            "created_at": "<TIMESTAMP>"
+          },
+          {
+            "extension_id": "other",
+            "capability_id": "keep",
+            "target_kind": "global",
+            "target_id": null,
+            "created_at": "<TIMESTAMP>"
+          }
+        ],
+        "tables": []
+      }
+    },
+    {
+      "label": "install_a_command_skill",
+      "prepare": [],
+      "argv": [
+        "install",
+        "notes",
+        "--extensions-root",
+        "<SRC>"
+      ],
+      "stdout": "Installed extension/notes\n  source: <SRC>/notes\n  installed: <HOME>/extensions/notes\n  runtime claude:\n    ext:notes -> <HOME>/runtime/skills/claude/ext-notes/SKILL.md\n  runtime pi:\n    ext-notes -> <HOME>/runtime/skills/pi/ext-notes/SKILL.md\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home": {
+        "extensions/notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions/notes/__pycache__": "<python bytecode cache>",
+        "extensions/notes/extension.py": "2ba94a7dd01d72a0",
+        "extensions/notes/migrations/001_init.sql": "0a1029285d2d6900",
+        "extensions/notes/skill.yaml": "9c9b6182b175aa75",
+        "memory_test.db": "<database, graded by its rows>",
+        "memory_test.db.bootstrap.lock": "e3b0c44298fc1c14",
+        "runtime/skills/claude/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/claude/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<HOME>/runtime/skills/claude\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/claude/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        },
+        "runtime/skills/pi/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/pi/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"pi\",\n  \"target_root\": \"<HOME>/runtime/skills/pi\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "target": {
+        "ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<TARGET>\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<SRC>/notes\",\n      \"manifest_path\": \"<SRC>/notes/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/notes/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "project": {},
+      "database": {
+        "migrations": [
+          {
+            "extension_id": "notes",
+            "filename": "001_init.sql",
+            "applied_at": "<TIMESTAMP>"
+          }
+        ],
+        "bindings": [
+          {
+            "extension_id": "notes",
+            "capability_id": "recent",
+            "target_kind": "persona",
+            "target_id": "engineer",
+            "created_at": "<TIMESTAMP>"
+          },
+          {
+            "extension_id": "other",
+            "capability_id": "keep",
+            "target_kind": "global",
+            "target_id": null,
+            "created_at": "<TIMESTAMP>"
+          }
+        ],
+        "tables": [
+          "ext_notes_items"
+        ]
+      }
+    },
+    {
+      "label": "install_again_is_idempotent",
+      "prepare": [],
+      "argv": [
+        "install",
+        "notes",
+        "--extensions-root",
+        "<SRC>"
+      ],
+      "stdout": "Installed extension/notes\n  source: <SRC>/notes\n  installed: <HOME>/extensions/notes\n  runtime claude:\n    ext:notes -> <HOME>/runtime/skills/claude/ext-notes/SKILL.md\n  runtime pi:\n    ext-notes -> <HOME>/runtime/skills/pi/ext-notes/SKILL.md\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home": {
+        "extensions/notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions/notes/__pycache__": "<python bytecode cache>",
+        "extensions/notes/extension.py": "2ba94a7dd01d72a0",
+        "extensions/notes/migrations/001_init.sql": "0a1029285d2d6900",
+        "extensions/notes/skill.yaml": "9c9b6182b175aa75",
+        "memory_test.db": "<database, graded by its rows>",
+        "memory_test.db.bootstrap.lock": "e3b0c44298fc1c14",
+        "runtime/skills/claude/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/claude/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<HOME>/runtime/skills/claude\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/claude/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        },
+        "runtime/skills/pi/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/pi/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"pi\",\n  \"target_root\": \"<HOME>/runtime/skills/pi\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "target": {
+        "ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<TARGET>\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<SRC>/notes\",\n      \"manifest_path\": \"<SRC>/notes/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/notes/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "project": {},
+      "database": {
+        "migrations": [
+          {
+            "extension_id": "notes",
+            "filename": "001_init.sql",
+            "applied_at": "<TIMESTAMP>"
+          }
+        ],
+        "bindings": [
+          {
+            "extension_id": "notes",
+            "capability_id": "recent",
+            "target_kind": "persona",
+            "target_id": "engineer",
+            "created_at": "<TIMESTAMP>"
+          },
+          {
+            "extension_id": "other",
+            "capability_id": "keep",
+            "target_kind": "global",
+            "target_id": null,
+            "created_at": "<TIMESTAMP>"
+          }
+        ],
+        "tables": [
+          "ext_notes_items"
+        ]
+      }
+    },
+    {
+      "label": "install_a_prompt_skill_skips_python",
+      "prepare": [],
+      "argv": [
+        "install",
+        "guide",
+        "--extensions-root",
+        "<SRC>"
+      ],
+      "stdout": "Installed extension/guide\n  source: <SRC>/guide\n  installed: <HOME>/extensions/guide\n  runtime pi:\n    ext-guide -> <HOME>/runtime/skills/pi/ext-guide/SKILL.md\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home": {
+        "extensions/guide/SKILL.md": "c95145e80ba0c2d6",
+        "extensions/guide/skill.yaml": "e6876e9bba65b68b",
+        "extensions/notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions/notes/__pycache__": "<python bytecode cache>",
+        "extensions/notes/extension.py": "2ba94a7dd01d72a0",
+        "extensions/notes/migrations/001_init.sql": "0a1029285d2d6900",
+        "extensions/notes/skill.yaml": "9c9b6182b175aa75",
+        "memory_test.db": "<database, graded by its rows>",
+        "memory_test.db.bootstrap.lock": "e3b0c44298fc1c14",
+        "runtime/skills/claude/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/claude/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<HOME>/runtime/skills/claude\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/claude/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        },
+        "runtime/skills/pi/ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "runtime/skills/pi/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/pi/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"pi\",\n  \"target_root\": \"<HOME>/runtime/skills/pi\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"guide\",\n      \"name\": \"Guide\",\n      \"category\": \"extension\",\n      \"kind\": \"prompt-skill\",\n      \"summary\": \"Fixture prompt-skill, which install must NOT migrate or load\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-guide\",\n      \"source_extension_dir\": \"<HOME>/extensions/guide\",\n      \"manifest_path\": \"<HOME>/extensions/guide/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/guide/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-guide/SKILL.md\"\n    },\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "target": {
+        "ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<TARGET>\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<SRC>/notes\",\n      \"manifest_path\": \"<SRC>/notes/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/notes/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "project": {},
+      "database": {
+        "migrations": [
+          {
+            "extension_id": "notes",
+            "filename": "001_init.sql",
+            "applied_at": "<TIMESTAMP>"
+          }
+        ],
+        "bindings": [
+          {
+            "extension_id": "notes",
+            "capability_id": "recent",
+            "target_kind": "persona",
+            "target_id": "engineer",
+            "created_at": "<TIMESTAMP>"
+          },
+          {
+            "extension_id": "other",
+            "capability_id": "keep",
+            "target_kind": "global",
+            "target_id": null,
+            "created_at": "<TIMESTAMP>"
+          }
+        ],
+        "tables": [
+          "ext_notes_items"
+        ]
+      }
+    },
+    {
+      "label": "install_refuses_to_copy_caches_and_vcs",
+      "prepare": [],
+      "argv": [
+        "install",
+        "noisy",
+        "--extensions-root",
+        "<SRC>"
+      ],
+      "stdout": "Installed extension/noisy\n  source: <SRC>/noisy\n  installed: <HOME>/extensions/noisy\n  runtime pi:\n    ext-noisy -> <HOME>/runtime/skills/pi/ext-noisy/SKILL.md\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home": {
+        "extensions/guide/SKILL.md": "c95145e80ba0c2d6",
+        "extensions/guide/skill.yaml": "e6876e9bba65b68b",
+        "extensions/noisy/SKILL.md": "fe6aba77c1ef063c",
+        "extensions/noisy/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/extension.py": "db765633d51029bb",
+        "extensions/noisy/skill.yaml": "ca3b78def9052728",
+        "extensions/noisy/src/__init__.py": "e3b0c44298fc1c14",
+        "extensions/noisy/src/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/src/helper.py": "84451fa614b1a7b7",
+        "extensions/notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions/notes/__pycache__": "<python bytecode cache>",
+        "extensions/notes/extension.py": "2ba94a7dd01d72a0",
+        "extensions/notes/migrations/001_init.sql": "0a1029285d2d6900",
+        "extensions/notes/skill.yaml": "9c9b6182b175aa75",
+        "memory_test.db": "<database, graded by its rows>",
+        "memory_test.db.bootstrap.lock": "e3b0c44298fc1c14",
+        "runtime/skills/claude/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/claude/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<HOME>/runtime/skills/claude\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/claude/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        },
+        "runtime/skills/pi/ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "runtime/skills/pi/ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "runtime/skills/pi/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/pi/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"pi\",\n  \"target_root\": \"<HOME>/runtime/skills/pi\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"guide\",\n      \"name\": \"Guide\",\n      \"category\": \"extension\",\n      \"kind\": \"prompt-skill\",\n      \"summary\": \"Fixture prompt-skill, which install must NOT migrate or load\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-guide\",\n      \"source_extension_dir\": \"<HOME>/extensions/guide\",\n      \"manifest_path\": \"<HOME>/extensions/guide/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/guide/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-guide/SKILL.md\"\n    },\n    {\n      \"id\": \"noisy\",\n      \"name\": \"Noisy\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Fixture whose source tree carries everything install must refuse to copy\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-noisy\",\n      \"source_extension_dir\": \"<HOME>/extensions/noisy\",\n      \"manifest_path\": \"<HOME>/extensions/noisy/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/noisy/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-noisy/SKILL.md\"\n    },\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "target": {
+        "ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<TARGET>\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<SRC>/notes\",\n      \"manifest_path\": \"<SRC>/notes/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/notes/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "project": {},
+      "database": {
+        "migrations": [
+          {
+            "extension_id": "notes",
+            "filename": "001_init.sql",
+            "applied_at": "<TIMESTAMP>"
+          }
+        ],
+        "bindings": [
+          {
+            "extension_id": "notes",
+            "capability_id": "recent",
+            "target_kind": "persona",
+            "target_id": "engineer",
+            "created_at": "<TIMESTAMP>"
+          },
+          {
+            "extension_id": "other",
+            "capability_id": "keep",
+            "target_kind": "global",
+            "target_id": null,
+            "created_at": "<TIMESTAMP>"
+          }
+        ],
+        "tables": [
+          "ext_notes_items"
+        ]
+      }
+    },
+    {
+      "label": "install_one_runtime_only",
+      "prepare": [],
+      "argv": [
+        "install",
+        "notes",
+        "--extensions-root",
+        "<SRC>",
+        "--runtime",
+        "pi"
+      ],
+      "stdout": "Installed extension/notes\n  source: <SRC>/notes\n  installed: <HOME>/extensions/notes\n  runtime pi:\n    ext-notes -> <HOME>/runtime/skills/pi/ext-notes/SKILL.md\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home": {
+        "extensions/guide/SKILL.md": "c95145e80ba0c2d6",
+        "extensions/guide/skill.yaml": "e6876e9bba65b68b",
+        "extensions/noisy/SKILL.md": "fe6aba77c1ef063c",
+        "extensions/noisy/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/extension.py": "db765633d51029bb",
+        "extensions/noisy/skill.yaml": "ca3b78def9052728",
+        "extensions/noisy/src/__init__.py": "e3b0c44298fc1c14",
+        "extensions/noisy/src/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/src/helper.py": "84451fa614b1a7b7",
+        "extensions/notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions/notes/__pycache__": "<python bytecode cache>",
+        "extensions/notes/extension.py": "2ba94a7dd01d72a0",
+        "extensions/notes/migrations/001_init.sql": "0a1029285d2d6900",
+        "extensions/notes/skill.yaml": "9c9b6182b175aa75",
+        "memory_test.db": "<database, graded by its rows>",
+        "memory_test.db.bootstrap.lock": "e3b0c44298fc1c14",
+        "runtime/skills/claude/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/claude/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<HOME>/runtime/skills/claude\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/claude/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        },
+        "runtime/skills/pi/ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "runtime/skills/pi/ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "runtime/skills/pi/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/pi/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"pi\",\n  \"target_root\": \"<HOME>/runtime/skills/pi\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"guide\",\n      \"name\": \"Guide\",\n      \"category\": \"extension\",\n      \"kind\": \"prompt-skill\",\n      \"summary\": \"Fixture prompt-skill, which install must NOT migrate or load\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-guide\",\n      \"source_extension_dir\": \"<HOME>/extensions/guide\",\n      \"manifest_path\": \"<HOME>/extensions/guide/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/guide/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-guide/SKILL.md\"\n    },\n    {\n      \"id\": \"noisy\",\n      \"name\": \"Noisy\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Fixture whose source tree carries everything install must refuse to copy\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-noisy\",\n      \"source_extension_dir\": \"<HOME>/extensions/noisy\",\n      \"manifest_path\": \"<HOME>/extensions/noisy/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/noisy/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-noisy/SKILL.md\"\n    },\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "target": {
+        "ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<TARGET>\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<SRC>/notes\",\n      \"manifest_path\": \"<SRC>/notes/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/notes/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "project": {},
+      "database": {
+        "migrations": [
+          {
+            "extension_id": "notes",
+            "filename": "001_init.sql",
+            "applied_at": "<TIMESTAMP>"
+          }
+        ],
+        "bindings": [
+          {
+            "extension_id": "notes",
+            "capability_id": "recent",
+            "target_kind": "persona",
+            "target_id": "engineer",
+            "created_at": "<TIMESTAMP>"
+          },
+          {
+            "extension_id": "other",
+            "capability_id": "keep",
+            "target_kind": "global",
+            "target_id": null,
+            "created_at": "<TIMESTAMP>"
+          }
+        ],
+        "tables": [
+          "ext_notes_items"
+        ]
+      }
+    },
+    {
+      "label": "install_identifies_by_directory_name_not_manifest_id",
+      "prepare": [],
+      "argv": [
+        "install",
+        "ext-mismatch",
+        "--extensions-root",
+        "<SRC>"
+      ],
+      "stdout": "",
+      "stderr": null,
+      "exit_code": 1,
+      "stderr_final_line": "memory.cli.extensions.ExtensionValidationError: migrations failed for extension/ext-mismatch: [extension/ext-mismatch] 001_init.sql targets table 'ext_mismatch_thing' outside the required prefix 'ext_ext_mismatch_*'",
+      "home": {
+        "extensions/ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "extensions/ext-mismatch/extension.py": "46ba3084c0dec68f",
+        "extensions/ext-mismatch/migrations/001_init.sql": "ecd5421614670509",
+        "extensions/ext-mismatch/skill.yaml": "d582347d6430bf34",
+        "extensions/guide/SKILL.md": "c95145e80ba0c2d6",
+        "extensions/guide/skill.yaml": "e6876e9bba65b68b",
+        "extensions/noisy/SKILL.md": "fe6aba77c1ef063c",
+        "extensions/noisy/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/extension.py": "db765633d51029bb",
+        "extensions/noisy/skill.yaml": "ca3b78def9052728",
+        "extensions/noisy/src/__init__.py": "e3b0c44298fc1c14",
+        "extensions/noisy/src/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/src/helper.py": "84451fa614b1a7b7",
+        "extensions/notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions/notes/__pycache__": "<python bytecode cache>",
+        "extensions/notes/extension.py": "2ba94a7dd01d72a0",
+        "extensions/notes/migrations/001_init.sql": "0a1029285d2d6900",
+        "extensions/notes/skill.yaml": "9c9b6182b175aa75",
+        "memory_test.db": "<database, graded by its rows>",
+        "memory_test.db.bootstrap.lock": "e3b0c44298fc1c14",
+        "runtime/skills/claude/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/claude/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<HOME>/runtime/skills/claude\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/claude/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        },
+        "runtime/skills/pi/ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "runtime/skills/pi/ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "runtime/skills/pi/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/pi/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"pi\",\n  \"target_root\": \"<HOME>/runtime/skills/pi\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"guide\",\n      \"name\": \"Guide\",\n      \"category\": \"extension\",\n      \"kind\": \"prompt-skill\",\n      \"summary\": \"Fixture prompt-skill, which install must NOT migrate or load\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-guide\",\n      \"source_extension_dir\": \"<HOME>/extensions/guide\",\n      \"manifest_path\": \"<HOME>/extensions/guide/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/guide/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-guide/SKILL.md\"\n    },\n    {\n      \"id\": \"noisy\",\n      \"name\": \"Noisy\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Fixture whose source tree carries everything install must refuse to copy\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-noisy\",\n      \"source_extension_dir\": \"<HOME>/extensions/noisy\",\n      \"manifest_path\": \"<HOME>/extensions/noisy/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/noisy/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-noisy/SKILL.md\"\n    },\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "target": {
+        "ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<TARGET>\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<SRC>/notes\",\n      \"manifest_path\": \"<SRC>/notes/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/notes/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "project": {},
+      "database": {
+        "migrations": [
+          {
+            "extension_id": "notes",
+            "filename": "001_init.sql",
+            "applied_at": "<TIMESTAMP>"
+          }
+        ],
+        "bindings": [
+          {
+            "extension_id": "notes",
+            "capability_id": "recent",
+            "target_kind": "persona",
+            "target_id": "engineer",
+            "created_at": "<TIMESTAMP>"
+          },
+          {
+            "extension_id": "other",
+            "capability_id": "keep",
+            "target_kind": "global",
+            "target_id": null,
+            "created_at": "<TIMESTAMP>"
+          }
+        ],
+        "tables": [
+          "ext_notes_items"
+        ]
+      },
+      "divergence": "python_traceback"
+    },
+    {
+      "label": "install_a_missing_source",
+      "prepare": [],
+      "argv": [
+        "install",
+        "ghost",
+        "--extensions-root",
+        "<SRC>"
+      ],
+      "stdout": "",
+      "stderr": null,
+      "exit_code": 1,
+      "stderr_final_line": "memory.cli.extensions.ExtensionValidationError: missing manifest: <SRC>/ghost/skill.yaml",
+      "home": {
+        "extensions/ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "extensions/ext-mismatch/extension.py": "46ba3084c0dec68f",
+        "extensions/ext-mismatch/migrations/001_init.sql": "ecd5421614670509",
+        "extensions/ext-mismatch/skill.yaml": "d582347d6430bf34",
+        "extensions/guide/SKILL.md": "c95145e80ba0c2d6",
+        "extensions/guide/skill.yaml": "e6876e9bba65b68b",
+        "extensions/noisy/SKILL.md": "fe6aba77c1ef063c",
+        "extensions/noisy/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/extension.py": "db765633d51029bb",
+        "extensions/noisy/skill.yaml": "ca3b78def9052728",
+        "extensions/noisy/src/__init__.py": "e3b0c44298fc1c14",
+        "extensions/noisy/src/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/src/helper.py": "84451fa614b1a7b7",
+        "extensions/notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions/notes/__pycache__": "<python bytecode cache>",
+        "extensions/notes/extension.py": "2ba94a7dd01d72a0",
+        "extensions/notes/migrations/001_init.sql": "0a1029285d2d6900",
+        "extensions/notes/skill.yaml": "9c9b6182b175aa75",
+        "memory_test.db": "<database, graded by its rows>",
+        "memory_test.db.bootstrap.lock": "e3b0c44298fc1c14",
+        "runtime/skills/claude/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/claude/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<HOME>/runtime/skills/claude\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/claude/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        },
+        "runtime/skills/pi/ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "runtime/skills/pi/ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "runtime/skills/pi/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/pi/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"pi\",\n  \"target_root\": \"<HOME>/runtime/skills/pi\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"guide\",\n      \"name\": \"Guide\",\n      \"category\": \"extension\",\n      \"kind\": \"prompt-skill\",\n      \"summary\": \"Fixture prompt-skill, which install must NOT migrate or load\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-guide\",\n      \"source_extension_dir\": \"<HOME>/extensions/guide\",\n      \"manifest_path\": \"<HOME>/extensions/guide/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/guide/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-guide/SKILL.md\"\n    },\n    {\n      \"id\": \"noisy\",\n      \"name\": \"Noisy\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Fixture whose source tree carries everything install must refuse to copy\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-noisy\",\n      \"source_extension_dir\": \"<HOME>/extensions/noisy\",\n      \"manifest_path\": \"<HOME>/extensions/noisy/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/noisy/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-noisy/SKILL.md\"\n    },\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "target": {
+        "ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<TARGET>\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<SRC>/notes\",\n      \"manifest_path\": \"<SRC>/notes/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/notes/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "project": {},
+      "database": {
+        "migrations": [
+          {
+            "extension_id": "notes",
+            "filename": "001_init.sql",
+            "applied_at": "<TIMESTAMP>"
+          }
+        ],
+        "bindings": [
+          {
+            "extension_id": "notes",
+            "capability_id": "recent",
+            "target_kind": "persona",
+            "target_id": "engineer",
+            "created_at": "<TIMESTAMP>"
+          },
+          {
+            "extension_id": "other",
+            "capability_id": "keep",
+            "target_kind": "global",
+            "target_id": null,
+            "created_at": "<TIMESTAMP>"
+          }
+        ],
+        "tables": [
+          "ext_notes_items"
+        ]
+      },
+      "divergence": "python_traceback"
+    },
+    {
+      "label": "expose_claude_requires_a_target_root",
+      "prepare": [],
+      "argv": [
+        "expose-claude"
+      ],
+      "stdout": "expose-claude requires --target-root PATH\n",
+      "stderr": "",
+      "exit_code": 1,
+      "home": {
+        "extensions/ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "extensions/ext-mismatch/extension.py": "46ba3084c0dec68f",
+        "extensions/ext-mismatch/migrations/001_init.sql": "ecd5421614670509",
+        "extensions/ext-mismatch/skill.yaml": "d582347d6430bf34",
+        "extensions/guide/SKILL.md": "c95145e80ba0c2d6",
+        "extensions/guide/skill.yaml": "e6876e9bba65b68b",
+        "extensions/noisy/SKILL.md": "fe6aba77c1ef063c",
+        "extensions/noisy/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/extension.py": "db765633d51029bb",
+        "extensions/noisy/skill.yaml": "ca3b78def9052728",
+        "extensions/noisy/src/__init__.py": "e3b0c44298fc1c14",
+        "extensions/noisy/src/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/src/helper.py": "84451fa614b1a7b7",
+        "extensions/notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions/notes/__pycache__": "<python bytecode cache>",
+        "extensions/notes/extension.py": "2ba94a7dd01d72a0",
+        "extensions/notes/migrations/001_init.sql": "0a1029285d2d6900",
+        "extensions/notes/skill.yaml": "9c9b6182b175aa75",
+        "memory_test.db": "<database, graded by its rows>",
+        "memory_test.db.bootstrap.lock": "e3b0c44298fc1c14",
+        "runtime/skills/claude/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/claude/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<HOME>/runtime/skills/claude\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/claude/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        },
+        "runtime/skills/pi/ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "runtime/skills/pi/ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "runtime/skills/pi/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/pi/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"pi\",\n  \"target_root\": \"<HOME>/runtime/skills/pi\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"guide\",\n      \"name\": \"Guide\",\n      \"category\": \"extension\",\n      \"kind\": \"prompt-skill\",\n      \"summary\": \"Fixture prompt-skill, which install must NOT migrate or load\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-guide\",\n      \"source_extension_dir\": \"<HOME>/extensions/guide\",\n      \"manifest_path\": \"<HOME>/extensions/guide/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/guide/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-guide/SKILL.md\"\n    },\n    {\n      \"id\": \"noisy\",\n      \"name\": \"Noisy\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Fixture whose source tree carries everything install must refuse to copy\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-noisy\",\n      \"source_extension_dir\": \"<HOME>/extensions/noisy\",\n      \"manifest_path\": \"<HOME>/extensions/noisy/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/noisy/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-noisy/SKILL.md\"\n    },\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "target": {
+        "ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<TARGET>\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<SRC>/notes\",\n      \"manifest_path\": \"<SRC>/notes/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/notes/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "project": {},
+      "database": {
+        "migrations": [
+          {
+            "extension_id": "notes",
+            "filename": "001_init.sql",
+            "applied_at": "<TIMESTAMP>"
+          }
+        ],
+        "bindings": [
+          {
+            "extension_id": "notes",
+            "capability_id": "recent",
+            "target_kind": "persona",
+            "target_id": "engineer",
+            "created_at": "<TIMESTAMP>"
+          },
+          {
+            "extension_id": "other",
+            "capability_id": "keep",
+            "target_kind": "global",
+            "target_id": null,
+            "created_at": "<TIMESTAMP>"
+          }
+        ],
+        "tables": [
+          "ext_notes_items"
+        ]
+      }
+    },
+    {
+      "label": "expose_claude_writes_the_overlay",
+      "prepare": [],
+      "argv": [
+        "expose-claude",
+        "--target-root",
+        "<PROJECT>"
+      ],
+      "stdout": "Exposed Claude external skills into <PROJECT>/.claude/skills\n  overlay catalog: <PROJECT>/.claude/skills/extensions.external.json\n  ext:notes -> <PROJECT>/.claude/skills/ext-notes/SKILL.md\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home": {
+        "extensions/ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "extensions/ext-mismatch/extension.py": "46ba3084c0dec68f",
+        "extensions/ext-mismatch/migrations/001_init.sql": "ecd5421614670509",
+        "extensions/ext-mismatch/skill.yaml": "d582347d6430bf34",
+        "extensions/guide/SKILL.md": "c95145e80ba0c2d6",
+        "extensions/guide/skill.yaml": "e6876e9bba65b68b",
+        "extensions/noisy/SKILL.md": "fe6aba77c1ef063c",
+        "extensions/noisy/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/extension.py": "db765633d51029bb",
+        "extensions/noisy/skill.yaml": "ca3b78def9052728",
+        "extensions/noisy/src/__init__.py": "e3b0c44298fc1c14",
+        "extensions/noisy/src/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/src/helper.py": "84451fa614b1a7b7",
+        "extensions/notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions/notes/__pycache__": "<python bytecode cache>",
+        "extensions/notes/extension.py": "2ba94a7dd01d72a0",
+        "extensions/notes/migrations/001_init.sql": "0a1029285d2d6900",
+        "extensions/notes/skill.yaml": "9c9b6182b175aa75",
+        "memory_test.db": "<database, graded by its rows>",
+        "memory_test.db.bootstrap.lock": "e3b0c44298fc1c14",
+        "runtime/skills/claude/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/claude/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<HOME>/runtime/skills/claude\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/claude/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        },
+        "runtime/skills/pi/ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "runtime/skills/pi/ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "runtime/skills/pi/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/pi/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"pi\",\n  \"target_root\": \"<HOME>/runtime/skills/pi\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"guide\",\n      \"name\": \"Guide\",\n      \"category\": \"extension\",\n      \"kind\": \"prompt-skill\",\n      \"summary\": \"Fixture prompt-skill, which install must NOT migrate or load\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-guide\",\n      \"source_extension_dir\": \"<HOME>/extensions/guide\",\n      \"manifest_path\": \"<HOME>/extensions/guide/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/guide/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-guide/SKILL.md\"\n    },\n    {\n      \"id\": \"noisy\",\n      \"name\": \"Noisy\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Fixture whose source tree carries everything install must refuse to copy\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-noisy\",\n      \"source_extension_dir\": \"<HOME>/extensions/noisy\",\n      \"manifest_path\": \"<HOME>/extensions/noisy/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/noisy/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-noisy/SKILL.md\"\n    },\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "target": {
+        "ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<TARGET>\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<SRC>/notes\",\n      \"manifest_path\": \"<SRC>/notes/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/notes/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "project": {
+        ".claude/skills/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        ".claude/skills/extensions.external.json": {
+          "text": "[\n  {\n    \"command_name\": \"ext:notes\",\n    \"source_skill_path\": \"<HOME>/runtime/skills/claude/ext-notes/SKILL.md\",\n    \"target_skill_path\": \"<PROJECT>/.claude/skills/ext-notes/SKILL.md\"\n  }\n]\n"
+        }
+      },
+      "database": {
+        "migrations": [
+          {
+            "extension_id": "notes",
+            "filename": "001_init.sql",
+            "applied_at": "<TIMESTAMP>"
+          }
+        ],
+        "bindings": [
+          {
+            "extension_id": "notes",
+            "capability_id": "recent",
+            "target_kind": "persona",
+            "target_id": "engineer",
+            "created_at": "<TIMESTAMP>"
+          },
+          {
+            "extension_id": "other",
+            "capability_id": "keep",
+            "target_kind": "global",
+            "target_id": null,
+            "created_at": "<TIMESTAMP>"
+          }
+        ],
+        "tables": [
+          "ext_notes_items"
+        ]
+      }
+    },
+    {
+      "label": "expose_claude_again_reuses_the_overlay",
+      "prepare": [],
+      "argv": [
+        "expose-claude",
+        "--target-root",
+        "<PROJECT>"
+      ],
+      "stdout": "Exposed Claude external skills into <PROJECT>/.claude/skills\n  overlay catalog: <PROJECT>/.claude/skills/extensions.external.json\n  pruned <PROJECT>/.claude/skills/ext-notes/SKILL.md\n  ext:notes -> <PROJECT>/.claude/skills/ext-notes/SKILL.md\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home": {
+        "extensions/ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "extensions/ext-mismatch/extension.py": "46ba3084c0dec68f",
+        "extensions/ext-mismatch/migrations/001_init.sql": "ecd5421614670509",
+        "extensions/ext-mismatch/skill.yaml": "d582347d6430bf34",
+        "extensions/guide/SKILL.md": "c95145e80ba0c2d6",
+        "extensions/guide/skill.yaml": "e6876e9bba65b68b",
+        "extensions/noisy/SKILL.md": "fe6aba77c1ef063c",
+        "extensions/noisy/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/extension.py": "db765633d51029bb",
+        "extensions/noisy/skill.yaml": "ca3b78def9052728",
+        "extensions/noisy/src/__init__.py": "e3b0c44298fc1c14",
+        "extensions/noisy/src/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/src/helper.py": "84451fa614b1a7b7",
+        "extensions/notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions/notes/__pycache__": "<python bytecode cache>",
+        "extensions/notes/extension.py": "2ba94a7dd01d72a0",
+        "extensions/notes/migrations/001_init.sql": "0a1029285d2d6900",
+        "extensions/notes/skill.yaml": "9c9b6182b175aa75",
+        "memory_test.db": "<database, graded by its rows>",
+        "memory_test.db.bootstrap.lock": "e3b0c44298fc1c14",
+        "runtime/skills/claude/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/claude/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<HOME>/runtime/skills/claude\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/claude/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        },
+        "runtime/skills/pi/ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "runtime/skills/pi/ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "runtime/skills/pi/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/pi/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"pi\",\n  \"target_root\": \"<HOME>/runtime/skills/pi\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"guide\",\n      \"name\": \"Guide\",\n      \"category\": \"extension\",\n      \"kind\": \"prompt-skill\",\n      \"summary\": \"Fixture prompt-skill, which install must NOT migrate or load\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-guide\",\n      \"source_extension_dir\": \"<HOME>/extensions/guide\",\n      \"manifest_path\": \"<HOME>/extensions/guide/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/guide/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-guide/SKILL.md\"\n    },\n    {\n      \"id\": \"noisy\",\n      \"name\": \"Noisy\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Fixture whose source tree carries everything install must refuse to copy\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-noisy\",\n      \"source_extension_dir\": \"<HOME>/extensions/noisy\",\n      \"manifest_path\": \"<HOME>/extensions/noisy/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/noisy/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-noisy/SKILL.md\"\n    },\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "target": {
+        "ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<TARGET>\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<SRC>/notes\",\n      \"manifest_path\": \"<SRC>/notes/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/notes/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "project": {
+        ".claude/skills/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        ".claude/skills/extensions.external.json": {
+          "text": "[\n  {\n    \"command_name\": \"ext:notes\",\n    \"source_skill_path\": \"<HOME>/runtime/skills/claude/ext-notes/SKILL.md\",\n    \"target_skill_path\": \"<PROJECT>/.claude/skills/ext-notes/SKILL.md\"\n  }\n]\n"
+        }
+      },
+      "database": {
+        "migrations": [
+          {
+            "extension_id": "notes",
+            "filename": "001_init.sql",
+            "applied_at": "<TIMESTAMP>"
+          }
+        ],
+        "bindings": [
+          {
+            "extension_id": "notes",
+            "capability_id": "recent",
+            "target_kind": "persona",
+            "target_id": "engineer",
+            "created_at": "<TIMESTAMP>"
+          },
+          {
+            "extension_id": "other",
+            "capability_id": "keep",
+            "target_kind": "global",
+            "target_id": null,
+            "created_at": "<TIMESTAMP>"
+          }
+        ],
+        "tables": [
+          "ext_notes_items"
+        ]
+      }
+    },
+    {
+      "label": "clean_claude_keeps_a_directory_that_is_not_only_ours",
+      "prepare": [
+        {
+          "path": "<PROJECT>/.claude/skills/ext-notes/NOTES.md",
+          "content": "a human wrote this\n"
+        }
+      ],
+      "argv": [
+        "clean-claude",
+        "--target-root",
+        "<PROJECT>"
+      ],
+      "stdout": "Removed Claude external skills from <PROJECT>/.claude/skills\n  overlay catalog: <PROJECT>/.claude/skills/extensions.external.json\n  removed <PROJECT>/.claude/skills/ext-notes/SKILL.md\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home": {
+        "extensions/ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "extensions/ext-mismatch/extension.py": "46ba3084c0dec68f",
+        "extensions/ext-mismatch/migrations/001_init.sql": "ecd5421614670509",
+        "extensions/ext-mismatch/skill.yaml": "d582347d6430bf34",
+        "extensions/guide/SKILL.md": "c95145e80ba0c2d6",
+        "extensions/guide/skill.yaml": "e6876e9bba65b68b",
+        "extensions/noisy/SKILL.md": "fe6aba77c1ef063c",
+        "extensions/noisy/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/extension.py": "db765633d51029bb",
+        "extensions/noisy/skill.yaml": "ca3b78def9052728",
+        "extensions/noisy/src/__init__.py": "e3b0c44298fc1c14",
+        "extensions/noisy/src/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/src/helper.py": "84451fa614b1a7b7",
+        "extensions/notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions/notes/__pycache__": "<python bytecode cache>",
+        "extensions/notes/extension.py": "2ba94a7dd01d72a0",
+        "extensions/notes/migrations/001_init.sql": "0a1029285d2d6900",
+        "extensions/notes/skill.yaml": "9c9b6182b175aa75",
+        "memory_test.db": "<database, graded by its rows>",
+        "memory_test.db.bootstrap.lock": "e3b0c44298fc1c14",
+        "runtime/skills/claude/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/claude/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<HOME>/runtime/skills/claude\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/claude/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        },
+        "runtime/skills/pi/ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "runtime/skills/pi/ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "runtime/skills/pi/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/pi/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"pi\",\n  \"target_root\": \"<HOME>/runtime/skills/pi\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"guide\",\n      \"name\": \"Guide\",\n      \"category\": \"extension\",\n      \"kind\": \"prompt-skill\",\n      \"summary\": \"Fixture prompt-skill, which install must NOT migrate or load\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-guide\",\n      \"source_extension_dir\": \"<HOME>/extensions/guide\",\n      \"manifest_path\": \"<HOME>/extensions/guide/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/guide/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-guide/SKILL.md\"\n    },\n    {\n      \"id\": \"noisy\",\n      \"name\": \"Noisy\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Fixture whose source tree carries everything install must refuse to copy\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-noisy\",\n      \"source_extension_dir\": \"<HOME>/extensions/noisy\",\n      \"manifest_path\": \"<HOME>/extensions/noisy/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/noisy/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-noisy/SKILL.md\"\n    },\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "target": {
+        "ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<TARGET>\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<SRC>/notes\",\n      \"manifest_path\": \"<SRC>/notes/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/notes/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "project": {
+        ".claude/skills/ext-notes/NOTES.md": "bd52582f680408e0"
+      },
+      "database": {
+        "migrations": [
+          {
+            "extension_id": "notes",
+            "filename": "001_init.sql",
+            "applied_at": "<TIMESTAMP>"
+          }
+        ],
+        "bindings": [
+          {
+            "extension_id": "notes",
+            "capability_id": "recent",
+            "target_kind": "persona",
+            "target_id": "engineer",
+            "created_at": "<TIMESTAMP>"
+          },
+          {
+            "extension_id": "other",
+            "capability_id": "keep",
+            "target_kind": "global",
+            "target_id": null,
+            "created_at": "<TIMESTAMP>"
+          }
+        ],
+        "tables": [
+          "ext_notes_items"
+        ]
+      }
+    },
+    {
+      "label": "expose_claude_after_the_kept_directory",
+      "prepare": [],
+      "argv": [
+        "expose-claude",
+        "--target-root",
+        "<PROJECT>"
+      ],
+      "stdout": "Exposed Claude external skills into <PROJECT>/.claude/skills\n  overlay catalog: <PROJECT>/.claude/skills/extensions.external.json\n  ext:notes -> <PROJECT>/.claude/skills/ext-notes/SKILL.md\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home": {
+        "extensions/ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "extensions/ext-mismatch/extension.py": "46ba3084c0dec68f",
+        "extensions/ext-mismatch/migrations/001_init.sql": "ecd5421614670509",
+        "extensions/ext-mismatch/skill.yaml": "d582347d6430bf34",
+        "extensions/guide/SKILL.md": "c95145e80ba0c2d6",
+        "extensions/guide/skill.yaml": "e6876e9bba65b68b",
+        "extensions/noisy/SKILL.md": "fe6aba77c1ef063c",
+        "extensions/noisy/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/extension.py": "db765633d51029bb",
+        "extensions/noisy/skill.yaml": "ca3b78def9052728",
+        "extensions/noisy/src/__init__.py": "e3b0c44298fc1c14",
+        "extensions/noisy/src/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/src/helper.py": "84451fa614b1a7b7",
+        "extensions/notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions/notes/__pycache__": "<python bytecode cache>",
+        "extensions/notes/extension.py": "2ba94a7dd01d72a0",
+        "extensions/notes/migrations/001_init.sql": "0a1029285d2d6900",
+        "extensions/notes/skill.yaml": "9c9b6182b175aa75",
+        "memory_test.db": "<database, graded by its rows>",
+        "memory_test.db.bootstrap.lock": "e3b0c44298fc1c14",
+        "runtime/skills/claude/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/claude/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<HOME>/runtime/skills/claude\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/claude/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        },
+        "runtime/skills/pi/ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "runtime/skills/pi/ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "runtime/skills/pi/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/pi/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"pi\",\n  \"target_root\": \"<HOME>/runtime/skills/pi\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"guide\",\n      \"name\": \"Guide\",\n      \"category\": \"extension\",\n      \"kind\": \"prompt-skill\",\n      \"summary\": \"Fixture prompt-skill, which install must NOT migrate or load\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-guide\",\n      \"source_extension_dir\": \"<HOME>/extensions/guide\",\n      \"manifest_path\": \"<HOME>/extensions/guide/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/guide/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-guide/SKILL.md\"\n    },\n    {\n      \"id\": \"noisy\",\n      \"name\": \"Noisy\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Fixture whose source tree carries everything install must refuse to copy\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-noisy\",\n      \"source_extension_dir\": \"<HOME>/extensions/noisy\",\n      \"manifest_path\": \"<HOME>/extensions/noisy/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/noisy/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-noisy/SKILL.md\"\n    },\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "target": {
+        "ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<TARGET>\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<SRC>/notes\",\n      \"manifest_path\": \"<SRC>/notes/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/notes/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "project": {
+        ".claude/skills/ext-notes/NOTES.md": "bd52582f680408e0",
+        ".claude/skills/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        ".claude/skills/extensions.external.json": {
+          "text": "[\n  {\n    \"command_name\": \"ext:notes\",\n    \"source_skill_path\": \"<HOME>/runtime/skills/claude/ext-notes/SKILL.md\",\n    \"target_skill_path\": \"<PROJECT>/.claude/skills/ext-notes/SKILL.md\"\n  }\n]\n"
+        }
+      },
+      "database": {
+        "migrations": [
+          {
+            "extension_id": "notes",
+            "filename": "001_init.sql",
+            "applied_at": "<TIMESTAMP>"
+          }
+        ],
+        "bindings": [
+          {
+            "extension_id": "notes",
+            "capability_id": "recent",
+            "target_kind": "persona",
+            "target_id": "engineer",
+            "created_at": "<TIMESTAMP>"
+          },
+          {
+            "extension_id": "other",
+            "capability_id": "keep",
+            "target_kind": "global",
+            "target_id": null,
+            "created_at": "<TIMESTAMP>"
+          }
+        ],
+        "tables": [
+          "ext_notes_items"
+        ]
+      }
+    },
+    {
+      "label": "clean_claude_keeps_a_directory_that_is_not_only_ours",
+      "prepare": [
+        {
+          "path": "<PROJECT>/.claude/skills/ext-notes/NOTES.md",
+          "content": "a human wrote this\n"
+        }
+      ],
+      "argv": [
+        "clean-claude",
+        "--target-root",
+        "<PROJECT>"
+      ],
+      "stdout": "Removed Claude external skills from <PROJECT>/.claude/skills\n  overlay catalog: <PROJECT>/.claude/skills/extensions.external.json\n  removed <PROJECT>/.claude/skills/ext-notes/SKILL.md\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home": {
+        "extensions/ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "extensions/ext-mismatch/extension.py": "46ba3084c0dec68f",
+        "extensions/ext-mismatch/migrations/001_init.sql": "ecd5421614670509",
+        "extensions/ext-mismatch/skill.yaml": "d582347d6430bf34",
+        "extensions/guide/SKILL.md": "c95145e80ba0c2d6",
+        "extensions/guide/skill.yaml": "e6876e9bba65b68b",
+        "extensions/noisy/SKILL.md": "fe6aba77c1ef063c",
+        "extensions/noisy/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/extension.py": "db765633d51029bb",
+        "extensions/noisy/skill.yaml": "ca3b78def9052728",
+        "extensions/noisy/src/__init__.py": "e3b0c44298fc1c14",
+        "extensions/noisy/src/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/src/helper.py": "84451fa614b1a7b7",
+        "extensions/notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions/notes/__pycache__": "<python bytecode cache>",
+        "extensions/notes/extension.py": "2ba94a7dd01d72a0",
+        "extensions/notes/migrations/001_init.sql": "0a1029285d2d6900",
+        "extensions/notes/skill.yaml": "9c9b6182b175aa75",
+        "memory_test.db": "<database, graded by its rows>",
+        "memory_test.db.bootstrap.lock": "e3b0c44298fc1c14",
+        "runtime/skills/claude/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/claude/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<HOME>/runtime/skills/claude\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/claude/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        },
+        "runtime/skills/pi/ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "runtime/skills/pi/ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "runtime/skills/pi/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/pi/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"pi\",\n  \"target_root\": \"<HOME>/runtime/skills/pi\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"guide\",\n      \"name\": \"Guide\",\n      \"category\": \"extension\",\n      \"kind\": \"prompt-skill\",\n      \"summary\": \"Fixture prompt-skill, which install must NOT migrate or load\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-guide\",\n      \"source_extension_dir\": \"<HOME>/extensions/guide\",\n      \"manifest_path\": \"<HOME>/extensions/guide/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/guide/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-guide/SKILL.md\"\n    },\n    {\n      \"id\": \"noisy\",\n      \"name\": \"Noisy\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Fixture whose source tree carries everything install must refuse to copy\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-noisy\",\n      \"source_extension_dir\": \"<HOME>/extensions/noisy\",\n      \"manifest_path\": \"<HOME>/extensions/noisy/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/noisy/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-noisy/SKILL.md\"\n    },\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "target": {
+        "ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<TARGET>\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<SRC>/notes\",\n      \"manifest_path\": \"<SRC>/notes/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/notes/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "project": {
+        ".claude/skills/ext-notes/NOTES.md": "bd52582f680408e0"
+      },
+      "database": {
+        "migrations": [
+          {
+            "extension_id": "notes",
+            "filename": "001_init.sql",
+            "applied_at": "<TIMESTAMP>"
+          }
+        ],
+        "bindings": [
+          {
+            "extension_id": "notes",
+            "capability_id": "recent",
+            "target_kind": "persona",
+            "target_id": "engineer",
+            "created_at": "<TIMESTAMP>"
+          },
+          {
+            "extension_id": "other",
+            "capability_id": "keep",
+            "target_kind": "global",
+            "target_id": null,
+            "created_at": "<TIMESTAMP>"
+          }
+        ],
+        "tables": [
+          "ext_notes_items"
+        ]
+      }
+    },
+    {
+      "label": "expose_claude_after_the_kept_directory",
+      "prepare": [],
+      "argv": [
+        "expose-claude",
+        "--target-root",
+        "<PROJECT>"
+      ],
+      "stdout": "Exposed Claude external skills into <PROJECT>/.claude/skills\n  overlay catalog: <PROJECT>/.claude/skills/extensions.external.json\n  ext:notes -> <PROJECT>/.claude/skills/ext-notes/SKILL.md\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home": {
+        "extensions/ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "extensions/ext-mismatch/extension.py": "46ba3084c0dec68f",
+        "extensions/ext-mismatch/migrations/001_init.sql": "ecd5421614670509",
+        "extensions/ext-mismatch/skill.yaml": "d582347d6430bf34",
+        "extensions/guide/SKILL.md": "c95145e80ba0c2d6",
+        "extensions/guide/skill.yaml": "e6876e9bba65b68b",
+        "extensions/noisy/SKILL.md": "fe6aba77c1ef063c",
+        "extensions/noisy/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/extension.py": "db765633d51029bb",
+        "extensions/noisy/skill.yaml": "ca3b78def9052728",
+        "extensions/noisy/src/__init__.py": "e3b0c44298fc1c14",
+        "extensions/noisy/src/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/src/helper.py": "84451fa614b1a7b7",
+        "extensions/notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions/notes/__pycache__": "<python bytecode cache>",
+        "extensions/notes/extension.py": "2ba94a7dd01d72a0",
+        "extensions/notes/migrations/001_init.sql": "0a1029285d2d6900",
+        "extensions/notes/skill.yaml": "9c9b6182b175aa75",
+        "memory_test.db": "<database, graded by its rows>",
+        "memory_test.db.bootstrap.lock": "e3b0c44298fc1c14",
+        "runtime/skills/claude/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/claude/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<HOME>/runtime/skills/claude\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/claude/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        },
+        "runtime/skills/pi/ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "runtime/skills/pi/ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "runtime/skills/pi/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/pi/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"pi\",\n  \"target_root\": \"<HOME>/runtime/skills/pi\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"guide\",\n      \"name\": \"Guide\",\n      \"category\": \"extension\",\n      \"kind\": \"prompt-skill\",\n      \"summary\": \"Fixture prompt-skill, which install must NOT migrate or load\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-guide\",\n      \"source_extension_dir\": \"<HOME>/extensions/guide\",\n      \"manifest_path\": \"<HOME>/extensions/guide/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/guide/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-guide/SKILL.md\"\n    },\n    {\n      \"id\": \"noisy\",\n      \"name\": \"Noisy\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Fixture whose source tree carries everything install must refuse to copy\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-noisy\",\n      \"source_extension_dir\": \"<HOME>/extensions/noisy\",\n      \"manifest_path\": \"<HOME>/extensions/noisy/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/noisy/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-noisy/SKILL.md\"\n    },\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "target": {
+        "ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<TARGET>\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<SRC>/notes\",\n      \"manifest_path\": \"<SRC>/notes/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/notes/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "project": {
+        ".claude/skills/ext-notes/NOTES.md": "bd52582f680408e0",
+        ".claude/skills/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        ".claude/skills/extensions.external.json": {
+          "text": "[\n  {\n    \"command_name\": \"ext:notes\",\n    \"source_skill_path\": \"<HOME>/runtime/skills/claude/ext-notes/SKILL.md\",\n    \"target_skill_path\": \"<PROJECT>/.claude/skills/ext-notes/SKILL.md\"\n  }\n]\n"
+        }
+      },
+      "database": {
+        "migrations": [
+          {
+            "extension_id": "notes",
+            "filename": "001_init.sql",
+            "applied_at": "<TIMESTAMP>"
+          }
+        ],
+        "bindings": [
+          {
+            "extension_id": "notes",
+            "capability_id": "recent",
+            "target_kind": "persona",
+            "target_id": "engineer",
+            "created_at": "<TIMESTAMP>"
+          },
+          {
+            "extension_id": "other",
+            "capability_id": "keep",
+            "target_kind": "global",
+            "target_id": null,
+            "created_at": "<TIMESTAMP>"
+          }
+        ],
+        "tables": [
+          "ext_notes_items"
+        ]
+      }
+    },
+    {
+      "label": "clean_claude_removes_what_it_exposed",
+      "prepare": [],
+      "argv": [
+        "clean-claude",
+        "--target-root",
+        "<PROJECT>"
+      ],
+      "stdout": "Removed Claude external skills from <PROJECT>/.claude/skills\n  overlay catalog: <PROJECT>/.claude/skills/extensions.external.json\n  removed <PROJECT>/.claude/skills/ext-notes/SKILL.md\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home": {
+        "extensions/ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "extensions/ext-mismatch/extension.py": "46ba3084c0dec68f",
+        "extensions/ext-mismatch/migrations/001_init.sql": "ecd5421614670509",
+        "extensions/ext-mismatch/skill.yaml": "d582347d6430bf34",
+        "extensions/guide/SKILL.md": "c95145e80ba0c2d6",
+        "extensions/guide/skill.yaml": "e6876e9bba65b68b",
+        "extensions/noisy/SKILL.md": "fe6aba77c1ef063c",
+        "extensions/noisy/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/extension.py": "db765633d51029bb",
+        "extensions/noisy/skill.yaml": "ca3b78def9052728",
+        "extensions/noisy/src/__init__.py": "e3b0c44298fc1c14",
+        "extensions/noisy/src/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/src/helper.py": "84451fa614b1a7b7",
+        "extensions/notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions/notes/__pycache__": "<python bytecode cache>",
+        "extensions/notes/extension.py": "2ba94a7dd01d72a0",
+        "extensions/notes/migrations/001_init.sql": "0a1029285d2d6900",
+        "extensions/notes/skill.yaml": "9c9b6182b175aa75",
+        "memory_test.db": "<database, graded by its rows>",
+        "memory_test.db.bootstrap.lock": "e3b0c44298fc1c14",
+        "runtime/skills/claude/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/claude/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<HOME>/runtime/skills/claude\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/claude/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        },
+        "runtime/skills/pi/ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "runtime/skills/pi/ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "runtime/skills/pi/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/pi/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"pi\",\n  \"target_root\": \"<HOME>/runtime/skills/pi\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"guide\",\n      \"name\": \"Guide\",\n      \"category\": \"extension\",\n      \"kind\": \"prompt-skill\",\n      \"summary\": \"Fixture prompt-skill, which install must NOT migrate or load\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-guide\",\n      \"source_extension_dir\": \"<HOME>/extensions/guide\",\n      \"manifest_path\": \"<HOME>/extensions/guide/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/guide/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-guide/SKILL.md\"\n    },\n    {\n      \"id\": \"noisy\",\n      \"name\": \"Noisy\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Fixture whose source tree carries everything install must refuse to copy\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-noisy\",\n      \"source_extension_dir\": \"<HOME>/extensions/noisy\",\n      \"manifest_path\": \"<HOME>/extensions/noisy/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/noisy/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-noisy/SKILL.md\"\n    },\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "target": {
+        "ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<TARGET>\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<SRC>/notes\",\n      \"manifest_path\": \"<SRC>/notes/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/notes/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "project": {
+        ".claude/skills/ext-notes/NOTES.md": "bd52582f680408e0"
+      },
+      "database": {
+        "migrations": [
+          {
+            "extension_id": "notes",
+            "filename": "001_init.sql",
+            "applied_at": "<TIMESTAMP>"
+          }
+        ],
+        "bindings": [
+          {
+            "extension_id": "notes",
+            "capability_id": "recent",
+            "target_kind": "persona",
+            "target_id": "engineer",
+            "created_at": "<TIMESTAMP>"
+          },
+          {
+            "extension_id": "other",
+            "capability_id": "keep",
+            "target_kind": "global",
+            "target_id": null,
+            "created_at": "<TIMESTAMP>"
+          }
+        ],
+        "tables": [
+          "ext_notes_items"
+        ]
+      }
+    },
+    {
+      "label": "clean_claude_on_a_clean_project",
+      "prepare": [],
+      "argv": [
+        "clean-claude",
+        "--target-root",
+        "<PROJECT>"
+      ],
+      "stdout": "Removed Claude external skills from <PROJECT>/.claude/skills\n  overlay catalog: <PROJECT>/.claude/skills/extensions.external.json\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home": {
+        "extensions/ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "extensions/ext-mismatch/extension.py": "46ba3084c0dec68f",
+        "extensions/ext-mismatch/migrations/001_init.sql": "ecd5421614670509",
+        "extensions/ext-mismatch/skill.yaml": "d582347d6430bf34",
+        "extensions/guide/SKILL.md": "c95145e80ba0c2d6",
+        "extensions/guide/skill.yaml": "e6876e9bba65b68b",
+        "extensions/noisy/SKILL.md": "fe6aba77c1ef063c",
+        "extensions/noisy/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/extension.py": "db765633d51029bb",
+        "extensions/noisy/skill.yaml": "ca3b78def9052728",
+        "extensions/noisy/src/__init__.py": "e3b0c44298fc1c14",
+        "extensions/noisy/src/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/src/helper.py": "84451fa614b1a7b7",
+        "extensions/notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions/notes/__pycache__": "<python bytecode cache>",
+        "extensions/notes/extension.py": "2ba94a7dd01d72a0",
+        "extensions/notes/migrations/001_init.sql": "0a1029285d2d6900",
+        "extensions/notes/skill.yaml": "9c9b6182b175aa75",
+        "memory_test.db": "<database, graded by its rows>",
+        "memory_test.db.bootstrap.lock": "e3b0c44298fc1c14",
+        "runtime/skills/claude/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/claude/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<HOME>/runtime/skills/claude\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/claude/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        },
+        "runtime/skills/pi/ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "runtime/skills/pi/ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "runtime/skills/pi/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/pi/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"pi\",\n  \"target_root\": \"<HOME>/runtime/skills/pi\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"guide\",\n      \"name\": \"Guide\",\n      \"category\": \"extension\",\n      \"kind\": \"prompt-skill\",\n      \"summary\": \"Fixture prompt-skill, which install must NOT migrate or load\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-guide\",\n      \"source_extension_dir\": \"<HOME>/extensions/guide\",\n      \"manifest_path\": \"<HOME>/extensions/guide/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/guide/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-guide/SKILL.md\"\n    },\n    {\n      \"id\": \"noisy\",\n      \"name\": \"Noisy\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Fixture whose source tree carries everything install must refuse to copy\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-noisy\",\n      \"source_extension_dir\": \"<HOME>/extensions/noisy\",\n      \"manifest_path\": \"<HOME>/extensions/noisy/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/noisy/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-noisy/SKILL.md\"\n    },\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "target": {
+        "ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<TARGET>\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<SRC>/notes\",\n      \"manifest_path\": \"<SRC>/notes/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/notes/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "project": {
+        ".claude/skills/ext-notes/NOTES.md": "bd52582f680408e0"
+      },
+      "database": {
+        "migrations": [
+          {
+            "extension_id": "notes",
+            "filename": "001_init.sql",
+            "applied_at": "<TIMESTAMP>"
+          }
+        ],
+        "bindings": [
+          {
+            "extension_id": "notes",
+            "capability_id": "recent",
+            "target_kind": "persona",
+            "target_id": "engineer",
+            "created_at": "<TIMESTAMP>"
+          },
+          {
+            "extension_id": "other",
+            "capability_id": "keep",
+            "target_kind": "global",
+            "target_id": null,
+            "created_at": "<TIMESTAMP>"
+          }
+        ],
+        "tables": [
+          "ext_notes_items"
+        ]
+      }
+    },
+    {
+      "label": "uninstall_one_runtime_keeps_the_source",
+      "prepare": [],
+      "argv": [
+        "uninstall",
+        "notes",
+        "--runtime",
+        "pi"
+      ],
+      "stdout": "Uninstalled extension/notes\n  installed: <HOME>/extensions/notes\n  runtime pi:\n    removed <HOME>/runtime/skills/pi/ext-notes\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home": {
+        "extensions/ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "extensions/ext-mismatch/extension.py": "46ba3084c0dec68f",
+        "extensions/ext-mismatch/migrations/001_init.sql": "ecd5421614670509",
+        "extensions/ext-mismatch/skill.yaml": "d582347d6430bf34",
+        "extensions/guide/SKILL.md": "c95145e80ba0c2d6",
+        "extensions/guide/skill.yaml": "e6876e9bba65b68b",
+        "extensions/noisy/SKILL.md": "fe6aba77c1ef063c",
+        "extensions/noisy/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/extension.py": "db765633d51029bb",
+        "extensions/noisy/skill.yaml": "ca3b78def9052728",
+        "extensions/noisy/src/__init__.py": "e3b0c44298fc1c14",
+        "extensions/noisy/src/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/src/helper.py": "84451fa614b1a7b7",
+        "extensions/notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions/notes/__pycache__": "<python bytecode cache>",
+        "extensions/notes/extension.py": "2ba94a7dd01d72a0",
+        "extensions/notes/migrations/001_init.sql": "0a1029285d2d6900",
+        "extensions/notes/skill.yaml": "9c9b6182b175aa75",
+        "memory_test.db": "<database, graded by its rows>",
+        "memory_test.db.bootstrap.lock": "e3b0c44298fc1c14",
+        "runtime/skills/claude/ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "runtime/skills/claude/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<HOME>/runtime/skills/claude\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<HOME>/extensions/notes\",\n      \"manifest_path\": \"<HOME>/extensions/notes/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/notes/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/claude/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        },
+        "runtime/skills/pi/ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "runtime/skills/pi/ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "runtime/skills/pi/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"pi\",\n  \"target_root\": \"<HOME>/runtime/skills/pi\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"guide\",\n      \"name\": \"Guide\",\n      \"category\": \"extension\",\n      \"kind\": \"prompt-skill\",\n      \"summary\": \"Fixture prompt-skill, which install must NOT migrate or load\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-guide\",\n      \"source_extension_dir\": \"<HOME>/extensions/guide\",\n      \"manifest_path\": \"<HOME>/extensions/guide/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/guide/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-guide/SKILL.md\"\n    },\n    {\n      \"id\": \"noisy\",\n      \"name\": \"Noisy\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Fixture whose source tree carries everything install must refuse to copy\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-noisy\",\n      \"source_extension_dir\": \"<HOME>/extensions/noisy\",\n      \"manifest_path\": \"<HOME>/extensions/noisy/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/noisy/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-noisy/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "target": {
+        "ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<TARGET>\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<SRC>/notes\",\n      \"manifest_path\": \"<SRC>/notes/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/notes/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "project": {
+        ".claude/skills/ext-notes/NOTES.md": "bd52582f680408e0"
+      },
+      "database": {
+        "migrations": [
+          {
+            "extension_id": "notes",
+            "filename": "001_init.sql",
+            "applied_at": "<TIMESTAMP>"
+          }
+        ],
+        "bindings": [
+          {
+            "extension_id": "notes",
+            "capability_id": "recent",
+            "target_kind": "persona",
+            "target_id": "engineer",
+            "created_at": "<TIMESTAMP>"
+          },
+          {
+            "extension_id": "other",
+            "capability_id": "keep",
+            "target_kind": "global",
+            "target_id": null,
+            "created_at": "<TIMESTAMP>"
+          }
+        ],
+        "tables": [
+          "ext_notes_items"
+        ]
+      }
+    },
+    {
+      "label": "uninstall_removes_the_source_and_bindings",
+      "prepare": [],
+      "argv": [
+        "uninstall",
+        "notes"
+      ],
+      "stdout": "Uninstalled extension/notes\n  installed: <HOME>/extensions/notes\n  source tree: removed\n  bindings: 1 row(s) removed\n  runtime claude:\n    removed <HOME>/runtime/skills/claude/ext-notes\n  runtime pi:\n",
+      "stderr": "",
+      "exit_code": 0,
+      "home": {
+        "extensions/ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "extensions/ext-mismatch/extension.py": "46ba3084c0dec68f",
+        "extensions/ext-mismatch/migrations/001_init.sql": "ecd5421614670509",
+        "extensions/ext-mismatch/skill.yaml": "d582347d6430bf34",
+        "extensions/guide/SKILL.md": "c95145e80ba0c2d6",
+        "extensions/guide/skill.yaml": "e6876e9bba65b68b",
+        "extensions/noisy/SKILL.md": "fe6aba77c1ef063c",
+        "extensions/noisy/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/extension.py": "db765633d51029bb",
+        "extensions/noisy/skill.yaml": "ca3b78def9052728",
+        "extensions/noisy/src/__init__.py": "e3b0c44298fc1c14",
+        "extensions/noisy/src/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/src/helper.py": "84451fa614b1a7b7",
+        "memory_test.db": "<database, graded by its rows>",
+        "memory_test.db.bootstrap.lock": "e3b0c44298fc1c14",
+        "runtime/skills/claude/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<HOME>/runtime/skills/claude\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": []\n}\n"
+        },
+        "runtime/skills/pi/ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "runtime/skills/pi/ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "runtime/skills/pi/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"pi\",\n  \"target_root\": \"<HOME>/runtime/skills/pi\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"guide\",\n      \"name\": \"Guide\",\n      \"category\": \"extension\",\n      \"kind\": \"prompt-skill\",\n      \"summary\": \"Fixture prompt-skill, which install must NOT migrate or load\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-guide\",\n      \"source_extension_dir\": \"<HOME>/extensions/guide\",\n      \"manifest_path\": \"<HOME>/extensions/guide/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/guide/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-guide/SKILL.md\"\n    },\n    {\n      \"id\": \"noisy\",\n      \"name\": \"Noisy\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Fixture whose source tree carries everything install must refuse to copy\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-noisy\",\n      \"source_extension_dir\": \"<HOME>/extensions/noisy\",\n      \"manifest_path\": \"<HOME>/extensions/noisy/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/noisy/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-noisy/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "target": {
+        "ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<TARGET>\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<SRC>/notes\",\n      \"manifest_path\": \"<SRC>/notes/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/notes/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "project": {
+        ".claude/skills/ext-notes/NOTES.md": "bd52582f680408e0"
+      },
+      "database": {
+        "migrations": [
+          {
+            "extension_id": "notes",
+            "filename": "001_init.sql",
+            "applied_at": "<TIMESTAMP>"
+          }
+        ],
+        "bindings": [
+          {
+            "extension_id": "other",
+            "capability_id": "keep",
+            "target_kind": "global",
+            "target_id": null,
+            "created_at": "<TIMESTAMP>"
+          }
+        ],
+        "tables": [
+          "ext_notes_items"
+        ]
+      }
+    },
+    {
+      "label": "uninstall_a_missing_extension",
+      "prepare": [],
+      "argv": [
+        "uninstall",
+        "ghost"
+      ],
+      "stdout": "installed extension not found: <HOME>/extensions/ghost\n",
+      "stderr": "",
+      "exit_code": 1,
+      "home": {
+        "extensions/ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "extensions/ext-mismatch/extension.py": "46ba3084c0dec68f",
+        "extensions/ext-mismatch/migrations/001_init.sql": "ecd5421614670509",
+        "extensions/ext-mismatch/skill.yaml": "d582347d6430bf34",
+        "extensions/guide/SKILL.md": "c95145e80ba0c2d6",
+        "extensions/guide/skill.yaml": "e6876e9bba65b68b",
+        "extensions/noisy/SKILL.md": "fe6aba77c1ef063c",
+        "extensions/noisy/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/extension.py": "db765633d51029bb",
+        "extensions/noisy/skill.yaml": "ca3b78def9052728",
+        "extensions/noisy/src/__init__.py": "e3b0c44298fc1c14",
+        "extensions/noisy/src/__pycache__": "<python bytecode cache>",
+        "extensions/noisy/src/helper.py": "84451fa614b1a7b7",
+        "memory_test.db": "<database, graded by its rows>",
+        "memory_test.db.bootstrap.lock": "e3b0c44298fc1c14",
+        "runtime/skills/claude/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<HOME>/runtime/skills/claude\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": []\n}\n"
+        },
+        "runtime/skills/pi/ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "runtime/skills/pi/ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "runtime/skills/pi/extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"pi\",\n  \"target_root\": \"<HOME>/runtime/skills/pi\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"guide\",\n      \"name\": \"Guide\",\n      \"category\": \"extension\",\n      \"kind\": \"prompt-skill\",\n      \"summary\": \"Fixture prompt-skill, which install must NOT migrate or load\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-guide\",\n      \"source_extension_dir\": \"<HOME>/extensions/guide\",\n      \"manifest_path\": \"<HOME>/extensions/guide/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/guide/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-guide/SKILL.md\"\n    },\n    {\n      \"id\": \"noisy\",\n      \"name\": \"Noisy\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Fixture whose source tree carries everything install must refuse to copy\",\n      \"runtime\": \"pi\",\n      \"command_name\": \"ext-noisy\",\n      \"source_extension_dir\": \"<HOME>/extensions/noisy\",\n      \"manifest_path\": \"<HOME>/extensions/noisy/skill.yaml\",\n      \"source_skill_path\": \"<HOME>/extensions/noisy/SKILL.md\",\n      \"installed_skill_path\": \"<HOME>/runtime/skills/pi/ext-noisy/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "target": {
+        "ext-guide/SKILL.md": "c95145e80ba0c2d6",
+        "ext-mismatch/SKILL.md": "964bc78862fda1dd",
+        "ext-noisy/SKILL.md": "fe6aba77c1ef063c",
+        "ext-notes/SKILL.md": "2f4204ed07bd834b",
+        "extensions.json": {
+          "text": "{\n  \"schema_version\": \"1\",\n  \"runtime\": \"claude\",\n  \"target_root\": \"<TARGET>\",\n  \"generated_at\": \"<TIMESTAMP>\",\n  \"extensions\": [\n    {\n      \"id\": \"notes\",\n      \"name\": \"Notes\",\n      \"category\": \"extension\",\n      \"kind\": \"command-skill\",\n      \"summary\": \"Caf\\u00e9 notes \\u2014 a deterministic fixture\",\n      \"runtime\": \"claude\",\n      \"command_name\": \"ext:notes\",\n      \"source_extension_dir\": \"<SRC>/notes\",\n      \"manifest_path\": \"<SRC>/notes/skill.yaml\",\n      \"source_skill_path\": \"<SRC>/notes/SKILL.md\",\n      \"installed_skill_path\": \"<TARGET>/ext-notes/SKILL.md\"\n    }\n  ]\n}\n"
+        }
+      },
+      "project": {
+        ".claude/skills/ext-notes/NOTES.md": "bd52582f680408e0"
+      },
+      "database": {
+        "migrations": [
+          {
+            "extension_id": "notes",
+            "filename": "001_init.sql",
+            "applied_at": "<TIMESTAMP>"
+          }
+        ],
+        "bindings": [
+          {
+            "extension_id": "other",
+            "capability_id": "keep",
+            "target_kind": "global",
+            "target_id": null,
+            "created_at": "<TIMESTAMP>"
+          }
+        ],
+        "tables": [
+          "ext_notes_items"
+        ]
+      }
+    }
+  ]
+}
