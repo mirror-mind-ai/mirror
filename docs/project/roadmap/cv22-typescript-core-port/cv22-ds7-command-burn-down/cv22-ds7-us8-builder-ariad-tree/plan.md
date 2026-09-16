@@ -1118,6 +1118,18 @@ Release read: **ready for Navigator validation with one named divergence.**
   Extract one token module and one arm table. `test/helpers/builderInvoke.ts` is
   a pure re-export shim after plateau 8; repoint or justify. (Plateau-8 panel,
   engineer.)
+- **Concurrent front-door writes race on the single pre-write backup, and the
+  first prompt of every session is lost.** Found while checking the step-5 log:
+  every session start since 2026-09-11 records two `conversation-logger ts
+  exit=1 Error` lines. The extension starts `session-maintenance` detached and
+  `log-user` ~50 ms later; both call `ensureBackup` onto the same
+  `frontdoor-pre-write-backup.db` (`rmSync` then `VACUUM INTO`), so one dies
+  with `disk I/O error` and the other fails `requireBackup` with a hash
+  mismatch. The hook swallows the failure, and the session's first user prompt
+  never reaches `messages` (eight sessions verified). Owner: the DS4 backup
+  seam / conversation-logger hooks, not Builder — a per-process backup path or
+  a lock around the snapshot would close it. Worth a CR with the evidence in
+  `test-guide.md`.
 - **`prepare-item` silently demotes an approved Plan.**
   `prepare_lifecycle_item` writes `last_delivery_event="prepare"` and
   `active_checkpoint=None` unconditionally, without checking the event it

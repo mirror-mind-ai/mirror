@@ -196,10 +196,54 @@ Run 2026-09-16 after the flip, with no gate in the environment:
 Remaining in step 4, after step 5: `validate-item --navigator-accepted`,
 `review-item`, `coherence-item`, `done-item` — each already dry-run above.
 
-### Step 5 — the Navigator's live Pi Builder session
+### Step 5 — the Navigator's live Pi Builder session (2026-09-16, 10:46–10:52 UTC)
 
-Pending. `/mm-build mirror-ts-core` in a fresh Pi session, `pull-candidates`,
-and one Workbench command (for example `build change-request capture --title x
---body y`, refused by name). Expected in `front-door.log`: `build ts leaf=…`
-lines, no `fell_back`, no argument text, and `build python` for the Workbench
-line.
+Run by the Navigator in a fresh Pi session; the log checked directly by the
+Driver afterwards. `front-door.log` for the window, `build` lines only:
+
+```text
+10:46:26  build  ts      exit=0  leaf=load calls=2
+10:47:20  build  ts      exit=1  leaf=pull-candidates
+10:47:23  build  ts      exit=0  leaf=pull-candidates
+10:54:22  build  python  exit=1
+```
+
+- `/mm-build mirror-ts-core` reached TypeScript: `leaf=load calls=2`, no
+  degraded kind, the `■ BUILDER RESUME` surface rendered in the session.
+- `pull-candidates` first exited 1: the session's agent ran it without
+  `--journey` and got `Error: Builder method pull candidates inspection requires
+  a journey. Activate Builder Mode for a journey or pass --journey.` —
+  reproduced on both engines byte for byte, exit 1 on both; it is Python's own
+  resolution rule and the same lived experience as before the flip. The retry
+  with `--journey` rendered the `ROADMAP SNAPSHOT`.
+- **The Workbench line was not produced by the session**: asked to run `build
+  change-request capture --title … --body …`, the session's agent refused on
+  its own grounds — this journey's Refinement Work is file-first
+  (`docs/project/refinement/index.md`), so a capture into the legacy SQLite
+  Workbench would be a throwaway row in a store the index says is no longer
+  consulted. Correct skill behavior, and not the route under test. The Driver
+  then exercised the route with a READ-ONLY Workbench leaf on the real home,
+  `build refinement-story overview --journey mirror-ts-core
+  --refinement-story-id RS-does-not-exist`: `Error: refinement_story_id does
+  not exist`, exit 1, identical to invoking Python directly, and `build python
+  exit=1` in the log — answered by Python by name, nothing written.
+- No `fell_back` anywhere in the day's log; none of the typed argument text
+  (the Portuguese title and body, the slug, the option names) appears in it.
+
+**Pass**, with the Workbench observation supplied by the Driver rather than
+the session.
+
+**Finding outside this story's scope, recorded for Debt Review.** Every
+session start since 2026-09-11 logs two `conversation-logger ts exit=1 Error`
+lines. `mirror-logger.log` shows the mechanism: the extension starts
+`session-maintenance` as a detached process and, ~50 ms later, `log-user` for
+the first prompt; both enter `withMirrorWriteDb`, both `ensureBackup` onto the
+same `frontdoor-pre-write-backup.db`, and one of them dies with `disk I/O
+error` in `VACUUM INTO` while the other fails `requireBackup` with `recorded
+backup hash does not match the backup file`. The hook swallows the failure by
+design, so the **first user prompt of every session is not logged**: the
+2026-09-16 conversation `642296c0` begins with the assistant's `■ BUILDER
+RESUME` and has no `Change to journey mirror-ts-core` row; eight sessions
+since 2026-09-11 show the same pair. Not a Builder defect — DS4's single
+pre-write backup path under concurrent front-door writes — and not fixed
+here.

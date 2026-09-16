@@ -60,27 +60,23 @@ argparse's `--option=value` and prefix spellings (parity, not a divergence).
 - `docs/reference/configuration.md` documents the temporary plateau-8 opt-in,
   composed reverts, replay pair, and redacted log shape.
 
-**Next: step 5, then the closure events.** Validation steps 1–3 and 6 were
-accepted by the Navigator on 2026-09-16 and the flip landed (`2a597fc5`).
-Step 4 is in flight on the flipped route (evidence in `test-guide.md`):
-`backup` taken, the restore drill passed (zip restored into a scratch home,
-`build load` run against it through the front door), the closure dry-run on a
-real-database copy against Python diff-clean at all eight events, and the real
-cursor advanced through the TS front door — `plan-item` then `approve-plan`,
-restoring the Plan approval a resume session had overwritten. The real cursor
-now reads **`plan_approved / gen 16`**, and `check-implementation` reports
-`allowed` identically on both engines. Remaining, in order:
+**Next: the closure events.** Steps 1–3 and 6 accepted 2026-09-16; the flip
+landed (`2a597fc5`); step 4's backup, restore drill, dry run, `plan-item`, and
+`approve-plan` are done; step 5 was run by the Navigator in a fresh Pi session
+and verified in the log (evidence in `test-guide.md`: `leaf=load calls=2`,
+`leaf=pull-candidates`, a `build python` line for a read-only Workbench leaf,
+no `fell_back`, no argument text). The real cursor reads **`plan_approved /
+gen 16`**. Remaining, through the TS front door, each already dry-run on a
+copy by `scripts/smoke_builder_real_copy.sh`:
 
-1. **Step 5 — a live Pi Builder session**, the Navigator's own: `/mm-build
-   mirror-ts-core` in a fresh session, `pull-candidates`, and one Workbench
-   command refused by name; `front-door.log` must show `build ts leaf=…`, no
-   `fell_back`, no argument text, and `build python` for the Workbench line.
-2. **The closure, through the TS front door:** `validate-item
-   --navigator-accepted --implementation-complete …`, `review-item`,
-   `coherence-item`, `done-item`. Each was dry-run on a copy already
-   (`scripts/smoke_builder_real_copy.sh`); take a fresh `backup` before the
-   first real one. `done-item` publishes the Journey projection and prints the
-   roadmap snapshot; the index status then moves to Done in the same session.
+1. a fresh `backup`, then `validate-item --navigator-accepted
+   --implementation-complete …` with the checks and the E2E evidence;
+2. `review-item` with the debt findings from `plan.md` and the Navigator's
+   decision;
+3. `coherence-item`;
+4. `done-item`, which publishes the Journey projection and prints the roadmap
+   snapshot; then the index status moves to Done and the ledger's family row
+   drops "closure in flight".
 
 **Cursor finding, resolved.** The real cursor read `prepare / gen 16` on
 2026-09-16 because a resume session's `prepare-item` on 2026-09-15 had demoted
