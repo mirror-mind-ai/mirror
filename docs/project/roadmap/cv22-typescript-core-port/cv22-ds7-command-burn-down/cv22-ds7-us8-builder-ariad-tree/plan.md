@@ -1099,11 +1099,20 @@ Release read: **ready for Navigator validation with one named divergence.**
 
 ## Debt / CRs To Capture At Debt Review (candidates)
 
-- **TS `build` argv grammar is narrower than argparse's.** `--opt=value` and
-  unambiguous long-option abbreviations succeed in Python and exit 2 in TS.
-  Same divergence class as `--mirror-home` (which goes the other way). Decide
-  once, pin with a test on the input set and exit code, record in the
-  divergence table. (Plateau-8 panel, quality-assurance.)
+- ~~**TS `build` argv grammar is narrower than argparse's.**~~ **Resolved
+  before the flip, as parity rather than as a recorded divergence.** Python is
+  the contract for what is accepted, not only for what is refused: `--opt=value`
+  and unambiguous long-option prefixes (`allow_abbrev` is on) are valid Python
+  invocations, so `parseBuilderArgv` now expands both into the canonical
+  `--option value` form the command mapping reads, and reproduces argparse's own
+  refusals — an ambiguous prefix, an inline value on a flag — at exit 2.
+  Measured on the Python CLI first (`--meth=ariad --jour=x` reaches the
+  domain error at exit 1; `--nav x` and `--preauthorize-approval=yes` exit 2)
+  and pinned in `buildRoute.test.ts` and through the process boundary in
+  `buildCli.test.ts`. One edge stays narrower on purpose: a SEPARATE value
+  token beginning with `--` is read as an option by both engines, and only the
+  `=` form can carry such a value — also as argparse does. (Plateau-8 panel,
+  quality-assurance.)
 - **Three readers of the Builder token grammar** — `buildRoute.ts` helpers plus
   two closures in `argv.ts`; the read-only invoker repeats three switch arms.
   Extract one token module and one arm table. `test/helpers/builderInvoke.ts` is

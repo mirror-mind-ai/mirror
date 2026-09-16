@@ -220,36 +220,81 @@ function usageError(message: string): CommandResult {
   return { stdout: "", stderr: `Mirror TS build: ${message}\n`, exitCode: 2 };
 }
 
-/** Validate the same input class argparse owns, while using honest TS prose. */
-export function validateBuilderArgv(argv: readonly string[]): CommandResult | null {
+export interface ParsedBuilderArgv {
+  /**
+   * The invocation in canonical `--option value` form: the subcommand, then
+   * positionals, then every option pair and flag in the order given. The
+   * Builder command mapping reads only this shape.
+   */
+  readonly argv: readonly string[];
+}
+
+/**
+ * Validate the input class argparse owns, with honest TS prose, and produce the
+ * canonical argv the command mapping reads.
+ *
+ * Python is the contract for what is ACCEPTED, not only for what is refused:
+ * argparse takes `--option=value` for any option, and any unambiguous prefix of
+ * a long option (`allow_abbrev` is on), so `--meth=ariad --jour=demo` is a valid
+ * Python invocation and must be a valid TypeScript one. An ambiguous prefix and
+ * an inline value on a flag are argparse's own refusals, reproduced at exit 2.
+ */
+export function parseBuilderArgv(argv: readonly string[]): ParsedBuilderArgv | CommandResult {
   const command = argv[0] ?? "";
   const spec = command === "load" ? LOAD_SPEC : COMMAND_SPECS[command];
   if (!spec) return usageError(`unknown subcommand ${command || "(none)"}`);
 
   const values = new Set(spec.values ?? []);
   const flags = new Set(spec.flags ?? []);
+  const known = [...values, ...flags];
   const seen = new Map<string, string>();
-  let positionalCount = 0;
+  const positionals: string[] = [];
+  const options: string[] = [];
   for (let index = 1; index < argv.length; index += 1) {
     const token = argv[index] ?? "";
     if (!token.startsWith("--")) {
-      positionalCount += 1;
+      positionals.push(token);
       continue;
     }
-    if (flags.has(token)) continue;
-    if (!values.has(token)) return usageError(`${command}: unrecognized argument ${token}`);
-    const value = argv[index + 1];
-    if (value === undefined || value.startsWith("--")) {
-      return usageError(`${command}: ${token} requires a value`);
+    const separator = token.indexOf("=");
+    const spelled = separator === -1 ? token : token.slice(0, separator);
+    const inline = separator === -1 ? null : token.slice(separator + 1);
+    let option = spelled;
+    if (!values.has(spelled) && !flags.has(spelled)) {
+      const candidates = known.filter((name) => name.startsWith(spelled));
+      if (candidates.length > 1) {
+        return usageError(
+          `${command}: ambiguous option ${spelled} could match ${candidates.join(", ")}`,
+        );
+      }
+      if (candidates.length === 0)
+        return usageError(`${command}: unrecognized argument ${spelled}`);
+      option = candidates[0] ?? spelled;
     }
-    seen.set(token, value);
-    index += 1;
+    if (flags.has(option)) {
+      if (inline !== null) return usageError(`${command}: ${option} takes no value`);
+      options.push(option);
+      continue;
+    }
+    let value = inline;
+    if (value === null) {
+      const next = argv[index + 1];
+      // A separate token that looks like an option is an option, as argparse
+      // reads it; only the `=` form can carry such a value.
+      if (next === undefined || next.startsWith("--")) {
+        return usageError(`${command}: ${option} requires a value`);
+      }
+      value = next;
+      index += 1;
+    }
+    seen.set(option, value);
+    options.push(option, value);
   }
 
-  if (positionalCount > (spec.positionals ?? 0)) {
+  if (positionals.length > (spec.positionals ?? 0)) {
     return usageError(`${command}: too many positional arguments`);
   }
-  if (command === "load" && positionalCount === 0) {
+  if (command === "load" && positionals.length === 0) {
     return usageError("load requires a journey slug");
   }
   for (const required of spec.required ?? []) {
@@ -262,7 +307,7 @@ export function validateBuilderArgv(argv: readonly string[]): CommandResult | nu
       return usageError(`${command}: invalid value for ${option}: ${value}`);
     }
   }
-  return null;
+  return { argv: [command, ...positionals, ...options] };
 }
 
 function writeResult(result: CommandResult): number {
@@ -288,10 +333,12 @@ export async function runBuildRoute(
   argv: readonly string[],
   deps: BuildRouteDeps,
 ): Promise<BuildRouteResult> {
-  const builderArgv = argv.slice(1);
-  const command = builderArgv[0] ?? "";
-  const invalid = validateBuilderArgv(builderArgv);
-  if (invalid) return { exitCode: writeResult(invalid), detail: `leaf=${command || "(none)"}` };
+  const command = argv[1] ?? "";
+  const parsed = parseBuilderArgv(argv.slice(1));
+  if (!("argv" in parsed)) {
+    return { exitCode: writeResult(parsed), detail: `leaf=${command || "(none)"}` };
+  }
+  const builderArgv = parsed.argv;
 
   // This is the resilience boundary. A reverted invocation never imports this
   // route; an enabled invocation imports the Builder core only now.

@@ -250,6 +250,19 @@ test("argparse-class and domain refusals preserve their distinct exit codes", ()
       domain.stderr,
       "Error: Builder method 'bogus' not found. Available methods: ariad\n",
     );
+
+    // argparse's `--option=value` and prefix spellings reach the command with
+    // Python's own domain answer, measured on the Python CLI: exit 1, not 2.
+    const spelled = run(f, [
+      "build",
+      "check-implementation",
+      "--meth=ariad",
+      "--jour=no-such-journey",
+      "--mirror-home",
+      f.home,
+    ]);
+    assert.equal(spelled.status, 1);
+    assert.equal(spelled.stderr, "Error: journey 'no-such-journey' not found.\n");
   } finally {
     rmSync(f.root, { recursive: true, force: true });
   }

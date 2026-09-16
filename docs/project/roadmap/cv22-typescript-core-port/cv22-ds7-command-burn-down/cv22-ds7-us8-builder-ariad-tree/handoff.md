@@ -73,9 +73,10 @@ for the flip, none blocking:
    `environment.MIRROR_TS_BUILD = "1"` in `runTypeScript`. Once the default
    flips, remove that line so the smoke proves the shipped route, not a
    configured one.
-2. **Record and pin the argv-grammar divergence.** TS refuses `--opt=value` and
-   argparse abbreviations with exit 2 where Python accepts them. Same class as
-   `--mirror-home`; decide, pin, record.
+2. ~~**Record and pin the argv-grammar divergence.**~~ Resolved as parity
+   before the flip: `parseBuilderArgv` accepts `--opt=value` and unambiguous
+   prefixes as argparse does and reproduces its refusals at exit 2 (see the
+   plan's debt list for the measurement).
 3. **Debt Review carries** the three-reader token grammar and the
    `builderInvoke.ts` shim.
 

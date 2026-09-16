@@ -2,14 +2,24 @@
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { validateBuilderArgv } from "#frontDoor/buildRoute.ts";
+import { parseBuilderArgv } from "#frontDoor/buildRoute.ts";
 
-function rejected(argv: string[]): void {
-  const result = validateBuilderArgv(argv);
-  assert.ok(result, argv.join(" "));
+function rejected(argv: string[]): string {
+  const result = parseBuilderArgv(argv);
+  assert.ok(!("argv" in result), `accepted: ${argv.join(" ")}`);
   assert.equal(result.exitCode, 2);
   assert.equal(result.stdout, "");
   assert.match(result.stderr, /^Mirror TS build:/);
+  return result.stderr;
+}
+
+function accepted(argv: string[]): readonly string[] {
+  const result = parseBuilderArgv(argv);
+  assert.ok(
+    "argv" in result,
+    `refused: ${argv.join(" ")}: ${"stderr" in result ? result.stderr : ""}`,
+  );
+  return result.argv;
 }
 
 test("accepts representative argv from every command shape", () => {
@@ -60,8 +70,62 @@ test("accepts representative argv from every command shape", () => {
     ["release-intent", "--method", "ariad", "--intent", "planned"],
     ["continue-lifecycle", "--method", "ariad", "--local-difference", "one"],
   ]) {
-    assert.equal(validateBuilderArgv(argv), null, argv.join(" "));
+    assert.deepEqual(accepted(argv), argv, "a canonical invocation parses to itself");
   }
+});
+
+test("argparse's accepted spellings are accepted: --option=value and unambiguous prefixes", () => {
+  // Python is the contract for what is accepted, not only for what is refused.
+  assert.deepEqual(accepted(["adopt", "--method=ariad"]), ["adopt", "--method", "ariad"]);
+  assert.deepEqual(accepted(["check-implementation", "--meth=ariad", "--jour=demo"]), [
+    "check-implementation",
+    "--method",
+    "ariad",
+    "--journey",
+    "demo",
+  ]);
+  assert.deepEqual(accepted(["plan-item", "--method", "ariad", "--pre", "--obj=ship it"]), [
+    "plan-item",
+    "--method",
+    "ariad",
+    "--preauthorize-approval",
+    "--objective",
+    "ship it",
+  ]);
+  // `action="append"` options keep every occurrence, in order, in either form.
+  assert.deepEqual(
+    accepted(["validate-item", "--method", "ariad", "--check=one", "--check", "two"]),
+    ["validate-item", "--method", "ariad", "--check", "one", "--check", "two"],
+  );
+  // Only the `=` form can carry a value that looks like an option, as in argparse.
+  assert.deepEqual(accepted(["load", "demo", "--session-id=--weird"]), [
+    "load",
+    "demo",
+    "--session-id",
+    "--weird",
+  ]);
+  // Positionals come first in the canonical form wherever they were typed.
+  assert.deepEqual(accepted(["inspect-method", "--journey=demo", "ariad"]), [
+    "inspect-method",
+    "ariad",
+    "--journey",
+    "demo",
+  ]);
+});
+
+test("argparse's own prefix and flag refusals are reproduced at exit 2", () => {
+  assert.match(
+    rejected(["validate-item", "--method", "ariad", "--nav", "x"]),
+    /ambiguous option --nav could match --navigator-route, --navigator-accepted/,
+  );
+  assert.match(
+    rejected(["plan-item", "--method", "ariad", "--preauthorize-approval=yes"]),
+    /--preauthorize-approval takes no value/,
+  );
+  // A prefix of nothing is unrecognized, not ambiguous.
+  assert.match(rejected(["adopt", "--method", "ariad", "--zzz=1"]), /unrecognized argument --zzz/);
+  // The subcommand itself is never abbreviated: argparse subparsers do not allow it.
+  rejected(["adop", "--method", "ariad"]);
 });
 
 test("refuses a bare command, unknown options, extra positionals, and missing values", () => {
@@ -134,21 +198,18 @@ test("refuses each argparse choices class but leaves domain choices to commands"
   ])
     rejected(argv);
 
-  assert.equal(validateBuilderArgv(["adopt", "--method", "bogus"]), null);
-  assert.equal(
-    validateBuilderArgv([
-      "pull-item",
-      "--method",
-      "ariad",
-      "--item-code",
-      "x",
-      "--item-title",
-      "x",
-      "--item-level",
-      "bogus",
-      "--why-now",
-      "x",
-    ]),
-    null,
-  );
+  accepted(["adopt", "--method", "bogus"]);
+  accepted([
+    "pull-item",
+    "--method",
+    "ariad",
+    "--item-code",
+    "x",
+    "--item-title",
+    "x",
+    "--item-level",
+    "bogus",
+    "--why-now",
+    "x",
+  ]);
 });
