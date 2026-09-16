@@ -10,8 +10,9 @@
 #
 # Copy-only and offline by construction: the real home and the real checkout
 # are never opened for writing, and the provider key is emptied in both
-# environments. The TypeScript side runs through the real front door under
-# MIRROR_TS_BUILD=1 so the route, not only the command tree, is graded.
+# environments. The TypeScript side runs through the real front door with NO
+# gate in its environment, so the shipped default route is what is graded; a
+# parent shell's own MIRROR_TS_* variables are stripped from both sides.
 #
 # Usage:
 #   scripts/smoke_builder_real_copy.sh --source-db ~/.mirror-minds/<user>/memory.db \
@@ -70,7 +71,7 @@ ts_env() {
   # shellcheck disable=SC2046
   env -u MIRROR_SESSION_ID -u MEMORY_ENV -u DB_PATH $(unset_ts_gates) \
     MIRROR_HOME="$ROOT/$1/$HOME_BASENAME" MIRROR_USER="$HOME_BASENAME" OPENROUTER_API_KEY= \
-    MIRROR_TS_BUILD=1 NODE_OPTIONS=--no-warnings "${@:2}"
+    NODE_OPTIONS=--no-warnings "${@:2}"
 }
 
 # Setup (ungraded): point each copy's journey at its own scratch clone.

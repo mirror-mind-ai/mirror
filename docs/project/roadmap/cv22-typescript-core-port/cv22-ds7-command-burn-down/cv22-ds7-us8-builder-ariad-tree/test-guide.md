@@ -167,4 +167,39 @@ reproduce this (step 3 starts from exactly that state). Consequence for step
 latter is a Navigator act) through the TS front door before `validate-item`.
 Recorded as a debt candidate in `plan.md`.
 
-Steps 4 and 5 run after the flip, by design.
+**Navigator acceptance of steps 1–3 and 6: given 2026-09-16**, with the
+plateau-9 flip authorized in the same breath. The flip landed as commit
+`2a597fc5`.
+
+### Step 4 — the self-hosting closure, in flight on the flipped route
+
+Run 2026-09-16 after the flip, with no gate in the environment:
+
+- **`backup`** through the front door: `memory_20260916_112816.zip` (17,072
+  KB), `backup ts exit=0` in the log.
+- **Restore drill:** the zip restored into a scratch home
+  (`pragma integrity_check` → `ok`), then `build load mirror-ts-core
+  --session-id restore-drill` against it through the front door: exit 0, the
+  full session start (39,250 B, the same size as step 2's), `build ts exit=0
+  leaf=load calls=2` in the scratch home's log, two ledger rows. A backup that
+  has now been restored and loaded is a backup.
+- **Dry run on a copy against Python:** `scripts/smoke_builder_real_copy.sh`
+  re-run with the gate absent — all eight events diff-clean on all four faces.
+- **Real cursor, through the TS front door:** `plan-item` (`prepare → plan`,
+  gen 16, `leaf=plan-item` in the log; the story package's existing artifacts
+  preserved) and `approve-plan` (`plan → plan_approved`, `leaf=approve-plan`),
+  restoring the approval the Navigator gave on 2026-09-13 and a resume
+  session's `prepare-item` had overwritten. `check-implementation` now reports
+  `allowed`, and the guard surface Python renders from the TS-written cursor
+  is byte-identical to TypeScript's.
+
+Remaining in step 4, after step 5: `validate-item --navigator-accepted`,
+`review-item`, `coherence-item`, `done-item` — each already dry-run above.
+
+### Step 5 — the Navigator's live Pi Builder session
+
+Pending. `/mm-build mirror-ts-core` in a fresh Pi session, `pull-candidates`,
+and one Workbench command (for example `build change-request capture --title x
+--body y`, refused by name). Expected in `front-door.log`: `build ts leaf=…`
+lines, no `fell_back`, no argument text, and `build python` for the Workbench
+line.

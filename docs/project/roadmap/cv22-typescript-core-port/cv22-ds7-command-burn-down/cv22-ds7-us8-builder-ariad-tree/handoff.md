@@ -60,30 +60,35 @@ argparse's `--option=value` and prefix spellings (parity, not a divergence).
 - `docs/reference/configuration.md` documents the temporary plateau-8 opt-in,
   composed reverts, replay pair, and redacted log shape.
 
-**Next: close the story on the flipped route.** Validation steps 1–3 and 6
-were run on 2026-09-16 and accepted by the Navigator the same day (evidence in
-`test-guide.md`); the flip was authorized and landed. Remaining, in order:
+**Next: step 5, then the closure events.** Validation steps 1–3 and 6 were
+accepted by the Navigator on 2026-09-16 and the flip landed (`2a597fc5`).
+Step 4 is in flight on the flipped route (evidence in `test-guide.md`):
+`backup` taken, the restore drill passed (zip restored into a scratch home,
+`build load` run against it through the front door), the closure dry-run on a
+real-database copy against Python diff-clean at all eight events, and the real
+cursor advanced through the TS front door — `plan-item` then `approve-plan`,
+restoring the Plan approval a resume session had overwritten. The real cursor
+now reads **`plan_approved / gen 16`**, and `check-implementation` reports
+`allowed` identically on both engines. Remaining, in order:
 
-1. **Step 4 — the self-hosting closure through the TS front door.** `backup`,
-   then the restore drill (the dated zip restored into a scratch home and
-   `build load` run against it), then this story's own lifecycle events —
-   each dry-run on a copy against Python first, which is what
-   `scripts/smoke_builder_real_copy.sh` does — with the real cursor advancing
-   on TypeScript.
-2. **Step 5 — a live Pi Builder session**, the Navigator's own: `/mm-build
-   mirror-ts-core`, `pull-candidates`, and one Workbench command refused by
-   name; `front-door.log` must show `build ts leaf=…`, no `fell_back`, no
-   argument text, and `build python` for the Workbench line.
-3. Then `validate-item --navigator-accepted`, `review-item`, `coherence-item`,
-   `done-item` — the closure itself, run through the route it validates.
+1. **Step 5 — a live Pi Builder session**, the Navigator's own: `/mm-build
+   mirror-ts-core` in a fresh session, `pull-candidates`, and one Workbench
+   command refused by name; `front-door.log` must show `build ts leaf=…`, no
+   `fell_back`, no argument text, and `build python` for the Workbench line.
+2. **The closure, through the TS front door:** `validate-item
+   --navigator-accepted --implementation-complete …`, `review-item`,
+   `coherence-item`, `done-item`. Each was dry-run on a copy already
+   (`scripts/smoke_builder_real_copy.sh`); take a fresh `backup` before the
+   first real one. `done-item` publishes the Journey projection and prints the
+   roadmap snapshot; the index status then moves to Done in the same session.
 
-**Cursor finding for step 4.** The real cursor is at `prepare / gen 16`, not
-`plan_approved`: a resume session's `prepare-item` on 2026-09-15 demoted the
-approved Plan, because Python's Prepare overwrites the event unconditionally
-(debt candidate in `plan.md`). The self-hosting closure therefore begins with
-`plan-item` and a Navigator `approve-plan` through the TS front door, then
-`validate-item`, `review-item`, `coherence-item`, `done-item` — each first
-dry-run on a copy, which is exactly what the step-3 script does.
+**Cursor finding, resolved.** The real cursor read `prepare / gen 16` on
+2026-09-16 because a resume session's `prepare-item` on 2026-09-15 had demoted
+the approved Plan — Python's Prepare overwrites the event unconditionally
+(debt candidate in `plan.md`). Restored through the TS front door with
+`plan-item` and `approve-plan` on 2026-09-16, as step 4's first two events.
+**Do not run `prepare-item` again on this story**: it would demote the cursor
+a second time.
 
 The plateau-8 handoff panel ran (recorded in `plan.md`) and left three items
 for the flip, none blocking:
