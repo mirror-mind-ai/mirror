@@ -1,0 +1,225 @@
+{
+  "_generated_by": "ts/parity/generate_identity_edit_golden.py",
+  "_semantics": "Python's answer for `identity edit <layer> <key>` with a scripted editor: the streams, the exit code, and every identity row afterwards. The editors are POSIX sh scripts carried here so both engines run the identical file. The temp file's 0600 mode and its removal are asserted in the TypeScript test, not here.",
+  "editors": {
+    "append": "#!/bin/sh\nprintf 'edited line\\n' >> \"$1\"\n",
+    "noop": "#!/bin/sh\nexit 0\n",
+    "blank": "#!/bin/sh\nprintf '   \\n' > \"$1\"\n",
+    "replace": "#!/bin/sh\nprintf 'a whole new behavior\\n' > \"$1\"\n",
+    "fail": "#!/bin/sh\nexit 3\n",
+    "echo_back": "#!/bin/sh\nprintf 'seen:' > \"$1\".seen\ncat \"$1\" >> \"$1\".seen\ncat \"$1\".seen > \"$1\"\n"
+  },
+  "seed": {
+    "layer": "ego",
+    "key": "behavior",
+    "content": "original content\n"
+  },
+  "cases": [
+    {
+      "label": "edit_with_no_change",
+      "argv": [
+        "edit",
+        "ego",
+        "behavior"
+      ],
+      "editor": "noop",
+      "environment": {},
+      "stdout": "No changes detected.\n",
+      "stderr": "",
+      "exit_code": 0,
+      "identity_after": [
+        {
+          "layer": "ego",
+          "key": "behavior",
+          "content": "original content\n"
+        }
+      ]
+    },
+    {
+      "label": "edit_appends_a_line",
+      "argv": [
+        "edit",
+        "ego",
+        "behavior"
+      ],
+      "editor": "append",
+      "environment": {},
+      "stdout": "✓ ego/behavior updated\n",
+      "stderr": "",
+      "exit_code": 0,
+      "identity_after": [
+        {
+          "layer": "ego",
+          "key": "behavior",
+          "content": "original content\nedited line\n"
+        }
+      ]
+    },
+    {
+      "label": "edit_sees_the_current_content",
+      "argv": [
+        "edit",
+        "ego",
+        "behavior"
+      ],
+      "editor": "echo_back",
+      "environment": {},
+      "stdout": "✓ ego/behavior updated\n",
+      "stderr": "",
+      "exit_code": 0,
+      "identity_after": [
+        {
+          "layer": "ego",
+          "key": "behavior",
+          "content": "seen:original content\nedited line\n"
+        }
+      ]
+    },
+    {
+      "label": "edit_replaces_the_content",
+      "argv": [
+        "edit",
+        "ego",
+        "behavior"
+      ],
+      "editor": "replace",
+      "environment": {},
+      "stdout": "✓ ego/behavior updated\n",
+      "stderr": "",
+      "exit_code": 0,
+      "identity_after": [
+        {
+          "layer": "ego",
+          "key": "behavior",
+          "content": "a whole new behavior\n"
+        }
+      ]
+    },
+    {
+      "label": "edit_creates_a_missing_key",
+      "argv": [
+        "edit",
+        "ego",
+        "fresh"
+      ],
+      "editor": "replace",
+      "environment": {},
+      "stdout": "✓ ego/fresh created\n",
+      "stderr": "",
+      "exit_code": 0,
+      "identity_after": [
+        {
+          "layer": "ego",
+          "key": "behavior",
+          "content": "a whole new behavior\n"
+        },
+        {
+          "layer": "ego",
+          "key": "fresh",
+          "content": "a whole new behavior\n"
+        }
+      ]
+    },
+    {
+      "label": "edit_refuses_blank_content",
+      "argv": [
+        "edit",
+        "ego",
+        "behavior"
+      ],
+      "editor": "blank",
+      "environment": {},
+      "stdout": "",
+      "stderr": "Content is empty after editing. No changes saved.\n",
+      "exit_code": 1,
+      "identity_after": [
+        {
+          "layer": "ego",
+          "key": "behavior",
+          "content": "a whole new behavior\n"
+        },
+        {
+          "layer": "ego",
+          "key": "fresh",
+          "content": "a whole new behavior\n"
+        }
+      ]
+    },
+    {
+      "label": "edit_refuses_a_failed_editor",
+      "argv": [
+        "edit",
+        "ego",
+        "behavior"
+      ],
+      "editor": "fail",
+      "environment": {},
+      "stdout": "",
+      "stderr": "Editor exited with code 3. Aborted.\n",
+      "exit_code": 1,
+      "identity_after": [
+        {
+          "layer": "ego",
+          "key": "behavior",
+          "content": "a whole new behavior\n"
+        },
+        {
+          "layer": "ego",
+          "key": "fresh",
+          "content": "a whole new behavior\n"
+        }
+      ]
+    },
+    {
+      "label": "edit_falls_back_to_visual",
+      "argv": [
+        "edit",
+        "ego",
+        "behavior"
+      ],
+      "editor": null,
+      "environment": {
+        "VISUAL": "<EDITOR:append>"
+      },
+      "stdout": "✓ ego/behavior updated\n",
+      "stderr": "",
+      "exit_code": 0,
+      "identity_after": [
+        {
+          "layer": "ego",
+          "key": "behavior",
+          "content": "a whole new behavior\nedited line\n"
+        },
+        {
+          "layer": "ego",
+          "key": "fresh",
+          "content": "a whole new behavior\n"
+        }
+      ]
+    },
+    {
+      "label": "edit_requires_both_arguments",
+      "argv": [
+        "edit",
+        "ego"
+      ],
+      "editor": "noop",
+      "environment": {},
+      "stdout": "",
+      "stderr": "usage: memory identity edit [-h] [--mirror-home MIRROR_HOME] layer key\nmemory identity edit: error: the following arguments are required: key\n",
+      "exit_code": 2,
+      "identity_after": [
+        {
+          "layer": "ego",
+          "key": "behavior",
+          "content": "a whole new behavior\nedited line\n"
+        },
+        {
+          "layer": "ego",
+          "key": "fresh",
+          "content": "a whole new behavior\n"
+        }
+      ]
+    }
+  ]
+}

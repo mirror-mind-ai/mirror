@@ -99,6 +99,8 @@ jobs:
           uv run python ts/parity/generate_ext_bindings_golden.py
           uv run python ts/parity/generate_ext_dispatch_golden.py
           uv run python ts/parity/generate_ext_catalog_writes_golden.py
+          uv run python ts/parity/generate_lifecycle_write_golden.py
+          uv run python ts/parity/generate_identity_edit_golden.py
           git diff --exit-code ts/test/goldens/
           # Two Builder generators also rewrite their committed fixture trees, so
           # drift there has to fail the gate too -- a golden that agrees with

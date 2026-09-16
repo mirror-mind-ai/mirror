@@ -1,0 +1,952 @@
+{
+  "_generated_by": "ts/parity/generate_lifecycle_write_golden.py",
+  "_semantics": "Python's answer for `conversations --metadata-lifecycle-apply` and `--metadata-lifecycle-demo`: the printed report, the exit code, and the conversation rows afterwards. Generated ids are aliased in first-seen order; the seeded world is carried so the replay starts from identical rows. A case carrying `divergence` records `stderr` as null: a CPython traceback is not portable, and the final line is what the port reproduces.",
+  "world": {
+    "conversations": [
+      {
+        "id": "<ID4>",
+        "interface": "cli",
+        "title": "vamos trabalhar no maestro",
+        "started_at": "2026-01-01T00:00:00Z",
+        "summary": null,
+        "tags": null,
+        "metadata": "{\"title_source\": \"first_user\", \"title_status\": \"provisional\"}"
+      },
+      {
+        "id": "<ID5>",
+        "interface": "cli",
+        "title": "Manual conversation title",
+        "started_at": "2026-01-01T00:00:01Z",
+        "summary": null,
+        "tags": null,
+        "metadata": "{\"previous_title\": \"Initial title\", \"title_source\": \"manual\", \"title_status\": \"manual\"}"
+      },
+      {
+        "id": "<ID6>",
+        "interface": "cli",
+        "title": "Initial editorial session",
+        "started_at": "2026-01-01T00:00:02Z",
+        "summary": "Editorial workflow for a manuscript. Scrivener import, cover briefing, Kindle export, EPUB validation, chapter cleanup, raw text hygiene.",
+        "tags": null,
+        "metadata": null
+      },
+      {
+        "id": "<ID7>",
+        "interface": "cli",
+        "title": "primeiro assunto do dia",
+        "started_at": "2026-01-01T00:00:03Z",
+        "summary": null,
+        "tags": null,
+        "metadata": "{\"title_source\": \"first_user\", \"title_status\": \"provisional\"}"
+      },
+      {
+        "id": "<ID8>",
+        "interface": "cli",
+        "title": null,
+        "started_at": "2026-01-01T00:00:04Z",
+        "summary": null,
+        "tags": null,
+        "metadata": null
+      },
+      {
+        "id": "<ID9>",
+        "interface": "cli",
+        "title": null,
+        "started_at": "2026-01-01T00:00:05Z",
+        "summary": null,
+        "tags": null,
+        "metadata": null
+      }
+    ],
+    "messages": [
+      {
+        "id": "<ID10>",
+        "conversation_id": "<ID4>",
+        "role": "user",
+        "content": "Vamos validar checkpoint visibility",
+        "created_at": "2026-01-01T00:00:06Z"
+      },
+      {
+        "id": "<ID11>",
+        "conversation_id": "<ID4>",
+        "role": "assistant",
+        "content": "Vamos revisar o handoff",
+        "created_at": "2026-01-01T00:00:07Z"
+      },
+      {
+        "id": "<ID12>",
+        "conversation_id": "<ID5>",
+        "role": "user",
+        "content": "Quero corrigir títulos",
+        "created_at": "2026-01-01T00:00:08Z"
+      },
+      {
+        "id": "<ID13>",
+        "conversation_id": "<ID5>",
+        "role": "assistant",
+        "content": "Vamos desenhar a correção",
+        "created_at": "2026-01-01T00:00:09Z"
+      },
+      {
+        "id": "<ID14>",
+        "conversation_id": "<ID6>",
+        "role": "user",
+        "content": "Let's begin",
+        "created_at": "2026-01-01T00:00:10Z"
+      },
+      {
+        "id": "<ID15>",
+        "conversation_id": "<ID6>",
+        "role": "assistant",
+        "content": "Ready",
+        "created_at": "2026-01-01T00:00:11Z"
+      },
+      {
+        "id": "<ID16>",
+        "conversation_id": "<ID7>",
+        "role": "user",
+        "content": "Mensagem 0 sobre o planejamento editorial e os proximos passos.",
+        "created_at": "2026-01-01T00:00:12Z"
+      },
+      {
+        "id": "<ID17>",
+        "conversation_id": "<ID7>",
+        "role": "assistant",
+        "content": "Mensagem 1 sobre o planejamento editorial e os proximos passos.",
+        "created_at": "2026-01-01T00:00:13Z"
+      },
+      {
+        "id": "<ID18>",
+        "conversation_id": "<ID7>",
+        "role": "user",
+        "content": "Mensagem 2 sobre o planejamento editorial e os proximos passos.",
+        "created_at": "2026-01-01T00:00:14Z"
+      },
+      {
+        "id": "<ID19>",
+        "conversation_id": "<ID7>",
+        "role": "assistant",
+        "content": "Mensagem 3 sobre o planejamento editorial e os proximos passos.",
+        "created_at": "2026-01-01T00:00:15Z"
+      },
+      {
+        "id": "<ID20>",
+        "conversation_id": "<ID8>",
+        "role": "user",
+        "content": "Mensagem 0 com substancia suficiente.",
+        "created_at": "2026-01-01T00:00:16Z"
+      },
+      {
+        "id": "<ID21>",
+        "conversation_id": "<ID8>",
+        "role": "assistant",
+        "content": "Mensagem 1 com substancia suficiente.",
+        "created_at": "2026-01-01T00:00:17Z"
+      },
+      {
+        "id": "<ID22>",
+        "conversation_id": "<ID8>",
+        "role": "user",
+        "content": "Mensagem 2 com substancia suficiente.",
+        "created_at": "2026-01-01T00:00:18Z"
+      },
+      {
+        "id": "<ID23>",
+        "conversation_id": "<ID8>",
+        "role": "assistant",
+        "content": "Mensagem 3 com substancia suficiente.",
+        "created_at": "2026-01-01T00:00:19Z"
+      }
+    ]
+  },
+  "ids": {
+    "repair": "<ID4>",
+    "manual_lock": "<ID5>",
+    "refine_candidate": "<ID6>",
+    "summary_and_tags_ready": "<ID7>",
+    "long_summary_target": "<ID8>",
+    "untitleable": "<ID9>"
+  },
+  "cases": [
+    {
+      "label": "apply_repairs_a_provisional_title",
+      "state": "repair",
+      "conversation_id": "<ID4>",
+      "extra_argv": [
+        "--title",
+        "Maestro checkpoint visibility validation"
+      ],
+      "argv": [
+        "--metadata-lifecycle-apply",
+        "<ID4>",
+        "--title",
+        "Maestro checkpoint visibility validation"
+      ],
+      "stdout": "{\n  \"conversation_id\": \"<ID4>\",\n  \"mode\": \"apply\",\n  \"mutated\": true,\n  \"changed\": {\n    \"title\": \"Maestro checkpoint visibility validation\"\n  },\n  \"skipped\": {\n    \"summary\": \"no_value_provided\",\n    \"tags\": \"no_value_provided\"\n  },\n  \"dry_run\": {\n    \"conversation_id\": \"<ID4>\",\n    \"mode\": \"dry_run\",\n    \"mutated\": false,\n    \"metadata_lifecycle_version\": 1,\n    \"fields\": {\n      \"title\": {\n        \"decision\": \"repair\",\n        \"reason\": \"current title is provisional or weak\",\n        \"current_value\": \"vamos trabalhar no maestro\",\n        \"readiness\": \"ready\",\n        \"provenance\": \"first_user\",\n        \"lock_state\": \"unlocked\"\n      },\n      \"summary\": {\n        \"decision\": \"defer\",\n        \"reason\": \"summary needs more conversation substance\",\n        \"current_value\": null,\n        \"readiness\": \"not_ready\",\n        \"provenance\": null\n      },\n      \"tags\": {\n        \"decision\": \"defer\",\n        \"reason\": \"tags need more conversation substance\",\n        \"current_value\": null,\n        \"readiness\": \"not_ready\",\n        \"provenance\": null\n      }\n    }\n  }\n}\n",
+      "stderr": "",
+      "exit_code": 0,
+      "rows_after": {
+        "repair": {
+          "id": "<ID4>",
+          "title": "Maestro checkpoint visibility validation",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"title_source\": \"metadata_lifecycle_apply\", \"title_status\": \"generated\", \"previous_title\": \"vamos trabalhar no maestro\", \"metadata_lifecycle_version\": 1, \"last_metadata_update_source\": \"metadata_lifecycle_apply\"}"
+        },
+        "manual_lock": {
+          "id": "<ID5>",
+          "title": "Manual conversation title",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"previous_title\": \"Initial title\", \"title_source\": \"manual\", \"title_status\": \"manual\"}"
+        },
+        "refine_candidate": {
+          "id": "<ID6>",
+          "title": "Initial editorial session",
+          "summary": "Editorial workflow for a manuscript. Scrivener import, cover briefing, Kindle export, EPUB validation, chapter cleanup, raw text hygiene.",
+          "tags": null,
+          "metadata": null
+        },
+        "summary_and_tags_ready": {
+          "id": "<ID7>",
+          "title": "primeiro assunto do dia",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"title_source\": \"first_user\", \"title_status\": \"provisional\"}"
+        },
+        "long_summary_target": {
+          "id": "<ID8>",
+          "title": null,
+          "summary": null,
+          "tags": null,
+          "metadata": null
+        },
+        "untitleable": {
+          "id": "<ID9>",
+          "title": null,
+          "summary": null,
+          "tags": null,
+          "metadata": null
+        }
+      },
+      "stderr_final_line": null,
+      "divergence": null
+    },
+    {
+      "label": "apply_again_after_the_repair",
+      "state": "repair",
+      "conversation_id": "<ID4>",
+      "extra_argv": [
+        "--title",
+        "A second title nobody asked for"
+      ],
+      "argv": [
+        "--metadata-lifecycle-apply",
+        "<ID4>",
+        "--title",
+        "A second title nobody asked for"
+      ],
+      "stdout": "{\n  \"conversation_id\": \"<ID4>\",\n  \"mode\": \"apply\",\n  \"mutated\": false,\n  \"changed\": {},\n  \"skipped\": {\n    \"title\": \"decision_keep_not_applied\",\n    \"summary\": \"no_value_provided\",\n    \"tags\": \"no_value_provided\"\n  },\n  \"dry_run\": {\n    \"conversation_id\": \"<ID4>\",\n    \"mode\": \"dry_run\",\n    \"mutated\": false,\n    \"metadata_lifecycle_version\": 1,\n    \"fields\": {\n      \"title\": {\n        \"decision\": \"keep\",\n        \"reason\": \"current title appears usable\",\n        \"current_value\": \"Maestro checkpoint visibility validation\",\n        \"readiness\": \"ready\",\n        \"provenance\": \"metadata_lifecycle_apply\",\n        \"lock_state\": \"unlocked\"\n      },\n      \"summary\": {\n        \"decision\": \"defer\",\n        \"reason\": \"summary needs more conversation substance\",\n        \"current_value\": null,\n        \"readiness\": \"not_ready\",\n        \"provenance\": null\n      },\n      \"tags\": {\n        \"decision\": \"defer\",\n        \"reason\": \"tags need more conversation substance\",\n        \"current_value\": null,\n        \"readiness\": \"not_ready\",\n        \"provenance\": null\n      }\n    }\n  }\n}\n",
+      "stderr": "",
+      "exit_code": 0,
+      "rows_after": {
+        "repair": {
+          "id": "<ID4>",
+          "title": "Maestro checkpoint visibility validation",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"title_source\": \"metadata_lifecycle_apply\", \"title_status\": \"generated\", \"previous_title\": \"vamos trabalhar no maestro\", \"metadata_lifecycle_version\": 1, \"last_metadata_update_source\": \"metadata_lifecycle_apply\"}"
+        },
+        "manual_lock": {
+          "id": "<ID5>",
+          "title": "Manual conversation title",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"previous_title\": \"Initial title\", \"title_source\": \"manual\", \"title_status\": \"manual\"}"
+        },
+        "refine_candidate": {
+          "id": "<ID6>",
+          "title": "Initial editorial session",
+          "summary": "Editorial workflow for a manuscript. Scrivener import, cover briefing, Kindle export, EPUB validation, chapter cleanup, raw text hygiene.",
+          "tags": null,
+          "metadata": null
+        },
+        "summary_and_tags_ready": {
+          "id": "<ID7>",
+          "title": "primeiro assunto do dia",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"title_source\": \"first_user\", \"title_status\": \"provisional\"}"
+        },
+        "long_summary_target": {
+          "id": "<ID8>",
+          "title": null,
+          "summary": null,
+          "tags": null,
+          "metadata": null
+        },
+        "untitleable": {
+          "id": "<ID9>",
+          "title": null,
+          "summary": null,
+          "tags": null,
+          "metadata": null
+        }
+      },
+      "stderr_final_line": null,
+      "divergence": null
+    },
+    {
+      "label": "apply_preserves_a_manual_lock",
+      "state": "manual_lock",
+      "conversation_id": "<ID5>",
+      "extra_argv": [
+        "--title",
+        "Generated replacement title"
+      ],
+      "argv": [
+        "--metadata-lifecycle-apply",
+        "<ID5>",
+        "--title",
+        "Generated replacement title"
+      ],
+      "stdout": "{\n  \"conversation_id\": \"<ID5>\",\n  \"mode\": \"apply\",\n  \"mutated\": false,\n  \"changed\": {},\n  \"skipped\": {\n    \"title\": \"manual_lock_preserved\",\n    \"summary\": \"no_value_provided\",\n    \"tags\": \"no_value_provided\"\n  },\n  \"dry_run\": {\n    \"conversation_id\": \"<ID5>\",\n    \"mode\": \"dry_run\",\n    \"mutated\": false,\n    \"metadata_lifecycle_version\": 1,\n    \"fields\": {\n      \"title\": {\n        \"decision\": \"preserve\",\n        \"reason\": \"manual title lock is preserved\",\n        \"current_value\": \"Manual conversation title\",\n        \"readiness\": \"locked\",\n        \"provenance\": \"manual\",\n        \"lock_state\": \"manual_locked\"\n      },\n      \"summary\": {\n        \"decision\": \"defer\",\n        \"reason\": \"summary needs more conversation substance\",\n        \"current_value\": null,\n        \"readiness\": \"not_ready\",\n        \"provenance\": null\n      },\n      \"tags\": {\n        \"decision\": \"defer\",\n        \"reason\": \"tags need more conversation substance\",\n        \"current_value\": null,\n        \"readiness\": \"not_ready\",\n        \"provenance\": null\n      }\n    }\n  }\n}\n",
+      "stderr": "",
+      "exit_code": 0,
+      "rows_after": {
+        "repair": {
+          "id": "<ID4>",
+          "title": "Maestro checkpoint visibility validation",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"title_source\": \"metadata_lifecycle_apply\", \"title_status\": \"generated\", \"previous_title\": \"vamos trabalhar no maestro\", \"metadata_lifecycle_version\": 1, \"last_metadata_update_source\": \"metadata_lifecycle_apply\"}"
+        },
+        "manual_lock": {
+          "id": "<ID5>",
+          "title": "Manual conversation title",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"previous_title\": \"Initial title\", \"title_source\": \"manual\", \"title_status\": \"manual\"}"
+        },
+        "refine_candidate": {
+          "id": "<ID6>",
+          "title": "Initial editorial session",
+          "summary": "Editorial workflow for a manuscript. Scrivener import, cover briefing, Kindle export, EPUB validation, chapter cleanup, raw text hygiene.",
+          "tags": null,
+          "metadata": null
+        },
+        "summary_and_tags_ready": {
+          "id": "<ID7>",
+          "title": "primeiro assunto do dia",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"title_source\": \"first_user\", \"title_status\": \"provisional\"}"
+        },
+        "long_summary_target": {
+          "id": "<ID8>",
+          "title": null,
+          "summary": null,
+          "tags": null,
+          "metadata": null
+        },
+        "untitleable": {
+          "id": "<ID9>",
+          "title": null,
+          "summary": null,
+          "tags": null,
+          "metadata": null
+        }
+      },
+      "stderr_final_line": null,
+      "divergence": null
+    },
+    {
+      "label": "apply_refuses_a_refine_candidate",
+      "state": "refine_candidate",
+      "conversation_id": "<ID6>",
+      "extra_argv": [
+        "--title",
+        "Better editorial workflow title"
+      ],
+      "argv": [
+        "--metadata-lifecycle-apply",
+        "<ID6>",
+        "--title",
+        "Better editorial workflow title"
+      ],
+      "stdout": "{\n  \"conversation_id\": \"<ID6>\",\n  \"mode\": \"apply\",\n  \"mutated\": false,\n  \"changed\": {},\n  \"skipped\": {\n    \"title\": \"candidate_decision_requires_explicit_review\",\n    \"summary\": \"no_value_provided\",\n    \"tags\": \"no_value_provided\"\n  },\n  \"dry_run\": {\n    \"conversation_id\": \"<ID6>\",\n    \"mode\": \"dry_run\",\n    \"mutated\": false,\n    \"metadata_lifecycle_version\": 1,\n    \"fields\": {\n      \"title\": {\n        \"decision\": \"refine_candidate\",\n        \"reason\": \"later evidence is more specific than the current unlocked title\",\n        \"current_value\": \"Initial editorial session\",\n        \"readiness\": \"ready\",\n        \"provenance\": null,\n        \"lock_state\": \"unlocked\",\n        \"confidence\": \"medium\",\n        \"evidence\": {\n          \"confidence\": \"medium\",\n          \"title_terms\": [\n            \"editorial\",\n            \"initial\",\n            \"session\"\n          ],\n          \"summary_specific_terms\": [\n            \"briefing\",\n            \"chapter\",\n            \"cleanup\",\n            \"cover\",\n            \"epub\",\n            \"export\",\n            \"hygiene\",\n            \"import\",\n            \"kindle\",\n            \"manuscript\",\n            \"scrivener\",\n            \"text\"\n          ],\n          \"overlap_terms\": [\n            \"editorial\"\n          ]\n        }\n      },\n      \"summary\": {\n        \"decision\": \"keep\",\n        \"reason\": \"summary already exists\",\n        \"current_value\": \"Editorial workflow for a manuscript. Scrivener import, cover briefing, Kindle export, EPUB validation, chapter cleanup, raw text hygiene.\",\n        \"readiness\": \"ready\",\n        \"provenance\": \"stored\"\n      },\n      \"tags\": {\n        \"decision\": \"create\",\n        \"reason\": \"conversation has enough substance for tags\",\n        \"current_value\": null,\n        \"readiness\": \"ready\",\n        \"provenance\": null\n      }\n    }\n  }\n}\n",
+      "stderr": "",
+      "exit_code": 0,
+      "rows_after": {
+        "repair": {
+          "id": "<ID4>",
+          "title": "Maestro checkpoint visibility validation",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"title_source\": \"metadata_lifecycle_apply\", \"title_status\": \"generated\", \"previous_title\": \"vamos trabalhar no maestro\", \"metadata_lifecycle_version\": 1, \"last_metadata_update_source\": \"metadata_lifecycle_apply\"}"
+        },
+        "manual_lock": {
+          "id": "<ID5>",
+          "title": "Manual conversation title",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"previous_title\": \"Initial title\", \"title_source\": \"manual\", \"title_status\": \"manual\"}"
+        },
+        "refine_candidate": {
+          "id": "<ID6>",
+          "title": "Initial editorial session",
+          "summary": "Editorial workflow for a manuscript. Scrivener import, cover briefing, Kindle export, EPUB validation, chapter cleanup, raw text hygiene.",
+          "tags": null,
+          "metadata": null
+        },
+        "summary_and_tags_ready": {
+          "id": "<ID7>",
+          "title": "primeiro assunto do dia",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"title_source\": \"first_user\", \"title_status\": \"provisional\"}"
+        },
+        "long_summary_target": {
+          "id": "<ID8>",
+          "title": null,
+          "summary": null,
+          "tags": null,
+          "metadata": null
+        },
+        "untitleable": {
+          "id": "<ID9>",
+          "title": null,
+          "summary": null,
+          "tags": null,
+          "metadata": null
+        }
+      },
+      "stderr_final_line": null,
+      "divergence": null
+    },
+    {
+      "label": "apply_with_no_values",
+      "state": "repair",
+      "conversation_id": "<ID4>",
+      "extra_argv": [],
+      "argv": [
+        "--metadata-lifecycle-apply",
+        "<ID4>"
+      ],
+      "stdout": "{\n  \"conversation_id\": \"<ID4>\",\n  \"mode\": \"apply\",\n  \"mutated\": false,\n  \"changed\": {},\n  \"skipped\": {\n    \"title\": \"no_value_provided\",\n    \"summary\": \"no_value_provided\",\n    \"tags\": \"no_value_provided\"\n  },\n  \"dry_run\": {\n    \"conversation_id\": \"<ID4>\",\n    \"mode\": \"dry_run\",\n    \"mutated\": false,\n    \"metadata_lifecycle_version\": 1,\n    \"fields\": {\n      \"title\": {\n        \"decision\": \"keep\",\n        \"reason\": \"current title appears usable\",\n        \"current_value\": \"Maestro checkpoint visibility validation\",\n        \"readiness\": \"ready\",\n        \"provenance\": \"metadata_lifecycle_apply\",\n        \"lock_state\": \"unlocked\"\n      },\n      \"summary\": {\n        \"decision\": \"defer\",\n        \"reason\": \"summary needs more conversation substance\",\n        \"current_value\": null,\n        \"readiness\": \"not_ready\",\n        \"provenance\": null\n      },\n      \"tags\": {\n        \"decision\": \"defer\",\n        \"reason\": \"tags need more conversation substance\",\n        \"current_value\": null,\n        \"readiness\": \"not_ready\",\n        \"provenance\": null\n      }\n    }\n  }\n}\n",
+      "stderr": "",
+      "exit_code": 0,
+      "rows_after": {
+        "repair": {
+          "id": "<ID4>",
+          "title": "Maestro checkpoint visibility validation",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"title_source\": \"metadata_lifecycle_apply\", \"title_status\": \"generated\", \"previous_title\": \"vamos trabalhar no maestro\", \"metadata_lifecycle_version\": 1, \"last_metadata_update_source\": \"metadata_lifecycle_apply\"}"
+        },
+        "manual_lock": {
+          "id": "<ID5>",
+          "title": "Manual conversation title",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"previous_title\": \"Initial title\", \"title_source\": \"manual\", \"title_status\": \"manual\"}"
+        },
+        "refine_candidate": {
+          "id": "<ID6>",
+          "title": "Initial editorial session",
+          "summary": "Editorial workflow for a manuscript. Scrivener import, cover briefing, Kindle export, EPUB validation, chapter cleanup, raw text hygiene.",
+          "tags": null,
+          "metadata": null
+        },
+        "summary_and_tags_ready": {
+          "id": "<ID7>",
+          "title": "primeiro assunto do dia",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"title_source\": \"first_user\", \"title_status\": \"provisional\"}"
+        },
+        "long_summary_target": {
+          "id": "<ID8>",
+          "title": null,
+          "summary": null,
+          "tags": null,
+          "metadata": null
+        },
+        "untitleable": {
+          "id": "<ID9>",
+          "title": null,
+          "summary": null,
+          "tags": null,
+          "metadata": null
+        }
+      },
+      "stderr_final_line": null,
+      "divergence": null
+    },
+    {
+      "label": "apply_blank_summary_on_a_create_decision",
+      "state": "summary_and_tags_ready",
+      "conversation_id": "<ID7>",
+      "extra_argv": [
+        "--summary",
+        "   "
+      ],
+      "argv": [
+        "--metadata-lifecycle-apply",
+        "<ID7>",
+        "--summary",
+        "   "
+      ],
+      "stdout": "{\n  \"conversation_id\": \"<ID7>\",\n  \"mode\": \"apply\",\n  \"mutated\": false,\n  \"changed\": {},\n  \"skipped\": {\n    \"title\": \"no_value_provided\",\n    \"summary\": \"blank_value\",\n    \"tags\": \"no_value_provided\"\n  },\n  \"dry_run\": {\n    \"conversation_id\": \"<ID7>\",\n    \"mode\": \"dry_run\",\n    \"mutated\": false,\n    \"metadata_lifecycle_version\": 1,\n    \"fields\": {\n      \"title\": {\n        \"decision\": \"repair\",\n        \"reason\": \"current title is provisional or weak\",\n        \"current_value\": \"primeiro assunto do dia\",\n        \"readiness\": \"ready\",\n        \"provenance\": \"first_user\",\n        \"lock_state\": \"unlocked\"\n      },\n      \"summary\": {\n        \"decision\": \"create\",\n        \"reason\": \"conversation has enough substance for a summary\",\n        \"current_value\": null,\n        \"readiness\": \"ready\",\n        \"provenance\": null\n      },\n      \"tags\": {\n        \"decision\": \"create\",\n        \"reason\": \"conversation has enough substance for tags\",\n        \"current_value\": null,\n        \"readiness\": \"ready\",\n        \"provenance\": null\n      }\n    }\n  }\n}\n",
+      "stderr": "",
+      "exit_code": 0,
+      "rows_after": {
+        "repair": {
+          "id": "<ID4>",
+          "title": "Maestro checkpoint visibility validation",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"title_source\": \"metadata_lifecycle_apply\", \"title_status\": \"generated\", \"previous_title\": \"vamos trabalhar no maestro\", \"metadata_lifecycle_version\": 1, \"last_metadata_update_source\": \"metadata_lifecycle_apply\"}"
+        },
+        "manual_lock": {
+          "id": "<ID5>",
+          "title": "Manual conversation title",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"previous_title\": \"Initial title\", \"title_source\": \"manual\", \"title_status\": \"manual\"}"
+        },
+        "refine_candidate": {
+          "id": "<ID6>",
+          "title": "Initial editorial session",
+          "summary": "Editorial workflow for a manuscript. Scrivener import, cover briefing, Kindle export, EPUB validation, chapter cleanup, raw text hygiene.",
+          "tags": null,
+          "metadata": null
+        },
+        "summary_and_tags_ready": {
+          "id": "<ID7>",
+          "title": "primeiro assunto do dia",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"title_source\": \"first_user\", \"title_status\": \"provisional\"}"
+        },
+        "long_summary_target": {
+          "id": "<ID8>",
+          "title": null,
+          "summary": null,
+          "tags": null,
+          "metadata": null
+        },
+        "untitleable": {
+          "id": "<ID9>",
+          "title": null,
+          "summary": null,
+          "tags": null,
+          "metadata": null
+        }
+      },
+      "stderr_final_line": null,
+      "divergence": null
+    },
+    {
+      "label": "apply_creates_a_summary_and_carries_deferred_tags",
+      "state": "summary_and_tags_ready",
+      "conversation_id": "<ID7>",
+      "extra_argv": [
+        "--summary",
+        "Planejamento editorial com os proximos passos acordados.",
+        "--tag",
+        "editorial",
+        "--tag",
+        "planejamento"
+      ],
+      "argv": [
+        "--metadata-lifecycle-apply",
+        "<ID7>",
+        "--summary",
+        "Planejamento editorial com os proximos passos acordados.",
+        "--tag",
+        "editorial",
+        "--tag",
+        "planejamento"
+      ],
+      "stdout": "{\n  \"conversation_id\": \"<ID7>\",\n  \"mode\": \"apply\",\n  \"mutated\": true,\n  \"changed\": {\n    \"summary\": \"Planejamento editorial com os proximos passos acordados.\",\n    \"tags\": [\n      \"editorial\",\n      \"planejamento\"\n    ]\n  },\n  \"skipped\": {\n    \"title\": \"no_value_provided\"\n  },\n  \"dry_run\": {\n    \"conversation_id\": \"<ID7>\",\n    \"mode\": \"dry_run\",\n    \"mutated\": false,\n    \"metadata_lifecycle_version\": 1,\n    \"fields\": {\n      \"title\": {\n        \"decision\": \"repair\",\n        \"reason\": \"current title is provisional or weak\",\n        \"current_value\": \"primeiro assunto do dia\",\n        \"readiness\": \"ready\",\n        \"provenance\": \"first_user\",\n        \"lock_state\": \"unlocked\"\n      },\n      \"summary\": {\n        \"decision\": \"create\",\n        \"reason\": \"conversation has enough substance for a summary\",\n        \"current_value\": null,\n        \"readiness\": \"ready\",\n        \"provenance\": null\n      },\n      \"tags\": {\n        \"decision\": \"create\",\n        \"reason\": \"conversation has enough substance for tags\",\n        \"current_value\": null,\n        \"readiness\": \"ready\",\n        \"provenance\": null\n      }\n    }\n  }\n}\n",
+      "stderr": "",
+      "exit_code": 0,
+      "rows_after": {
+        "repair": {
+          "id": "<ID4>",
+          "title": "Maestro checkpoint visibility validation",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"title_source\": \"metadata_lifecycle_apply\", \"title_status\": \"generated\", \"previous_title\": \"vamos trabalhar no maestro\", \"metadata_lifecycle_version\": 1, \"last_metadata_update_source\": \"metadata_lifecycle_apply\"}"
+        },
+        "manual_lock": {
+          "id": "<ID5>",
+          "title": "Manual conversation title",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"previous_title\": \"Initial title\", \"title_source\": \"manual\", \"title_status\": \"manual\"}"
+        },
+        "refine_candidate": {
+          "id": "<ID6>",
+          "title": "Initial editorial session",
+          "summary": "Editorial workflow for a manuscript. Scrivener import, cover briefing, Kindle export, EPUB validation, chapter cleanup, raw text hygiene.",
+          "tags": null,
+          "metadata": null
+        },
+        "summary_and_tags_ready": {
+          "id": "<ID7>",
+          "title": "primeiro assunto do dia",
+          "summary": "Planejamento editorial com os proximos passos acordados.",
+          "tags": "[\"editorial\", \"planejamento\"]",
+          "metadata": "{\"title_source\": \"first_user\", \"title_status\": \"provisional\", \"summary_status\": \"generated\", \"tags_status\": \"generated\", \"metadata_lifecycle_version\": 1, \"last_metadata_update_source\": \"metadata_lifecycle_apply\"}"
+        },
+        "long_summary_target": {
+          "id": "<ID8>",
+          "title": null,
+          "summary": null,
+          "tags": null,
+          "metadata": null
+        },
+        "untitleable": {
+          "id": "<ID9>",
+          "title": null,
+          "summary": null,
+          "tags": null,
+          "metadata": null
+        }
+      },
+      "stderr_final_line": null,
+      "divergence": null
+    },
+    {
+      "label": "apply_tags_after_the_summary_landed",
+      "state": "summary_and_tags_ready",
+      "conversation_id": "<ID7>",
+      "extra_argv": [
+        "--tag",
+        "tarde-demais"
+      ],
+      "argv": [
+        "--metadata-lifecycle-apply",
+        "<ID7>",
+        "--tag",
+        "tarde-demais"
+      ],
+      "stdout": "{\n  \"conversation_id\": \"<ID7>\",\n  \"mode\": \"apply\",\n  \"mutated\": false,\n  \"changed\": {},\n  \"skipped\": {\n    \"title\": \"no_value_provided\",\n    \"summary\": \"no_value_provided\",\n    \"tags\": \"decision_keep_not_applied\"\n  },\n  \"dry_run\": {\n    \"conversation_id\": \"<ID7>\",\n    \"mode\": \"dry_run\",\n    \"mutated\": false,\n    \"metadata_lifecycle_version\": 1,\n    \"fields\": {\n      \"title\": {\n        \"decision\": \"repair\",\n        \"reason\": \"current title is provisional or weak\",\n        \"current_value\": \"primeiro assunto do dia\",\n        \"readiness\": \"ready\",\n        \"provenance\": \"first_user\",\n        \"lock_state\": \"unlocked\"\n      },\n      \"summary\": {\n        \"decision\": \"keep\",\n        \"reason\": \"summary already exists\",\n        \"current_value\": \"Planejamento editorial com os proximos passos acordados.\",\n        \"readiness\": \"ready\",\n        \"provenance\": \"stored\"\n      },\n      \"tags\": {\n        \"decision\": \"keep\",\n        \"reason\": \"tags already exist\",\n        \"current_value\": \"[\\\"editorial\\\", \\\"planejamento\\\"]\",\n        \"readiness\": \"ready\",\n        \"provenance\": \"stored\"\n      }\n    }\n  }\n}\n",
+      "stderr": "",
+      "exit_code": 0,
+      "rows_after": {
+        "repair": {
+          "id": "<ID4>",
+          "title": "Maestro checkpoint visibility validation",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"title_source\": \"metadata_lifecycle_apply\", \"title_status\": \"generated\", \"previous_title\": \"vamos trabalhar no maestro\", \"metadata_lifecycle_version\": 1, \"last_metadata_update_source\": \"metadata_lifecycle_apply\"}"
+        },
+        "manual_lock": {
+          "id": "<ID5>",
+          "title": "Manual conversation title",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"previous_title\": \"Initial title\", \"title_source\": \"manual\", \"title_status\": \"manual\"}"
+        },
+        "refine_candidate": {
+          "id": "<ID6>",
+          "title": "Initial editorial session",
+          "summary": "Editorial workflow for a manuscript. Scrivener import, cover briefing, Kindle export, EPUB validation, chapter cleanup, raw text hygiene.",
+          "tags": null,
+          "metadata": null
+        },
+        "summary_and_tags_ready": {
+          "id": "<ID7>",
+          "title": "primeiro assunto do dia",
+          "summary": "Planejamento editorial com os proximos passos acordados.",
+          "tags": "[\"editorial\", \"planejamento\"]",
+          "metadata": "{\"title_source\": \"first_user\", \"title_status\": \"provisional\", \"summary_status\": \"generated\", \"tags_status\": \"generated\", \"metadata_lifecycle_version\": 1, \"last_metadata_update_source\": \"metadata_lifecycle_apply\"}"
+        },
+        "long_summary_target": {
+          "id": "<ID8>",
+          "title": null,
+          "summary": null,
+          "tags": null,
+          "metadata": null
+        },
+        "untitleable": {
+          "id": "<ID9>",
+          "title": null,
+          "summary": null,
+          "tags": null,
+          "metadata": null
+        }
+      },
+      "stderr_final_line": null,
+      "divergence": null
+    },
+    {
+      "label": "apply_a_summary_that_is_already_stored",
+      "state": "refine_candidate",
+      "conversation_id": "<ID6>",
+      "extra_argv": [
+        "--summary",
+        "A replacement summary"
+      ],
+      "argv": [
+        "--metadata-lifecycle-apply",
+        "<ID6>",
+        "--summary",
+        "A replacement summary"
+      ],
+      "stdout": "{\n  \"conversation_id\": \"<ID6>\",\n  \"mode\": \"apply\",\n  \"mutated\": false,\n  \"changed\": {},\n  \"skipped\": {\n    \"title\": \"candidate_decision_requires_explicit_review\",\n    \"summary\": \"decision_keep_not_applied\",\n    \"tags\": \"no_value_provided\"\n  },\n  \"dry_run\": {\n    \"conversation_id\": \"<ID6>\",\n    \"mode\": \"dry_run\",\n    \"mutated\": false,\n    \"metadata_lifecycle_version\": 1,\n    \"fields\": {\n      \"title\": {\n        \"decision\": \"refine_candidate\",\n        \"reason\": \"later evidence is more specific than the current unlocked title\",\n        \"current_value\": \"Initial editorial session\",\n        \"readiness\": \"ready\",\n        \"provenance\": null,\n        \"lock_state\": \"unlocked\",\n        \"confidence\": \"medium\",\n        \"evidence\": {\n          \"confidence\": \"medium\",\n          \"title_terms\": [\n            \"editorial\",\n            \"initial\",\n            \"session\"\n          ],\n          \"summary_specific_terms\": [\n            \"briefing\",\n            \"chapter\",\n            \"cleanup\",\n            \"cover\",\n            \"epub\",\n            \"export\",\n            \"hygiene\",\n            \"import\",\n            \"kindle\",\n            \"manuscript\",\n            \"scrivener\",\n            \"text\"\n          ],\n          \"overlap_terms\": [\n            \"editorial\"\n          ]\n        }\n      },\n      \"summary\": {\n        \"decision\": \"keep\",\n        \"reason\": \"summary already exists\",\n        \"current_value\": \"Editorial workflow for a manuscript. Scrivener import, cover briefing, Kindle export, EPUB validation, chapter cleanup, raw text hygiene.\",\n        \"readiness\": \"ready\",\n        \"provenance\": \"stored\"\n      },\n      \"tags\": {\n        \"decision\": \"create\",\n        \"reason\": \"conversation has enough substance for tags\",\n        \"current_value\": null,\n        \"readiness\": \"ready\",\n        \"provenance\": null\n      }\n    }\n  }\n}\n",
+      "stderr": "",
+      "exit_code": 0,
+      "rows_after": {
+        "repair": {
+          "id": "<ID4>",
+          "title": "Maestro checkpoint visibility validation",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"title_source\": \"metadata_lifecycle_apply\", \"title_status\": \"generated\", \"previous_title\": \"vamos trabalhar no maestro\", \"metadata_lifecycle_version\": 1, \"last_metadata_update_source\": \"metadata_lifecycle_apply\"}"
+        },
+        "manual_lock": {
+          "id": "<ID5>",
+          "title": "Manual conversation title",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"previous_title\": \"Initial title\", \"title_source\": \"manual\", \"title_status\": \"manual\"}"
+        },
+        "refine_candidate": {
+          "id": "<ID6>",
+          "title": "Initial editorial session",
+          "summary": "Editorial workflow for a manuscript. Scrivener import, cover briefing, Kindle export, EPUB validation, chapter cleanup, raw text hygiene.",
+          "tags": null,
+          "metadata": null
+        },
+        "summary_and_tags_ready": {
+          "id": "<ID7>",
+          "title": "primeiro assunto do dia",
+          "summary": "Planejamento editorial com os proximos passos acordados.",
+          "tags": "[\"editorial\", \"planejamento\"]",
+          "metadata": "{\"title_source\": \"first_user\", \"title_status\": \"provisional\", \"summary_status\": \"generated\", \"tags_status\": \"generated\", \"metadata_lifecycle_version\": 1, \"last_metadata_update_source\": \"metadata_lifecycle_apply\"}"
+        },
+        "long_summary_target": {
+          "id": "<ID8>",
+          "title": null,
+          "summary": null,
+          "tags": null,
+          "metadata": null
+        },
+        "untitleable": {
+          "id": "<ID9>",
+          "title": null,
+          "summary": null,
+          "tags": null,
+          "metadata": null
+        }
+      },
+      "stderr_final_line": null,
+      "divergence": null
+    },
+    {
+      "label": "apply_truncates_a_long_summary_by_code_points",
+      "state": "long_summary_target",
+      "conversation_id": "<ID8>",
+      "extra_argv": [
+        "--summary",
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa😀bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      ],
+      "argv": [
+        "--metadata-lifecycle-apply",
+        "<ID8>",
+        "--summary",
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa😀bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      ],
+      "stdout": "{\n  \"conversation_id\": \"<ID8>\",\n  \"mode\": \"apply\",\n  \"mutated\": true,\n  \"changed\": {\n    \"summary\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa😀\"\n  },\n  \"skipped\": {\n    \"title\": \"no_value_provided\",\n    \"tags\": \"no_value_provided\"\n  },\n  \"dry_run\": {\n    \"conversation_id\": \"<ID8>\",\n    \"mode\": \"dry_run\",\n    \"mutated\": false,\n    \"metadata_lifecycle_version\": 1,\n    \"fields\": {\n      \"title\": {\n        \"decision\": \"create\",\n        \"reason\": \"conversation has no title\",\n        \"current_value\": null,\n        \"readiness\": \"ready\",\n        \"provenance\": null,\n        \"lock_state\": \"unlocked\"\n      },\n      \"summary\": {\n        \"decision\": \"create\",\n        \"reason\": \"conversation has enough substance for a summary\",\n        \"current_value\": null,\n        \"readiness\": \"ready\",\n        \"provenance\": null\n      },\n      \"tags\": {\n        \"decision\": \"create\",\n        \"reason\": \"conversation has enough substance for tags\",\n        \"current_value\": null,\n        \"readiness\": \"ready\",\n        \"provenance\": null\n      }\n    }\n  }\n}\n",
+      "stderr": "",
+      "exit_code": 0,
+      "rows_after": {
+        "repair": {
+          "id": "<ID4>",
+          "title": "Maestro checkpoint visibility validation",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"title_source\": \"metadata_lifecycle_apply\", \"title_status\": \"generated\", \"previous_title\": \"vamos trabalhar no maestro\", \"metadata_lifecycle_version\": 1, \"last_metadata_update_source\": \"metadata_lifecycle_apply\"}"
+        },
+        "manual_lock": {
+          "id": "<ID5>",
+          "title": "Manual conversation title",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"previous_title\": \"Initial title\", \"title_source\": \"manual\", \"title_status\": \"manual\"}"
+        },
+        "refine_candidate": {
+          "id": "<ID6>",
+          "title": "Initial editorial session",
+          "summary": "Editorial workflow for a manuscript. Scrivener import, cover briefing, Kindle export, EPUB validation, chapter cleanup, raw text hygiene.",
+          "tags": null,
+          "metadata": null
+        },
+        "summary_and_tags_ready": {
+          "id": "<ID7>",
+          "title": "primeiro assunto do dia",
+          "summary": "Planejamento editorial com os proximos passos acordados.",
+          "tags": "[\"editorial\", \"planejamento\"]",
+          "metadata": "{\"title_source\": \"first_user\", \"title_status\": \"provisional\", \"summary_status\": \"generated\", \"tags_status\": \"generated\", \"metadata_lifecycle_version\": 1, \"last_metadata_update_source\": \"metadata_lifecycle_apply\"}"
+        },
+        "long_summary_target": {
+          "id": "<ID8>",
+          "title": null,
+          "summary": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa😀",
+          "tags": null,
+          "metadata": "{\"summary_status\": \"generated\", \"metadata_lifecycle_version\": 1, \"last_metadata_update_source\": \"metadata_lifecycle_apply\"}"
+        },
+        "untitleable": {
+          "id": "<ID9>",
+          "title": null,
+          "summary": null,
+          "tags": null,
+          "metadata": null
+        }
+      },
+      "stderr_final_line": null,
+      "divergence": null
+    },
+    {
+      "label": "apply_on_an_untitleable_conversation",
+      "state": "untitleable",
+      "conversation_id": "<ID9>",
+      "extra_argv": [
+        "--title",
+        "A title for a conversation with no messages"
+      ],
+      "argv": [
+        "--metadata-lifecycle-apply",
+        "<ID9>",
+        "--title",
+        "A title for a conversation with no messages"
+      ],
+      "stdout": "{\n  \"conversation_id\": \"<ID9>\",\n  \"mode\": \"apply\",\n  \"mutated\": false,\n  \"changed\": {},\n  \"skipped\": {\n    \"title\": \"decision_defer_not_applied\",\n    \"summary\": \"no_value_provided\",\n    \"tags\": \"no_value_provided\"\n  },\n  \"dry_run\": {\n    \"conversation_id\": \"<ID9>\",\n    \"mode\": \"dry_run\",\n    \"mutated\": false,\n    \"metadata_lifecycle_version\": 1,\n    \"fields\": {\n      \"title\": {\n        \"decision\": \"defer\",\n        \"reason\": \"conversation needs at least one user and one assistant message\",\n        \"current_value\": null,\n        \"readiness\": \"not_ready\",\n        \"provenance\": null,\n        \"lock_state\": \"unlocked\"\n      },\n      \"summary\": {\n        \"decision\": \"defer\",\n        \"reason\": \"summary needs more conversation substance\",\n        \"current_value\": null,\n        \"readiness\": \"not_ready\",\n        \"provenance\": null\n      },\n      \"tags\": {\n        \"decision\": \"defer\",\n        \"reason\": \"tags need more conversation substance\",\n        \"current_value\": null,\n        \"readiness\": \"not_ready\",\n        \"provenance\": null\n      }\n    }\n  }\n}\n",
+      "stderr": "",
+      "exit_code": 0,
+      "rows_after": {
+        "repair": {
+          "id": "<ID4>",
+          "title": "Maestro checkpoint visibility validation",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"title_source\": \"metadata_lifecycle_apply\", \"title_status\": \"generated\", \"previous_title\": \"vamos trabalhar no maestro\", \"metadata_lifecycle_version\": 1, \"last_metadata_update_source\": \"metadata_lifecycle_apply\"}"
+        },
+        "manual_lock": {
+          "id": "<ID5>",
+          "title": "Manual conversation title",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"previous_title\": \"Initial title\", \"title_source\": \"manual\", \"title_status\": \"manual\"}"
+        },
+        "refine_candidate": {
+          "id": "<ID6>",
+          "title": "Initial editorial session",
+          "summary": "Editorial workflow for a manuscript. Scrivener import, cover briefing, Kindle export, EPUB validation, chapter cleanup, raw text hygiene.",
+          "tags": null,
+          "metadata": null
+        },
+        "summary_and_tags_ready": {
+          "id": "<ID7>",
+          "title": "primeiro assunto do dia",
+          "summary": "Planejamento editorial com os proximos passos acordados.",
+          "tags": "[\"editorial\", \"planejamento\"]",
+          "metadata": "{\"title_source\": \"first_user\", \"title_status\": \"provisional\", \"summary_status\": \"generated\", \"tags_status\": \"generated\", \"metadata_lifecycle_version\": 1, \"last_metadata_update_source\": \"metadata_lifecycle_apply\"}"
+        },
+        "long_summary_target": {
+          "id": "<ID8>",
+          "title": null,
+          "summary": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa😀",
+          "tags": null,
+          "metadata": "{\"summary_status\": \"generated\", \"metadata_lifecycle_version\": 1, \"last_metadata_update_source\": \"metadata_lifecycle_apply\"}"
+        },
+        "untitleable": {
+          "id": "<ID9>",
+          "title": null,
+          "summary": null,
+          "tags": null,
+          "metadata": null
+        }
+      },
+      "stderr_final_line": null,
+      "divergence": null
+    },
+    {
+      "label": "apply_unknown_conversation",
+      "state": null,
+      "conversation_id": "does-not-exist",
+      "extra_argv": [
+        "--title",
+        "Nobody"
+      ],
+      "argv": [
+        "--metadata-lifecycle-apply",
+        "does-not-exist",
+        "--title",
+        "Nobody"
+      ],
+      "stdout": "",
+      "stderr": null,
+      "exit_code": 1,
+      "rows_after": {
+        "repair": {
+          "id": "<ID4>",
+          "title": "Maestro checkpoint visibility validation",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"title_source\": \"metadata_lifecycle_apply\", \"title_status\": \"generated\", \"previous_title\": \"vamos trabalhar no maestro\", \"metadata_lifecycle_version\": 1, \"last_metadata_update_source\": \"metadata_lifecycle_apply\"}"
+        },
+        "manual_lock": {
+          "id": "<ID5>",
+          "title": "Manual conversation title",
+          "summary": null,
+          "tags": null,
+          "metadata": "{\"previous_title\": \"Initial title\", \"title_source\": \"manual\", \"title_status\": \"manual\"}"
+        },
+        "refine_candidate": {
+          "id": "<ID6>",
+          "title": "Initial editorial session",
+          "summary": "Editorial workflow for a manuscript. Scrivener import, cover briefing, Kindle export, EPUB validation, chapter cleanup, raw text hygiene.",
+          "tags": null,
+          "metadata": null
+        },
+        "summary_and_tags_ready": {
+          "id": "<ID7>",
+          "title": "primeiro assunto do dia",
+          "summary": "Planejamento editorial com os proximos passos acordados.",
+          "tags": "[\"editorial\", \"planejamento\"]",
+          "metadata": "{\"title_source\": \"first_user\", \"title_status\": \"provisional\", \"summary_status\": \"generated\", \"tags_status\": \"generated\", \"metadata_lifecycle_version\": 1, \"last_metadata_update_source\": \"metadata_lifecycle_apply\"}"
+        },
+        "long_summary_target": {
+          "id": "<ID8>",
+          "title": null,
+          "summary": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa😀",
+          "tags": null,
+          "metadata": "{\"summary_status\": \"generated\", \"metadata_lifecycle_version\": 1, \"last_metadata_update_source\": \"metadata_lifecycle_apply\"}"
+        },
+        "untitleable": {
+          "id": "<ID9>",
+          "title": null,
+          "summary": null,
+          "tags": null,
+          "metadata": null
+        }
+      },
+      "stderr_final_line": "ValueError: Conversation 'does-not-exist' not found",
+      "divergence": "python_traceback"
+    }
+  ],
+  "demo": {
+    "argv": [
+      "--metadata-lifecycle-demo"
+    ],
+    "stdout": "{\n  \"mode\": \"metadata_lifecycle_demo\",\n  \"uses_production_data\": false,\n  \"passed\": true,\n  \"checks\": {\n    \"preview_non_mutating\": true,\n    \"apply_changed_title\": true,\n    \"manual_lock_preserved\": true,\n    \"refine_candidate_skipped\": true\n  },\n  \"scenarios\": {\n    \"preview\": {\n      \"conversation_id\": \"<ID1>\",\n      \"mode\": \"dry_run\",\n      \"mutated\": false,\n      \"metadata_lifecycle_version\": 1,\n      \"fields\": {\n        \"title\": {\n          \"decision\": \"repair\",\n          \"reason\": \"current title is provisional or weak\",\n          \"current_value\": \"vamos trabalhar no maestro\",\n          \"readiness\": \"ready\",\n          \"provenance\": \"first_user\",\n          \"lock_state\": \"unlocked\"\n        },\n        \"summary\": {\n          \"decision\": \"defer\",\n          \"reason\": \"summary needs more conversation substance\",\n          \"current_value\": null,\n          \"readiness\": \"not_ready\",\n          \"provenance\": null\n        },\n        \"tags\": {\n          \"decision\": \"defer\",\n          \"reason\": \"tags need more conversation substance\",\n          \"current_value\": null,\n          \"readiness\": \"not_ready\",\n          \"provenance\": null\n        }\n      }\n    },\n    \"apply\": {\n      \"report\": {\n        \"conversation_id\": \"<ID1>\",\n        \"mode\": \"apply\",\n        \"mutated\": true,\n        \"changed\": {\n          \"title\": \"Maestro checkpoint visibility validation\"\n        },\n        \"skipped\": {\n          \"summary\": \"decision_defer_not_applied\",\n          \"tags\": \"decision_defer_not_applied\"\n        },\n        \"dry_run\": {\n          \"conversation_id\": \"<ID1>\",\n          \"mode\": \"dry_run\",\n          \"mutated\": false,\n          \"metadata_lifecycle_version\": 1,\n          \"fields\": {\n            \"title\": {\n              \"decision\": \"repair\",\n              \"reason\": \"current title is provisional or weak\",\n              \"current_value\": \"vamos trabalhar no maestro\",\n              \"readiness\": \"ready\",\n              \"provenance\": \"first_user\",\n              \"lock_state\": \"unlocked\"\n            },\n            \"summary\": {\n              \"decision\": \"defer\",\n              \"reason\": \"summary needs more conversation substance\",\n              \"current_value\": null,\n              \"readiness\": \"not_ready\",\n              \"provenance\": null\n            },\n            \"tags\": {\n              \"decision\": \"defer\",\n              \"reason\": \"tags need more conversation substance\",\n              \"current_value\": null,\n              \"readiness\": \"not_ready\",\n              \"provenance\": null\n            }\n          }\n        }\n      },\n      \"after\": {\n        \"title\": \"Maestro checkpoint visibility validation\",\n        \"summary\": null,\n        \"tags\": null\n      }\n    },\n    \"manual_lock\": {\n      \"conversation_id\": \"<ID2>\",\n      \"mode\": \"apply\",\n      \"mutated\": false,\n      \"changed\": {},\n      \"skipped\": {\n        \"title\": \"manual_lock_preserved\",\n        \"summary\": \"no_value_provided\",\n        \"tags\": \"no_value_provided\"\n      },\n      \"dry_run\": {\n        \"conversation_id\": \"<ID2>\",\n        \"mode\": \"dry_run\",\n        \"mutated\": false,\n        \"metadata_lifecycle_version\": 1,\n        \"fields\": {\n          \"title\": {\n            \"decision\": \"preserve\",\n            \"reason\": \"manual title lock is preserved\",\n            \"current_value\": \"Manual conversation title\",\n            \"readiness\": \"locked\",\n            \"provenance\": \"manual\",\n            \"lock_state\": \"manual_locked\"\n          },\n          \"summary\": {\n            \"decision\": \"defer\",\n            \"reason\": \"summary needs more conversation substance\",\n            \"current_value\": null,\n            \"readiness\": \"not_ready\",\n            \"provenance\": null\n          },\n          \"tags\": {\n            \"decision\": \"defer\",\n            \"reason\": \"tags need more conversation substance\",\n            \"current_value\": null,\n            \"readiness\": \"not_ready\",\n            \"provenance\": null\n          }\n        }\n      }\n    },\n    \"refine_candidate\": {\n      \"conversation_id\": \"<ID3>\",\n      \"mode\": \"apply\",\n      \"mutated\": false,\n      \"changed\": {},\n      \"skipped\": {\n        \"title\": \"candidate_decision_requires_explicit_review\",\n        \"summary\": \"no_value_provided\",\n        \"tags\": \"no_value_provided\"\n      },\n      \"dry_run\": {\n        \"conversation_id\": \"<ID3>\",\n        \"mode\": \"dry_run\",\n        \"mutated\": false,\n        \"metadata_lifecycle_version\": 1,\n        \"fields\": {\n          \"title\": {\n            \"decision\": \"refine_candidate\",\n            \"reason\": \"later evidence is more specific than the current unlocked title\",\n            \"current_value\": \"Initial editorial session\",\n            \"readiness\": \"ready\",\n            \"provenance\": null,\n            \"lock_state\": \"unlocked\",\n            \"confidence\": \"medium\",\n            \"evidence\": {\n              \"confidence\": \"medium\",\n              \"title_terms\": [\n                \"editorial\",\n                \"initial\",\n                \"session\"\n              ],\n              \"summary_specific_terms\": [\n                \"albino\",\n                \"briefing\",\n                \"chapter\",\n                \"cleanup\",\n                \"cover\",\n                \"epub\",\n                \"export\",\n                \"hygiene\",\n                \"import\",\n                \"kindle\",\n                \"manuscript\",\n                \"raphael\"\n              ],\n              \"overlap_terms\": [\n                \"editorial\"\n              ]\n            }\n          },\n          \"summary\": {\n            \"decision\": \"keep\",\n            \"reason\": \"summary already exists\",\n            \"current_value\": \"Editorial workflow for Raphael Albino manuscript. Scrivener import, cover briefing, Kindle export, EPUB validation, chapter cleanup, raw text hygiene.\",\n            \"readiness\": \"ready\",\n            \"provenance\": \"stored\"\n          },\n          \"tags\": {\n            \"decision\": \"create\",\n            \"reason\": \"conversation has enough substance for tags\",\n            \"current_value\": null,\n            \"readiness\": \"ready\",\n            \"provenance\": null\n          }\n        }\n      }\n    }\n  }\n}\n",
+    "stderr": "",
+    "exit_code": 0,
+    "alias_count": 3
+  }
+}

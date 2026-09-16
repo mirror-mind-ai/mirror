@@ -2,7 +2,7 @@
 
 # Handoff — CV22.DS7.TS4 — Ops/utility tail 3: extension catalog
 
-**Status:** plateaus 1-5 of 8 complete. The **catalog reads** answer from
+**Status:** plateaus 1-6 of 8 complete. The **catalog reads** answer from
 TypeScript — `extensions list|validate` (with the runtime filter and every
 usage refusal), `ext list`, `list extensions`, `inspect extension`, and
 `inspect runtime-catalog` — graded against 32 recorded Python invocations, and
@@ -24,24 +24,38 @@ cases carrying the complete file tree of the mirror home, the runtime target
 root, and the Claude project root, plus the rows, and a live both-engine
 `extension_install` probe on a copy of a real database.
 
+Plateau 6 adds the **editor seam and the ES-001 write faces** — `identity edit`
+with a scripted editor, `conversations --metadata-lifecycle-apply` graded on the
+report AND the row it leaves, and `--metadata-lifecycle-demo` compared as a
+whole document with ids aliased.
+
 **Nothing is routed:** `routing.ts` still sends the whole family to Python,
 which is the intended state until plateau 7 adds the routes and plateau 8
 flips the gates.
 
 ## Resume here
 
-**Next: plateau 6 — `identity edit` (Scope F) and the ES-001 metadata-lifecycle
-write faces (Scope G).** Then plateau 7 wires the front door with the three D2
-gates, and plateau 8 flips them. Nothing in this family is routed yet.
+**Next: plateau 7 — the front door (Scope H).** Routes with the three D2 gates
+(`MIRROR_TS_EXTENSIONS`, `MIRROR_TS_IDENTITY_EDIT`, and the existing
+`MIRROR_TS_CONVERSATIONS_LIFECYCLE`), the two-level allowlist for `ext`
+(built-in verbs by name, `<id> <subcommand>` as the dynamic leaf), refusals
+through the process boundary, redaction with extension argv sentinels,
+`build`-style `leaf=` logging, and oracle registration for the nine Python
+modules the Plan names. Then plateau 8 flips the gates.
 
-What plateau 6 owes: `spawnSync($EDITOR)` with a 0600 temp file removed on every
-path, the empty-content refusal, the save through the ported identity write;
-then `applyMetadataLifecycle` over the existing `dryRunMetadataLifecycle`, every
-decision branch from `test_conversation_metadata_lifecycle.py`, the `demo`
-report byte-identical, and the `metadata_lifecycle_apply` write probe. The
-quality-assurance panel named the corpus it needs: a copy holding a manually
-locked title, a refine candidate, and a deferred-tags conversation, or the
-branches are theory.
+Everything the family needs is now ported. Nothing is routed: `routing.ts`
+still sends all of it to Python.
+
+What landed in plateau 6:
+
+- `ts/src/conversation/lifecycleWrites.ts` — `applyMetadataLifecycle` over the
+  engine US10 ported, plus the two title writes the demo scripts and the demo
+  report itself;
+- `ts/src/identity/identityEdit.ts` — the `$EDITOR` seam, the 0600 buffer, and
+  the three refusals, applying through the SAME `applyIdentitySet` that
+  `identity set` uses so both commands report one verb from one check;
+- `ts/parity/generate_lifecycle_write_golden.py` and
+  `ts/parity/generate_identity_edit_golden.py`, both in the CI determinism gate.
 
 What landed in plateau 5:
 
@@ -126,6 +140,45 @@ What landed in plateau 1:
   fields the renderers print, exactly where TS3 said TS4 would extend it;
 - `ts/parity/generate_extension_catalog_golden.py` and its fixture tree, in the
   CI determinism gate with their own `git diff` check.
+
+## Rules plateau 6 paid for — do not rediscover them
+
+- **A shipped, flipped face was reading three columns of five.** The US11
+  read face selected `id, title, metadata` and handed it to an engine that also
+  reads `summary` and `tags`, so every conversation carrying either got a
+  different report from each core. Fixed and committed separately; its corpus
+  now seeds a conversation that has both.
+- **The flag is `--tag`, singular and REPEATABLE**, with `dest="tags"`. There is
+  no `--tags`; the plural spelling is an argparse error. A port written from the
+  parameter name would offer an option Python refuses.
+- **`no_value_provided` is a different fact from `decision_X_not_applied`** and
+  is reported as one: the first says nobody offered a value, the second says a
+  value was offered and the decision refused it.
+- **The summary truncation counts CODE POINTS.** A UTF-16 slice at 1000 cuts a
+  surrogate pair in half and stores a lone surrogate; the corpus straddles the
+  boundary with an astral character.
+- **`identity edit` refuses three ways and saves nothing in all of them**: a
+  non-zero editor exit is an abort (`:cq` means discard), blank content is
+  refused, and an unchanged buffer writes nothing at all. The temp file is 0600
+  and removed on every path, including the refusals.
+- **A test that can launch a real editor can hang CI forever.** This file's
+  first version resolved one case to `nano`, which opened on the runner's
+  terminal and never returned. The replay now refuses to spawn anything but the
+  corpus's own scripted editors — a failure is strictly better than a hang,
+  because CI has nobody to press Ctrl-X.
+- **A killed mutation run can leave a mutant in the tree.** The first mutation
+  harness died at the shell timeout before its `finally`, leaving
+  `resolveEditor` without its VISUAL fallback — which is exactly what launched
+  that `nano`. The harness now keeps a pristine copy outside the tree, restores
+  before AND after each mutant, bounds every run, and verifies the tree at the
+  end.
+- **Two survivors here are equivalent, and the reason is worth keeping.** The
+  `tags_ready_after_summary` branch cannot fire: both decisions flip at four
+  substantive messages, so `tags: defer` and `summary: create` cannot co-occur.
+  A test pins that coupling instead, so a future policy change that separates
+  the thresholds makes the branch live and fails loudly. The `previous_title`
+  guard is likewise unobservable — when the values are equal the assignment is
+  a no-op — and is kept because Python keeps it.
 
 ## Rules plateau 5 paid for — do not rediscover them
 

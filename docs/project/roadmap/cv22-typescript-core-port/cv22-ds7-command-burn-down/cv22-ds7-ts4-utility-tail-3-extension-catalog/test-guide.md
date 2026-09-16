@@ -315,3 +315,75 @@ advertising a real corpus while grading a fresh one. Its second version froze
 only the catalog's clock, leaving the migration ledger's `applied_at` live, so
 it produced a different hash on every run. A probe that cannot repeat itself
 cannot grade anything.
+
+### Plateau 6 — the editor seam and the ES-001 write faces
+
+**Before anything was ported, the corpus found a live defect in a SHIPPED
+face.** `--metadata-lifecycle-dry-run` has answered from TypeScript, ungated,
+since the US11 flip: it selected `id, title, metadata` and handed that row to an
+engine that also reads `summary` and `tags`. On a conversation carrying either,
+the two cores disagreed on all three decisions (`title=refine_candidate
+summary=keep tags=keep` in Python; `keep/defer/defer` in TypeScript). Fixed and
+committed on its own; the US11 corpus now seeds a conversation that has both
+columns, and re-dropping them is killed.
+
+`--metadata-lifecycle-apply`: 12 recorded cases, each graded on the report AND
+the conversation row afterwards — a report claiming `mutated: true` over a row
+that kept its old title is the defect a stream-only corpus cannot see. The
+seeded states are the ones the plan-stage quality-assurance panel named: a
+manually locked title, a refine candidate, and a deferred-tags conversation,
+each seeded through the real Python service so its metadata is authentic and
+recorded so the replay starts from identical rows.
+
+| Fact | Measured |
+|---|---|
+| The flag | `--tag`, singular and REPEATABLE (`dest="tags"`); the plural `--tags` is an argparse error |
+| `no_value_provided` | a different skip reason from `decision_X_not_applied`: nobody offered a value versus the decision refused one |
+| A manual lock | `manual_lock_preserved`, never overwritten, even with an explicit title |
+| A refine candidate | `candidate_decision_requires_explicit_review` — a decision that needs a human, not a value |
+| A blank summary | `blank_value`, distinct from a missing one |
+| Summary truncation | a slice at 1000 CODE POINTS; a UTF-16 slice would halve a surrogate pair |
+| A second apply | finds `keep` and writes nothing, which is why `previous_title` keeps the title a human actually saw |
+
+`--metadata-lifecycle-demo` is compared as a whole document, ids aliased in
+first-seen order; both engines script the same in-memory world and must reach
+the same four checks.
+
+`identity edit`: 9 recorded cases, each driving a POSIX `sh` editor script
+carried in the golden so both engines run the IDENTICAL editor, and each graded
+on the streams, the exit code, and the identity rows afterwards. The temp file's
+0600 mode and its removal are asserted in the test rather than recorded: they
+are about the file handed to another program, not about output. Measured on the
+real CLI: `mirror-identity-ego-behavior-nk5f8xjr.md`, mode `0o600`, holding the
+current content.
+
+| Fact | Measured |
+|---|---|
+| Editor resolution | `EDITOR`, then `VISUAL`, then `nano` — an EMPTY value falls through like an unset one |
+| A failed editor | `Editor exited with code N. Aborted.` on stderr at exit 1, saving nothing |
+| Blank content | `Content is empty after editing. No changes saved.` on stderr at exit 1 |
+| An unchanged buffer | `No changes detected.` on stdout at exit 0, with no write at all |
+| A missing key | `✓ ego/fresh created`, sharing `identity set`'s created/updated verb |
+
+**Checks:** 12/12 apply cases equal in report and rows, the demo document equal,
+9/9 edit cases equal in streams and rows; **12 of 14 mutants killed**, each
+asserted to have changed the file first. Both corpora regenerate identically
+under both CI interpreters. TS suite 2,247 pass; typecheck clean; biome clean
+except the pre-existing `routing.ts` warning.
+
+**Two survivors are equivalent, and the reason is recorded rather than papered
+over.** The `tags_ready_after_summary` branch cannot fire: both decisions flip
+at four substantive messages, so `tags: defer` and `summary: create` cannot
+co-occur. A test now pins that coupling, so a policy change that separates the
+thresholds makes the branch live and fails loudly. The `previous_title` guard is
+unobservable for the same kind of reason — when the values are equal the
+assignment is a no-op — and is kept because Python keeps it.
+
+**Two process defects, both worth more than the code they produced.** A test
+case resolved to `nano`, which opened a real interactive editor on the runner's
+terminal and hung; the replay now refuses to spawn anything but the corpus's own
+editors, because CI has nobody to press Ctrl-X. And the first mutation harness
+died at a shell timeout before its `finally`, leaving a mutant in the working
+tree — `resolveEditor` without its VISUAL fallback, which is what launched that
+`nano`. The harness now keeps a pristine copy outside the tree, restores before
+and after each mutant, bounds every run, and verifies the tree when it finishes.
