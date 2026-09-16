@@ -46,13 +46,22 @@ which is what plateau 8 changes.
 `identity edit` and the lifecycle write faces from its Python allowlist, and the
 burn-down ledger gets its per-leaf table and checklist.
 
-**The flip needs the Navigator first.** The Plan's Test Guide lists steps 1–4
-and 7 on the REAL home before the gates move: the read diff, `ext <id>` for
-every installed extension, one real extension subcommand through the compat
-host, the catalog lifecycle on a disposable home and target root, and one revert
-per family. Step 5 (`identity edit`) and step 6 (the lifecycle writes) are the
-Navigator's too. Nothing about plateau 8 is a code problem; it is an acceptance
-gate.
+**The flip needs the Navigator first, and the list is now short.**
+`ts/parity/ts4_home_copy_route.ts` runs the automatable half on a COPY of the
+real home — read-only at the source, every command against the copy — and on
+2026-09-16 every step was equal on both engines: the whole read diff, `ext <id>`
+for all SEVEN installed extensions through the compat host, one real read-only
+subcommand, the lifecycle demo, `identity edit` with a scripted editor, real
+`--metadata-lifecycle-apply` on one conversation per available decision state,
+and three revert drills. [Validation](validation.md) records it, together with
+the exact command sheet for the three steps that remain the Navigator's: step 3
+on the untouched home, step 5 with their own `$EDITOR`, and the acceptance pass
+of step 1.
+
+Two findings the copy produced: five of seven installed extensions are SYMLINKS
+into source repos (a `Dirent.isDirectory()` filter sees one of seven), and the
+real home holds ZERO manually locked titles, so that decision branch cannot be
+exercised on real data and is covered by the corpus instead.
 
 What landed in plateau 7:
 
