@@ -6,7 +6,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:f
 import { join } from "node:path";
 import test from "node:test";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
-import { setIdentity } from "#identity/setIdentity.ts";
+import { createJourney } from "#journey/journeyWrite.ts";
 
 const CLI = new URL("../../src/frontDoor/cli.ts", import.meta.url).pathname;
 
@@ -19,14 +19,21 @@ function fixture(): Fixture {
   const root = mkdtempSync("/tmp/builder-cli-");
   const home = join(root, "home");
   mkdirSync(home, { recursive: true });
+  // A NEUTRAL project directory: the clone-role guard `load` runs first judges
+  // the journey's project path, and with none it judges the SHELL's directory.
+  // The test runner's cwd is this repository, which carries a `dev` marker on a
+  // developer machine and none on a CI runner (default `production`, refusal,
+  // exit 2). The plateau-1 lesson yet again: stage inputs, never inherit them.
+  const project = join(root, "project");
+  mkdirSync(project, { recursive: true });
   const db = bootstrapDatabase(join(home, "memory.db"));
-  setIdentity(
+  createJourney(
     db,
     {
       id: "journey-demo",
-      layer: "journey",
-      key: "demo",
+      slug: "demo",
       content: "# Demo\n\n## Briefing\n\nBRIEFING_SECRET should never reach front-door.log.",
+      projectPath: project,
     },
     "2026-01-01T00:00:00Z",
   );
@@ -36,6 +43,7 @@ function fixture(): Fixture {
 
 function run(f: Fixture, args: readonly string[], extraEnv: NodeJS.ProcessEnv = {}) {
   const result = spawnSync(process.execPath, [CLI, ...args], {
+    cwd: f.root,
     encoding: "utf8",
     env: {
       PATH: process.env.PATH,
