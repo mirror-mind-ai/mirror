@@ -9,7 +9,7 @@
  * none of consult's models are in Python's 2-entry price table either.
  */
 
-import type { WritableDatabase } from "#db/database.ts";
+import type { Database, WritableDatabase } from "#db/database.ts";
 import { type LogLlmCallsMode, resolveLogLlmCallsMode } from "#providers/config.ts";
 import { newId, nowIso } from "#util/pyGenerators.ts";
 
@@ -103,7 +103,10 @@ export interface LlmCallSummary {
  * independently tested; an unconsumed but tested query is not dead code.
  */
 export function getLlmCallSummary(
-  db: WritableDatabase,
+  // A READ: widened from `WritableDatabase` at CV22.DS7.TS4 plateau 2, when
+  // `inspect llm-calls --summary` gave it its first caller and that caller
+  // opens the database read-only.
+  db: Database,
   options: { since?: string } = {},
 ): LlmCallSummary {
   const where = options.since ? "WHERE called_at >= ?" : "";

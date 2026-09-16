@@ -1,0 +1,226 @@
+{
+  "_purpose": "Seed rows for the `inspect llm-calls` / `inspect embedding-provenance` corpus (CV22.DS7.TS4 plateau 2). Each engine builds its OWN database from this file, so nothing binary is committed and both sides provably start from the same values.",
+  "_traps": [
+    "role and model are NOT NULL in the schema, so the renderer's `or '?'` branch is reachable only through an EMPTY STRING -- row ledger-08 is how that branch is exercised honestly.",
+    "ledger-06's prompt crosses the 200-code-point cut with an astral character straddling it: Python slices code points, a naive JS slice cuts UTF-16 units and halves the pair.",
+    "ledger-04 contains a single quote and no double quote, which is where Python's repr switches to double quotes; ledger-05 contains both, which is where it does not.",
+    "ledger-09 sits in a different ISO week from the rest, so `by_week` ordering (DESC) is graded rather than assumed.",
+    "ledger-10 carries a session id no other row has AND is the oldest row, so `--session` after `--limit` drops it: the CLI filters AFTER the store's LIMIT."
+  ],
+  "conversations": [
+    {
+      "id": "conv-0001-aaaa-bbbb",
+      "started_at": "2026-01-05T09:00:00Z",
+      "interface": "pi"
+    },
+    {
+      "id": "conv-0002-cccc-dddd",
+      "started_at": "2026-01-12T09:00:00Z",
+      "interface": "pi"
+    }
+  ],
+  "llm_calls": [
+    {
+      "id": "ledger-01-aaaa-bbbb",
+      "role": "extraction",
+      "model": "anthropic/claude-sonnet-4",
+      "prompt": "Extract memories.\nUser said:\thello",
+      "response": "[]",
+      "prompt_tokens": 120,
+      "completion_tokens": 40,
+      "latency_ms": 1200,
+      "cost_usd": 0.00042,
+      "conversation_id": "conv-0001-aaaa-bbbb",
+      "session_id": "session-alpha",
+      "called_at": "2026-01-05T10:00:00.123456Z"
+    },
+    {
+      "id": "ledger-02-aaaa-bbbb",
+      "role": "embedding",
+      "model": "openai/text-embedding-3-small",
+      "prompt": "",
+      "response": "",
+      "prompt_tokens": 102,
+      "completion_tokens": null,
+      "latency_ms": 90,
+      "cost_usd": null,
+      "conversation_id": "conv-0001-aaaa-bbbb",
+      "session_id": "session-alpha",
+      "called_at": "2026-01-05T10:00:01Z"
+    },
+    {
+      "id": "ledger-03-aaaa-bbbb",
+      "role": "embedding",
+      "model": "openai/text-embedding-3-small",
+      "prompt": "",
+      "response": "",
+      "prompt_tokens": 98,
+      "completion_tokens": null,
+      "latency_ms": 88,
+      "cost_usd": null,
+      "conversation_id": null,
+      "session_id": null,
+      "called_at": "2026-01-05T10:00:02Z"
+    },
+    {
+      "id": "ledger-04-aaaa-bbbb",
+      "role": "consult",
+      "model": "openai/gpt-5",
+      "prompt": "it's a quoted prompt",
+      "response": "it's a quoted response",
+      "prompt_tokens": 10,
+      "completion_tokens": 5,
+      "latency_ms": 300,
+      "cost_usd": 0.001,
+      "conversation_id": "conv-0001-aaaa-bbbb",
+      "session_id": "session-alpha",
+      "called_at": "2026-01-05T11:00:00Z"
+    },
+    {
+      "id": "ledger-05-aaaa-bbbb",
+      "role": "consult",
+      "model": "openai/gpt-5",
+      "prompt": "he said \"it's fine\" and left",
+      "response": "backslash \\ and \"quotes\"",
+      "prompt_tokens": 12,
+      "completion_tokens": 6,
+      "latency_ms": 310,
+      "cost_usd": 0.002,
+      "conversation_id": "conv-0001-aaaa-bbbb",
+      "session_id": "session-alpha",
+      "called_at": "2026-01-05T11:00:01Z"
+    },
+    {
+      "id": "ledger-06-aaaa-bbbb",
+      "role": "journal_classification",
+      "model": "openai/gpt-5-mini",
+      "prompt": "   Classificação de diário com acentuação e um caractere astral exatamente na fronteira do corte de duzentos pontos de código: ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLM𝔘RSTUVWXYZ tail   ",
+      "response": "  personal  ",
+      "prompt_tokens": 60,
+      "completion_tokens": 3,
+      "latency_ms": 450,
+      "cost_usd": 7.5e-06,
+      "conversation_id": "conv-0002-cccc-dddd",
+      "session_id": "session-beta",
+      "called_at": "2026-01-12T09:30:00Z"
+    },
+    {
+      "id": "ledger-07-aaaa-bbbb",
+      "role": "conversation_title",
+      "model": "openai/gpt-5-mini",
+      "prompt": "Title this.",
+      "response": "A Title",
+      "prompt_tokens": 200,
+      "completion_tokens": 8,
+      "latency_ms": 500,
+      "cost_usd": 0.00011,
+      "conversation_id": "conv-0002-cccc-dddd",
+      "session_id": "session-beta",
+      "called_at": "2026-01-12T09:31:00Z"
+    },
+    {
+      "id": "ledger-08-aaaa-bbbb",
+      "role": "",
+      "model": "",
+      "prompt": "",
+      "response": "",
+      "prompt_tokens": null,
+      "completion_tokens": null,
+      "latency_ms": null,
+      "cost_usd": null,
+      "conversation_id": null,
+      "session_id": null,
+      "called_at": "2026-01-12T09:32:00Z"
+    },
+    {
+      "id": "ledger-09-aaaa-bbbb",
+      "role": "week_plan",
+      "model": "openai/gpt-5-mini",
+      "prompt": "Plan the week.",
+      "response": "done",
+      "prompt_tokens": 80,
+      "completion_tokens": 20,
+      "latency_ms": 700,
+      "cost_usd": 9e-05,
+      "conversation_id": "conv-0002-cccc-dddd",
+      "session_id": "session-beta",
+      "called_at": "2026-01-19T08:00:00Z"
+    },
+    {
+      "id": "ledger-10-aaaa-bbbb",
+      "role": "extraction",
+      "model": "anthropic/claude-sonnet-4",
+      "prompt": "The oldest row.",
+      "response": "[]",
+      "prompt_tokens": 55,
+      "completion_tokens": 9,
+      "latency_ms": 1500,
+      "cost_usd": 0.00033,
+      "conversation_id": "conv-0001-aaaa-bbbb",
+      "session_id": "session-gamma",
+      "called_at": "2026-01-04T08:00:00Z"
+    }
+  ],
+  "memories": [
+    {
+      "id": "mem-01",
+      "memory_type": "fact",
+      "layer": "ego",
+      "title": "One",
+      "content": "One",
+      "created_at": "2026-01-05T10:00:00Z",
+      "embedding": "vector",
+      "metadata": "{\"embedding_model\": \"openai/text-embedding-3-small\"}"
+    },
+    {
+      "id": "mem-02",
+      "memory_type": "fact",
+      "layer": "ego",
+      "title": "Two",
+      "content": "Two",
+      "created_at": "2026-01-05T10:00:01Z",
+      "embedding": "vector",
+      "metadata": "{\"embedding_model\": \"openai/text-embedding-3-small\"}"
+    },
+    {
+      "id": "mem-03",
+      "memory_type": "fact",
+      "layer": "ego",
+      "title": "Three",
+      "content": "Three",
+      "created_at": "2026-01-05T10:00:02Z",
+      "embedding": "vector",
+      "metadata": "{\"embedding_model\": \"voyage/voyage-3\"}"
+    },
+    {
+      "id": "mem-04",
+      "memory_type": "fact",
+      "layer": "ego",
+      "title": "Four",
+      "content": "Four",
+      "created_at": "2026-01-05T10:00:03Z",
+      "embedding": "vector",
+      "metadata": "{ not valid json"
+    },
+    {
+      "id": "mem-05",
+      "memory_type": "fact",
+      "layer": "ego",
+      "title": "Five",
+      "content": "Five",
+      "created_at": "2026-01-05T10:00:04Z",
+      "embedding": "vector",
+      "metadata": "{\"embedding_model\": 7}"
+    },
+    {
+      "id": "mem-06",
+      "memory_type": "fact",
+      "layer": "ego",
+      "title": "Six (no vector)",
+      "content": "Six",
+      "created_at": "2026-01-05T10:00:05Z",
+      "embedding": null,
+      "metadata": "{\"embedding_model\": \"openai/text-embedding-3-small\"}"
+    }
+  ]
+}

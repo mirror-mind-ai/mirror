@@ -95,6 +95,7 @@ jobs:
           uv run python ts/parity/generate_builder_lifecycle_golden.py
           uv run python ts/parity/generate_builder_load_golden.py
           uv run python ts/parity/generate_extension_catalog_golden.py
+          uv run python ts/parity/generate_ledger_inspect_golden.py
           git diff --exit-code ts/test/goldens/
           # Two Builder generators also rewrite their committed fixture trees, so
           # drift there has to fail the gate too -- a golden that agrees with
@@ -107,6 +108,8 @@ jobs:
           # see it.
           git diff --exit-code ts/test/fixtures/extension-catalog.golden.json
           git diff --exit-code ts/test/fixtures/extension-catalog/
+          git diff --exit-code ts/test/fixtures/ledger-inspect.golden.json
+          git diff --exit-code ts/test/fixtures/ledger-inspect/
           # `git diff` cannot see a file that is not tracked yet, and the damage
           # this class produces is usually untracked: a generator that resolves a
           # write target to the repository writes NEW files into it (CR065's fifth

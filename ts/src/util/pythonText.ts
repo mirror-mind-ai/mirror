@@ -163,11 +163,43 @@ export function pyTitle(text: string): string {
   return result;
 }
 
-/** Python `repr(value)` / an f-string's `!r`: strings gain single quotes. */
+/**
+ * Python `repr(value)` / an f-string's `!r`.
+ *
+ * Widened at CV22.DS7.TS4 plateau 2, where `inspect llm-calls` prints stored
+ * prompts and responses with `!r` -- arbitrary user text, not the single
+ * lowercase words the first caller passed. Python's rules, in order:
+ *
+ *   * the QUOTE is single, unless the string contains a single quote and no
+ *     double quote, in which case Python switches to double quotes rather
+ *     than escaping (`"it's fine"`, not `'it\'s fine'`);
+ *   * a backslash is doubled, and the chosen quote is escaped;
+ *   * `\n`, `\r`, `\t` get their short escapes; every other C0 control and
+ *     DEL get `\xNN`;
+ *   * printable non-ASCII is left ALONE (Python 3 repr is not ASCII-safe),
+ *     so `descrição` stays itself.
+ */
 export function pyRepr(value: unknown): string {
   if (typeof value !== "string") return pyStr(value);
-  const escaped = value.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
-  return `'${escaped}'`;
+  const quote = value.includes("'") && !value.includes('"') ? '"' : "'";
+  let out = "";
+  for (const character of value) {
+    if (character === "\\") {
+      out += "\\\\";
+    } else if (character === quote) {
+      out += `\\${quote}`;
+    } else if (character === "\n") {
+      out += "\\n";
+    } else if (character === "\r") {
+      out += "\\r";
+    } else if (character === "\t") {
+      out += "\\t";
+    } else {
+      const code = character.codePointAt(0) ?? 0;
+      out += code < 0x20 || code === 0x7f ? `\\x${code.toString(16).padStart(2, "0")}` : character;
+    }
+  }
+  return `${quote}${out}${quote}`;
 }
 
 /** Python `sorted()` / `<` on `str`: lexicographic by code point. */

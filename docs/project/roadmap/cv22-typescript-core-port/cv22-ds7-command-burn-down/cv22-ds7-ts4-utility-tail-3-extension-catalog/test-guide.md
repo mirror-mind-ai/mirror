@@ -92,6 +92,40 @@ fixture home. What the measurement settled:
 Nothing is routed: `routing.ts` still sends every one of these commands to
 Python.
 
+### Plateau 2 — the ledger reads
+
+21 cases in `ts/test/fixtures/ledger-inspect.golden.json`, recorded from the
+real CLI over a database seeded from `ledger-inspect/rows.json` — the same
+file the TypeScript test seeds its own database from, so nothing binary is
+committed and both engines provably start from the same values.
+
+What the measurement settled:
+
+| Fact | Measured |
+|---|---|
+| Refusal class | these two leaves **are** argparse: exit **2**, usage on **stderr** — the opposite of the catalog family under the same `inspect` command |
+| `--session` / `--since` | applied by the CLI **after** the store's `LIMIT`: `--session session-gamma` finds a row alone and finds nothing at `--limit 3` |
+| `role` / `model` fallback | `NOT NULL` in the schema, so `or "?"` is reachable only through an **empty string** |
+| The role column | `{:<18}` pads and never truncates, so `journal_classification` overflows and misaligns its own row |
+| An all-unpriced bucket | keeps `—`, never sums to `$0.000000` |
+| `repr` of prompts | Python switches to **double quotes** when the text contains `'` and no `"` |
+| The 200-character cut | **code points**: the corpus stages an astral character at index 199, where a UTF-16 cut halves the surrogate pair |
+| Unknown provenance | sorts before a named model on a count tie, because Python sorts by `str(None)` = `"None"` |
+
+Deliberate divergence, recorded: argparse wraps its usage block to the
+terminal's `COLUMNS`, so its TEXT is not a portable contract — the generator
+had to pin `COLUMNS=80` just to make the golden stable. TypeScript refuses the
+same inputs with exit 2 and a one-line message, and the test grades the class
+(input, stream, exit code), not the block. Same rule US8 pinned.
+
+**Checks:** 21/21 cases equal; **six mutants killed** (session filter dropped,
+UTF-16 slice, repr never switching quotes, role column truncated, provenance
+sorted ascending, unpriced rendered as zero), each one asserted to have changed
+the file before its verdict was believed. TS suite 2,220 pass; typecheck clean;
+Python `inspect` tests still green. `getLlmCallSummary` — shipped by DS8 with
+no caller — got its first one here, and its parameter widened from
+`WritableDatabase` to `Database` because the caller opens read-only.
+
 ### Scope note recorded at plateau 1
 
 `list all` composes the persona and journey renderers DS7.US1 already ported
