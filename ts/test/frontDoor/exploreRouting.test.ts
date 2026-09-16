@@ -84,7 +84,7 @@ test("half a replay fixture refuses promote by name instead of spending", () => 
   const route = routeMemoryCommand(["explore", "story", "promote", "a-journey"], {
     MIRROR_TS_BUILD_LLM_REPLAY: "/tmp/half.json",
   });
-  assert.equal(route.engine, "python");
+  assert.equal(route.engine, "ts", "the TS runtime must refuse before promote mutates");
   assert.match(route.reason, /incomplete replay fixture/);
   assert.match(route.reason, /MIRROR_TS_BUILD_EMBEDDING_REPLAY/);
 });

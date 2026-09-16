@@ -270,6 +270,24 @@ TypeScript. Without `OPENROUTER_API_KEY` it degrades to lexical-only search
 and prints the same note the Python engine prints — no call is attempted and
 no `llm_calls` row is written.
 
+### Builder route during CV22.DS7.US8 plateau 8
+
+All 27 in-scope `build` leaves are available through the TypeScript front door,
+but the production default remains Python until the plateau-9 validation and
+flip. Set `MIRROR_TS_BUILD=1` only to exercise the completed route. The twenty
+legacy SQLite Workbench leaves under `build refinement-story` and
+`build change-request` remain Python-owned and retire unported in DS10.
+
+`build load` composes fresh search with the previous conversation's close tail,
+so its transport decision resolves three controls before printing any surface:
+`MIRROR_TS_BUILD`, `MIRROR_TS_SEARCH`, and
+`MIRROR_TS_CONVERSATION_LLM_TAIL`. A `0` on any one sends the whole invocation
+to Python. Replay uses both `MIRROR_TS_BUILD_LLM_REPLAY` and
+`MIRROR_TS_BUILD_EMBEDDING_REPLAY`; setting only one refuses in TypeScript
+rather than falling into live Python. The front-door log records only
+`leaf=load calls=N` and a degraded category when present — never the journey
+briefing used as the embedding query.
+
 ### Node-specific environment differences
 
 Two behaviors differ from Python's HTTP stack and are **not** papered over in

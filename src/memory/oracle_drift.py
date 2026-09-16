@@ -198,6 +198,37 @@ ORACLE_PATHS: tuple[str, ...] = (
     # leaks a real key into a file the user commits. Ported into
     # ts/src/explorer/handoff.ts.
     "src/memory/services/explorer_handoff.py",
+    # DS7.US8: the Builder/Ariad tree. The command is a self-hosting runtime
+    # surface, so drift covers the CLI composition and every in-scope Builder
+    # module. `workbench.py` is included for its ported read-only snapshot;
+    # `workbench_surfaces.py` is excluded because all twenty legacy Workbench
+    # leaves retire unported in DS10.
+    "src/memory/cli/build.py",
+    "src/memory/builder/ariad_method.py",
+    "src/memory/builder/artifact_surfaces.py",
+    "src/memory/builder/delivery_cursor.py",
+    "src/memory/builder/delivery_story_closure.py",
+    "src/memory/builder/delivery_story_plan.py",
+    "src/memory/builder/delivery_story_roadmap_closure.py",
+    "src/memory/builder/flow_unit.py",
+    "src/memory/builder/home_surface.py",
+    "src/memory/builder/lifecycle.py",
+    "src/memory/builder/lifecycle_ribbon.py",
+    "src/memory/builder/method_adoption.py",
+    "src/memory/builder/method_definition.py",
+    "src/memory/builder/method_inspection.py",
+    "src/memory/builder/plan_preauthorization.py",
+    "src/memory/builder/pull_candidates.py",
+    "src/memory/builder/release_intent.py",
+    "src/memory/builder/resume_state.py",
+    "src/memory/builder/resume_surface.py",
+    "src/memory/builder/roadmap_grammar.py",
+    "src/memory/builder/roadmap_position.py",
+    "src/memory/builder/story_paths.py",
+    "src/memory/builder/story_plan_preauthorization.py",
+    "src/memory/builder/surface_protocol.py",
+    "src/memory/builder/template_generation.py",
+    "src/memory/builder/workbench.py",
 )
 
 BASELINE_RELPATH = "ts/parity/oracle-baseline.json"

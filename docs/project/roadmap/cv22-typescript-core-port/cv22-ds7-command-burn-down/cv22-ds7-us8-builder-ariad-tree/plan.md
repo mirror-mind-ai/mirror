@@ -1072,7 +1072,43 @@ Navigator decisions taken the same day: **compose the revert** (a half-flipped
 session start cannot be reviewed) and **reproduce degraded rendering, capture the
 CR** (marking it is a product change that belongs after the flip).
 
+## Persona Review — Plateau 8 (handoff, after automated validation)
+
+Run 2026-09-14 against the delivered route, before Navigator validation.
+Three lenses dissented; database-architect, security-engineer, and ai-engineer
+converged with no objection.
+
+- **engineer** — three readers of one token grammar (`buildRoute.ts`'s
+  `positional`/`optionValue`, and two closures in `argv.ts` whose read-only
+  variant repeats three switch arms verbatim). DRY debt, graded by the corpus,
+  but the class that drifts when a leaf grows an option. Also
+  `test/helpers/builderInvoke.ts` is now a pure re-export shim. Both carried to
+  Debt Review below.
+- **quality-assurance** — argparse accepts `--method=ariad` and unambiguous
+  abbreviations (`allow_abbrev` defaults on); `validateBuilderArgv` exits 2 on
+  both. No skill or doc uses either form, so this is the recorded-divergence
+  class Explorer set for `--mirror-home` — but it must be **recorded and pinned**
+  before plateau 9, not found as a "regression" after the flip. Added to the
+  divergence candidates below.
+- **devops-engineer** — `builder_lifecycle_smoke.ts` sets
+  `MIRROR_TS_BUILD=1` in the child environment. Plateau 9 must delete that line
+  so the smoke proves the shipped default, as the `backup` smoke does. Added to
+  the plateau-9 steps.
+
+Release read: **ready for Navigator validation with one named divergence.**
+
 ## Debt / CRs To Capture At Debt Review (candidates)
+
+- **TS `build` argv grammar is narrower than argparse's.** `--opt=value` and
+  unambiguous long-option abbreviations succeed in Python and exit 2 in TS.
+  Same divergence class as `--mirror-home` (which goes the other way). Decide
+  once, pin with a test on the input set and exit code, record in the
+  divergence table. (Plateau-8 panel, quality-assurance.)
+- **Three readers of the Builder token grammar** — `buildRoute.ts` helpers plus
+  two closures in `argv.ts`; the read-only invoker repeats three switch arms.
+  Extract one token module and one arm table. `test/helpers/builderInvoke.ts` is
+  a pure re-export shim after plateau 8; repoint or justify. (Plateau-8 panel,
+  engineer.)
 
 - **Exactly tied search scores are ordered differently by the two engines.** Found
   at plateau 7 while building a `load` case with symmetric embeddings: three

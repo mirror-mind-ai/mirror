@@ -48,6 +48,7 @@ import {
 import { ensureMigratedOnOpen } from "#db/migrateOnOpen.ts";
 import { assertSchemaState, SchemaStateError } from "#db/schemaState.ts";
 import { allDescriptors, descriptorsByLayer } from "#descriptor/descriptorRead.ts";
+import { createPythonProjectionRefresh } from "#explorer/projectionRefresh.ts";
 import { listIdentityByLayer } from "#identity/identityRead.ts";
 import { listJourneysForListCommand } from "#identity/journeyListing.ts";
 import { listPersonas } from "#identity/personaListing.ts";
@@ -1290,6 +1291,25 @@ function runShadowWrite(argv: readonly string[]): number | Promise<number> {
   return runShadowScanWrite(argv); // "scan"
 }
 
+function withMirrorReadDb(argv: readonly string[], read: (db: Database) => number): number {
+  const dbPath = resolveDbPathForCli(argv.slice(1));
+  if (dbPath === null) return 2;
+  ensureDatabaseReady(dbPath, argv[0] ?? null);
+  const db = openDatabaseReadOnly(dbPath);
+  try {
+    assertSchemaState(db);
+    return read(db);
+  } catch (error) {
+    if (error instanceof SchemaStateError) {
+      console.error(`Mirror TS front door: ${error.message}`);
+      return 2;
+    }
+    throw error;
+  } finally {
+    db.close();
+  }
+}
+
 async function withMirrorWriteDb(
   argv: readonly string[],
   write: (db: WritableDatabase, dbPath: string) => Promise<number> | number,
@@ -1516,6 +1536,13 @@ async function runMemorySearch(argv: readonly string[]): Promise<number> {
 interface DispatchOutcome {
   exitCode: number;
   engine: FrontDoorEngine;
+  /** Content-free route metadata for the durable front-door log. */
+  detail?: string;
+}
+
+interface TsDispatchOutcome {
+  exitCode: number;
+  detail?: string;
 }
 
 async function dispatch(
@@ -1525,11 +1552,34 @@ async function dispatch(
   if (engine === "python") return { exitCode: fallbackPython(argv), engine: "python" };
   // The only route that can still choose Python after being routed to TS.
   if (isConversationLoggerCommand(argv)) return runConversationLoggerWrite(argv);
-  return { exitCode: await dispatchTs(argv), engine: "ts" };
+  const result = await dispatchTs(argv);
+  return typeof result === "number"
+    ? { exitCode: result, engine: "ts" }
+    : {
+        exitCode: result.exitCode,
+        engine: "ts",
+        ...(result.detail ? { detail: result.detail } : {}),
+      };
 }
 
 /** Every route that is answered by TypeScript once dispatch has chosen it. */
-async function dispatchTs(argv: readonly string[]): Promise<number> {
+async function dispatchTs(argv: readonly string[]): Promise<number | TsDispatchOutcome> {
+  if (argv[0] === "build") {
+    // The Builder command tree is deliberately lazy. A reverted invocation is
+    // sent to Python before this import, so a broken Builder core cannot destroy
+    // its own MIRROR_TS_BUILD=0 escape hatch.
+    const { runBuildRoute } = await import("./buildRoute.ts");
+    return runBuildRoute(argv, {
+      withReadOnlyDatabase: (run) => withMirrorReadDb(argv, run),
+      withWritableDatabase: (run) => withMirrorWriteDb(argv, run),
+      createLoadRuntime: (db, dbPath, ignoreProductionRole) =>
+        createBuildLoadRuntime({ db, dbPath, ignoreProductionRole }),
+      nowIso,
+      environmentSessionId: process.env.MIRROR_SESSION_ID ?? null,
+      requestProjectionRefresh: (journey, dbPath) =>
+        createPythonProjectionRefresh({ mirrorHome: dirname(dbPath) }).request(journey),
+    });
+  }
   if (isInit(argv)) return runInit(argv);
   if (isSeed(argv)) return runSeedCommand(argv);
   if (isIdentityWrite(argv)) return runIdentityWrite(argv);
@@ -1597,7 +1647,8 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
       // A route that answered on the other engine is an event worth seeing: it
       // means a gate is set one way and the runtime disagreed. Metadata only.
       detail:
-        outcome.engine === decision.engine ? undefined : `fell_back routed=${decision.engine}`,
+        outcome.detail ??
+        (outcome.engine === decision.engine ? undefined : `fell_back routed=${decision.engine}`),
     });
     return outcome.exitCode;
   } catch (error) {

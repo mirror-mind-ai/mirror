@@ -77,4 +77,27 @@ Navigator has run steps 1–6 and accepted them explicitly.
 
 ## Validation Evidence
 
-Pending implementation and validation.
+Plateau 8 automated evidence:
+
+- TypeScript suite: 2,212 tests discovered; the provider-isolation regression
+  found while promoting the lazy boundary was corrected by keeping `load.ts`
+  outside `builder/index.ts` and rerun green.
+- `tsc --noEmit`: clean.
+- Builder lifecycle smoke through the real front-door process: **331/331**.
+- Conversation/logger + Soul + Explorer regression smoke: green.
+- `builder_cursor_state` and `builder_artifacts` write probes: `match: true` on
+  the portable demo database; `builder_load` remains the already-green
+  1536-wide real-corpus probe and correctly refuses the 8-wide demo.
+- Broken-core loader-hook drill: enabled Builder fails at the injected boundary,
+  `MIRROR_TS_BUILD=0` reaches Python, unrelated TypeScript command still answers.
+- Front-door redaction: all prose-bearing Builder options and the briefing-derived
+  `load` query are absent from the log; only `leaf=`, `calls=`, and category
+  metadata appear.
+- Python unit/integration suite: **2,761 passed**; Ruff and Python formatting
+  clean. Repository-wide mypy remains at its pre-existing baseline of 131 errors
+  across 29 files; none is in this plateau's changed Python file.
+- Oracle-drift tripwire: clean after registering `cli/build.py` and every
+  in-scope Builder module; documentation links and roadmap headings clean.
+
+Navigator validation steps 1–3 and 6 remain pending. Their acceptance authorizes
+plateau 9; it does not happen implicitly from the automated evidence above.

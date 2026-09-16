@@ -244,14 +244,17 @@ jobs:
       # the TS1 mojibake repair over seeded rows, the US6 Soul ritual state
       # graded step by step, and the US7 Exploratory Story graded across BOTH
       # of its stores (the durable row and the legacy runtime payload) after
-      # every step of one exploration.
+      # every step of one exploration. Builder cursor/artifact probes run here;
+      # builder_load is intentionally excluded because it requires a private
+      # 1536-wide corpus and refuses the portable 8-wide demo database.
       # Copy-only and redacted by design; no live database is ever involved.
       - name: Write parity on the demo copy (redacted, must pass)
         run: |
           for probe in reinforcement journey identity conversation_logger \
                        close_tail session_composites journey_repair_apply \
                        repair_encoding soul_state soul_apply soul_harvest_save \
-                       explorer_story explorer_handoff; do
+                       explorer_story explorer_handoff builder_cursor_state \
+                       builder_artifacts; do
             uv run python ts/parity/write_parity.py \
               --source-db tmp/parity/demo-memory.db --probe "$probe" \
               --work-dir "tmp/parity/write-$probe"
@@ -270,10 +273,10 @@ jobs:
       # The Ariad story lifecycle — adopt through done — run on BOTH engines over
       # two disposable worlds and compared after every step: streams, the Builder
       # runtime rows with `metadata` byte for byte, every authored artifact, and the
-      # Journey projection the seam published (CV22.DS7.US8 plateau 4). Unrouted by
-      # construction: `build` reaches Python in production until the plateau-9 flip,
-      # so the smoke refuses to run with MIRROR_TS_BUILD set and proves the shipped
-      # default rather than a configured one. Linux is also a third root length for
-      # the path-normalization invariant the artifact rows depend on.
-      - name: Builder Ariad lifecycle smoke (both engines, no gate, must pass)
+      # Journey projection the seam published. Since US8 plateau 8 the TS side runs
+      # through the real front-door process under the route's temporary =1 opt-in;
+      # plateau 9 removes that internal opt-in so this same smoke proves the shipped
+      # default. Linux is also a third root length for the path-normalization
+      # invariant the artifact rows depend on.
+      - name: Builder Ariad lifecycle smoke (both engines through the real front door, must pass)
         run: node --no-warnings ts/parity/builder_lifecycle_smoke.ts

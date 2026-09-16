@@ -58,6 +58,67 @@ const CONVERSATIONS_LIFECYCLE_FLAGS = [
   ...DS10_BACKFILL_FLAGS,
 ];
 
+// CV22.DS7.US8 plateau 8: the 27 Builder leaves ported in plateaus 1–7.
+// Exported so the route tests can prove that the allowlist and its audited
+// denominator stay the same. The two legacy Workbench groups are deliberately
+// absent: their twenty leaves retire unported in DS10.
+export const TS_BUILD_SUBCOMMANDS = new Set([
+  "load",
+  "inspect-method",
+  "adopt",
+  "prepare-templates",
+  "sync-cursor",
+  "pull-candidates",
+  "pull-item",
+  "prepare-item",
+  "plan-item",
+  "approve-plan",
+  "cancel-plan-preauthorization",
+  "check-implementation",
+  "validate-item",
+  "review-item",
+  "coherence-item",
+  "done-item",
+  "set-flow-unit",
+  "plan-delivery-story",
+  "approve-delivery-story-plan",
+  "cancel-delivery-story-plan-preauthorization",
+  "validate-delivery-story",
+  "review-delivery-story",
+  "coherence-delivery-story",
+  "done-delivery-story",
+  "set-cadence",
+  "release-intent",
+  "continue-lifecycle",
+]);
+
+export const TS_BUILD_WORKBENCH_ACTIONS = {
+  "refinement-story": new Set([
+    "create",
+    "overview",
+    "pull",
+    "review",
+    "coherence",
+    "close",
+    "park",
+  ]),
+  "change-request": new Set([
+    "capture",
+    "attach",
+    "discard",
+    "select",
+    "confirm",
+    "resume",
+    "plan",
+    "mark-implemented",
+    "validate",
+    "done",
+    "park",
+    "reject",
+    "promote",
+  ]),
+} as const;
+
 // A type alias rather than an interface: aliases get an implicit index
 // signature, which is what lets the named variables below still be passed to
 // `resolveProviderTransport`, whose families name their variables as data.
@@ -226,16 +287,22 @@ function providerRoute(
   // A composition resolves three specs at once (`build load` and the one leaf
   // whose tail it is, `explore story promote`); a plain spec resolves one. Both
   // yield the same decision shape, so the engine rule below is written once.
-  const transport =
-    "owner" in spec
-      ? resolveComposedProviderTransport(env, spec)
-      : resolveProviderTransport(env, spec);
+  const composition = "owner" in spec;
+  const transport = composition
+    ? resolveComposedProviderTransport(env, spec)
+    : resolveProviderTransport(env, spec);
   const reason = leaf ? `${transport.reason} (${leaf})` : transport.reason;
   return {
     command,
-    // `incomplete_replay` is not live and not Python-by-choice: the runtime
-    // refuses by name so half a fixture cannot spend money (CR077).
-    engine: transport.mode === "python" || transport.mode === "incomplete_replay" ? "python" : "ts",
+    // A composed command MUST reach its TS runtime on incomplete replay so it
+    // can refuse before mutation. Python has no replay transport and could
+    // spend live; routing it there would violate the CR077 rule this
+    // composition exists to enforce. Plain-family behavior is left unchanged
+    // here because changing every external route is outside US8.
+    engine:
+      transport.mode === "python" || (transport.mode === "incomplete_replay" && !composition)
+        ? "python"
+        : "ts",
     reason,
   };
 }
@@ -767,6 +834,46 @@ export function routeMemoryCommand(
       return providerRoute(command, env, BUILD_LOAD_COMPOSITION, "story promote");
     }
     return { command, engine: "ts", reason: `DS7.US7 explore ${subcommand} ported to TS` };
+  }
+
+  if (command === "build") {
+    const subcommand = argv[1] ?? "";
+    if (subcommand === "refinement-story" || subcommand === "change-request") {
+      const action = argv[2] ?? "";
+      const known = TS_BUILD_WORKBENCH_ACTIONS[subcommand].has(action);
+      return {
+        command,
+        engine: "python",
+        reason: known
+          ? `build ${subcommand} ${action} retires unported in DS10`
+          : `build ${subcommand} action not ported to TS: ${action || "(none)"}`,
+      };
+    }
+    if (!TS_BUILD_SUBCOMMANDS.has(subcommand)) {
+      return {
+        command,
+        engine: "python",
+        reason: `build subcommand not ported to TS: ${subcommand || "(none)"}`,
+      };
+    }
+    // Plateau 8 proves the complete route without changing production. The
+    // shipped default flips only in plateau 9, after Navigator validation.
+    if (env.MIRROR_TS_BUILD !== "1") {
+      return {
+        command,
+        engine: "python",
+        reason:
+          env.MIRROR_TS_BUILD === "0"
+            ? "MIRROR_TS_BUILD=0 revert to Python"
+            : "build TS route awaits plateau 9; set MIRROR_TS_BUILD=1 to exercise plateau 8",
+      };
+    }
+    // `load` composes the search and conversation-tail provider families. Its
+    // engine must be chosen before the banner or any surface is printed.
+    if (subcommand === "load") {
+      return providerRoute(command, env, BUILD_LOAD_COMPOSITION, "load");
+    }
+    return { command, engine: "ts", reason: `DS7.US8 build ${subcommand} ported to TS` };
   }
 
   if (command === "journal") {

@@ -1,71 +1,69 @@
 [< Story](index.md)
 
-# Handoff — CV22.DS7.US8 — Builder/Ariad tree (plateaus 1–7 complete)
+# Handoff — CV22.DS7.US8 — Builder/Ariad tree (plateaus 1–8 complete)
 
-**Status:** plateaus 1–7 of 9 complete. **All 27 in-scope leaves answer from
-TypeScript**, `load` included and graded on a real corpus, and all three Ariad
-flows — the story lifecycle, the aggregate Delivery Story lifecycle, and the
-cadence/authority paths — run on both engines and agree after every step.
-**No `build` invocation is routed** — `routing.ts` still sends the whole family
-to Python, which is the intended state until plateau 8 adds the gate and plateau
-9 flips it. The one routing change plateau 7 did make is `explore story promote`
-(US7's held leaf), whose tail is a Builder session start.
+**Status:** plateaus 1–8 of 9 complete. **All 27 in-scope leaves answer from
+TypeScript through the production front door when `MIRROR_TS_BUILD=1`**, `load`
+included, while the shipped default deliberately remains Python. All three
+Ariad flows — the story lifecycle, the aggregate Delivery Story lifecycle, and
+the cadence/authority paths — now run through both real process boundaries and
+agree after every step. The twenty legacy SQLite Workbench leaves remain on
+Python by name for DS10 retirement. `explore story promote`, whose tail is a
+Builder session start, remains on TypeScript.
 
 ## Resume here
 
-**Plateau 7 is complete.** Every leaf is ported and graded, `load` included, and
-one of them — `explore story promote`, whose tail is a Builder session start —
-already answers from TypeScript. The `build` family itself is still entirely
-unrouted: the gate arrives at plateau 8 and the flip at plateau 9.
+**Plateau 8 is complete. Do not rebuild the route.** What landed:
 
-What landed in plateau 7:
+- `frontDoor/buildRoute.ts`: production argv validation, honest TypeScript
+  exit-2 usage refusals, all 26 non-`load` leaves, and `load` through
+  `createBuildLoadRuntime`;
+- `builder/argv.ts`: the single argv-to-command mapping now shared by production,
+  the command corpus, and the lifecycle smoke; read-only leaves use a read-only
+  database handle and do not take an unnecessary live backup;
+- `builder/index.ts`: the lazy command-tree boundary. `dispatchTs` imports it only
+  after routing selects TypeScript, so `MIRROR_TS_BUILD=0` reaches Python even
+  when the Builder boundary throws;
+- the two-level route allowlist: 27 in-scope leaves, seven `refinement-story`
+  actions and thirteen `change-request` actions refused explicitly with their
+  DS10 retirement owner, and unknown additions inherited by neither engine;
+- `build load` resolves the Builder/search/conversation-tail composition before
+  any byte. A half replay fixture reaches TypeScript's named refusal instead of
+  falling into live Python — a plateau-8 correction to the earlier routing
+  implementation — and `explore story promote` gets the same safety property;
+- front-door logging records `leaf=<subcommand>` and, for `load`, `calls=N` plus
+  a degraded category. Tests pass every prose-bearing argument and a journey
+  briefing sentinel and prove none reaches `front-door.log`;
+- the existing lifecycle smoke now drives TypeScript through the real front-door
+  process rather than calling the command functions in process: **331/331
+  checks**, including streams, exit codes, cursor bytes after every step,
+  artifacts, and Journey projection receipts;
+- the loader-hook broken-core drill proves the enabled route fails at the injected
+  Builder boundary, `MIRROR_TS_BUILD=0` still reaches Python, and an unrelated
+  TypeScript command still answers;
+- `cli/build.py` and every in-scope `builder/*.py` oracle are registered on the
+  drift tripwire; `builder_cursor_state` and `builder_artifacts` run in CI on the
+  portable demo copy (`builder_load` correctly remains a real-1536-corpus probe);
+- `docs/reference/configuration.md` documents the temporary plateau-8 opt-in,
+  composed reverts, replay pair, and redacted log shape.
 
-- **the pure half** — `builder/transition.ts` (the `■ BUILDER MODE ACTIVE` card,
-  `extractStage`/`extractSection`/`truncateWords`, `extractQuery`), 21 transition
-  and 10 query cases;
-- **the composition, graded** — `builder/load.ts`'s `runBuildLoad`, compared
-  against Python on six recorded invocations × four faces: streams and exit code,
-  the `runtime_sessions` rows, the access the read left behind, and the
-  `llm_calls` ledger;
-- **the oracle seam** — `ts/parity/build_load_oracle.py` runs the real `cmd_load`
-  in a subprocess with every provider entry point patched to
-  `ts/test/fixtures/builder-load/oracle-seam.json`, the same numbers TypeScript
-  reads through `replay-embedding.json`, behind a socket tripwire that makes a
-  live call impossible;
-- nine mutants killed, including one that forced `mergeRankedResults` out into a
-  pure exported function (see below);
-- **the composed transport decision** (plan item 18b) — `BUILD_LOAD_TRANSPORT`
-  and `BUILD_LOAD_COMPOSITION` in `providers/transport.ts`,
-  `resolveComposedProviderTransport`, and `resolveFamilyProviders` accepting a
-  composition. Six mutants killed; see the rules below.
-- **the degraded case** (plan items 18a/18c) — four recorded outages
-  (`load_lexical_offline`, `load_partial_outage`, `load_first_call_outage`,
-  `load_degraded_briefing_query`) graded on all four faces against Python, whose
-  seam now fails the way `generate_embedding` fails. Eight mutants killed, and
-  one real defect fixed (the absent-provider branch, below);
-- **the `builder_load` probe, the provider-isolation test, and the cost
-  measurement** (plan items 18d, 23) — a whole session start replayed on a copy
-  of the REAL database, 25 graded rows, matching first run and proven to bite by
-  two killed mutants. See the three entries below;
-- **the `explore story promote` tail** (plan item 20) — **plateau 7 is
-  complete**. The leaf that waited on Python by name since US7 now answers from
-  TypeScript, with the clone-role guard ported and graded, and with
-  `frontDoor/buildLoadRuntime.ts` — the composed transport, the close tail, and
-  the guard — which plateau 8's `build` route reuses unchanged.
+**Next: Navigator validation for plateau 9.** Run the plan's validation steps
+1–3 and 6 against the gated route. The flip itself is a separate final plateau:
+default the family on, update the three skill copies and ledger, then run the
+self-hosting closure through TypeScript.
 
-**Next: plateau 8** (front door, gate off), then plateau 9 (the flip).
+The plateau-8 handoff panel ran (recorded in `plan.md`) and left three items
+for the flip, none blocking:
 
-Plateau 8 inherits more than it was planned to: the route only has to parse
-argv, pick a leaf, and call `createBuildLoadRuntime` — the provider wiring,
-the guard, and the composed decision are done and exercised by a flipped leaf.
-
-The composed decision exists but is **not consumed yet**: `buildRoute.ts` calls
-it before the banner at plateau 8 (item 21), which is also where
-`MIRROR_TS_BUILD_LLM_REPLAY` / `MIRROR_TS_BUILD_EMBEDDING_REPLAY` and the two
-composed reverts become documentable in `docs/reference/configuration.md` — they
-steer nothing while `build` still reaches Python.
-
-Then plateau 8 (front door, gate off) and plateau 9 (the flip).
+1. **Delete the smoke's internal opt-in.** `builder_lifecycle_smoke.ts` sets
+   `environment.MIRROR_TS_BUILD = "1"` in `runTypeScript`. Once the default
+   flips, remove that line so the smoke proves the shipped route, not a
+   configured one.
+2. **Record and pin the argv-grammar divergence.** TS refuses `--opt=value` and
+   argparse abbreviations with exit 2 where Python accepts them. Same class as
+   `--mirror-home`; decide, pin, record.
+3. **Debt Review carries** the three-reader token grammar and the
+   `builderInvoke.ts` shim.
 
 ### Rules this plateau paid for — do not rediscover them
 
@@ -239,22 +237,15 @@ exists so a resuming session does not have to re-derive the measurements below.
 
 ## What is now true
 
-Twenty-three of the 27 in-scope leaves answer from TypeScript end to end, behind no
-route: `inspect-method`, `pull-candidates`, `adopt`, `prepare-templates`,
-`sync-cursor`, `check-implementation`, `pull-item`, `prepare-item`, `plan-item`,
-`approve-plan`, `cancel-plan-preauthorization`, `validate-item`, `review-item`,
-`coherence-item`, `done-item`, `set-flow-unit`, `plan-delivery-story`,
-`approve-delivery-story-plan`, `cancel-delivery-story-plan-preauthorization`,
-`validate-delivery-story`, `review-delivery-story`, `coherence-delivery-story`,
-`done-delivery-story`.
+All 27 in-scope leaves answer from TypeScript end to end through the production
+front door under `MIRROR_TS_BUILD=1`. The shipped default remains Python until
+plateau 9. The route, not only the command functions, is graded: argv validation,
+stream bytes, exit status, cursor rows, artifacts, projection receipts, provider
+composition for `load`, redacted observability, and the broken-core revert.
 
-… plus `set-cadence`, `release-intent`, and `continue-lifecycle`.
-
-… plus `load`, graded at plateau 7 against six recorded invocations.
-
-**Remaining: none.** What is left in the story is the seam around `load` (the
-composed transport, the degraded case, the probe, the isolation test, the
-`promote` tail), then the front door and the flip.
+**Remaining: the flip only.** Navigator validation precedes the small plateau-9
+commit that defaults the gate on, updates the skill copies and ledger, and makes
+the self-hosting closure run through TypeScript.
 
 The ten commits below carried plateaus 1–2. Plateaus 3 and 4 added, oldest first:
 `2dff5adb` (lifecycle oracle before any TypeScript), `e98554aa` / `9cb44cd8`
@@ -279,10 +270,15 @@ Ten commits, oldest first:
 | `9d1be54f` | `resumeState`, `workbenchSnapshot`, `implementationGuard`, `lifecycleRibbon` |
 | `fef52ce2` | `templateGeneration`, four more leaves, the `builder_cursor_state` write probe |
 
-**Checks at handoff:** TS suite 2137 pass / 0 fail; `tsc --noEmit` clean; biome
-clean (one pre-existing `routing.ts` warning, not from this story); Python suite
-green; doc links and roadmap-heading checks clean; CI green on all five jobs at
-`fef52ce2`; `builder_cursor_state` write probe green on a copy of a real database.
+**Checks at handoff:** TS suite **2212 pass / 0 fail**; `tsc --noEmit` clean;
+biome clean except the pre-existing unused `CONVERSATIONS_LIFECYCLE_FLAGS`
+warning; Python unit/integration suite **2761 pass / 0 fail**; Ruff and Python
+format checks clean; doc links, roadmap headings, and oracle drift clean;
+`builder_cursor_state` and `builder_artifacts` write probes match on the portable
+demo copy; front-door Builder lifecycle smoke **331/331** and the broader
+conversation/Soul/Explorer smoke green. Repository-wide mypy remains a
+pre-existing red gate (131 errors across 29 files, none in this plateau's changed
+Python file).
 
 **Seven golden corpora**, all in the CI determinism gate, all generated from
 Python before the TypeScript existed:
@@ -332,30 +328,17 @@ reasoning is here so nobody "simplifies" one back.
 
 ## What remains intentionally undone
 
-Plateaus 3–9, unchanged from the approved plan:
+9. **Flip** — after Navigator validation: default the route on, update the three
+   `mm-build` skill copies and ledger, run the self-hosting closure through the
+   TypeScript front door, and retain `MIRROR_TS_BUILD=0` as the whole-family
+   revert.
 
-3. **Story lifecycle** — `pull-item` (with Expand and the candidate-table
-   grammar), `prepare-item`, `plan-item`, `approve-plan`, story-package artifact
-   materialization with the `if not path.exists()` preservation rule, and
-   `planPreauthorization` (sha256 over canonical sorted-compact ASCII JSON).
-4. **Story closure** — `validate-item`, `review-item`, `coherence-item`,
-   `done-item`, the closure artifacts, and the two CLI-rendered surfaces
-   (`debt_review_started`, `done_closure_confirmation`).
-5. **Delivery Story lifecycle** — the six DS leaves and the authored roadmap
-   closure preflight.
-6. **Cadence and authority** — `set-cadence`, `set-flow-unit`, `release-intent`,
-   both preauthorization cancels, `continue-lifecycle`.
-7. **`load` and the provider seam** — the correction that reshaped the plan:
-   `build load` is **not** provider-free. It embeds the query twice and runs the
-   previous conversation's close tail, so it needs `BUILD_LOAD_TRANSPORT`, replay
-   fixtures, and the degraded-search case.
-8. **Front door, gate off** — lazy route import, the two-level allowlist with all
-   twenty Workbench leaves refused by name, redaction, the broken-core drill,
-   oracle registration.
-9. **Flip** — gate on, three `mm-build` skill copies, ledger, `explore story
-   promote` released.
+## Historical plateau notes
 
-### Starting plateau 3
+The remaining sections preserve the implementation evidence and traps from
+plateaus 1–8. They are history, not resume instructions.
+
+### Plateau 3 constraints
 
 Read first: the plan's Scope C and the panel's module-layout constraint — **one
 module per Ariad event** (`pull.ts`, `expand.ts`, `prepare.ts`, `plan.ts`,

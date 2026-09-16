@@ -1,4 +1,4 @@
-// CV22.DS7.US8 plateau 4 — the unrouted Ariad story-lifecycle smoke.
+// CV22.DS7.US8 — the Ariad lifecycle smoke through the production front door.
 //
 // Everything before this graded a STEP: a surface, a cursor transition, a written
 // artifact, an exit code. This runs a whole lifecycle — adopt through done — on
@@ -20,22 +20,17 @@
 // where a wrapped path splits — two roots of different lengths would produce
 // different row counts and a diff that is an artifact of the harness.
 //
-// ## What "unrouted" means here, and what it does not prove
+// ## What the route proves
 //
-// `routing.ts` is untouched until plateau 8, so there is no gate to set and no
-// route to take: the Python side is the shipped default by construction, and the
-// TypeScript side is invoked through `invokeBuilderArgv`, in process, returning the
-// `CommandResult` its leaves produce. So this smoke does NOT grade the TypeScript
-// side's stream mechanics — how the bytes reach a terminal, and the exit status a
-// shell observes. Plateau 8 owns that by construction, when the front door route
-// exists; the command corpus already pins the bytes themselves against Python's
-// real subprocess output. Stating the limit is the point: a smoke that overclaims
-// is worse than one that claims less.
+// Since plateau 8, the TypeScript side runs through the real front-door process:
+// routing, lazy Builder import, production argv validation, database/backup seam,
+// stream writes, exit status, and projection delegation are all in the path. The
+// route gate is still deliberately off in the shipped default, so this plateau
+// sets MIRROR_TS_BUILD=1 only in the child process. Plateau 9 removes that internal
+// opt-in and the same smoke then proves the shipped default.
 //
-// The environment assertion is real today and load-bearing later: the smoke refuses
-// to run with `MIRROR_TS_BUILD` set, and strips every `MIRROR_TS_*` from the Python
-// side's environment, so at plateau 9 the same file proves the flip rather than a
-// configuration.
+// The parent environment assertion prevents a developer shell from choosing the
+// result accidentally, and the Python side strips every MIRROR_TS_* variable.
 //
 // ## What is graded after EVERY step
 //
@@ -65,10 +60,8 @@ import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
 import { bootstrapDatabaseIfMissing } from "../src/db/bootstrap.ts";
 import { openDatabaseCopyForWrite } from "../src/db/database.ts";
-import { createPythonProjectionRefresh } from "../src/explorer/projectionRefresh.ts";
 import { createJourney } from "../src/journey/journeyWrite.ts";
 import { activateOperatingMode } from "../src/mode/operatingMode.ts";
-import { invokeBuilderArgv } from "../test/helpers/builderInvoke.ts";
 import {
   absolutePathsIn,
   normalizePathRows,
@@ -380,32 +373,20 @@ function runPython(world: World, argv: readonly string[]): Observation {
   });
 }
 
-/** One seam per world: it spawns Python with that world's home. */
-const projectionSeams = new Map<string, ReturnType<typeof createPythonProjectionRefresh>>();
-function projectionSeamFor(world: World) {
-  const existing = projectionSeams.get(world.home);
-  if (existing !== undefined) return existing;
-  const seam = createPythonProjectionRefresh({ mirrorHome: world.home });
-  projectionSeams.set(world.home, seam);
-  return seam;
-}
-
 function runTypeScript(world: World, argv: readonly string[]): Observation {
-  // A connection per invocation, closed before the state is read: the real front
-  // door is one process per command, and a long-lived handle would let this smoke
-  // pass on a cache Python never sees.
-  const seam = projectionSeamFor(world);
-  const db = openDatabaseCopyForWrite(world.dbPath);
-  let outcome: { stdout: string; stderr: string; exitCode: number };
-  try {
-    outcome = invokeBuilderArgv(db, argv, {
-      nowIso: () => new Date().toISOString(),
-      requestProjectionRefresh: (journey) => seam.request(journey),
-    });
-  } finally {
-    db.close();
-  }
-  return observe(world, outcome);
+  const environment = pythonEnvironment(world.home);
+  environment.MIRROR_TS_BUILD = "1";
+  environment.NODE_OPTIONS = "--no-warnings";
+  const result = spawnSync(
+    process.execPath,
+    [join(TS_ROOT, "src", "frontDoor", "cli.ts"), "build", ...argv],
+    { cwd: REPO_ROOT, encoding: "utf8", env: environment },
+  );
+  return observe(world, {
+    stdout: result.stdout ?? "",
+    stderr: result.stderr ?? "",
+    exitCode: result.status,
+  });
 }
 
 // --- the lifecycle ------------------------------------------------------------
