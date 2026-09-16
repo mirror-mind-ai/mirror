@@ -248,9 +248,12 @@ defaulting off until the flip:
    codes and usage bytes on the real CLI before writing a line.
 2. **Ledger reads** (B).
 3. **Bindings and migrations** (C) — `migrations.ts` write half; probes.
-4. **Catalog writes** (D) — the file-tree probe.
-5. **The dispatch** (E) — D1 as decided; compat host `cli` mode; fixtures of
-   both kinds; DS10 gate text.
+4. **The dispatch** (E) — D1 as decided; compat host `cli` mode; fixtures of
+   both kinds; DS10 gate text. **Moved ahead of the writes** by the amendment
+   above: a command-skill install calls `register(api)`, so the writes need
+   this host.
+5. **Catalog writes** (D) — the file-tree probe, now able to complete a
+   command-skill install through the host.
 6. **`identity edit`** (F) and **ES-001 write faces** (G).
 7. **Front door, gates off** (H) — lazy import not required (no core-sized
    tree), allowlist, redaction, oracle registration, CI entries.
@@ -272,6 +275,41 @@ messages explaining why; the persona panel at Plan (done) and at handoff.
 - `failing_required_check_without_clear_fix`.
 - `navigator_decision_needed` — D1 above; and any extension on the validated
   home whose handler cannot run under the compat host.
+
+## Plan Amendment — plateaus 4 and 5 swap (2026-09-16, measured)
+
+**`extensions install` of a command-skill loads the extension's Python module
+and calls `register(api)`.** `_post_install_command_skill` runs the migrations
+(ported at plateau 3) and then `load_extension(...)`, and a broken `register`
+fails the install with exit 1. Measured before writing plateau-4 code, by
+installing a fixture whose `register` raises:
+
+```text
+register(api) failed for extension/hello: [extension/hello] register(register) raised: BOOM
+```
+
+So catalog writes DEPEND on the D1 extension host: TypeScript cannot complete
+an install of a command-skill without a way to execute the extension's Python
+entry point. The plan had the host at plateau 5 and the writes at plateau 4;
+that order cannot produce a complete plateau 4.
+
+**Amendment: the two swap.** The host lands first (old plateau 5, now 4), then
+catalog writes (old plateau 4, now 5) consume it. Scope is unchanged, D1 is
+unchanged, and no other plateau moves. Recorded rather than silently
+re-ordered, because the Implementation Contract named the order.
+
+Two further facts measured in the same run, both for the writes plateau:
+
+- **`install_extension` uses the DIRECTORY NAME as the extension id**, not the
+  manifest's `id`. The repository's own `ext-hello` fixture (directory
+  `ext-hello`, manifest id `hello`) therefore fails its own migration prefix
+  check with `targets table 'ext_hello_pings' outside the required prefix
+  'ext_ext_hello_*'`. A port that reads the id from the manifest would silently
+  "fix" this and diverge.
+- **An install failure is an uncaught traceback on stderr**, not a rendered
+  message: `ExtensionValidationError` escapes `cmd_extensions`. Exit 1 with a
+  Python traceback is not reproducible in TypeScript; this is the recorded
+  divergence class — same input, same exit code, a one-line TS message.
 
 ## Debt / CRs To Capture At Debt Review (candidates)
 

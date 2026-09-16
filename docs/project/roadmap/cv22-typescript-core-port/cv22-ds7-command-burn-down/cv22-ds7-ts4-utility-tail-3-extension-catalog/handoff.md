@@ -17,13 +17,28 @@ flips the gates.
 
 ## Resume here
 
-**Next: plateau 4, catalog writes** — `extensions sync|install|uninstall|
-expose-claude|clean-claude`: tree copy with `_should_copy_source_tree`, skill
-directory sync including the legacy-name pruning rule, catalog JSON bytes, the
-Claude overlay catalog, and `uninstall`'s binding deletion. Graded like
-`builder_artifacts`: file trees compared byte for byte in a disposable home AND
-a disposable target root — never the developer's `.pi`, which the plan-stage
-panel named explicitly.
+**Next: the DISPATCH (D1's host), not the catalog writes — the two plateaus
+swapped.** Measured before writing plateau-4 code: `extensions install` of a
+command-skill calls `_post_install_command_skill`, which runs the migrations
+and then **loads the extension's Python module and calls `register(api)`**; a
+broken `register` fails the install with exit 1. TypeScript cannot complete
+that install without the D1 host, so the host lands first and the writes
+consume it. The amendment, its measurement, and two further facts for the
+writes plateau are recorded in `plan.md`.
+
+What the host plateau owes: the `cli` mode of `memory.extensions.compat_host`
+(a second request kind of the host TS2 already ships — never a second host),
+the `commands[].runtime` manifest contract executed directly when declared, the
+`ext <id>` help listing, `ext <id> <subcommand>` with argv passed verbatim and
+the handler's exit code preserved, and fixtures of both kinds.
+
+Then catalog writes: `extensions sync|install|uninstall|expose-claude|
+clean-claude`, graded like `builder_artifacts` — file trees compared byte for
+byte in a disposable home AND a disposable target root, never the developer's
+`.pi`, which the plan-stage panel named explicitly. Two traps already measured
+and waiting there: `install_extension` uses the DIRECTORY NAME as the extension
+id (the repository's own `ext-hello` fixture fails its own prefix check because
+of it), and an install failure escapes as an uncaught traceback.
 
 What landed in plateau 3:
 
