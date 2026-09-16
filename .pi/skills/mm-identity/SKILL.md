@@ -74,13 +74,13 @@ If `--content` is omitted, content is read from stdin.
 Open the current content in `$EDITOR`, edit it, and save back to the database on close.
 
 ```bash
-uv run python -m memory identity edit <layer> <key> [--mirror-home PATH]
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity edit <layer> <key> [--mirror-home PATH]
 ```
 
 **Examples:**
-- `uv run python -m memory identity edit ego behavior`
-- `uv run python -m memory identity edit self soul`
-- `uv run python -m memory identity edit persona engineer`
+- `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity edit ego behavior`
+- `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity edit self soul`
+- `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts identity edit persona engineer`
 
 If no changes are detected, nothing is written. If the file is left empty, the edit is aborted.
 

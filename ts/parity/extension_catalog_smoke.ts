@@ -2,10 +2,11 @@
 // (CV22.DS7.TS4 plateau 7).
 //
 // The goldens grade each command against a recording. This smoke grades the
-// FAMILY as a sequence, live, through the real front-door process with the gate
-// on: install → `ext <id>` → bind → bindings → `ext <id> <subcommand>` →
-// unbind → migrate → uninstall, each step run by Python in one disposable world
-// and by TypeScript in another, with the streams, the file trees, and the rows
+// FAMILY as a sequence, live, through the real front-door process with NO gate
+// in the environment — since the 2026-09-16 flip that is the shipped default:
+// install → `ext <id>` → bind → bindings → `ext <id> <subcommand>` → unbind →
+// migrate → uninstall, each step run by Python in one disposable world and by
+// TypeScript in another, with the streams, the file trees, and the rows
 // compared after every step.
 //
 // Two things only a live run can prove:
@@ -66,7 +67,9 @@ function environmentFor(world: World, engine: "python" | "ts"): NodeJS.ProcessEn
   environment.MIRROR_HOME = world.home;
   environment.MEMORY_ENV = "test";
   environment.OPENROUTER_API_KEY = "";
-  if (engine === "ts") environment.MIRROR_TS_EXTENSIONS = "1";
+  // No gate: since the 2026-09-16 flip the TS side runs on the SHIPPED default,
+  // so this smoke proves what a user gets rather than what an opt-in gets.
+  void engine;
   return environment;
 }
 

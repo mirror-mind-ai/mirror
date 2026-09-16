@@ -4,9 +4,8 @@
 
 ## Status
 
-**Automated evidence complete. Navigator validation pending** — three steps, all
-on the real home, listed under [What is left for the Navigator](#what-is-left-for-the-navigator).
-Plateau 8 (the flip) does not proceed until they are run and accepted.
+**Passed. Navigator accepted 2026-09-16**, and plateau 8 flipped the three gates
+on that acceptance.
 
 ## Automated Checks
 
@@ -109,7 +108,21 @@ MIRROR_TS_IDENTITY_EDIT=1 node --env-file=.env --no-warnings ts/src/frontDoor/cl
 for c in "extensions list" "ext list" "list all" "inspect llm-calls --summary"; do uv run python -m memory $c > /tmp/py.txt; MIRROR_TS_EXTENSIONS=1 node --env-file=.env --no-warnings ts/src/frontDoor/cli.ts $c > /tmp/ts.txt; diff /tmp/py.txt /tmp/ts.txt && echo "same: $c"; done
 ```
 
-Navigator accepted: **not yet**
+Navigator accepted: **yes — 2026-09-16**
+
+Observed on the real home: step 1, the four read commands byte-identical on both
+engines; step 3, `ext session-export folder list` identical with
+`ext ts exit=0 leaf=session-export` in the log and no argument text; step 5,
+`identity edit ego behavior` through the Navigator's own editor — the save
+landed (`✓ ego/behavior updated`, confirmed at the row: +2 characters,
+`updated_at` moved), an unchanged buffer wrote nothing three times running, and
+empty content was refused with the content intact.
+
+One correction paid for on the way: the first command sheet omitted
+`--env-file=.env`, without which the TS front door cannot resolve a home that
+Python resolves from the same `.env`. Not a TS4 defect — `journeys`, flipped
+months ago, behaves identically — and now captured as
+[CR085](../../../../refinement/rs009-cv22-front-door-routing-correctness/cr085-the-ts-front-door-does-not-read-the-env-python-reads.md).
 
 Pass condition: identical bytes and exit codes on steps 1 and 3; the log line
 carries `leaf=session-export` and no argument; `identity edit` saves an edit,
@@ -120,6 +133,6 @@ content lost by the editor seam.
 
 ## Missing Evidence
 
-- The three Navigator steps above.
+- none.
 - `manual_lock_preserved` on real data — impossible on this home (no manually
   locked titles exist); covered by the corpus and the demo instead.

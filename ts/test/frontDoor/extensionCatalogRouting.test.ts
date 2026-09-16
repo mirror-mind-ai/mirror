@@ -1,9 +1,9 @@
-// CV22.DS7.TS4 plateau 7 — the routes, the gates, and the denominator.
+// CV22.DS7.TS4 plateaus 7 and 8 — the routes, the gates, and the denominator.
 //
-// Ported is not flipped. Everything this story owns is wired here and OFF: the
-// family answers from Python until plateau 8 moves three constants, so an
-// operator who pulls this version gets exactly today's behavior and an explicit
-// `=1` to try the new one.
+// Flipped 2026-09-16 on accepted Navigator validation. What these tests hold
+// now is the other half of the promise: every leaf answers from TypeScript by
+// default, and every one of them goes back to Python with a single `=0` — no
+// code change, no data migration.
 
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -21,8 +21,9 @@ import {
 
 const REPO_ROOT = dirname(dirname(dirname(dirname(fileURLToPath(import.meta.url)))));
 const ON = { MIRROR_TS_EXTENSIONS: "1" };
+const OFF = { MIRROR_TS_EXTENSIONS: "0" };
 
-test("the whole extension family is wired and off until the flip", () => {
+test("the whole extension family answers from TypeScript, and reverts with one variable", () => {
   for (const argv of [
     ["extensions", "list"],
     ["extensions", "install", "ext-hello", "--extensions-root", "/tmp/src"],
@@ -34,40 +35,41 @@ test("the whole extension family is wired and off until the flip", () => {
     ["inspect", "extension", "google-ads"],
     ["inspect", "llm-calls", "--summary"],
   ]) {
-    const decision = routeMemoryCommand(argv);
-    assert.equal(decision.engine, "python", `${argv.join(" ")} must stay on Python`);
-    assert.match(decision.reason, /MIRROR_TS_EXTENSIONS/, argv.join(" "));
+    assert.equal(routeMemoryCommand(argv).engine, "ts", `${argv.join(" ")} is flipped`);
     assert.equal(routeMemoryCommand(argv, ON).engine, "ts", `${argv.join(" ")} with the gate on`);
+    const reverted = routeMemoryCommand(argv, OFF);
+    assert.equal(reverted.engine, "python", `${argv.join(" ")} must revert`);
+    assert.match(reverted.reason, /MIRROR_TS_EXTENSIONS/, argv.join(" "));
   }
 });
 
 test("`identity edit` and the ES-001 write faces carry their own gates", () => {
-  assert.equal(routeMemoryCommand(["identity", "edit", "ego", "behavior"]).engine, "python");
+  assert.equal(routeMemoryCommand(["identity", "edit", "ego", "behavior"]).engine, "ts");
   assert.equal(
-    routeMemoryCommand(["identity", "edit", "ego", "behavior"], { MIRROR_TS_IDENTITY_EDIT: "1" })
+    routeMemoryCommand(["identity", "edit", "ego", "behavior"], { MIRROR_TS_IDENTITY_EDIT: "0" })
       .engine,
-    "ts",
+    "python",
   );
   // The editor seam does NOT ride the catalog gate: losing a person's identity
   // content and misreporting an extension list are different failures, and each
   // deserves a revert that does not take the other with it.
   assert.equal(
-    routeMemoryCommand(["identity", "edit", "ego", "behavior"], ON).engine,
-    "python",
-    "identity edit must not inherit the catalog gate",
+    routeMemoryCommand(["identity", "edit", "ego", "behavior"], OFF).engine,
+    "ts",
+    "identity edit must not be reverted by the catalog gate",
   );
 
   for (const flag of ["--metadata-lifecycle-apply", "--metadata-lifecycle-demo"]) {
-    assert.equal(routeMemoryCommand(["conversations", flag, "abc"]).engine, "python");
+    assert.equal(routeMemoryCommand(["conversations", flag, "abc"]).engine, "ts");
     assert.equal(
       routeMemoryCommand(["conversations", flag, "abc"], {
-        MIRROR_TS_CONVERSATIONS_LIFECYCLE: "1",
+        MIRROR_TS_CONVERSATIONS_LIFECYCLE: "0",
       }).engine,
-      "ts",
+      "python",
     );
   }
-  // The READ faces flipped in US11 and stay on with the same variable unset:
-  // one variable, two defaults, until plateau 8 makes them one again.
+  // The READ faces flipped in US11; since plateau 8 the writes share both the
+  // variable AND the default, so one `=0` reverts the whole ES-001 family.
   assert.equal(
     routeMemoryCommand(["conversations", "--metadata-lifecycle-dry-run", "abc"]).engine,
     "ts",
@@ -114,13 +116,15 @@ test("every gate reverts with `=0`, which is what makes the flip safe to take", 
 });
 
 test("a claimed command does not inherit a subcommand it never ported", () => {
+  // Unchanged by the flip: what TypeScript answers is what it ported, and a
+  // verb Python grows tomorrow still reaches Python.
   // `conversations` grew `append` after DS7.US1 claimed the command, and the
   // new subcommand silently rendered a listing and discarded the caller's
   // messages. Every family this story touches allowlists by NAME instead.
-  assert.equal(routeMemoryCommand(["extensions", "doctor"], ON).engine, "python");
-  assert.equal(routeMemoryCommand(["inspect", "something-new"], ON).engine, "python");
-  assert.equal(routeMemoryCommand(["list", "something-new"], ON).engine, "python");
-  assert.equal(routeMemoryCommand(["identity", "something-new"], ON).engine, "python");
+  assert.equal(routeMemoryCommand(["extensions", "doctor"]).engine, "python");
+  assert.equal(routeMemoryCommand(["inspect", "something-new"]).engine, "python");
+  assert.equal(routeMemoryCommand(["list", "something-new"]).engine, "python");
+  assert.equal(routeMemoryCommand(["identity", "something-new"]).engine, "python");
 });
 
 test("`ext`'s allowlist is audited against `cli/ext.py`, because it cannot filter", () => {

@@ -57,7 +57,7 @@ test("keeps unported commands on Python fallback", () => {
   assert.equal(routeMemoryCommand(["journal", "hello"]).engine, "ts");
 });
 
-test("routes `identity set/list/get` to TS but keeps the interactive `edit` on Python", () => {
+test("routes every `identity` leaf to TS, `edit` reverting on its own variable", () => {
   assert.deepEqual(routeMemoryCommand(["identity", "set", "ego", "behavior", "--content", "x"]), {
     command: "identity",
     engine: "ts",
@@ -70,7 +70,17 @@ test("routes `identity set/list/get` to TS but keeps the interactive `edit` on P
   });
   assert.equal(routeMemoryCommand(["identity", "list", "--layer", "ego"]).engine, "ts");
   assert.equal(routeMemoryCommand(["identity", "get", "ego", "behavior"]).engine, "ts");
-  assert.equal(routeMemoryCommand(["identity", "edit", "ego", "behavior"]).engine, "python");
+  // Flipped 2026-09-16 (CV22.DS7.TS4 plateau 8) on accepted Navigator
+  // validation: the editor seam answers from TS and reverts on its own gate,
+  // not the catalog's.
+  assert.equal(routeMemoryCommand(["identity", "edit", "ego", "behavior"]).engine, "ts");
+  assert.equal(
+    routeMemoryCommand(["identity", "edit", "ego", "behavior"], { MIRROR_TS_IDENTITY_EDIT: "0" })
+      .engine,
+    "python",
+  );
+  // A leaf `identity` never ported still reaches Python by name.
+  assert.equal(routeMemoryCommand(["identity", "something-new"]).engine, "python");
 });
 
 test("routes `tasks` list/default to TS", () => {
@@ -155,31 +165,48 @@ test("routes `conversations` listing and the two lifecycle READ faces to TS", ()
   for (const flag of ["--metadata-lifecycle-dry-run", "--metadata-lifecycle-preview-at-message"]) {
     assert.equal(routeMemoryCommand(["conversations", flag, "x"], {}).engine, "ts", flag);
   }
-  // The writes and the backfills stay on Python, each refused BY NAME with its
-  // own owner (DS7.TS4 and DS10 respectively).
-  for (const flag of [
-    "--metadata-lifecycle-apply",
-    "--metadata-lifecycle-demo",
-    "--metadata-backfill-preview",
-    "--metadata-backfill-apply",
-  ]) {
+  // The two WRITE faces joined them at plateau 8; one `=0` now reverts the
+  // whole ES-001 family, reads and writes together.
+  for (const flag of ["--metadata-lifecycle-apply", "--metadata-lifecycle-demo"]) {
+    assert.equal(routeMemoryCommand(["conversations", flag, "x"], {}).engine, "ts", flag);
+    assert.equal(
+      routeMemoryCommand(["conversations", flag, "x"], { MIRROR_TS_CONVERSATIONS_LIFECYCLE: "0" })
+        .engine,
+      "python",
+      flag,
+    );
+  }
+  // The backfills are still refused BY NAME: DS10 retires them unported.
+  for (const flag of ["--metadata-backfill-preview", "--metadata-backfill-apply"]) {
     assert.equal(routeMemoryCommand(["conversations", flag, "x"], {}).engine, "python", flag);
   }
 });
 
-test("routes `inspect persona` to TS but keeps other inspect targets on Python", () => {
+test("routes every ported `inspect` target to TS, and refuses an unknown one by name", () => {
   assert.deepEqual(routeMemoryCommand(["inspect", "persona", "engineer"]), {
     command: "inspect",
     engine: "ts",
     reason: "DS7.US1 inspect persona read ported to TS",
   });
-  assert.equal(routeMemoryCommand(["inspect", "extension", "ext-google-ads"]).engine, "python");
-  assert.equal(routeMemoryCommand(["inspect", "runtime-catalog", "pi"]).engine, "python");
-  assert.equal(routeMemoryCommand(["inspect", "llm-calls"]).engine, "python");
-  assert.equal(routeMemoryCommand(["inspect", "embedding-provenance"]).engine, "python");
+  // CV22.DS7.TS4 plateau 8: the catalog pair and the ledger pair flipped
+  // together, under one revert.
+  for (const target of [
+    ["extension", "ext-google-ads"],
+    ["runtime-catalog", "pi"],
+    ["llm-calls"],
+    ["embedding-provenance"],
+  ]) {
+    assert.equal(routeMemoryCommand(["inspect", ...target]).engine, "ts", target.join(" "));
+    assert.equal(
+      routeMemoryCommand(["inspect", ...target], { MIRROR_TS_EXTENSIONS: "0" }).engine,
+      "python",
+      target.join(" "),
+    );
+  }
+  assert.equal(routeMemoryCommand(["inspect", "something-new"]).engine, "python");
 });
 
-test("routes `list personas/journeys` to TS but keeps `list extensions/all` on Python", () => {
+test("routes every ported `list` target to TS, and refuses an unknown one by name", () => {
   assert.deepEqual(routeMemoryCommand(["list", "personas"]), {
     command: "list",
     engine: "ts",
@@ -191,9 +218,17 @@ test("routes `list personas/journeys` to TS but keeps `list extensions/all` on P
     reason: "DS7.US1 list journeys read ported to TS",
   });
   assert.equal(routeMemoryCommand(["list", "personas", "--verbose"]).engine, "ts");
-  assert.equal(routeMemoryCommand(["list", "extensions"]).engine, "python");
-  assert.equal(routeMemoryCommand(["list", "all"]).engine, "python");
-  assert.equal(routeMemoryCommand(["list"]).engine, "python");
+  // CV22.DS7.TS4 plateau 8: `extensions` and `all` (the no-target default)
+  // flipped; `all` is the composition of three ported renderers.
+  for (const argv of [["list", "extensions"], ["list", "all"], ["list"]]) {
+    assert.equal(routeMemoryCommand(argv).engine, "ts", argv.join(" "));
+    assert.equal(
+      routeMemoryCommand(argv, { MIRROR_TS_EXTENSIONS: "0" }).engine,
+      "python",
+      argv.join(" "),
+    );
+  }
+  assert.equal(routeMemoryCommand(["list", "something-new"]).engine, "python");
 });
 
 test("descriptor list and generate both answer from TS, with generate revertible", () => {
@@ -820,21 +855,21 @@ test("lifecycle READ flags route to TS under their own gate", () => {
   }
 });
 
-test("lifecycle WRITE flags are their own leaves, ported by DS7.TS4 and still off", () => {
-  // US11 refused these two BY NAME so they could never inherit the read route.
-  // DS7.TS4 ported them; they now carry the reads' variable with their own
-  // default, so an unset environment still answers from Python and `=1` is the
-  // deliberate opt-in until plateau 8. The name check stays: a flag that
-  // inherits a decision is what this test was written to catch.
+test("lifecycle WRITE flags are their own leaves, named in both directions", () => {
+  // US11 refused these two BY NAME so they could never inherit the read route;
+  // DS7.TS4 ported them and plateau 8 flipped them. The NAME is what this test
+  // has always been about: whichever way the route goes, the reason says which
+  // flag decided it, so a flag can never inherit another one's decision.
   for (const flag of ["--metadata-lifecycle-apply", "--metadata-lifecycle-demo"]) {
-    const off = routeMemoryCommand(["conversations", flag, "x"]);
-    assert.equal(off.engine, "python", `${flag} must not be flipped before plateau 8`);
-    assert.match(off.reason, new RegExp(flag.replace(/-/g, "\\-")));
-    const on = routeMemoryCommand(["conversations", flag, "x"], {
-      MIRROR_TS_CONVERSATIONS_LIFECYCLE: "1",
-    });
+    const on = routeMemoryCommand(["conversations", flag, "x"]);
     assert.equal(on.engine, "ts");
     assert.match(on.reason, /DS7\.TS4/);
+    assert.match(on.reason, new RegExp(flag.replace(/-/g, "\\-")));
+    const reverted = routeMemoryCommand(["conversations", flag, "x"], {
+      MIRROR_TS_CONVERSATIONS_LIFECYCLE: "0",
+    });
+    assert.equal(reverted.engine, "python");
+    assert.match(reverted.reason, new RegExp(flag.replace(/-/g, "\\-")));
   }
 });
 

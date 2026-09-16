@@ -2,7 +2,7 @@
 
 # Handoff — CV22.DS7.TS4 — Ops/utility tail 3: extension catalog
 
-**Status:** plateaus 1-7 of 8 complete. The **catalog reads** answer from
+**Status:** all 8 plateaus complete. **Flipped 2026-09-16.** The **catalog reads** answer from
 TypeScript — `extensions list|validate` (with the runtime filter and every
 usage refusal), `ext list`, `list extensions`, `inspect extension`, and
 `inspect runtime-catalog` — graded against 32 recorded Python invocations, and
@@ -29,39 +29,41 @@ with a scripted editor, `conversations --metadata-lifecycle-apply` graded on the
 report AND the row it leaves, and `--metadata-lifecycle-demo` compared as a
 whole document with ids aliased.
 
-Plateau 7 wires the **front door**: every leaf this story ports now has a route,
-three gates, an audited allowlist, and a leaf-only log line — and all three
-gates are OFF. `routing.ts` still sends the whole family to Python until plateau
-8 moves three constants.
+Plateau 7 wired the **front door** — routes, three gates, audited allowlists, a
+leaf-only log line — and plateau 8 **flipped it** on accepted Navigator
+validation.
 
-**Wired, not flipped:** `MIRROR_TS_EXTENSIONS=1`, `MIRROR_TS_IDENTITY_EDIT=1`, and
-`MIRROR_TS_CONVERSATIONS_LIFECYCLE=1` each opt one family in; unset is Python,
-which is what plateau 8 changes.
+**Flipped 2026-09-16.** All seventeen leaves answer from TypeScript by default.
+`MIRROR_TS_EXTENSIONS=0` returns the catalog, the dispatcher, and the
+`list`/`inspect` branches; `MIRROR_TS_IDENTITY_EDIT=0` returns the editor seam;
+`MIRROR_TS_CONVERSATIONS_LIFECYCLE=0` returns the whole ES-001 family, reads
+included. No code change, no data migration.
 
 ## Resume here
 
-**Next: plateau 8 — the flip.** Three constants in `routing.ts`
-(`EXTENSIONS_DEFAULT_ON`, `IDENTITY_EDIT_DEFAULT_ON`,
-`LIFECYCLE_WRITES_DEFAULT_ON`) move to `true`, the skill parity checker loses
-`identity edit` and the lifecycle write faces from its Python allowlist, and the
-burn-down ledger gets its per-leaf table and checklist.
+**The implementation is done.** What remains is the Ariad lifecycle closure for
+this story — Validation, Debt Review, Coherence, Done — through the Builder
+runtime, on a story whose validation the Navigator has already accepted.
 
-**The flip needs the Navigator first, and the list is now short.**
-`ts/parity/ts4_home_copy_route.ts` runs the automatable half on a COPY of the
-real home — read-only at the source, every command against the copy — and on
-2026-09-16 every step was equal on both engines: the whole read diff, `ext <id>`
-for all SEVEN installed extensions through the compat host, one real read-only
-subcommand, the lifecycle demo, `identity edit` with a scripted editor, real
-`--metadata-lifecycle-apply` on one conversation per available decision state,
-and three revert drills. [Validation](validation.md) records it, together with
-the exact command sheet for the three steps that remain the Navigator's: step 3
-on the untouched home, step 5 with their own `$EDITOR`, and the acceptance pass
-of step 1.
+Debt candidates to carry into that review, all measured rather than suspected:
 
-Two findings the copy produced: five of seven installed extensions are SYMLINKS
-into source repos (a `Dirent.isDirectory()` filter sees one of seven), and the
-real home holds ZERO manually locked titles, so that decision branch cannot be
-exercised on real data and is covered by the corpus instead.
+- the `--global` binding idempotence defect from plateau 3 (a nullable
+  `target_id` in a rowid primary key, so `INSERT OR IGNORE` ignores nothing);
+- `RELEASE SAVEPOINT` on the success path, unobservable by corpus or probe;
+- the ledger reads riding the catalog gate rather than being ungated as D2
+  wrote them (a deliberate narrowing, one line to undo);
+- CR085, captured 2026-09-16: the TS front door does not read the `.env` Python
+  reads — not this story's, and now owned by RS009.
+
+What landed in plateau 8:
+
+- `ts/src/frontDoor/routing.ts` — the three constants, flipped;
+- three `mm-identity` skill copies moved to the front door, and `identity edit`
+  removed from the skill parity checker's `PYTHON_ALLOWLIST`;
+- the catalog smoke now runs the TS side with NO gate, so CI proves the shipped
+  default rather than an opt-in;
+- the burn-down ledger's per-leaf table, flip checklist, and history entry; the
+  *Unported — deterministic* table now holds only DS10's retirements.
 
 What landed in plateau 7:
 

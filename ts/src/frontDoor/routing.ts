@@ -242,13 +242,18 @@ function gateEnabled(value: string | undefined): boolean {
   return DB_SAFETY_TOOLS_DEFAULT_ON;
 }
 
-// CV22.DS7.TS4 plateau 7: ported, wired, and OFF. The family answers from
-// Python until plateau 8 flips these three constants, so an operator who pulls
-// this version gets exactly today's behavior and an explicit `=1` to try the
-// new one. Each `=0` stays the revert control after the flip.
-const EXTENSIONS_DEFAULT_ON = false;
-const IDENTITY_EDIT_DEFAULT_ON = false;
-const LIFECYCLE_WRITES_DEFAULT_ON = false;
+// CV22.DS7.TS4 plateau 8: FLIPPED 2026-09-16, after the Navigator ran the
+// validation route on the real home and accepted it — the read diff, the
+// dispatch through the compat host with `leaf=session-export` and no argument
+// in the log, and `identity edit` saving through their own editor. The rest of
+// the route was run on copies of that home (`ts/parity/ts4_home_copy_route.ts`)
+// and in CI.
+//
+// Each `=0` is now the revert control: no code change, no data migration, and
+// nothing in this family writes a shape the other engine cannot read.
+const EXTENSIONS_DEFAULT_ON = true;
+const IDENTITY_EDIT_DEFAULT_ON = true;
+const LIFECYCLE_WRITES_DEFAULT_ON = true;
 
 /**
  * Exported because its default is about to change.
@@ -268,10 +273,13 @@ export function gateWithDefault(value: string | undefined, defaultOn: boolean): 
 /**
  * The extension family's single gate.
  *
- * `inspect llm-calls|embedding-provenance` ride it too for now. D2 gives those
- * two no permanent revert — they are plain ledger reads and join their ungated
- * `inspect persona` sibling — but "ported" is not "flipped", and a leaf that
- * turns on the moment it is wired would make plateau 7 a release.
+ * `inspect llm-calls|embedding-provenance` ride it too, which is a deliberate
+ * narrowing of decision D2: that decision left the two ledger reads ungated,
+ * like their `inspect persona` sibling. Keeping them here gives the STORY one
+ * revert control instead of a family with a hole in it — an operator reverting
+ * "the extension catalog work" should not discover that two of its leaves kept
+ * answering from the new engine. Unhooking them is a one-line change if the
+ * Navigator prefers D2 literally.
  */
 function extensionsRouteEnabled(env: RouteEnvironment): boolean {
   return gateWithDefault(env.MIRROR_TS_EXTENSIONS, EXTENSIONS_DEFAULT_ON);

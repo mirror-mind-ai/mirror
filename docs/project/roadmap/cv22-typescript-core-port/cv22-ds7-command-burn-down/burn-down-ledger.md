@@ -88,7 +88,7 @@ replay-gated section below is empty for the first time since DS5 created it.
 | Soul Mode | `soul` | 1/1 | DS7.US6 | ✅ done — flipped 2026-09-08; **`harvest save` flipped ungated 2026-09-12** with DS8.US3, which also gave it the provider the front door had never wired |
 | Explorer Mode | `explore` | 1/1 | DS7.US7 | ✅ done — flipped 2026-09-09; **`story promote` flipped 2026-09-14** with DS7.US8 plateau 7, following the composed Builder revert; projection refresh delegated behind a DS10-owned seam |
 | Builder/Ariad | `build` | 1/1 | DS7.US8 | ✅ **flipped 2026-09-16** — all 27 in-scope leaves answer from TS by default (revert `MIRROR_TS_BUILD=0`; `load` also follows `MIRROR_TS_SEARCH=0` and `MIRROR_TS_CONVERSATION_LLM_TAIL=0` through its composed decision); the twenty SQLite Workbench leaves stay on Python by name until DS10 retires them; **story closed 2026-09-16 through the TS front door itself** (self-hosting) |
-| Ops/utility tail | `backup`, `repair-encoding`, `extensions`, `ext`, `welcome` (+ `runtime` reads§) | 3/5‡ | DS7.TS1 / TS3 / TS4 | 🔵 in progress — TS1 `backup`+`repair-encoding` ✅ flipped 2026-09-07; TS3 `welcome` ✅ flipped 2026-09-08 (+ `runtime` reads as branch coverage); TS4 extension catalog (also takes `identity edit`). `journey-projection` left this row for DS10 on 2026-09-09 with TS5 |
+| Ops/utility tail | `backup`, `repair-encoding`, `extensions`, `ext`, `welcome` (+ `runtime` reads§) | 5/5‡ | DS7.TS1 / TS3 / TS4 | ✅ **done — TS4 flipped 2026-09-16** — TS1 `backup`+`repair-encoding` flipped 2026-09-07; TS3 `welcome` flipped 2026-09-08 (+ `runtime` reads as branch coverage); TS4 `extensions`+`ext` flipped 2026-09-16 with the US1-deferred `list`/`inspect` branches, `identity edit`, and the two ES-001 write faces (reverts `MIRROR_TS_EXTENSIONS=0`, `MIRROR_TS_IDENTITY_EDIT=0`, `MIRROR_TS_CONVERSATIONS_LIFECYCLE=0`). See the [extension catalog per-leaf detail](#extension-catalog--per-leaf-detail-ds7ts4). `journey-projection` left this row for DS10 on 2026-09-09 with TS5 |
 
 Deferred to later Delivery Stories (excluded from the denominator): `mcp`
 (DS9), `web` (DS10), `eval` (DS10 — ownership decided by DS8.TS1), `runtime` (DS10, mutating half; reads are
@@ -182,13 +182,13 @@ the defect this ledger exists to prevent.
 | ~~`build` — 27 in-scope leaves (29 subcommands, **47** leaves in Python)~~ | DS7.US8 | ✅ **Answered by TS since 2026-09-16** (plateau 9), after the Navigator validated the gated route on the real home. Plateaus 1–7 ported all 27 leaves behind no route; plateau 8 put them through the production front door under a temporary `MIRROR_TS_BUILD=1` opt-in; plateau 9 made TS the default with `MIRROR_TS_BUILD=0` as the whole-family revert. See the [`build` per-leaf detail](#build--per-leaf-detail-ds7us8) below and the [US8 package](cv22-ds7-us8-builder-ariad-tree/index.md) |
 | `build refinement-story create\|overview\|pull\|review\|coherence\|close\|park` (7), `build change-request` × 13 | DS10 (retire, cutoff) | The SQLite Refinement Workbench, superseded by CV20.DS12's document-first Workbench (US8 D1, decided 2026-09-09). **Twenty** leaves, not fifteen — `refinement-story review\|coherence\|close` and `change-request select\|confirm` were omitted from the earlier count. US8 refuses all twenty by name; `load`'s read-only `get_workbench_snapshot` is ported by US8 and deleted here |
 | ~~`explore story promote`~~ | DS7.US8 | ✅ **Answered by TS since 2026-09-14** (plateau 7). Renderer ported in US7; the tail is Builder `load`, wired through `buildLoadRuntime.ts`, which plateau 8's `build` route reuses |
-| `extensions install\|uninstall\|expose-claude\|clean-claude` | DS7.TS4 | Mutates skill directories |
-| `ext list`, `ext <id>`, `ext <id> bind\|unbind\|bindings\|migrate` | DS7.TS4 | Catalog and bindings |
-| `ext <id> <extension-subcommand>` | DS7.TS4 — **plan input** | Dynamic dispatch into an extension's own Python entry point. TS4 must decide: finite compat host (TS2's shape) or a TS extension-command contract. Not a silent port |
-| `list extensions\|all` | DS7.TS4 | US1-deferred branch |
-| `inspect extension\|runtime-catalog\|llm-calls\|embedding-provenance` | DS7.TS4 | US1-deferred branches |
-| `identity edit` | DS7.TS4 | `spawnSync($EDITOR)`; "kept on Python" is not a disposition once Python is deleted |
-| `conversations --metadata-lifecycle-apply\|-demo` | DS7.TS4 | Both need `apply_metadata_lifecycle`, ~80 lines of unported decision logic with a write path; `demo` calls `apply`. US11 recorded all four faces as wiring, which was true of the two reads only (Navigator decision 2026-09-09) |
+| ~~`extensions install\|uninstall\|expose-claude\|clean-claude`~~ | DS7.TS4 | ✅ **Answered by TS since 2026-09-16.** Graded by 26 recorded cases carrying the complete file tree of the home, the runtime target root, and the Claude project root, plus a live both-engine `extension_install` probe on a real-database copy |
+| ~~`ext list`, `ext <id>`, `ext <id> bind\|unbind\|bindings\|migrate`~~ | DS7.TS4 | ✅ **Answered by TS since 2026-09-16.** 40 recorded dispatch cases and 24 binding/migration cases, plus the `ext_bindings` write probe |
+| ~~`ext <id> <extension-subcommand>`~~ | DS7.TS4 | ✅ **Answered by TS since 2026-09-16.** The plan input was decided by the Navigator (D1, 2026-09-16): **both halves** — a declared `mirror-cli-v1` runtime on the manifest's existing `cli.subcommands[]` is executed directly, and anything else falls per-SUBCOMMAND to a `cli` mode of TS2's existing compat host, under DS10's single deletion gate. Validated against all seven installed extensions on a copy of the real home, and one real read-only subcommand on the real home |
+| ~~`list extensions\|all`~~ | DS7.TS4 | ✅ **Answered by TS since 2026-09-16.** `all` composes DS7.US1's persona and journey renderers with this story's extension listing |
+| ~~`inspect extension\|runtime-catalog\|llm-calls\|embedding-provenance`~~ | DS7.TS4 | ✅ **Answered by TS since 2026-09-16.** One command, two refusal classes: the catalog pair prints usage on stdout at exit 1, the ledger pair is argparse and exits 2 on stderr |
+| ~~`identity edit`~~ | DS7.TS4 | ✅ **Answered by TS since 2026-09-16.** The 0600 buffer is removed on every path including the refusals; the save goes through the same `applyIdentitySet` as `identity set`. Left `PYTHON_ALLOWLIST` in the flip commit, so CI now fails if a skill reaches Python for it |
+| ~~`conversations --metadata-lifecycle-apply\|-demo`~~ | DS7.TS4 | ✅ **Answered by TS since 2026-09-16.** `apply_metadata_lifecycle` ported over the engine US10 already had; graded on the report AND the row, including on real conversations from a copy of the Navigator's home. One `MIRROR_TS_CONVERSATIONS_LIFECYCLE=0` now reverts the whole ES-001 family, reads and writes together |
 | `conversations --metadata-backfill-preview\|-apply` | DS10 (retire) | One-shot backfill of pre-ES-001 rows |
 | `journey-projection` (all) | DS10 (TS5) | Publisher cannot land while both cores write (`fcntl.flock`) |
 
@@ -521,6 +521,73 @@ implied.
 
 ---
 
+## Extension catalog — per-leaf detail (DS7.TS4)
+
+The family the ops tail closes on: the catalog, the dispatcher, the two
+US1-deferred `list`/`inspect` branches, the editor seam, and the two ES-001
+write faces US11 refused by name. **Flipped 2026-09-16** after accepted
+Navigator validation.
+
+| Leaf | Corpus | Status |
+|------|--------|--------|
+| `extensions list\|validate` | 32 recorded cases | ✅ TS |
+| `extensions sync` | file trees in a disposable home and target root | ✅ TS |
+| `extensions install` | trees + rows + a live both-engine probe on a real-DB copy | ✅ TS |
+| `extensions uninstall` | trees + rows; data tables preserved (D4) | ✅ TS |
+| `extensions expose-claude\|clean-claude` | project-root trees, overlay bytes | ✅ TS |
+| `ext list` | recorded with the catalog reads | ✅ TS |
+| `ext <id>` (subcommand listing) | 40 dispatch cases | ✅ TS |
+| `ext <id> bind\|unbind\|bindings` | 24 cases + `ext_bindings` probe | ✅ TS |
+| `ext <id> migrate` | 24 cases + `ext_migrations` rows | ✅ TS |
+| `ext <id> <extension-subcommand>` | 40 cases; declared runtime executed directly, otherwise the compat host | ✅ TS |
+| `list extensions` | recorded with the catalog reads | ✅ TS |
+| `list all` | composed at the front door from three ported renderers | ✅ TS |
+| `inspect extension\|runtime-catalog` | 32 cases (usage on stdout, exit 1) | ✅ TS |
+| `inspect llm-calls\|embedding-provenance` | 21 cases (argparse, exit 2 on stderr) | ✅ TS |
+| `identity edit` | 9 cases with scripted `sh` editors, streams + rows | ✅ TS |
+| `conversations --metadata-lifecycle-apply` | 12 cases, report + row | ✅ TS |
+| `conversations --metadata-lifecycle-demo` | whole document, ids aliased | ✅ TS |
+
+**17 leaves, three reverts.** `MIRROR_TS_EXTENSIONS=0` returns the catalog,
+the dispatcher, and both `list`/`inspect` branches; `MIRROR_TS_IDENTITY_EDIT=0`
+returns the editor seam; `MIRROR_TS_CONVERSATIONS_LIFECYCLE=0` returns the
+whole ES-001 family, reads included. The ledger reads ride the catalog gate
+rather than being ungated as decision D2 wrote them, so that reverting "the
+extension catalog work" does not leave two of its leaves on the new engine;
+unhooking them is a one-line change if the Navigator prefers D2 literally.
+
+### Flip checklist (2026-09-16)
+
+| # | Check | Status |
+|---|-------|--------|
+| 1 | Four new golden corpora (`ext-dispatch`, `ext-catalog-writes`, `lifecycle-write`, `identity-edit`) byte-identical under the determinism gate, and verified identical under BOTH CI interpreters | ✅ |
+| 2 | `ext_bindings` and `extension_install` write probes green on the demo copy in CI | ✅ |
+| 3 | Both-engine catalog smoke — install through uninstall, twelve steps, streams, exit codes, and file trees — through the real front door with **no gate in the environment** | ✅ |
+| 4 | Allowlists audited against Python itself: `TS4_EXTENSIONS_VERBS` against `cli/extensions.py`, `TS4_EXT_TOP_LEVEL_VERBS` against `cli/ext.py`, so a verb Python grows fails the build | ✅ |
+| 5 | Redaction: account id, campaign name, and folder path sentinels absent from `front-door.log`, which records `leaf=<id>` and stops | ✅ |
+| 6 | Revert drills: all three variables, one leaf each, Python in the log | ✅ |
+| 7 | Regression: full TS suite (2,255), Python extension suite, oracle drift, skill parity | ✅ |
+| 8 | Three skill copies switched to the front door; `identity edit` removed from the skill parity checker's Python allowlist | ✅ |
+| 9 | Oracle-drift tripwire clean with `cli/ext.py`, `cli/inspect.py`, `cli/identity_cmd.py`, and `extensions/compat_host.py` registered | ✅ |
+| 10 | Navigator validation accepted 2026-09-16 (steps 1, 3, 5 on the real home; the rest on copies of it and in CI) | ✅ |
+| 11 | Gate defaults on (all three variables absent → TS) | ✅ |
+
+**Navigator validation, 2026-09-16.** Step 1: `extensions list`, `ext list`,
+`list all`, and `inspect llm-calls --summary` on the real home, byte-identical
+on both engines. Step 3: `ext session-export folder list` on the real home,
+identical output, with `ext ts exit=0 leaf=session-export` in the log and no
+argument text. Step 5: `identity edit ego behavior` with the Navigator's own
+editor — the save landed (`✓ ego/behavior updated`, confirmed at the row), an
+unchanged buffer wrote nothing, and empty content was refused. Steps 2, 6, and 7
+ran on copies of the same home through
+[`ts/parity/ts4_home_copy_route.ts`](../../../../../ts/parity/ts4_home_copy_route.ts),
+including `ext <id>` for all SEVEN installed extensions and real
+`--metadata-lifecycle-apply` on one conversation per available decision state;
+step 4 is the CI smoke. One state could not be exercised on real data and is
+recorded rather than skipped: the home holds zero manually locked titles.
+
+---
+
 ## `build` — per-leaf detail (DS7.US8)
 
 Twenty-nine subcommands, forty-seven leaves in Python; **27 in scope, flipped
@@ -701,3 +768,4 @@ default route, and the `=0` steps prove the revert.
 | 2026-09-11 | **DS8.US2 group 2 live: the whole close-tail family answers from TS.** `session-start` (full run) and `session-maintenance` follow group 1 after it was observed live on the real home. Sixteen replay-gated leaves at the start of DS8 → **ten**, all of them DS8.US3's low-traffic tail. Group 2 validated on a real-DB copy with the multi-conversation case its staging existed for: one `session-maintenance` run extracted two conversations, 11 ledger rows, every one priced with bodies withheld, both `extraction_status=ok`, and the per-conversation embedding counts matching the memory deltas exactly (1 summary + n memory embeddings → n new memories) — which is the plateau-1 atomicity contract holding under a real run rather than a fixture. Run cost: $0.0032. `session-start --fast` deliberately stays outside the revert: it makes no model call, so a close-tail scare must not drag it back, exactly as `week view` sits outside the `week` gate. A first maintenance run on an untouched copy was a no-op (no work due) and made zero live calls — worth recording because "exit 0" alone would have looked like evidence and was not. |
 | 2026-09-13 | **DS8.TS2: the replay-gated table is empty.** `consolidate scan` and `shadow scan` — the two leaves US3 refused live by name because TypeScript sent a fenced memory dump where Python sends a 2–3k-character instruction — now send Python's real `CONSOLIDATION_PROMPT` and `SHADOW_SCAN_PROMPT`, assembled through `pyFormat` and graded against bytes **captured** from the real Python builders (`send_to_model` stubbed) rather than re-composed. Three pins: raw template bytes, per-branch SHA-256, and replay fixtures that refuse one byte of drift for both roles. The owner-name and identity-context inputs `cmd_scan` resolves are ported with Unicode `\w` and code-point slicing; the `consolidate_cmd` hardcoded owner name is deliberately not ported (D1, CR014). A four-lens plan review added the live witness the hermetic pins cannot give — a `prompt_tokens` floor in the smoke — and a hard stop where the prompt engineer reads the assembled text before it spends. Live on copies: both leaves answered, rows they produced were consumed by TS's `apply`, the tail reverts with `MIRROR_TS_CULTIVATION=0`. Sixteen replay-gated leaves at the start of DS8 → **zero**. Captured: **CR080** (the consolidation prompt's identity-context block) and **CR081** (typecheck `ts/parity`). Remaining in DS8: TS1, the `eval` ownership decision. |
 | 2026-09-13 | **DS8.TS1: `eval` gets an owner, and the release gate gets a defect report.** The candidate row asked whether the harness is ported or retired; measured, it is neither — the instrument's subject moved. Every live eval module imports a Python pipeline function while TypeScript answers eight of those nine surfaces in production, and DS10's index did not mention `eval` at all, so retirement would have deleted the model-behavior release gate without a decision. Ownership transfers to `ts/evals/` as a **DS10 deletion gate** (six items: the Python contract, the live transport, a recorded disposition per module, injection probes made individually blocking, the doc updates, and deletion only after those). `eval` is re-attributed from DS8 to DS10 here in all three places. The Navigator-run `eval --all` — this home's first, 11/12 with `routing` the only failing module, matching D-005's recorded score exactly — confirmed the Python harness remains a valid interim gate and left sixteen JSONL records as the baseline the TS harness will diff. It also surfaced **D-017**: `scene` reported `5/6 passed ✓ PASS` with its injection probe **obeyed**, because a security probe is averaged with quality probes against one threshold — so a fence regression on any of the six fenced surfaces cannot trip the gate. An authorized n=5 confirmed AI-22's documented residual rather than a regression (5/5 resisted, pin unchanged). **DS8 is 5/5 with every done condition met**; the parent collapse and the release-intent decision are the Navigator's. |
+| 2026-09-16 | **TS4 flipped: the extension catalog family answers from TS, and the ops tail closes.** Seventeen leaves — `extensions` ×7, `ext` ×5 including the dynamic `<id> <subcommand>`, `list extensions|all`, `inspect extension|runtime-catalog|llm-calls|embedding-provenance`, `identity edit`, and the two ES-001 write faces — answer from TypeScript by default. Three independent reverts: `MIRROR_TS_EXTENSIONS=0`, `MIRROR_TS_IDENTITY_EDIT=0`, `MIRROR_TS_CONVERSATIONS_LIFECYCLE=0` (which now returns the whole ES-001 family, reads included). D1 was decided by the Navigator and amended at implementation: a declared `mirror-cli-v1` runtime hangs off the manifest's EXISTING `cli.subcommands[]` rather than a new `commands[]` array, and the fallback to the compat host is per SUBCOMMAND, so an author migrates one command at a time. `identity edit` left `PYTHON_ALLOWLIST`, and four Python modules joined the drift tripwire. Two defects were found in already-flipped code while doing it: the US11 lifecycle READ face selected three of the five columns its engine reads (every field disagreed for any conversation with a summary or tags), and plateau 3's `runMigrate` normalized a path Python prints raw. Ops/utility tail 3/5 → **5/5**; the *Unported — deterministic* table now holds only DS10's retirements. |

@@ -63,7 +63,6 @@ PYTHON_RE = re.compile(r"uv run python -m memory\s+(?P<rest>.+)$")
 # same commit that flips its route; DS10's Skill Invocation Gate requires the
 # list to be empty before Python is deleted.
 PYTHON_ALLOWLIST: dict[str, str] = {
-    "identity edit": "CV22.DS7.TS4 (interactive $EDITOR seam, unported)",
     "runtime update": "CV22.DS10 (updater redesigned under npm)",
     "runtime pull": "CV22.DS10 (updater redesigned under npm)",
     "runtime stable": "CV22.DS10 (updater redesigned under npm)",
