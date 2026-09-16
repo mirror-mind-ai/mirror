@@ -27,13 +27,13 @@ import {
   builderCursorStateProbe,
   builderLoadProbe,
 } from "./builderProbes.ts";
-import { type ExtBindingsProbeParams, extBindingsProbe } from "./extensionProbes.ts";
 import {
   type ExplorerHandoffProbeParams,
   type ExplorerStoryProbeParams,
   explorerHandoffProbe,
   explorerStoryProbe,
 } from "./explorerProbes.ts";
+import { type ExtBindingsProbeParams, extBindingsProbe } from "./extensionProbes.ts";
 import {
   type CloseTailProbeParams,
   closeTailProbe,
