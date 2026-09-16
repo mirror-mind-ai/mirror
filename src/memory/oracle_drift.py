@@ -154,6 +154,19 @@ ORACLE_PATHS: tuple[str, ...] = (
     # belongs to the extension catalog (TS4) -- but the checksum normalisation
     # is the part both halves must agree on, so drift here is a parity signal.
     "src/memory/extensions/migrations.py",
+    # DS7.TS4: the extension catalog family. `cli/ext.py` is the dispatcher
+    # (argv splitting, the built-in verbs, the help guard, the installed check);
+    # `cli/inspect.py` carries `cmd_list`/`cmd_inspect`, whose catalog targets
+    # and ledger targets are BOTH ported with two different refusal classes;
+    # `cli/identity_cmd.py` is the editor seam; and `extensions/compat_host.py`
+    # is the temporary bridge that runs an extension's registered handler and
+    # validates its `register(api)` at install time. `cli/extensions.py`,
+    # `extensions/api.py`, `extensions/loader.py`, `extensions/migrations.py`,
+    # and `services/conversation.py` are already tracked above.
+    "src/memory/cli/ext.py",
+    "src/memory/cli/inspect.py",
+    "src/memory/cli/identity_cmd.py",
+    "src/memory/extensions/compat_host.py",
     # DS7.US6 plateau 1: the Soul Mode surfaces. `transport=verbatim` cards
     # ported whole (ts/src/soul/render.ts), including the wrapping helpers whose
     # code-point and whitespace semantics the golden pins.

@@ -820,13 +820,21 @@ test("lifecycle READ flags route to TS under their own gate", () => {
   }
 });
 
-test("lifecycle WRITE flags are refused by name and name DS7.TS4 as their owner", () => {
-  const gate = { MIRROR_TS_CONVERSATIONS_LIFECYCLE: "1" };
+test("lifecycle WRITE flags are their own leaves, ported by DS7.TS4 and still off", () => {
+  // US11 refused these two BY NAME so they could never inherit the read route.
+  // DS7.TS4 ported them; they now carry the reads' variable with their own
+  // default, so an unset environment still answers from Python and `=1` is the
+  // deliberate opt-in until plateau 8. The name check stays: a flag that
+  // inherits a decision is what this test was written to catch.
   for (const flag of ["--metadata-lifecycle-apply", "--metadata-lifecycle-demo"]) {
-    const decision = routeMemoryCommand(["conversations", flag, "x"], gate);
-    assert.equal(decision.engine, "python", `${flag} must not inherit the read route`);
-    assert.match(decision.reason, /DS7\.TS4/);
-    assert.match(decision.reason, new RegExp(flag.replace(/-/g, "\\-")));
+    const off = routeMemoryCommand(["conversations", flag, "x"]);
+    assert.equal(off.engine, "python", `${flag} must not be flipped before plateau 8`);
+    assert.match(off.reason, new RegExp(flag.replace(/-/g, "\\-")));
+    const on = routeMemoryCommand(["conversations", flag, "x"], {
+      MIRROR_TS_CONVERSATIONS_LIFECYCLE: "1",
+    });
+    assert.equal(on.engine, "ts");
+    assert.match(on.reason, /DS7\.TS4/);
   }
 });
 

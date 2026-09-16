@@ -300,3 +300,13 @@ jobs:
       # depend on.
       - name: Builder Ariad lifecycle smoke (both engines, no gate, must pass)
         run: node --no-warnings ts/parity/builder_lifecycle_smoke.ts
+
+      # CV22.DS7.TS4 plateau 7 — the extension catalog family as a SEQUENCE,
+      # live on both engines in disposable homes: install through uninstall,
+      # including the dispatch through the compat host. It also proves the
+      # front-door log carries leaf names only: every step passes an account id,
+      # a campaign name, and a folder path that would be a leak if logged.
+      - name: Extension catalog smoke (both engines, gate on, must pass)
+        run: node --no-warnings ts/parity/extension_catalog_smoke.ts
+        env:
+          MEMORY_ENV: test

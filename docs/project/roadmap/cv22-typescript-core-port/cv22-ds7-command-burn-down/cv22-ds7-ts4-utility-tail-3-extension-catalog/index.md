@@ -2,7 +2,7 @@
 
 # CV22.DS7.TS4 — Ops/utility tail 3: extension catalog
 
-**Status:** 🟢 In Progress — **plateaus 1-6 of 8 complete** (catalog reads, ledger reads, the binding/migration writes, the `ext <id> <subcommand>` dispatch — both halves: the declared `mirror-cli-v1` command executed directly, everything else through the compat host's new `cli` mode — and the catalog writes graded by the file trees they leave in a disposable home and target root, `identity edit`, and the ES-001 metadata-lifecycle write faces — ported and graded, nothing routed); pulled 2026-09-16 through the TS front door (the first Ariad Pull answered by TypeScript in production); **Plan approved 2026-09-16** with D1 answered (c): a TS dispatcher, a declared `mirror-cli-v1` contract, and a `cli` mode of the existing temporary compat host under DS10's deletion gate
+**Status:** 🟢 In Progress — **plateaus 1-7 of 8 complete** (catalog reads, ledger reads, the binding/migration writes, the `ext <id> <subcommand>` dispatch — both halves: the declared `mirror-cli-v1` command executed directly, everything else through the compat host's new `cli` mode — and the catalog writes graded by the file trees they leave in a disposable home and target root, `identity edit`, and the ES-001 metadata-lifecycle write faces — ported and graded, and the front door wired behind three gates that are all OFF — the flip is plateau 8 and needs the Navigator's validation route first); pulled 2026-09-16 through the TS front door (the first Ariad Pull answered by TypeScript in production); **Plan approved 2026-09-16** with D1 answered (c): a TS dispatcher, a declared `mirror-cli-v1` contract, and a `cli` mode of the existing temporary compat host under DS10's deletion gate
 **Type:** Technical Story
 
 ---

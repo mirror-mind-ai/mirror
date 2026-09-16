@@ -691,6 +691,119 @@ function isIdentityWrite(argv: readonly string[]): boolean {
   return argv[0] === "identity" && argv[1] === "set";
 }
 
+function isIdentityEdit(argv: readonly string[]): boolean {
+  return argv[0] === "identity" && argv[1] === "edit";
+}
+
+/**
+ * The leaves CV22.DS7.TS4 answers, once `routing.ts` has allowed them.
+ *
+ * `list` and `inspect` are SHARED commands: `list personas|journeys` and
+ * `inspect persona` are DS7.US1's ported reads and must keep reaching their own
+ * handlers. The first version of this predicate claimed both commands whole and
+ * sent all four of those leaves through the catalog route — the same
+ * inheritance the routing comments warn about, committed one file away from the
+ * warning. Named leaves only.
+ */
+function isExtensionCatalogCommand(argv: readonly string[]): boolean {
+  const command = argv[0];
+  if (command === "extensions" || command === "ext") return true;
+  const target = firstCatalogPositional(argv.slice(1));
+  if (command === "list") return target === null || target === "extensions" || target === "all";
+  if (command === "inspect") {
+    return (
+      target === "extension" ||
+      target === "runtime-catalog" ||
+      target === "llm-calls" ||
+      target === "embedding-provenance"
+    );
+  }
+  return false;
+}
+
+/** The first non-option token, skipping the valued options these commands take. */
+function firstCatalogPositional(args: readonly string[]): string | null {
+  const valued = new Set([
+    "--mirror-home",
+    "--db-path",
+    "--extensions-root",
+    "--runtime",
+    "--target-root",
+  ]);
+  for (let index = 0; index < args.length; index += 1) {
+    const token = args[index] as string;
+    if (valued.has(token)) {
+      index += 1;
+      continue;
+    }
+    if (!token.startsWith("--")) return token;
+  }
+  return null;
+}
+
+function isLifecycleWriteFace(argv: readonly string[]): boolean {
+  return (
+    argv[0] === "conversations" &&
+    (argv.includes("--metadata-lifecycle-apply") || argv.includes("--metadata-lifecycle-demo"))
+  );
+}
+
+/**
+ * `identity edit <layer> <key>`: drive $EDITOR, then write through the same
+ * seam `identity set` uses.
+ *
+ * The editor inherits this process's streams, so the write handle is taken
+ * AFTER it returns — a human staring at vim for ten minutes should not be
+ * holding the database open, and an editor that never exits should not be
+ * holding it forever.
+ */
+async function runIdentityEditRoute(argv: readonly string[]): Promise<number> {
+  const { runIdentityEdit } = await import("#identity/identityEdit.ts");
+  const positionals = stripOptionWithValue(
+    stripOptionWithValue(argv.slice(2), "--db-path"),
+    "--mirror-home",
+  );
+  const layer = positionals[0];
+  const key = positionals[1];
+  if (!layer || !key) {
+    console.error("identity edit requires <layer> <key>");
+    return 2;
+  }
+  return withMirrorWriteDb(argv, (db) => {
+    const result = runIdentityEdit(db, layer, key, {
+      editor: process.env.EDITOR,
+      visual: process.env.VISUAL,
+      nowIso,
+      newId,
+    });
+    if (result.stdout) process.stdout.write(result.stdout);
+    if (result.stderr) process.stderr.write(result.stderr);
+    return result.exitCode;
+  });
+}
+
+/** `conversations --metadata-lifecycle-apply|--metadata-lifecycle-demo`. */
+async function runLifecycleWriteFace(argv: readonly string[]): Promise<number> {
+  const { runLifecycleWriteRoute } = await import("./lifecycleWriteRoute.ts");
+  return withMirrorWriteDb(argv, (db) => runLifecycleWriteRoute(db, argv.slice(1)));
+}
+
+/** The extension catalog family, answered from the TS core. */
+async function runExtensionCatalog(argv: readonly string[]): Promise<TsDispatchOutcome> {
+  const { runExtensionCatalogRoute } = await import("./extensionCatalogRoute.ts");
+  const dbPath = resolveDbPathForCli(argv.slice(1));
+  if (dbPath === null) return { exitCode: 2 };
+  ensureDatabaseReady(dbPath, argv[0] ?? null);
+  const { pythonUtcIsoformat } = await import("#extensions/bindings.ts");
+  return runExtensionCatalogRoute(argv, {
+    mirrorHome: dirname(dbPath),
+    databasePath: dbPath,
+    deps: { nowIso: () => pythonUtcIsoformat() },
+    withReadOnlyDatabase: (run) => withMirrorReadDb(argv, run),
+    withWritableDatabase: (run) => withMirrorWriteDb(argv, run),
+  });
+}
+
 /**
  * Route `identity set <layer> <key> --content ... | stdin` to the TS core. Mirrors
  * the Python `identity set` interface and output, but writes through the sanctioned
@@ -1583,6 +1696,12 @@ async function dispatchTs(argv: readonly string[]): Promise<number | TsDispatchO
   if (isInit(argv)) return runInit(argv);
   if (isSeed(argv)) return runSeedCommand(argv);
   if (isIdentityWrite(argv)) return runIdentityWrite(argv);
+  if (isIdentityEdit(argv)) return runIdentityEditRoute(argv);
+  // CV22.DS7.TS4: the extension catalog family. Lazy like the Builder tree, and
+  // for the same reason: a reverted invocation is sent to Python before this
+  // import, so a broken catalog core cannot destroy its own escape hatch.
+  if (isExtensionCatalogCommand(argv)) return runExtensionCatalog(argv);
+  if (isLifecycleWriteFace(argv)) return runLifecycleWriteFace(argv);
   if (isJourneyWrite(argv)) return runJourneyWrite(argv);
   if (isJourneyUpdateWrite(argv)) return runJourneyUpdateWrite(argv);
   if (isTasksSubcommandWrite(argv)) return runTasksWrite(argv);

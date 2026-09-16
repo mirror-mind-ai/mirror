@@ -52,6 +52,48 @@ const TS4_LIFECYCLE_WRITE_FLAGS = ["--metadata-lifecycle-apply", "--metadata-lif
 // documented cutoff; refused by name so it can never inherit the read route.
 const DS10_BACKFILL_FLAGS = ["--metadata-backfill-preview", "--metadata-backfill-apply"];
 
+// CV22.DS7.TS4: the extension catalog family, allowlisted by NAME.
+//
+// `extensions` and `inspect` are claimed commands with subcommands Python may
+// grow, and this family has already paid for inheritance once: `conversations`
+// grew `append` after DS7.US1 claimed the command, and the new subcommand
+// silently rendered a listing and discarded the caller's messages. So every
+// verb TS answers is listed here, and anything else stays Python's.
+export const TS4_EXTENSIONS_VERBS = new Set([
+  "list",
+  "validate",
+  "sync",
+  "install",
+  "uninstall",
+  "expose-claude",
+  "clean-claude",
+]);
+
+const TS4_INSPECT_TARGETS = new Set([
+  "extension",
+  "runtime-catalog",
+  "llm-calls",
+  "embedding-provenance",
+]);
+
+/**
+ * `ext`'s two levels, exported as the AUDITED denominator rather than as a
+ * filter.
+ *
+ * Level one is every head `cmd_ext` recognises as a verb; level two is the four
+ * built-in verbs that follow an id. Everything else — `<id>`, `<id> <builtin>`,
+ * `<id> <subcommand>` — is the dynamic leaf, whose subcommand belongs to an
+ * extension Mirror does not own and therefore cannot be enumerated.
+ *
+ * Because the route cannot refuse an unknown head (Python reads it as an id),
+ * these sets are checked against `cli/ext.py` itself by a route test. That is
+ * what keeps the inheritance honest: the day Python grows a verb beside
+ * `list`, the test fails instead of the user silently getting `extension not
+ * installed: .../doctor`.
+ */
+export const TS4_EXT_TOP_LEVEL_VERBS = new Set(["list", "--help", "-h", "help"]);
+export const TS4_EXT_BUILTIN_VERBS = new Set(["bind", "unbind", "bindings", "migrate"]);
+
 const CONVERSATIONS_LIFECYCLE_FLAGS = [
   ...TS_LIFECYCLE_READ_FLAGS,
   ...TS4_LIFECYCLE_WRITE_FLAGS,
@@ -167,6 +209,18 @@ export type RouteEnvironment = {
   MIRROR_TS_JOURNAL_EMBEDDING_REPLAY?: string;
   MIRROR_TS_WEEK_LLM_REPLAY?: string;
   MIRROR_TS_CONVERSATIONS_LIFECYCLE?: string;
+  /**
+   * CV22.DS7.TS4: the extension catalog family and the editor seam.
+   *
+   * `MIRROR_TS_EXTENSIONS` covers `extensions`, `ext`, `list extensions|all`,
+   * and `inspect extension|runtime-catalog` as ONE gate (decision D2): they
+   * share discovery, and a half-flipped catalog would report two truths about
+   * the same installed world. `identity edit` gets its own — an editor seam
+   * that can lose a person's identity content deserves a revert that does not
+   * also revert the catalog.
+   */
+  MIRROR_TS_EXTENSIONS?: string;
+  MIRROR_TS_IDENTITY_EDIT?: string;
   MIRROR_TS_DESCRIPTOR?: string;
   MIRROR_TS_DESCRIPTOR_LLM_REPLAY?: string;
   MEMORY_RECEPTION?: string;
@@ -186,6 +240,54 @@ function gateEnabled(value: string | undefined): boolean {
   if (value === "0") return false;
   if (value === "1") return true;
   return DB_SAFETY_TOOLS_DEFAULT_ON;
+}
+
+// CV22.DS7.TS4 plateau 7: ported, wired, and OFF. The family answers from
+// Python until plateau 8 flips these three constants, so an operator who pulls
+// this version gets exactly today's behavior and an explicit `=1` to try the
+// new one. Each `=0` stays the revert control after the flip.
+const EXTENSIONS_DEFAULT_ON = false;
+const IDENTITY_EDIT_DEFAULT_ON = false;
+const LIFECYCLE_WRITES_DEFAULT_ON = false;
+
+/**
+ * Exported because its default is about to change.
+ *
+ * While a gate defaults OFF, `=0` and "unset" produce the same route, so a test
+ * that only checks "unset and `=0` both reach Python" passes even if the `=0`
+ * branch is deleted — which a mutant proved. Plateau 8 flips these defaults to
+ * ON, and on that day the `=0` branch IS the revert control the flip is safe
+ * to take with. So the contract is pinned here, independent of today's default.
+ */
+export function gateWithDefault(value: string | undefined, defaultOn: boolean): boolean {
+  if (value === "0") return false;
+  if (value === "1") return true;
+  return defaultOn;
+}
+
+/**
+ * The extension family's single gate.
+ *
+ * `inspect llm-calls|embedding-provenance` ride it too for now. D2 gives those
+ * two no permanent revert — they are plain ledger reads and join their ungated
+ * `inspect persona` sibling — but "ported" is not "flipped", and a leaf that
+ * turns on the moment it is wired would make plateau 7 a release.
+ */
+function extensionsRouteEnabled(env: RouteEnvironment): boolean {
+  return gateWithDefault(env.MIRROR_TS_EXTENSIONS, EXTENSIONS_DEFAULT_ON);
+}
+
+function identityEditRouteEnabled(env: RouteEnvironment): boolean {
+  return gateWithDefault(env.MIRROR_TS_IDENTITY_EDIT, IDENTITY_EDIT_DEFAULT_ON);
+}
+
+/**
+ * The ES-001 WRITE faces share the reads' environment variable (D2) but not
+ * their default: the reads flipped in US11 and are on, these are wired here and
+ * off. One variable, two defaults, until plateau 8 makes them one again.
+ */
+function lifecycleWritesRouteEnabled(env: RouteEnvironment): boolean {
+  return gateWithDefault(env.MIRROR_TS_CONVERSATIONS_LIFECYCLE, LIFECYCLE_WRITES_DEFAULT_ON);
 }
 
 function backupRouteEnabled(env: RouteEnvironment): boolean {
@@ -344,19 +446,64 @@ export function routeMemoryCommand(
   }
 
   if (command === "identity") {
-    // `set` (DS4) and `list`/`get` (DS7.US1) are ported. `identity edit` spawns
-    // $EDITOR — an interactive seam that stays on Python by design, not oversight.
+    // `set` (DS4) and `list`/`get` (DS7.US1) are ported; `edit` is DS7.TS4's
+    // editor seam, wired here and off until the flip.
     if (argv[1] === "set") {
       return { command, engine: "ts", reason: "DS4 identity set write ported to TS" };
     }
     if (argv[1] === "list" || argv[1] === "get") {
       return { command, engine: "ts", reason: "DS7.US1 identity list/get read ported to TS" };
     }
+    if (argv[1] === "edit") {
+      if (!identityEditRouteEnabled(env)) {
+        return {
+          command,
+          engine: "python",
+          reason: "identity edit TS route disabled by MIRROR_TS_IDENTITY_EDIT",
+        };
+      }
+      return { command, engine: "ts", reason: "DS7.TS4 identity edit ported to TS" };
+    }
+    // A subcommand this family does not know is Python's, by name rather than
+    // by inheritance: `identity` grew `edit` after `set` claimed the command.
     return {
       command,
       engine: "python",
-      reason: "identity edit (interactive $EDITOR) not ported to TS",
+      reason: "identity subcommand not ported to TS",
     };
+  }
+
+  if (command === "extensions") {
+    const verb = argv[1] ?? "list";
+    if (!TS4_EXTENSIONS_VERBS.has(verb)) {
+      // `cmd_extensions` refuses an unknown verb with a usage line. TS owns that
+      // refusal only for the verbs it knows; a verb Python grows later must
+      // reach Python, not a TS refusal written before it existed.
+      return { command, engine: "python", reason: "extensions verb not ported to TS" };
+    }
+    if (!extensionsRouteEnabled(env)) {
+      return {
+        command,
+        engine: "python",
+        reason: "extensions TS route disabled by MIRROR_TS_EXTENSIONS",
+      };
+    }
+    return { command, engine: "ts", reason: `DS7.TS4 extensions ${verb} ported to TS` };
+  }
+
+  if (command === "ext") {
+    // No verb allowlist is possible here, and saying so is better than writing
+    // one that accepts everything: `cmd_ext` treats EVERY head that is not
+    // `list` or a help flag as an extension id, so TS must too. The exposure
+    // that creates is real and named — a new top-level verb beside `list`
+    // would be read as an id and answered `extension not installed` — and it
+    // is guarded by a test that reads `cli/ext.py` and fails when that set of
+    // literals changes, rather than by a set duplicated here that nothing
+    // checks.
+    if (!extensionsRouteEnabled(env)) {
+      return { command, engine: "python", reason: "ext TS route disabled by MIRROR_TS_EXTENSIONS" };
+    }
+    return { command, engine: "ts", reason: "DS7.TS4 ext dispatcher ported to TS" };
   }
 
   if (command === "init") {
@@ -414,11 +561,14 @@ export function routeMemoryCommand(
     }
     const writeFlag = TS4_LIFECYCLE_WRITE_FLAGS.find((flag) => argv.includes(flag));
     if (writeFlag) {
-      return {
-        command,
-        engine: "python",
-        reason: `${writeFlag} needs apply_metadata_lifecycle, owned by DS7.TS4`,
-      };
+      if (!lifecycleWritesRouteEnabled(env)) {
+        return {
+          command,
+          engine: "python",
+          reason: `${writeFlag} TS route disabled by MIRROR_TS_CONVERSATIONS_LIFECYCLE`,
+        };
+      }
+      return { command, engine: "ts", reason: `DS7.TS4 ${writeFlag} ported to TS` };
     }
     const readFlag = TS_LIFECYCLE_READ_FLAGS.find((flag) => argv.includes(flag));
     if (readFlag) {
@@ -439,35 +589,56 @@ export function routeMemoryCommand(
   }
 
   if (command === "inspect") {
-    // `persona` (DS7.US1) is a deterministic identity read. `extension` and
-    // `runtime-catalog` share the extension-catalog machinery (like `list
-    // extensions`), and `llm-calls`/`embedding-provenance` are ops-tail
-    // introspection -- all bound to CV22.DS7.TS1, not this story.
+    // `persona` (DS7.US1) is a deterministic identity read. The other four
+    // targets are DS7.TS4's: `extension`/`runtime-catalog` share the catalog
+    // machinery, `llm-calls`/`embedding-provenance` read the ledger.
     if (argv[1] === "persona") {
       return { command, engine: "ts", reason: "DS7.US1 inspect persona read ported to TS" };
     }
+    if (TS4_INSPECT_TARGETS.has(argv[1] ?? "")) {
+      if (!extensionsRouteEnabled(env)) {
+        return {
+          command,
+          engine: "python",
+          reason: `inspect ${argv[1]} TS route disabled by MIRROR_TS_EXTENSIONS`,
+        };
+      }
+      return { command, engine: "ts", reason: `DS7.TS4 inspect ${argv[1]} ported to TS` };
+    }
+    // An unknown target is Python's by NAME. `cmd_inspect` refuses it with a
+    // usage line, and reproducing that refusal is a port, not an inheritance:
+    // a target Python grows tomorrow must not silently land on a TS refusal.
     return {
       command,
       engine: "python",
-      reason: "inspect extension/runtime-catalog/llm-calls/embedding-provenance not ported to TS",
+      reason: "inspect target not ported to TS",
     };
   }
 
   if (command === "list") {
-    // `personas`/`journeys` (DS7.US1) are deterministic identity reads.
-    // `extensions`/`all` (and no target => "all") touch the extension catalog
-    // and stay on Python, bound to CV22.DS7.TS1.
+    // `personas`/`journeys` (DS7.US1) are deterministic identity reads;
+    // `extensions` and `all` (which is also the no-target default) touch the
+    // extension catalog and belong to DS7.TS4.
     if (argv[1] === "personas") {
       return { command, engine: "ts", reason: "DS7.US1 list personas read ported to TS" };
     }
     if (argv[1] === "journeys") {
       return { command, engine: "ts", reason: "DS7.US1 list journeys read ported to TS" };
     }
-    return {
-      command,
-      engine: "python",
-      reason: "list extensions/all (extension catalog) not ported to TS",
-    };
+    const listTarget = argv[1] ?? "all";
+    if (listTarget === "extensions" || listTarget === "all") {
+      if (!extensionsRouteEnabled(env)) {
+        return {
+          command,
+          engine: "python",
+          reason: `list ${listTarget} TS route disabled by MIRROR_TS_EXTENSIONS`,
+        };
+      }
+      return { command, engine: "ts", reason: `DS7.TS4 list ${listTarget} ported to TS` };
+    }
+    // Anything else is `cmd_list`'s usage refusal, which TS reproduces only for
+    // the targets it owns.
+    return { command, engine: "python", reason: "list target not ported to TS" };
   }
 
   if (command === "descriptor") {

@@ -387,3 +387,39 @@ died at a shell timeout before its `finally`, leaving a mutant in the working
 tree — `resolveEditor` without its VISUAL fallback, which is what launched that
 `nano`. The harness now keeps a pristine copy outside the tree, restores before
 and after each mutant, bounds every run, and verifies the tree when it finishes.
+
+### Plateau 7 — the front door
+
+Routes, gates, allowlists, and the log line. Everything this story ports now has
+a route, and **all three gates default OFF**: `MIRROR_TS_EXTENSIONS`,
+`MIRROR_TS_IDENTITY_EDIT`, and — for the write faces only —
+`MIRROR_TS_CONVERSATIONS_LIFECYCLE`, whose READ faces flipped back in US11. One
+variable, two defaults, until plateau 8 makes them one again.
+
+| Guard | What it proves |
+|---|---|
+| Route tests | every leaf is Python with an unset environment, TS with `=1`, and Python again with `=0` |
+| Gate contract | `gateWithDefault` is pinned against the default plateau 8 will set — with an OFF default, `=0` and unset are indistinguishable, and a mutant proved a route-level test cannot see the difference |
+| Allowlist audit | `TS4_EXTENSIONS_VERBS` is compared against `cli/extensions.py`'s own literal set, and `TS4_EXT_TOP_LEVEL_VERBS` against `cli/ext.py`'s, so a verb Python grows fails the build instead of being read as an extension id |
+| Leaf redaction | `leafFor` returns `install`, `google-ads`, `google-ads/bind` — never a subcommand's arguments |
+| Both-engine smoke | install → `ext <id>` → bind → bindings → dispatch → unbind → migrate → inspect → `list all` → uninstall, run live on both engines in disposable homes, comparing streams, exit codes, and file trees at every step |
+
+The smoke also carries the redaction proof: every step passes an account id, a
+campaign name, and a folder path, and it fails if any of them reaches
+`front-door.log` — or if the log never records the dispatch leaf at all.
+
+Four Python modules joined the oracle-drift tripwire: `cli/ext.py`,
+`cli/inspect.py`, `cli/identity_cmd.py`, and `extensions/compat_host.py`.
+
+**Checks:** TS suite 2,254 pass; the smoke agrees on all twelve steps; typecheck
+clean; biome clean except the pre-existing `routing.ts` warning; oracle drift
+clean. **Twelve mutants killed**, two of which had survived a first run and
+exposed real weaknesses rather than code defects: a gate whose revert branch
+could be deleted unnoticed, and a mutation harness pointed at the wrong test
+file.
+
+**The plateau's own defect, caught by four render goldens.** The first CLI
+predicate claimed `list` and `inspect` whole, so `list personas` and `inspect
+persona` — DS7.US1's ported reads — were routed through the catalog. That is the
+exact inheritance the routing comments warn about, committed one file away from
+the warning. The predicate now names its leaves, and two mutants pin it.

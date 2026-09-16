@@ -2,7 +2,7 @@
 
 # Handoff — CV22.DS7.TS4 — Ops/utility tail 3: extension catalog
 
-**Status:** plateaus 1-6 of 8 complete. The **catalog reads** answer from
+**Status:** plateaus 1-7 of 8 complete. The **catalog reads** answer from
 TypeScript — `extensions list|validate` (with the runtime filter and every
 usage refusal), `ext list`, `list extensions`, `inspect extension`, and
 `inspect runtime-catalog` — graded against 32 recorded Python invocations, and
@@ -29,22 +29,43 @@ with a scripted editor, `conversations --metadata-lifecycle-apply` graded on the
 report AND the row it leaves, and `--metadata-lifecycle-demo` compared as a
 whole document with ids aliased.
 
-**Nothing is routed:** `routing.ts` still sends the whole family to Python,
-which is the intended state until plateau 7 adds the routes and plateau 8
-flips the gates.
+Plateau 7 wires the **front door**: every leaf this story ports now has a route,
+three gates, an audited allowlist, and a leaf-only log line — and all three
+gates are OFF. `routing.ts` still sends the whole family to Python until plateau
+8 moves three constants.
+
+**Wired, not flipped:** `MIRROR_TS_EXTENSIONS=1`, `MIRROR_TS_IDENTITY_EDIT=1`, and
+`MIRROR_TS_CONVERSATIONS_LIFECYCLE=1` each opt one family in; unset is Python,
+which is what plateau 8 changes.
 
 ## Resume here
 
-**Next: plateau 7 — the front door (Scope H).** Routes with the three D2 gates
-(`MIRROR_TS_EXTENSIONS`, `MIRROR_TS_IDENTITY_EDIT`, and the existing
-`MIRROR_TS_CONVERSATIONS_LIFECYCLE`), the two-level allowlist for `ext`
-(built-in verbs by name, `<id> <subcommand>` as the dynamic leaf), refusals
-through the process boundary, redaction with extension argv sentinels,
-`build`-style `leaf=` logging, and oracle registration for the nine Python
-modules the Plan names. Then plateau 8 flips the gates.
+**Next: plateau 8 — the flip.** Three constants in `routing.ts`
+(`EXTENSIONS_DEFAULT_ON`, `IDENTITY_EDIT_DEFAULT_ON`,
+`LIFECYCLE_WRITES_DEFAULT_ON`) move to `true`, the skill parity checker loses
+`identity edit` and the lifecycle write faces from its Python allowlist, and the
+burn-down ledger gets its per-leaf table and checklist.
 
-Everything the family needs is now ported. Nothing is routed: `routing.ts`
-still sends all of it to Python.
+**The flip needs the Navigator first.** The Plan's Test Guide lists steps 1–4
+and 7 on the REAL home before the gates move: the read diff, `ext <id>` for
+every installed extension, one real extension subcommand through the compat
+host, the catalog lifecycle on a disposable home and target root, and one revert
+per family. Step 5 (`identity edit`) and step 6 (the lifecycle writes) are the
+Navigator's too. Nothing about plateau 8 is a code problem; it is an acceptance
+gate.
+
+What landed in plateau 7:
+
+- `ts/src/frontDoor/routing.ts` — the three gates, each defaulting OFF, plus
+  the allowlists exported as an audited denominator;
+- `ts/src/frontDoor/extensionCatalogRoute.ts` — the family's route, the `list
+  all` composition, and `leafFor`;
+- `ts/src/frontDoor/lifecycleWriteRoute.ts` — the two ES-001 write faces;
+- `ts/src/frontDoor/cli.ts` — `identity edit` and the lazy catalog import;
+- `ts/parity/extension_catalog_smoke.ts` — install through uninstall on BOTH
+  engines, live, with the log checked for leaks; in CI;
+- four Python modules registered as oracles (`cli/ext.py`, `cli/inspect.py`,
+  `cli/identity_cmd.py`, `extensions/compat_host.py`).
 
 What landed in plateau 6:
 
@@ -140,6 +161,37 @@ What landed in plateau 1:
   fields the renderers print, exactly where TS3 said TS4 would extend it;
 - `ts/parity/generate_extension_catalog_golden.py` and its fixture tree, in the
   CI determinism gate with their own `git diff` check.
+
+## Rules plateau 7 paid for — do not rediscover them
+
+- **A claimed command is not a claimed family, and I proved it by breaking it.**
+  The first CLI predicate claimed `list` and `inspect` whole, so `list personas`
+  and `inspect persona` — DS7.US1's ported reads — were swallowed by the catalog
+  route. Four render goldens caught it immediately. The routing comments in the
+  same repository warn about exactly this; writing the warning is not the same
+  as obeying it.
+- **`ext` cannot filter its own heads.** `cmd_ext` reads every head that is not
+  `list` or a help flag as an extension id, so the route has no unknown-verb
+  refusal to make. The exposure — a new top-level verb answered `extension not
+  installed` — is guarded by a test that reads `cli/ext.py` and fails when its
+  literal heads change, rather than by a set duplicated in TypeScript that
+  nothing checks.
+- **The dispatch must hold NO handle.** `ext <id> <subcommand>` reaches the
+  compat host, which opens the database itself, exactly as Python's dispatcher
+  does. The decision is pure, so it is taken without a handle and the host is
+  spawned with none open; two writers on one file would be a SQLITE_BUSY this
+  route invented for itself.
+- **`identity edit` takes its handle AFTER the editor exits.** A human staring
+  at vim for ten minutes must not hold the database open, and an editor that
+  never exits must not hold it forever.
+- **A gate that defaults OFF cannot prove its own revert.** With the default
+  off, `=0` and unset reach Python either way, so a route-level test passes even
+  with the `=0` branch deleted — a mutant proved it. The contract is now pinned
+  at the function, against the default plateau 8 will set.
+- **The log learns the leaf, never the argument.** `extensions install <id>`
+  logs `leaf=install`; `ext <id> <sub> --account …` logs `leaf=<id>` and stops
+  there. The smoke passes an account id, a campaign name, and a folder path
+  through every step and fails if any reaches `front-door.log`.
 
 ## Rules plateau 6 paid for — do not rediscover them
 
