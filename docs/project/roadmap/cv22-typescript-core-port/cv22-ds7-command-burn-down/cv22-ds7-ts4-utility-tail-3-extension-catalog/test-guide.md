@@ -126,6 +126,49 @@ Python `inspect` tests still green. `getLlmCallSummary` — shipped by DS8 with
 no caller — got its first one here, and its parameter widened from
 `WritableDatabase` to `Database` because the caller opens read-only.
 
+### Plateau 3 — bindings and the migration runner's write half
+
+24 recorded cases in `ext-bindings.golden.json`, each carrying the streams AND
+the `_ext_bindings` / `_ext_migrations` rows and extension tables that exist
+after the step — a command that prints the right line and writes the wrong row
+fails here. Plus the `ext_bindings` **write probe** on a copy of a real
+database, running the production functions.
+
+| Fact | Measured |
+|---|---|
+| A `--global` bind is **not idempotent** | `_ext_bindings`'s primary key includes a nullable `target_id`, and SQLite does not consider two NULLs equal, so `INSERT OR IGNORE` ignores nothing: three global binds leave **three rows**, three persona binds leave one |
+| One global unbind clears them all | `(target_id IS ? OR target_id = ?)` matches every duplicate at once |
+| `--help` on a built-in verb | describes and **never executes**: `ext <id> migrate --help` leaves the migration unapplied |
+| A failing statement | rolls the whole file back — table **and** bookkeeping row — via SAVEPOINT, because SQLite implicitly commits a deferred transaction before DDL |
+| The prefix guard reads statements, not text | a block comment naming `memories` and `DROP TABLE conversations` does not trip it; the real out-of-namespace statement does |
+| Checksum semantics | a comment-and-whitespace edit is tolerated; changing a string literal is drift and is refused |
+| `created_at` / `applied_at` | Python's `isoformat()` with `+00:00`, **not** the `Z` spelling the rest of Mirror writes |
+
+Recorded divergence: the tail of `<file> failed to apply: <message>` is the
+SQLite driver's own sentence, and `node:sqlite` does not word it as CPython's
+`sqlite3` does. The graded contract is the prefix, the exit code, and the
+rollback.
+
+**Checks:** 24/24 cases equal; **seven mutants killed** on the corpus (splitter
+losing string literals, prefix guard reading comments, rollback removed, drift
+accepted, `IS` → `=`, unbind always claiming success, `Z` timestamps), each
+asserted to have changed the file first. `ext_bindings` write probe:
+`match: true` on a real-database copy.
+
+**The probe caught its own weakness, twice.** Its first version reimplemented
+the binding SQL instead of calling `runBind`/`runUnbind`, so a mutant that
+broke the production `IS`-matching **survived** — a probe grading the probe. It
+now calls the production functions. Its second version stamped every step from
+one frozen instant, which made `INSERT OR REPLACE` indistinguishable from
+`INSERT OR IGNORE`; it now derives a distinct stamp per step in both halves.
+Both survivors are recorded because finding them required running mutants
+against the probe itself, not only against the corpus.
+
+**Known limit, not papered over:** a mutant that removes `RELEASE SAVEPOINT` on
+the SUCCESS path still survives. Final rows are identical whether or not the
+savepoint was released, so neither the corpus nor the probe can see it; the
+failure path's rollback IS graded. Recorded rather than left implicit.
+
 ### Scope note recorded at plateau 1
 
 `list all` composes the persona and journey renderers DS7.US1 already ported

@@ -273,6 +273,22 @@ messages explaining why; the persona panel at Plan (done) and at handoff.
 - `navigator_decision_needed` — D1 above; and any extension on the validated
   home whose handler cannot run under the compat host.
 
+## Debt / CRs To Capture At Debt Review (candidates)
+
+- **A `--global` extension binding is not idempotent.** `_ext_bindings`'s
+  primary key includes `target_id`, which is NULL for a global binding, and
+  SQLite does not treat two NULLs as equal in a rowid-table primary key. So
+  `ext <id> bind <cap> --global` inserts a duplicate row on every run, where
+  the persona and journey kinds are correctly idempotent, and `_cmd_bind`'s own
+  docstring ("No-op if already present (PK conflict)") is true for two kinds of
+  three. Measured at plateau 3, reproduced in both cores, and NOT repaired: the
+  fix is a product decision (a partial unique index, or a sentinel `target_id`)
+  that changes an on-disk constraint.
+- **`RELEASE SAVEPOINT` on the success path is not observable.** A mutant that
+  removes it survives both the corpus and the write probe, because the final
+  rows are identical either way. The failure path's rollback is graded. Worth a
+  CR only if a savepoint leak is ever observed in practice.
+
 ## Persona Review (plan stage)
 
 Run 2026-09-16 on this draft, five lenses (no model-in-the-loop behavior;

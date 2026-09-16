@@ -27,6 +27,7 @@ import {
   builderCursorStateProbe,
   builderLoadProbe,
 } from "./builderProbes.ts";
+import { type ExtBindingsProbeParams, extBindingsProbe } from "./extensionProbes.ts";
 import {
   type ExplorerHandoffProbeParams,
   type ExplorerStoryProbeParams,
@@ -127,6 +128,13 @@ export type WriteProbeFixture =
   | (WriteProbeBase & {
       probe_type: "builder_cursor_state";
       builder_cursor: BuilderCursorProbeParams;
+    })
+  // CV22.DS7.TS4 plateau 3: extension bindings and the migration runner's write
+  // half, on a real-DB copy. The state is an aggregate of two tables plus the
+  // extension tables the migration creates, so it is all carried by `apply`.
+  | (WriteProbeBase & {
+      probe_type: "ext_bindings";
+      ext_bindings: ExtBindingsProbeParams;
     })
   // CV22.DS7.US8 plateau 3: story-package materialization on a real-DB copy, graded
   // as FILES. Its project tree is disposable and derived from `ts_copy_path`, so the
@@ -408,6 +416,8 @@ function buildWriteProbe(fixture: WriteProbeFixture, tsCopyPath: string): WriteP
       return explorerHandoffProbe(fixture.label, fixture.explorer_handoff);
     case "builder_cursor_state":
       return builderCursorStateProbe(fixture.label, fixture.builder_cursor, fixture.now_iso);
+    case "ext_bindings":
+      return extBindingsProbe(fixture.label, fixture.ext_bindings, fixture.now_iso);
     case "builder_artifacts":
       return builderArtifactsProbe(
         fixture.label,

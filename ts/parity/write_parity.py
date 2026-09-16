@@ -21,6 +21,7 @@ from pathlib import Path
 
 import write_parity_builder as builder
 import write_parity_explorer as explorer
+import write_parity_extensions as extensions
 import write_parity_lifecycle as lifecycle
 import write_parity_safety_tools as safety_tools
 import write_parity_soul as soul
@@ -88,6 +89,7 @@ PROBES = {
     **soul.PROBES,
     **explorer.PROBES,
     **builder.PROBES,
+    **extensions.PROBES,
 }
 
 

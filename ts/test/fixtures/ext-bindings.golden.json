@@ -1,0 +1,695 @@
+{
+  "_generated_by": "ts/parity/generate_ext_bindings_golden.py",
+  "_semantics": "Python's answer for `ext <id> bind|unbind|bindings|migrate`: streams and exit code, plus the _ext_bindings / _ext_migrations rows and the extension tables that exist after each step. Timestamps are tokenised; their BYTES are graded by the write probe with a frozen clock.",
+  "timestamp_token": "<TIMESTAMP>",
+  "extension_id": "beta",
+  "steps": [
+    "bindings_empty",
+    "bind_persona",
+    "bind_persona_again_is_idempotent",
+    "bind_journey",
+    "bind_global",
+    "bind_global_again_duplicates",
+    "bindings_populated",
+    "unbind_persona",
+    "unbind_persona_again_finds_nothing",
+    "unbind_global_removes_every_duplicate",
+    "bind_without_tail",
+    "bind_without_target",
+    "bind_unrecognised_argument",
+    "bind_help_describes_and_does_not_write",
+    "migrate_help_describes_and_does_not_apply",
+    "bindings_after_unbinds",
+    "migrate_applies_pending",
+    "migrate_is_idempotent",
+    "migrate_unknown_extension"
+  ],
+  "cases": [
+    {
+      "label": "bindings_empty",
+      "scenario": "happy",
+      "argv": [
+        "beta",
+        "bindings"
+      ],
+      "stdout": "no bindings for extension/beta\n",
+      "stderr": "",
+      "exit_code": 0,
+      "bindings": [],
+      "migrations": [],
+      "tables": []
+    },
+    {
+      "label": "bind_persona",
+      "scenario": "happy",
+      "argv": [
+        "beta",
+        "bind",
+        "context",
+        "--persona",
+        "engineer"
+      ],
+      "stdout": "bound beta/context -> persona/engineer\n",
+      "stderr": "",
+      "exit_code": 0,
+      "bindings": [
+        {
+          "extension_id": "beta",
+          "capability_id": "context",
+          "target_kind": "persona",
+          "target_id": "engineer",
+          "created_at": "<TIMESTAMP>"
+        }
+      ],
+      "migrations": [],
+      "tables": []
+    },
+    {
+      "label": "bind_persona_again_is_idempotent",
+      "scenario": "happy",
+      "argv": [
+        "beta",
+        "bind",
+        "context",
+        "--persona",
+        "engineer"
+      ],
+      "stdout": "bound beta/context -> persona/engineer\n",
+      "stderr": "",
+      "exit_code": 0,
+      "bindings": [
+        {
+          "extension_id": "beta",
+          "capability_id": "context",
+          "target_kind": "persona",
+          "target_id": "engineer",
+          "created_at": "<TIMESTAMP>"
+        }
+      ],
+      "migrations": [],
+      "tables": []
+    },
+    {
+      "label": "bind_journey",
+      "scenario": "happy",
+      "argv": [
+        "beta",
+        "bind",
+        "context",
+        "--journey",
+        "mirror-ts-core"
+      ],
+      "stdout": "bound beta/context -> journey/mirror-ts-core\n",
+      "stderr": "",
+      "exit_code": 0,
+      "bindings": [
+        {
+          "extension_id": "beta",
+          "capability_id": "context",
+          "target_kind": "journey",
+          "target_id": "mirror-ts-core",
+          "created_at": "<TIMESTAMP>"
+        },
+        {
+          "extension_id": "beta",
+          "capability_id": "context",
+          "target_kind": "persona",
+          "target_id": "engineer",
+          "created_at": "<TIMESTAMP>"
+        }
+      ],
+      "migrations": [],
+      "tables": []
+    },
+    {
+      "label": "bind_global",
+      "scenario": "happy",
+      "argv": [
+        "beta",
+        "bind",
+        "briefing",
+        "--global"
+      ],
+      "stdout": "bound beta/briefing -> global\n",
+      "stderr": "",
+      "exit_code": 0,
+      "bindings": [
+        {
+          "extension_id": "beta",
+          "capability_id": "briefing",
+          "target_kind": "global",
+          "target_id": null,
+          "created_at": "<TIMESTAMP>"
+        },
+        {
+          "extension_id": "beta",
+          "capability_id": "context",
+          "target_kind": "journey",
+          "target_id": "mirror-ts-core",
+          "created_at": "<TIMESTAMP>"
+        },
+        {
+          "extension_id": "beta",
+          "capability_id": "context",
+          "target_kind": "persona",
+          "target_id": "engineer",
+          "created_at": "<TIMESTAMP>"
+        }
+      ],
+      "migrations": [],
+      "tables": []
+    },
+    {
+      "label": "bind_global_again_duplicates",
+      "scenario": "happy",
+      "argv": [
+        "beta",
+        "bind",
+        "briefing",
+        "--global"
+      ],
+      "stdout": "bound beta/briefing -> global\n",
+      "stderr": "",
+      "exit_code": 0,
+      "bindings": [
+        {
+          "extension_id": "beta",
+          "capability_id": "briefing",
+          "target_kind": "global",
+          "target_id": null,
+          "created_at": "<TIMESTAMP>"
+        },
+        {
+          "extension_id": "beta",
+          "capability_id": "briefing",
+          "target_kind": "global",
+          "target_id": null,
+          "created_at": "<TIMESTAMP>"
+        },
+        {
+          "extension_id": "beta",
+          "capability_id": "context",
+          "target_kind": "journey",
+          "target_id": "mirror-ts-core",
+          "created_at": "<TIMESTAMP>"
+        },
+        {
+          "extension_id": "beta",
+          "capability_id": "context",
+          "target_kind": "persona",
+          "target_id": "engineer",
+          "created_at": "<TIMESTAMP>"
+        }
+      ],
+      "migrations": [],
+      "tables": []
+    },
+    {
+      "label": "bindings_populated",
+      "scenario": "happy",
+      "argv": [
+        "beta",
+        "bindings"
+      ],
+      "stdout": "=== bindings for extension/beta ===\n  briefing -> global/(global)\n  briefing -> global/(global)\n  context -> journey/mirror-ts-core\n  context -> persona/engineer\n",
+      "stderr": "",
+      "exit_code": 0,
+      "bindings": [
+        {
+          "extension_id": "beta",
+          "capability_id": "briefing",
+          "target_kind": "global",
+          "target_id": null,
+          "created_at": "<TIMESTAMP>"
+        },
+        {
+          "extension_id": "beta",
+          "capability_id": "briefing",
+          "target_kind": "global",
+          "target_id": null,
+          "created_at": "<TIMESTAMP>"
+        },
+        {
+          "extension_id": "beta",
+          "capability_id": "context",
+          "target_kind": "journey",
+          "target_id": "mirror-ts-core",
+          "created_at": "<TIMESTAMP>"
+        },
+        {
+          "extension_id": "beta",
+          "capability_id": "context",
+          "target_kind": "persona",
+          "target_id": "engineer",
+          "created_at": "<TIMESTAMP>"
+        }
+      ],
+      "migrations": [],
+      "tables": []
+    },
+    {
+      "label": "unbind_persona",
+      "scenario": "happy",
+      "argv": [
+        "beta",
+        "unbind",
+        "context",
+        "--persona",
+        "engineer"
+      ],
+      "stdout": "unbound beta/context -> persona/engineer\n",
+      "stderr": "",
+      "exit_code": 0,
+      "bindings": [
+        {
+          "extension_id": "beta",
+          "capability_id": "briefing",
+          "target_kind": "global",
+          "target_id": null,
+          "created_at": "<TIMESTAMP>"
+        },
+        {
+          "extension_id": "beta",
+          "capability_id": "briefing",
+          "target_kind": "global",
+          "target_id": null,
+          "created_at": "<TIMESTAMP>"
+        },
+        {
+          "extension_id": "beta",
+          "capability_id": "context",
+          "target_kind": "journey",
+          "target_id": "mirror-ts-core",
+          "created_at": "<TIMESTAMP>"
+        }
+      ],
+      "migrations": [],
+      "tables": []
+    },
+    {
+      "label": "unbind_persona_again_finds_nothing",
+      "scenario": "happy",
+      "argv": [
+        "beta",
+        "unbind",
+        "context",
+        "--persona",
+        "engineer"
+      ],
+      "stdout": "no matching binding\n",
+      "stderr": "",
+      "exit_code": 0,
+      "bindings": [
+        {
+          "extension_id": "beta",
+          "capability_id": "briefing",
+          "target_kind": "global",
+          "target_id": null,
+          "created_at": "<TIMESTAMP>"
+        },
+        {
+          "extension_id": "beta",
+          "capability_id": "briefing",
+          "target_kind": "global",
+          "target_id": null,
+          "created_at": "<TIMESTAMP>"
+        },
+        {
+          "extension_id": "beta",
+          "capability_id": "context",
+          "target_kind": "journey",
+          "target_id": "mirror-ts-core",
+          "created_at": "<TIMESTAMP>"
+        }
+      ],
+      "migrations": [],
+      "tables": []
+    },
+    {
+      "label": "unbind_global_removes_every_duplicate",
+      "scenario": "happy",
+      "argv": [
+        "beta",
+        "unbind",
+        "briefing",
+        "--global"
+      ],
+      "stdout": "unbound beta/briefing -> global\n",
+      "stderr": "",
+      "exit_code": 0,
+      "bindings": [
+        {
+          "extension_id": "beta",
+          "capability_id": "context",
+          "target_kind": "journey",
+          "target_id": "mirror-ts-core",
+          "created_at": "<TIMESTAMP>"
+        }
+      ],
+      "migrations": [],
+      "tables": []
+    },
+    {
+      "label": "bind_without_tail",
+      "scenario": "happy",
+      "argv": [
+        "beta",
+        "bind"
+      ],
+      "stdout": "usage: python -m memory ext beta bind <capability> (--persona <id> | --journey <id> | --global)\n",
+      "stderr": "",
+      "exit_code": 1,
+      "bindings": [
+        {
+          "extension_id": "beta",
+          "capability_id": "context",
+          "target_kind": "journey",
+          "target_id": "mirror-ts-core",
+          "created_at": "<TIMESTAMP>"
+        }
+      ],
+      "migrations": [],
+      "tables": []
+    },
+    {
+      "label": "bind_without_target",
+      "scenario": "happy",
+      "argv": [
+        "beta",
+        "bind",
+        "context"
+      ],
+      "stdout": "missing target: pass --persona <id>, --journey <id>, or --global\n",
+      "stderr": "",
+      "exit_code": 1,
+      "bindings": [
+        {
+          "extension_id": "beta",
+          "capability_id": "context",
+          "target_kind": "journey",
+          "target_id": "mirror-ts-core",
+          "created_at": "<TIMESTAMP>"
+        }
+      ],
+      "migrations": [],
+      "tables": []
+    },
+    {
+      "label": "bind_unrecognised_argument",
+      "scenario": "happy",
+      "argv": [
+        "beta",
+        "bind",
+        "context",
+        "--everywhere"
+      ],
+      "stdout": "unrecognised argument '--everywhere'\n",
+      "stderr": "",
+      "exit_code": 1,
+      "bindings": [
+        {
+          "extension_id": "beta",
+          "capability_id": "context",
+          "target_kind": "journey",
+          "target_id": "mirror-ts-core",
+          "created_at": "<TIMESTAMP>"
+        }
+      ],
+      "migrations": [],
+      "tables": []
+    },
+    {
+      "label": "bind_help_describes_and_does_not_write",
+      "scenario": "happy",
+      "argv": [
+        "beta",
+        "bind",
+        "--help"
+      ],
+      "stdout": "Usage:\n  python -m memory ext beta bind <capability> (--persona <id> | --journey <id> | --global)\n\nBind a capability to a persona, a journey, or every context.\n",
+      "stderr": "",
+      "exit_code": 0,
+      "bindings": [
+        {
+          "extension_id": "beta",
+          "capability_id": "context",
+          "target_kind": "journey",
+          "target_id": "mirror-ts-core",
+          "created_at": "<TIMESTAMP>"
+        }
+      ],
+      "migrations": [],
+      "tables": []
+    },
+    {
+      "label": "migrate_help_describes_and_does_not_apply",
+      "scenario": "happy",
+      "argv": [
+        "beta",
+        "migrate",
+        "--help"
+      ],
+      "stdout": "Usage:\n  python -m memory ext beta migrate\n\nApply the extension's pending database migrations.\n",
+      "stderr": "",
+      "exit_code": 0,
+      "bindings": [
+        {
+          "extension_id": "beta",
+          "capability_id": "context",
+          "target_kind": "journey",
+          "target_id": "mirror-ts-core",
+          "created_at": "<TIMESTAMP>"
+        }
+      ],
+      "migrations": [],
+      "tables": []
+    },
+    {
+      "label": "bindings_after_unbinds",
+      "scenario": "happy",
+      "argv": [
+        "beta",
+        "bindings"
+      ],
+      "stdout": "=== bindings for extension/beta ===\n  context -> journey/mirror-ts-core\n",
+      "stderr": "",
+      "exit_code": 0,
+      "bindings": [
+        {
+          "extension_id": "beta",
+          "capability_id": "context",
+          "target_kind": "journey",
+          "target_id": "mirror-ts-core",
+          "created_at": "<TIMESTAMP>"
+        }
+      ],
+      "migrations": [],
+      "tables": []
+    },
+    {
+      "label": "migrate_applies_pending",
+      "scenario": "happy",
+      "argv": [
+        "beta",
+        "migrate"
+      ],
+      "stdout": "applied 2 migration(s) for extension/beta\n",
+      "stderr": "",
+      "exit_code": 0,
+      "bindings": [
+        {
+          "extension_id": "beta",
+          "capability_id": "context",
+          "target_kind": "journey",
+          "target_id": "mirror-ts-core",
+          "created_at": "<TIMESTAMP>"
+        }
+      ],
+      "migrations": [
+        {
+          "extension_id": "beta",
+          "filename": "001_initial.sql",
+          "checksum": "0ebdc87ad191999e62d48ea759c5987b50ece781290444b27bbad56b5bac62c6",
+          "applied_at": "<TIMESTAMP>"
+        },
+        {
+          "extension_id": "beta",
+          "filename": "002_more.sql",
+          "checksum": "9fadd08a95a7601e34c45a1383d8657b093549035efbdce5edf1c87ee954310f",
+          "applied_at": "<TIMESTAMP>"
+        }
+      ],
+      "tables": [
+        "ext_beta_notes"
+      ]
+    },
+    {
+      "label": "migrate_is_idempotent",
+      "scenario": "happy",
+      "argv": [
+        "beta",
+        "migrate"
+      ],
+      "stdout": "applied 0 migration(s) for extension/beta\n",
+      "stderr": "",
+      "exit_code": 0,
+      "bindings": [
+        {
+          "extension_id": "beta",
+          "capability_id": "context",
+          "target_kind": "journey",
+          "target_id": "mirror-ts-core",
+          "created_at": "<TIMESTAMP>"
+        }
+      ],
+      "migrations": [
+        {
+          "extension_id": "beta",
+          "filename": "001_initial.sql",
+          "checksum": "0ebdc87ad191999e62d48ea759c5987b50ece781290444b27bbad56b5bac62c6",
+          "applied_at": "<TIMESTAMP>"
+        },
+        {
+          "extension_id": "beta",
+          "filename": "002_more.sql",
+          "checksum": "9fadd08a95a7601e34c45a1383d8657b093549035efbdce5edf1c87ee954310f",
+          "applied_at": "<TIMESTAMP>"
+        }
+      ],
+      "tables": [
+        "ext_beta_notes"
+      ]
+    },
+    {
+      "label": "migrate_unknown_extension",
+      "scenario": "happy",
+      "argv": [
+        "ext-nope",
+        "migrate"
+      ],
+      "stdout": "extension not installed: <HOME>/extensions/ext-nope\n",
+      "stderr": "",
+      "exit_code": 1,
+      "bindings": [
+        {
+          "extension_id": "beta",
+          "capability_id": "context",
+          "target_kind": "journey",
+          "target_id": "mirror-ts-core",
+          "created_at": "<TIMESTAMP>"
+        }
+      ],
+      "migrations": [
+        {
+          "extension_id": "beta",
+          "filename": "001_initial.sql",
+          "checksum": "0ebdc87ad191999e62d48ea759c5987b50ece781290444b27bbad56b5bac62c6",
+          "applied_at": "<TIMESTAMP>"
+        },
+        {
+          "extension_id": "beta",
+          "filename": "002_more.sql",
+          "checksum": "9fadd08a95a7601e34c45a1383d8657b093549035efbdce5edf1c87ee954310f",
+          "applied_at": "<TIMESTAMP>"
+        }
+      ],
+      "tables": [
+        "ext_beta_notes"
+      ]
+    },
+    {
+      "label": "migrate_prefix_violation",
+      "scenario": "prefix-violation",
+      "argv": [
+        "beta",
+        "migrate"
+      ],
+      "stdout": "[extension/beta] 001_initial.sql targets table 'memories_shadow' outside the required prefix 'ext_beta_*'\n",
+      "stderr": "",
+      "exit_code": 1,
+      "bindings": [],
+      "migrations": [],
+      "tables": []
+    },
+    {
+      "label": "migrate_invalid_filename",
+      "scenario": "invalid-filename",
+      "argv": [
+        "beta",
+        "migrate"
+      ],
+      "stdout": "[extension/beta] invalid migration filename: 2_bad_name.sql (expected ^[0-9]{3,}_[a-z0-9_]+\\.sql$)\n",
+      "stderr": "",
+      "exit_code": 1,
+      "bindings": [],
+      "migrations": [],
+      "tables": []
+    },
+    {
+      "label": "migrate_failing_sql_rolls_back",
+      "scenario": "failing-sql",
+      "argv": [
+        "beta",
+        "migrate"
+      ],
+      "stdout": "[extension/beta] 001_initial.sql failed to apply: table ext_beta_rollback_me has no column named nope\n",
+      "stderr": "",
+      "exit_code": 1,
+      "bindings": [],
+      "migrations": [],
+      "tables": []
+    },
+    {
+      "label": "migrate_drifted_file",
+      "scenario": "drift",
+      "argv": [
+        "beta",
+        "migrate"
+      ],
+      "stdout": "[extension/beta] 001_initial.sql has been edited since it was applied (recorded checksum 0ebdc87a..., current checksum d81065e3...); never edit an applied migration in ways that change its SQL semantics — comment and whitespace edits are tolerated, but a structural change requires a new migration file\n",
+      "stderr": "",
+      "exit_code": 1,
+      "bindings": [],
+      "migrations": [
+        {
+          "extension_id": "beta",
+          "filename": "001_initial.sql",
+          "checksum": "0ebdc87ad191999e62d48ea759c5987b50ece781290444b27bbad56b5bac62c6",
+          "applied_at": "<TIMESTAMP>"
+        }
+      ],
+      "tables": [
+        "ext_beta_notes"
+      ]
+    },
+    {
+      "label": "migrate_tolerates_comment_and_whitespace_edit",
+      "scenario": "happy",
+      "argv": [
+        "beta",
+        "migrate"
+      ],
+      "stdout": "applied 0 migration(s) for extension/beta\n",
+      "stderr": "",
+      "exit_code": 0,
+      "bindings": [],
+      "migrations": [
+        {
+          "extension_id": "beta",
+          "filename": "001_initial.sql",
+          "checksum": "0ebdc87ad191999e62d48ea759c5987b50ece781290444b27bbad56b5bac62c6",
+          "applied_at": "<TIMESTAMP>"
+        },
+        {
+          "extension_id": "beta",
+          "filename": "002_more.sql",
+          "checksum": "9fadd08a95a7601e34c45a1383d8657b093549035efbdce5edf1c87ee954310f",
+          "applied_at": "<TIMESTAMP>"
+        }
+      ],
+      "tables": [
+        "ext_beta_notes"
+      ]
+    }
+  ]
+}

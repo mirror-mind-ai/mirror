@@ -13,6 +13,15 @@
 // pretending: an unimplemented path must fail loudly, not silently print
 // nothing.
 
+import type { WritableDatabase } from "#db/database.ts";
+import {
+  type BindingDeps,
+  parseBindingTail,
+  runBind,
+  runBindings,
+  runMigrate,
+  runUnbind,
+} from "./bindings.ts";
 import {
   discoverExtensions,
   extensionsRootForHome,
@@ -64,6 +73,28 @@ export interface CatalogContext {
   /** The resolved Mirror home; `--mirror-home` has already been applied. */
   readonly mirrorHome: string;
 }
+
+/** The writable half, for the four `ext` verbs that touch the database. */
+export interface ExtWriteContext extends CatalogContext {
+  readonly db: WritableDatabase;
+  readonly deps: BindingDeps;
+}
+
+const BUILTIN_VERBS = new Set(["bind", "unbind", "bindings", "migrate"]);
+const HELP_FLAGS = new Set(["--help", "-h", "help"]);
+
+const BUILTIN_VERB_HELP: Record<string, readonly [string, string]> = {
+  bind: [
+    "bind <capability> (--persona <id> | --journey <id> | --global)",
+    "Bind a capability to a persona, a journey, or every context.",
+  ],
+  unbind: [
+    "unbind <capability> (--persona <id> | --journey <id> | --global)",
+    "Remove a capability binding.",
+  ],
+  bindings: ["bindings", "List the extension's capability bindings."],
+  migrate: ["migrate", "Apply the extension's pending database migrations."],
+};
 
 function out(stdout: string, exitCode = 0): RenderedCommand {
   return { stdout, stderr: "", exitCode };
@@ -211,7 +242,43 @@ export function runExtCommand(context: CatalogContext, argv: readonly string[]):
     const discovery = discoverExtensions(root);
     return out(renderCommandSkillList(discovery.manifests, discovery.errors, root));
   }
-  throw new UnsupportedCatalogCommandError("ext dispatch is CV22.DS7.TS4 plateau 5");
+
+  const extensionId = head;
+  const rest = args.slice(1);
+  const verb = rest[0];
+  if (verb === undefined) {
+    // `ext <id>` lists the extension's subcommands, which means LOADING the
+    // extension -- plateau 5's dispatch, not this one's.
+    throw new UnsupportedCatalogCommandError("ext <id> help is CV22.DS7.TS4 plateau 5");
+  }
+  const tail = rest.slice(1);
+
+  // Describe, never execute: this guard is a fix `cli/ext.py` carries, and
+  // losing it would make `ext <id> migrate --help` APPLY migrations.
+  if (BUILTIN_VERBS.has(verb) && tail.some((token) => HELP_FLAGS.has(token))) {
+    const [usage, description] = BUILTIN_VERB_HELP[verb] as readonly [string, string];
+    return out(`Usage:\n  python -m memory ext ${extensionId} ${usage}\n\n${description}\n`);
+  }
+
+  if (!BUILTIN_VERBS.has(verb)) {
+    throw new UnsupportedCatalogCommandError("ext dispatch is CV22.DS7.TS4 plateau 5");
+  }
+  if (!isWriteContext(context)) {
+    throw new UnsupportedCatalogCommandError(`ext ${verb} needs a writable database`);
+  }
+  if (verb === "bindings") return runBindings(context.db, extensionId);
+  if (verb === "migrate") return runMigrate(context.db, home, extensionId, context.deps);
+
+  const parsed = parseBindingTail(extensionId, verb === "bind" ? "bind" : "unbind", tail);
+  if ("stdout" in parsed) return parsed;
+  const target = { kind: parsed.kind, id: parsed.id };
+  return verb === "bind"
+    ? runBind(context.db, extensionId, parsed.capabilityId, target, context.deps)
+    : runUnbind(context.db, extensionId, parsed.capabilityId, target);
+}
+
+function isWriteContext(context: CatalogContext): context is ExtWriteContext {
+  return "db" in context;
 }
 
 /** Port of `cmd_list`'s extension branch and its usage refusal. */

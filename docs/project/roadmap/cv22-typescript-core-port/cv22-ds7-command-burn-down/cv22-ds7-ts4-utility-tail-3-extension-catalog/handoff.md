@@ -2,19 +2,42 @@
 
 # Handoff — CV22.DS7.TS4 — Ops/utility tail 3: extension catalog
 
-**Status:** plateaus 1-2 of 8 complete. The **catalog reads** answer from
+**Status:** plateaus 1-3 of 8 complete. The **catalog reads** answer from
 TypeScript — `extensions list|validate` (with the runtime filter and every
 usage refusal), `ext list`, `list extensions`, `inspect extension`, and
 `inspect runtime-catalog` — graded against 32 recorded Python invocations, and
 the **ledger reads** (`inspect llm-calls` rows and `--summary`, `inspect
-embedding-provenance`) against 21 more.
+embedding-provenance`) against 21 more. Plateau 3 adds the family's first
+WRITES — `ext <id> bind|unbind|bindings|migrate`, including the migration
+runner's write half — graded by 24 recorded cases and by the `ext_bindings`
+write probe on a copy of a real database.
 **Nothing is routed:** `routing.ts` still sends the whole family to Python,
 which is the intended state until plateau 7 adds the routes and plateau 8
 flips the gates.
 
 ## Resume here
 
-**Next: plateau 3, bindings and migrations** — `ext <id>
+**Next: plateau 4, catalog writes** — `extensions sync|install|uninstall|
+expose-claude|clean-claude`: tree copy with `_should_copy_source_tree`, skill
+directory sync including the legacy-name pruning rule, catalog JSON bytes, the
+Claude overlay catalog, and `uninstall`'s binding deletion. Graded like
+`builder_artifacts`: file trees compared byte for byte in a disposable home AND
+a disposable target root — never the developer's `.pi`, which the plan-stage
+panel named explicitly.
+
+What landed in plateau 3:
+
+- `ts/src/extensions/migrations.ts` — the write half (`splitStatements`,
+  `extractTableTargets`, `validatePrefix`, `runMigrations`) extending TS3's
+  read half in place, as TS3's comment asked;
+- `ts/src/extensions/bindings.ts` — `runBind`, `runUnbind`, `runBindings`,
+  `runMigrate`, the binding-tail parser, and `pythonUtcIsoformat`;
+- `ts/src/parity/extensionProbes.ts` + `ts/parity/write_parity_extensions.py`
+  — the `ext_bindings` write probe, in CI on the demo copy.
+
+What landed before plateau 3:
+
+**Plateau 2 detail (superseded as "next", kept as history):** — `ext <id>
 bind|unbind|bindings|migrate`: the `_ext_bindings` insert-or-ignore and delete
 with Python's `isoformat()` timestamp bytes, and the WRITE half of the
 migration runner (`run_migrations`, `_split_statements`,
@@ -71,6 +94,18 @@ What landed in plateau 1:
   by appending `module_path`, and `inspect extension` prints the mapping in
   insertion order. The TS manifest carries an ordered pair list for that
   reason, not an object.
+- **A `--global` binding is not idempotent.** `_ext_bindings`'s primary key
+  includes a nullable `target_id`; SQLite does not consider two NULLs equal, so
+  `INSERT OR IGNORE` ignores nothing and duplicates accumulate. The docstring
+  that says "No-op if already present (PK conflict)" is true only for the
+  targeted kinds. Parity-bound here, recorded as debt.
+- **A probe that reimplements the write grades the probe.** The `ext_bindings`
+  probe survived a real mutant until it called `runBind`/`runUnbind` instead of
+  copying their SQL — and survived a second until each step carried a distinct
+  timestamp. Run mutants against the probe, not only against the corpus.
+- **Migration atomicity is a SAVEPOINT, not a transaction**, in both cores:
+  SQLite implicitly commits a deferred transaction before DDL, so `BEGIN`/
+  `ROLLBACK` would not undo a half-applied `CREATE TABLE`.
 - **One `inspect` command, two refusal classes.** `inspect extension` and
   `inspect runtime-catalog` exit 1 with usage on stdout; `inspect llm-calls`
   and `inspect embedding-provenance` are argparse and exit 2 on stderr. A

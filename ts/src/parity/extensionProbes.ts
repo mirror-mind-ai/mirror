@@ -1,0 +1,118 @@
+// Extension binding + migration probe, TypeScript half (CV22.DS7.TS4 plateau 3).
+//
+// Counterpart of `ts/parity/write_parity_extensions.py`. Both halves run the
+// same binding sequence and apply the SAME committed migration scripts to their
+// own copy of a real database, and every intermediate `_ext_bindings` /
+// `_ext_migrations` state is compared as an ordered sequence — a port that
+// reaches the same end state through different intermediate rows fails here
+// rather than passing on the last row alone.
+
+import type { WritableDatabase } from "#db/database.ts";
+import { runBind, runUnbind } from "#extensions/bindings.ts";
+import { runMigrations } from "#extensions/migrations.ts";
+import type { MutatedRow } from "./writeParity.ts";
+import type { WriteProbe } from "./writeProbe.ts";
+
+export interface ExtBindingsProbeParams {
+  readonly extension_id: string;
+  readonly migrations_dir: string;
+  readonly sequence: ReadonlyArray<{
+    readonly label: string;
+    readonly action: "bind" | "unbind";
+    readonly capability_id: string;
+    readonly target_kind: string;
+    readonly target_id: string | null;
+  }>;
+}
+
+function state(db: WritableDatabase): Record<string, string | number> {
+  const bindings = db
+    .prepare(
+      "SELECT extension_id, capability_id, target_kind, target_id, created_at " +
+        "FROM _ext_bindings ORDER BY capability_id, target_kind, COALESCE(target_id, ''), created_at",
+    )
+    .all();
+  const migrations = db
+    .prepare(
+      "SELECT extension_id, filename, checksum, applied_at FROM _ext_migrations ORDER BY filename",
+    )
+    .all();
+  const tables = db
+    .prepare(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'ext_beta_%' ORDER BY name",
+    )
+    .all();
+  return {
+    bindings: bindings
+      .map(
+        (row) =>
+          `${String(row.capability_id)}/${String(row.target_kind)}/${
+            row.target_id === null ? "" : String(row.target_id)
+          }@${String(row.created_at)}`,
+      )
+      .join("|"),
+    binding_count: bindings.length,
+    migrations: migrations
+      .map((row) => `${String(row.filename)}:${String(row.checksum)}@${String(row.applied_at)}`)
+      .join("|"),
+    tables: tables.map((row) => String(row.name)).join(","),
+  };
+}
+
+export function extBindingsProbe(
+  label: string,
+  params: ExtBindingsProbeParams,
+  nowIso: string,
+): WriteProbe {
+  return {
+    label,
+    // Every graded cell is produced by `apply`, as the artifacts probe does:
+    // the state here is an aggregate of two tables plus `sqlite_master`, which
+    // no single-table snapshot spec can express.
+    snapshots: [],
+    apply(db: WritableDatabase): MutatedRow[] {
+      // Production spells both timestamps with Python's `isoformat()` (`+00:00`);
+      // the harness hands the frozen instant over in the `Z` form its other
+      // probes use. Convert once, so the probe grades production's spelling.
+      const frozen = nowIso.replace(/Z$/, "+00:00");
+      // A DISTINCT stamp per step, derived identically in the Python half. One
+      // frozen instant for every step hid a real difference: with identical
+      // values `INSERT OR REPLACE` and `INSERT OR IGNORE` leave the same row,
+      // and a mutant swapping them survived until the stamps differed.
+      const stampFor = (index: number): string =>
+        frozen.replace("12:00:00", `12:00:${String(index).padStart(2, "0")}`);
+      const steps: MutatedRow[] = [];
+      params.sequence.forEach((step, index) => {
+        // PRODUCTION functions, not a copy of their SQL. A probe that reimplements
+        // the write grades the probe: this one survived a mutant that broke
+        // `runUnbind`'s NULL matching until it called the real function.
+        const target = {
+          kind: step.target_kind as "persona" | "journey" | "global",
+          id: step.target_id,
+        };
+        if (step.action === "bind") {
+          runBind(db, params.extension_id, step.capability_id, target, {
+            nowIso: () => stampFor(index),
+          });
+        } else {
+          runUnbind(db, params.extension_id, step.capability_id, target);
+        }
+        steps.push({ id: `${String(index).padStart(2, "0")}:${step.label}`, cells: state(db) });
+      });
+
+      const deps = { nowIso: () => frozen };
+      const applied = runMigrations(db, params.extension_id, params.migrations_dir, deps);
+      steps.push({
+        id: `${String(params.sequence.length).padStart(2, "0")}:migrate_applied_${applied}`,
+        cells: state(db),
+      });
+      const again = runMigrations(db, params.extension_id, params.migrations_dir, deps);
+      steps.push({
+        id: `${String(params.sequence.length + 1).padStart(2, "0")}:migrate_again_applied_${again}`,
+        cells: state(db),
+      });
+      steps.push({ id: "final", cells: state(db) });
+      return steps;
+    },
+  };
+}
