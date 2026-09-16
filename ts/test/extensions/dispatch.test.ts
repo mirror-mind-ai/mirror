@@ -19,7 +19,7 @@
 
 import assert from "node:assert/strict";
 import { type SpawnSyncReturns, spawnSync } from "node:child_process";
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
@@ -33,6 +33,7 @@ import {
   installedExtensionDir,
   isExtensionDispatch,
   pythonPathJoin,
+  readDeclaredCommands,
   runExtensionSubcommand,
 } from "#extensions/dispatch.ts";
 
@@ -40,7 +41,9 @@ interface GoldenCase {
   label: string;
   argv: string[];
   stdout: string;
-  stderr: string;
+  /** Null for a traceback case: the interpreter's frames are not portable. */
+  stderr: string | null;
+  stderr_final_line?: string;
   exit_code: number;
   /** Where the generator put its own `--mirror-home <home>` pair. */
   home_flag: "prefix" | "suffix";
@@ -50,7 +53,7 @@ interface GoldenCase {
 
 const golden = JSON.parse(
   readFileSync(new URL("../fixtures/ext-dispatch.golden.json", import.meta.url), "utf8"),
-) as { extensions: string[]; cases: GoldenCase[] };
+) as { extensions: string[]; migrated: string[]; cases: GoldenCase[] };
 
 const FIXTURES = new URL("../fixtures/ext-dispatch", import.meta.url).pathname;
 const REPO_ROOT = dirname(dirname(dirname(dirname(new URL(import.meta.url).pathname))));
@@ -165,8 +168,11 @@ function lastLine(text: string): string {
 test("every recorded dispatch matches Python, bytes, exit code, and rows", (t) => {
   const world = makeWorld();
   try {
-    // The dispatcher never creates extension tables; `migrate` does.
-    runExtCommand(contextFor(world), ["tools", "migrate"]);
+    // The dispatcher never creates extension tables; `migrate` does, and the
+    // generator applied exactly these before recording.
+    for (const extensionId of golden.migrated) {
+      runExtCommand(contextFor(world), [extensionId, "migrate"]);
+    }
 
     const probe = answer(world, ["tools", "--help", "--mirror-home", world.home]);
     if (probe.stderr.includes("could not spawn `uv`")) {
@@ -192,23 +198,28 @@ test("every recorded dispatch matches Python, bytes, exit code, and rows", (t) =
 
       if (recorded.divergence === undefined) {
         assert.equal(stdout, recorded.stdout, recorded.label);
-        assert.equal(stderr, recorded.stderr, `${recorded.label} (stderr)`);
+        assert.equal(stderr, recorded.stderr ?? "", `${recorded.label} (stderr)`);
         continue;
       }
 
-      // RECORDED DIVERGENCE. Two shapes, and which one applies is decided by
-      // WHO refused: the host still IS Python, so a failure it reaches
-      // reproduces Python's own traceback down to the last line; a refusal
-      // TypeScript makes before spawning is a one-line message at the same
-      // exit code, on the same stream, with stdout untouched.
+      // `python_path_display` is a flagged case, not a loosened one: the bytes
+      // still match exactly: the flag only records WHY the path looks odd.
       assert.equal(stdout, recorded.stdout, `${recorded.label} (stdout)`);
-      if (stderr.startsWith("Mirror TS front door:")) {
-        assert.ok(recorded.stderr.length > 0, `${recorded.label} refused where Python answered`);
+      if (recorded.divergence === "python_path_display") {
+        assert.equal(stderr, recorded.stderr ?? "", `${recorded.label} (stderr)`);
         continue;
       }
+
+      // `python_traceback`: which shape applies is decided by WHO refused. The
+      // host still IS Python, so a failure it reaches reproduces Python's own
+      // traceback down to its final line -- the only part portable enough to
+      // record. A refusal TypeScript makes before spawning is one line at the
+      // same exit code, on the same stream, with stdout untouched.
+      assert.ok(stderr.length > 0, `${recorded.label} lost its failure report`);
+      if (stderr.startsWith("Mirror TS front door:")) continue;
       assert.equal(
         lastLine(stderr),
-        lastLine(recorded.stderr),
+        recorded.stderr_final_line,
         `${recorded.label} (traceback tail)`,
       );
     }
@@ -353,6 +364,126 @@ test("a missing host is reported as a failure, never as a silent success", () =>
     assert.equal(reported.length, 1);
     assert.match(reported[0] as string, /could not spawn `uv`|failed to run/);
   } finally {
+    closeWorld(world);
+  }
+});
+
+test("a declared command is executed directly, with the user's three streams", () => {
+  const world = makeWorld();
+  try {
+    const decision = runExtCommand(contextFor(world), [
+      "declared",
+      "greet",
+      "--account",
+      "secret-account-42",
+    ]);
+    assert.ok(isExtensionDispatch(decision));
+
+    let seen: { command: string; args: string[]; options: Record<string, unknown> } | null = null;
+    runExtensionSubcommand(decision as ExtensionDispatch, {
+      databasePath: world.dbPath,
+      spawn: ((command: string, args: string[], options: Record<string, unknown>) => {
+        seen = { command, args, options };
+        return { status: 0, stdout: "", stderr: "", signal: null, output: [], pid: 1 };
+      }) as unknown as typeof spawnSync,
+    });
+    const call = seen as unknown as {
+      command: string;
+      args: string[];
+      options: Record<string, unknown>;
+    };
+
+    assert.equal(call.command, "node", "the declared argv is executed, not the Python host");
+    assert.deepEqual(call.args, ["commands/greet.mjs", "--account", "secret-account-42"]);
+    assert.equal(call.options.cwd, join(world.home, "extensions", "declared"));
+    // ALL THREE streams are the user's here. The legacy bridge spends stdin on
+    // its request; a declared command does not have to.
+    assert.equal(call.options.stdio, "inherit");
+    assert.equal(call.options.input, undefined);
+    assert.equal(call.options.shell, false);
+
+    const environment = call.options.env as NodeJS.ProcessEnv;
+    assert.equal(environment.MIRROR_HOME, world.home);
+    assert.equal(environment.MIRROR_DATABASE_PATH, world.dbPath);
+    assert.equal(environment.MIRROR_EXTENSION_ID, "declared");
+    assert.equal(environment.MIRROR_EXTENSION_ROOT, join(world.home, "extensions", "declared"));
+    assert.equal(environment.MIRROR_TABLE_PREFIX, "ext_declared_");
+  } finally {
+    closeWorld(world);
+  }
+});
+
+test("a declaration TypeScript will not execute falls back per subcommand", () => {
+  const world = makeWorld();
+  const extensionRoot = join(world.home, "extensions", "declared");
+  const manifest = join(extensionRoot, "skill.yaml");
+  const original = readFileSync(manifest, "utf8");
+  try {
+    const refused: Record<string, string> = {
+      // Keep a VALID command here: a foreign protocol must be refused on its
+      // own, not because the replacement happened to drop the argv too. The
+      // first version of this case did exactly that and let a mutant that
+      // deleted the protocol check survive.
+      "a foreign protocol":
+        "protocol: mirror-context-v1\n        command: [node, commands/greet.mjs]",
+      "an empty argv": "protocol: mirror-cli-v1\n        command: []",
+      "an absolute path": "protocol: mirror-cli-v1\n        command: [node, /etc/passwd]",
+      "a path escaping the root":
+        "protocol: mirror-cli-v1\n        command: [node, ../tools/extension.py]",
+      "a path that does not exist":
+        "protocol: mirror-cli-v1\n        command: [node, commands/absent.mjs]",
+    };
+    for (const [why, replacement] of Object.entries(refused)) {
+      writeFileSync(
+        manifest,
+        original.replace(
+          "protocol: mirror-cli-v1\n        command: [node, commands/greet.mjs]",
+          replacement,
+        ),
+      );
+      const declared = readDeclaredCommands(extensionRoot).map((entry) => entry.name);
+      assert.equal(declared.includes("greet"), false, `greet survived ${why}`);
+      // The extension's OTHER declaration is untouched: the fallback is per
+      // subcommand, so a mixed or partly broken manifest cannot cost an
+      // extension the handlers it declared correctly.
+      assert.equal(declared.includes("fail"), true, `fail was lost to ${why}`);
+    }
+  } finally {
+    writeFileSync(manifest, original);
+    closeWorld(world);
+  }
+});
+
+test("the subcommand listing is never a declared command", () => {
+  const world = makeWorld();
+  const manifest = join(world.home, "extensions", "declared", "skill.yaml");
+  const original = readFileSync(manifest, "utf8");
+  try {
+    // An extension that declares a subcommand named `--help` must not be able
+    // to take over the listing: Python answers it from the live registry, and
+    // asking a command what it does is the one moment nothing may execute.
+    writeFileSync(
+      manifest,
+      original.replace(
+        "    - name: greet",
+        "    - name: --help\n      summary: hijack\n      runtime:\n" +
+          "        protocol: mirror-cli-v1\n        command: [node, commands/fail.mjs]\n" +
+          "    - name: greet",
+      ),
+    );
+    const decision = runExtCommand(contextFor(world), ["declared"]);
+    assert.ok(isExtensionDispatch(decision));
+    let command: string | null = null;
+    runExtensionSubcommand(decision as ExtensionDispatch, {
+      databasePath: world.dbPath,
+      spawn: ((executable: string) => {
+        command = executable;
+        return { status: 0, stdout: "", stderr: "", signal: null, output: [], pid: 1 };
+      }) as unknown as typeof spawnSync,
+    });
+    assert.equal(command, "uv", "the listing went to a declared command");
+  } finally {
+    writeFileSync(manifest, original);
     closeWorld(world);
   }
 });

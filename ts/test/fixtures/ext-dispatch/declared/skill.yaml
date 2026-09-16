@@ -1,0 +1,42 @@
+id: declared
+name: Declared Commands
+category: extension
+kind: command-skill
+summary: Fixture extension whose subcommands declare a language-neutral runtime
+table_prefix: ext_declared_
+
+entrypoint:
+  module: extension
+  function: register
+
+runtimes:
+  pi:
+    command_name: ext-declared
+    skill_file: SKILL.md
+
+# The contract half of CV22.DS7.TS4's D1. `runtime` hangs off the subcommand
+# entries that already existed here, so an extension keeps ONE list of its
+# subcommands instead of a declared list and a documented list that can drift.
+#
+# Every entry below has a Python twin in `extension.py` printing the same
+# bytes, which is what lets a single golden recorded from Python grade the
+# TypeScript contract path as well.
+cli:
+  subcommands:
+    - name: greet
+      summary: Greet with the argv it received
+      runtime:
+        protocol: mirror-cli-v1
+        command: [node, commands/greet.mjs]
+    - name: fail
+      summary: Exit 3 through the declared runtime
+      runtime:
+        protocol: mirror-cli-v1
+        command: [node, commands/fail.mjs]
+    - name: legacy
+      summary: Declared with no runtime, so the host answers it
+    - name: broken
+      summary: A malformed declaration falls back to the host, never executes
+      runtime:
+        protocol: mirror-cli-v1
+        command: []

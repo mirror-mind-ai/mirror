@@ -311,6 +311,25 @@ Two further facts measured in the same run, both for the writes plateau:
   Python traceback is not reproducible in TypeScript; this is the recorded
   divergence class — same input, same exit code, a one-line TS message.
 
+## Plan Amendment — the declared command lives on `cli.subcommands[]` (2026-09-16, measured)
+
+D1 and the Scope below were written as `commands[].runtime.command` before the
+installed manifests were read. **Every installed extension already declares its
+subcommands** under `cli.subcommands[]` (`name` + `summary`) — a block
+documented in `docs/product/extensions/template/skill.yaml.template` and
+consumed by no core code. A new top-level `commands[]` array would have created
+a second list of the same subcommand names beside it, free to drift.
+
+**Amendment: `runtime:` hangs off the existing `cli.subcommands[]` entries.**
+Adopted by the Navigator on 2026-09-16 and recorded in
+[Decisions](../../../../decisions.md#extension-commands-reach-typescript-through-a-declared-contract-with-one-temporary-python-host).
+Protocol, argv rules, no-shell execution, and the single deletion gate are
+unchanged; only the field's location is. Two rules were adopted with it: the
+fallback to the host is per SUBCOMMAND, never per extension, and the
+declaration is read by the dispatcher rather than the manifest validator, so a
+malformed declaration falls back instead of invalidating the extension for the
+byte-graded catalog reads.
+
 ## Debt / CRs To Capture At Debt Review (candidates)
 
 - **A `--global` extension binding is not idempotent.** `_ext_bindings`'s

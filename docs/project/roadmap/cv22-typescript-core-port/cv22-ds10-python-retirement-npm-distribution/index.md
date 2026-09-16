@@ -42,7 +42,8 @@ CV22.DS7.TS2 transfers extension context dispatch to TS through the language-neu
 `memory.extensions.compat_host`. **CV22.DS7.TS4 extends that same host with a `cli`
 mode** (Navigator decision D1, 2026-09-16) so `ext <id> <subcommand>` and the
 `ext <id>` subcommand listing keep reaching handlers registered through
-`api.register_cli` until extensions declare `commands[].runtime`. One host, one gate:
+`api.register_cli` until extensions declare a `mirror-cli-v1` runtime on their
+`cli.subcommands[]` entries. One host, one gate:
 every item below covers the command bridge as well as the context bridge. Before
 Python retirement or npm publication, DS10 must:
 

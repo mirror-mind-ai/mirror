@@ -46,12 +46,16 @@ mirror_context_providers:
       protocol: mirror-context-v1
       command: [node, context/<capability_id>.mjs]
 
-# Optional: declared CLI subcommands (informational; the runtime source of
-# truth is what extension.py registers via api.register_cli)
+# Optional: declared CLI subcommands. `name` and `summary` are informational
+# while a Python entrypoint exists; `runtime` is not — a subcommand that
+# declares one is executed directly by the core, in any language.
 cli:
   subcommands:
     - name: <subcommand>
       summary: <one-line>
+      runtime:                      # optional; core-owned CLI command
+        protocol: mirror-cli-v1
+        command: [node, commands/<subcommand>.mjs]
 ```
 
 ### Validation rules
@@ -67,6 +71,10 @@ cli:
 - `provider_runtime.protocol`, when present, is exactly `mirror-context-v1`.
 - `provider_runtime.command` is a non-empty argv array. It is never interpreted by a shell;
   path-like arguments must remain inside the installed extension root.
+- `cli.subcommands[].runtime`, when present, uses protocol `mirror-cli-v1` and the same
+  argv rules as `provider_runtime.command`. It is read by the dispatcher rather than by
+  the manifest validator, so a malformed declaration never invalidates the extension: that
+  subcommand simply falls back to the Python handler (see the migration window below).
 
 Manifests that fail validation are rejected at install time and at every
 subsequent load.
@@ -291,6 +299,34 @@ skipped so Mirror Mode can continue.
 The installed extension is trusted executable code, as `extension.py` already is. A process
 provider may open `database_path`; extension authors remain responsible for the documented
 table-prefix boundary. Prefer read-only context providers and short deterministic work.
+
+### Extension commands
+
+`python -m memory ext <id> <subcommand> [args...]` reaches a subcommand two ways.
+
+A subcommand that declares `cli.subcommands[].runtime` is executed **directly**: the
+declared argv runs without a shell, from the installed extension root, with the user's
+argv appended verbatim and the user's stdin, stdout, and stderr inherited. Its exit code
+is the command's exit code. Context arrives in the environment, never on stdin:
+
+| Variable | Value |
+|---|---|
+| `MIRROR_HOME` | the resolved mirror home |
+| `MIRROR_DATABASE_PATH` | the database the core opened for this home and environment |
+| `MIRROR_EXTENSION_ID` | the extension's id |
+| `MIRROR_EXTENSION_ROOT` | the installed extension directory |
+| `MIRROR_TABLE_PREFIX` | the extension's required table prefix |
+
+A subcommand that declares no runtime — or whose declaration is malformed — is answered by
+the temporary CV22 compatibility host, which loads `extension.py` and calls the handler
+registered through `api.register_cli`. The fallback is per SUBCOMMAND: an extension may
+migrate one command at a time without losing the others. Because that host spends stdin on
+its own request, a legacy handler cannot read the user's stdin; a declared command can.
+
+The subcommand listing (`ext <id>`, `ext <id> --help`) is answered from the live registry
+through the same host, so it always describes what the extension can actually run. This
+compatibility host is deprecated and must be removed by CV22.DS10; after removal, every
+retained extension command must enter through a declared `mirror-cli-v1` command.
 
 ### Python provider migration window
 

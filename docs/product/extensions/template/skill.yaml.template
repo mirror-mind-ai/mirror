@@ -32,12 +32,19 @@ mirror_context_providers:
       protocol: mirror-context-v1
       command: [node, context-provider.mjs]
 
-# Optional: declared CLI subcommands. Informational; runtime truth is what
-# extension.py registers via api.register_cli.
+# Optional: declared CLI subcommands. `name` and `summary` are informational
+# while extension.py registers the handler via api.register_cli. Adding
+# `runtime` makes the core execute the command directly, in any language, and
+# is what frees the subcommand from the Python compatibility host before
+# CV22.DS10 removes it. Migrate one subcommand at a time: the fallback is per
+# subcommand, not per extension.
 cli:
   subcommands:
     - name: <subcommand>
       summary: <one-line>
+      runtime:
+        protocol: mirror-cli-v1
+        command: [node, commands/<subcommand>.mjs]
 
 # Optional: declare a minimum core API version.
 requires:

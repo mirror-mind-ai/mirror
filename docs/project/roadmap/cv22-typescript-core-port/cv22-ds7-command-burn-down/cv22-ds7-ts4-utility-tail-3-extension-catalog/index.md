@@ -2,7 +2,7 @@
 
 # CV22.DS7.TS4 — Ops/utility tail 3: extension catalog
 
-**Status:** 🟢 In Progress — **plateaus 1-3 of 8 complete, plateau 4 complete except its contract half** (catalog reads, ledger reads, the binding/migration writes, and the `ext <id> <subcommand>` dispatch through the compat host's new `cli` mode ported and graded, nothing routed; the declared-runtime manifest field waits on one Navigator decision recorded in the [Handoff](handoff.md#resume-here)); pulled 2026-09-16 through the TS front door (the first Ariad Pull answered by TypeScript in production); **Plan approved 2026-09-16** with D1 answered (c): a TS dispatcher, a declared `commands[].runtime` contract, and a `cli` mode of the existing temporary compat host under DS10's deletion gate
+**Status:** 🟢 In Progress — **plateaus 1-4 of 8 complete** (catalog reads, ledger reads, the binding/migration writes, and the `ext <id> <subcommand>` dispatch — both halves: the declared `mirror-cli-v1` command executed directly, everything else through the compat host's new `cli` mode — ported and graded, nothing routed); pulled 2026-09-16 through the TS front door (the first Ariad Pull answered by TypeScript in production); **Plan approved 2026-09-16** with D1 answered (c): a TS dispatcher, a declared `commands[].runtime` contract, and a `cli` mode of the existing temporary compat host under DS10's deletion gate
 **Type:** Technical Story
 
 ---
@@ -29,7 +29,7 @@ So that Python retirement is gated only by DS10's own scope.
 `ext <id> <extension-subcommand>` dispatches into a handler the extension
 registered in Python (`api.register_cli`); all seven installed extensions on
 the validated home have them. The [Plan](plan.md#decisions-taken-at-plan-time)
-chose TS2's shape — a TS dispatcher, a `commands[].runtime` manifest contract
+chose TS2's shape — a TS dispatcher, a declared `mirror-cli-v1` manifest contract
 executed directly when declared, and a `cli` mode of the existing temporary
 compat host for everything else, under DS10's existing deletion gate.
 Decided by the Navigator at Plan approval on 2026-09-16 and recorded in

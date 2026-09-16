@@ -33,13 +33,31 @@ story owns.
 
 Decision: **both halves, exactly as CV22.DS7.TS2 did for context providers.**
 TypeScript owns the dispatcher — argument splitting, the built-in verbs,
-`--help` that describes and never executes, id validation, exit codes. An
-extension that declares `commands[].runtime.command` (a no-shell argv, the
-same shape as `provider_runtime`) is executed directly, in any language. An
-extension that declares nothing falls to a **`cli` mode of the existing
-`memory.extensions.compat_host`** — a second request kind of the host TS2
-already ships, never a second host — which loads the extension, runs the
-handler with streams inherited, and returns its exit code.
+`--help` that describes and never executes, id validation, exit codes. A
+subcommand that declares a `mirror-cli-v1` runtime (a no-shell argv, the same
+shape as `provider_runtime`) is executed directly, in any language. Anything
+else falls to a **`cli` mode of the existing `memory.extensions.compat_host`**
+— a second request kind of the host TS2 already ships, never a second host —
+which loads the extension, runs the handler with streams inherited, and returns
+its exit code.
+
+**Amended at implementation, 2026-09-16: the declaration lives on the
+`cli.subcommands[]` entries the manifest already had, not on a new
+`commands[]` array.** The plan wrote `commands[].runtime.command` before
+measuring the installed manifests. Every installed extension already declares
+its subcommands under `cli.subcommands[]` with `name` and `summary`, a block
+the core reads nowhere; a parallel `commands[]` array would have created a
+second list of the same subcommand names that could silently drift from the
+first. One authoring surface, one place to add `runtime:`.
+
+Two consequences were decided with it. The fallback is per **subcommand**, not
+per extension, so an author migrates one command at a time and a malformed
+declaration costs that subcommand only — never the extension's other handlers.
+And the declaration is read by the DISPATCHER, never by the manifest validator:
+the validator is a byte-graded port of Python's, which ignores `cli:` entirely,
+so a TypeScript-only field that could fail validation would make `extensions
+list` report an invalid extension where Python reports a valid one. A
+declaration TypeScript will not execute is a fallback, not a refusal.
 
 The consequence that makes this safe to choose is the gate: DS10's Extension
 Compatibility-Host Deletion Gate now covers the command bridge as well as the

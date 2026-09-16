@@ -14,7 +14,14 @@ byte (`divergence` field):
 
   * `python_traceback` -- an unhandled exception escapes as a CPython
     traceback. TypeScript cannot reproduce those bytes; the graded contract is
-    the input, the stream, and the exit code. TWO different failures land here,
+    the input, the stream, and the exit code. Such a case records `stderr` as
+    NULL and keeps only `stderr_final_line`: a traceback interleaves the
+    INTERPRETER'S OWN paths (`/opt/hostedtoolcache/...` in CI,
+    `~/.local/share/uv/...` here) and its frame rendering changed after 3.10,
+    so the frames are not a portable artifact and pretending otherwise fails
+    the determinism gate on the first machine that is not this one. The final
+    line -- exception type and message -- is portable, and it is what the
+    replay grades. TWO different failures land here,
     and the reason is worth keeping: `memory.cli.extensions` defines its OWN
     `ExtensionValidationError(ValueError)`, unrelated to the `ExtensionError`
     hierarchy in `memory.extensions.errors` that `_dispatch_subcommand`
@@ -42,7 +49,9 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 FIXTURES = REPO_ROOT / "ts" / "test" / "fixtures" / "ext-dispatch"
 GOLDEN_PATH = REPO_ROOT / "ts" / "test" / "fixtures" / "ext-dispatch.golden.json"
-EXTENSIONS = ("tools", "silent", "broken", "malformed")
+EXTENSIONS = ("tools", "silent", "broken", "malformed", "declared")
+# Extensions whose tables the corpus needs before its first case.
+MIGRATED = ("tools", "declared")
 
 # (label, argv after `ext`, divergence-class or None). Ordered: later cases see
 # the writes earlier ones made.
@@ -95,6 +104,20 @@ CASES: list[tuple[str, list[str], str | None]] = [
     ("empty_id_reads_the_extensions_dir_itself", ["", "ping"], "python_traceback"),
     ("malformed_manifest_escapes", ["malformed", "ping"], "python_traceback"),
     ("malformed_manifest_escapes_on_listing", ["malformed"], "python_traceback"),
+    # --- the declared command contract ------------------------------------
+    # Python knows nothing about `cli.subcommands[].runtime` and answers all
+    # four from `register_cli`. TypeScript executes the two that declare a
+    # runtime and falls back to the host for the two that do not -- per
+    # SUBCOMMAND, never per extension, so a mixed extension cannot lose a
+    # handler. The twins print the same bytes, so this corpus grades both.
+    ("declared_runtime_receives_argv", ["declared", "greet", "alpha", "beta gamma"], None),
+    ("declared_runtime_with_no_argv", ["declared", "greet"], None),
+    ("declared_runtime_keeps_flags", ["declared", "greet", "--flag", "-x", "--", "a b"], None),
+    ("declared_runtime_exit_code", ["declared", "fail"], None),
+    ("declared_without_runtime_falls_back", ["declared", "legacy", "tail"], None),
+    ("declared_but_malformed_falls_back", ["declared", "broken"], None),
+    ("declared_listing_comes_from_the_registry", ["declared"], None),
+    ("declared_unknown_subcommand", ["declared", "nope"], None),
 ]
 
 # Cases whose recorded argv must END the command line, so the harness passes
@@ -152,6 +175,11 @@ def _redact(text: str, home: Path) -> str:
     return text.replace(str(home), "<HOME>").replace(str(REPO_ROOT), "<REPO>")
 
 
+def _final_line(text: str) -> str:
+    stripped = text.rstrip("\n")
+    return stripped.rsplit("\n", 1)[-1] if stripped else ""
+
+
 def _run(home: Path, argv: list[str], *, home_flag_first: bool = False) -> dict[str, object]:
     flag = ["--mirror-home", str(home)]
     line = [*flag, *argv] if home_flag_first else [*argv, *flag]
@@ -175,11 +203,16 @@ def main() -> int:
     with tempfile.TemporaryDirectory(prefix="ext-dispatch-golden-") as raw_tmp:
         home = _make_home(Path(raw_tmp))
         # The dispatcher never creates extension tables; `migrate` does, and
-        # `ext-tools`' write handler needs its table to exist.
-        _run(home, ["tools", "migrate"])
+        # the write handler and the `rows=` comparison need theirs to exist.
+        for extension_id in MIGRATED:
+            _run(home, [extension_id, "migrate"])
         for label, argv, divergence in CASES:
             home_flag_first = label in HOME_FLAG_FIRST
             answer = _run(home, argv, home_flag_first=home_flag_first)
+            if divergence == "python_traceback":
+                # Not portable, so not recorded: only the final line is.
+                answer["stderr_final_line"] = _final_line(str(answer["stderr"]))
+                answer["stderr"] = None
             case: dict[str, object] = {
                 "label": label,
                 **answer,
@@ -199,9 +232,15 @@ def main() -> int:
             "Python's answer for `ext <id>` and `ext <id> <subcommand> [args...]`: streams, "
             "exit code, and the ext_tools_notes rows that exist afterwards. Cases carrying a "
             "`divergence` field are graded by class (input, stream, exit code), not by bytes: "
-            "TypeScript cannot reproduce a CPython traceback."
+            "TypeScript cannot reproduce a CPython traceback. Those cases record `stderr` as "
+            "null and keep `stderr_final_line`, because a traceback carries the interpreter's "
+            "own paths and its frame rendering is version-dependent."
         ),
         "extensions": list(EXTENSIONS),
+        # Applied before the first case, and the replay must apply the same
+        # ones: a declared command that counts rows answers differently when
+        # its table is missing.
+        "migrated": list(MIGRATED),
         "cases": cases,
     }
     GOLDEN_PATH.write_text(

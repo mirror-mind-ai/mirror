@@ -33,13 +33,19 @@
 // when it lands.
 
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { isAbsolute, join, relative, resolve } from "node:path";
+import { parse } from "yaml";
 import type { RenderedCommand } from "./catalog.ts";
+import { tablePrefixFor } from "./migrations.ts";
 
 export const MIRROR_CLI_PROTOCOL = "mirror-cli-v1";
 
 /** The host's own id rule (`compat_host._EXTENSION_ID`). */
 const EXTENSION_ID = /^[a-z][a-z0-9-]*$/;
+
+/** The three spellings `_dispatch_subcommand` treats as the listing request. */
+const HELP_SUBCOMMANDS = new Set(["--help", "-h", "help"]);
 
 const DEFAULT_HOST_COMMAND = [
   "uv",
@@ -87,6 +93,114 @@ export interface DispatchOptions {
   /** Injected so tests can assert what would be spawned without spawning. */
   spawn?: typeof spawnSync;
   onError?: (message: string) => void;
+}
+
+/**
+ * A subcommand's declared, language-neutral command.
+ *
+ * It hangs off the `cli.subcommands[]` entries the manifest format already
+ * had, rather than a parallel `commands[]` array: an extension keeps ONE list
+ * of its subcommands, so a declared name and a documented name cannot drift.
+ */
+interface DeclaredCommand {
+  name: string;
+  command: string[];
+}
+
+/**
+ * Read the declared commands, tolerantly.
+ *
+ * Deliberately NOT part of `loadExtensionManifest`: that function is a port of
+ * Python's validator, graded byte for byte by the catalog reads, and Python
+ * ignores `cli:` entirely. A TypeScript-only field that could FAIL validation
+ * would make `extensions list` report an invalid extension where Python
+ * reports a valid one.
+ *
+ * So every structural problem here -- unreadable manifest, wrong protocol,
+ * empty argv, a path escaping the extension root -- drops that one entry and
+ * lets the host answer, which is exactly what Python does today. A declaration
+ * TypeScript will not execute is never a refusal; it is a fallback.
+ */
+export function readDeclaredCommands(extensionRoot: string): DeclaredCommand[] {
+  let parsed: unknown;
+  try {
+    parsed = parse(readFileSync(join(extensionRoot, "skill.yaml"), "utf8"));
+  } catch {
+    return [];
+  }
+  if (!isRecord(parsed) || !isRecord(parsed.cli)) return [];
+  const subcommands = parsed.cli.subcommands;
+  if (!Array.isArray(subcommands)) return [];
+  const declared: DeclaredCommand[] = [];
+  const seen = new Set<string>();
+  for (const entry of subcommands) {
+    if (!isRecord(entry) || typeof entry.name !== "string" || entry.name.length === 0) continue;
+    if (seen.has(entry.name)) continue;
+    seen.add(entry.name);
+    const runtime = entry.runtime;
+    if (!isRecord(runtime) || runtime.protocol !== MIRROR_CLI_PROTOCOL) continue;
+    const command = runtime.command;
+    if (
+      !Array.isArray(command) ||
+      command.length === 0 ||
+      !command.every((part) => typeof part === "string" && part.length > 0)
+    ) {
+      continue;
+    }
+    if (!commandStaysInside(extensionRoot, command as string[])) continue;
+    declared.push({ name: entry.name, command: [...(command as string[])] });
+  }
+  return declared;
+}
+
+/**
+ * Path-like arguments must resolve inside the installed extension root, the
+ * same rule `provider_runtime.command` follows. An extension is trusted code,
+ * but a manifest that reaches OUT of its own directory is not a contract --
+ * it is a way to make the core launch something the installer never placed.
+ */
+function commandStaysInside(extensionRoot: string, command: readonly string[]): boolean {
+  const root = resolve(extensionRoot);
+  for (const [index, argument] of command.entries()) {
+    const pathLike =
+      isAbsolute(argument) ||
+      argument.includes("/") ||
+      argument.includes("\\") ||
+      (index > 0 && /\.(?:[cm]?js|py)$/i.test(argument));
+    if (!pathLike) continue;
+    if (isAbsolute(argument)) return false;
+    const candidate = resolve(root, argument);
+    const rel = relative(root, candidate);
+    if (rel === ".." || rel.startsWith(`..${"/"}`) || rel.startsWith("..\\")) return false;
+    if (!existsSync(candidate)) return false;
+  }
+  return true;
+}
+
+/**
+ * The context a declared command receives.
+ *
+ * In the ENVIRONMENT, never on stdin: stdin belongs to the user, which is the
+ * one thing the legacy bridge cannot offer. Argv is appended to the declared
+ * command verbatim, so a declared command sees exactly what a legacy handler
+ * sees.
+ */
+function declaredEnvironment(
+  dispatch: ExtensionDispatch,
+  options: DispatchOptions,
+): NodeJS.ProcessEnv {
+  return {
+    ...(options.environment ?? process.env),
+    MIRROR_HOME: dispatch.mirrorHome,
+    MIRROR_DATABASE_PATH: options.databasePath,
+    MIRROR_EXTENSION_ID: dispatch.extensionId,
+    MIRROR_EXTENSION_ROOT: dispatch.extensionRoot,
+    MIRROR_TABLE_PREFIX: tablePrefixFor(dispatch.extensionId),
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /**
@@ -155,6 +269,25 @@ export function buildSubcommandRequest(
  * with a manifest traceback; TypeScript answers with one line on stderr at the
  * same exit code -- the recorded divergence class for this family.
  */
+/** The legacy bridge: the request on stdin, the user's streams inherited. */
+function spawnHost(
+  dispatch: ExtensionDispatch,
+  options: DispatchOptions,
+  spawn: typeof spawnSync,
+): ReturnType<typeof spawnSync> {
+  const command = options.hostCommand ?? DEFAULT_HOST_COMMAND;
+  return spawn(command[0] as string, command.slice(1), {
+    cwd: options.hostCwd ?? process.cwd(),
+    env: options.environment ?? process.env,
+    input: `${JSON.stringify(buildSubcommandRequest(dispatch, options.databasePath))}\n`,
+    // stdin is the request pipe; stdout and stderr are the user's.
+    stdio: ["pipe", "inherit", "inherit"],
+    timeout: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+    windowsHide: true,
+    shell: false,
+  });
+}
+
 export function runExtensionSubcommand(
   dispatch: ExtensionDispatch,
   options: DispatchOptions,
@@ -166,18 +299,36 @@ export function runExtensionSubcommand(
   }
   if (!existsSync(dispatch.extensionRoot)) return 1;
 
-  const command = options.hostCommand ?? DEFAULT_HOST_COMMAND;
+  // The listing stays with the host even for a declared extension: Python
+  // answers it from the live `api.cli_registry`, and a manifest-rendered
+  // listing would disagree with it for any extension that registers a
+  // subcommand it never declared. DS10 owns the post-retirement listing.
+  const declared = HELP_SUBCOMMANDS.has(dispatch.subcommand)
+    ? undefined
+    : readDeclaredCommands(dispatch.extensionRoot).find(
+        (candidate) => candidate.name === dispatch.subcommand,
+      );
+
   const spawn = options.spawn ?? spawnSync;
-  const result = spawn(command[0] as string, command.slice(1), {
-    cwd: options.hostCwd ?? process.cwd(),
-    env: options.environment ?? process.env,
-    input: `${JSON.stringify(buildSubcommandRequest(dispatch, options.databasePath))}\n`,
-    // stdin is the request pipe; stdout and stderr are the user's.
-    stdio: ["pipe", "inherit", "inherit"],
-    timeout: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-    windowsHide: true,
-    shell: false,
-  });
+  const result = declared
+    ? spawn(declared.command[0] as string, [...declared.command.slice(1), ...dispatch.argv], {
+        cwd: dispatch.extensionRoot,
+        env: declaredEnvironment(dispatch, options),
+        // All three streams are the user's: a declared command may read stdin,
+        // which is precisely what the legacy bridge cannot allow.
+        stdio: "inherit",
+        timeout: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+        windowsHide: true,
+        shell: false,
+      })
+    : spawnHost(dispatch, options, spawn);
+  if (result.error && declared) {
+    report(
+      `Mirror TS front door: extension/${dispatch.extensionId} declares a command for ` +
+        `'${dispatch.subcommand}' that could not be started: ${result.error.message}`,
+    );
+    return 1;
+  }
   if (result.error) {
     const code = (result.error as NodeJS.ErrnoException).code;
     if (code === "ENOENT") {

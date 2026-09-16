@@ -178,13 +178,23 @@ golden; the extension half is graded here through `list extensions`.
 
 ### Plateau 4 — the dispatch
 
-32 recorded cases in `ext-dispatch.golden.json`, each carrying the streams, the
+40 recorded cases in `ext-dispatch.golden.json`, each carrying the streams, the
 exit code, AND the `ext_tools_notes` rows that exist afterwards — a dispatch
 that prints the right line while the handler's write lands in a different
 database is the defect this bridge could introduce, and no stream comparison
 would see it. Four fixture extensions stage the branches: handlers that pin
 each outcome, an extension that registers nothing, one whose `register` raises,
-and one whose manifest fails validation.
+one whose manifest fails validation, and one whose subcommands DECLARE a
+`mirror-cli-v1` runtime.
+
+The declared fixture is the one that makes the contract path gradable at all.
+Python knows nothing about `cli.subcommands[].runtime` and answers all four of
+its subcommands from `register_cli`; TypeScript executes the two that declare a
+runtime and falls back to the host for the two that do not. Each declared
+command has a Python twin printing the same bytes — including a `rows=` count
+read from the extension's own table — so a single corpus recorded from Python
+grades both engines, and any drift between a declared command and its handler
+fails the build.
 
 | Fact | Measured |
 |---|---|
@@ -197,20 +207,28 @@ and one whose manifest fails validation.
 | Streams | inherited, not captured: stdout and stderr both reach the caller, interleaved as the handler produced them |
 
 Recorded divergences, graded by class (input, stream, exit code) rather than by
-bytes: a CPython traceback cannot be reproduced in TypeScript. Which shape
+bytes: a CPython traceback cannot be reproduced in TypeScript. A traceback case
+records `stderr` as **null** and keeps only `stderr_final_line`, because a
+traceback interleaves the INTERPRETER'S own paths and renders frames
+differently after 3.10 — recording them made the determinism gate fail on the
+first machine that was not this one, which is precisely the failure that gate
+exists to produce. The generator is now proven identical on 3.10 and 3.12. Which shape
 applies is decided by WHO refuses — the host still IS Python, so a failure it
 reaches reproduces Python's traceback down to its last line (the test grades
 that line); a refusal TypeScript makes before spawning is one line on stderr at
 the same exit code with stdout untouched.
 
-**Checks:** 32/32 cases equal, rows included; **nine mutants killed** (a
+**Checks:** 40/40 cases equal, rows included; **seventeen mutants killed** (a
 normalizing `join`, captured streams, a flattened exit code, id validation
 dropped, argv truncated, the installed check removed, the host swallowing
 handler streams, the database straddle guard removed, and the host dispatching
 a resolved home), each asserted to have changed the file before its verdict was
-believed. One mutant SURVIVED and is equivalent: the listing's `"--help"`
-replaced by `"help"`, which `_dispatch_subcommand` treats identically. TS suite
-2,230 pass; typecheck clean; biome clean except the pre-existing `routing.ts`
+believed. The contract half added eight of them: the declared path never
+taken, argv truncated, the wrong cwd, a missing database path, a shell
+interpreting the argv, path containment dropped, the protocol check dropped,
+and the listing hijacked by a declared command. One mutant SURVIVED and is
+equivalent: the listing's `"--help"` replaced by `"help"`, which
+`_dispatch_subcommand` treats identically. TS suite 2,233 pass; typecheck clean; biome clean except the pre-existing `routing.ts`
 warning; Python extension suite green; golden regeneration is a no-op and joins
 the CI determinism gate with its own `git diff`.
 
@@ -223,7 +241,20 @@ the CI determinism gate with its own `git diff`.
    every path Python prints on macOS (`/var` → `/private/var`). It now
    validates resolved and dispatches raw, with a Python test pinning it.
 
-**Known limit, recorded:** the request travels on the host's stdin, so a legacy
-handler cannot read the user's stdin through the bridge. Measured before
+**A third defect, caught by CI rather than locally:** the first version of the
+golden recorded whole tracebacks, interpreter paths included, so regeneration
+was a no-op only on the machine that recorded it. Fixed by recording the final
+line alone and verifying the generator produces identical bytes under both CI
+interpreters.
+
+**A fourth, caught by a mutant rather than by a case:** the
+foreign-protocol refusal case replaced the protocol AND dropped the argv, so it
+would have passed even with the protocol check deleted. Fixed to keep a valid
+command, and the mutant is killed.
+
+**Known limit, recorded:** the LEGACY request travels on the host's stdin, so a
+legacy handler cannot read the user's stdin through the bridge. Measured before
 choosing it — no CLI handler in any installed extension reads stdin — and the
-declared-runtime path is free to define stdin passthrough when it lands.
+declared path removes the limit rather than inheriting it: a declared command
+inherits all three streams, which is one more reason for an author to migrate
+before DS10.

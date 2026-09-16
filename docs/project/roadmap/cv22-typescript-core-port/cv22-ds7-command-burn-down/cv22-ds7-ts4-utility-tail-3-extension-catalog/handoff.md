@@ -2,7 +2,7 @@
 
 # Handoff — CV22.DS7.TS4 — Ops/utility tail 3: extension catalog
 
-**Status:** plateaus 1-3 and the legacy half of plateau 4 complete. The
+**Status:** plateaus 1-4 of 8 complete. The
 **catalog reads** answer from
 TypeScript — `extensions list|validate` (with the runtime filter and every
 usage refusal), `ext list`, `list extensions`, `inspect extension`, and
@@ -21,34 +21,16 @@ flips the gates.
 
 ## Resume here
 
-**Open Navigator decision before plateau 4 can close: WHERE the declared
-command runtime lives in the manifest.** The Plan and the recorded decision say
-`commands[].runtime.command`. Measured since: every installed extension already
-carries a `cli.subcommands[]` block (`name` + `summary`) that no core code
-reads — it is documented in
-`docs/product/extensions/template/skill.yaml.template` and consumed nowhere.
-Adding `runtime:` to those existing entries keeps ONE authoring surface; a new
-top-level `commands[]` array creates a second list of subcommand names and
-summaries beside it. This is a manifest-schema choice the Plan's stop
-conditions reserve for the Navigator, so the contract half was not written on a
-guess. Everything else in plateau 4 is done and green.
-
-When that is answered, the contract half owes: the manifest field, one branch
-in the dispatcher that executes a declared argv directly (no shell, the
-`provider_runtime` shape), a fixture extension that declares a command AND
-registers the Python twin so one golden grades both paths, and the rule for a
-subcommand declared nowhere — recommended: fall back to the host
-per-SUBCOMMAND, never per-extension, so a mixed extension cannot lose a
-handler.
-
-Then plateau 5, catalog writes: `extensions sync|install|uninstall|
+**Next: plateau 5, the catalog writes.** `extensions sync|install|uninstall|
 expose-claude|clean-claude`, graded like `builder_artifacts` — file trees
 compared byte for byte in a disposable home AND a disposable target root, never
-the developer's `.pi`, which the plan-stage panel named explicitly. Two traps
-already measured and waiting there: `install_extension` uses the DIRECTORY NAME
-as the extension id (the repository's own `ext-hello` fixture fails its own
-prefix check because of it), and an install failure escapes as an uncaught
-traceback.
+the developer's `.pi`, which the plan-stage panel named explicitly. It can now
+be written: a command-skill install calls the extension's own `register(api)`,
+and the host this plateau landed is what lets TypeScript complete that.
+Two traps already measured and waiting there: `install_extension` uses the
+DIRECTORY NAME as the extension id (the repository's own `ext-hello` fixture
+fails its own prefix check because of it), and an install failure escapes as an
+uncaught traceback.
 
 What landed in plateau 4:
 
@@ -62,8 +44,14 @@ What landed in plateau 4:
 - `ts/src/extensions/catalogCommands.ts` — `runExtCommand` now returns
   `RenderedCommand | ExtensionDispatch`: it DECIDES, and only a caller allowed
   to spawn executes;
-- `ts/parity/generate_ext_dispatch_golden.py` and its four fixture extensions,
-  in the CI determinism gate with their own `git diff` check.
+- `ts/src/extensions/dispatch.ts` — `readDeclaredCommands`: the contract half,
+  reading `cli.subcommands[].runtime` rather than a parallel `commands[]`
+  array, because every installed manifest already lists its subcommands there
+  (Navigator amendment, recorded in the Plan and in Decisions);
+- `ts/parity/generate_ext_dispatch_golden.py` and its five fixture extensions,
+  in the CI determinism gate with their own `git diff` check. The `declared`
+  fixture carries a Python twin for every declared command, so ONE corpus
+  recorded from Python grades the TypeScript contract path too.
 
 What landed in plateau 3:
 
@@ -143,6 +131,20 @@ What landed in plateau 1:
   really `/private/var`. The corpus caught it; review had not.
 - **A refused id never reaches a process.** Id validation runs in TypeScript
   before the spawn, so `ext /etc ping` cannot make Python open `/etc`.
+- **The declaration is the dispatcher's to read, never the validator's.** The
+  manifest validator is a byte-graded port of Python's, and Python ignores
+  `cli:` entirely: a TypeScript-only field that could FAIL validation would
+  make `extensions list` report an invalid extension where Python reports a
+  valid one. Every malformed declaration falls back to the host instead.
+- **The listing is not a declared command.** It is answered from the live
+  registry through the host, so an extension cannot hijack `ext <id>` by
+  declaring a subcommand named `--help`, and the listing never disagrees with
+  what the extension can actually run.
+- **A test that refuses for the wrong reason grades nothing.** The first
+  foreign-protocol case replaced the protocol AND dropped the argv, so a mutant
+  deleting the protocol check survived. Same lesson plateau 1 and plateau 3
+  each paid for once: assert that the mutant mutated, and that the case
+  isolates what it claims to isolate.
 - **Equivalent mutant, recorded:** replacing the listing's `"--help"` with
   `"help"` survives, because `_dispatch_subcommand` treats `--help`, `-h`, and
   `help` identically before any registry lookup. A gap in the code's
