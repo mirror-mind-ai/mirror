@@ -64,8 +64,11 @@ The index describes this story from the ledger. The code says:
 
 ## Decisions Taken At Plan Time
 
-**D1 — `ext <id> <subcommand>` and `ext <id>` (recommendation; Navigator
-decides).** Three options were weighed:
+**D1 — `ext <id> <subcommand>` and `ext <id>`. DECIDED 2026-09-16: option
+(c).** The Navigator chose the compat-host-plus-contract path at Plan
+approval; it is recorded in
+[Decisions](../../../../decisions.md#extension-commands-reach-typescript-through-a-declared-contract-with-one-temporary-python-host).
+Three options were weighed:
 
 - *(a) Route them to Python by name until DS10.* Rejected: DS10 deletes
   Python, and every installed extension has CLI handlers — this would leave 64
@@ -88,11 +91,17 @@ decides).** Three options were weighed:
   One Python bridge, one deletion gate — DS10's existing one, extended in the
   same commit to name the `cli` mode.
 
-**Recommended: (c).** It is the only option under which 2026-09-17 looks like
+**Decided: (c).** It is the only option under which 2026-09-17 looks like
 2026-09-16 for the Navigator, and it gives extensions a migration target that
 DS10's gate can check. The contract half is small (a manifest field, one
 branch in the dispatcher, a fixture extension exercising it); the compat half
 is the shape TS2 already proved.
+
+Two obligations follow from the decision and are binding on plateau 5: the
+`cli` mode is a second request kind of the **existing** `compat_host` — never
+a second host — and DS10's Extension Compatibility-Host Deletion Gate is
+extended in the same commit to name it, so the gate that deletes the context
+bridge deletes the command bridge with it.
 
 **D2 — gates.** One new revert for the catalog family, `MIRROR_TS_EXTENSIONS=0`,
 covering `extensions`, `ext`, `list extensions|all`, and `inspect
@@ -302,6 +311,6 @@ above before it was presented.
 
 ## Approval Gate
 
-- active checkpoint: `after_plan`
-- pending confirmation: `navigator_approval` — including D1
-- implementation remains blocked until Navigator approval.
+- **Approved 2026-09-16** by the Navigator, with D1 answered (c).
+- Implementation proceeds plateau by plateau under the stepwise cadence:
+  each plateau is its own commit and its own stop.

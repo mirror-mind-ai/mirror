@@ -2,7 +2,7 @@
 
 # CV22.DS7.TS4 — Ops/utility tail 3: extension catalog
 
-**Status:** 🟡 Planned — pulled 2026-09-16 through the TS front door (the first Ariad Pull answered by TypeScript in production); Plan drafted with the persona panel, awaiting Navigator approval and the D1 decision
+**Status:** 🟢 In Progress — pulled 2026-09-16 through the TS front door (the first Ariad Pull answered by TypeScript in production); **Plan approved 2026-09-16** with D1 answered (c): a TS dispatcher, a declared `commands[].runtime` contract, and a `cli` mode of the existing temporary compat host under DS10's deletion gate
 **Type:** Technical Story
 
 ---
@@ -29,10 +29,11 @@ So that Python retirement is gated only by DS10's own scope.
 `ext <id> <extension-subcommand>` dispatches into a handler the extension
 registered in Python (`api.register_cli`); all seven installed extensions on
 the validated home have them. The [Plan](plan.md#decisions-taken-at-plan-time)
-recommends TS2's shape — a TS dispatcher, a `commands[].runtime` manifest
-contract executed directly when declared, and a `cli` mode of the existing
-temporary compat host for everything else, under DS10's existing deletion
-gate. The Navigator decides at approval.
+chose TS2's shape — a TS dispatcher, a `commands[].runtime` manifest contract
+executed directly when declared, and a `cli` mode of the existing temporary
+compat host for everything else, under DS10's existing deletion gate.
+Decided by the Navigator at Plan approval on 2026-09-16 and recorded in
+[Decisions](../../../../decisions.md#extension-commands-reach-typescript-through-a-declared-contract-with-one-temporary-python-host).
 
 ## Acceptance Behavior
 

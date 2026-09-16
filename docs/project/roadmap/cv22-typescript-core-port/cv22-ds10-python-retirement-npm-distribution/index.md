@@ -39,15 +39,20 @@ Python core deletion is blocked until all of the following are true:
 
 CV22.DS7.TS2 transfers extension context dispatch to TS through the language-neutral
 `mirror-context-v1` protocol while temporarily preserving Python-only providers through
-`memory.extensions.compat_host`. Before Python retirement or npm publication, DS10 must:
+`memory.extensions.compat_host`. **CV22.DS7.TS4 extends that same host with a `cli`
+mode** (Navigator decision D1, 2026-09-16) so `ext <id> <subcommand>` and the
+`ext <id>` subcommand listing keep reaching handlers registered through
+`api.register_cli` until extensions declare `commands[].runtime`. One host, one gate:
+every item below covers the command bridge as well as the context bridge. Before
+Python retirement or npm publication, DS10 must:
 
 1. delete the compatibility host and every TS launcher branch that invokes it;
 2. prove the packaged artifact contains no core-owned Python extension-provider bridge;
 3. document the final migration cutoff for capabilities without `provider_runtime`;
 4. make unmigrated providers fail explicitly and fail-soft rather than silently losing
    context; and
-5. run a repository/package check proving every retained extension context provider enters
-   through a declared language-neutral command.
+5. run a repository/package check proving every retained extension context provider and
+   every retained extension COMMAND enters through a declared language-neutral command.
 
 This gate does not require provider authors to use JavaScript. Extensions may own any
 executable runtime; the Mirror core must not own Python as their permanent compatibility

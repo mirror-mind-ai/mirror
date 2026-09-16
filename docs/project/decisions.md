@@ -11,6 +11,48 @@ resolved.
 
 ## Completed Decisions
 
+### Extension commands reach TypeScript through a declared contract, with one temporary Python host
+
+**Date:** 2026-09-16
+**Reference:** [CV22.DS7.TS4](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-ts4-utility-tail-3-extension-catalog/index.md), [CV22.DS7.TS2](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-ts2-extension-context-provider-runtime-convergence/index.md), [CV22.DS10](roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/index.md), [Burn-Down Ledger](roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/burn-down-ledger.md)
+**Participants:** Vinícius Manhães Teles
+
+`python -m memory ext <id> <subcommand>` dispatches into a handler the
+extension registered in Python through `api.register_cli`. Every one of the
+seven extensions installed on the validated home has such handlers, and 64
+invocations of that command live in the skills those extensions generate. Even
+`ext <id>`, which only lists an extension's subcommands, has to load the
+Python module to read the registry. So this is not a port decision but a
+platform one: after DS10 deletes Python, those commands need an engine.
+
+Three paths were weighed at TS4's Plan. Keeping the family on Python until
+DS10 leaves 64 skill invocations with no engine on retirement day. A
+TypeScript-only extension-command contract is the correct end state but
+strands every installed extension until its author rewrites it — work no CV22
+story owns.
+
+Decision: **both halves, exactly as CV22.DS7.TS2 did for context providers.**
+TypeScript owns the dispatcher — argument splitting, the built-in verbs,
+`--help` that describes and never executes, id validation, exit codes. An
+extension that declares `commands[].runtime.command` (a no-shell argv, the
+same shape as `provider_runtime`) is executed directly, in any language. An
+extension that declares nothing falls to a **`cli` mode of the existing
+`memory.extensions.compat_host`** — a second request kind of the host TS2
+already ships, never a second host — which loads the extension, runs the
+handler with streams inherited, and returns its exit code.
+
+The consequence that makes this safe to choose is the gate: DS10's Extension
+Compatibility-Host Deletion Gate now covers the command bridge as well as the
+context bridge, in the same five obligations, so the day Python is deleted is
+the day both bridges are deleted and every retained extension command must
+already enter through a declared language-neutral command. The Mirror core
+owns no permanent Python layer for extensions; extension authors owe a
+manifest declaration, not a rewrite into JavaScript.
+
+Recorded separately as a DS10 plan input, not fixed by TS4: extension-authored
+skills invoke `python -m memory ext …` directly, so DS10's npm distribution
+must supply the entry point those generated skills call.
+
 ### CV22 makes the ported work real before porting more
 
 **Date:** 2026-09-09
