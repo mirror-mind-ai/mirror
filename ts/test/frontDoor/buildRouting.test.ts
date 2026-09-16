@@ -1,6 +1,7 @@
-// CV22.DS7.US8 plateau 8 — the Builder family enters the front door with its
-// gate deliberately OFF. The flip is plateau 9; these tests prove the route is
-// complete before changing the shipped default.
+// CV22.DS7.US8 — the Builder family through the front door. Flipped at plateau
+// 9 (2026-09-16): the shipped default is TypeScript for all 27 ported leaves,
+// `MIRROR_TS_BUILD=0` reverts the whole family, and the twenty legacy Workbench
+// leaves stay on Python by name until DS10 retires them.
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -10,20 +11,30 @@ import {
   TS_BUILD_WORKBENCH_ACTIONS,
 } from "#frontDoor/routing.ts";
 
-const ON = { MIRROR_TS_BUILD: "1" };
+const ON = {};
+const OFF = { MIRROR_TS_BUILD: "0" };
 
-test("the plateau-8 default keeps every Builder leaf on Python", () => {
-  for (const subcommand of TS_BUILD_SUBCOMMANDS) {
-    const argv = subcommand === "load" ? ["build", "load", "demo"] : ["build", subcommand];
-    assert.equal(routeMemoryCommand(argv).engine, "python", subcommand);
-  }
-});
-
-test("MIRROR_TS_BUILD=1 exposes every one of the 27 ported leaves", () => {
+test("the shipped default routes every one of the 27 ported leaves to TS", () => {
   assert.equal(TS_BUILD_SUBCOMMANDS.size, 27);
   for (const subcommand of TS_BUILD_SUBCOMMANDS) {
     const argv = subcommand === "load" ? ["build", "load", "demo"] : ["build", subcommand];
     assert.equal(routeMemoryCommand(argv, ON).engine, "ts", subcommand);
+  }
+});
+
+test("MIRROR_TS_BUILD=0 reverts every leaf to Python with one variable", () => {
+  for (const subcommand of TS_BUILD_SUBCOMMANDS) {
+    const argv = subcommand === "load" ? ["build", "load", "demo"] : ["build", subcommand];
+    const decision = routeMemoryCommand(argv, OFF);
+    assert.equal(decision.engine, "python", subcommand);
+    assert.match(decision.reason, /MIRROR_TS_BUILD=0/);
+  }
+});
+
+test("MIRROR_TS_BUILD=1 is not a mode: the default and the explicit value agree", () => {
+  for (const subcommand of TS_BUILD_SUBCOMMANDS) {
+    const argv = subcommand === "load" ? ["build", "load", "demo"] : ["build", subcommand];
+    assert.equal(routeMemoryCommand(argv, { MIRROR_TS_BUILD: "1" }).engine, "ts", subcommand);
   }
 });
 
@@ -53,10 +64,7 @@ test("build load follows the search and conversation-tail reverts too", () => {
     "MIRROR_TS_SEARCH",
     "MIRROR_TS_CONVERSATION_LLM_TAIL",
   ]) {
-    const decision = routeMemoryCommand(["build", "load", "demo"], {
-      MIRROR_TS_BUILD: "1",
-      [variable]: "0",
-    });
+    const decision = routeMemoryCommand(["build", "load", "demo"], { [variable]: "0" });
     assert.equal(decision.engine, "python", variable);
     assert.match(decision.reason, new RegExp(`${variable}=0`));
   }
@@ -64,7 +72,6 @@ test("build load follows the search and conversation-tail reverts too", () => {
 
 test("half-configured build replay refuses load instead of going live", () => {
   const decision = routeMemoryCommand(["build", "load", "demo"], {
-    MIRROR_TS_BUILD: "1",
     MIRROR_TS_BUILD_LLM_REPLAY: "/tmp/llm.json",
   });
   assert.equal(decision.engine, "ts", "the TS runtime owns the safe refusal");

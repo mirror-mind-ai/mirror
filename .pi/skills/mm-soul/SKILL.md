@@ -119,7 +119,7 @@ This is operational Builder work, not Soul Mode ritual listening. Soul Mode turn
 Only after the user confirms the switch should Mirror activate Builder Mode with:
 
 ```bash
-uv run python -m memory build load <slug>
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build load <slug>
 ```
 
 Local refinements to the ritual experience, such as discussing microcopy,

@@ -1,4 +1,4 @@
-// CV22.DS7.US8 plateau 8 — the Builder revert survives a broken Builder core.
+// CV22.DS7.US8 — the Builder revert survives a broken Builder core.
 
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
@@ -29,7 +29,7 @@ test("MIRROR_TS_BUILD=0 reaches Python when the lazy Builder boundary throws", (
       `  return nextResolve(specifier, context);\n` +
       `} });\n`,
   );
-  const base = {
+  const base: NodeJS.ProcessEnv = {
     ...process.env,
     HOME: root,
     MIRROR_HOME: home,
@@ -37,12 +37,12 @@ test("MIRROR_TS_BUILD=0 reaches Python when the lazy Builder boundary throws", (
     MEMORY_ENV: "",
     NODE_OPTIONS: `--no-warnings --import=${hook}`,
   };
+  // A developer shell's own revert must not make the broken run pass vacuously.
+  delete base.MIRROR_TS_BUILD;
 
   try {
-    const broken = run(["build", "inspect-method", "ariad"], {
-      ...base,
-      MIRROR_TS_BUILD: "1",
-    });
+    // The shipped default, with no gate in the environment.
+    const broken = run(["build", "inspect-method", "ariad"], base);
     assert.equal(broken.status, 1);
     assert.match(broken.stderr, /BROKEN_BUILDER_CORE/);
 
@@ -54,10 +54,7 @@ test("MIRROR_TS_BUILD=0 reaches Python when the lazy Builder boundary throws", (
     assert.match(reverted.stdout, /^■ Builder Method Available/);
     assert.doesNotMatch(reverted.stderr, /BROKEN_BUILDER_CORE/);
 
-    const unrelated = run(["welcome", "--status-line"], {
-      ...base,
-      MIRROR_TS_BUILD: "1",
-    });
+    const unrelated = run(["welcome", "--status-line"], base);
     assert.equal(unrelated.status, 0, unrelated.stderr);
     assert.doesNotMatch(unrelated.stderr, /BROKEN_BUILDER_CORE/);
   } finally {

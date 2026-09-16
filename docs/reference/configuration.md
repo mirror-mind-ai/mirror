@@ -270,13 +270,16 @@ TypeScript. Without `OPENROUTER_API_KEY` it degrades to lexical-only search
 and prints the same note the Python engine prints — no call is attempted and
 no `llm_calls` row is written.
 
-### Builder route during CV22.DS7.US8 plateau 8
+### The Builder/Ariad tree (CV22.DS7.US8)
 
-All 27 in-scope `build` leaves are available through the TypeScript front door,
-but the production default remains Python until the plateau-9 validation and
-flip. Set `MIRROR_TS_BUILD=1` only to exercise the completed route. The twenty
-legacy SQLite Workbench leaves under `build refinement-story` and
-`build change-request` remain Python-owned and retire unported in DS10.
+All 27 in-scope `build` leaves answer from TypeScript by default since
+2026-09-16. `MIRROR_TS_BUILD=0` reverts the whole family to Python with no
+code change and no data migration — one gate, because Builder is a lived mode
+whose lifecycle writes one cursor row, and a half-flipped lifecycle cannot be
+reviewed. The twenty legacy SQLite Workbench leaves under `build
+refinement-story` and `build change-request` are refused by name and answered
+by Python until DS10 retires them; the front-door log shows `build python` for
+those and `build ts leaf=<name>` for the rest.
 
 `build load` composes fresh search with the previous conversation's close tail,
 so its transport decision resolves three controls before printing any surface:

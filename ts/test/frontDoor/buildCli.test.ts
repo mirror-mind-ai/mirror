@@ -1,4 +1,4 @@
-// CV22.DS7.US8 plateau 8 — Builder through the real front-door process.
+// CV22.DS7.US8 — Builder through the real front-door process, on the shipped default.
 
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
@@ -52,14 +52,14 @@ function run(f: Fixture, args: readonly string[], extraEnv: NodeJS.ProcessEnv = 
       MIRROR_HOME: f.home,
       MIRROR_USER: "home",
       MEMORY_ENV: "",
-      MIRROR_TS_BUILD: "1",
+      // No gate: since the plateau-9 flip these tests prove the shipped default.
       ...extraEnv,
     },
   });
   return { status: result.status, stdout: result.stdout, stderr: result.stderr };
 }
 
-test("the enabled route lazily dispatches an inspect leaf and logs only its name", () => {
+test("the default route lazily dispatches an inspect leaf and logs only its name", () => {
   const f = fixture();
   try {
     const result = run(f, ["build", "inspect-method", "ariad", "--mirror-home", f.home]);

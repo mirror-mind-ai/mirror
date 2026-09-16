@@ -87,7 +87,7 @@ replay-gated section below is empty for the first time since DS5 created it.
 | Extraction lifecycle (composites & LLM tail) | `conversation-logger` remainder | 8/8‡ | DS7.US10 | ✅ done (2026-09-07) — `repair-journeys --apply` route waits for TS1's `backup` |
 | Soul Mode | `soul` | 1/1 | DS7.US6 | ✅ done — flipped 2026-09-08; **`harvest save` flipped ungated 2026-09-12** with DS8.US3, which also gave it the provider the front door had never wired |
 | Explorer Mode | `explore` | 1/1 | DS7.US7 | ✅ done — flipped 2026-09-09; **`story promote` flipped 2026-09-14** with DS7.US8 plateau 7, following the composed Builder revert; projection refresh delegated behind a DS10-owned seam |
-| Builder/Ariad | `build` | 0/1 | DS7.US8 | 🟡 planned |
+| Builder/Ariad | `build` | 1/1 | DS7.US8 | ✅ **flipped 2026-09-16** — all 27 in-scope leaves answer from TS by default (revert `MIRROR_TS_BUILD=0`; `load` also follows `MIRROR_TS_SEARCH=0` and `MIRROR_TS_CONVERSATION_LLM_TAIL=0` through its composed decision); the twenty SQLite Workbench leaves stay on Python by name until DS10 retires them; story closure (validation steps 4–5) in flight on the flipped route |
 | Ops/utility tail | `backup`, `repair-encoding`, `extensions`, `ext`, `welcome` (+ `runtime` reads§) | 3/5‡ | DS7.TS1 / TS3 / TS4 | 🔵 in progress — TS1 `backup`+`repair-encoding` ✅ flipped 2026-09-07; TS3 `welcome` ✅ flipped 2026-09-08 (+ `runtime` reads as branch coverage); TS4 extension catalog (also takes `identity edit`). `journey-projection` left this row for DS10 on 2026-09-09 with TS5 |
 
 Deferred to later Delivery Stories (excluded from the denominator): `mcp`
@@ -179,7 +179,7 @@ the defect this ledger exists to prevent.
 
 | Leaf | Owner | Note |
 |------|-------|------|
-| `build` — 27 in-scope leaves (29 subcommands, **47** leaves in Python) | DS7.US8 | Self-hosting story; see the [US8 package](cv22-ds7-us8-builder-ariad-tree/index.md). Leaf count corrected 2026-09-13 at plateau 1 by enumerating the subparsers (was 42). **In progress, nothing routed:** plateaus 1–7 have ported **all 27 leaves** behind no route at all — the fifteen story-level ones (`inspect-method`, `pull-candidates`, `adopt`, `prepare-templates`, `sync-cursor`, `check-implementation`, `pull-item`, `prepare-item`, `plan-item`, `approve-plan`, `cancel-plan-preauthorization`, `validate-item`, `review-item`, `coherence-item`, `done-item`) plus the eight aggregate ones (`set-flow-unit`, `plan-delivery-story`, `approve-delivery-story-plan`, `cancel-delivery-story-plan-preauthorization`, `validate-delivery-story`, `review-delivery-story`, `coherence-delivery-story`, `done-delivery-story`) and the three cadence/authority ones (`set-cadence`, `release-intent`, `continue-lifecycle`) — with the cursor, the method DSL, every activation surface, story and Delivery Story artifact materialization, both Plan authorities, and the authored-roadmap Done preflight. All three flows run on both engines and agree after every step. `load`, the only leaf that crosses the provider seam, is ported and graded against eleven recorded invocations under a patched Python seam — including four provider outages — and replayed on a copy of a REAL database by the `builder_load` write probe. **Plateau 7 closed 2026-09-14** with the seam around it: the composed transport decision (`MIRROR_TS_BUILD`, `MIRROR_TS_SEARCH`, `MIRROR_TS_CONVERSATION_LLM_TAIL` resolved together, before any byte), the degraded path, the provider-isolation test (the other 26 leaves cannot REACH a provider module), the measured per-`load` cost, the clone-role guard, and the `explore story promote` tail. **Plateau 8 complete:** the production front door now carries all 27 leaves under `MIRROR_TS_BUILD=1`, with a lazy Builder boundary, honest exit-2 argv refusals, a two-level allowlist that keeps all twenty Workbench leaves on Python by name for DS10, content-free `leaf=`/`calls=` logging, the composed `load` decision before any byte, and a loader-hook broken-core revert drill. The 331-check lifecycle smoke now drives TS through the real front-door process rather than an in-process helper; `builder_cursor_state` and `builder_artifacts` are in CI, and all in-scope Python Builder oracles are on the drift tripwire. The shipped default remains Python pending Navigator validation and the plateau-9 flip |
+| ~~`build` — 27 in-scope leaves (29 subcommands, **47** leaves in Python)~~ | DS7.US8 | ✅ **Answered by TS since 2026-09-16** (plateau 9), after the Navigator validated the gated route on the real home. Plateaus 1–7 ported all 27 leaves behind no route; plateau 8 put them through the production front door under a temporary `MIRROR_TS_BUILD=1` opt-in; plateau 9 made TS the default with `MIRROR_TS_BUILD=0` as the whole-family revert. See the [`build` per-leaf detail](#build--per-leaf-detail-ds7us8) below and the [US8 package](cv22-ds7-us8-builder-ariad-tree/index.md) |
 | `build refinement-story create\|overview\|pull\|review\|coherence\|close\|park` (7), `build change-request` × 13 | DS10 (retire, cutoff) | The SQLite Refinement Workbench, superseded by CV20.DS12's document-first Workbench (US8 D1, decided 2026-09-09). **Twenty** leaves, not fifteen — `refinement-story review\|coherence\|close` and `change-request select\|confirm` were omitted from the earlier count. US8 refuses all twenty by name; `load`'s read-only `get_workbench_snapshot` is ported by US8 and deleted here |
 | ~~`explore story promote`~~ | DS7.US8 | ✅ **Answered by TS since 2026-09-14** (plateau 7). Renderer ported in US7; the tail is Builder `load`, wired through `buildLoadRuntime.ts`, which plateau 8's `build` route reuses |
 | `extensions install\|uninstall\|expose-claude\|clean-claude` | DS7.TS4 | Mutates skill directories |
@@ -240,6 +240,7 @@ emptied before TS2 closes.
 | `consolidate scan` | DS8.TS2 (2026-09-13) | `MIRROR_TS_CULTIVATION=0` | Python's real `CONSOLIDATION_PROMPT` assembled through `pyFormat`, byte-identical and digest-pinned; `prompt_tokens` 1362/1232/1186 live on a copy where the dump it replaced was ~50 (the smoke now asserts a floor of 400); a merge it produced was consumed by TS's own `apply`; the first live run hit a slow-provider window (2 transport failures beside a 28 s answer) and cleared on re-run |
 | `shadow scan` | DS8.TS2 (2026-09-13) | `MIRROR_TS_CULTIVATION=0` | Python's real `SHADOW_SCAN_PROMPT`, same discipline; `prompt_tokens` 1251 (5 candidates) and 8285 (50 candidates) live; an observation it produced was applied by TS to `shadow/profile` |
 | `conversation-logger switch\|session-end-pi\|session-end\|session-start (full)\|session-maintenance` | DS8.US2 (2026-09-11) | `MIRROR_TS_CONVERSATION_LLM_TAIL=0` (tail only; `MIRROR_TS_CONVERSATION_LOGGER=0` still reverts all fifteen) | live close tail on a real-DB copy: `extraction_status=ok`, 4 memories at 1536 dims, title/tags/summary within Python's caps, 10/10 ledger rows priced with bodies withheld, role sequence `extraction → task_extraction → embedding ×5 → conversation_title → conversation_summary → conversation_tags` |
+| `build load` | DS7.US8 (2026-09-16) | `MIRROR_TS_BUILD=0`, and — because `load` COMPOSES the search family and the conversation close tail — `MIRROR_TS_SEARCH=0` or `MIRROR_TS_CONVERSATION_LLM_TAIL=0` each send the whole session start to Python; replay pair `MIRROR_TS_BUILD_LLM_REPLAY` + `MIRROR_TS_BUILD_EMBEDDING_REPLAY`, half a pair refused by name | live on two fresh copies of the real database, one per engine: stdout 39,250 B byte-identical INCLUDING the ranked block, two `embedding` rows each (`openai/text-embedding-3-small`, 102 tokens, $0.000002), the same 7 memories bumped and 10 access rows written; the close tail is graded by DS8.US2's evidence and fires only when the session has a previous conversation |
 
 The first leaf in CV22 where TypeScript spends real money. `embedding` was the
 highest-volume role in this home's ledger (171 rows, more than every other
@@ -520,6 +521,97 @@ implied.
 
 ---
 
+## `build` — per-leaf detail (DS7.US8)
+
+Twenty-nine subcommands, forty-seven leaves in Python; **27 in scope, flipped
+2026-09-16**: the family answers from TS by default and `MIRROR_TS_BUILD=0` is
+the revert control, with no code change and no data migration. ONE gate for the
+family, like Soul and Explorer: Builder is a lived mode whose whole lifecycle
+writes one cursor row, and a half-flipped lifecycle cannot be reviewed. The
+twenty SQLite Workbench leaves are outside the port and retire in DS10.
+
+| Leaf | TS ported | Routed to TS | Note |
+|------|:---------:|:------------:|------|
+| `load` | ✅ | ✅ flipped | the only leaf that crosses the provider seam; composed decision before any byte; clone-role guard; `calls=N` and a degraded kind in the log, never the briefing-derived query |
+| `inspect-method` | ✅ | ✅ flipped | read-only handle, no pre-write backup |
+| `adopt` | ✅ | ✅ flipped | — |
+| `prepare-templates` | ✅ | ✅ flipped | `if not path.exists()` preservation rule |
+| `sync-cursor` | ✅ | ✅ flipped | cursor bytes are the contract (CAS on the serialized metadata) |
+| `pull-candidates` | ✅ | ✅ flipped | read-only handle; `sorted(rglob)` component order reproduced |
+| `pull-item` | ✅ | ✅ flipped | with Expand and the candidate-table grammar |
+| `prepare-item` | ✅ | ✅ flipped | overwrites the event unconditionally, as Python does — see the plan's debt list |
+| `plan-item` | ✅ | ✅ flipped | story package materialization; prints absolute paths raw (reproduced) |
+| `approve-plan` | ✅ | ✅ flipped | story Plan authority, sha256 over canonical sorted-compact ASCII JSON |
+| `cancel-plan-preauthorization` | ✅ | ✅ flipped | — |
+| `check-implementation` | ✅ | ✅ flipped | read-only handle; exit 1 when blocked, on both engines |
+| `validate-item` | ✅ | ✅ flipped | closure artifact `validation.md` |
+| `review-item` | ✅ | ✅ flipped | closure artifact `review.md` |
+| `coherence-item` | ✅ | ✅ flipped | closure artifact `coherence.md` |
+| `done-item` | ✅ | ✅ flipped | closure artifact `done.md`; requests the Journey projection refresh through the DS10-owned seam |
+| `set-flow-unit` | ✅ | ✅ flipped | absent `--unit` is the inspect face |
+| `plan-delivery-story` | ✅ | ✅ flipped | the broader DS unfilled-section rule, kept separate on purpose |
+| `approve-delivery-story-plan` | ✅ | ✅ flipped | — |
+| `cancel-delivery-story-plan-preauthorization` | ✅ | ✅ flipped | — |
+| `validate-delivery-story` | ✅ | ✅ flipped | — |
+| `review-delivery-story` | ✅ | ✅ flipped | — |
+| `coherence-delivery-story` | ✅ | ✅ flipped | — |
+| `done-delivery-story` | ✅ | ✅ flipped | authored-roadmap Done preflight, walking `legacy/` like Python |
+| `set-cadence` | ✅ | ✅ flipped | validates the profile BEFORE resolving the journey, unlike every other leaf |
+| `release-intent` | ✅ | ✅ flipped | absent `--intent` is the inspect face |
+| `continue-lifecycle` | ✅ | ✅ flipped | one surface per path; takes Coherence's evidence without running Coherence |
+| `refinement-story` × 7, `change-request` × 13 | — | Python by name | DS10 retirement; refused with the owner in the reason, never inherited |
+
+**27 of 27 in-scope leaves answer from TS.** The route is two-level: an unknown
+`build <sub>` and an unknown `build refinement-story|change-request <action>`
+are refused separately, and each of the twenty Workbench actions is named, so a
+leaf Python grows later cannot acquire a TS route by inheritance (CR055's
+class).
+
+**Lazy by construction.** The whole Builder tree sits behind `builder/index.ts`,
+imported only after routing has chosen TS. A loader-hook drill in CI answers
+that module with a throwing one and proves `MIRROR_TS_BUILD=0` still reaches
+Python while an unrelated TS command still answers — the general "eager front
+door" case is a CR under RS009.
+
+**Accepted spellings and divergences.** Python is the contract for what is
+accepted as well as what is refused: `--option=value` and unambiguous
+long-option prefixes parse as argparse parses them, and argparse's own refusals
+(ambiguous prefix, inline value on a flag) exit 2. Two recorded divergences,
+both the class Soul and Explorer established: argparse refusals carry a
+one-line TS message rather than the `usage: __main__.py …` block, and the TS
+route accepts `--mirror-home` / `--db-path` where Python's `build` parser does
+not. Domain refusals keep Python's byte-exact `Error:` text at exit 1.
+
+### Flip checklist (2026-09-16)
+
+| # | Check | Status |
+|---|-------|--------|
+| 1 | Seven golden corpora plus the lifecycle, load, and command corpora byte-identical under the determinism gate (3.10 and 3.12) | ✅ |
+| 2 | `builder_cursor_state` and `builder_artifacts` write probes green on the portable demo copy in CI; `builder_load` green on a copy of the real database (1536-wide corpus) | ✅ |
+| 3 | Lifecycle smoke, three flows, 331 checks, TS through the real front-door process with **no gate in the environment** | ✅ |
+| 4 | Two-level allowlist: 27 leaves on TS, twenty Workbench leaves refused by name, unknown additions to neither | ✅ |
+| 5 | Redaction: every prose-bearing option and the briefing-derived `load` query absent from `front-door.log` | ✅ |
+| 6 | Broken-core drill: `MIRROR_TS_BUILD=0` reaches Python when the Builder boundary throws | ✅ |
+| 7 | Regression: conversation lifecycle smoke, Explorer smoke, `welcome --status-line` after a `load` | ✅ |
+| 8 | Nine skill copies switched to the front door: `mm-build` ×3 (55 + 1 + 1 invocations), `mm-explore` ×3 and `mm-soul` ×3 (`build load`); `build` removed from the skill parity checker's Python allowlist | ✅ |
+| 9 | Oracle-drift tripwire clean with `cli/build.py` and every in-scope Builder module registered | ✅ |
+| 10 | Navigator validation on the real home (steps 1–3 and 6), accepted 2026-09-16 | ✅ |
+| 11 | Gate default on (`MIRROR_TS_BUILD` absent → TS) | ✅ |
+
+**Navigator validation, 2026-09-16.** Step 1: the four read-only leaves on the
+real home, byte-identical on both engines. Step 2: a live `build load` on two
+fresh copies of the real database, one per engine — 39,250 bytes of stdout
+identical including the ranked block, the same ledger rows, the same access
+rows. Step 3: a full story lifecycle on real-database copies and scratch clones
+of this repository (`scripts/smoke_builder_real_copy.sh`), eight steps,
+diff-clean on streams, cursor bytes, closure artifacts, and projection
+receipts, with the harness proven to bite by a mutant. Step 6: the revert
+identical with Python in the log, and CI's drill reviewed. Steps 4 (the
+self-hosting closure) and 5 (a live Pi Builder session) run on the flipped
+route and close the story.
+
+---
+
 ## DB safety tools — per-command detail (DS7.TS1)
 
 `backup` and `repair-encoding` are ported and wired through the front door
@@ -566,6 +658,7 @@ default route, and the `=0` steps prove the revert.
 
 | Date | Change |
 |------|--------|
+| 2026-09-16 | **US8 plateau 9: `build` flipped — all 27 in-scope leaves answer from TypeScript by default; `MIRROR_TS_BUILD=0` reverts the family.** After the Navigator ran and accepted validation steps 1–3 and 6 on the real home (four read-only leaves byte-identical; a live `load` on two real-database copies identical on all four faces including the ranked block; a full lifecycle on real-database copies and scratch clones diff-clean at every step through `scripts/smoke_builder_real_copy.sh`, whose harness was proven to bite; the revert identical with Python in the log). The flip commit changes the gate predicate, deletes the lifecycle smoke's internal opt-in so the same 331 checks now prove the shipped default, switches nine skill copies to the front door (`mm-build` ×3 with 55 + 1 + 1 invocations, and the `build load` line in `mm-explore` ×3 and `mm-soul` ×3), removes `build` from the skill parity checker's Python allowlist, and records the per-leaf table and this checklist. Landed just before it: the TS route now accepts argparse's `--option=value` and unambiguous-prefix spellings, a narrowing of the accepted grammar the plateau-8 panel caught. Found on the way and recorded rather than fixed: the real cursor read `prepare`, not `plan_approved`, because a resume session's `prepare-item` overwrote the approved Plan — Python's Prepare writes the event unconditionally, and TypeScript reproduces it. The story closes with validation steps 4 and 5 on the flipped route. |
 | 2026-09-14 | **US8 plateau 8 complete: all 27 `build` leaves enter the production front door under `MIRROR_TS_BUILD=1`; shipped default still Python.** The route adds honest TypeScript exit-2 argv refusals, a 27-leaf allowlist, explicit DS10 ownership for all twenty legacy Workbench leaves, lazy loading behind a `builder/index.ts` boundary, and metadata-only `leaf=` / `calls=` diagnostics. A half-configured composed replay now reaches the TypeScript refusal rather than falling into live Python, for both `build load` and `explore story promote`. The existing three-flow lifecycle smoke now drives TypeScript through the real front-door process and remains 331/331; a loader-hook drill proves `MIRROR_TS_BUILD=0` still reaches Python when the Builder boundary throws. `builder_cursor_state` and `builder_artifacts` joined the portable-demo CI loop; `builder_load` stays a real-1536-corpus probe by design. All in-scope Builder Python files are now on the oracle-drift tripwire. Next: Navigator validation, then the isolated plateau-9 flip. |
 | 2026-09-14 | **US8 plateau 7 in flight: `build load` ported and graded — all 27 leaves now answer from TypeScript, still 0 routed.** The last leaf, and the only one crossing the provider seam. Graded in two halves: the pure one (the `■ BUILDER MODE ACTIVE` card and the query extractor, 21 + 10 cases) and the composition (six recorded invocations × four faces — streams and exit code, the `runtime_sessions` rows, the access the read left behind, and the `llm_calls` ledger). Its oracle needed a seam Python does not have: `build_load_oracle.py` runs the real `cmd_load` in a subprocess with every provider entry point patched to a fixture TypeScript also reads, behind a socket tripwire. That tripwire exists because the first version MADE LIVE CALLS — two modules patched, `intelligence/search.py` missed, and a repository `.env` supplied the key, so the golden briefly encoded real token counts. Three defects found in `_extract_query` while writing the pure half, all silent and all reproduced rather than repaired: a body line containing a section name is DROPPED from the query (and if it is the only line, the query collapses to the journey slug — a slug search where a briefing search was intended); the Portuguese section names are matched without Unicode normalization, so an NFD `Descrição` falls back the same way; and `[:500]` is code points, so a naive UTF-16 slice halves an astral briefing and silently changes the ranking. CI caught a fourth class the local run could not: the corpus staged its projects inside this checkout, so the clone-role guard read the developer's `.mirror-clone-role` and every case refused on a runner that has none — cases now stage a neutral checkout marker, verified by regenerating with the marker moved away. Recorded for Debt Review: exactly tied search scores are ordered differently by the two engines (numpy's argmax against the TypeScript loop — a SEARCH-family divergence the DS2 corpus never exercised), and `load`'s ordering depends on a live clock through the recency term. Nine mutants killed, one of which forced the merge out into a pure graded function because its first-occurrence rule is not observable through the command. |
 | 2026-09-14 | **US8 plateau 6: 26 of 27 `build` leaves ported, 0 routed — one left.** `set-cadence`, `release-intent`, and `continue-lifecycle` answer from TypeScript; only `load` remains. Corpus at 112 sequences / 494 steps and 121 command cases, and the lifecycle smoke gained a third sequence (331 checks) covering release intent, a stepwise continuation refusal, autonomous cadence refused without limits, an unbypassable-event refusal under checkpoint, and bounded story authority recorded then withdrawn with the ordinary Plan gate surviving. Two plan corrections of the "written from reading rather than from code" class: `set-cadence` and `continue-lifecycle` have **no module at all** (both live entirely in `cli/build.py`, so the command corpus is their only oracle), and `continue-lifecycle` has **no multi-surface output** — every path prints exactly one surface, against the plan's and the skill's description. Three behaviors pinned that a port would otherwise invent: `set-cadence` validates its profile BEFORE resolving the journey, unlike every other leaf; `continue-lifecycle` accepts `--process`/`--project`/`--product`/`--difference` and ignores all four, taking Coherence's evidence without ever running Coherence; and it crosses Done printing nothing after its checkpoint where `done-item` prints the roadmap snapshot. Mutation testing earned its keep again — seven of eight mutants died at once, and the survivor exposed a case that could not fail: the guard-order case passed an explicit `--journey`, which always resolves, so it could not distinguish the two orders. Also fixed: the replay seeded `release_intent` as `null` where Python's `_KEEP` sentinel PRESERVES it, invisible until a scenario recorded an intent and then re-seeded. The Plan-stage panel was skipped for this plateau as a recorded decision — two leaves with no module, one 197-line module, and every renderer and guard idiom already ported and graded is a small slice by the collaboration strategy's own definition. |

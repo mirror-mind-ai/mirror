@@ -49,7 +49,9 @@ test("both consult leaves are live by default, each with its own fixture require
 });
 
 test("keeps unported commands on Python fallback", () => {
-  assert.equal(routeMemoryCommand(["build", "load", "mirror-ts-core"]).engine, "python");
+  // `build` left this list in CV22.DS7.US8; only its Workbench leaves remain.
+  assert.equal(routeMemoryCommand(["build", "load", "mirror-ts-core"]).engine, "ts");
+  assert.equal(routeMemoryCommand(["build", "change-request", "capture"]).engine, "python");
   assert.equal(routeMemoryCommand(["conversation-logger", "extract-pending"]).engine, "python");
   // `journal` left this list in CV22.DS8.US3; it is live by default now.
   assert.equal(routeMemoryCommand(["journal", "hello"]).engine, "ts");

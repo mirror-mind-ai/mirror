@@ -1,19 +1,32 @@
 [< Story](index.md)
 
-# Handoff — CV22.DS7.US8 — Builder/Ariad tree (plateaus 1–8 complete)
+# Handoff — CV22.DS7.US8 — Builder/Ariad tree (flipped; closure in flight)
 
-**Status:** plateaus 1–8 of 9 complete. **All 27 in-scope leaves answer from
-TypeScript through the production front door when `MIRROR_TS_BUILD=1`**, `load`
-included, while the shipped default deliberately remains Python. All three
-Ariad flows — the story lifecycle, the aggregate Delivery Story lifecycle, and
-the cadence/authority paths — now run through both real process boundaries and
-agree after every step. The twenty legacy SQLite Workbench leaves remain on
-Python by name for DS10 retirement. `explore story promote`, whose tail is a
-Builder session start, remains on TypeScript.
+**Status:** plateaus 1–9 of 9 complete. **All 27 in-scope leaves answer from
+TypeScript by default through the production front door** since 2026-09-16;
+`MIRROR_TS_BUILD=0` reverts the whole family. All three Ariad flows — the
+story lifecycle, the aggregate Delivery Story lifecycle, and the
+cadence/authority paths — run through both real process boundaries and agree
+after every step, with no gate in the environment. The twenty legacy SQLite
+Workbench leaves remain on Python by name for DS10 retirement. `explore story
+promote`, whose tail is a Builder session start, remains on TypeScript. What
+is left is the story's own closure on the flipped route: validation step 4
+(the self-hosting closure) and step 5 (a live Pi Builder session).
 
 ## Resume here
 
-**Plateau 8 is complete. Do not rebuild the route.** What landed:
+**The flip is done. Do not rebuild the route, and do not re-flip it.** What
+plateau 9 changed (commit "Flip the Builder tree to TypeScript by default"):
+`buildGateEnabled` in `routing.ts` (`MIRROR_TS_BUILD !== "0"`), the lifecycle
+smoke's internal opt-in deleted so its 331 checks prove the shipped default,
+the route/CLI/broken-core tests rewritten around the default, nine skill copies
+switched to the front door (`mm-build` ×3, and the `build load` line in
+`mm-explore` ×3 and `mm-soul` ×3), `build` removed from the skill parity
+checker's Python allowlist, the configuration reference, and the ledger's
+per-leaf table, flip checklist, and history. Just before it, the route learned
+argparse's `--option=value` and prefix spellings (parity, not a divergence).
+
+**What plateau 8 landed** (unchanged by the flip):
 
 - `frontDoor/buildRoute.ts`: production argv validation, honest TypeScript
   exit-2 usage refusals, all 26 non-`load` leaves, and `load` through
@@ -47,16 +60,22 @@ Builder session start, remains on TypeScript.
 - `docs/reference/configuration.md` documents the temporary plateau-8 opt-in,
   composed reverts, replay pair, and redacted log shape.
 
-**Next: the Navigator's acceptance, then plateau 9.** Validation steps 1–3
-and 6 were run on 2026-09-16 against the gated route and are recorded in
-`test-guide.md` — all four identical on the real home (step 1), `load` live on
-two real-database copies byte-identical on all four faces (step 2), a full
-lifecycle on real-database copies and scratch clones diff-clean at every step
-(step 3, `scripts/smoke_builder_real_copy.sh`, proven to bite with a mutant),
-and the revert identical with Python in the log (step 6). Running the route is
-not accepting it. The flip is a separate final plateau: default the family on,
-update the three skill copies and ledger, then run the self-hosting closure
-through TypeScript.
+**Next: close the story on the flipped route.** Validation steps 1–3 and 6
+were run on 2026-09-16 and accepted by the Navigator the same day (evidence in
+`test-guide.md`); the flip was authorized and landed. Remaining, in order:
+
+1. **Step 4 — the self-hosting closure through the TS front door.** `backup`,
+   then the restore drill (the dated zip restored into a scratch home and
+   `build load` run against it), then this story's own lifecycle events —
+   each dry-run on a copy against Python first, which is what
+   `scripts/smoke_builder_real_copy.sh` does — with the real cursor advancing
+   on TypeScript.
+2. **Step 5 — a live Pi Builder session**, the Navigator's own: `/mm-build
+   mirror-ts-core`, `pull-candidates`, and one Workbench command refused by
+   name; `front-door.log` must show `build ts leaf=…`, no `fell_back`, no
+   argument text, and `build python` for the Workbench line.
+3. Then `validate-item --navigator-accepted`, `review-item`, `coherence-item`,
+   `done-item` — the closure itself, run through the route it validates.
 
 **Cursor finding for step 4.** The real cursor is at `prepare / gen 16`, not
 `plan_approved`: a resume session's `prepare-item` on 2026-09-15 demoted the
@@ -69,10 +88,9 @@ dry-run on a copy, which is exactly what the step-3 script does.
 The plateau-8 handoff panel ran (recorded in `plan.md`) and left three items
 for the flip, none blocking:
 
-1. **Delete the smoke's internal opt-in.** `builder_lifecycle_smoke.ts` sets
-   `environment.MIRROR_TS_BUILD = "1"` in `runTypeScript`. Once the default
-   flips, remove that line so the smoke proves the shipped route, not a
-   configured one.
+1. ~~**Delete the smoke's internal opt-in.**~~ Done in the flip commit: the
+   child environment carries no gate, so the 331 checks prove the shipped
+   default.
 2. ~~**Record and pin the argv-grammar divergence.**~~ Resolved as parity
    before the flip: `parseBuilderArgv` accepts `--opt=value` and unambiguous
    prefixes as argparse does and reproduces its refusals at exit 2 (see the

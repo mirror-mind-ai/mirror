@@ -2,7 +2,7 @@
 
 # CV22.DS7.US8 — Builder/Ariad tree
 
-**Status:** 🟡 Planned — **in flight since 2026-09-13**: plateaus 1–8 of 9 landed, **all 27 leaves ported, graded, and reachable through the production front door under `MIRROR_TS_BUILD=1`**. The shipped default remains Python until plateau 9; the twenty legacy Workbench leaves remain Python-owned by name for DS10 retirement. `load` is proven on a copy of a real corpus, and all three Ariad flows agree through both real process boundaries. `explore story promote`, US7's held leaf, remains on TypeScript with the Builder session start its tail depends on. Sequenced after CR072, US11, and DS8 (decision 2026-09-09); D1 resolved the same day. Resume from [handoff.md](handoff.md)
+**Status:** 🟡 Planned — **in flight since 2026-09-13**: **flipped 2026-09-16** (plateau 9 of 9). All 27 in-scope `build` leaves answer from TypeScript by default through the production front door; `MIRROR_TS_BUILD=0` reverts the family. Navigator validation steps 1–3 and 6 accepted 2026-09-16 on the real home; steps 4 (the self-hosting closure through the TS front door) and 5 (a live Pi Builder session) close the story on the flipped route. The twenty legacy Workbench leaves remain Python-owned by name for DS10 retirement. Sequenced after CR072, US11, and DS8 (decision 2026-09-09); D1 resolved the same day. Resume from [handoff.md](handoff.md)
 **Type:** User Story
 **Owner:** CV22.DS7 for the whole `build` command surface and the Builder runtime state it writes
 **Depends on:** [CV22.DS7.US1](../cv22-ds7-us1-remaining-identity-journey-reads-writes/index.md)

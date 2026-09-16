@@ -856,17 +856,8 @@ export function routeMemoryCommand(
         reason: `build subcommand not ported to TS: ${subcommand || "(none)"}`,
       };
     }
-    // Plateau 8 proves the complete route without changing production. The
-    // shipped default flips only in plateau 9, after Navigator validation.
-    if (env.MIRROR_TS_BUILD !== "1") {
-      return {
-        command,
-        engine: "python",
-        reason:
-          env.MIRROR_TS_BUILD === "0"
-            ? "MIRROR_TS_BUILD=0 revert to Python"
-            : "build TS route awaits plateau 9; set MIRROR_TS_BUILD=1 to exercise plateau 8",
-      };
+    if (!buildGateEnabled(env)) {
+      return { command, engine: "python", reason: "MIRROR_TS_BUILD=0 revert to Python" };
     }
     // `load` composes the search and conversation-tail provider families. Its
     // engine must be chosen before the banner or any surface is printed.
@@ -909,6 +900,21 @@ const TS_SOUL_SUBCOMMANDS = new Set([
 // data migration.
 function soulGateEnabled(env: RouteEnvironment): boolean {
   return env.MIRROR_TS_SOUL !== "0";
+}
+
+// CV22.DS7.US8: the Builder/Ariad tree. Flipped 2026-09-16 after the Navigator
+// validated the gated route on the real home -- the four read-only leaves
+// byte-identical, a live `build load` on two real-database copies identical on
+// all four faces, a full story lifecycle on real-database copies and scratch
+// clones diff-clean at every step, and the revert exercised.
+//
+// ONE gate for the whole family, like Soul and Explorer: Builder is a lived
+// mode whose lifecycle writes one cursor row, and a half-flipped lifecycle
+// cannot be reviewed. `MIRROR_TS_BUILD=0` is the revert control, with no code
+// change and no data migration; `load` additionally honors the search and
+// conversation-tail reverts through its composed transport decision.
+function buildGateEnabled(env: RouteEnvironment): boolean {
+  return env.MIRROR_TS_BUILD !== "0";
 }
 
 // Python's argparse subcommands for `explore`, by name.

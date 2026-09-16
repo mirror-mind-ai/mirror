@@ -24,13 +24,13 @@
 //
 // Since plateau 8, the TypeScript side runs through the real front-door process:
 // routing, lazy Builder import, production argv validation, database/backup seam,
-// stream writes, exit status, and projection delegation are all in the path. The
-// route gate is still deliberately off in the shipped default, so this plateau
-// sets MIRROR_TS_BUILD=1 only in the child process. Plateau 9 removes that internal
-// opt-in and the same smoke then proves the shipped default.
+// stream writes, exit status, and projection delegation are all in the path.
+// Since the plateau-9 flip (2026-09-16) the child process carries NO gate: the
+// smoke proves the shipped default, and `MIRROR_TS_BUILD=0` is a revert it does
+// not exercise (the route tests and the broken-core drill do).
 //
 // The parent environment assertion prevents a developer shell from choosing the
-// result accidentally, and the Python side strips every MIRROR_TS_* variable.
+// result accidentally, and both sides strip every MIRROR_TS_* variable.
 //
 // ## What is graded after EVERY step
 //
@@ -374,8 +374,9 @@ function runPython(world: World, argv: readonly string[]): Observation {
 }
 
 function runTypeScript(world: World, argv: readonly string[]): Observation {
+  // Same stripped environment as Python's: no gate, so the shipped default is
+  // what runs.
   const environment = pythonEnvironment(world.home);
-  environment.MIRROR_TS_BUILD = "1";
   environment.NODE_OPTIONS = "--no-warnings";
   const result = spawnSync(
     process.execPath,

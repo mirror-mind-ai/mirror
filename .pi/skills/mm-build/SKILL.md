@@ -38,7 +38,7 @@ adopted Ariad or any Builder method.
 ## 1. Load Context (DB)
 
 ```bash
-uv run python -m memory build load <slug>
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build load <slug>
 ```
 
 The command:
@@ -193,13 +193,13 @@ When the user asks which Builder method governs the active journey, inspect the
 current Builder method state:
 
 ```bash
-uv run python -m memory build inspect-method
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build inspect-method
 ```
 
 If the user names a specific journey:
 
 ```bash
-uv run python -m memory build inspect-method --journey <slug>
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build inspect-method --journey <slug>
 ```
 
 Render the command output visibly. If no Builder journey is active yet, say so
@@ -211,7 +211,7 @@ When the user asks what Ariad is as a Builder method, inspect the built-in metho
 defaults:
 
 ```bash
-uv run python -m memory build inspect-method ariad
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build inspect-method ariad
 ```
 
 This is read-only inspection.
@@ -221,13 +221,13 @@ This is read-only inspection.
 When the user explicitly asks to adopt Ariad for the active journey, run:
 
 ```bash
-uv run python -m memory build adopt --method ariad
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build adopt --method ariad
 ```
 
 If the user names a specific journey:
 
 ```bash
-uv run python -m memory build adopt --journey <slug> --method ariad
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build adopt --journey <slug> --method ariad
 ```
 
 Render the adoption report visibly. This mutates Builder method state only. It
@@ -497,10 +497,10 @@ these CRs", or "show me that refinement story", route to the Builder Workbench
 commands only when the canonical project index is absent:
 
 ```bash
-uv run python -m memory build refinement-story create --journey <slug> --title "<title>" [--description "<description>"]
-uv run python -m memory build change-request capture --journey <slug> --title "<title>" --body "<body>" [--refinement-story-id <rs-id>]
-uv run python -m memory build change-request attach --journey <slug> --change-request-id <cr-id> --refinement-story-id <rs-id>
-uv run python -m memory build refinement-story overview --journey <slug> --refinement-story-id <rs-id>
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build refinement-story create --journey <slug> --title "<title>" [--description "<description>"]
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build change-request capture --journey <slug> --title "<title>" --body "<body>" [--refinement-story-id <rs-id>]
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build change-request attach --journey <slug> --change-request-id <cr-id> --refinement-story-id <rs-id>
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build refinement-story overview --journey <slug> --refinement-story-id <rs-id>
 ```
 
 When the Navigator asks to "pull that refinement story", "start working on
@@ -508,7 +508,7 @@ RS-001", "enter refinement work for ...", or "pull the RS we just created", rout
 to:
 
 ```bash
-uv run python -m memory build refinement-story pull --journey <slug> --refinement-story-id <rs-id>
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build refinement-story pull --journey <slug> --refinement-story-id <rs-id>
 ```
 
 Use the recent RS context only when it is unambiguous. If "pull" could mean a
@@ -528,22 +528,22 @@ When the Navigator asks to select, confirm, plan, mark implemented, validate, or
 mark done a Change Request in active Refinement Work, route to:
 
 ```bash
-uv run python -m memory build change-request select --journey <slug> --change-request-id <cr-id>
-uv run python -m memory build change-request resume --journey <slug> --change-request-id <cr-id>
-uv run python -m memory build change-request confirm --journey <slug> --change-request-id <cr-id>
-uv run python -m memory build change-request plan --journey <slug> --change-request-id <cr-id> --summary "<plan>"
-uv run python -m memory build change-request mark-implemented --journey <slug> --change-request-id <cr-id> --evidence "<evidence>"
-uv run python -m memory build change-request validate --journey <slug> --change-request-id <cr-id> --evidence "<evidence>"
-uv run python -m memory build change-request done --journey <slug> --change-request-id <cr-id> --notes "<done note>"
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build change-request select --journey <slug> --change-request-id <cr-id>
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build change-request resume --journey <slug> --change-request-id <cr-id>
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build change-request confirm --journey <slug> --change-request-id <cr-id>
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build change-request plan --journey <slug> --change-request-id <cr-id> --summary "<plan>"
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build change-request mark-implemented --journey <slug> --change-request-id <cr-id> --evidence "<evidence>"
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build change-request validate --journey <slug> --change-request-id <cr-id> --evidence "<evidence>"
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build change-request done --journey <slug> --change-request-id <cr-id> --notes "<done note>"
 ```
 
 When the Navigator wants to defer, decline, or graduate a CR instead of
 finishing it, route to the matching terminal verb:
 
 ```bash
-uv run python -m memory build change-request park --journey <slug> --change-request-id <cr-id> --reason "<why deferred>" --revisit-trigger "<what reopens it>"
-uv run python -m memory build change-request reject --journey <slug> --change-request-id <cr-id> --reason "<decided no>"
-uv run python -m memory build change-request promote --journey <slug> --change-request-id <cr-id> --target "<delivery target>" [--notes "<note>"]
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build change-request park --journey <slug> --change-request-id <cr-id> --reason "<why deferred>" --revisit-trigger "<what reopens it>"
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build change-request reject --journey <slug> --change-request-id <cr-id> --reason "<decided no>"
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build change-request promote --journey <slug> --change-request-id <cr-id> --target "<delivery target>" [--notes "<note>"]
 ```
 
 These are distinct verbs, not synonyms — do not substitute one for another:
@@ -572,16 +572,16 @@ When the Navigator asks to review, check coherence, or close an active RS, route
 to:
 
 ```bash
-uv run python -m memory build refinement-story review --journey <slug> --refinement-story-id <rs-id> --summary "<review>"
-uv run python -m memory build refinement-story coherence --journey <slug> --refinement-story-id <rs-id> --summary "<coherence>"
-uv run python -m memory build refinement-story close --journey <slug> --refinement-story-id <rs-id> --summary "<close summary>"
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build refinement-story review --journey <slug> --refinement-story-id <rs-id> --summary "<review>"
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build refinement-story coherence --journey <slug> --refinement-story-id <rs-id> --summary "<coherence>"
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build refinement-story close --journey <slug> --refinement-story-id <rs-id> --summary "<close summary>"
 ```
 
 If the Navigator wants to defer the whole Refinement Story rather than an
 individual CR, route to:
 
 ```bash
-uv run python -m memory build refinement-story park --journey <slug> --refinement-story-id <rs-id> --reason "<why deferred>" --revisit-trigger "<what reopens it>"
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build refinement-story park --journey <slug> --refinement-story-id <rs-id> --reason "<why deferred>" --revisit-trigger "<what reopens it>"
 ```
 
 Render `REFINEMENT_FLOW_EVENT` surfaces verbatim before commentary. Do not skip
@@ -601,13 +601,13 @@ When the user asks to prepare Ariad templates or make the adopted journey
 documentation-ready, run:
 
 ```bash
-uv run python -m memory build prepare-templates --method ariad
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build prepare-templates --method ariad
 ```
 
 If the user names a specific journey:
 
 ```bash
-uv run python -m memory build prepare-templates --journey <slug> --method ariad
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build prepare-templates --journey <slug> --method ariad
 ```
 
 Render the report visibly. The operation may create missing method-declared
@@ -620,13 +620,13 @@ When the user asks to sync the initial Builder delivery cursor for an
 Ariad-adopted journey, run:
 
 ```bash
-uv run python -m memory build sync-cursor --method ariad
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build sync-cursor --method ariad
 ```
 
 If the user names a specific journey:
 
 ```bash
-uv run python -m memory build sync-cursor --journey <slug> --method ariad
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build sync-cursor --journey <slug> --method ariad
 ```
 
 Render the cursor sync report visibly. This persists runtime resume state only.
@@ -640,7 +640,7 @@ candidates, see what can be pulled, choose the next story, or asks "o que posso
 puxar agora?", run:
 
 ```bash
-uv run python -m memory build pull-candidates --method ariad
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build pull-candidates --method ariad
 ```
 
 If the user names a specific journey, pass `--journey <slug>`. Render the
@@ -653,13 +653,13 @@ execute lifecycle work, change story status, commit, push, or release.
 When the user asks to change testing/runtime cadence, use:
 
 ```bash
-uv run python -m memory build set-cadence --method ariad --profile <stepwise|checkpoint|accelerated|autonomous>
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build set-cadence --method ariad --profile <stepwise|checkpoint|accelerated|autonomous>
 ```
 
 Use `stepwise` for detailed dogfooding: Plan stops for approval unless the Navigator naturally asks the Driver to create and execute the active story Plan without another approval turn. Use `checkpoint` for normal Ariad cadence. Use `accelerated` when the Navigator trusts the Driver to complete the active story Plan and continue directly into local implementation; the runtime automatically records bounded story Plan authority and still stops at Navigator Validation. Use `autonomous` only with explicit Navigator limits, for example:
 
 ```bash
-uv run python -m memory build set-cadence --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build set-cadence --method ariad \
   --profile autonomous \
   --limit "stop before push or release" \
   --limit "stop on scope change" \
@@ -671,7 +671,7 @@ Higher-autonomy cadence never grants permission to cross Navigator validation ac
 When the user asks to continue under the active cadence, use:
 
 ```bash
-uv run python -m memory build continue-lifecycle --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build continue-lifecycle --method ariad \
   --process "<process alignment evidence>" \
   --project "<project/docs/artifacts alignment evidence>" \
   --product "<product behavior alignment evidence>" \
@@ -686,7 +686,7 @@ When the user asks to pull a roadmap item into active Ariad work, run the
 contained Pull command with explicit item metadata:
 
 ```bash
-uv run python -m memory build pull-item --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build pull-item --method ariad \
   --item-code <code> \
   --item-title "<title>" \
   --item-level <delivery_story|user_story|technical_story> \
@@ -708,7 +708,7 @@ Then plan that implementable story when requested.
 When the user asks to prepare the pulled item, run:
 
 ```bash
-uv run python -m memory build prepare-item --method ariad
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build prepare-item --method ariad
 ```
 
 If the user names a specific journey, pass `--journey <slug>`. Render the Prepare
@@ -756,7 +756,7 @@ explicitly says the DS is expected to create a release boundary, has no release
 intent, or remains undecided, record only that planning state:
 
 ```bash
-uv run python -m memory build release-intent --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build release-intent --method ariad \
   --intent <planned|none|undecided>
 ```
 
@@ -791,7 +791,7 @@ current Delivery Story and says a natural-language equivalent of:
 run:
 
 ```bash
-uv run python -m memory build set-flow-unit --method ariad --unit delivery_story
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build set-flow-unit --method ariad --unit delivery_story
 ```
 
 If the user names a specific journey, pass `--journey <slug>`. Return the
@@ -819,7 +819,7 @@ equivalent of:
 run:
 
 ```bash
-uv run python -m memory build plan-delivery-story --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build plan-delivery-story --method ariad \
   --objective "<aggregate Delivery Story objective>" \
   --child <child-work-item-code>
 ```
@@ -846,7 +846,7 @@ User Story and Technical Story preauthorization is handled separately under
 For an explicit matching request, include:
 
 ```bash
-uv run python -m memory build plan-delivery-story --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build plan-delivery-story --method ariad \
   --objective "<aggregate Delivery Story objective>" \
   --child <every exact child code> \
   --preauthorize-approval \
@@ -862,7 +862,7 @@ replace an existing non-empty Plan with the runtime scaffold.
 In the same assistant turn, after completing the Plan, consume the receipt with:
 
 ```bash
-uv run python -m memory build approve-delivery-story-plan --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build approve-delivery-story-plan --method ariad \
   --use-preauthorization
 ```
 
@@ -875,7 +875,7 @@ presentational, but addition or removal is a mismatch.
 Cancel pending authority when the Navigator withdraws it:
 
 ```bash
-uv run python -m memory build cancel-delivery-story-plan-preauthorization \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build cancel-delivery-story-plan-preauthorization \
   --method ariad
 ```
 
@@ -892,7 +892,7 @@ as `aprovo o plano da DS`, `plano da DS aprovado`, or `approve the Delivery
 Story plan`, run:
 
 ```bash
-uv run python -m memory build approve-delivery-story-plan --method ariad
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build approve-delivery-story-plan --method ariad
 ```
 
 If the user names a specific journey, pass `--journey <slug>`. Return every
@@ -914,7 +914,7 @@ When the user asks to plan the pulled item, create a plan for the active item, o
 says a natural-language equivalent such as `planeje o item puxado`, run:
 
 ```bash
-uv run python -m memory build plan-item --method ariad
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build plan-item --method ariad
 ```
 
 If the user names a specific journey, pass `--journey <slug>`. Render the Plan
@@ -956,7 +956,7 @@ is itself the explicit cadence decision that authorizes Plan continuation for
 active implementable stories. For natural explicit delegation, run:
 
 ```bash
-uv run python -m memory build plan-item --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build plan-item --method ariad \
   --preauthorize-approval \
   --stop-after navigator_validation
 ```
@@ -974,7 +974,7 @@ sections before authority can be consumed.
 In the same assistant turn, after completing the exact story Plan, run:
 
 ```bash
-uv run python -m memory build approve-plan --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build approve-plan --method ariad \
   --use-preauthorization
 ```
 
@@ -986,7 +986,7 @@ Plan approval; never repair, reinterpret, or recreate authority silently.
 Cancel pending story authority when the Navigator withdraws it:
 
 ```bash
-uv run python -m memory build cancel-plan-preauthorization --method ariad
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build cancel-plan-preauthorization --method ariad
 ```
 
 Cancellation preserves the ordinary Plan gate. Story authority is private,
@@ -997,14 +997,14 @@ purchase, or another irreversible action.
 When the Navigator approves an ordinary Plan checkpoint, run:
 
 ```bash
-uv run python -m memory build approve-plan --method ariad
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build approve-plan --method ariad
 ```
 
 If the user asks to implement while the Plan checkpoint is pending, run the guard
 before doing any implementation work:
 
 ```bash
-uv run python -m memory build check-implementation --method ariad
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build check-implementation --method ariad
 ```
 
 Render the deterministic `IMPLEMENTATION_GUARD` surface. If the guard reports
@@ -1022,7 +1022,7 @@ For natural validation requests such as `valide a DS`, `valide a Delivery
 Story`, or `validação da DS aceita`, run:
 
 ```bash
-uv run python -m memory build validate-delivery-story --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build validate-delivery-story --method ariad \
   --summary "<aggregate DS validation evidence>" \
   --navigator-accepted
 ```
@@ -1030,7 +1030,7 @@ uv run python -m memory build validate-delivery-story --method ariad \
 For DS-level debt review requests, run:
 
 ```bash
-uv run python -m memory build review-delivery-story --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build review-delivery-story --method ariad \
   --decision <no_action|defer|pay_now> \
   --summary "<DS-level debt review summary>"
 ```
@@ -1041,14 +1041,14 @@ every known child package/candidate row, and every canonical roadmap table row
 for the DS as Done. Then run:
 
 ```bash
-uv run python -m memory build done-delivery-story --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build done-delivery-story --method ariad \
   --summary "<DS-level done/history summary>"
 ```
 
 The command runs an authored roadmap closure preflight before cursor or artifact
 mutation. If any DS package, known child package/candidate row, or canonical
 roadmap row remains non-Done, the runtime refuses Done before cursor or artifact mutation and names project-relative files to align. The agent owns semantic
-Markdown updates; Python verifies explicit status evidence and never invents
+Markdown updates; the runtime verifies explicit status evidence and never invents
 project meaning.
 
 DS-level Coherence is not a separate lifecycle stage before Done. It is checked
@@ -1069,7 +1069,7 @@ After implementation is complete and before moving to Debt Review or Done,
 render the Validation checkpoint:
 
 ```bash
-uv run python -m memory build validate-item --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build validate-item --method ariad \
   --implementation-complete \
   --check "<automated check command or evidence>" \
   --checks-status <passed|failed|not_run> \
@@ -1096,7 +1096,7 @@ After Validation has passed and before moving to Done, render the Debt Review
 checkpoint:
 
 ```bash
-uv run python -m memory build review-item --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build review-item --method ariad \
   --debt "<debt finding, or No debt found>" \
   --decision <pending|no_action|defer|pay_now> \
   --defer-reason "<required when decision=defer>" \
@@ -1115,7 +1115,7 @@ unresolved.
 After Debt Review is complete, verify Process, Project, and Product alignment:
 
 ```bash
-uv run python -m memory build coherence-item --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build coherence-item --method ariad \
   --process "<process alignment evidence>" \
   --project "<project alignment evidence>" \
   --product "<product alignment evidence>"
@@ -1134,7 +1134,7 @@ After Coherence is complete and the Navigator confirms there is nothing else to
 do in the story, render the Done checkpoint:
 
 ```bash
-uv run python -m memory build done-item --method ariad \
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build done-item --method ariad \
   --history-action "<commit/history action taken or proposed>" \
   --roadmap-update "<roadmap/story package update>" \
   --next-recommendation "<next Pull, parent collapse, or release boundary>"
