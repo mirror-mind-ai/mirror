@@ -1109,6 +1109,17 @@ Release read: **ready for Navigator validation with one named divergence.**
   Extract one token module and one arm table. `test/helpers/builderInvoke.ts` is
   a pure re-export shim after plateau 8; repoint or justify. (Plateau-8 panel,
   engineer.)
+- **`prepare-item` silently demotes an approved Plan.**
+  `prepare_lifecycle_item` writes `last_delivery_event="prepare"` and
+  `active_checkpoint=None` unconditionally, without checking the event it
+  overwrites. Found on the real home during Navigator validation step 1: this
+  story's cursor read `plan_approved / gen 16` at plateau 1 and `prepare / gen
+  16` on 2026-09-16, the difference being a resume session's `prepare-item` on
+  2026-09-15. The guard then refuses Implement with `approved Plan is required`
+  — correct for the bytes, wrong for the history. A Prepare re-run should
+  refuse or no-op past Plan; parity-bound here (TypeScript reproduces it, and
+  step 3 starts from exactly that state), so the fix is a product change to
+  the Python-authoritative-then-TS lifecycle after the flip.
 
 - **Exactly tied search scores are ordered differently by the two engines.** Found
   at plateau 7 while building a `load` case with symmetric embeddings: three

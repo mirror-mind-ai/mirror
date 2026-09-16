@@ -47,10 +47,24 @@ Builder session start, remains on TypeScript.
 - `docs/reference/configuration.md` documents the temporary plateau-8 opt-in,
   composed reverts, replay pair, and redacted log shape.
 
-**Next: Navigator validation for plateau 9.** Run the plan's validation steps
-1–3 and 6 against the gated route. The flip itself is a separate final plateau:
-default the family on, update the three skill copies and ledger, then run the
-self-hosting closure through TypeScript.
+**Next: the Navigator's acceptance, then plateau 9.** Validation steps 1–3
+and 6 were run on 2026-09-16 against the gated route and are recorded in
+`test-guide.md` — all four identical on the real home (step 1), `load` live on
+two real-database copies byte-identical on all four faces (step 2), a full
+lifecycle on real-database copies and scratch clones diff-clean at every step
+(step 3, `scripts/smoke_builder_real_copy.sh`, proven to bite with a mutant),
+and the revert identical with Python in the log (step 6). Running the route is
+not accepting it. The flip is a separate final plateau: default the family on,
+update the three skill copies and ledger, then run the self-hosting closure
+through TypeScript.
+
+**Cursor finding for step 4.** The real cursor is at `prepare / gen 16`, not
+`plan_approved`: a resume session's `prepare-item` on 2026-09-15 demoted the
+approved Plan, because Python's Prepare overwrites the event unconditionally
+(debt candidate in `plan.md`). The self-hosting closure therefore begins with
+`plan-item` and a Navigator `approve-plan` through the TS front door, then
+`validate-item`, `review-item`, `coherence-item`, `done-item` — each first
+dry-run on a copy, which is exactly what the step-3 script does.
 
 The plateau-8 handoff panel ran (recorded in `plan.md`) and left three items
 for the flip, none blocking:

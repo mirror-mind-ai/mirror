@@ -67,7 +67,7 @@ In order, on the real home:
 |---|---|---|---|---|
 | 1 | `inspect-method ariad`, `inspect-method --journey mirror-ts-core`, `pull-candidates --method ariad --journey mirror-ts-core`, `check-implementation --method ariad --journey mirror-ts-core` — both engines, diffed | Byte-identical stdout, stderr, exit code | identical | any byte |
 | 2 | `build load mirror-ts-core --session-id <disposable>` on **two fresh copies** of the real database, one per engine | Identical banner, transition, resume surface, context, trailer; same six entries in the ranked block | identical outside the block, same entries inside | any surface difference or a different entry set |
-| 3 | Full story lifecycle on a copy of the real database and a scratch clone of this repository, both engines, cursor row diffed after every step | Diff-clean at every step, artifacts identical | diff-clean | any cursor-row or artifact difference at any step |
+| 3 | Full story lifecycle on a copy of the real database and a scratch clone of this repository, both engines, cursor row diffed after every step: `scripts/smoke_builder_real_copy.sh --source-db ~/.mirror-minds/<user>/memory.db` | Diff-clean at every step, artifacts identical | diff-clean | any cursor-row or artifact difference at any step |
 | 4 | `backup`; restore the dated zip into a scratch home and `build load` there; then this story's own `review-item`, `coherence-item`, `done-item` through the **TS front door**, each dry-run on a copy against Python first | Restore works; each dry-run diff-clean; the real cursor advances on TS with identical surfaces | diff-clean and cursor advances | any difference, or a cursor that Python cannot then read |
 | 5 | A live Pi Builder session after the flip: `/mm-build mirror-ts-core`, then `pull-candidates`, then `build change-request capture --title x --body y` | Unchanged experience; `front-door.log` shows `build ts leaf=…`, no `fell_back`, no argument text; the Workbench line says `python` with the DS10 reason | as described | `fell_back`, argument text in the log, a TS answer for a Workbench leaf |
 | 6 | `MIRROR_TS_BUILD=0` on `pull-candidates`; then review the CI output of the broken-core drill | Identical output, Python in the log; drill green | identical and green | any difference; drill red |
@@ -99,5 +99,72 @@ Plateau 8 automated evidence:
 - Oracle-drift tripwire: clean after registering `cli/build.py` and every
   in-scope Builder module; documentation links and roadmap headings clean.
 
-Navigator validation steps 1–3 and 6 remain pending. Their acceptance authorizes
-plateau 9; it does not happen implicitly from the automated evidence above.
+### Navigator route, steps 1–3 and 6 — run 2026-09-16 on the real home
+
+The Driver ran the route and recorded the observations below; **acceptance is
+the Navigator's**, and it authorizes plateau 9 explicitly or not at all.
+
+**Step 1 — read-only, both engines, real home.** Python via `uv run python -m
+memory build …`; TypeScript via `MIRROR_TS_BUILD=1 node --env-file=.env
+ts/src/frontDoor/cli.ts build …`. stdout, stderr, and exit code compared
+byte for byte:
+
+| leaf | exit (py / ts) | stdout | verdict |
+|---|---|---|---|
+| `inspect-method ariad` | 0 / 0 | 4,372 B | identical |
+| `inspect-method --journey mirror-ts-core` | 0 / 0 | 134 B | identical |
+| `pull-candidates --method ariad --journey mirror-ts-core` | 0 / 0 | 17,100 B | identical |
+| `check-implementation --method ariad --journey mirror-ts-core` | 1 / 1 | 1,321 B | identical |
+
+`front-door.log` carried `build ts exit=0 leaf=inspect-method`,
+`leaf=pull-candidates`, and `exit=1 leaf=check-implementation` — leaf names
+only. The guard's exit 1 is the real cursor's truth, not a defect: see the
+cursor finding below.
+
+**Step 2 — `load`, live, on two fresh copies of the real database (51 MB,
+snapshotted once with `sqlite3 .backup`, one copy per engine), disposable
+session id `nav-step2-disposable`.** All four faces agreed:
+
+- streams: stdout **39,250 B byte-identical** (banner, transition,
+  `■ BUILDER RESUME`, context, ranked block, `project_path=` trailer), stderr
+  134 B identical, exit 0 both — the ranked block itself matched, not only
+  its entry set;
+- `runtime_sessions`: the same row for the disposable session
+  (`Builder Mode`, `mirror-ts-core`);
+- ledger: two `embedding` rows each, `openai/text-embedding-3-small`, 102
+  prompt tokens, $0.000002 per call — $0.000008 for the whole step; no close
+  tail fired, because a fresh session id has no previous conversation;
+- access: the same 7 memories bumped (`use_count` / `last_accessed_at`) and 10
+  `memory_access_log` rows added in both copies.
+
+**Step 3 — full story lifecycle on a copy of the real database and a scratch
+clone of this repository, both engines.** `scripts/smoke_builder_real_copy.sh
+--source-db ~/.mirror-minds/vinicius-ts/memory.db`. Eight steps, four faces
+each (streams + exit, cursor metadata bytes, closure artifacts in the clone,
+projection receipts): **diff-clean at every step**. The cursor advanced
+`prepare → plan → plan_approved → validation_passed → review_complete →
+coherence_complete → done_complete` with the same bytes on both engines; four closure artifacts
+(`validation.md`, `review.md`, `coherence.md`, `done.md`) were written
+identically into both clones; six projection receipts published in each. The
+harness bites: a mutant that dropped `--objective` in the TS `plan-item`
+mapping was reported at step 2 and the script exited 1. The real cursor was
+not touched (still `prepare`, `updated_at 2026-09-15T08:59:25Z`).
+
+**Step 6 — revert.** `MIRROR_TS_BUILD=0` and gate-absent `pull-candidates`
+through the front door: stdout identical to Python's, empty stderr, exit 0,
+`build python exit=0` in the log. CI run `35071663728` (green on all five
+jobs): the broken-core drill passed on ubuntu and macOS, the redaction tests
+passed on both, and the parity job reported the lifecycle smoke 331/331.
+
+**Cursor finding (process, not parity).** The real cursor reads
+`last_delivery_event: prepare`, `cursor_generation: 16`, updated
+2026-09-15T08:59:25Z — where plateau 1 recorded `plan_approved / gen 16` for
+the same item. `prepare_lifecycle_item` writes `last_delivery_event="prepare"`
+and `active_checkpoint=None` unconditionally, so the resume session's
+`prepare-item` on 2026-09-15 silently demoted the approved Plan. Both engines
+reproduce this (step 3 starts from exactly that state). Consequence for step
+4: this story's real closure must re-run `plan-item` and `approve-plan` (the
+latter is a Navigator act) through the TS front door before `validate-item`.
+Recorded as a debt candidate in `plan.md`.
+
+Steps 4 and 5 run after the flip, by design.
