@@ -2,7 +2,7 @@
 
 # CV22.DS9 — TS MCP Server
 
-**Status:** 🟢 In Progress — pulled 2026-09-17; authored from code the same day
+**Status:** 🟢 In Progress — pulled and authored 2026-09-17; **US1 done (1/4)**; US2 next
 **Type:** Delivery Story
 **Depends on:** CV22.DS7 (command burn-down, done 14/14 — every capability the tools
 need is already TS-owned); CV22.DS8 (live-provider cutover, done — the embedding call
@@ -121,13 +121,18 @@ assertions, not one blanket "no reinforcement".
 
 | Code | Story | Type | Outcome | Status |
 |------|-------|------|---------|--------|
-| CV22.DS9.US1 | JSON-RPC protocol core | User Story | `handle_message` ported to TS with exact parity on a committed golden: `initialize` (including protocol-version echo), `notifications/initialized`, `ping`, `tools/list`, `tools/call` dispatch, notification-vs-request semantics, and the error taxonomy (`-32700`, `-32600`, `-32601`, `-32602`, plus tool errors returned as `isError` results rather than protocol errors). No routing flip; the threat model is this story's Plan input | 🟡 Planned |
+| [CV22.DS9.US1](cv22-ds9-us1-json-rpc-protocol-core/index.md) | JSON-RPC protocol core | User Story | `handle_message` ported to TS with exact parity on a committed golden: `initialize` (including protocol-version echo), `notifications/initialized`, `ping`, `tools/list`, `tools/call` dispatch, notification-vs-request semantics, and the error taxonomy (`-32700`, `-32600`, `-32601`, `-32602`, plus tool errors returned as `isError` results rather than protocol errors). No routing flip; the threat model is this story's Plan input | ✅ **Done — 2026-09-17.** 22 dispatch cases plus a spawned-process framing transcript, byte-identical across engines; the `json.dumps` separator gap fixed in `wire.ts` rather than recorded as a divergence; drain-before-exit mutation-proven; stderr empty under bare `node`. Two Python-side findings deferred to RS007 |
 | CV22.DS9.US2 | The seven read/context tools | User Story | Each tool wired to its existing TS capability with byte-exact payload parity (`ensure_ascii=False, indent=2, default=str` JSON), the `log_access=false` invariant pinned, and `tools/list` schemas byte-identical so no client re-negotiates | 🟡 Planned |
 | CV22.DS9.TS1 | Wallet and abuse guards | Technical Story | AI-19's per-tool call-rate guard and optional daily USD ceiling on the two embedding-crossing tools, with guard state read from the cross-process `llm_calls` ledger (not process memory — a user runs several MCP clients at once) and cost from the single TS cost authority DS8 ported; refusals are **terminal, agent-readable `isError` results** whose wording is prompt text; plus D4's argument validation and output bounds. **Deliberate divergence from Python** — none of it exists in the oracle — so it is its own story, its own decision, and its own revert | 🟡 Planned |
 | CV22.DS9.TS2 | Cutover and plugin manifest flip | Technical Story | The `mcpServers` entry launches the TS server through D5's revert mechanism; the **scripted** stdio smoke diffs a fixed JSON-RPC transcript against the recorded Python baseline, then one real Claude session; blast radius named (Claude is the only production consumer of the manifest today); no CV21 scope is redefined | 🟡 Planned |
 
 Four stories, sequenced protocol → tools → guards → flip, so that the surface is provably
 identical before it is made different, and made different before it is made live.
+
+**Inherited by the remaining three, from US1:** the threat model (in US1's `plan.md`), the
+golden and its generator, the oracle-drift coverage of `src/memory/mcp/`, the injectable
+`ToolRegistry` seam that lets US2 fill handlers without touching dispatch, and `wire.ts` —
+whose Python-separator encoding every later response also travels through.
 
 ---
 

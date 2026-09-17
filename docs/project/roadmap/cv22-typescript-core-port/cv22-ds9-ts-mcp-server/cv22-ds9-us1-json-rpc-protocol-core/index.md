@@ -2,7 +2,7 @@
 
 # CV22.DS9.US1 — JSON-RPC protocol core
 
-**Status:** 🟡 Planned — pulled 2026-09-17
+**Status:** ✅ Done — 2026-09-17 (Navigator validation accepted; `1eda003e`, Actions `35233356175`)
 **Type:** User Story
 **Depends on:** nothing new — `resolveDbPath` (DS3), the DS6 TS-owned database, and the
 DS9 package's decisions D1–D5 and flow unit
@@ -80,7 +80,45 @@ And   no routing entry, manifest edit, or launcher exists
 
 ---
 
+## What Was Delivered
+
+`ts/src/mcp/`: `protocol.ts` (pure dispatch), `registry.ts` (the seven declarations over
+not-yet-wired handlers), `serve.ts` (the stdio loop), `wire.ts` (Python-separator JSON
+encoding), `main.ts` (the entry point, referenced by nothing until TS2). 35 tests in
+`ts/test/mcp/`. Byte-identical to the Python oracle on 22 dispatch cases and on a
+spawned-process transcript run through both engines.
+
+Four parity traps the golden caught, each of which a reasonable port fails silently:
+`"id" in message` rather than truthiness (so `0`, `""`, and explicit `null` are requests);
+`Unknown tool: None` from Python's `str(None)`; Python's `x or {}` coercion for `params`
+and `arguments`; and `json.dumps`' `", "` / `": "` separators, which made every response
+differ byte-for-byte while parsing identically. The separator gap was **fixed rather than
+recorded as a divergence** (`wire.ts`) so the parity claim needs no asterisk at DS10.
+
+Both Plan-stage review findings are implemented and regression-locked: the loop drains
+stdout before exit (mutation-proven — a mutant dropping the write callback fails only that
+test), and stderr stays empty under bare `node` with `NODE_OPTIONS` deleted, the way an MCP
+client launches it.
+
+## Deferred Debt (Debt Review, 2026-09-17)
+
+Both Python-side, both outside US1's scope — US1 edited no file under `src/memory/`:
+
+1. A `MIRROR_HOME`/`MIRROR_USER` conflict is reported as *"Mirror home is not configured"*.
+   `resolve_mirror_home` raises a precise ValueError naming the conflict; `config.py`
+   swallows it at import. An MCP client launching with a partial environment hits exactly
+   this misleading message.
+2. Python's `serve()` still has no framing test of its own; US1's harness records its
+   behavior only at golden-generation time.
+
+**Revisit:** capture both as CRs against RS007 at the next Refinement pass. (1) is re-raised
+by TS2 if the manifest flip shows a real client a misleading startup failure; (2) dies with
+DS10's deletion of `src/memory/mcp/`.
+
+---
+
 ## Artifacts
 
-- [Plan](plan.md) — carries the threat model
+- [Plan](plan.md) — carries the DS9 threat model
 - [Test Guide](test-guide.md)
+- [Validation](validation.md) · [Review](review.md) · [Coherence](coherence.md)

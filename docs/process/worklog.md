@@ -12,6 +12,48 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-17 — CV22.DS9.US1: the MCP protocol answers from TypeScript, byte for byte
+
+**Both servers, one transcript, an empty diff.** The Mirror MCP server's protocol layer —
+`handle_message` and the stdio framing loop — is ported: dispatch as a pure function over an
+injectable registry, the seven tool declarations over not-yet-wired handlers, and the loop
+itself. Graded against a golden generated from the real Python oracle (22 dispatch cases)
+and a transcript replayed through both *spawned processes*. Nothing is routed — `main.ts` is
+referenced by nothing until TS2 flips the plugin manifest. **DS9 is 1/4.**
+
+Four parity traps the golden caught, each of which a reasonable port fails silently: the
+oracle decides request-vs-notification on `"id" in message`, so `id: 0`, `""`, and an
+explicit `null` are requests and a `||` leaves those clients hanging forever; a missing tool
+name renders `Unknown tool: None`, Python's `str(None)`; `params`/`arguments` go through
+Python's `x or {}` coercion; and `json.dumps` separates with `", "` / `": "` where
+`JSON.stringify` uses `","` / `":"`, so **every response differed byte-for-byte while parsing
+identically**. CV22's superset rule would have allowed recording that last one as an
+invisible divergence — no MCP client reads raw bytes. It was fixed instead (`wire.ts`, 15
+lines, all escaping still delegated to `JSON.stringify`), because a recorded divergence is a
+question that must be re-answered every time these two servers are compared, including at
+DS10's deletion decision.
+
+The story's Plan carried DS9's **threat model**, written once for US2/TS1/TS2 to inherit and
+reviewed by the security-engineer and ai-engineer lenses before implementation. Its central
+correction: the trust boundary is not client-to-server (stdio, same user, same machine) but
+**user intent to model context**. The caller is legitimately the model, and the model is
+driven by anything in its context — so against an injected document the server is a read
+oracle over private memory. Authentication does not apply; bounded output does. Two review
+findings became code and are regression-locked: the loop **drains stdout before exit**
+(Node's stdout-to-a-pipe is asynchronous on macOS, so exiting on EOF truncates a large
+queued response — the shape `recall_conversation` produces; mutation-proven, a mutant
+dropping the write callback fails only that test), and **stderr stays empty under bare
+`node`**, since `node:sqlite`'s ExperimentalWarning is silenced in-process rather than by the
+`NODE_OPTIONS` no MCP client sets, and stderr is the client's log. Also asserted: no tool
+declares `annotations`, because a truthful `readOnlyHint` would let clients skip the
+per-call permission prompt that is the only human gate on that read oracle.
+
+Deferred at Debt Review, both Python-side and outside the story's scope: a
+`MIRROR_HOME`/`MIRROR_USER` conflict is reported as "Mirror home is not configured" because
+`config.py` swallows the precise ValueError at import (found while wiring the generator; an
+MCP client with a partial environment hits exactly it), and Python's `serve()` still has no
+framing test of its own. Both revisit as CRs against RS007. **Next: US2, the seven tools.**
+
 ### 2026-09-17 — CV22.DS7 closed at 14/14: the web console is retired instead of ported
 
 **The command burn-down is finished, and its last story shipped nothing.** US9 —
