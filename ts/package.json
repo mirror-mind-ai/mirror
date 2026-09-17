@@ -23,6 +23,7 @@
     "#init/*": "./src/init/*",
     "#journey/*": "./src/journey/*",
     "#memory/*": "./src/memory/*",
+    "#mcp/*": "./src/mcp/*",
     "#mirror/*": "./src/mirror/*",
     "#mode/*": "./src/mode/*",
     "#observability/*": "./src/observability/*",
