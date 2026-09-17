@@ -1,0 +1,468 @@
+{
+  "_comment": "MCP tool payload parity golden (CV22.DS9.US2). Generated from the real memory.mcp.tools handlers by ts/parity/generate_mcp_tools_golden.py. The seed below is ORDERED and both engines must insert it in this order: neither Python read has a tie-break beyond its timestamp, so equal timestamps resolve by rowid.",
+  "embedding_dim": 8,
+  "seed": {
+    "journeys": [
+      {
+        "key": "alpha-journey",
+        "content": "# Alpha Journey\n**Status:** active\n\n## Description\nThe first seeded journey. Its description runs past the one-hundred-and-fifty character boundary that list_journeys truncates on, so the cut is graded rather than assumed by either engine.",
+        "metadata": "{\"icon\": \"\\u26a1\", \"parent_journey\": \"\"}"
+      },
+      {
+        "key": "beta-journey",
+        "content": "# Beta Journey\n**Status:** paused\n\n## Description\nA paused journey.",
+        "metadata": "{\"icon\": \"\\u25c7\"}"
+      },
+      {
+        "key": "gamma-journey",
+        "content": "# Gamma Journey\n**Status:** completed\n\n## Description\nA finished journey.",
+        "metadata": null
+      },
+      {
+        "key": "delta-journey",
+        "content": "# Delta Jornada ✳\n**Status:** active\n\n## Description\nDescrição com acentuação.",
+        "metadata": "{\"icon\": \"\\u2733\"}"
+      }
+    ],
+    "personas": [
+      {
+        "key": "engineer",
+        "content": "# Engineer\nThe engineering lens.",
+        "metadata": "{\"routing_keywords\": [\"code\", \"bug\", \"database schema\"], \"routing_descriptor\": \"engineering\"}"
+      },
+      {
+        "key": "therapist",
+        "content": "# Therapist\nThe reflective lens.",
+        "metadata": "{\"routing_keywords\": [\"feeling\", \"fear\"], \"routing_descriptor\": \"reflection\"}"
+      }
+    ],
+    "identity": [
+      {
+        "layer": "self",
+        "key": "soul",
+        "content": "# Soul\nThe seeded soul layer."
+      },
+      {
+        "layer": "ego",
+        "key": "behavior",
+        "content": "# Behavior\nThe seeded behavior layer."
+      },
+      {
+        "layer": "ego",
+        "key": "identity",
+        "content": "# Identity\nThe seeded ego identity."
+      },
+      {
+        "layer": "user",
+        "key": "identity",
+        "content": "# User\nThe seeded user identity."
+      }
+    ],
+    "memories": [
+      {
+        "id": "mem-0001",
+        "title": "First alpha insight",
+        "content": "Content of the first alpha insight.",
+        "memory_type": "insight",
+        "layer": "ego",
+        "journey": "alpha-journey",
+        "tags": "[\"one\", \"two\"]",
+        "created_at": "2026-01-01T10:00:00Z",
+        "embedding_seed": 1,
+        "embedding": [
+          0.7,
+          1.0,
+          0.2,
+          0.5,
+          0.8,
+          0.0,
+          0.3,
+          0.6
+        ]
+      },
+      {
+        "id": "mem-0002",
+        "title": "Second alpha insight (timestamp tie)",
+        "content": "Content of the second alpha insight.",
+        "memory_type": "insight",
+        "layer": "ego",
+        "journey": "alpha-journey",
+        "tags": null,
+        "created_at": "2026-01-01T10:00:00Z",
+        "embedding_seed": 2,
+        "embedding": [
+          0.3,
+          0.6,
+          0.9,
+          0.1,
+          0.4,
+          0.7,
+          1.0,
+          0.2
+        ]
+      },
+      {
+        "id": "mem-0003",
+        "title": "Uma decisão importante ✳",
+        "content": "Conteúdo com acentuação e um emoji ✳.",
+        "memory_type": "decision",
+        "layer": "shadow",
+        "journey": "delta-journey",
+        "tags": "[\"decisão\"]",
+        "created_at": "2026-01-02T11:30:00Z",
+        "embedding_seed": 3,
+        "embedding": [
+          1.0,
+          0.2,
+          0.5,
+          0.8,
+          0.0,
+          0.3,
+          0.6,
+          0.9
+        ]
+      },
+      {
+        "id": "mem-0004",
+        "title": "Beta pattern",
+        "content": "A pattern observed in the beta journey.",
+        "memory_type": "pattern",
+        "layer": "self",
+        "journey": "beta-journey",
+        "tags": "[]",
+        "created_at": "2026-01-03T09:15:00Z",
+        "embedding_seed": 4,
+        "embedding": [
+          0.6,
+          0.9,
+          0.1,
+          0.4,
+          0.7,
+          1.0,
+          0.2,
+          0.5
+        ]
+      },
+      {
+        "id": "mem-0005",
+        "title": "Unassigned reflection",
+        "content": "A reflection with no journey and no embedding.",
+        "memory_type": "reflection",
+        "layer": "ego",
+        "journey": null,
+        "tags": null,
+        "created_at": "2026-01-04T08:00:00Z",
+        "embedding_seed": null,
+        "embedding": null
+      }
+    ],
+    "conversations": [
+      {
+        "id": "conv-0001",
+        "title": "Alpha planning",
+        "started_at": "2026-01-05T09:00:00Z",
+        "ended_at": "2026-01-05T09:45:00Z",
+        "interface": "cli",
+        "persona": "engineer",
+        "journey": "alpha-journey",
+        "summary": "Planned the alpha work."
+      },
+      {
+        "id": "conv-0002",
+        "title": null,
+        "started_at": "2026-01-05T09:00:00Z",
+        "ended_at": null,
+        "interface": "pi",
+        "persona": null,
+        "journey": "alpha-journey",
+        "summary": null
+      },
+      {
+        "id": "conv-0003",
+        "title": "Delta conversa ✳",
+        "started_at": "2026-01-06T14:20:00Z",
+        "ended_at": "2026-01-06T15:00:00Z",
+        "interface": "cli",
+        "persona": "therapist",
+        "journey": "delta-journey",
+        "summary": "Conversa em português."
+      }
+    ],
+    "messages": [
+      {
+        "id": "msg-0001",
+        "conversation_id": "conv-0001",
+        "role": "user",
+        "content": "First user line.",
+        "created_at": "2026-01-05T09:00:10Z"
+      },
+      {
+        "id": "msg-0002",
+        "conversation_id": "conv-0001",
+        "role": "assistant",
+        "content": "First assistant line.",
+        "created_at": "2026-01-05T09:00:20Z"
+      },
+      {
+        "id": "msg-0003",
+        "conversation_id": "conv-0001",
+        "role": "user",
+        "content": "Second user line with ✳.",
+        "created_at": "2026-01-05T09:00:30Z"
+      },
+      {
+        "id": "msg-0004",
+        "conversation_id": "conv-0003",
+        "role": "user",
+        "content": "Linha em português.",
+        "created_at": "2026-01-06T14:20:10Z"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "list_journeys_active_only",
+      "tool": "list_journeys",
+      "arguments": {},
+      "payload": "[\n  {\n    \"id\": \"alpha-journey\",\n    \"name\": \"Alpha Journey\",\n    \"description\": \"\",\n    \"status\": \"active\",\n    \"metadata\": {\n      \"icon\": \"⚡\",\n      \"parent_journey\": \"\"\n    }\n  },\n  {\n    \"id\": \"delta-journey\",\n    \"name\": \"Delta Jornada ✳\",\n    \"description\": \"\",\n    \"status\": \"active\",\n    \"metadata\": {\n      \"icon\": \"✳\"\n    }\n  }\n]",
+      "raises": null
+    },
+    {
+      "name": "journey_status_one_slug",
+      "tool": "journey_status",
+      "arguments": {
+        "slug": "alpha-journey"
+      },
+      "payload": "{\n  \"alpha-journey\": {\n    \"identity\": \"# Alpha Journey\\n**Status:** active\\n\\n## Description\\nThe first seeded journey. Its description runs past the one-hundred-and-fifty character boundary that list_journeys truncates on, so the cut is graded rather than assumed by either engine.\",\n    \"journey_path\": null,\n    \"recent_memories\": [\n      {\n        \"id\": \"mem-0001\",\n        \"title\": \"First alpha insight\",\n        \"memory_type\": \"insight\",\n        \"layer\": \"ego\",\n        \"journey\": \"alpha-journey\",\n        \"tags\": \"[\\\"one\\\", \\\"two\\\"]\",\n        \"content\": \"Content of the first alpha insight.\"\n      },\n      {\n        \"id\": \"mem-0002\",\n        \"title\": \"Second alpha insight (timestamp tie)\",\n        \"memory_type\": \"insight\",\n        \"layer\": \"ego\",\n        \"journey\": \"alpha-journey\",\n        \"tags\": null,\n        \"content\": \"Content of the second alpha insight.\"\n      }\n    ],\n    \"recent_conversations\": [\n      {\n        \"id\": \"conv-0001\",\n        \"title\": \"Alpha planning\",\n        \"started_at\": \"2026-01-05T09:00:00Z\",\n        \"ended_at\": \"2026-01-05T09:45:00Z\",\n        \"interface\": \"cli\",\n        \"persona\": \"engineer\",\n        \"journey\": \"alpha-journey\",\n        \"summary\": \"Planned the alpha work.\"\n      },\n      {\n        \"id\": \"conv-0002\",\n        \"title\": null,\n        \"started_at\": \"2026-01-05T09:00:00Z\",\n        \"ended_at\": null,\n        \"interface\": \"pi\",\n        \"persona\": null,\n        \"journey\": \"alpha-journey\",\n        \"summary\": null\n      }\n    ]\n  }\n}",
+      "raises": null
+    },
+    {
+      "name": "journey_status_no_slug_every_journey",
+      "tool": "journey_status",
+      "arguments": {},
+      "payload": "{\n  \"alpha-journey\": {\n    \"identity\": \"# Alpha Journey\\n**Status:** active\\n\\n## Description\\nThe first seeded journey. Its description runs past the one-hundred-and-fifty character boundary that list_journeys truncates on, so the cut is graded rather than assumed by either engine.\",\n    \"journey_path\": null,\n    \"recent_memories\": [\n      {\n        \"id\": \"mem-0001\",\n        \"title\": \"First alpha insight\",\n        \"memory_type\": \"insight\",\n        \"layer\": \"ego\",\n        \"journey\": \"alpha-journey\",\n        \"tags\": \"[\\\"one\\\", \\\"two\\\"]\",\n        \"content\": \"Content of the first alpha insight.\"\n      },\n      {\n        \"id\": \"mem-0002\",\n        \"title\": \"Second alpha insight (timestamp tie)\",\n        \"memory_type\": \"insight\",\n        \"layer\": \"ego\",\n        \"journey\": \"alpha-journey\",\n        \"tags\": null,\n        \"content\": \"Content of the second alpha insight.\"\n      }\n    ],\n    \"recent_conversations\": [\n      {\n        \"id\": \"conv-0001\",\n        \"title\": \"Alpha planning\",\n        \"started_at\": \"2026-01-05T09:00:00Z\",\n        \"ended_at\": \"2026-01-05T09:45:00Z\",\n        \"interface\": \"cli\",\n        \"persona\": \"engineer\",\n        \"journey\": \"alpha-journey\",\n        \"summary\": \"Planned the alpha work.\"\n      },\n      {\n        \"id\": \"conv-0002\",\n        \"title\": null,\n        \"started_at\": \"2026-01-05T09:00:00Z\",\n        \"ended_at\": null,\n        \"interface\": \"pi\",\n        \"persona\": null,\n        \"journey\": \"alpha-journey\",\n        \"summary\": null\n      }\n    ]\n  },\n  \"beta-journey\": {\n    \"identity\": \"# Beta Journey\\n**Status:** paused\\n\\n## Description\\nA paused journey.\",\n    \"journey_path\": null,\n    \"recent_memories\": [\n      {\n        \"id\": \"mem-0004\",\n        \"title\": \"Beta pattern\",\n        \"memory_type\": \"pattern\",\n        \"layer\": \"self\",\n        \"journey\": \"beta-journey\",\n        \"tags\": \"[]\",\n        \"content\": \"A pattern observed in the beta journey.\"\n      }\n    ],\n    \"recent_conversations\": []\n  },\n  \"delta-journey\": {\n    \"identity\": \"# Delta Jornada ✳\\n**Status:** active\\n\\n## Description\\nDescrição com acentuação.\",\n    \"journey_path\": null,\n    \"recent_memories\": [\n      {\n        \"id\": \"mem-0003\",\n        \"title\": \"Uma decisão importante ✳\",\n        \"memory_type\": \"decision\",\n        \"layer\": \"shadow\",\n        \"journey\": \"delta-journey\",\n        \"tags\": \"[\\\"decisão\\\"]\",\n        \"content\": \"Conteúdo com acentuação e um emoji ✳.\"\n      }\n    ],\n    \"recent_conversations\": [\n      {\n        \"id\": \"conv-0003\",\n        \"title\": \"Delta conversa ✳\",\n        \"started_at\": \"2026-01-06T14:20:00Z\",\n        \"ended_at\": \"2026-01-06T15:00:00Z\",\n        \"interface\": \"cli\",\n        \"persona\": \"therapist\",\n        \"journey\": \"delta-journey\",\n        \"summary\": \"Conversa em português.\"\n      }\n    ]\n  },\n  \"gamma-journey\": {\n    \"identity\": \"# Gamma Journey\\n**Status:** completed\\n\\n## Description\\nA finished journey.\",\n    \"journey_path\": null,\n    \"recent_memories\": [],\n    \"recent_conversations\": []\n  }\n}",
+      "raises": null
+    },
+    {
+      "name": "journey_status_unknown_slug",
+      "tool": "journey_status",
+      "arguments": {
+        "slug": "does-not-exist"
+      },
+      "payload": "{\n  \"does-not-exist\": {\n    \"identity\": null,\n    \"journey_path\": null,\n    \"recent_memories\": [],\n    \"recent_conversations\": []\n  }\n}",
+      "raises": null
+    },
+    {
+      "name": "list_conversations_default_limit",
+      "tool": "list_conversations",
+      "arguments": {},
+      "payload": "[\n  {\n    \"id\": \"conv-0003\",\n    \"title\": \"Delta conversa ✳\",\n    \"started_at\": \"2026-01-06T14:20:00Z\",\n    \"persona\": \"therapist\",\n    \"journey\": \"delta-journey\",\n    \"message_count\": 1\n  },\n  {\n    \"id\": \"conv-0001\",\n    \"title\": \"Alpha planning\",\n    \"started_at\": \"2026-01-05T09:00:00Z\",\n    \"persona\": \"engineer\",\n    \"journey\": \"alpha-journey\",\n    \"message_count\": 3\n  },\n  {\n    \"id\": \"conv-0002\",\n    \"title\": null,\n    \"started_at\": \"2026-01-05T09:00:00Z\",\n    \"persona\": null,\n    \"journey\": \"alpha-journey\",\n    \"message_count\": 0\n  }\n]",
+      "raises": null
+    },
+    {
+      "name": "list_conversations_by_journey",
+      "tool": "list_conversations",
+      "arguments": {
+        "journey": "alpha-journey"
+      },
+      "payload": "[\n  {\n    \"id\": \"conv-0001\",\n    \"title\": \"Alpha planning\",\n    \"started_at\": \"2026-01-05T09:00:00Z\",\n    \"persona\": \"engineer\",\n    \"journey\": \"alpha-journey\",\n    \"message_count\": 3\n  },\n  {\n    \"id\": \"conv-0002\",\n    \"title\": null,\n    \"started_at\": \"2026-01-05T09:00:00Z\",\n    \"persona\": null,\n    \"journey\": \"alpha-journey\",\n    \"message_count\": 0\n  }\n]",
+      "raises": null
+    },
+    {
+      "name": "list_conversations_by_persona",
+      "tool": "list_conversations",
+      "arguments": {
+        "persona": "engineer"
+      },
+      "payload": "[\n  {\n    \"id\": \"conv-0001\",\n    \"title\": \"Alpha planning\",\n    \"started_at\": \"2026-01-05T09:00:00Z\",\n    \"persona\": \"engineer\",\n    \"journey\": \"alpha-journey\",\n    \"message_count\": 3\n  }\n]",
+      "raises": null
+    },
+    {
+      "name": "list_conversations_limit_one",
+      "tool": "list_conversations",
+      "arguments": {
+        "limit": 1
+      },
+      "payload": "[\n  {\n    \"id\": \"conv-0003\",\n    \"title\": \"Delta conversa ✳\",\n    \"started_at\": \"2026-01-06T14:20:00Z\",\n    \"persona\": \"therapist\",\n    \"journey\": \"delta-journey\",\n    \"message_count\": 1\n  }\n]",
+      "raises": null
+    },
+    {
+      "name": "recall_conversation_by_full_id",
+      "tool": "recall_conversation",
+      "arguments": {
+        "conversation_id": "conv-0001"
+      },
+      "payload": "{\n  \"conversation_id\": \"conv-0001\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"First user line.\",\n      \"created_at\": \"2026-01-05T09:00:10Z\"\n    },\n    {\n      \"role\": \"assistant\",\n      \"content\": \"First assistant line.\",\n      \"created_at\": \"2026-01-05T09:00:20Z\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Second user line with ✳.\",\n      \"created_at\": \"2026-01-05T09:00:30Z\"\n    }\n  ]\n}",
+      "raises": null
+    },
+    {
+      "name": "recall_conversation_by_prefix",
+      "tool": "recall_conversation",
+      "arguments": {
+        "conversation_id": "conv-000"
+      },
+      "payload": "{\n  \"conversation_id\": \"conv-0003\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Linha em português.\",\n      \"created_at\": \"2026-01-06T14:20:10Z\"\n    }\n  ]\n}",
+      "raises": null
+    },
+    {
+      "name": "recall_conversation_limit_two",
+      "tool": "recall_conversation",
+      "arguments": {
+        "conversation_id": "conv-0001",
+        "limit": 2
+      },
+      "payload": "{\n  \"conversation_id\": \"conv-0001\",\n  \"messages\": [\n    {\n      \"role\": \"assistant\",\n      \"content\": \"First assistant line.\",\n      \"created_at\": \"2026-01-05T09:00:20Z\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Second user line with ✳.\",\n      \"created_at\": \"2026-01-05T09:00:30Z\"\n    }\n  ]\n}",
+      "raises": null
+    },
+    {
+      "name": "recall_conversation_limit_zero_returns_all",
+      "tool": "recall_conversation",
+      "arguments": {
+        "conversation_id": "conv-0001",
+        "limit": 0
+      },
+      "payload": "{\n  \"conversation_id\": \"conv-0001\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"First user line.\",\n      \"created_at\": \"2026-01-05T09:00:10Z\"\n    },\n    {\n      \"role\": \"assistant\",\n      \"content\": \"First assistant line.\",\n      \"created_at\": \"2026-01-05T09:00:20Z\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Second user line with ✳.\",\n      \"created_at\": \"2026-01-05T09:00:30Z\"\n    }\n  ]\n}",
+      "raises": null
+    },
+    {
+      "name": "recall_conversation_unknown_prefix_raises",
+      "tool": "recall_conversation",
+      "arguments": {
+        "conversation_id": "zzzz"
+      },
+      "payload": null,
+      "raises": "no conversation matching 'zzzz'"
+    },
+    {
+      "name": "recall_conversation_missing_id_raises",
+      "tool": "recall_conversation",
+      "arguments": {},
+      "payload": null,
+      "raises": "'conversation_id' is required"
+    },
+    {
+      "name": "detect_persona_whole_float_scores",
+      "tool": "detect_persona",
+      "arguments": {
+        "query": "there is a bug in the database schema"
+      },
+      "payload": "[\n  {\n    \"persona\": \"engineer\",\n    \"score\": 2.0,\n    \"descriptor\": \"keyword\"\n  }\n]",
+      "raises": null
+    },
+    {
+      "name": "detect_persona_no_match",
+      "tool": "detect_persona",
+      "arguments": {
+        "query": "completely unrelated wording"
+      },
+      "payload": "[]",
+      "raises": null
+    },
+    {
+      "name": "detect_persona_missing_query_raises",
+      "tool": "detect_persona",
+      "arguments": {},
+      "payload": null,
+      "raises": "'query' is required"
+    },
+    {
+      "name": "search_memories_by_journey_filter",
+      "tool": "search_memories",
+      "arguments": {
+        "journey": "alpha-journey"
+      },
+      "payload": "[\n  {\n    \"id\": \"mem-0001\",\n    \"title\": \"First alpha insight\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": \"[\\\"one\\\", \\\"two\\\"]\",\n    \"content\": \"Content of the first alpha insight.\"\n  },\n  {\n    \"id\": \"mem-0002\",\n    \"title\": \"Second alpha insight (timestamp tie)\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": null,\n    \"content\": \"Content of the second alpha insight.\"\n  }\n]",
+      "raises": null
+    },
+    {
+      "name": "search_memories_by_layer_filter",
+      "tool": "search_memories",
+      "arguments": {
+        "layer": "ego"
+      },
+      "payload": "[\n  {\n    \"id\": \"mem-0005\",\n    \"title\": \"Unassigned reflection\",\n    \"memory_type\": \"reflection\",\n    \"layer\": \"ego\",\n    \"journey\": null,\n    \"tags\": null,\n    \"content\": \"A reflection with no journey and no embedding.\"\n  },\n  {\n    \"id\": \"mem-0001\",\n    \"title\": \"First alpha insight\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": \"[\\\"one\\\", \\\"two\\\"]\",\n    \"content\": \"Content of the first alpha insight.\"\n  },\n  {\n    \"id\": \"mem-0002\",\n    \"title\": \"Second alpha insight (timestamp tie)\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": null,\n    \"content\": \"Content of the second alpha insight.\"\n  }\n]",
+      "raises": null
+    },
+    {
+      "name": "search_memories_by_type_filter",
+      "tool": "search_memories",
+      "arguments": {
+        "type": "insight"
+      },
+      "payload": "[\n  {\n    \"id\": \"mem-0001\",\n    \"title\": \"First alpha insight\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": \"[\\\"one\\\", \\\"two\\\"]\",\n    \"content\": \"Content of the first alpha insight.\"\n  },\n  {\n    \"id\": \"mem-0002\",\n    \"title\": \"Second alpha insight (timestamp tie)\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": null,\n    \"content\": \"Content of the second alpha insight.\"\n  }\n]",
+      "raises": null
+    },
+    {
+      "name": "search_memories_filter_limit_one",
+      "tool": "search_memories",
+      "arguments": {
+        "type": "insight",
+        "limit": 1
+      },
+      "payload": "[\n  {\n    \"id\": \"mem-0001\",\n    \"title\": \"First alpha insight\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": \"[\\\"one\\\", \\\"two\\\"]\",\n    \"content\": \"Content of the first alpha insight.\"\n  }\n]",
+      "raises": null
+    },
+    {
+      "name": "search_memories_filter_limit_zero",
+      "tool": "search_memories",
+      "arguments": {
+        "type": "insight",
+        "limit": 0
+      },
+      "payload": "[]",
+      "raises": null
+    },
+    {
+      "name": "search_memories_no_query_no_filter_raises",
+      "tool": "search_memories",
+      "arguments": {},
+      "payload": null,
+      "raises": "provide 'query' or one of 'type' / 'layer' / 'journey'"
+    },
+    {
+      "name": "search_memories_query_replayed",
+      "tool": "search_memories",
+      "arguments": {
+        "query": "alpha insight",
+        "limit": 3
+      },
+      "payload": "[\n  {\n    \"id\": \"mem-0001\",\n    \"title\": \"First alpha insight\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": \"[\\\"one\\\", \\\"two\\\"]\",\n    \"content\": \"Content of the first alpha insight.\",\n    \"score\": 0.5924575202971935\n  },\n  {\n    \"id\": \"mem-0004\",\n    \"title\": \"Beta pattern\",\n    \"memory_type\": \"pattern\",\n    \"layer\": \"self\",\n    \"journey\": \"beta-journey\",\n    \"tags\": \"[]\",\n    \"content\": \"A pattern observed in the beta journey.\",\n    \"score\": 0.5365998523678895\n  },\n  {\n    \"id\": \"mem-0002\",\n    \"title\": \"Second alpha insight (timestamp tie)\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": null,\n    \"content\": \"Content of the second alpha insight.\",\n    \"score\": 0.48417178325954385\n  }\n]",
+      "raises": null
+    },
+    {
+      "name": "search_memories_query_non_ascii",
+      "tool": "search_memories",
+      "arguments": {
+        "query": "decisão",
+        "limit": 3
+      },
+      "payload": "[\n  {\n    \"id\": \"mem-0004\",\n    \"title\": \"Beta pattern\",\n    \"memory_type\": \"pattern\",\n    \"layer\": \"self\",\n    \"journey\": \"beta-journey\",\n    \"tags\": \"[]\",\n    \"content\": \"A pattern observed in the beta journey.\",\n    \"score\": 0.5294213371717944\n  },\n  {\n    \"id\": \"mem-0003\",\n    \"title\": \"Uma decisão importante ✳\",\n    \"memory_type\": \"decision\",\n    \"layer\": \"shadow\",\n    \"journey\": \"delta-journey\",\n    \"tags\": \"[\\\"decisão\\\"]\",\n    \"content\": \"Conteúdo com acentuação e um emoji ✳.\",\n    \"score\": 0.5197114073350613\n  },\n  {\n    \"id\": \"mem-0002\",\n    \"title\": \"Second alpha insight (timestamp tie)\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": null,\n    \"content\": \"Content of the second alpha insight.\",\n    \"score\": 0.44994735055249513\n  }\n]",
+      "raises": null
+    },
+    {
+      "name": "mirror_context_no_query",
+      "tool": "mirror_context",
+      "arguments": {},
+      "payload": "=== self/soul ===\n# Soul\nThe seeded soul layer.\n\n=== ego/behavior ===\n# Behavior\nThe seeded behavior layer.\n\n=== user/identity ===\n# User\nThe seeded user identity.\n\n=== ego/identity ===\n# Identity\nThe seeded ego identity.",
+      "raises": null
+    },
+    {
+      "name": "mirror_context_with_journey",
+      "tool": "mirror_context",
+      "arguments": {
+        "journey": "alpha-journey"
+      },
+      "payload": "=== self/soul ===\n# Soul\nThe seeded soul layer.\n\n=== ego/behavior ===\n# Behavior\nThe seeded behavior layer.\n\n=== user/identity ===\n# User\nThe seeded user identity.\n\n=== ego/identity ===\n# Identity\nThe seeded ego identity.\n\n=== journey/alpha-journey ===\n# Alpha Journey\n**Status:** active\n\n## Description\nThe first seeded journey. Its description runs past the one-hundred-and-fifty character boundary that list_journeys truncates on, so the cut is graded rather than assumed by either engine.",
+      "raises": null
+    },
+    {
+      "name": "mirror_context_with_query_replayed",
+      "tool": "mirror_context",
+      "arguments": {
+        "query": "alpha insight"
+      },
+      "payload": "=== self/soul ===\n# Soul\nThe seeded soul layer.\n\n=== ego/behavior ===\n# Behavior\nThe seeded behavior layer.\n\n=== user/identity ===\n# User\nThe seeded user identity.\n\n=== ego/identity ===\n# Identity\nThe seeded ego identity.",
+      "raises": null
+    }
+  ]
+}
