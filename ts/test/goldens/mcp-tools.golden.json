@@ -7,22 +7,22 @@
     "journeys": [
       {
         "key": "alpha-journey",
-        "content": "# Alpha Journey\n**Status:** active\n\n## Description\nThe first seeded journey. Its description runs past the one-hundred-and-fifty character boundary that list_journeys truncates on, so the cut is graded rather than assumed by either engine.",
+        "content": "# Alpha Journey\n**Status:** active\n\n## Description\nThe first seeded journey. Its description runs past the one-hundred-and-fifty character boundary that list_journeys truncates on, so the cut is graded rather than assumed by either engine.\n\n## Scope\nA trailing section, because the description regex needs a blank line or a following heading to terminate on.",
         "metadata": "{\"icon\": \"\\u26a1\", \"parent_journey\": \"\"}"
       },
       {
         "key": "beta-journey",
-        "content": "# Beta Journey\n**Status:** paused\n\n## Description\nA paused journey.",
+        "content": "# Beta Journey\n**Status:** paused\n\n## Description\nA paused journey.\n\n## Scope\nEnds here.",
         "metadata": "{\"icon\": \"\\u25c7\"}"
       },
       {
         "key": "gamma-journey",
-        "content": "# Gamma Journey\n**Status:** completed\n\n## Description\nA finished journey.",
+        "content": "# Gamma Journey\n**Status:** completed\n\n## Description\nA finished journey.\n\n## Scope\nEnds here.",
         "metadata": null
       },
       {
         "key": "delta-journey",
-        "content": "# Delta Jornada ✳\n**Status:** active\n\n## Description\nDescrição com acentuação.",
+        "content": "# Delta Jornada ✳\n**Status:** active\n\n## Description\nDescrição com acentuação ✳.\n\n## Escopo\nTermina aqui.",
         "metadata": "{\"icon\": \"\\u2733\"}"
       }
     ],
@@ -146,6 +146,27 @@
         ]
       },
       {
+        "id": "mem-0006",
+        "title": "Newest alpha insight",
+        "content": "The most recent alpha memory.",
+        "memory_type": "insight",
+        "layer": "ego",
+        "journey": "alpha-journey",
+        "tags": "[\"recent\"]",
+        "created_at": "2026-01-07T16:45:00Z",
+        "embedding_seed": 6,
+        "embedding": [
+          0.9,
+          0.1,
+          0.4,
+          0.7,
+          1.0,
+          0.2,
+          0.5,
+          0.8
+        ]
+      },
+      {
         "id": "mem-0005",
         "title": "Unassigned reflection",
         "content": "A reflection with no journey and no embedding.",
@@ -176,6 +197,16 @@
         "ended_at": null,
         "interface": "pi",
         "persona": null,
+        "journey": "alpha-journey",
+        "summary": null
+      },
+      {
+        "id": "conv-0004",
+        "title": "Newest alpha session",
+        "started_at": "2026-01-08T11:00:00Z",
+        "ended_at": null,
+        "interface": "cli",
+        "persona": "engineer",
         "journey": "alpha-journey",
         "summary": null
       },
@@ -226,7 +257,7 @@
       "name": "list_journeys_active_only",
       "tool": "list_journeys",
       "arguments": {},
-      "payload": "[\n  {\n    \"id\": \"alpha-journey\",\n    \"name\": \"Alpha Journey\",\n    \"description\": \"\",\n    \"status\": \"active\",\n    \"metadata\": {\n      \"icon\": \"⚡\",\n      \"parent_journey\": \"\"\n    }\n  },\n  {\n    \"id\": \"delta-journey\",\n    \"name\": \"Delta Jornada ✳\",\n    \"description\": \"\",\n    \"status\": \"active\",\n    \"metadata\": {\n      \"icon\": \"✳\"\n    }\n  }\n]",
+      "payload": "[\n  {\n    \"id\": \"alpha-journey\",\n    \"name\": \"Alpha Journey\",\n    \"description\": \"The first seeded journey. Its description runs past the one-hundred-and-fifty character boundary that list_journeys truncates on, so the cut is graded\",\n    \"status\": \"active\",\n    \"metadata\": {\n      \"icon\": \"⚡\",\n      \"parent_journey\": \"\"\n    }\n  },\n  {\n    \"id\": \"delta-journey\",\n    \"name\": \"Delta Jornada ✳\",\n    \"description\": \"Descrição com acentuação ✳.\",\n    \"status\": \"active\",\n    \"metadata\": {\n      \"icon\": \"✳\"\n    }\n  }\n]",
       "raises": null
     },
     {
@@ -235,14 +266,14 @@
       "arguments": {
         "slug": "alpha-journey"
       },
-      "payload": "{\n  \"alpha-journey\": {\n    \"identity\": \"# Alpha Journey\\n**Status:** active\\n\\n## Description\\nThe first seeded journey. Its description runs past the one-hundred-and-fifty character boundary that list_journeys truncates on, so the cut is graded rather than assumed by either engine.\",\n    \"journey_path\": null,\n    \"recent_memories\": [\n      {\n        \"id\": \"mem-0001\",\n        \"title\": \"First alpha insight\",\n        \"memory_type\": \"insight\",\n        \"layer\": \"ego\",\n        \"journey\": \"alpha-journey\",\n        \"tags\": \"[\\\"one\\\", \\\"two\\\"]\",\n        \"content\": \"Content of the first alpha insight.\"\n      },\n      {\n        \"id\": \"mem-0002\",\n        \"title\": \"Second alpha insight (timestamp tie)\",\n        \"memory_type\": \"insight\",\n        \"layer\": \"ego\",\n        \"journey\": \"alpha-journey\",\n        \"tags\": null,\n        \"content\": \"Content of the second alpha insight.\"\n      }\n    ],\n    \"recent_conversations\": [\n      {\n        \"id\": \"conv-0001\",\n        \"title\": \"Alpha planning\",\n        \"started_at\": \"2026-01-05T09:00:00Z\",\n        \"ended_at\": \"2026-01-05T09:45:00Z\",\n        \"interface\": \"cli\",\n        \"persona\": \"engineer\",\n        \"journey\": \"alpha-journey\",\n        \"summary\": \"Planned the alpha work.\"\n      },\n      {\n        \"id\": \"conv-0002\",\n        \"title\": null,\n        \"started_at\": \"2026-01-05T09:00:00Z\",\n        \"ended_at\": null,\n        \"interface\": \"pi\",\n        \"persona\": null,\n        \"journey\": \"alpha-journey\",\n        \"summary\": null\n      }\n    ]\n  }\n}",
+      "payload": "{\n  \"alpha-journey\": {\n    \"identity\": \"# Alpha Journey\\n**Status:** active\\n\\n## Description\\nThe first seeded journey. Its description runs past the one-hundred-and-fifty character boundary that list_journeys truncates on, so the cut is graded rather than assumed by either engine.\\n\\n## Scope\\nA trailing section, because the description regex needs a blank line or a following heading to terminate on.\",\n    \"journey_path\": null,\n    \"recent_memories\": [\n      {\n        \"id\": \"mem-0006\",\n        \"title\": \"Newest alpha insight\",\n        \"memory_type\": \"insight\",\n        \"layer\": \"ego\",\n        \"journey\": \"alpha-journey\",\n        \"tags\": \"[\\\"recent\\\"]\",\n        \"content\": \"The most recent alpha memory.\"\n      },\n      {\n        \"id\": \"mem-0001\",\n        \"title\": \"First alpha insight\",\n        \"memory_type\": \"insight\",\n        \"layer\": \"ego\",\n        \"journey\": \"alpha-journey\",\n        \"tags\": \"[\\\"one\\\", \\\"two\\\"]\",\n        \"content\": \"Content of the first alpha insight.\"\n      },\n      {\n        \"id\": \"mem-0002\",\n        \"title\": \"Second alpha insight (timestamp tie)\",\n        \"memory_type\": \"insight\",\n        \"layer\": \"ego\",\n        \"journey\": \"alpha-journey\",\n        \"tags\": null,\n        \"content\": \"Content of the second alpha insight.\"\n      }\n    ],\n    \"recent_conversations\": [\n      {\n        \"id\": \"conv-0004\",\n        \"title\": \"Newest alpha session\",\n        \"started_at\": \"2026-01-08T11:00:00Z\",\n        \"ended_at\": null,\n        \"interface\": \"cli\",\n        \"persona\": \"engineer\",\n        \"journey\": \"alpha-journey\",\n        \"summary\": null\n      },\n      {\n        \"id\": \"conv-0001\",\n        \"title\": \"Alpha planning\",\n        \"started_at\": \"2026-01-05T09:00:00Z\",\n        \"ended_at\": \"2026-01-05T09:45:00Z\",\n        \"interface\": \"cli\",\n        \"persona\": \"engineer\",\n        \"journey\": \"alpha-journey\",\n        \"summary\": \"Planned the alpha work.\"\n      },\n      {\n        \"id\": \"conv-0002\",\n        \"title\": null,\n        \"started_at\": \"2026-01-05T09:00:00Z\",\n        \"ended_at\": null,\n        \"interface\": \"pi\",\n        \"persona\": null,\n        \"journey\": \"alpha-journey\",\n        \"summary\": null\n      }\n    ]\n  }\n}",
       "raises": null
     },
     {
       "name": "journey_status_no_slug_every_journey",
       "tool": "journey_status",
       "arguments": {},
-      "payload": "{\n  \"alpha-journey\": {\n    \"identity\": \"# Alpha Journey\\n**Status:** active\\n\\n## Description\\nThe first seeded journey. Its description runs past the one-hundred-and-fifty character boundary that list_journeys truncates on, so the cut is graded rather than assumed by either engine.\",\n    \"journey_path\": null,\n    \"recent_memories\": [\n      {\n        \"id\": \"mem-0001\",\n        \"title\": \"First alpha insight\",\n        \"memory_type\": \"insight\",\n        \"layer\": \"ego\",\n        \"journey\": \"alpha-journey\",\n        \"tags\": \"[\\\"one\\\", \\\"two\\\"]\",\n        \"content\": \"Content of the first alpha insight.\"\n      },\n      {\n        \"id\": \"mem-0002\",\n        \"title\": \"Second alpha insight (timestamp tie)\",\n        \"memory_type\": \"insight\",\n        \"layer\": \"ego\",\n        \"journey\": \"alpha-journey\",\n        \"tags\": null,\n        \"content\": \"Content of the second alpha insight.\"\n      }\n    ],\n    \"recent_conversations\": [\n      {\n        \"id\": \"conv-0001\",\n        \"title\": \"Alpha planning\",\n        \"started_at\": \"2026-01-05T09:00:00Z\",\n        \"ended_at\": \"2026-01-05T09:45:00Z\",\n        \"interface\": \"cli\",\n        \"persona\": \"engineer\",\n        \"journey\": \"alpha-journey\",\n        \"summary\": \"Planned the alpha work.\"\n      },\n      {\n        \"id\": \"conv-0002\",\n        \"title\": null,\n        \"started_at\": \"2026-01-05T09:00:00Z\",\n        \"ended_at\": null,\n        \"interface\": \"pi\",\n        \"persona\": null,\n        \"journey\": \"alpha-journey\",\n        \"summary\": null\n      }\n    ]\n  },\n  \"beta-journey\": {\n    \"identity\": \"# Beta Journey\\n**Status:** paused\\n\\n## Description\\nA paused journey.\",\n    \"journey_path\": null,\n    \"recent_memories\": [\n      {\n        \"id\": \"mem-0004\",\n        \"title\": \"Beta pattern\",\n        \"memory_type\": \"pattern\",\n        \"layer\": \"self\",\n        \"journey\": \"beta-journey\",\n        \"tags\": \"[]\",\n        \"content\": \"A pattern observed in the beta journey.\"\n      }\n    ],\n    \"recent_conversations\": []\n  },\n  \"delta-journey\": {\n    \"identity\": \"# Delta Jornada ✳\\n**Status:** active\\n\\n## Description\\nDescrição com acentuação.\",\n    \"journey_path\": null,\n    \"recent_memories\": [\n      {\n        \"id\": \"mem-0003\",\n        \"title\": \"Uma decisão importante ✳\",\n        \"memory_type\": \"decision\",\n        \"layer\": \"shadow\",\n        \"journey\": \"delta-journey\",\n        \"tags\": \"[\\\"decisão\\\"]\",\n        \"content\": \"Conteúdo com acentuação e um emoji ✳.\"\n      }\n    ],\n    \"recent_conversations\": [\n      {\n        \"id\": \"conv-0003\",\n        \"title\": \"Delta conversa ✳\",\n        \"started_at\": \"2026-01-06T14:20:00Z\",\n        \"ended_at\": \"2026-01-06T15:00:00Z\",\n        \"interface\": \"cli\",\n        \"persona\": \"therapist\",\n        \"journey\": \"delta-journey\",\n        \"summary\": \"Conversa em português.\"\n      }\n    ]\n  },\n  \"gamma-journey\": {\n    \"identity\": \"# Gamma Journey\\n**Status:** completed\\n\\n## Description\\nA finished journey.\",\n    \"journey_path\": null,\n    \"recent_memories\": [],\n    \"recent_conversations\": []\n  }\n}",
+      "payload": "{\n  \"alpha-journey\": {\n    \"identity\": \"# Alpha Journey\\n**Status:** active\\n\\n## Description\\nThe first seeded journey. Its description runs past the one-hundred-and-fifty character boundary that list_journeys truncates on, so the cut is graded rather than assumed by either engine.\\n\\n## Scope\\nA trailing section, because the description regex needs a blank line or a following heading to terminate on.\",\n    \"journey_path\": null,\n    \"recent_memories\": [\n      {\n        \"id\": \"mem-0006\",\n        \"title\": \"Newest alpha insight\",\n        \"memory_type\": \"insight\",\n        \"layer\": \"ego\",\n        \"journey\": \"alpha-journey\",\n        \"tags\": \"[\\\"recent\\\"]\",\n        \"content\": \"The most recent alpha memory.\"\n      },\n      {\n        \"id\": \"mem-0001\",\n        \"title\": \"First alpha insight\",\n        \"memory_type\": \"insight\",\n        \"layer\": \"ego\",\n        \"journey\": \"alpha-journey\",\n        \"tags\": \"[\\\"one\\\", \\\"two\\\"]\",\n        \"content\": \"Content of the first alpha insight.\"\n      },\n      {\n        \"id\": \"mem-0002\",\n        \"title\": \"Second alpha insight (timestamp tie)\",\n        \"memory_type\": \"insight\",\n        \"layer\": \"ego\",\n        \"journey\": \"alpha-journey\",\n        \"tags\": null,\n        \"content\": \"Content of the second alpha insight.\"\n      }\n    ],\n    \"recent_conversations\": [\n      {\n        \"id\": \"conv-0004\",\n        \"title\": \"Newest alpha session\",\n        \"started_at\": \"2026-01-08T11:00:00Z\",\n        \"ended_at\": null,\n        \"interface\": \"cli\",\n        \"persona\": \"engineer\",\n        \"journey\": \"alpha-journey\",\n        \"summary\": null\n      },\n      {\n        \"id\": \"conv-0001\",\n        \"title\": \"Alpha planning\",\n        \"started_at\": \"2026-01-05T09:00:00Z\",\n        \"ended_at\": \"2026-01-05T09:45:00Z\",\n        \"interface\": \"cli\",\n        \"persona\": \"engineer\",\n        \"journey\": \"alpha-journey\",\n        \"summary\": \"Planned the alpha work.\"\n      },\n      {\n        \"id\": \"conv-0002\",\n        \"title\": null,\n        \"started_at\": \"2026-01-05T09:00:00Z\",\n        \"ended_at\": null,\n        \"interface\": \"pi\",\n        \"persona\": null,\n        \"journey\": \"alpha-journey\",\n        \"summary\": null\n      }\n    ]\n  },\n  \"beta-journey\": {\n    \"identity\": \"# Beta Journey\\n**Status:** paused\\n\\n## Description\\nA paused journey.\\n\\n## Scope\\nEnds here.\",\n    \"journey_path\": null,\n    \"recent_memories\": [\n      {\n        \"id\": \"mem-0004\",\n        \"title\": \"Beta pattern\",\n        \"memory_type\": \"pattern\",\n        \"layer\": \"self\",\n        \"journey\": \"beta-journey\",\n        \"tags\": \"[]\",\n        \"content\": \"A pattern observed in the beta journey.\"\n      }\n    ],\n    \"recent_conversations\": []\n  },\n  \"delta-journey\": {\n    \"identity\": \"# Delta Jornada ✳\\n**Status:** active\\n\\n## Description\\nDescrição com acentuação ✳.\\n\\n## Escopo\\nTermina aqui.\",\n    \"journey_path\": null,\n    \"recent_memories\": [\n      {\n        \"id\": \"mem-0003\",\n        \"title\": \"Uma decisão importante ✳\",\n        \"memory_type\": \"decision\",\n        \"layer\": \"shadow\",\n        \"journey\": \"delta-journey\",\n        \"tags\": \"[\\\"decisão\\\"]\",\n        \"content\": \"Conteúdo com acentuação e um emoji ✳.\"\n      }\n    ],\n    \"recent_conversations\": [\n      {\n        \"id\": \"conv-0003\",\n        \"title\": \"Delta conversa ✳\",\n        \"started_at\": \"2026-01-06T14:20:00Z\",\n        \"ended_at\": \"2026-01-06T15:00:00Z\",\n        \"interface\": \"cli\",\n        \"persona\": \"therapist\",\n        \"journey\": \"delta-journey\",\n        \"summary\": \"Conversa em português.\"\n      }\n    ]\n  },\n  \"gamma-journey\": {\n    \"identity\": \"# Gamma Journey\\n**Status:** completed\\n\\n## Description\\nA finished journey.\\n\\n## Scope\\nEnds here.\",\n    \"journey_path\": null,\n    \"recent_memories\": [],\n    \"recent_conversations\": []\n  }\n}",
       "raises": null
     },
     {
@@ -258,7 +289,7 @@
       "name": "list_conversations_default_limit",
       "tool": "list_conversations",
       "arguments": {},
-      "payload": "[\n  {\n    \"id\": \"conv-0003\",\n    \"title\": \"Delta conversa ✳\",\n    \"started_at\": \"2026-01-06T14:20:00Z\",\n    \"persona\": \"therapist\",\n    \"journey\": \"delta-journey\",\n    \"message_count\": 1\n  },\n  {\n    \"id\": \"conv-0001\",\n    \"title\": \"Alpha planning\",\n    \"started_at\": \"2026-01-05T09:00:00Z\",\n    \"persona\": \"engineer\",\n    \"journey\": \"alpha-journey\",\n    \"message_count\": 3\n  },\n  {\n    \"id\": \"conv-0002\",\n    \"title\": null,\n    \"started_at\": \"2026-01-05T09:00:00Z\",\n    \"persona\": null,\n    \"journey\": \"alpha-journey\",\n    \"message_count\": 0\n  }\n]",
+      "payload": "[\n  {\n    \"id\": \"conv-0004\",\n    \"title\": \"Newest alpha session\",\n    \"started_at\": \"2026-01-08T11:00:00Z\",\n    \"persona\": \"engineer\",\n    \"journey\": \"alpha-journey\",\n    \"message_count\": 0\n  },\n  {\n    \"id\": \"conv-0003\",\n    \"title\": \"Delta conversa ✳\",\n    \"started_at\": \"2026-01-06T14:20:00Z\",\n    \"persona\": \"therapist\",\n    \"journey\": \"delta-journey\",\n    \"message_count\": 1\n  },\n  {\n    \"id\": \"conv-0001\",\n    \"title\": \"Alpha planning\",\n    \"started_at\": \"2026-01-05T09:00:00Z\",\n    \"persona\": \"engineer\",\n    \"journey\": \"alpha-journey\",\n    \"message_count\": 3\n  },\n  {\n    \"id\": \"conv-0002\",\n    \"title\": null,\n    \"started_at\": \"2026-01-05T09:00:00Z\",\n    \"persona\": null,\n    \"journey\": \"alpha-journey\",\n    \"message_count\": 0\n  }\n]",
       "raises": null
     },
     {
@@ -267,7 +298,7 @@
       "arguments": {
         "journey": "alpha-journey"
       },
-      "payload": "[\n  {\n    \"id\": \"conv-0001\",\n    \"title\": \"Alpha planning\",\n    \"started_at\": \"2026-01-05T09:00:00Z\",\n    \"persona\": \"engineer\",\n    \"journey\": \"alpha-journey\",\n    \"message_count\": 3\n  },\n  {\n    \"id\": \"conv-0002\",\n    \"title\": null,\n    \"started_at\": \"2026-01-05T09:00:00Z\",\n    \"persona\": null,\n    \"journey\": \"alpha-journey\",\n    \"message_count\": 0\n  }\n]",
+      "payload": "[\n  {\n    \"id\": \"conv-0004\",\n    \"title\": \"Newest alpha session\",\n    \"started_at\": \"2026-01-08T11:00:00Z\",\n    \"persona\": \"engineer\",\n    \"journey\": \"alpha-journey\",\n    \"message_count\": 0\n  },\n  {\n    \"id\": \"conv-0001\",\n    \"title\": \"Alpha planning\",\n    \"started_at\": \"2026-01-05T09:00:00Z\",\n    \"persona\": \"engineer\",\n    \"journey\": \"alpha-journey\",\n    \"message_count\": 3\n  },\n  {\n    \"id\": \"conv-0002\",\n    \"title\": null,\n    \"started_at\": \"2026-01-05T09:00:00Z\",\n    \"persona\": null,\n    \"journey\": \"alpha-journey\",\n    \"message_count\": 0\n  }\n]",
       "raises": null
     },
     {
@@ -276,7 +307,7 @@
       "arguments": {
         "persona": "engineer"
       },
-      "payload": "[\n  {\n    \"id\": \"conv-0001\",\n    \"title\": \"Alpha planning\",\n    \"started_at\": \"2026-01-05T09:00:00Z\",\n    \"persona\": \"engineer\",\n    \"journey\": \"alpha-journey\",\n    \"message_count\": 3\n  }\n]",
+      "payload": "[\n  {\n    \"id\": \"conv-0004\",\n    \"title\": \"Newest alpha session\",\n    \"started_at\": \"2026-01-08T11:00:00Z\",\n    \"persona\": \"engineer\",\n    \"journey\": \"alpha-journey\",\n    \"message_count\": 0\n  },\n  {\n    \"id\": \"conv-0001\",\n    \"title\": \"Alpha planning\",\n    \"started_at\": \"2026-01-05T09:00:00Z\",\n    \"persona\": \"engineer\",\n    \"journey\": \"alpha-journey\",\n    \"message_count\": 3\n  }\n]",
       "raises": null
     },
     {
@@ -285,7 +316,7 @@
       "arguments": {
         "limit": 1
       },
-      "payload": "[\n  {\n    \"id\": \"conv-0003\",\n    \"title\": \"Delta conversa ✳\",\n    \"started_at\": \"2026-01-06T14:20:00Z\",\n    \"persona\": \"therapist\",\n    \"journey\": \"delta-journey\",\n    \"message_count\": 1\n  }\n]",
+      "payload": "[\n  {\n    \"id\": \"conv-0004\",\n    \"title\": \"Newest alpha session\",\n    \"started_at\": \"2026-01-08T11:00:00Z\",\n    \"persona\": \"engineer\",\n    \"journey\": \"alpha-journey\",\n    \"message_count\": 0\n  }\n]",
       "raises": null
     },
     {
@@ -303,7 +334,7 @@
       "arguments": {
         "conversation_id": "conv-000"
       },
-      "payload": "{\n  \"conversation_id\": \"conv-0003\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Linha em português.\",\n      \"created_at\": \"2026-01-06T14:20:10Z\"\n    }\n  ]\n}",
+      "payload": "{\n  \"conversation_id\": \"conv-0004\",\n  \"messages\": []\n}",
       "raises": null
     },
     {
@@ -373,7 +404,7 @@
       "arguments": {
         "journey": "alpha-journey"
       },
-      "payload": "[\n  {\n    \"id\": \"mem-0001\",\n    \"title\": \"First alpha insight\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": \"[\\\"one\\\", \\\"two\\\"]\",\n    \"content\": \"Content of the first alpha insight.\"\n  },\n  {\n    \"id\": \"mem-0002\",\n    \"title\": \"Second alpha insight (timestamp tie)\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": null,\n    \"content\": \"Content of the second alpha insight.\"\n  }\n]",
+      "payload": "[\n  {\n    \"id\": \"mem-0006\",\n    \"title\": \"Newest alpha insight\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": \"[\\\"recent\\\"]\",\n    \"content\": \"The most recent alpha memory.\"\n  },\n  {\n    \"id\": \"mem-0001\",\n    \"title\": \"First alpha insight\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": \"[\\\"one\\\", \\\"two\\\"]\",\n    \"content\": \"Content of the first alpha insight.\"\n  },\n  {\n    \"id\": \"mem-0002\",\n    \"title\": \"Second alpha insight (timestamp tie)\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": null,\n    \"content\": \"Content of the second alpha insight.\"\n  }\n]",
       "raises": null
     },
     {
@@ -382,7 +413,7 @@
       "arguments": {
         "layer": "ego"
       },
-      "payload": "[\n  {\n    \"id\": \"mem-0005\",\n    \"title\": \"Unassigned reflection\",\n    \"memory_type\": \"reflection\",\n    \"layer\": \"ego\",\n    \"journey\": null,\n    \"tags\": null,\n    \"content\": \"A reflection with no journey and no embedding.\"\n  },\n  {\n    \"id\": \"mem-0001\",\n    \"title\": \"First alpha insight\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": \"[\\\"one\\\", \\\"two\\\"]\",\n    \"content\": \"Content of the first alpha insight.\"\n  },\n  {\n    \"id\": \"mem-0002\",\n    \"title\": \"Second alpha insight (timestamp tie)\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": null,\n    \"content\": \"Content of the second alpha insight.\"\n  }\n]",
+      "payload": "[\n  {\n    \"id\": \"mem-0006\",\n    \"title\": \"Newest alpha insight\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": \"[\\\"recent\\\"]\",\n    \"content\": \"The most recent alpha memory.\"\n  },\n  {\n    \"id\": \"mem-0005\",\n    \"title\": \"Unassigned reflection\",\n    \"memory_type\": \"reflection\",\n    \"layer\": \"ego\",\n    \"journey\": null,\n    \"tags\": null,\n    \"content\": \"A reflection with no journey and no embedding.\"\n  },\n  {\n    \"id\": \"mem-0001\",\n    \"title\": \"First alpha insight\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": \"[\\\"one\\\", \\\"two\\\"]\",\n    \"content\": \"Content of the first alpha insight.\"\n  },\n  {\n    \"id\": \"mem-0002\",\n    \"title\": \"Second alpha insight (timestamp tie)\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": null,\n    \"content\": \"Content of the second alpha insight.\"\n  }\n]",
       "raises": null
     },
     {
@@ -391,7 +422,7 @@
       "arguments": {
         "type": "insight"
       },
-      "payload": "[\n  {\n    \"id\": \"mem-0001\",\n    \"title\": \"First alpha insight\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": \"[\\\"one\\\", \\\"two\\\"]\",\n    \"content\": \"Content of the first alpha insight.\"\n  },\n  {\n    \"id\": \"mem-0002\",\n    \"title\": \"Second alpha insight (timestamp tie)\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": null,\n    \"content\": \"Content of the second alpha insight.\"\n  }\n]",
+      "payload": "[\n  {\n    \"id\": \"mem-0006\",\n    \"title\": \"Newest alpha insight\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": \"[\\\"recent\\\"]\",\n    \"content\": \"The most recent alpha memory.\"\n  },\n  {\n    \"id\": \"mem-0001\",\n    \"title\": \"First alpha insight\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": \"[\\\"one\\\", \\\"two\\\"]\",\n    \"content\": \"Content of the first alpha insight.\"\n  },\n  {\n    \"id\": \"mem-0002\",\n    \"title\": \"Second alpha insight (timestamp tie)\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": null,\n    \"content\": \"Content of the second alpha insight.\"\n  }\n]",
       "raises": null
     },
     {
@@ -401,7 +432,7 @@
         "type": "insight",
         "limit": 1
       },
-      "payload": "[\n  {\n    \"id\": \"mem-0001\",\n    \"title\": \"First alpha insight\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": \"[\\\"one\\\", \\\"two\\\"]\",\n    \"content\": \"Content of the first alpha insight.\"\n  }\n]",
+      "payload": "[\n  {\n    \"id\": \"mem-0006\",\n    \"title\": \"Newest alpha insight\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": \"[\\\"recent\\\"]\",\n    \"content\": \"The most recent alpha memory.\"\n  }\n]",
       "raises": null
     },
     {
@@ -428,7 +459,7 @@
         "query": "alpha insight",
         "limit": 3
       },
-      "payload": "[\n  {\n    \"id\": \"mem-0001\",\n    \"title\": \"First alpha insight\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": \"[\\\"one\\\", \\\"two\\\"]\",\n    \"content\": \"Content of the first alpha insight.\",\n    \"score\": 0.6901771613543344\n  },\n  {\n    \"id\": \"mem-0004\",\n    \"title\": \"Beta pattern\",\n    \"memory_type\": \"pattern\",\n    \"layer\": \"self\",\n    \"journey\": \"beta-journey\",\n    \"tags\": \"[]\",\n    \"content\": \"A pattern observed in the beta journey.\",\n    \"score\": 0.6358124667959787\n  },\n  {\n    \"id\": \"mem-0002\",\n    \"title\": \"Second alpha insight (timestamp tie)\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": null,\n    \"content\": \"Content of the second alpha insight.\",\n    \"score\": 0.5818914243166756\n  }\n]",
+      "payload": "[\n  {\n    \"id\": \"mem-0001\",\n    \"title\": \"First alpha insight\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": \"[\\\"one\\\", \\\"two\\\"]\",\n    \"content\": \"Content of the first alpha insight.\",\n    \"score\": 0.6901771613543344\n  },\n  {\n    \"id\": \"mem-0006\",\n    \"title\": \"Newest alpha insight\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": \"[\\\"recent\\\"]\",\n    \"content\": \"The most recent alpha memory.\",\n    \"score\": 0.6740189264224058\n  },\n  {\n    \"id\": \"mem-0004\",\n    \"title\": \"Beta pattern\",\n    \"memory_type\": \"pattern\",\n    \"layer\": \"self\",\n    \"journey\": \"beta-journey\",\n    \"tags\": \"[]\",\n    \"content\": \"A pattern observed in the beta journey.\",\n    \"score\": 0.6358124667959787\n  }\n]",
       "raises": null
     },
     {
@@ -438,7 +469,7 @@
         "query": "decisão",
         "limit": 3
       },
-      "payload": "[\n  {\n    \"id\": \"mem-0004\",\n    \"title\": \"Beta pattern\",\n    \"memory_type\": \"pattern\",\n    \"layer\": \"self\",\n    \"journey\": \"beta-journey\",\n    \"tags\": \"[]\",\n    \"content\": \"A pattern observed in the beta journey.\",\n    \"score\": 0.6286339516001321\n  },\n  {\n    \"id\": \"mem-0003\",\n    \"title\": \"Uma decisão importante ✳\",\n    \"memory_type\": \"decision\",\n    \"layer\": \"shadow\",\n    \"journey\": \"delta-journey\",\n    \"tags\": \"[\\\"decisão\\\"]\",\n    \"content\": \"Conteúdo com acentuação e um emoji ✳.\",\n    \"score\": 0.6182339676571985\n  },\n  {\n    \"id\": \"mem-0002\",\n    \"title\": \"Second alpha insight (timestamp tie)\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": null,\n    \"content\": \"Content of the second alpha insight.\",\n    \"score\": 0.5476669916098428\n  }\n]",
+      "payload": "[\n  {\n    \"id\": \"mem-0004\",\n    \"title\": \"Beta pattern\",\n    \"memory_type\": \"pattern\",\n    \"layer\": \"self\",\n    \"journey\": \"beta-journey\",\n    \"tags\": \"[]\",\n    \"content\": \"A pattern observed in the beta journey.\",\n    \"score\": 0.6286339516001321\n  },\n  {\n    \"id\": \"mem-0003\",\n    \"title\": \"Uma decisão importante ✳\",\n    \"memory_type\": \"decision\",\n    \"layer\": \"shadow\",\n    \"journey\": \"delta-journey\",\n    \"tags\": \"[\\\"decisão\\\"]\",\n    \"content\": \"Conteúdo com acentuação e um emoji ✳.\",\n    \"score\": 0.6182339676571985\n  },\n  {\n    \"id\": \"mem-0006\",\n    \"title\": \"Newest alpha insight\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": \"[\\\"recent\\\"]\",\n    \"content\": \"The most recent alpha memory.\",\n    \"score\": 0.5618491361544614\n  }\n]",
       "raises": null
     },
     {
@@ -454,7 +485,7 @@
       "arguments": {
         "journey": "alpha-journey"
       },
-      "payload": "=== self/soul ===\n# Soul\nThe seeded soul layer.\n\n=== ego/behavior ===\n# Behavior\nThe seeded behavior layer.\n\n=== user/identity ===\n# User\nThe seeded user identity.\n\n=== ego/identity ===\n# Identity\nThe seeded ego identity.\n\n=== journey/alpha-journey ===\n# Alpha Journey\n**Status:** active\n\n## Description\nThe first seeded journey. Its description runs past the one-hundred-and-fifty character boundary that list_journeys truncates on, so the cut is graded rather than assumed by either engine.",
+      "payload": "=== self/soul ===\n# Soul\nThe seeded soul layer.\n\n=== ego/behavior ===\n# Behavior\nThe seeded behavior layer.\n\n=== user/identity ===\n# User\nThe seeded user identity.\n\n=== ego/identity ===\n# Identity\nThe seeded ego identity.\n\n=== journey/alpha-journey ===\n# Alpha Journey\n**Status:** active\n\n## Description\nThe first seeded journey. Its description runs past the one-hundred-and-fifty character boundary that list_journeys truncates on, so the cut is graded rather than assumed by either engine.\n\n## Scope\nA trailing section, because the description regex needs a blank line or a following heading to terminate on.",
       "raises": null
     },
     {

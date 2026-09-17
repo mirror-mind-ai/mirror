@@ -21,7 +21,7 @@ export interface JourneyListRow {
 }
 
 /** Port of `_extract_status`: the first `**Status:** <word>`, or "unknown". */
-function extractStatus(content: string): string {
+export function extractStatus(content: string): string {
   const match = content.match(/\*\*Status:\*\*\s*(\w+)/);
   return match ? match[1] : "unknown";
 }

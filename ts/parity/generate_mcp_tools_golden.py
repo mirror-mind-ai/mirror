@@ -75,24 +75,25 @@ SEED_JOURNEYS: tuple[dict[str, Any], ...] = (
             "# Alpha Journey\n**Status:** active\n\n## Description\n"
             "The first seeded journey. Its description runs past the one-hundred-and-fifty "
             "character boundary that list_journeys truncates on, so the cut is graded rather "
-            "than assumed by either engine."
+            "than assumed by either engine.\n\n## Scope\nA trailing section, because the "
+            "description regex needs a blank line or a following heading to terminate on."
         ),
         "metadata": '{"icon": "\\u26a1", "parent_journey": ""}',
     },
     {
         "key": "beta-journey",
-        "content": "# Beta Journey\n**Status:** paused\n\n## Description\nA paused journey.",
+        "content": "# Beta Journey\n**Status:** paused\n\n## Description\nA paused journey.\n\n## Scope\nEnds here.",
         "metadata": '{"icon": "\\u25c7"}',
     },
     {
         "key": "gamma-journey",
-        "content": "# Gamma Journey\n**Status:** completed\n\n## Description\nA finished journey.",
+        "content": "# Gamma Journey\n**Status:** completed\n\n## Description\nA finished journey.\n\n## Scope\nEnds here.",
         "metadata": None,
     },
     {
         # Non-ASCII name and description: ensure_ascii=False must let them through.
         "key": "delta-journey",
-        "content": "# Delta Jornada ✳\n**Status:** active\n\n## Description\nDescrição com acentuação.",
+        "content": "# Delta Jornada ✳\n**Status:** active\n\n## Description\nDescrição com acentuação ✳.\n\n## Escopo\nTermina aqui.",
         "metadata": '{"icon": "\\u2733"}',
     },
 )
@@ -144,6 +145,21 @@ SEED_MEMORIES: tuple[dict[str, Any], ...] = (
         "embedding_seed": 4,
     },
     {
+        # Later than the alpha pair above, so DESC and ASC differ: without this
+        # row the sort DIRECTION is ungraded, because alpha's other two memories
+        # share a timestamp and resolve by rowid either way. (Found by mutating
+        # the ORDER BY and watching every test still pass.)
+        "id": "mem-0006",
+        "title": "Newest alpha insight",
+        "content": "The most recent alpha memory.",
+        "memory_type": "insight",
+        "layer": "ego",
+        "journey": "alpha-journey",
+        "tags": '["recent"]',
+        "created_at": "2026-01-07T16:45:00Z",
+        "embedding_seed": 6,
+    },
+    {
         # No journey, no embedding: exercises null fields and the non-embedded path.
         "id": "mem-0005",
         "title": "Unassigned reflection",
@@ -176,6 +192,18 @@ SEED_CONVERSATIONS: tuple[dict[str, Any], ...] = (
         "ended_at": None,
         "interface": "pi",
         "persona": None,
+        "journey": "alpha-journey",
+        "summary": None,
+    },
+    {
+        # Later than the alpha pair, so the per-journey conversation sort
+        # direction is graded too, not just the tie-break.
+        "id": "conv-0004",
+        "title": "Newest alpha session",
+        "started_at": "2026-01-08T11:00:00Z",
+        "ended_at": None,
+        "interface": "cli",
+        "persona": "engineer",
         "journey": "alpha-journey",
         "summary": None,
     },
