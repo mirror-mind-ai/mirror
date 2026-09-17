@@ -103,6 +103,7 @@ jobs:
           uv run python ts/parity/generate_identity_edit_golden.py
           uv run python ts/parity/generate_mcp_protocol_golden.py
           MEMORY_ENV=test uv run python ts/parity/generate_mcp_tools_golden.py
+          uv run python ts/parity/generate_number_rendering_golden.py
           git diff --exit-code ts/test/goldens/
           # Two Builder generators also rewrite their committed fixture trees, so
           # drift there has to fail the gate too -- a golden that agrees with

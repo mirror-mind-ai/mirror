@@ -1,6 +1,8 @@
 {
   "_comment": "MCP tool payload parity golden (CV22.DS9.US2). Generated from the real memory.mcp.tools handlers by ts/parity/generate_mcp_tools_golden.py. The seed below is ORDERED and both engines must insert it in this order: neither Python read has a tie-break beyond its timestamp, so equal timestamps resolve by rowid.",
   "embedding_dim": 8,
+  "frozen_now": "2026-02-01T12:00:00Z",
+  "frozen_now_ms": 1769947200000,
   "seed": {
     "journeys": [
       {
@@ -426,7 +428,7 @@
         "query": "alpha insight",
         "limit": 3
       },
-      "payload": "[\n  {\n    \"id\": \"mem-0001\",\n    \"title\": \"First alpha insight\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": \"[\\\"one\\\", \\\"two\\\"]\",\n    \"content\": \"Content of the first alpha insight.\",\n    \"score\": 0.5924575202971935\n  },\n  {\n    \"id\": \"mem-0004\",\n    \"title\": \"Beta pattern\",\n    \"memory_type\": \"pattern\",\n    \"layer\": \"self\",\n    \"journey\": \"beta-journey\",\n    \"tags\": \"[]\",\n    \"content\": \"A pattern observed in the beta journey.\",\n    \"score\": 0.5365998523678895\n  },\n  {\n    \"id\": \"mem-0002\",\n    \"title\": \"Second alpha insight (timestamp tie)\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": null,\n    \"content\": \"Content of the second alpha insight.\",\n    \"score\": 0.48417178325954385\n  }\n]",
+      "payload": "[\n  {\n    \"id\": \"mem-0001\",\n    \"title\": \"First alpha insight\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": \"[\\\"one\\\", \\\"two\\\"]\",\n    \"content\": \"Content of the first alpha insight.\",\n    \"score\": 0.6901771613543344\n  },\n  {\n    \"id\": \"mem-0004\",\n    \"title\": \"Beta pattern\",\n    \"memory_type\": \"pattern\",\n    \"layer\": \"self\",\n    \"journey\": \"beta-journey\",\n    \"tags\": \"[]\",\n    \"content\": \"A pattern observed in the beta journey.\",\n    \"score\": 0.6358124667959787\n  },\n  {\n    \"id\": \"mem-0002\",\n    \"title\": \"Second alpha insight (timestamp tie)\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": null,\n    \"content\": \"Content of the second alpha insight.\",\n    \"score\": 0.5818914243166756\n  }\n]",
       "raises": null
     },
     {
@@ -436,7 +438,7 @@
         "query": "decisão",
         "limit": 3
       },
-      "payload": "[\n  {\n    \"id\": \"mem-0004\",\n    \"title\": \"Beta pattern\",\n    \"memory_type\": \"pattern\",\n    \"layer\": \"self\",\n    \"journey\": \"beta-journey\",\n    \"tags\": \"[]\",\n    \"content\": \"A pattern observed in the beta journey.\",\n    \"score\": 0.5294213371717944\n  },\n  {\n    \"id\": \"mem-0003\",\n    \"title\": \"Uma decisão importante ✳\",\n    \"memory_type\": \"decision\",\n    \"layer\": \"shadow\",\n    \"journey\": \"delta-journey\",\n    \"tags\": \"[\\\"decisão\\\"]\",\n    \"content\": \"Conteúdo com acentuação e um emoji ✳.\",\n    \"score\": 0.5197114073350613\n  },\n  {\n    \"id\": \"mem-0002\",\n    \"title\": \"Second alpha insight (timestamp tie)\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": null,\n    \"content\": \"Content of the second alpha insight.\",\n    \"score\": 0.44994735055249513\n  }\n]",
+      "payload": "[\n  {\n    \"id\": \"mem-0004\",\n    \"title\": \"Beta pattern\",\n    \"memory_type\": \"pattern\",\n    \"layer\": \"self\",\n    \"journey\": \"beta-journey\",\n    \"tags\": \"[]\",\n    \"content\": \"A pattern observed in the beta journey.\",\n    \"score\": 0.6286339516001321\n  },\n  {\n    \"id\": \"mem-0003\",\n    \"title\": \"Uma decisão importante ✳\",\n    \"memory_type\": \"decision\",\n    \"layer\": \"shadow\",\n    \"journey\": \"delta-journey\",\n    \"tags\": \"[\\\"decisão\\\"]\",\n    \"content\": \"Conteúdo com acentuação e um emoji ✳.\",\n    \"score\": 0.6182339676571985\n  },\n  {\n    \"id\": \"mem-0002\",\n    \"title\": \"Second alpha insight (timestamp tie)\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": null,\n    \"content\": \"Content of the second alpha insight.\",\n    \"score\": 0.5476669916098428\n  }\n]",
       "raises": null
     },
     {

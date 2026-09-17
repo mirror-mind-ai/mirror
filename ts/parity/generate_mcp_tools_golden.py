@@ -32,6 +32,7 @@ import json
 import sqlite3
 import struct
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -49,6 +50,20 @@ EMBEDDING_DIM = 8
 # identity rows carry NOT NULL created_at/updated_at with no default; fixing them
 # to a literal keeps the fixture reproducible on both engines.
 SEED_NOW = "2026-01-01T00:00:00Z"
+
+# The hybrid ranker's recency and reinforcement terms read `datetime.now()`, so
+# `search_memories`' scores drift between runs -- measured at the seventh decimal,
+# enough to make the determinism gate fail on an unchanged port. The DS2 search
+# golden froze the clock for exactly this reason; the same fix applies here, and
+# the frozen value travels in the golden so the TypeScript side ranks against it.
+FROZEN_NOW = datetime(2026, 2, 1, 12, 0, 0, tzinfo=timezone.utc)
+
+
+class _FrozenDateTime(datetime):
+    @classmethod
+    def now(cls, tz=None):  # type: ignore[override]
+        return FROZEN_NOW if tz else FROZEN_NOW.replace(tzinfo=None)
+
 
 # --- the ordered seed -------------------------------------------------------
 # Order is contract (see module docstring). Timestamp ties are deliberate.
@@ -504,6 +519,11 @@ def main() -> None:
         def replay(text: str, **kwargs: Any) -> Any:
             return np.array(query_embedding(text), dtype=np.float32)
 
+        import memory.intelligence.search as ranking_module
+
+        original_datetime = ranking_module.datetime
+        ranking_module.datetime = _FrozenDateTime  # type: ignore[assignment]
+
         originals = []
         for module in (
             embeddings_module,
@@ -517,6 +537,7 @@ def main() -> None:
         try:
             cases = _run_cases(client)
         finally:
+            ranking_module.datetime = original_datetime  # type: ignore[assignment]
             for module, original in originals:
                 module.generate_embedding = original  # type: ignore[assignment]
 
@@ -528,6 +549,8 @@ def main() -> None:
             "read has a tie-break beyond its timestamp, so equal timestamps resolve by rowid."
         ),
         "embedding_dim": EMBEDDING_DIM,
+        "frozen_now": FROZEN_NOW.isoformat().replace("+00:00", "Z"),
+        "frozen_now_ms": int(FROZEN_NOW.timestamp() * 1000),
         "seed": {
             "journeys": list(SEED_JOURNEYS),
             "personas": list(SEED_PERSONAS),
