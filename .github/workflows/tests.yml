@@ -101,6 +101,7 @@ jobs:
           uv run python ts/parity/generate_ext_catalog_writes_golden.py
           uv run python ts/parity/generate_lifecycle_write_golden.py
           uv run python ts/parity/generate_identity_edit_golden.py
+          uv run python ts/parity/generate_mcp_protocol_golden.py
           git diff --exit-code ts/test/goldens/
           # Two Builder generators also rewrite their committed fixture trees, so
           # drift there has to fail the gate too -- a golden that agrees with
@@ -108,6 +109,10 @@ jobs:
           git diff --exit-code ts/test/fixtures/builder-roadmap/
           git diff --exit-code ts/test/fixtures/builder-refinement/
           git diff --exit-code ts/test/fixtures/builder-command/
+          # The MCP generator also writes the stdin transcript its framing
+          # oracle was recorded from; a transcript that drifts from the golden
+          # it produced would silently re-point the parity claim.
+          git diff --exit-code ts/test/fixtures/mcp-framing.jsonl
           # TS4's catalog golden lives beside its fixture tree rather than under
           # ts/test/goldens/, so it needs its own diff: the gate above would not
           # see it.

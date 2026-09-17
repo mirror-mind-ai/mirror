@@ -242,6 +242,16 @@ ORACLE_PATHS: tuple[str, ...] = (
     "src/memory/builder/surface_protocol.py",
     "src/memory/builder/template_generation.py",
     "src/memory/builder/workbench.py",
+    # DS9.US1: the MCP protocol surface. `server.py` owns the JSON-RPC dispatch
+    # and the stdio framing loop; `tools.py` owns the seven tool declarations,
+    # whose names, descriptions, and inputSchema bytes are the client contract
+    # -- including the deliberate ABSENCE of `annotations`, since a truthful
+    # `readOnlyHint` would let clients skip the per-call permission prompt that
+    # is the only human gate on a read oracle over private memory (DS9 threat
+    # model). Both are low-churn (two commits since 2026-06-23), so the tripwire
+    # is cheap here and a change to either is worth a human reading it.
+    "src/memory/mcp/server.py",
+    "src/memory/mcp/tools.py",
 )
 
 BASELINE_RELPATH = "ts/parity/oracle-baseline.json"

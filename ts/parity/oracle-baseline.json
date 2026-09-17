@@ -65,6 +65,8 @@
     "src/memory/intelligence/reception.py": "1cf1ec18795b064c9166b94f75105f366caed3cb",
     "src/memory/intelligence/search.py": "593596a67d89275a35fb4afedb4aeef802ddc493",
     "src/memory/intelligence/shadow.py": "343180b8fe21ccd080cb9f0bc45d6fccdae26588",
+    "src/memory/mcp/server.py": "45c62b0632ea9952a97bf80e36c7f605fdc502a9",
+    "src/memory/mcp/tools.py": "65e6f6eef370c819e7232add6b9bcbaf800dc8c1",
     "src/memory/models.py": "6f282df413cc085e8447f6a40c77dbc4aeb9f39e",
     "src/memory/prompts/soul_beauty_voice.md": "1b74493371696474aa0d02f84a1b9034e6fd1f59",
     "src/memory/prompts/soul_self_voice.md": "83d49b661f8b8556cb02453c31032a1b441f37ee",
