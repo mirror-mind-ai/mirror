@@ -27,6 +27,18 @@ export interface FreshSearchFilters {
 export interface FreshSearchOptions extends FreshSearchFilters {
   query: string;
   limit?: number;
+  /**
+   * Reinforce retrieval for the returned memories. Default `true`, mirroring
+   * Python's `log_access: bool = True`.
+   *
+   * `access_count` feeds `reinforcement_score` and the hybrid ranker, so a
+   * caller that searches on the system's behalf rather than the user's must opt
+   * out -- otherwise the ranker learns from its own exhaust (AI-12). Python's
+   * non-genuine callers pass `log_access=False`: the curation pass, the MCP
+   * agent search, and `memories --search`. Builder context load keeps the
+   * default and still reinforces, because that one is a genuine load.
+   */
+  logAccess?: boolean;
   frozenNowMs?: number;
   now?: string;
   provider: EmbeddingProvider;
@@ -133,9 +145,11 @@ export async function searchMemoriesWithStatus(
   // Reinforce only on genuine context loads. This mirrors Python's log_access
   // param (AI-12) firing regardless of degraded status -- the two concerns are
   // orthogonal and intentionally not coupled; do not make this conditional.
-  const accessNow = options.now ?? nowIso();
-  for (const result of ranked) {
-    logAccess(db, result.id, accessNow, options.query.slice(0, 200));
+  if (options.logAccess ?? true) {
+    const accessNow = options.now ?? nowIso();
+    for (const result of ranked) {
+      logAccess(db, result.id, accessNow, options.query.slice(0, 200));
+    }
   }
   return { results: ranked, degraded, degradedKind };
 }

@@ -10,10 +10,17 @@ the DS2/DS5/DS7 capabilities the tools wrap
 
 ---
 
+> **Parity scope (Navigator decision, 2026-09-17 — plan D10).** Payloads are byte-identical
+> **except** the score field of the two ranked `search_memories` query cases, which is graded
+> to 1e-6. Python's `np.dot` accumulates in float32 and JavaScript has no float32 arithmetic,
+> so identical vectors diverge at the ~8th significant digit (measured: 3.6e-08). Order and
+> every other field stay exact. Any later claim that this surface is byte-identical to
+> Python — including DS10's deletion rationale — carries this exception.
+
 ## Outcome
 
 Every `tools/call` the Python MCP server answers is answered by TypeScript with a
-byte-identical payload: the seven handlers in `src/memory/mcp/tools.py` are ported over the
+byte-identical payload (within the scope above): the seven handlers in `src/memory/mcp/tools.py` are ported over the
 TS capabilities that already exist, graded on a golden generated from the real Python
 handlers against a seeded fixture database, with the two embedding-crossing tools under the
 replay transport. Nothing is routed — `main.ts` stays unreferenced until TS2.

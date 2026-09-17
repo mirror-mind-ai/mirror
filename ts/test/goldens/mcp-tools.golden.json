@@ -1,6 +1,6 @@
 {
   "_comment": "MCP tool payload parity golden (CV22.DS9.US2). Generated from the real memory.mcp.tools handlers by ts/parity/generate_mcp_tools_golden.py. The seed below is ORDERED and both engines must insert it in this order: neither Python read has a tie-break beyond its timestamp, so equal timestamps resolve by rowid.",
-  "embedding_dim": 8,
+  "embedding_dim": 1536,
   "frozen_now": "2026-02-01T12:00:00Z",
   "frozen_now_ms": 1769947200000,
   "seed": {
@@ -70,17 +70,7 @@
         "journey": "alpha-journey",
         "tags": "[\"one\", \"two\"]",
         "created_at": "2026-01-01T10:00:00Z",
-        "embedding_seed": 1,
-        "embedding": [
-          0.7,
-          1.0,
-          0.2,
-          0.5,
-          0.8,
-          0.0,
-          0.3,
-          0.6
-        ]
+        "embedding_seed": 1
       },
       {
         "id": "mem-0002",
@@ -91,17 +81,7 @@
         "journey": "alpha-journey",
         "tags": null,
         "created_at": "2026-01-01T10:00:00Z",
-        "embedding_seed": 2,
-        "embedding": [
-          0.3,
-          0.6,
-          0.9,
-          0.1,
-          0.4,
-          0.7,
-          1.0,
-          0.2
-        ]
+        "embedding_seed": 2
       },
       {
         "id": "mem-0003",
@@ -112,17 +92,7 @@
         "journey": "delta-journey",
         "tags": "[\"decisão\"]",
         "created_at": "2026-01-02T11:30:00Z",
-        "embedding_seed": 3,
-        "embedding": [
-          1.0,
-          0.2,
-          0.5,
-          0.8,
-          0.0,
-          0.3,
-          0.6,
-          0.9
-        ]
+        "embedding_seed": 3
       },
       {
         "id": "mem-0004",
@@ -133,17 +103,7 @@
         "journey": "beta-journey",
         "tags": "[]",
         "created_at": "2026-01-03T09:15:00Z",
-        "embedding_seed": 4,
-        "embedding": [
-          0.6,
-          0.9,
-          0.1,
-          0.4,
-          0.7,
-          1.0,
-          0.2,
-          0.5
-        ]
+        "embedding_seed": 4
       },
       {
         "id": "mem-0006",
@@ -154,17 +114,7 @@
         "journey": "alpha-journey",
         "tags": "[\"recent\"]",
         "created_at": "2026-01-07T16:45:00Z",
-        "embedding_seed": 6,
-        "embedding": [
-          0.9,
-          0.1,
-          0.4,
-          0.7,
-          1.0,
-          0.2,
-          0.5,
-          0.8
-        ]
+        "embedding_seed": 6
       },
       {
         "id": "mem-0005",
@@ -175,8 +125,7 @@
         "journey": null,
         "tags": null,
         "created_at": "2026-01-04T08:00:00Z",
-        "embedding_seed": null,
-        "embedding": null
+        "embedding_seed": null
       }
     ],
     "conversations": [
@@ -459,7 +408,7 @@
         "query": "alpha insight",
         "limit": 3
       },
-      "payload": "[\n  {\n    \"id\": \"mem-0001\",\n    \"title\": \"First alpha insight\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": \"[\\\"one\\\", \\\"two\\\"]\",\n    \"content\": \"Content of the first alpha insight.\",\n    \"score\": 0.6901771613543344\n  },\n  {\n    \"id\": \"mem-0006\",\n    \"title\": \"Newest alpha insight\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": \"[\\\"recent\\\"]\",\n    \"content\": \"The most recent alpha memory.\",\n    \"score\": 0.6740189264224058\n  },\n  {\n    \"id\": \"mem-0004\",\n    \"title\": \"Beta pattern\",\n    \"memory_type\": \"pattern\",\n    \"layer\": \"self\",\n    \"journey\": \"beta-journey\",\n    \"tags\": \"[]\",\n    \"content\": \"A pattern observed in the beta journey.\",\n    \"score\": 0.6358124667959787\n  }\n]",
+      "payload": "[\n  {\n    \"id\": \"mem-0001\",\n    \"title\": \"First alpha insight\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": \"[\\\"one\\\", \\\"two\\\"]\",\n    \"content\": \"Content of the first alpha insight.\",\n    \"score\": 0.6966136881296945\n  },\n  {\n    \"id\": \"mem-0006\",\n    \"title\": \"Newest alpha insight\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": \"[\\\"recent\\\"]\",\n    \"content\": \"The most recent alpha memory.\",\n    \"score\": 0.6740071545050627\n  },\n  {\n    \"id\": \"mem-0004\",\n    \"title\": \"Beta pattern\",\n    \"memory_type\": \"pattern\",\n    \"layer\": \"self\",\n    \"journey\": \"beta-journey\",\n    \"tags\": \"[]\",\n    \"content\": \"A pattern observed in the beta journey.\",\n    \"score\": 0.6057520860987283\n  }\n]",
       "raises": null
     },
     {
@@ -469,7 +418,7 @@
         "query": "decisão",
         "limit": 3
       },
-      "payload": "[\n  {\n    \"id\": \"mem-0004\",\n    \"title\": \"Beta pattern\",\n    \"memory_type\": \"pattern\",\n    \"layer\": \"self\",\n    \"journey\": \"beta-journey\",\n    \"tags\": \"[]\",\n    \"content\": \"A pattern observed in the beta journey.\",\n    \"score\": 0.6286339516001321\n  },\n  {\n    \"id\": \"mem-0003\",\n    \"title\": \"Uma decisão importante ✳\",\n    \"memory_type\": \"decision\",\n    \"layer\": \"shadow\",\n    \"journey\": \"delta-journey\",\n    \"tags\": \"[\\\"decisão\\\"]\",\n    \"content\": \"Conteúdo com acentuação e um emoji ✳.\",\n    \"score\": 0.6182339676571985\n  },\n  {\n    \"id\": \"mem-0006\",\n    \"title\": \"Newest alpha insight\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": \"[\\\"recent\\\"]\",\n    \"content\": \"The most recent alpha memory.\",\n    \"score\": 0.5618491361544614\n  }\n]",
+      "payload": "[\n  {\n    \"id\": \"mem-0003\",\n    \"title\": \"Uma decisão importante ✳\",\n    \"memory_type\": \"decision\",\n    \"layer\": \"shadow\",\n    \"journey\": \"delta-journey\",\n    \"tags\": \"[\\\"decisão\\\"]\",\n    \"content\": \"Conteúdo com acentuação e um emoji ✳.\",\n    \"score\": 0.6687596925450464\n  },\n  {\n    \"id\": \"mem-0004\",\n    \"title\": \"Beta pattern\",\n    \"memory_type\": \"pattern\",\n    \"layer\": \"self\",\n    \"journey\": \"beta-journey\",\n    \"tags\": \"[]\",\n    \"content\": \"A pattern observed in the beta journey.\",\n    \"score\": 0.5914407724695779\n  },\n  {\n    \"id\": \"mem-0006\",\n    \"title\": \"Newest alpha insight\",\n    \"memory_type\": \"insight\",\n    \"layer\": \"ego\",\n    \"journey\": \"alpha-journey\",\n    \"tags\": \"[\\\"recent\\\"]\",\n    \"content\": \"The most recent alpha memory.\",\n    \"score\": 0.566724766294766\n  }\n]",
       "raises": null
     },
     {

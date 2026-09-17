@@ -127,7 +127,19 @@ generator asserts that (an installed extension would make the oracle machine-dep
 **D5 — `limit` is reproduced exactly, including `limit=0` on `recall_conversation` returning
 the whole transcript.** The golden records it; TS1 caps it; the gap stays visible.
 
-**D6 — Reinforcement is asserted per tool, Python against TypeScript, on two copies.** The
+**D6 — CORRECTED AT IMPLEMENTATION (2026-09-17): neither tool reinforces.** The plan
+assumed `mirror_context` reinforced, reading AI-12's note that "Builder context load keeps
+the default and still reinforces" as covering it. Measured against the Python oracle on a
+seeded fixture, that is wrong: the *Builder* load runs a memory search, whereas
+`load_mirror_context` assembles identity layers and searches **attachments**, which have no
+reinforcement path at all. Python writes zero `memory_access_log` rows for both tools, and
+the port matches. The asymmetry the plan was protecting is real but lives elsewhere
+(`search_memories` opts out explicitly; the Builder load does not), so the tests assert
+zero rows for both tools plus one test proving the opt-out is load-bearing — the same query
+through the default path *must* write rows, or "writes nothing" would also pass if search
+were broken. Original text follows.
+
+**D6 (as planned) — Reinforcement is asserted per tool, Python against TypeScript, on two copies.** The
 first draft compared `mirror_context` to "what the CLI's `mirror load` writes" — and the
 CLI's load *is* `loadMirrorContext`, so that test would have compared TS to itself. The
 quality-assurance lens caught the tautology. The honest oracle is Python: take two copies
@@ -144,6 +156,33 @@ the float rule. Shipping them as two modules is the duplication the engineer len
 `wire.ts` is folded into `payload.ts` as `pythonJson(value, { indent })`, `encodeJsonLine`
 remains as a one-line alias so US1's tests and call sites do not move, and the float rule
 applies to both (the envelope carries no floats, so it is harmless there and consistent).
+
+**D10 — The ranked query path is graded on order and fields exactly, score to 1e-6.**
+*Navigator decision, 2026-09-17.* Python's `np.dot` over float32 arrays accumulates **in
+float32**; JavaScript has no float32 arithmetic and widens to double. Identical vectors
+therefore yield scores that agree to ~7 significant digits and then diverge — measured at
+3.6e-08 on the fixture. Options weighed: reproduce numpy's pairwise float32 summation in JS
+(reverse-engineering an implementation detail numpy may change), round the payload (a
+deliberate divergence that *hides* rather than records), or scope the claim. The Navigator
+chose to scope it.
+
+So for the two `search_memories` query cases — and only those — result count, order, and
+every non-score field are compared byte for byte, and the score must fall within 1e-6.
+Everything else in this story, filter paths included, stays byte-identical. Mutation-proven:
+reversing the ranking, shifting a score by 0.01, and dropping the AI-12 opt-out each fail.
+
+**Where this exception must travel:** the US2 and DS9 indexes, and any later statement that
+the MCP surface is byte-identical to Python — including DS10's deletion rationale. Ordering
+is the contract a model can act on; an 8th-significant-digit difference in a relevance hint
+is not.
+
+**D11 — Fixture vectors are 1536-dimensional, derived from a seed on both engines.** The
+first fixture used 8 dimensions, which Python accepts and TypeScript rejects:
+`generateEmbeddingSafely` enforces `EMBEDDING_DIMENSIONS = 1536` and degrades the search to
+lexical-only on a mismatch. Every TS score was therefore missing its semantic term while the
+test reported parity of a *degraded* search against a full one. Vectors are now production
+width and computed from `embedding_seed` by a formula both sides implement, so the golden
+stays 29 KB instead of carrying a megabyte of floats.
 
 **D9 — The fixture is one ordered seed read by both engines, carried in the golden.** Neither
 Python query has a tie-break beyond `created_at DESC` / `started_at DESC`, so equal

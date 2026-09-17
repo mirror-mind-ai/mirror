@@ -222,3 +222,20 @@ export function recallMessages(
       created_at: optionalString(row, "created_at"),
     }));
 }
+
+/**
+ * Full rows for an explicit id list, as `search_memories`' query path needs
+ * after ranking returns ids and scores. Order is the caller's, not the
+ * database's: the ranking decided it.
+ */
+export function memoriesByIds(db: Database, ids: readonly string[]): MemoryDto[] {
+  if (ids.length === 0) return [];
+  const placeholders = ids.map(() => "?").join(", ");
+  return db
+    .prepare(
+      `SELECT id, title, memory_type, layer, journey, tags, content FROM memories ` +
+        `WHERE id IN (${placeholders})`,
+    )
+    .all(...ids)
+    .map((row: Row) => memoryDto(row));
+}

@@ -45,7 +45,14 @@ HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parent.parent
 OUT_PATH = HERE.parent / "test" / "goldens" / "mcp-tools.golden.json"
 
-EMBEDDING_DIM = 8
+# Production embeddings are 1536-dimensional, and the TypeScript provider
+# validates that (`generateEmbeddingSafely` throws on a mismatch, degrading the
+# search to lexical-only) while Python does not. An 8-dimension fixture
+# therefore "passed" on the Python side and silently dropped the semantic term
+# on the TypeScript side -- the fixture was testing the asymmetry, not the port.
+# Vectors are computed from a seed on both engines rather than stored, so the
+# golden stays small.
+EMBEDDING_DIM = 1536
 
 # identity rows carry NOT NULL created_at/updated_at with no default; fixing them
 # to a literal keeps the fixture reproducible on both engines.
@@ -583,17 +590,10 @@ def main() -> None:
             "journeys": list(SEED_JOURNEYS),
             "personas": list(SEED_PERSONAS),
             "identity": list(SEED_IDENTITY),
-            "memories": [
-                {
-                    **memory,
-                    "embedding": (
-                        deterministic_embedding(memory["embedding_seed"])
-                        if memory["embedding_seed"] is not None
-                        else None
-                    ),
-                }
-                for memory in SEED_MEMORIES
-            ],
+            # The vector is derived from `embedding_seed` by the formula both
+            # engines implement, not carried here: 1536 floats x 6 rows would be
+            # a megabyte of golden that no reader can check.
+            "memories": list(SEED_MEMORIES),
             "conversations": list(SEED_CONVERSATIONS),
             "messages": list(SEED_MESSAGES),
         },
