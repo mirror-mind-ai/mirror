@@ -2090,6 +2090,74 @@ This does not license divergence generally. Parity remains the rule; a superset 
 acceptable only when the oracle's behavior is an error, no caller can depend on it, and
 the difference is recorded and asserted.
 
+### The web console is retired, not ported, and DS7 closes at 14/14
+
+**Date:** 2026-09-17 · **Context:** CV22.DS7.US9 (Workspace and web hierarchy
+parity) was pulled as the last DS7 story, planned in full, and reviewed by the
+persona panel. Reading that plan, the Navigator asked what would actually change
+for the user after it shipped. The answer was: nothing — `python -m memory web`
+would keep serving the product unchanged, because the process cutover is DS10's.
+
+**The decision: the Python web console is retired rather than ported. CV22 will
+not reimplement it in TypeScript. US9 closes unported, DS7's non-command rider is
+lifted, and DS7 closes at 14/14.**
+
+Reasons:
+
+1. **The surface is barely used.** The rider was already sequenced last for this
+   reason — zero `web` conversations in the preceding thirty days. Porting a
+   surface nobody opens is the most expensive way to reach zero.
+2. **A better replacement is already a journey.** `mirror-gui` exists to build
+   graphical surfaces over Mirror's memory, identity, journeys, and modes. A
+   desktop client makes the browser console largely redundant; porting the web
+   console first would spend CV22's budget on the surface being superseded.
+3. **US9's value was contract transfer, not user benefit.** Its own acceptance
+   criteria required *no user-visible change*. What it bought was an owner for
+   the hierarchy contract before Python deletion. Retirement buys the same
+   safety more cheaply: a deleted surface needs no owner.
+4. **The precedent already exists in this Delivery Story.** `migrate-legacy` and
+   `memory-rehearse-migration` were retired with a documented cutoff on
+   2026-09-07 rather than ported, and the SQLite Refinement Workbench followed on
+   2026-09-09. `web` is the same shape of decision, one surface larger.
+
+**What survives US9's closure.** The hierarchy *semantics* were never web-only
+and are already TS-owned and done: `listJourneyOptions()` (numeric depth,
+complete lineage, bounded malformed cycles), `resolveParentJourney()` (CR050
+metadata authority), `validateParentJourney()`, and `createJourney()` /
+`setParentJourney()` (CR052). Only the Workspace-specific projection —
+`journeyMap`, `locationPath`, `nearbyJourneys`, `scene` — and the browser
+compatibility evidence are dropped. US9's authored `index.md` and `plan.md` stay
+in the repository as the record of what was decided against, including the cost
+read from code and the five-lens review.
+
+**One invariant is re-homed, not deleted.** US9's selected-journey isolation
+contract — a focused surface shows only records whose journey *is* the selected
+journey, ancestors contributing lineage but no conversations, memories, tasks,
+attachments, metrics, or synthesis scope — is a product rule about hierarchy, not
+about HTML. It is handed to `mirror-gui`, which will render a tree and would
+otherwise rediscover it by leaking.
+
+**What DS10 inherits.** DS10's Workspace/web *convergence* gate becomes a
+*retirement* gate: no TS web process, no endpoint inventory, no static-asset
+packaging. It deletes `src/memory/web/`, the `web` entry in `__main__.py`, the
+web unit tests, and the user-facing documentation in `README.md`, `REFERENCE.md`,
+and `docs/getting-started.md`, after a documented cutoff in the release note.
+The command denominator is unchanged — `web` was already out of it, owned by
+DS10.
+
+**Risk accepted, and named.** `mirror-gui` is at stage *Starting*: its first
+slice is not defined and its done condition is explicitly deferred. So the
+replacement does not exist yet, and between DS10's deletion and the desktop
+client's first usable release there may be **no graphical surface at all**. That
+is acceptable because the console is already effectively unused, and because the
+data remains fully reachable through the CLI and the runtimes. It would stop
+being acceptable if the console became load-bearing again before DS10 executes.
+
+**Revisit trigger.** A real need for a browser-reachable Mirror surface before
+`mirror-gui` ships — for example remote or multi-device access, which a desktop
+app does not cover — or a DS10 finding that something outside `src/memory/web/`
+depends on the console. Either reopens the question *before* deletion, not after.
+
 ## Open Discussions
 
 ### Migration rehearsal — long-term status

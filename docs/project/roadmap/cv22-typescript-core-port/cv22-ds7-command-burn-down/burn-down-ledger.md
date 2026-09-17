@@ -50,7 +50,8 @@ smoke; they became true of daily sessions on 2026-09-08.
 
 **Denominator.** The 35 top-level `python -m memory <command>` entries, minus
 the six explicitly owned by later Delivery Stories: `mcp` (DS9), `web`
-(DS10), `eval` (DS10 — the harness transfers to `ts/evals/` as a retirement
+(DS10 — since 2026-09-17 retired with a cutoff rather than ported, together with
+its DS7.US9 hierarchy rider), `eval` (DS10 — the harness transfers to `ts/evals/` as a retirement
 gate; DS8.TS1 decided ownership, DS8 never ported it), `runtime` (DS10 — its git-based
 update/release half is redesigned under npm, not ported; TS1 ports the read
 subcommands as branch coverage), `migrate-legacy` (DS10 — retired with a
@@ -251,7 +252,7 @@ by DS8.US2/US3 for the remaining fifteen leaves.
 
 ### Out of the denominator (owned elsewhere, unported by decision)
 
-`mcp` (DS9); `web` (DS10); `eval` (DS10 — DS8.TS1 decided the harness transfers to `ts/evals/` as a deletion gate rather than being ported at parity or retired); `runtime update|pull|stable|backup|release-doctor|release-promote` (DS10, redesigned under npm); `migrate-legacy` and `memory-rehearse-migration` (DS10, retired with cutoff); `journey-projection` (DS10, TS5).
+`mcp` (DS9); **`web` (DS10 — retired with cutoff, not ported; Navigator decision 2026-09-17, which also retired the DS7.US9 hierarchy rider unported)**; `eval` (DS10 — DS8.TS1 decided the harness transfers to `ts/evals/` as a deletion gate rather than being ported at parity or retired); `runtime update|pull|stable|backup|release-doctor|release-promote` (DS10, redesigned under npm); `migrate-legacy` and `memory-rehearse-migration` (DS10, retired with cutoff); `journey-projection` (DS10, TS5).
 
 ---
 

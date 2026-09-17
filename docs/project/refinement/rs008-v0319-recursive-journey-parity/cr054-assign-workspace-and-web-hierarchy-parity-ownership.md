@@ -184,6 +184,14 @@ planning remains deferred until pull.
 
 ## Outcome
 
+> **Superseded 2026-09-17 (recorded, not rewritten).** CR054 assigned the Workspace/web
+> hierarchy to CV22.DS7.US9 and the process convergence to CV22.DS10. US9 was later pulled,
+> planned, panel-reviewed, and **retired unported**: the Navigator decided to retire the web
+> console rather than port it, so DS10's convergence gate became a deletion gate and the
+> ownership this CR assigned no longer has a subject. The CR's finding stands — the surface
+> did need an explicit disposition before Python deletion — and it got one: retirement. See
+> [Decisions](../../decisions.md#the-web-console-is-retired-not-ported-and-ds7-closes-at-1414).
+
 Accepted by the Navigator and completed as an ownership-only roadmap change.
 Implementation commit `98d8131` passed Docs CI run `32056389258`; the canonical
 Workbench records CR054 as `done`. No Workspace/web code port, Python retirement, or

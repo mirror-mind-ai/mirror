@@ -142,16 +142,25 @@ and green CI on every push.
 ## Remaining Sequence
 
 ```text
-CR072 — route the nine bypassing skills through the front door
-→ DS7.US11 — content & planning LLM tail (journal, week plan|save,
+✓ CR072 — route the nine bypassing skills through the front door
+✓ DS7.US11 — content & planning LLM tail (journal, week plan|save,
               descriptor generate, ES-001 lifecycle faces)
-→ DS8 — live-provider cutover: seventeen leaves reach production
-→ DS7.US8 — Builder/Ariad tree (27 leaves; SQLite Workbench retired in DS10)
-→ DS7.TS4 — extension catalog + identity edit
-→ DS9 — TS MCP server
-→ DS7.US9 — Workspace/web hierarchy rider, adjacent to DS10's web cutover
-→ DS10 — TS5 projection cutover as its first act, then retirement and npm
+✓ DS8 — live-provider cutover: sixteen leaves reach production
+✓ DS7.US8 — Builder/Ariad tree (27 leaves; SQLite Workbench retired in DS10)
+✓ DS7.TS4 — extension catalog + identity edit   → DS7 done 14/14
+⛔ DS7.US9 — Workspace/web hierarchy rider: RETIRED UNPORTED 2026-09-17
+→ DS9 — TS MCP server                            ← current
+→ DS10 — TS5 projection cutover as its first act, then retirement (now
+         including the web console itself) and npm
 ```
+
+US9 was the last DS7 story and the only non-command rider. It was pulled, planned, and
+panel-reviewed on 2026-09-17, then declined at its approval gate: the port's own acceptance
+required no user-visible change, the console is barely used, and `mirror-gui` supersedes it.
+The web console is retired rather than ported and DS10 deletes it — see
+[Decisions](../../decisions.md#the-web-console-is-retired-not-ported-and-ds7-closes-at-1414).
+This is the panel process working as intended in the opposite direction from usual: a
+complete, reviewed plan made the true cost of the port legible enough to decline it.
 
 Re-sequenced 2026-09-09 — see
 [Decisions — CV22 makes the ported work real before porting more](../../decisions.md#cv22-makes-the-ported-work-real-before-porting-more).

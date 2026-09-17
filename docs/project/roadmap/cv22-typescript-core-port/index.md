@@ -2,7 +2,7 @@
 
 # CV22 — TypeScript Core Port (Database-Seam Strangler)
 
-**Status:** 🟢 Active — restarted 2026-09-02 after pause-window reconciliation; **DS8 live-provider cutover done 2026-09-13 (5/5)**; DS7 command burn-down at 13/15 — **US8 Builder/Ariad tree flipped 2026-09-16** — next TS4 (extension catalog + `identity edit`), then DS9 and US9. No Delivery Story creates a release boundary — CV22 [releases once, when the migration is complete](../../decisions.md#cv22-releases-once-when-the-migration-is-complete)
+**Status:** 🟢 Active — restarted 2026-09-02 after pause-window reconciliation; **DS8 live-provider cutover done 2026-09-13 (5/5)**; **DS7 command burn-down done 2026-09-17 (14/14)** — US8 flipped 2026-09-16, TS4 flipped 2026-09-16, and **US9 was retired unported on 2026-09-17** when the Navigator decided to [retire the web console rather than port it](../../decisions.md#the-web-console-is-retired-not-ported-and-ds7-closes-at-1414), lifting DS7's non-command rider. Next: **DS9** (TS MCP server), then DS10. No Delivery Story creates a release boundary — CV22 [releases once, when the migration is complete](../../decisions.md#cv22-releases-once-when-the-migration-is-complete)
 **Goal:** Port Mirror Mind's Python core (`src/memory/`) to TypeScript through a database-seam strangler — never a big-bang rewrite — so the system converges on one language across core and runtimes, distributes through npm, widens the contributor pool, and aligns with the MCP/plugin ecosystem, all without losing the accumulated correctness of the ranker, extraction, and memory pipeline.
 
 ---
@@ -87,9 +87,12 @@ the write commands (DS4), and behavior at larger scale (the ranker is a full sca
   as `command + args → stdout`. Progress is a visible burn-down:
   *commands-on-TS / total*.
 - **Workspace/web retirement rule.** The web process, endpoints, and static assets do not
-  enter the command denominator. DS7.US9 owns hierarchy parity; DS10 owns final process
-  and package convergence. Zero commands cannot authorize Python deletion while that
-  released surface still depends on Python.
+  enter the command denominator. The rule was that zero commands cannot authorize Python
+  deletion while that released surface still depends on Python — originally satisfied by
+  transfer (DS7.US9 hierarchy parity + DS10 process convergence). Since **2026-09-17** it is
+  satisfied by **deletion instead**: US9 is retired unported and DS10 removes the web
+  console behind a documented cutoff. The rule itself is unchanged — no released surface may
+  reach Python deletion without an explicit disposition; retirement is now the disposition.
 - **Front door — Pi.** The first TS surface wraps Python for unported entry points
   and routes transferred commands to TS, dogfooded daily in the runtime both authors
   use. Routing records authority; it does not imply that every Python surface froze
@@ -111,9 +114,11 @@ adds complete-ancestry validation and an atomic, meaning-preserving TS parent-mo
 core seam without claiming Workspace/web routing. CR053 adds a transactional TS domain
 seam that removes only an empty leaf after metadata-authoritative child detection and a
 closed association inventory (now twelve categories after absorbing main's
-`identity_integrations`). CR054 assigns the Workspace hierarchy
+`identity_integrations`). CR054 assigned the Workspace hierarchy
 projection, deterministic web adapters, selected-scope evidence, and JavaScript
-compatibility to CV22.DS7.US9; CV22.DS10 owns final web-process and package convergence.
+compatibility to CV22.DS7.US9, with CV22.DS10 owning final web-process and package
+convergence — superseded on 2026-09-17, when the console was retired rather than ported and
+DS10's convergence gate became a deletion gate.
 This sequence demonstrates the moving-target rule:
 released Python behavior becomes named TS parity work instead of silently freezing or
 drifting.
@@ -140,10 +145,10 @@ CR054 proved that zero commands alone cannot safely authorize Python deletion.
 | [CV22.DS4](cv22-ds4-deterministic-writes/index.md) | Deterministic Writes | Port write commands (journey/identity CRUD, `log_access`) with parity proven on DB copies; backup-gated; schema-compatible; CLI-write routing on the TS front door (identity + journey) | ✅ Done |
 | [CV22.DS5](cv22-ds5-external-api-commands/index.md) | External-API Commands | Port extraction, embeddings/search, and consult behind replay-safe provider boundaries; route validated external command surfaces through the TS front door while preserving Python fallback for unsafe/unconfigured paths | ✅ Done |
 | [CV22.DS6](cv22-ds6-schema-custody-transfer/index.md) | Schema Custody Transfer | Move all database creation, migration, and discipline from Python to TS — bootstrap DDL (rewritten in English per CV0), migration engine and `_migrations` bookkeeping, cross-process bootstrap locking, connection pragma discipline — proven over real legacy databases; plus the two schema decisions gated on custody (`identity.metadata` canonicalization, `parent_journey` first-class column) | ✅ Done — all children complete (TS1–TS5, US1–US3); TS owns bootstrap/migration/locking/pragmas, proven over real legacy copies including migration-016's real ADD-COLUMN + backfill; the deletion gate is cleared |
-| [CV22.DS7](cv22-ds7-command-burn-down/index.md) | Command Burn-Down & Re-homed Feature Work | Port the remaining command surface to TS — the Builder/Ariad tree (re-homed CV20/CV21 in-flight work), Soul, Explorer, mirror-mode orchestration, remaining identity/journey reads and writes, and the extraction lifecycle — until the deterministic Python command surface is empty; complete the non-command Workspace/web hierarchy retirement rider | 🟢 In Progress — US1–US5, US10, US6, US7, US11, TS1, TS2, TS3, US8 done (**13/15**); US9, TS4 remain (TS5 reassigned to DS10 and US11 created on 2026-09-09; denominator unchanged). Re-sequenced 2026-09-09: CR072 → US11 → **DS8** → US8 → TS4 → DS9 → US9 → DS10 — see [Decisions](../../decisions.md#cv22-makes-the-ported-work-real-before-porting-more). DS10 owns deletion of TS2's finite compatibility host, the two gates US7 added, TS5, and the retired SQLite Workbench verbs |
+| [CV22.DS7](cv22-ds7-command-burn-down/index.md) | Command Burn-Down & Re-homed Feature Work | Port the remaining command surface to TS — the Builder/Ariad tree (re-homed CV20/CV21 in-flight work), Soul, Explorer, mirror-mode orchestration, remaining identity/journey reads and writes, and the extraction lifecycle — until the deterministic Python command surface is empty; give the non-command Workspace/web hierarchy an explicit disposition | ✅ **Done — 2026-09-17 (14/14).** US1–US5, US10, US6, US7, US11, TS1, TS2, TS3, US8, TS4 done; the deterministic Python command surface is empty. **US9 retired unported 2026-09-17** — the web console is retired rather than ported, lifting the non-command rider and moving the story denominator 15 → 14 ([Decisions](../../decisions.md#the-web-console-is-retired-not-ported-and-ds7-closes-at-1414)). Re-sequenced 2026-09-09: CR072 → US11 → **DS8** → US8 → TS4 → DS9 — see [Decisions](../../decisions.md#cv22-makes-the-ported-work-real-before-porting-more). DS10 owns deletion of TS2's finite compatibility host, the two gates US7 added, TS5, the retired SQLite Workbench verbs, and now the web console itself |
 | [CV22.DS8](cv22-ds8-live-provider-cutover/index.md) | Live-Provider Cutover | Implement the `live` mode of the TS `LlmTransport` (chat + embeddings) with per-role timeouts, bounded retries, error taxonomy, and metadata-only logging (AI-18); route real external calls through TS; validated by live smoke contracts, not golden parity; multi-persona Plan review before implementation | ✅ **Done — 2026-09-13 (5/5)**. All sixteen replay-gated leaves answer from TypeScript against real providers on an unconfigured install, each with a single-variable revert: US1 `memories --search` (vector-space parity `cos=1.000000`), US2 the conversation close tail including the unattended session-end hook, US3 eight long-tail leaves with `MIRROR_TS_EXTERNAL_ROUTES` retired, TS2 the cultivation prompts (the leaves US3 refused by name), TS1 the `eval` ownership decision (harness transfers to DS10 as a deletion gate; D-017 registered). Release intent `none` — the boundary is the migration's end, not this story |
 | CV22.DS9 | TS MCP Server | Threat model first (RS005: localhost binding, per-tool permission scoping, tightest gate on identity-mutating tools; AI-19: per-tool rate/budget guards against denial-of-wallet), then port `python -m memory mcp` to TS | 🟡 Planned |
-| [CV22.DS10](cv22-ds10-python-retirement-npm-distribution/index.md) | Python Retirement & npm Distribution | After zero commands, converge the complete Python web process/endpoint inventory and packaged assets; only then may deletion, rename, and npm distribution be planned under separate gates | 🟡 Planned — CR054 web convergence gate authored; DS10 not pulled |
+| [CV22.DS10](cv22-ds10-python-retirement-npm-distribution/index.md) | Python Retirement & npm Distribution | After zero commands, **delete** the Python web process, endpoints, and static assets behind a documented cutoff (2026-09-17); only then may the remaining deletion, rename, and npm distribution be planned under separate gates | 🟡 Planned — the CR054 convergence gate became a **retirement** gate on 2026-09-17; DS10 not pulled |
 
 ---
 
@@ -308,9 +313,11 @@ Risk-first, mirroring the decision spine:
    dissolved; **TS5** moved to DS10, because its publisher can only land in
    the act that retires Python's; and **DS8 was pulled ahead of US8**, because
    thirteen ported leaves — the product's LLM core — sit behind an opt-in gate
-   and answer from Python in production. US9 is the separately visible
-   non-command Workspace/web hierarchy rider required before DS7 can finish,
-   sequenced late next to DS10's web cutover.
+   and answer from Python in production. US9 was the separately visible
+   non-command Workspace/web hierarchy rider required before DS7 could finish,
+   sequenced late next to DS10's web cutover — and **retired unported on 2026-09-17**,
+   closing DS7 at **14/14**: the console is barely used, `mirror-gui` supersedes it, and
+   the port's own acceptance required no user-visible change.
 8. **DS8 — live-provider cutover** (done 2026-09-13; was next after US11): implement the `live`
    mode of the TS `LlmTransport` (AI-18) so real external calls leave Python;
    validated by live smoke contracts, not golden parity, and run through the
@@ -322,9 +329,11 @@ Risk-first, mirroring the decision spine:
 9. **DS9 — TS MCP server**: threat model first (RS005 scoping rider, AI-19
    denial-of-wallet rider), then port `python -m memory mcp` to TS.
 10. **DS10 — Python retirement & npm distribution**: after the command, provider, and
-    MCP prerequisites, replace the complete Python web process and account for every
-    endpoint/static asset. Deletion, rename, npm planning, and publication remain
-    separate later gates. The MCP threat-model rider remains a DS9 plan input.
+    MCP prerequisites, **delete** the Python web process, its endpoints, and its static
+    assets behind a documented cutoff (2026-09-17 decision) rather than replacing them;
+    `mirror-gui` owns any future graphical surface. Deletion, rename, npm planning, and
+    publication remain separate later gates. The MCP threat-model rider remains a DS9 plan
+    input.
 
 Part-time, no deadline — a background burn. The transition state (TS front door
 over a still-evolving Python product at explicitly unported boundaries) is durable and

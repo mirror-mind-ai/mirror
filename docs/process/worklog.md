@@ -12,6 +12,48 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-17 — CV22.DS7 closed at 14/14: the web console is retired instead of ported
+
+**The command burn-down is finished, and its last story shipped nothing.** US9 —
+the Workspace/web hierarchy rider, the only non-command story in DS7 — was pulled,
+planned in full, reviewed by the five-lens persona panel, and then **declined at its
+approval gate**. The Navigator's question is what closed it: *what changes for the user
+after this ships?* Nothing. The plan's own acceptance criteria required **no user-visible
+change**, because the web process cutover was always DS10's; US9 would have delivered TS
+producers, adapters, and evidence that no production path called. Weighed against a console
+with zero conversations in thirty days and the `mirror-gui` journey already chartered to
+build a desktop client, the port stopped being worth its cost. **The web console is retired
+rather than ported.** DS7's non-command rider is lifted, the story denominator moves 15 →
+14, and DS7 is done at **14/14** with the deterministic Python command surface empty.
+
+What the declined plan still bought: its terrain section is the only line-referenced map of
+the Python hierarchy producers in the repository, and it surfaced facts no one had written
+down — `_scene_model()` is a *second* hierarchy algorithm that never calls
+`list_journey_options()`; the same service carries two divergent `**Status:**` regexes
+(`\w+` for cards, `[^\n]+` for selectors), so `**Status:** in progress` renders as `in` in
+one surface and `in progress` in the other; `_scene_source_hash()` depends on Python's
+`json.dumps` separators, so a naive TS port would have marked every stored orientation
+stale; and `_journey_horizon()` re-reads each journey identity that the caller already held
+(an N+1 per Workspace render). Both files were also absent from the oracle-drift tripwire.
+None of it is lost: `index.md` and `plan.md` stay in the repository as the record of a
+decision not taken, and DS10 reads them to delete confidently rather than to reimplement.
+
+DS10's Workspace/web **convergence** gate became a **retirement** gate: no TS web process,
+no endpoint inventory, no packaged static assets — instead a documented cutoff, a
+repository-wide check that nothing outside `src/memory/web/` depends on the console,
+deletion of the package, its `__main__.py` entry and tests, and the README/REFERENCE/
+getting-started updates in the same change. The hierarchy *semantics* were never web-only
+and survive untouched in TS (`listJourneyOptions`, `resolveParentJourney`,
+`validateParentJourney`, `createJourney` / `setParentJourney`). One product rule was
+re-homed rather than dropped: US9's **selected-journey isolation contract** — ancestors
+contribute lineage, never conversations, memories, tasks, attachments, metrics, or
+synthesis scope — is handed to `mirror-gui`, which will render a tree and would otherwise
+rediscover it by leaking. Risk accepted and named: `mirror-gui` is at stage *Starting*, so
+between DS10's deletion and the desktop client's first release there may be no graphical
+surface at all. Revisit trigger: a real need for browser-reachable or multi-device access
+before `mirror-gui` ships. **Next: DS9, the TS MCP server.** See
+[Decisions](../project/decisions.md#the-web-console-is-retired-not-ported-and-ds7-closes-at-1414).
+
 ### 2026-09-16 — CV22.DS7.US8 Builder/Ariad tree completed
 
 **The `build` family — 27 in-scope leaves — answers from TypeScript by default**, `MIRROR_TS_BUILD=0` reverting it in one move, and the story closed **through the route it validates**: after the flip, this story's own `plan-item`, `approve-plan`, `validate-item`, `review-item`, `coherence-item`, and `done-item` ran on the real cursor through the TS front door, with Python reading every cursor state identically. The twenty SQLite Workbench leaves stay on Python by explicit refusal until DS10 retires them; `explore story promote`, whose tail is a Builder session start, had already moved with plateau 7. **DS7 progress 12/15 → 13/15.**

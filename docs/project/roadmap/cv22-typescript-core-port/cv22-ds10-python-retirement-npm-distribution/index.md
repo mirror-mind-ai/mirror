@@ -4,8 +4,9 @@
 
 **Status:** 🟡 Planned
 **Type:** Delivery Story — convergence gate only; not yet pulled
-**Depends on:** CV22.DS7 command burn-down and Workspace/web hierarchy rider; CV22.DS8
-live-provider cutover; CV22.DS9 TS MCP server
+**Depends on:** CV22.DS7 command burn-down (done 2026-09-17, 14/14 — its Workspace/web
+hierarchy rider was retired unported); CV22.DS8 live-provider cutover (done); CV22.DS9 TS
+MCP server
 
 ---
 
@@ -13,27 +14,43 @@ live-provider cutover; CV22.DS9 TS MCP server
 
 Python deletion cannot begin merely because the CLI command denominator reaches zero.
 The Python-owned web process, its endpoint inventory, and its static assets must first
-have explicit TypeScript runtime/package ownership. DS10 owns that final process and
-packaging convergence; it consumes the hierarchy semantics assigned to CV22.DS7.US9.
+carry an explicit disposition. **Since 2026-09-17 that disposition is retirement, not
+convergence:** the web console is deleted rather than reimplemented in TypeScript — see
+[Decisions — The web console is retired, not ported](../../../decisions.md#the-web-console-is-retired-not-ported-and-ds7-closes-at-1414).
+DS10 therefore owns the removal, not a port; `mirror-gui` owns any future graphical surface.
 
-## Workspace And Web Convergence Gate
+## Workspace And Web Retirement Gate
 
-Python core deletion is blocked until all of the following are true:
+This gate replaced the convergence gate on 2026-09-17. Python core deletion is blocked
+until all of the following are true:
 
-1. [CV22.DS7.US9](../cv22-ds7-command-burn-down/cv22-ds7-us9-workspace-web-hierarchy-parity/index.md)
-   is done and its hierarchy owner matrix is fully evidenced.
-2. Every route in `src/memory/web/server.py` appears in a complete endpoint inventory
-   with one TS implementation owner and a parity or approved-retirement disposition.
-3. A TS-owned web process serves every retained endpoint and the required static assets
-   without spawning or importing Python.
-4. The recursive Workspace/browser contract passes US9's JSON, selected-scope,
-   malformed-tree, adapter, JavaScript, and browser evidence.
-5. Startup, shutdown, configuration, database-open, and error-reporting behavior have
-   operational smoke coverage for the replacement process.
-6. Static assets are included and verified in the future package artifact rather than
-   loaded through an undeclared repository checkout.
-7. A repository and packaged-artifact check proves no web path falls back to
-   `python -m memory web` or another Python subprocess.
+1. A documented cutoff is published in the release note for the version that removes the
+   console, stating that `python -m memory web` no longer exists and naming `mirror-gui`
+   as the successor surface.
+2. A repository-wide check proves nothing outside `src/memory/web/` depends on the console:
+   no runtime, skill, extension, hook, or script invokes `python -m memory web`, and no
+   non-web module imports `memory.web.*`. Anything found is reported to the Navigator as a
+   possible revisit trigger before deletion, never silently ported.
+3. `src/memory/web/` (server, operations, configuration, preferences, mirrors, docs,
+   command executor, agent prototype, and `static/`) is deleted, together with the `web`
+   entry in `src/memory/__main__.py` and `tests/unit/memory/web/`.
+4. User-facing documentation stops advertising the console: `README.md`, `REFERENCE.md`
+   (the `python -m memory web` row), and `docs/getting-started.md` (the Web console
+   section) are updated in the same change that deletes it.
+5. Web-only preferences state under `<mirror-home>/web/` has a recorded disposition —
+   left in place as inert, or removed with the cutoff — decided explicitly rather than
+   orphaned.
+6. No TS replacement is built: there is no TS web server, no ported endpoint inventory,
+   and no packaged static assets in the npm artifact. Adding one is a `mirror-gui` decision
+   and a new story, not DS10 scope creep.
+
+**Inherited from the retired CV22.DS7.US9.** Its
+[story package](../cv22-ds7-command-burn-down/cv22-ds7-us9-workspace-web-hierarchy-parity/index.md)
+remains the most accurate description of the released `v0.31.9` hierarchy contract and the
+only line-referenced map of the Python producers. DS10 reads it to delete confidently — to
+know what is being removed — not to reimplement it. The hierarchy *semantics* survive
+independently in TS (`listJourneyOptions`, `resolveParentJourney`, `validateParentJourney`,
+`createJourney` / `setParentJourney`) and are not affected by this deletion.
 
 ## Extension Compatibility-Host Deletion Gate
 
@@ -255,19 +272,27 @@ denominator (29) and served by Python fallback until DS10 acts on them:
 
 ## Ownership Boundary
 
-- DS7.US9 owns recursive hierarchy DTOs, deterministic hierarchy adapters, and browser
-  compatibility evidence.
-- DS10 owns final web-process cutover, the complete endpoint inventory, static-asset
-  packaging, and the Python deletion gate.
+- DS7.US9 *would have* owned recursive hierarchy DTOs, deterministic hierarchy adapters, and
+  browser compatibility evidence. It was retired unported on 2026-09-17; nothing inherits
+  that ownership, because the surface is deleted rather than transferred.
+- DS10 owns the web console's **removal** — process, endpoints, static assets, tests, and
+  user documentation — and the Python deletion gate. It does not own a TS web process,
+  because there is not going to be one.
+- `mirror-gui` owns any future graphical surface over Mirror. DS10 must not pre-empt that
+  journey's design by leaving a half-ported web server behind.
 - DS10 must not redefine metadata parent authority, recursive ordering, cycle bounds,
-  movement validation, conservative removal, or selected-journey isolation.
+  movement validation, conservative removal, or selected-journey isolation. Those semantics
+  live in TS independently of the console and survive its deletion; the selected-journey
+  isolation contract is re-homed to `mirror-gui`.
 
 ## Done Condition
 
-- DS7.US9 and every other prerequisite selected when DS10 is pulled are done.
-- Every Python web route has explicit TS ownership or approved retirement evidence.
-- The TS process and packaged static assets pass the complete web convergence gate.
-- No web execution path depends on Python.
+- Every prerequisite selected when DS10 is pulled is done. (DS7.US9 is not among them: it
+  was retired unported on 2026-09-17.)
+- The web console passes the retirement gate above: cutoff documented, no external
+  dependency found, `src/memory/web/` and its `__main__.py` entry and tests deleted, user
+  documentation updated, and web-only preferences state given an explicit disposition.
+- No web execution path depends on Python — satisfied by deletion, not by replacement.
 - The DS7.TS2 legacy extension context host and every core-owned launcher for it are removed.
 - The `runtime` update/release path has a TS-owned npm-era replacement with operational
   smoke coverage; `migrate-legacy`, `memory-rehearse-migration`, the SQLite Refinement

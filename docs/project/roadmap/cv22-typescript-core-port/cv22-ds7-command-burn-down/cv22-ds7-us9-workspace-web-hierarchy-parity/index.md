@@ -2,16 +2,49 @@
 
 # CV22.DS7.US9 — Workspace And Web Hierarchy Parity
 
-**Status:** 🟡 Planned
-**Type:** User Story — non-command retirement rider
-**Owner:** CV22.DS7 for hierarchy projection, deterministic adapters, and parity evidence
+**Status:** ⛔ Retired unported — 2026-09-17, by Navigator decision
+**Type:** User Story — non-command retirement rider (never implemented)
+**Owner:** none; the surface it would have ported is deleted in CV22.DS10
 **Depends on:** CV22.DS7.US1 / RS008 CR051 for the ordered recursive `JourneyOption`
 projection; RS008 CR052 for validated parent creation and movement; RS008 CR050 for
 metadata-authoritative parent semantics
 
 ---
 
-## Outcome
+## Why This Story Was Retired
+
+This story was pulled, planned in full, and reviewed by the five-lens persona panel on
+2026-09-17. Reading the plan, the Navigator asked what a user would see after it shipped.
+Nothing: the plan's own acceptance criteria required *no user-visible change*, because the
+web process cutover belongs to DS10. Weighed against a barely-used surface and the
+`mirror-gui` journey already chartered to build a desktop client, the port stopped being
+worth its cost.
+
+**The web console is retired rather than ported** — see
+[Decisions — The web console is retired, not ported](../../../../decisions.md#the-web-console-is-retired-not-ported-and-ds7-closes-at-1414).
+DS7's non-command rider requirement is lifted and DS7 closes at 14/14. DS10 deletes
+`src/memory/web/`, its `__main__.py` entry, its tests, and its user documentation behind a
+documented cutoff, instead of converging it onto TypeScript.
+
+**What survives.** The hierarchy semantics were never web-only and are already TS-owned:
+`listJourneyOptions()` (depth, complete lineage, bounded cycles), `resolveParentJourney()`,
+`validateParentJourney()`, `createJourney()` / `setParentJourney()`. Only the
+Workspace-specific projection (`journeyMap`, `locationPath`, `nearbyJourneys`, `scene`) and
+the browser compatibility evidence are dropped.
+
+**What is re-homed.** The Selected-Journey Isolation Contract below is a product rule about
+hierarchy, not about HTML. It is handed to the `mirror-gui` journey, which will render a
+journey tree and would otherwise rediscover the rule by leaking ancestor content.
+
+**What this document is now.** A record of a decision not taken, kept deliberately. The
+contract and owner matrix below remain the most accurate description of the released
+`v0.31.9` Workspace hierarchy that exists anywhere in the repository; `plan.md` records what
+porting it would have cost, read from code, with the panel review that hardened it. If the
+revisit trigger in the decision ever fires, restart from these two files.
+
+---
+
+## Outcome (as originally specified — not delivered)
 
 The released `v0.31.9` Workspace and browser hierarchy contract has one explicit TS
 implementation owner and one reviewable evidence package. Workspace JSON, hierarchy-
