@@ -66,6 +66,15 @@ export async function runMemorySearchRoute(
     layer: optionValue(args, "--layer"),
     journey: optionValue(args, "--journey"),
     provider,
+    // An exploratory CLI search is not a genuine context load, so it must not
+    // reinforce: `access_count` feeds `reinforcement_score` and the hybrid
+    // ranker, and a ranker fed by its own exhaust drifts toward whatever was
+    // searched for rather than whatever was used (AI-12). Python's
+    // `cli/memories.py` has passed `log_access=False` since 2026-07-16; this
+    // port did not, and reinforced on every `memories --search` from the flip
+    // until CV22.DS9.US2 measured it. Builder context load deliberately keeps
+    // the default and still reinforces -- that one IS a genuine load.
+    logAccess: false,
   });
   // A degraded live search is the one failure an operator has to diagnose
   // without a re-run, so the taxonomy class reaches the front-door log rather

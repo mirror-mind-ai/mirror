@@ -238,6 +238,35 @@ plateau-4 replay test instead.
 
 ---
 
+## Scope Amendment — the `memories --search` reinforcement defect (2026-09-17)
+
+Adding `logAccess` to `FreshSearchOptions` for the MCP tool exposed that the option was
+missing for a **live production route**. Python's `cli/memories.py` has passed
+`log_access=False` since AI-12 (2026-07-16); `frontDoor/searchRoute.ts` had no equivalent
+and reinforced on every `memories --search`, so the ranker was being fed by its own exhaust
+on the exact command AI-12 named.
+
+Fixed here, by Navigator decision, in its own commit with its own mutation-proven test —
+parity restoration rather than new behavior, and cheaper than letting it accumulate through
+a CR cycle. Measured on both engines against the same seeded fixture: zero access rows.
+
+**The data is not repaired.** Measured read-only on the production database: 520
+`memory_access_log` rows since the flip, touching 53 of 950 memories — an upper bound, since
+Builder loads legitimately write to the same table and the rows carry no attribution.
+Reinforcement is weighted 0.1 and its recency term decays; a deletion with no reliable
+attribution rule would do more harm than the drift it corrects. Recorded, accepted.
+
+**Root cause, which outlives the fix.** `intelligence/search.py` *is* a tracked oracle. AI-12
+changed it, the drift tripwire fired, and the baseline was advanced on 2026-07-23 inside a
+commit about routing `tasks` — the flag never ported. That is the failure the devops lens
+predicted in the US9 review: a tripwire that fires on unrelated work trains reflexive
+re-baselining. Captured as a CR against RS010 (CV22 Oracle And Port Hygiene) (see the refinement index): a baseline advance
+must name the oracle change it absorbs and, in the same commit, either port it or open a CR.
+
+Siblings checked: Python has four `log_access=False` callers; TypeScript has two
+reinforcement writers, and the extraction curation path does not search memories in TS at
+all. One defect, one route.
+
 ## Non-Goals
 
 - Validation, caps, guards (TS1). Manifest, launcher, flip (TS2).

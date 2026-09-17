@@ -107,9 +107,14 @@ test("front door runs memories --search through TS replay route and keeps logs m
   assert.doesNotMatch(result.stdout, /Degraded/); // proves this ran normal, not degraded, search
   const dbAfter = openDatabaseCopyForWrite(dbPath);
   try {
+    // Zero, not one. This assertion used to expect a row, pinning a divergence
+    // from the oracle: Python's cli/memories.py passes log_access=False (AI-12)
+    // because an exploratory search is not a genuine context load, and
+    // access_count feeds the hybrid ranker. The TS route reinforced anyway, and
+    // this test locked that in. Corrected with the route in CV22.DS9.US2.
     assert.equal(
       dbAfter.prepare("SELECT COUNT(*) AS count FROM memory_access_log").get()?.count,
-      1,
+      0,
     );
   } finally {
     dbAfter.close();

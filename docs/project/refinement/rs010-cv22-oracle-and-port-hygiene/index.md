@@ -54,3 +54,4 @@ evidence stays honest as both cores move.
 - [CR081 — Typecheck the parity tools](cr081-typecheck-the-parity-tools.md)
 - [CR083 — Path-normalization assumptions in the ported tree are untested, and one shipped wrong for two plateaus](cr083-path-normalization-assumptions-are-untested-in-the-port.md)
 - [CR084 — The bootstrap lock is not exclusive during the window between creating it and writing it](cr084-the-bootstrap-lock-is-not-exclusive-while-it-is-being-written.md)
+- [CR086 — A baseline advance must name the oracle change it absorbs](cr086-baseline-advance-must-name-the-oracle-change.md)

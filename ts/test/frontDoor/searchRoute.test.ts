@@ -1,12 +1,16 @@
 import assert from "node:assert/strict";
+import { mkdirSync, mkdtempSync } from "node:fs";
 import { rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
+import { openDatabaseCopyForWrite } from "#db/database.ts";
+import { createSchema } from "#db/schema.ts";
 import {
   formatSearchResults,
   resolveSearchEmbeddingProvider,
+  runMemorySearchRoute,
   type SearchMemoryRow,
 } from "#frontDoor/searchRoute.ts";
 import { LiveEmbeddingProvider, ReplayEmbeddingProvider } from "#providers/embedding.ts";
@@ -101,4 +105,46 @@ test("the live provider is built even with no API key, so the route can degrade"
   } as NodeJS.ProcessEnv);
 
   assert.ok(provider instanceof LiveEmbeddingProvider);
+});
+
+test("memories --search does not reinforce retrieval (AI-12 parity)", async () => {
+  // Python's cli/memories.py passes log_access=False; this port did not, and
+  // reinforced on every exploratory search from the DS5 flip (2026-07-16) until
+  // CV22.DS9.US2 measured it against the oracle. access_count feeds
+  // reinforcement_score and the hybrid ranker, so the ranker was learning from
+  // its own exhaust — the exact defect AI-12 fixed in Python.
+  const dir = mkdtempSync(join(tmpdir(), "mirror-core-search-reinforce-"));
+  const tmp = join(dir, "tmp");
+  mkdirSync(tmp);
+  const db = openDatabaseCopyForWrite(join(tmp, "copy.db"));
+  try {
+    createSchema(db);
+    db.prepare(
+      "INSERT INTO memories (id, title, content, memory_type, layer, created_at, embedding) " +
+        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+    ).run(
+      "m-reinforce",
+      "Nomad freedom",
+      "digital nomad freedom content",
+      "insight",
+      "ego",
+      "2026-01-01T00:00:00Z",
+      Buffer.from(new Float32Array(Array.from({ length: 1536 }, (_, i) => (i % 7) / 10)).buffer),
+    );
+
+    const accessRows = () =>
+      Number(db.prepare("SELECT COUNT(*) AS n FROM memory_access_log").get()?.n ?? -1);
+    const before = accessRows();
+
+    await runMemorySearchRoute(db, ["--search", "nomad", "--limit", "5"]);
+
+    assert.equal(accessRows(), before, "memories --search reinforced retrieval");
+    const stamped = Number(
+      db.prepare("SELECT COUNT(*) AS n FROM memories WHERE last_accessed_at IS NOT NULL").get()
+        ?.n ?? -1,
+    );
+    assert.equal(stamped, 0, "memories --search stamped last_accessed_at");
+  } finally {
+    db.close();
+  }
 });

@@ -111,7 +111,7 @@ Both Python-side, both outside US1's scope — US1 edited no file under `src/mem
 2. Python's `serve()` still has no framing test of its own; US1's harness records its
    behavior only at golden-generation time.
 
-**Revisit:** capture both as CRs against RS007 at the next Refinement pass. (1) is re-raised
+**Revisit:** capture both as CRs against RS010 (CV22 Oracle And Port Hygiene) at the next Refinement pass. (1) is re-raised
 by TS2 if the manifest flip shows a real client a misleading startup failure; (2) dies with
 DS10's deletion of `src/memory/mcp/`.
 

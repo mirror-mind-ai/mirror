@@ -150,3 +150,25 @@ touched by this story.
 **Next plateau.** Run the Navigator route; if step 3 (`cos >= 0.99`) fails,
 stop — the vectors are not in the corpus's space and the flip must be reverted
 with `MIRROR_TS_SEARCH=0` rather than debugged in production.
+
+
+---
+
+## Inbound Correction — reinforcement side effect (CV22.DS9.US2, 2026-09-17)
+
+This story flipped `memories --search` to the TypeScript core and graded it on **ranking
+parity** — the vector-space check that produced `cos=1.000000`. It did not grade the
+route's **side effects**, and one diverged: Python's `cli/memories.py` passes
+`log_access=False` (AI-12, 2026-07-16) while `frontDoor/searchRoute.ts` had no such option
+and reinforced on every search. From this flip until 2026-09-17, every exploratory search
+through the front door wrote `memory_access_log` rows that Python would not have written —
+the ranker learning from its own exhaust, on the exact command AI-12 named.
+
+Found while DS9.US2 added the same opt-out for the MCP tool. Fixed there, in its own commit,
+with a mutation-proven test; the historical rows are recorded and deliberately not repaired
+(520 rows touching 53 of 950 memories, no attribution rule that could distinguish them from
+legitimate Builder-load reinforcement).
+
+**What this story would do differently:** a read command that can write needs side-effect
+parity in its flip checklist, not only output parity. `cos=1.000000` says the ranking is
+right; it says nothing about what the route left behind in the database.
