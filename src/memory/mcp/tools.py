@@ -42,6 +42,26 @@ def _memory_to_dict(memory: Any) -> dict[str, Any]:
     }
 
 
+def _conversation_to_dict(conversation: Any) -> dict[str, Any]:
+    """Serializable view of a conversation row for tool payloads.
+
+    Mirrors ``_memory_to_dict``: the fields a caller can use, and nothing that
+    only makes sense inside the process. ``message_count`` is deliberately absent
+    -- these are ``Conversation`` rows, not ``ConversationSummary``, and counting
+    would cost a query per row for a field no tool consumer asked for.
+    """
+    return {
+        "id": getattr(conversation, "id", None),
+        "title": getattr(conversation, "title", None),
+        "started_at": getattr(conversation, "started_at", None),
+        "ended_at": getattr(conversation, "ended_at", None),
+        "interface": getattr(conversation, "interface", None),
+        "persona": getattr(conversation, "persona", None),
+        "journey": getattr(conversation, "journey", None),
+        "summary": getattr(conversation, "summary", None),
+    }
+
+
 # --- handlers --------------------------------------------------------------
 
 
@@ -60,7 +80,32 @@ def _list_journeys(client: MemoryClient, args: dict[str, Any]) -> str:
 
 
 def _journey_status(client: MemoryClient, args: dict[str, Any]) -> str:
-    return _json(client.get_journey_status(args.get("slug")))
+    # CV22.DS9.US2 (D1). `get_journey_status` returns live Memory and Conversation
+    # objects; `_json`'s `default=str` used to render them through Pydantic's
+    # `__str__` as `key='value'` text -- INCLUDING `embedding=b'...'`, the raw
+    # vector bytes. Measured before this fix on a real database: one memory
+    # rendered to 19,686 characters, and a no-slug call returned 3,205,993 bytes
+    # (~800K tokens) carrying 126 embedding blobs. That exceeds every model's
+    # context window, so the tool was unusable exactly when it mattered most, and
+    # it handed an agent vector bytes nobody can read. The objects are mapped to
+    # the same serializable views the other tools use.
+    status = client.get_journey_status(args.get("slug"))
+    return _json(
+        {
+            journey_id: {
+                "identity": data.get("identity"),
+                "journey_path": data.get("journey_path"),
+                "recent_memories": [
+                    _memory_to_dict(memory) for memory in data.get("recent_memories", [])
+                ],
+                "recent_conversations": [
+                    _conversation_to_dict(conversation)
+                    for conversation in data.get("recent_conversations", [])
+                ],
+            }
+            for journey_id, data in status.items()
+        }
+    )
 
 
 def _search_memories(client: MemoryClient, args: dict[str, Any]) -> str:
