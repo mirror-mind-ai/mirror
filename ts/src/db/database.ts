@@ -197,6 +197,85 @@ export function openDatabaseForWrite(
 }
 
 /**
+ * A handle that can append to the `llm_calls` ledger and read — nothing else.
+ *
+ * Deliberately NOT a `WritableDatabase`: it exposes no `exec`, so there is no
+ * DDL or multi-statement path, and its `prepare` refuses any statement but the
+ * ledger append. Structural typing would otherwise let it satisfy
+ * `WritableDatabase` and travel anywhere a write is accepted.
+ */
+export interface LedgerAppendDatabase extends Database {
+  prepare(sql: string): WritablePreparedQuery;
+}
+
+/**
+ * The one statement shape this handle may form. Matched on the normalized text
+ * so formatting (the multi-line template `logLlmCall` builds) is irrelevant,
+ * while anything with a second statement, a different table, or a different
+ * verb fails. Reads are allowed so the writer can verify its own row.
+ */
+const LEDGER_APPEND = /^insert\s+into\s+llm_calls\s*\(/;
+const READ_ONLY_STATEMENT = /^(select|with)\b/;
+
+function assertLedgerStatement(sql: string): void {
+  const normalized = sql.trim().replace(/\s+/g, " ").toLowerCase();
+  const singleStatement = !normalized.replace(/;\s*$/, "").includes(";");
+  const permitted =
+    singleStatement && (LEDGER_APPEND.test(normalized) || READ_ONLY_STATEMENT.test(normalized));
+  if (!permitted) {
+    throw new Error(
+      `this connection may prepare only the llm_calls append or a read; refused: ${sql.trim().slice(0, 60)}`,
+    );
+  }
+}
+
+/**
+ * Open a live database for the `llm_calls` append and nothing else
+ * (CV22.DS9.TS2 D1) — the MCP server's single sanctioned write.
+ *
+ * **Why this is not `openDatabaseForWrite`.** The DS4 backup gate is a
+ * last-write undo built for a snapshot→write→exit CLI: `ensureBackup` replaces a
+ * fixed-name snapshot and the record is verified once, at open. The MCP server
+ * lives for an entire client session, so a snapshot taken at launch is not the
+ * state before a row written forty minutes later, and re-snapshotting per write
+ * would put a 399 ms / ~50 MB `VACUUM INTO` on the agent's response path while
+ * overwriting the front door's undo with an observability row. The gate is the
+ * wrong shape here, not merely the wrong price.
+ *
+ * **What replaces it.** Narrowing, enforced at the statement level rather than
+ * documented: an append-only INSERT into an observability table, through a
+ * handle that can form no other statement and exposes no `exec`. It cannot
+ * UPDATE, DELETE, DROP, open a transaction, or touch `memories`, `identity`,
+ * `conversations`, or any other table — so the failure modes the gate protects
+ * against are unreachable rather than undone. `logLlmCall` is already
+ * fail-soft, matching Python, whose MCP server writes this same row through an
+ * ungated connection.
+ *
+ * The sole sanctioned caller is `ts/src/mcp/main.ts`, which keeps its tools on a
+ * driver-level read-only handle and hands them only a sink function.
+ */
+export function openDatabaseForLedgerAppend(
+  path: string,
+  options: OpenOptions = {},
+): LedgerAppendDatabase {
+  const driver = new DatabaseSync(path);
+  applyConnectionPragmas(driver, options);
+  return {
+    prepare(sql: string): WritablePreparedQuery {
+      assertLedgerStatement(sql);
+      const statement = driver.prepare(sql);
+      return {
+        ...readableStatement(statement),
+        run: (...params: SqlValue[]): RunResult => statement.run(...params),
+      };
+    },
+    close: (): void => {
+      driver.close();
+    },
+  };
+}
+
+/**
  * Snapshot a live database into `targetPath` using `VACUUM INTO` from a
  * read-only connection. Unlike a raw file copy, this captures committed
  * transactions still living in the `-wal` sidecar and cannot produce a torn

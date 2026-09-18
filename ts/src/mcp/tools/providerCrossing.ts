@@ -12,7 +12,7 @@
 import type { Database } from "#db/database.ts";
 import { collectExtensionContext } from "#extensions/contextRuntime.ts";
 import { loadMirrorContext } from "#mirror/context.ts";
-import type { EmbeddingProvider } from "#providers/embedding.ts";
+import type { EmbeddingAttemptInfo, EmbeddingProvider } from "#providers/embedding.ts";
 import { searchMemories } from "#search/memorySearch.ts";
 import { pyFloat, pythonJson } from "../payload.ts";
 import { type MemoryDto, memoriesByFilter, memoriesByIds } from "../readModels.ts";
@@ -20,6 +20,16 @@ import { type MemoryDto, memoriesByFilter, memoriesByIds } from "../readModels.t
 /** What the tools need from the process to reach providers and extensions. */
 export interface ToolRuntime {
   embeddingProvider: EmbeddingProvider;
+  /**
+   * Where an agent-initiated embedding is recorded as spend (CV22.DS9.TS2 D1).
+   *
+   * A FUNCTION, never a database handle, and the distinction is the control:
+   * the `llm_calls`-only connection lives in `main.ts` and is never reachable
+   * from a tool, so no tool -- present or future -- can write an
+   * agent-influenced value into the ledger. Omitted, nothing is recorded and
+   * US2's read-only posture stands unchanged.
+   */
+  embeddingLedger?: (info: EmbeddingAttemptInfo) => void;
   /** Absolute mirror home, for extension resolution. Omit to disable fan-out. */
   mirrorHome?: string;
   /** Absolute database path, handed to extension providers. */
@@ -85,11 +95,11 @@ export async function searchMemoriesTool(
       // load, so it must not teach the ranker. Python's MCP handler passes
       // log_access=False for exactly this reason.
       logAccess: false,
-      // The server holds a read-only handle (US2 Navigator decision (d)), so
-      // the embedding-ledger row is not written either. Named consequence:
-      // agent-initiated searches are uncounted spend until TS2 settles how this
-      // server opens its database, which TS1's wallet guard depends on.
-      recordEmbeddingLedger: false,
+      // Spend IS recorded, through the sink rather than through this handle
+      // (TS2 D1): the tools' database is read-only at the driver level, and the
+      // ledger connection it never sees can form no statement but the append.
+      // Without a sink, nothing is written -- US2's posture, unchanged.
+      recordEmbeddingLedger: runtime.embeddingLedger ?? false,
       ...(runtime.frozenNowMs === undefined ? {} : { frozenNowMs: runtime.frozenNowMs }),
     });
     const rows = memoriesByIds(

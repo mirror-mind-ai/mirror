@@ -43,13 +43,17 @@ export interface FreshSearchOptions extends FreshSearchFilters {
    * Record each embedding attempt in the `llm_calls` ledger (AI-09/D-003).
    * Default `true`.
    *
-   * The MCP server opens the database READ-ONLY (CV22.DS9.US2, Navigator
-   * decision (d)), so it passes `false`: an agent-initiated search is not
-   * recorded as spend until CV22.DS9.TS2 decides how that server should open
-   * its database. The consequence is named there and inherited by TS1's wallet
-   * guard, which counts from this ledger.
+   * - `true`/unset -- write through `db`, which must be writable.
+   * - `false` -- record nothing.
+   * - a function -- record through that sink, leaving `db` untouched.
+   *
+   * The sink exists for the MCP server (CV22.DS9.TS2 D1), whose tools hold a
+   * driver-level READ-ONLY handle while its single sanctioned write goes to a
+   * separate `llm_calls`-only connection. Passing a function rather than a
+   * second handle keeps that connection out of this module and out of every
+   * tool: search never learns it exists.
    */
-  recordEmbeddingLedger?: boolean;
+  recordEmbeddingLedger?: boolean | ((info: EmbeddingAttemptInfo) => void);
   frozenNowMs?: number;
   now?: string;
   provider: EmbeddingProvider;
@@ -117,10 +121,7 @@ export async function searchMemoriesWithStatus(
     // single-shot attempt. Any exhausted/permanent/provider-exception failure
     // still maps to degraded=true here, preserving CR037's contract exactly.
     queryEmbedding = await generateEmbeddingSafely(options.provider, options.query, {
-      onAttempt:
-        (options.recordEmbeddingLedger ?? true)
-          ? logQueryEmbeddingAttempt(asWritable(db, "recordEmbeddingLedger"))
-          : undefined,
+      onAttempt: resolveLedgerSink(db, options.recordEmbeddingLedger),
       sleep: options.embeddingRetrySleep,
     });
   } catch (error) {
@@ -289,6 +290,20 @@ function asWritable(db: Database, requestedBy: string): WritableDatabase {
  * to a conversation, so no conversationId travels with it. */
 function logQueryEmbeddingAttempt(db: WritableDatabase): (info: EmbeddingAttemptInfo) => void {
   return embeddingLedgerHook(db);
+}
+
+/**
+ * Resolve where an embedding attempt is recorded: `db` by default, nowhere when
+ * disabled, or a caller-supplied sink. Only the default narrows `db` to a
+ * writable handle -- a caller passing a sink may hold a read-only one.
+ */
+function resolveLedgerSink(
+  db: Database,
+  record: boolean | ((info: EmbeddingAttemptInfo) => void) | undefined,
+): ((info: EmbeddingAttemptInfo) => void) | undefined {
+  if (typeof record === "function") return record;
+  if (record === false) return undefined;
+  return logQueryEmbeddingAttempt(asWritable(db, "recordEmbeddingLedger"));
 }
 
 function toMemoryRow(row: Record<string, unknown>): MemoryRow {
