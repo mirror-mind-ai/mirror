@@ -98,4 +98,52 @@ error kills the server, or the process tree shows the wrong engine.
 
 ## Validation Evidence
 
-Pending implementation and validation.
+**Automated, CI green at `4493fe00`** (Tests and Docs workflows both success):
+2356 TS tests pass, typecheck and lint clean apart from one pre-existing
+`routing.ts` warning this story did not touch; `uv run pytest` green except
+`test_operations_run_api_executes_runtime_diagnose_through_controlled_command`,
+the known machine-local flake captured as
+[CR058](../../../../refinement/rs010-cv22-oracle-and-port-hygiene/cr058-wait-for-completion-in-the-runtime-diagnose-web-test.md),
+which passes in CI.
+
+**Step 1 — two-engine diff through the launcher.** Run 2026-09-18:
+
+```text
+── plugins/mirror-mind/mcp/launch.sh with MIRROR_TS_MCP=0  (the revert branch)
+   exit=0 stderr_bytes=0
+── plugins/mirror-mind/mcp/launch.sh with no gate  (what a client spawns by default)
+   exit=0 stderr_bytes=0
+   ✓ DIFF EMPTY — 9 responses identical byte for byte
+   ✓ both exit 0 with empty stderr
+   ✓ default branch  -> TypeScript
+   ✓ MIRROR_TS_MCP=0 -> Python (0.31.14)
+```
+
+**Step 2 — real-copy probe through the launcher**, on a copy of the 50 MB
+production database. Twelve tools byte-identical across engines; read paths
+wrote nothing; then one query search on the TS branch:
+
+```text
+   memory_access_log        3786 -> 3786     delta=+0 want=+0 OK
+   llm_calls                 552 -> 553      delta=+1 want=+1 OK
+   memories                  950 -> 950      delta=+0 want=+0 OK
+   conversations            1024 -> 1024     delta=+0 want=+0 OK
+   row: role=embedding model=openai/text-embedding-3-small bodies_withheld=True
+        priced=True unattributed=True
+```
+
+`memory_access_log +0` alongside `llm_calls +1` is the pair that matters: spend
+is recorded and AI-12's no-reinforcement rule still holds.
+
+**Step 3 — launcher from a non-repo cwd.** Covered automatically by
+`ts/test/mcp/launcher.test.ts` (7 cases, all spawned from `os.tmpdir()` against
+a fake repo layout): default → TS, `MIRROR_TS_MCP=0` in the environment → Python,
+`0` in `.env` alone → Python, environment overriding the file in both directions,
+last-assignment-wins, commented/similarly-named gates ignored, `.env` reaching
+the process with the environment still outranking it, and no `.env` at all.
+`claude plugin validate plugins/mirror-mind` passes with the
+`${CLAUDE_PLUGIN_ROOT}` command.
+
+**Step 4 — the real Claude session: PENDING.** This is the Navigator's, and it
+is the story's E2E. Nothing dogfoods this surface, so no amount of scripted
+evidence substitutes for one session.
