@@ -9,7 +9,7 @@
 // query is a filter over `memories`, and `mirror_context` without one assembles
 // identity layers from the database.
 
-import type { Database, WritableDatabase } from "#db/database.ts";
+import type { Database } from "#db/database.ts";
 import { collectExtensionContext } from "#extensions/contextRuntime.ts";
 import { loadMirrorContext } from "#mirror/context.ts";
 import type { EmbeddingProvider } from "#providers/embedding.ts";
@@ -63,7 +63,7 @@ function optionalText(value: unknown): string | undefined {
  * this, and the error text is its text.
  */
 export async function searchMemoriesTool(
-  db: WritableDatabase,
+  db: Database,
   args: unknown,
   runtime: ToolRuntime,
 ): Promise<string> {
@@ -85,6 +85,11 @@ export async function searchMemoriesTool(
       // load, so it must not teach the ranker. Python's MCP handler passes
       // log_access=False for exactly this reason.
       logAccess: false,
+      // The server holds a read-only handle (US2 Navigator decision (d)), so
+      // the embedding-ledger row is not written either. Named consequence:
+      // agent-initiated searches are uncounted spend until TS2 settles how this
+      // server opens its database, which TS1's wallet guard depends on.
+      recordEmbeddingLedger: false,
       ...(runtime.frozenNowMs === undefined ? {} : { frozenNowMs: runtime.frozenNowMs }),
     });
     const rows = memoriesByIds(

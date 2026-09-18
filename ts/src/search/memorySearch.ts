@@ -1,4 +1,4 @@
-import type { SqlValue, WritableDatabase } from "#db/database.ts";
+import type { Database, SqlValue, WritableDatabase } from "#db/database.ts";
 import { optionalNumber, optionalString, requireString } from "#db/rowDecode.ts";
 import { logAccess } from "#memory/reinforcement.ts";
 import { embeddingLedgerHook } from "#observability/ledgerHooks.ts";
@@ -39,6 +39,17 @@ export interface FreshSearchOptions extends FreshSearchFilters {
    * default and still reinforces, because that one is a genuine load.
    */
   logAccess?: boolean;
+  /**
+   * Record each embedding attempt in the `llm_calls` ledger (AI-09/D-003).
+   * Default `true`.
+   *
+   * The MCP server opens the database READ-ONLY (CV22.DS9.US2, Navigator
+   * decision (d)), so it passes `false`: an agent-initiated search is not
+   * recorded as spend until CV22.DS9.TS2 decides how that server should open
+   * its database. The consequence is named there and inherited by TS1's wallet
+   * guard, which counts from this ledger.
+   */
+  recordEmbeddingLedger?: boolean;
   frozenNowMs?: number;
   now?: string;
   provider: EmbeddingProvider;
@@ -92,7 +103,7 @@ interface MemoryRow {
  * unaffected -- it ranks on the stored memory embeddings, not the query.
  */
 export async function searchMemoriesWithStatus(
-  db: WritableDatabase,
+  db: Database,
   options: FreshSearchOptions,
 ): Promise<FreshSearchOutcome> {
   const limit = options.limit ?? 5;
@@ -106,7 +117,10 @@ export async function searchMemoriesWithStatus(
     // single-shot attempt. Any exhausted/permanent/provider-exception failure
     // still maps to degraded=true here, preserving CR037's contract exactly.
     queryEmbedding = await generateEmbeddingSafely(options.provider, options.query, {
-      onAttempt: logQueryEmbeddingAttempt(db),
+      onAttempt:
+        (options.recordEmbeddingLedger ?? true)
+          ? logQueryEmbeddingAttempt(asWritable(db, "recordEmbeddingLedger"))
+          : undefined,
       sleep: options.embeddingRetrySleep,
     });
   } catch (error) {
@@ -146,9 +160,10 @@ export async function searchMemoriesWithStatus(
   // param (AI-12) firing regardless of degraded status -- the two concerns are
   // orthogonal and intentionally not coupled; do not make this conditional.
   if (options.logAccess ?? true) {
+    const writable = asWritable(db, "logAccess");
     const accessNow = options.now ?? nowIso();
     for (const result of ranked) {
-      logAccess(db, result.id, accessNow, options.query.slice(0, 200));
+      logAccess(writable, result.id, accessNow, options.query.slice(0, 200));
     }
   }
   return { results: ranked, degraded, degradedKind };
@@ -158,16 +173,13 @@ export async function searchMemoriesWithStatus(
  * Python's `search()` over `search_with_status()`: existing callers keep the
  * plain-array shape, and an embedding failure no longer propagates uncaught. */
 export async function searchMemories(
-  db: WritableDatabase,
+  db: Database,
   options: FreshSearchOptions,
 ): Promise<FreshSearchResult[]> {
   return (await searchMemoriesWithStatus(db, options)).results;
 }
 
-export function listSearchMemoryRows(
-  db: WritableDatabase,
-  filters: FreshSearchFilters = {},
-): MemoryRow[] {
+export function listSearchMemoryRows(db: Database, filters: FreshSearchFilters = {}): MemoryRow[] {
   const conditions = ["embedding IS NOT NULL"];
   const params: SqlValue[] = [];
   if (filters.memoryType) {
@@ -193,7 +205,7 @@ export function listSearchMemoryRows(
 }
 
 export function accessCountsByMemoryId(
-  db: WritableDatabase,
+  db: Database,
   memoryIds: readonly string[],
 ): Map<string, number> {
   if (memoryIds.length === 0) return new Map();
@@ -212,7 +224,7 @@ export function accessCountsByMemoryId(
 }
 
 export function ftsLexicalScores(
-  db: WritableDatabase,
+  db: Database,
   query: string,
   filters: FreshSearchFilters = {},
   limit = 100,
@@ -256,6 +268,21 @@ export function ftsQuery(query: string): string {
     .map((word) => word.replaceAll('"', ""))
     .filter((word) => word.length > 0);
   return words.map((word) => `"${word}"`).join(" ");
+}
+
+/**
+ * Narrow a handle to a writable one, or fail with the option that asked for it.
+ *
+ * Search reads through a plain `Database` so a read-only caller (the MCP
+ * server) can use it. The two paths that WRITE -- reinforcement and the
+ * embedding ledger -- are opt-in, and asking for either with a read-only handle
+ * is a caller bug worth naming rather than a SQLite error to decode.
+ */
+function asWritable(db: Database, requestedBy: string): WritableDatabase {
+  if (typeof (db as WritableDatabase).exec !== "function") {
+    throw new Error(`${requestedBy} requires a writable database handle; this one is read-only`);
+  }
+  return db as WritableDatabase;
 }
 
 /** The query embedding's ledger row (AI-09/D-003). The query text is not tied

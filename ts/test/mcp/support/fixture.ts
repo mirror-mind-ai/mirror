@@ -18,6 +18,13 @@ interface Golden {
   embedding_dim: number;
   frozen_now: string;
   frozen_now_ms: number;
+  frozen_version?: string;
+  transcript: {
+    stdin: string;
+    stdout_lines: string[];
+    stderr: string;
+    exit_code: number;
+  };
   seed: {
     journeys: { key: string; content: string; metadata: string | null }[];
     personas: { key: string; content: string; metadata: string | null }[];
@@ -220,13 +227,24 @@ export function accessState(db: WritableDatabase): [string, number][] {
     .map((row) => [String(row.id), Number(row.hits)]);
 }
 
+const SEEDED_PATHS = new WeakMap<object, string>();
+
 /** Open a seeded database the caller is responsible for closing. */
 export function seededDatabase(): WritableDatabase {
   const dir = mkdtempSync(join(tmpdir(), "mirror-core-mcp-tools-"));
   const tmp = join(dir, "tmp");
   mkdirSync(tmp);
-  const db = openDatabaseCopyForWrite(join(tmp, "copy.db"));
+  const path = join(tmp, "copy.db");
+  const db = openDatabaseCopyForWrite(path);
   createSchema(db);
   seedDatabase(db);
+  SEEDED_PATHS.set(db, path);
   return db;
+}
+
+/** The file behind a seeded handle, for tests that reopen it read-only. */
+export function seededPath(db: WritableDatabase): string {
+  const path = SEEDED_PATHS.get(db);
+  if (!path) throw new Error("not a seeded database handle");
+  return path;
 }

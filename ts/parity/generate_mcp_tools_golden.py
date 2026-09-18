@@ -29,8 +29,11 @@ Run:  uv run python ts/parity/generate_mcp_tools_golden.py
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 import struct
+import subprocess
+import sys
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -53,6 +56,10 @@ OUT_PATH = HERE.parent / "test" / "goldens" / "mcp-tools.golden.json"
 # Vectors are computed from a seed on both engines rather than stored, so the
 # golden stays small.
 EMBEDDING_DIM = 1536
+
+# The MCP server reports its installed version in `initialize`; freeze it so the
+# transcript does not encode the generating machine's install state.
+FROZEN_VERSION = "0.0.0-golden"
 
 # identity rows carry NOT NULL created_at/updated_at with no default; fixing them
 # to a literal keeps the fixture reproducible on both engines.
@@ -524,6 +531,64 @@ def _seed(db_path: Path) -> None:
         connection.close()
 
 
+# Tool calls for the two-engine process diff. Deliberately only the
+# deterministic surfaces: a `query` would need a live provider on both sides,
+# and the replayed query path is already graded case-by-case above.
+TRANSCRIPT_CALLS: tuple[dict[str, Any], ...] = (
+    {"name": "list_journeys", "arguments": {}},
+    {"name": "journey_status", "arguments": {"slug": "alpha-journey"}},
+    # limit 4, not 2: conv-0002 carries a null title AND a null persona, and a
+    # transcript that stops at 2 never renders a null. (Found by mutating
+    # `persona ?? ""` into the mapper and watching the diff stay clean.)
+    {"name": "list_conversations", "arguments": {"limit": 4}},
+    {"name": "recall_conversation", "arguments": {"conversation_id": "conv-0001", "limit": 2}},
+    {"name": "detect_persona", "arguments": {"query": "there is a bug in the database schema"}},
+    {"name": "search_memories", "arguments": {"type": "insight", "limit": 2}},
+    {"name": "mirror_context", "arguments": {"journey": "alpha-journey"}},
+    {"name": "recall_conversation", "arguments": {"conversation_id": "nope"}},
+)
+
+
+def _tools_transcript() -> str:
+    lines = [json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}})]
+    for index, call in enumerate(TRANSCRIPT_CALLS, start=2):
+        lines.append(
+            json.dumps(
+                {"jsonrpc": "2.0", "id": index, "method": "tools/call", "params": call},
+                ensure_ascii=False,
+            )
+        )
+    return "\n".join(lines) + "\n"
+
+
+def _tools_framing_golden(db_path: Path, transcript: str) -> dict[str, Any]:
+    """Spawn the REAL server over the fixture database and record its bytes."""
+    env = {**os.environ, "DB_PATH": str(db_path), "MEMORY_ENV": "test"}
+    env.pop("MIRROR_HOME", None)
+    env.pop("MIRROR_USER", None)
+    completed = subprocess.run(
+        [sys.executable, "-m", "memory", "mcp"],
+        input=transcript,
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+        env=env,
+        timeout=120,
+    )
+    stdout = completed.stdout
+    real_version = next(
+        parsed["result"]["serverInfo"]["version"]
+        for parsed in (json.loads(line) for line in stdout.splitlines())
+        if isinstance(parsed.get("result"), dict) and "serverInfo" in parsed["result"]
+    )
+    stdout = stdout.replace(f'"version": "{real_version}"', f'"version": "{FROZEN_VERSION}"')
+    return {
+        "stdout_lines": stdout.splitlines(),
+        "stderr": completed.stderr,
+        "exit_code": completed.returncode,
+    }
+
+
 def _run_cases(client: MemoryClient) -> list[dict[str, Any]]:
     recorded: list[dict[str, Any]] = []
     for case in CASES:
@@ -576,6 +641,10 @@ def main() -> None:
             for module, original in originals:
                 module.generate_embedding = original  # type: ignore[assignment]
 
+        # Spawned outside the patches: a separate process, its own imports.
+        transcript = _tools_transcript()
+        framing = _tools_framing_golden(db_path, transcript)
+
     golden = {
         "_comment": (
             "MCP tool payload parity golden (CV22.DS9.US2). Generated from the real "
@@ -598,6 +667,10 @@ def main() -> None:
             "messages": list(SEED_MESSAGES),
         },
         "cases": cases,
+        "transcript": {
+            "stdin": transcript,
+            **framing,
+        },
     }
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     OUT_PATH.write_text(json.dumps(golden, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

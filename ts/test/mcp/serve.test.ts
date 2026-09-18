@@ -1,11 +1,36 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { openDatabaseCopyForWrite } from "#db/database.ts";
+import { createSchema } from "#db/schema.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+
+/**
+ * A database for the spawned server to open.
+ *
+ * `main.ts` opens its database eagerly, as Python's `serve()` does, so an
+ * unconfigured install fails at startup instead of answering `initialize` and
+ * then failing all seven tools. These tests therefore have to run the server
+ * the way a client does -- with a real database -- rather than with none.
+ */
+function fixtureDatabasePath(): string {
+  const dir = mkdtempSync(join(tmpdir(), "mirror-core-mcp-serve-"));
+  const tmp = join(dir, "tmp");
+  mkdirSync(tmp);
+  const path = join(tmp, "copy.db");
+  const db = openDatabaseCopyForWrite(path);
+  try {
+    createSchema(db);
+  } finally {
+    db.close();
+  }
+  return path;
+}
 const TS_ROOT = join(HERE, "..", "..");
 const MAIN = join(TS_ROOT, "src", "mcp", "main.ts");
 const TRANSCRIPT = join(TS_ROOT, "test", "fixtures", "mcp-framing.jsonl");
@@ -38,6 +63,7 @@ function runServer(input: string, extraEnv: Record<string, string> = {}): Promis
     const env: NodeJS.ProcessEnv = {
       ...process.env,
       MIRROR_MCP_VERSION: GOLDEN.frozen_version,
+      DB_PATH: fixtureDatabasePath(),
       ...extraEnv,
     };
     delete env.NODE_OPTIONS;
@@ -81,7 +107,11 @@ test("a large response survives immediate EOF (drain before exit)", async () => 
   const size = 1_000_000;
   const stubModule = join(TS_ROOT, "test", "mcp", "fixtures", "largeResponseServer.ts");
   const run = await new Promise<RunResult>((resolve, reject) => {
-    const env: NodeJS.ProcessEnv = { ...process.env, LARGE_RESPONSE_BYTES: String(size) };
+    const env: NodeJS.ProcessEnv = {
+      ...process.env,
+      LARGE_RESPONSE_BYTES: String(size),
+      DB_PATH: fixtureDatabasePath(),
+    };
     delete env.NODE_OPTIONS;
     const child = spawn(process.execPath, [stubModule], { cwd: TS_ROOT, env });
     let stdout = "";

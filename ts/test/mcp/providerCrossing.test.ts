@@ -3,7 +3,14 @@ import { test } from "node:test";
 import { mirrorContextTool, searchMemoriesTool } from "#mcp/tools/providerCrossing.ts";
 import type { EmbeddingProvider } from "#providers/embedding.ts";
 import { searchMemories } from "#search/memorySearch.ts";
-import { accessState, GOLDEN, queryEmbedding, withSeededDatabaseAsync } from "./support/fixture.ts";
+import {
+  accessState,
+  GOLDEN,
+  queryEmbedding,
+  seededDatabase,
+  seededPath,
+  withSeededDatabaseAsync,
+} from "./support/fixture.ts";
 
 /** Replays the generator's patched `generate_embedding`, no provider call. */
 const replayProvider: EmbeddingProvider = {
@@ -78,7 +85,7 @@ for (const testCase of CASES) {
       // Only the ranked query path carries a float score; every other case,
       // filter paths included, is compared byte for byte.
       if (testCase.tool === "search_memories" && "query" in testCase.arguments) {
-        assertRankedPayloadParity(actual, testCase.payload!, testCase.name);
+        assertRankedPayloadParity(actual, testCase.payload ?? "", testCase.name);
         return;
       }
       assert.equal(actual, testCase.payload);
@@ -125,4 +132,48 @@ test("the AI-12 opt-out is load-bearing: the same search reinforces without it",
     });
     assert.notDeepEqual(accessState(db), before, "the default path should reinforce");
   });
+});
+
+test("the query path records no embedding-ledger row (Navigator decision (d))", async () => {
+  // The MCP server opens the database read-only, so an agent-initiated search
+  // writes nothing at all -- not reinforcement, not the llm_calls ledger row
+  // that a query embedding would normally record (AI-09/D-003).
+  //
+  // This is the COST of that decision, pinned so it cannot be forgotten:
+  // agent-initiated searches are uncounted spend. CV22.DS9.TS1's wallet guard
+  // reads this ledger, so TS2 has to settle how this server opens its database
+  // before TS1 can guard what it cannot see. When that happens, this test is
+  // the one that must change, deliberately.
+  await withSeededDatabaseAsync(async (db) => {
+    const ledgerRows = () =>
+      Number(db.prepare("SELECT COUNT(*) AS n FROM llm_calls").get()?.n ?? -1);
+    const before = ledgerRows();
+    await searchMemoriesTool(db, { query: "alpha insight", limit: 3 }, runtime);
+    assert.equal(ledgerRows(), before, "the MCP query path wrote a ledger row");
+  });
+});
+
+test("asking for a write through a read-only handle names the option that asked", async () => {
+  // The guard that makes decision (d) safe rather than silent: search reads
+  // through a plain handle, and the two write paths are opt-in. Requesting one
+  // with a read-only connection is a caller bug, and it says so.
+  const { openDatabaseReadOnly } = await import("#db/database.ts");
+  const seeded = seededDatabase();
+  const path = seededPath(seeded);
+  seeded.close();
+  const readOnly = openDatabaseReadOnly(path);
+  try {
+    await assert.rejects(
+      () =>
+        searchMemories(readOnly, {
+          query: "alpha insight",
+          provider: replayProvider,
+          logAccess: true,
+          recordEmbeddingLedger: false,
+        }),
+      /logAccess requires a writable database handle/,
+    );
+  } finally {
+    readOnly.close();
+  }
 });

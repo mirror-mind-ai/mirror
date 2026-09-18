@@ -238,6 +238,37 @@ plateau-4 replay test instead.
 
 ---
 
+## D12 — The server opens the database read-only, and spend goes uncounted until TS2
+
+*Navigator decision, 2026-09-17, option (d).* Wiring the registry surfaced that
+`search_memories` with a query is not a pure read: `logQueryEmbeddingAttempt` records an
+`llm_calls` row (AI-09/D-003), as Python does in production. So `main.ts` needs a handle,
+and the three obvious ways to open one were all unattractive:
+
+- **(a) writable + `ensureBackup`**, as the front door does for `memories --search` — keeps
+  DS4 discipline, but measured at **399 ms and a 49.3 MB snapshot per launch** on the
+  owner's database, paid every time a client spawns the process;
+- **(b) read-only** — strongest posture, but the ledger write fails at runtime;
+- **(c) writable without the backup gate** — no cost, but narrows a safety discipline inside
+  a wiring story, which is the kind of quiet erosion this project treats as a defect.
+
+The Navigator chose **(d)**: open read-only and skip the ledger write. The server now
+*cannot* write, which matches the DS9 threat model's read-oracle framing exactly — a tool
+that tried would fail rather than succeed quietly.
+
+**The cost, named so it is inherited rather than discovered.** Agent-initiated searches are
+**uncounted spend**: no `llm_calls` row, so nothing to bill, audit, or rate-limit against.
+**CV22.DS9.TS1's wallet guard reads that ledger.** TS2 must settle how this server opens its
+database before TS1 can guard what it cannot see — that ordering is now a dependency between
+the two stories, not a preference. Both halves are pinned by tests: the query path writes no
+ledger row, and asking for either write path through a read-only handle fails with the name
+of the option that asked.
+
+To make (d) implementable, `searchMemoriesWithStatus` and its read helpers now take a plain
+`Database`; the two write paths (`logAccess`, `recordEmbeddingLedger`) are opt-in and
+narrow the handle explicitly. Every existing caller passes a writable handle and is
+unaffected.
+
 ## Scope Amendment — the `memories --search` reinforcement defect (2026-09-17)
 
 Adding `logAccess` to `FreshSearchOptions` for the MCP tool exposed that the option was

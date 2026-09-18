@@ -15,10 +15,24 @@
 // model, and the model is driven by anything in its context. Parity and security
 // agree here; the golden's byte-identical `tools/list` enforces it.
 //
-// US1 ships declarations over stub handlers so the protocol can be graded
-// without a database. US2 replaces `notImplemented` with the real TS
-// capabilities (`loadMirrorContext`, journey listing/status, `searchMemories`,
-// conversation listing/recall, `detectPersona`), which all already exist.
+// US1 shipped declarations over stub handlers so the protocol could be graded
+// without a database; US2 wires them to the TS capabilities that already exist
+// (`loadMirrorContext`, journey listing/status, `searchMemories`, conversation
+// listing/recall, `detectPersona`).
+
+import type { Database } from "#db/database.ts";
+import {
+  detectPersonaTool,
+  journeyStatusTool,
+  listConversationsTool,
+  listJourneysTool,
+  recallConversationTool,
+} from "./tools/deterministic.ts";
+import {
+  mirrorContextTool,
+  searchMemoriesTool,
+  type ToolRuntime,
+} from "./tools/providerCrossing.ts";
 
 /** JSON Schema as the tool declares it; shape is opaque to the protocol layer. */
 export type JsonSchema = Record<string, unknown>;
@@ -46,6 +60,37 @@ function notImplemented(name: string): ToolHandler {
   return () => {
     throw new Error(`Tool '${name}' is not wired yet (CV22.DS9.US2 owns tool behavior)`);
   };
+}
+
+/** What the wired handlers need from the process. */
+export interface ToolContext {
+  db: Database;
+  runtime: ToolRuntime;
+}
+
+/**
+ * The registry with real handlers, in Python's declaration order.
+ *
+ * Declarations stay exactly as `TOOL_DECLARATIONS` has them -- `tools/list` is
+ * the client contract and must not shift when behavior arrives.
+ */
+export function wiredRegistry(context: ToolContext): ToolRegistry {
+  const handlers: Record<string, ToolHandler> = {
+    mirror_context: (args) => mirrorContextTool(context.db, args, context.runtime),
+    list_journeys: (args) => listJourneysTool(context.db, args),
+    journey_status: (args) => journeyStatusTool(context.db, args),
+    search_memories: (args) => searchMemoriesTool(context.db, args, context.runtime),
+    list_conversations: (args) => listConversationsTool(context.db, args),
+    recall_conversation: (args) => recallConversationTool(context.db, args),
+    detect_persona: (args) => detectPersonaTool(context.db, args),
+  };
+  return buildRegistry(
+    TOOL_DECLARATIONS.map((declaration) => {
+      const handler = handlers[declaration.name];
+      if (!handler) throw new Error(`no handler wired for tool '${declaration.name}'`);
+      return { ...declaration, handler };
+    }),
+  );
 }
 
 /**
@@ -140,7 +185,12 @@ export function buildRegistry(
   return { list, byName };
 }
 
-/** The default registry: the seven declarations over not-yet-wired handlers. */
+/**
+ * The seven declarations over handlers that refuse.
+ *
+ * Kept for the protocol tests, which grade dispatch without a database. The
+ * server uses `wiredRegistry`.
+ */
 export function defaultRegistry(): ToolRegistry {
   return buildRegistry(
     TOOL_DECLARATIONS.map((declaration) => ({
