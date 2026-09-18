@@ -11,6 +11,83 @@ resolved.
 
 ## Completed Decisions
 
+### The MCP server's one write is narrowed instead of backup-gated
+
+**Date:** 2026-09-18
+**Reference:** [CV22.DS9.TS2](roadmap/cv22-typescript-core-port/cv22-ds9-ts-mcp-server/cv22-ds9-ts2-cutover-and-plugin-manifest-flip/index.md), [CV22.DS9.US2](roadmap/cv22-typescript-core-port/cv22-ds9-ts-mcp-server/cv22-ds9-us2-context-tools/index.md)
+**Participants:** Vinícius Manhães Teles
+
+CV22.DS9.US2 opened the TypeScript MCP server's database read-only and
+accepted, in writing, that agent-initiated searches would go unrecorded as
+spend — deferring to TS2 the question of how that server should open its
+database. It was a real cost: Python records one `llm_calls` row per query
+search, and DS9.TS1's wallet guard counts from exactly that ledger, so the
+guard could not be built over a server that wrote nothing.
+
+The obvious repair was the DS4 backup gate every other live TypeScript write
+uses. Measured, it costs 399 ms and a ~50 MB snapshot per client launch. The
+deeper objection is not the price but the shape: `ensureBackup` replaces a
+fixed-name snapshot and `openDatabaseForWrite` verifies that record **once, at
+open**. Every existing caller is a CLI invocation — snapshot, write, exit — so
+the snapshot is genuinely the state immediately before the write. An MCP server
+lives for a whole client session, so a launch-time snapshot is not the state
+before a row written forty minutes later, and nothing re-verifies it.
+Re-snapshotting per write would instead put that cost on the agent's response
+path while overwriting the front door's last-write undo with an observability
+row.
+
+So the write is **narrowed rather than gated**. `openDatabaseForLedgerAppend`
+returns a handle that can prepare only `INSERT INTO llm_calls` or a read: no
+`exec`, no DDL, no `UPDATE`/`DELETE`/`DROP`, no transaction control, no other
+table. The failure modes a backup exists to undo are made *unreachable* instead
+of recoverable, which is a stronger property for a long-lived process than an
+undo nobody re-verifies. The connection is built in `main.ts` and never leaves
+it: tools receive a sink *function*, typed so a handle cannot be passed, while
+their own database stays read-only at the driver level.
+
+The row is written at Python's shape, unattributed. If TS1's guard needs to
+distinguish MCP spend from front-door or extraction spend it must add a marker
+Python never wrote — its divergence to decide, not one absorbed while restoring
+parity.
+
+This narrowing is deliberately not a general-purpose ungated write. Any future
+caller wanting one is a new decision, not a precedent already set.
+
+### The plugin manifest launches a launcher, not an engine
+
+**Date:** 2026-09-18
+**Reference:** [CV22.DS9.TS2](roadmap/cv22-typescript-core-port/cv22-ds9-ts-mcp-server/cv22-ds9-ts2-cutover-and-plugin-manifest-flip/index.md), [CV22.DS9](roadmap/cv22-typescript-core-port/cv22-ds9-ts-mcp-server/index.md), [CV21.E2](roadmap/cv21-runtime-expansion-ii/cv21-e2-mirror-plugin-mcp-foundation/index.md)
+**Participants:** Vinícius Manhães Teles
+
+Every ported DS7 family reverts through a `MIRROR_TS_*=0` variable the front
+door reads. A plugin manifest points at a *command*, and a plugin installed
+into someone's runtime is not re-edited by an environment variable — so the
+usual revert did not transfer. DS9's D5 chose a launcher-level bridge over
+"the revert is a documented manifest edit", because a revert that requires
+editing an installed plugin is not one a user can perform under pressure.
+
+`plugins/mirror-mind/mcp/launch.sh` is that bridge: `MIRROR_TS_MCP=0` `exec`s
+`python3 -m memory mcp`, anything else `exec`s the TypeScript server. `exec`
+rather than spawn, so there is no intermediary process to orphan, no signals to
+forward, and the PID the client holds is the server's. It resolves the
+repository from its own location rather than the cwd — the same trick
+`config.py` uses to find `.env` — because an MCP client spawns the server from
+whatever directory the session is in.
+
+The gate is honored from `.env` as well as the environment, environment first.
+This is the one place that needed saying out loud: every other
+`MIRROR_TS_*` gate works from `.env` because Node loads the file before the
+front door reads it, and the DS8 validation holdback was literally commented
+gates in that file — but this script decides *before* Node exists. Without an
+explicit read, the one gate a user reaches for first would have been the only
+one that silently ignored the file. It is parsed with `grep`, never `source`d:
+that file holds the OpenRouter key.
+
+CV22 changed only `command`/`args` in `build_manifest()`. Plugin structure,
+versioning, and propagation to other runtimes remain CV21's. DS10 deletes the
+launcher and repoints the manifest at the npm entry point, which is why the
+manifest carries no repository path today.
+
 ### Extension commands reach TypeScript through a declared contract, with one temporary Python host
 
 **Date:** 2026-09-16

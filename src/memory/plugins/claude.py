@@ -59,8 +59,14 @@ def read_version(repo_root: Path) -> str:
 def build_manifest(version: str) -> dict[str, object]:
     """Build the Claude plugin manifest dict (minimal; no unsupported keys).
 
-    Declares the Mirror MCP server so the canonical package carries it. The
-    command follows the installed-``memory`` contract (D5), like the hooks.
+    Declares the Mirror MCP server so the canonical package carries it.
+
+    Since CV22.DS9.TS2 the entry is the plugin's own launcher rather than an
+    engine. The launcher chooses TypeScript (the ported server) or Python
+    (``MIRROR_TS_MCP=0``), so reverting the engine never requires editing a
+    plugin installed inside someone's runtime -- DS9 decision D5. CV22 changes
+    only ``command``/``args`` here; plugin structure, versioning, and
+    distribution remain CV21's, and DS10 repoints this at the npm entry point.
     """
     return {
         "name": PLUGIN_NAME,
@@ -68,7 +74,7 @@ def build_manifest(version: str) -> dict[str, object]:
         "description": PLUGIN_DESCRIPTION,
         "author": {"name": PLUGIN_AUTHOR},
         "mcpServers": {
-            PLUGIN_NAME: {"command": "python3", "args": ["-m", "memory", "mcp"]},
+            PLUGIN_NAME: {"command": "${CLAUDE_PLUGIN_ROOT}/mcp/launch.sh"},
         },
     }
 

@@ -93,6 +93,32 @@ CV21.E2 is done when:
 
 ---
 
+## Inbound Change — CV22.DS9.TS2 (2026-09-18)
+
+CV22 flipped the MCP server this epic authored to TypeScript. Recorded here
+because the manifest is E2's artifact, and DS9's decision D2 asked for the change
+to be visible from the owning epic rather than only from CV22's packages.
+
+**What CV22 changed:** the `mcpServers.mirror-mind` entry in `build_manifest()`,
+and nothing else. The command was `python3` with args `-m memory mcp`; it is now
+`${CLAUDE_PLUGIN_ROOT}/mcp/launch.sh`, a hand-authored plugin file beside
+`hooks/`, which `exec`s the TypeScript server or — with `MIRROR_TS_MCP=0` — the
+Python one. `claude plugin validate` accepts the variable in `mcpServers.command`.
+
+**What CV22 did not change:** plugin structure, skill generation, hooks,
+versioning, the drift guard's contract, or propagation to other runtimes. Those
+remain E2's and the later runtime epics'. CV22.DS10 deletes the launcher and
+repoints the entry at the npm bin, so the manifest deliberately carries no
+repository path today.
+
+**One finding for this epic.** S1's D5 records the plugin contract as "`memory`
+is installed and importable, so `python3 -m memory` resolves without a repo cwd".
+Measured on the author's machine on 2026-09-18, it is not: from `/tmp`, bare
+`python3 -c "import memory"` fails with `ModuleNotFoundError`, so the hooks and
+the pre-flip MCP entry do not run there. CV22 made this visible rather than
+causing it, and its Python fallback branch restores exactly that status quo.
+Fixing the contract (or documenting the install step it needs) belongs to CV21.
+
 ## Discovered Issues
 
 Surfaced while planning S1:

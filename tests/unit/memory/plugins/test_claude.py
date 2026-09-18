@@ -40,6 +40,25 @@ def test_manifest_has_required_keys_and_no_schema() -> None:
     assert "$schema" not in manifest
 
 
+def test_manifest_launches_the_mcp_server_through_the_plugin_launcher() -> None:
+    """CV22.DS9.TS2: the manifest points at the launcher, not at an engine.
+
+    The launcher owns the engine choice and the ``MIRROR_TS_MCP=0`` revert, so a
+    user reverting to Python never edits an installed plugin. ``${CLAUDE_PLUGIN_ROOT}``
+    keeps the entry location-independent, which is also what lets DS10 repoint it
+    at the npm entry without touching plugin structure.
+    """
+    server = claude.build_manifest("1.2.3")["mcpServers"]["mirror-mind"]
+    assert server["command"] == "${CLAUDE_PLUGIN_ROOT}/mcp/launch.sh"
+    assert "args" not in server, "the launcher takes no arguments; the gate is an env var"
+
+
+def test_mcp_launcher_is_executable_and_shipped() -> None:
+    launcher = PROJECT_ROOT / "plugins" / "mirror-mind" / "mcp" / "launch.sh"
+    assert launcher.is_file(), "the manifest points at a file that must exist in the package"
+    assert launcher.stat().st_mode & 0o111, "a plugin launcher the client cannot execute is not one"
+
+
 def test_manifest_version_matches_pyproject() -> None:
     version = claude.read_version(PROJECT_ROOT)
     files = claude.plan_generated_files(PROJECT_ROOT)

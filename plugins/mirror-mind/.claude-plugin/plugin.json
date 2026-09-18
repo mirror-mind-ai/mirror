@@ -7,12 +7,7 @@
   },
   "mcpServers": {
     "mirror-mind": {
-      "command": "python3",
-      "args": [
-        "-m",
-        "memory",
-        "mcp"
-      ]
+      "command": "${CLAUDE_PLUGIN_ROOT}/mcp/launch.sh"
     }
   }
 }

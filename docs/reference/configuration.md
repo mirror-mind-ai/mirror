@@ -291,6 +291,31 @@ rather than falling into live Python. The front-door log records only
 `leaf=load calls=N` and a degraded category when present — never the journey
 briefing used as the embedding query.
 
+### The MCP server (CV22.DS9.TS2)
+
+| Variable | Meaning |
+|---|---|
+| `MIRROR_TS_MCP` | Set to `0` to make the plugin's MCP server launch the Python engine (`python3 -m memory mcp`) instead of the TypeScript one. Read from the environment **or** from `.env`, environment first. |
+
+The Claude plugin manifest launches
+`${CLAUDE_PLUGIN_ROOT}/mcp/launch.sh`, not an engine. The launcher picks the
+engine and `exec`s it, so reverting to Python never means editing a plugin
+installed inside a runtime. Unlike every other gate on this page, it is read by
+a shell script *before* Node starts, which is why the launcher parses `.env`
+itself — with `grep`, never `source`, since that file holds your API key.
+
+The TypeScript server needs `node` (≥ 24) on the `PATH` the MCP client
+spawns it with, and a configured database (`.env` in the repository, or
+`DB_PATH`/`MIRROR_HOME`/`MIRROR_USER` in the client's environment). A missing
+`node`, a Node older than 22.9 (no `--env-file-if-exists`), or an unconfigured
+home each fail loudly on stderr, which is where the MCP client's log for this
+server goes. The Python branch needs `memory` importable from a bare `python3`
+— CV21's plugin contract, unchanged by this gate.
+
+An agent-initiated search records one `llm_calls` row, as the Python server
+always has. It is written through a connection that can run nothing but that
+append; the tools' own handle is read-only at the driver level.
+
 ### Node-specific environment differences
 
 Two behaviors differ from Python's HTTP stack and are **not** papered over in

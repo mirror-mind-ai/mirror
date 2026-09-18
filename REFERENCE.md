@@ -629,6 +629,13 @@ to the homes root (`~/.mirror-minds`).
 | `PI_SESSIONS_DIR` | `~/.pi/agent/sessions` | Source directory for `backfill_pi_sessions`. Override for multi-user setups. |
 | `MIRROR_SESSION_ID` | (unset) | Fallback session id for conversation-logger CLIs when neither `--session-id` nor a hook payload is present. Rarely set by humans. |
 | `MIRROR_WELCOME` | (unset) | Set to `off`, `0`, `false`, or `no` to suppress the welcome card emitted by `python -m memory welcome`. See `docs/product/specs/welcome/index.md`. |
+| `MIRROR_TS_MCP` | (unset) | Set to `0` to make the Claude plugin's MCP server launch the Python engine instead of the TypeScript one. Read from the environment or from `.env`, environment first — see [Configuration](docs/reference/configuration.md#the-mcp-server-cv22ds9ts2). |
+
+The plugin manifest launches `${CLAUDE_PLUGIN_ROOT}/mcp/launch.sh`, which picks
+the engine and `exec`s it, so reverting to Python never means editing a plugin
+installed inside a runtime. The TypeScript server requires `node` ≥ 24 on the
+PATH the MCP client spawns it with; the Python branch requires `memory` to be
+importable from a bare `python3`.
 
 ### Set by External Runtimes (do not set manually)
 

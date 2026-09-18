@@ -152,6 +152,45 @@ one call can spend, what one call can trigger, and what leaks on the way**.
 - Secrets: the server reads no credentials itself; the embedding path reuses DS8's transport,
   whose secret handling (env/config only, never argv, never logged) is already in force.
 
+### Amendment (CV22.DS9.TS2, 2026-09-18): this server now performs exactly one write
+
+US1 and US2 described a server that could not write at all, and US2's read-only handle made
+that literally true. TS2's D1 changes the fact, so it changes this model rather than leaving
+a reviewed artifact stale.
+
+**What changed.** An agent-initiated `search_memories(query)` records one `llm_calls` row
+again, as the Python server always has — US2's read-only open had silently made agent spend
+invisible, which also blocked TS1's wallet guard (item 3 above counts from that ledger).
+
+**Why it does not widen the read-oracle framing.**
+
+- The write is **append-only to an observability table**, through a second connection whose
+  `prepare` accepts only `INSERT INTO llm_calls` or a read: no `exec`, no DDL, no
+  `UPDATE`/`DELETE`/`DROP`, no transaction control, no other table. Statement-level, not
+  documented-level — `ts/test/db/ledgerOpen.test.ts` tries each refused shape.
+- The **tools never receive that connection**. `ToolRuntime` carries a *function*, typed so a
+  handle cannot be put there, and the connection is constructed in `main.ts` and closed over.
+  No present or future tool can reach it to write an agent-influenced value.
+- The tools' own handle remains **read-only at the driver level**, so item 1's and item 2's
+  analysis is unchanged: a tool that tried to write still fails.
+- **Bodies are withheld.** The row stores `prompt=""` unless `MEMORY_LOG_LLM_CALLS=full`,
+  the same policy Python's `build_llm_logger` applies. In `full` mode an agent-authored query
+  would persist in `llm_calls.prompt` — opt-in, identical to Python, and nothing reads that
+  column back into model context. Recorded, ranked low, not mitigated further.
+- The row is **unattributed** (`conversation_id`/`session_id` null), exactly as Python writes
+  it. TS1 decides whether its guard needs a marker to tell MCP spend from front-door spend;
+  that would be a divergence from the oracle and is TS1's to record.
+
+**Item 5 gains one line.** A migration applied at launch writes
+`migrate_on_open applied=<ids> backup=<file>` to stderr — ids and a file name, never content.
+The sentinel's rule (no argument or result bytes in any log sink) is unchanged, and steady
+state keeps stderr empty.
+
+**Item 3 is unchanged in ownership and now measurable.** Spend became *visible* here; it
+becomes *bounded* in TS1. Between the manifest flip and TS1 the server can spend without a
+ceiling — exactly the posture the Python server has had since CV21.E2.S2, at zero installed
+consumers. TS1 is a gate on distributing the plugin beyond the author.
+
 ### What this story implements from the model
 
 Items 5, 6, 7 — the logging sentinel, the never-exit loop, and the `id` semantics — plus the
