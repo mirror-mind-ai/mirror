@@ -58,4 +58,27 @@ engine's payload and the line count; it never prints content.
 
 ## Validation Evidence
 
-Pending implementation and validation.
+Run 2026-09-17, before the Navigator route.
+
+- `npm test` in `ts/`: 2337 pass, 0 fail (81 under `test/mcp`).
+- `pytest tests/unit/memory/mcp`: 21 pass (two new for the D1 fix).
+- Three goldens regenerate to a no-op; oracle drift clean.
+- `scripts/mcp_two_engine_diff.sh`: **9 responses identical byte for byte**, both
+  engines exit 0, both stderr empty.
+- `scripts/mcp_real_copy_probe.sh` on the owner's 50 MB database: **12 of 12 tools
+  agree**, including `mirror_context` (19,113 bytes of assembled identity) and
+  `journey_status` (14,439 bytes). Neither engine wrote: `memory_access_log`
+  3776 -> 3776, `llm_calls` 547 -> 547.
+
+Mutation evidence, since green tests are not the claim:
+
+| mutation | expected | result |
+|---|---|---|
+| drop `pyFloat` from the score mapper | fail | 2 tests failed |
+| flip `ORDER BY created_at DESC` -> `ASC` | fail | 3 tests failed |
+| flip conversation `started_at DESC` -> `ASC` | fail | 3 tests failed |
+| reverse the ranked result order | fail | 2 tests failed |
+| shift a score by 0.01 (above the 1e-6 tolerance) | fail | 2 tests failed |
+| drop the AI-12 `logAccess: false` opt-out | fail | 1 test failed |
+| restore the `memories --search` reinforcement defect | fail | 1 test failed |
+| `persona` -> `persona ?? ""` in the conversation mapper | fail | 1 test failed (after the transcript fixture was widened to reach a null row) |
