@@ -117,6 +117,9 @@ assertions, not one blanket "no reinforcement".
 
 ---
 
+**Session handoff:** [handoff.md](handoff.md) — what is true now, why TS2 goes before TS1,
+and what travels with this story.
+
 ## Candidate Stories
 
 | Code | Story | Type | Outcome | Status |
