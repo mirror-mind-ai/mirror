@@ -12,6 +12,7 @@
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { MCP_LEDGER_SESSION } from "#mcp/guards.ts";
 import { searchMemoriesTool } from "#mcp/tools/providerCrossing.ts";
 import { embeddingLedgerHook } from "#observability/ledgerHooks.ts";
 import { DEFAULT_EMBEDDING_MODEL } from "#providers/config.ts";
@@ -47,7 +48,7 @@ test("a query search through the sink writes exactly one priced llm_calls row", 
       {
         embeddingProvider: meteredProvider,
         frozenNowMs: GOLDEN.frozen_now_ms,
-        embeddingLedger: embeddingLedgerHook(db),
+        embeddingLedger: embeddingLedgerHook(db, { sessionId: MCP_LEDGER_SESSION }),
       },
     );
 
@@ -62,10 +63,13 @@ test("a query search through the sink writes exactly one priced llm_calls row", 
     assert.equal(row.response, "");
     assert.equal(row.prompt_tokens, PROMPT_TOKENS);
     assert.equal(row.completion_tokens, null);
-    // Parity with Python's MCP row: unattributed. TS1 decides whether it needs
-    // a marker to tell MCP spend from front-door spend; it is not invented here.
+    // FLIPPED AT CV22.DS9.TS1, deliberately. TS2 wrote this row at Python's shape --
+    // unattributed -- and recorded that a wallet guard reading it could not tell MCP spend
+    // from extraction spend. TS1 is that guard, so the row now carries the `mcp` marker and
+    // this assertion changes with the fact it was pinning. `conversation_id` stays null: an
+    // agent's search belongs to no conversation.
     assert.equal(row.conversation_id, null);
-    assert.equal(row.session_id, null);
+    assert.equal(row.session_id, MCP_LEDGER_SESSION);
 
     const expected = computeCost(DEFAULT_EMBEDDING_MODEL, PROMPT_TOKENS, null);
     assert.notEqual(expected, null, "the cost authority must price the pinned model");
@@ -85,7 +89,7 @@ test("a filter search crosses no provider and writes no ledger row", async () =>
       {
         embeddingProvider: meteredProvider,
         frozenNowMs: GOLDEN.frozen_now_ms,
-        embeddingLedger: embeddingLedgerHook(db),
+        embeddingLedger: embeddingLedgerHook(db, { sessionId: MCP_LEDGER_SESSION }),
       },
     );
     assert.equal(ledgerRows(db).length, 0);

@@ -1,7 +1,11 @@
 import type { Database } from "#db/database.ts";
 import { blobToFloat32 } from "#db/decode.ts";
 import { getIdentityContent, listIdentityByLayer } from "#identity/identityRead.ts";
-import { type EmbeddingProvider, generateEmbeddingSafely } from "#providers/embedding.ts";
+import {
+  type EmbeddingAttemptInfo,
+  type EmbeddingProvider,
+  generateEmbeddingSafely,
+} from "#providers/embedding.ts";
 import { cosineSimilarity } from "#search/ranker.ts";
 import { stripAccents } from "#util/slug.ts";
 
@@ -13,6 +17,16 @@ export interface MirrorContextOptions {
   touchesIdentity?: boolean;
   touchesShadow?: boolean;
   embeddingProvider?: EmbeddingProvider;
+  /**
+   * Where the attachment-search embedding is recorded as spend (CV22.DS9.TS1).
+   *
+   * Attachment search is a paid call that neither engine logged: Python's
+   * `attachment.py` calls `generate_embedding(query)` with no `on_llm_call`, against its
+   * own AI-09 rule that every model-in-the-loop call site logs. The MCP server passes a
+   * sink so its `mirror_context(query)` spend is countable; every other caller omits it
+   * and keeps the oracle's behaviour.
+   */
+  embeddingLedger?: (info: EmbeddingAttemptInfo) => void;
   extensionContext?: string;
 }
 
@@ -79,6 +93,7 @@ export async function loadMirrorContext(
       options.query,
       options.journey ?? null,
       options.embeddingProvider,
+      options.embeddingLedger,
     );
     if (attachments.length > 0) {
       const attachmentParts = ["=== relevant attachments ==="];
@@ -100,11 +115,16 @@ export async function relevantAttachments(
   query: string,
   journey: string | null,
   provider?: EmbeddingProvider,
+  embeddingLedger?: (info: EmbeddingAttemptInfo) => void,
 ): Promise<{ row: AttachmentRow; score: number }[]> {
   const rows = attachmentRows(db, journey);
+  // No attachments, no embedding: the early return is why a query against a database
+  // without attachments records no spend -- there is none.
   if (rows.length === 0) return [];
   if (!provider) throw new Error("attachment embedding replay provider is required");
-  const queryEmbedding = await generateEmbeddingSafely(provider, query);
+  const queryEmbedding = await generateEmbeddingSafely(provider, query, {
+    ...(embeddingLedger ? { onAttempt: embeddingLedger } : {}),
+  });
   const queryTokens = (query.match(/[\p{L}\p{N}_]+/gu) ?? [])
     .filter((token) => [...token].length >= 2 || /^\p{N}+$/u.test(token))
     .map((token) => stripAccents(token.toLowerCase()));

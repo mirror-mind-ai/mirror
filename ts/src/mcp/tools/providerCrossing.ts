@@ -179,6 +179,9 @@ export async function mirrorContextTool(
     journey: journey ?? null,
     query: query ?? null,
     embeddingProvider: runtime.embeddingProvider,
+    // TS1: attachment search is the tool's paid path and neither engine recorded it.
+    // Same sink as `search_memories`, so one window counts the whole surface.
+    ...(runtime.embeddingLedger ? { embeddingLedger: runtime.embeddingLedger } : {}),
     extensionContext,
   });
 }

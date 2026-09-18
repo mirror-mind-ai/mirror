@@ -23,6 +23,7 @@ const { resolveSearchEmbeddingProvider } = await import("#frontDoor/searchRoute.
 const { openDatabaseForLedgerAppend, openDatabaseReadOnly } = await import("#db/database.ts");
 const { ensureDatabaseReady } = await import("#db/readyOnOpen.ts");
 const { embeddingLedgerHook } = await import("#observability/ledgerHooks.ts");
+const { MCP_LEDGER_SESSION } = await import("./guards.ts");
 const { basename } = await import("node:path");
 const { wiredRegistry } = await import("./registry.ts");
 const { serve } = await import("./serve.ts");
@@ -72,10 +73,15 @@ const db = openDatabaseReadOnly(databasePath);
 // a session that never searches never opens it. The handle can prepare nothing
 // but the `llm_calls` append, and it never reaches a tool: the registry gets
 // the SINK below, not this connection.
+// Attributed to this surface (TS1 D2): extraction embeds every memory it creates, so a
+// session close writes dozens of embedding rows in a minute. A wallet guard counting all
+// of them would refuse the agent because the USER ended a conversation. The marker is what
+// makes the count name the actor it guards -- and it never leaves this file, so no tool can
+// write a row claiming to be someone else.
 let ledgerDb: ReturnType<typeof openDatabaseForLedgerAppend> | null = null;
 const embeddingLedger = (info: Parameters<ReturnType<typeof embeddingLedgerHook>>[0]): void => {
   ledgerDb ??= openDatabaseForLedgerAppend(databasePath);
-  embeddingLedgerHook(ledgerDb)(info);
+  embeddingLedgerHook(ledgerDb, { sessionId: MCP_LEDGER_SESSION })(info);
 };
 
 // The live provider resolves its config lazily, so a missing key degrades the

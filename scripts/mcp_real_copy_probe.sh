@@ -253,11 +253,13 @@ if row:
     role, model, prompt, response, cost, conversation, session = row
     # Shape only -- the query is agent-authored text and the row is the user's
     # own spend record; neither is printed.
+    # `session` carries the MCP marker since CV22.DS9.TS1 -- the guard counts by it, so
+    # the probe asserts it rather than the unattributed shape TS2 recorded.
     print(f"   row: role={role} model={model} "
           f"bodies_withheld={prompt == '' and response == ''} "
           f"priced={cost is not None} "
-          f"unattributed={conversation is None and session is None}")
-    ok &= role == "embedding" and prompt == "" and response == ""
+          f"session={session} conversation_unset={conversation is None}")
+    ok &= role == "embedding" and prompt == "" and response == "" and session == "mcp"
 print("   done: exactly one ledger row, nothing else written" if ok else "   FAIL: ledger write is wrong")
 sys.exit(0 if ok else 1)
 LEDGER_PY
