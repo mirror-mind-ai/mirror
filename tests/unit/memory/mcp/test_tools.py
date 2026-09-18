@@ -66,7 +66,7 @@ def test_mirror_context_returns_text_without_mutating_mirror_state(mcp_client) -
     assert session_count() == before
 
 
-def test_journey_status_serializes_rows_without_embeddings_or_reprs(mcp_client) -> None:
+def test_journey_status_serializes_rows_without_embeddings_or_reprs(mcp_client, mocker) -> None:
     """CV22.DS9.US2 (D1): the payload carries data, not Pydantic ``__str__``.
 
     Before the fix, ``default=str`` rendered live Memory and Conversation objects
@@ -74,6 +74,14 @@ def test_journey_status_serializes_rows_without_embeddings_or_reprs(mcp_client) 
     for a single memory, and ~3.2 MB for a no-slug call on a real database. A
     tool whose answer cannot fit in any context window is not a working tool.
     """
+    # add_memory embeds, which reaches a provider. Patched, as the sibling test
+    # does: a unit test must not depend on a key or spend money to run.
+    import numpy as np
+
+    mocker.patch(
+        "memory.services.memory.generate_embedding",
+        return_value=np.ones(1536, dtype=np.float32) / np.sqrt(1536),
+    )
     mcp_client.journeys.create_journey(
         slug="ds9-fixture",
         content=(
