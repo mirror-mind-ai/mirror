@@ -13,8 +13,11 @@ the DS2/DS5/DS7 capabilities the tools wrap
 > **Parity scope (Navigator decision, 2026-09-17 — plan D10).** Payloads are byte-identical
 > **except** the score field of the two ranked `search_memories` query cases, which is graded
 > to 1e-6. Python's `np.dot` accumulates in float32 and JavaScript has no float32 arithmetic,
-> so identical vectors diverge at the ~8th significant digit (measured: 3.6e-08). Order and
-> every other field stay exact. Any later claim that this surface is byte-identical to
+> so identical vectors diverge at the ~8th significant digit (measured: 3.6e-08). Stronger
+> still: **Python disagrees with Python across machines** by ~3e-08 (CI versus the
+> development laptop), because numpy's float32 accumulation is platform-dependent — the
+> score was never a byte contract in any language. The golden records it rounded to six
+> decimals. Order and every other field stay exact. Any later claim that this surface is byte-identical to
 > Python — including DS10's deletion rationale — carries this exception.
 
 ## Outcome

@@ -176,6 +176,17 @@ the MCP surface is byte-identical to Python — including DS10's deletion ration
 is the contract a model can act on; an 8th-significant-digit difference in a relevance hint
 is not.
 
+**Amended at validation (2026-09-17), and it strengthens the decision.** CI failed the
+determinism gate: the golden did not regenerate to a no-op on the runner. The cause is not
+TypeScript at all — **Python disagrees with Python across machines**, by ~3e-08 on all three
+ranked rows (measured against the CI log), because numpy's float32 dot product uses
+platform-dependent pairwise/SIMD summation. So the score was never a byte contract in any
+language, and a golden recording its full mantissa fails its own gate on any other host.
+The generator now records the score rounded to six decimals — coarser than the observed
+platform spread, and still inside the 1e-06 tolerance (5e-07 rounding + 3.6e-08
+float32-vs-float64 = 5.4e-07). Order and every other field stay byte-exact. The transcript
+contains no query call, so it remains byte-stable everywhere.
+
 **D11 — Fixture vectors are 1536-dimensional, derived from a seed on both engines.** The
 first fixture used 8 dimensions, which Python accepts and TypeScript rejects:
 `generateEmbeddingSafely` enforces `EMBEDDING_DIMENSIONS = 1536` and degrades the search to

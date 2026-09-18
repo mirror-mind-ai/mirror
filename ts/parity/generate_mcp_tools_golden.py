@@ -589,12 +589,38 @@ def _tools_framing_golden(db_path: Path, transcript: str) -> dict[str, Any]:
     }
 
 
+# The ranked score is not reproducible even between two PYTHON runs on
+# different machines: numpy accumulates a float32 dot product with
+# platform-dependent pairwise/SIMD summation, and the CI runner disagrees with
+# the development machine by ~3e-08 (measured, on all three ranked rows). A
+# golden that records the full mantissa is therefore a golden that fails its own
+# determinism gate on any other host.
+#
+# So the score is recorded ROUNDED to six decimals -- coarser than the observed
+# platform spread and still well inside plan D10's 1e-06 comparison tolerance
+# (worst case: 5e-07 of rounding plus 3.6e-08 of float32-vs-float64 = 5.4e-07).
+# Order and every other field remain byte-exact, which is what D10 scoped as the
+# contract. Only these two query cases carry a score; the transcript deliberately
+# contains no query call, so it stays byte-stable everywhere.
+SCORE_DECIMALS = 6
+
+
+def _round_scores(payload: str) -> str:
+    rows = json.loads(payload)
+    for row in rows:
+        if isinstance(row, dict) and isinstance(row.get("score"), float):
+            row["score"] = round(row["score"], SCORE_DECIMALS)
+    return json.dumps(rows, ensure_ascii=False, indent=2)
+
+
 def _run_cases(client: MemoryClient) -> list[dict[str, Any]]:
     recorded: list[dict[str, Any]] = []
     for case in CASES:
         tool = tools.TOOLS_BY_NAME[case["tool"]]
         try:
             payload = tool.handler(client, case["arguments"])
+            if case["tool"] == "search_memories" and "query" in case["arguments"]:
+                payload = _round_scores(payload)
             recorded.append({**case, "payload": payload, "raises": None})
         except Exception as exc:  # the dispatcher renders these as isError results
             recorded.append({**case, "payload": None, "raises": str(exc)})
