@@ -86,4 +86,47 @@ as an n=1 observation against the prediction, not as a property.
 
 ## Validation Evidence
 
-Pending implementation and validation.
+**Automated, CI green at `3a80cffc`**: 2389 TS tests, typecheck and lint clean apart from
+the pre-existing `routing.ts` warning; `uv run pytest` green except CR058's known
+machine-local flake.
+
+**One CI failure, diagnosed and not ours.** The first run of `ts (macos-latest)` failed in
+the *Bootstrap custody parity* step — `concurrency race (8 real processes bootstrapping the
+same fresh path)` reported one worker failure. Nothing in this story touches bootstrap, and
+a re-run of the same commit with no code change passed. This is
+[CR084](../../../../refinement/rs010-cv22-oracle-and-port-hygiene/cr084-the-bootstrap-lock-is-not-exclusive-while-it-is-being-written.md)
+— the bootstrap lock is not exclusive between creating the file and writing its record —
+appearing unprompted in CI for the first time. Until now it was only reproducible by
+staging the window by hand, so this is new evidence about its priority, recorded at Debt
+Review rather than absorbed here.
+
+**Step 1 — two-engine diff through the launcher**, run 2026-09-18 with guards on by
+default: 9 responses byte-identical on both branches, empty stderr, sentinel routing
+confirmed (default → TypeScript, `MIRROR_TS_MCP=0` → Python 0.31.14). Guards do not touch
+in-range calls.
+
+**Steps 2–3 — `scripts/mcp_guard_probe.sh`**, on a copy of the 50 MB production database,
+at `MIRROR_MCP_EMBED_RATE_LIMIT=3`:
+
+```text
+   limit=0   -> isError Error: recall_conversation: limit must be an integer from 1 to 200 (received 0)
+   limit=999 -> isError Error: recall_conversation: limit must be an integer from 1 to 200 (received 999)
+   limit=0 with MIRROR_TS_MCP_GUARDS=0 -> ok (the oracle's whole-transcript behaviour, restored)
+   allowed=3 (expected 3)  mcp ledger rows 0 -> 3
+   refusal: isError Error: search_memories is rate-limited (3 calls in 10 minutes). Use a
+     filter instead — journey, layer, or type — or ask the user to raise
+     MIRROR_MCP_EMBED_RATE_LIMIT. Do not retry this tool.
+   guard refused tool=search_memories reason=rate_limit
+   ✓ no query or payload in the log
+   bodies stored in mcp rows: 0 (must be 0)
+   memory_access_log rows: 3786 (unchanged — AI-12 holds while spend is counted)
+```
+
+Two defects in the probe itself were found by running it, both fixed: a 180-character
+truncation cut the end off the refusal so the terminal-wording check failed against text
+that was terminal, and a successful payload would have been printed — memory and transcript
+content, against the script's own privacy claim. A success is now reported by size and
+withheld; a refusal prints in full, because its wording is the control under test.
+
+**Step 4 — the real Claude session: PENDING.** The Navigator's, and the story's E2E: the
+refusal text is a hypothesis about model behaviour until a model reads it.
