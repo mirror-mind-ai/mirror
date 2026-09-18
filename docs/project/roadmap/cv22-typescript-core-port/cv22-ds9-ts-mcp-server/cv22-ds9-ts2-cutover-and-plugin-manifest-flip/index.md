@@ -2,7 +2,7 @@
 
 # CV22.DS9.TS2 — Cutover and plugin manifest flip
 
-**Status:** 🟡 Planned — Plan drafted and panel-reviewed 2026-09-18, pending Navigator approval and **D1**
+**Status:** ✅ Done — 2026-09-18 (Navigator validation accepted). D1 answered **(C) two connections**
 **Type:** Technical Story
 **Depends on:** CV22.DS9.US1 (protocol, `serve.ts`, threat model); CV22.DS9.US2 (the seven
 tools, D12's read-only open, `mcp_two_engine_diff.sh`, `mcp_real_copy_probe.sh`); CV21.E2

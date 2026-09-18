@@ -12,6 +12,66 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-18 — CV22.DS9.TS2: the plugin launches TypeScript, and the agent's search is spend again
+
+The MCP surface is now answered by TypeScript in the place that matters — the
+command Claude's plugin manifest actually names. DS9 is 3/4; only TS1's wallet
+guards remain, and they are unblocked because this story wrote the ledger they
+count from.
+
+**The database-open decision (D1), inherited from US2's D12.** US2 opened the
+server read-only and accepted, in writing, that agent searches would go
+unrecorded as spend. The obvious repair was the DS4 backup gate every other live
+TS write uses; it was rejected on **shape**, not price. `openDatabaseForWrite`
+verifies its backup record once, at open, which is honest for a
+snapshot→write→exit CLI and false for a process that lives a whole client
+session: a snapshot taken at launch is not the state before a row written forty
+minutes later. Re-snapshotting per write would put 399 ms and ~50 MB on the
+agent's response path and overwrite the front door's undo with an observability
+row. So the write is **narrowed instead of gated** —
+`openDatabaseForLedgerAppend` returns a handle that can prepare only
+`INSERT INTO llm_calls` or a read: no `exec`, no DDL, no UPDATE/DELETE/DROP, no
+transaction control, no other table. The failure modes a backup would undo are
+unreachable rather than recoverable. The connection never leaves `main.ts`; tools
+receive a sink *function*, typed so a handle cannot be passed, while their own
+database stays read-only at the driver level.
+
+**The revert (D5).** A manifest points at a command, and a plugin installed in
+someone's runtime is not re-edited by an environment variable, so the DS7 revert
+reflex did not transfer. `plugins/mirror-mind/mcp/launch.sh` `exec`s one engine
+or the other — no intermediary to orphan, no signals to forward — and resolves
+the repository from its own location, the trick `config.py` uses to find `.env`.
+The gate is read from `.env` as well as the environment, environment first:
+every other `MIRROR_TS_*` gate works from that file because Node loads it before
+the front door reads it, but this script decides before Node exists, so without
+an explicit read the one gate a user reaches for under pressure would have been
+the only one that silently ignored it. Grepped, never sourced — that file holds
+the API key.
+
+**Two parity gaps closed on the way.** The server now migrates on open, as
+Python's `get_connection` always has, so a pending TS-authored migration no
+longer surfaces as a tool error on the first read that touches the new shape.
+And `initialize` reports the project version instead of `0.0.0`, which only the
+parity harness ever masked by exporting `MIRROR_MCP_VERSION`.
+
+Validation: CI green at `4493fe00`; two-engine diff through the launcher on both
+branches, 9 responses byte-identical; real-copy probe on a copy of the 50 MB
+production database, 12 tools byte-identical, then one query search writing
+`llm_calls +1` with `memory_access_log +0`. The E2E was a real Claude session:
+seven tools called (4–23 ms, and 2 s for the paid path), a malformed call
+returned as an `isError` result the server survived, `serverInfo` reporting
+`0.31.14` through a real client, and **zero stderr bytes** for the whole session.
+Claude's own MCP log also recorded the revert routing to Python.
+
+Carried forward to TS1: the ledger row is **unattributed**, exactly as Python
+writes it, so a guard cannot separate MCP spend from front-door spend without a
+marker the oracle never had; and until TS1 lands the server spends without a
+ceiling — Python's posture since CV21.E2.S2, acceptable at zero installed
+consumers and a gate on distributing the plugin. Made visible, not caused:
+CV21's plugin contract assumes `memory` is importable from a bare `python3`, and
+on this machine it is not — so the flip is the first time a plugin load of this
+server works here at all.
+
 ### 2026-09-17 — CV22.DS9.US2: the seven MCP tools, and two defects found by porting them
 
 **Twelve of twelve tools agree on a copy of the real database.** Every `tools/call` the

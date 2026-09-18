@@ -2,7 +2,7 @@
 
 # CV22.DS9 — TS MCP Server
 
-**Status:** 🟢 In Progress — pulled and authored 2026-09-17; **US1 and US2 done (2/4)**; TS2 next, then TS1
+**Status:** 🟢 In Progress — pulled and authored 2026-09-17; **US1, US2, and TS2 done (3/4)**; TS1 remains, now unblocked
 **Type:** Delivery Story
 **Depends on:** CV22.DS7 (command burn-down, done 14/14 — every capability the tools
 need is already TS-owned); CV22.DS8 (live-provider cutover, done — the embedding call
@@ -126,16 +126,22 @@ and what travels with this story.
 |------|-------|------|---------|--------|
 | [CV22.DS9.US1](cv22-ds9-us1-json-rpc-protocol-core/index.md) | JSON-RPC protocol core | User Story | `handle_message` ported to TS with exact parity on a committed golden: `initialize` (including protocol-version echo), `notifications/initialized`, `ping`, `tools/list`, `tools/call` dispatch, notification-vs-request semantics, and the error taxonomy (`-32700`, `-32600`, `-32601`, `-32602`, plus tool errors returned as `isError` results rather than protocol errors). No routing flip; the threat model is this story's Plan input | ✅ **Done — 2026-09-17.** 22 dispatch cases plus a spawned-process framing transcript, byte-identical across engines; the `json.dumps` separator gap fixed in `wire.ts` rather than recorded as a divergence; drain-before-exit mutation-proven; stderr empty under bare `node`. Two Python-side findings deferred to RS007 |
 | CV22.DS9.US2 | The seven read/context tools | User Story | Each tool wired to its existing TS capability with byte-exact payload parity (`ensure_ascii=False, indent=2, default=str` JSON), the `log_access=false` invariant pinned, and `tools/list` schemas byte-identical so no client re-negotiates | 🟡 Planned |
-| CV22.DS9.TS1 | Wallet and abuse guards | Technical Story | **Blocked on TS2's database-open decision (US2 D12): the server currently opens read-only and records NO `llm_calls` row for an agent search, so there is no spend for this guard to count.** AI-19's per-tool call-rate guard and optional daily USD ceiling on the two embedding-crossing tools, with guard state read from the cross-process `llm_calls` ledger (not process memory — a user runs several MCP clients at once) and cost from the single TS cost authority DS8 ported; refusals are **terminal, agent-readable `isError` results** whose wording is prompt text; plus D4's argument validation and output bounds. **Deliberate divergence from Python** — none of it exists in the oracle — so it is its own story, its own decision, and its own revert | 🟡 Planned |
-| CV22.DS9.TS2 | Cutover and plugin manifest flip | Technical Story | **Owns the database-open decision deferred by US2 D12** — read-only (no spend ledger, TS1 blind) versus a backup-gated or ledger-only writable open, measured at 399 ms / 49.3 MB per launch for the backup path. The `mcpServers` entry launches the TS server through D5's revert mechanism; the **scripted** stdio smoke diffs a fixed JSON-RPC transcript against the recorded Python baseline, then one real Claude session; blast radius named (Claude is the only production consumer of the manifest today); no CV21 scope is redefined | 🟡 Planned |
+| CV22.DS9.TS1 | Wallet and abuse guards | Technical Story | **Unblocked 2026-09-18 by TS2: an agent search now records one `llm_calls` row, so there is spend for this guard to count.** AI-19's per-tool call-rate guard and optional daily USD ceiling on the two embedding-crossing tools, with guard state read from the cross-process `llm_calls` ledger (not process memory — a user runs several MCP clients at once) and cost from the single TS cost authority DS8 ported; refusals are **terminal, agent-readable `isError` results** whose wording is prompt text; plus D4's argument validation and output bounds. **Deliberate divergence from Python** — none of it exists in the oracle — so it is its own story, its own decision, and its own revert | 🟡 Planned |
+| CV22.DS9.TS2 | Cutover and plugin manifest flip | Technical Story | The manifest launches `${CLAUDE_PLUGIN_ROOT}/mcp/launch.sh` rather than an engine; `MIRROR_TS_MCP=0` reverts to Python from the environment or from `.env`; the server opens like Python (migrate-on-open, version from `pyproject.toml`) and records the agent's search as spend through an `llm_calls`-only connection | ✅ **Done — 2026-09-18.** D1 answered **(C) two connections**: the tools keep the driver-level read-only handle and the single append-only write goes through a handle that can prepare nothing else — the DS4 backup gate was rejected on *shape*, not price, because it verifies its record once at open and this process lives for a whole session. Proven in a real Claude session: 7 tools, a malformed call the server survived, `llm_calls +1` with `memory_access_log +0`, `serverInfo 0.31.14`, and zero stderr |
 
 Four stories, sequenced protocol → tools → guards → flip, so that the surface is provably
 identical before it is made different, and made different before it is made live.
 
-**Sequence correction (2026-09-17, from US2 D12):** TS1 no longer follows US2 directly.
-The server opens read-only and records no `llm_calls` row for an agent search, so there is
-no spend for a wallet guard to count. **TS2 must settle how this server opens its database
-before TS1 can be planned.** The remaining order is TS2 → TS1.
+**Sequence correction (2026-09-17, from US2 D12), resolved 2026-09-18.** TS1 could not
+follow US2 directly: the server opened read-only and recorded no `llm_calls` row for an
+agent search, so there was no spend for a wallet guard to count. **TS2 settled it** — the
+row is written again, through a connection that can form no other statement — so TS1 is
+unblocked and is the last story in this Delivery Story. Two inputs travel to it from TS2's
+Debt Review: the row is **unattributed** (`conversation_id`/`session_id` null, exactly as
+Python writes it), so a guard cannot distinguish MCP spend from front-door or extraction
+spend without a marker the oracle never had; and until TS1 lands, the live server spends
+without a ceiling — acceptable at zero installed consumers, and a gate on distributing the
+plugin.
 
 **Inherited by the remaining three, from US1:** the threat model (in US1's `plan.md`), the
 golden and its generator, the oracle-drift coverage of `src/memory/mcp/`, the injectable
