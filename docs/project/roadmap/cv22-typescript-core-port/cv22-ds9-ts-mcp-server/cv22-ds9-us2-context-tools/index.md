@@ -2,7 +2,7 @@
 
 # CV22.DS9.US2 — The seven read/context tools
 
-**Status:** 🟡 Planned — pulled 2026-09-17
+**Status:** ✅ Done — 2026-09-17 (Navigator validation accepted)
 **Type:** User Story
 **Depends on:** CV22.DS9.US1 (registry seam, golden generator pattern, `wire.ts`, threat
 model); DS8 (the live embedding transport behind `search_memories` and `mirror_context`);
@@ -82,7 +82,41 @@ And   no route, manifest edit, or launcher exists
 
 ---
 
+## What Was Delivered
+
+`ts/src/mcp/`: `payload.ts` (one Python-JSON encoder at two widths, with the `PyFloat`
+runtime marker), `readModels.ts` (the two read models TS lacked), `tools/deterministic.ts`
+and `tools/providerCrossing.ts` (the seven handlers), `registry.ts`'s `wiredRegistry`, and a
+`main.ts` that opens read-only. 81 tests under `ts/test/mcp/`.
+
+Evidence: 28 golden cases, a fixture two-engine transcript diff (9 responses byte-identical),
+and a read-only copy of the 50 MB production database where **12 of 12 tools agree** —
+`mirror_context` at 19,113 bytes, `journey_status` at 14,439 — with all four row counts
+unchanged. Eight mutations run, each expected to fail and each failing; the table is in the
+[test guide](test-guide.md).
+
+Two user-visible repairs landed on the way: `journey_status` stopped returning 3.2 MB of
+Pydantic reprs and vector bytes (D1, fixed in Python first), and `memories --search` stopped
+reinforcing the ranker, restoring the AI-12 behavior Python has had since July.
+
+## Deferred Debt (Debt Review, 2026-09-17)
+
+1. **Accepted scope, not debt:** D12 leaves agent-initiated searches uncounted as spend, so
+   **TS2's database-open decision is a prerequisite for TS1's wallet guard**.
+2. D10's 1e-6 score tolerance travels with every "byte-identical" claim about this surface,
+   including DS10's deletion rationale.
+3. Python's `list_journeys` docstring disagrees with its code (promises three fields,
+   returns five). Ported as the code behaves.
+4. `journey_status` with no slug is still the widest read here — 226 KB / ~57K tokens over
+   21 journeys — a cap candidate for TS1.
+
+Also captured during this story: **CR086** against RS010, for the root cause of the
+`memories --search` defect — a baseline advance that absorbed an oracle change nobody ported.
+
+---
+
 ## Artifacts
 
-- [Plan](plan.md)
-- [Test Guide](test-guide.md)
+- [Plan](plan.md) — D1–D12, the corrected D6, and the scope amendment
+- [Test Guide](test-guide.md) — evidence and the mutation table
+- [Validation](validation.md) · [Review](review.md) · [Coherence](coherence.md)

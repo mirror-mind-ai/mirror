@@ -12,6 +12,53 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-17 — CV22.DS9.US2: the seven MCP tools, and two defects found by porting them
+
+**Twelve of twelve tools agree on a copy of the real database.** Every `tools/call` the
+Python MCP server answers is answered by TypeScript: the five deterministic tools over two
+read models TS did not have, and the two provider-crossing tools under a replay provider.
+Evidence is two spawned-process diffs — a fixture transcript (9 responses byte-identical)
+and a read-only `VACUUM INTO` copy of the owner's 50 MB database, where all twelve
+deterministic tool variants produce identical SHA-256, `mirror_context` at 19,113 bytes and
+`journey_status` at 14,439, with four row counts unchanged. **DS9 is 2/4.** Nothing is
+routed; `main.ts` is referenced by nothing until TS2.
+
+**Porting the tools found two real defects, one of them in production.** `journey_status`
+put live Pydantic objects into its payload and `default=str` rendered them as `key='value'`
+text **including `embedding=b'...'`** — measured at 3,205,993 bytes and ~800K tokens for a
+no-slug call, which no model can hold. The Navigator chose to fix Python first and port the
+fixed shape (D1): now 226,564 bytes, no blobs, no reprs. Separately, adding the AI-12
+`log_access` opt-out for the MCP tool exposed that **`memories --search` had no such option
+in TypeScript** and had been reinforcing the ranker on every exploratory search since the
+DS5 flip on 2026-07-16 — the exact defect AI-12 fixed in Python, reintroduced by the port.
+Fixed, with the historical rows deliberately not repaired (520 rows over 53 of 950 memories,
+no attribution rule that separates them from legitimate Builder-load reinforcement).
+
+**Two guards had failed, not one.** `intelligence/search.py` is a tracked oracle and the
+tripwire did fire on AI-12 — but the baseline was advanced on 2026-07-23 inside a commit
+about routing `tasks`, absorbing the drift without porting the flag. And
+`externalRoutes.test.ts` *asserted* the defect, expecting one access row, because it was
+written from observed TypeScript behavior instead of from the oracle. Captured as **CR086**
+against RS010: a baseline advance must name the oracle change it absorbs and, in the same
+commit, port it or open a CR — and the question it must answer is "what did the oracle do?",
+not "what does our port do now?".
+
+Three Navigator decisions shaped the story and travel with it. **D10:** Python's `np.dot`
+accumulates in float32 and JavaScript widens to double, so ranked scores diverge at ~3.6e-08;
+order and every other field stay byte-exact and the score is graded to 1e-6, an exception
+now written into the US2 and DS9 indexes because DS10's deletion rationale will lean on the
+parity claim. **D12:** the server opens the database **read-only** — the alternatives were a
+399 ms, 49.3 MB backup per client launch or narrowing the DS4 write gate inside a wiring
+story — which matches the threat model's read-oracle framing but leaves agent searches
+**uncounted as spend**, so the remaining order is corrected to **TS2 before TS1**: the wallet
+guard cannot count what the server does not record.
+
+Green tests were not the claim. Eight mutations were run against the suite and each failed
+as expected; two of them had previously *survived* and exposed fixture holes — sort direction
+was ungraded because every candidate row shared a timestamp, and no null persona was ever
+rendered because a transcript stopped at `limit: 2`. **Next: TS2, the manifest cutover and
+the database-open decision.**
+
 ### 2026-09-17 — CV22.DS9.US1: the MCP protocol answers from TypeScript, byte for byte
 
 **Both servers, one transcript, an empty diff.** The Mirror MCP server's protocol layer —

@@ -2,7 +2,7 @@
 
 # CV22.DS9 — TS MCP Server
 
-**Status:** 🟢 In Progress — pulled and authored 2026-09-17; **US1 done (1/4)**; US2 next
+**Status:** 🟢 In Progress — pulled and authored 2026-09-17; **US1 and US2 done (2/4)**; TS2 next, then TS1
 **Type:** Delivery Story
 **Depends on:** CV22.DS7 (command burn-down, done 14/14 — every capability the tools
 need is already TS-owned); CV22.DS8 (live-provider cutover, done — the embedding call
@@ -128,6 +128,11 @@ assertions, not one blanket "no reinforcement".
 
 Four stories, sequenced protocol → tools → guards → flip, so that the surface is provably
 identical before it is made different, and made different before it is made live.
+
+**Sequence correction (2026-09-17, from US2 D12):** TS1 no longer follows US2 directly.
+The server opens read-only and records no `llm_calls` row for an agent search, so there is
+no spend for a wallet guard to count. **TS2 must settle how this server opens its database
+before TS1 can be planned.** The remaining order is TS2 → TS1.
 
 **Inherited by the remaining three, from US1:** the threat model (in US1's `plan.md`), the
 golden and its generator, the oracle-drift coverage of `src/memory/mcp/`, the injectable
