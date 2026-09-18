@@ -316,6 +316,53 @@ An agent-initiated search records one `llm_calls` row, as the Python server
 always has. It is written through a connection that can run nothing but that
 append; the tools' own handle is read-only at the driver level.
 
+### MCP wallet and abuse guards (CV22.DS9.TS1)
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `MIRROR_TS_MCP_GUARDS` | on | Set to `0` to remove every refusal and serve exactly what CV22.DS9.TS2 shipped. Recording and attribution stay on. |
+| `MIRROR_MCP_EMBED_RATE_LIMIT` | `30` | Embedding calls the MCP surface may make inside the window, across `search_memories` and `mirror_context` together and across every MCP client at once. |
+| `MIRROR_MCP_EMBED_RATE_WINDOW_MINUTES` | `10` | The sliding window. |
+| `MIRROR_MCP_DAILY_USD_CEILING` | unset | Trailing-24h ceiling on attributed MCP spend. Unset means no ceiling. |
+
+Set these where the launcher will find them — the repository `.env`, which
+`launch.sh` passes to node — or in the environment the MCP client is started
+with. **A malformed value fails the launch** with the variable named on stderr,
+rather than silently serving unguarded; the client shows the server as failed
+and its MCP log carries the reason.
+
+**Why a rate and not a budget by default.** An embedding costs about
+$0.000002, so a ceiling that actually bites would have to be set at cents. What
+a runaway agent loop really does is exhaust the provider's rate limit — whose
+429s then land on your *other* work — stall the agent about two seconds per
+call, and fill its context with search results. The rate guard is the control;
+the USD ceiling is there for when you have decided what this surface may cost
+you per day.
+
+**What a refusal looks like.** The agent receives a readable tool error, never a
+protocol error, and the server stays up:
+
+```text
+Error: search_memories is rate-limited (30 calls in 10 minutes). Use a filter
+instead — journey, layer, or type — or ask the user to raise
+MIRROR_MCP_EMBED_RATE_LIMIT. Do not retry this tool.
+```
+
+The MCP log gets one metadata-only line per refusal —
+`guard refused tool=search_memories reason=rate_limit` — never the query.
+
+**Seeing the spend.** Calls made by this surface are tagged in the `llm_calls`
+ledger with session `mcp`, so `inspect llm-calls --session mcp` is the view of
+what agents have spent. That tag is also what the guard counts: your own session
+closes write embedding rows too, and counting those would refuse the agent
+because *you* ended a conversation.
+
+**Argument bounds.** `limit` must be an integer within each tool's cap
+(`search_memories` 50, `list_conversations` 100, `recall_conversation` 200) and
+a query may be at most 4,000 characters. Python accepted `limit=0` on
+`recall_conversation` and returned the entire transcript; that is refused here,
+and `MIRROR_TS_MCP_GUARDS=0` restores it.
+
 ### Node-specific environment differences
 
 Two behaviors differ from Python's HTTP stack and are **not** papered over in

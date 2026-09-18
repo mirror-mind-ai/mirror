@@ -631,6 +631,8 @@ to the homes root (`~/.mirror-minds`).
 | `MIRROR_WELCOME` | (unset) | Set to `off`, `0`, `false`, or `no` to suppress the welcome card emitted by `python -m memory welcome`. See `docs/product/specs/welcome/index.md`. |
 | `MIRROR_TS_MCP` | (unset) | Set to `0` to make the Claude plugin's MCP server launch the Python engine instead of the TypeScript one. Read from the environment or from `.env`, environment first — see [Configuration](docs/reference/configuration.md#the-mcp-server-cv22ds9ts2). |
 
+| `MIRROR_TS_MCP_GUARDS` | (unset) | Set to `0` to remove the MCP wallet and abuse guards (rate limit, spend ceiling, argument caps). See [Configuration](docs/reference/configuration.md#mcp-wallet-and-abuse-guards-cv22ds9ts1). |
+
 The plugin manifest launches `${CLAUDE_PLUGIN_ROOT}/mcp/launch.sh`, which picks
 the engine and `exec`s it, so reverting to Python never means editing a plugin
 installed inside a runtime. The TypeScript server requires `node` ≥ 24 on the

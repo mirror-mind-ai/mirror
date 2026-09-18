@@ -143,6 +143,42 @@ one call can spend, what one call can trigger, and what leaks on the way**.
    `id: 0` treated as a notification gets no answer and the client hangs waiting. *Owner:*
    US1 — golden cases for `0`, `""`, `null`-present.
 
+### Amendment (CV22.DS9.TS1, 2026-09-18): items 1-3 have owners no longer pending
+
+**Item 3 (denial of wallet) is implemented.** A sliding-window rate guard — 30 embedding
+calls per 10 minutes by default — counts from the `llm_calls` ledger, so state is shared
+across every MCP client the user has open rather than living in one process. It counts only
+rows tagged `session_id = 'mcp'`, because extraction writes embedding rows at every session
+close and counting those would refuse the agent for the *user's* activity. A refusal is
+decided before the provider is reached, writes no row, and arrives as an `isError` result
+whose text forbids retrying — an agent told when to come back plans to come back, and the
+retry is the loop. An optional trailing-24h USD ceiling exists and is off by default:
+measured, an embedding costs ~$0.000002, so a ceiling that bites would sit at cents, and a
+default that never bites is a belief the user holds about being protected.
+
+**TS1 also closed a hole this model did not name.** `mirror_context(query)` embeds through
+attachment search, and neither engine recorded it — Python's `attachment.py` calls
+`generate_embedding(query)` with no `on_llm_call`. Half the paid surface was invisible to
+any ledger-based guard. TS1 records it; the Python omission is filed as an oracle finding.
+
+**Items 1-2 (exfiltration) are bounded per call, not in total — stated plainly.**
+Argument validation now refuses `limit=0`, negatives, fractions, non-numeric values, and
+anything above a per-tool cap (`search_memories` 50, `list_conversations` 100,
+`recall_conversation` 200), and a query may be at most 4,000 characters. So the
+cheapest shape — one call returning an entire transcript — is gone. What remains, and is
+accepted rather than papered over: **a cap bounds one call, not a sequence**. Free reads are
+not rate-limited, so an agent can still page a long transcript in several calls of 200.
+Rate-limiting free reads would punish legitimate use to slow an attacker who is already
+inside the model's context; that trade is a product decision, not a guard this story should
+have made silently. The residual defense remains what item 2 says it is: the client's
+per-call permission prompt, and the caps above.
+
+**A refusal never quotes a text argument.** A numeric `limit` is echoed (`received 0`)
+because it helps the agent correct itself; a string is reduced to `a non-numeric value`,
+because `limit` is typed integer but nothing stops an agent putting injected text there,
+and the refusal travels back into the model's context and into the client's log under the
+server's own voice.
+
 ### Non-threats, named so nobody re-litigates them
 
 - Network exposure: none. stdio only; no listener, no port. Adding one is a new story with
