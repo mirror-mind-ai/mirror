@@ -38,14 +38,13 @@ import {
   DEFAULT_SHADOW_SCAN_LIMIT,
   shadowScan,
 } from "#cultivation/scan.ts";
-import { bootstrapDatabaseIfMissing } from "#db/bootstrap.ts";
 import {
   type Database,
   openDatabaseForWrite,
   openDatabaseReadOnly,
   type WritableDatabase,
 } from "#db/database.ts";
-import { ensureMigratedOnOpen } from "#db/migrateOnOpen.ts";
+import { ensureDatabaseReady } from "#db/readyOnOpen.ts";
 import { assertSchemaState, SchemaStateError } from "#db/schemaState.ts";
 import { allDescriptors, descriptorsByLayer } from "#descriptor/descriptorRead.ts";
 import { createPythonProjectionRefresh } from "#explorer/projectionRefresh.ts";
@@ -233,16 +232,13 @@ function fallbackPython(argv: readonly string[]): number {
 }
 
 /**
- * Prepare a database for TS serving: bootstrap it if the file is absent (TS4),
- * then apply any pending TS-authored forward migration Python cannot (US3
- * migrate-on-open). The steady state is a cheap no-op; a one-time migration is
- * recorded as a redacted `migrate_on_open` event (migration ids + backup file
- * name, never content). Shared by every TS serving path so read and write opens
- * get the same activation before the serving connection is opened.
+ * Prepare a database for TS serving and record what happened in the front-door
+ * log: a redacted `migrate_on_open` event (migration ids + backup file name,
+ * never content). The activation itself lives in `db/readyOnOpen.ts`, shared
+ * with the MCP entry point, which writes its note to stderr instead.
  */
-function ensureDatabaseReady(dbPath: string, command: string | null): void {
-  bootstrapDatabaseIfMissing(dbPath);
-  const migration = ensureMigratedOnOpen(dbPath);
+function ensureDatabaseReadyForCli(dbPath: string, command: string | null): void {
+  const migration = ensureDatabaseReady(dbPath);
   if (migration.migrated) {
     logFrontDoor(frontDoorLogPath(dbPath), {
       command,
@@ -266,7 +262,7 @@ function runTs(argv: readonly string[]): number {
   // schema, and migrations under the cross-process lock — then serve read-only
   // from the fresh file. (This replaces the DS3 stopgap that delegated a
   // missing DB to Python; see docs/project/decisions.md.)
-  ensureDatabaseReady(dbPath, command ?? null);
+  ensureDatabaseReadyForCli(dbPath, command ?? null);
   const db = openDatabaseReadOnly(dbPath);
   try {
     assertSchemaState(db);
@@ -635,7 +631,7 @@ function withLiveWriteDbAt(
   // Missing DB => unbootstrapped install; TS bootstraps it (CV22.DS6.TS4) and
   // applies any pending TS-authored migration (US3), then the backup-gated
   // live-write seam opens the now-current file.
-  ensureDatabaseReady(dbPath, command);
+  ensureDatabaseReadyForCli(dbPath, command);
   const db = openDatabaseForWrite(dbPath, ensureBackup(dbPath));
   try {
     assertSchemaState(db);
@@ -663,7 +659,7 @@ async function withLiveWriteDbAsync(
 ): Promise<number> {
   const dbPath = resolveDbPathForCli(argv.slice(2));
   if (dbPath === null) return 2;
-  ensureDatabaseReady(dbPath, argv[0] ?? null);
+  ensureDatabaseReadyForCli(dbPath, argv[0] ?? null);
   const db = openDatabaseForWrite(dbPath, ensureBackup(dbPath));
   try {
     assertSchemaState(db);
@@ -793,7 +789,7 @@ async function runExtensionCatalog(argv: readonly string[]): Promise<TsDispatchO
   const { runExtensionCatalogRoute } = await import("./extensionCatalogRoute.ts");
   const dbPath = resolveDbPathForCli(argv.slice(1));
   if (dbPath === null) return { exitCode: 2 };
-  ensureDatabaseReady(dbPath, argv[0] ?? null);
+  ensureDatabaseReadyForCli(dbPath, argv[0] ?? null);
   const { pythonUtcIsoformat } = await import("#extensions/bindings.ts");
   return runExtensionCatalogRoute(argv, {
     mirrorHome: dirname(dbPath),
@@ -926,7 +922,7 @@ function runSeedCommand(argv: readonly string[]): number {
     throw error;
   }
 
-  ensureDatabaseReady(paths.dbPath, "seed");
+  ensureDatabaseReadyForCli(paths.dbPath, "seed");
   const db = openDatabaseForWrite(paths.dbPath, ensureBackup(paths.dbPath));
   try {
     assertSchemaState(db);
@@ -1407,7 +1403,7 @@ function runShadowWrite(argv: readonly string[]): number | Promise<number> {
 function withMirrorReadDb(argv: readonly string[], read: (db: Database) => number): number {
   const dbPath = resolveDbPathForCli(argv.slice(1));
   if (dbPath === null) return 2;
-  ensureDatabaseReady(dbPath, argv[0] ?? null);
+  ensureDatabaseReadyForCli(dbPath, argv[0] ?? null);
   const db = openDatabaseReadOnly(dbPath);
   try {
     assertSchemaState(db);
@@ -1429,7 +1425,7 @@ async function withMirrorWriteDb(
 ): Promise<number> {
   const dbPath = resolveDbPathForCli(argv.slice(1));
   if (dbPath === null) return 2;
-  ensureDatabaseReady(dbPath, argv[0] ?? null);
+  ensureDatabaseReadyForCli(dbPath, argv[0] ?? null);
   const db = openDatabaseForWrite(dbPath, ensureBackup(dbPath));
   try {
     assertSchemaState(db);
@@ -1612,7 +1608,7 @@ async function runMemorySearch(argv: readonly string[]): Promise<number> {
   // Missing DB => unbootstrapped install; TS bootstraps it (CV22.DS6.TS4) and
   // applies any pending TS-authored migration (US3) before the backup-gated
   // search read/log path opens it.
-  ensureDatabaseReady(dbPath, argv[0] ?? null);
+  ensureDatabaseReadyForCli(dbPath, argv[0] ?? null);
   const db = openDatabaseForWrite(dbPath, ensureBackup(dbPath));
   try {
     assertSchemaState(db);

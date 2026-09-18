@@ -22,10 +22,17 @@
 //    Each message is handled inside its own try, and failures become JSON-RPC
 //    responses rather than exits.
 
+import { dirname } from "node:path";
 import { createInterface } from "node:readline";
+import { fileURLToPath } from "node:url";
+import { versionFromPyproject } from "#runtime/version.ts";
 import { handleMessage, type JsonRpcResponse } from "./protocol.ts";
 import { defaultRegistry, type ToolRegistry } from "./registry.ts";
 import { encodeJsonLine } from "./wire.ts";
+
+// Resolved from this file, not the cwd: an MCP client spawns the server from
+// whatever directory the session happens to be in.
+const HERE = dirname(fileURLToPath(import.meta.url));
 
 export interface ServeOptions {
   registry?: ToolRegistry;
@@ -36,10 +43,15 @@ export interface ServeOptions {
 
 /** Resolve the server version the way `initialize` reports it. */
 export function resolveServerVersion(): string {
-  // DS10 owns versioning under npm; until then this mirrors Python's
-  // `importlib.metadata.version("mirror")` fallback of "0.0.0" rather than
-  // inventing a second source of truth.
-  return process.env.MIRROR_MCP_VERSION ?? "0.0.0";
+  // Python reports `importlib.metadata.version("mirror")` -- 0.31.x, measured
+  // under both `uv run` and a bare `python3` with `src` on PYTHONPATH. An
+  // explicit pin wins (the parity harness sets one); otherwise walk up for
+  // `pyproject.toml`, the same source the plugin manifest is generated from and
+  // the same walk `runtime version` already performs. Falling back to "0.0.0"
+  // would have made a client see the version change with the engine, since
+  // nothing but the harness exports MIRROR_MCP_VERSION. DS10 re-points this at
+  // the npm package version.
+  return process.env.MIRROR_MCP_VERSION ?? versionFromPyproject(HERE) ?? "0.0.0";
 }
 
 /** Write one line and resolve once it has actually left the process. */

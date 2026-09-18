@@ -9,7 +9,7 @@
  * none of consult's models are in Python's 2-entry price table either.
  */
 
-import type { Database, WritableDatabase } from "#db/database.ts";
+import type { Database, StatementRunner } from "#db/database.ts";
 import { type LogLlmCallsMode, resolveLogLlmCallsMode } from "#providers/config.ts";
 import { newId, nowIso } from "#util/pyGenerators.ts";
 
@@ -44,7 +44,7 @@ export interface LogLlmCallOptions {
  * formatting choice. Only explicit `full` mode persists bodies.
  */
 export function logLlmCall(
-  db: WritableDatabase,
+  db: StatementRunner,
   input: LogLlmCallInput,
   options: LogLlmCallOptions = {},
 ): void {

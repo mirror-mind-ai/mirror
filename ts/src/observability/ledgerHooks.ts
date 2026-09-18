@@ -32,7 +32,7 @@
  * unpriced and every existing golden is unchanged.
  */
 
-import type { WritableDatabase } from "#db/database.ts";
+import type { StatementRunner } from "#db/database.ts";
 import { logLlmCall } from "#observability/llmCalls.ts";
 import {
   type ModelPinOptions,
@@ -64,7 +64,7 @@ export type ChatLedgerHook = (response: LlmResponse, prompt: string) => void;
  * extraction pin — which is what Python logs.
  */
 export function chatLedgerHook(
-  db: WritableDatabase,
+  db: StatementRunner,
   role: string,
   context: LedgerContext = {},
 ): ChatLedgerHook {
@@ -100,7 +100,7 @@ export function chatLedgerHook(
  * input text rides the same body-withholding rule as every other row.
  */
 export function embeddingLedgerHook(
-  db: WritableDatabase,
+  db: StatementRunner,
   context: LedgerContext = {},
 ): (info: EmbeddingAttemptInfo) => void {
   const pins: ModelPinOptions = context.env ? { env: context.env } : {};

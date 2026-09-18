@@ -20,7 +20,10 @@ process.on("warning", (warning) => {
 
 const { resolveDbPath } = await import("#frontDoor/dbPath.ts");
 const { resolveSearchEmbeddingProvider } = await import("#frontDoor/searchRoute.ts");
-const { openDatabaseReadOnly } = await import("#db/database.ts");
+const { openDatabaseForLedgerAppend, openDatabaseReadOnly } = await import("#db/database.ts");
+const { ensureDatabaseReady } = await import("#db/readyOnOpen.ts");
+const { embeddingLedgerHook } = await import("#observability/ledgerHooks.ts");
+const { basename } = await import("node:path");
 const { wiredRegistry } = await import("./registry.ts");
 const { serve } = await import("./serve.ts");
 
@@ -43,7 +46,37 @@ const { serve } = await import("./serve.ts");
 // reading the first line, so an unconfigured install fails at startup rather
 // than answering `initialize` and then failing all seven tools.
 const databasePath = resolveDbPath([]);
+
+// Activate before opening, also as Python does: `get_connection` bootstraps a
+// missing file and runs migrations under the bootstrap lock before handing back
+// a connection, so every Python entry point -- this server included -- gets a
+// current schema. US2 opened read-only and skipped it, which meant a pending
+// TS-authored migration would surface as a tool error on the first read that
+// touched the new shape, where Python would simply have applied it.
+const migration = ensureDatabaseReady(databasePath);
+if (migration.migrated) {
+  // The one thing this server writes to stderr in normal operation. A migration
+  // is an operator-visible event and stderr is the client's log for this
+  // process; the front door records the same fact, redacted the same way, in
+  // the front-door log. Ids and a backup file name only -- never content.
+  process.stderr.write(
+    `migrate_on_open applied=${migration.appliedIds.join(",")} backup=${
+      migration.backupPath ? basename(migration.backupPath) : "none"
+    }\n`,
+  );
+}
+
 const db = openDatabaseReadOnly(databasePath);
+
+// The single sanctioned write (TS2 D1), on its own connection, opened lazily so
+// a session that never searches never opens it. The handle can prepare nothing
+// but the `llm_calls` append, and it never reaches a tool: the registry gets
+// the SINK below, not this connection.
+let ledgerDb: ReturnType<typeof openDatabaseForLedgerAppend> | null = null;
+const embeddingLedger = (info: Parameters<ReturnType<typeof embeddingLedgerHook>>[0]): void => {
+  ledgerDb ??= openDatabaseForLedgerAppend(databasePath);
+  embeddingLedgerHook(ledgerDb)(info);
+};
 
 // The live provider resolves its config lazily, so a missing key degrades the
 // search to lexical-only instead of failing the server -- the same posture the
@@ -55,6 +88,7 @@ await serve({
     db,
     runtime: {
       embeddingProvider,
+      embeddingLedger,
       databasePath,
       ...(process.env.MIRROR_HOME ? { mirrorHome: process.env.MIRROR_HOME } : {}),
       ...(process.env.MIRROR_USER ? { user: process.env.MIRROR_USER } : {}),

@@ -100,8 +100,19 @@ export interface WritablePreparedQuery extends PreparedQuery {
   run(...params: SqlValue[]): RunResult;
 }
 
+/**
+ * The narrowest write capability: prepare a statement and run it.
+ *
+ * Both `WritableDatabase` and the `llm_calls`-only `LedgerAppendDatabase`
+ * satisfy this, so append-only writers (the ledger hooks) can depend on what
+ * they actually use instead of demanding a handle that can also `exec` DDL.
+ */
+export interface StatementRunner {
+  prepare(sql: string): WritablePreparedQuery;
+}
+
 /** A writable handle over a SQLite *copy*. */
-export interface WritableDatabase extends Database {
+export interface WritableDatabase extends Database, StatementRunner {
   prepare(sql: string): WritablePreparedQuery;
   exec(sql: string): void;
 }
@@ -204,7 +215,7 @@ export function openDatabaseForWrite(
  * ledger append. Structural typing would otherwise let it satisfy
  * `WritableDatabase` and travel anywhere a write is accepted.
  */
-export interface LedgerAppendDatabase extends Database {
+export interface LedgerAppendDatabase extends Database, StatementRunner {
   prepare(sql: string): WritablePreparedQuery;
 }
 

@@ -17,7 +17,7 @@
 
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 
 export const GIT_LOCAL_TIMEOUT_MS = 2_000;
 export const GIT_NETWORK_TIMEOUT_MS = 120_000;
@@ -209,30 +209,9 @@ export function upstreamFor(channel: MarkerValue): string {
   return `origin/${channel.value}`;
 }
 
-/**
- * Port of `_version_from_pyproject`: walk upward for the first `version =`
- * line. Python prefers installed distribution metadata and falls back to this;
- * TypeScript has no equivalent metadata, so the walk is the shared source. The
- * two agree for an editable install.
- */
-export function versionFromPyproject(start: string): string | null {
-  let current = resolve(start);
-  for (;;) {
-    const candidate = join(current, "pyproject.toml");
-    if (existsSync(candidate)) {
-      for (const line of readFileSync(candidate, "utf8").split("\n")) {
-        if (line.trim().startsWith("version =")) {
-          const quoted = line.split("=", 2)[1]?.trim() ?? "";
-          const value = quoted.replace(/^["']|["']$/g, "");
-          if (value) return value;
-        }
-      }
-    }
-    const parent = dirname(current);
-    if (parent === current) return null;
-    current = parent;
-  }
-}
+// Lives in `runtime/version.ts` now -- the MCP server needs it and should not
+// import this module to get it. Re-exported so runtime call sites do not move.
+export { versionFromPyproject } from "./version.ts";
 
 /** Port of `_classify_update_status`: ancestry from the local object database. */
 function classifyUpdateStatus(
