@@ -12,6 +12,67 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-19 — CV22.DS9 closed (4/4): the MCP surface is TypeScript's, and bounded
+
+CV22.DS9.TS1 shipped the wallet and abuse guards, closing DS9. `python -m memory
+mcp` is now answered by TypeScript, launched by the plugin manifest, and an
+agent cannot spend or extract through it without bound. Only **DS10** remains in
+CV22 — Python retirement and npm distribution.
+
+**The story with no oracle.** US1, US2, and TS2 were ports: Python said what
+correct meant and byte equality proved it. Nothing in TS1 exists in Python, so
+every behaviour had to be argued from the threat model and sized from measured
+spend. That measurement changed the design: an embedding costs ~$0.000002 and
+this account spent $0.0001 on embeddings in seven days, so a USD ceiling that
+bites would sit at cents. The real damage of a loop is provider rate-limit
+exhaustion landing on the user's *other* work, ~2 s of stall per call, and the
+agent's own context filling. So the control is a **rate** — 30 calls per 10
+minutes, shared across every MCP client because the state is rows in `llm_calls`
+rather than process memory — and the USD ceiling is opt-in, off by default,
+because a default that never bites is a belief the user holds about being
+protected.
+
+**Attribution is what makes the count honest.** Extraction embeds every memory it
+creates, so a session close writes dozens of embedding rows in a minute. A guard
+counting all of them would refuse the agent because the *user* ended a
+conversation. Rows from this surface carry `session_id='mcp'`, which also makes
+MCP spend filterable in `inspect llm-calls`. Building on that ledger surfaced a
+hole in both engines: `mirror_context(query)` embeds through attachment search
+and neither engine recorded it — Python still does not
+([CR088](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr088-python-embeds-attachment-queries-without-a-ledger-row.md)).
+
+**Guards wrap the registry, not the tools**, so `recall_conversation` with
+`limit=0` still returns the whole transcript to a direct call — byte-identical to
+the recorded oracle case — while the registry a client reaches refuses it. DS9's
+D4 asked for the divergence to be visible on both sides instead of one silently
+overwriting the other.
+
+**The E2E earned its cost.** The first live session held the wallet exactly (30
+allowed, 30 rows, no row written by a refusal, production untouched) and then
+found two things no unit test could: the agent read *"Use a filter instead"* as
+**"the error message suggests a way around the limit"**, and, told *"Do not retry
+this tool"*, called it four more times with different topics. Our own control was
+advertising an escape route, and the stop instruction was narrower than it read.
+The wording now states that filtered calls are **not metered** and scopes the
+stop to another query, gated on the human. The second session stopped at the
+first refusal and offered escalation without any bypass framing. n=1 per wording
+— what it establishes is that those two misreadings are gone, not that agents
+obey refusals in general.
+
+Also closed here: RS005's permission-scoping rider (the threat model exists, was
+reviewed, and records what the caps do *not* do — they bound one call, not a
+sequence, because free reads stay unlimited by decision) and AI-19's
+denial-of-wallet rider, with its deviation recorded: one global surface rate
+rather than per tool, because both paid tools cost one embedding per call and a
+delimiter in `session_id` would have been two facts in one column.
+
+Carried out of the story: [CR087](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr087-journey-status-returns-every-journeys-full-document.md)
+(`journey_status` without a slug returns every journey's full document, 226 KB /
+~57K tokens, while describing itself as returning overall status) and
+[CR084](../project/refinement/rs010-cv22-oracle-and-port-hygiene/cr084-the-bootstrap-lock-is-not-exclusive-while-it-is-being-written.md),
+which gained its first unprompted CI reproduction — a hosted macOS runner lost
+the bootstrap lock race on a commit that touched nothing in that path.
+
 ### 2026-09-18 — CV22.DS9.TS2: the plugin launches TypeScript, and the agent's search is spend again
 
 The MCP surface is now answered by TypeScript in the place that matters — the

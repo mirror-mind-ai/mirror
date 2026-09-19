@@ -2,7 +2,7 @@
 
 # CV22.DS9.TS1 — Wallet and abuse guards
 
-**Status:** 🟡 Planned — Plan drafted and panel-reviewed 2026-09-18, pending Navigator approval and **D2**, **D9**
+**Status:** ✅ Done — 2026-09-19 (Navigator validation accepted). D2 = constant `mcp` marker, one global rate; D9 = no cap, captured as CR087
 **Type:** Technical Story
 **Depends on:** CV22.DS9.TS2 (the ledger row this guard counts from; the launcher and its
 `.env` path, which the guard gate and tunables ride on); CV22.DS9.US1 (the threat model,
