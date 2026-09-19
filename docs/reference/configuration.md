@@ -343,13 +343,29 @@ you per day.
 protocol error, and the server stays up:
 
 ```text
-Error: search_memories is rate-limited (30 calls in 10 minutes). Use a filter
-instead — journey, layer, or type — or ask the user to raise
-MIRROR_MCP_EMBED_RATE_LIMIT. Do not retry this tool.
+Error: search_memories is rate-limited (30 query searches in 10 minutes).
+Filtered calls — journey, layer, or type, with no query — are not metered and
+still work. Ask the user to raise MIRROR_MCP_EMBED_RATE_LIMIT if you need more.
+Do not send another query to this tool until the user replies.
 ```
 
-The MCP log gets one metadata-only line per refusal —
-`guard refused tool=search_memories reason=rate_limit` — never the query.
+The wording is deliberate and was corrected after watching a real agent read it.
+Saying only "use a filter instead" got read as *a way around the limit*, so the
+text now states the property plainly: filtered calls are not metered, because
+they cross no provider. And "do not retry this tool" got read as *this call will
+not succeed* — the agent moved to its next topic and was refused again — so the
+stop is scoped to another query and gated on you.
+
+**Where to see refusals.** The server writes one metadata-only line per refusal
+to stderr — `guard refused tool=search_memories reason=rate_limit`, never the
+query. Claude Code does not surface a connected server's stderr, so there the
+refusal appears in the MCP log as the tool failure itself:
+
+```text
+Tool 'search_memories' failed after 0s: Error: search_memories is rate-limited …
+```
+
+Both carry the same fact; which one you see depends on the client.
 
 **Seeing the spend.** Calls made by this surface are tagged in the `llm_calls`
 ledger with session `mcp`, so `inspect llm-calls --session mcp` is the view of

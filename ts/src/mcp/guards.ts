@@ -76,25 +76,55 @@ export const DEFAULT_SPEND_POLICY: SpendPolicy = {
 };
 
 /**
+ * The unmetered way to use each paid tool, named in its own refusal.
+ *
+ * Per tool, because the advice has to be advice the refused tool can actually take:
+ * `mirror_context` has no layer or type filter, and telling an agent to use one is how it
+ * learns that refusal text is noise.
+ */
+const UNMETERED_ALTERNATIVE: Record<string, string> = {
+  search_memories:
+    "Filtered calls — journey, layer, or type, with no query — are not metered and still work.",
+  mirror_context: "Calling it without a query is not metered and still returns the context.",
+};
+
+function alternativeFor(tool: string): string {
+  return UNMETERED_ALTERNATIVE[tool] ?? "Calls that do not carry a query are not metered.";
+}
+
+/**
  * Decide whether one paid call may proceed. Pure: no clock, no database.
  *
  * The refusal TEXT is produced here rather than at the call site because it is the control,
- * not decoration -- an agent that reads "try again later" retries, and the retry is the
- * loop the guard exists to stop. Keeping it here keeps it under test.
+ * not decoration. Keeping it here keeps it under test -- and the E2E is what tests the part
+ * a unit test cannot: whether a real model obeys it.
  *
- * Shape (prompt-engineer lens): lead with the fact, name the alternative, name the human
- * who can lift the bound, and put the instruction LAST, because what comes last is what a
- * model follows in the moment. No reset time: that is true, and telling a model when to
- * come back invites it to plan a retry. The window belongs in the docs, for the human.
+ * Shape (prompt-engineer lens): lead with the fact, name the unmetered alternative, name
+ * the human who can lift the bound, instruction LAST because what comes last is what a
+ * model follows in the moment. Never a timed invitation: an agent told when to come back
+ * plans to come back, and the return is the loop.
+ *
+ * Two corrections came from the first E2E (2026-09-19), and both are the loop working:
+ *
+ *   * "Use a filter instead" was read by the model as "the error message suggests a way
+ *     around the limit", and it then admitted it did not know whether filtered calls
+ *     counted. A refusal that reads as a loophole hint teaches bypass in the server's own
+ *     voice. Saying plainly that filters are NOT METERED is the truth, grants nothing the
+ *     tool schema did not already expose, and removes the evasion framing.
+ *
+ *   * "Do not retry this tool" was read as "this call will not succeed": the agent moved
+ *     to the next topic and was refused four more times. The stop is now scoped to the
+ *     paid mode (another QUERY) and gated on the human rather than on nothing.
  */
 export function decideSpend(tool: string, state: SpendState, policy: SpendPolicy): SpendDecision {
+  const stop = `Do not send another query to this tool until the user replies.`;
   if (policy.dailyUsdCeiling !== null && state.usdLast24h >= policy.dailyUsdCeiling) {
     return {
       allow: false,
       reason: "daily_ceiling",
       text:
         `${tool} is over the MCP spend ceiling the user set for today. ` +
-        `Ask the user before continuing. Do not retry this tool.`,
+        `${alternativeFor(tool)} Ask the user before continuing. ${stop}`,
     };
   }
   if (state.callsInWindow >= policy.rateLimit) {
@@ -102,9 +132,9 @@ export function decideSpend(tool: string, state: SpendState, policy: SpendPolicy
       allow: false,
       reason: "rate_limit",
       text:
-        `${tool} is rate-limited (${policy.rateLimit} calls in ${policy.windowMinutes} minutes). ` +
-        `Use a filter instead — journey, layer, or type — or ask the user to raise ` +
-        `MIRROR_MCP_EMBED_RATE_LIMIT. Do not retry this tool.`,
+        `${tool} is rate-limited (${policy.rateLimit} query searches in ${policy.windowMinutes} minutes). ` +
+        `${alternativeFor(tool)} Ask the user to raise MIRROR_MCP_EMBED_RATE_LIMIT if you ` +
+        `need more. ${stop}`,
     };
   }
   return { allow: true };

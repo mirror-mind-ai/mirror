@@ -133,8 +133,12 @@ print(sqlite3.connect('$COPY').execute(\"SELECT COUNT(*) FROM llm_calls WHERE se
   [ "$ALLOWED" = "$LIMIT" ] || { echo "      ✗ the guard did not refuse at the limit"; STATUS=1; }
   [ "$AFTER" = "$((BEFORE + LIMIT))" ] || { echo "      ✗ a refusal wrote a row, or a call did not"; STATUS=1; }
   case "$REFUSED" in
-    *"Do not retry this tool."*) ;;
-    *) echo "      ✗ the refusal is not terminal"; STATUS=1 ;;
+    *"Do not send another query to this tool until the user replies."*) ;;
+    *) echo "      ✗ the refusal does not end with the scoped stop"; STATUS=1 ;;
+  esac
+  case "$REFUSED" in
+    *"not metered"*) ;;
+    *) echo "      ✗ the refusal does not name the unmetered path as sanctioned"; STATUS=1 ;;
   esac
 fi
 

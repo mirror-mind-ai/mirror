@@ -81,7 +81,7 @@ test("a second MCP process sees the first's calls and is refused by the shared c
     for (const text of [first, second]) {
       assert.match(
         text,
-        /rate-limited \(2 calls in 10 minutes\)/,
+        /rate-limited \(2 query searches in 10 minutes\)/,
         "a per-process counter would have given this server its own fresh budget",
       );
     }

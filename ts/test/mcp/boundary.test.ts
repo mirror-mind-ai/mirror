@@ -198,7 +198,7 @@ test("the call at the limit is refused before the provider, and writes no row", 
 
     await assert.rejects(
       () => call(registry, "search_memories", { query: "one too many" }),
-      /rate-limited \(3 calls in 10 minutes\)/,
+      /rate-limited \(3 query searches in 10 minutes\)/,
     );
     assert.equal(provider.calls, 3, "a refusal must not reach the provider");
     assert.equal(ledgerCount(db), 3, "a refusal writes no row: nothing was attempted");

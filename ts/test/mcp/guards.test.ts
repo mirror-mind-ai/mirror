@@ -39,17 +39,42 @@ test("the call AT the limit is refused — the limit is a ceiling, not a target"
   assert.equal(decision.allow === false && decision.reason, "rate_limit");
 });
 
-test("the rate refusal names the bound, the alternative, the human, and forbids retry", () => {
+test("the rate refusal names the bound, the unmetered path, the human, and the stop", () => {
   const decision = decideSpend("search_memories", { callsInWindow: 30, usdLast24h: 0 }, POLICY);
   assert.equal(decision.allow, false);
   if (decision.allow) return;
-  assert.match(decision.text, /rate-limited \(30 calls in 10 minutes\)/);
-  assert.match(decision.text, /filter/, "an agent needs somewhere to go, not just a wall");
+  assert.match(decision.text, /rate-limited \(30 query searches in 10 minutes\)/);
+  assert.match(decision.text, /filter/i, "an agent needs somewhere to go, not just a wall");
   assert.match(decision.text, /MIRROR_MCP_EMBED_RATE_LIMIT/, "name the human's lever");
-  assert.match(decision.text, /Do not retry this tool\.$/, "the instruction goes last");
-  // The failure this wording exists to prevent: an agent told when to come back plans to
-  // come back, and the retry is the loop the guard is for.
-  assert.doesNotMatch(decision.text, /try again|later|wait|minutes? from now|until/i);
+
+  // Measured in the CV22.DS9.TS1 E2E, 2026-09-19. The first wording said "Use a filter
+  // instead", meaning "here is a cheaper path". A real model read it as "the error message
+  // suggests a way around the limit" and then said it did not know whether filtered calls
+  // counted. A refusal that reads as a loophole hint is teaching bypass in the server's own
+  // voice, so the text now states the property plainly: filters are not metered. That is
+  // the truth, it grants no capability the tool schema did not already expose, and it
+  // removes the framing that made the agent think it was evading a control.
+  assert.match(
+    decision.text,
+    /not metered/,
+    "the alternative must read as sanctioned, not as evasion",
+  );
+
+  // Same E2E: told "Do not retry this tool", the agent called it four more times with
+  // different topics -- it read the instruction as "this call will not succeed" rather than
+  // "stop using this tool". The stop is now scoped to the paid mode and gated on the human.
+  assert.match(decision.text, /Do not send another query to this tool until the user replies\.$/);
+  assert.doesNotMatch(decision.text, /try again|later|wait/i, "never invite a timed return");
+});
+
+test("the unmetered alternative is the one the refused tool actually has", () => {
+  // `mirror_context` takes no layer or type filter; advising them would be advice the tool
+  // cannot follow, which is how an agent learns to ignore refusal text.
+  const search = decideSpend("search_memories", { callsInWindow: 30, usdLast24h: 0 }, POLICY);
+  const context = decideSpend("mirror_context", { callsInWindow: 30, usdLast24h: 0 }, POLICY);
+  assert.equal(search.allow === false && /journey, layer, or type/.test(search.text), true);
+  assert.equal(context.allow === false && /without a query/.test(context.text), true);
+  assert.equal(context.allow === false && /layer/.test(context.text), false);
 });
 
 test("no ceiling by default, however much has been spent", () => {
@@ -76,7 +101,8 @@ test("the ceiling refusal is terminal for the day and points at the user", () =>
   assert.equal(decision.allow, false);
   if (decision.allow) return;
   assert.match(decision.text, /Ask the user/);
-  assert.match(decision.text, /Do not retry this tool\.$/);
+  assert.match(decision.text, /not metered/);
+  assert.match(decision.text, /Do not send another query to this tool until the user replies\.$/);
   // Never quote the spend back: it is the user's figure, and the text lands in agent
   // context and in the client's log.
   assert.doesNotMatch(decision.text, /0\.0/);

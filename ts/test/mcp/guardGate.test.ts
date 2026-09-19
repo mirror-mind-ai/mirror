@@ -143,8 +143,8 @@ test("the rate limit refuses from ledger state alone, and the tunable moves it",
     const refused = await run(fixture.path, [search], { MIRROR_MCP_EMBED_RATE_LIMIT: "3" });
     const { text, isError } = toolText(refused.responses[0]);
     assert.equal(isError, true);
-    assert.match(text, /rate-limited \(3 calls in 10 minutes\)/);
-    assert.match(text, /Do not retry this tool\.$/);
+    assert.match(text, /rate-limited \(3 query searches in 10 minutes\)/);
+    assert.match(text, /Do not send another query to this tool until the user replies\.$/);
     assert.match(refused.stderr, /guard refused tool=search_memories reason=rate_limit/);
     assert.doesNotMatch(refused.stderr, /anything/, "the query must never reach the log");
 
