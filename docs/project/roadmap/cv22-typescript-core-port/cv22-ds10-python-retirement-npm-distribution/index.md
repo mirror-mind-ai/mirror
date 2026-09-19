@@ -2,8 +2,8 @@
 
 # CV22.DS10 — Python Retirement And npm Distribution
 
-**Status:** 🟡 Planned
-**Type:** Delivery Story — convergence gate only; not yet pulled
+**Status:** 🟢 In Progress — pulled 2026-09-19 with eight approved child stories (0/8)
+**Type:** Delivery Story
 **Depends on:** CV22.DS7 command burn-down (done 2026-09-17, 14/14 — its Workspace/web
 hierarchy rider was retired unported); CV22.DS8 live-provider cutover (done); CV22.DS9 TS
 MCP server
@@ -18,6 +18,27 @@ carry an explicit disposition. **Since 2026-09-17 that disposition is retirement
 convergence:** the web console is deleted rather than reimplemented in TypeScript — see
 [Decisions — The web console is retired, not ported](../../../decisions.md#the-web-console-is-retired-not-ported-and-ds7-closes-at-1414).
 DS10 therefore owns the removal, not a port; `mirror-gui` owns any future graphical surface.
+
+## Candidate Stories
+
+| Code | Story | Type | Outcome | Status |
+|------|-------|------|---------|--------|
+| CV22.DS10.TS1 | Journey projection cutover (ex-DS7.TS5) | Technical Story | TypeScript compiles and publishes `.mirror/projections` under its own single-writer lock; the `journey-projection refresh` subcommand, its TS spawn sites (`createPythonProjectionRefresh`), and Python's publisher go in one flip so the dual-writer window never opens; refresh stays best-effort after the source commit | 🟡 Planned |
+| CV22.DS10.US1 | Web console retirement | User Story | Cutoff published in the release note naming `mirror-gui` as successor; a repository-wide check finds nothing outside `src/memory/web/` depending on the console; `src/memory/web/`, the `web` entry in `__main__.py`, and `tests/unit/memory/web/` deleted; README, REFERENCE, and getting-started updated in the same change; `<mirror-home>/web/` disposition recorded; no TS replacement built | 🟡 Planned |
+| CV22.DS10.TS2 | Extension compatibility-host deletion | Technical Story | `memory.extensions.compat_host` (context and `cli` modes) and every TS launcher branch that invokes it removed; providers without `provider_runtime` fail explicit and fail-soft; the migration cutoff documented; a repository/package check proves every retained provider and command enters through a declared language-neutral runtime | 🟡 Planned |
+| CV22.DS10.TS3 | Eval harness transfer to `ts/evals/` | Technical Story | The Python contract carried (`PROBES` and `THRESHOLD` per module, capability discovery for `--all`, JSONL history, threshold exit code); fixtures engine-neutral; each module's disposition recorded (`routing` retired, `scene` follows US1, `retrieval` decided); injection probes individually blocking (D-017); first run diffed against the 2026-09-13 `eval-history/`; development guide and engineering principles name the TS harness; then `evals/` and the `eval` entry deleted | 🟡 Planned |
+| CV22.DS10.US2 | npm-era updater and release tooling | User Story | A TS-owned replacement for `runtime update`, `pull`, `stable`, `backup`, `release-doctor`, and `release-promote`, designed around versioned installs and dist-tags rather than ported, with operational smoke coverage; `release-promote`'s product-versus-tooling placement decided; `mm-update` stops calling Python; `PYTHON_ALLOWLIST` goes empty and the skill parity check asserts the entry point is absent, including for the packaged plugin | 🟡 Planned |
+| CV22.DS10.TS4 | Retire the unported surfaces with cutoffs | Technical Story | `migrate-legacy`, `memory-rehearse-migration`, the twenty SQLite Refinement Workbench leaves plus the `get_workbench_snapshot` read, and the `conversations` metadata-backfill flags removed, each with its cutoff in the release note | 🟡 Planned |
+| CV22.DS10.TS5 | Python core deletion | Technical Story | `src/memory/`, its tests, the `uv` and `pyproject` Python surface, the front door's `fallbackPython` path, and the `MIRROR_TS_*` revert gates removed; existing `memory.db` files keep working; every runtime operates over TS only. Separately Navigator-authorized | 🟡 Planned |
+| CV22.DS10.US3 | npm distribution | User Story | Package rename and a single-language npm artifact; the Pi, Gemini CLI, Codex, and Claude Code install paths resolve from it; publication, stable promotion, tag, and release remain separate Navigator gates | 🟡 Planned |
+
+Eight stories, approved 2026-09-19, in the order the gates below constrain: TS1 first
+(the package's own ordering note — the projection cutover is the act that retires
+Python's publisher); US1 before the deletion and npm gates open (the roadmap row: after
+zero commands, delete the web process, *only then* plan the rest); TS2–TS4 clear the
+remaining gates; TS5 and US3 last and separately authorized. The codes are renumbered
+under DS10 — the projection story keeps its `DS7.TS5` lineage in its title because that
+is how the decisions log and the burn-down ledger refer to it.
 
 ## Workspace And Web Retirement Gate
 
@@ -310,9 +331,10 @@ denominator (29) and served by Python fallback until DS10 acts on them:
 - Python deletion, package rename, npm publication, stable promotion, tag, and release
   remain separate Navigator-authorized actions.
 
-## Out Of Scope Until Pulled
+## Out Of Scope Of The Pull
 
-This document records the CR054 convergence owner and deletion gate only. It does not
-pull DS10, authorize endpoint implementation, define the complete future npm release
-plan, delete Python, rename packages, publish artifacts, promote stable, tag, or release.
-Those decisions require DS10's own planning and Navigator gates.
+Until 2026-09-19 this document recorded the CR054 convergence owner and deletion gate
+only. Pulling DS10 with the candidate table above authorizes planning its child stories,
+nothing more: it does not authorize endpoint implementation, define the complete npm
+release plan, delete Python, rename packages, publish artifacts, promote stable, tag, or
+release. Each of those remains its own Navigator gate inside the story that owns it.
