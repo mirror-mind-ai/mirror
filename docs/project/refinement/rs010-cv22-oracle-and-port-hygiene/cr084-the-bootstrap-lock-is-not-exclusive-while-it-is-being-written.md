@@ -105,6 +105,19 @@ exposure is real, and the fix is small and local to `bootstrapLock.ts`.
   stack above; the remaining twelve runs were green.
 * Source: `ts/src/db/bootstrapLock.ts` (`tryCreateExclusive`, `isStale`,
   `readLockRecord`, `release`), `ts/src/db/migrateOnOpen.ts` (`takeBackup`).
+* **First unprompted CI reproduction, 2026-09-18** (added at CV22.DS9.TS1 Debt
+  Review). The `ts (macos-latest)` job failed in *Bootstrap custody parity* —
+  `concurrency race (8 real processes bootstrapping the same fresh path)` —
+  reporting `FAIL (worker failures: 1, duplicate rows: false, ledger complete:
+  true)`. The commit under test touched nothing in the bootstrap path, and a
+  re-run of the same commit with no code change passed.
+
+  This matters for priority. Until now the defect was only reachable by staging
+  the window by hand, which invited reading it as theoretical. A hosted macOS
+  runner hit it on its own, which means the window is wide enough to lose a race
+  on ordinary hardware — and it will now appear as an intermittent red build on
+  work unrelated to bootstrap, which is how a team learns to re-run CI rather
+  than read it.
 
 ## Outcome
 
