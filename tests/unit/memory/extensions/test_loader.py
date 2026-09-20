@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from memory.cli.extensions import ExtensionValidationError
@@ -26,27 +28,19 @@ def test_load_extension_returns_api_with_populated_registries(db_conn, hello_fix
     assert api.table_prefix == "ext_hello_"
     assert set(api.cli_registry.keys()) == {"ping", "list"}
     assert set(api.context_registry.keys()) == {"greeting"}
-    assert api.journey_projections.extension_id == "hello"
 
 
-def test_loader_passes_projection_service_into_bound_facade(db_conn, hello_fixture_dir):
-    class StubProjectionService:
-        def inspect(self, journey_id, namespace, projection, *, domain):
-            return (journey_id, namespace, projection, domain)
+def test_reaching_for_the_retired_projection_capability_says_so(db_conn, hello_fixture_dir):
+    """CV22.DS10.TS1 removed `api.journey_projections` with the contract.
 
-    api = load_extension(
-        hello_fixture_dir,
-        connection=db_conn,
-        journey_projection_service=StubProjectionService(),  # type: ignore[arg-type]
-        reload=True,
-    )
+    Feature detection must degrade rather than crash, and a direct reach must
+    read the reason instead of a bare attribute error.
+    """
+    api = load_extension(hello_fixture_dir, connection=db_conn, reload=True)
 
-    assert api.journey_projections.inspect("synthetic-journey", "tactical") == (
-        "synthetic-journey",
-        "hello",
-        "tactical",
-        "extension",
-    )
+    assert not hasattr(api, "journey_projections")
+    with pytest.raises(AttributeError, match=re.escape("mirror.journey-projections@1.0")):
+        _ = api.journey_projections
 
 
 def test_load_extension_is_idempotent_within_a_process(db_conn, hello_fixture_dir):

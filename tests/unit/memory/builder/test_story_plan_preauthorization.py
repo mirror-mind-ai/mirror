@@ -14,11 +14,21 @@ from memory.builder.story_plan_preauthorization import (
 )
 from memory.config import default_db_path_for_home
 
+# The client owns the connection, so it must outlive the store the tests use.
+# Until CV22.DS10.TS1 this helper got that for free from an accidental cycle:
+# the projection-refresh wiring stored a coordinator callback on the store whose
+# `active_work_reader` closed over the client, so the store kept the client
+# alive. Retiring the seam removed the cycle and the client began to be
+# collected mid-test, closing the database under it. The sibling suite
+# (`test_delivery_cursor.py`) already returned both; this one now does too.
+_CLIENTS = []
+
 
 def _store(tmp_path):
     mirror_home = tmp_path / ".mirror" / "pati"
     db_path = default_db_path_for_home(mirror_home)
     client = MemoryClient(env="test", db_path=db_path)
+    _CLIENTS.append(client)
     return client.store
 
 

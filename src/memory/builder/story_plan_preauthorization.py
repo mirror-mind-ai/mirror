@@ -93,14 +93,12 @@ def approve_story_plan_with_preauthorization(
             cursor_generation=cursor.cursor_generation,
             plan_preauthorization=replace(receipt, status="consumed", reason=None),
             expected_cursor=cursor,
-            refresh_projection=False,
         )
     except DeliveryCursorConflict:
         current = get_delivery_cursor(store, journey)
         if current is not None and _is_consumed_story_approval(current):
             return StoryPlanPreauthorizationReport(cursor=current, status="already_approved")
         raise PlanPreauthorizationMismatch("cursor_changed") from None
-    store.request_projection_refresh(journey)
     return StoryPlanPreauthorizationReport(
         cursor=updated,
         status="approved",

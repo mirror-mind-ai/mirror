@@ -162,7 +162,6 @@ def invalidate_plan_preauthorization(
             cursor_generation=cursor.cursor_generation,
             plan_preauthorization=replace(receipt, status="invalidated", reason=reason),
             expected_cursor=cursor,
-            refresh_projection=False,
         )
     except DeliveryCursorConflict:
         return cursor

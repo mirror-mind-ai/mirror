@@ -18,7 +18,6 @@ def main() -> int:
     args = parser.parse_args()
 
     client = MemoryClient(env="test", db_path=args.db)
-    client.store.configure_projection_refresh(None)
     if args.flow == "story":
         report = approve_story_plan_with_preauthorization(
             client.store,

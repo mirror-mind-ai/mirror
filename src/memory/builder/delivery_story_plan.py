@@ -108,7 +108,6 @@ def plan_delivery_story_checkpoint(
         ),
         cursor_generation=cursor.cursor_generation,
         plan_preauthorization=receipt,
-        refresh_projection=False,
     )
     report = DeliveryStoryPlanReport(
         journey=journey,
@@ -122,7 +121,6 @@ def plan_delivery_story_checkpoint(
         plan_artifact_path=plan_artifact_path,
     )
     materialized = _write_delivery_story_package(report)
-    store.request_projection_refresh(journey)
     return replace(report, materialized_artifacts=materialized)
 
 
@@ -199,7 +197,6 @@ def approve_delivery_story_plan(
             cursor_generation=cursor.cursor_generation,
             plan_preauthorization=receipt,
             expected_cursor=cursor if use_preauthorization else None,
-            refresh_projection=False,
         )
     except DeliveryCursorConflict:
         current = get_delivery_cursor(store, journey)
@@ -232,7 +229,6 @@ def approve_delivery_story_plan(
         implementation_started=True,
     )
     materialized = _write_delivery_story_package(report)
-    store.request_projection_refresh(journey)
     return replace(report, materialized_artifacts=materialized, unfilled_sections=unfilled)
 
 

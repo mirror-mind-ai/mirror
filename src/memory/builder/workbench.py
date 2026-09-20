@@ -71,7 +71,6 @@ def create_refinement_story(
         source=source,
         provenance=provenance,
     )
-    store.request_projection_refresh(journey)
     return story
 
 
@@ -96,7 +95,6 @@ def capture_change_request(
         source=source,
         provenance=provenance,
     )
-    store.request_projection_refresh(journey)
     return change_request
 
 
@@ -108,7 +106,6 @@ def attach_change_request_to_story(
 ) -> ChangeRequestRecord:
     """Associate an existing Change Request to a Refinement Story."""
     change_request = store.attach_change_request_to_story(change_request_id, refinement_story_id)
-    store.request_projection_refresh(change_request.journey)
     return change_request
 
 
@@ -135,7 +132,6 @@ def discard_change_request(
         raise ValueError("active Change Request cannot be discarded")
     story = store.get_refinement_story(cr.refinement_story_id) if cr.refinement_story_id else None
     store.delete_change_request(cr.id)
-    store.request_projection_refresh(journey)
     return ChangeRequestDiscard(
         journey=journey,
         change_request=cr,
@@ -166,7 +162,6 @@ def pull_refinement_story(
         journey=journey,
         refinement_story_id=refinement_story_id,
     )
-    store.request_projection_refresh(journey)
     return result
 
 
@@ -746,7 +741,6 @@ def _flow_event(
     previous_status: str | None,
     detail: str | None,
 ) -> RefinementFlowEvent:
-    store.request_projection_refresh(journey)
     return RefinementFlowEvent(
         journey=journey,
         event=event,

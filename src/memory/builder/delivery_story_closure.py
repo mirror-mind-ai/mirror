@@ -63,7 +63,6 @@ def validate_delivery_story(
     )
     report = _report(journey, method, cursor, "validation", status, summary, updated, artifact_path)
     _write_artifact(report)
-    store.request_projection_refresh(journey)
     return report
 
 
@@ -96,7 +95,6 @@ def review_delivery_story(
         journey, method, cursor, "debt_review", status, summary, updated, artifact_path
     )
     _write_artifact(report)
-    store.request_projection_refresh(journey)
     return report
 
 
@@ -125,7 +123,6 @@ def coherence_delivery_story(
         journey, method, cursor, "coherence", "coherent", summary, updated, artifact_path
     )
     _write_artifact(report)
-    store.request_projection_refresh(journey)
     return report
 
 
@@ -157,11 +154,9 @@ def done_delivery_story(
         navigator_flow_unit=cursor.navigator_flow_unit,
         child_work_items=cursor.child_work_items,
         aggregate_checkpoint_status=statuses,
-        refresh_projection=False,
     )
     report = _report(journey, method, cursor, "done", "done", summary, updated, artifact_path)
     _write_artifact(report)
-    store.request_projection_refresh(journey)
     return report
 
 
@@ -362,7 +357,6 @@ def _update_cursor(
         aggregate_checkpoint_status=_replace_status(
             cursor.aggregate_checkpoint_status, checkpoint, status
         ),
-        refresh_projection=False,
     )
 
 

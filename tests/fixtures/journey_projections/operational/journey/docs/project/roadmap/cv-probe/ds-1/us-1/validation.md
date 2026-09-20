@@ -1,3 +1,0 @@
-# Validation
-
-Synthetic validation artifact.

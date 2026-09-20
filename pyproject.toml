@@ -14,7 +14,6 @@ dependencies = [
     "pyyaml>=6.0",
     "markdown>=3.6",
     "jsonschema>=4.23",
-    "filelock>=3.16",
     "certifi>=2026.2.25",
 ]
 

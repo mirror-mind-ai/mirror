@@ -17,7 +17,6 @@ WORKER = Path(__file__).with_name("plan_preauthorization_worker.py")
 def test_two_processes_consume_plan_preauthorization_once(tmp_path: Path) -> None:
     db_path = tmp_path / "memory.db"
     client = MemoryClient(env="test", db_path=db_path)
-    client.store.configure_projection_refresh(None)
     plan_path = tmp_path / "project" / "cv20-ds15" / "plan.md"
     set_delivery_cursor(
         client.store,
@@ -80,7 +79,6 @@ def test_two_processes_consume_plan_preauthorization_once(tmp_path: Path) -> Non
 def test_two_processes_consume_story_plan_preauthorization_once(tmp_path: Path) -> None:
     db_path = tmp_path / "memory.db"
     client = MemoryClient(env="test", db_path=db_path)
-    client.store.configure_projection_refresh(None)
     plan_path = tmp_path / "project" / "cv20-ds16-us1" / "plan.md"
     plan_path.parent.mkdir(parents=True)
     plan_path.write_text(

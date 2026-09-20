@@ -4,13 +4,6 @@ from pathlib import Path
 
 from memory.db import get_connection
 from memory.intelligence.search import MemorySearch
-from memory.journey_projections.operational import AriadOperationalProjectionService
-from memory.journey_projections.refresh import (
-    ProjectionRefreshCoordinator,
-    active_work_from_cursor,
-    exploratory_stories_from_store,
-)
-from memory.journey_projections.service import JourneyProjectionService
 from memory.models import (
     Attachment,
     Conversation,
@@ -76,30 +69,6 @@ class MemoryClient:
             tasks=self.tasks,
             attachments=self.attachments,
         )
-
-        # Projection refresh is wired last: source services commit first and
-        # request this optional callback without making projection availability
-        # mutation authority.
-        projection_service = JourneyProjectionService(self.journeys.get_project_path)
-        operational_projection = AriadOperationalProjectionService(projection_service)
-
-        def explorer_projection_reader(journey: str):
-            project_path = self.journeys.get_project_path(journey)
-            if not project_path:
-                return None
-            stories = exploratory_stories_from_store(
-                self.store,
-                journey,
-                Path(project_path),
-            )
-            return stories or None
-
-        self.projection_refresh = ProjectionRefreshCoordinator(
-            operational_projection,
-            active_work_reader=lambda journey: active_work_from_cursor(self.store, journey),
-            exploratory_stories_reader=explorer_projection_reader,
-        )
-        self.store.configure_projection_refresh(self.projection_refresh.request)
 
     @property
     def is_production(self) -> bool:

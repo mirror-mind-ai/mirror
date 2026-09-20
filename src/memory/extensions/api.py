@@ -44,8 +44,6 @@ VERSION = _extension_api_version.VERSION
 if TYPE_CHECKING:  # pragma: no cover
     import numpy as np
 
-    from memory.journey_projections.service import JourneyProjectionService
-
 
 # Statements that mutate data. We forbid these in ``read`` and use them to
 # decide whether ``execute`` needs the prefix check (it always does for
@@ -111,32 +109,34 @@ class ExtensionAPI:
         context_registry: dict[str, ContextProvider] | None = None,
         embed_fn: Callable[[str], np.ndarray] | None = None,
         llm_fn: Callable[..., str] | None = None,
-        journey_projection_service: JourneyProjectionService | None = None,
     ) -> None:
-        from memory.journey_projections.extension_api import (
-            ExtensionJourneyProjections,
-            registered_journey_root_resolver,
-        )
-        from memory.journey_projections.service import JourneyProjectionService
-
         self.extension_id = extension_id
         self.table_prefix = table_prefix_for(extension_id)
         self._db = connection
-        projection_service = (
-            journey_projection_service
-            if journey_projection_service is not None
-            else JourneyProjectionService(registered_journey_root_resolver(connection))
-        )
-        self.journey_projections = ExtensionJourneyProjections(
-            extension_id,
-            projection_service,
-        )
         self._cli_registry: dict[str, CLIHandler] = cli_registry if cli_registry is not None else {}
         self._context_registry: dict[str, ContextProvider] = (
             context_registry if context_registry is not None else {}
         )
         self._embed_fn = embed_fn
         self._llm_fn = llm_fn
+
+    @property
+    def journey_projections(self) -> object:
+        """Removed in CV22.DS10.TS1; raises so an extension is told, not surprised.
+
+        Extension API 1.1 exposed `api.journey_projections.publish/inspect` over
+        the Journey Projection Contract. The contract and its subsystem retired
+        with the Python core, and Mirror no longer publishes `.mirror/projections`.
+
+        An `AttributeError` is deliberate: `hasattr(api, "journey_projections")`
+        returns False, so an extension that feature-detects degrades instead of
+        crashing, while one that reaches for it directly reads why.
+        """
+        raise AttributeError(
+            "api.journey_projections was removed with the Journey Projection Contract "
+            "(mirror.journey-projections@1.0). Mirror no longer publishes "
+            ".mirror/projections; see the release note for the cutoff."
+        )
 
     # --- Database access ------------------------------------------------
 
