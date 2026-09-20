@@ -149,9 +149,12 @@ and green CI on every push.
 ✓ DS7.US8 — Builder/Ariad tree (27 leaves; SQLite Workbench retired in DS10)
 ✓ DS7.TS4 — extension catalog + identity edit   → DS7 done 14/14
 ⛔ DS7.US9 — Workspace/web hierarchy rider: RETIRED UNPORTED 2026-09-17
-→ DS9 — TS MCP server                            ← current
-→ DS10 — TS5 projection cutover as its first act, then retirement (now
-         including the web console itself) and npm
+✓ DS9 — TS MCP server                            (done 2026-09-19, 4/4)
+→ DS10 — retirement and npm                       ← current (pulled 2026-09-19, 0/8)
+         TS1 retires the projection seam and subsystem first (decided the same
+         day, after it was pulled as a port); then the web console, the compat
+         host, the eval harness, the updater, the unported cutoffs, Python
+         deletion, npm. Mirror Desktop is outside the migration.
 ```
 
 US9 was the last DS7 story and the only non-command rider. It was pulled, planned, and

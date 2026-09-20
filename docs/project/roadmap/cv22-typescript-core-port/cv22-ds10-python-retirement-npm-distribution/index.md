@@ -23,12 +23,12 @@ DS10 therefore owns the removal, not a port; `mirror-gui` owns any future graphi
 
 | Code | Story | Type | Outcome | Status |
 |------|-------|------|---------|--------|
-| CV22.DS10.TS1 | Journey projection cutover (ex-DS7.TS5) | Technical Story | TypeScript compiles and publishes `.mirror/projections` under its own single-writer lock; the `journey-projection refresh` subcommand, its TS spawn sites (`createPythonProjectionRefresh`), and Python's publisher go in one flip so the dual-writer window never opens; refresh stays best-effort after the source commit | 🟡 Planned |
+| [CV22.DS10.TS1](cv22-ds10-ts1-retire-the-projection-seam-and-subsystem/index.md) | Retire the projection seam and subsystem | Technical Story | TypeScript writes spawn no Python: the `journey-projection refresh` seam and its four TS call sites, the `journey_projections` subsystem, its CLI, its Extension API capability, tests, and fixture are deleted; `.mirror/projections` is no longer published; `mirror.journey-projections@1.0` is sunset with a documented cutoff. Pulled 2026-09-19 as a port (ex-DS7.TS5), re-authored the same day as a retirement after the Navigator placed Mirror Desktop outside the migration | 🟢 In Progress — re-planned 2026-09-19 |
 | CV22.DS10.US1 | Web console retirement | User Story | Cutoff published in the release note naming `mirror-gui` as successor; a repository-wide check finds nothing outside `src/memory/web/` depending on the console; `src/memory/web/`, the `web` entry in `__main__.py`, and `tests/unit/memory/web/` deleted; README, REFERENCE, and getting-started updated in the same change; `<mirror-home>/web/` disposition recorded; no TS replacement built | 🟡 Planned |
 | CV22.DS10.TS2 | Extension compatibility-host deletion | Technical Story | `memory.extensions.compat_host` (context and `cli` modes) and every TS launcher branch that invokes it removed; providers without `provider_runtime` fail explicit and fail-soft; the migration cutoff documented; a repository/package check proves every retained provider and command enters through a declared language-neutral runtime | 🟡 Planned |
 | CV22.DS10.TS3 | Eval harness transfer to `ts/evals/` | Technical Story | The Python contract carried (`PROBES` and `THRESHOLD` per module, capability discovery for `--all`, JSONL history, threshold exit code); fixtures engine-neutral; each module's disposition recorded (`routing` retired, `scene` follows US1, `retrieval` decided); injection probes individually blocking (D-017); first run diffed against the 2026-09-13 `eval-history/`; development guide and engineering principles name the TS harness; then `evals/` and the `eval` entry deleted | 🟡 Planned |
 | CV22.DS10.US2 | npm-era updater and release tooling | User Story | A TS-owned replacement for `runtime update`, `pull`, `stable`, `backup`, `release-doctor`, and `release-promote`, designed around versioned installs and dist-tags rather than ported, with operational smoke coverage; `release-promote`'s product-versus-tooling placement decided; `mm-update` stops calling Python; `PYTHON_ALLOWLIST` goes empty and the skill parity check asserts the entry point is absent, including for the packaged plugin | 🟡 Planned |
-| CV22.DS10.TS4 | Retire the unported surfaces with cutoffs | Technical Story | `migrate-legacy`, `memory-rehearse-migration`, the twenty SQLite Refinement Workbench leaves plus the `get_workbench_snapshot` read, and the `conversations` metadata-backfill flags removed, each with its cutoff in the release note | 🟡 Planned |
+| CV22.DS10.TS4 | Retire the unported surfaces with cutoffs | Technical Story | `migrate-legacy`, `memory-rehearse-migration`, the twenty SQLite Refinement Workbench leaves plus the `get_workbench_snapshot` read, the `conversations` metadata-backfill flags, and `journey export-registry` / `journey mutate` (`journey_admin`, 345 lines, arrived in the pause-window merge and never entered the DS7 denominator — see CR089 for the front-door mis-route) removed, each with its cutoff in the release note | 🟡 Planned |
 | CV22.DS10.TS5 | Python core deletion | Technical Story | `src/memory/`, its tests, the `uv` and `pyproject` Python surface, the front door's `fallbackPython` path, and the `MIRROR_TS_*` revert gates removed; existing `memory.db` files keep working; every runtime operates over TS only. Separately Navigator-authorized | 🟡 Planned |
 | CV22.DS10.US3 | npm distribution | User Story | Package rename and a single-language npm artifact; the Pi, Gemini CLI, Codex, and Claude Code install paths resolve from it; publication, stable promotion, tag, and release remain separate Navigator gates | 🟡 Planned |
 
@@ -140,39 +140,83 @@ lifecycle, until DS7.US8), `mm-journal` (until DS7.US11), `mm-update` (the
 Python by design" was never a disposition once Python is deleted). Each needs
 an explicit answer here, not an assumption that the burn-down covered them.
 
-## Journey Projection Refresh Seam Deletion Gate
+## Journey Projection Retirement Gate
 
-The [2026-09-09 decision](../../../decisions.md#journey-projection-publication-stays-python-owned-until-the-retirement-window)
-keeps Journey projection publication Python-owned for the whole transition,
-because publication is linearizable through `fcntl.flock` and a TypeScript
-publisher would be a second writer with no mutual exclusion against Python's
-lock. TypeScript commands that produce a refresh — Explorer Story writes
-(DS7.US7), the Builder tree (DS7.US8) — delegate it to Python through a
-`journey-projection refresh --journey <slug>` subcommand carrying
-`ProjectionRefreshCoordinator` semantics.
+**Rewritten 2026-09-19 from a port gate to a deletion gate.** The
+[2026-09-09 decision](../../../decisions.md#journey-projection-publication-stays-python-owned-until-the-retirement-window)
+kept publication Python-owned for the transition so that a TypeScript publisher would
+land in one flip at retirement time; TypeScript Explorer (DS7.US7) and Builder (DS7.US8)
+writes delegate the post-commit refresh to Python through `journey-projection refresh`.
+That decision assumed a port. On 2026-09-19 the Navigator
+[decided there will be none](../../../decisions.md#journey-projections-retire-with-the-python-core-mirror-desktop-is-outside-the-migration):
+the subsystem's only reader is Mirror Desktop, which is outside the migration, and no
+current Mirror user consumes `.mirror/projections`. The seam is deleted with the
+subsystem it fed. Before Python retirement or npm publication, DS10 must:
 
-That subcommand is Python surface added deliberately to a component being
-retired. Before Python retirement or npm publication, DS10 must:
+1. delete the `journey-projection refresh` subcommand and every TypeScript call site
+   that spawns it, so that no TypeScript write depends on Python at runtime;
+2. delete `src/memory/journey_projections/`, its CLI, its Extension API capability,
+   its tests, and its fixture, and drop `filelock`;
+3. prove with a guard, not a reading of the code, that Explorer and Builder writes
+   spawn no process;
+4. document the cutoff in the release note: `journey-projection` and
+   `api.journey_projections` no longer exist, `.mirror/projections` is no longer
+   published, and `mirror.journey-projections@1.0` consumers stay on the last
+   Python-bearing release until Mirror Desktop's integration with the TypeScript core
+   defines its read model; and
+5. leave existing `.mirror/projections/` trees in place as inert — gitignored, readable
+   by the last Python-bearing runtime — with that disposition recorded, as US1 does for
+   `<mirror-home>/web/`.
 
-1. land CV22.DS7.TS5, so TypeScript owns projection compilation and publication
-   and is the **only** writer of `.mirror/projections`;
-2. delete the `journey-projection refresh` subcommand and every TS call site
-   that spawns it;
-3. prove the packaged artifact spawns no Python for a projection refresh;
-4. prove the TS publisher holds a single-writer lock appropriate for one core,
-   since the `fcntl.flock` compatibility constraint that forced this seam
-   disappears with Python; and
-5. confirm the refresh remains best-effort after the source commit — a failed
-   projection must never fail the Explorer or Builder write that requested it.
+This is **TS1**, and it stays DS10's first act for a reason the port never had: it is
+the one place where the TypeScript core still calls Python for its own writes. After it,
+every Builder and Explorer write is self-sufficient. `journey-projection` left the DS7
+command denominator on 2026-09-09 (30 → 29) and does not return.
 
-Ordering note: **TS5 was reassigned from DS7 to DS10 on 2026-09-09.** A story
-that can only land in the act that retires Python's publisher is a retirement
-story, and leaving it in DS7 meant DS7 could never close on its
-deterministic-command promise. TS5 is DS10's first act: port the compiler and
-publisher, cut over, and delete the Python publisher and the `refresh` seam in
-one flip, so the dual-writer window never opens. It cannot be pulled forward
-into the DS7 remainder without reintroducing that window. `journey-projection`
-left the DS7 command denominator with it (30 → 29).
+## Mirror Desktop Is Outside The Migration
+
+Decided 2026-09-19. [Mirror Desktop](https://github.com/mirror-mind-ai/mirror-desktop)
+(the Tauri app formerly Nautilus Harness, alpha, one user) is bound to the Python era in
+ways deeper than any command. An inventory taken at TS1's Plan, kept here for the
+integration effort that follows the migration:
+
+| Site (`src-tauri/src/`) | Calls | Coupling |
+|---|---|---|
+| `main.rs:2924` | `journey-projection inspect` | CLI; retired by TS1 |
+| `main.rs:2118`, `:2175` | `journey export-registry`, `journey mutate` | CLI; retired by TS4; mis-routed today (CR089) |
+| `main.rs:5518` | `conversations append` | CLI; TS-owned since DS7.US10, but called through Python directly |
+| `main.rs:1728` | `recall` piped into `pi @file` | CLI via shell; TS-owned, called through Python directly |
+| `main.rs:531` → bundled `scripts/mirror_conversation_catalog.py` | `sys.path.insert(mirror_root/src)`; imports `MemoryClient`; `conversations.list_recent`, `find_by_id_prefix`, rename | **Python internals** — no command exists |
+| `main.rs:1792` → bundled `scripts/provision_mirror_conversation.py` | same; `runtime_sessions.get_or_create_conversation`, `store.upsert_runtime_session`, `store.update_conversation` | **Python internals** — no command exists |
+| `runtime_binding.rs:189–199` | requires `mirror_root/src/memory`, version from `pyproject.toml` in `>=0.31.14,<0.32.0`, `uv` on the trusted path | binding contract |
+
+The migration serves current Mirror users on Pi, Gemini CLI, Codex, and Claude Code, who
+do not know Desktop exists. Desktop pins to the last Python-bearing release. Its
+integration with the TypeScript core is a separate effort after the migration closes;
+that effort owns whatever read model, commands, and binding shape Desktop needs, and
+may or may not resurrect a projection contract. The acceptance kit under
+`mirror-desktop/contracts/mirror-journey-projections/v1/` is not edited by this journey.
+
+## Zero Python Gate
+
+Navigator constraint, 2026-09-19: **when the migration closes, this version of Mirror
+uses no Python at all** — not in the product, not in the package, not in the tooling
+that builds or checks it. `src/memory/` and `tests/` are the obvious part. The rest of
+the denominator, from `git ls-files '*.py'` on 2026-09-19:
+
+| Where | Files | Disposition |
+|---|---|---|
+| `ts/parity/` | 76 | The oracle harness and golden generators; they exist to run Python as the oracle. Deleted in **TS5** with the oracle, after the last golden is regenerated |
+| `evals/` | 17 | **TS3** |
+| `scripts/` | 5 | `check_skill_command_parity.py` (ported to Node — the guard that asserts skills call no Python cannot itself be Python), `check_doc_links.py` (ported), `build_claude_plugin.py` (**US3**), `check_oracle_drift.py` (deleted with the oracle), `reset_sandbox_pet_store.py` (disposition decided in **TS5**) |
+| `spikes/ts-search-parity/` | 2 | Historical; deleted in **TS5** |
+| `ts/test/fixtures/**` | ~10 | Python-bodied fixture extensions for the catalog and dispatch tests. Rewritten as Node scripts in **TS2** so CI needs no interpreter; the tests still prove "any executable runtime", just not with Python |
+| `.github/workflows/tests.yml`, `docs.yml` | 2 | `uv`/Python steps removed in **TS5**; CI runs on Node alone |
+| `pyproject.toml`, `uv.lock` | 2 | **TS5**; version authority moves to `package.json` (**US3**) |
+
+The check is mechanical and lands in CI at TS5: `git ls-files '*.py'` is empty, no
+workflow installs Python, and no shipped artifact contains a `.py` file or a `uv`
+invocation.
 
 ## Eval Harness Deletion Gate
 
@@ -262,8 +306,8 @@ denominator (29) and served by Python fallback until DS10 acts on them:
    engine over real legacy copies, so the tool validates a retired engine. A TS
    rehearsal tool, if ever wanted, is separate scope against the TS engine.
 4. **`journey-projection`** (all subcommands) and the `journey_projections`
-   subsystem — CV22.DS7.TS5, reassigned here. Ported and cut over as DS10's
-   first act; see the seam deletion gate above.
+   subsystem — CV22.DS7.TS5, reassigned here as a port on 2026-09-09; **retired
+   unported on 2026-09-19** as TS1. See the retirement gate above.
 5. **The SQLite Refinement Workbench** — `build refinement-story
    create|overview|pull|review|coherence|close|park` (7) and the `build
    change-request` verbs `capture|attach|discard|select|confirm|resume|plan|
@@ -319,8 +363,14 @@ denominator (29) and served by Python fallback until DS10 acts on them:
   smoke coverage; `migrate-legacy`, `memory-rehearse-migration`, the SQLite Refinement
   Workbench verbs, and the ES-001 backfill flags are removed with their cutoffs
   documented in the release notes.
-- TS5 is done: TypeScript is the only writer of `.mirror/projections`, and the
-  `journey-projection refresh` seam and its TS call sites are gone.
+- TS1 is done: no TypeScript write spawns Python; the `journey-projection refresh` seam,
+  its TS call sites, and the `journey_projections` subsystem are gone; the contract's
+  cutoff is in the release note; existing `.mirror/projections/` trees are recorded as
+  inert.
+- The Zero Python gate holds: `git ls-files '*.py'` is empty, CI installs no Python, and
+  the shipped artifact contains none.
+- Mirror Desktop is not a prerequisite. Its inventory is recorded above for the
+  integration effort that follows.
 - No skill copy in any runtime invokes `uv run python -m memory`, and the skill parity
   check asserts the entry point is absent (CR072 brought the assertion forward; DS10
   verifies it holds for the packaged plugin).

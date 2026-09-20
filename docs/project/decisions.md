@@ -11,6 +11,81 @@ resolved.
 
 ## Completed Decisions
 
+### Journey projections retire with the Python core; Mirror Desktop is outside the migration
+
+**Date:** 2026-09-19
+**Reference:** [CV22.DS10.TS1](roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-ts1-retire-the-projection-seam-and-subsystem/index.md), [CV22.DS10](roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/index.md), [CV23 Journey Projection Contract](roadmap/cv23-journey-projection-contract/index.md), [CR089](refinement/rs009-cv22-front-door-routing-correctness/cr089-the-journey-route-swallows-export-registry-and-mutate.md)
+**Participants:** Vinícius Manhães Teles
+
+**Supersedes** the 2026-09-09 entry *Journey projection publication stays
+Python-owned until the retirement window*, and **sunsets** the contract the
+2026-08-19 entry *CV23 owns delivery* established. Both were right for the
+world they were decided in.
+
+DS10.TS1 was pulled on 2026-09-19 as the port that the 2026-09-09 decision
+deferred: TypeScript would own compilation and publication of
+`.mirror/projections`, landing in one flip at retirement time so the
+dual-writer window never opened. The plan was written, panel-reviewed, and
+amended. Its product-designer lens asked who reads the tree, and the answer
+changed the story: **nothing in this repository does.** Not the web console,
+not any TypeScript path, not a skill, not one of the seven installed
+extensions. The reader is Mirror Desktop — the Tauri application incubated as
+Nautilus Harness, for which CV23 implemented `mirror.journey-projections@1.0`
+against a consumer-owned acceptance kit.
+
+An inventory of Mirror Desktop's Mirror invocations found that projections
+are the shallowest of its couplings. It calls `journey-projection inspect`,
+`journey export-registry`, `journey mutate`, `conversations append`, and
+`recall` through `uv run python -m memory` directly; two bundled scripts
+`sys.path.insert` Mirror's source tree and import `MemoryClient`; its runtime
+binding requires `src/memory`, a `pyproject.toml` version in
+`>=0.31.14,<0.32.0`, and `uv`. It is an alpha with one user, built against
+the Python era.
+
+Decided:
+
+1. **Mirror Desktop is outside the TypeScript migration.** CV22 serves current
+   Mirror users on Pi, Gemini CLI, Codex, and Claude Code. Desktop pins to the
+   last Python-bearing release. Its integration with the TypeScript core is a
+   separate effort after the migration closes, and that effort — not this
+   journey — decides what read model, commands, and binding Desktop needs.
+   The inventory is recorded in the DS10 package for it.
+2. **The projection subsystem is retired, not ported.** With its only reader
+   deferred, no current user consumes the tree, and the contract's premise —
+   a second-party consumer that must read files because it cannot depend on
+   Mirror internals — no longer describes a first-party app. TS1 deletes the
+   `journey-projection refresh` seam and its TypeScript call sites, the
+   `journey_projections` subsystem, its CLI, its Extension API capability, its
+   tests and fixture, and `filelock`. It stays DS10's first act: it is the one
+   place where the TypeScript core still spawns Python for its own writes.
+3. **`mirror.journey-projections@1.0` is sunset with the Python core.** The
+   cutoff is documented in the release note. Existing `.mirror/projections/`
+   trees stay on disk as inert. The acceptance kit is not edited. CV23's
+   roadmap records the sunset so it does not read as a live contract over
+   deleted code.
+4. **`journey export-registry` and `journey mutate` retire with cutoff in
+   TS4.** They arrived in the pause-window merge for Desktop, were promised an
+   owner at the next DS7 pull, and never received one. The TypeScript front
+   door mis-routes them as journey slugs with exit 0 — a defect in Mirror,
+   not in Desktop — captured as CR089.
+5. **Zero Python.** When the migration closes, this version of Mirror uses no
+   Python: not in `src/`, not in tests, not in `scripts/`, `ts/parity/`,
+   `evals/`, fixtures, or CI. The denominator is enumerated in the DS10
+   package's Zero Python gate with a disposition per directory, and the check
+   is mechanical: `git ls-files '*.py'` empty, no workflow installs Python, no
+   shipped artifact contains a `.py` file or a `uv` invocation.
+
+What this is not: a judgment that the projection contract was wrong. It was a
+clean answer to a two-owner problem. The problem changed when both owners
+became one person and the consumer became first-party; the answer is allowed
+to change with it, and the port plan that was declined is kept in the story
+package as the record of what a faithful port would have cost.
+
+This is the third time in three days that the migration's own razor — *no
+user-visible change for current users* — cut a faithful port out of DS10's
+plan: the web console (2026-09-17), the eval harness's disposition, and now
+this. The razor is the right one.
+
 ### The MCP server's one write is narrowed instead of backup-gated
 
 **Date:** 2026-09-18

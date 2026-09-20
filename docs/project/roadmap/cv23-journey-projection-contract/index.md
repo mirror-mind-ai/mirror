@@ -2,7 +2,7 @@
 
 # CV23 — Journey Projection Contract
 
-**Status:** ✅ Done — v0.31.10 contract plus accepted v0.31.11 confinement hotfix
+**Status:** ✅ Done — v0.31.10 contract plus accepted v0.31.11 confinement hotfix. **Sunset 2026-09-19:** the contract retires with the Python core in [CV22.DS10.TS1](../cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-ts1-retire-the-projection-seam-and-subsystem/index.md) — its only consumer, Mirror Desktop, is outside the TypeScript migration and pins to the last Python-bearing release until its own integration defines a read model anew ([decision](../../decisions.md#journey-projections-retire-with-the-python-core-mirror-desktop-is-outside-the-migration))
 **Goal:** Implement `mirror.journey-projections@1.0` in the Python Core so local consumers and installed extensions can publish and inspect secure, deterministic, versioned Journey read models, while Ariad publishes an Operational projection without surrendering mutation authority.
 
 ---

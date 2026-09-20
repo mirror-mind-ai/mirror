@@ -40,3 +40,4 @@ inherit a TS route it was never ported into.
 - [CR072 — Route every skill through the front door](cr072-route-every-skill-through-the-front-door.md)
 - [CR077 — The route and the runtime disagree on a half-configured replay fixture](cr077-route-and-runtime-disagree-on-a-half-replay-fixture.md)
 - [CR085 — The TypeScript front door does not read the `.env` Python reads](cr085-the-ts-front-door-does-not-read-the-env-python-reads.md)
+- [CR089 — The `journey` route swallows `export-registry` and `mutate` as journey slugs](cr089-the-journey-route-swallows-export-registry-and-mutate.md)
