@@ -186,11 +186,6 @@ class ExtensionAPI:
     """capability_id must be declared in skill.yaml under
     mirror_context_providers."""
 
-    # --- Journey projections (Extension API 1.1+) ---
-
-    journey_projections: ExtensionJourneyProjections
-    """Namespace-bound projection publication and inspection."""
-
     # --- Migrations ---
 
     def run_migrations(self, migrations_dir: Path) -> int: ...
@@ -221,43 +216,26 @@ class ContextRequest:
 Providers may use any combination of these fields. They should never assume
 all are populated; in particular, `query` and `journey_id` may be `None`.
 
-## Journey projections
+## Journey projections — removed
 
-Extension API `1.1` adds a stable façade for versioned Journey read models:
+Extension API `1.1` exposed `api.journey_projections.publish(...)` and
+`.inspect(...)` over the `mirror.journey-projections@1.0` contract. **CV22.DS10.TS1
+removed the capability**: the contract retired with the Python core, and Mirror no
+longer publishes `.mirror/projections`.
+
+Reaching for the attribute raises with that reason. `hasattr(api,
+"journey_projections")` returns `False`, so an extension that feature-detects
+degrades rather than crashing:
 
 ```python
-publication = api.journey_projections.publish(
-    journey_id="my-journey",
-    projection_id="tactical",
-    document=document,
-    schema=optional_json_schema,
-)
-
-inspection = api.journey_projections.inspect(
-    journey_id="my-journey",
-    projection_id="tactical",
-)
+if hasattr(api, "journey_projections"):
+    ...  # never true on this version
 ```
 
-`document` is a complete `mirror.journey-projections@1.0` extension envelope.
-The optional schema is JSON Schema 2020-12 and validates that complete document
-offline in addition to the built-in extension schema.
+An extension that needs a durable read model of Journey state owns it: a table
+under its own prefix, or files under its own directory. See the release note for
+the cutoff.
 
-The façade is permanently bound to `api.extension_id`:
-
-- the document's `namespace` and `producer.id` must equal the bound extension;
-- `producer.kind` must be `extension`;
-- the document Journey and projection must equal the explicit call arguments;
-- `ariad` is reserved for Mirror Core;
-- inspection always uses the bound extension namespace;
-- callers provide a registered Journey ID, never a filesystem root.
-
-Both operations delegate to Mirror's shared per-Journey publication kernel.
-Publication is deterministic and linearizable; inspection returns a consistent
-current document/manifest-entry pair and never repairs or synthesizes. Stable
-results are `ProjectionPublication` and `ProjectionInspection`; contract
-failures are bounded `ProjectionError` values. The raw `db` escape hatch does
-not grant projection filesystem or namespace authority.
 
 ## TypeScript provider runtime — `mirror-context-v1`
 
@@ -354,8 +332,12 @@ subclasses and they will be treated uniformly.
 ## Versioning and stability
 
 The API is versioned as `extension_api_version` and exposed at
-`memory.extensions.api.VERSION`. Version `1.1` adds the backward-compatible
-`journey_projections` façade; all `1.0` methods remain unchanged.
+`memory.extensions.api.VERSION`. Version `1.1` added the `journey_projections`
+façade; **CV22.DS10.TS1 removed it**, which is a backward-incompatible change to
+a capability no installed extension used. The version number is deliberately not
+bumped here: the Extension API's version authority belongs to CV22.DS10.TS2,
+which owns the extension runtime boundary and the compatibility host, and a
+number chosen in isolation would be a second authority.
 Backward-incompatible changes increment the major version and trigger a
 deprecation cycle of at least one minor release.
 

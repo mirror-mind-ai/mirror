@@ -464,11 +464,13 @@ so `routing.ts` refuses an unknown `explore <sub>` and an unknown `explore story
 <anything>` — the `conversations append` defect (CR055) that exited 0 and
 discarded the caller's data.
 
-**The projection seam.** Every Explorer Story write asks Python to refresh the
+**The projection seam.** Every Explorer Story write asked Python to refresh the
 Journey projection, because publication is linearizable through an `fcntl.flock`
-lock Node cannot share. TypeScript ports the *decision* (`_projected_story`) and
-delegates the *publication* to `journey-projection refresh`, whose deletion is
-owned by [DS10's gate](../cv22-ds10-python-retirement-npm-distribution/index.md#journey-projection-refresh-seam-deletion-gate).
+lock Node cannot share. TypeScript ported the *decision* (`_projected_story`) and
+delegated the *publication* to `journey-projection refresh`. **Retired 2026-09-19**
+by [CV22.DS10.TS1](../cv22-ds10-python-retirement-npm-distribution/cv22-ds10-ts1-retire-the-projection-seam-and-subsystem/index.md):
+the subsystem is deleted rather than ported, so the seam, the decision, and the
+publication are all gone. What the seam taught stands.
 The delegation is best-effort by contract, so a broken seam is SILENT — which is
 why the lifecycle smoke asserts a published `operational.json` file rather than a
 log line, and why that check caught the seam resolving `--mirror-home` from the

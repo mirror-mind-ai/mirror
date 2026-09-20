@@ -6,7 +6,7 @@
 retirement after the Navigator's decision
 **Type:** Technical Story
 **Depends on:** CV22.DS7.US7 and CV22.DS7.US8 (the TypeScript Explorer and Builder writes
-that spawn the seam today); the [retirement decision](../../../decisions.md#journey-projections-retire-with-the-python-core-mirror-desktop-is-outside-the-migration)
+that spawn the seam today); the [retirement decision](../../../../decisions.md#journey-projections-retire-with-the-python-core-mirror-desktop-is-outside-the-migration)
 
 ---
 

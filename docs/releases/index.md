@@ -10,6 +10,12 @@ Future release notes should use the structure defined in [Release Notes](../proc
 
 ---
 
+## Pending
+
+- [Pending Cutoffs](pending-cutoffs.md) — surfaces removed by CV22.DS10 stories, staged
+  for the single CV22 release note. CV22 releases once, when the migration is complete,
+  so each retirement records its cutoff here rather than in a release note of its own.
+
 ## Releases
 
 - [v0.31.14 — Change Request Resume](v0.31.14.md) — patch release that adds the public Ariad Workbench `change-request resume` verb so a non-terminal advanced Change Request that lost the active pointer can continue without direct SQLite edits or artificial status regression. Resume preserves the CR record, restores only the Refinement cursor, allows `implemented` to proceed to `validate` and `validated` to proceed to `done`, and keeps terminal CRs closed.

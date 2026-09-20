@@ -159,7 +159,9 @@ subsystem it fed. Before Python retirement or npm publication, DS10 must:
    its tests, and its fixture, and drop `filelock`;
 3. prove with a guard, not a reading of the code, that Explorer and Builder writes
    spawn no process;
-4. document the cutoff in the release note: `journey-projection` and
+4. document the cutoff in [Pending Cutoffs](../../../../releases/pending-cutoffs.md) —
+   CV22 releases once, so the retirement stories stage their cutoffs there and the
+   single release note carries them: `journey-projection` and
    `api.journey_projections` no longer exist, `.mirror/projections` is no longer
    published, and `mirror.journey-projections@1.0` consumers stay on the last
    Python-bearing release until Mirror Desktop's integration with the TypeScript core

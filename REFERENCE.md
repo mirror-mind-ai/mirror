@@ -45,7 +45,6 @@ Codex uses the `$mm-` prefix. All runtimes call the same Python core.
 | `/mm-help` | `$mm-help` | `/mm:help` | Lists available commands | no arguments |
 | `python -m memory runtime` | — | — | Inspects Mirror runtime status, version, drift, backups, release notes, release promotion readiness, plans updates, and executes safe updates | `status [--mirror-home PATH] [--channel stable|main]`, `version [--start PATH] [--channel stable|main]`, `diagnose [--mirror-home PATH]`, `backup [--mirror-home PATH]`, `backup --verify PATH`, `release-notes [latest|vX.Y.Z]`, `release-notes pending [--from vX.Y.Z] [--ref REF] [--no-fetch]`, `release-doctor --target vX.Y.Z [--stable REF]`, `release-promote --target vX.Y.Z [--stable BRANCH] [--remote REMOTE] [--dry-run] [--push]`, `update --dry-run [--mirror-home PATH] [--channel stable|main]`, `update --check [--channel stable|main]`, `update [--no-fetch] [--skip-migrations] [--mirror-home PATH] [--channel stable|main]`, `update --repair-updater [--no-fetch] [--mirror-home PATH] [--channel stable|main]` |
 | `python -m memory conversation-logger` | — | — | Runtime conversation logging and repair utilities | `discard-current [--interface pi] [--session-id ID]`, `repair-journeys [--limit N] [--apply]` |
-| `python -m memory journey-projection` | — | — | Discovers, rebuilds, and inspects Journey projections; isolated test mode also supports the immutable consumer probe | `capabilities`, `rebuild-operational --journey ID`, `inspect --journey ID --namespace ID --projection ID`, test-only `probe-prepare` and `probe-publish`; all accept `--mirror-home PATH --format json` |
 | `python -m memory web` | — | — | Runs the local Mirror Web Console — Identity and Workspace perspectives, conversation intelligence, bulk conversation maintenance (assign/delete), and allowlisted operation runs | `[--host 127.0.0.1] [--port 8765]` |
 | `ext-review-copy` | — | `ext:review-copy` | External multi-LLM copy review skill; install and expose it before use | skill-driven workflow |
 
@@ -89,46 +88,6 @@ only conversation/Journey identity, counts, and validated message IDs with
 `duplicate_request_message_id`, `idempotency_conflict`, and
 `persistence_failure`. Receipts never echo message content, caller metadata,
 private paths, environment values, or raw exceptions.
-
-## Journey Projection Contract
-
-```bash
-uv run python -m memory journey-projection capabilities \
-  --mirror-home <home> --format json
-```
-
-Capability discovery is database-free and returns the installed
-`mirror.journey-projections` contract version, Extension API version `1.1`, and
-all five v1 operations. Production consumers can run `rebuild-operational` and
-`inspect`; both resolve the Journey root from the selected home's registry. The
-`probe-prepare` and `probe-publish` routes are unavailable unless
-`MEMORY_ENV=test` and an isolated non-production home is proven. All output is
-structured JSON. Unknown operations, formats, unsafe paths, invalid schemas, and
-authority violations return nonzero bounded JSON without echoing private paths
-or payload content.
-
-Extension API `1.1` adds `api.journey_projections.publish(...)` and
-`api.journey_projections.inspect(...)`. Both are permanently bound to the
-installed extension's `extension_id`; extensions cannot select `ariad`, another
-extension namespace, or a filesystem root. See the [Extension API
-reference](docs/product/extensions/api-reference.md#journey-projections).
-
-Ariad Operational rebuilds are Core-owned. They compile the registered
-Journey's authored roadmap, explicit active work, public Exploratory Story
-handoff fields, canonical Refinement indexes, and allowlisted artifact paths
-into `ariad:operational`, then publish through the shared linearizable kernel.
-The compiler accepts no production root from consumers, invokes no model or
-network, copies no private narrative bodies, and fails closed on unsafe or
-ambiguous durable references. `rebuild-operational` returns the published
-document and identity; `inspect` returns the validated document plus its current
-manifest entry and never repairs divergence implicitly.
-
-Represented Ariad mutations now request Operational refresh only after durable
-source commit. Equal projected `sourceRevision` values are treated as unchanged;
-otherwise publication uses the shared kernel. Refresh failure is intentionally
-non-transactional with source truth: the source mutation stays committed and the
-latest bounded outcome remains available through the internal coordinator. No
-background retry, repair, model, network, or extra CLI output is introduced.
 
 ## Operating Mode Lifecycle
 

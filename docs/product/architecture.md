@@ -26,7 +26,6 @@ server; all data stays on the user's machine.
 src/memory/                  — Python package: all business logic
   cli/                       — CLI entry points (call services, no raw SQL)
   hooks/                     — Hook handlers (called by runtime lifecycle events)
-  journey_projections/       — Versioned Journey projection contracts, schemas, serialization, and publication
   intelligence/              — LLM-powered extraction, search, routing
   services/                  — Domain services (the implementation layer)
   storage/                   — Persistence components (raw SQL lives here)
@@ -108,64 +107,15 @@ Intent survives Pulls within that DS and clears when work moves to another DS.
 It never grants commit, push, tag, stable-promotion, publication, or remote
 mutation authority.
 
-Journey projections add a filesystem read-model boundary without changing this
-import direction. CLI, Ariad lifecycle, and the public Extension API call one
-Journey projection service; contract models/schema validation, deterministic
-serialization, Operational compilation, and publication storage remain separate
-owners. Production root authority always comes from the registered Journey, not
-a caller-supplied path. The subsystem invokes no model or network service.
-
-Projection publication is linearizable per Journey. Core and extension writers,
-as well as inspection, share one cross-process Journey lock; different Journeys
-remain independent. The manifest is re-read and merged only after lock
-acquisition, preventing stale-manifest lost updates. Internal create-once
-receipts bind each snapshot ID to its canonical byte digest, while the manifest
-remains the public current-state authority. Projection replacement precedes
-manifest replacement; controlled pre-manifest failures restore the old document,
-and interrupted/unrecoverable states surface explicit divergence without
-implicit repair.
-
-Extension API `1.1` exposes this owner through a bound
-`ExtensionJourneyProjections` façade. Its namespace and producer identity come
-from `ExtensionAPI.extension_id`, never caller parameters; `ariad` remains
-Core-only. A lazy resolver reads only the registered Journey `project_path` from
-the existing registry connection, and the façade delegates all validation,
-locking, receipts, publication, rollback, and inspection to the shared service.
-The extension's raw SQLite handle grants no projection path authority.
-
-The Ariad Operational compiler is a pure read-model compiler above that same
-service. It resolves authored roadmap links from their containing documents with
-shared Ariad grammar, then classifies safety by the canonical target beneath the
-registered Journey root. Parent-relative traversal is valid only while confined;
-absolute, URI-like, backslash-based, canonical-escape, and symlink-escape targets
-remain bounded failures. The compiler preserves authored hierarchy order, reads
-active work only from explicit durable state, and extracts only public
-exploration/refinement fields and allowlisted artifact references. Its `sourceRevision` hashes the canonical projected content, so
-excluded narrative bodies cannot perturb consumer identity. A registered-root
-rebuild validates the Operational schema and delegates publication to the DS2
-kernel; lifecycle-triggered refresh remains a separate coordinator concern.
-Malformed, cyclic, duplicate, or escaping durable references fail before
-publication and never trigger inference or implicit repair.
-
-Operational refresh is a post-commit observer, not mutation authority. A generic
-optional callback on `Store` is wired by `MemoryClient` to one
-`ProjectionRefreshCoordinator`. Delivery cursor writes compare only projected
-active-work fields; Explorer persistence compares only public story fields; and
-Refinement service operations request once after their complete logical commit.
-The coordinator compiles registered state, skips publication when the current
-`sourceRevision` already matches, and otherwise delegates to DS2. Compilation,
-inspection, or publication failure becomes bounded diagnostics and is never
-re-raised into the already-successful source mutation. Read-only operations and
-excluded Explorer evidence do not request refresh.
-
-The Journey Projection CLI is a transport over these owners. Production rebuild
-and inspection accept a Journey ID plus selected Mirror home, then resolve root
-authority from that home's registry. Consumer-probe preparation is a separate
-test-only adapter: it requires `MEMORY_ENV=test`, proves a non-production home,
-confines fixture and active state below `.journey-projection-probe`, verifies the
-isolated SQLite main path, and grants extension publication only through the
-fixed `projection-probe` identity. Fixed compiler identities live in that
-isolated control record and cannot be selected by production callers.
+Journey projections are retired. Until CV22.DS10.TS1 Mirror published a
+versioned filesystem read model under `.mirror/projections` — a linearizable
+publication kernel, an Ariad Operational compiler, and an Extension API
+capability, specified as `mirror.journey-projections@1.0` for an external
+consumer. The consumer is Mirror Desktop, which is outside the TypeScript
+migration and pins to the last Python-bearing release; with no reader the
+migration serves, the subsystem retired with the Python core rather than being
+ported. Any future read model belongs to the Desktop integration effort, and is
+a new design rather than a revival of this one.
 
 ---
 
