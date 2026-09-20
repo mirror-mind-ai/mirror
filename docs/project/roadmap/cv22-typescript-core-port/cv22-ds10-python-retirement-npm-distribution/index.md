@@ -2,7 +2,7 @@
 
 # CV22.DS10 — Python Retirement And npm Distribution
 
-**Status:** 🟢 In Progress — pulled 2026-09-19 with eight approved child stories (0/8)
+**Status:** 🟢 In Progress — pulled 2026-09-19 with eight approved child stories (1/8; TS1 done 2026-09-19)
 **Type:** Delivery Story
 **Depends on:** CV22.DS7 command burn-down (done 2026-09-17, 14/14 — its Workspace/web
 hierarchy rider was retired unported); CV22.DS8 live-provider cutover (done); CV22.DS9 TS
@@ -23,7 +23,7 @@ DS10 therefore owns the removal, not a port; `mirror-gui` owns any future graphi
 
 | Code | Story | Type | Outcome | Status |
 |------|-------|------|---------|--------|
-| [CV22.DS10.TS1](cv22-ds10-ts1-retire-the-projection-seam-and-subsystem/index.md) | Retire the projection seam and subsystem | Technical Story | TypeScript writes spawn no Python: the `journey-projection refresh` seam and its four TS call sites, the `journey_projections` subsystem, its CLI, its Extension API capability, tests, and fixture are deleted; `.mirror/projections` is no longer published; `mirror.journey-projections@1.0` is sunset with a documented cutoff. Pulled 2026-09-19 as a port (ex-DS7.TS5), re-authored the same day as a retirement after the Navigator placed Mirror Desktop outside the migration | 🟢 In Progress — re-planned 2026-09-19 |
+| [CV22.DS10.TS1](cv22-ds10-ts1-retire-the-projection-seam-and-subsystem/index.md) | Retire the projection seam and subsystem | Technical Story | TypeScript writes spawn no Python: the `journey-projection refresh` seam and its four TS call sites, the `journey_projections` subsystem, its CLI, its Extension API capability, tests, and fixture are deleted; `.mirror/projections` is no longer published; `mirror.journey-projections@1.0` is sunset with a documented cutoff. Pulled 2026-09-19 as a port (ex-DS7.TS5), re-authored the same day as a retirement after the Navigator placed Mirror Desktop outside the migration | ✅ **Done — 2026-09-19.** TypeScript writes spawn no Python; 5,528 lines removed; cutoff staged; D-018 and D-019 carried |
 | CV22.DS10.US1 | Web console retirement | User Story | Cutoff published in the release note naming `mirror-gui` as successor; a repository-wide check finds nothing outside `src/memory/web/` depending on the console; `src/memory/web/`, the `web` entry in `__main__.py`, and `tests/unit/memory/web/` deleted; README, REFERENCE, and getting-started updated in the same change; `<mirror-home>/web/` disposition recorded; no TS replacement built | 🟡 Planned |
 | CV22.DS10.TS2 | Extension compatibility-host deletion | Technical Story | `memory.extensions.compat_host` (context and `cli` modes) and every TS launcher branch that invokes it removed; providers without `provider_runtime` fail explicit and fail-soft; the migration cutoff documented; a repository/package check proves every retained provider and command enters through a declared language-neutral runtime | 🟡 Planned |
 | CV22.DS10.TS3 | Eval harness transfer to `ts/evals/` | Technical Story | The Python contract carried (`PROBES` and `THRESHOLD` per module, capability discovery for `--all`, JSONL history, threshold exit code); fixtures engine-neutral; each module's disposition recorded (`routing` retired, `scene` follows US1, `retrieval` decided); injection probes individually blocking (D-017); first run diffed against the 2026-09-13 `eval-history/`; development guide and engineering principles name the TS harness; then `evals/` and the `eval` entry deleted | 🟡 Planned |

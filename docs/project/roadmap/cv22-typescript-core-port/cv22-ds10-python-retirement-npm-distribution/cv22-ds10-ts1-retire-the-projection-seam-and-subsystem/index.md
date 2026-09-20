@@ -2,8 +2,10 @@
 
 # CV22.DS10.TS1 — Retire the projection seam and subsystem
 
-**Status:** 🟢 In Progress — pulled 2026-09-19 as a port, re-authored the same day as a
-retirement after the Navigator's decision
+**Status:** ✅ **Done — 2026-09-19.** Pulled as a port, re-authored the same day as a
+retirement, implemented in four plateaus, Navigator validation accepted. TypeScript writes
+spawn no Python; the subsystem, its CLI, its Extension API capability, its tests, its
+fixture, and `filelock` are deleted; the cutoff is staged for the CV22 release note
 **Type:** Technical Story
 **Depends on:** CV22.DS7.US7 and CV22.DS7.US8 (the TypeScript Explorer and Builder writes
 that spawn the seam today); the [retirement decision](../../../../decisions.md#journey-projections-retire-with-the-python-core-mirror-desktop-is-outside-the-migration)
@@ -150,3 +152,34 @@ Navigator-visible route plus automated checks:
    decisions, and release notes.
 3. Mirror Desktop, pointed at the last Python-bearing tag, still inspects a projection —
    the cutoff is real for the version after, not the version before.
+
+## Outcome
+
+Done 2026-09-19. Four commits:
+
+| | Commit | |
+|---|---|---|
+| Guard + TypeScript | `2c0ef765` | +251/−482 |
+| Python subsystem | `a3bca6ad` | +50/−5,528 |
+| Docs and cutoff | `4c9e45d5` | docs only |
+| Closure | this one | validation, review, status |
+
+The guard was written first and failed against the live seam — two spawns from the
+Builder path, one from the Explorer path — then passed against its absence. It greps the
+process table through a `PATH` shim rather than spying on `node:child_process`, so it
+catches a spawn from any module, including one a later story adds.
+
+**Validation:** 2372 TypeScript and 2656 Python tests, both suites green with no surface
+golden changed; ruff, biome, doc links, skill parity, and oracle drift clean; and a real
+front-door Builder write on the production journey under the shim with an empty spawn log
+and an unmoved `current.json`. Navigator accepted 2026-09-19.
+
+**Debt:** deferred, both carried to the stories that own their subject — **D-018**
+(Extension API `VERSION` still says `1.1`, TS2's to decide) and **D-019** (the lifecycle
+corpus's unasserted `projection_requests`, which TS5 removes with the oracle).
+
+**What the deletion taught.** The projection wiring was holding a test fixture together
+by accident: `test_story_plan_preauthorization.py` let its `MemoryClient` fall out of
+scope and survived only because the store held a callback whose closure referenced the
+client. Removing the seam collected the client mid-test and closed the database under it.
+A retirement is not only subtraction — it exposes what was leaning on the thing removed.

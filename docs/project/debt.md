@@ -35,6 +35,8 @@ Dropped   no longer relevant or replaced by another item
 | D-015 | Production updater blocks on retired experimental migration rows | operations / data | medium | Paid | CV23.DS7 release installation → local repair 2026-08-25 | Paid by verified removal of empty retired schema and rows 017–019 |
 | D-016 | Read-only WAL recovery assumes SQLite fails eagerly during connect | reliability / testing | medium | Paid | CV9.E2.S31 Navigator Validation baseline comparison → runtime WAL fallback maintenance | Paid by the integrated eager schema-probe fallback |
 | D-017 | Injection-resistance probes are averaged into a module score, so an obeyed probe can pass the release gate | eval measurement | medium | Carried | CV22.DS8.TS1 validation | The eval harness transfer (CV22.DS10), a fence change on any fenced surface, or any story that treats a module PASS as injection-resistance evidence |
+| D-018 | Extension API `VERSION` stays `1.1` after `api.journey_projections` was removed, so the constant advertises a capability that no longer exists | design / contract | low | Carried | CV22.DS10.TS1 Debt Review | CV22.DS10.TS2 plan time, or any story that changes the Extension API surface |
+| D-019 | The Builder lifecycle corpus records a `projection_requests` field that nothing asserts | testing | low | Carried | CV22.DS10.TS1 Debt Review | CV22.DS10.TS5, which deletes the Python oracle the corpus would be regenerated against |
 
 ## D-001 — Metadata lifecycle policy and evidence filtering live inside ConversationService
 
@@ -757,3 +759,76 @@ module's aggregate score, in whichever harness owns the release gate, with a
 test proving the failure path. Until then, injection-resistance evidence comes
 from reading the probe line, not from the module verdict.
 
+## D-018 — Extension API `VERSION` advertises a removed capability
+
+**Kind:** design / contract  
+**Severity:** low  
+**Status:** Carried  
+**Source:** CV22.DS10.TS1 Debt Review  
+
+### Carrying reason
+
+CV22.DS10.TS1 removed `api.journey_projections` with the Journey Projection
+Contract. Extension API `1.1` is the version that *added* that façade, and
+`memory.extensions.api.VERSION` still reports `1.1`. A removal is
+backward-incompatible, so the constant now describes a surface that does not
+exist.
+
+The practical exposure is small and bounded: no installed extension uses the
+capability, reaching for the attribute raises with the reason, and
+`hasattr` returns `False` so feature detection degrades. What is wrong is the
+*number*, not the behavior.
+
+It is carried rather than paid because the Extension API's version authority
+belongs to **CV22.DS10.TS2**, which owns the extension runtime boundary and the
+compatibility host. Choosing a number inside TS1 would create a second
+authority over the same constant — the failure mode this project has already
+paid for elsewhere. TS2 decides whether the removal warrants `1.2`, `2.0`, or
+a statement that the capability never reached a user and the number never
+mattered.
+
+### Revisit trigger
+
+CV22.DS10.TS2 plan time, or any story that changes the Extension API surface.
+
+### Closure condition
+
+`memory.extensions.api.VERSION` and the Extension API reference agree about
+which capabilities exist, under a version decided by the story that owns the
+extension runtime boundary.
+
+## D-019 — The Builder lifecycle corpus records an assertion it no longer makes
+
+**Kind:** testing  
+**Severity:** low  
+**Status:** Carried  
+**Source:** CV22.DS10.TS1 Debt Review  
+
+### Carrying reason
+
+`ts/test/builder/lifecycle.test.ts` replays a recorded corpus of the Python
+Builder oracle step by step. Each step carries `projection_requests` — the
+refreshes Python requested at that point. TS1 retired the projection seam, so
+TypeScript issues none, and the assertion was removed with the reason written
+where it used to be.
+
+The field stays in the corpus, recorded and unasserted. That is a small honesty
+gap: a reader can no longer tell from the test whether the field is unused or
+merely unchecked, and only the comment says which.
+
+It is carried because regenerating the corpus requires running the Python
+oracle, which **CV22.DS10.TS5** deletes. Paying it now means rebuilding an
+artifact that is itself scheduled for removal, against an engine that is being
+retired. The sibling parity suite (`cursor.test.ts`) took the opposite and
+cheaper route for the same data — it asserts the *absence* of requests against
+the oracle's recording, so a re-added spawn is still caught there.
+
+### Revisit trigger
+
+CV22.DS10.TS5, which deletes the Python oracle the corpus would be regenerated
+against.
+
+### Closure condition
+
+The corpus and its assertions agree: either the field is gone with the oracle,
+or the replay asserts something about it.

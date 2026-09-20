@@ -12,6 +12,60 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-19 — CV22.DS10.TS1: the TypeScript core stops calling Python, by deleting what it called
+
+DS10's first story closed the same day it was pulled, twice over: pulled as a
+**port**, re-planned as a **retirement**, implemented, validated, and closed. Every
+Explorer story write and every Builder cursor write used to spawn `uv run python -m
+memory journey-projection refresh` after commit — the last runtime dependency of the
+TypeScript core on Python for its own writes. That seam and the 2,500-line subsystem
+behind it are gone: 5,528 lines removed, `filelock` with them.
+
+**A panel question, not a test, reversed the story.** The port plan was written,
+reviewed by eight lenses, and amended. The product-designer lens asked who reads
+`.mirror/projections`, and nothing in this repository does — not the web console, not
+TypeScript, not a skill, not one of the seven installed extensions. The reader is
+**Mirror Desktop**, the Tauri app incubated as Nautilus Harness, for which CV23 built
+`mirror.journey-projections@1.0` against a consumer-owned acceptance kit. An inventory
+of its Mirror invocations showed projections were its *shallowest* coupling: two bundled
+scripts `sys.path.insert` Mirror's source tree and import `MemoryClient`, and its runtime
+binding requires `src/memory`, a `pyproject.toml` version, and `uv`.
+
+The Navigator then drew the line that resolved it: **Mirror Desktop is outside this
+migration.** CV22 serves the users on Pi, Gemini CLI, Codex, and Claude Code, who do not
+know Desktop exists; Desktop pins to the last Python-bearing release and gets its own
+integration effort afterwards, which will define its read model anew. With the only
+reader deferred, the subsystem had no consumer the migration serves — so it retired with
+the Python core, and `mirror.journey-projections@1.0` is sunset with a documented cutoff.
+The third time in three days that "no user-visible change *for current users*" cut a
+faithful port out of DS10's plan, after the web console and the eval harness.
+
+**The guard greps the process table, not the module graph.** A `child_process` spy grades
+the modules the test imported. This one puts fake `uv`, `python`, and `python3` first on
+`PATH`, runs real front-door invocations in real subprocesses, and asserts the marker file
+stays empty — so it catches a spawn from a module the test never imported, including one
+a later story adds. Written first, it failed exactly as intended: two spawns from the
+Builder path, one from the Explorer path. A third test spawns the shim directly, so green
+cannot come from a broken detector.
+
+**A retirement exposes what leaned on the thing removed.** The projection wiring was
+holding a test fixture together by accident: `test_story_plan_preauthorization.py`
+returned `client.store` and let the client fall out of scope, surviving only because the
+store held a callback whose closure referenced the client. With the cycle gone, the client
+was collected mid-test and closed the database under it. Fixed in the helper, the way its
+sibling suite already did it.
+
+Validation: 2372 TypeScript and 2656 Python tests green with no surface golden changed,
+and a real Builder write on the production journey under the shim — empty spawn log,
+unmoved `current.json`. Debt deferred to the stories that own it: **D-018** (Extension API
+`VERSION` still reads `1.1`; TS2 owns that number) and **D-019** (the lifecycle corpus's
+unasserted `projection_requests`; TS5 deletes the oracle it would be regenerated against).
+**CR089** captures a defect found on the way and unrelated to the retirement: the
+TypeScript `journey` route swallows `export-registry` and `mutate` as journey slugs and
+exits 0 — a write verb silently doing nothing.
+
+**DS10 is 1/8.** Next: US1, the web console retirement.
+
 ### 2026-09-19 — CV22.DS9 closed (4/4): the MCP surface is TypeScript's, and bounded
 
 CV22.DS9.TS1 shipped the wallet and abuse guards, closing DS9. `python -m memory
