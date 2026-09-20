@@ -266,7 +266,6 @@ export function invalidatePlanPreauthorization(
         cursorGeneration: cursor.cursorGeneration,
         planPreauthorization: setTo({ ...receipt, status: "invalidated", reason }),
         expectedCursor: cursor,
-        refreshProjection: false,
       },
       deps,
     );

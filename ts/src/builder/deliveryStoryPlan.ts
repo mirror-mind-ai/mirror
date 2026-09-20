@@ -167,7 +167,6 @@ export function planDeliveryStoryCheckpoint(
       aggregateCheckpointStatus: replaceStatus(cursor.aggregateCheckpointStatus, "plan", "pending"),
       cursorGeneration: cursor.cursorGeneration,
       planPreauthorization: { kind: "set", value: receipt },
-      refreshProjection: false,
     },
     deps,
   );
@@ -186,7 +185,6 @@ export function planDeliveryStoryCheckpoint(
     implementationStarted: false,
   };
   const materialized = materializePackage(report);
-  deps.requestProjectionRefresh?.(options.journey);
   return { ...report, materializedArtifacts: materialized };
 }
 
@@ -303,7 +301,6 @@ export function approveDeliveryStoryPlan(
         cursorGeneration: cursor.cursorGeneration,
         planPreauthorization: { kind: "set", value: receipt },
         expectedCursor: usePreauthorization ? cursor : null,
-        refreshProjection: false,
       },
       deps,
     );
@@ -335,7 +332,6 @@ export function approveDeliveryStoryPlan(
     implementationStarted: true,
   };
   const materialized = materializePackage(report);
-  deps.requestProjectionRefresh?.(options.journey);
   return { ...report, materializedArtifacts: materialized, unfilledSections: unfilled };
 }
 

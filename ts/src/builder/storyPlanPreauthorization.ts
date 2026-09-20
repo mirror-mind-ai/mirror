@@ -132,7 +132,6 @@ export function approveStoryPlanWithPreauthorization(
         cursorGeneration: cursor.cursorGeneration,
         planPreauthorization: setTo({ ...receipt, status: "consumed", reason: null }),
         expectedCursor: cursor,
-        refreshProjection: false,
       },
       deps,
     );
@@ -150,7 +149,6 @@ export function approveStoryPlanWithPreauthorization(
     throw new PlanPreauthorizationMismatch("cursor_changed");
   }
 
-  deps.requestProjectionRefresh?.(journey);
   return {
     cursor: updated,
     status: "approved",

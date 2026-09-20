@@ -25,7 +25,6 @@ import {
   getExplorerStory,
   listExplorerStories,
   markExplorerStoryPromoted,
-  projectionRefreshRequested,
   renderExplorerStoryContext,
   type StoryClock,
   setExplorerAttractors,
@@ -414,34 +413,6 @@ for (const scenario of golden.derive_title) {
     assert.equal((row?.title ?? null) as string | null, scenario.title);
   });
 }
-
-// --- G. projection refresh decision ----------------------------------------
-
-for (const scenario of golden.projection_change_detection) {
-  test(`explorer projection refresh decision: ${scenario.name}`, () => {
-    assert.equal(
-      projectionRefreshRequested(
-        fromDict(scenario.left as StoryDict | null),
-        fromDict(scenario.right as StoryDict | null),
-      ),
-      scenario.refresh_requested,
-    );
-  });
-}
-
-test("the projection decision is asymmetric by design and stays that way", () => {
-  const base = fromDict(golden.projection_change_detection[0]?.left as StoryDict) as ExplorerStory;
-  assert.equal(
-    projectionRefreshRequested(base, { ...base, lastStoryCard: "changed" }),
-    false,
-    "last_story_card must not request a refresh",
-  );
-  assert.equal(
-    projectionRefreshRequested(base, { ...base, title: "changed" }),
-    true,
-    "title must request a refresh, and _derive_title derives it from the story text",
-  );
-});
 
 // --- H. context render -----------------------------------------------------
 

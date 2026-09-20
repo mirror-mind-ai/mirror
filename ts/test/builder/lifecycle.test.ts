@@ -430,7 +430,6 @@ interface ReplayContext {
   readonly projectAbsolute: string;
   readonly journey: string;
   readonly deps: CursorWriteDeps;
-  readonly projectionRequests: string[];
   /**
    * The reports a later step composes with, exactly as the CLI holds them.
    * `delivery_story_ready` needs Pull, Prepare, AND Expand, so Expand renders it
@@ -1484,17 +1483,14 @@ function replaySequence(sequence: Sequence): void {
   rmSync(root, { recursive: true, force: true });
   mkdirSync(project, { recursive: true });
   const db = memoryDatabase(root);
-  const projectionRequests: string[] = [];
   const context: ReplayContext = {
     db,
     project,
     journey: sequence.journey,
     deps: {
       nowIso: () => NOW,
-      requestProjectionRefresh: (journey) => projectionRequests.push(journey),
     },
     projectAbsolute: resolve(project),
-    projectionRequests,
     reports: {},
     planPath: null,
     existedBefore: new Map(),
@@ -1542,7 +1538,10 @@ function replaySequence(sequence: Sequence): void {
       );
       assert.equal(storedMetadata(db, sequence.journey), step.metadata, `${where}: cursor bytes`);
       assert.deepEqual(snapshotFiles(project), step.files, `${where}: files`);
-      assert.deepEqual(projectionRequests, step.projection_requests, `${where}: projection seam`);
+      // `step.projection_requests` stays in the corpus and is no longer asserted:
+      // CV22.DS10.TS1 retired the projection seam, so every step would record an
+      // empty list. The corpus is a recording of the Python oracle, not a fixture
+      // this story may rewrite, and its surface assertions still grade the port.
       if (step.artifacts !== undefined) {
         assert.deepEqual(outcome.artifacts, step.artifacts, `${where}: artifacts`);
       }

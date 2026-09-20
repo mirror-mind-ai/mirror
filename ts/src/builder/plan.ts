@@ -3,19 +3,16 @@
 // Port of `plan_lifecycle_item` and `render_plan_checkpoint` from
 // `src/memory/builder/lifecycle.py`.
 //
-// Four behaviors carry the meaning, and three of them are invisible in the surface:
+// Three behaviors carry the meaning, and two of them are invisible in the surface:
 //
 //   1. **The receipt argument is always EXPLICIT.** Plan passes the receipt it
 //      resolved — new, or the existing one — which bypasses the cursor's
 //      coordinate-change invalidation. That is what lets a freshly recorded receipt
 //      survive the very write that records it; passing the KEEP sentinel here would
 //      invalidate it on arrival.
-//   2. **`refreshProjection: false`, then an explicit request.** The cursor write is
-//      told not to publish, and Plan calls the seam itself afterwards, so the
-//      refresh happens once, after the artifacts exist, rather than mid-write.
-//   3. **The generation does NOT advance.** Plan is a checkpoint on the item Pull
+//   2. **The generation does NOT advance.** Plan is a checkpoint on the item Pull
 //      committed to, and a bump would invalidate the receipt it just wrote.
-//   4. **Defaults are per FIELD, not per call.** Every empty argument falls back to
+//   3. **Defaults are per FIELD, not per call.** Every empty argument falls back to
 //      its own Python default, so a caller that supplies only `objective` still gets
 //      Python's scope, non-goals, acceptance, and validation text.
 
@@ -172,7 +169,6 @@ export function planLifecycleItem(
       aggregateCheckpointStatus: existing.aggregateCheckpointStatus,
       cursorGeneration: existing.cursorGeneration,
       planPreauthorization: setTo(receipt),
-      refreshProjection: false,
     },
     deps,
   );
@@ -240,7 +236,6 @@ export function planLifecycleItem(
   }
   // Unconditional, and after the artifacts: the cursor write was told not to
   // publish, so this is the only refresh for the whole event.
-  deps.requestProjectionRefresh?.(journey);
   return report;
 }
 

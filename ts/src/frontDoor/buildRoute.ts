@@ -22,7 +22,6 @@ export interface BuildRouteDeps {
   ) => Promise<BuildLoadRuntime | null>;
   readonly nowIso: () => string;
   readonly environmentSessionId?: string | null;
-  readonly requestProjectionRefresh: (journey: string, dbPath: string) => void;
 }
 
 export interface BuildRouteResult {
@@ -384,7 +383,6 @@ export async function runBuildRoute(
     const result = builder.invokeBuilderArgv(db, builderArgv, {
       nowIso: deps.nowIso,
       environmentSessionId: deps.environmentSessionId ?? null,
-      requestProjectionRefresh: (journey) => deps.requestProjectionRefresh(journey, dbPath),
     });
     return writeResult(result);
   });

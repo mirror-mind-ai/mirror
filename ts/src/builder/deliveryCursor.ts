@@ -343,13 +343,10 @@ export interface SetDeliveryCursorOptions {
   readonly expectedCursor?: BuilderDeliveryCursor | null;
   readonly releaseIntentDeliveryStory?: Keepable<string | null>;
   readonly releaseIntent?: Keepable<string | null>;
-  readonly refreshProjection?: boolean;
 }
 
 export interface CursorWriteDeps {
   readonly nowIso: () => string;
-  /** US7's seam, reused unchanged. Absent means no projection is requested. */
-  readonly requestProjectionRefresh?: (journey: string) => void;
 }
 
 /**
@@ -456,10 +453,6 @@ export function setDeliveryCursor(
     );
   }
 
-  const refresh = options.refreshProjection ?? true;
-  if (refresh && !projectedWorkEqual(projectedActiveWork(previous), projectedActiveWork(cursor))) {
-    deps.requestProjectionRefresh?.(normalizedJourney);
-  }
   return cursor;
 }
 
@@ -470,7 +463,6 @@ export function clearDeliveryCursor(
   deps: CursorWriteDeps,
 ): void {
   const normalizedJourney = normalizeRequired(journey, "journey");
-  const previous = getDeliveryCursor(db, normalizedJourney);
   upsertRuntimeSession(
     db,
     cursorSessionId(normalizedJourney),
@@ -482,9 +474,6 @@ export function clearDeliveryCursor(
     },
     deps.nowIso(),
   );
-  if (projectedActiveWork(previous) !== null) {
-    deps.requestProjectionRefresh?.(normalizedJourney);
-  }
 }
 
 /**
@@ -543,32 +532,6 @@ export function renderDeliveryCursorSyncReport(cursor: BuilderDeliveryCursor): s
     "boundary",
     "No story lifecycle work was executed.",
   ].join("\n")}\n`;
-}
-
-/**
- * Python `_projected_active_work`: the four fields the Journey projection
- * actually shows. `None` when there is no active item, so a cursor without one
- * never requests a refresh — and note the `or "active"` default, which makes a
- * missing `last_delivery_event` indistinguishable from the literal `"active"`.
- */
-export function projectedActiveWork(
-  cursor: BuilderDeliveryCursor | null,
-): readonly [string, string | null, string | null, string] | null {
-  if (cursor === null || cursor.activeItem === null) return null;
-  return [
-    cursor.activeItem,
-    cursor.activeCheckpoint,
-    cursor.pendingConfirmation,
-    cursor.lastDeliveryEvent || "active",
-  ];
-}
-
-function projectedWorkEqual(
-  left: readonly (string | null)[] | null,
-  right: readonly (string | null)[] | null,
-): boolean {
-  if (left === null || right === null) return left === right;
-  return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
 /**

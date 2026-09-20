@@ -47,12 +47,6 @@ export interface BuilderInvokeDeps {
   readonly nowIso: () => string;
   /** `MIRROR_SESSION_ID`, passed in rather than read, as every TS route does. */
   readonly environmentSessionId?: string | null;
-  /**
-   * US7's Journey projection seam. Absent means no refresh is requested — right
-   * for a hermetic test, wrong for the smoke, where a silently dead seam is
-   * exactly the defect US7 shipped once already.
-   */
-  readonly requestProjectionRefresh?: (journey: string) => void;
 }
 
 /** Raised for an argv this mapping does not carry, so a gap cannot pass silently. */
@@ -116,9 +110,6 @@ export function invokeBuilderArgv(
     environmentSessionId,
     deps: {
       nowIso: invokeDeps.nowIso,
-      ...(invokeDeps.requestProjectionRefresh
-        ? { requestProjectionRefresh: invokeDeps.requestProjectionRefresh }
-        : {}),
     },
   };
   const shared = {

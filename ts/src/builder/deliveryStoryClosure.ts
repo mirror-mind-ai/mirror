@@ -143,7 +143,6 @@ function updateCursor(
         options.checkpoint,
         options.status,
       ),
-      refreshProjection: false,
     },
     deps,
   );
@@ -247,7 +246,6 @@ export function validateDeliveryStory(
     artifactPath: options.artifactPath ?? null,
   });
   persistArtifact(report);
-  deps.requestProjectionRefresh?.(options.journey);
   return report;
 }
 
@@ -296,7 +294,6 @@ export function reviewDeliveryStory(
     artifactPath: options.artifactPath ?? null,
   });
   persistArtifact(report);
-  deps.requestProjectionRefresh?.(options.journey);
   return report;
 }
 
@@ -340,7 +337,6 @@ export function coherenceDeliveryStory(
     artifactPath: options.artifactPath ?? null,
   });
   persistArtifact(report);
-  deps.requestProjectionRefresh?.(options.journey);
   return report;
 }
 
@@ -386,7 +382,6 @@ export function doneDeliveryStory(
       navigatorFlowUnit: cursor.navigatorFlowUnit,
       childWorkItems: cursor.childWorkItems,
       aggregateCheckpointStatus: statuses,
-      refreshProjection: false,
     },
     deps,
   );
@@ -401,7 +396,6 @@ export function doneDeliveryStory(
     artifactPath: options.artifactPath ?? null,
   });
   persistArtifact(report);
-  deps.requestProjectionRefresh?.(options.journey);
   return report;
 }
 

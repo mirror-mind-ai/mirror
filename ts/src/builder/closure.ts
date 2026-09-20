@@ -16,8 +16,9 @@
 // pending. That was found live on another project, not reasoned about. Done allows no
 // re-entry at all and refuses any pending confirmation its predecessors left behind.
 //
-// All four write `refreshProjection: false` and then request the refresh themselves,
-// once, after the artifact exists — the same ordering Plan uses.
+// Until CV22.DS10.TS1 all four ordered a Journey projection refresh after their
+// artifact existed. The projection subsystem retired with the Python core, so the
+// ordering dance is gone and the cursor write is the whole write.
 //
 // They live in one module rather than four because they are one state machine over
 // one cursor, sharing the missing-evidence idiom and the guard vocabulary. Splitting
@@ -241,7 +242,6 @@ export function validateLifecycleItem(
       navigatorFlowUnit: existing.navigatorFlowUnit,
       childWorkItems: existing.childWorkItems,
       aggregateCheckpointStatus: existing.aggregateCheckpointStatus,
-      refreshProjection: false,
     },
     deps,
   );
@@ -269,7 +269,6 @@ export function validateLifecycleItem(
   if (report.validationArtifactPath !== null) {
     writeClosureArtifact(report.validationArtifactPath, renderValidationArtifact(report));
   }
-  deps.requestProjectionRefresh?.(journey);
   return report;
 }
 
@@ -444,7 +443,6 @@ export function reviewLifecycleItem(
       navigatorFlowUnit: existing.navigatorFlowUnit,
       childWorkItems: existing.childWorkItems,
       aggregateCheckpointStatus: existing.aggregateCheckpointStatus,
-      refreshProjection: false,
     },
     deps,
   );
@@ -467,7 +465,6 @@ export function reviewLifecycleItem(
   if (report.reviewArtifactPath !== null) {
     writeClosureArtifact(report.reviewArtifactPath, renderReviewArtifact(report));
   }
-  deps.requestProjectionRefresh?.(journey);
   return report;
 }
 
@@ -608,7 +605,6 @@ export function coherenceLifecycleItem(
       navigatorFlowUnit: existing.navigatorFlowUnit,
       childWorkItems: existing.childWorkItems,
       aggregateCheckpointStatus: existing.aggregateCheckpointStatus,
-      refreshProjection: false,
     },
     deps,
   );
@@ -631,7 +627,6 @@ export function coherenceLifecycleItem(
   if (report.coherenceArtifactPath !== null) {
     writeClosureArtifact(report.coherenceArtifactPath, renderCoherenceArtifact(report));
   }
-  deps.requestProjectionRefresh?.(journey);
   return report;
 }
 
@@ -763,7 +758,6 @@ export function doneLifecycleItem(
       navigatorFlowUnit: existing.navigatorFlowUnit,
       childWorkItems: existing.childWorkItems,
       aggregateCheckpointStatus: existing.aggregateCheckpointStatus,
-      refreshProjection: false,
     },
     deps,
   );
@@ -784,7 +778,6 @@ export function doneLifecycleItem(
   if (report.doneArtifactPath !== null) {
     writeClosureArtifact(report.doneArtifactPath, renderDoneArtifact(report));
   }
-  deps.requestProjectionRefresh?.(journey);
   return report;
 }
 

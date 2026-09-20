@@ -25,10 +25,6 @@ import {
   writeBuilderHandoffArtifacts,
 } from "#explorer/handoff.ts";
 import {
-  createPythonProjectionRefresh,
-  type ProjectionRefreshSeam,
-} from "#explorer/projectionRefresh.ts";
-import {
   renderAttractorsEmerging,
   renderBuilderHandoffProposed,
   renderExperimentProposal,
@@ -167,7 +163,6 @@ function usageError(message: string): number {
 
 export interface ExploreRouteDeps {
   clock: StoryClock;
-  projectionRefresh: ProjectionRefreshSeam;
   readMessages: (db: WritableDatabase, conversationId: string) => HandoffSourceMessage[];
   /**
    * `story promote`'s Builder tail, or null when the composition reverts to
@@ -180,17 +175,9 @@ export interface ExploreRouteDeps {
   buildLoadRuntime?: () => Promise<BuildLoadRuntime | null>;
 }
 
-export function defaultExploreRouteDeps(mirrorHome: string | null): ExploreRouteDeps {
+export function defaultExploreRouteDeps(): ExploreRouteDeps {
   return {
     clock: { now: nowIso, uuid: newId },
-    projectionRefresh: createPythonProjectionRefresh({
-      mirrorHome,
-      // Diagnostics go to stderr, never stdout: the Explorer surfaces are
-      // `transport=verbatim` and a stray line corrupts one.
-      onDiagnostic: (message) => {
-        if (process.env.MIRROR_DEBUG) process.stderr.write(`${message}\n`);
-      },
-    }),
     readMessages: (db, conversationId) =>
       db
         .prepare("SELECT role, content FROM messages WHERE conversation_id = ? ORDER BY rowid")
@@ -198,13 +185,14 @@ export function defaultExploreRouteDeps(mirrorHome: string | null): ExploreRoute
   };
 }
 
-/** Every story mutation asks Python to refresh, and only when the projection changed. */
-function afterMutation(
-  mutation: StoryMutation,
-  journey: string,
-  deps: ExploreRouteDeps,
-): ExplorerStory {
-  if (mutation.refreshRequested) deps.projectionRefresh.request(journey);
+/**
+ * The story write, unwrapped.
+ *
+ * Until CV22.DS10.TS1 this asked Python to publish `.mirror/projections` when a
+ * mutation changed the projected fields. The subsystem retired with the Python
+ * core, so a mutation is now just a mutation.
+ */
+function afterMutation(mutation: StoryMutation): ExplorerStory {
   return mutation.story;
 }
 
@@ -314,8 +302,7 @@ async function runStory(
         ),
       );
     case "archive": {
-      const { story, refreshRequested } = archiveExplorerStory(db, slug, deps.clock);
-      if (refreshRequested) deps.projectionRefresh.request(slug);
+      const { story } = archiveExplorerStory(db, slug, deps.clock);
       return write(
         requiredSurface("exploratory_story_archived", renderExplorerStoryArchived(story, slug)),
       );
@@ -324,17 +311,17 @@ async function runStory(
       clearExplorerStory(db, slug, deps.clock);
       return write(`Exploratory Story cleared for journey: ${slug}`);
     case "update": {
-      const story = afterMutation(updateStory(db, slug, settable, deps), slug, deps);
+      const story = afterMutation(updateStory(db, slug, settable, deps));
       return write(renderExplorerStoryContext(story));
     }
     case "open": {
-      const story = afterMutation(updateStory(db, slug, settable, deps), slug, deps);
+      const story = afterMutation(updateStory(db, slug, settable, deps));
       return write(
         requiredSurface("exploratory_story_opened", renderExploratoryStoryOpened(story)),
       );
     }
     case "thicken": {
-      const story = afterMutation(updateStory(db, slug, settable, deps), slug, deps);
+      const story = afterMutation(updateStory(db, slug, settable, deps));
       return write(
         requiredSurface("story_thickened", renderStoryThickened(story, option("--changed"))),
       );
@@ -363,8 +350,6 @@ async function runStory(
             status: option("--status") ?? "proposed",
           },
         ]),
-        slug,
-        deps,
       );
       return write(requiredSurface("attractors_emerging", renderAttractorsEmerging(story)));
     }
@@ -381,8 +366,6 @@ async function runStory(
           description: option("--description"),
           status: option("--status") ?? "proposed",
         }),
-        slug,
-        deps,
       );
       return write(requiredSurface("experiment_proposal", renderExperimentProposal(story)));
     }
@@ -446,11 +429,8 @@ async function runPromote(
       productDesignProposalPath: handoff.productDesignProposalPath,
       fullConversationPath: handoff.fullConversationPath,
     }),
-    slug,
-    deps,
   );
-  const promoted = markExplorerStoryPromoted(db, slug, deps.clock);
-  if (promoted.refreshRequested) deps.projectionRefresh.request(slug);
+  markExplorerStoryPromoted(db, slug, deps.clock);
 
   // Python calls `cmd_load(slug)` with no session id, so the session comes from
   // the environment or the active runtime row — never from `explore`'s own
@@ -523,8 +503,6 @@ function runHandoff(
           role: source.role,
         })),
       ),
-      slug,
-      deps,
     );
   }
 
@@ -549,11 +527,7 @@ function runHandoff(
         fullConversationPath: null,
       };
 
-  const updated = afterMutation(
-    setExplorerBuilderHandoff(db, slug, deps.clock, handoff),
-    slug,
-    deps,
-  );
+  const updated = afterMutation(setExplorerBuilderHandoff(db, slug, deps.clock, handoff));
   return write(requiredSurface("builder_handoff_proposed", renderBuilderHandoffProposed(updated)));
 }
 

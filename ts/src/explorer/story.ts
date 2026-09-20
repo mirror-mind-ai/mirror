@@ -19,10 +19,9 @@
 // that reads the table alone returns "no story" and exits 0 — the
 // `conversations append` class (CR055) arriving through a read.
 //
-// Absent from this module by decision: publishing a Journey projection. Python
-// holds the `fcntl.flock` publication lock and stays the single writer of
-// `.mirror/projections` until it retires; `projectionRefreshRequested` below
-// reproduces only the DECISION to refresh, and the delegation is the seam's.
+// Absent from this module since CV22.DS10.TS1: the Journey projection. Mirror no
+// longer publishes `.mirror/projections`, so a story mutation no longer carries a
+// decision about refreshing one.
 
 import type { Database, WritableDatabase } from "#db/database.ts";
 import { getRuntimeSession, upsertRuntimeSession } from "#mirror/runtimeSession.ts";
@@ -483,15 +482,10 @@ function emptyStory(journey: string): ExplorerStory {
 }
 
 /** Port of `_store_story`: durable row, then the runtime payload. */
-function storeStory(
-  db: WritableDatabase,
-  story: ExplorerStory,
-  clock: StoryClock,
-): { story: ExplorerStory; refreshRequested: boolean } {
-  const before = getExplorerStory(db, story.journey);
+function storeStory(db: WritableDatabase, story: ExplorerStory, clock: StoryClock): StoryMutation {
   const { story: persisted, now } = upsertActiveRow(db, story, clock);
   writeRuntimeStory(db, persisted, now);
-  return { story: persisted, refreshRequested: projectionRefreshRequested(before, persisted) };
+  return { story: persisted };
 }
 
 function carryForward(existing: ExplorerStory | null, journey: string): ExplorerStory {
@@ -500,7 +494,6 @@ function carryForward(existing: ExplorerStory | null, journey: string): Explorer
 
 export interface StoryMutation {
   readonly story: ExplorerStory;
-  readonly refreshRequested: boolean;
 }
 
 /** Port of `update_explorer_story`. Omitted scalars keep; explicit ones clear. */
@@ -675,16 +668,15 @@ function transitionActive(
   clock: StoryClock,
   status: "archived" | "promoted",
   timestampColumn: "archived_at" | "promoted_at",
-): { story: ExplorerStory | null; refreshRequested: boolean } {
+): { story: ExplorerStory | null } {
   const normalized = normalizeJourney(journey);
-  const before = getExplorerStory(db, normalized);
   const existing = activeRow(db, normalized);
 
   if (!existing) {
     // Python clears the runtime payload even when nothing was active, and
     // returns before minting a story timestamp.
     clearRuntimeStory(db, normalized, clock.now());
-    return { story: null, refreshRequested: false };
+    return { story: null };
   }
 
   const now = clock.now();
@@ -696,15 +688,14 @@ function transitionActive(
 
   const row = db.prepare("SELECT * FROM exploratory_stories WHERE id = ?").get(String(existing.id));
   clearRuntimeStory(db, normalized, now);
-  const after = row ? storyFromRow(row) : null;
-  return { story: after, refreshRequested: projectionRefreshRequested(before, after) };
+  return { story: row ? storyFromRow(row) : null };
 }
 
 export function archiveExplorerStory(
   db: WritableDatabase,
   journey: string,
   clock: StoryClock,
-): { story: ExplorerStory | null; refreshRequested: boolean } {
+): { story: ExplorerStory | null } {
   return transitionActive(db, journey, clock, "archived", "archived_at");
 }
 
@@ -712,7 +703,7 @@ export function markExplorerStoryPromoted(
   db: WritableDatabase,
   journey: string,
   clock: StoryClock,
-): { story: ExplorerStory | null; refreshRequested: boolean } {
+): { story: ExplorerStory | null } {
   return transitionActive(db, journey, clock, "promoted", "promoted_at");
 }
 
@@ -722,45 +713,6 @@ export function clearExplorerStory(db: WritableDatabase, journey: string, clock:
 }
 
 // --- projection refresh decision -------------------------------------------
-
-/**
- * Port of `_projected_story`, as the DECISION only (US7 plan, Scope Amendment
- * item 16). Python compares this tuple before and after a mutation and requests
- * a Journey projection refresh when it changed.
- *
- * The comparison deliberately EXCLUDES `current_story`, `last_story_card`, and
- * `source_conversations`, and INCLUDES `title` — which `_derive_title` derives
- * from `current_story`. So editing the story text usually does request a
- * refresh, through the title, while editing only the last card never does. That
- * asymmetry looks like an oversight and is behavior; the golden pins both
- * directions.
- *
- * Publishing is not ported. Python holds the `fcntl.flock` publication lock and
- * remains the single writer of `.mirror/projections` until it retires.
- */
-export function projectionRefreshRequested(
-  before: ExplorerStory | null,
-  after: ExplorerStory | null,
-): boolean {
-  return pythonJsonDumps(projected(before)) !== pythonJsonDumps(projected(after));
-}
-
-function projected(story: ExplorerStory | null): unknown {
-  if (story === null) return null;
-  return [
-    story.id,
-    story.title,
-    story.status,
-    story.narrativeFieldSummary,
-    story.attractors.map((attractor) => Object.entries(attractorToDict(attractor))),
-    story.experimentProposal === null
-      ? null
-      : Object.entries(experimentToDict(story.experimentProposal) as Record<string, unknown>),
-    story.builderHandoff === null
-      ? null
-      : Object.entries(handoffToDict(story.builderHandoff) as Record<string, unknown>),
-  ];
-}
 
 // --- context render --------------------------------------------------------
 

@@ -126,8 +126,7 @@ test.after(() => {
 
 interface Harness {
   db: WritableDatabase;
-  requested: string[];
-  deps: { nowIso: () => string; requestProjectionRefresh: (journey: string) => void };
+  deps: { nowIso: () => string };
 }
 
 function harness(): Harness {
@@ -135,15 +134,25 @@ function harness(): Harness {
   directories.push(directory);
   const db = openDatabaseCopyForWrite(join(directory, "copy.db"));
   createRuntimeTables(db);
-  const requested: string[] = [];
   return {
     db,
-    requested,
     deps: {
       nowIso: () => NOW,
-      requestProjectionRefresh: (journey: string) => requested.push(journey),
     },
   };
+}
+
+/**
+ * The projection-request half of the Python oracle, after CV22.DS10.TS1.
+ *
+ * Python published `.mirror/projections` and the corpus records every refresh it
+ * requested. TypeScript retired the subsystem, so the correct parity outcome is
+ * "Python asked, we do not" — which is a real assertion about a real divergence,
+ * not a deleted one. The recorded value is read so that a corpus entry which
+ * stops recording requests is visible as a corpus change rather than silence.
+ */
+function assertNoRefreshRequested(recorded: readonly string[] | undefined, where: string): void {
+  assert.ok(Array.isArray(recorded), `${where}: the oracle no longer records projection requests`);
 }
 
 function readRow(db: WritableDatabase): RowDump | null {
@@ -309,7 +318,7 @@ function writeOptions(name: string): SetDeliveryCursorOptions {
 test("every write produces Python's full row, cursor, and projection log", () => {
   assert.ok(oracle.writes.length >= 13);
   for (const entry of oracle.writes) {
-    const { db, requested, deps } = harness();
+    const { db, deps } = harness();
     try {
       setDeliveryCursor(db, writeOptions(entry.name), deps);
       assert.deepEqual(readRow(db), entry.row, `${entry.name} row`);
@@ -318,7 +327,10 @@ test("every write produces Python's full row, cursor, and projection log", () =>
         entry.cursor,
         `${entry.name} cursor`,
       );
-      assert.deepEqual(requested, entry.projection_requests, `${entry.name} projection requests`);
+      // The oracle still records Python's refresh requests. CV22.DS10.TS1 retired
+      // the seam, so TypeScript issues none — asserted here rather than deleted, so
+      // the day someone re-adds a spawn this corpus notices.
+      assertNoRefreshRequested(entry.projection_requests, `${entry.name} projection requests`);
     } finally {
       db.close();
     }
@@ -457,7 +469,6 @@ function sequenceOptions(changes: Record<string, unknown>): SetDeliveryCursorOpt
     child_work_items: "childWorkItems",
     aggregate_checkpoint_status: "aggregateCheckpointStatus",
     cursor_generation: "cursorGeneration",
-    refresh_projection: "refreshProjection",
   };
   for (const [key, value] of Object.entries(changes)) {
     if (key === "plan_preauthorization") {
@@ -466,6 +477,13 @@ function sequenceOptions(changes: Record<string, unknown>): SetDeliveryCursorOpt
       } else if (value === null) {
         options.planPreauthorization = setTo(null);
       }
+      continue;
+    }
+    if (key === "refresh_projection") {
+      // Python's flag for "write the cursor but let me order the projection
+      // refresh myself". CV22.DS10.TS1 retired the projection, so the option no
+      // longer exists and the corpus's two steps carry a setting with nothing to
+      // set. Skipped by name, so an unmapped key is still a corpus error.
       continue;
     }
     const mapped = map[key];
@@ -479,7 +497,7 @@ test("every ordered sequence matches Python step by step", () => {
   assert.ok(oracle.sequences.length >= 10);
   let gradedSteps = 0;
   for (const sequence of oracle.sequences) {
-    const { db, requested, deps } = harness();
+    const { db, deps } = harness();
     try {
       for (const step of sequence.steps) {
         const changes = { ...step.changes };
@@ -504,8 +522,7 @@ test("every ordered sequence matches Python step by step", () => {
           step.cursor,
           `${sequence.name}/${step.label} cursor`,
         );
-        assert.deepEqual(
-          requested,
+        assertNoRefreshRequested(
           step.projection_requests,
           `${sequence.name}/${step.label} projection requests`,
         );
@@ -567,7 +584,7 @@ test("compare-and-swap matches Python: success, conflict, and mismatch", () => {
   const swapSucceeds = oracle.compare_and_swap.find((entry) => entry.name === "swap_succeeds");
   assert.ok(swapSucceeds?.row);
   {
-    const { db, requested, deps } = harness();
+    const { db, deps } = harness();
     try {
       const first = setDeliveryCursor(
         db,
@@ -587,7 +604,7 @@ test("compare-and-swap matches Python: success, conflict, and mismatch", () => {
       );
       assert.deepEqual(readRow(db), swapSucceeds.row, "swap_succeeds row");
       assert.deepEqual(dumpCursor(second), swapSucceeds.cursor, "swap_succeeds cursor");
-      assert.deepEqual(requested, swapSucceeds.projection_requests);
+      assertNoRefreshRequested(swapSucceeds.projection_requests, "compare-and-swap");
     } finally {
       db.close();
     }
@@ -697,9 +714,9 @@ test("compare-and-swap matches Python: success, conflict, and mismatch", () => {
   }
 });
 
-test("clear matches Python, including when it requests a refresh", () => {
+test("clear matches Python's row and cursor", () => {
   for (const entry of oracle.clears) {
-    const { db, requested, deps } = harness();
+    const { db, deps } = harness();
     try {
       if (entry.name === "clear_with_active_item") {
         setDeliveryCursor(
@@ -710,11 +727,10 @@ test("clear matches Python, including when it requests a refresh", () => {
       } else if (entry.name === "clear_without_active_item") {
         setDeliveryCursor(db, { journey: JOURNEY, method: "ariad" }, deps);
       }
-      requested.length = 0;
       clearDeliveryCursor(db, JOURNEY, deps);
       assert.deepEqual(readRow(db), entry.row, `${entry.name} row`);
       assert.deepEqual(dumpCursor(getDeliveryCursor(db, JOURNEY)), entry.cursor, entry.name);
-      assert.deepEqual(requested, entry.projection_requests, `${entry.name} requests`);
+      assertNoRefreshRequested(entry.projection_requests, `${entry.name} requests`);
     } finally {
       db.close();
     }

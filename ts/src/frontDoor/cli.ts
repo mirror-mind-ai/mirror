@@ -47,7 +47,6 @@ import {
 import { ensureDatabaseReady } from "#db/readyOnOpen.ts";
 import { assertSchemaState, SchemaStateError } from "#db/schemaState.ts";
 import { allDescriptors, descriptorsByLayer } from "#descriptor/descriptorRead.ts";
-import { createPythonProjectionRefresh } from "#explorer/projectionRefresh.ts";
 import { listIdentityByLayer } from "#identity/identityRead.ts";
 import { listJourneysForListCommand } from "#identity/journeyListing.ts";
 import { listPersonas } from "#identity/personaListing.ts";
@@ -1467,13 +1466,9 @@ function runSoulWrite(argv: readonly string[]): Promise<number> {
 }
 
 function runExploreWrite(argv: readonly string[]): Promise<number> {
-  // The projection seam needs the same `--mirror-home` the command was given,
-  // because it delegates to a separate Python process that resolves its own
-  // database from that home rather than inheriting this one.
-  const mirrorHome = optionValue(argv.slice(1), "--mirror-home");
   return withMirrorWriteDb(argv, (db, dbPath) =>
     runExploreRoute(db, argv, {
-      ...defaultExploreRouteDeps(mirrorHome),
+      ...defaultExploreRouteDeps(),
       // `story promote` ends in a Builder session start, so it needs the same
       // wiring plateau 8's `build` route will use: the composed transport, the
       // close tail, and the clone-role guard. Lazy, so the other eleven story
@@ -1685,8 +1680,6 @@ async function dispatchTs(argv: readonly string[]): Promise<number | TsDispatchO
         createBuildLoadRuntime({ db, dbPath, ignoreProductionRole }),
       nowIso,
       environmentSessionId: process.env.MIRROR_SESSION_ID ?? null,
-      requestProjectionRefresh: (journey, dbPath) =>
-        createPythonProjectionRefresh({ mirrorHome: dirname(dbPath) }).request(journey),
     });
   }
   if (isInit(argv)) return runInit(argv);
