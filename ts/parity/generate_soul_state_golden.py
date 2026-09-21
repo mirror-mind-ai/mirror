@@ -245,6 +245,7 @@ def main() -> None:
         from memory.client import MemoryClient
 
         counter = {"n": 0}
+        clients: list[MemoryClient] = []
 
         def make_store():
             counter["n"] += 1
@@ -253,6 +254,13 @@ def main() -> None:
             opened = Path(mem.conn.execute("PRAGMA database_list").fetchone()[2]).resolve()
             if not opened.is_relative_to(Path(tmp).resolve()):
                 raise RuntimeError(f"refusing non-temporary fixture database: {opened}")
+            # The client owns the connection, so it must outlive the store the
+            # caller uses. Until CV22.DS10.TS1 this got it for free from an
+            # accidental cycle: the projection-refresh wiring stored a callback
+            # on the store whose closure referenced the client. Retiring that
+            # seam let the client be collected between scenarios, closing the
+            # database under the generator (CI, Python 3.12).
+            clients.append(mem)
             return mem.store, mem.conn
 
         payload = {

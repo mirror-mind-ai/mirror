@@ -28,10 +28,12 @@ The docstring in the service calls that payload "pre-DS8". It understates it:
 live dual write, not a legacy read. A port that drops it also stops feeding
 whatever still reads it.
 
-`_projected_story` is graded as its own family. It decides whether a mutation
-requests a Journey projection refresh, and it deliberately EXCLUDES
-`current_story` and `last_story_card` while including `title` -- which
-`_derive_title` derives from `current_story`. So editing the story text usually
+`_projected_story` WAS graded as its own family (section G) until
+CV22.DS10.TS1 retired the projection subsystem and deleted the helper on both
+engines. What it decided: whether a mutation requests a Journey projection
+refresh, deliberately EXCLUDING `current_story` and `last_story_card` while
+including `title` -- which `_derive_title` derives from `current_story`. So
+editing the story text usually
 does request a refresh, and editing only the last card never does. That
 asymmetry is behavior (CV22.DS7.US7 plan, Scope Amendment item 16).
 
@@ -149,7 +151,6 @@ def _story_dict(story: Any) -> Any:
 def build(make_store) -> dict[str, Any]:
     import memory.storage.explorer_stories as storage_mod
     from memory.services.explorer_story import (
-        _projected_story,
         _UNSET,
         ExplorerAttractor,
         ExplorerBuilderHandoff,
@@ -509,75 +510,6 @@ def build(make_store) -> dict[str, Any]:
             }
         )
     payload["derive_title"] = title_cases
-
-    # --- G. _projected_story change detection ----------------------------
-    # Decides whether a mutation asks for a Journey projection refresh.
-    # `current_story` and `last_story_card` are NOT compared; `title` is, and
-    # `_derive_title` derives it from `current_story`.
-    def story(**kwargs: Any) -> ExplorerStory:
-        base: dict[str, Any] = {"journey": JOURNEY, "id": "id-1", "title": "t", "status": "active"}
-        base.update(kwargs)
-        return ExplorerStory(**base)
-
-    projection_cases = []
-    for name, left, right in (
-        ("identical", story(), story()),
-        ("none_vs_story", None, story()),
-        ("both_none", None, None),
-        (
-            "current_story_is_not_compared",
-            story(current_exploratory_story="a"),
-            story(current_exploratory_story="b"),
-        ),
-        ("last_card_is_not_compared", story(last_story_card="a"), story(last_story_card="b")),
-        ("title_is_compared", story(title="a"), story(title="b")),
-        ("status_is_compared", story(status="active"), story(status="archived")),
-        ("id_is_compared", story(id="a"), story(id="b")),
-        (
-            "summary_is_compared",
-            story(narrative_field_summary="a"),
-            story(narrative_field_summary="b"),
-        ),
-        (
-            "attractors_are_compared",
-            story(attractors=(ExplorerAttractor(label="a"),)),
-            story(attractors=(ExplorerAttractor(label="b"),)),
-        ),
-        (
-            "attractor_order_is_compared",
-            story(attractors=(ExplorerAttractor(label="a"), ExplorerAttractor(label="b"))),
-            story(attractors=(ExplorerAttractor(label="b"), ExplorerAttractor(label="a"))),
-        ),
-        (
-            "experiment_is_compared",
-            story(experiment_proposal=ExplorerExperimentProposal(title="a")),
-            story(experiment_proposal=ExplorerExperimentProposal(title="b")),
-        ),
-        (
-            "handoff_is_compared",
-            story(builder_handoff=ExplorerBuilderHandoff(title="a")),
-            story(builder_handoff=ExplorerBuilderHandoff(title="b")),
-        ),
-        (
-            "handoff_present_vs_absent",
-            story(builder_handoff=None),
-            story(builder_handoff=ExplorerBuilderHandoff(title="a")),
-        ),
-        (
-            "source_conversations_are_not_compared",
-            story(source_conversations=(ExplorerSourceConversation(conversation_id="a"),)),
-            story(source_conversations=(ExplorerSourceConversation(conversation_id="b"),)),
-        ),
-    ):
-        projection_cases.append(
-            {
-                "name": name,
-                "left": _story_dict(left),
-                "right": _story_dict(right),
-                "refresh_requested": _projected_story(left) != _projected_story(right),
-            }
-        )
-    payload["projection_change_detection"] = projection_cases
 
     # --- H. render_explorer_story_context --------------------------------
     context_cases = []
