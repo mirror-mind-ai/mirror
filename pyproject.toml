@@ -36,7 +36,7 @@ memory-rehearse-migration = "memory.cli.migration_rehearsal:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-memory = ["web/static/*", "prompts/*.md", "journey_projections/schema_documents/*.json"]
+memory = ["prompts/*.md"]
 
 # ---------------------------------------------------------------------------
 # pytest

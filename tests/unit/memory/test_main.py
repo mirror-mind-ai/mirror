@@ -33,11 +33,16 @@ def test_conversation_logger_status_dispatches():
     mock_logger_main.assert_called_once_with(["status"])
 
 
-def test_web_dispatches():
-    with patch("memory.web.server.main") as mock_web_main:
+def test_web_is_retired_and_dispatches_nowhere():
+    """CV22.DS10.US1 removed the console; `web` is an ordinary unknown command.
+
+    Kept rather than deleted: a dispatcher test that only ever asserted what the
+    router DOES would not notice a `web` branch coming back.
+    """
+    with pytest.raises(SystemExit) as exc_info:
         _run_main(["web", "--port", "9999"])
 
-    mock_web_main.assert_called_once_with(["--port", "9999"])
+    assert exc_info.value.code == 1
 
 
 def test_runtime_dispatches():
