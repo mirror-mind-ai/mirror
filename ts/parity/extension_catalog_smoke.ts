@@ -117,12 +117,16 @@ function treeOf(root: string, world: World): Record<string, string> {
   if (!existsSync(root)) return files;
   for (const path of walk(root)) {
     const parts = relative(root, path).split(sep);
-    const cacheIndex = parts.indexOf("__pycache__");
-    if (cacheIndex >= 0) {
-      files[[...parts.slice(0, cacheIndex), "__pycache__"].join("/")] = "<bytecode>";
-      continue;
-    }
     const name = parts[parts.length - 1] as string;
+    // CV22.DS10.TS2, one-directional and permanent: both of these are left by a
+    // PYTHON PROCESS running at install time. Python's install imports the
+    // extension (`__pycache__`) through a path that opens the database (the
+    // bootstrap lock); TypeScript imports nothing now and produces neither.
+    // Python cannot stop producing them while it owns its own install path, so
+    // they are excluded rather than reconciled. Their absence on the TS side is
+    // asserted directly in `catalogWrites.test.ts`.
+    if (parts.includes("__pycache__")) continue;
+    if (name.endsWith(".bootstrap.lock")) continue;
     if (name.endsWith(".db") || name.endsWith("-wal") || name.endsWith("-shm")) continue;
     // The log differs by design (it records the engine that answered) and is
     // asserted separately, on content rather than on bytes.
@@ -160,7 +164,10 @@ const STEPS: string[][] = [
   ["ext", EXTENSION_ID],
   ["ext", EXTENSION_ID, "bind", "greeting", "--persona", "engineer"],
   ["ext", EXTENSION_ID, "bindings"],
-  // The dispatch, carrying every sentinel the log must not learn.
+  // The dispatch, carrying every sentinel the log must not learn. Graded by
+  // `tsOnlySubcommandFailures`, not cross-engine -- see that function for why.
+  // It still runs on BOTH engines, because the log half of this smoke depends
+  // on the TS front door actually dispatching with these arguments.
   ["ext", EXTENSION_ID, "add", SENTINELS[0] as string, SENTINELS[1] as string, SENTINELS[2] as string],
   ["ext", EXTENSION_ID, "unbind", "greeting", "--persona", "engineer"],
   ["ext", EXTENSION_ID, "migrate"],
@@ -168,6 +175,40 @@ const STEPS: string[][] = [
   ["list", "all"],
   ["extensions", "uninstall", EXTENSION_ID],
 ];
+
+/**
+ * The two steps that read an extension's SUBCOMMANDS, which are TypeScript's
+ * own surface now.
+ *
+ * One cause, two symptoms. Python answers both from the live `api.cli_registry`
+ * it built by importing `extension.py`; with the compatibility host deleted,
+ * TypeScript answers both from the manifest's `cli.subcommands[]`. The `notes`
+ * fixture registers `add` and documents nothing, so the two engines are
+ * SUPPOSED to disagree here, and comparing them could never pass. Everything
+ * that does not depend on the registry -- install, catalogs, bindings,
+ * migrate, inspect, uninstall -- stays fully cross-engine graded above.
+ */
+function tsOnlySubcommandFailures(step: readonly string[], ts: StepResult): string[] {
+  const failures: string[] = [];
+  const isDispatch = step[2] === "add";
+  if (isDispatch) {
+    if (ts.exitCode !== 1) failures.push(`dispatch should refuse at exit 1, got ${ts.exitCode}`);
+    if (!ts.stdout.includes(`unknown subcommand 'add' for extension/${EXTENSION_ID}`)) {
+      failures.push(`dispatch should name the unknown subcommand, got ${JSON.stringify(ts.stdout)}`);
+    }
+  } else if (ts.exitCode !== 0) {
+    failures.push(`listing should succeed, got ${ts.exitCode}`);
+  }
+  // Both surfaces must report what the MANIFEST documents -- here, nothing --
+  // rather than inventing the registry's view of it.
+  if (!ts.stdout.includes(`=== subcommands of extension/${EXTENSION_ID} ===`)) {
+    failures.push("expected the manifest-rendered listing");
+  }
+  if (!ts.stdout.includes("(none declared)")) {
+    failures.push("the fixture documents no subcommands; the listing must say so");
+  }
+  return failures;
+}
 
 function compare(python: StepResult, ts: StepResult): string[] {
   const failures: string[] = [];
@@ -198,9 +239,19 @@ function main(): number {
     for (const step of STEPS) {
       const python = run(pythonWorld, "python", step);
       const ts = run(tsWorld, "ts", step);
-      const failures = compare(python, ts);
+      // `ext <id>` (the listing) and `ext <id> add` (the dispatch) both read
+      // the subcommand set, which moved from Python's registry to the manifest.
+      // `ext list` is the extension INVENTORY, not a subcommand listing, and
+      // stays cross-engine graded -- hence the explicit id check.
+      const readsSubcommands =
+        step[0] === "ext" &&
+        step[1] === EXTENSION_ID &&
+        (step.length === 2 || step[2] === "add");
+      const failures = readsSubcommands
+        ? tsOnlySubcommandFailures(step, ts)
+        : compare(python, ts);
       if (failures.length === 0) {
-        console.log(`  OK    ${step.join(" ")}`);
+        console.log(`  ${readsSubcommands ? "TS-ONLY" : "OK"}    ${step.join(" ")}`);
         continue;
       }
       failed += 1;

@@ -175,21 +175,28 @@ INSTALL_EXTENSION_ID = "notes"
 def _install_files(home: Path, source_root: Path) -> list[dict[str, Any]]:
     """Every file under the home as a state row, the `builder_artifacts` shape.
 
-    Two normalisations, both because the bytes are not a portable contract and
-    neither is product state: a `__pycache__` collapses to one marker row (the
-    post-install import writes it, and its name carries the interpreter
-    version), and the database and its journal sidecars are skipped -- this
-    probe grades the FILES; the rows are graded beside it.
+    Normalisations, all because the bytes are not a portable contract and none
+    of them is product state: the database and its journal sidecars are skipped
+    (this probe grades the FILES; the rows are graded beside it), and since
+    CV22.DS10.TS2 so are `__pycache__` and the bootstrap lock.
+
+    Those last two were once graded as a marker row. They are excluded now
+    because they stopped being SHARED state: Python's install imports the
+    extension (writing `__pycache__`) through a path that opens the database
+    (writing the lock), and TypeScript imports nothing at install any more, so
+    it writes neither. Python cannot stop producing them while it owns its own
+    install path, which makes the difference permanent and one-directional --
+    not a parity failure. The TS side asserts their absence directly in
+    `catalogWrites.test.ts`.
     """
     rows: list[dict[str, Any]] = []
-    caches: set[str] = set()
     for path in sorted(home.rglob("*")):
         if not path.is_file():
             continue
         relative = path.relative_to(home)
         if "__pycache__" in relative.parts:
-            index = relative.parts.index("__pycache__")
-            caches.add("/".join([*relative.parts[:index], "__pycache__"]))
+            continue
+        if path.name.endswith(".bootstrap.lock"):
             continue
         if path.suffix == ".db" or path.name.endswith(("-wal", "-shm")):
             continue
@@ -203,9 +210,6 @@ def _install_files(home: Path, source_root: Path) -> list[dict[str, Any]]:
             .replace(str(source_root), "<SRC>")
         )
         rows.append({"id": f"file:{relative.as_posix()}", "cells": {"content": content}})
-    rows.extend(
-        {"id": f"cache:{cache}", "cells": {"content": "<bytecode>"}} for cache in sorted(caches)
-    )
     return sorted(rows, key=lambda row: row["id"])
 
 

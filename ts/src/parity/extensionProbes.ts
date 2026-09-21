@@ -191,15 +191,18 @@ export function extensionInstallProbe(
 /** The Python half's `_install_files`, normalisations included. */
 function installedFiles(home: string, sourceRoot: string): MutatedRow[] {
   const rows: MutatedRow[] = [];
-  const caches = new Set<string>();
   for (const path of walkFiles(home)) {
     const parts = relative(home, path).split(sep);
-    const cacheIndex = parts.indexOf("__pycache__");
-    if (cacheIndex >= 0) {
-      caches.add([...parts.slice(0, cacheIndex), "__pycache__"].join("/"));
-      continue;
-    }
     const name = parts[parts.length - 1] as string;
+    // CV22.DS10.TS2: neither of these is product state, and since TS2 they are
+    // not even shared state. Python's install imports the extension
+    // (`__pycache__`) through a path that opens the database (the bootstrap
+    // lock); TypeScript imports nothing now and writes neither. Excluded on
+    // BOTH halves rather than reconciled -- Python cannot stop producing them
+    // while it owns its own install path. `catalogWrites.test.ts` asserts the
+    // absence directly, which is where that claim belongs.
+    if (parts.includes("__pycache__")) continue;
+    if (name.endsWith(".bootstrap.lock")) continue;
     if (name.endsWith(".db") || name.endsWith("-wal") || name.endsWith("-shm")) continue;
     rows.push({
       id: `file:${parts.join("/")}`,
@@ -214,9 +217,6 @@ function installedFiles(home: string, sourceRoot: string): MutatedRow[] {
           .join("<SRC>"),
       },
     });
-  }
-  for (const cache of [...caches].sort()) {
-    rows.push({ id: `cache:${cache}`, cells: { content: "<bytecode>" } });
   }
   return rows.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 }
