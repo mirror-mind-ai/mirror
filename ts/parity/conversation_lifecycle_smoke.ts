@@ -939,21 +939,23 @@ check(
   exploreOpen.stdout.slice(0, 120),
 );
 
-// THE seam check. `explore story open` is answered by TypeScript, and the
-// Journey projection it must publish is written by Python, because publication
-// is linearizable through an `fcntl.flock` lock Node cannot share.
+// THE seam check, inverted. Until CV22.DS10.TS1 this asserted that the
+// TypeScript write delegated a Journey projection refresh to Python and that
+// Python published `operational.json` -- a file rather than a log line, because
+// the delegation was best-effort and a broken seam was therefore SILENT.
 //
-// The delegation is best-effort by contract -- a refresh that cannot run must
-// not fail the write -- which means a broken seam is SILENT. If the Python
-// subcommand is renamed, its options change, or the spawn stops working, every
-// test above still passes and the projection quietly stops updating. This is
-// the check that catches that, and it is the reason it asserts a file rather
-// than a log line.
-const publishedProjection = join(exploreProject, ".mirror", "projections", "ariad", "operational.json");
+// The subsystem is retired: nothing publishes, and the silence that made the
+// old check necessary is now the correct behavior. So the check is kept and
+// reversed. It still guards the same property from the other side -- an
+// end-to-end proof, through the real front door on a real project, that an
+// Explorer write spawns nothing and writes nothing under `.mirror/`. The
+// unit-level guard (`noPythonSpawn.test.ts`) greps the process table; this one
+// grades the filesystem a user would see.
+const retiredProjectionTree = join(exploreProject, ".mirror", "projections");
 check(
-  existsSync(publishedProjection),
-  "the TS write delegated its Journey projection refresh to Python, which published",
-  publishedProjection,
+  !existsSync(retiredProjectionTree),
+  "the TS write published no Journey projection: the subsystem is retired",
+  retiredProjectionTree,
 );
 
 const exploreThicken = exploreStep("explore story thicken", [

@@ -836,11 +836,20 @@ function sequenceOutcome(name: string, python: World, typescript: World): void {
       runtimeRows(world)[CURSOR_SESSION]?.metadata ?? "<no cursor>",
     );
   }
-  check(
-    projections(typescript).documents.some((document) => document.endsWith("operational.json")),
-    `${name}: the TypeScript run published an operational projection through the Python seam`,
-    JSON.stringify(projections(typescript)),
-  );
+  // Inverted by CV22.DS10.TS1. This asserted that a TypeScript Builder run
+  // published `operational.json` through the Python seam; the subsystem is
+  // retired, so the correct end state is an absent tree on BOTH engines -- the
+  // Python run no longer publishes either, because the publisher is gone.
+  // Kept rather than deleted: it is the end-to-end proof, on a real project
+  // through both real engines, that a full Ariad lifecycle writes nothing under
+  // `.mirror/`.
+  for (const world of [python, typescript]) {
+    check(
+      projections(world).documents.length === 0 && projections(world).receipts === 0,
+      `${name}: the ${world.name} run published no Journey projection`,
+      JSON.stringify(projections(world)),
+    );
+  }
 }
 
 runSequence("story", STORY_STEPS);
