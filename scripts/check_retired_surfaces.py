@@ -101,6 +101,10 @@ RETIRED: tuple[RetiredSurface, ...] = (
             "docs/product/extensions/api-reference.md": (
                 "documents the removal for an extension author reading an older copy"
             ),
+            "src/memory/extensions/version.py": (
+                "decision D-018 names the removed capability to explain why VERSION is "
+                "frozen at 1.1 rather than bumped"
+            ),
         },
     ),
     RetiredSurface(

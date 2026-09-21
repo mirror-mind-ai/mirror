@@ -11,6 +11,54 @@ resolved.
 
 ## Completed Decisions
 
+### The Extension API freezes at 1.1 rather than versioning its own retirement (D-018)
+
+**Date:** 2026-09-21 · **Context:** CV22.DS10.TS1 removed the
+`journey_projections` façade that Extension API `1.1` added, and deliberately
+left the version number alone, recording that the authority belonged to
+CV22.DS10.TS2 — the story that owns the extension runtime boundary. TS2 now
+answers.
+
+**The decision: `memory.extensions.api.VERSION` stays `1.1`, permanently. The
+in-process Extension API is not versioned forward again; the manifest runtime
+protocols take over as the contract extensions code against.**
+
+The obvious move was a bump — `1.2` for a removed capability, or `2.0` for a
+backward-incompatible one. Both are wrong here, and the reason is worth
+stating because it is the shape of the whole Delivery Story.
+
+A version number is a promise about a contract's future. `1.1 → 1.2` says
+"this API is evolving and you should track it". But TS2 deleted the
+compatibility host, which was the only thing that called `register(api)` on
+the core's behalf. Nothing in the Mirror core imports extension code any more,
+at install time or at dispatch time. The in-process API is not changing; it is
+**ending**, and it ends completely at TS5 when `src/memory/` is deleted.
+Numbering that would advertise a roadmap the API does not have.
+
+The secondary reason is smaller but points the same way: `1.1`'s only addition
+never reached a user, so the removal is unobservable. A number marking it would
+date a change nobody can see.
+
+**What carries the contract instead.** `mirror-cli-v1` and
+`mirror-context-v1`, declared per capability in `skill.yaml`. They are
+language-neutral — an extension may own any executable runtime, Python very
+much included — and they version themselves by suffix (`mirror-cli-v2`) if they
+ever need to. That is the honest place for a compatibility promise, because it
+is the boundary that will still exist after the Python core is gone.
+
+**What this is not.** Not a claim that extension authors must rewrite in
+JavaScript, and not a deprecation of Python for extensions. The core stops
+owning Python as every extension's permanent compatibility layer; an extension
+that wants Python keeps Python, and the reference shim at
+`docs/product/extensions/template/cli.py.template` keeps existing
+`register(api)` handlers working unchanged behind a declared runtime.
+
+**Revisit trigger.** A decision to keep an in-process Extension API alive past
+TS5 — which would mean reversing the Python deletion — or evidence that an
+installed extension depends on reading `VERSION` for behavior rather than for
+a compatibility check.
+
+
 ### Journey projections retire with the Python core; Mirror Desktop is outside the migration
 
 **Date:** 2026-09-19

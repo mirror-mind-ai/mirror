@@ -83,10 +83,12 @@ The target mirror home is resolved from `MIRROR_HOME` or `MIRROR_USER`
 in the active `.env` (or shell environment). Pass `--mirror-home <path>`
 explicitly when working against a non-default home, otherwise omit it.
 
-Installation copies the source tree, validates context provider runtime descriptors, runs
-the extension's SQL migrations, imports `extension.py`, and calls its `register(api)`
-entrypoint for Python CLI/legacy compatibility. Mirror Mode itself dispatches declared
-`mirror-context-v1` providers through the TS core.
+Installation copies the source tree, validates the runtimes the manifest declares, and
+runs the extension's SQL migrations. **Since CV22.DS10.TS2 it does not import
+`extension.py` or call `register(api)`** — the Mirror core no longer loads extension code
+at any point. Install warns about capabilities that declare no runtime and still succeeds,
+so an extension can migrate one capability at a time. Mirror dispatches declared
+`mirror-cli-v1` commands and `mirror-context-v1` providers through the TS core.
 
 ## Reading order
 

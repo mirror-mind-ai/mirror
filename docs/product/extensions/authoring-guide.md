@@ -216,8 +216,9 @@ try {
 The provider command runs without a shell from the installed extension root. It receives
 sensitive context on stdin, so never echo the request or provider result into logs. Keep
 stdout reserved for the single protocol JSON object. Failures are isolated by the core.
-Capabilities that omit `provider_runtime` use a deprecated Python compatibility host only
-until CV22.DS10; migrate before that cutoff.
+Capabilities that omit `provider_runtime` are skipped with a `no_provider_runtime`
+diagnostic — the compatibility host that used to answer them was deleted in
+CV22.DS10.TS2. Declare a runtime; any executable will do, Python included.
 
 #### Importing your own helpers
 

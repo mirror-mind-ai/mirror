@@ -2,9 +2,10 @@
 
 # CV22.DS10.TS2 — Extension compatibility-host deletion
 
-**Status:** 🟡 Pulled 2026-09-21, awaiting a Navigator decision before planning. The
-inventory below was taken at Pull; the decision it asks for changes the story's shape,
-so no Plan exists yet
+**Status:** ✅ **Done — 2026-09-21.** The Navigator chose **option 3** (migrate what is
+in daily use, retire the rest): google-workspace, session-export, and persona-export
+migrated; google-ads and meta-ads retired under the cutoff. See [plan.md](plan.md) for
+the approved plan, its panel review, and the two corpus dispositions
 **Type:** Technical Story
 **Depends on:** CV22.DS7.TS2 (the `mirror-context-v1` protocol and the host itself);
 CV22.DS7.TS4 (the host's `cli` mode, Navigator decision D1, 2026-09-16)
@@ -23,7 +24,7 @@ This gate does not require extension authors to use JavaScript. Extensions may o
 executable runtime — **including Python**. What ends is the *core* owning Python as their
 permanent compatibility layer.
 
-## Start Here: The Decision This Story Is Waiting On
+## The Decision This Story Was Waiting On (answered 2026-09-21: option 3)
 
 TS1 and US1 deleted subsystems with no consumers. **This one has seven**, and they are
 the Navigator's daily tooling. Inventory taken 2026-09-21 against
@@ -59,6 +60,20 @@ and a capability that refuses with a message naming the fix is honest, where a c
 carrying a Python host indefinitely is the thing DS10 exists to end. It is recorded as a
 recommendation, not a decision — option 1 breaks working tools the day it lands, which is
 the Navigator's call to make.
+
+**The Navigator chose option 3 on 2026-09-21.** Migrated: google-workspace (5 subcommands),
+session-export (2), persona-export (2). Retired under the cutoff: google-ads (1 provider +
+4 subcommands), meta-ads (1 provider + 4 subcommands), which stay installed and refuse.
+
+Two facts found while executing it, neither visible at Pull:
+
+- **The inventory undercounted google-workspace.** It registered **five** subcommands and
+  documented three; `docs` and `sheets` existed only in `register(api)`. That drift was
+  invisible while the listing came from the live registry, and post-migration the manifest
+  is the only source — both commands would have disappeared. Added with their summaries.
+- **All five capability-bearing extensions import the Mirror core at runtime**, so TS5's
+  deletion of `src/memory/` would have broken them regardless of this story. The migration
+  was never avoidable; option 2 would only have moved who paid and when.
 
 ## The Migration Path, For Whichever Option Wins
 
@@ -118,11 +133,17 @@ the way US1's `web-console` row was added.
 
 ## Where To Resume
 
-The cursor holds `CV22.DS10.TS2`, prepared, with no Plan. A fresh session should:
+Nothing — the story is done. What it left for later:
 
-1. read this file — the inventory is already done, do not re-derive it;
-2. get the Navigator's answer to the decision above;
-3. author the scope from that answer, then plan.
+- **[CR092](../../../../refinement/rs010-cv22-oracle-and-port-hygiene/cr092-the-shim-template-resolves-python3-from-ambient-path.md)**
+  — the shim template resolves `python3` from ambient `PATH`, correct for the Navigator's
+  own tooling and undecided for a third party. Owner: **US3** (npm distribution), where a
+  third-party audience first exists.
+- **The manifest validator still requires `entrypoint.module` to resolve to a `.py` file.**
+  That is why `ext-catalog-writes` and `extension-catalog` keep inert Python bodies while
+  `ext-dispatch` is fully Node. Relaxing it would change `extensions list` against its
+  Python-recorded golden — a second corpus retirement — and this story's Plan made it a
+  non-goal. Unresolved by decision, not by oversight.
 
 Two lessons from TS1 and US1 that apply here: **the authored gate names one layer and the
 inventory finds more** (both stories), and **the parity harness, the determinism gate, and

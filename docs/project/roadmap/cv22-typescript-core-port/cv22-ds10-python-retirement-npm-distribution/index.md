@@ -2,7 +2,7 @@
 
 # CV22.DS10 — Python Retirement And npm Distribution
 
-**Status:** 🟢 In Progress — pulled 2026-09-19 with eight approved child stories (2/8; TS1 and US1 done 2026-09-19)
+**Status:** 🟢 In Progress — pulled 2026-09-19 with eight approved child stories (3/8; TS1 and US1 done 2026-09-19, TS2 done 2026-09-21)
 **Type:** Delivery Story
 **Depends on:** CV22.DS7 command burn-down (done 2026-09-17, 14/14 — its Workspace/web
 hierarchy rider was retired unported); CV22.DS8 live-provider cutover (done); CV22.DS9 TS
@@ -25,7 +25,7 @@ DS10 therefore owns the removal, not a port; `mirror-gui` owns any future graphi
 |------|-------|------|---------|--------|
 | [CV22.DS10.TS1](cv22-ds10-ts1-retire-the-projection-seam-and-subsystem/index.md) | Retire the projection seam and subsystem | Technical Story | TypeScript writes spawn no Python: the `journey-projection refresh` seam and its four TS call sites, the `journey_projections` subsystem, its CLI, its Extension API capability, tests, and fixture are deleted; `.mirror/projections` is no longer published; `mirror.journey-projections@1.0` is sunset with a documented cutoff. Pulled 2026-09-19 as a port (ex-DS7.TS5), re-authored the same day as a retirement after the Navigator placed Mirror Desktop outside the migration | ✅ **Done — 2026-09-19.** TypeScript writes spawn no Python; 5,528 lines removed; cutoff staged; D-018 and D-019 carried |
 | CV22.DS10.US1 | Web console retirement | User Story | Cutoff published in the release note naming `mirror-gui` as successor; a repository-wide check finds nothing outside `src/memory/web/` depending on the console; `src/memory/web/`, the `web` entry in `__main__.py`, and `tests/unit/memory/web/` deleted; README, REFERENCE, and getting-started updated in the same change; `<mirror-home>/web/` disposition recorded; no TS replacement built | 🟡 Planned |
-| [CV22.DS10.TS2](cv22-ds10-ts2-extension-compatibility-host-deletion/index.md) | Extension compatibility-host deletion | Technical Story | `memory.extensions.compat_host` (context and `cli` modes) and every TS launcher branch that invokes it removed; providers without `provider_runtime` fail explicit and fail-soft; the migration cutoff documented; a repository/package check proves every retained provider and command enters through a declared language-neutral runtime | 🟡 Planned |
+| [CV22.DS10.TS2](cv22-ds10-ts2-extension-compatibility-host-deletion/index.md) | Extension compatibility-host deletion | Technical Story | `memory.extensions.compat_host` (context and `cli` modes) and every TS launcher branch that invokes it removed; providers without `provider_runtime` fail explicit and fail-soft; the migration cutoff documented; a repository/package check proves every retained provider and command enters through a declared language-neutral runtime | ✅ **Done — 2026-09-21.** Host and all three launcher branches deleted; refusal + `no_provider_runtime` fail-soft landed; `compat-host` row added to the retired-surface check; cutoff published; three daily-use extensions migrated to `mirror-cli-v1` in `automation`; google-ads/meta-ads retired under the cutoff; D-018 decided (VERSION frozen at 1.1) |
 | CV22.DS10.TS3 | Eval harness transfer to `ts/evals/` | Technical Story | The Python contract carried (`PROBES` and `THRESHOLD` per module, capability discovery for `--all`, JSONL history, threshold exit code); fixtures engine-neutral; each module's disposition recorded (`routing` retired, `scene` follows US1, `retrieval` decided); injection probes individually blocking (D-017); first run diffed against the 2026-09-13 `eval-history/`; development guide and engineering principles name the TS harness; then `evals/` and the `eval` entry deleted | 🟡 Planned |
 | CV22.DS10.US2 | npm-era updater and release tooling | User Story | A TS-owned replacement for `runtime update`, `pull`, `stable`, `backup`, `release-doctor`, and `release-promote`, designed around versioned installs and dist-tags rather than ported, with operational smoke coverage; `release-promote`'s product-versus-tooling placement decided; `mm-update` stops calling Python; `PYTHON_ALLOWLIST` goes empty and the skill parity check asserts the entry point is absent, including for the packaged plugin | 🟡 Planned |
 | CV22.DS10.TS4 | Retire the unported surfaces with cutoffs | Technical Story | `migrate-legacy`, `memory-rehearse-migration`, the twenty SQLite Refinement Workbench leaves plus the `get_workbench_snapshot` read, the `conversations` metadata-backfill flags, and `journey export-registry` / `journey mutate` (`journey_admin`, 345 lines, arrived in the pause-window merge and never entered the DS7 denominator — see CR089 for the front-door mis-route) removed, each with its cutoff in the release note | 🟡 Planned |
@@ -80,6 +80,13 @@ independently in TS (`listJourneyOptions`, `resolveParentJourney`, `validatePare
 `createJourney` / `setParentJourney`) and are not affected by this deletion.
 
 ## Extension Compatibility-Host Deletion Gate
+
+**Satisfied 2026-09-21 by [TS2](cv22-ds10-ts2-extension-compatibility-host-deletion/index.md).**
+All five items below hold, and `scripts/check_retired_surfaces.py` now asserts items 2
+and 5 mechanically through a `compat-host` row covering both the module and the
+launcher seams that called it. The deletion also reached one layer this gate did not
+name: the install-time `register(api)` import, which was the last place the core
+loaded extension code.
 
 CV22.DS7.TS2 transfers extension context dispatch to TS through the language-neutral
 `mirror-context-v1` protocol while temporarily preserving Python-only providers through

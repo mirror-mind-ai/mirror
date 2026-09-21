@@ -23,9 +23,9 @@ We need a way for:
 ### Capabilities (declared by the extension)
 
 A **capability** is a named hook the extension offers. It is declared in the
-manifest and implemented through its `mirror-context-v1` `provider_runtime`. During the
-bounded CV22 migration window, an existing Python implementation registered through
-`api.register_mirror_context` is invoked by the deprecated compatibility host.
+manifest and implemented through its `mirror-context-v1` `provider_runtime`. Since
+CV22.DS10.TS2 that declaration is the only way in: a capability implemented only through
+`api.register_mirror_context` is skipped with a `no_provider_runtime` diagnostic.
 
 A capability is *not* a CLI subcommand. CLI subcommands are always reachable
 directly (`python -m memory ext <id> <subcommand>`). Capabilities are
@@ -84,8 +84,8 @@ processes.
 
 The provider returns either text (appended to the prompt) or `null` (skipped silently).
 Missing, malformed, timed-out, or failing providers are isolated. A capability without a
-process descriptor uses the temporary Python compatibility host until CV22.DS10; the
-complete `mirror load` command does not fall back to Python.
+process descriptor is skipped with a `no_provider_runtime` diagnostic; nothing falls back
+to Python.
 
 ## Three target kinds
 

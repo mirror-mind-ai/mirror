@@ -89,7 +89,7 @@ IdentityService.load_mirror_context(journey="product-launch", ...)
    │     ├─ resolves provider_runtime for capability_id
    │     ├─ builds mirror-context-v1 JSON with journey_id="product-launch"
    │     └─ invokes the bounded no-shell provider process
-   │           (or the deprecated Python compatibility host until DS10)
+   │           (no runtime declared -> skipped, reported, load continues)
    │
    ├─ Provider may read journey metadata:
    │     identity.metadata.project_path -> /path/to/project

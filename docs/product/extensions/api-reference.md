@@ -295,25 +295,28 @@ is the command's exit code. Context arrives in the environment, never on stdin:
 | `MIRROR_EXTENSION_ROOT` | the installed extension directory |
 | `MIRROR_TABLE_PREFIX` | the extension's required table prefix |
 
-A subcommand that declares no runtime — or whose declaration is malformed — is answered by
-the temporary CV22 compatibility host, which loads `extension.py` and calls the handler
-registered through `api.register_cli`. The fallback is per SUBCOMMAND: an extension may
-migrate one command at a time without losing the others. Because that host spends stdin on
-its own request, a legacy handler cannot read the user's stdin; a declared command can.
+A subcommand that declares no runtime — or whose declaration is malformed, which amounts to
+the same thing — **refuses**, since CV22.DS10.TS2 deleted the compatibility host that used
+to answer it. One line on stderr names the extension, the subcommand, and the fix; stdout
+stays empty and the exit code is 1. Nothing is spawned.
 
-The subcommand listing (`ext <id>`, `ext <id> --help`) is answered from the live registry
-through the same host, so it always describes what the extension can actually run. This
-compatibility host is deprecated and must be removed by CV22.DS10; after removal, every
-retained extension command must enter through a declared `mirror-cli-v1` command.
+Refusal is per SUBCOMMAND, so an extension may migrate one command at a time without
+losing the others. A declared command receives all three of the user's streams, including
+stdin — which the retired host could never offer, because it spent stdin on its own
+request.
+
+The subcommand listing (`ext <id>`, `ext <id> --help`) is rendered from the manifest's
+`cli.subcommands[]`, with unmigrated entries flagged `(no runtime declared)`. It therefore
+describes what the manifest documents, not what a Python `register` happened to add: a
+handler registered but never documented will not appear. Keep the two in step.
 
 ### Python provider migration window
 
-A capability without `provider_runtime` currently runs through the temporary CV22 legacy
-host. The complete `mirror load` command still stays in TS; the host invokes only that named
-Python provider. This compatibility host is deprecated and must be removed by CV22.DS10.
-Authors should add a `mirror-context-v1` command before that cutoff. After removal, an
-unmigrated capability will produce explicit migration diagnostics rather than being silently
-omitted.
+A capability without `provider_runtime` is **skipped**, since CV22.DS10.TS2 deleted the
+legacy host. The skip is soft and reported: `mirror load` completes with every other
+section intact, and a `no_provider_runtime` diagnostic names what went dark. One
+unmigrated capability never costs the whole load, and it is never silently omitted
+either.
 
 ## Errors
 
@@ -334,12 +337,38 @@ subclasses and they will be treated uniformly.
 The API is versioned as `extension_api_version` and exposed at
 `memory.extensions.api.VERSION`. Version `1.1` added the `journey_projections`
 façade; **CV22.DS10.TS1 removed it**, which is a backward-incompatible change to
-a capability no installed extension used. The version number is deliberately not
-bumped here: the Extension API's version authority belongs to CV22.DS10.TS2,
-which owns the extension runtime boundary and the compatibility host, and a
-number chosen in isolation would be a second authority.
-Backward-incompatible changes increment the major version and trigger a
-deprecation cycle of at least one minor release.
+a capability no installed extension used.
+
+**Frozen at `1.1` — decision D-018, CV22.DS10.TS2, 2026-09-21.** The number is
+not bumped, and will not be. Two reasons, pointing the same way:
+
+- `1.1`'s only addition never reached a user, so a new number would date a
+  change nobody can observe.
+- More decisively, **this API is not evolving — it is retiring.**
+  CV22.DS10.TS2 deleted the compatibility host that called `register(api)` on
+  the core's behalf. Nothing in the Mirror core imports extension code any
+  more, at install time or at dispatch time.
+
+### What replaces it
+
+The contract an extension codes against is now the **manifest runtime
+protocols**, which carry their own names and their own compatibility story:
+
+| | |
+|---|---|
+| `mirror-cli-v1` | one subcommand, declared on `cli.subcommands[].runtime` |
+| `mirror-context-v1` | one context provider, declared on `mirror_context_providers[].provider_runtime` |
+
+Both are language-neutral: an extension may own any executable runtime,
+**Python included**. What ended is the core owning Python as every extension's
+permanent compatibility layer. See the
+[cutoff](../../releases/pending-cutoffs.md) for the migration path, and
+`docs/product/extensions/template/cli.py.template` for a reference shim that
+keeps existing `register(api)` handlers working unchanged.
+
+The `VERSION` constant survives only until CV22.DS10.TS5 deletes the Python
+core with it. Backward-incompatible changes to the *runtime protocols*
+increment their own version suffix (`mirror-cli-v2`) rather than this number.
 
 Extensions may declare a minimum version in `skill.yaml`:
 
