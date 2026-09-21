@@ -3,9 +3,7 @@
     {
       "cursor": null,
       "name": "clear_with_active_item",
-      "projection_requests": [
-        "demo"
-      ],
+      "projection_requests": [],
       "row": {
         "active": 0,
         "closed_at": null,
@@ -83,10 +81,7 @@
         "release_intent_delivery_story": null
       },
       "name": "swap_succeeds",
-      "projection_requests": [
-        "demo",
-        "demo"
-      ],
+      "projection_requests": [],
       "row": {
         "active": 1,
         "closed_at": null,
@@ -685,9 +680,7 @@
             "release_intent_delivery_story": null
           },
           "label": "pull",
-          "projection_requests": [
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -731,10 +724,7 @@
             "release_intent_delivery_story": null
           },
           "label": "prepare",
-          "projection_requests": [
-            "demo",
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -780,11 +770,7 @@
             "release_intent_delivery_story": null
           },
           "label": "plan",
-          "projection_requests": [
-            "demo",
-            "demo",
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -828,12 +814,7 @@
             "release_intent_delivery_story": null
           },
           "label": "approve",
-          "projection_requests": [
-            "demo",
-            "demo",
-            "demo",
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -897,9 +878,7 @@
             "release_intent_delivery_story": null
           },
           "label": "record_receipt",
-          "projection_requests": [
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -958,10 +937,7 @@
             "release_intent_delivery_story": null
           },
           "label": "unrelated_write",
-          "projection_requests": [
-            "demo",
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -1019,11 +995,7 @@
             "release_intent_delivery_story": null
           },
           "label": "coordinate_change",
-          "projection_requests": [
-            "demo",
-            "demo",
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -1087,9 +1059,7 @@
             "release_intent_delivery_story": null
           },
           "label": "record_receipt",
-          "projection_requests": [
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -1148,10 +1118,7 @@
             "release_intent_delivery_story": null
           },
           "label": "unrelated_write",
-          "projection_requests": [
-            "demo",
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -1209,11 +1176,7 @@
             "release_intent_delivery_story": null
           },
           "label": "coordinate_change",
-          "projection_requests": [
-            "demo",
-            "demo",
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -1277,9 +1240,7 @@
             "release_intent_delivery_story": null
           },
           "label": "record_receipt",
-          "projection_requests": [
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -1338,10 +1299,7 @@
             "release_intent_delivery_story": null
           },
           "label": "unrelated_write",
-          "projection_requests": [
-            "demo",
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -1399,11 +1357,7 @@
             "release_intent_delivery_story": null
           },
           "label": "coordinate_change",
-          "projection_requests": [
-            "demo",
-            "demo",
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -1467,9 +1421,7 @@
             "release_intent_delivery_story": null
           },
           "label": "record_receipt",
-          "projection_requests": [
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -1528,10 +1480,7 @@
             "release_intent_delivery_story": null
           },
           "label": "unrelated_write",
-          "projection_requests": [
-            "demo",
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -1589,11 +1538,7 @@
             "release_intent_delivery_story": null
           },
           "label": "coordinate_change",
-          "projection_requests": [
-            "demo",
-            "demo",
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -1657,9 +1602,7 @@
             "release_intent_delivery_story": null
           },
           "label": "record_receipt",
-          "projection_requests": [
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -1718,10 +1661,7 @@
             "release_intent_delivery_story": null
           },
           "label": "unrelated_write",
-          "projection_requests": [
-            "demo",
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -1784,11 +1724,7 @@
             "release_intent_delivery_story": null
           },
           "label": "coordinate_change",
-          "projection_requests": [
-            "demo",
-            "demo",
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -1851,9 +1787,7 @@
             "release_intent_delivery_story": null
           },
           "label": "record_consumed",
-          "projection_requests": [
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -1910,10 +1844,7 @@
             "release_intent_delivery_story": null
           },
           "label": "coordinate_change",
-          "projection_requests": [
-            "demo",
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -1975,9 +1906,7 @@
             "release_intent_delivery_story": null
           },
           "label": "record",
-          "projection_requests": [
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -2020,9 +1949,7 @@
             "release_intent_delivery_story": null
           },
           "label": "explicit_none",
-          "projection_requests": [
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -2108,9 +2035,7 @@
             "release_intent_delivery_story": null
           },
           "label": "active_item_appears",
-          "projection_requests": [
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -2153,9 +2078,7 @@
             "release_intent_delivery_story": null
           },
           "label": "unprojected_field_changes",
-          "projection_requests": [
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -2197,10 +2120,7 @@
             "release_intent_delivery_story": null
           },
           "label": "projected_field_changes",
-          "projection_requests": [
-            "demo",
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -2243,11 +2163,7 @@
             "release_intent_delivery_story": null
           },
           "label": "checkpoint_appears",
-          "projection_requests": [
-            "demo",
-            "demo",
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -2288,12 +2204,7 @@
             "release_intent_delivery_story": null
           },
           "label": "active_item_disappears",
-          "projection_requests": [
-            "demo",
-            "demo",
-            "demo",
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -2339,9 +2250,7 @@
             "release_intent_delivery_story": null
           },
           "label": "item_without_event",
-          "projection_requests": [
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -2383,9 +2292,7 @@
             "release_intent_delivery_story": null
           },
           "label": "event_becomes_literal_active",
-          "projection_requests": [
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -2427,10 +2334,7 @@
             "release_intent_delivery_story": null
           },
           "label": "event_becomes_something_else",
-          "projection_requests": [
-            "demo",
-            "demo"
-          ],
+          "projection_requests": [],
           "row": {
             "active": 1,
             "closed_at": null,
@@ -2471,58 +2375,6 @@
             "release_intent_delivery_story": null
           },
           "label": "event_returns_to_absent",
-          "projection_requests": [
-            "demo",
-            "demo",
-            "demo"
-          ],
-          "row": {
-            "active": 1,
-            "closed_at": null,
-            "conversation_id": null,
-            "hook_injected": 0,
-            "interface": "builder_delivery_cursor",
-            "journey": "demo",
-            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1\", \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
-            "mirror_active": 0,
-            "persona": null,
-            "session_id": "__builder_delivery_cursor__:demo",
-            "started_at": "2026-01-01T00:00:00+00:00",
-            "updated_at": "2026-01-01T00:00:00+00:00"
-          }
-        }
-      ]
-    },
-    {
-      "name": "refresh_projection_disabled",
-      "steps": [
-        {
-          "changes": {
-            "active_item": "CV1",
-            "last_delivery_event": "pulled",
-            "refresh_projection": false
-          },
-          "cursor": {
-            "active_checkpoint": null,
-            "active_item": "CV1",
-            "active_item_level": null,
-            "active_item_title": null,
-            "aggregate_checkpoint_status": [],
-            "cadence_limits": [],
-            "cadence_profile": null,
-            "child_work_items": [],
-            "cursor_generation": 0,
-            "granularity_decision": null,
-            "journey": "demo",
-            "last_delivery_event": "pulled",
-            "method": "ariad",
-            "navigator_flow_unit": null,
-            "pending_confirmation": null,
-            "plan_preauthorization": null,
-            "release_intent": null,
-            "release_intent_delivery_story": null
-          },
-          "label": "write",
           "projection_requests": [],
           "row": {
             "active": 1,
@@ -2531,7 +2383,7 @@
             "hook_injected": 0,
             "interface": "builder_delivery_cursor",
             "journey": "demo",
-            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1\", \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": \"pulled\", \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
+            "metadata": "{\"method\": \"ariad\", \"active_item\": \"CV1\", \"active_item_title\": null, \"active_item_level\": null, \"active_checkpoint\": null, \"pending_confirmation\": null, \"last_delivery_event\": null, \"cadence_profile\": null, \"cadence_limits\": [], \"granularity_decision\": null, \"navigator_flow_unit\": null, \"child_work_items\": [], \"aggregate_checkpoint_status\": [], \"cursor_generation\": 0, \"plan_preauthorization\": null, \"release_intent_delivery_story\": null, \"release_intent\": null}",
             "mirror_active": 0,
             "persona": null,
             "session_id": "__builder_delivery_cursor__:demo",
@@ -2612,9 +2464,7 @@
         "release_intent_delivery_story": null
       },
       "name": "full",
-      "projection_requests": [
-        "demo"
-      ],
+      "projection_requests": [],
       "row": {
         "active": 1,
         "closed_at": null,
@@ -2692,9 +2542,7 @@
         "release_intent_delivery_story": null
       },
       "name": "padded_values",
-      "projection_requests": [
-        "demo"
-      ],
+      "projection_requests": [],
       "row": {
         "active": 1,
         "closed_at": null,

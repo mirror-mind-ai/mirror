@@ -10,7 +10,8 @@ already proves the primitive's bytes. What it cannot prove is that the lifecycle
 CHOOSES the same next state: Pull resets child work items only when the active
 item actually changed, bumps `cursor_generation` even on a re-pull, and preserves
 release intent only inside the same Delivery Story; Plan writes
-`refresh_projection=False` and then requests the refresh itself; approval
+suppressed the cursor's own refresh and requested it after the artifact existed
+(both retired with the projection subsystem in CV22.DS10.TS1); approval
 invalidates a pending receipt instead of dropping it. Two engines can agree on the
 final row and disagree at every step between, so each step records the serialized
 metadata the way Python wrote it.
@@ -313,7 +314,10 @@ def _store() -> tuple[Store, list[str]]:
     connection.executescript(SCHEMA)
     requested: list[str] = []
     store = Store(connection)
-    store.configure_projection_refresh(requested.append)
+    # CV22.DS10.TS1 deleted the Store hook this list used to receive. It stays so
+    # the recorded shape is unchanged; it is now always empty, because Python no
+    # longer requests a projection refresh. The non-empty values in the committed
+    # goldens are history this generator can no longer reproduce (see D-019).
     return store, requested
 
 

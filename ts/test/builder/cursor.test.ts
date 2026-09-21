@@ -479,13 +479,6 @@ function sequenceOptions(changes: Record<string, unknown>): SetDeliveryCursorOpt
       }
       continue;
     }
-    if (key === "refresh_projection") {
-      // Python's flag for "write the cursor but let me order the projection
-      // refresh myself". CV22.DS10.TS1 retired the projection, so the option no
-      // longer exists and the corpus's two steps carry a setting with nothing to
-      // set. Skipped by name, so an unmapped key is still a corpus error.
-      continue;
-    }
     const mapped = map[key];
     assert.ok(mapped, `unmapped sequence change key ${key}`);
     options[mapped] = value;
@@ -532,7 +525,12 @@ test("every ordered sequence matches Python step by step", () => {
       db.close();
     }
   }
-  assert.ok(gradedSteps >= 35, `expected the full sequence corpus, graded ${gradedSteps}`);
+  // 35 until CV22.DS10.TS1 retired the projection subsystem, which took the
+  // `refresh_projection_disabled` sequence with it: its whole subject was a
+  // kwarg that suppressed a refresh nothing requests anymore. The floor moved
+  // deliberately, by one, and is still here to catch a corpus that shrinks
+  // without anyone deciding it should.
+  assert.ok(gradedSteps >= 34, `expected the full sequence corpus, graded ${gradedSteps}`);
 });
 
 test("an unrelated write preserves a pending receipt; a coordinate change invalidates it", () => {

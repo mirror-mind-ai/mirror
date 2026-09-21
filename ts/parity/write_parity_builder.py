@@ -198,7 +198,6 @@ def builder_cursor_state_probe(python_copy, frozen_datetime, now_iso: str) -> di
         store = Store(conn)
         # The projection seam is Python-owned and best-effort; a probe must not
         # spawn it, so it is disabled rather than stubbed.
-        store.configure_projection_refresh(None)
 
         starting_row = _row(conn, session_id)
         starting_cursor = get_delivery_cursor(store, journey)
@@ -352,7 +351,6 @@ def builder_artifacts_probe(python_copy, frozen_datetime, now_iso: str) -> dict[
     try:
         journey = _pick_journey(conn)
         store = Store(conn)
-        store.configure_projection_refresh(None)
 
         set_delivery_cursor(
             store,

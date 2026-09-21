@@ -90,7 +90,10 @@ def _store() -> tuple[Store, list[str]]:
     connection.executescript(SCHEMA)
     requested: list[str] = []
     store = Store(connection)
-    store.configure_projection_refresh(requested.append)
+    # CV22.DS10.TS1 deleted the Store hook this list used to receive. It stays so
+    # the recorded shape is unchanged; it is now always empty, because Python no
+    # longer requests a projection refresh. The non-empty values in the committed
+    # goldens are history this generator can no longer reproduce (see D-019).
     return store, requested
 
 
@@ -605,25 +608,6 @@ def _build_sequences() -> list[dict[str, Any]]:
         ],
     )
 
-    # `refresh_projection=False` suppresses the request entirely.
-    # Recorded through `run` like every other sequence, so the `changes` payload
-    # the golden publishes is BY CONSTRUCTION the payload that was written. An
-    # earlier hand-built version of this entry listed different kwargs than the
-    # call used, and the replay disagreed with the oracle for a reason that had
-    # nothing to do with the port.
-    run(
-        "refresh_projection_disabled",
-        [
-            (
-                "write",
-                {
-                    "active_item": "CV1",
-                    "last_delivery_event": "pulled",
-                    "refresh_projection": False,
-                },
-            )
-        ],
-    )
     return sequences
 
 

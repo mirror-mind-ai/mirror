@@ -77,6 +77,13 @@ RETIRED: tuple[RetiredSurface, ...] = (
             r"journey-projection\b",
             r"createPythonProjectionRefresh",
             r"requestProjectionRefresh",
+            # The API names, not just the module names. CI found
+            # `configure_projection_refresh` surviving in `ts/parity/` after the
+            # first version of this table missed it: the patterns were written
+            # from the files the deletion touched, which is the one place residue
+            # cannot be.
+            r"configure_projection_refresh",
+            r"request_projection_refresh",
         ),
         exemptions={
             "src/memory/extensions/api.py": (

@@ -36,7 +36,7 @@ Dropped   no longer relevant or replaced by another item
 | D-016 | Read-only WAL recovery assumes SQLite fails eagerly during connect | reliability / testing | medium | Paid | CV9.E2.S31 Navigator Validation baseline comparison → runtime WAL fallback maintenance | Paid by the integrated eager schema-probe fallback |
 | D-017 | Injection-resistance probes are averaged into a module score, so an obeyed probe can pass the release gate | eval measurement | medium | Carried | CV22.DS8.TS1 validation | The eval harness transfer (CV22.DS10), a fence change on any fenced surface, or any story that treats a module PASS as injection-resistance evidence |
 | D-018 | Extension API `VERSION` stays `1.1` after `api.journey_projections` was removed, so the constant advertises a capability that no longer exists | design / contract | low | Carried | CV22.DS10.TS1 Debt Review | CV22.DS10.TS2 plan time, or any story that changes the Extension API surface |
-| D-019 | The Builder lifecycle corpus records a `projection_requests` field that nothing asserts | testing | low | Carried | CV22.DS10.TS1 Debt Review | CV22.DS10.TS5, which deletes the Python oracle the corpus would be regenerated against |
+| D-019 | The Builder lifecycle corpus records a `projection_requests` field that nothing asserts | testing | low | **Paid** | CV22.DS10.TS1 Debt Review | Paid 2026-09-21: CI's determinism gate forced the regeneration this entry assumed had to wait for TS5 |
 
 ## D-001 — Metadata lifecycle policy and evidence filtering live inside ConversationService
 
@@ -840,12 +840,22 @@ retired. The sibling parity suite (`cursor.test.ts`) took the opposite and
 cheaper route for the same data — it asserts the *absence* of requests against
 the oracle's recording, so a re-added spawn is still caught there.
 
-### Revisit trigger
+### Resolution
 
-CV22.DS10.TS5, which deletes the Python oracle the corpus would be regenerated
-against.
+**Paid 2026-09-21, by CI rather than by plan.** The reasoning above was sound and
+the conclusion was wrong: regenerating did not have to wait for TS5, because the
+determinism gate (`regenerate must be a no-op`) does not care what a story
+intended. It ran the generators, they crashed on a Store hook TS1 had deleted, and
+fixing them meant regenerating — which recorded the truth: Python requests no
+refreshes, so `projection_requests` is `[]` in every step, in the lifecycle corpus
+and in the cursor and command goldens beside it.
 
-### Closure condition
+The corpus and its assertions now agree, which was this entry's closure condition.
+The `refresh_projection_disabled` sequence went with it: its whole subject was a
+kwarg that suppressed a refresh nothing requests.
 
-The corpus and its assertions agree: either the field is gone with the oracle,
-or the replay asserts something about it.
+What the entry got wrong is worth keeping. It reasoned about cost — "rebuilding an
+artifact that is itself scheduled for removal" — and concluded defer. It did not
+ask whether anything *else* would force the rebuild first. A deferral is a bet that
+nothing will touch the thing before its revisit trigger fires, and CI is a thing
+that touches everything.

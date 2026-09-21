@@ -630,11 +630,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 3
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_with_cursor",
       "session_id": "builder-command-session",
@@ -666,11 +663,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 3
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_with_cursor",
       "session_id": "builder-command-session",
@@ -705,11 +699,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 3
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_ds_pullable",
       "session_id": "builder-command-session",
@@ -741,11 +732,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 3
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_with_cursor",
       "session_id": "builder-command-session",
@@ -782,7 +770,7 @@
       },
       "scenario": "adopted_cursor_no_project",
       "session_id": "builder-command-session",
-      "stderr": "Operational projection refresh failed after source commit: code=unknown_journey\nOperational projection refresh failed after source commit: code=unknown_journey\nError: Delivery Story expansion requires project_path.\n",
+      "stderr": "Error: Delivery Story expansion requires project_path.\n",
       "stdout": ""
     },
     {
@@ -810,11 +798,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 1
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_with_cursor",
       "session_id": "builder-command-session",
@@ -966,11 +951,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 2
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_prepared",
       "session_id": "builder-command-session",
@@ -998,11 +980,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 2
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_prepared",
       "session_id": "builder-command-session",
@@ -1031,11 +1010,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 2
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_prepared",
       "session_id": "builder-command-session",
@@ -1059,11 +1035,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 1
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_with_cursor",
       "session_id": "builder-command-session",
@@ -1087,11 +1060,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 1
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_prepared_ds",
       "session_id": "builder-command-session",
@@ -1279,11 +1249,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 2
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_closure_plan_approved",
       "session_id": "builder-command-session",
@@ -1309,11 +1276,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 2
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_closure_plan_approved",
       "session_id": "builder-command-session",
@@ -1345,11 +1309,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 2
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_closure_pending_validation",
       "session_id": "builder-command-session",
@@ -1380,11 +1341,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 1
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_closure_plan_approved",
       "session_id": "builder-command-session",
@@ -1409,11 +1367,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 1
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_prepared",
       "session_id": "builder-command-session",
@@ -1492,11 +1447,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 2
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_closure_validated",
       "session_id": "builder-command-session",
@@ -1523,11 +1475,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 2
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_closure_validated",
       "session_id": "builder-command-session",
@@ -1560,11 +1509,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 2
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_closure_validated",
       "session_id": "builder-command-session",
@@ -1591,11 +1537,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 2
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_closure_validated",
       "session_id": "builder-command-session",
@@ -1621,11 +1564,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 1
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_prepared",
       "session_id": "builder-command-session",
@@ -1656,11 +1596,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 2
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_closure_reviewed",
       "session_id": "builder-command-session",
@@ -1690,11 +1627,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 1
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_closure_validated",
       "session_id": "builder-command-session",
@@ -1725,11 +1659,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 2
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_closure_reviewed",
       "session_id": "builder-command-session",
@@ -1759,11 +1690,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 1
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_prepared",
       "session_id": "builder-command-session",
@@ -1889,11 +1817,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 2
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_agg_planned",
       "session_id": "builder-command-session",
@@ -1924,11 +1849,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 1
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_agg_story_by_story",
       "session_id": "builder-command-session",
@@ -1966,11 +1888,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 2
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_agg_planned",
       "session_id": "builder-command-session",
@@ -1999,11 +1918,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 3
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_agg_pending_approval",
       "session_id": "builder-command-session",
@@ -2030,11 +1946,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 1
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_agg_planned",
       "session_id": "builder-command-session",
@@ -2080,11 +1993,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 2
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_agg_approved",
       "session_id": "builder-command-session",
@@ -2114,11 +2024,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 2
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_agg_approved",
       "session_id": "builder-command-session",
@@ -2148,11 +2055,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 1
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_agg_planned",
       "session_id": "builder-command-session",
@@ -2184,11 +2088,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 2
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_agg_validated",
       "session_id": "builder-command-session",
@@ -2220,11 +2121,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 2
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_agg_validated",
       "session_id": "builder-command-session",
@@ -2254,11 +2152,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 2
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_agg_reviewed",
       "session_id": "builder-command-session",
@@ -2288,11 +2183,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 2
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_agg_reviewed",
       "session_id": "builder-command-session",
@@ -2321,11 +2213,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 1
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_agg_children_unfinished",
       "session_id": "builder-command-session",
@@ -2354,11 +2243,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 1
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_agg_approved",
       "session_id": "builder-command-session",
@@ -2626,11 +2512,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 1
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_closure_reviewed",
       "session_id": "builder-command-session",
@@ -2660,11 +2543,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 1
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_cadence_checkpoint_pending",
       "session_id": "builder-command-session",
@@ -2694,11 +2574,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 1
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_cadence_autonomous_unlimited",
       "session_id": "builder-command-session",
@@ -2728,11 +2605,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 1
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_cadence_checkpoint_prepared",
       "session_id": "builder-command-session",
@@ -2760,11 +2634,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 1
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_cadence_checkpoint_reviewed",
       "session_id": "builder-command-session",
@@ -2801,11 +2672,8 @@
         "docs/project/roadmap/index.md": "# Roadmap\n\n| Code | Capability Value | Status |\n|------|------------------|--------|\n| CV1 | First value | 🟢 Active |\n"
       },
       "projection": {
-        "documents": [
-          "ariad/operational.json",
-          "current.json"
-        ],
-        "receipts": 2
+        "documents": [],
+        "receipts": 0
       },
       "scenario": "adopted_cadence_checkpoint_reviewed",
       "session_id": "builder-command-session",

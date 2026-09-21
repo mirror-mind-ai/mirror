@@ -71,7 +71,6 @@ def _store() -> Store:
     connection.row_factory = sqlite3.Row
     connection.executescript(SCHEMA)
     store = Store(connection)
-    store.configure_projection_refresh(lambda journey: None)
     return store
 
 
