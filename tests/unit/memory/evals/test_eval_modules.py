@@ -17,7 +17,9 @@ EVAL_MODULES = [
     "evals.proportionality",
     "evals.reception",
     "evals.retrieval",
-    "evals.scene",
+    # `evals.scene` retired with the web console (CV22.DS10.US1): the surface it
+    # graded reached users only through that process. `eval --all` discovers by
+    # capability and dropped it for free; this list is hand-maintained and did not.
     "evals.shadow",
     "evals.consolidate",
     # CV9.E2.S25 additions — previously built but never added to this list, so

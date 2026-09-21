@@ -353,6 +353,12 @@ class TestDiscoverEvalNames:
         # An eval is any evals/*.py exposing PROBES. Adding a new eval module
         # must consciously join the release gate — this contract test is the
         # checkpoint that makes that a decision, not an accident (QA).
+        #
+        # It works in both directions. `scene` left this set in CV22.DS10.US1,
+        # retired with the web console because the surface it graded reached
+        # users only through that process. Capability discovery dropped it for
+        # free; this assertion is what made the shrinking denominator a decision
+        # someone had to write down.
         assert set(discover_eval_names()) == {
             "consolidate",
             "conversation_summary",
@@ -363,7 +369,6 @@ class TestDiscoverEvalNames:
             "retrieval",
             "retrieval_relevance",
             "routing",
-            "scene",
             "shadow",
             "title_tags",
         }
