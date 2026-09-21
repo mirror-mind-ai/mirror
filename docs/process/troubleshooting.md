@@ -97,8 +97,8 @@ Core migrations: attention needed (... unable to open database file)
 Extension health: attention needed (... database unavailable)
 ```
 
-A common trigger is a local Mirror surface, such as the web console, that has
-recently opened the production database.
+A common trigger is a local Mirror process — an MCP server session, or a runtime
+holding a connection — that has recently opened the production database.
 
 ### Current behavior
 
