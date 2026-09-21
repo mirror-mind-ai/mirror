@@ -149,6 +149,12 @@ jobs:
       - name: Oracle-drift tripwire (ported Python oracles must match the baseline)
         run: uv run python scripts/check_oracle_drift.py
 
+      # Fails when a surface CV22.DS10 retired comes back, or never fully left.
+      # A deletion has no test of its own; this is it. Each retiring story adds
+      # a row to the table rather than a script to the repository.
+      - name: Retired-surface tripwire (DS10 deletions must stay deleted)
+        run: uv run python scripts/check_retired_surfaces.py
+
   ts:
     runs-on: ${{ matrix.os }}
     strategy:

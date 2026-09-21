@@ -29,7 +29,7 @@ src/memory/                  — Python package: all business logic
   intelligence/              — LLM-powered extraction, search, routing
   services/                  — Domain services (the implementation layer)
   storage/                   — Persistence components (raw SQL lives here)
-  surfaces/                  — Web read-model composition for Atlas, Workspace, detail, evidence, and search
+  surfaces/                  — Rendered text surfaces for the CLI (mode transitions, Soul, Explorer)
   skills/                    — Shared skill logic callable by any harness
 templates/identity/          — Generic bootstrap templates shipped in the repo
 examples/extensions/         — Reference extensions (e.g. review-copy)

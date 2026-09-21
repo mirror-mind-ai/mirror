@@ -42,8 +42,14 @@ is how the decisions log and the burn-down ledger refer to it.
 
 ## Workspace And Web Retirement Gate
 
-This gate replaced the convergence gate on 2026-09-17. Python core deletion is blocked
-until all of the following are true:
+**Satisfied 2026-09-19 by [US1](cv22-ds10-us1-web-console-retirement/index.md).** All six
+items below hold; the deletion also reached two layers this gate did not name — the six
+web-only modules in `src/memory/surfaces/` and `intelligence/scene.py`, whose only
+consumer was the console — and `scripts/check_retired_surfaces.py` now asserts the
+absence mechanically, for this surface and for TS1's.
+
+This gate replaced the convergence gate on 2026-09-17. Python core deletion was blocked
+until all of the following were true:
 
 1. A documented cutoff is published in the release note for the version that removes the
    console, stating that `python -m memory web` no longer exists and naming `mirror-gui`

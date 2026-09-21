@@ -45,5 +45,35 @@ readable by that release; nothing deletes them.
 
 ---
 
-<!-- CV22.DS10.US1 (web console), TS4 (unported surfaces), TS5 (Python deletion),
-     and US3 (npm distribution) add their cutoffs here. -->
+## The web console, and the scene surface it rendered
+
+**Story:** [CV22.DS10.US1](../project/roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-us1-web-console-retirement/index.md) ·
+**Decision:** [The web console is retired, not ported](../project/decisions.md#the-web-console-is-retired-not-ported-and-ds7-closes-at-1414)
+
+**Removed.** `python -m memory web` and the local console it served — the Identity
+and Workspace perspectives, conversation intelligence, bulk conversation
+maintenance, and allowlisted operation runs. With it go the read models that
+existed only to feed it, and the **scene synthesis**: an LLM-composed reading of
+a journey's current state that was reachable only through the console.
+
+**Why.** The console was barely used, and porting it to TypeScript was declined on
+2026-09-17 after a complete, reviewed plan made the true cost legible. `mirror-gui`
+is the successor surface for anything graphical over Mirror.
+
+**What to do instead.** Everything the console showed is available in the terminal:
+`journeys`, `journey <slug>`, `memories`, `conversations`, `tasks`, and the Mirror,
+Builder, Explorer, and Soul modes in any of the four runtimes. There is no
+replacement for the scene synthesis; it was a console-only reading.
+
+**What still works.** Every command, every runtime, every mode. If you have never
+run `python -m memory web`, nothing about your Mirror changes.
+
+**Your preferences file stays.** `<mirror-home>/web/preferences.json` is left exactly
+where it is — 41 bytes, inert, read by nothing. Mirror does not delete state from
+your home on your behalf. Remove it yourself whenever you like, or leave it.
+
+---
+
+<!-- CV22.DS10.TS2 (extension compat host), TS3 (eval harness), US2 (npm-era
+     updater), TS4 (unported surfaces), TS5 (Python deletion), and US3 (npm
+     distribution) add their cutoffs here. -->

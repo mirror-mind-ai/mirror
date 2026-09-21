@@ -745,9 +745,18 @@ five runs. The persisted record stores per-probe detail (`probes[].passed`), so
 `--history` could have flagged the flip — the instrument captured the signal
 and the verdict discarded it.
 
+**The worked example is gone; the debt is not (CV22.DS10.US1, 2026-09-19).**
+`scene` retired with the web console — the surface it graded reached users only
+through that process — so the evidence above is now history rather than a module
+anyone can rerun. Nothing about the finding changes: the arithmetic is identical
+for `extraction`, `shadow`, `consolidate`, `title_tags`, and
+`conversation_summary`, each of which still carries a security probe inside a
+module average. A debt whose example is retired is easy to mistake for a debt
+that was paid; it was not.
+
 ### Revisit trigger
 
-The eval harness transfer (CV22.DS10, where the fix is a harness-contract
+The eval harness transfer (CV22.DS10.TS3, where the fix is a harness-contract
 requirement rather than a per-module patch — recorded as an item in that
 story's deletion gate), a fence change on any fenced surface, or any story
 that cites a module PASS as injection-resistance evidence.
