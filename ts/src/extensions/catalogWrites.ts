@@ -50,6 +50,8 @@ import {
   type RenderedCommand,
   runtimeSkillsRootForHome,
 } from "./catalog.ts";
+import { readProvidersWithoutRuntime } from "./contextRuntime.ts";
+import { readSubcommandListing } from "./dispatch.ts";
 import { ExtensionError, ExtensionValidationError } from "./errors.ts";
 import { type ExtensionManifest, loadExtensionManifest } from "./manifest.ts";
 import { runMigrations } from "./migrations.ts";
@@ -298,10 +300,17 @@ export interface InstallReport {
   installedDir: string;
   synced: Array<readonly [string, CatalogEntry[]]>;
   migrationsApplied: number;
+  /**
+   * Capabilities the manifest documents but declares no runtime for.
+   *
+   * Install SUCCEEDS with these present. A skill-only extension, or one being
+   * migrated a capability at a time, is legal -- refusing here would block the
+   * very incremental migration CV22.DS10.TS2 exists to enable. The report says
+   * so out loud instead, because the alternative is a user discovering it at
+   * the first refusal a week later.
+   */
+  unmigrated: string[];
 }
-
-/** Validates an installed command-skill's `register(api)`. Plateau 4's host. */
-export type RegisterValidator = (extensionId: string, extensionDir: string) => void;
 
 export interface InstallOptions {
   extensionId: string;
@@ -310,7 +319,6 @@ export interface InstallOptions {
   runtime: string | null;
   db: WritableDatabase;
   deps: BindingDeps;
-  validateRegister: RegisterValidator;
 }
 
 /** Port of `install_extension` + `_post_install_command_skill`. */
@@ -346,7 +354,6 @@ export function installExtension(options: InstallOptions): InstallReport {
         `migrations failed for extension/${extensionId}: ${error.message}`,
       );
     }
-    options.validateRegister(extensionId, targetExtensionDir);
   }
 
   // Fact 4: rebuild from everything installed, report only this one.
@@ -364,7 +371,26 @@ export function installExtension(options: InstallOptions): InstallReport {
     installedDir: targetExtensionDir,
     synced,
     migrationsApplied,
+    unmigrated: unmigratedCapabilities(targetExtensionDir),
   };
+}
+
+/**
+ * What still needs a runtime, in one list, labelled by kind.
+ *
+ * Each module reads its own manifest section -- `dispatch` owns
+ * `cli.subcommands[]`, `contextRuntime` owns `mirror_context_providers[]` --
+ * and install merely composes them. Putting a second manifest parser here is
+ * how the three readers would drift.
+ */
+function unmigratedCapabilities(extensionDir: string): string[] {
+  const subcommands = readSubcommandListing(extensionDir)
+    .filter((entry) => !entry.hasRuntime)
+    .map((entry) => `subcommand '${entry.name}'`);
+  const providers = readProvidersWithoutRuntime(extensionDir).map(
+    (id) => `context provider '${id}'`,
+  );
+  return [...subcommands, ...providers];
 }
 
 export interface UninstallReport {
@@ -591,7 +617,20 @@ export function renderInstallReport(report: InstallReport): RenderedCommand {
       lines.push(`    ${item.command_name} -> ${item.installed_skill_path}`);
     }
   }
-  return { stdout: `${lines.join("\n")}\n`, stderr: "", exitCode: 0 };
+  // On stderr, not stdout: the install SUCCEEDED, and a warning must not land
+  // in the bytes a caller parses as the install report.
+  const stderr =
+    report.unmigrated.length === 0
+      ? ""
+      : [
+          `Warning: extension/${report.extensionId} declares no runtime for ` +
+            `${report.unmigrated.length} capability(ies):`,
+          ...report.unmigrated.map((entry) => `  ${entry}`),
+          "These will refuse until they declare a runtime. " +
+            "See docs/releases/pending-cutoffs.md.",
+          "",
+        ].join("\n");
+  return { stdout: `${lines.join("\n")}\n`, stderr, exitCode: 0 };
 }
 
 /** The `uninstall` report, in Python's print order. */

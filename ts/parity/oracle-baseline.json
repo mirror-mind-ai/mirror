@@ -51,7 +51,6 @@
     "src/memory/db/connection.py": "0b5b55f598d7f3aca2465d396747441d32084c2f",
     "src/memory/db/migrations.py": "0a09c38e12890dea88fc329d72d7d9129eb492be",
     "src/memory/extensions/api.py": "5c897a8ebc777e66f9dcfb5ae61308fcf0ecf9de",
-    "src/memory/extensions/compat_host.py": "2fdb4d508c89546e4e46b45ff8e030b5b1850a83",
     "src/memory/extensions/context.py": "df457390e6c333567abbd7c36cc0a16c7db99327",
     "src/memory/extensions/loader.py": "c5e6e5b147c76408511ef5795b6a83179c192a5e",
     "src/memory/extensions/migrations.py": "37757faf4f572c9acefe6786c24c9602c30f446e",

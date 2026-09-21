@@ -43,7 +43,6 @@ import {
   exposeClaudeRuntimeSkills,
   installExtension,
   loadRuntimeCatalog,
-  type RegisterValidator,
   renderInstallReport,
   renderUninstallReport,
   syncExtensionsForRuntime,
@@ -53,6 +52,10 @@ import {
   type ExtensionDispatch,
   extensionNotInstalled,
   installedExtensionDir,
+  noRuntimeRefusal,
+  readDeclaredCommands,
+  readSubcommandListing,
+  renderSubcommandListing,
 } from "./dispatch.ts";
 import { ExtensionValidationError } from "./errors.ts";
 
@@ -100,17 +103,6 @@ export interface CatalogContext {
 export interface ExtWriteContext extends CatalogContext {
   readonly db: WritableDatabase;
   readonly deps: BindingDeps;
-}
-
-/**
- * The catalog WRITE half. It adds one capability the others do not need:
- * validating an installed command-skill's `register(api)`, which still runs
- * through the temporary Python host and so must be injected rather than
- * reached for -- a write context assembled without it cannot silently skip
- * the check and report a successful install of a broken extension.
- */
-export interface CatalogWriteContext extends ExtWriteContext {
-  readonly validateRegister: RegisterValidator;
 }
 
 const BUILTIN_VERBS = new Set(["bind", "unbind", "bindings", "migrate"]);
@@ -195,11 +187,11 @@ function expandHomePath(path: string): string {
   return path;
 }
 
-function writeContext(context: CatalogContext, command: string): CatalogWriteContext {
-  if (!isWriteContext(context) || !("validateRegister" in context)) {
+function writeContext(context: CatalogContext, command: string): ExtWriteContext {
+  if (!isWriteContext(context)) {
     throw new UnsupportedCatalogCommandError(`extensions ${command} needs a write context`);
   }
-  return context as CatalogWriteContext;
+  return context;
 }
 
 /**
@@ -244,7 +236,6 @@ export function runExtensionsCommand(
           runtime: options.runtime,
           db: write.db,
           deps: write.deps,
-          validateRegister: write.validateRegister,
         }),
       ),
     );
@@ -421,10 +412,26 @@ function isWriteContext(context: CatalogContext): context is ExtWriteContext {
 }
 
 /**
- * The installed check `_dispatch_subcommand` runs before loading anything.
+ * Decide what `ext <id> [subcommand]` does, without running anything.
  *
- * The refusal prints the path Python BUILT, not the path it would resolve --
+ * The installed check `_dispatch_subcommand` ran before loading anything, and
+ * its refusal prints the path Python BUILT, not the path it would resolve --
  * see `installedExtensionDir` for why that distinction is observable.
+ *
+ * After CV22.DS10.TS2 there are five outcomes and only the last one is a
+ * process:
+ *
+ *   1. not installed              -> Python's byte-identical refusal
+ *   2. a help spelling            -> the manifest-rendered listing
+ *   3. a name the manifest does not document -> unknown + the listing
+ *   4. documented, no runtime     -> the refusal, on stderr, exit 1
+ *   5. documented with a runtime  -> an `ExtensionDispatch` for the caller
+ *                                    that is allowed to spawn
+ *
+ * Cases 3 and 4 are deliberately distinct. "I have never heard of that" and
+ * "that exists but has not been migrated" are different problems with
+ * different fixes, and collapsing them would send a user editing the wrong
+ * file.
  */
 function dispatchOrNotInstalled(
   mirrorHome: string,
@@ -434,6 +441,22 @@ function dispatchOrNotInstalled(
 ): RenderedCommand | ExtensionDispatch {
   const extensionRoot = installedExtensionDir(mirrorHome, extensionId);
   if (!existsSync(extensionRoot)) return extensionNotInstalled(mirrorHome, extensionId);
+
+  const entries = readSubcommandListing(extensionRoot);
+  if (HELP_FLAGS.has(subcommand)) return out(renderSubcommandListing(extensionId, entries));
+
+  const documented = entries.find((entry) => entry.name === subcommand);
+  if (documented === undefined) {
+    return out(
+      `unknown subcommand '${subcommand}' for extension/${extensionId}\n` +
+        renderSubcommandListing(extensionId, entries),
+      1,
+    );
+  }
+  const declared = readDeclaredCommands(extensionRoot).find((entry) => entry.name === subcommand);
+  if (declared === undefined) {
+    return { stdout: "", stderr: noRuntimeRefusal(extensionId, subcommand), exitCode: 1 };
+  }
   return {
     kind: "extension-subcommand",
     extensionId,
@@ -441,6 +464,7 @@ function dispatchOrNotInstalled(
     argv: [...argv],
     mirrorHome,
     extensionRoot,
+    command: declared.command,
   };
 }
 

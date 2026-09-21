@@ -98,10 +98,15 @@ still needs the embedding replay.
 
 CV22.DS7.TS2 keeps matching extension bindings on the TS route. Capabilities declare a
 no-shell `mirror-context-v1` process command; TS owns selection, ordering, bounded
-execution, and rendering. Existing Python-only providers run through the explicitly
-temporary `memory.extensions.compat_host`, which invokes one provider rather than the
-complete Mirror command. CV22.DS10 must remove that host before Python retirement/npm
-publication. See [CV22.DS7.TS2](../docs/project/roadmap/cv22-typescript-core-port/cv22-ds7-command-burn-down/cv22-ds7-ts2-extension-context-provider-runtime-convergence/index.md).
+execution, and rendering. Extension subcommands declare `mirror-cli-v1` the same way.
+
+**CV22.DS10.TS2 removed the Python compatibility bridge.** A capability that declares no
+runtime no longer falls back to anything: a context provider is skipped with a
+`no_provider_runtime` diagnostic and the load continues, and a subcommand refuses with one
+line naming the fix. Extensions may still own any executable runtime, Python included —
+what ended is the *core* owning Python as their permanent compatibility layer. See
+[CV22.DS10.TS2](../docs/project/roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-ts2-extension-compatibility-host-deletion/index.md)
+and the cutoff in [pending-cutoffs](../docs/releases/pending-cutoffs.md).
 
 ## Layout
 

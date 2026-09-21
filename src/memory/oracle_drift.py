@@ -158,15 +158,16 @@ ORACLE_PATHS: tuple[str, ...] = (
     # (argv splitting, the built-in verbs, the help guard, the installed check);
     # `cli/inspect.py` carries `cmd_list`/`cmd_inspect`, whose catalog targets
     # and ledger targets are BOTH ported with two different refusal classes;
-    # `cli/identity_cmd.py` is the editor seam; and `extensions/compat_host.py`
-    # is the temporary bridge that runs an extension's registered handler and
-    # validates its `register(api)` at install time. `cli/extensions.py`,
+    # `cli/identity_cmd.py` is the editor seam. `cli/extensions.py`,
     # `extensions/api.py`, `extensions/loader.py`, `extensions/migrations.py`,
     # and `services/conversation.py` are already tracked above.
+    #
+    # `extensions/compat_host.py` was tracked here until CV22.DS10.TS2 deleted
+    # it. Nothing replaced it in Python: the declared-runtime protocols made
+    # the bridge unnecessary, so there is no oracle left to drift against.
     "src/memory/cli/ext.py",
     "src/memory/cli/inspect.py",
     "src/memory/cli/identity_cmd.py",
-    "src/memory/extensions/compat_host.py",
     # DS7.US6 plateau 1: the Soul Mode surfaces. `transport=verbatim` cards
     # ported whole (ts/src/soul/render.ts), including the wrapping helpers whose
     # code-point and whitespace semantics the golden pins.

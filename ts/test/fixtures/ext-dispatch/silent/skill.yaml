@@ -2,7 +2,7 @@ id: silent
 name: Silent Extension
 category: extension
 kind: command-skill
-summary: A valid command-skill that registers no CLI subcommand at all
+summary: A valid command-skill that documents no CLI subcommand at all
 table_prefix: ext_silent_
 
 entrypoint:

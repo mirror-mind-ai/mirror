@@ -129,6 +129,44 @@ RETIRED: tuple[RetiredSurface, ...] = (
         ),
         exemptions={},
     ),
+    RetiredSurface(
+        surface_id="compat-host",
+        story="CV22.DS10.TS2",
+        # Gate items 2 and 5 in one mechanical place: item 2 asks that the
+        # packaged artifact carry no core-owned Python extension bridge, and
+        # item 5 that every retained provider and command enter through a
+        # declared language-neutral runtime. Both reduce to the same claim --
+        # the host and every launcher branch for it are gone -- and this check
+        # runs over the tracked file set the package is built from.
+        absent_paths=(
+            "src/memory/extensions/compat_host.py",
+            "tests/unit/memory/extensions/test_compat_host.py",
+            "ts/parity/generate_ext_dispatch_golden.py",
+            "ts/test/fixtures/ext-dispatch.golden.json",
+        ),
+        forbidden_patterns=(
+            r"compat_host",
+            r"compat-host",
+            # The launcher seams, not only the module. The TS1 lesson: residue
+            # hides in the names of the things that CALLED the deleted code,
+            # which is the one place the deletion diff cannot show it.
+            r"validate_register",
+            r"validateExtensionRegister",
+            r"legacyCommand",
+            r"legacyCwd",
+            r"hostCommand",
+            r"spawnHost",
+        ),
+        exemptions={
+            "src/memory/oracle_drift.py": (
+                "a comment recording that the bridge was tracked here until TS2 deleted it"
+            ),
+            "ts/test/extensions/dispatch.test.ts": (
+                "the file that REPLACED the host's parity corpus, and whose header records "
+                "what each retired group of cases proved -- the disposition itself"
+            ),
+        },
+    ),
 )
 
 

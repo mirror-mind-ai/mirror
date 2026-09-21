@@ -7,11 +7,17 @@
 //     splitting, the built-in verbs, the help guard, the installed check, and
 //     the exit code. That half lives in `catalogCommands.ts` and produces the
 //     `ExtensionDispatch` DECISION below, without running anything.
-//   * Execution is this module. A subcommand whose extension declares a
-//     language-neutral command runtime is executed directly; anything else
-//     reaches the `cli` mode of the existing `memory.extensions.compat_host`
-//     -- a second request kind of TS2's host, never a second host, under
-//     DS10's single deletion gate.
+//   * Execution is this module.
+//
+// CV22.DS10.TS2 closed that gate. The Python compatibility host is deleted, so
+// the ONLY thing this module executes is a subcommand whose extension declares
+// a language-neutral `mirror-cli-v1` runtime. Everything else -- the listing,
+// an unknown subcommand, a subcommand documented without a runtime -- is now a
+// DECISION rendered as bytes in `catalogCommands.ts`, with no process at all.
+// `readSubcommandListing` and `renderSubcommandListing` therefore live here,
+// beside the manifest reader they share, but are called from the decision
+// layer: parsing the manifest is this module's knowledge; choosing what to
+// print is not.
 //
 // TWO measured facts shape this file, both recorded in the golden:
 //
@@ -41,19 +47,8 @@ import { tablePrefixFor } from "./migrations.ts";
 
 export const MIRROR_CLI_PROTOCOL = "mirror-cli-v1";
 
-/** The host's own id rule (`compat_host._EXTENSION_ID`). */
+/** The extension id rule, unchanged since the catalog defined it. */
 const EXTENSION_ID = /^[a-z][a-z0-9-]*$/;
-
-/** The three spellings `_dispatch_subcommand` treats as the listing request. */
-const HELP_SUBCOMMANDS = new Set(["--help", "-h", "help"]);
-
-const DEFAULT_HOST_COMMAND = [
-  "uv",
-  "run",
-  "python",
-  "-m",
-  "memory.extensions.compat_host",
-] as const;
 
 /** Generous but finite, like the front door's Python fallback. */
 const DEFAULT_TIMEOUT_MS = 10 * 60 * 1000;
@@ -72,27 +67,37 @@ export interface ExtensionDispatch {
   argv: readonly string[];
   mirrorHome: string;
   extensionRoot: string;
-}
-
-export interface ExtensionSubcommandRequest {
-  protocol: typeof MIRROR_CLI_PROTOCOL;
-  extension_id: string;
-  subcommand: string;
-  argv: readonly string[];
-  mirror_home: string;
-  extension_root: string;
-  database_path: string;
+  /**
+   * The declared command to run, resolved by the decision layer.
+   *
+   * Carried on the decision rather than re-read here: deciding that this
+   * subcommand was executable at all already required parsing the manifest,
+   * and reading it twice is how two layers drift.
+   */
+  command: readonly string[];
 }
 
 export interface DispatchOptions {
   databasePath: string;
-  hostCommand?: readonly string[];
-  hostCwd?: string;
   environment?: NodeJS.ProcessEnv;
   timeoutMs?: number;
   /** Injected so tests can assert what would be spawned without spawning. */
   spawn?: typeof spawnSync;
   onError?: (message: string) => void;
+}
+
+/**
+ * One `cli.subcommands[]` entry as the listing needs it.
+ *
+ * `hasRuntime` is the migration state made visible: an entry the manifest
+ * documents but declares no runtime for is listed, flagged, and refused --
+ * never silently absent, which would read as "the extension lost a command"
+ * rather than "this command needs migrating".
+ */
+export interface SubcommandEntry {
+  name: string;
+  summary: string;
+  hasRuntime: boolean;
 }
 
 /**
@@ -245,160 +250,123 @@ export function isExtensionDispatch(value: unknown): value is ExtensionDispatch 
   );
 }
 
-export function buildSubcommandRequest(
-  dispatch: ExtensionDispatch,
-  databasePath: string,
-): ExtensionSubcommandRequest {
-  return {
-    protocol: MIRROR_CLI_PROTOCOL,
-    extension_id: dispatch.extensionId,
-    subcommand: dispatch.subcommand,
-    argv: [...dispatch.argv],
-    mirror_home: dispatch.mirrorHome,
-    extension_root: dispatch.extensionRoot,
-    database_path: databasePath,
-  };
-}
-
 /**
- * Execute one extension subcommand and return its exit code.
+ * Every documented subcommand, declared or not, in manifest order.
  *
- * Refuses an id the host would refuse, BEFORE spawning: the installed check
- * has already passed at this point, so an id that cannot be a legal extension
- * id can only be a traversal attempt at a real directory. Python answers those
- * with a manifest traceback; TypeScript answers with one line on stderr at the
- * same exit code -- the recorded divergence class for this family.
+ * Tolerant for the same reason `readDeclaredCommands` is: a manifest problem
+ * must never turn a listing into a refusal. An unreadable or shapeless
+ * manifest simply has no subcommands to list.
  */
-/**
- * Ask the host to load an installed command-skill and call `register(api)`.
- *
- * The one thing `extensions install` still cannot do without an interpreter.
- * Migrations are the TypeScript port's; this is the entrypoint import, and it
- * has to happen at install time for the reason Python does it there: an
- * extension whose `register` raises must fail the INSTALL, not the first
- * command someone runs a week later.
- *
- * A mode of the same `mirror-cli-v1` request kind, not a new protocol and not
- * a second host -- it dies with the rest of the bridge at DS10. Unlike a
- * dispatch, streams are captured: a registration is not a command, so its
- * output is diagnostics rather than product.
- */
-export function validateExtensionRegister(
-  extensionId: string,
-  mirrorHome: string,
-  extensionRoot: string,
-  options: DispatchOptions,
-): { ok: true } | { ok: false; message: string } {
-  const command = options.hostCommand ?? DEFAULT_HOST_COMMAND;
-  const spawn = options.spawn ?? spawnSync;
-  const request = {
-    protocol: MIRROR_CLI_PROTOCOL,
-    mode: "validate_register",
-    extension_id: extensionId,
-    argv: [],
-    mirror_home: mirrorHome,
-    extension_root: extensionRoot,
-    database_path: options.databasePath,
-  };
-  const result = spawn(command[0] as string, command.slice(1), {
-    cwd: options.hostCwd ?? process.cwd(),
-    env: options.environment ?? process.env,
-    encoding: "utf8",
-    input: `${JSON.stringify(request)}\n`,
-    timeout: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-    windowsHide: true,
-    shell: false,
-  });
-  if (result.error) {
-    return {
-      ok: false,
-      message: `register(api) could not be validated for extension/${extensionId}: the Python host could not be started`,
-    };
+export function readSubcommandListing(extensionRoot: string): SubcommandEntry[] {
+  let parsed: unknown;
+  try {
+    parsed = parse(readFileSync(join(extensionRoot, "skill.yaml"), "utf8"));
+  } catch {
+    return [];
   }
-  if (result.status === 0) return { ok: true };
-  const reported = String(result.stderr ?? "")
-    .trimEnd()
-    .split("\n")
-    .at(-1);
-  return {
-    ok: false,
-    message: reported || `register(api) failed for extension/${extensionId}`,
-  };
+  if (!isRecord(parsed) || !isRecord(parsed.cli)) return [];
+  const subcommands = parsed.cli.subcommands;
+  if (!Array.isArray(subcommands)) return [];
+  const declared = new Set(readDeclaredCommands(extensionRoot).map((entry) => entry.name));
+  const entries: SubcommandEntry[] = [];
+  const seen = new Set<string>();
+  for (const entry of subcommands) {
+    if (!isRecord(entry) || typeof entry.name !== "string" || entry.name.length === 0) continue;
+    if (seen.has(entry.name)) continue;
+    seen.add(entry.name);
+    entries.push({
+      name: entry.name,
+      summary: typeof entry.summary === "string" ? entry.summary : "",
+      hasRuntime: declared.has(entry.name),
+    });
+  }
+  return entries;
 }
 
-function spawnHost(
-  dispatch: ExtensionDispatch,
-  options: DispatchOptions,
-  spawn: typeof spawnSync,
-): ReturnType<typeof spawnSync> {
-  const command = options.hostCommand ?? DEFAULT_HOST_COMMAND;
-  return spawn(command[0] as string, command.slice(1), {
-    cwd: options.hostCwd ?? process.cwd(),
-    env: options.environment ?? process.env,
-    input: `${JSON.stringify(buildSubcommandRequest(dispatch, options.databasePath))}\n`,
-    // stdin is the request pipe; stdout and stderr are the user's.
-    stdio: ["pipe", "inherit", "inherit"],
-    timeout: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-    windowsHide: true,
-    shell: false,
-  });
+/**
+ * The `ext <id>` listing, rendered from the manifest.
+ *
+ * Python rendered this from the LIVE `api.cli_registry`, so a handler
+ * registered but never documented appeared, and a documented-but-unregistered
+ * one did not. With the host gone the manifest is the only source, which makes
+ * this TypeScript's surface from here on -- a recorded divergence, not a
+ * parity failure. Sorted by name, as Python sorted its registry, so the bytes
+ * stay stable across manifest reordering.
+ */
+export function renderSubcommandListing(extensionId: string, entries: SubcommandEntry[]): string {
+  const lines = [`=== subcommands of extension/${extensionId} ===`];
+  if (entries.length === 0) {
+    lines.push("  (none declared)");
+    return `${lines.join("\n")}\n`;
+  }
+  const sorted = [...entries].sort((left, right) => (left.name < right.name ? -1 : 1));
+  for (const entry of sorted) {
+    const summary = entry.summary ? ` — ${entry.summary}` : "";
+    const flag = entry.hasRuntime ? "" : "  (no runtime declared)";
+    lines.push(`  ${entry.name}${summary}${flag}`);
+  }
+  return `${lines.join("\n")}\n`;
 }
 
+/**
+ * What a documented subcommand with no declared runtime says now.
+ *
+ * One line naming the extension, the subcommand, and the fix. No traceback, no
+ * spawn, no partial output: the command did not run, and the message says why
+ * in the vocabulary of the thing the user has to change.
+ */
+export function noRuntimeRefusal(extensionId: string, subcommand: string): string {
+  return (
+    `Mirror: extension/${extensionId} declares no runtime for '${subcommand}'. ` +
+    `The Python compatibility host was retired — declare ` +
+    `cli.subcommands[].runtime (${MIRROR_CLI_PROTOCOL}) in skill.yaml. ` +
+    `See docs/releases/pending-cutoffs.md.\n`
+  );
+}
+
+/**
+ * Execute one DECLARED extension subcommand and return its exit code.
+ *
+ * Every other outcome was decided before this is called, so there is exactly
+ * one process here and one way to fail to start it. Refuses an id that cannot
+ * be a legal extension id BEFORE spawning: the installed check has already
+ * passed, so such an id can only be a traversal attempt at a real directory.
+ */
 export function runExtensionSubcommand(
   dispatch: ExtensionDispatch,
   options: DispatchOptions,
 ): number {
   const report = options.onError ?? ((message: string) => process.stderr.write(`${message}\n`));
   if (!EXTENSION_ID.test(dispatch.extensionId)) {
-    report(`Mirror TS front door: '${dispatch.extensionId}' is not a valid extension id.`);
+    report(`Mirror: '${dispatch.extensionId}' is not a valid extension id.`);
     return 1;
   }
   if (!existsSync(dispatch.extensionRoot)) return 1;
 
-  // The listing stays with the host even for a declared extension: Python
-  // answers it from the live `api.cli_registry`, and a manifest-rendered
-  // listing would disagree with it for any extension that registers a
-  // subcommand it never declared. DS10 owns the post-retirement listing.
-  const declared = HELP_SUBCOMMANDS.has(dispatch.subcommand)
-    ? undefined
-    : readDeclaredCommands(dispatch.extensionRoot).find(
-        (candidate) => candidate.name === dispatch.subcommand,
-      );
-
+  const [executable, ...head] = dispatch.command;
   const spawn = options.spawn ?? spawnSync;
-  const result = declared
-    ? spawn(declared.command[0] as string, [...declared.command.slice(1), ...dispatch.argv], {
-        cwd: dispatch.extensionRoot,
-        env: declaredEnvironment(dispatch, options),
-        // All three streams are the user's: a declared command may read stdin,
-        // which is precisely what the legacy bridge cannot allow.
-        stdio: "inherit",
-        timeout: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-        windowsHide: true,
-        shell: false,
-      })
-    : spawnHost(dispatch, options, spawn);
-  if (result.error && declared) {
-    report(
-      `Mirror TS front door: extension/${dispatch.extensionId} declares a command for ` +
-        `'${dispatch.subcommand}' that could not be started: ${result.error.message}`,
-    );
-    return 1;
-  }
+  const result = spawn(executable as string, [...head, ...dispatch.argv], {
+    cwd: dispatch.extensionRoot,
+    env: declaredEnvironment(dispatch, options),
+    // All three streams are the user's: a declared command may read stdin,
+    // which is precisely what the retired bridge could never allow.
+    stdio: "inherit",
+    timeout: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+    windowsHide: true,
+    shell: false,
+  });
   if (result.error) {
     const code = (result.error as NodeJS.ErrnoException).code;
-    if (code === "ENOENT") {
+    if (code === "ETIMEDOUT") {
       report(
-        "Mirror TS front door: could not spawn `uv` — extension subcommands still need " +
-          "Python until their extension declares a command runtime.",
-      );
-    } else if (code === "ETIMEDOUT") {
-      report(
-        `Mirror TS front door: extension subcommand timed out after ` +
+        `Mirror: extension/${dispatch.extensionId} '${dispatch.subcommand}' timed out after ` +
           `${options.timeoutMs ?? DEFAULT_TIMEOUT_MS}ms.`,
       );
     } else {
-      report(`Mirror TS front door: extension subcommand failed to run: ${result.error.message}`);
+      report(
+        `Mirror: extension/${dispatch.extensionId} declares a command for ` +
+          `'${dispatch.subcommand}' that could not be started: ${result.error.message}`,
+      );
     }
     return 1;
   }

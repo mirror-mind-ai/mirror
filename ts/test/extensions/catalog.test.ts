@@ -157,11 +157,19 @@ test("a write verb that passes its refusals fails loudly instead of printing not
     // `ext <id> <subcommand>` stopped throwing at plateau 4: it now DECIDES,
     // and the decision is executed by a caller allowed to spawn. Deciding is
     // still not executing -- nothing here loads extension code.
+    //
+    // After CV22.DS10.TS2 `ext-beta` reaches the OTHER decision: it documents
+    // no `cli.subcommands[]`, so `echo` is a name the manifest has never heard
+    // of. Before the deletion this was still a dispatch, because only the
+    // Python host could know whether `register(api)` had added it.
     const decision = runExtCommand(context, ["ext-beta", "echo", "--loud"]);
-    assert.ok(isExtensionDispatch(decision));
-    assert.deepEqual(
-      { subcommand: decision.subcommand, argv: decision.argv },
-      { subcommand: "echo", argv: ["--loud"] },
+    assert.equal(isExtensionDispatch(decision), false);
+    const rendered = decision as { stdout: string; stderr: string; exitCode: number };
+    assert.equal(rendered.exitCode, 1);
+    assert.match(rendered.stdout, /^unknown subcommand 'echo' for extension\/ext-beta\n/);
+    assert.match(
+      rendered.stdout,
+      /=== subcommands of extension\/ext-beta ===\n {2}\(none declared\)/,
     );
   });
 });

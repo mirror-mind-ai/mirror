@@ -18,9 +18,10 @@ runtimes:
 # entries that already existed here, so an extension keeps ONE list of its
 # subcommands instead of a declared list and a documented list that can drift.
 #
-# Every entry below has a Python twin in `extension.py` printing the same
-# bytes, which is what lets a single golden recorded from Python grade the
-# TypeScript contract path as well.
+# The Python twins are gone with CV22.DS10.TS2: there is no second engine to
+# agree with, so these entries are graded directly. `legacy` and `broken` kept
+# their names and lost their fallback -- both now refuse, which is the
+# inversion the deletion causes.
 cli:
   subcommands:
     - name: greet
@@ -34,9 +35,9 @@ cli:
         protocol: mirror-cli-v1
         command: [node, commands/fail.mjs]
     - name: legacy
-      summary: Declared with no runtime, so the host answers it
+      summary: Declared with no runtime, so it refuses
     - name: broken
-      summary: A malformed declaration falls back to the host, never executes
+      summary: A malformed declaration is treated as undeclared, and refuses
       runtime:
         protocol: mirror-cli-v1
         command: []

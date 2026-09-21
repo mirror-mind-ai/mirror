@@ -2,9 +2,12 @@ id: tools
 name: Dispatch Tools
 category: extension
 kind: command-skill
-summary: Fixture extension whose handlers pin every `ext <id> <subcommand>` outcome
+summary: Fixture extension whose commands pin every `ext <id> <subcommand>` outcome
 table_prefix: ext_tools_
 
+# `entrypoint` survives CV22.DS10.TS2 as a tolerated legacy field: the manifest
+# validator is a byte-for-byte port graded by `extensions list`, so removing the
+# requirement is a separate change. Nothing loads it any more.
 entrypoint:
   module: extension
   function: register
@@ -13,3 +16,46 @@ runtimes:
   pi:
     command_name: ext-tools
     skill_file: SKILL.md
+
+# PARTIALLY MIGRATED ON PURPOSE.
+#
+# `legacy` is documented and declares no runtime; every other entry declares
+# one. That is the state an extension passes through while migrating one
+# capability at a time, and it is the state most likely to be wrong: the
+# listing must flag exactly one entry, dispatch must refuse exactly one, and
+# the declared siblings must keep working throughout.
+#
+# `bare` has no summary, which pins the listing's name-only line.
+cli:
+  subcommands:
+    - name: echo
+      summary: Print the argv it received
+      runtime:
+        protocol: mirror-cli-v1
+        command: [node, commands/echo.mjs]
+    - name: fail
+      summary: Exit with code 3
+      runtime:
+        protocol: mirror-cli-v1
+        command: [node, commands/fail.mjs]
+    - name: streams
+      summary: Write to stdout and to stderr
+      runtime:
+        protocol: mirror-cli-v1
+        command: [node, commands/streams.mjs]
+    - name: write
+      summary: Insert a row in its own table
+      runtime:
+        protocol: mirror-cli-v1
+        command: [node, commands/write.mjs]
+    - name: shell
+      summary: Any executable runtime, not only Node
+      runtime:
+        protocol: mirror-cli-v1
+        command: [sh, commands/shell.sh]
+    - name: bare
+      runtime:
+        protocol: mirror-cli-v1
+        command: [node, commands/bare.mjs]
+    - name: legacy
+      summary: Documented but never migrated, so it refuses

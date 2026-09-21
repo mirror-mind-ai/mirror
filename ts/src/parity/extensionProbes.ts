@@ -144,7 +144,6 @@ export function extensionInstallProbe(
   nowIso: string,
   home: string,
   homeDatabase: WritableDatabase,
-  validateRegister: (extensionId: string, extensionDir: string) => void,
 ): WriteProbe {
   return {
     label,
@@ -163,7 +162,6 @@ export function extensionInstallProbe(
         runtime: null,
         db,
         deps: { nowIso: () => frozen },
-        validateRegister,
       });
       const migrations = db
         .prepare(

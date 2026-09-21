@@ -29,12 +29,11 @@ import test from "node:test";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import type { WritableDatabase } from "#db/database.ts";
 import {
-  type CatalogWriteContext,
+  type ExtWriteContext,
   runExtensionsCommand,
   UnsupportedCatalogCommandError,
 } from "#extensions/catalogCommands.ts";
 import { filesystemSkillDirName } from "#extensions/catalogWrites.ts";
-import { validateExtensionRegister } from "#extensions/dispatch.ts";
 
 interface GoldenCase {
   label: string;
@@ -61,7 +60,6 @@ const golden = JSON.parse(
 ) as { timestamp_token: string; cases: GoldenCase[] };
 
 const FIXTURES = new URL("../fixtures/ext-catalog-writes", import.meta.url).pathname;
-const REPO_ROOT = dirname(dirname(dirname(dirname(new URL(import.meta.url).pathname))));
 const TOKEN = golden.timestamp_token;
 
 interface World {
@@ -105,38 +103,15 @@ function closeWorld(world: World): void {
   rmSync(world.root, { recursive: true, force: true });
 }
 
-function hostEnvironment(world: World): NodeJS.ProcessEnv {
-  const environment: NodeJS.ProcessEnv = {};
-  for (const [key, value] of Object.entries(process.env)) {
-    if (key.startsWith("MIRROR_TS_")) continue;
-    if (key === "MIRROR_HOME" || key === "MIRROR_USER" || key === "DB_PATH") continue;
-    environment[key] = value;
-  }
-  environment.MIRROR_HOME = world.home;
-  environment.MEMORY_ENV = "test";
-  environment.PYTHONIOENCODING = "utf-8";
-  return environment;
-}
-
-function contextFor(world: World): CatalogWriteContext {
+function contextFor(world: World): ExtWriteContext {
   return {
     mirrorHome: world.home,
     db: world.db,
     // The clock seam: the catalog carries `generated_at`, tokenised in the
     // golden, so the replay freezes it to the token's own shape.
     deps: { nowIso: () => "2026-09-16T12:00:00.000000+00:00" },
-    validateRegister: (extensionId, extensionDir) => {
-      const outcome = validateExtensionRegister(extensionId, world.home, extensionDir, {
-        databasePath: world.dbPath,
-        hostCwd: REPO_ROOT,
-        environment: hostEnvironment(world),
-      });
-      if (!outcome.ok) throw new RegisterValidationFailed(outcome.message);
-    },
   };
 }
-
-class RegisterValidationFailed extends Error {}
 
 function redact(text: string, world: World): string {
   // Longest first, the way the generator redacts: the target root and the
@@ -157,17 +132,39 @@ function digest(path: string): string {
   return createHash("sha256").update(readFileSync(path)).digest("hex").slice(0, 16);
 }
 
+/**
+ * The recorded oracle, minus what only a Python process at install time leaves.
+ *
+ * Applied to the RECORDED side so the divergence is stated once, in one place,
+ * instead of being quietly absorbed by a looser comparison.
+ */
+function withoutPythonProcessArtifacts(recorded: Record<string, unknown>): Record<string, unknown> {
+  const kept: Record<string, unknown> = {};
+  for (const [path, value] of Object.entries(recorded)) {
+    if (path.split("/").includes("__pycache__")) continue;
+    if (path.endsWith(".bootstrap.lock")) continue;
+    kept[path] = value;
+  }
+  return kept;
+}
+
 function tree(root: string, world: World): Record<string, unknown> {
   if (!existsSyncSafe(root)) return {};
   const files: Record<string, unknown> = {};
   for (const path of walk(root)) {
     const relativePath = relative(root, path);
     const parts = relativePath.split(sep);
-    const cacheIndex = parts.indexOf("__pycache__");
-    if (cacheIndex >= 0) {
-      files[[...parts.slice(0, cacheIndex), "__pycache__"].join("/")] = "<python bytecode cache>";
-      continue;
-    }
+    // CV22.DS10.TS2 divergence, deliberate and one-directional: these two are
+    // artifacts of a PYTHON PROCESS running at install time. Python's
+    // `_post_install_command_skill` imports the extension (leaving
+    // `__pycache__`) through a host that opens the database (leaving the
+    // bootstrap lock). TypeScript imports nothing now, so it produces neither,
+    // and the recorded oracle will always disagree here. Dropped from the
+    // comparison rather than re-recorded, because Python cannot stop producing
+    // them while it still owns its own install path. Their ABSENCE is asserted
+    // positively below -- it is the cleanest proof the bridge is gone.
+    if (parts.includes("__pycache__")) continue;
+    if (relativePath.endsWith(".bootstrap.lock")) continue;
     const key = parts.join("/");
     if (path.endsWith("extensions.json") || path.endsWith("extensions.external.json")) {
       files[key] = { text: redact(readFileSync(path, "utf8"), world) };
@@ -243,19 +240,12 @@ function answer(world: World, argv: readonly string[]) {
       .replace("<TARGET>", world.target)
       .replace("<PROJECT>", world.project),
   );
-  try {
-    const rendered = runExtensionsCommand(contextFor(world), resolved);
-    return {
-      stdout: redact(rendered.stdout, world),
-      stderr: redact(rendered.stderr, world),
-      exitCode: rendered.exitCode,
-    };
-  } catch (error) {
-    if (error instanceof RegisterValidationFailed) {
-      return { stdout: "", stderr: redact(`${error.message}\n`, world), exitCode: 1 };
-    }
-    throw error;
-  }
+  const rendered = runExtensionsCommand(contextFor(world), resolved);
+  return {
+    stdout: redact(rendered.stdout, world),
+    stderr: redact(rendered.stderr, world),
+    exitCode: rendered.exitCode,
+  };
 }
 
 test("every recorded catalog write matches Python, on disk and in the database", (t) => {
@@ -297,7 +287,11 @@ test("every recorded catalog write matches Python, on disk and in the database",
         );
       }
 
-      assert.deepEqual(tree(replay.home, replay), recorded.home, `${recorded.label} (home tree)`);
+      assert.deepEqual(
+        tree(replay.home, replay),
+        withoutPythonProcessArtifacts(recorded.home),
+        `${recorded.label} (home tree)`,
+      );
       assert.deepEqual(
         tree(replay.target, replay),
         recorded.target,
@@ -312,6 +306,29 @@ test("every recorded catalog write matches Python, on disk and in the database",
     }
   } finally {
     closeWorld(replay);
+  }
+});
+
+test("install runs no Python, and leaves nothing behind that would prove otherwise", () => {
+  const world = makeWorld();
+  try {
+    const outcome = answer(world, ["install", "notes", "--extensions-root", "<SRC>"]);
+    assert.equal(outcome.exitCode, 0);
+
+    // The two artifacts a Python install leaves. Their absence is the assertion:
+    // `__pycache__` requires an import, the bootstrap lock requires a Python
+    // process opening the database, and CV22.DS10.TS2 removed the only code
+    // path that did either.
+    const paths = Object.keys(tree(world.home, world));
+    assert.deepEqual(
+      paths.filter((path) => path.includes("__pycache__") || path.endsWith(".bootstrap.lock")),
+      [],
+    );
+    // ...and the install still did its real work.
+    assert.ok(paths.includes("extensions/notes/skill.yaml"));
+    assert.ok(paths.some((path) => path.startsWith("runtime/skills/pi/")));
+  } finally {
+    closeWorld(world);
   }
 });
 
@@ -356,13 +373,6 @@ test("the corpus grades the facts a reading of the code would not give", () => {
     [],
   );
   assert.ok(noisy.includes("extensions/noisy/src/helper.py"));
-  // The `__pycache__` that IS there was not copied: it is what the post-install
-  // import left behind, which is why the tree carries a marker rather than
-  // interpreter-specific bytes.
-  assert.equal(
-    at("install_refuses_to_copy_caches_and_vcs").home["extensions/noisy/__pycache__"],
-    "<python bytecode cache>",
-  );
 
   // D4: a full uninstall removes the code and the bindings, and KEEPS the data.
   const uninstalled = at("uninstall_removes_the_source_and_bindings");

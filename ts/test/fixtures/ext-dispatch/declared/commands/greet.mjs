@@ -1,6 +1,6 @@
-// Declared `mirror-cli-v1` command. The Python twin in `extension.py` prints
-// the same bytes; the golden is recorded from Python and replayed through this
-// file, so any drift between the two fails the corpus.
+// Declared `mirror-cli-v1` command. Its Python twin was deleted with the
+// compatibility host in CV22.DS10.TS2 -- there is no second engine left to
+// agree with, so this file is graded directly.
 //
 // Context arrives in the environment (never on stdin — stdin belongs to the
 // user) and the user's argv is appended to the declared command verbatim.

@@ -25,7 +25,7 @@ import type { BindingDeps } from "#extensions/bindings.ts";
 import type { RenderedCommand } from "#extensions/catalog.ts";
 import {
   type CatalogContext,
-  type CatalogWriteContext,
+  type ExtWriteContext,
   runExtCommand,
   runExtensionsCommand,
   runInspectCommand,
@@ -36,7 +36,6 @@ import {
   type ExtensionDispatch,
   isExtensionDispatch,
   runExtensionSubcommand,
-  validateExtensionRegister,
 } from "#extensions/dispatch.ts";
 import { listJourneysForListCommand } from "#identity/journeyListing.ts";
 import { listPersonas } from "#identity/personaListing.ts";
@@ -62,9 +61,6 @@ export interface ExtensionRouteDeps {
   withWritableDatabase: (
     run: (db: WritableDatabase) => Promise<number> | number,
   ) => Promise<number>;
-  /** Injected so tests can drive the host without spawning a real one. */
-  hostCommand?: readonly string[];
-  hostCwd?: string;
   environment?: NodeJS.ProcessEnv;
 }
 
@@ -82,7 +78,6 @@ const EXT_READ_VERBS = new Set(["bindings"]);
 const EXT_HELP_HEADS = new Set(["list", "--help", "-h", "help"]);
 
 /** A failed `register(api)` during install: Python's traceback, one TS line. */
-export class RegisterValidationFailed extends Error {}
 
 function emit(rendered: RenderedCommand): number {
   if (rendered.stdout) process.stdout.write(rendered.stdout);
@@ -148,30 +143,15 @@ function readContextFor(route: ExtensionRouteDeps): CatalogContext {
   return { mirrorHome: route.mirrorHome };
 }
 
-function hostOptions(route: ExtensionRouteDeps) {
+function dispatchOptions(route: ExtensionRouteDeps) {
   return {
     databasePath: route.databasePath,
-    ...(route.hostCommand ? { hostCommand: route.hostCommand } : {}),
-    ...(route.hostCwd ? { hostCwd: route.hostCwd } : {}),
     ...(route.environment ? { environment: route.environment } : {}),
   };
 }
 
-function writeContextFor(route: ExtensionRouteDeps, db: WritableDatabase): CatalogWriteContext {
-  return {
-    mirrorHome: route.mirrorHome,
-    db,
-    deps: route.deps,
-    validateRegister: (extensionId, extensionDir) => {
-      const outcome = validateExtensionRegister(
-        extensionId,
-        route.mirrorHome,
-        extensionDir,
-        hostOptions(route),
-      );
-      if (!outcome.ok) throw new RegisterValidationFailed(outcome.message);
-    },
-  };
+function writeContextFor(route: ExtensionRouteDeps, db: WritableDatabase): ExtWriteContext {
+  return { mirrorHome: route.mirrorHome, db, deps: route.deps };
 }
 
 export async function runExtensionCatalogRoute(
@@ -182,32 +162,26 @@ export async function runExtensionCatalogRoute(
   const args = argv.slice(1);
   const detail = `leaf=${leafFor(argv)}`;
 
-  try {
-    if (command === "extensions") {
-      const verb = firstPositional(args) ?? "list";
-      if (!EXTENSIONS_WRITE_VERBS.has(verb)) {
-        return { exitCode: emit(runExtensionsCommand(readContextFor(route), args)), detail };
-      }
-      const exitCode = await route.withWritableDatabase((db) =>
-        emit(runExtensionsCommand(writeContextFor(route, db), args)),
-      );
-      return { exitCode, detail };
+  // No translation layer here any more: `install` no longer imports extension
+  // code, so the one failure class this route used to catch -- a `register(api)`
+  // raising inside the Python host -- cannot occur. Manifest and migration
+  // failures keep the paths they already had.
+  if (command === "extensions") {
+    const verb = firstPositional(args) ?? "list";
+    if (!EXTENSIONS_WRITE_VERBS.has(verb)) {
+      return { exitCode: emit(runExtensionsCommand(readContextFor(route), args)), detail };
     }
-
-    if (command === "inspect") return { exitCode: runInspect(args, route), detail };
-    if (command === "list") return { exitCode: runList(args, route), detail };
-    if (command === "ext") return { exitCode: await runExt(argv, route), detail };
-
-    throw new UnsupportedCatalogCommandError(`extension catalog route: ${command}`);
-  } catch (error) {
-    if (error instanceof RegisterValidationFailed) {
-      // Python lets `ExtensionValidationError` escape `cmd_extensions` as a
-      // traceback: same exit code, same stream, one line.
-      process.stderr.write(`${error.message}\n`);
-      return { exitCode: 1, detail: `${detail} error=register_failed` };
-    }
-    throw error;
+    const exitCode = await route.withWritableDatabase((db) =>
+      emit(runExtensionsCommand(writeContextFor(route, db), args)),
+    );
+    return { exitCode, detail };
   }
+
+  if (command === "inspect") return { exitCode: runInspect(args, route), detail };
+  if (command === "list") return { exitCode: runList(args, route), detail };
+  if (command === "ext") return { exitCode: await runExt(argv, route), detail };
+
+  throw new UnsupportedCatalogCommandError(`extension catalog route: ${command}`);
 }
 
 /**
@@ -274,5 +248,5 @@ async function runExt(argv: readonly string[], route: ExtensionRouteDeps): Promi
 
   const answer = runExtCommand(readContextFor(route), argv.slice(1));
   if (!isExtensionDispatch(answer)) return emit(answer);
-  return runExtensionSubcommand(answer as ExtensionDispatch, hostOptions(route));
+  return runExtensionSubcommand(answer as ExtensionDispatch, dispatchOptions(route));
 }

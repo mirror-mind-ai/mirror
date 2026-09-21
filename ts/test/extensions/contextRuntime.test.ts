@@ -186,9 +186,13 @@ process.stdout.write(JSON.stringify({protocol: request.protocol, text: "wrote"})
   }
 });
 
-test("legacy descriptors use the compatibility command without changing the protocol", () => {
+test("a provider with no declared runtime fails soft, and says so", () => {
   const ws = workspace();
   try {
+    // Until CV22.DS10.TS2 this descriptor reached the Python compatibility
+    // host. With the host deleted there is nothing to reach -- and the
+    // important half of this test is what does NOT happen: the load keeps
+    // going, and every other section survives.
     const extension = join(ws.root, "extensions", "legacy");
     mkdirSync(extension);
     writeFileSync(
@@ -197,23 +201,68 @@ test("legacy descriptors use the compatibility command without changing the prot
         "entrypoint:\n  module: extension\nruntimes:\n  pi:\n    command_name: ext-legacy\n" +
         "mirror_context_providers:\n  - id: context\n    description: fixture\n",
     );
-    writeFileSync(join(extension, "extension.py"), "def register(api):\n    pass\n");
-    const host = join(ws.root, "legacy-host.mjs");
-    writeFileSync(
-      host,
-      `let input = ""; for await (const chunk of process.stdin) input += chunk;
-const request = JSON.parse(input);
-process.stdout.write(JSON.stringify({protocol: request.protocol, text: "legacy:" + request.capability_id}));`,
-    );
     bind(ws.db, "legacy", "context", "journey", "mirror-ts-core");
     const result = collectExtensionContext(ws.db, {
       mirrorHome: ws.root,
       databasePath: ws.dbPath,
       journeyId: "mirror-ts-core",
-      legacyCommand: [process.execPath, host],
     });
-    assert.equal(result.rendered, "=== extension/legacy/context ===\nlegacy:context");
+
+    assert.deepEqual(result.sections, [], "the unmigrated capability contributes nothing");
+    assert.deepEqual(
+      result.diagnostics,
+      [{ kind: "no_provider_runtime" }],
+      "and it is reported, not swallowed: a section going dark must be visible",
+    );
+    assert.equal(result.rendered, "");
     assert.equal(MIRROR_CONTEXT_PROTOCOL, "mirror-context-v1");
+  } finally {
+    ws.db.close();
+    ws.cleanup();
+  }
+});
+
+test("one unmigrated provider does not cost the whole load", () => {
+  const ws = workspace();
+  try {
+    // The fail-SOFT half, stated on its own because it is the property the
+    // Navigator actually feels: a half-migrated extension set must still
+    // produce every section that can still be produced.
+    const unmigrated = join(ws.root, "extensions", "legacy");
+    mkdirSync(unmigrated);
+    writeFileSync(
+      join(unmigrated, "skill.yaml"),
+      "id: legacy\nname: Legacy\ncategory: extension\nkind: command-skill\nsummary: fixture\n" +
+        "entrypoint:\n  module: extension\nruntimes:\n  pi:\n    command_name: ext-legacy\n" +
+        "mirror_context_providers:\n  - id: context\n    description: fixture\n",
+    );
+    const working = join(ws.root, "extensions", "native");
+    mkdirSync(working);
+    const provider = join(working, "provider.mjs");
+    writeFileSync(
+      provider,
+      `let input = ""; for await (const chunk of process.stdin) input += chunk;
+const request = JSON.parse(input);
+process.stdout.write(JSON.stringify({protocol: request.protocol, text: "native:" + request.capability_id}));`,
+    );
+    writeFileSync(
+      join(working, "skill.yaml"),
+      "id: native\nname: Native\ncategory: extension\nkind: command-skill\nsummary: fixture\n" +
+        "entrypoint:\n  module: extension\nruntimes:\n  pi:\n    command_name: ext-native\n" +
+        "mirror_context_providers:\n  - id: context\n    description: fixture\n" +
+        "    provider_runtime:\n      protocol: mirror-context-v1\n" +
+        "      command: [node, provider.mjs]\n",
+    );
+    bind(ws.db, "legacy", "context", "journey", "mirror-ts-core");
+    bind(ws.db, "native", "context", "journey", "mirror-ts-core");
+
+    const result = collectExtensionContext(ws.db, {
+      mirrorHome: ws.root,
+      databasePath: ws.dbPath,
+      journeyId: "mirror-ts-core",
+    });
+    assert.equal(result.rendered, "=== extension/native/context ===\nnative:context");
+    assert.deepEqual(result.diagnostics, [{ kind: "no_provider_runtime" }]);
   } finally {
     ws.db.close();
     ws.cleanup();

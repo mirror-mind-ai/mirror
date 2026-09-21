@@ -15,7 +15,6 @@ import { assertCopyTarget } from "#db/copyGuard.ts";
 import { openDatabaseCopyForWrite } from "#db/database.ts";
 import { assertFtsIntegrity } from "#db/ftsIntegrity.ts";
 import { ensureMigratedOnOpen } from "#db/migrateOnOpen.ts";
-import { validateExtensionRegister } from "#extensions/dispatch.ts";
 import { updateIdentityMetadata } from "#identity/identityStore.ts";
 import { setIdentity } from "#identity/setIdentity.ts";
 import { createJourney, setProjectPath } from "#journey/journeyWrite.ts";
@@ -447,19 +446,16 @@ function buildWriteProbe(fixture: WriteProbeFixture, tsCopyPath: string): WriteP
       const homeDatabasePath = join(home, fixture.extension_install.database_name);
       copyFileSync(tsCopyPath, homeDatabasePath);
       const homeDatabase = openDatabaseCopyForWrite(homeDatabasePath);
+      // No register-validation step: CV22.DS10.TS2 removed the import of
+      // extension code at install time, on BOTH engines' side of this probe.
+      // What the probe grades -- migration rows, extension tables, catalog
+      // writes -- is untouched by that removal.
       return extensionInstallProbe(
         fixture.label,
         fixture.extension_install,
         fixture.now_iso,
         home,
         homeDatabase,
-        (extensionId, extensionDir) => {
-          const outcome = validateExtensionRegister(extensionId, home, extensionDir, {
-            databasePath: homeDatabasePath,
-            hostCwd: process.cwd(),
-          });
-          if (!outcome.ok) throw new Error(outcome.message);
-        },
       );
     }
     case "builder_artifacts":

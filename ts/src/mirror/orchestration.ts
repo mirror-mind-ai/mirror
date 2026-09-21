@@ -51,7 +51,7 @@ export interface MirrorLoadInput {
   user?: string;
   extensionRuntime?: Pick<
     CollectExtensionContextOptions,
-    "timeoutMs" | "maxOutputBytes" | "legacyCommand" | "legacyCwd" | "environment"
+    "timeoutMs" | "maxOutputBytes" | "environment"
   >;
   newId: () => string;
   nowIso: () => string;

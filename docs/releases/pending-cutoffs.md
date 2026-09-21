@@ -74,6 +74,67 @@ your home on your behalf. Remove it yourself whenever you like, or leave it.
 
 ---
 
-<!-- CV22.DS10.TS2 (extension compat host), TS3 (eval harness), US2 (npm-era
-     updater), TS4 (unported surfaces), TS5 (Python deletion), and US3 (npm
-     distribution) add their cutoffs here. -->
+## The extension compatibility host, and `register(api)` as a core-served contract
+
+**Story:** [CV22.DS10.TS2](../project/roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-ts2-extension-compatibility-host-deletion/index.md)
+
+**Removed.** `memory.extensions.compat_host` and every launcher branch that reached it.
+The host was the bridge that let an extension's Python `register(api)` handlers keep
+answering after extension dispatch moved to TypeScript. It ran context providers, ran
+`ext <id> <subcommand>`, and imported an extension at install time to validate its
+`register`. All three are gone.
+
+**This does not mean extensions must be written in JavaScript.** An extension may own
+**any** executable runtime, Python very much included. What ended is the *Mirror core*
+owning Python as every extension's permanent compatibility layer.
+
+**What to do instead.** Declare a runtime per capability in `skill.yaml`. Migration is
+per capability, not per extension — an extension can move one command at a time, and the
+migrated ones keep working while the rest have not moved yet:
+
+```yaml
+mirror_context_providers:
+  - id: campaign_status
+    provider_runtime:
+      protocol: mirror-context-v1
+      command: [node, context-provider.mjs]   # or [python3, provider.py]
+
+cli:
+  subcommands:
+    - name: campaigns
+      runtime:
+        protocol: mirror-cli-v1
+        command: [python3, cli.py, campaigns]  # or any executable runtime
+```
+
+The command must resolve **inside** the installed extension directory. A manifest that
+reaches outside its own tree is not a contract.
+
+**What a capability that has not migrated does now.** It fails explicitly, and it fails
+soft:
+
+- a **context provider** with no `provider_runtime` is skipped, `mirror load` completes
+  with every other section intact, and a `no_provider_runtime` warning names what went
+  dark;
+- a **subcommand** with no runtime refuses with one line naming the extension, the
+  subcommand, and the fix — no traceback, no partial output, exit 1;
+- `ext <id>` still **lists** it, flagged `(no runtime declared)`, so a command that needs
+  migrating never looks like a command that disappeared;
+- `extensions install` still **succeeds**, and warns which capabilities declare no
+  runtime. A skill-only or half-migrated extension is legal.
+
+**What still works.** Every extension that declares a runtime. Every non-extension
+command, every runtime, every mode. If none of your extensions registered Python
+handlers, nothing about your Mirror changes.
+
+**Install no longer imports your extension.** `register(api)` used to be called at install
+time so a broken extension failed the install rather than the first command a week later.
+With no interpreter in the core, install validates what the manifest *declares* instead.
+The practical difference: a runtime that is declared but cannot start is now reported when
+you run the command, not when you install it.
+
+---
+
+<!-- CV22.DS10.TS3 (eval harness), US2 (npm-era updater), TS4 (unported
+     surfaces), TS5 (Python deletion), and US3 (npm distribution) add their
+     cutoffs here. -->

@@ -37,6 +37,16 @@ export type ExtensionContextDiagnosticKind =
   | "missing_extension"
   | "invalid_manifest"
   | "unknown_capability"
+  /**
+   * The capability exists and is bound, but declares no `provider_runtime`.
+   *
+   * Before CV22.DS10.TS2 this case silently reached the Python compatibility
+   * host. With the host deleted there is nothing to reach, and the failure is
+   * SOFT on purpose: one missing provider must not cost the Navigator the
+   * whole `mirror load`. It is reported rather than swallowed so the section
+   * going dark is visible as a migration state, not as an empty context.
+   */
+  | "no_provider_runtime"
   | "provider_failed"
   | "provider_timeout"
   | "invalid_output";
@@ -54,8 +64,6 @@ export interface CollectExtensionContextOptions {
   query?: string | null;
   timeoutMs?: number;
   maxOutputBytes?: number;
-  legacyCommand?: readonly string[];
-  legacyCwd?: string;
   environment?: NodeJS.ProcessEnv;
 }
 
@@ -169,21 +177,16 @@ export function collectExtensionContext(
       binding_kind: binding.targetKind,
       binding_target: binding.targetId,
     };
-    const invocation = capability.providerRuntime
-      ? { command: capability.providerRuntime.command, cwd: extensionRoot }
-      : {
-          command: [
-            ...(options.legacyCommand ?? [
-              "uv",
-              "run",
-              "python",
-              "-m",
-              "memory.extensions.compat_host",
-            ]),
-          ],
-          cwd: options.legacyCwd ?? process.cwd(),
-        };
-    const outcome = invokeProvider(invocation.command, invocation.cwd, request, options);
+    if (!capability.providerRuntime) {
+      diagnostics.push({ kind: "no_provider_runtime" });
+      continue;
+    }
+    const outcome = invokeProvider(
+      capability.providerRuntime.command,
+      extensionRoot,
+      request,
+      options,
+    );
     if (outcome.diagnostic) {
       diagnostics.push({ kind: outcome.diagnostic });
       continue;
@@ -198,6 +201,24 @@ export function collectExtensionContext(
     });
   }
   return { sections, rendered: renderExtensionSections(sections), diagnostics };
+}
+
+/**
+ * Bound capability ids that declare no `provider_runtime`, for `install` to
+ * report.
+ *
+ * Tolerant like every other manifest read on this path: a manifest that cannot
+ * be parsed has nothing to report here, and `install` already refuses it
+ * through the validator that owns that judgment.
+ */
+export function readProvidersWithoutRuntime(extensionRoot: string): string[] {
+  try {
+    return readContextManifest(extensionRoot)
+      .capabilities.filter((capability) => capability.providerRuntime === null)
+      .map((capability) => capability.id);
+  } catch {
+    return [];
+  }
 }
 
 function readContextManifest(extensionRoot: string): ExtensionManifest {

@@ -174,7 +174,7 @@ test("front door mirror load query uses scrubbed reception and embedding replay 
   }
 });
 
-test("matching native and legacy extension providers stay on the TS mirror route", () => {
+test("a declared provider still renders while an unmigrated one fails soft and is reported", () => {
   const ws = mirrorDbCopy();
   try {
     const mirrorHome = join(ws.dbPath, "..");
@@ -215,14 +215,9 @@ test("matching native and legacy extension providers stay on the TS mirror route
         "entrypoint:\n  module: extension\nruntimes:\n  pi:\n    command_name: ext-legacy\n" +
         "mirror_context_providers:\n  - id: context\n    description: fixture\n",
     );
-    writeFileSync(
-      join(legacy, "extension.py"),
-      "def register(api):\n    api.register_mirror_context('context', _provide)\n" +
-        "def _provide(api, request):\n" +
-        "    api.execute(\"INSERT INTO ext_legacy_calls (value) VALUES ('called')\")\n" +
-        "    api.commit()\n" +
-        "    return 'legacy private context'\n",
-    );
+    // No `extension.py` any more, and no `provider_runtime` either: after
+    // CV22.DS10.TS2 this is simply an unmigrated capability, and the point of
+    // the fixture is what it does to the OTHER providers -- nothing.
     const db = openDatabaseCopyForWrite(ws.dbPath);
     db.exec("CREATE TABLE ext_legacy_calls (value TEXT NOT NULL)");
     db.prepare(
@@ -247,12 +242,18 @@ test("matching native and legacy extension providers stay on the TS mirror route
       "--db-path",
       ws.dbPath,
     ]);
+    // FAIL SOFT, end to end: one unmigrated provider and one broken provider,
+    // and the load still exits 0 with every section that can still be built.
     assert.equal(load.status, 0, load.stderr);
-    assert.match(
+    assert.match(load.stdout, /=== extension\/native\/context ===\nnative private context/);
+    assert.doesNotMatch(
       load.stdout,
-      /=== extension\/legacy\/context ===\nlegacy private context\n\n=== extension\/native\/context ===\nnative private context/,
+      /extension\/legacy\/context/,
+      "an unmigrated provider contributes no section",
     );
     assert.equal([...load.stdout.matchAll(/=== extension\/native\/context ===/g)].length, 1);
+    // FAIL EXPLICIT: going dark is reported, never silent.
+    assert.match(load.stderr, /warning: extension context no_provider_runtime; continuing/);
     assert.match(load.stderr, /warning: extension context invalid_output; continuing/);
     assert.doesNotMatch(load.stderr, /private provider stderr/);
     const log = readFileSync(join(mirrorHome, "front-door.log"), "utf8");
@@ -261,8 +262,12 @@ test("matching native and legacy extension providers stay on the TS mirror route
       log,
       /legacy private|native private|private provider stderr|mirror-ts-core/,
     );
+    // The row the retired host used to write on this path. An unmigrated
+    // provider does not run, so it cannot write -- and proving the table is
+    // still empty is how we know the capability went dark rather than
+    // half-executing.
     const after = openDatabaseReadOnly(ws.dbPath);
-    assert.equal(after.prepare("SELECT COUNT(*) AS count FROM ext_legacy_calls").get()?.count, 1);
+    assert.equal(after.prepare("SELECT COUNT(*) AS count FROM ext_legacy_calls").get()?.count, 0);
     after.close();
   } finally {
     ws.cleanup();
