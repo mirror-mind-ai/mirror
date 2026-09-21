@@ -2,8 +2,9 @@
 
 # CV22.DS10.US1 — Web console retirement
 
-**Status:** 🟢 In Progress — pulled 2026-09-19, authored from the gate and a code inventory
-the same day
+**Status:** ✅ **Done — 2026-09-19.** `python -m memory web` no longer exists; the console,
+its six web-only read models, and the scene surface it alone rendered are deleted — 5,480
+lines across three layers, two of which the gate never named. Navigator validation accepted
 **Type:** User Story
 **Depends on:** the [2026-09-17 decision](../../../../decisions.md#the-web-console-is-retired-not-ported-and-ds7-closes-at-1414)
 that retired the console rather than porting it, which closed DS7 at 14/14 and moved the
@@ -150,3 +151,35 @@ Navigator-visible route plus automated checks:
    decisions, debt, and release notes.
 4. A Mirror session on Pi behaves identically — the console was never in that path, and
    this proves it.
+
+## Outcome
+
+Done 2026-09-19. Four commits: `5e9b9d2a` (the process, and the check that proves it stays
+gone), `48101788` (the read models and the scene surface), `8013db74` (docs and cutoff),
+plus closure.
+
+**The check found a defect before it was committed.** `check_retired_surfaces.py` was
+written first and run against the tree as it stood; besides failing on the console as
+intended, it reported that TS1 had left `journey_projections/schema_documents/*.json` in
+`pyproject.toml`'s package-data — a packaging reference to a directory deleted the day
+before. Harmless and invisible, and exactly the residue a large deletion leaves. It is now
+in CI beside the oracle-drift tripwire, with a row per retired surface, so TS2, TS3, and
+TS4 inherit the mechanism rather than writing three more scripts.
+
+**Validation:** 2467 Python and 2372 TypeScript tests green; `web` exits 1 with no help
+row; a real Pi session unchanged; `preferences.json` untouched. `eval --all` ran with the
+denominator at eleven, `scene` absent, no import error — and every surviving module scored
+**identically to the 2026-09-13 baseline, probe for probe**. The suite's one failure is
+`routing`, which is D-005 and reproduced its recorded failures by name.
+
+**Debt:** deferred to TS3, which owns the eval harness — the disposition of
+`eval-history/scene.jsonl` (six runs of a retired module, including D-017's evidence) and
+the fact that `routing` is now the sole red. Neither is a defect this story introduced.
+**CR090** was captured during the story's own Debt Review: the `DEBT_REVIEW_STARTED`
+surface mixes Portuguese into an English sentence, in both engines, faithfully ported.
+
+**What the deletion taught.** Two eval lists behaved differently and the difference was
+the point: capability-based discovery dropped `scene` for free, while the contract test
+whose docstring says adding an eval "must consciously join the release gate" forced the
+*shrinking* denominator to be a decision someone wrote down. A gate that only notices
+growth is half a gate.

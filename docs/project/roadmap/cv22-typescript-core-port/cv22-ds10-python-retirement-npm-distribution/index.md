@@ -2,7 +2,7 @@
 
 # CV22.DS10 — Python Retirement And npm Distribution
 
-**Status:** 🟢 In Progress — pulled 2026-09-19 with eight approved child stories (1/8; TS1 done 2026-09-19)
+**Status:** 🟢 In Progress — pulled 2026-09-19 with eight approved child stories (2/8; TS1 and US1 done 2026-09-19)
 **Type:** Delivery Story
 **Depends on:** CV22.DS7 command burn-down (done 2026-09-17, 14/14 — its Workspace/web
 hierarchy rider was retired unported); CV22.DS8 live-provider cutover (done); CV22.DS9 TS
@@ -257,8 +257,15 @@ Before Python retirement or npm publication, DS10 must:
    retirement (failing since v0.31.0 on the stale persona fixtures of
    [D-005](../../../debt.md#d-005--evalsroutingpy-fixtures-are-stale-against-the-current-persona-catalog),
    and TypeScript has deterministic `detect-persona` goldens from DS2),
-   `scene` follows this story's web cutover, and `retrieval` may duplicate
-   `ts/test/search/ranker.test.ts`;
+   **`scene` was retired on 2026-09-19 with the web console** (US1) — the surface
+   it graded reached users only through that process, so the disposition is
+   settled and the denominator is eleven; and `retrieval` may duplicate
+   `ts/test/search/ranker.test.ts`. One question US1 surfaced and left here:
+   `eval-history/scene.jsonl` keeps six runs of a module that no longer exists,
+   including the run that produced D-017's evidence. Decide whether history
+   follows the harness to `ts/evals/`, stays behind as a record, or is dropped —
+   deleting a module did not delete its measurements, and nothing has decided
+   what should;
 4. **make injection-resistance probes individually blocking rather than
    averaged into a module score**
    ([D-017](../../../debt.md#d-017--injection-resistance-probes-are-averaged-into-a-module-score)).

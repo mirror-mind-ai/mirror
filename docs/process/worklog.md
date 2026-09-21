@@ -12,6 +12,63 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-19 — CV22.DS10.US1: the web console is gone, and so is the reading only it could show
+
+DS10's second story. `python -m memory web` no longer exists — 5,480 lines across
+three layers, and only the first was named in the gate.
+
+**The gate named one layer; the inventory found three.** Gate item 2 is a check, so
+it ran at Pull rather than at implementation: nothing outside `src/memory/web/`
+depended on the console, with one dispatch test to update. Then the importer map
+showed that six of the nine `surfaces/` modules — atlas, workspace, evidence,
+objects, models, search — had zero non-web importers, and that `SurfaceService`
+composed exactly those six, so the facade would have survived over nothing. Below
+that sat `intelligence/scene.py`: an LLM-composed reading of a journey's state with
+one production caller, `web/server.py`. DS8.TS1 had already written down that scene
+"reaches users only through the web process this Delivery Story cuts over". With the
+console gone it had no delivery path in any runtime.
+
+So the scene eval retired with the surface it graded, resolving a disposition the
+DS10 eval gate had left open for TS3 rather than deferring it a third time. Keeping
+`workspace.py` alive to feed an eval of a feature no user can reach would have
+preserved a measurement of nothing.
+
+**A deletion has no test of its own, so this story wrote one — and it found a defect
+before it was committed.** `check_retired_surfaces.py` holds a table of the surfaces
+DS10 retires and asserts each stayed absent from the tracked tree with no residue
+outside the documents whose job is to record the retirement. Run against the tree as
+it stood, it failed on the console as intended *and* reported that TS1 had left
+`journey_projections/schema_documents/*.json` in `pyproject.toml`'s package-data — a
+packaging reference to a directory deleted the day before. Harmless, invisible, and
+precisely the residue a 5,500-line deletion leaves behind. It is now in CI next to
+the oracle-drift tripwire: drift catches a Python oracle changing under the port,
+this catches a deleted surface coming back or never fully leaving.
+
+**Two eval lists behaved differently, and the difference is the lesson.**
+`discover_eval_names()` is capability-based and dropped `scene` for free. Two
+hand-maintained lists did not — including the contract test whose docstring says
+adding an eval "must consciously join the release gate". It works in both
+directions, and made the shrinking denominator a decision someone had to write down
+instead of a module quietly vanishing. A gate that only notices growth is half a
+gate.
+
+Validation: 2467 Python and 2372 TypeScript tests green; `web` exits 1 with no help
+row; a real Pi session unchanged; `<mirror-home>/web/preferences.json` untouched,
+because Mirror does not delete state from a user's home on their behalf. `eval --all`
+ran at eleven modules with scene absent and no import error, and **every surviving
+module scored identically to the 2026-09-13 baseline, probe for probe** — the
+deletion perturbed nothing. The suite's one failure is `routing`, carried debt D-005
+since v0.31.0, reproducing its recorded failures by name.
+
+Debt deferred to TS3, which owns the harness: what becomes of `eval-history/scene.jsonl`
+(six runs of a retired module, including D-017's evidence), and the fact that
+`routing` is now the sole red — a single-failure suite invites the wrong repair.
+**CR090** captured during this story's own Debt Review: the `DEBT_REVIEW_STARTED`
+surface mixes Portuguese into an English sentence, in both engines, faithfully ported
+from Python.
+
+**DS10 is 2/8.** Next: TS2, the extension compatibility-host deletion.
+
 ### 2026-09-19 — CV22.DS10.TS1: the TypeScript core stops calling Python, by deleting what it called
 
 DS10's first story closed the same day it was pulled, twice over: pulled as a

@@ -41,3 +41,4 @@ cannot choose safely.
 - [CR067 — Render the refused checkpoint, not a hardcoded Implement stage](cr067-render-the-refused-checkpoint-not-a-hardcoded-implement-stage.md)
 - [CR079 — Preserve authored content in every lifecycle artifact, not one at a time](cr079-preserve-authored-content-in-every-lifecycle-artifact.md)
 - [CR082 — Plan and Expand surfaces print absolute filesystem paths where their artifact surface prints project-relative ones](cr082-lifecycle-surfaces-print-absolute-paths.md)
+- [CR090 — The Debt Review surface mixes Portuguese into an English sentence](cr090-debt-review-surface-mixes-portuguese-into-english.md)

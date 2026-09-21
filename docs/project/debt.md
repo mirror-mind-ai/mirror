@@ -213,8 +213,16 @@ module is the obvious retirement rather than a port
 ([CV22.DS8.TS1 decision](decisions.md#the-eval-harness-transfers-to-typescript-as-a-ds10-gate-not-a-ds8-port)):
 TypeScript has deterministic `detect-persona` goldens from CV22.DS2, so paying
 the fixture debt to port a live probe that duplicates them would be the
-expensive answer. That disposition belongs to the DS10 harness story, which
-must decide it explicitly.
+expensive answer. That disposition belongs to **CV22.DS10.TS3**, the harness
+story, which must decide it explicitly.
+
+**Now the only red (CV22.DS10.US1, 2026-09-19).** `scene` retired with the web
+console, so the suite is eleven modules and `routing` is the sole reason
+`eval --all` reports `SUITE FAIL` — 11/15 against a 0.85 threshold, reproducing
+the three failures recorded above by name. Nothing changed about the debt; the
+denominator shrank around it. Worth stating because a single-failure suite
+invites the wrong repair: raising the threshold or dropping the module to get a
+green light, rather than deciding whether the module should exist.
 
 ### Closure condition
 
