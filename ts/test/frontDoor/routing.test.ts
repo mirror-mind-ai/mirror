@@ -49,9 +49,10 @@ test("both consult leaves are live by default, each with its own fixture require
 });
 
 test("keeps unported commands on Python fallback", () => {
-  // `build` left this list in CV22.DS7.US8; only its Workbench leaves remain.
+  // `build` left this list in CV22.DS7.US8; its Workbench leaves left it in
+  // CV22.DS10.TS4, which retired them (see retiredSurfaces.test.ts).
   assert.equal(routeMemoryCommand(["build", "load", "mirror-ts-core"]).engine, "ts");
-  assert.equal(routeMemoryCommand(["build", "change-request", "capture"]).engine, "python");
+  assert.equal(routeMemoryCommand(["build", "change-request", "capture"]).engine, "retired");
   assert.equal(routeMemoryCommand(["conversation-logger", "extract-pending"]).engine, "python");
   // `journal` left this list in CV22.DS8.US3; it is live by default now.
   assert.equal(routeMemoryCommand(["journal", "hello"]).engine, "ts");
@@ -176,9 +177,10 @@ test("routes `conversations` listing and the two lifecycle READ faces to TS", ()
       flag,
     );
   }
-  // The backfills are still refused BY NAME: DS10 retires them unported.
+  // The backfills were refused BY NAME to Python; CV22.DS10.TS4 deleted them,
+  // so the same names are now retired.
   for (const flag of ["--metadata-backfill-preview", "--metadata-backfill-apply"]) {
-    assert.equal(routeMemoryCommand(["conversations", flag, "x"], {}).engine, "python", flag);
+    assert.equal(routeMemoryCommand(["conversations", flag, "x"], {}).engine, "retired", flag);
   }
 });
 
@@ -874,11 +876,19 @@ test("lifecycle WRITE flags are their own leaves, named in both directions", () 
 });
 
 test("backfill flags are refused by name and name DS10", () => {
-  const gate = { MIRROR_TS_CONVERSATIONS_LIFECYCLE: "1" };
-  for (const flag of ["--metadata-backfill-preview", "--metadata-backfill-apply"]) {
-    const decision = routeMemoryCommand(["conversations", flag, "x"], gate);
-    assert.equal(decision.engine, "python");
-    assert.match(decision.reason, /DS10/);
+  // The lifecycle gate is irrelevant to them: they are retired either way,
+  // which is the property that stops a gate flip from resurrecting a deleted
+  // write path.
+  for (const gate of [
+    {},
+    { MIRROR_TS_CONVERSATIONS_LIFECYCLE: "1" },
+    { MIRROR_TS_CONVERSATIONS_LIFECYCLE: "0" },
+  ]) {
+    for (const flag of ["--metadata-backfill-preview", "--metadata-backfill-apply"]) {
+      const decision = routeMemoryCommand(["conversations", flag, "x"], gate);
+      assert.equal(decision.engine, "retired");
+      assert.match(decision.reason, /CV22\.DS10\.TS4/);
+    }
   }
 });
 

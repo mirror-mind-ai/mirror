@@ -152,7 +152,7 @@ import {
   renderTasksSyncOutcome,
 } from "./render/tasksImportSync.ts";
 import { renderWeekView } from "./render/week.ts";
-import { type FrontDoorEngine, routeMemoryCommand } from "./routing.ts";
+import { type FrontDoorEngine, retiredRefusal, routeMemoryCommand } from "./routing.ts";
 import { runRuntimeReadRoute, runWelcomeRoute } from "./runtimeRoute.ts";
 import { runMemorySearchRoute } from "./searchRoute.ts";
 import { resolveSeedPaths } from "./seedPaths.ts";
@@ -1746,6 +1746,23 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
   }
   const decision = routeMemoryCommand(argv);
   const logPath = resolveLogPath(argv);
+  // CV22.DS10.TS4: a surface this migration removed answers here, before any
+  // dispatch -- so nothing is spawned, no database is opened, and NO STDIN IS
+  // READ. `journey mutate` took JSON on stdin; refusing before the read is what
+  // makes the refusal immediate instead of a hang, and what keeps the caller's
+  // payload out of this process entirely.
+  if (decision.engine === "retired") {
+    process.stderr.write(retiredRefusal(decision));
+    logFrontDoor(logPath, {
+      command: decision.command,
+      route: "retired",
+      exitCode: 1,
+      // Metadata only, and constant per entry: the anchor names the cutoff,
+      // never the arguments the caller passed to the removed command.
+      detail: `cutoff=${decision.anchor}`,
+    });
+    return 1;
+  }
   try {
     const outcome = await dispatch(argv, decision.engine);
     logFrontDoor(logPath, {

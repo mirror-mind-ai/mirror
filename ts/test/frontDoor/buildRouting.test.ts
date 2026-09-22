@@ -46,14 +46,17 @@ test("unknown and bare Builder subcommands are refused by name", () => {
   }
 });
 
-test("all twenty legacy Workbench leaves remain on Python with the DS10 reason", () => {
+test("all twenty legacy Workbench leaves are retired, not routed", () => {
+  // CV22.DS10.TS4 flipped these from `python` to `retired`: US8 refused them by
+  // name to an engine that still answered them; TS4 deleted the engine behind
+  // them, so the front door now says removed and names the cutoff.
   assert.equal(TS_BUILD_WORKBENCH_ACTIONS["refinement-story"].size, 7);
   assert.equal(TS_BUILD_WORKBENCH_ACTIONS["change-request"].size, 13);
   for (const [group, actions] of Object.entries(TS_BUILD_WORKBENCH_ACTIONS)) {
     for (const action of actions) {
       const decision = routeMemoryCommand(["build", group, action], ON);
-      assert.equal(decision.engine, "python", `${group} ${action}`);
-      assert.match(decision.reason, /retires unported in DS10/);
+      assert.equal(decision.engine, "retired", `${group} ${action}`);
+      assert.equal(decision.engine === "retired" && decision.anchor, "sqlite-refinement-workbench");
     }
   }
 });

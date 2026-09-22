@@ -21,11 +21,42 @@ import { DS10_RUNTIME_SUBCOMMANDS, TS_RUNTIME_READ_SUBCOMMANDS } from "./runtime
 
 export type FrontDoorEngine = "ts" | "python";
 
-export interface RouteDecision {
-  command: string | null;
-  engine: FrontDoorEngine;
-  reason: string;
+/**
+ * A surface CV22.DS10 removed rather than ported.
+ *
+ * Until TS4 a retired name was simply unclaimed: it fell through to Python,
+ * which answered `Unknown command: <name>` with its usage block. That answer
+ * belongs to the engine TS5 deletes, and it names commands DS10 has already
+ * removed. These entries let the front door say *removed* itself, in one line,
+ * pointing at the cutoff that explains what to do instead.
+ *
+ * `matches` reads argv by NAME. Nothing here is matched by inheritance: a verb
+ * a retired family never had keeps its family's existing answer (the CR055
+ * lesson `conversations append` paid for).
+ */
+export interface RetiredSurface {
+  /** The shape as a user types it, e.g. `journey export-registry`. */
+  readonly surface: string;
+  /** Heading anchor in `docs/releases/pending-cutoffs.md`. A CONSTANT. */
+  readonly anchor: string;
+  readonly matches: (argv: readonly string[]) => boolean;
 }
+
+export type RouteDecision =
+  | {
+      command: string | null;
+      engine: FrontDoorEngine;
+      reason: string;
+    }
+  | {
+      command: string | null;
+      engine: "retired";
+      reason: string;
+      /** The retired shape, from the matched entry -- never from argv. */
+      surface: string;
+      /** The cutoff anchor, from the matched entry -- never from argv. */
+      anchor: string;
+    };
 
 const TS_READ_COMMANDS = new Set(["detect-persona", "journeys"]);
 
@@ -160,6 +191,80 @@ export const TS_BUILD_WORKBENCH_ACTIONS = {
     "promote",
   ]),
 } as const;
+
+/**
+ * The surfaces CV22.DS10.TS4 removed, each with the cutoff that explains it.
+ *
+ * A LIST OF PREDICATES, not a map keyed by command: the six shapes are four
+ * different matchers (whole command; command + verb; command + flag; command +
+ * subcommand + verb), and a map would push those differences into ad-hoc string
+ * checks inside `routeMemoryCommand`.
+ *
+ * The surfaces TS1, US1, and TS3 retired are deliberately NOT here. Their
+ * stories are closed, and the post-Python answer for every unclaimed name is
+ * TS5's to shape at once -- adding them now would reopen three done packages
+ * for a cosmetic change. (Naming them here would also trip their own
+ * retired-surface rows, which is the guard working.)
+ */
+export const RETIRED_SURFACES: readonly RetiredSurface[] = [
+  {
+    surface: "migrate-legacy",
+    anchor: "legacy-migration",
+    matches: (argv) => argv[0] === "migrate-legacy",
+  },
+  {
+    surface: "journey export-registry",
+    anchor: "journey-admin-verbs",
+    matches: (argv) => argv[0] === "journey" && argv[1] === "export-registry",
+  },
+  {
+    surface: "journey mutate",
+    anchor: "journey-admin-verbs",
+    matches: (argv) => argv[0] === "journey" && argv[1] === "mutate",
+  },
+  {
+    surface: "conversations --metadata-backfill-preview",
+    anchor: "conversation-metadata-backfill",
+    matches: (argv) => argv[0] === "conversations" && argv.includes(DS10_BACKFILL_FLAGS[0]),
+  },
+  {
+    surface: "conversations --metadata-backfill-apply",
+    anchor: "conversation-metadata-backfill",
+    matches: (argv) => argv[0] === "conversations" && argv.includes(DS10_BACKFILL_FLAGS[1]),
+  },
+  ...(
+    [
+      "refinement-story",
+      "change-request",
+    ] as const satisfies readonly (keyof typeof TS_BUILD_WORKBENCH_ACTIONS)[]
+  ).flatMap((family) =>
+    [...TS_BUILD_WORKBENCH_ACTIONS[family]].map((verb) => ({
+      surface: `build ${family} ${verb}`,
+      anchor: "sqlite-refinement-workbench",
+      matches: (argv: readonly string[]) =>
+        argv[0] === "build" && argv[1] === family && argv[2] === verb,
+    })),
+  ),
+];
+
+/** The matched entry, or `null` when nothing this story retired was named. */
+function retiredSurfaceFor(argv: readonly string[]): RetiredSurface | null {
+  return RETIRED_SURFACES.find((entry) => entry.matches(argv)) ?? null;
+}
+
+/**
+ * The one line a caller sees. No traceback, no usage block, no partial output.
+ *
+ * Every substitution comes from the matched entry, never from argv: a caller
+ * cannot push text into this message, and a path passed to a retired command
+ * cannot reach a terminal, a log, or a screen recording through it.
+ */
+export function retiredRefusal(decision: RouteDecision & { engine: "retired" }): string {
+  return (
+    `Mirror: '${decision.surface}' was removed in the CV22 migration. ` +
+    `See docs/releases/pending-cutoffs.md#${decision.anchor}.\n`
+  );
+}
 
 // A type alias rather than an interface: aliases get an implicit index
 // signature, which is what lets the named variables below still be passed to
@@ -423,6 +528,21 @@ export function routeMemoryCommand(
 ): RouteDecision {
   const command = argv[0] ?? null;
   if (!command) return { command, engine: "python", reason: "no command" };
+
+  // Retired surfaces are matched FIRST, before any family claims the command.
+  // This is what closes CR089: `journey export-registry` and `journey mutate`
+  // can no longer fall into the `journey` status read and be treated as slugs
+  // -- a wrong answer with exit 0 on a read, and a silent no-op on a write.
+  const retired = retiredSurfaceFor(argv);
+  if (retired) {
+    return {
+      command,
+      engine: "retired",
+      reason: `${retired.surface} retired in CV22.DS10.TS4`,
+      surface: retired.surface,
+      anchor: retired.anchor,
+    };
+  }
 
   if (TS_READ_COMMANDS.has(command)) {
     return { command, engine: "ts", reason: "DS2 read command ported to TS" };

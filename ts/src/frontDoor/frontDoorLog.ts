@@ -16,7 +16,13 @@ import { dirname, join } from "node:path";
 
 export interface FrontDoorLogEntry {
   command: string | null;
-  route: "ts" | "python";
+  /**
+   * `retired` (CV22.DS10.TS4) is a route like the other two: the front door
+   * answered, and the answer was that the surface no longer exists. It is
+   * logged so "my command disappeared" stays answerable from the log after the
+   * story that removed it is history.
+   */
+  route: "ts" | "python" | "retired";
   exitCode: number;
   /** A short, content-free note or error category. Never argument values. */
   detail?: string;

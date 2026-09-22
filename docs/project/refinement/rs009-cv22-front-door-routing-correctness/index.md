@@ -41,3 +41,4 @@ inherit a TS route it was never ported into.
 - [CR077 — The route and the runtime disagree on a half-configured replay fixture](cr077-route-and-runtime-disagree-on-a-half-replay-fixture.md)
 - [CR085 — The TypeScript front door does not read the `.env` Python reads](cr085-the-ts-front-door-does-not-read-the-env-python-reads.md)
 - [CR089 — The `journey` route swallows `export-registry` and `mutate` as journey slugs](cr089-the-journey-route-swallows-export-registry-and-mutate.md)
+- [CR095 — `journey <slug>` renders an empty status document, exit 0, for a journey that does not exist — on both engines](cr095-journey-status-renders-an-empty-document-for-an-unknown-slug.md)
