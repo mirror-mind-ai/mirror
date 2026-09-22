@@ -30,7 +30,6 @@ dev = [
 [project.scripts]
 memory-seed = "memory.cli.seed:main"
 memory-backup = "memory.cli.backup:main"
-memory-rehearse-migration = "memory.cli.migration_rehearsal:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

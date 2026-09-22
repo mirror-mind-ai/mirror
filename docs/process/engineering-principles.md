@@ -381,11 +381,15 @@ impossible states at the schema level where SQLite can enforce them
 enforce an invariant, it lives in exactly one storage module — never in "the
 code is expected to remember."
 
-**Migrations are append-only and rehearsed.** Every migration ships with a
-test that proves it against a realistic fixture, including the Portuguese-era
-legacy layout
-([`test_migration_rehearsal`](../../tests/unit/memory/cli/test_migration_rehearsal.py),
-[`test_migrate_legacy`](../../tests/unit/memory/cli/test_migrate_legacy.py)).
+**Migrations are append-only and proven against real end-states.** Every
+migration ships with a test that runs it over a realistic seeded fixture and
+grades the result against the end-state the other engine produces
+([`migrationFixtures.test.ts`](../../ts/test/db/migrationFixtures.test.ts),
+[`migrateOnOpen.test.ts`](../../ts/test/db/migrateOnOpen.test.ts)). The
+Portuguese-era conversion and the Python rehearsal tool that used to carry this
+paragraph were [retired in CV22.DS10.TS4](../releases/pending-cutoffs.md#legacy-migration)
+once migration custody moved to TypeScript: a rehearsal of the Python engine
+stopped saying anything about what would actually run.
 [`runtime diagnose`](../../src/memory/cli/runtime.py) extends the same
 discipline operationally — it detects drift patterns like stray runtime state
 at the homes root (`legacy_root_runtime_state`) that a migration alone would

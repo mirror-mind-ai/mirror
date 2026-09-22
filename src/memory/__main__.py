@@ -90,9 +90,6 @@ Commands:
                        Usage: python -m memory week [--mirror-home PATH] [view|plan <text>|save]
   journeys             List journeys with status, stage, and description
                        Usage: python -m memory journeys [--mirror-home PATH]
-  migrate-legacy       Validate or run explicit legacy migration into a user home
-                       Usage: python -m memory migrate-legacy validate --source PATH --target-home PATH
-                              python -m memory migrate-legacy run --source PATH --target-home PATH
   consult              Ask other LLMs through OpenRouter with Mirror context
                        Usage: python -m memory consult <family> [tier] "question" [--persona P] [--journey J] [--org] [--mirror-home PATH]
                               python -m memory consult credits
@@ -279,12 +276,6 @@ def _dispatch() -> None:
         from memory.cli.consult import main as _consult_main
 
         _consult_main()
-
-    elif command == "migrate-legacy":
-        sys.argv = [sys.argv[0], *sys.argv[2:]]
-        from memory.cli.migrate_legacy import main as _migrate_legacy_main
-
-        _migrate_legacy_main()
 
     elif command == "descriptor":
         from memory.cli.descriptor import main as _descriptor_main

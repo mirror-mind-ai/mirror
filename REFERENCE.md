@@ -634,53 +634,15 @@ workspace is running without `MIRROR_USER`/`MIRROR_HOME`.
 
 ## Legacy Migration Workflow
 
-> **Note:** This workflow exists for users migrating from Portuguese-era
-> databases (pre-CV0). Most early users have already completed this migration.
-> **Scheduled for removal in CV22.DS10** (decision 2026-09-07): Portuguese-era
-> databases must be migrated with a pre-DS10 release; the command will not be
-> ported to the TypeScript core.
+**Removed in the CV22 migration.** The Portuguese-era database conversion
+(`memoria.db` → a user home, pre-CV0) was retired rather than ported to the
+TypeScript core — see the
+[cutoff](docs/releases/pending-cutoffs.md#legacy-migration) for what to do
+instead and what still works.
 
-Use this when you have a Portuguese-era source database such as `memoria.db`
-and want to migrate it into a user home.
-
-### Supported Source Policy
-
-Supported:
-- clean Portuguese legacy databases
-
-Rejected explicitly:
-- already-English/current databases
-- mixed Portuguese/English databases
-- unsupported or ambiguous SQLite shapes
-
-### Commands
-
-```bash
-uv run python -m memory migrate-legacy validate \
-  --source ~/.espelho/memoria.db \
-  --target-home ~/.mirror-minds/<user> \
-  --report /tmp/mirror-migration-validate.json
-
-uv run python -m memory migrate-legacy run \
-  --source ~/.espelho/memoria.db \
-  --target-home ~/.mirror-minds/<user> \
-  --report /tmp/mirror-migration-run.json
-```
-
-### Safety Guarantees
-
-- explicit source required
-- explicit target home required
-- source is never mutated
-- target `memory.db` must not already exist
-- no silent merge into an existing target
-- `validate` performs no writes
-- `run` copies first, migrates the copy, and verifies the result
-
-Both commands support `--report PATH`. The JSON report includes: generation
-timestamp, command mode, source and target paths, source classification,
-source row counts, applied migrations, detected legacy columns/indexes/identity
-layers, planned translations, and post-migration verification details.
+In one line: if you still hold a Portuguese-era database, convert it with the
+last Python-bearing release, once; a home that was already converted keeps
+working, and nothing about it changed.
 
 ---
 

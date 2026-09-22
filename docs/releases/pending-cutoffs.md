@@ -135,6 +135,59 @@ you run the command, not when you install it.
 
 ---
 
-<!-- CV22.DS10.TS3 (eval harness), US2 (npm-era updater), TS4 (unported
-     surfaces), TS5 (Python deletion), and US3 (npm distribution) add their
-     cutoffs here. -->
+## Legacy migration
+
+**Story:** [CV22.DS10.TS4](../project/roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-ts4-retire-the-unported-surfaces-with-cutoffs/index.md) ·
+**Decision:** [CV22.DS7.TS1 ops tail](../project/decisions.md#cv22ds7ts1-ops-tail-runtime-splits-rehearsal-and-legacy-migration-retire-in-ds10)
+
+**Removed.** `python -m memory migrate-legacy validate|run` — the Portuguese-era
+database conversion (`~/.espelho/memoria.db` and its `travessia` vocabulary)
+into a current user home, with its `--report` JSON.
+
+**Why.** It converts a database shape that predates CV0. The conversion is a
+one-time act, most early users completed it years ago, and porting a one-time
+converter to TypeScript would have spent migration budget on a path with no
+future callers.
+
+**What to do instead.** If you still hold a Portuguese-era database, convert it
+with the **last Python-bearing release**, once, then use the current release
+normally. The command lives on in git history and in that release; it is not
+gone from the world, only from this version.
+
+**What still works.** Everything, if your home is already a current home —
+which it is if Mirror has ever started normally for you. Homes converted by the
+old command are ordinary homes and nothing about them changed. The legacy
+`~/.mirror/<user>` location still resolves, so an old *path* keeps working;
+only the *conversion* is gone.
+
+---
+
+## The migration rehearsal tool
+
+**Story:** [CV22.DS10.TS4](../project/roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-ts4-retire-the-unported-surfaces-with-cutoffs/index.md) ·
+**Decision:** [CV22.DS7.TS1 ops tail](../project/decisions.md#cv22ds7ts1-ops-tail-runtime-splits-rehearsal-and-legacy-migration-retire-in-ds10)
+
+**Removed.** The `memory-rehearse-migration` console script, which rehearsed
+the **Python** migration engine against a copy of a database before letting it
+near the real one.
+
+**Why.** CV22.DS6 moved migration custody to TypeScript and proved the TS
+engine over real legacy copies. The tool rehearsed an engine that no longer
+runs your migrations, so a green rehearsal had stopped meaning anything about
+what would actually happen.
+
+**What to do instead.** Nothing, for the property it protected: the TypeScript
+migration engine is the one that runs, it is covered by its own suites, and
+`backup` still exists for a copy before any upgrade. A rehearsal tool *against
+the TS engine* is separate scope, and would be its own story if the need
+appears.
+
+**What still works.** Every migration path. This was developer tooling — it had
+no front-door route, no skill, and no place in any runtime; if you have never
+typed `memory-rehearse-migration`, nothing about your Mirror changes.
+
+---
+
+<!-- CV22.DS10.US2 (npm-era updater), TS5 (Python deletion), and US3 (npm
+     distribution) add their cutoffs here. TS4's remaining surfaces land with
+     their own deletion plateaus. -->

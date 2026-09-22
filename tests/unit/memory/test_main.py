@@ -92,17 +92,15 @@ def test_repair_encoding_dispatches():
     mock_repair_main.assert_called_once_with(["--mirror-home", "/tmp/pati", "--apply"])
 
 
-def test_migrate_legacy_dispatches():
-    with patch("memory.cli.migrate_legacy.main") as mock_migrate_legacy_main:
-        _run_main(
-            [
-                "migrate-legacy",
-                "validate",
-                "--source",
-                "legacy.db",
-                "--target-home",
-                "~/.mirror/testuser",
-            ]
-        )
+def test_migrate_legacy_is_not_a_command():
+    """CV22.DS10.TS4 retired it; the dispatcher must not know the name.
 
-    mock_migrate_legacy_main.assert_called_once()
+    The front door answers `migrate-legacy` with its cutoff before reaching
+    Python at all. This asserts the other half: if an invocation does reach the
+    module, it falls through to the unknown-command path rather than finding a
+    dispatch that outlived its implementation.
+    """
+    with pytest.raises(SystemExit) as exc_info:
+        _run_main(["migrate-legacy", "validate", "--source", "legacy.db"])
+
+    assert exc_info.value.code == 1
