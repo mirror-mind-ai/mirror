@@ -218,6 +218,30 @@ jobs:
         env:
           MEMORY_ENV: test
 
+      # CV22.DS10.TS2 — the Zero Python gate's fixtures row claims "CI needs no
+      # interpreter" for the extension suites. That claim was true by accident
+      # before (nothing happened to call Python) and is now true by CHECK.
+      #
+      # Shadowing beats scrubbing PATH: macOS and most runners ship a
+      # /usr/bin/python3 that a PATH edit cannot remove, so a scrub would pass
+      # while still leaving an interpreter reachable. A stub that exits 66
+      # fails loudly the moment anything reaches for one.
+      #
+      # Six inert .py fixture bodies remain under ts/test/fixtures/ because
+      # their BYTES are graded by Python-recorded goldens (see the Zero Python
+      # gate). This step is what proves they are inert rather than merely
+      # believed to be.
+      - name: Extension suites need no interpreter (CV22.DS10.TS2)
+        run: |
+          SHADOW="$(mktemp -d)"
+          for bin in python python3 uv; do
+            printf '#!/bin/sh\necho "FORBIDDEN: %s was invoked by a TS extension suite" >&2\nexit 66\n' "$bin" > "$SHADOW/$bin"
+            chmod +x "$SHADOW/$bin"
+          done
+          PATH="$SHADOW:$PATH" node --test "test/extensions/*.test.ts"
+        env:
+          MEMORY_ENV: test
+
       # CR051 — this script was silently drifted from the CI-enforced
       # migrationFixtures.test.ts it duplicates; now wired into CI so that
       # can't happen unnoticed again.

@@ -139,11 +139,22 @@ Nothing — the story is done. What it left for later:
   — the shim template resolves `python3` from ambient `PATH`, correct for the Navigator's
   own tooling and undecided for a third party. Owner: **US3** (npm distribution), where a
   third-party audience first exists.
-- **The manifest validator still requires `entrypoint.module` to resolve to a `.py` file.**
-  That is why `ext-catalog-writes` and `extension-catalog` keep inert Python bodies while
-  `ext-dispatch` is fully Node. Relaxing it would change `extensions list` against its
-  Python-recorded golden — a second corpus retirement — and this story's Plan made it a
-  non-goal. Unresolved by decision, not by oversight.
+- **The validator fork — resolved at Debt Review (2026-09-21, Navigator: pay now).**
+  The manifest validator requires `entrypoint.module` to resolve to a `.py` file, so the
+  six inert bodies in `ext-catalog-writes` and `extension-catalog` cannot become Node
+  while their bytes are graded by Python-recorded goldens: converting them would make the
+  Python oracle call the fixture invalid, so the golden could not be regenerated. The
+  fixture and its oracle die together. Reassigned to **TS5** — the same disposition this
+  roadmap already gives `ts/parity/` — and the Zero Python gate row now says so. The
+  gate's real requirement, *CI needs no interpreter*, is enforced mechanically by the
+  `Extension suites need no interpreter` CI step (shadows `python`/`python3`/`uv` with
+  stubs that exit 66; 41 pass, 3 shim tests correctly skip).
+- **Rollback — evidenced at Debt Review (2026-09-21, Navigator: pay now).** Test-guide
+  route 7 was executed against a worktree at `8bc3a31a~1`, the last commit with the host
+  present: the migrated extensions answered identically there, so they are
+  forward-compatible and reverting the core alone is safe. The contrast also held — on
+  that core the unmigrated `google-ads` still spawned the Python host, where the current
+  core refuses without a process.
 
 Two lessons from TS1 and US1 that apply here: **the authored gate names one layer and the
 inventory finds more** (both stories), and **the parity harness, the determinism gate, and
