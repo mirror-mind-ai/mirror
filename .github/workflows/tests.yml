@@ -97,7 +97,9 @@ jobs:
           uv run python ts/parity/generate_extension_catalog_golden.py
           uv run python ts/parity/generate_ledger_inspect_golden.py
           uv run python ts/parity/generate_ext_bindings_golden.py
-          uv run python ts/parity/generate_ext_dispatch_golden.py
+          # `generate_ext_dispatch_golden.py` was removed by CV22.DS10.TS2 with
+          # the 40-case corpus it recorded: the compatibility host it graded no
+          # longer exists, so there is no oracle left to regenerate from.
           uv run python ts/parity/generate_ext_catalog_writes_golden.py
           uv run python ts/parity/generate_lifecycle_write_golden.py
           uv run python ts/parity/generate_identity_edit_golden.py

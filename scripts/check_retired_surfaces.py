@@ -160,6 +160,13 @@ RETIRED: tuple[RetiredSurface, ...] = (
             r"legacyCwd",
             r"hostCommand",
             r"spawnHost",
+            # The generator and the corpus it recorded. `absent_paths` proves
+            # the FILES are gone; these prove nothing still CALLS them. CI
+            # found the gap the hard way on 2026-09-22: the determinism step
+            # kept invoking the deleted generator and failed on Python 3.10
+            # and 3.12 after the files had been removed for four commits.
+            r"generate_ext_dispatch_golden",
+            r"ext-dispatch\.golden",
         ),
         exemptions={
             "src/memory/oracle_drift.py": (
@@ -168,6 +175,10 @@ RETIRED: tuple[RetiredSurface, ...] = (
             "ts/test/extensions/dispatch.test.ts": (
                 "the file that REPLACED the host's parity corpus, and whose header records "
                 "what each retired group of cases proved -- the disposition itself"
+            ),
+            ".github/workflows/tests.yml": (
+                "a comment in the determinism step naming the generator it no longer runs, "
+                "so the next reader does not re-add it"
             ),
         },
     ),
