@@ -109,6 +109,32 @@ test("runEval rejects an unknown eval name", async () => {
   await assert.rejects(() => runEval("nope", { io }), /Unknown eval 'nope'/);
 });
 
+// Found while porting the first real module: every load failure was being
+// reported as "Unknown eval", so a parameter-property syntax error in a probe
+// module sent the reader hunting for a typo in the module NAME. A broken
+// module must report its own breakage.
+test("runEval surfaces a real load failure instead of calling the module unknown", async () => {
+  const io = harness({}).io;
+  io.loadModule = async () => {
+    throw new Error("TypeScript parameter property is not supported in strip-only mode");
+  };
+  await assert.rejects(
+    () => runEval("retrieval_relevance", { io }),
+    /parameter property is not supported/,
+    "the module's own error reaches the caller",
+  );
+});
+
+test("runEval still reports a genuinely missing module as unknown", async () => {
+  const io = harness({}).io;
+  io.loadModule = async () => {
+    const error = new Error("Cannot find module") as Error & { code: string };
+    error.code = "ERR_MODULE_NOT_FOUND";
+    throw error;
+  };
+  await assert.rejects(() => runEval("no-such-module-anywhere", { io }), /Unknown eval/);
+});
+
 test("runEval rejects a module that exposes no PROBES", async () => {
   const io = harness({}).io;
   io.loadModule = async () => ({}) as EvalModule;
@@ -206,6 +232,7 @@ test("discovery reads the real evals directory and never scans harness infrastru
   for (const infra of ["types", "runner", "persistence", "support", "cli"]) {
     assert.equal(names.includes(infra), false, `${infra} is not discovered`);
   }
+  assert.ok(names.includes("retrieval_relevance"), "the real module is discovered by capability");
 });
 
 // --- runAll ----------------------------------------------------------------

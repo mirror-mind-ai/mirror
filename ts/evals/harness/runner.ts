@@ -13,9 +13,9 @@
  */
 
 import { createHash } from "node:crypto";
-import { readdirSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   appendRun as appendRunToDisk,
   type EvalRunRecord,
@@ -68,7 +68,8 @@ export interface RunAllOptions extends RunOptions {
 
 function resolved(io: RunnerIo = {}): Required<RunnerIo> {
   return {
-    loadModule: io.loadModule ?? ((name) => import(join(EVALS_DIR, `${name}.ts`))),
+    loadModule:
+      io.loadModule ?? ((name) => import(pathToFileURL(join(EVALS_DIR, `${name}.ts`)).href)),
     listModuleNames:
       io.listModuleNames ??
       (async () =>
@@ -91,6 +92,11 @@ export async function runEval(evalName: string, options: RunOptions = {}): Promi
   try {
     module = await io.loadModule(evalName);
   } catch (error) {
+    // Only a genuinely missing module is an unknown eval. Anything else --
+    // a syntax error, a bad import, a module that throws while loading -- is
+    // reported as itself: mapping every load failure to "unknown eval" sends
+    // whoever is debugging a probe module to look for a typo in its name.
+    if (!moduleIsMissing(evalName, error)) throw error;
     throw new Error(`Unknown eval '${evalName}'. No module found at evals/${evalName}.ts.`, {
       cause: error,
     });
@@ -158,6 +164,19 @@ export async function runAll(names: string[], options: RunAllOptions = {}): Prom
     reports.push(report);
   }
   return reports;
+}
+
+/**
+ * True when the failure is the module not being there, rather than the module
+ * being there and broken. The file check comes first because a bad import
+ * *inside* a real module also raises ERR_MODULE_NOT_FOUND, and that error
+ * belongs to the module, not to the name the user typed.
+ */
+function moduleIsMissing(evalName: string, error: unknown): boolean {
+  const path = join(EVALS_DIR, `${evalName}.ts`);
+  if (existsSync(path)) return false;
+  const code = (error as { code?: string } | null)?.code;
+  return code === undefined || code === "ERR_MODULE_NOT_FOUND";
 }
 
 function persistRun(
