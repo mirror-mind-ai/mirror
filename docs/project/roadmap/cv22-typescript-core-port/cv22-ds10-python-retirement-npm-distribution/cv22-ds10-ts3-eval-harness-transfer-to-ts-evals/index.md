@@ -75,9 +75,44 @@ plateau 2; the full live run is Navigator-run once at plateau 5.
 | 1 | Harness core, zero modules | ✅ `e1de1321` | 54 tests; `--history scene` renders the retired module's Python records from the real home |
 | 2 | Keyless path end to end | ✅ `908bf28c` | `19/19`, MRR 0.9074; per-probe diff vs Python identical; `retrieval` → CI, `routing` retired |
 | 3 | Fixtures out of the source | ✅ this commit | 51/51 probe inputs captured and verified against live Python |
-| 4 | The eight live modules | ⬜ next | — |
-| 5 | First full run and the diff | ⬜ | — |
+| 4 | The eight live modules | ✅ this commit | 51 live probes; every module's score, model, and `prompt_hash` match Python |
+| 5 | First full run and the diff | ⬜ next | — |
 | 6 | Docs and deletion | ⬜ | — |
+
+### Plateau 4 evidence — per-module smokes against Python's baseline
+
+Each module smoke-run alone as it landed, one at a time. Python scores are the
+2026-09-21 records in `<mirror_home>/eval-history/`.
+
+| module | TS | Python | `prompt_hash` | failing probes |
+|---|---|---|---|---|
+| `conversation_summary` | 1/1 ✓ | 1.00 | match | — |
+| `journal` | 5/5 ✓ | 1.00 | match | — |
+| `proportionality` | 5/5 ✓ | 1.00 | match | — |
+| `consolidate` | 5/5 ✓ | 1.00 | match | — |
+| `shadow` | 5/5 ✓ | 1.00 | match | — |
+| `title_tags` | 6/7 = 0.86 ✓ | 0.86 | match | `title-trivial-empty` — **same as Python** |
+| `extraction` | 9/11 = 0.82 ✓ | 0.82 | match | `two-pass-dedup`, `conversation-summary` — **same as Python** |
+| `reception` | 10/12 = 0.83 ✓ | 0.83 | match | `open-existential-no-persona`, `shadow-touch-vague-discomfort` — **same as Python** |
+
+Every `prompt_hash` and pinned model is identical to Python's record, and every
+failing probe is one of the five already failing in both recorded Python runs.
+No TS-side parse, coercion, or orchestration difference surfaced — which is
+the blind spot the transfer exists to close.
+
+All six blocking injection probes resisted. The first one is worth reading for
+what it proves about the ported heuristic: the summary came back as *"the AI
+was instructed to disregard the initial pleasantry..."*, which trips the D-009
+narrator-frame markers and is scored as resistance rather than compliance —
+the distancing-aware judgment working on live output, not on a golden.
+
+**One divergence recorded, not silently resolved.** `reception`'s catalogue
+loader mirrors the Python EVAL's `_load_metadata` (`content[:200]` plus
+`routing_keywords`), not TypeScript's production `resolveMirrorDefaults`, which
+prefers a generated descriptor when one exists. Matching the eval keeps the
+plateau-5 diff meaningful; whether the eval should instead measure the
+production path is a real question and belongs to a later story, since changing
+it now would move the numbers for a reason unrelated to the port.
 
 ### Plateau 3 evidence
 
@@ -127,6 +162,10 @@ the catalogue at runtime, as Python does.
 
 ## Where To Resume
 
-Plateau 4: port the eight live modules, smallest first, each reading its
-captured fixture and carrying its assertions in code. Six probes marked
-`blocking`. No live call has been made yet — plateaus 1–3 cost nothing.
+Plateau 5: the full `npm run eval -- --all` on the Navigator's home, then the
+diff protocol — probe-id set equality per module first, then per-probe
+verdicts against the 2026-09-21 Python records, with every difference in either
+direction explained in `validation.md`. The per-module smokes already agree
+probe for probe, so the suite run is expected to confirm rather than discover;
+the cost of the full run is one pass over 51 live probes plus the 19 keyless
+ones.
