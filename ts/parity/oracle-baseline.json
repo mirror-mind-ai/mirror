@@ -71,7 +71,7 @@
     "src/memory/prompts/soul_self_voice.md": "83d49b661f8b8556cb02453c31032a1b441f37ee",
     "src/memory/prompts/soul_wisdom_voice.md": "82f4076811d373152bf8ab9293064ea8fea637db",
     "src/memory/services/attachment.py": "5c2b1c02133a70995cd3c7016eebb5eaef6ed285",
-    "src/memory/services/conversation.py": "a17daac52458b4a539839f5b739d4c8ac1cc674e",
+    "src/memory/services/conversation.py": "5594c38b90004c9b42207642ebfaa2fed00ff46e",
     "src/memory/services/conversation_append.py": "31137be081a66d1a5c9900f5334fc7d9b22b42e2",
     "src/memory/services/explorer_handoff.py": "0d6dfd0b98174b13079db32c0e9ad3f29c746256",
     "src/memory/services/explorer_story.py": "28ab42ad505f952620e53ede30284fa20a92c949",

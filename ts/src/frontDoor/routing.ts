@@ -125,12 +125,6 @@ const TS4_INSPECT_TARGETS = new Set([
 export const TS4_EXT_TOP_LEVEL_VERBS = new Set(["list", "--help", "-h", "help"]);
 export const TS4_EXT_BUILTIN_VERBS = new Set(["bind", "unbind", "bindings", "migrate"]);
 
-const CONVERSATIONS_LIFECYCLE_FLAGS = [
-  ...TS_LIFECYCLE_READ_FLAGS,
-  ...TS4_LIFECYCLE_WRITE_FLAGS,
-  ...DS10_BACKFILL_FLAGS,
-];
-
 // CV22.DS7.US8 plateau 8: the 27 Builder leaves ported in plateaus 1–7.
 // Exported so the route tests can prove that the allowlist and its audited
 // denominator stay the same. The two legacy Workbench groups are deliberately

@@ -227,6 +227,37 @@ read and write model it needs.
 
 ---
 
+## Conversation metadata backfill
+
+**Story:** [CV22.DS10.TS4](../project/roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-ts4-retire-the-unported-surfaces-with-cutoffs/index.md)
+
+**Removed.** `python -m memory conversations --metadata-backfill-preview`,
+`--metadata-backfill-apply`, and the `--metadata-backfill-mode safe|force`
+they took. This was a **one-shot** pass that generated titles, summaries, and
+tags for conversations recorded before the metadata lifecycle existed
+(pre-ES-001).
+
+**Why.** It ran once, for the rows that needed it, and validated nothing
+afterwards. The metadata *lifecycle* — the engine that decides what to write
+and when — is TypeScript-owned and very much alive: it still titles, summarizes,
+and tags conversations as they close.
+
+**What to do instead.** Nothing. New conversations get metadata through the
+ordinary close path. A pre-ES-001 conversation that was never backfilled keeps
+the metadata it has — possibly none — and every listing, search, recall, and
+lifecycle face works on it exactly as before.
+
+**What still works.** Everything else on `conversations`, including the
+lifecycle faces `--metadata-lifecycle-dry-run`,
+`--metadata-lifecycle-preview-at-message`, `--metadata-lifecycle-apply`, and
+`--metadata-lifecycle-demo`. Also untouched, despite the similar name: the
+**transcript** backfills `conversation-logger backfill-pi-sessions`,
+`backfill-codex-session`, and `backfill-assistant-messages`, which import
+sessions the live hooks never saw. Those are a different feature, they are
+ported, and they stay.
+
+---
+
 <!-- CV22.DS10.US2 (npm-era updater), TS5 (Python deletion), and US3 (npm
      distribution) add their cutoffs here. TS4's remaining surfaces land with
      their own deletion plateaus. -->
