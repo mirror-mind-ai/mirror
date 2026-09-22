@@ -12,6 +12,65 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-22 — CV22.DS10.TS2: the core stops owning a Python bridge for extensions
+
+DS10's third story. `memory.extensions.compat_host` is deleted, along with all three
+TypeScript branches that spawned it: the context-provider fallback, the subcommand
+fallback, and the install-time `register(api)` import. Net −902 lines in the deletion
+commit.
+
+**What replaces a fallback is a refusal, and that had to be designed rather than
+inherited.** A context provider with no declared runtime is skipped with a
+`no_provider_runtime` diagnostic and `mirror load` continues — fail soft, because one
+unmigrated capability must not cost a whole load; fail explicit, because a section going
+dark silently reads as an empty context rather than as a migration state. A subcommand
+with no runtime refuses with one line naming the extension, the subcommand, and the fix.
+An undocumented subcommand and an unmigrated one stay *different* failures: "never heard
+of it" and "exists but not migrated" have different fixes, and collapsing them sends a
+user to the wrong file.
+
+**The listing changed owners.** It used to render from Python's live `api.cli_registry`;
+it now renders from the manifest, flagging unmigrated entries. That surfaced real drift:
+`google-workspace` registered five subcommands and documented three. `docs` and `sheets`
+existed only in `register(api)` and would have silently disappeared.
+
+**The story's authored layer named one thing and the inventory found more — four times.**
+The dispatch "fixtures" were a 40-case parity corpus recorded from Python, so they could
+not move ahead of the deletion; 18 cases retired with a disposition record, 12 survived
+untouched, 10 migrated to the declared path. The install golden expected `__pycache__`
+and `.bootstrap.lock`, both residue of a Python process at install — Python still makes
+them, TypeScript never will again, so they stopped being parity cells and became an
+asserted *absence*. The catalog smoke and the write probe carried the same two artifacts.
+And the subcommand surface stopped being cross-engine gradable at all, because the two
+engines are now supposed to disagree.
+
+**Migration, not deprecation.** The core ships a reference `mirror-cli-v1` shim
+(`docs/product/extensions/template/cli.py.template`) that supplies the same `api` object
+legacy handlers were written against. `google-workspace`, `session-export`, and
+`persona-export` migrated with their handlers untouched; `google-ads` and `meta-ads`
+retire under a published cutoff. The shim carries two properties the core used to own —
+the `ext_<id>_*` write prefix guard and the `busy_timeout`/`foreign_keys` connection
+contract — both found by the Plan review panel, both now acceptance criteria with tests.
+Extensions may still own any executable runtime, Python included.
+
+**D-018:** the Extension API freezes at `1.1`. A version number promises a future, and
+this API has none — it retires at TS5. The manifest runtime protocols carry the contract
+forward.
+
+Validated by the Navigator on his real home: nine migrated subcommands answering as
+before, the retired extension refusing at exit 1 with empty stdout, and `mirror load`
+completing with one named `no_provider_runtime` warning.
+
+Debt: two paid (the Zero Python gate row now states what is true and reassigns six inert
+fixture bodies to TS5, with a CI step that shadows `python`/`python3`/`uv` to make
+"CI needs no interpreter" mechanical; and test-guide route 7 executed against the
+pre-deletion worktree, turning the rollback claim into evidence). Two carried as CR092
+and CR093, both waiting on the npm entry point US3 defines. CR093 is the larger one: 245
+documented invocations still name a Python entry point that TS5 deletes, and the existing
+skill-parity check reports clean while covering none of them.
+
+DS10 is 3/8. Next: TS3, the eval harness transfer.
+
 ### 2026-09-19 — CV22.DS10.US1: the web console is gone, and so is the reading only it could show
 
 DS10's second story. `python -m memory web` no longer exists — 5,480 lines across
