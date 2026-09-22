@@ -1,0 +1,240 @@
+{
+  "provenance": {
+    "source": "evals/proportionality.py",
+    "story": "CV22.DS10.TS3",
+    "method": "captured by executing each probe against recording stand-ins"
+  },
+  "threshold": 0.8,
+  "eval_model_pinned": true,
+  "prompt_count": 1,
+  "probes": [
+    {
+      "id": "casual-greeting",
+      "description": "brief social exchange produces 0 memories",
+      "blocking": false,
+      "calls": [
+        {
+          "function": "extract_memories",
+          "args": [
+            [
+              {
+                "id": "<varies-per-run>",
+                "conversation_id": "eval",
+                "role": "user",
+                "content": "Hey, how are you?",
+                "created_at": "<varies-per-run>",
+                "token_count": null,
+                "metadata": null
+              },
+              {
+                "id": "<varies-per-run>",
+                "conversation_id": "eval",
+                "role": "assistant",
+                "content": "Doing well, thanks for asking. What's on your mind?",
+                "created_at": "<varies-per-run>",
+                "token_count": null,
+                "metadata": null
+              },
+              {
+                "id": "<varies-per-run>",
+                "conversation_id": "eval",
+                "role": "user",
+                "content": "Not much, just checking in. Have a good day!",
+                "created_at": "<varies-per-run>",
+                "token_count": null,
+                "metadata": null
+              }
+            ]
+          ],
+          "kwargs": {}
+        }
+      ]
+    },
+    {
+      "id": "logistical-question",
+      "description": "logistical travel question produces 0 memories",
+      "blocking": false,
+      "calls": [
+        {
+          "function": "extract_memories",
+          "args": [
+            [
+              {
+                "id": "<varies-per-run>",
+                "conversation_id": "eval",
+                "role": "user",
+                "content": "What's the best way to get from Lisbon to Porto?",
+                "created_at": "<varies-per-run>",
+                "token_count": null,
+                "metadata": null
+              },
+              {
+                "id": "<varies-per-run>",
+                "conversation_id": "eval",
+                "role": "assistant",
+                "content": "The fastest option is the Alfa Pendular train — about 2h45m. There's also the AP Express which is slightly slower but cheaper. Driving takes about 3 hours depending on traffic.",
+                "created_at": "<varies-per-run>",
+                "token_count": null,
+                "metadata": null
+              },
+              {
+                "id": "<varies-per-run>",
+                "conversation_id": "eval",
+                "role": "user",
+                "content": "Great, I'll take the train. Thanks.",
+                "created_at": "<varies-per-run>",
+                "token_count": null,
+                "metadata": null
+              }
+            ]
+          ],
+          "kwargs": {}
+        }
+      ]
+    },
+    {
+      "id": "quick-factual",
+      "description": "quick factual lookup produces 0 memories",
+      "blocking": false,
+      "calls": [
+        {
+          "function": "extract_memories",
+          "args": [
+            [
+              {
+                "id": "<varies-per-run>",
+                "conversation_id": "eval",
+                "role": "user",
+                "content": "What year was Python first released?",
+                "created_at": "<varies-per-run>",
+                "token_count": null,
+                "metadata": null
+              },
+              {
+                "id": "<varies-per-run>",
+                "conversation_id": "eval",
+                "role": "assistant",
+                "content": "Python 0.9.0 was released in February 1991 by Guido van Rossum.",
+                "created_at": "<varies-per-run>",
+                "token_count": null,
+                "metadata": null
+              },
+              {
+                "id": "<varies-per-run>",
+                "conversation_id": "eval",
+                "role": "user",
+                "content": "Thanks, that's what I needed.",
+                "created_at": "<varies-per-run>",
+                "token_count": null,
+                "metadata": null
+              }
+            ]
+          ],
+          "kwargs": {}
+        }
+      ]
+    },
+    {
+      "id": "status-check",
+      "description": "vague status check produces 0 memories",
+      "blocking": false,
+      "calls": [
+        {
+          "function": "extract_memories",
+          "args": [
+            [
+              {
+                "id": "<varies-per-run>",
+                "conversation_id": "eval",
+                "role": "user",
+                "content": "How is the project going?",
+                "created_at": "<varies-per-run>",
+                "token_count": null,
+                "metadata": null
+              },
+              {
+                "id": "<varies-per-run>",
+                "conversation_id": "eval",
+                "role": "assistant",
+                "content": "Steady progress. The core pieces are in place and we're moving forward.",
+                "created_at": "<varies-per-run>",
+                "token_count": null,
+                "metadata": null
+              },
+              {
+                "id": "<varies-per-run>",
+                "conversation_id": "eval",
+                "role": "user",
+                "content": "Great, keep it up.",
+                "created_at": "<varies-per-run>",
+                "token_count": null,
+                "metadata": null
+              }
+            ]
+          ],
+          "kwargs": {}
+        }
+      ]
+    },
+    {
+      "id": "small-talk",
+      "description": "small talk about weather and plans produces 0 memories",
+      "blocking": false,
+      "calls": [
+        {
+          "function": "extract_memories",
+          "args": [
+            [
+              {
+                "id": "<varies-per-run>",
+                "conversation_id": "eval",
+                "role": "user",
+                "content": "Nice weather today, isn't it?",
+                "created_at": "<varies-per-run>",
+                "token_count": null,
+                "metadata": null
+              },
+              {
+                "id": "<varies-per-run>",
+                "conversation_id": "eval",
+                "role": "assistant",
+                "content": "It does sound like a good day to be outside.",
+                "created_at": "<varies-per-run>",
+                "token_count": null,
+                "metadata": null
+              },
+              {
+                "id": "<varies-per-run>",
+                "conversation_id": "eval",
+                "role": "user",
+                "content": "Yeah I'm thinking of going for a walk this afternoon.",
+                "created_at": "<varies-per-run>",
+                "token_count": null,
+                "metadata": null
+              },
+              {
+                "id": "<varies-per-run>",
+                "conversation_id": "eval",
+                "role": "assistant",
+                "content": "That sounds like a good use of the afternoon.",
+                "created_at": "<varies-per-run>",
+                "token_count": null,
+                "metadata": null
+              },
+              {
+                "id": "<varies-per-run>",
+                "conversation_id": "eval",
+                "role": "user",
+                "content": "Agreed. Anyway, talk later.",
+                "created_at": "<varies-per-run>",
+                "token_count": null,
+                "metadata": null
+              }
+            ]
+          ],
+          "kwargs": {}
+        }
+      ]
+    }
+  ]
+}
