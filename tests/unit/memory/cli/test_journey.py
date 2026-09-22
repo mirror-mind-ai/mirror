@@ -1,7 +1,6 @@
 """Tests for journey CLI behavior."""
 
 import io
-import json
 
 import pytest
 
