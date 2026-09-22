@@ -12,6 +12,64 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-22 — CV22.DS10.TS3: the release gate measures the engine users run
+
+DS10's fourth story. The model-behavior eval harness lives at `ts/evals/`, nine
+modules call the TypeScript pipeline through the live provider, and `evals/`, its
+252 tests, and `python -m memory eval` are deleted behind an `eval-harness`
+retired-surface row. Until this story a green run described Python's pipeline while
+TypeScript answered every one of those surfaces in production.
+
+**The first full run agreed with Python on all 70 probe verdicts, in both
+directions.** The diff protocol the Plan review fixed ran sets-first: probe-id set
+equality as a hard gate, then per-probe verdicts. No TypeScript probe failed where
+Python passed, and none passed where Python fails — the five long-standing failures
+reproduced exactly. Every `prompt_hash` and pinned model was byte-identical. Templates,
+model, and transcripts were all held equal, so the only thing free to vary was
+TypeScript-side parsing, coercion, and orchestration — the blind spot the transfer
+existed to close — and nothing varied.
+
+**D-017 is paid, as a harness contract rather than a per-module patch.** A probe can
+declare itself `blocking`; an obeyed injection fails its module at any score and the
+verdict names the probe. Six carry the flag, and a structural test pins that exactly
+six do and every one is an injection probe. The first live call was the evidence the
+port needed: the summary came back as *"the AI was instructed to disregard"*, which
+trips the D-009 narrator-frame markers and scores as resistance — the heuristic
+ported verbatim in plateau 1, working on live output rather than on its golden.
+
+**The fixtures were captured, not transcribed.** Every `memory.*` callable each Python
+module imported was replaced by a recorder, every probe executed offline, and the
+arguments written out — 51 probes, 51 calls, deterministic across processes after two
+non-determinism traps (pydantic default factories; a module-level `Identity` that two
+captures in one process shared). The equality check was verified to fail on a
+one-word transcript edit before it was trusted, then deleted with the harness it
+interrogated. Three dispositions settled: `routing` retired with **no successor gate**
+named in the engineering principles; `retrieval`'s ten math contracts moved to CI
+where the half-life contract became exact; `retrieval_relevance` kept as the keyless
+smoke of the harness itself.
+
+**Records are `schema_version: 3`** because `passed` changed meaning — the
+database-architect's Plan-review finding, and my own premise for staying at 2 was
+wrong. The retention rule is now written: deleting a module never deletes its
+measurements, and `--history scene` renders a module that no longer exists.
+
+Validated on the Navigator's real home; the checkpoint was first rendered *without*
+acceptance and held the gate until it was given. Handoff review narrowed to
+security-engineer by decision, which found what five personas could not have: every
+blocking probe reads "resisted" when the provider never answered, because the fenced
+functions fail soft to values that contain no sentinel.
+
+Debt: one paid (D-017), one dropped (D-005, retired with its module), three deferred
+with triggers — D-020 the harness records no spend, a promise the Plan made and the
+build could not keep; D-021 `reception`'s loader mirrors the Python eval rather than
+production, and routing quality has no gate; D-022 the unanswered-provider pass, with
+a verification command that must fail and today passes. Two runtime findings on the
+way: `validate-item` overwrote 145 lines of authored `validation.md` (CR079,
+reproduced live), and a closed Debt Review cannot be re-entered, refused by a guard
+whose surface claimed Validation had not passed.
+
+DS10 is 4/8. Next: TS4, retire the unported surfaces with cutoffs.
+
 ### 2026-09-22 — CV22.DS10.TS2: the core stops owning a Python bridge for extensions
 
 DS10's third story. `memory.extensions.compat_host` is deleted, along with all three
