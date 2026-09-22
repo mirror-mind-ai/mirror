@@ -4,10 +4,13 @@
  * `ts/evals/fixtures/captured/<module>.json` holds what the Python probes fed
  * the pipeline, recorded by executing them against stand-ins rather than
  * transcribed by hand. A TS probe reads its inputs from here so both engines
- * ask the model the same thing; the ASSERTION stays in the module, as it does
+ * asked the model the same thing; the ASSERTION stays in the module, as it did
  * in Python, because an expectation is logic rather than data.
  *
- * `evals/_check_fixture_equality.py` keeps these honest while Python exists.
+ * These were verified equal to Python's live inputs, probe by probe, while both
+ * harnesses existed. That check ran for the last time at plateau 6 and was
+ * deleted with the harness it interrogated -- the fixtures are now the durable
+ * record, and the evidence of their provenance is in the story package.
  */
 
 import { readFileSync } from "node:fs";

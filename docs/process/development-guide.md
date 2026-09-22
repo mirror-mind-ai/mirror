@@ -312,53 +312,80 @@ When behavior changes:
 
 ## Evals
 
-Evals live in `evals/`, separate from `tests/`. They hit real LLM APIs, cost a few cents per run, and are non-deterministic. Do not add them to CI.
+Evals live in `ts/evals/`, beside `ts/parity/` and separate from `ts/test/`.
+They hit real LLM APIs, cost a few cents per run, and are non-deterministic. Do
+not add them to CI.
 
-A failing eval means behavior drifted, not necessarily that code broke. A passing eval means the LLM is behaving within the expected envelope for that probe set.
+A failing eval means behavior drifted, not necessarily that code broke. A
+passing eval means the model is behaving within the expected envelope for that
+probe set.
 
 Run evals:
 
-- before changing prompts in `src/memory/intelligence/prompts.py`,
-- before shipping changes to extraction, routing, reception, consolidation, or shadow logic,
-- after a model change in `src/memory/config.py`,
-- before closing a story that changes LLM behavior.
+- before changing prompts in `ts/src/extraction/prompts.ts`,
+- before shipping changes to extraction, reception, consolidation, or shadow logic,
+- after a model change in `ts/src/providers/config.ts`,
+- before closing a story that changes model-in-the-loop behavior.
 
-Run one eval, or the whole suite:
+Run one eval, or the whole suite, from `ts/`:
 
 ```bash
-uv run python -m memory eval extraction          # one named eval
-uv run python -m memory eval --all               # every eval (release gate)
-uv run python -m memory eval extraction --history # trend past runs of one eval
+npm run eval -- extraction             # one named eval
+npm run eval -- --all                  # every eval (release gate)
+npm run eval -- extraction --history   # trend past runs of one eval
 ```
 
-Exit code 0 means the probe score met the threshold; 1 means it did not. `eval
---all` discovers every eval module by capability (any `evals/*.py` exposing
-`PROBES`), so a new probe module joins the suite automatically; it exits 0 only
-when **every** eval passes and names which evals failed otherwise. Each run
-appends a JSONL record under `<mirror_home>/eval-history/` (a shared
-`suite_run_id` ties one `--all` invocation together), and `--history` trends
-them and flags any probe that flipped. The gate writes only that history — never
-the product database. Investigate before shipping.
+Exit code 0 means the module passed; 1 means it did not. `--all` discovers
+every eval module by capability (any `ts/evals/*.ts` exporting `PROBES`), so a
+new probe module joins the suite automatically; harness infrastructure lives in
+`ts/evals/harness/` and is never scanned. The suite exits 0 only when **every**
+module passes, and names which failed otherwise. Each run appends a JSONL
+record under `<mirror_home>/eval-history/` (a shared `suite_run_id` ties one
+`--all` invocation together), and `--history` trends them and flags any probe
+that flipped. The gate writes only that history — never the product database.
+Investigate before shipping.
 
-**What the gate measures, and what it does not (2026-09-13).** Every live eval
-module imports a Python pipeline function directly, so the harness measures
-**Python's** pipeline — while TypeScript answers eight of those nine surfaces in
-production since CV22.DS8 (`scene` is the ninth and still Python, through the
-web process). The gate is nonetheless valid on both engines *for what it
-tests*: the prompts are byte-identical across cores and digest-pinned, so a
-probe measuring prompt behavior measures what a TypeScript command sends. Its
-blind spot is TypeScript-side parsing, coercion, and orchestration, which the
-assembled-prompt goldens and unit tests cover instead. Ownership transfers to a
-`ts/evals/` harness as a Python-retirement gate
-([CV22.DS8.TS1 decision](../project/decisions.md#the-eval-harness-transfers-to-typescript-as-a-ds10-gate-not-a-ds8-port));
-until then, a green run means the Python harness.
+**What the gate measures (2026-09-22).** Every module calls the **TypeScript**
+pipeline through the live provider, so a green run means the engine users
+actually run — including TypeScript-side parsing, coercion, and orchestration,
+which the Python harness structurally could not see. The denominator is **nine
+modules**: `conversation_summary`, `consolidate`, `extraction`, `journal`,
+`proportionality`, `reception`, `retrieval_relevance`, `shadow`, `title_tags`.
+`retrieval_relevance` is keyless and free, so it doubles as a smoke test of the
+harness itself.
 
-**The standing `routing` waiver.** `eval --all` has reported **11/12** since
-v0.31.0: `routing` fails on stale persona fixtures
-([D-005](../project/debt.md#d-005--evalsroutingpy-fixtures-are-stale-against-the-current-persona-catalog)),
-unrelated to any shipped behavior. That is the expected result, not a new
-regression — a fresh reader should not spend a release investigating it. A
-failure in any *other* module is a real signal.
+**A module fails when a blocking probe fails, at any score
+([D-017](../project/debt.md#d-017--injection-resistance-probes-are-averaged-into-a-module-score)).**
+The six `*-injection-resisted` probes are blocking: an obeyed injection fails
+its module even when the score clears the threshold, and the verdict names the
+probe. Before this rule, a six-probe module could not fall below 0.80 on one
+failure, so a fenced surface could report PASS with its injection probe
+obeyed — which is exactly what CV22.DS8.TS1's run recorded.
+
+**When a blocking probe blocks: investigate at the probe, never waive by
+re-running the suite until green.** Re-run that probe alone, `n=5`, and
+decide from the result — ≥2/5 obeyed is a fence regression and stops the
+release; 1/5 or 0/5 is recorded as the known residual with the run recorded as
+blocked. Re-running the whole suite hoping for a green is how a real regression
+gets spent into noise.
+
+**Deleting a module never deletes its measurements.** `eval-history/` keeps the
+JSONL of retired modules — `scene.jsonl`, `routing.jsonl`, `retrieval.jsonl` —
+and `--history <name>` still renders them, because a history read opens a file
+rather than a module. Records at `schema_version: 3` were written by the
+TypeScript harness under blocking semantics; `2` is the Python era, where
+`passed` meant score alone.
+
+**`routing` and `retrieval` are retired, not waived.** The standing `routing`
+waiver is gone with the module: its fixtures were stale against the live
+persona catalogue
+([D-005](../project/debt.md#d-005--evalsroutingpy-fixtures-are-stale-against-the-current-persona-catalog))
+and it had failed since v0.31.0. **Retiring it leaves no successor gate for
+routing quality** — `detectPersona` has deterministic goldens in CI, but those
+prove parity with Python, not that the current catalogue routes sensibly.
+Refreshing the fixtures is future work. `retrieval`'s ten deterministic math
+contracts moved into `ts/test/search/ranker.test.ts`, where CI runs them on
+every push.
 
 ### Model upgrade playbook
 
@@ -369,7 +396,7 @@ changing `EXTRACTION_MODEL` or `EMBEDDING_MODEL`:
    *current* pin. This is the step most easily skipped and the one the whole
    comparison depends on — without a fresh baseline, `--history` compares
    against stale runs.
-2. **Swap the pin** in `src/memory/config.py` (or via the
+2. **Swap the pin** in `ts/src/providers/config.ts` (or via the
    `MEMORY_EXTRACTION_MODEL` / `MEMORY_EMBEDDING_MODEL` env overrides for a dry
    run).
 3. **Re-run** `eval --all` on the new pin.

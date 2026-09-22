@@ -99,9 +99,6 @@ Commands:
   descriptor           Generate and list routing descriptors for personas and journeys
                        Usage: python -m memory descriptor generate [--layer LAYER] [--key KEY]
                               python -m memory descriptor list [--layer LAYER]
-  eval                 Run eval probe set(s) (hits real LLM — costs money, not for CI)
-                       Usage: python -m memory eval <name>     # one eval
-                              python -m memory eval --all      # whole suite (release gate)
   consolidate          Scan memories for patterns and manage consolidation proposals
                        Usage: python -m memory consolidate <scan|apply|reject|list> [args]
   shadow               Surface and promote shadow-layer observations
@@ -293,11 +290,6 @@ def _dispatch() -> None:
         from memory.cli.descriptor import main as _descriptor_main
 
         _descriptor_main(sys.argv[2:])
-
-    elif command == "eval":
-        from evals.runner import main as _eval_main
-
-        sys.exit(_eval_main(sys.argv[2:]))
 
     elif command == "consolidate":
         from memory.cli.consolidate_cmd import main as _consolidate_main

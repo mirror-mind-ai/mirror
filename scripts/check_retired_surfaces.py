@@ -178,6 +178,39 @@ RETIRED: tuple[RetiredSurface, ...] = (
             ),
         },
     ),
+    RetiredSurface(
+        surface_id="eval-harness",
+        story="CV22.DS10.TS3",
+        # The model-behavior release gate moved to ts/evals/ and the Python
+        # harness was deleted with its tests, its entry point, and the three
+        # helpers that existed only to feed the port: the input capture, the
+        # fixture-equality check, and the support-golden generator. Each of
+        # those imported what this story removed, so they die with it -- the
+        # fixture and its oracle die together, as in TS2.
+        absent_paths=(
+            "evals/",
+            "tests/unit/memory/evals/",
+        ),
+        forbidden_patterns=(
+            r"from evals\b",
+            r"import evals\b",
+            r"memory eval\b",
+            r"evals\.runner",
+            r"evals\._support",
+            # The helpers by name: absent_paths proves the FILES are gone,
+            # these prove nothing still calls them -- the TS2 lesson, where a
+            # CI step kept invoking a deleted generator for four commits.
+            r"_capture_probe_inputs",
+            r"_check_fixture_equality",
+            r"_generate_support_golden",
+        ),
+        exemptions={
+            "docs/process/development-guide.md": (
+                "the guide now names ts/evals/ and npm run eval; the phrase survives only "
+                "where it explains what the Python era measured and why the denominator moved"
+            ),
+        },
+    ),
 )
 
 

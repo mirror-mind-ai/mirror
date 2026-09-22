@@ -2,7 +2,7 @@
 
 # CV22.DS10.TS3 — Eval harness transfer to `ts/evals/`
 
-**Status:** 🟢 In Progress — pulled, panel-reviewed, and approved 2026-09-22; plateaus 1–3 of 6 done
+**Status:** 🟢 Implementation complete — all 6 plateaus done 2026-09-22; awaiting Navigator Validation
 **Type:** Technical Story
 **Artifacts:** [plan.md](plan.md) · [test-guide.md](test-guide.md) · [validation.md](validation.md)
 
@@ -77,7 +77,34 @@ plateau 2; the full live run is Navigator-run once at plateau 5.
 | 3 | Fixtures out of the source | ✅ this commit | 51/51 probe inputs captured and verified against live Python |
 | 4 | The eight live modules | ✅ this commit | 51 live probes; every module's score, model, and `prompt_hash` match Python |
 | 5 | First full run and the diff | ✅ this commit | `9/9 SUITE PASS`; **70/70 probe verdicts identical to Python**, zero differences in either direction — [validation.md](validation.md) |
-| 6 | Docs and deletion | ⬜ next | — |
+| 6 | Docs and deletion | ✅ this commit | `evals/` + 252 tests + the `eval` entry gone; `eval-harness` row asserts it; all suites green |
+
+### Plateau 6 evidence
+
+**Deleted:** `evals/` and `tests/unit/memory/evals/` — 32 files, 252 Python
+tests (2540 → 2288), plus the `eval` help text and dispatch in
+`src/memory/__main__.py`. `python -m memory eval --all` now answers
+`Unknown command: eval` and exits 1.
+
+**Docs now name the TypeScript harness**, not just in the measurement
+paragraph but in the places that tell a reader what to *do*: the trigger list
+points at `ts/src/extraction/prompts.ts` and `ts/src/providers/config.ts`, the
+model-upgrade playbook swaps the pin in the TS config, the architecture tree
+lists `ts/evals/`, and the "which gate sustains each rule" section counts nine
+modules and records that six of them are blocking. The blocked-run policy and
+the history-retention rule are written where the commands are, so a human
+reading a red gate months from now knows what it asks of them.
+
+**The retired-surface check earned its place immediately.** It failed on first
+run against a stale sentence in `ts/evals/harness/fixture.ts` claiming that
+`_check_fixture_equality.py` "keeps these honest while Python exists" — true
+when written, false three commits later. Fixed by correcting the prose, not by
+adding an exemption: an exemption claims a mention is correct, and that one was
+not.
+
+**History is untouched**, as the retention rule promises: `scene.jsonl`,
+`routing.jsonl`, and `retrieval.jsonl` remain at their original sizes, and
+`npm run eval -- scene --history` still renders a module that no longer exists.
 
 ### Plateau 4 evidence — per-module smokes against Python's baseline
 
@@ -162,14 +189,21 @@ the catalogue at runtime, as Python does.
 
 ## Where To Resume
 
-Plateau 6, the last one: point the development guide and engineering principles
-at `ts/evals/` (including the trigger paths and the blocked-run policy), add the
-`eval-harness` row to `scripts/check_retired_surfaces.py`, grep for stray
-`evals` references outside the deletion set, then delete `evals/`,
-`tests/unit/memory/evals/`, and the `eval` entry in `src/memory/__main__.py` in
-one commit.
+Implementation is complete and every check is green. What remains is the
+lifecycle, which is Navigator-owned:
 
-One finding is carried into Debt Review rather than fixed here: the harness
-records no spend, because eval probes call the provider without a ledger hook
-(Python's did not either). The plan promised actually-spent in `validation.md`
-and the build cannot deliver it — see [validation.md §Cost](validation.md#cost).
+1. **Navigator Validation** — test-guide Route 4 (deletion is clean) is the
+   only route not yet exercised by the Navigator; Routes 1–3 are recorded in
+   [validation.md](validation.md).
+2. **Debt Review** — one finding carried: the harness records no spend, because
+   eval probes reach the provider without a ledger hook (Python's did not
+   either). The plan promised actually-spent in `validation.md` and the build
+   cannot deliver it — see [validation.md §Cost](validation.md#cost). A concrete
+   proposal is attached there.
+3. **Coherence**, then **Done**.
+
+A second, smaller item for Debt Review: `reception`'s catalogue loader mirrors
+the Python eval rather than TypeScript's production `resolveMirrorDefaults`
+(which prefers a generated descriptor). Deliberate, so the plateau-5 diff stayed
+meaningful; whether the eval should measure the production path is a real
+question for a later story.

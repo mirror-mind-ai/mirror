@@ -38,7 +38,7 @@ tests/                       — Automated tests
 .claude/skills/              — Claude Code skill surface
 .agents/skills/              — Shared Gemini CLI/Codex surface (symlinked from .pi/skills/)
 scripts/                     — Shell utilities (smoke tests, Codex wrapper)
-evals/                       — LLM behavioral evaluations (not in CI)
+ts/evals/                    — LLM behavioral evaluations (not in CI)
 ```
 
 **User home (outside the repo):**

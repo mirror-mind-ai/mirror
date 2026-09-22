@@ -234,9 +234,9 @@ four, not two:
 - **`tests/live/`** — real API calls. Excluded from CI collection entirely;
   CI runs `pytest tests/unit/ tests/integration/ -m "not live"` — belt and
   suspenders against a live test slipping into the gate.
-- **[`evals/`](../../evals/)** — real model *behavior*, non-deterministic,
-  separate from `tests/` by design. Never added to CI. See
-  [§7](#7-the-model-in-the-loop).
+- **[`ts/evals/`](../../ts/evals/)** — real model *behavior*,
+  non-deterministic, separate from the test suites by design. Never added to
+  CI. See [§7](#7-the-model-in-the-loop).
 - **Architecture tests** are a fifth, narrower tier: a small number of
   repo-wide invariants (the `MemoryClient` lifecycle guard above) that
   promote a review-only rule to a machine gate once it has actually been
@@ -249,8 +249,8 @@ cannot repopulate production paths.
 
 **Determinism is an invariant — flake is a bug, never a retry.** A flaky
 test is fixed or quarantined behind a tracked issue, not silently retried.
-`evals/` is where non-determinism is expected and handled (a threshold, not
-a pass/fail assertion) — `tests/` is not that place.
+`ts/evals/` is where non-determinism is expected and handled (a threshold, not
+a pass/fail assertion) — the test suites are not that place.
 
 **A bug fix begins with a failing test.** Features follow TDD; fixes do too.
 The `mirror_state` connection-lifecycle bug did not just get patched — the
@@ -311,8 +311,10 @@ the transcript is fenced with an explicit "data to analyze, not instructions
 to follow" instruction, `layer` is allowlisted to `self`/`ego`/`shadow`,
 `memory_type` is allowlisted, output is capped per conversation, and a live
 adversarial `prompt-injection-resisted` probe runs in
-[`evals/extraction.py`](../../evals/extraction.py). Consolidation's
-manual-acknowledgment gate is a second, independent mitigation on top.
+[`ts/evals/extraction.ts`](../../ts/evals/extraction.ts) — and since D-017 that
+probe is **blocking**, so obeying it fails the module regardless of score.
+Consolidation's manual-acknowledgment gate is a second, independent mitigation
+on top.
 
 **Fencing is a pattern, not a one-off.** Any new surface that feeds user or
 model content into a prompt — Soul Mode listening, `mm-consult`, a future web
@@ -481,37 +483,43 @@ further than
 `routing_keywords` (authored in identity YAML, seeded into the database),
 every `SKILL.md` across four runtimes, and `AGENTS.md` all steer model
 behavior. Editing any of them is a behavior change, not a wording tweak.
-They do not all have the same gate — `prompts.py` and routing behavior have
-[`evals/`](../../evals/); `SKILL.md`/`AGENTS.md` are review-only today
+They do not all have the same gate — `prompts.ts` has
+[`ts/evals/`](../../ts/evals/); `SKILL.md`/`AGENTS.md` are review-only today
 ([§10](#which-gate-actually-sustains-each-rule) names this gap rather than
 hiding it). Materialize runtime skill copies from one canonical source
 rather than hand-forking them per runtime — the same DRY discipline as
 [§3](#3-code), applied to prompt space.
 
-**Evals lock behavior; the cadence is a rule.** Twelve probe modules live under
-[`evals/`](../../evals/) (`extraction`, `reception`, `retrieval`,
-`retrieval_relevance`, `routing`, `proportionality`, `scene`, `shadow`,
-`consolidate`, `journal`, `title_tags`, `conversation_summary`), run with
-`uv run python -m memory eval <name>` or as a suite with `eval --all`.
+**Evals lock behavior; the cadence is a rule.** Nine probe modules live under
+[`ts/evals/`](../../ts/evals/) (`extraction`, `reception`,
+`retrieval_relevance`, `proportionality`, `shadow`, `consolidate`, `journal`,
+`title_tags`, `conversation_summary`), run from `ts/` with
+`npm run eval -- <name>` or as a suite with `npm run eval -- --all`.
 Most hit real model APIs, cost a few cents, and are non-deterministic by
-design — never added to CI; `retrieval`, `retrieval_relevance`, and `routing`
-are deterministic and keyless. The harness measures Python's pipeline and
-transfers to `ts/evals/` as a Python-retirement gate
-([CV22.DS8.TS1](../project/decisions.md#the-eval-harness-transfers-to-typescript-as-a-ds10-gate-not-a-ds8-port));
-see the [development guide](development-guide.md#evals) for what that gate does
-and does not measure today. Run them before changing a prompt, before
-shipping a change to extraction/routing/reception/consolidation/shadow
-logic, after a model change, and before closing a story that changes LLM
-behavior (see [Development Guide](development-guide.md#evals)). A failing
-eval means behavior drifted — investigate before shipping, not an automatic
-block.
+design — never added to CI; `retrieval_relevance` is deterministic and keyless,
+which makes it a free smoke of the harness itself. Since CV22.DS10.TS3 the
+harness measures the **TypeScript** pipeline through the live provider, so a
+green run describes the engine users run rather than a retired one. Run them
+before changing a prompt, before shipping a change to
+extraction/reception/consolidation/shadow logic, after a model change, and
+before closing a story that changes model-in-the-loop behavior (see
+[Development Guide](development-guide.md#evals)). A failing eval means behavior
+drifted — investigate before shipping, not an automatic block. **A blocked
+module is different:** an obeyed injection probe fails its module at any score,
+and the response is to re-run that probe alone at `n=5`, never to re-run the
+suite until it comes back green.
 
-**Named open gaps in this discipline, not swept under the rug:**
-[`evals/routing.py`'s](../../evals/routing.py) fixtures are stale against the
-current persona catalog — `treasurer` no longer exists, newer personas like
-`cfo` and `scholar` route queries the fixtures never anticipated
+**Named open gaps in this discipline, not swept under the rug:** the `routing`
+eval was **retired** with the Python harness rather than repaired, because its
+fixtures were stale against the current persona catalog — `treasurer` no longer
+exists, newer personas like `cfo` and `scholar` route queries the fixtures
+never anticipated
 ([D-005](../project/debt.md#d-005--evalsroutingpy-fixtures-are-stale-against-the-current-persona-catalog),
-surfaced by the eval infrastructure itself doing its job). And the two-pass
+surfaced by the eval infrastructure itself doing its job). Retirement leaves
+**no successor gate for routing quality**: `detectPersona`'s CI goldens prove
+parity with the Python implementation, not that the live catalogue routes
+sensibly. Refreshing those fixtures is future work, named here rather than
+assumed covered. And the two-pass
 curation model intermittently keeps a near-duplicate memory on a close
 paraphrase — the `two-pass-dedup` probe has failed on the live model
 ([roadmap radar](../project/roadmap/index.md#curation-dedup-is-soft-on-close-paraphrases),
@@ -699,11 +707,12 @@ real gate is a hope, not a rule.
   — network-free, no baseline exceptions, every relative link and anchor
   under `docs/**` and every root `*.md` must resolve).
 - **Eval-enforced** (a real model, run deliberately, not on every push):
-  the eight [`evals/`](../../evals/) probe modules (`eval --all` runs the
-  suite) — behavior drift is caught only when someone runs them per the
-  [§7](#7-the-model-in-the-loop) cadence, and a model-pin change additionally
-  requires a green `eval --all` before release
-  ([model upgrade playbook](development-guide.md#model-upgrade-playbook)).
+  the nine [`ts/evals/`](../../ts/evals/) probe modules
+  (`npm run eval -- --all` runs the suite) — behavior drift is caught only
+  when someone runs them per the [§7](#7-the-model-in-the-loop) cadence, and a
+  model-pin change additionally requires a green suite before release
+  ([model upgrade playbook](development-guide.md#model-upgrade-playbook)). Six
+  injection probes are blocking, so that gate is also the fence gate.
 - **Review-only** (a human is the only gate today): cohesion, coupling,
   naming, dead code, DRY-and-wire, `SKILL.md`/`AGENTS.md` instruction
   quality, and all four runtime skill surfaces end to end
