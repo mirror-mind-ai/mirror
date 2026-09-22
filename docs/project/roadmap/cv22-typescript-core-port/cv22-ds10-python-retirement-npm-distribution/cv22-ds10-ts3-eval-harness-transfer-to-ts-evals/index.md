@@ -4,7 +4,7 @@
 
 **Status:** 🟢 In Progress — pulled, panel-reviewed, and approved 2026-09-22; plateaus 1–3 of 6 done
 **Type:** Technical Story
-**Artifacts:** [plan.md](plan.md) · [test-guide.md](test-guide.md)
+**Artifacts:** [plan.md](plan.md) · [test-guide.md](test-guide.md) · [validation.md](validation.md)
 
 ---
 
@@ -76,8 +76,8 @@ plateau 2; the full live run is Navigator-run once at plateau 5.
 | 2 | Keyless path end to end | ✅ `908bf28c` | `19/19`, MRR 0.9074; per-probe diff vs Python identical; `retrieval` → CI, `routing` retired |
 | 3 | Fixtures out of the source | ✅ this commit | 51/51 probe inputs captured and verified against live Python |
 | 4 | The eight live modules | ✅ this commit | 51 live probes; every module's score, model, and `prompt_hash` match Python |
-| 5 | First full run and the diff | ⬜ next | — |
-| 6 | Docs and deletion | ⬜ | — |
+| 5 | First full run and the diff | ✅ this commit | `9/9 SUITE PASS`; **70/70 probe verdicts identical to Python**, zero differences in either direction — [validation.md](validation.md) |
+| 6 | Docs and deletion | ⬜ next | — |
 
 ### Plateau 4 evidence — per-module smokes against Python's baseline
 
@@ -162,10 +162,14 @@ the catalogue at runtime, as Python does.
 
 ## Where To Resume
 
-Plateau 5: the full `npm run eval -- --all` on the Navigator's home, then the
-diff protocol — probe-id set equality per module first, then per-probe
-verdicts against the 2026-09-21 Python records, with every difference in either
-direction explained in `validation.md`. The per-module smokes already agree
-probe for probe, so the suite run is expected to confirm rather than discover;
-the cost of the full run is one pass over 51 live probes plus the 19 keyless
-ones.
+Plateau 6, the last one: point the development guide and engineering principles
+at `ts/evals/` (including the trigger paths and the blocked-run policy), add the
+`eval-harness` row to `scripts/check_retired_surfaces.py`, grep for stray
+`evals` references outside the deletion set, then delete `evals/`,
+`tests/unit/memory/evals/`, and the `eval` entry in `src/memory/__main__.py` in
+one commit.
+
+One finding is carried into Debt Review rather than fixed here: the harness
+records no spend, because eval probes call the provider without a ledger hook
+(Python's did not either). The plan promised actually-spent in `validation.md`
+and the build cannot deliver it — see [validation.md §Cost](validation.md#cost).
