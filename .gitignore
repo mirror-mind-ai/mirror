@@ -4,6 +4,9 @@ __pycache__/
 # The comment must sit on its own line — git treats trailing text after a
 # pattern as part of the pattern, so an inline comment silently disabled this.
 evals/.history/
+# Same fallback for the TypeScript harness (CV22.DS10.TS3). Both lines stand
+# while both harnesses exist; plateau 6 drops the Python one with evals/.
+ts/evals/.history/
 *.pyc
 .env
 claude.sh

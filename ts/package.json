@@ -15,6 +15,7 @@
     "#cultivation/*": "./src/cultivation/*",
     "#db/*": "./src/db/*",
     "#descriptor/*": "./src/descriptor/*",
+    "#evals/*": "./evals/*",
     "#explorer/*": "./src/explorer/*",
     "#extraction/*": "./src/extraction/*",
     "#extensions/*": "./src/extensions/*",
@@ -46,6 +47,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "node --test \"test/**/*.test.ts\"",
+    "eval": "node --env-file-if-exists=../.env evals/harness/cli.ts",
     "lint": "biome check .",
     "format": "biome format --write ."
   },
