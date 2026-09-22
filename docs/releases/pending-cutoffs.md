@@ -188,6 +188,45 @@ typed `memory-rehearse-migration`, nothing about your Mirror changes.
 
 ---
 
+## Journey admin verbs
+
+**Story:** [CV22.DS10.TS4](../project/roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-ts4-retire-the-unported-surfaces-with-cutoffs/index.md) ·
+**Refinement:** [CR089](../project/refinement/rs009-cv22-front-door-routing-correctness/cr089-the-journey-route-swallows-export-registry-and-mutate.md)
+
+**Removed.** `python -m memory journey export-registry` (the whole Journey
+hierarchy as JSON on stdout) and `python -m memory journey mutate` (a JSON
+mutation request on stdin, answering with a receipt), together with the
+`mirror.journey-mutation@1.0` request shape they served.
+
+**Why.** They arrived during a pause-window merge and never entered the CV22
+port denominator — 345 lines with no owner, no TypeScript counterpart, and one
+caller. They were also the clearest case of a routing defect this migration
+has produced: the TypeScript front door claimed the `journey` family and read
+any unknown verb as a journey *slug*, so `export-registry` rendered an empty
+status for a journey that does not exist, with exit 0 — and `mutate`, a
+**write**, did nothing at all, also with exit 0. Rather than port a surface
+nobody had asked for, DS10 removed it and taught the front door to say
+*removed*.
+
+**What to do instead.** Read Journey structure with the ordinary commands —
+`journeys` for the hierarchy, `journey <slug>` for one Journey's status. Create
+and change Journeys through the Mirror, Builder, and Explorer surfaces that own
+those acts. There is no replacement for a machine-readable registry dump or a
+batch mutation endpoint; if a future consumer needs one, it is a new contract
+with a named consumer, not a revival of this one.
+
+**What still works.** Every Journey you have, exactly as it is. Nothing about
+the data changed — only these two entry points to it. Both verbs now answer in
+one line naming this cutoff, and exit 1 instead of pretending to succeed.
+
+**Mirror Desktop.** It called both verbs through Python directly, bypassing the
+front door. It is outside this migration and pins to the last Python-bearing
+release, as its own [cutoff](#journey-projections-and-mirrorjourney-projections10)
+already says. Its integration with the TypeScript core defines whatever Journey
+read and write model it needs.
+
+---
+
 <!-- CV22.DS10.US2 (npm-era updater), TS5 (Python deletion), and US3 (npm
      distribution) add their cutoffs here. TS4's remaining surfaces land with
      their own deletion plateaus. -->

@@ -83,9 +83,10 @@ ORACLE_PATHS: tuple[str, ...] = (
     # CR073: `journey update`'s sentinel/empty guards and usage text, graded
     # byte-exact by ts/test/goldens/journey-update.golden.json. The file was
     # ported in DS7.US1 slice B and flipped, but never registered here -- a
-    # Python change to it would not have tripped drift. `status`, `set-path`,
-    # `mutate`, and `export-registry` live in the same file and are tracked at
-    # file granularity like every other entry.
+    # Python change to it would not have tripped drift. `status` and `set-path`
+    # live in the same file and are tracked at file granularity like every
+    # other entry. The two admin verbs that also lived here were deleted by
+    # CV22.DS10.TS4; they had no TS counterpart to grade.
     "src/memory/cli/journey.py",
     # RS008 CR053: conservative journey association inventory and atomic removal.
     "src/memory/storage/identity.py",

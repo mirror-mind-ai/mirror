@@ -18,7 +18,6 @@ from memory.services.attachment import AttachmentService
 from memory.services.conversation import ConversationService
 from memory.services.identity import IdentityService
 from memory.services.journey import JourneyService
-from memory.services.journey_admin import JourneyAdminService
 from memory.services.memory import MemoryService
 from memory.services.operation_runs import OperationRunService
 from memory.services.runtime_session import RuntimeSessionService
@@ -56,7 +55,6 @@ class MemoryClient:
         self.attachments = AttachmentService(self.store)
         self.identity = IdentityService(self.store, self.attachments)
         self.journeys = JourneyService(self.store, self.identity)
-        self.journey_admin = JourneyAdminService(self.store)
         self.tasks = TaskService(self.store, self.journeys)
         self.memories = MemoryService(self.store, self.search_engine)
         self.conversations = ConversationService(self.store, self.memories, self.tasks)

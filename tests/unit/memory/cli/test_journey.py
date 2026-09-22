@@ -56,40 +56,32 @@ def test_journey_set_path_uses_journey_service(tmp_path, capsys):
     assert mem.journeys.get_project_path("mirror-poc") == str(project_path.resolve())
 
 
-def test_journey_admin_cli_round_trips_json_without_provider(tmp_path, capsys, monkeypatch):
+@pytest.mark.parametrize("verb", ["export-registry", "mutate"])
+def test_retired_admin_verbs_are_not_dispatched_and_never_read_stdin(
+    verb, tmp_path, capsys, monkeypatch
+):
+    """CV22.DS10.TS4 / CR089: the two admin verbs are gone from the dispatcher.
+
+    They now fall to the status read, which treats the verb as a slug -- the
+    long-standing Python behavior this story deliberately did NOT change
+    (CR095, after TS5). What matters here is the pair of properties the
+    deletion owes: no JourneyAdminService is reachable, and `mutate` cannot
+    consume stdin, because there is no code left to read it.
+    """
     mirror_home = tmp_path / ".mirror" / "pati"
     mem = MemoryClient(env="test", db_path=default_db_path_for_home(mirror_home))
     mem.set_identity("journey", "mirror-poc", JOURNEY_CONTENT)
 
+    stdin = io.StringIO('{"operation": "create_journey"}')
+    monkeypatch.setattr("sys.stdin", stdin)
+
     from memory.cli.journey import main
 
-    main(["export-registry", "--mirror-home", str(mirror_home)])
-    registry = json.loads(capsys.readouterr().out)
-    monkeypatch.setattr(
-        "sys.stdin",
-        io.StringIO(
-            json.dumps(
-                {
-                    "schemaVersion": "mirror.journey-mutation@1.0",
-                    "requestId": "cli-request-001",
-                    "expectedSourceVersion": registry["sourceVersion"],
-                    "operation": "create_journey",
-                    "payload": {
-                        "slug": "child-poc",
-                        "name": "Child POC",
-                        "description": "A sufficiently detailed child Journey description.",
-                        "parentId": "mirror-poc",
-                        "position": 0,
-                    },
-                }
-            )
-        ),
-    )
-    main(["mutate", "--mirror-home", str(mirror_home)])
-    result = json.loads(capsys.readouterr().out)
+    main([verb, "--mirror-home", str(mirror_home)])
 
-    assert result["registry"]["roots"][0]["children"][0]["id"] == "child-poc"
-    assert result["receipt"]["operation"] == "create_journey"
+    assert f"=== journey: {verb} ===" in capsys.readouterr().out
+    assert stdin.tell() == 0, "the retired write verb must not consume stdin"
+    assert not hasattr(mem, "journey_admin")
 
 
 def test_journey_update_explicit_mirror_home_overrides_environment_selection(

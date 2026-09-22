@@ -14,7 +14,6 @@ from memory.storage.consolidations import ConsolidationStore
 from memory.storage.conversations import ConversationStore
 from memory.storage.explorer_stories import ExplorerStoryStore
 from memory.storage.identity import IdentityStore
-from memory.storage.journey_admin import JourneyAdminStore
 from memory.storage.llm_calls import LLMCallStore
 from memory.storage.memories import MemoryStore
 from memory.storage.messages import MessageStore
@@ -30,7 +29,6 @@ class Store(
     MessageStore,
     MemoryStore,
     IdentityStore,
-    JourneyAdminStore,
     AttachmentStore,
     TaskStore,
     LLMCallStore,
