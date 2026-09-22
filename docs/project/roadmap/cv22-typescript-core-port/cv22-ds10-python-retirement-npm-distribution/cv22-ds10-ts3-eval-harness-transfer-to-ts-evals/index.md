@@ -2,9 +2,9 @@
 
 # CV22.DS10.TS3 — Eval harness transfer to `ts/evals/`
 
-**Status:** 🟢 Implementation complete — all 6 plateaus done 2026-09-22; awaiting Navigator Validation
+**Status:** 🟢 Validated and reviewed — all 6 plateaus done, Validation accepted, Debt Review closed with three deferrals, handoff pass done 2026-09-22; awaiting Coherence and Done
 **Type:** Technical Story
-**Artifacts:** [plan.md](plan.md) · [test-guide.md](test-guide.md) · [validation.md](validation.md)
+**Artifacts:** [plan.md](plan.md) · [test-guide.md](test-guide.md) · [validation.md](validation.md) · [review.md](review.md)
 
 ---
 
@@ -187,23 +187,24 @@ from the production database. That is the Navigator's own data and it drifts
 with the catalogue, so only the query is captured; both engines keep reading
 the catalogue at runtime, as Python does.
 
+## Lifecycle Record
+
+| stage | outcome |
+|---|---|
+| Validation | **passed**, Navigator accepted 2026-09-22 — [validation.md](validation.md) |
+| Debt Review | **defer** × 3 — D-020 (no spend recorded), D-021 (reception loader diverges; routing has no gate), D-022 (blocking probes read "resisted" on an unanswered provider). **Paid:** D-017. **Dropped:** D-005 — [review.md](review.md) |
+| Handoff review | narrowed security-engineer pass, a recorded decision rather than a default; no blockers, one medium finding (D-022) |
+| Coherence | pending |
+| Done | pending |
+
 ## Where To Resume
 
-Implementation is complete and every check is green. What remains is the
-lifecycle, which is Navigator-owned:
+Coherence, then Done. Done needs a history action (six plateau commits plus the
+lifecycle commits, all pushed and CI-green), a roadmap update (DS10 moves to
+4/8; this package and the DS10 index already say Done for TS3), and a next
+recommendation (TS4, retire the unported surfaces with cutoffs).
 
-1. **Navigator Validation** — test-guide Route 4 (deletion is clean) is the
-   only route not yet exercised by the Navigator; Routes 1–3 are recorded in
-   [validation.md](validation.md).
-2. **Debt Review** — one finding carried: the harness records no spend, because
-   eval probes reach the provider without a ledger hook (Python's did not
-   either). The plan promised actually-spent in `validation.md` and the build
-   cannot deliver it — see [validation.md §Cost](validation.md#cost). A concrete
-   proposal is attached there.
-3. **Coherence**, then **Done**.
-
-A second, smaller item for Debt Review: `reception`'s catalogue loader mirrors
-the Python eval rather than TypeScript's production `resolveMirrorDefaults`
-(which prefers a generated descriptor). Deliberate, so the plateau-5 diff stayed
-meaningful; whether the eval should measure the production path is a real
-question for a later story.
+Three ledger items carry forward with triggers; none blocks the next story.
+D-022 is the one to remember: a green injection verdict currently cannot tell
+resistance from an outage, and the verification command that should fail
+(`OPENROUTER_API_KEY=invalid npm run eval -- title_tags`) today passes.

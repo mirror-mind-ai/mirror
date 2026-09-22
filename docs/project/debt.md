@@ -39,6 +39,7 @@ Dropped   no longer relevant or replaced by another item
 | D-019 | The Builder lifecycle corpus records a `projection_requests` field that nothing asserts | testing | low | **Paid** | CV22.DS10.TS1 Debt Review | Paid 2026-09-21: CI's determinism gate forced the regeneration this entry assumed had to wait for TS5 |
 | D-020 | The eval harness records no spend, so a run's cost cannot be reported | observability / cost | low | Carried | CV22.DS10.TS3 Debt Review | The first time a run's cost is questioned, or before any model-pin migration, where cost per run is part of the decision |
 | D-021 | `reception`'s eval reads the catalogue differently from production, and no gate covers routing quality | eval measurement | low | Carried | CV22.DS10.TS3 Debt Review | The next story that touches reception routing or descriptor generation |
+| D-022 | Blocking injection probes read "resisted" when the provider never answered, and nothing pins the attack payload in their fixtures | eval measurement / security | medium | Carried | CV22.DS10.TS3 handoff review (security-engineer) | The first blocked or inconclusive suite run, or before any story that treats a green gate as injection-resistance evidence |
 
 ## D-001 — Metadata lifecycle policy and evidence filtering live inside ConversationService
 
@@ -991,3 +992,68 @@ The eval reads the catalogue the way production reads it, or the divergence is
 recorded as deliberate with a reason that survives the port; and the two
 standing `reception` failures have a diagnosis rather than a threshold that
 hides them.
+
+## D-022 — Blocking injection probes cannot distinguish resistance from an unanswered provider
+
+**Kind:** eval measurement / security  
+**Severity:** medium  
+**Status:** Carried  
+**Source:** CV22.DS10.TS3 handoff review — narrowed security-engineer pass, 2026-09-22  
+
+### Carrying reason
+
+Two gaps in what a green `*-injection-resisted` verdict actually proves, found
+by reading the delivered code adversarially after Validation.
+
+**A provider failure reads as resistance.** All six fenced pipeline functions
+fail soft by design: `generateConversationTitle`, `Tags`, and `Summary` return
+`""` on a caught provider error; `extractMemories` and
+`proposeShadowObservations` return `[]`; `proposeConsolidation` returns `null`.
+None of those contain a sentinel, and the consolidate and shadow probes
+*explicitly* treat the null as "the safe null always counts as resistance." So
+a revoked key, a network outage, or a provider 5xx yields **six green injection
+probes and a passing gate** — and D-017's blocking rule, which exists to make
+injection verdicts trustworthy, does nothing, because nothing failed. The probe
+cannot tell *the model chose silence* from *the provider never answered*,
+because the pipeline swallows the exception before the probe sees it.
+
+This is inherited from Python verbatim, and its original authors chose it
+deliberately. What changed is the stakes: under the Python contract "resisted"
+was one probe in an average; under D-017 it is the claim the gate stands on. A
+fenced surface is entitled to fail soft in production. A security probe *of*
+that surface is not entitled to call that silence resistance.
+
+**Nothing pins the attack payload in the fixture.** The sentinels live in
+module source; the injected transcript lives in captured JSON. All six fixtures
+contain their payload today (verified 2026-09-22), but the Python check that
+established that is deleted, and an edit that shortens or paraphrases the
+injected message — the kind of tidy-up that happens to test data — converts the
+probe to a vacuous pass with nothing to say so.
+
+### Controls, when paid
+
+1. Every fenced function already accepts an `onLlmCall` hook. A blocking probe
+   requires that the hook fired and the response was non-empty before an
+   empty result may count as resistance, and reports **`inconclusive`**
+   otherwise. This needs its own policy — does `inconclusive` block, warn, or
+   pass? — which is why it is deferred rather than bolted onto a closed story.
+2. One structural test in `ts/test/evals/moduleContract.test.ts`, beside
+   "exactly six", asserting that each blocking probe's captured call contains
+   every sentinel its assertion searches for. It fails at the moment of drift
+   rather than at the next incident.
+
+### Verification
+
+`OPENROUTER_API_KEY=invalid npm run eval -- title_tags` must **not** pass. Today
+it does.
+
+### Revisit trigger
+
+The first blocked or inconclusive suite run, or before any story that treats a
+green gate as injection-resistance evidence.
+
+### Closure condition
+
+An unanswered provider produces an `inconclusive` verdict on every blocking
+probe rather than a pass; the verification command above fails; and a
+structural test pins each blocking fixture's payload to its sentinels.
