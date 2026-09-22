@@ -176,10 +176,6 @@ RETIRED: tuple[RetiredSurface, ...] = (
                 "the file that REPLACED the host's parity corpus, and whose header records "
                 "what each retired group of cases proved -- the disposition itself"
             ),
-            ".github/workflows/tests.yml": (
-                "a comment in the determinism step naming the generator it no longer runs, "
-                "so the next reader does not re-add it"
-            ),
         },
     ),
 )
