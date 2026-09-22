@@ -6,6 +6,14 @@
 **Command:** `cd ts && npm run eval -- --all`
 **Suite run id:** `4618a86c-034b-451a-a792-3b3cbe385b6d`
 **Verdict:** `9/9 evals passed ✓ SUITE PASS`, exit 0
+**Checkpoint status:** `passed` — Navigator accepted 2026-09-22, missing evidence: none
+
+> **Note on this file.** The `validate-item` runtime overwrote this document
+> with a generated scaffold, destroying the authored evidence below; it was
+> restored from `a7a8d778` and the checkpoint's own fields merged back in. That
+> is a live reproduction of
+> [CR079](../../../../refinement/rs001-ariad-runtime-trust/cr079-preserve-authored-content-in-every-lifecycle-artifact.md),
+> recorded here because the story hit it rather than read about it.
 
 ---
 
@@ -130,7 +138,17 @@ report what a run cost instead of estimating it afterwards.
   `ts/test/evals/types.test.ts` — *"a failed blocking probe fails the module at
   5/6, above threshold"*. ✅
 - **Route 3 (paid, full run + diff):** this document. ✅
-- **Route 4 (deletion is clean):** plateau 6, not yet run.
+- **Route 4 (deletion is clean):** run 2026-09-22 after the deletion commit.
+  `uv run python -m memory eval --all` → `Unknown command: eval`, exit 1;
+  `git ls-files evals/ tests/unit/memory/evals/` → zero files; and
+  `eval-history/` still lists `retrieval.jsonl` (2588 bytes), `routing.jsonl`
+  (3394) and `scene.jsonl` (6042) — the same sizes recorded before the
+  deletion, so the retention rule held. ✅
+
+**Navigator acceptance:** given 2026-09-22. The checkpoint was first rendered
+without `--navigator-accepted`, which held the gate at
+`pending_navigator_validation` — running the routes and accepting them are
+different acts, and the runtime is right to separate them.
 
 ## Automated Checks At This Plateau
 
@@ -142,4 +160,19 @@ report what a run cost instead of estimating it afterwards.
 | `uv run pytest` | 2540 pass, 0 fail |
 | `uv run python -m evals._check_fixture_equality` | 51/51 probe inputs identical |
 | `uv run python scripts/check_doc_links.py` | clean |
-| CI (`Tests` + `Docs`) | green on `e1de1321`, `908bf28c`, `2481eeff`, `25ce261c` |
+| CI (`Tests` + `Docs`) | green on all six plateau commits: `e1de1321`, `908bf28c`, `2481eeff`, `25ce261c`, `a7a8d778`, `19462fb0` |
+
+## Debt Review Outcome
+
+Decision: **defer**, both findings, 2026-09-22.
+
+| finding | ledger | revisit trigger |
+|---|---|---|
+| The harness records no spend | **D-020** | First time a run's cost is questioned, or before any model-pin migration |
+| `reception`'s loader diverges from production; routing quality has no gate | **D-021** | Next story touching reception routing or descriptor generation |
+
+Debt **paid** by this story: **D-017** — the averaged injection score. Six
+probes are blocking, an obeyed injection fails its module at any score, and the
+failure path is pinned by test. Debt **dropped**: **D-005** — the stale
+`routing` fixtures, retired with the module, with the absent successor gate
+carried forward as D-021 rather than allowed to read as a fix.

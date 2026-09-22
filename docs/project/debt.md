@@ -22,7 +22,7 @@ Dropped   no longer relevant or replaced by another item
 | D-002 | Journey search silently returns `[]` on embedding failure | product | low | Carried | CV9.E2.S1 (AI-E4) | A "no journeys matched" report that is actually an embedding outage, or unifying journey degradation with memory-search's lexical fallback |
 | D-003 | Embedding calls bypass the `llm_calls` ledger (invisible spend, amplified by S1 retry) | observability | medium | Paid | CV9.E2.S1 (AI-E1, AI-09 tail) → CV9.E2.S18 | Paid by CV9.E2.S18 embedding call observability |
 | D-004 | Full test suite exhausts file descriptors under a low `ulimit -n` (macOS default) | testing | low | Paid | CV9.E2.S1 validation | Paid: conftest raises the soft fd limit at startup |
-| D-005 | `evals/routing.py` fixtures are stale against the current persona catalog | testing | low | Carried | CV9.E2.S19 validation | Update fixtures to the current catalog (treasurer → cfo/financial; add scholar coverage), or the next persona-catalog change, or retirement with the eval harness transfer (CV22.DS8.TS1) |
+| D-005 | `evals/routing.py` fixtures are stale against the current persona catalog | testing | low | **Dropped** | CV9.E2.S19 validation | Dropped 2026-09-22: the module was retired with the Python harness (CV22.DS10.TS3) rather than repaired. The successor gap — no routing-quality gate at all — is named in the engineering principles and carried by D-021 |
 | D-006 | `mypy` is documented as a CI gate but is enforced in no workflow; `src/memory` carries 109 mypy errors | process | medium | Carried | CV9.E2.S20 QA audit | Wire `mypy` into CI (clear/baseline the 109 errors) so the claim becomes true, or correct §10/the checklist to mypy's real (review-only) status |
 | D-007 | `Consolidation.action` field comment doesn't list the `shadow_observation` value shadow.py actually writes | design | low | Carried | CV9.E2.S22 (database-architect review) | Reconcile the model's action-enum comment with the real value set, or the next time `Consolidation.action` is touched |
 | D-008 | `layer` domain constraint enforced inconsistently across write paths | data integrity | low | Carried | CV9.E2.S25 (AI-24) database-architect review | A new write path bypasses both existing coercions, `add_memory()` is touched for another reason, or a schema migration is already planned |
@@ -34,9 +34,11 @@ Dropped   no longer relevant or replaced by another item
 | D-014 | Runtime-diagnose web test polling budget is below observed command latency | testing | low | Carried | CV23.DS2 validation | Runtime-diagnose execution, web polling, or that test harness changes, or CI reproduces the failure |
 | D-015 | Production updater blocks on retired experimental migration rows | operations / data | medium | Paid | CV23.DS7 release installation → local repair 2026-08-25 | Paid by verified removal of empty retired schema and rows 017–019 |
 | D-016 | Read-only WAL recovery assumes SQLite fails eagerly during connect | reliability / testing | medium | Paid | CV9.E2.S31 Navigator Validation baseline comparison → runtime WAL fallback maintenance | Paid by the integrated eager schema-probe fallback |
-| D-017 | Injection-resistance probes are averaged into a module score, so an obeyed probe can pass the release gate | eval measurement | medium | Carried | CV22.DS8.TS1 validation | The eval harness transfer (CV22.DS10), a fence change on any fenced surface, or any story that treats a module PASS as injection-resistance evidence |
+| D-017 | Injection-resistance probes are averaged into a module score, so an obeyed probe can pass the release gate | eval measurement | medium | **Paid** | CV22.DS8.TS1 validation | Paid 2026-09-22 by CV22.DS10.TS3: six injection probes are `blocking`, so an obeyed probe fails its module at any score and the verdict names it |
 | D-018 | Extension API `VERSION` stays `1.1` after `api.journey_projections` was removed, so the constant advertises a capability that no longer exists | design / contract | low | Carried | CV22.DS10.TS1 Debt Review | CV22.DS10.TS2 plan time, or any story that changes the Extension API surface |
 | D-019 | The Builder lifecycle corpus records a `projection_requests` field that nothing asserts | testing | low | **Paid** | CV22.DS10.TS1 Debt Review | Paid 2026-09-21: CI's determinism gate forced the regeneration this entry assumed had to wait for TS5 |
+| D-020 | The eval harness records no spend, so a run's cost cannot be reported | observability / cost | low | Carried | CV22.DS10.TS3 Debt Review | The first time a run's cost is questioned, or before any model-pin migration, where cost per run is part of the decision |
+| D-021 | `reception`'s eval reads the catalogue differently from production, and no gate covers routing quality | eval measurement | low | Carried | CV22.DS10.TS3 Debt Review | The next story that touches reception routing or descriptor generation |
 
 ## D-001 — Metadata lifecycle policy and evidence filtering live inside ConversationService
 
@@ -215,6 +217,22 @@ TypeScript has deterministic `detect-persona` goldens from CV22.DS2, so paying
 the fixture debt to port a live probe that duplicates them would be the
 expensive answer. That disposition belongs to **CV22.DS10.TS3**, the harness
 story, which must decide it explicitly.
+
+### Resolution
+
+**Dropped 2026-09-22 by CV22.DS10.TS3**, which decided the disposition the
+trigger demanded: `routing` was retired with the Python harness rather than
+ported or repaired. The fixture debt is gone because the fixtures are gone.
+
+What replaced it is *not* equivalent, and the story recorded that rather than
+letting the retirement read as a fix. `detectPersona`'s CI goldens prove
+**parity with the Python implementation**; they do not prove that the live
+persona catalogue routes real queries sensibly, which is what this eval
+measured. Retirement therefore leaves **no successor gate for routing quality**.
+That gap is written into the
+[engineering principles](../process/engineering-principles.md) as a named open
+gap and carried forward as **D-021**; refreshing the fixtures against the
+current catalogue is future work, not work this story did.
 
 **Now the only red (CV22.DS10.US1, 2026-09-19).** `scene` retired with the web
 console, so the suite is eleven modules and `routing` is the sole reason
@@ -776,6 +794,33 @@ module's aggregate score, in whichever harness owns the release gate, with a
 test proving the failure path. Until then, injection-resistance evidence comes
 from reading the probe line, not from the module verdict.
 
+### Resolution
+
+**Paid 2026-09-22 by CV22.DS10.TS3**, as a harness-contract requirement rather
+than a per-module patch, which is what the revisit trigger anticipated.
+`EvalProbe` carries a `blocking` flag; `evalPassed` returns false when any
+blocking probe failed, independently of the score; and the report names the
+probe (`blocked by <id>`) instead of leaving a human to infer it from the probe
+lines. The failure path is pinned by
+`ts/test/evals/types.test.ts::"a failed blocking probe fails the module at 5/6,
+above threshold"` — the exact arithmetic this entry described — and by a
+suite-level test asserting `--all` fails on a blocked module whose score clears
+threshold.
+
+The six probes carrying the flag are `prompt-injection-resisted` (extraction),
+`summary-injection-resisted`, `consolidation-injection-resisted`,
+`shadow-injection-resisted`, `title-injection-resisted`, and
+`tags-injection-resisted` — the five fenced surfaces this entry named as sharing
+`scene`'s arithmetic, plus extraction's. A structural test asserts that exactly
+six probes suite-wide are blocking and that every one of them is an injection
+probe, so the flag cannot quietly spread to quality probes or quietly fall off a
+security one.
+
+The entry's last warning proved worth keeping: a debt whose example is retired
+is easy to mistake for a debt that was paid. It was not paid when `scene` was
+deleted; it is paid now, and the first live run under the new rule had all six
+probes resist.
+
 ## D-018 — Extension API `VERSION` advertises a removed capability
 
 **Kind:** design / contract  
@@ -859,3 +904,90 @@ artifact that is itself scheduled for removal" — and concluded defer. It did n
 ask whether anything *else* would force the rebuild first. A deferral is a bet that
 nothing will touch the thing before its revisit trigger fires, and CI is a thing
 that touches everything.
+
+## D-020 — The eval harness records no spend
+
+**Kind:** observability / cost  
+**Severity:** low  
+**Status:** Carried  
+**Source:** CV22.DS10.TS3 Debt Review  
+
+### Carrying reason
+
+CV22.DS10.TS3's approved Plan committed to recording actually-spent in the
+story's `validation.md`. The build cannot: eval probes call the provider
+directly, without the `onLlmCall` ledger hook the production callers pass, so
+the full live suite wrote **zero rows** to `llm_calls`. Verified by query over
+the run window, not assumed.
+
+This is inherited rather than introduced — Python's harness recorded eval spend
+nowhere either, and the transfer preserved that behavior along with everything
+else. But the Plan made a promise this build does not keep, and a promise
+quietly dropped at closure is worse than a promise carried openly.
+
+The gap is small and the materials exist. `LiveLlmProvider` already returns the
+response fields the ledger hook consumes, and the harness already has a natural
+place to aggregate them: `runEval` builds one record per module and `runAll`
+knows the whole suite. What it does not have is a decision about *where* eval
+spend belongs — the product `llm_calls` ledger is the product's, and the gate
+writes only run history by design ("the gate writes only that history — never
+the product database"). Reporting a per-run total in the report and the JSONL
+record is the smaller, more likely answer.
+
+### Revisit trigger
+
+The first time a run's cost is questioned, or before any model-pin migration,
+where cost per run is part of the decision
+([model upgrade playbook](../process/development-guide.md#model-upgrade-playbook)
+already makes a full `--all` run mandatory on both pins, which doubles the
+spend it cannot currently report).
+
+### Closure condition
+
+A suite run reports what it cost, and the number lands somewhere durable
+alongside the verdict — without the gate writing to the product database.
+
+## D-021 — `reception`'s eval reads the catalogue differently from production, and routing quality has no gate
+
+**Kind:** eval measurement  
+**Severity:** low  
+**Status:** Carried  
+**Source:** CV22.DS10.TS3 Debt Review  
+
+### Carrying reason
+
+Two related gaps in what the model-behavior gate covers for routing.
+
+**The loader diverges.** `ts/evals/reception.ts` mirrors the Python eval's
+`_load_metadata` — `content[:200]` plus `routing_keywords` — while production's
+`resolveMirrorDefaults` prefers a generated descriptor when one exists and falls
+back to the content slice only when it does not. So the eval measures reception
+against a catalogue rendering that production does not quite use. This was
+deliberate at plateau 4: matching the eval is what made the plateau-5 diff
+meaningful, and changing it in the same story would have moved the numbers for a
+reason unrelated to the port.
+
+**Routing quality has no gate at all.** `routing` was retired with the Python
+harness (D-005). `detectPersona`'s CI goldens prove parity with the Python
+implementation, not that the live catalogue routes real queries sensibly — the
+thing `routing` actually measured, and the thing its stale fixtures stopped
+measuring well before retirement.
+
+Related evidence already on record: two `reception` probes
+(`open-existential-no-persona`, `shadow-touch-vague-discomfort`) have failed in
+every recorded run on both engines. Whether that is a prompt finding, a
+catalogue-drift finding of the same family as D-005, or a stale expectation has
+never been diagnosed — the module passes at 0.83 and the failures sit under the
+threshold, which is the same shape of invisibility D-017 described for security
+probes.
+
+### Revisit trigger
+
+The next story that touches reception routing or descriptor generation.
+
+### Closure condition
+
+The eval reads the catalogue the way production reads it, or the divergence is
+recorded as deliberate with a reason that survives the port; and the two
+standing `reception` failures have a diagnosis rather than a threshold that
+hides them.
