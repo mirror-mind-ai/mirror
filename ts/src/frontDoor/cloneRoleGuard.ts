@@ -14,9 +14,9 @@
 // lose the warning, which is the only trace that a Navigator worked in a
 // production clone on purpose.
 
-import { existsSync, readFileSync, statSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { existsSync, statSync } from "node:fs";
 import { inspectCloneRole } from "#runtime/git.ts";
+import { findPackageIdentity } from "#runtime/packageIdentity.ts";
 
 /** What the guard decided, or null when it has nothing to say. */
 export interface CloneRoleGuardOutcome {
@@ -40,31 +40,27 @@ export interface CloneRoleGuardOptions {
 }
 
 /**
- * Python `_is_mirror_mind_checkout`: walk upward to the first directory holding
- * both `pyproject.toml` and `src/memory`, and ask whether that pyproject
+ * Was `_is_mirror_mind_checkout`: walk upward to the first directory holding
+ * both `pyproject.toml` and `src/memory/`, and ask whether that pyproject
  * declares Mirror Mind.
  *
- * The walk STOPS at the first such directory, whatever the answer — it does not
- * keep climbing toward another candidate. An unreadable pyproject answers
- * `false` rather than continuing, which is Python's `return False` inside the
- * `except`, not a `continue`.
+ * **CV22.DS10.TS5 re-points the markers** (decision D1) to the TypeScript
+ * package, because `src/memory/` is deleted at plateau 3 — and a guard keyed
+ * to a deleted directory does not fail, it silently answers "not a checkout"
+ * and stops guarding. The production clone-role refusal would have
+ * disappeared with no test going red. See `#runtime/packageIdentity.ts`.
+ *
+ * The two properties Python had are preserved exactly, and are the reason this
+ * is a walk rather than a lookup:
+ *
+ *   * the walk STOPS at the first directory carrying the structural markers,
+ *     whatever it then answers — a nested project decides for itself instead
+ *     of inheriting its parent's identity;
+ *   * an unreadable or malformed manifest answers `false` rather than
+ *     continuing upward — Python's `return False` inside the `except`.
  */
 export function isMirrorMindCheckout(start: string): boolean {
-  let current = resolve(start);
-  for (;;) {
-    const pyproject = resolve(current, "pyproject.toml");
-    const memoryPackage = resolve(current, "src", "memory");
-    if (isFile(pyproject) && isDirectory(memoryPackage)) {
-      try {
-        return readFileSync(pyproject, "utf8").includes('name = "mirror"');
-      } catch {
-        return false;
-      }
-    }
-    const parent = dirname(current);
-    if (parent === current) return false;
-    current = parent;
-  }
+  return findPackageIdentity(start)?.isMirrorMind === true;
 }
 
 /**

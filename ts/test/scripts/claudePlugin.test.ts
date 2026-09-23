@@ -12,7 +12,6 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { after, describe, test } from "node:test";
-
 import {
   buildManifest,
   discoverSkillSources,
@@ -22,6 +21,7 @@ import {
   planGeneratedFiles,
   readVersion,
 } from "#guards/claudePlugin.ts";
+import { stageMirrorPackage } from "../support/mirrorTree.ts";
 
 const REPO_ROOT = resolve(import.meta.dirname, "..", "..", "..");
 const roots: string[] = [];
@@ -34,6 +34,9 @@ function fixture(files: Record<string, string>): string {
     mkdirSync(dirname(full), { recursive: true });
     writeFileSync(full, content, "utf8");
   }
+  // CV22.DS10.TS5 (D1): the builder reads its version from the TypeScript
+  // package now, through the one body US2's decision D2 created.
+  stageMirrorPackage(root, { version: "9.9.9" });
   return root;
 }
 
@@ -90,7 +93,6 @@ describe("skill discovery", () => {
     // Robust on both case-sensitive and case-insensitive filesystems,
     // including older checkouts still carrying lowercase `skill.md`.
     const root = fixture({
-      "pyproject.toml": 'version = "9.9.9"\n',
       ".claude/skills/upper/SKILL.md": "# upper\n",
       ".claude/skills/lower/skill.md": "# lower\n",
     });
@@ -103,7 +105,6 @@ describe("skill discovery", () => {
 
   test("ignores a skill directory with no markdown, and loose files", () => {
     const root = fixture({
-      "pyproject.toml": 'version = "9.9.9"\n',
       ".claude/skills/real/SKILL.md": "# real\n",
       ".claude/skills/empty/notes.txt": "nothing\n",
       ".claude/skills/README.md": "not a skill dir\n",
@@ -117,7 +118,6 @@ describe("skill discovery", () => {
 
   test("copies the source markdown verbatim", () => {
     const root = fixture({
-      "pyproject.toml": 'version = "9.9.9"\n',
       ".claude/skills/one/SKILL.md": "# one\n\nbody with ◇ glyph\n",
     });
 
@@ -131,7 +131,6 @@ describe("skill discovery", () => {
 describe("materialize", () => {
   test("reports a missing generated file in check mode", () => {
     const root = fixture({
-      "pyproject.toml": 'version = "9.9.9"\n',
       ".claude/skills/one/SKILL.md": "# one\n",
     });
 
@@ -142,7 +141,6 @@ describe("materialize", () => {
 
   test("reports an out-of-date generated file", () => {
     const root = fixture({
-      "pyproject.toml": 'version = "9.9.9"\n',
       ".claude/skills/one/SKILL.md": "# one\n",
     });
     materialize(root, { write: true });
@@ -155,7 +153,6 @@ describe("materialize", () => {
 
   test("reports a stale generated skill, then removes it on write", () => {
     const root = fixture({
-      "pyproject.toml": 'version = "9.9.9"\n',
       ".claude/skills/one/SKILL.md": "# one\n",
     });
     materialize(root, { write: true });
@@ -172,7 +169,6 @@ describe("materialize", () => {
 
   test("writing is idempotent and produces the planned bytes", () => {
     const root = fixture({
-      "pyproject.toml": 'version = "9.9.9"\n',
       ".claude/skills/one/SKILL.md": "# one\n",
     });
 

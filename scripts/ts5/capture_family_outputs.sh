@@ -20,6 +20,22 @@
 # whose normalized output differs from itself. A family that cannot match
 # itself ten seconds apart cannot prove anything four plateaus apart.
 #
+# What --selftest CANNOT catch, and the first cross-commit replay did: anything
+# that varies with TIME rather than with the run. Two runs one second apart sit
+# on the same commit, so a surface printing the git SHA looks perfectly
+# deterministic -- and then differs on every replay. `runtime version` prints
+# `Git commit:`, and it took an actual plateau-1 replay to see it. Hence the
+# commit mask below; hence also the rule that a capture is re-taken at the
+# BASELINE COMMIT whenever the normalizer changes, or the two files are hashed
+# under different rules and the diff means nothing.
+#
+# The same replay showed the masks must cover CHECKOUT STATE too -- branch,
+# clone role, update channel. Those describe the machine, not the engine, and
+# the baseline replays from a git worktree where all three legitimately differ.
+# What this capture is for is proving that REMOVING AN ENGINE changed no
+# answer; a branch name is not an answer. The clone-role guard keeps its own
+# direct coverage in cloneRoleGuard.test.ts and in the Navigator route.
+#
 # Deleted at Done? No — this script outlives the story, because it is the only
 # before/after instrument the migration leaves behind.
 
@@ -27,7 +43,11 @@ set -uo pipefail
 
 PRISTINE="${1:?usage: capture_family_outputs.sh <pristine.db> [--selftest]}"
 MODE="${2:-capture}"
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# `pwd -P`, not `pwd`: on macOS /tmp is a symlink to /private/tmp, and the
+# front door resolves the repository path before printing it. With the logical
+# form the mask misses by exactly the `/private` prefix, which is how three
+# families looked changed when nothing had changed.
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 WORK="$REPO_ROOT/tmp/ts5/capture-work"
 SOURCE_HOME="${MIRROR_SOURCE_HOME:-$HOME/.mirror-minds/vinicius-ts}"
 
@@ -90,6 +110,11 @@ normalize() {
     -e 's/\b[0-9]+ (second|minute|hour|day|week|month|year)s? ago\b/<AGO>/g' \
     -e 's/\bh[áa] [0-9]+ (segundo|minuto|hora|dia|semana|m[êe]s|ano)s?\b/<AGO>/g' \
     -e 's/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/<UUID>/g' \
+    -e 's/([Cc]ommit): [0-9a-f]{7,40}/\1: <SHA>/g' \
+    -e 's/(Git branch): .*/\1: <BRANCH>/g' \
+    -e 's/(Clone role): .*/\1: <ROLE>/g' \
+    -e 's/(Update channel): .*/\1: <CHANNEL>/g' \
+    -e 's/(channel) [a-z-]+/\1 <CHANNEL>/g' \
     -e 's/\b[0-9]+\.[0-9]+\.[0-9]+\b/<VERSION>/g' \
     -e "s#$WORK/[A-Za-z0-9._-]*#<WORK>#g" \
     -e "s#$REPO_ROOT#<REPO>#g" \
@@ -126,6 +151,17 @@ run_family() {
   normalize < "$WORK/$tag.err"
   return $exit_code
 }
+
+if [ "$MODE" = "--dump" ]; then
+  # Debug aid: print one family's normalized streams instead of hashing them.
+  while IFS='|' read -r slug argv; do
+    [ -z "$slug" ] && continue
+    [ "$slug" = "${3:-}" ] || continue
+    run_family "$slug" "$argv" dump
+  done <<< "$FAMILIES"
+  rm -rf "$WORK"
+  exit 0
+fi
 
 if [ "$MODE" = "--selftest" ]; then
   echo "family                 verdict   (two runs, two fresh copies)"

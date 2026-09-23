@@ -1,6 +1,6 @@
 {
   "name": "mirror-core",
-  "version": "0.0.0",
+  "version": "0.31.14",
   "private": true,
   "type": "module",
   "description": "Mirror Mind TypeScript core (database-seam strangler of the Python core)",

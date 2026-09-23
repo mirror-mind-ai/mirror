@@ -21,6 +21,7 @@ import {
 import { join } from "node:path";
 import test from "node:test";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
+import { stageMirrorPackage } from "../support/mirrorTree.ts";
 
 const CLI = new URL("../../src/frontDoor/cli.ts", import.meta.url).pathname;
 const REPO_ROOT = new URL("../../..", import.meta.url).pathname;
@@ -57,6 +58,7 @@ function fixture(): Fixture {
   };
   git("init", "--initial-branch=stable");
   writeFileSync(join(repo, "pyproject.toml"), '[project]\nname = "mirror"\nversion = "9.9.9"\n');
+  stageMirrorPackage(repo, { version: "9.9.9" });
   mkdirSync(join(repo, "docs", "releases"), { recursive: true });
   writeFileSync(
     join(repo, "docs", "releases", "v9.9.9.md"),

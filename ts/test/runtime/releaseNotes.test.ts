@@ -19,6 +19,7 @@ import {
   renderReleaseNote,
   renderReleaseNotesBundle,
 } from "#runtime/releaseNotes.ts";
+import { stageMirrorPackage } from "../support/mirrorTree.ts";
 
 const GOLDEN_PATH = new URL("../goldens/release-notes.golden.json", import.meta.url);
 
@@ -80,6 +81,7 @@ function fixture(): { root: string; clone: string; cleanup: () => void } {
     join(seed, "pyproject.toml"),
     `[project]\nname = "mirror"\nversion = "${CURRENT}"\n`,
   );
+  stageMirrorPackage(seed, { version: CURRENT });
   for (const [name, body] of Object.entries(golden.local_notes)) {
     writeFileSync(join(seed, "docs", "releases", name), body);
   }

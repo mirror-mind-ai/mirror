@@ -17,6 +17,7 @@ import {
   renderReleaseDoctor,
 } from "../../scripts/releaseDoctor.ts";
 import { renderPromotion, runReleasePromotion } from "../../scripts/releasePromote.ts";
+import { stageMirrorPackage } from "../support/mirrorTree.ts";
 
 const GIT_ENV = {
   ...process.env,
@@ -42,6 +43,7 @@ function fixture(version = "1.2.3"): Fixture {
   const repo = mkdtempSync(join(tmpdir(), "us2-release-"));
   git(repo, "init", "-q", "-b", "main");
   writeFileSync(join(repo, "pyproject.toml"), `[project]\nname = "x"\nversion = "${version}"\n`);
+  stageMirrorPackage(repo, { version });
   mkdirSync(join(repo, "docs", "releases"), { recursive: true });
   writeFileSync(join(repo, "docs", "releases", `v${version}.md`), `# v${version} — A Release\n`);
   writeFileSync(join(repo, "docs", "releases", "index.md"), `- [v${version}](v${version}.md)\n`);

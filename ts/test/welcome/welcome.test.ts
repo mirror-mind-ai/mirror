@@ -35,6 +35,7 @@ import {
   type UpdateAwareness,
   writeUpdateCache,
 } from "#welcome/updateCache.ts";
+import { stageMirrorPackage } from "../support/mirrorTree.ts";
 
 const GOLDEN_PATH = new URL("../goldens/welcome.golden.json", import.meta.url);
 
@@ -371,6 +372,7 @@ function cardFixture(): CardFixture {
     join(seed, "pyproject.toml"),
     `[project]\nname = "mirror"\nversion = "${VERSION}"\n`,
   );
+  stageMirrorPackage(seed, { version: VERSION });
   writeFileSync(join(seed, "README.md"), "fixture\n");
   git(seed, "add", ".");
   git(seed, "commit", "-m", "first");

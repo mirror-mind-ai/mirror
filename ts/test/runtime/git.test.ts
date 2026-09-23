@@ -22,6 +22,7 @@ import {
   renderRuntimeUpdateAvailability,
   renderRuntimeVersion,
 } from "#runtime/git.ts";
+import { stageMirrorPackage } from "../support/mirrorTree.ts";
 
 const GOLDEN_PATH = new URL("../goldens/runtime-git.golden.json", import.meta.url);
 
@@ -84,6 +85,15 @@ function fixture(): { root: string; clone: string; seed: string; cleanup: () => 
   git(root, "clone", "--bare", seed, remote);
   git(root, "clone", remote, clone);
   git(clone, "checkout", "stable");
+  // CV22.DS10.TS5 (D1): identity and version now come from the TypeScript
+  // package. Staged into the CLONE, after cloning, and hidden from git via
+  // info/exclude -- because this golden compares real commit ids and a
+  // `dirty` flag. Committing the manifest would change the tree hash and
+  // every recorded id with it; leaving it untracked would make the fixture
+  // dirty. Neither is the thing under test, so the manifest exists on disk
+  // for `packageVersion` and nowhere for git.
+  writeFileSync(join(clone, ".git", "info", "exclude"), "ts/\n", "utf8");
+  stageMirrorPackage(clone, { version: golden.meta.fixture_version });
   writeFileSync(join(seed, "README.md"), "fixture, moved on\n");
   git(seed, "commit", "-am", "second");
   git(seed, "push", remote, "stable");
