@@ -264,7 +264,7 @@ bash scripts/smoke_runtime_update.sh
 
 It builds a scratch origin, clone, mirror home, and env-file, and shadows `python`, `python3`, and `uv` with stubs that exit 66 — so an interpreter spawn fails the smoke instead of passing unnoticed. That is how CV22.DS10.US2 found the updater spawning `uv` to fill in a display field its own gate never read.
 
-**The checklist above is not the full gate.** CI's list is the authority, and it includes work these commands do not touch: the parity generators, the write-parity probes, the determinism gate, the smokes, and the four repository checks (`check_oracle_drift`, `check_retired_surfaces`, `check_skill_command_parity`, `check_doc_links`). Green `pytest` plus green `npm test` says nothing about any of them; CV22.DS10.TS2 failed CI twice for exactly that assumption.
+**The checklist above is not the full gate.** CI's list is the authority, and it includes work these commands do not touch: the parity generators, the write-parity probes, the determinism gate, the smokes, and the repository checks (`check_oracle_drift`, `check_retired_surfaces`, `check_doc_links`, and the Node `checkSkillCommandParity`). Green `pytest` plus green `npm test` says nothing about any of them; CV22.DS10.TS2 failed CI twice for exactly that assumption.
 
 If a verification command fails because of known pre-existing debt, record that explicitly in the story notes and do not silently treat the gate as green.
 

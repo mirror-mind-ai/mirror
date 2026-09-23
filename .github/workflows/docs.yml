@@ -7,7 +7,6 @@ on:
       - "docs/**"
       - "**.md"
       - "scripts/check_doc_links.py"
-      - "scripts/check_skill_command_parity.py"
       - "ts/scripts/checkSkillCommandParity.ts"
       - "src/memory/docs_lint.py"
   pull_request:
@@ -16,7 +15,6 @@ on:
       - "docs/**"
       - "**.md"
       - "scripts/check_doc_links.py"
-      - "scripts/check_skill_command_parity.py"
       - "ts/scripts/checkSkillCommandParity.ts"
       - "src/memory/docs_lint.py"
 
@@ -61,20 +59,20 @@ jobs:
       # `uv run python -m memory` on Claude Code and the published plugin, for
       # commands flipped as far back as DS3. Nothing failed, because Python
       # answered correctly; the claim "answers from TS" was simply untrue for
-      # two of three runtimes, and DS10 deletes the module those copies invoke.
-      - name: Check skill command parity across runtime copies
-        run: uv run python scripts/check_skill_command_parity.py
-
-      # CV22.DS10.US2 (D6): the Node successor, running BESIDE the Python one
-      # for exactly one commit so that "the two agree" is evidence rather than
-      # a claim. The next commit deletes the Python guard -- a check whose job
-      # is to assert that nothing invokes the interpreter cannot itself need
-      # that interpreter to run, and after TS5 there would be nothing left to
-      # execute it.
+      # two of three runtimes.
       #
-      # It also asserts what the Python one never could: ABSENCE. The allowlist
-      # mechanism is deleted rather than emptied, and the scan covers the whole
-      # packaged plugin -- manifest, commands, hooks -- because an installed
-      # user resolves that directory, not this repository's `.pi/`.
-      - name: Check skill command parity (Node successor)
+      # Ported to Node by CV22.DS10.US2 (D6): a check whose job is to assert
+      # that nothing invokes the interpreter cannot itself need that
+      # interpreter to run, and after TS5 there would be nothing left to
+      # execute the Python version. Both guards ran side by side in the
+      # previous commit and agreed, on a clean tree and on a seeded
+      # regression, before the Python one was deleted.
+      #
+      # It asserts what the original could not: ABSENCE. The allowlist
+      # mechanism is deleted rather than emptied -- an empty dictionary invites
+      # the next story to add a row, which is the escape hatch DS10's Skill
+      # Invocation Gate exists to close -- and the scan covers the whole
+      # packaged plugin, manifest and commands and hooks included, because an
+      # installed user resolves that directory and not this repository's .pi/.
+      - name: Check skill command parity across runtime copies
         run: node ts/scripts/checkSkillCommandParity.ts
