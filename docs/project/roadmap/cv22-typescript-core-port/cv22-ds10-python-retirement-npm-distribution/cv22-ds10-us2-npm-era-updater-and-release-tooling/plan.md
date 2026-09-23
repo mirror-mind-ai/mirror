@@ -88,7 +88,14 @@ configured.**
 **One pipeline, two apply strategies.** The pipeline is what the product promises and what
 the smoke proves:
 
-*gate → capture → backup → verify → apply → migrate → validate*
+*gate → capture → plan → fetch → backup → verify → apply → migrate → validate*
+
+*(Stage order corrected at plateau 3 against the oracle. The Plan's first draft put
+`backup` before `plan`/`fetch`, which would archive the database on every invocation
+including the ones that find nothing to do. The oracle plans and fetches first — both
+cheap and read-only — and only backs up once it knows the tree is going to move. The
+safety property is unchanged and now explicit: `apply` never runs unless `capture` and
+`verify backup` passed.)*
 
 Every stage records `pass | fail | skip` with a detail; the run stops at the first `fail`;
 a recovery block is printed on any failure; `--repair-updater` runs a minimal gate (clean
@@ -102,8 +109,14 @@ and tells the user to rerun `runtime update`. Only `apply` differs by kind:
 | `--dry-run` | ancestry plan (`inspectGitUpdatePlan`) + pending release notes | resolved target version from the dist-tag + release note for it when present |
 | capture | `git rev-parse HEAD` | installed `version` from the package's own `package.json` |
 | apply | `git fetch` + `git merge --ff-only origin/<channel>` | `npm install -g <name>@<resolved-version>` |
-| refuses when | `dev` role, dirty tree, diverged, local ahead — as today | `unknown` kind, `npm` absent, path not under `npm root -g` |
+| refuses when | dirty tree, diverged, local ahead, unready status — as today | `unknown` kind, `npm` absent, path not under `npm root -g` |
 | recovery | `git reset --hard <captured sha>` | `npm install -g <name>@<captured version>` |
+
+*(Corrected at plateau 3: the table said a `dev` clone role is refused. It is not, on
+either engine — `run_runtime_update` never reads `clone_role`. That marker drives the
+session-start guard and the welcome card. Adding a refusal here would have invented
+behavior the oracle does not have and made the Navigator's own dev checkout
+un-updatable.)*
 
 **`capture` is a stage, not an implementation detail.** It runs before `backup` and records
 the exact value the recovery block will print. `npm install -g` is not atomic; a failed
@@ -360,8 +373,8 @@ index's *Plateau Progress*.
 Given the production clone on channel <c>, one commit behind origin/<c>
 When  the Navigator asks Mirror to update itself
 Then  the front door runs the pipeline with no uv or Python process spawned
-And   the stages print in order — status gate, capture, backup, verify backup, plan,
-      fetch, fast-forward, migrate, post-update status — each pass/fail/skip with detail
+And   the stages print in order — status gate, capture, plan, fetch, backup,
+      verify backup, fast-forward, migrate, post-update status — each with a detail
 And   a backup exists, and verifying it opens the database and passes quick_check
 And   the migrate stage ran in a FRESH process on the NEW code and printed the
       _migrations ledger before and after

@@ -247,18 +247,29 @@ test("runtime status and diagnose carry the oracle's exit codes", () => {
   }
 });
 
-test("the DS10 updater stays on Python even with the reads flipped", () => {
+test("the updater answers from TS, and MIRROR_TS_RUNTIME_UPDATE=0 is the way back", () => {
+  // Was "the DS10 updater stays on Python" until CV22.DS10.US2 plateau 3
+  // ported it. `--check` is still the cheapest updater path and needs no
+  // network, so it is still what this grades -- only the expected engine
+  // changed, and the revert control is now what must be pinned.
   const f = fixture();
   try {
-    // `--check` is the cheapest updater path and needs no network to refuse.
-    const result = runCli(f, ["runtime", "update", "--check"], { MIRROR_TS_BACKUP: "1" });
-    // Python answers (or fails to spawn in a bare test env); either way the
-    // front door must have ROUTED it to python, which the log records.
+    const answered = runCli(f, ["runtime", "update", "--check"], {});
+    assert.match(answered.stdout, /^Mirror runtime update check$/m);
+    assert.doesNotMatch(answered.stdout, /uv run python/);
+    assert.ok(
+      logLines(f).some((line) => line.includes("\truntime\tts\t")),
+      "expected the front-door log to record runtime update on ts",
+    );
+
+    const reverted = runCli(f, ["runtime", "update", "--check"], {
+      MIRROR_TS_RUNTIME_UPDATE: "0",
+    });
+    assert.doesNotMatch(reverted.stdout, /Mirror runtime drift diagnosis/);
     assert.ok(
       logLines(f).some((line) => line.includes("\truntime\tpython\t")),
-      "expected the front-door log to record runtime update on python",
+      "expected the revert control to route runtime update back to python",
     );
-    assert.doesNotMatch(result.stdout, /Mirror runtime drift diagnosis/);
   } finally {
     f.cleanup();
   }

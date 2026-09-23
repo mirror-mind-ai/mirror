@@ -12,6 +12,7 @@
 import { join } from "node:path";
 import { createZipBackup } from "#backup/zipBackup.ts";
 import { dbNameForEnv, resolveMirrorHome } from "#frontDoor/dbPath.ts";
+import { frontDoorLogPath, logFrontDoor } from "#frontDoor/frontDoorLog.ts";
 import {
   renderBackupVerification,
   renderRuntimeBackupCreated,
@@ -24,13 +25,18 @@ import {
   rootStateFindings,
 } from "#runtime/diagnose.ts";
 import {
+  checkUpdateAvailability,
   inspectCloneRole,
   inspectGit,
   inspectGitWorktree,
   inspectUpdateChannel,
+  renderRuntimeUpdateAvailability,
   renderRuntimeVersion,
+  upstreamFor,
   versionFromPyproject,
 } from "#runtime/git.ts";
+import { detectInstallKind } from "#runtime/installKind.ts";
+import { renderMigrate, runMigrate } from "#runtime/migrate.ts";
 import {
   buildPendingReleaseNotes,
   readReleaseNote,
@@ -38,6 +44,9 @@ import {
   renderReleaseNotesBundle,
 } from "#runtime/releaseNotes.ts";
 import { buildRuntimeStatus, renderRuntimeStatus, statusVerdict } from "#runtime/status.ts";
+import { frontDoorSpawner, runUpdate, type UpdateSpawn } from "#runtime/update.ts";
+import { statusAllowsUpdatePreflight } from "#runtime/updateGate.ts";
+import { renderUpdateResult, updateLogDetail } from "#runtime/updatePipeline.ts";
 import { expandHome } from "#util/paths.ts";
 import { composeWelcome, welcomeDisabled } from "#welcome/card.ts";
 import { composeStatusLine } from "#welcome/statusLine.ts";
@@ -64,6 +73,9 @@ export const RUNTIME_SUBCOMMANDS = [
   "release-doctor",
   "release-promote",
   "backup",
+  // CV22.DS10.US2 (D8): not on the oracle. The updater spawns it in a fresh
+  // process so the code that migrates is the code that was just installed.
+  "migrate",
 ] as const;
 
 /**
@@ -89,7 +101,7 @@ export const DS10_RUNTIME_SUBCOMMANDS = new Set(["update", "release-doctor", "re
  * reverting a bad updater must not drag `status`, `version`, and `diagnose`
  * back to Python with it.
  */
-export const TS_RUNTIME_UPDATE_SUBCOMMANDS = new Set(["backup"]);
+export const TS_RUNTIME_UPDATE_SUBCOMMANDS = new Set(["backup", "update", "migrate"]);
 
 /**
  * argparse's answer to a name that is not a subcommand, in TypeScript.
@@ -260,6 +272,8 @@ export async function runRuntimeReadRoute(
   }
 
   if (subcommand === "backup") return runRuntimeBackup(args.slice(1), io, env);
+  if (subcommand === "migrate") return runRuntimeMigrate(args.slice(1), io, env);
+  if (subcommand === "update") return runRuntimeUpdate(args.slice(1), io, env, cwd);
 
   // Not unreachable any more: the routing table sends every name it does not
   // recognize here, so that the refusal survives the oracle's deletion.
@@ -319,6 +333,165 @@ function runRuntimeBackup(
   const verification = verifyBackupArchive(backupPath);
   writeOut(io, renderRuntimeBackupCreated({ backupPath, mirrorHome, verification }));
   return verification.valid ? 0 : 1;
+}
+
+/** The mirror home this invocation addresses, or an error to print. */
+function homeFor(
+  args: readonly string[],
+  env: NodeJS.ProcessEnv,
+): { home: string } | { error: string } {
+  const explicit = optionValue(args, "--mirror-home");
+  try {
+    return {
+      home:
+        explicit !== null
+          ? expandHome(explicit)
+          : resolveMirrorHome(env as Record<string, string | undefined>),
+    };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+/** `runtime migrate [--mirror-home PATH]` (CV22.DS10.US2, D8). */
+function runRuntimeMigrate(
+  args: readonly string[],
+  io: RuntimeRouteIo,
+  env: NodeJS.ProcessEnv,
+): number {
+  const resolved = homeFor(args, env);
+  if ("error" in resolved) {
+    writeErr(io, `${resolved.error}\n`);
+    return 1;
+  }
+  const dbPath = join(resolved.home, dbNameForEnv(env.MEMORY_ENV || "production"));
+  const outcome = runMigrate(dbPath);
+  writeOut(io, renderMigrate(outcome));
+  return outcome.error === null ? 0 : 1;
+}
+
+/**
+ * `runtime update [--check|--dry-run|--repair-updater] [--no-fetch]
+ * [--skip-migrations] [--mirror-home PATH] [--channel stable|main]`.
+ */
+function runRuntimeUpdate(
+  args: readonly string[],
+  io: RuntimeRouteIo,
+  env: NodeJS.ProcessEnv,
+  cwd: string,
+): number {
+  const version = versionFromPyproject(cwd) ?? "unknown";
+  const channelOverride = optionValue(args, "--channel");
+  const install = detectInstallKind({ frontDoorPath: frontDoorSelfPath() });
+  const start = install.kind === "clone" ? install.repository : cwd;
+  const channel = inspectUpdateChannel(start, channelOverride);
+
+  if (args.includes("--check")) {
+    const availability = checkUpdateAvailability(start, channelOverride, version);
+    writeOut(io, renderRuntimeUpdateAvailability(availability));
+    return availability.status === "up_to_date" || availability.status === "update_available"
+      ? 0
+      : 1;
+  }
+
+  const resolved = homeFor(args, env);
+  if ("error" in resolved) {
+    writeErr(io, `${resolved.error}\n`);
+    return 1;
+  }
+  const mirrorHome = resolved.home;
+  const dbPath = join(mirrorHome, dbNameForEnv(env.MEMORY_ENV || "production"));
+
+  // The repair lane is entered on request, and AUTOMATICALLY when the gate
+  // throws rather than merely reporting trouble: an updater that cannot
+  // evaluate its own status is exactly the failure the lane exists for, and
+  // asking the broken status to authorize its own repair is circular.
+  let repair = args.includes("--repair-updater");
+  let repairReason = repair ? "requested with --repair-updater" : "";
+
+  const gate = (): { ready: boolean; allowed: boolean; detail: string } => {
+    const report = buildRuntimeStatus({
+      start,
+      mirrorHome,
+      channel: channelOverride,
+      env,
+      version,
+      // The gate needs a VERDICT, not a display field, and
+      // `detectPythonVersion` spawns `uv run python` to fill one in. An
+      // updater that spawns the interpreter it is replacing fails its own
+      // acceptance -- caught by shadowing python/python3/uv on PATH during the
+      // first end-to-end run. `statusAllowsUpdatePreflight` never reads this
+      // field; `unknown` is the value the probe itself returns when it cannot
+      // tell, so nothing downstream sees a value that could not occur.
+      pythonVersion: "unknown",
+    });
+    const verdict = statusAllowsUpdatePreflight(report);
+    return { ready: statusVerdict(report) === "ready", ...verdict };
+  };
+
+  if (!repair) {
+    try {
+      gate();
+    } catch (error) {
+      repair = true;
+      repairReason = `runtime status crashed before update planning: ${
+        error instanceof Error ? error.message.split("\n")[0] : String(error)
+      }`;
+    }
+  }
+
+  const result = runUpdate({
+    install,
+    upstream: install.kind === "clone" ? upstreamFor(channel) : null,
+    channel: channel.value,
+    mirrorHome,
+    gate,
+    // Re-read through a FRESH process, so the verdict comes from the code that
+    // was just installed rather than from the modules this one imported.
+    statusReady: () => {
+      const probe = spawner(env)(["runtime", "status", "--mirror-home", mirrorHome]);
+      return {
+        ready: probe.code === 0,
+        detail: probe.code === 0 ? "" : "runtime status is not ready",
+      };
+    },
+    createBackup: () => createZipBackup({ dbPath, mirrorHome, backupDir: null, silent: true, env }),
+    spawnFrontDoor: spawner(env),
+    fetch: !args.includes("--no-fetch"),
+    migrate: !args.includes("--skip-migrations"),
+    dryRun: args.includes("--dry-run"),
+    repair,
+    ...(repairReason ? { repairReason } : {}),
+  });
+
+  writeOut(io, renderUpdateResult(result));
+  if (repair && result.success) {
+    // After the stages, not before them: the instruction is what to do NEXT,
+    // and it reads as a caption on a result the operator has already seen.
+    writeOut(
+      io,
+      "\nThe updater was repaired. Run `runtime update` again to complete the update.\n",
+    );
+  }
+  // The log takes the install KIND word and the short refs, never the
+  // repository path: this file's contract is "never argument values", and the
+  // migrate_on_open entry beside it records a basename for the same reason.
+  logFrontDoor(frontDoorLogPath(dbPath), {
+    command: "runtime",
+    route: "ts",
+    exitCode: result.success ? 0 : 1,
+    detail: updateLogDetail(install.kind, channel.value, result),
+  });
+  return result.success ? 0 : 1;
+}
+
+function spawner(env: NodeJS.ProcessEnv): UpdateSpawn {
+  return frontDoorSpawner(frontDoorSelfPath(), env);
+}
+
+/** This front door's own path, which is also how the install kind is read. */
+function frontDoorSelfPath(): string {
+  return new URL("./cli.ts", import.meta.url).pathname;
 }
 
 /**

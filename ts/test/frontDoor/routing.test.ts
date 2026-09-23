@@ -712,12 +712,35 @@ test("the DS10 updater and release machinery are refused by name, even with the 
   // error this file's sibling comment already corrected for `latest`/`pending`.
   // Carrying them here made the front door claim DS10 owns a port of something
   // that has never existed (CV22.DS10.US2 plateau 1).
-  // `backup` left this set at plateau 2, when US2 ported it.
-  for (const sub of ["update", "release-doctor", "release-promote"]) {
+  // `backup` left this set at plateau 2 and `update` at plateau 3, as US2
+  // ported each. What remains is the release chain, which plateau 5 re-homes
+  // out of the product surface rather than porting.
+  for (const sub of ["release-doctor", "release-promote"]) {
     const decision = routeMemoryCommand(["runtime", sub], { MIRROR_TS_BACKUP: "1" });
     assert.equal(decision.engine, "python", sub);
     assert.match(decision.reason, /DS10/, sub);
   }
+});
+
+test("the updater family answers from TS, and reverts as one", () => {
+  // CV22.DS10.US2 plateau 3. `update` and the `migrate` verb D8 added join
+  // `backup` behind ONE gate, because reverting a broken updater must return
+  // the whole family -- an update that runs but cannot migrate is worse than
+  // an update that does not run.
+  for (const sub of ["update", "migrate", "backup"]) {
+    assert.equal(routeMemoryCommand(["runtime", sub], {}).engine, "ts", sub);
+    assert.match(routeMemoryCommand(["runtime", sub], {}).reason, /DS10\.US2/, sub);
+    assert.equal(
+      routeMemoryCommand(["runtime", sub], { MIRROR_TS_RUNTIME_UPDATE: "0" }).engine,
+      "python",
+      sub,
+    );
+  }
+  // ...and the reads do not move with it.
+  assert.equal(
+    routeMemoryCommand(["runtime", "status"], { MIRROR_TS_RUNTIME_UPDATE: "0" }).engine,
+    "ts",
+  );
 });
 
 test("the two backups are different commands with independent gates", () => {
