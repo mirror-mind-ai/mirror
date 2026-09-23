@@ -18,9 +18,9 @@ import {
   inspectGit,
   inspectGitWorktree,
   inspectUpdateChannel,
+  packageVersion,
   renderRuntimeUpdateAvailability,
   renderRuntimeVersion,
-  versionFromPyproject,
 } from "#runtime/git.ts";
 
 const GOLDEN_PATH = new URL("../goldens/runtime-git.golden.json", import.meta.url);
@@ -219,18 +219,14 @@ test("the networked read uses the network budget, not the local one", () => {
   assert.ok(localReads.length >= 3, "local reads keep the local budget by default");
 });
 
-test("versionFromPyproject walks upward like the oracle", () => {
+test("packageVersion walks upward like the oracle", () => {
   const f = fixture();
   try {
-    assert.equal(versionFromPyproject(f.clone), golden.meta.pyproject_version);
+    assert.equal(packageVersion(f.clone), golden.meta.pyproject_version);
     const nested = join(f.clone, "a", "b");
     mkdirSync(nested, { recursive: true });
-    assert.equal(
-      versionFromPyproject(nested),
-      golden.meta.pyproject_version,
-      "found by walking up",
-    );
-    assert.equal(versionFromPyproject("/"), null, "absent above the root");
+    assert.equal(packageVersion(nested), golden.meta.pyproject_version, "found by walking up");
+    assert.equal(packageVersion("/"), null, "absent above the root");
   } finally {
     f.cleanup();
   }

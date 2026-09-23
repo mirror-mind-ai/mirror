@@ -45,6 +45,8 @@
     "#helpers/*": "./test/helpers/*"
   },
   "scripts": {
+    "release:doctor": "node scripts/releaseDoctor.ts",
+    "release:promote": "node scripts/releasePromote.ts",
     "typecheck": "tsc --noEmit",
     "test": "node --test \"test/**/*.test.ts\"",
     "eval": "node --env-file-if-exists=../.env evals/harness/cli.ts",

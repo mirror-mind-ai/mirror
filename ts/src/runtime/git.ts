@@ -211,7 +211,7 @@ export function upstreamFor(channel: MarkerValue): string {
 
 // Lives in `runtime/version.ts` now -- the MCP server needs it and should not
 // import this module to get it. Re-exported so runtime call sites do not move.
-export { versionFromPyproject } from "./version.ts";
+export { packageVersion } from "./version.ts";
 
 /** Port of `_classify_update_status`: ancestry from the local object database. */
 function classifyUpdateStatus(

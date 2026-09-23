@@ -25,7 +25,7 @@
 import { dirname } from "node:path";
 import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
-import { versionFromPyproject } from "#runtime/version.ts";
+import { packageVersion } from "#runtime/version.ts";
 import { handleMessage, type JsonRpcResponse } from "./protocol.ts";
 import { defaultRegistry, type ToolRegistry } from "./registry.ts";
 import { encodeJsonLine } from "./wire.ts";
@@ -51,7 +51,7 @@ export function resolveServerVersion(): string {
   // would have made a client see the version change with the engine, since
   // nothing but the harness exports MIRROR_MCP_VERSION. DS10 re-points this at
   // the npm package version.
-  return process.env.MIRROR_MCP_VERSION ?? versionFromPyproject(HERE) ?? "0.0.0";
+  return process.env.MIRROR_MCP_VERSION ?? packageVersion(HERE) ?? "0.0.0";
 }
 
 /** Write one line and resolve once it has actually left the process. */

@@ -30,10 +30,10 @@ import {
   inspectGit,
   inspectGitWorktree,
   inspectUpdateChannel,
+  packageVersion,
   renderRuntimeUpdateAvailability,
   renderRuntimeVersion,
   upstreamFor,
-  versionFromPyproject,
 } from "#runtime/git.ts";
 import { detectInstallKind } from "#runtime/installKind.ts";
 import { renderMigrate, runMigrate } from "#runtime/migrate.ts";
@@ -93,12 +93,14 @@ export const RUNTIME_SUBCOMMANDS = [
  * claimed DS10 owed a port of something that was never a command. Four names,
  * and each leaves as its story flips it.
  */
-export const DS10_RUNTIME_SUBCOMMANDS = new Set(["update", "release-doctor", "release-promote"]);
-
 /**
- * The updater family, as US2 flips it: one subcommand at a time, each leaving
- * `DS10_RUNTIME_SUBCOMMANDS` in the same commit that adds it here. Gated by
- * `MIRROR_TS_RUNTIME_UPDATE`, which is deliberately NOT the reads' gate --
+ * The updater family. US2 flipped it one subcommand at a time -- `backup`,
+ * then `update` and the `migrate` verb D8 added -- and the set it emptied,
+ * `DS10_RUNTIME_SUBCOMMANDS`, is gone: `release-doctor` and `release-promote`
+ * were the last two names in it, and they are not ported but RETIRED from the
+ * product surface, so they answer from the retired-surface table instead.
+ *
+ * Gated by `MIRROR_TS_RUNTIME_UPDATE`, deliberately NOT the reads' gate:
  * reverting a bad updater must not drag `status`, `version`, and `diagnose`
  * back to Python with it.
  */
@@ -182,7 +184,7 @@ export function runWelcomeRoute(argv: readonly string[], io: RuntimeRouteIo = {}
     return 0;
   }
 
-  const version = versionFromPyproject(cwd) ?? "unknown";
+  const version = packageVersion(cwd) ?? "unknown";
   const card = composeWelcome({
     mirrorHome: home,
     cwd,
@@ -203,7 +205,7 @@ export async function runRuntimeReadRoute(
   const cwd = io.cwd ?? process.cwd();
   const args = argv.slice(1);
   const subcommand = args[0] ?? "";
-  const version = versionFromPyproject(cwd) ?? "unknown";
+  const version = packageVersion(cwd) ?? "unknown";
 
   if (subcommand === "version") {
     const startArg = optionValue(args, "--start");
@@ -381,7 +383,7 @@ function runRuntimeUpdate(
   env: NodeJS.ProcessEnv,
   cwd: string,
 ): number {
-  const version = versionFromPyproject(cwd) ?? "unknown";
+  const version = packageVersion(cwd) ?? "unknown";
   const channelOverride = optionValue(args, "--channel");
   // `npm root -g` is resolved once, and only matters for identifying a
   // package install: a clone never pays for it.

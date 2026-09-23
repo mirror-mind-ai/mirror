@@ -306,6 +306,49 @@ create, instead of reporting an empty SQLite store.
 
 ---
 
-<!-- CV22.DS10.US2 (npm-era updater), TS5 (Python deletion), and US3 (npm
-     distribution) add their cutoffs here. TS4's remaining surfaces land with
-     their own deletion plateaus. -->
+## Release tooling leaves the product command surface
+
+`python -m memory runtime release-doctor` and `runtime release-promote` are
+gone from the product command surface. The front door answers both names in one
+line pointing here and exits 1.
+
+**Why.** They were offered to every installed user, and no installed user can
+run them: they need a git checkout, a clean working tree, local tags, a
+`stable` branch, and push rights to the repository. A command surface that
+offers an operation only its maintainer can perform is not a feature, it is a
+trap with a good error message. CV22.DS10.US2 decided (D1) that the release
+chain is maintainer tooling rather than product.
+
+**What replaces them.** Both moved, unchanged in substance, to scripts run from
+the repository:
+
+```bash
+cd ts
+npm run release:doctor  -- --target vX.Y.Z [--stable origin/stable]
+npm run release:promote -- --target vX.Y.Z [--stable stable] [--remote origin] [--dry-run] [--push]
+```
+
+The doctor performs the same eight checks in the same order — repository, clean
+tree, package version, release note, note heading, release index link, tag
+state, stable-ref relation — and is still strictly read-only: it does not tag,
+merge, push, fetch, or edit files. Promotion still runs the doctor first and
+refuses on any failure, still refuses to move a tag that points anywhere other
+than `HEAD`, and still reaches a remote only under an explicit `--push`.
+
+**What still works if you do nothing.** Everything, for everyone who is not
+cutting a release. No product command changed behavior, and `runtime status`,
+`version`, `diagnose`, `release-notes`, `update`, `backup`, and `migrate` are
+unaffected. A maintainer on the last Python-bearing release can still run the
+old commands there; on this release, run the `npm run release:*` scripts
+instead.
+
+**One thing to know.** The chain is unchanged in shape — release note →
+doctor → promote → `stable` + GitHub Release — and push, tag, stable promotion
+and publication all remain separate, explicitly authorized steps. US3 appends
+npm publication and the dist-tag move to the same ordered step list.
+
+---
+
+<!-- CV22.DS10.TS5 (Python deletion) and US3 (npm distribution) add their
+     cutoffs here. TS4's remaining surfaces land with their own deletion
+     plateaus. -->

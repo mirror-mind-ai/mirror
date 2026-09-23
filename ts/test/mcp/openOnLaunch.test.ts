@@ -23,7 +23,7 @@ import { bootstrapDatabase } from "#db/bootstrap.ts";
 import { openDatabaseForBootstrap } from "#db/database.ts";
 import { TS_AUTHORED_MIGRATION_IDS } from "#db/schemaState.ts";
 import { regressToPre017 } from "#helpers/legacyDb.ts";
-import { versionFromPyproject } from "#runtime/version.ts";
+import { packageVersion } from "#runtime/version.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const TS_ROOT = join(HERE, "..", "..");
@@ -128,7 +128,7 @@ test("initialize reports the project version without MIRROR_MCP_VERSION set", as
   try {
     const run = await runServer(fixture.dbPath);
     const response = JSON.parse(run.stdout.split("\n").filter(Boolean)[0]);
-    const expected = versionFromPyproject(TS_ROOT);
+    const expected = packageVersion(TS_ROOT);
     assert.ok(expected, "the repository must expose a version to match against");
     assert.equal(
       response.result.serverInfo.version,

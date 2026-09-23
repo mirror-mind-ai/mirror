@@ -17,11 +17,7 @@ import {
   WEEK_PLAN_TRANSPORT,
 } from "#providers/transport.ts";
 
-import {
-  DS10_RUNTIME_SUBCOMMANDS,
-  TS_RUNTIME_READ_SUBCOMMANDS,
-  TS_RUNTIME_UPDATE_SUBCOMMANDS,
-} from "./runtimeRoute.ts";
+import { TS_RUNTIME_READ_SUBCOMMANDS, TS_RUNTIME_UPDATE_SUBCOMMANDS } from "./runtimeRoute.ts";
 
 export type FrontDoorEngine = "ts" | "python";
 
@@ -229,6 +225,21 @@ export const RETIRED_SURFACES: readonly RetiredSurface[] = [
     surface: "conversations --metadata-backfill-apply",
     anchor: "conversation-metadata-backfill",
     matches: (argv) => argv[0] === "conversations" && argv.includes(DS10_BACKFILL_FLAGS[1]),
+  },
+  // CV22.DS10.US2 (D1): the release chain leaves the PRODUCT surface. These
+  // two were offered to every installed user and need a git checkout, a clean
+  // tree, tags, and push rights -- none of which an installed user has. They
+  // are maintainer tooling now, reached through `npm run release:*`, so the
+  // old names answer with their cutoff rather than being ported.
+  {
+    surface: "runtime release-doctor",
+    anchor: "release-tooling-leaves-the-product-command-surface",
+    matches: (argv) => argv[0] === "runtime" && argv[1] === "release-doctor",
+  },
+  {
+    surface: "runtime release-promote",
+    anchor: "release-tooling-leaves-the-product-command-surface",
+    matches: (argv) => argv[0] === "runtime" && argv[1] === "release-promote",
   },
   ...(
     [
@@ -1056,13 +1067,6 @@ export function routeMemoryCommand(
           };
         }
         return { command, engine: "ts", reason: `DS10.US2 runtime ${subcommand} ported to TS` };
-      }
-      if (DS10_RUNTIME_SUBCOMMANDS.has(subcommand)) {
-        return {
-          command,
-          engine: "python",
-          reason: `runtime ${subcommand} is the git-based updater/release machinery, redesigned in DS10`,
-        };
       }
       // CV22.DS10.US2: the unknown answer is TypeScript's own. It used to fall
       // through to Python's argparse; at TS5 there is no Python to fall

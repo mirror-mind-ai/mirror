@@ -712,14 +712,22 @@ test("the DS10 updater and release machinery are refused by name, even with the 
   // error this file's sibling comment already corrected for `latest`/`pending`.
   // Carrying them here made the front door claim DS10 owns a port of something
   // that has never existed (CV22.DS10.US2 plateau 1).
-  // `backup` left this set at plateau 2 and `update` at plateau 3, as US2
-  // ported each. What remains is the release chain, which plateau 5 re-homes
-  // out of the product surface rather than porting.
+  // Nothing is left to refuse. `backup` left this set at plateau 2, `update`
+  // at plateau 3, and plateau 5 RETIRED the release chain from the product
+  // surface rather than porting it -- so `DS10_RUNTIME_SUBCOMMANDS` is gone
+  // and both names answer from the retired-surface table.
   for (const sub of ["release-doctor", "release-promote"]) {
     const decision = routeMemoryCommand(["runtime", sub], { MIRROR_TS_BACKUP: "1" });
-    assert.equal(decision.engine, "python", sub);
-    assert.match(decision.reason, /DS10/, sub);
+    assert.equal(decision.engine, "retired", sub);
   }
+
+  // The refusal must land BEFORE dispatch, so `--push` never reaches code
+  // that could touch a remote. This is TS4's route shape doing its job.
+  const promote = routeMemoryCommand(
+    ["runtime", "release-promote", "--target", "v9.9.9", "--push"],
+    {},
+  );
+  assert.equal(promote.engine, "retired");
 });
 
 test("the updater family answers from TS, and reverts as one", () => {

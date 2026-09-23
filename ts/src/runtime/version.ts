@@ -10,16 +10,21 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
 /**
- * Port of `_version_from_pyproject`: walk upward for the first `version =`
- * line. Python prefers installed distribution metadata and falls back to this;
- * TypeScript has no equivalent metadata, so the walk is the shared source. The
- * two agree for an editable install.
+ * THE product version. One function, read by the updater, the release doctor,
+ * the welcome card, and the MCP server, so that npm distribution changes one
+ * body and nothing else (CV22.DS10.US2, decision D2).
  *
- * DS10 re-points this at the npm package's own version when npm owns
- * distribution; until then `pyproject.toml` is the single source of truth the
- * plugin manifest is also generated from.
+ * Today it walks upward for `pyproject.toml`'s first `version =` line, which
+ * is a port of `_version_from_pyproject`. Python prefers installed
+ * distribution metadata and falls back to this; TypeScript has no equivalent,
+ * so the walk is the shared source, and the two agree for an editable install.
+ *
+ * US3 re-points this body at `package.json` when the npm package becomes real.
+ * No "the two sources agree" check is added before then: `ts/package.json` is
+ * deliberately `0.0.0` and `private` until that story renames it, so such a
+ * check would fail by design and teach everyone to ignore it.
  */
-export function versionFromPyproject(start: string): string | null {
+export function packageVersion(start: string): string | null {
   let current = resolve(start);
   for (;;) {
     const candidate = join(current, "pyproject.toml");

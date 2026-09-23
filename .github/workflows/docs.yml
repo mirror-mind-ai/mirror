@@ -8,6 +8,7 @@ on:
       - "**.md"
       - "scripts/check_doc_links.py"
       - "scripts/check_skill_command_parity.py"
+      - "ts/scripts/checkSkillCommandParity.ts"
       - "src/memory/docs_lint.py"
   pull_request:
     branches: [main]
@@ -16,6 +17,7 @@ on:
       - "**.md"
       - "scripts/check_doc_links.py"
       - "scripts/check_skill_command_parity.py"
+      - "ts/scripts/checkSkillCommandParity.ts"
       - "src/memory/docs_lint.py"
 
 permissions:
@@ -42,6 +44,11 @@ jobs:
         with:
           enable-cache: true
 
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+
       - name: Install dependencies
         run: uv sync --frozen
 
@@ -57,3 +64,17 @@ jobs:
       # two of three runtimes, and DS10 deletes the module those copies invoke.
       - name: Check skill command parity across runtime copies
         run: uv run python scripts/check_skill_command_parity.py
+
+      # CV22.DS10.US2 (D6): the Node successor, running BESIDE the Python one
+      # for exactly one commit so that "the two agree" is evidence rather than
+      # a claim. The next commit deletes the Python guard -- a check whose job
+      # is to assert that nothing invokes the interpreter cannot itself need
+      # that interpreter to run, and after TS5 there would be nothing left to
+      # execute it.
+      #
+      # It also asserts what the Python one never could: ABSENCE. The allowlist
+      # mechanism is deleted rather than emptied, and the scan covers the whole
+      # packaged plugin -- manifest, commands, hooks -- because an installed
+      # user resolves that directory, not this repository's `.pi/`.
+      - name: Check skill command parity (Node successor)
+        run: node ts/scripts/checkSkillCommandParity.ts

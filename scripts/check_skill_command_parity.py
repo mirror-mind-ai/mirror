@@ -69,10 +69,7 @@ PYTHON_RE = re.compile(r"uv run python -m memory\s+(?P<rest>.+)$")
 # 2026-09-07 decision. An allowlist entry for a name that never existed is an
 # exemption guarding nothing, and it would have had to be "paid off" by a story
 # that could never find the command it was supposed to port.
-PYTHON_ALLOWLIST: dict[str, str] = {
-    "runtime release-doctor": "CV22.DS10.US2 (release tooling redesigned under npm)",
-    "runtime release-promote": "CV22.DS10.US2 (release tooling redesigned under npm)",
-}
+PYTHON_ALLOWLIST: dict[str, str] = {}
 
 
 def invocation_tokens(rest: str) -> list[str]:
