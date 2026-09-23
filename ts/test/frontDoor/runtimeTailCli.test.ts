@@ -382,3 +382,70 @@ test("release-notes tells a positional from an option value", () => {
     f.cleanup();
   }
 });
+
+test("runtime backup creates, verifies, and exits on the VERIFICATION", () => {
+  // CV22.DS10.US2 plateau 2. `runtime backup` is not the `backup` command:
+  // it is the updater's safety stage, so the exit code follows the
+  // verification rather than the creation. An archive that was written but
+  // does not open is a failure here -- that is the point of the stage.
+  const f = fixture();
+  try {
+    const created = runCli(f, ["runtime", "backup", "--mirror-home", f.home], {});
+    assert.equal(created.status, 0, created.stderr);
+    assert.match(created.stdout, /^Mirror runtime backup\n\n/);
+    assert.match(created.stdout, /^Verification result: valid$/m);
+    assert.match(created.stdout, /^Manual recovery route:$/m);
+    assert.doesNotMatch(created.stdout, /uv run python/);
+
+    const archive = /^Backup: (.+)$/m.exec(created.stdout)?.[1];
+    assert.ok(archive, "the render must name the archive it created");
+    const verified = runCli(f, ["runtime", "backup", "--verify", archive], {});
+    assert.equal(verified.status, 0, verified.stderr);
+    assert.match(verified.stdout, /^Mirror runtime backup verification\n\n/);
+    assert.match(verified.stdout, /^Verification result: valid$/m);
+
+    // The archive it just wrote holds a WAL-mode database, which is the shape
+    // that made `mode=ro` alone insufficient. This is the end-to-end pin.
+    assert.match(verified.stdout, /^Entries: memory\.db$/m);
+  } finally {
+    f.cleanup();
+  }
+});
+
+test("runtime backup refuses a missing database and an unreadable archive", () => {
+  const f = fixture();
+  try {
+    const empty = join(f.root, "no-db-home");
+    mkdirSync(empty, { recursive: true });
+    const missing = runCli(f, ["runtime", "backup", "--mirror-home", empty], {});
+    assert.equal(missing.status, 1);
+    assert.match(missing.stderr, /^Database not found: /m);
+    assert.equal(missing.stdout, "");
+
+    const garbage = join(f.root, "not-a-zip.zip");
+    writeFileSync(garbage, "nope\n");
+    const bad = runCli(f, ["runtime", "backup", "--verify", garbage], {});
+    assert.equal(bad.status, 1);
+    assert.match(bad.stdout, /Verification note: backup file is not a readable zip/);
+    assert.match(bad.stdout, /^Verification result: invalid$/m);
+  } finally {
+    f.cleanup();
+  }
+});
+
+test("MIRROR_TS_RUNTIME_UPDATE=0 hands the updater family back, and only it", () => {
+  const f = fixture();
+  try {
+    runCli(f, ["runtime", "backup", "--mirror-home", f.home], { MIRROR_TS_RUNTIME_UPDATE: "0" });
+    assert.ok(
+      logLines(f).some((line) => line.includes("\truntime\tpython\t")),
+      "expected the front-door log to record runtime backup on python",
+    );
+    // The reads must NOT follow the updater's revert.
+    const version = runCli(f, ["runtime", "version"], { MIRROR_TS_RUNTIME_UPDATE: "0" });
+    assert.equal(version.status, 0, version.stderr);
+    assert.match(version.stdout, /^Mirror runtime version$/m);
+  } finally {
+    f.cleanup();
+  }
+});

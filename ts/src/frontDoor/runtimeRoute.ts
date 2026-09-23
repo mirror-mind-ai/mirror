@@ -10,7 +10,13 @@
 // because the command name already had one.
 
 import { join } from "node:path";
-import { resolveMirrorHome } from "#frontDoor/dbPath.ts";
+import { createZipBackup } from "#backup/zipBackup.ts";
+import { dbNameForEnv, resolveMirrorHome } from "#frontDoor/dbPath.ts";
+import {
+  renderBackupVerification,
+  renderRuntimeBackupCreated,
+  verifyBackupArchive,
+} from "#runtime/backup.ts";
 import {
   diagnoseRuntime,
   probeModelPins,
@@ -74,12 +80,16 @@ export const RUNTIME_SUBCOMMANDS = [
  * claimed DS10 owed a port of something that was never a command. Four names,
  * and each leaves as its story flips it.
  */
-export const DS10_RUNTIME_SUBCOMMANDS = new Set([
-  "update",
-  "backup",
-  "release-doctor",
-  "release-promote",
-]);
+export const DS10_RUNTIME_SUBCOMMANDS = new Set(["update", "release-doctor", "release-promote"]);
+
+/**
+ * The updater family, as US2 flips it: one subcommand at a time, each leaving
+ * `DS10_RUNTIME_SUBCOMMANDS` in the same commit that adds it here. Gated by
+ * `MIRROR_TS_RUNTIME_UPDATE`, which is deliberately NOT the reads' gate --
+ * reverting a bad updater must not drag `status`, `version`, and `diagnose`
+ * back to Python with it.
+ */
+export const TS_RUNTIME_UPDATE_SUBCOMMANDS = new Set(["backup"]);
 
 /**
  * argparse's answer to a name that is not a subcommand, in TypeScript.
@@ -249,10 +259,66 @@ export async function runRuntimeReadRoute(
     return 0;
   }
 
+  if (subcommand === "backup") return runRuntimeBackup(args.slice(1), io, env);
+
   // Not unreachable any more: the routing table sends every name it does not
   // recognize here, so that the refusal survives the oracle's deletion.
   writeErr(io, renderUnknownRuntimeSubcommand(subcommand));
   return 2;
+}
+
+/**
+ * `runtime backup [--mirror-home PATH]` and `runtime backup --verify PATH`.
+ *
+ * NOT the `backup` command (DS7.TS1). That one creates and stops; this one is
+ * the updater's safety stage, so it creates, verifies, and prints the manual
+ * recovery route. The exit code follows the VERIFICATION, not the creation:
+ * an archive that was written but does not open is a failure here, which is
+ * the whole point of the stage.
+ */
+function runRuntimeBackup(
+  args: readonly string[],
+  io: RuntimeRouteIo,
+  env: NodeJS.ProcessEnv,
+): number {
+  const verifyTarget = optionValue(args, "--verify");
+  if (verifyTarget !== null) {
+    const verification = verifyBackupArchive(expandHome(verifyTarget));
+    writeOut(io, renderBackupVerification(verification));
+    return verification.valid ? 0 : 1;
+  }
+
+  const explicitHome = optionValue(args, "--mirror-home");
+  let mirrorHome: string;
+  try {
+    mirrorHome =
+      explicitHome !== null
+        ? expandHome(explicitHome)
+        : resolveMirrorHome(env as Record<string, string | undefined>);
+  } catch (error) {
+    // Python writes the ValueError's own text and exits 1.
+    writeErr(io, `${error instanceof Error ? error.message : String(error)}\n`);
+    return 1;
+  }
+
+  const dbPath = join(mirrorHome, dbNameForEnv(env.MEMORY_ENV || "production"));
+  const backupPath = createZipBackup({
+    dbPath,
+    mirrorHome,
+    backupDir: null,
+    // The oracle passes `silent=True`: creation chatter would sit in the
+    // middle of this command's own render.
+    silent: true,
+    env,
+  });
+  if (backupPath === null) {
+    writeErr(io, `Database not found: ${dbPath}\n`);
+    return 1;
+  }
+
+  const verification = verifyBackupArchive(backupPath);
+  writeOut(io, renderRuntimeBackupCreated({ backupPath, mirrorHome, verification }));
+  return verification.valid ? 0 : 1;
 }
 
 /**

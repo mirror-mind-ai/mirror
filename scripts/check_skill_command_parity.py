@@ -71,7 +71,6 @@ PYTHON_RE = re.compile(r"uv run python -m memory\s+(?P<rest>.+)$")
 # that could never find the command it was supposed to port.
 PYTHON_ALLOWLIST: dict[str, str] = {
     "runtime update": "CV22.DS10.US2 (updater redesigned under npm)",
-    "runtime backup": "CV22.DS10.US2 (updater redesigned under npm)",
     "runtime release-doctor": "CV22.DS10.US2 (release tooling redesigned under npm)",
     "runtime release-promote": "CV22.DS10.US2 (release tooling redesigned under npm)",
 }

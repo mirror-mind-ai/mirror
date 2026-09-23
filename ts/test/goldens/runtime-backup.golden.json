@@ -1,0 +1,98 @@
+{
+  "meta": {
+    "story": "CV22.DS10.US2",
+    "oracle": "src/memory/cli/runtime.py",
+    "archive_token": "<ARCHIVE>"
+  },
+  "scenarios": {
+    "valid": {
+      "archive_base64": "UEsDBBQAAAAIAApqN100DnFnhwAAAAAgAAAJAAAAbWVtb3J5LmRi7dexCQJBEIXh2UEEA1kDwdAJNdHABjxls0vUa+CEEwRFkKnCJm3EwBU1MTExkv/jveDBNDCbVbn3xnan87F2m0lPVGVuJiL66lvIbX3sb1Qml373cRyvkgMAAAAAAH5vGNqDGMPU6+2hcdflOhVVsqpYlMl8VI+fv/lNcgAAAAAAwB/SoJ07UEsBAhQDFAAAAAgACmo3XTQOcWeHAAAAACAAAAkAAAAAAAAAAAAAAIABAAAAAG1lbW9yeS5kYlBLBQYAAAAAAQABADcAAACuAAAAAAA=",
+      "entries": [
+        "memory.db"
+      ],
+      "valid": true,
+      "note": null,
+      "verify_render": "Mirror runtime backup verification\n\nBackup: <ARCHIVE>\nEntries: memory.db\nVerification result: valid\n",
+      "verify_exit": 0
+    },
+    "valid_with_sidecars": {
+      "archive_base64": "UEsDBBQAAAAIAApqN100DnFnhwAAAAAgAAAJAAAAbWVtb3J5LmRi7dexCQJBEIXh2UEEA1kDwdAJNdHABjxls0vUa+CEEwRFkKnCJm3EwBU1MTExkv/jveDBNDCbVbn3xnan87F2m0lPVGVuJiL66lvIbX3sb1Qml373cRyvkgMAAAAAAH5vGNqDGMPU6+2hcdflOhVVsqpYlMl8VI+fv/lNcgAAAAAAwB/SoJ07UEsDBBQAAAAIAApqN11S0B2WBQAAAAMAAAANAAAAbWVtb3J5LmRiLXdhbCtPzAEAUEsDBBQAAAAIAApqN11R89E3BQAAAAMAAAANAAAAbWVtb3J5LmRiLXNobSvOyAUAUEsBAhQDFAAAAAgACmo3XTQOcWeHAAAAACAAAAkAAAAAAAAAAAAAAIABAAAAAG1lbW9yeS5kYlBLAQIUAxQAAAAIAApqN11S0B2WBQAAAAMAAAANAAAAAAAAAAAAAACAAa4AAABtZW1vcnkuZGItd2FsUEsBAhQDFAAAAAgACmo3XVHz0TcFAAAAAwAAAA0AAAAAAAAAAAAAAIAB3gAAAG1lbW9yeS5kYi1zaG1QSwUGAAAAAAMAAwCtAAAADgEAAAAA",
+      "entries": [
+        "memory.db",
+        "memory.db-shm",
+        "memory.db-wal"
+      ],
+      "valid": true,
+      "note": null,
+      "verify_render": "Mirror runtime backup verification\n\nBackup: <ARCHIVE>\nEntries: memory.db, memory.db-shm, memory.db-wal\nVerification result: valid\n",
+      "verify_exit": 0
+    },
+    "traversal_entry": {
+      "archive_base64": "UEsDBBQAAAAIAApqN100DnFnhwAAAAAgAAAMAAAALi4vbWVtb3J5LmRi7dexCQJBEIXh2UEEA1kDwdAJNdHABjxls0vUa+CEEwRFkKnCJm3EwBU1MTExkv/jveDBNDCbVbn3xnan87F2m0lPVGVuJiL66lvIbX3sb1Qml373cRyvkgMAAAAAAH5vGNqDGMPU6+2hcdflOhVVsqpYlMl8VI+fv/lNcgAAAAAAwB/SoJ07UEsBAhQDFAAAAAgACmo3XTQOcWeHAAAAACAAAAwAAAAAAAAAAAAAAIABAAAAAC4uL21lbW9yeS5kYlBLBQYAAAAAAQABADoAAACxAAAAAAA=",
+      "entries": [
+        "../memory.db"
+      ],
+      "valid": false,
+      "note": "unsafe archive entry: ../memory.db",
+      "verify_render": "Mirror runtime backup verification\n\nBackup: <ARCHIVE>\nEntries: ../memory.db\nVerification note: unsafe archive entry: ../memory.db\nVerification result: invalid\n",
+      "verify_exit": 1
+    },
+    "absolute_entry": {
+      "archive_base64": "UEsDBBQAAAAIAApqN100DnFnhwAAAAAgAAAOAAAAL3RtcC9tZW1vcnkuZGLt17EJAkEQheHZQQQDWQPB0Ak10cAGPGWzS9Rr4IQTBEWQqcImbcTAFTUxMTGS/+O94ME0MJtVuffGdqfzsXabSU9UZW4mIvrqW8htfexvVCaXfvdxHK+SAwAAAAAAfm8Y2oMYw9Tr7aFx1+U6FVWyqliUyXxUj5+/+U1yAAAAAADAH9KgnTtQSwECFAMUAAAACAAKajddNA5xZ4cAAAAAIAAADgAAAAAAAAAAAAAAgAEAAAAAL3RtcC9tZW1vcnkuZGJQSwUGAAAAAAEAAQA8AAAAswAAAAAA",
+      "entries": [
+        "/tmp/memory.db"
+      ],
+      "valid": false,
+      "note": "unsafe archive entry: /tmp/memory.db",
+      "verify_render": "Mirror runtime backup verification\n\nBackup: <ARCHIVE>\nEntries: /tmp/memory.db\nVerification note: unsafe archive entry: /tmp/memory.db\nVerification result: invalid\n",
+      "verify_exit": 1
+    },
+    "unexpected_entry": {
+      "archive_base64": "UEsDBBQAAAAIAApqN100DnFnhwAAAAAgAAAJAAAAbWVtb3J5LmRi7dexCQJBEIXh2UEEA1kDwdAJNdHABjxls0vUa+CEEwRFkKnCJm3EwBU1MTExkv/jveDBNDCbVbn3xnan87F2m0lPVGVuJiL66lvIbX3sb1Qml373cRyvkgMAAAAAAH5vGNqDGMPU6+2hcdflOhVVsqpYlMl8VI+fv/lNcgAAAAAAwB/SoJ07UEsDBBQAAAAIAApqN12sKpPYBAAAAAIAAAAJAAAAbm90ZXMudHh0y8gEAFBLAQIUAxQAAAAIAApqN100DnFnhwAAAAAgAAAJAAAAAAAAAAAAAACAAQAAAABtZW1vcnkuZGJQSwECFAMUAAAACAAKajddrCqT2AQAAAACAAAACQAAAAAAAAAAAAAAgAGuAAAAbm90ZXMudHh0UEsFBgAAAAACAAIAbgAAANkAAAAAAA==",
+      "entries": [
+        "memory.db",
+        "notes.txt"
+      ],
+      "valid": false,
+      "note": "unexpected archive entries: notes.txt",
+      "verify_render": "Mirror runtime backup verification\n\nBackup: <ARCHIVE>\nEntries: memory.db, notes.txt\nVerification note: unexpected archive entries: notes.txt\nVerification result: invalid\n",
+      "verify_exit": 1
+    },
+    "missing_member": {
+      "archive_base64": "UEsDBBQAAAAIAApqN100DnFnhwAAAAAgAAAIAAAAb3RoZXIuZGLt17EJAkEQheHZQQQDWQPB0Ak10cAGPGWzS9Rr4IQTBEWQqcImbcTAFTUxMTGS/+O94ME0MJtVuffGdqfzsXabSU9UZW4mIvrqW8htfexvVCaXfvdxHK+SAwAAAAAAfm8Y2oMYw9Tr7aFx1+U6FVWyqliUyXxUj5+/+U1yAAAAAADAH9KgnTtQSwECFAMUAAAACAAKajddNA5xZ4cAAAAAIAAACAAAAAAAAAAAAAAAgAEAAAAAb3RoZXIuZGJQSwUGAAAAAAEAAQA2AAAArQAAAAAA",
+      "entries": [
+        "other.db"
+      ],
+      "valid": false,
+      "note": "memory.db missing from backup",
+      "verify_render": "Mirror runtime backup verification\n\nBackup: <ARCHIVE>\nEntries: other.db\nVerification note: memory.db missing from backup\nVerification result: invalid\n",
+      "verify_exit": 1
+    },
+    "not_a_zip": {
+      "archive_base64": "dGhpcyBpcyBub3QgYSB6aXAgZmlsZQo=",
+      "entries": [],
+      "valid": false,
+      "note": "backup file is not a readable zip",
+      "verify_render": "Mirror runtime backup verification\n\nBackup: <ARCHIVE>\nVerification note: backup file is not a readable zip\nVerification result: invalid\n",
+      "verify_exit": 1
+    },
+    "absent": {
+      "archive_base64": null,
+      "entries": [],
+      "valid": false,
+      "note": "backup file not found",
+      "verify_render": "Mirror runtime backup verification\n\nBackup: <ARCHIVE>\nVerification note: backup file not found\nVerification result: invalid\n",
+      "verify_exit": 1
+    }
+  },
+  "created": {
+    "created_render": "Mirror runtime backup\n\nMirror home: <HOME>\nBackup: <ARCHIVE>\nVerification result: valid\nEntries: memory.db\n\nManual recovery route:\n  1. Stop active runtime sessions that could write to the database.\n  2. Move current memory.db, memory.db-wal, and memory.db-shm aside.\n  3. Extract memory.db and sidecars from this backup into the Mirror home.\n  4. Run runtime status against the Mirror home.\n  5. Do not retry update execution until status is ready.\n\nRecovery is manual in this version; no files were restored.\n",
+    "created_exit": 0
+  },
+  "documented_deviation": {
+    "why": "Python verifies entry NAMES; this archive holds 4 KB of zeros named memory.db and the oracle calls it valid. The TypeScript port extracts and runs PRAGMA quick_check, so it refuses. Asserted by a TS-only test.",
+    "archive_base64": "UEsDBBQAAAAIAApqN130HRcxKQAAALAPAAAJAAAAbWVtb3J5LmRi7cHBCQAQAABAo9jBGj4ygQflISX7Zwyfu6slz9vj2Ge1G1MAAAAA/ntQSwECFAMUAAAACAAKajdd9B0XMSkAAACwDwAACQAAAAAAAAAAAAAAgAEAAAAAbWVtb3J5LmRiUEsFBgAAAAABAAEANwAAAFAAAAAAAA==",
+    "python_valid": true,
+    "typescript_valid": false
+  }
+}

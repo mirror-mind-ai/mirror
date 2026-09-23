@@ -301,11 +301,15 @@ tests already know the boundaries; the source follows them:
 - **Rewriting `frame/` or `installer/`** (D4) — recorded, re-homed, not built.
 - **Editing the `automation` repository's extension `SKILL.md` files** (D5).
 - **Porting `check_retired_surfaces.py` or `check_doc_links.py`** — TS5.
-- **Backup retention.** An update now produces **two** archives: the pipeline's, before
-  `apply`, and migrate-on-open's own, before it migrates. `<mirror-home>/backups` is a
-  Dropbox symlink on this machine and nothing prunes it. Not solved here; **recorded at
-  Debt Review** as carried debt with the growth rate measured, so it accrues in the open
-  rather than silently.
+- ~~**Backup retention.**~~ **Withdrawn at plateau 2 — the debt does not exist.** The
+  panel recorded "two archives per update, nothing prunes them". Verified against the
+  code instead of the claim: `createZipBackup` and Python's `backup()` both sweep a
+  **30-day retention** (`RETENTION_DAYS = 30`, `sweepRetention` / the `cutoff` loop), and
+  migrate-on-open does not archive at all — it writes one fixed-name snapshot,
+  `frontdoor-pre-migration-backup.db`, and `rmSync`s it before each write, so it is a
+  single overwritten file that cannot accumulate. An update produces one retained archive
+  and one overwritten snapshot; growth is bounded by design on both engines. Nothing is
+  carried to Debt Review for this.
 - **A Windows smoke.** The smoke is POSIX shell like its six siblings.
 
 ## Plateaus

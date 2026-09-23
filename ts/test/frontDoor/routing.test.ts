@@ -712,17 +712,33 @@ test("the DS10 updater and release machinery are refused by name, even with the 
   // error this file's sibling comment already corrected for `latest`/`pending`.
   // Carrying them here made the front door claim DS10 owns a port of something
   // that has never existed (CV22.DS10.US2 plateau 1).
-  for (const sub of ["update", "backup", "release-doctor", "release-promote"]) {
+  // `backup` left this set at plateau 2, when US2 ported it.
+  for (const sub of ["update", "release-doctor", "release-promote"]) {
     const decision = routeMemoryCommand(["runtime", sub], { MIRROR_TS_BACKUP: "1" });
     assert.equal(decision.engine, "python", sub);
     assert.match(decision.reason, /DS10/, sub);
   }
-  // `runtime backup` must not inherit the top-level `backup` command's route.
-  assert.equal(routeMemoryCommand(["backup"], { MIRROR_TS_BACKUP: "1" }).engine, "ts");
+});
+
+test("the two backups are different commands with independent gates", () => {
+  // `runtime backup` (create + VERIFY + recovery route, the updater's safety
+  // stage) is not `backup` (create, DS7.TS1). They were never the same route,
+  // and after US2 they are not even the same gate: reverting one must not move
+  // the other, in either direction.
+  assert.equal(routeMemoryCommand(["runtime", "backup"], {}).engine, "ts");
+  assert.match(routeMemoryCommand(["runtime", "backup"], {}).reason, /DS10\.US2/);
+
+  // The top-level command's gate does not reach the runtime subcommand...
+  assert.equal(routeMemoryCommand(["runtime", "backup"], { MIRROR_TS_BACKUP: "0" }).engine, "ts");
+  // ...and the updater's gate does not reach the top-level command.
+  assert.equal(routeMemoryCommand(["backup"], { MIRROR_TS_RUNTIME_UPDATE: "0" }).engine, "ts");
+
+  // Each reverts itself, and only itself.
   assert.equal(
-    routeMemoryCommand(["runtime", "backup"], { MIRROR_TS_BACKUP: "1" }).engine,
+    routeMemoryCommand(["runtime", "backup"], { MIRROR_TS_RUNTIME_UPDATE: "0" }).engine,
     "python",
   );
+  assert.equal(routeMemoryCommand(["backup"], { MIRROR_TS_BACKUP: "0" }).engine, "python");
 });
 
 test("an unknown runtime subcommand is answered by TypeScript, not inherited", () => {

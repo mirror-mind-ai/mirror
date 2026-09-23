@@ -17,7 +17,11 @@ import {
   WEEK_PLAN_TRANSPORT,
 } from "#providers/transport.ts";
 
-import { DS10_RUNTIME_SUBCOMMANDS, TS_RUNTIME_READ_SUBCOMMANDS } from "./runtimeRoute.ts";
+import {
+  DS10_RUNTIME_SUBCOMMANDS,
+  TS_RUNTIME_READ_SUBCOMMANDS,
+  TS_RUNTIME_UPDATE_SUBCOMMANDS,
+} from "./runtimeRoute.ts";
 
 export type FrontDoorEngine = "ts" | "python";
 
@@ -289,6 +293,8 @@ export type RouteEnvironment = {
   MIRROR_TS_REPAIR_ENCODING?: string;
   MIRROR_TS_WELCOME?: string;
   MIRROR_TS_RUNTIME_READS?: string;
+  /** CV22.DS10.US2: the updater family's revert control (`=0` -> Python). */
+  MIRROR_TS_RUNTIME_UPDATE?: string;
   MIRROR_TS_SOUL?: string;
   MIRROR_TS_SOUL_EMBEDDING_REPLAY?: string;
   MIRROR_TS_EXPLORE?: string;
@@ -1038,6 +1044,19 @@ export function routeMemoryCommand(
     // a subcommand this build has never heard of must not acquire a TS route
     // because `runtime` already has one.
     if (!TS_RUNTIME_READ_SUBCOMMANDS.has(subcommand)) {
+      // CV22.DS10.US2: the updater family, flipped one subcommand at a time.
+      // Its own gate, separate from the reads': reverting a bad updater must
+      // not drag `status`/`version`/`diagnose` back to Python with it.
+      if (TS_RUNTIME_UPDATE_SUBCOMMANDS.has(subcommand)) {
+        if (env.MIRROR_TS_RUNTIME_UPDATE === "0") {
+          return {
+            command,
+            engine: "python",
+            reason: "runtime updater TS route disabled by MIRROR_TS_RUNTIME_UPDATE=0",
+          };
+        }
+        return { command, engine: "ts", reason: `DS10.US2 runtime ${subcommand} ported to TS` };
+      }
       if (DS10_RUNTIME_SUBCOMMANDS.has(subcommand)) {
         return {
           command,
