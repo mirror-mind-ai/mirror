@@ -2,7 +2,7 @@
 
 # CV22.DS10.TS4 — Retire the unported surfaces with cutoffs
 
-**Status:** 🟡 Planned — pulled 2026-09-23; Plan authored and panel-reviewed the same day, awaiting Navigator approval
+**Status:** 🟢 Implemented — all 6 plateaus done 2026-09-23, each pushed with CI green; awaiting Validation
 **Type:** Technical Story
 **Artifacts:** [plan.md](plan.md) · [test-guide.md](test-guide.md)
 
@@ -99,13 +99,13 @@ Navigator's real-home `build load` after plateau 5 is the end-to-end check.
 
 | # | Plateau | Status |
 |---|---|---|
-| 0 | Baseline: `build load mirror-ts-core` captured, read-only home copy for the index-less route | ○ |
-| 1 | The front door says *removed* (`retired` decision, six predicates, three refusal properties, CR089's two entries) | ○ |
-| 2 | `migrate-legacy` and `memory-rehearse-migration` deleted | ○ |
-| 3 | `journey_admin` deleted | ○ |
-| 4 | `conversations --metadata-backfill-*` deleted | ○ |
-| 5 | The Workbench: Python renders the single state → goldens regenerated → TS follows → Python's Workbench deleted (four commits, reverted as a set) | ○ |
-| 6 | Cutoffs, guard rows, residue sweep | ○ |
+| 0 | Baseline captured (609 lines); read-only home copy at /tmp/ts4-home | ✅ |
+| 1 | The front door says *removed* (`retired` decision, six predicates, three refusal properties, CR089's two entries) | ✅ 51b9d35c |
+| 2 | `migrate-legacy` and `memory-rehearse-migration` deleted (1,719 lines) | ✅ 6905365e |
+| 3 | `journey_admin` deleted (663 lines) | ✅ 05be0da9 |
+| 4 | `conversations --metadata-backfill-*` deleted (~230 lines) | ✅ |
+| 5 | The Workbench: Python → goldens → TS → deletion (~4,900 lines) | ✅ 44ab0858, ef27009d, 30db8493, + |
+| 6 | Guard rows, residue sweep, anchor test | ✅ |
 
 ## Lifecycle Record
 
@@ -121,7 +121,29 @@ Navigator's real-home `build load` after plateau 5 is the end-to-end check.
   — and keep TS4 to deletion. Plateau 5 re-ordered Python-first for the
   goldens; plateau 0 added for the baseline.
 
+## Findings For Debt Review
+
+1. **Two orphaned execution profiles.** `backfill_safe` and `backfill_force`
+   in `metadata_lifecycle.py` are unreachable in both engines now that the
+   backfill is gone, but the file is a ported oracle graded by
+   `metadata-lifecycle.golden.json` with a mirror table in
+   `metadataLifecycle.ts`. Removing them is a three-file cross-engine change
+   plus a golden regeneration; the DS index assigned this story the CLI face,
+   not the engine. Left in place deliberately. If TS5 does not prune them they
+   ship into the npm package unreachable.
+2. **The DS candidate table's US1 row is stale.** It reads `🟡 Planned` while
+   the [Workspace And Web Retirement Gate](../index.md#workspace-and-web-retirement-gate)
+   says "Satisfied 2026-09-19 by US1" and the roadmap DS10 row counts US1 as
+   done. Not TS4's to change — it is a status claim about another story — but
+   the DS-level Done preflight refuses closure while any authored candidate row
+   is non-Done, so it blocks DS10 until someone decides it.
+3. **The seed-CR scan still reads a hard-coded path** into Mirror Mind's own
+   roadmap (`cv20-ds6-refinement-workbench-flow/plan.md`) inside the USER's
+   project. Inherited by the port and untouched here; now the only remaining
+   oddity in a field that otherwise has one state.
+
 ## Where To Resume
 
-Plan reviewed and corrected; awaiting Navigator approval of the three
-decisions. Nothing implemented.
+All six plateaus implemented and pushed, CI green on each. Awaiting Navigator
+Validation — the route is in [test-guide.md](test-guide.md), and every check in
+it is free and keyless.

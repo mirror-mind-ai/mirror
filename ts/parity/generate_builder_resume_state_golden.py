@@ -4,20 +4,20 @@ CV22.DS7.US8 plateau 2, second slice. Three things the delivery cursor unblocked
 
   * `read_builder_resume_state` -- the DB composition deferred from plateau 1,
     which needs the adoption row AND the cursor;
-  * `get_workbench_snapshot` -- the read-only Workbench query D1 could not
-    retire, because every `build load` on a project with no
-    `docs/project/refinement/index.md` renders its Refinement field from it;
+  * the read-only Workbench query D1 could not retire, because every
+    `build load` on a project with no `docs/project/refinement/index.md` used
+    to render its Refinement field from it -- removed by CV22.DS10.TS4, which
+    retired the Workbench and left one file-first state in its place;
   * `assert_implementation_allowed` plus the two `IMPLEMENTATION_GUARD` surfaces,
     which is why `check-implementation` was moved out of plateau 1.
 
 Two behaviors here are easy to port wrongly and hard to notice:
 
-**The Workbench read must survive a database that has no Workbench tables.**
-`_safe_workbench_snapshot` catches `sqlite3.OperationalError` and returns `None`.
-That is not defensive decoration: an install that predates CV20.DS6 has no
-`builder_refinement_stories`, and without the catch every `build load` on it
-raises instead of rendering. The `missing_tables` case below drops the tables to
-prove the path.
+**Resume state must survive a database that has no Workbench tables.** It used
+to be the opposite: the Home path caught `sqlite3.OperationalError` and degraded
+while this path raised, so an install predating CV20.DS6 failed here. CV22.DS10.TS4
+removed the read, so the `missing_tables` case below drops the tables and proves
+the resume path now renders.
 
 **The guard's four outcomes are not a boolean.** No cursor, a pending
 confirmation, `plan_approved`, and the delivery-story combination

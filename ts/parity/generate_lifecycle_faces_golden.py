@@ -12,7 +12,7 @@ refusal saying so), and `demo` calls `apply`. The US11 Plan review had recorded
 these four as "wiring over the ported engine", which was true of the two reads
 and false of the two writes. Navigator decision 2026-09-09 (option B): ship the
 reads here, refuse the writes BY NAME, hand them to DS7.TS4. The two
-`--metadata-backfill-*` flags remain DS10 retirements.
+historical metadata-backfill flags were retired outright by CV22.DS10.TS4.
 
 Both faces are pure reads: no model call, no write, so the corpus needs no
 provider stub -- only the key popped, so an unexpected network path raises.

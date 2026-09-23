@@ -12,10 +12,10 @@
 //   otherwise         -> resumable, actions chosen by the cursor
 //
 // CV22.DS10.TS4 removed the Workbench read that used to happen here, and with
-// it an asymmetry both engines carried: Python called `get_workbench_snapshot`
-// unguarded here while `home_surface` wrapped the same call, so a database
-// predating CV20.DS6 degraded on the Home path and RAISED on this one. Resume
-// state is Delivery state now; the absent-tables case is graded in the golden.
+// it an asymmetry both engines carried: Python read the Workbench unguarded
+// here while the Home path wrapped the same call, so a database predating
+// CV20.DS6 degraded there and RAISED on this one. Resume state is Delivery
+// state now; the absent-tables case is graded in the golden.
 
 import type { Database } from "#db/database.ts";
 import { getDeliveryCursor } from "./deliveryCursor.ts";

@@ -211,6 +211,154 @@ RETIRED: tuple[RetiredSurface, ...] = (
             ),
         },
     ),
+    # CV22.DS10.TS4 retired five surfaces, so it contributes five rows rather
+    # than one. They are separate because they fail separately: a resurrected
+    # `migrate-legacy` and a resurrected Workbench verb are different mistakes
+    # with different fixes, and one row naming both would report the wrong one.
+    #
+    # Every pattern below is a COMMAND SHAPE or a MODULE NAME, never bare
+    # vocabulary. `mutate`, `change-request`, and `refinement-story` are living
+    # Ariad words -- the file-first Refinement flow, the mm-build skill, and the
+    # TypeScript builder surfaces all use them correctly -- so a guard matching
+    # the words alone would be red on the day it landed and would then be
+    # weakened with exemptions until it meant nothing.
+    RetiredSurface(
+        surface_id="legacy-migration",
+        story="CV22.DS10.TS4",
+        absent_paths=(
+            "src/memory/cli/migrate_legacy.py",
+            "src/memory/cli/migration_rehearsal.py",
+            "tests/unit/memory/cli/test_migrate_legacy.py",
+            "tests/unit/memory/cli/test_migration_rehearsal.py",
+        ),
+        forbidden_patterns=(
+            r"migrate_legacy",
+            r"migration_rehearsal",
+            r"memory-rehearse-migration",
+            r"memory migrate-legacy",
+        ),
+        exemptions={
+            "docs/product/extensions/migrations.md": (
+                "`ext <id> migrate-legacy` is an EXTENSION-owned subcommand name that an "
+                "extension author may still choose; it never referred to the core command"
+            ),
+            "ts/src/frontDoor/routing.ts": "the retired entry that answers the name",
+            "ts/test/frontDoor/retiredSurfaces.test.ts": "the test of that refusal",
+            "tests/unit/memory/test_main.py": (
+                "asserts the dispatcher no longer knows the name"
+            ),
+        },
+    ),
+    RetiredSurface(
+        surface_id="journey-admin-verbs",
+        story="CV22.DS10.TS4",
+        absent_paths=(
+            "src/memory/services/journey_admin.py",
+            "src/memory/storage/journey_admin.py",
+            "tests/unit/memory/services/test_journey_admin.py",
+        ),
+        forbidden_patterns=(
+            r"journey_admin",
+            r"JourneyAdmin",
+            r"journey export-registry",
+            r"journey mutate\b",
+            r"mirror\.journey-mutation@",
+        ),
+        exemptions={
+            "ts/src/frontDoor/routing.ts": "the retired entries that answer the two verbs",
+            "ts/src/frontDoor/cli.ts": (
+                "the refusal itself; the comment names the write verb to explain why it "
+                "must answer BEFORE stdin is read, which is the property under test"
+            ),
+            "ts/test/frontDoor/retiredSurfaces.test.ts": "the test of those refusals",
+            "tests/unit/memory/cli/test_journey.py": (
+                "asserts the verbs reach no service and consume no stdin"
+            ),
+            "src/memory/oracle_drift.py": (
+                "a comment recording that the two verbs used to be tracked here"
+            ),
+        },
+    ),
+    RetiredSurface(
+        surface_id="conversation-metadata-backfill",
+        story="CV22.DS10.TS4",
+        absent_paths=(),
+        forbidden_patterns=(
+            # The flags and the two service methods. NOT the bare word
+            # `backfill`: `conversation-logger backfill-pi-sessions` and
+            # `ts/src/conversation/backfill.ts` are the TRANSCRIPT backfills,
+            # a different feature that is ported and staying.
+            r"--metadata-backfill-",
+            r"metadata_backfill",
+            r"preview_metadata_backfill",
+            r"apply_metadata_backfill",
+        ),
+        exemptions={
+            "ts/src/frontDoor/routing.ts": "the retired entries that answer the two flags",
+            "ts/test/frontDoor/retiredSurfaces.test.ts": "the test of those refusals",
+            "ts/test/frontDoor/routing.test.ts": (
+                "asserts the flags are retired whatever the lifecycle gate says"
+            ),
+        },
+    ),
+    RetiredSurface(
+        surface_id="sqlite-refinement-workbench",
+        story="CV22.DS10.TS4",
+        absent_paths=(
+            "src/memory/builder/workbench.py",
+            "src/memory/builder/workbench_surfaces.py",
+            "src/memory/storage/builder_workbench.py",
+            "ts/src/builder/workbenchSnapshot.ts",
+            "tests/unit/memory/builder/test_workbench.py",
+            "tests/unit/memory/storage/test_builder_workbench_store.py",
+        ),
+        forbidden_patterns=(
+            r"workbench_surfaces",
+            r"BuilderWorkbenchStore",
+            r"get_workbench_snapshot",
+            r"getWorkbenchSnapshot",
+            r"safeWorkbenchSnapshot",
+            r"_safe_workbench_snapshot",
+            r"workbenchSnapshot",
+            r"build refinement-story ",
+            r"build change-request ",
+            # The surfaces those twenty commands rendered.
+            r"CHANGE_REQUEST_CAPTURED",
+            r"REFINEMENT_STORY_OVERVIEW",
+            r"REFINEMENT_STORY_PULLED",
+        ),
+        exemptions={
+            "ts/src/frontDoor/routing.ts": (
+                "TS_BUILD_WORKBENCH_ACTIONS is retained as the NAME LIST the retired "
+                "entries match on, which is what keeps the twenty verbs refusable"
+            ),
+            "ts/test/frontDoor/buildRouting.test.ts": (
+                "asserts all twenty names retire, and that the count is still twenty"
+            ),
+            "ts/test/frontDoor/retiredSurfaces.test.ts": "the test of those refusals",
+            "tests/unit/memory/cli/test_build.py": (
+                "asserts the mm-build skill no longer offers the retired command -- the "
+                "mention is the negative assertion itself"
+            ),
+            "src/memory/db/migrations.py": (
+                "migrations 015/016 create the tables and REMAIN applied: the rows are "
+                "kept, only the commands were retired"
+            ),
+            "ts/src/db/migrations.ts": "the same two migrations on the TypeScript side",
+            "ts/src/db/schemaState.ts": (
+                "still recognizes 015/016 as applied, which is what keeps an existing "
+                "database from looking unmigrated"
+            ),
+            "ts/parity/generate_migration_fixtures.py": "grades those two migrations",
+            "ts/parity/generate_runtime_status_golden.py": "lists the applied migration ids",
+            "tests/unit/memory/db/test_migrations.py": "tests those two migrations",
+            "ts/test/db/migrationFixtures.test.ts": "grades those two migrations",
+            "ts/test/db/schemaState.test.ts": "pins 015/016 recognition",
+            "src/memory/oracle_drift.py": (
+                "a comment recording that workbench.py used to be tracked here"
+            ),
+        },
+    ),
 )
 
 

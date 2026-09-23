@@ -143,9 +143,12 @@ routing, Builder state, and search remain scoped to the exact journey id.
 infers filesystem content. Parent assignment rejects cycles, and removing a
 journey is allowed only for an empty leaf with no associated records.
 
-Canonical desktop administration uses `mirror.journey-mutation@1.0`. The
-Mirror-owned Journey administration service validates create, move, sibling order, project-path and empty-leaf deletion
-operations against an exact registry `sourceVersion`.
+The dedicated desktop Journey-administration contract and the service behind it
+were retired in the CV22 migration — see the
+[cutoff](../releases/pending-cutoffs.md#journey-admin-verbs). Journeys are
+created, moved, reordered, re-pathed, and deleted through the ordinary Mirror,
+Builder, and Explorer surfaces, which enforce the same invariants described
+above.
 The focused storage boundary acquires an immediate SQLite transaction, rejects
 stale authority, commits Journey rows and a sanitized idempotency receipt once,
 and provides native read-back for the `0.2.0` registry projection. Deletion

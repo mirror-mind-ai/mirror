@@ -10,6 +10,7 @@
 // the refusal reads no stdin, echoes no argv, and prints a STATIC anchor.
 
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { RETIRED_SURFACES, retiredRefusal, routeMemoryCommand } from "#frontDoor/routing.ts";
 
@@ -40,12 +41,12 @@ const RETIRED_SHAPES: ReadonlyArray<{ argv: string[]; surface: string; anchor: s
   {
     argv: ["build", "change-request", "capture", "--journey", "x", "--title", "t"],
     surface: "build change-request capture",
-    anchor: "sqlite-refinement-workbench",
+    anchor: "the-sqlite-refinement-workbench",
   },
   {
     argv: ["build", "refinement-story", "create", "--journey", "x"],
     surface: "build refinement-story create",
-    anchor: "sqlite-refinement-workbench",
+    anchor: "the-sqlite-refinement-workbench",
   },
 ];
 
@@ -156,5 +157,34 @@ test("every entry's anchor is a static string, not a template", () => {
   for (const entry of RETIRED_SURFACES) {
     assert.match(entry.anchor, /^[a-z0-9-]+$/, entry.surface);
     assert.match(entry.surface, /^[a-z0-9 \-.]+$/i, entry.surface);
+  }
+});
+
+test("every anchor a refusal prints resolves to a heading in pending-cutoffs.md", () => {
+  // The refusal's whole value is the second half of the sentence: "see
+  // docs/releases/pending-cutoffs.md#<anchor>". An anchor that does not resolve
+  // sends a user whose command just disappeared to a page that does not explain
+  // it — which is worse than saying nothing, because it spends their trust.
+  //
+  // GitHub's slug rule for the headings this file uses: lowercase, spaces to
+  // hyphens, drop anything that is not a letter, digit, hyphen or space.
+  const cutoffs = readFileSync(
+    new URL("../../../docs/releases/pending-cutoffs.md", import.meta.url),
+    "utf8",
+  );
+  const slugs = new Set(
+    [...cutoffs.matchAll(/^## (.+)$/gm)].map(([, heading]) =>
+      heading
+        .trim()
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, "")
+        .replace(/\s+/g, "-"),
+    ),
+  );
+  for (const entry of RETIRED_SURFACES) {
+    assert.ok(
+      slugs.has(entry.anchor),
+      `${entry.surface}: anchor #${entry.anchor} has no heading in pending-cutoffs.md`,
+    );
   }
 });

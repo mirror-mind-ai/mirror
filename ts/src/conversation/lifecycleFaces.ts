@@ -13,7 +13,8 @@
  * path, which `closeTail.ts` already refuses for the same reason, and `demo`
  * calls `apply`. The US11 plan recorded all four as "wiring over the ported
  * engine", which was true of the reads and false of the writes. DS7.TS4 owns
- * them; the two `--metadata-backfill-*` flags remain DS10 retirements.
+ * them; the two historical metadata-backfill flags were retired outright by
+ * CV22.DS10.TS4.
  */
 
 import {

@@ -234,7 +234,7 @@ export const RETIRED_SURFACES: readonly RetiredSurface[] = [
   ).flatMap((family) =>
     [...TS_BUILD_WORKBENCH_ACTIONS[family]].map((verb) => ({
       surface: `build ${family} ${verb}`,
-      anchor: "sqlite-refinement-workbench",
+      anchor: "the-sqlite-refinement-workbench",
       matches: (argv: readonly string[]) =>
         argv[0] === "build" && argv[1] === family && argv[2] === verb,
     })),
