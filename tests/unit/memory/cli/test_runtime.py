@@ -846,8 +846,10 @@ def test_render_runtime_update_availability_stable_without_fetched_release_detai
     )
 
     assert "Release details: not fetched by this check" in rendered
-    assert "uv run python -m memory runtime update --dry-run" in rendered
-    assert "uv run python -m memory runtime update" in rendered
+    # CV22.DS10.US2: the recommendation is engine-neutral -- the command is
+    # the same on both engines, and the invocation prefix is not.
+    assert "runtime update --dry-run" in rendered
+    assert "uv run python" not in rendered
 
 
 def test_render_runtime_update_availability_with_release_details(tmp_path):
@@ -988,7 +990,8 @@ def test_render_runtime_update_dry_run_shows_stable_release_details(tmp_path):
 
     assert "Release available: v0.9.0 — Self-Update Done" in rendered
     assert "Summary: Release summary." in rendered
-    assert "uv run python -m memory runtime update" in rendered
+    assert "runtime update" in rendered
+    assert "uv run python" not in rendered
 
 
 def test_build_runtime_update_dry_run_loads_newer_stable_release(monkeypatch, tmp_path):

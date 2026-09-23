@@ -293,3 +293,25 @@ test("an option-shaped channel override is normalized, never passed to git", () 
     f.cleanup();
   }
 });
+
+test("the update recommendation is engine-neutral, on both engines", () => {
+  // CV22.DS10.US2 plateau 1. `update --check` recommended
+  // `uv run python -m memory runtime update` -- an invocation prefix that was
+  // a Python-era assumption, not a fact about the command. The COMMAND is the
+  // same on both engines; the npm-era invocation does not exist until US3
+  // defines a `bin`. Python's two strings changed in the same commit, so the
+  // golden still grades this render byte-for-byte.
+  const f = fixture();
+  try {
+    const availability = checkUpdateAvailability(f.clone, "main", "0.0.0");
+    const render = renderRuntimeUpdateAvailability({
+      ...availability,
+      status: "update_available",
+    });
+    assert.match(render, /^Preview:\nruntime update --dry-run$/m);
+    assert.match(render, /^Update:\nruntime update$/m);
+    assert.doesNotMatch(render, /uv run python/);
+  } finally {
+    f.cleanup();
+  }
+});

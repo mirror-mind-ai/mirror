@@ -264,6 +264,58 @@ test("the DS10 updater stays on Python even with the reads flipped", () => {
   }
 });
 
+test("an unknown runtime subcommand is answered by TS: usage, exit 2, no Python", () => {
+  // CV22.DS10.US2 plateau 1. The oracle answers these through argparse, which
+  // names `__main__.py` -- a Python artifact that cannot survive TS5. TS owns
+  // the answer now, in argparse's SHAPE but in the product's vocabulary. The
+  // deviation is deliberate and recorded in the plan's \u00a7A.
+  const f = fixture();
+  try {
+    for (const sub of ["pull", "stable", "publish"]) {
+      const result = runCli(f, ["runtime", sub], {});
+      assert.equal(result.status, 2, `${sub}: ${result.stderr}`);
+      assert.match(result.stderr, /invalid choice: '\w+'/, sub);
+      assert.match(result.stderr, /^usage: runtime /m, sub);
+      // The choice list must name what this build really answers.
+      assert.match(result.stderr, /status/, sub);
+      assert.equal(result.stdout, "", sub);
+      // Answered by TS means the front door did not spawn the oracle.
+      assert.ok(
+        logLines(f).some((line) => line.includes("\truntime\tts\t")),
+        `${sub}: expected the front-door log to record runtime on ts`,
+      );
+    }
+
+    // Bare `runtime` carries argparse's OTHER message, and the same exit.
+    const bare = runCli(f, ["runtime"], {});
+    assert.equal(bare.status, 2, bare.stderr);
+    assert.match(bare.stderr, /the following arguments are required: command/);
+  } finally {
+    f.cleanup();
+  }
+});
+
+test("no runtime render tells a user to run Python", () => {
+  // CV22.DS10.US2 \u00a7F. `update --check` printed
+  // `uv run python -m memory runtime update` as its recommendation on BOTH
+  // engines -- the TypeScript core instructing the user back into the
+  // interpreter this migration is deleting.
+  const f = fixture();
+  try {
+    for (const argv of [
+      ["runtime", "version"],
+      ["runtime", "release-notes"],
+      ["runtime", "status", "--mirror-home", f.home],
+      ["welcome", "--mirror-home", f.home],
+    ]) {
+      const result = runCli(f, argv, { MIRROR_TS_RUNTIME_READS: "1" });
+      assert.doesNotMatch(result.stdout, /uv run python/, argv.join(" "));
+    }
+  } finally {
+    f.cleanup();
+  }
+});
+
 test("the status line reaches the database read-only: no bootstrap, no migration", () => {
   const f = fixture();
   try {

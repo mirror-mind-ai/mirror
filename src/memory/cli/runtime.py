@@ -1302,11 +1302,16 @@ def render_runtime_update_availability(report: RuntimeUpdateAvailability) -> str
             lines.append(
                 "Release details: not fetched by this check; dry-run can show them when local refs contain release notes."
             )
+        # CV22.DS10.US2: engine-neutral. The invocation prefix was a
+        # Python-era assumption, not a fact about the command -- both
+        # engines answer `runtime update`, and the npm-era invocation does
+        # not exist until US3 defines a `bin`. Changed in the oracle FIRST
+        # so the TS golden is regenerated from it, never against it.
         lines.append("Preview:")
-        lines.append("uv run python -m memory runtime update --dry-run")
+        lines.append("runtime update --dry-run")
         lines.append("")
         lines.append("Update:")
-        lines.append("uv run python -m memory runtime update")
+        lines.append("runtime update")
     elif report.status == "up_to_date":
         lines.append("")
         lines.append("Next: no update needed")
@@ -1879,11 +1884,16 @@ def render_runtime_update_dry_run(dry_run: RuntimeUpdateDryRun) -> str:
         if dry_run.target_release.digest:
             lines.append(f"Summary: {dry_run.target_release.digest}")
         lines.append("")
+        # CV22.DS10.US2: engine-neutral. The invocation prefix was a
+        # Python-era assumption, not a fact about the command -- both
+        # engines answer `runtime update`, and the npm-era invocation does
+        # not exist until US3 defines a `bin`. Changed in the oracle FIRST
+        # so the TS golden is regenerated from it, never against it.
         lines.append("Preview:")
-        lines.append("uv run python -m memory runtime update --dry-run")
+        lines.append("runtime update --dry-run")
         lines.append("")
         lines.append("Update:")
-        lines.append("uv run python -m memory runtime update")
+        lines.append("runtime update")
     elif report.update_channel.value == "stable" and git_plan.action == "pull":
         lines.append("")
         lines.append("Release details: unavailable in local refs; commit summary will be used.")

@@ -45,19 +45,60 @@ export const TS_RUNTIME_READ_SUBCOMMANDS = new Set([
 ]);
 
 /**
+ * Every `runtime` subcommand that EXISTS, in the order the oracle's argparse
+ * lists them. One source of names: the usage line an unknown subcommand gets
+ * is rendered from this, so it cannot drift from what the build answers.
+ */
+export const RUNTIME_SUBCOMMANDS = [
+  "status",
+  "version",
+  "diagnose",
+  "update",
+  "release-notes",
+  "release-doctor",
+  "release-promote",
+  "backup",
+] as const;
+
+/**
  * The `runtime` subcommands that stay Python, each named on purpose.
+ *
  * `latest` and `pending` are ARGUMENTS of `release-notes`, not subcommands --
  * the 2026-09-07 decision text and the burn-down ledger's table listed them as
- * subcommands, and this story corrects that.
+ * subcommands, and DS7.TS3 corrected that.
+ *
+ * CV22.DS10.US2 finished the correction the line above started: `pull` and
+ * `stable` were in this set and have NEVER existed on either engine. `pull` is
+ * the update planner's ACTION (`action: "pull"`); `stable` is the CHANNEL.
+ * Both answer `invalid choice` with exit 2 on Python, so routing them here
+ * claimed DS10 owed a port of something that was never a command. Four names,
+ * and each leaves as its story flips it.
  */
 export const DS10_RUNTIME_SUBCOMMANDS = new Set([
   "update",
-  "pull",
-  "stable",
   "backup",
   "release-doctor",
   "release-promote",
 ]);
+
+/**
+ * argparse's answer to a name that is not a subcommand, in TypeScript.
+ *
+ * Until US2 this fell through to Python, whose argparse names `__main__.py` --
+ * a Python artifact that cannot survive TS5. At TS5 the fallthrough disappears
+ * and nobody owns the answer, so TypeScript owns it now, while there is still
+ * an oracle to compare against. The SHAPE is argparse's (usage, then one
+ * `error:` line, both on stderr, exit 2); the vocabulary is the product's.
+ * The deviation is deliberate and recorded in the story's plan.
+ */
+export function renderUnknownRuntimeSubcommand(subcommand: string): string {
+  const choices = RUNTIME_SUBCOMMANDS.join(",");
+  const detail =
+    subcommand === ""
+      ? "the following arguments are required: command"
+      : `argument command: invalid choice: '${subcommand}' (choose from ${RUNTIME_SUBCOMMANDS.join(", ")})`;
+  return `usage: runtime [-h] {${choices}} ...\nruntime: error: ${detail}\n`;
+}
 
 function optionValue(args: readonly string[], name: string): string | null {
   const index = args.indexOf(name);
@@ -87,10 +128,16 @@ export interface RuntimeRouteIo {
   cwd?: string;
   env?: NodeJS.ProcessEnv;
   stdout?: (text: string) => void;
+  /** Refusals go to stderr, as argparse's do. */
+  stderr?: (text: string) => void;
 }
 
 function writeOut(io: RuntimeRouteIo, text: string): void {
   (io.stdout ?? ((value: string) => process.stdout.write(value)))(text);
+}
+
+function writeErr(io: RuntimeRouteIo, text: string): void {
+  (io.stderr ?? ((value: string) => process.stderr.write(value)))(text);
 }
 
 /** Port of `welcome.main`. Always exits 0, like the oracle. */
@@ -202,8 +249,10 @@ export async function runRuntimeReadRoute(
     return 0;
   }
 
-  // Unreachable through the routing table, which allowlists by subcommand.
-  throw new Error(`runtime subcommand not ported to TS: ${subcommand || "(none)"}`);
+  // Not unreachable any more: the routing table sends every name it does not
+  // recognize here, so that the refusal survives the oracle's deletion.
+  writeErr(io, renderUnknownRuntimeSubcommand(subcommand));
+  return 2;
 }
 
 /**

@@ -706,7 +706,13 @@ test("release-notes ARGUMENTS are not subcommands", () => {
 });
 
 test("the DS10 updater and release machinery are refused by name, even with the gate on", () => {
-  for (const sub of ["update", "pull", "stable", "backup", "release-doctor", "release-promote"]) {
+  // FOUR names, not six. `pull` and `stable` were never subcommands on either
+  // engine -- `pull` is the update planner's ACTION and `stable` is the
+  // CHANNEL. The 2026-09-07 decision transcribed both as subcommands, the same
+  // error this file's sibling comment already corrected for `latest`/`pending`.
+  // Carrying them here made the front door claim DS10 owns a port of something
+  // that has never existed (CV22.DS10.US2 plateau 1).
+  for (const sub of ["update", "backup", "release-doctor", "release-promote"]) {
     const decision = routeMemoryCommand(["runtime", sub], { MIRROR_TS_BACKUP: "1" });
     assert.equal(decision.engine, "python", sub);
     assert.match(decision.reason, /DS10/, sub);
@@ -719,14 +725,28 @@ test("the DS10 updater and release machinery are refused by name, even with the 
   );
 });
 
-test("an unknown runtime subcommand is refused, not inherited", () => {
-  // The allowlist's whole purpose: a subcommand Python grows later must not
-  // acquire a TS route because `runtime` already has one.
-  for (const sub of ["", "doctor", "publish", "--help"]) {
+test("an unknown runtime subcommand is answered by TypeScript, not inherited", () => {
+  // The allowlist's original purpose stands: a subcommand Python grows later
+  // must not acquire a TS route because `runtime` already has one. What
+  // CHANGED in US2 is who says so. Until now the refusal fell through to
+  // Python, which rendered argparse's usage. At TS5 that fallthrough
+  // disappears and NOBODY owns the answer -- so TypeScript owns it now, while
+  // there is still an oracle to compare against.
+  for (const sub of ["", "doctor", "publish", "pull", "stable"]) {
     const argv = sub ? ["runtime", sub] : ["runtime"];
     const decision = routeMemoryCommand(argv, {});
-    assert.equal(decision.engine, "python", sub);
-    assert.match(decision.reason, /not ported to TS/, sub);
+    assert.equal(decision.engine, "ts", sub);
+    assert.match(decision.reason, /unknown runtime subcommand/, sub);
+  }
+});
+
+test("`pull` and `stable` are unknown names, never DS10 work", () => {
+  // The regression this pins: re-adding either to DS10_RUNTIME_SUBCOMMANDS
+  // would route a nonexistent command to Python and call it a port.
+  for (const sub of ["pull", "stable"]) {
+    const decision = routeMemoryCommand(["runtime", sub], { MIRROR_TS_BACKUP: "1" });
+    assert.doesNotMatch(decision.reason, /DS10/, sub);
+    assert.equal(decision.engine, "ts", sub);
   }
 });
 

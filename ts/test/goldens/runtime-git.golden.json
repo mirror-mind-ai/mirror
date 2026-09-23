@@ -22,7 +22,7 @@
         "upstream": "origin/stable",
         "version": "9.9.9"
       },
-      "availability_render": "Mirror runtime update check\n\nVersion: 9.9.9\nUpdate channel: stable\nCurrent: 114d786\nUpstream: origin/stable @ be31806\nAvailability: update_available\n\nRelease details: not fetched by this check; dry-run can show them when local refs contain release notes.\nPreview:\nuv run python -m memory runtime update --dry-run\n\nUpdate:\nuv run python -m memory runtime update\n",
+      "availability_render": "Mirror runtime update check\n\nVersion: 9.9.9\nUpdate channel: stable\nCurrent: 114d786\nUpstream: origin/stable @ be31806\nAvailability: update_available\n\nRelease details: not fetched by this check; dry-run can show them when local refs contain release notes.\nPreview:\nruntime update --dry-run\n\nUpdate:\nruntime update\n",
       "channel_override": null,
       "clone_role": {
         "note": null,
@@ -96,7 +96,7 @@
         "upstream": "origin/stable",
         "version": "9.9.9"
       },
-      "availability_render": "Mirror runtime update check\n\nVersion: 9.9.9\nUpdate channel: stable\nUpdate channel note: unknown channel 'nonsense', defaulting to stable\nCurrent: 114d786\nUpstream: origin/stable @ be31806\nAvailability: update_available\n\nRelease details: not fetched by this check; dry-run can show them when local refs contain release notes.\nPreview:\nuv run python -m memory runtime update --dry-run\n\nUpdate:\nuv run python -m memory runtime update\n",
+      "availability_render": "Mirror runtime update check\n\nVersion: 9.9.9\nUpdate channel: stable\nUpdate channel note: unknown channel 'nonsense', defaulting to stable\nCurrent: 114d786\nUpstream: origin/stable @ be31806\nAvailability: update_available\n\nRelease details: not fetched by this check; dry-run can show them when local refs contain release notes.\nPreview:\nruntime update --dry-run\n\nUpdate:\nruntime update\n",
       "channel_override": "Nonsense",
       "clone_role": {
         "note": null,
@@ -133,7 +133,7 @@
         "upstream": "origin/stable",
         "version": "9.9.9"
       },
-      "availability_render": "Mirror runtime update check\n\nVersion: 9.9.9\nUpdate channel: stable\nCurrent: 114d786\nUpstream: origin/stable @ be31806\nAvailability: update_available\n\nRelease details: not fetched by this check; dry-run can show them when local refs contain release notes.\nPreview:\nuv run python -m memory runtime update --dry-run\n\nUpdate:\nuv run python -m memory runtime update\n",
+      "availability_render": "Mirror runtime update check\n\nVersion: 9.9.9\nUpdate channel: stable\nCurrent: 114d786\nUpstream: origin/stable @ be31806\nAvailability: update_available\n\nRelease details: not fetched by this check; dry-run can show them when local refs contain release notes.\nPreview:\nruntime update --dry-run\n\nUpdate:\nruntime update\n",
       "channel_override": null,
       "clone_role": {
         "note": null,
@@ -257,7 +257,7 @@
         "upstream": "origin/stable",
         "version": "9.9.9"
       },
-      "availability_render": "Mirror runtime update check\n\nVersion: 9.9.9\nUpdate channel: stable\nUpdate channel note: unknown channel 'weekly', defaulting to stable\nCurrent: 114d786\nUpstream: origin/stable @ be31806\nAvailability: update_available\n\nRelease details: not fetched by this check; dry-run can show them when local refs contain release notes.\nPreview:\nuv run python -m memory runtime update --dry-run\n\nUpdate:\nuv run python -m memory runtime update\n",
+      "availability_render": "Mirror runtime update check\n\nVersion: 9.9.9\nUpdate channel: stable\nUpdate channel note: unknown channel 'weekly', defaulting to stable\nCurrent: 114d786\nUpstream: origin/stable @ be31806\nAvailability: update_available\n\nRelease details: not fetched by this check; dry-run can show them when local refs contain release notes.\nPreview:\nruntime update --dry-run\n\nUpdate:\nruntime update\n",
       "channel_override": null,
       "clone_role": {
         "note": "unknown role 'staging', defaulting to production",

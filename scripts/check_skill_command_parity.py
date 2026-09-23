@@ -62,13 +62,18 @@ PYTHON_RE = re.compile(r"uv run python -m memory\s+(?P<rest>.+)$")
 # A Python invocation that matches no entry fails CI. Remove an entry in the
 # same commit that flips its route; DS10's Skill Invocation Gate requires the
 # list to be empty before Python is deleted.
+# CV22.DS10.US2 dropped `runtime pull` and `runtime stable` from this list: they
+# are not unported commands, they are not commands at all. Both answer
+# `invalid choice` with exit 2 on Python -- `pull` is the update planner's
+# ACTION and `stable` is the CHANNEL, transcribed as subcommands by the
+# 2026-09-07 decision. An allowlist entry for a name that never existed is an
+# exemption guarding nothing, and it would have had to be "paid off" by a story
+# that could never find the command it was supposed to port.
 PYTHON_ALLOWLIST: dict[str, str] = {
-    "runtime update": "CV22.DS10 (updater redesigned under npm)",
-    "runtime pull": "CV22.DS10 (updater redesigned under npm)",
-    "runtime stable": "CV22.DS10 (updater redesigned under npm)",
-    "runtime backup": "CV22.DS10 (updater redesigned under npm)",
-    "runtime release-doctor": "CV22.DS10 (release tooling redesigned under npm)",
-    "runtime release-promote": "CV22.DS10 (release tooling redesigned under npm)",
+    "runtime update": "CV22.DS10.US2 (updater redesigned under npm)",
+    "runtime backup": "CV22.DS10.US2 (updater redesigned under npm)",
+    "runtime release-doctor": "CV22.DS10.US2 (release tooling redesigned under npm)",
+    "runtime release-promote": "CV22.DS10.US2 (release tooling redesigned under npm)",
 }
 
 

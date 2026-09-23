@@ -1034,16 +1034,25 @@ export function routeMemoryCommand(
 
   if (command === "runtime") {
     const subcommand = argv[1] ?? "";
-    // Allowlist, not blocklist. The updater and release machinery are DS10's,
-    // and so is anything Python grows later: a subcommand this build has never
-    // heard of must not acquire a TS route because `runtime` already has one.
+    // Allowlist, not blocklist. The updater and release machinery are DS10's:
+    // a subcommand this build has never heard of must not acquire a TS route
+    // because `runtime` already has one.
     if (!TS_RUNTIME_READ_SUBCOMMANDS.has(subcommand)) {
+      if (DS10_RUNTIME_SUBCOMMANDS.has(subcommand)) {
+        return {
+          command,
+          engine: "python",
+          reason: `runtime ${subcommand} is the git-based updater/release machinery, redesigned in DS10`,
+        };
+      }
+      // CV22.DS10.US2: the unknown answer is TypeScript's own. It used to fall
+      // through to Python's argparse; at TS5 there is no Python to fall
+      // through to, and an unowned answer is how a surface disappears without
+      // anyone deciding to remove it.
       return {
         command,
-        engine: "python",
-        reason: DS10_RUNTIME_SUBCOMMANDS.has(subcommand)
-          ? `runtime ${subcommand} is the git-based updater/release machinery, redesigned in DS10`
-          : `runtime subcommand not ported to TS: ${subcommand || "(none)"}`,
+        engine: "ts",
+        reason: `unknown runtime subcommand: ${subcommand || "(none)"}`,
       };
     }
     if (!tailGateEnabled(env.MIRROR_TS_RUNTIME_READS)) {

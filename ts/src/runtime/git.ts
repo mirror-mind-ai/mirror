@@ -449,11 +449,16 @@ export function renderRuntimeUpdateAvailability(report: UpdateAvailability): str
         "Release details: not fetched by this check; dry-run can show them when local refs contain release notes.",
       );
     }
+    // CV22.DS10.US2: engine-neutral, changed in the oracle first and
+    // regenerated into the golden. The TypeScript core told users to run the
+    // interpreter this migration deletes; the COMMAND was always the same on
+    // both engines, and the npm-era invocation does not exist until US3
+    // defines a `bin`.
     lines.push("Preview:");
-    lines.push("uv run python -m memory runtime update --dry-run");
+    lines.push("runtime update --dry-run");
     lines.push("");
     lines.push("Update:");
-    lines.push("uv run python -m memory runtime update");
+    lines.push("runtime update");
   } else if (report.status === "up_to_date") {
     lines.push("");
     lines.push("Next: no update needed");
