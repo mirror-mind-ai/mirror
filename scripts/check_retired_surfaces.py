@@ -42,7 +42,13 @@ HISTORY_PREFIXES = (
     "docs/project/",
     "docs/process/worklog.md",
     "docs/releases/",
+    # A guard's own table is the one file that must name every retired surface:
+    # the patterns ARE the data. Python has always self-exempted; CV22.DS10.TS5
+    # adds its Node port and that port's self-test for the same reason, and
+    # deletes this Python file at plateau 3.
     "scripts/check_retired_surfaces.py",
+    "ts/src/guards/retiredSurfaces.ts",
+    "ts/test/scripts/retiredSurfaces.test.ts",
 )
 
 

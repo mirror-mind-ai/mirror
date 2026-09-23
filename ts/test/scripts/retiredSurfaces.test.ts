@@ -129,6 +129,16 @@ describe("residue", () => {
     assert.ok(!isHistory("docs/process/development-guide.md"));
     assert.ok(!isHistory("README.md"));
   });
+
+  test("both guards' own tables and this self-test are history", () => {
+    // A guard's table must name every retired surface -- the patterns ARE the
+    // data -- so the table and its test cannot be residue. Missing this turned
+    // CI red at 5fb23132: locally both guards were green because the new files
+    // were not yet COMMITTED, and the sweep reads `git ls-files`.
+    assert.ok(isHistory("scripts/check_retired_surfaces.py"));
+    assert.ok(isHistory("ts/src/guards/retiredSurfaces.ts"));
+    assert.ok(isHistory("ts/test/scripts/retiredSurfaces.test.ts"));
+  });
 });
 
 describe("the table itself", () => {
