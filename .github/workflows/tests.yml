@@ -158,6 +158,17 @@ jobs:
       # Fails when a surface CV22.DS10 retired comes back, or never fully left.
       # A deletion has no test of its own; this is it. Each retiring story adds
       # a row to the table rather than a script to the repository.
+      #
+      # CV22.DS10.TS5 slice B: the Node port runs BESIDE the original for one
+      # commit and must agree -- same exit code, byte-identical stdout -- on the
+      # clean tree and on seeded regressions, before the Python one is deleted.
+      # The Zero Python gate's reason for assigning this file to TS5 is the
+      # whole point: the guard must OUTLIVE the deletion it proves, and a guard
+      # written in the language it forbids cannot.
+      #
+      # The port also carries the self-test the original never had. It was
+      # written as a script and graded by use, which is how its table gained
+      # patterns twice after CI caught residue it had missed.
       - name: Retired-surface tripwire (DS10 deletions must stay deleted)
         run: uv run python scripts/check_retired_surfaces.py
 
@@ -247,6 +258,24 @@ jobs:
           PATH="$SHADOW:$PATH" node --test "test/extensions/*.test.ts"
         env:
           MEMORY_ENV: test
+
+      # CV22.DS10.TS5 slice B: the Node port of the retired-surface guard runs
+      # BESIDE the Python original (in the `test` job) for one commit, and must
+      # agree -- same exit code, byte-identical stdout -- on the clean tree and
+      # on seeded regressions, before the original is deleted.
+      #
+      # It runs HERE rather than next to its original because that job installs
+      # Python and uv but no Node, and the runner's default Node is too old to
+      # strip types. The agreement is per-commit, not per-job.
+      #
+      # The Zero Python gate's reason for assigning this file to TS5 is the
+      # whole point: the guard must OUTLIVE the deletion it proves, and one
+      # written in the language it forbids cannot. The port also carries the
+      # self-test the original never had -- it was written as a script and
+      # graded by use, which is how its table gained patterns twice after CI
+      # caught residue it had missed.
+      - name: Retired-surface tripwire (Node port, must agree with the original)
+        run: node scripts/checkRetiredSurfaces.ts
 
       # CR051 — this script was silently drifted from the CI-enforced
       # migrationFixtures.test.ts it duplicates; now wired into CI so that
