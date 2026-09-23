@@ -25,9 +25,6 @@ class RefinementFieldSnapshot:
     seed_change_requests: int
     seed_change_request_source: str | None
     next_move: str
-    refinement_story_count: int = 0
-    change_request_count: int = 0
-    unassigned_change_request_count: int = 0
     canonical_index: str | None = None
 
 

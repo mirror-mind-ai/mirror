@@ -66,8 +66,6 @@ from memory.builder.resume_state import (
 )
 from memory.builder.resume_surface import render_builder_resume_surface
 from memory.builder.roadmap_position import RoadmapPosition
-from memory.builder.workbench import WorkbenchSnapshot
-from memory.storage.builder_workbench import ChangeRequestRecord, RefinementStoryRecord
 
 HERE = Path(__file__).resolve().parent
 FIXTURES = HERE.parent / "test" / "fixtures" / "builder-refinement"
@@ -79,47 +77,6 @@ LONG = (
 UNICODE = "jornada de ação 🟦 com acentuação e emoji 🧰"
 
 # --- Building blocks ------------------------------------------------------
-
-
-def _story(
-    display_code: str = "RS-001", title: str = "Ariad runtime trust"
-) -> RefinementStoryRecord:
-    return RefinementStoryRecord(
-        id="rs-id",
-        journey="j",
-        display_code=display_code,
-        title=title,
-        description=None,
-        status="active",
-        position=1,
-        source="manual",
-        provenance=None,
-        created_at="2026-01-01T00:00:00Z",
-        updated_at="2026-01-01T00:00:00Z",
-        pulled_at=None,
-        closed_at=None,
-    )
-
-
-def _change_request(
-    display_code: str = "CR-007", title: str = "Resume a stranded Change Request"
-) -> ChangeRequestRecord:
-    return ChangeRequestRecord(
-        id="cr-id",
-        journey="j",
-        display_code=display_code,
-        refinement_story_id="rs-id",
-        title=title,
-        body="body",
-        status="selected",
-        position=1,
-        source="manual",
-        provenance=None,
-        outcome_notes=None,
-        created_at="2026-01-01T00:00:00Z",
-        updated_at="2026-01-01T00:00:00Z",
-        completed_at=None,
-    )
 
 
 def _cursor(**changes: Any) -> BuilderDeliveryCursor:
@@ -136,31 +93,14 @@ def _cursor(**changes: Any) -> BuilderDeliveryCursor:
     return BuilderDeliveryCursor(**base)
 
 
-def _workbench(**changes: Any) -> WorkbenchSnapshot:
-    base = {
-        "storage_state": "implemented",
-        "active_refinement_story": _story(),
-        "active_change_request": _change_request(),
-        "last_refinement_event": "change_request_selected",
-        "refinement_story_count": 3,
-        "change_request_count": 17,
-        "unassigned_change_request_count": 2,
-    }
-    base.update(changes)
-    return WorkbenchSnapshot(**base)
-
-
 def _refinement(**changes: Any) -> RefinementFieldSnapshot:
     base = {
-        "active_refinement_story": "RS-001: Ariad runtime trust",
-        "active_change_request": "CR-007: Resume a stranded Change Request",
-        "storage_state": "implemented",
+        "active_refinement_story": None,
+        "active_change_request": None,
+        "storage_state": "project files (not started)",
         "seed_change_requests": 0,
         "seed_change_request_source": None,
-        "next_move": "continue active Change Request",
-        "refinement_story_count": 3,
-        "change_request_count": 17,
-        "unassigned_change_request_count": 2,
+        "next_move": "create docs/project/refinement/index.md",
         "canonical_index": None,
     }
     base.update(changes)
@@ -229,7 +169,6 @@ def _resume_state(**changes: Any) -> BuilderResumeState:
         "resumable": True,
         "reason": None,
         "allowed_next_actions": ACTIVE_ITEM_ACTIONS,
-        "refinement": None,
     }
     base.update(changes)
     return BuilderResumeState(**base)
@@ -280,9 +219,6 @@ def _snapshot_dump(snapshot: RefinementFieldSnapshot) -> dict[str, Any]:
         "seed_change_requests": snapshot.seed_change_requests,
         "seed_change_request_source": snapshot.seed_change_request_source,
         "next_move": snapshot.next_move,
-        "refinement_story_count": snapshot.refinement_story_count,
-        "change_request_count": snapshot.change_request_count,
-        "unassigned_change_request_count": snapshot.unassigned_change_request_count,
         "canonical_index": snapshot.canonical_index,
     }
 
@@ -316,29 +252,6 @@ def build_payload() -> dict[str, Any]:
                     "resumable": state.resumable,
                     "reason": state.reason,
                     "allowed_next_actions": list(state.allowed_next_actions),
-                    "refinement": None
-                    if state.refinement is None
-                    else {
-                        "storage_state": state.refinement.storage_state,
-                        "active_refinement_story": None
-                        if state.refinement.active_refinement_story is None
-                        else {
-                            "display_code": state.refinement.active_refinement_story.display_code,
-                            "title": state.refinement.active_refinement_story.title,
-                        },
-                        "active_change_request": None
-                        if state.refinement.active_change_request is None
-                        else {
-                            "display_code": state.refinement.active_change_request.display_code,
-                            "title": state.refinement.active_change_request.title,
-                        },
-                        "last_refinement_event": state.refinement.last_refinement_event,
-                        "refinement_story_count": state.refinement.refinement_story_count,
-                        "change_request_count": state.refinement.change_request_count,
-                        "unassigned_change_request_count": (
-                            state.refinement.unassigned_change_request_count
-                        ),
-                    },
                 },
                 "roadmap_position": None
                 if position is None
@@ -414,31 +327,7 @@ def build_payload() -> dict[str, Any]:
     add_resume(
         "canonical_refinement_index", _resume_state(), canonical="docs/project/refinement/index.md"
     )
-    add_resume("refinement_populated", _resume_state(refinement=_workbench()))
-    add_resume(
-        "refinement_story_without_cr",
-        _resume_state(refinement=_workbench(active_change_request=None)),
-    )
-    add_resume(
-        "refinement_no_active_story",
-        _resume_state(
-            refinement=_workbench(
-                active_refinement_story=None,
-                active_change_request=None,
-                last_refinement_event="change_request_captured",
-            )
-        ),
-    )
-    add_resume(
-        "refinement_event_without_story",
-        # `_last_refinement_event` returns "none" when there is no active RS, even
-        # though an event IS recorded. A port that reads the field directly differs.
-        _resume_state(
-            refinement=_workbench(
-                active_refinement_story=None, last_refinement_event="change_request_done"
-            )
-        ),
-    )
+    add_resume("no_canonical_index", _resume_state())
     add_resume("long_reason", _resume_state(reason=LONG, resumable=False))
     add_resume("unicode_journey", _resume_state(journey=UNICODE))
     add_resume("empty_actions", _resume_state(allowed_next_actions=()))
@@ -446,42 +335,19 @@ def build_payload() -> dict[str, Any]:
     home: list[dict[str, Any]] = []
     orientation: list[dict[str, Any]] = []
 
+    # CV22.DS10.TS4: with the SQLite Workbench retired there are three shapes
+    # left, not seven. The four removed ones (populated, story_without_cr,
+    # captured_only, not_implemented) all described Workbench-derived content
+    # that no read can produce anymore.
     refinement_states = {
         "canonical": _refinement(canonical_index="docs/project/refinement/index.md"),
-        "populated": _refinement(),
-        "story_without_cr": _refinement(
-            active_change_request=None, next_move="continue active Refinement Story"
-        ),
-        "captured_only": _refinement(
-            active_refinement_story=None,
-            active_change_request=None,
-            next_move="compose or capture Refinement Work when requested",
-        ),
-        "nothing": _refinement(
-            active_refinement_story=None,
-            active_change_request=None,
-            change_request_count=0,
-            refinement_story_count=0,
-            unassigned_change_request_count=0,
-            next_move="compose or capture Refinement Work when requested",
-        ),
-        "not_implemented": _refinement(
-            active_refinement_story=None,
-            active_change_request=None,
-            storage_state="not implemented yet",
-            change_request_count=0,
-            refinement_story_count=0,
-            next_move="implement Workbench Storage Model before durable RS/CR work",
-        ),
+        "not_started": _refinement(),
         "seeded": _refinement(
-            active_refinement_story=None,
-            active_change_request=None,
             seed_change_requests=3,
             seed_change_request_source=(
                 "docs/project/roadmap/cv20-builder-mode-evolution/"
                 "cv20-ds6-refinement-workbench-flow/plan.md"
             ),
-            next_move="compose or capture Refinement Work when requested",
         ),
     }
 
@@ -525,7 +391,7 @@ def build_payload() -> dict[str, Any]:
     home.append(
         {
             "name": "home__unicode_journey",
-            "refinement": _snapshot_dump(refinement_states["populated"]),
+            "refinement": _snapshot_dump(refinement_states["not_started"]),
             "candidates": "recommended",
             "journey": UNICODE,
             "method": "ariad",
@@ -533,7 +399,7 @@ def build_payload() -> dict[str, Any]:
                 journey=UNICODE,
                 method="ariad",
                 candidates_report=candidate_reports["recommended"],
-                refinement=refinement_states["populated"],
+                refinement=refinement_states["not_started"],
             ),
         }
     )

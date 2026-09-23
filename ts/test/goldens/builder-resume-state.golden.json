@@ -141,45 +141,13 @@
         "cursor_present": false,
         "journey": "demo",
         "reason": "adoption_required",
-        "refinement": {
-          "active_change_request": null,
-          "active_refinement_story": null,
-          "change_request_count": 0,
-          "last_refinement_event": null,
-          "refinement_story_count": 0,
-          "storage_state": "implemented",
-          "unassigned_change_request_count": 0
-        },
         "resumable": false
       },
       "name": "not_adopted",
       "seed": {
         "adopt": false,
         "cursor": null,
-        "include_refinement": true,
-        "workbench": null
-      }
-    },
-    {
-      "expected": {
-        "adopted_method": null,
-        "allowed_next_actions": [
-          "adopt_method",
-          "inspect_method"
-        ],
-        "cursor_active_item": null,
-        "cursor_present": false,
-        "journey": "demo",
-        "reason": "adoption_required",
-        "refinement": null,
-        "resumable": false
-      },
-      "name": "not_adopted_without_refinement",
-      "seed": {
-        "adopt": false,
-        "cursor": null,
-        "include_refinement": false,
-        "workbench": null
+        "include_refinement": true
       }
     },
     {
@@ -193,23 +161,13 @@
         "cursor_present": false,
         "journey": "demo",
         "reason": "cursor_sync_required",
-        "refinement": {
-          "active_change_request": null,
-          "active_refinement_story": null,
-          "change_request_count": 0,
-          "last_refinement_event": null,
-          "refinement_story_count": 0,
-          "storage_state": "implemented",
-          "unassigned_change_request_count": 0
-        },
         "resumable": false
       },
       "name": "adopted_without_cursor",
       "seed": {
         "adopt": true,
         "cursor": null,
-        "include_refinement": true,
-        "workbench": null
+        "include_refinement": true
       }
     },
     {
@@ -224,23 +182,13 @@
         "cursor_present": true,
         "journey": "demo",
         "reason": null,
-        "refinement": {
-          "active_change_request": null,
-          "active_refinement_story": null,
-          "change_request_count": 0,
-          "last_refinement_event": null,
-          "refinement_story_count": 0,
-          "storage_state": "implemented",
-          "unassigned_change_request_count": 0
-        },
         "resumable": true
       },
       "name": "adopted_with_cursor_no_active_item",
       "seed": {
         "adopt": true,
         "cursor": {},
-        "include_refinement": true,
-        "workbench": null
+        "include_refinement": true
       }
     },
     {
@@ -255,15 +203,6 @@
         "cursor_present": true,
         "journey": "demo",
         "reason": null,
-        "refinement": {
-          "active_change_request": null,
-          "active_refinement_story": null,
-          "change_request_count": 0,
-          "last_refinement_event": null,
-          "refinement_story_count": 0,
-          "storage_state": "implemented",
-          "unassigned_change_request_count": 0
-        },
         "resumable": true
       },
       "name": "active_item",
@@ -272,9 +211,7 @@
         "cursor": {
           "active_item": "CV1.US1",
           "last_delivery_event": "pulled"
-        },
-        "include_refinement": true,
-        "workbench": null
+        }
       }
     },
     {
@@ -288,15 +225,6 @@
         "cursor_present": true,
         "journey": "demo",
         "reason": null,
-        "refinement": {
-          "active_change_request": null,
-          "active_refinement_story": null,
-          "change_request_count": 0,
-          "last_refinement_event": null,
-          "refinement_story_count": 0,
-          "storage_state": "implemented",
-          "unassigned_change_request_count": 0
-        },
         "resumable": true
       },
       "name": "pending_confirmation",
@@ -306,9 +234,7 @@
           "active_checkpoint": "after_plan",
           "active_item": "CV1.US1",
           "pending_confirmation": "navigator_approval"
-        },
-        "include_refinement": true,
-        "workbench": null
+        }
       }
     },
     {
@@ -322,15 +248,6 @@
         "cursor_present": true,
         "journey": "demo",
         "reason": null,
-        "refinement": {
-          "active_change_request": null,
-          "active_refinement_story": null,
-          "change_request_count": 0,
-          "last_refinement_event": null,
-          "refinement_story_count": 0,
-          "storage_state": "implemented",
-          "unassigned_change_request_count": 0
-        },
         "resumable": true
       },
       "name": "pending_confirmation_without_active_item",
@@ -338,84 +255,6 @@
         "adopt": true,
         "cursor": {
           "pending_confirmation": "navigator_approval"
-        },
-        "include_refinement": true,
-        "workbench": null
-      }
-    },
-    {
-      "expected": {
-        "adopted_method": "ariad",
-        "allowed_next_actions": [
-          "prepare_active_item",
-          "inspect_roadmap",
-          "inspect_method"
-        ],
-        "cursor_active_item": "CV1.US1",
-        "cursor_present": true,
-        "journey": "demo",
-        "reason": null,
-        "refinement": {
-          "active_change_request": {
-            "display_code": "CR-001",
-            "status": "captured",
-            "title": "Change request 1"
-          },
-          "active_refinement_story": {
-            "display_code": "RS-001",
-            "status": "active",
-            "title": "Refinement story 1"
-          },
-          "change_request_count": 5,
-          "last_refinement_event": "change_request_selected",
-          "refinement_story_count": 2,
-          "storage_state": "implemented",
-          "unassigned_change_request_count": 1
-        },
-        "resumable": true
-      },
-      "name": "with_workbench_rows",
-      "seed": {
-        "adopt": true,
-        "cursor": {
-          "active_item": "CV1.US1"
-        },
-        "include_refinement": true,
-        "workbench": {
-          "active": true,
-          "crs": 5,
-          "stories": 2,
-          "unassigned": 1
-        }
-      }
-    },
-    {
-      "expected": {
-        "adopted_method": "ariad",
-        "allowed_next_actions": [
-          "prepare_active_item",
-          "inspect_roadmap",
-          "inspect_method"
-        ],
-        "cursor_active_item": "CV1.US1",
-        "cursor_present": true,
-        "journey": "demo",
-        "reason": null,
-        "refinement": null,
-        "resumable": true
-      },
-      "name": "workbench_excluded",
-      "seed": {
-        "adopt": true,
-        "cursor": {
-          "active_item": "CV1.US1"
-        },
-        "include_refinement": false,
-        "workbench": {
-          "active": true,
-          "crs": 5,
-          "stories": 2,
-          "unassigned": 1
         }
       }
     }
@@ -424,7 +263,7 @@
     "expected_error": "ValueError: journey must not be empty"
   },
   "resume_missing_tables": {
-    "excluded_ok": {
+    "expected": {
       "adopted_method": "ariad",
       "allowed_next_actions": [
         "prepare_active_item",
@@ -435,10 +274,8 @@
       "cursor_present": true,
       "journey": "demo",
       "reason": null,
-      "refinement": null,
       "resumable": true
-    },
-    "expected_error": "OperationalError"
+    }
   },
   "ribbon_refusals": [
     {
@@ -480,90 +317,5 @@
       "review": "RS Flow: ✓ Pull → ✓ Select CR → ✓ CR Cycle → ◉ Review → ○ Coherence → ○ Close",
       "select_cr": "RS Flow: ✓ Pull → ◉ Select CR → ○ CR Cycle → ○ Review → ○ Coherence → ○ Close"
     }
-  },
-  "workbench": [
-    {
-      "expected": {
-        "active_change_request": null,
-        "active_refinement_story": null,
-        "change_request_count": 0,
-        "last_refinement_event": null,
-        "refinement_story_count": 0,
-        "storage_state": "implemented",
-        "unassigned_change_request_count": 0
-      },
-      "name": "empty",
-      "seed": {
-        "active": false,
-        "crs": 0,
-        "stories": 0,
-        "unassigned": 0
-      }
-    },
-    {
-      "expected": {
-        "active_change_request": null,
-        "active_refinement_story": null,
-        "change_request_count": 5,
-        "last_refinement_event": null,
-        "refinement_story_count": 2,
-        "storage_state": "implemented",
-        "unassigned_change_request_count": 2
-      },
-      "name": "rows_without_cursor",
-      "seed": {
-        "active": false,
-        "crs": 5,
-        "stories": 2,
-        "unassigned": 2
-      }
-    },
-    {
-      "expected": {
-        "active_change_request": {
-          "display_code": "CR-001",
-          "status": "captured",
-          "title": "Change request 1"
-        },
-        "active_refinement_story": {
-          "display_code": "RS-001",
-          "status": "active",
-          "title": "Refinement story 1"
-        },
-        "change_request_count": 7,
-        "last_refinement_event": "change_request_selected",
-        "refinement_story_count": 3,
-        "storage_state": "implemented",
-        "unassigned_change_request_count": 3
-      },
-      "name": "rows_with_cursor",
-      "seed": {
-        "active": true,
-        "crs": 7,
-        "stories": 3,
-        "unassigned": 3
-      }
-    },
-    {
-      "expected": {
-        "active_change_request": null,
-        "active_refinement_story": null,
-        "change_request_count": 4,
-        "last_refinement_event": null,
-        "refinement_story_count": 1,
-        "storage_state": "implemented",
-        "unassigned_change_request_count": 4
-      },
-      "name": "all_unassigned",
-      "seed": {
-        "active": false,
-        "crs": 4,
-        "stories": 1,
-        "unassigned": 4
-      }
-    }
-  ],
-  "workbench_missing_tables": {
-    "expected_error": "OperationalError"
   }
 }

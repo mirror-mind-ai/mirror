@@ -49,7 +49,6 @@ from memory.builder.lifecycle_ribbon import (
 )
 from memory.builder.method_adoption import set_adopted_method
 from memory.builder.resume_state import read_builder_resume_state
-from memory.builder.workbench import get_workbench_snapshot
 from memory.db.schema import SCHEMA
 from memory.storage.store import Store
 
@@ -74,26 +73,6 @@ def _store() -> Store:
     return store
 
 
-def _story_dump(record: Any) -> dict[str, Any] | None:
-    if record is None:
-        return None
-    return {"display_code": record.display_code, "title": record.title, "status": record.status}
-
-
-def _snapshot_dump(snapshot: Any) -> dict[str, Any] | None:
-    if snapshot is None:
-        return None
-    return {
-        "storage_state": snapshot.storage_state,
-        "active_refinement_story": _story_dump(snapshot.active_refinement_story),
-        "active_change_request": _story_dump(snapshot.active_change_request),
-        "last_refinement_event": snapshot.last_refinement_event,
-        "refinement_story_count": snapshot.refinement_story_count,
-        "change_request_count": snapshot.change_request_count,
-        "unassigned_change_request_count": snapshot.unassigned_change_request_count,
-    }
-
-
 def _state_dump(state: Any) -> dict[str, Any]:
     return {
         "journey": state.journey,
@@ -103,63 +82,8 @@ def _state_dump(state: Any) -> dict[str, Any]:
         "resumable": state.resumable,
         "reason": state.reason,
         "allowed_next_actions": list(state.allowed_next_actions),
-        "refinement": _snapshot_dump(state.refinement),
     }
 
-
-def _seed_workbench(store: Store, *, stories: int, crs: int, unassigned: int, active: bool) -> None:
-    """Insert Workbench rows directly, which is all the read needs."""
-    for index in range(stories):
-        store.conn.execute(
-            """INSERT INTO builder_refinement_stories
-               (id, journey, display_code, title, description, status, position, source,
-                provenance, created_at, updated_at, pulled_at, closed_at)
-               VALUES (?, ?, ?, ?, NULL, 'active', ?, 'manual', NULL, ?, ?, NULL, NULL)""",
-            (
-                f"rs-{index}",
-                JOURNEY,
-                f"RS-{index + 1:03d}",
-                f"Refinement story {index + 1}",
-                index,
-                FROZEN_NOW,
-                FROZEN_NOW,
-            ),
-        )
-    for index in range(crs):
-        assigned = None if index < unassigned else "rs-0"
-        store.conn.execute(
-            """INSERT INTO builder_change_requests
-               (id, journey, display_code, refinement_story_id, title, body, status, position,
-                source, provenance, outcome_notes, created_at, updated_at, completed_at)
-               VALUES (?, ?, ?, ?, ?, 'body', 'captured', ?, 'manual', NULL, NULL, ?, ?, NULL)""",
-            (
-                f"cr-{index}",
-                JOURNEY,
-                f"CR-{index + 1:03d}",
-                assigned,
-                f"Change request {index + 1}",
-                index,
-                FROZEN_NOW,
-                FROZEN_NOW,
-            ),
-        )
-    if active:
-        store.conn.execute(
-            """INSERT INTO builder_refinement_cursors
-               (journey, active_refinement_story_id, active_change_request_id,
-                last_refinement_event, updated_at)
-               VALUES (?, 'rs-0', 'cr-0', 'change_request_selected', ?)""",
-            (JOURNEY, FROZEN_NOW),
-        )
-    store.conn.commit()
-
-
-WORKBENCH_CASES: list[tuple[str, dict[str, Any]]] = [
-    ("empty", {"stories": 0, "crs": 0, "unassigned": 0, "active": False}),
-    ("rows_without_cursor", {"stories": 2, "crs": 5, "unassigned": 2, "active": False}),
-    ("rows_with_cursor", {"stories": 3, "crs": 7, "unassigned": 3, "active": True}),
-    ("all_unassigned", {"stories": 1, "crs": 4, "unassigned": 4, "active": False}),
-]
 
 GUARD_CASES: list[tuple[str, dict[str, Any] | None]] = [
     ("no_cursor", None),
@@ -232,27 +156,21 @@ GUARD_CASES: list[tuple[str, dict[str, Any] | None]] = [
 RESUME_CASES: list[tuple[str, dict[str, Any]]] = [
     (
         "not_adopted",
-        {"adopt": False, "cursor": None, "workbench": None, "include_refinement": True},
-    ),
-    (
-        "not_adopted_without_refinement",
-        {"adopt": False, "cursor": None, "workbench": None, "include_refinement": False},
+        {"adopt": False, "cursor": None, "include_refinement": True},
     ),
     (
         "adopted_without_cursor",
-        {"adopt": True, "cursor": None, "workbench": None, "include_refinement": True},
+        {"adopt": True, "cursor": None, "include_refinement": True},
     ),
     (
         "adopted_with_cursor_no_active_item",
-        {"adopt": True, "cursor": {}, "workbench": None, "include_refinement": True},
+        {"adopt": True, "cursor": {}, "include_refinement": True},
     ),
     (
         "active_item",
         {
             "adopt": True,
             "cursor": {"active_item": "CV1.US1", "last_delivery_event": "pulled"},
-            "workbench": None,
-            "include_refinement": True,
         },
     ),
     (
@@ -264,8 +182,6 @@ RESUME_CASES: list[tuple[str, dict[str, Any]]] = [
                 "active_checkpoint": "after_plan",
                 "pending_confirmation": "navigator_approval",
             },
-            "workbench": None,
-            "include_refinement": True,
         },
     ),
     (
@@ -273,26 +189,6 @@ RESUME_CASES: list[tuple[str, dict[str, Any]]] = [
         {
             "adopt": True,
             "cursor": {"pending_confirmation": "navigator_approval"},
-            "workbench": None,
-            "include_refinement": True,
-        },
-    ),
-    (
-        "with_workbench_rows",
-        {
-            "adopt": True,
-            "cursor": {"active_item": "CV1.US1"},
-            "workbench": {"stories": 2, "crs": 5, "unassigned": 1, "active": True},
-            "include_refinement": True,
-        },
-    ),
-    (
-        "workbench_excluded",
-        {
-            "adopt": True,
-            "cursor": {"active_item": "CV1.US1"},
-            "workbench": {"stories": 2, "crs": 5, "unassigned": 1, "active": True},
-            "include_refinement": False,
         },
     ),
 ]
@@ -337,33 +233,6 @@ def build_payload() -> dict[str, Any]:
         except Exception as exc:
             ribbon_refusals.append({"kind": kind, "expected_error": f"{type(exc).__name__}: {exc}"})
 
-    workbench: list[dict[str, Any]] = []
-    for name, seed in WORKBENCH_CASES:
-        store = _store()
-        _seed_workbench(store, **seed)
-        workbench.append(
-            {
-                "name": name,
-                "seed": seed,
-                "expected": _snapshot_dump(get_workbench_snapshot(store, JOURNEY)),
-            }
-        )
-
-    # A database with no Workbench tables at all: the pre-CV20.DS6 shape.
-    store = _store()
-    for table in (
-        "builder_refinement_cursors",
-        "builder_change_requests",
-        "builder_refinement_stories",
-    ):
-        store.conn.execute(f"DROP TABLE IF EXISTS {table}")
-    store.conn.commit()
-    try:
-        get_workbench_snapshot(store, JOURNEY)
-        missing_tables: dict[str, Any] = {"expected": "ok"}
-    except Exception as exc:
-        missing_tables = {"expected_error": type(exc).__name__}
-
     guards: list[dict[str, Any]] = []
     for name, cursor_changes in GUARD_CASES:
         store = _store()
@@ -387,17 +256,11 @@ def build_payload() -> dict[str, Any]:
             set_adopted_method(store, JOURNEY, "ariad")
         if seed["cursor"] is not None:
             set_delivery_cursor(store, journey=JOURNEY, method="ariad", **seed["cursor"])
-        if seed["workbench"] is not None:
-            _seed_workbench(store, **seed["workbench"])
         resume.append(
             {
                 "name": name,
                 "seed": _jsonable(seed),
-                "expected": _state_dump(
-                    read_builder_resume_state(
-                        store, JOURNEY, include_refinement=seed["include_refinement"]
-                    )
-                ),
+                "expected": _state_dump(read_builder_resume_state(store, JOURNEY)),
             }
         )
 
@@ -409,12 +272,11 @@ def build_payload() -> dict[str, Any]:
     except Exception as exc:
         empty_journey = {"expected_error": f"{type(exc).__name__}: {exc}"}
 
-    # An asymmetry worth recording rather than smoothing: `home_surface`
-    # wraps the Workbench read in `_safe_workbench_snapshot`, which swallows
-    # `sqlite3.OperationalError`, but `read_builder_resume_state` calls
-    # `get_workbench_snapshot` DIRECTLY. So on a database predating CV20.DS6 the
-    # Home path degrades and the Resume path raises. The port must reproduce both
-    # halves; the inconsistency is Python's and becomes a CR.
+    # CV22.DS10.TS4 removed the asymmetry this block used to record. Resume
+    # state no longer touches the Workbench tables, so a database predating
+    # CV20.DS6 -- or any database whose Workbench tables are absent -- resumes
+    # normally instead of raising where the Home path degraded. Graded so the
+    # property cannot silently regress.
     store = _store()
     set_adopted_method(store, JOURNEY, "ariad")
     set_delivery_cursor(store, journey=JOURNEY, method="ariad", active_item="CV1")
@@ -425,26 +287,13 @@ def build_payload() -> dict[str, Any]:
     ):
         store.conn.execute(f"DROP TABLE IF EXISTS {table}")
     store.conn.commit()
-    try:
-        read_builder_resume_state(store, JOURNEY)
-        resume_missing_tables: dict[str, Any] = {"expected": "ok"}
-    except Exception as exc:
-        resume_missing_tables = {"expected_error": type(exc).__name__}
-    # Excluding refinement avoids the read entirely, which is how `build load`
-    # dodges this on a file-first project.
-    try:
-        excluded = _state_dump(read_builder_resume_state(store, JOURNEY, include_refinement=False))
-        resume_missing_tables["excluded_ok"] = excluded
-    except Exception as exc:
-        resume_missing_tables["excluded_error"] = type(exc).__name__
+    resume_missing_tables = {"expected": _state_dump(read_builder_resume_state(store, JOURNEY))}
 
     return {
         "frozen_now": FROZEN_NOW,
         "journey": JOURNEY,
         "ribbons": ribbons,
         "ribbon_refusals": ribbon_refusals,
-        "workbench": workbench,
-        "workbench_missing_tables": missing_tables,
         "guards": guards,
         "resume": resume,
         "resume_empty_journey": empty_journey,
@@ -471,11 +320,9 @@ def main() -> None:
     allowed = sum(1 for entry in payload["guards"] if entry["outcome"] == "allowed")
     print(
         f"ribbons: {sum(len(group) for group in payload['ribbons'].values())}  "
-        f"workbench: {len(payload['workbench'])}  "
         f"guards: {len(payload['guards'])} ({allowed} allowed)  "
         f"resume: {len(payload['resume'])}"
     )
-    print(f"workbench with no tables: {payload['workbench_missing_tables']}")
     print(f"wrote {OUT_PATH.relative_to(HERE.parent.parent)}")
 
 
