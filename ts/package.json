@@ -15,6 +15,7 @@
     "#cultivation/*": "./src/cultivation/*",
     "#db/*": "./src/db/*",
     "#descriptor/*": "./src/descriptor/*",
+    "#docs/*": "./src/docs/*",
     "#evals/*": "./evals/*",
     "#explorer/*": "./src/explorer/*",
     "#extraction/*": "./src/extraction/*",

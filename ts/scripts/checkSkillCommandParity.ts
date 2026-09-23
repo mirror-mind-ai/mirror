@@ -32,7 +32,7 @@
 //
 // Usage:  node ts/scripts/checkSkillCommandParity.ts
 
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const REPO_ROOT = new URL("../..", import.meta.url).pathname.replace(/\/$/, "");

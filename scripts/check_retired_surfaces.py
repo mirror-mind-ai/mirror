@@ -299,6 +299,11 @@ RETIRED: tuple[RetiredSurface, ...] = (
             "ts/test/frontDoor/routing.test.ts": (
                 "asserts the flags are retired whatever the lifecycle gate says"
             ),
+            "scripts/ts5/capture_family_outputs.sh": (
+                "CV22.DS10.TS5 captures the refusal itself as a command family: the "
+                "cutoff answer is a user-visible surface, so it is hashed before the "
+                "deletion and replayed after it"
+            ),
         },
     ),
     RetiredSurface(
@@ -336,6 +341,11 @@ RETIRED: tuple[RetiredSurface, ...] = (
                 "asserts all twenty names retire, and that the count is still twenty"
             ),
             "ts/test/frontDoor/retiredSurfaces.test.ts": "the test of those refusals",
+            "scripts/ts5/capture_family_outputs.sh": (
+                "CV22.DS10.TS5 captures the refusal itself as a command family: the "
+                "cutoff answer is a user-visible surface, so it is hashed before the "
+                "deletion and replayed after it"
+            ),
             "tests/unit/memory/cli/test_build.py": (
                 "asserts the mm-build skill no longer offers the retired command -- the "
                 "mention is the negative assertion itself"

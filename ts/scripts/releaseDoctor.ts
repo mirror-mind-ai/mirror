@@ -72,7 +72,11 @@ export function buildReleaseDoctorReport(options: {
   const stableRef = options.stableRef ?? "origin/stable";
   const repository = repositoryRoot(start);
   if (repository === null) {
-    return { target: display, repository: null, checks: [check("repository", "fail", "not a git repository")] };
+    return {
+      target: display,
+      repository: null,
+      checks: [check("repository", "fail", "not a git repository")],
+    };
   }
 
   const checks: ReleaseCheck[] = [check("repository", "pass", repository)];
@@ -159,7 +163,9 @@ export function renderReleaseDoctor(report: ReleaseDoctorReport): string {
   lines.push("");
   for (const entry of report.checks) {
     const mark = marks[entry.state] ?? "?";
-    lines.push(entry.detail ? `[${mark}] ${entry.name}: ${entry.detail}` : `[${mark}] ${entry.name}`);
+    lines.push(
+      entry.detail ? `[${mark}] ${entry.name}: ${entry.detail}` : `[${mark}] ${entry.name}`,
+    );
   }
   lines.push("");
   const warned = report.checks.some((entry) => entry.state === "warn");
@@ -168,7 +174,9 @@ export function renderReleaseDoctor(report: ReleaseDoctorReport): string {
       hasFailures(report) ? "failed" : warned ? "ready with warnings" : "ready"
     }`,
   );
-  lines.push("Note: release doctor is read-only; it does not tag, merge, push, fetch, or edit files.");
+  lines.push(
+    "Note: release doctor is read-only; it does not tag, merge, push, fetch, or edit files.",
+  );
   return `${lines.join("\n")}\n`;
 }
 

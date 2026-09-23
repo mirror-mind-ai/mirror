@@ -50,8 +50,24 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
 
-      - name: Check documentation links and anchors
+      # CV22.DS10.TS5 slice B: the Node port runs BESIDE the Python original
+      # for exactly one commit, and both must agree -- same exit code, same
+      # first problem line -- on a clean tree and on a seeded regression,
+      # before the original is deleted. This is the discipline US2 used to
+      # retire `check_skill_command_parity.py`, and the reason the guard that
+      # proves the repository holds no Python cannot itself be Python.
+      #
+      # The port carries the 26-case self-test of
+      # `tests/unit/memory/test_docs_lint.py` into
+      # `ts/test/scripts/docsLint.test.ts`. That test IS this checker's
+      # specification: `scripts/check_doc_links.py` is a 57-line wrapper with
+      # no test of its own, so porting it without the cases would have shipped
+      # the docs gate untested -- in the story that rewrites ten docs.
+      - name: Check documentation links and anchors (Python original)
         run: uv run python scripts/check_doc_links.py
+
+      - name: Check documentation links and anchors (Node port, must agree)
+        run: node ts/scripts/checkDocLinks.ts
 
       # Fails when a strangler flip updates the invocation in one runtime's
       # skill copy and not the others (CR071). By 2026-09-09 eleven skills had

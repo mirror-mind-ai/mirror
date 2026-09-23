@@ -184,7 +184,9 @@ export function renderPromotion(result: PromotionResult): string {
   lines.push("");
   for (const entry of result.steps) {
     const mark = marks[entry.state] ?? "?";
-    lines.push(entry.detail ? `[${mark}] ${entry.name}: ${entry.detail}` : `[${mark}] ${entry.name}`);
+    lines.push(
+      entry.detail ? `[${mark}] ${entry.name}: ${entry.detail}` : `[${mark}] ${entry.name}`,
+    );
   }
   lines.push("");
   lines.push(`Release promotion result: ${result.success ? "success" : "failed"}`);
