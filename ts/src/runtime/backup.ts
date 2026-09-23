@@ -6,11 +6,11 @@
 // characterized from `src/memory/cli/runtime.py:1052-1113`, with exactly one
 // deliberate difference, documented on `verifyBackupArchive`.
 
-import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { NotAReadableZipError, readZipEntry, readZipEntryNames } from "#backup/zipReader.ts";
+import { quickCheckDatabaseFile } from "#db/database.ts";
 
 /** The member every Mirror backup must hold. */
 const ARCHIVE_MEMBER = "memory.db";
@@ -46,41 +46,19 @@ function isUnsafeEntry(name: string): boolean {
  * relies on this verdict immediately before it moves the tree, so a backup
  * that has never been opened is a belief rather than a backup.
  *
- * Read-only, on an extracted copy, in a temp dir removed afterwards: the
- * archive is untrusted input and this never touches the live database.
- *
- * `immutable=1` is load-bearing, not decoration. Every real Mirror backup
- * holds a WAL-mode database (header bytes 18/19 = 2), and a WAL database
- * opened with `mode=ro` alone fails with SQLITE_CANTOPEN(14): read-only cannot
- * create the `-shm` file WAL needs, and the archive carries no sidecars to
- * supply it. `immutable` tells SQLite the file cannot change, so it skips the
- * WAL machinery entirely and still opens nothing for writing.
+ * Runs on an extracted copy in a temp dir removed afterwards: the archive is
+ * untrusted input and this never touches the live database. The check itself
+ * goes through `#db/database.ts`, the one module allowed to hold the driver --
+ * an external `sqlite3` binary is not guaranteed on a user's machine, and a
+ * second SQLite access path is not something a verifier should introduce.
  */
 function integrityNote(data: Buffer): string | null {
   const dir = mkdtempSync(join(tmpdir(), "mirror-verify-"));
   const path = join(dir, ARCHIVE_MEMBER);
   try {
     writeFileSync(path, data, { mode: 0o600 });
-    const output = execFileSync(
-      "sqlite3",
-      [`file:${path}?mode=ro&immutable=1`, "PRAGMA quick_check;"],
-      {
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "pipe"],
-      },
-    );
-    const verdict = output.trim().split("\n")[0] ?? "";
-    return verdict === "ok" ? null : `${ARCHIVE_MEMBER} failed integrity check: ${verdict}`;
-  } catch (error) {
-    // SQLite's own verdict, never Node's `Command failed: sqlite3 <argv>`,
-    // which would print the temp path and the invocation into a user-facing
-    // render and into the front-door log.
-    const stderr =
-      typeof error === "object" && error !== null && "stderr" in error
-        ? String((error as { stderr: unknown }).stderr)
-        : "";
-    const detail = stderr.trim().split("\n")[0] || "database could not be opened";
-    return `${ARCHIVE_MEMBER} failed integrity check: ${detail}`;
+    const { ok, verdict } = quickCheckDatabaseFile(path);
+    return ok ? null : `${ARCHIVE_MEMBER} failed integrity check: ${verdict}`;
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

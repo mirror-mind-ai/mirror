@@ -65,9 +65,9 @@ jobs:
           uv run python ts/parity/generate_repair_encoding_golden.py
           uv run python ts/parity/generate_backup_golden.py
           # CV22.DS10.US2: `runtime backup` is a different surface from
-          # `backup` -- create, verify, recovery route. Deliberately NOT in
-          # the determinism gate below: its fixtures hold a real SQLite
-          # database, whose header carries the writing library's version.
+          # `backup` -- create, verify, recovery route. The golden records
+          # RECIPES rather than archive bytes, so it is byte-stable here even
+          # though a real database header carries its writer's version.
           uv run python ts/parity/generate_runtime_backup_golden.py
           uv run python ts/parity/generate_runtime_git_golden.py
           uv run python ts/parity/generate_release_notes_golden.py

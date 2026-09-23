@@ -80,6 +80,54 @@ export function openDatabaseReadOnly(path: string, options: OpenOptions = {}): D
   };
 }
 
+/**
+ * `PRAGMA quick_check` against a standalone database FILE (CV22.DS10.US2).
+ *
+ * For verifying a backup: `runtime backup --verify` extracts the archive's
+ * `memory.db` to a throwaway copy and asks whether it actually opens, because
+ * the oracle verifies entry NAMES and will call 4 KB of zeros a valid backup.
+ *
+ * It lives here because this module is the only one allowed to touch the
+ * driver. The first implementation spawned the `sqlite3` CLI, which was a
+ * second SQLite access path and an external binary no user is guaranteed to
+ * have; CI found it on the macOS leg.
+ *
+ * The copy is opened READ-WRITE on purpose. Every archive Mirror writes holds
+ * a WAL-mode database (header byte 18 == 2) and carries no `-shm`/`-wal`
+ * sidecars, and a WAL database opened read-only cannot create the `-shm` file
+ * it needs -- SQLITE_CANTOPEN. The target is a temp copy the caller deletes,
+ * never the live database, so allowing SQLite to create sidecars beside it
+ * costs nothing and is the only way the check can run at all.
+ */
+export function quickCheckDatabaseFile(path: string): { ok: boolean; verdict: string } {
+  let driver: DatabaseSync;
+  try {
+    driver = new DatabaseSync(path);
+  } catch (error) {
+    return { ok: false, verdict: sqliteMessage(error) };
+  }
+  try {
+    const rows = driver.prepare("PRAGMA quick_check").all() as Record<string, SqlValue>[];
+    const first = rows[0];
+    const verdict = first === undefined ? "no result" : String(Object.values(first)[0] ?? "");
+    return { ok: verdict === "ok", verdict };
+  } catch (error) {
+    return { ok: false, verdict: sqliteMessage(error) };
+  } finally {
+    try {
+      driver.close();
+    } catch {
+      // A database that failed to open has nothing to close.
+    }
+  }
+}
+
+/** The driver's own message, never a wrapper's, and never a path. */
+function sqliteMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.split("\n")[0] ?? "database could not be opened";
+}
+
 /** A prepared query that can also execute a write. */
 /** What a write reports back. `node:sqlite` returns bigint counts. */
 export interface RunResult {

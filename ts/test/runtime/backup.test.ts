@@ -206,22 +206,34 @@ test("the renders carry the oracle's shape, including the manual recovery route"
 });
 
 // --- parity with the oracle, from `ts/parity/generate_runtime_backup_golden.py` ---
+//
+// The golden records RECIPES, not archive bytes: every verdict depends on entry
+// NAMES and on whether the member opens, never on the container's bytes. So
+// this engine builds each fixture with ITS OWN SQLite and the decision rule is
+// what gets graded -- which is also what keeps the golden byte-stable across
+// CI's Python legs, since a real database header carries its writer's version.
+
+interface GoldenMember {
+  name: string;
+  payload: string;
+}
+
+interface GoldenScenario {
+  members: GoldenMember[] | null;
+  raw_text: string | null;
+  absent: boolean;
+  entries: string[];
+  valid: boolean;
+  note: string | null;
+  verify_render: string;
+  verify_exit: number;
+}
 
 interface BackupGolden {
   meta: { archive_token: string };
-  scenarios: Record<
-    string,
-    {
-      archive_base64: string | null;
-      entries: string[];
-      valid: boolean;
-      note: string | null;
-      verify_render: string;
-      verify_exit: number;
-    }
-  >;
+  scenarios: Record<string, GoldenScenario>;
   documented_deviation: {
-    archive_base64: string;
+    members: GoldenMember[];
     python_valid: boolean;
     typescript_valid: boolean;
   };
@@ -231,15 +243,46 @@ const GOLDEN: BackupGolden = JSON.parse(
   readFileSync(new URL("../goldens/runtime-backup.golden.json", import.meta.url), "utf8"),
 );
 
+const CORRUPT_DATABASE = Buffer.concat([
+  Buffer.from("SQLite format 3\0", "binary"),
+  Buffer.alloc(4000),
+]);
+
+function payloadBytes(kind: string, database: Buffer): Buffer {
+  if (kind === "database") return database;
+  if (kind === "corrupt-database") return CORRUPT_DATABASE;
+  return Buffer.from(kind, "utf8");
+}
+
+function buildFromRecipe(
+  dir: string,
+  name: string,
+  members: readonly GoldenMember[],
+  database: Buffer,
+): string {
+  return zipWith(
+    dir,
+    name,
+    members.map((member) => [member.name, payloadBytes(member.payload, database)]),
+  );
+}
+
 test("every verification verdict matches the oracle, byte for byte", () => {
   const f = scratch();
   try {
+    const database = realDatabase(f.dir);
     for (const [name, scenario] of Object.entries(GOLDEN.scenarios)) {
-      const path = join(f.dir, `${name}.zip`);
-      // `absent` records no archive: the file must NOT exist for that verdict.
-      if (scenario.archive_base64 !== null) {
-        writeFileSync(path, Buffer.from(scenario.archive_base64, "base64"));
+      let path: string;
+      if (scenario.absent) {
+        path = join(f.dir, `${name}-absent.zip`);
+      } else if (scenario.raw_text !== null) {
+        path = join(f.dir, `${name}.zip`);
+        writeFileSync(path, scenario.raw_text);
+      } else {
+        assert.ok(scenario.members, `${name}: a recipe or raw text is required`);
+        path = buildFromRecipe(f.dir, `${name}.zip`, scenario.members, database);
       }
+
       const result = verifyBackupArchive(path);
       assert.equal(result.valid, scenario.valid, `${name}: valid`);
       assert.equal(result.note, scenario.note, `${name}: note`);
@@ -262,10 +305,16 @@ test("the documented deviation is real in both directions", () => {
   const f = scratch();
   try {
     assert.equal(GOLDEN.documented_deviation.python_valid, true, "the oracle accepted it");
-    const path = join(f.dir, "deviation.zip");
-    writeFileSync(path, Buffer.from(GOLDEN.documented_deviation.archive_base64, "base64"));
+    const database = realDatabase(f.dir);
+    const path = buildFromRecipe(
+      f.dir,
+      "deviation.zip",
+      GOLDEN.documented_deviation.members,
+      database,
+    );
     const result = verifyBackupArchive(path);
     assert.equal(result.valid, false, "the port refuses it");
+    assert.match(result.note ?? "", /failed integrity check/);
     assert.equal(GOLDEN.documented_deviation.typescript_valid, false);
   } finally {
     f.cleanup();

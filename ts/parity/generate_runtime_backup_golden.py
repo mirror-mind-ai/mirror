@@ -8,37 +8,33 @@ verification rather than the creation. Its three functions
 `render_runtime_backup_created`) had no TypeScript counterpart before this
 story.
 
-What is graded: the RENDER and the EXIT CODE for every refusal the oracle can
-produce, against archives whose bytes are embedded here so both engines read
-the identical input -- including the two unsafe-entry shapes (`../memory.db`
-and `/tmp/memory.db`) that the story's own inventory missed.
+What is graded: the RENDER and the VERDICT for every refusal the oracle can
+produce -- including the two unsafe-entry shapes (`../memory.db` and
+`/tmp/memory.db`) that the story's own inventory missed. A backup path is user
+input the moment `--verify PATH` accepts one.
 
-Deliberately NOT graded, and the reason it matters:
+This golden records RECIPES, not archive bytes, and that is what lets it sit in
+CI's determinism gate beside the others. The first version embedded base64
+archives holding a real SQLite database -- whose header carries the writing
+library's version -- so regeneration was not byte-stable and the gate failed on
+the 3.12 leg. Every verdict here depends on entry NAMES and on whether the
+member opens, never on the container's bytes, so each engine builds the fixture
+with its own SQLite and what gets graded is the decision rule.
 
-  * `corrupt_db` -- an archive holding a well-named `memory.db` that is 4 KB of
-    zeros. Python reports it VALID, because it verifies entry NAMES. The
-    TypeScript port extracts and runs `PRAGMA quick_check`, so it reports it
-    INVALID. That is the one deliberate deviation in this port, measured in the
-    story's plateau-0 baseline and pinned by a TS-only test. A scenario the two
-    engines are known to disagree on has no place in a parity golden, so it is
-    recorded here as `documented_deviation` and asserted separately.
-
-  * archive BYTES. Deflate output differs across zlib builds (CPython links
-    one, Node bundles another), exactly as `generate_backup_golden.py` records.
-    Parity is the verdict, not the container.
-
-This generator is NOT in CI's determinism gate, and must not be added to it:
-the fixtures hold a REAL SQLite database, whose header carries the writing
-library's version, so regeneration is legitimately not byte-stable across the
-3.10 and 3.12 legs. A real database is required rather than a byte pattern
-precisely because the port opens it.
+Deliberately NOT graded: `corrupt_db`, an archive holding a well-named
+`memory.db` that is 4 KB of zeros. Python reports it VALID, because it verifies
+entry NAMES. The TypeScript port extracts it and runs `PRAGMA quick_check`, so
+it reports INVALID. That is the one deliberate deviation in this port, measured
+in the story's plateau-0 baseline. A scenario the engines are known to disagree
+on has no place in a parity golden, so it is recorded as `documented_deviation`
+and asserted separately, in both directions, so that if the oracle ever starts
+refusing it the deviation is retired rather than forgotten.
 
 Run:  uv run python ts/parity/generate_runtime_backup_golden.py
 """
 
 from __future__ import annotations
 
-import base64
 import json
 import sqlite3
 import tempfile
@@ -55,6 +51,11 @@ HERE = Path(__file__).resolve().parent
 OUT_PATH = HERE.parent / "test" / "goldens" / "runtime-backup.golden.json"
 
 ARCHIVE_TOKEN = "<ARCHIVE>"
+HOME_TOKEN = "<HOME>"
+
+# Payload kinds a recipe can name. The other engine supplies its own bytes.
+DATABASE = "database"
+CORRUPT_DATABASE = "corrupt-database"
 
 
 def _real_database(path: Path) -> bytes:
@@ -62,10 +63,9 @@ def _real_database(path: Path) -> bytes:
 
     WAL is not incidental: every archive `create_backup` writes holds a
     WAL-mode database (header byte 18 == 2), and a WAL database opened
-    read-only without its sidecars fails with SQLITE_CANTOPEN unless the reader
-    asks for `immutable`. A rollback-journal fixture would hide that, and did:
-    the port's first unit fixture used one and passed while the real archive
-    failed.
+    read-only without its sidecars fails with SQLITE_CANTOPEN. A
+    rollback-journal fixture would hide that, and did -- the port's first unit
+    fixture used one and passed while a real archive verified as invalid.
     """
     conn = sqlite3.connect(path)
     conn.execute("PRAGMA journal_mode=WAL")
@@ -79,19 +79,46 @@ def _real_database(path: Path) -> bytes:
     return data
 
 
-def _zip(path: Path, members: list[tuple[str, bytes]]) -> Path:
+def _payload(kind: str, database: bytes) -> bytes:
+    if kind == DATABASE:
+        return database
+    if kind == CORRUPT_DATABASE:
+        return b"SQLite format 3\x00" + b"\x00" * 4000
+    return kind.encode("utf-8")
+
+
+def _build(path: Path, members: list[dict[str, str]], database: bytes) -> Path:
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as archive:
-        for name, payload in members:
-            archive.writestr(name, payload)
+        for member in members:
+            archive.writestr(member["name"], _payload(member["payload"], database))
     return path
 
 
-def _scenario(path: Path) -> dict[str, object]:
+def _scenario(
+    tmp: Path,
+    name: str,
+    database: bytes,
+    *,
+    members: list[dict[str, str]] | None = None,
+    raw_text: str | None = None,
+    absent: bool = False,
+) -> dict[str, object]:
+    path = tmp / f"{name}.zip"
+    if absent:
+        pass
+    elif raw_text is not None:
+        path.write_text(raw_text, encoding="utf-8")
+    else:
+        assert members is not None
+        _build(path, members, database)
+
     verification = verify_backup_archive(path)
     return {
-        "archive_base64": base64.b64encode(path.read_bytes()).decode("ascii")
-        if path.exists()
-        else None,
+        # The RECIPE. The other engine builds an equivalent archive with its
+        # own SQLite rather than reading bytes this one happened to produce.
+        "members": members,
+        "raw_text": raw_text,
+        "absent": absent,
         "entries": list(verification.entries),
         "valid": verification.valid,
         "note": verification.note,
@@ -103,60 +130,82 @@ def _scenario(path: Path) -> dict[str, object]:
 def main() -> None:
     with tempfile.TemporaryDirectory() as raw:
         tmp = Path(raw)
-        db = _real_database(tmp / "memory.db")
-        corrupt = b"SQLite format 3\x00" + b"\x00" * 4000
+        database = _real_database(tmp / "seed.db")
 
-        scenarios: dict[str, object] = {}
-        scenarios["valid"] = _scenario(_zip(tmp / "valid.zip", [("memory.db", db)]))
-        scenarios["valid_with_sidecars"] = _scenario(
-            _zip(
-                tmp / "sidecars.zip",
-                [("memory.db", db), ("memory.db-wal", b"wal"), ("memory.db-shm", b"shm")],
-            )
-        )
-        scenarios["traversal_entry"] = _scenario(
-            _zip(tmp / "traversal.zip", [("../memory.db", db)])
-        )
-        scenarios["absolute_entry"] = _scenario(
-            _zip(tmp / "absolute.zip", [("/tmp/memory.db", db)])
-        )
-        scenarios["unexpected_entry"] = _scenario(
-            _zip(tmp / "unexpected.zip", [("memory.db", db), ("notes.txt", b"hi")])
-        )
-        scenarios["missing_member"] = _scenario(_zip(tmp / "missing.zip", [("other.db", db)]))
-
-        not_a_zip = tmp / "not-a-zip.zip"
-        not_a_zip.write_bytes(b"this is not a zip file\n")
-        scenarios["not_a_zip"] = _scenario(not_a_zip)
-
-        absent = tmp / "absent.zip"
-        scenarios["absent"] = _scenario(absent)
+        scenarios = {
+            "valid": _scenario(
+                tmp, "valid", database, members=[{"name": "memory.db", "payload": DATABASE}]
+            ),
+            "valid_with_sidecars": _scenario(
+                tmp,
+                "sidecars",
+                database,
+                members=[
+                    {"name": "memory.db", "payload": DATABASE},
+                    {"name": "memory.db-wal", "payload": "wal"},
+                    {"name": "memory.db-shm", "payload": "shm"},
+                ],
+            ),
+            "traversal_entry": _scenario(
+                tmp,
+                "traversal",
+                database,
+                members=[{"name": "../memory.db", "payload": DATABASE}],
+            ),
+            "absolute_entry": _scenario(
+                tmp,
+                "absolute",
+                database,
+                members=[{"name": "/tmp/memory.db", "payload": DATABASE}],
+            ),
+            "unexpected_entry": _scenario(
+                tmp,
+                "unexpected",
+                database,
+                members=[
+                    {"name": "memory.db", "payload": DATABASE},
+                    {"name": "notes.txt", "payload": "hi"},
+                ],
+            ),
+            "missing_member": _scenario(
+                tmp, "missing", database, members=[{"name": "other.db", "payload": DATABASE}]
+            ),
+            "not_a_zip": _scenario(tmp, "not-a-zip", database, raw_text="this is not a zip file\n"),
+            "absent": _scenario(tmp, "absent", database, absent=True),
+        }
 
         # The created render, with the home and the dated archive normalized.
         home = tmp / "home"
         home.mkdir()
-        archive = _zip(home / "memory_20260101_000000.zip", [("memory.db", db)])
-        created_verification = verify_backup_archive(archive)
-        created_render = render_runtime_backup_created(
-            backup_path=archive, mirror_home=home, verification=created_verification
+        archive = _build(
+            home / "memory_20260101_000000.zip",
+            [{"name": "memory.db", "payload": DATABASE}],
+            database,
         )
+        created_verification = verify_backup_archive(archive)
         created = {
-            "created_render": created_render.replace(str(archive), ARCHIVE_TOKEN).replace(
-                str(home), "<HOME>"
-            ),
+            "created_render": render_runtime_backup_created(
+                backup_path=archive, mirror_home=home, verification=created_verification
+            )
+            .replace(str(archive), ARCHIVE_TOKEN)
+            .replace(str(home), HOME_TOKEN),
             "created_exit": 0 if created_verification.valid else 1,
         }
 
         # Recorded, not graded: the engines are KNOWN to disagree here.
-        deviation_archive = _zip(tmp / "corrupt.zip", [("memory.db", corrupt)])
-        deviation_verification = verify_backup_archive(deviation_archive)
+        deviation_path = _build(
+            tmp / "corrupt.zip",
+            [{"name": "memory.db", "payload": CORRUPT_DATABASE}],
+            database,
+        )
+        deviation_verification = verify_backup_archive(deviation_path)
         deviation = {
             "why": (
                 "Python verifies entry NAMES; this archive holds 4 KB of zeros named "
                 "memory.db and the oracle calls it valid. The TypeScript port extracts "
                 "and runs PRAGMA quick_check, so it refuses. Asserted by a TS-only test."
             ),
-            "archive_base64": base64.b64encode(deviation_archive.read_bytes()).decode("ascii"),
+            "members": [{"name": "memory.db", "payload": CORRUPT_DATABASE}],
             "python_valid": deviation_verification.valid,
             "typescript_valid": False,
         }
@@ -169,6 +218,12 @@ def main() -> None:
                     "story": "CV22.DS10.US2",
                     "oracle": "src/memory/cli/runtime.py",
                     "archive_token": ARCHIVE_TOKEN,
+                    "home_token": HOME_TOKEN,
+                    "payload_kinds": {
+                        DATABASE: "a real WAL-mode SQLite database, built by the reading engine",
+                        CORRUPT_DATABASE: 'b"SQLite format 3\\x00" + 4000 zero bytes',
+                        "<anything else>": "the literal string, UTF-8 encoded",
+                    },
                 },
                 "scenarios": scenarios,
                 "created": created,
@@ -182,7 +237,6 @@ def main() -> None:
     )
     print(f"wrote {OUT_PATH.relative_to(HERE.parent.parent)}")
     for name, scenario in scenarios.items():
-        assert isinstance(scenario, dict)
         print(f"  {name:22s} -> {'valid' if scenario['valid'] else scenario['note']}")
 
 
