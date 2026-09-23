@@ -235,6 +235,45 @@ jobs:
         env:
           MEMORY_ENV: test
 
+      # CV22.DS10.TS5 slice B: TS2's shadow, widened from test/extensions/ to
+      # the WHOLE suite. It is the proof for plateau 2 -- that no test, and so
+      # no code path a test reaches, spawns the interpreter any more.
+      #
+      # It is `continue-on-error` ON PURPOSE, and only until plateau 2. Today
+      # it MUST fail: the front door still carries fallbackPython and ~30 tests
+      # exercise it. Wiring it now makes plateau 2's success a visible flip
+      # from red to green rather than a new green nobody can date -- but a
+      # required check that everyone expects to be red is the same as no check
+      # at all, and this repository's rule is green CI on every push. So it
+      # reports without blocking, and plateau 2 deletes this comment along with
+      # the `continue-on-error` line.
+      #
+      # The log line is the artifact: each stub appends to $TS5_SHADOW_LOG, so
+      # the step prints exactly WHICH suites reach for an interpreter, which is
+      # the work list for plateau 2.
+      - name: Interpreter shadow (expected red until CV22.DS10.TS5 plateau 2)
+        continue-on-error: true
+        run: |
+          SHADOW="$(mktemp -d)"
+          export TS5_SHADOW_LOG="$SHADOW/spawns.log"
+          : > "$TS5_SHADOW_LOG"
+          for bin in python python3 uv; do
+            printf '#!/bin/sh\necho "TS5 SPAWN: %s $*" >> "$TS5_SHADOW_LOG"\nexit 66\n' "$bin" > "$SHADOW/$bin"
+            chmod +x "$SHADOW/$bin"
+          done
+          set +e
+          PATH="$SHADOW:$PATH" npm test > "$SHADOW/suite.log" 2>&1
+          SUITE=$?
+          set -e
+          echo "suite exit: $SUITE"
+          echo "--- interpreter spawn attempts: $(wc -l < "$TS5_SHADOW_LOG" | tr -d ' ') ---"
+          sort "$TS5_SHADOW_LOG" | uniq -c | sort -rn | head -20
+          echo "--- failing suites ---"
+          grep -E '^not ok|✖' "$SHADOW/suite.log" | head -20 || true
+          exit $SUITE
+        env:
+          MEMORY_ENV: test
+
       # CV22.DS10.TS2 — the Zero Python gate's fixtures row claims "CI needs no
       # interpreter" for the extension suites. That claim was true by accident
       # before (nothing happened to call Python) and is now true by CHECK.
