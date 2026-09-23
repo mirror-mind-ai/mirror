@@ -3,9 +3,9 @@
 # CR089 — The `journey` route swallows `export-registry` and `mutate` as journey slugs
 
 **Refinement Story:** RS009 — CV22 Front-Door Routing Correctness
-**Status:** captured
-**Driver:** —
-**Delivery:** —
+**Status:** done
+**Driver:** @viniciusteles
+**Delivery:** `mirror-ts-core`
 
 ## Problem
 
@@ -97,4 +97,36 @@ discovered by the next caller.
 
 ## Outcome
 
-Open.
+**Done 2026-09-23, delivered by
+[CV22.DS10.TS4](../../roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-ts4-retire-the-unported-surfaces-with-cutoffs/index.md)
+plateau 1**, in the shape this CR preferred: **option 1, the two verbs routed
+explicitly by name**.
+
+`ts/src/frontDoor/routing.ts` matches retired surfaces BEFORE any family claims
+the command, so `journey export-registry` and `journey mutate` can no longer
+reach the status read and be treated as slugs. Both now print one line naming
+the cutoff and exit 1. The refusal is emitted before dispatch, so the write
+verb's JSON on stdin is never read — measured at ~220ms rather than the hang a
+late refusal would have produced — and nothing from argv or stdin is echoed
+into the message or the front-door log. TS4 plateau 3 then deleted the 345
+lines of `journey_admin` behind them, so the retirement and the refusal landed
+in the same release, as this CR asked ("the fix is small and should land before
+TS4 deletes the Python behind it").
+
+**What this CR did NOT cover, and why.** Its "at minimum" fallback — that a
+status read whose slug resolves to no journey should exit nonzero — turned out
+to be **parity with Python**, not a TypeScript defect: `uv run python -m memory
+journey no-such-journey-xyz` prints the same empty document with exit 0
+(verified on both engines 2026-09-23). Changing it is a deliberate deviation
+from the oracle rather than a routing correction, so the Navigator separated it
+into
+[CR095](cr095-journey-status-renders-an-empty-document-for-an-unknown-slug.md),
+sequenced after TS5 removes the oracle. The positive verb enumeration this CR
+proposed is not achievable in general for the same reason: at the front door a
+verb and a slug have the same shape, so refusing an unknown verb would refuse
+every bare-slug status read.
+
+Mirror Desktop, the one caller that used these verbs, bypassed the front door
+and called Python directly. It is outside the migration and pinned to the last
+Python-bearing release; the
+[cutoff](../../../releases/pending-cutoffs.md#journey-admin-verbs) says so.
