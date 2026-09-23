@@ -2,9 +2,9 @@
 
 # CV22.DS10.TS4 — Retire the unported surfaces with cutoffs
 
-**Status:** 🟢 Implemented — all 6 plateaus done 2026-09-23, each pushed with CI green; awaiting Validation
+**Status:** ✅ **Done — 2026-09-23.** Six plateaus, each pushed with CI green; Validation accepted, Debt Review deferred to TS5 (D-023, D-024), Coherence checked
 **Type:** Technical Story
-**Artifacts:** [plan.md](plan.md) · [test-guide.md](test-guide.md)
+**Artifacts:** [plan.md](plan.md) · [test-guide.md](test-guide.md) · [validation.md](validation.md) · [review.md](review.md)
 
 ---
 
@@ -121,7 +121,19 @@ Navigator's real-home `build load` after plateau 5 is the end-to-end check.
   — and keep TS4 to deletion. Plateau 5 re-ordered Python-first for the
   goldens; plateau 0 added for the baseline.
 
-## Findings For Debt Review
+## Findings From Debt Review
+
+**Paid here.** The DS10 candidate table's US1 row read `🟡 Planned` while US1's
+own package, its retirement gate, and the CV22 roadmap row all read Done — and
+US1's `done.md` recorded that row update as completed work that never landed.
+Corrected on Navigator instruction, with the link the row also lacked; the DS10
+count moved 2/8 → 4/8 → 5/8. It would otherwise have blocked the DS-level Done
+preflight at the end of the migration, four stories from its cause.
+
+**Deferred to TS5**, recorded as [D-023](../../../../debt.md#d-023--two-execution-profiles-outlived-the-only-command-that-reached-them)
+and [D-024](../../../../debt.md#d-024--the-refinement-fields-seed-cr-scan-reads-mirror-minds-own-roadmap-path-inside-the-users-project)
+so the trigger lives where TS5 will look rather than only inside a closed story
+package:
 
 1. **Two orphaned execution profiles.** `backfill_safe` and `backfill_force`
    in `metadata_lifecycle.py` are unreachable in both engines now that the
@@ -144,6 +156,8 @@ Navigator's real-home `build load` after plateau 5 is the end-to-end check.
 
 ## Where To Resume
 
-All six plateaus implemented and pushed, CI green on each. Awaiting Navigator
-Validation — the route is in [test-guide.md](test-guide.md), and every check in
-it is free and keyless.
+Nothing — the story is closed. DS10 stands at **5/8**; the next pull is **US2**
+(npm-era updater and release tooling), after which **TS5** and **US3** open the
+deletion and npm gates under separate Navigator authorization. TS5 inherits two
+things from here: the `retired` route shape, which is where every remaining
+Python name will answer once the interpreter is gone, and D-023/D-024.

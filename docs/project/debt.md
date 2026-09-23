@@ -1057,3 +1057,87 @@ green gate as injection-resistance evidence.
 An unanswered provider produces an `inconclusive` verdict on every blocking
 probe rather than a pass; the verification command above fails; and a
 structural test pins each blocking fixture's payload to its sentinels.
+
+---
+
+## D-023 — Two execution profiles outlived the only command that reached them
+
+**Kind:** dead code / packaging
+**Severity:** low
+**Status:** Carried
+**Source:** CV22.DS10.TS4 Debt Review, 2026-09-23 — Navigator decision: defer to TS5
+
+### Carrying reason
+
+TS4 deleted the `conversations --metadata-backfill-preview|-apply` faces and the
+two service methods behind them. The `backfill_safe` and `backfill_force`
+execution profiles they used remain in
+[`metadata_lifecycle.py`](../../src/memory/services/metadata_lifecycle.py) and
+in the TypeScript mirror table in
+[`metadataLifecycle.ts`](../../ts/src/conversation/metadataLifecycle.ts).
+**Nothing reaches either profile in either engine.** The close tail uses
+`close_time`; `manual_safe` and `active_runtime` have their own callers.
+
+They were not removed with the faces because `metadata_lifecycle.py` is a
+tracked oracle graded byte-for-byte by
+`ts/test/goldens/metadata-lifecycle.golden.json`. Removing two entries is a
+three-file cross-engine change plus a golden regeneration — and the DS10 index
+assigned TS4 the *CLI face*, with the lifecycle engine explicitly left as
+TS-owned and out of scope. Widening a deletion story into the ported engine to
+remove two unreachable dict entries was the worse trade at the time.
+
+### Cost of carrying
+
+Two profiles that no code path can select ship into the npm artifact. A future
+reader finding `backfill_force` in the profile table has no way to tell it is
+unreachable without tracing every caller, and may reasonably assume a backfill
+still exists somewhere.
+
+### Revisit trigger
+
+**CV22.DS10.TS5**, which deletes the Python core. At that moment the oracle
+constraint disappears and the removal becomes a single-file TypeScript edit with
+no golden to keep in sync. TS5 must check this before packaging: after it there
+is no second engine left to force the question.
+
+### Closure condition
+
+Neither `backfill_safe` nor `backfill_force` appears in any shipped source, or a
+recorded decision explains why an unreachable profile is deliberately retained.
+
+---
+
+## D-024 — The Refinement field's seed-CR scan reads Mirror Mind's own roadmap path inside the user's project
+
+**Kind:** product correctness / inherited port oddity
+**Severity:** low
+**Status:** Carried
+**Source:** CV22.DS10.TS4 Debt Review, 2026-09-23 — Navigator decision: defer to TS5
+
+### Carrying reason
+
+`inspect_refinement_field` counts "seed Change Requests" by reading a
+**hard-coded path into Mirror Mind's own roadmap** —
+`docs/project/roadmap/cv20-builder-mode-evolution/cv20-ds6-refinement-workbench-flow/plan.md`
+— inside whatever project the journey points at. Any other project has no such
+file and silently reports zero, so the seed count is a Mirror-Mind-only feature
+wearing the costume of a general one.
+
+DS7.US8 reproduced it deliberately during the port and recorded it as debt
+rather than fixing it mid-port. TS4 left it for the same reason it left the
+profiles above: the story's job was deleting the SQLite Workbench, and this is
+the filesystem half, which it did not touch.
+
+It is more visible now. Before TS4 the field had three states and this was one
+oddity among several; the field now has exactly one state without a canonical
+index, and the seed count is the only conditional left in it.
+
+### Revisit trigger
+
+**CV22.DS10.TS5**, with the profiles above — or any story that changes what the
+Refinement field offers a project that has not created its index yet.
+
+### Closure condition
+
+The seed-CR scan is removed, or generalized to a path the project declares,
+or explicitly documented as a Mirror-Mind-only affordance with a reason.

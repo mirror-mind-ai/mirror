@@ -12,6 +12,51 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-23 — CV22.DS10.TS4: the front door learns to say *removed*
+
+DS10's fifth story, and the last of the retirements. Five Python surfaces are
+deleted — the Portuguese-era converter, the migration rehearsal tool,
+`journey export-registry` / `mutate`, the conversation metadata backfill, and
+the twenty SQLite Refinement Workbench commands with the read that outlived
+them — about 7,700 lines across both engines, each behind a published cutoff
+and a `check_retired_surfaces` row.
+
+The part worth remembering is not the deletion. Until now a retired name was
+simply unclaimed by the router: it fell through to Python, which answered
+`Unknown command` with a usage list — an answer belonging to the engine TS5 is
+about to delete, listing commands DS10 had already removed. The front door
+gained a third route beside `ts` and `python`: **`retired`**, which answers in
+one line naming the cutoff and exits 1. TS5 inherits the shape that will
+answer for every remaining Python name once the interpreter is gone.
+
+It also closed **CR089**, the sharpest routing defect this migration produced:
+`journey mutate` — a write taking JSON on stdin — was a silent no-op with exit
+0, because the `journey` family claimed the command and read any unknown verb
+as a slug. The refusal is now emitted before dispatch, so the payload is never
+read (~220ms, not a hang) and nothing from argv or stdin reaches the message or
+the log. CR089's other half turned out to be **parity with Python** rather than
+a TypeScript defect, and became CR095 for after TS5 — a deliberate deviation
+deserves its own record, not a ride inside a deletion story.
+
+Three things were found by the guards rather than by the author. The
+retired-surface check caught a comment naming a surface TS1 retired. Oracle
+drift caught four files and forced the reconciliation to be stated each time. A
+new test asserting that every refusal's cutoff anchor resolves to a real
+heading **failed on its first run**: all twenty Workbench refusals pointed at a
+dead anchor, which would have sent a user whose command had just vanished to a
+page that could not explain it.
+
+And one thing was found by looking sideways: US1's `done.md` recorded, as
+completed work, a candidate-row update that never landed. The row had read
+`Planned` since 2026-09-19 while three other places read Done, and it would
+have blocked DS10's closure preflight at the end of the migration, four stories
+from its cause.
+
+`build load` is byte-identical for a project with the canonical index. The 62
+Workbench rows and migrations `015`/`016` are untouched, with the read recipe
+published in the cutoff — retention without an access path is soft deletion
+with better wording. Debt D-023 and D-024 carry to TS5.
+
 ### 2026-09-22 — CV22.DS10.TS3: the release gate measures the engine users run
 
 DS10's fourth story. The model-behavior eval harness lives at `ts/evals/`, nine
