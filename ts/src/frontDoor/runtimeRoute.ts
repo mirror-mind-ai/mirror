@@ -44,6 +44,7 @@ import {
   renderReleaseNotesBundle,
 } from "#runtime/releaseNotes.ts";
 import { buildRuntimeStatus, renderRuntimeStatus, statusVerdict } from "#runtime/status.ts";
+import { npmRootGlobal, readPackageChannel } from "#runtime/strategies/package.ts";
 import { frontDoorSpawner, runUpdate, type UpdateSpawn } from "#runtime/update.ts";
 import { statusAllowsUpdatePreflight } from "#runtime/updateGate.ts";
 import { renderUpdateResult, updateLogDetail } from "#runtime/updatePipeline.ts";
@@ -382,9 +383,21 @@ function runRuntimeUpdate(
 ): number {
   const version = versionFromPyproject(cwd) ?? "unknown";
   const channelOverride = optionValue(args, "--channel");
-  const install = detectInstallKind({ frontDoorPath: frontDoorSelfPath() });
+  // `npm root -g` is resolved once, and only matters for identifying a
+  // package install: a clone never pays for it.
+  const install = detectInstallKind({
+    frontDoorPath: frontDoorSelfPath(),
+    npmRootGlobal: npmRootGlobal(),
+  });
   const start = install.kind === "clone" ? install.repository : cwd;
-  const channel = inspectUpdateChannel(start, channelOverride);
+  // The channel is scoped like the install: a clone's marker is per-checkout
+  // and correctly tracked in git; a global npm install is per OS user, so its
+  // channel lives in the user's config rather than in a Mirror home that one
+  // of several could own.
+  const channel =
+    install.kind === "package"
+      ? readPackageChannel(env, channelOverride)
+      : inspectUpdateChannel(start, channelOverride);
 
   if (args.includes("--check")) {
     const availability = checkUpdateAvailability(start, channelOverride, version);

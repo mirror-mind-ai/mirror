@@ -106,6 +106,16 @@ proves the seam between the updater being replaced and the one replacing it.
 
 ### Plateau 3 — the real update, across the Python → TS hop
 
+**BLOCKED until this branch reaches `main` — recorded 2026-09-23 at plateau 3.** The
+production clone can only fast-forward to a ref its origin publishes: `origin/stable` is
+`b2d710eb` and `origin/main` is `193dc0f4`, and this story's work is on the
+`mirror-ts-core` branch, which is an ancestor of neither. So hop 1 cannot deliver the TS
+updater to that clone, and hop 2 has nothing to run. The route below is correct and stays
+as written; it becomes executable only after the branch merges to `main`, which is its own
+Navigator gate. Until then the evidence for this plateau is the scratch-clone run recorded
+in the story index, which exercises the same pipeline with the interpreters shadowed but
+is automated evidence rather than a Navigator observation.
+
 **The clone is `~/dev/workspace/mirror`**, not this checkout. This repository is
 `.mirror-clone-role=dev`, and the updater refuses `dev` by design — running `/mm-update`
 here validates a refusal. The production clone is role-default (production),

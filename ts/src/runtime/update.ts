@@ -29,6 +29,13 @@ import {
   type GitRunner,
   installedChanges,
 } from "#runtime/strategies/clone.ts";
+import {
+  defaultNpmRunner,
+  installGlobal,
+  type NpmRunner,
+  packageRecoveryCommand,
+  resolveDistTag,
+} from "#runtime/strategies/package.ts";
 import type { statusAllowsUpdatePreflight } from "#runtime/updateGate.ts";
 import { stage, type UpdateResult, type UpdateStage } from "#runtime/updatePipeline.ts";
 
@@ -69,6 +76,8 @@ export interface UpdateDeps {
   repair?: boolean;
   /** Why the repair lane was entered, when it was entered automatically. */
   repairReason?: string;
+  /** The npm seam, injected for the same reason the git one is. */
+  npm?: NpmRunner;
 }
 
 function failed(
@@ -101,14 +110,7 @@ export function runUpdate(deps: UpdateDeps): UpdateResult {
       "A git checkout updates in place; a global npm install updates through npm.",
     ]);
   }
-  if (deps.install.kind === "package") {
-    // Plateau 4 owns this strategy. Refusing explicitly beats a half-answer.
-    stages.push(stage("status gate", "fail", "package installs are not updatable yet"));
-    return failed(stages, deps.install.version, null, [
-      "This Mirror is a package install; its update strategy lands with npm distribution.",
-      `Reinstall manually with: npm install -g ${deps.install.name}@${deps.channel}`,
-    ]);
-  }
+  if (deps.install.kind === "package") return runPackageUpdate(deps, deps.install, stages);
 
   const repository = deps.install.repository;
 
@@ -304,6 +306,187 @@ export function runUpdate(deps: UpdateDeps): UpdateResult {
     success: true,
     recovery: [],
     installedChanges: changes,
+  };
+}
+
+/**
+ * The `package` pipeline. Same promise as the clone's, same order, and the
+ * same rule that `apply` waits for `capture` and `verify backup`. What differs
+ * is only what those stages mean: the ref is a version rather than a commit,
+ * and the apply is an install rather than a fast-forward.
+ */
+function runPackageUpdate(
+  deps: UpdateDeps,
+  install: Extract<InstallKind, { kind: "package" }>,
+  stages: UpdateStage[],
+): UpdateResult {
+  const npm = deps.npm ?? defaultNpmRunner;
+  const repairing = deps.repair === true;
+
+  if (!repairing) {
+    const verdict = deps.gate();
+    if (!verdict.ready) {
+      if (!verdict.allowed) {
+        stages.push(stage("status gate", "fail", "runtime status is not ready"));
+        return failed(stages, install.version, null, [
+          "Run: runtime diagnose",
+          "Resolve the reported drift, then retry runtime update.",
+        ]);
+      }
+      stages.push(stage("status gate", "pass", `update-safe preflight drift (${verdict.detail})`));
+    } else {
+      stages.push(stage("status gate", "pass"));
+    }
+  } else {
+    stages.push(
+      stage("repair preflight", "pass", deps.repairReason ?? "requested with --repair-updater"),
+    );
+  }
+
+  // The installed version, read BEFORE anything is installed over it. npm's
+  // global install is not atomic, so a pinned reinstall is the only rollback
+  // there is, and it needs this value.
+  const previousRef = install.version;
+  stages.push(stage("capture", "pass", `${install.name}@${previousRef}`));
+
+  const resolved = resolveDistTag(install.name, deps.channel, npm);
+  if (!resolved.ok || resolved.version === null) {
+    stages.push(stage("plan", "fail", resolved.detail));
+    return failed(stages, previousRef, null, [
+      `Could not resolve the '${deps.channel}' dist-tag for ${install.name}.`,
+      "Check network access to the npm registry, then retry runtime update.",
+    ]);
+  }
+  if (resolved.version === previousRef) {
+    stages.push(stage("plan", "pass", `already up to date (${resolved.version})`));
+    return {
+      stages,
+      previousRef,
+      newRef: previousRef,
+      backupPath: null,
+      success: true,
+      recovery: [],
+      installedChanges: [],
+    };
+  }
+  stages.push(stage("plan", "pass", `${previousRef} -> ${resolved.version}`));
+
+  if (deps.dryRun === true) {
+    stages.push(stage("backup", "skip", "dry run"));
+    stages.push(stage("verify backup", "skip", "dry run"));
+    stages.push(stage("apply", "skip", `would install ${install.name}@${resolved.version}`));
+    stages.push(stage("migrate", "skip", "dry run"));
+    stages.push(stage("post-update status", "skip", "dry run"));
+    return {
+      stages,
+      previousRef,
+      newRef: null,
+      backupPath: null,
+      success: true,
+      recovery: [],
+      installedChanges: [],
+    };
+  }
+
+  let backupPath: string | null = null;
+  if (!repairing) {
+    try {
+      backupPath = deps.createBackup();
+    } catch (error) {
+      stages.push(stage("backup", "fail", error instanceof Error ? error.message : String(error)));
+      return failed(stages, previousRef, null, [
+        `Backup directory must be writable: ${deps.mirrorHome ?? "<mirror home>"}`,
+      ]);
+    }
+    if (backupPath === null) {
+      stages.push(stage("backup", "fail", "database not found"));
+      return failed(stages, previousRef, null, [
+        `Expected a database under: ${deps.mirrorHome ?? "<mirror home>"}`,
+      ]);
+    }
+    stages.push(stage("backup", "pass", backupPath));
+
+    const verification = (deps.verifyBackup ?? verifyBackupArchive)(backupPath);
+    if (!verification.valid) {
+      stages.push(stage("verify backup", "fail", verification.note ?? "invalid backup"));
+      return failed(stages, previousRef, backupPath, [
+        `Backup created but failed verification: ${backupPath}`,
+        "Inspect the archive before retrying runtime update; nothing was installed.",
+      ]);
+    }
+    stages.push(stage("verify backup", "pass"));
+  } else {
+    stages.push(stage("backup", "skip", "repair lane"));
+  }
+
+  const applied = installGlobal(install.name, resolved.version, npm);
+  if (!applied.ok) {
+    stages.push(stage("apply", "fail", applied.detail));
+    return failed(stages, previousRef, backupPath, [
+      "A global npm install is not atomic; this one did not complete.",
+      `Recover with: ${packageRecoveryCommand(install.name, previousRef)}`,
+      ...(backupPath ? [`Backup: ${backupPath}`] : []),
+    ]);
+  }
+  stages.push(stage("apply", "pass", applied.detail));
+
+  if (repairing) {
+    stages.push(stage("migrate", "skip", "repair lane: the ordinary update owns migrations"));
+    return {
+      stages,
+      previousRef,
+      newRef: resolved.version,
+      backupPath,
+      success: true,
+      recovery: [],
+      installedChanges: [],
+    };
+  }
+
+  if (deps.migrate !== false) {
+    const result = deps.spawnFrontDoor(
+      deps.mirrorHome
+        ? ["runtime", "migrate", "--mirror-home", deps.mirrorHome]
+        : ["runtime", "migrate"],
+    );
+    if (result.code !== 0) {
+      stages.push(stage("migrate", "fail", firstLine(result.stderr || result.stdout)));
+      return {
+        ...failed(stages, previousRef, backupPath, [
+          ...(backupPath ? [`Backup: ${backupPath}`] : []),
+          `${install.name}@${resolved.version} is installed; the database may be partly migrated.`,
+          `Restore the database from the backup, then: ${packageRecoveryCommand(install.name, previousRef)}`,
+        ]),
+        newRef: resolved.version,
+      };
+    }
+    stages.push(stage("migrate", "pass", migrateSummary(result.stdout)));
+  } else {
+    stages.push(stage("migrate", "skip", "--skip-migrations"));
+  }
+
+  const post = deps.statusReady();
+  if (!post.ready) {
+    stages.push(stage("post-update status", "fail", post.detail));
+    return {
+      ...failed(stages, previousRef, backupPath, [
+        `${install.name}@${resolved.version} is installed and the database may be migrated.`,
+        ...(backupPath ? [`Backup: ${backupPath}`] : []),
+        "Run: runtime diagnose",
+      ]),
+      newRef: resolved.version,
+    };
+  }
+  stages.push(stage("post-update status", "pass"));
+
+  return {
+    stages,
+    previousRef,
+    newRef: resolved.version,
+    backupPath,
+    success: true,
+    recovery: [],
+    installedChanges: [],
   };
 }
 

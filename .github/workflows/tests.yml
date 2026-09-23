@@ -259,6 +259,14 @@ jobs:
       - name: Bootstrap custody parity (Navigator script)
         run: node parity/bootstrap_custody_parity.ts
 
+      # CV22.DS10.US2 — the updater's first operational coverage since v0.8.0.
+      # Runs in the `ts` job because it needs Node and a git checkout, and it
+      # shadows python/python3/uv so any interpreter spawn FAILS the smoke
+      # rather than passing unnoticed. Everything it touches is a scratch
+      # clone, a scratch home, and a scratch env-file.
+      - name: Runtime updater smoke (CV22.DS10.US2)
+        run: bash ../scripts/smoke_runtime_update.sh "${RUNNER_TEMP}/mirror-update-smoke"
+
   parity:
     # Realism proof: behavioral parity against a real-shaped database, not only
     # synthetic-golden determinism. Needs both runtimes (Python oracle + TS core).

@@ -50,6 +50,12 @@ function deps(overrides: Partial<UpdateDeps> = {}): UpdateDeps {
     createBackup: () => "/scratch/home/backups/memory_20260101_000000.zip",
     verifyBackup: () => ({ valid: true, note: null }),
     git: git.runner,
+    // Injected in the BASE fixture, not per-test: without it the default
+    // runner shells out to the real npm, and a unit test that reaches a
+    // registry is not a unit test. Caught when the package strategy landed
+    // and an existing test kept passing for a networked reason -- 1.2 seconds
+    // of it.
+    npm: () => ({ code: 1, stdout: "", stderr: "npm was not stubbed for this test\n" }),
     spawnFrontDoor: () => ({ code: 0, stdout: "Migrate result: nothing pending\n", stderr: "" }),
     ...overrides,
   };
@@ -218,18 +224,116 @@ test("the gate refuses a not-ready status, and allows migration drift alone", ()
   assert.match(allowed.stages[0]?.detail ?? "", /update-safe preflight drift/);
 });
 
-test("an unknown install refuses to guess, and a package says who owns it", () => {
+test("an unknown install refuses to guess", () => {
   const unknown = runUpdate(deps({ install: { kind: "unknown", reason: "not a git checkout" } }));
   assert.equal(unknown.success, false);
   assert.match(unknown.stages[0]?.detail ?? "", /install kind unknown/);
+  assert.ok(unknown.recovery.some((line) => line.includes("will not update itself")));
+});
 
-  const asPackage = runUpdate(
+// --- the package strategy (plateau 4) ---------------------------------------
+
+const PACKAGE: InstallKind = {
+  kind: "package",
+  root: "/usr/local/lib/node_modules/mirror-core",
+  name: "mirror-core",
+  version: "1.2.3",
+};
+
+/** An npm that answers from a table, and records what it was asked. */
+function scriptNpm(answers: Record<string, { code?: number; stdout?: string; stderr?: string }>) {
+  const calls: string[][] = [];
+  const runner = (args: readonly string[]) => {
+    calls.push([...args]);
+    const key = args.join(" ");
+    for (const [pattern, answer] of Object.entries(answers)) {
+      if (key.startsWith(pattern)) {
+        return { code: answer.code ?? 0, stdout: answer.stdout ?? "", stderr: answer.stderr ?? "" };
+      }
+    }
+    return { code: 1, stdout: "", stderr: `unscripted npm call: ${key}\n` };
+  };
+  return { runner, calls };
+}
+
+test("a package install resolves the dist-tag and installs an EXACT version", () => {
+  // Never `npm install -g name@stable`: a bare tag installs whatever it
+  // pointed at in that instant and reports nothing about what arrived.
+  const npm = scriptNpm({
+    "view mirror-core dist-tags": { stdout: JSON.stringify({ stable: "1.3.0", main: "1.4.0" }) },
+    "install -g": { stdout: "added 1 package\n" },
+  });
+  const result = runUpdate(deps({ install: PACKAGE, channel: "stable", npm: npm.runner }));
+  assert.equal(result.success, true, JSON.stringify(result.stages));
+  assert.equal(result.previousRef, "1.2.3");
+  assert.equal(result.newRef, "1.3.0");
+  assert.deepEqual(
+    npm.calls.find((call) => call[0] === "install"),
+    ["install", "-g", "mirror-core@1.3.0"],
+    "the install argv must carry the resolved version, never the tag",
+  );
+});
+
+test("a package already on the tag's version does nothing at all", () => {
+  const npm = scriptNpm({
+    "view mirror-core dist-tags": { stdout: JSON.stringify({ stable: "1.2.3" }) },
+  });
+  let backups = 0;
+  const result = runUpdate(
     deps({
-      install: { kind: "package", root: "/usr/lib/node_modules/m", name: "m", version: "1.2.3" },
+      install: PACKAGE,
+      channel: "stable",
+      npm: npm.runner,
+      createBackup: () => {
+        backups += 1;
+        return "/should/not/happen.zip";
+      },
     }),
   );
-  assert.equal(asPackage.success, false);
-  assert.equal(asPackage.previousRef, "1.2.3", "the installed version is the captured ref");
+  assert.equal(result.success, true);
+  assert.equal(backups, 0);
+  assert.ok(!npm.calls.some((call) => call[0] === "install"));
+});
+
+test("a failed install names the captured version as the way back", () => {
+  // `npm install -g` is not atomic: a failure can leave a broken tree, and a
+  // pinned reinstall is the only rollback there is.
+  const npm = scriptNpm({
+    "view mirror-core dist-tags": { stdout: JSON.stringify({ stable: "1.3.0" }) },
+    "install -g": { code: 1, stderr: "npm ERR! code EACCES\n" },
+  });
+  const result = runUpdate(deps({ install: PACKAGE, channel: "stable", npm: npm.runner }));
+  assert.equal(result.success, false);
+  assert.ok(
+    result.recovery.some((line) => line.includes("npm install -g mirror-core@1.2.3")),
+    JSON.stringify(result.recovery),
+  );
+  assert.ok(result.recovery.some((line) => line.includes("not atomic")));
+});
+
+test("an unreadable dist-tag answer fails at plan, before any backup", () => {
+  for (const answer of [
+    { stdout: "not json" },
+    { stdout: JSON.stringify({ latest: "9.9.9" }) },
+    { code: 1, stderr: "npm ERR! network\n" },
+  ]) {
+    const npm = scriptNpm({ "view mirror-core dist-tags": answer });
+    let backups = 0;
+    const result = runUpdate(
+      deps({
+        install: PACKAGE,
+        channel: "stable",
+        npm: npm.runner,
+        createBackup: () => {
+          backups += 1;
+          return null;
+        },
+      }),
+    );
+    assert.equal(result.success, false, JSON.stringify(answer));
+    assert.equal(backups, 0, "nothing is archived before the plan is known");
+    assert.ok(!npm.calls.some((call) => call[0] === "install"));
+  }
 });
 
 test("the render and the log line report the same run", () => {
