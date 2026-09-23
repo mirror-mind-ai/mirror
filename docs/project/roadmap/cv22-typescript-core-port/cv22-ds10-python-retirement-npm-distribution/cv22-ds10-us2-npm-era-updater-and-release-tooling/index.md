@@ -2,9 +2,13 @@
 
 # CV22.DS10.US2 — npm-era updater and release tooling
 
-**Status:** 🟡 Pulled 2026-09-23, Prepared; Plan is the next event, and it opens on six named
-decisions rather than on implementation. The inventory below was taken at Pull, because
-this journey has paid four times for trusting the authored gate's layer count
+**Status:** ✅ **Done — 2026-09-23.** `runtime update`, `runtime backup`, and the new
+`runtime migrate` answer from TypeScript with no interpreter spawned; `mm-update` enters
+the front door in all three skill copies; **`PYTHON_ALLOWLIST` no longer exists** — the
+mechanism, not just its entries — and the guard enforcing its absence is itself Node. The
+release chain left the product surface. The updater has operational coverage for the first
+time since v0.8.0 introduced it. Navigator accepted the smoke as this story's E2E
+evidence; the production-clone two-hop route is carried as a post-merge obligation
 **Type:** User Story
 **Depends on:** the [2026-09-07 ops-tail decision](../../../../decisions.md#cv22ds7ts1-ops-tail-runtime-splits-rehearsal-and-legacy-migration-retire-in-ds10),
 which assigned the `runtime` update/release half here **to be redesigned under npm

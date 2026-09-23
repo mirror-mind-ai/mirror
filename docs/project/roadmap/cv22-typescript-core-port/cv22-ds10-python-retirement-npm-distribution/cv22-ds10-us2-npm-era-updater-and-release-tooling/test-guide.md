@@ -11,36 +11,52 @@ the throw-fallback and the pending-migration case have routes.
 Run from the repository root unless noted. Every item is part of the pre-push set for
 this story; `npm test` plus `pytest` alone say nothing about items 3–6.
 
-1. **TypeScript suite** — `cd ts && npm test`. New files:
-   - `test/runtime/installKind.test.ts` — `clone` from a work tree whose root holds
-     `ts/package.json`; `package` only when the path is under the injected `npm root -g`;
-     **a project-local `node_modules/` resolves to `unknown`, with the reason**; missing
-     `npm`; unreadable prefix.
-   - `test/runtime/updatePipeline.test.ts` — stages in order; stop at first `fail`;
-     `capture` always runs before `backup`, and `apply` never runs unless `capture` and
-     `verify backup` passed; the recovery render contains the **captured value**, not a
-     placeholder; the log line's fields; **the status gate throwing falls back to the
-     repair lane** (the finding with no route in the draft).
-   - `test/runtime/strategies/clone.test.ts` — scripted runner: behind → ff; diverged →
-     `plan` fail; local ahead → refuse; `dev` role → refuse; dirty tree → refuse;
-     `--no-fetch` skips fetch.
-   - `test/runtime/strategies/package.test.ts` — `npm view` resolves the dist-tag to a
-     concrete version; the install argv carries **the resolved version, never the bare
-     tag**; capture reads the installed version first; repair reinstalls the captured one;
-     malformed `npm view` JSON fails the stage rather than proceeding.
-   - `test/runtime/migrate.test.ts` — `runtime migrate` opens through the DS6 seam,
-     applies pending migrations, prints the ledger before and after, exit 0; nothing
-     pending → ledger identical, exit 0; unreadable database → exit 1 with the reason.
-   - `test/runtime/backup.test.ts` — characterization of Python's five checks, including
-     **a crafted zip with an absolute entry and one with `..`, both refused**; plus the
-     TS-only `quick_check` case (a well-named archive holding a corrupt database is
-     refused here and would pass on Python — deviation recorded in the test's docstring).
-   - `test/runtime/releaseDoctor.test.ts`, `test/runtime/releasePromote.test.ts` — the
-     eight checks in pass/warn/fail; steps ordered; `--dry-run` writes nothing; `--push`
-     pushes tag and branch to a scratch origin.
-   - `test/frontDoor/routing.test.ts` — `runtime pull|stable` and any unknown subcommand
-     answered **by TypeScript** with usage + exit 2; the two `retired` entries;
-     `MIRROR_TS_RUNTIME_UPDATE=0` returns `update`, `migrate`, and `backup` to Python.
+1. **TypeScript suite** — `cd ts && npm test`. New files, **reconciled 2026-09-23 with
+   what was actually built**: this list was written at Plan time and named five files
+   that do not exist (`updatePipeline.test.ts`, `strategies/clone.test.ts`,
+   `strategies/package.test.ts`, `releaseDoctor.test.ts`, `releasePromote.test.ts`). The
+   tests exist; the split does not. A test guide that names files nobody wrote is the
+   same defect this story spent six plateaus finding elsewhere, so it is corrected to the
+   artifact rather than the artifact renamed to it.
+
+   - `test/runtime/installKind.test.ts` (7 tests) — `clone` from a work tree whose root
+     holds `ts/package.json`; `package` only when the path is under the injected
+     `npm root -g`; **a project-local `node_modules/` resolves to `unknown`**; a path that
+     merely shares a string prefix with the global root is not inside it; npm absent; a
+     `.git` without `ts/package.json` is not this project's clone; and the real front door
+     in this checkout detects as a clone.
+   - `test/runtime/update.test.ts` (14 tests) — the pipeline's decisions and both apply
+     strategies, driven through injected git and npm seams so no test reaches a remote or
+     a registry. Stages in the oracle's order; an up-to-date clone takes **no backup at
+     all**; `apply` unreachable unless `capture` and `verify backup` passed; diverged
+     fails at `plan` with nothing moved; the recovery block carries the **captured value**;
+     `migrate` spawns a fresh process after the fast-forward; the gate refuses a not-ready
+     status and allows migration drift alone; and for packages — the dist-tag resolves to
+     an **exact version** in the install argv, an already-current package does nothing, a
+     failed install names the captured version as the way back, and an unreadable
+     `npm view` answer fails at `plan` before any backup.
+   - `test/runtime/migrate.test.ts` (4 tests) — a fully migrated database reports nothing
+     pending with an unchanged ledger; a missing database fails with its path rather than
+     a stack trace; a file that is not a database is an error, not a silent no-op.
+   - `test/runtime/backup.test.ts` (8 tests) — characterization of Python's five checks,
+     including **a crafted zip with an absolute entry and one with `..`, both refused**;
+     the eight golden scenarios byte-identical to the oracle; and the TS-only
+     `quick_check` case, asserted in both directions so the deviation is retired rather
+     than forgotten if the oracle ever changes.
+   - `test/runtime/release.test.ts` (9 tests) — the doctor's checks in pass/warn/fail
+     against scratch repositories; that it creates no tag, moves no branch, writes no
+     file; a dry-run promotion that performs none of its steps; promotion tagging HEAD and
+     fast-forwarding stable without pushing; a misplaced tag stopping promotion at the
+     doctor; and a diverged `stable` refused.
+   - Routing pins in `test/frontDoor/routing.test.ts` and CLI behavior in
+     `test/frontDoor/runtimeTailCli.test.ts` — the unknown-subcommand answer, the
+     updater family's single revert gate, the two independent backup gates, and the
+     release chain answering `retired` **before dispatch**, so `--push` reaches nothing.
+
+   Not covered by any of the above, and named rather than implied: there is **no
+   `dev`-role refusal**, because neither engine has one — `run_runtime_update` never reads
+   `clone_role`.
+
 2. **Python suite** — `uv run pytest tests/unit/ tests/integration/ -m "not live"`. Only
    `tests/unit/memory/cli/test_runtime.py:831,849,850` change (the two neutral strings).
 3. **Parity generators** — `uv run python ts/parity/generate_runtime_git_golden.py`
@@ -80,14 +96,14 @@ this story; `npm test` plus `pytest` alone say nothing about items 3–6.
      sha>` **with the real sha**; exit 1.
    - `--repair-updater --no-fetch` on the behind clone → ff applied, `migrate skip`,
      message names `runtime update`, exit 0.
-   - **Package half:** `cd ts && npm pack` → tarball; `npm install -g --prefix
-     <scratch-prefix> <tarball>` using the captured real npm; then `npm` shadowed by a stub
-     whose `view` answers a fixed `dist-tags`/`version` JSON and whose `install -g`
-     delegates to the captured real npm with the tarball. The installed front door's
-     `runtime update --check` prints the **resolved version**; `runtime update` captures
-     the installed version, applies, migrates and validates in fresh processes, exit 0. If
-     this half cannot be made deterministic, it is removed and recorded as a US3 handoff
-     (plan stop condition `plan_rule_conflict`).
+   - **Package half — CORRECTED 2026-09-23 to describe what ships.** The smoke runs
+     `npm pack`, installs the tarball into an isolated prefix with the captured real npm,
+     and asserts the installed package is discoverable. It does **not** resolve a
+     dist-tag, install over a previous version, migrate, or validate. The package *update
+     path* has unit coverage only — four tests in `update.test.ts` driving the injected
+     npm seam — and its operational coverage is carried to **US3**, which publishes the
+     package that makes a real resolution possible. This paragraph previously described
+     the fuller half, which was planned and not built.
 5. **Guards** — on the plateau-5 commit where both exist: `uv run python
    scripts/check_skill_command_parity.py` and `node ts/scripts/check-skill-command-parity.ts`
    both clean, and both failing identically when a `uv run python -m memory` line is added
@@ -162,5 +178,36 @@ take, and it is only observable once.
 
 ## Validation Evidence
 
-Pending implementation and validation. Recorded per plateau in the story index's
-*Plateau Progress* and here at closure.
+**Accepted 2026-09-23. Navigator decision: the operational smoke is this story's E2E
+evidence, and the two-hop route below is a post-merge obligation rather than a blocker.**
+
+What was actually run, on the last pushed commit (`86e18d00`), CI green on both workflows:
+
+| Evidence | Result |
+|---|---|
+| TypeScript suite | 2578 pass, 0 fail |
+| Python suite | 2091 pass, on both the 3.10 and 3.12 legs |
+| `scripts/smoke_runtime_update.sh` | **34 assertions, 0 failures, on ubuntu AND macOS**, with `python`/`python3`/`uv` shadowed to exit 66 |
+| `runtime update --check` | byte-identical to the oracle on the same tree |
+| `runtime backup` | all 8 golden scenarios byte-identical to the oracle |
+| `npm run release:doctor` | all 8 check states identical to the oracle for the same target |
+| The two skill guards | agreed in CI on a clean tree, and locally on a seeded regression, before the Python one was deleted |
+| Repository checks | doc links, oracle drift, retired surfaces, Node skill parity — all clean |
+
+The smoke is what carries the E2E claim: it moves a real tree, writes and verifies a real
+archive, applies a real migration through a fresh process, and asserts the database by its
+`_migrations` ledger and `PRAGMA integrity_check` rather than by file bytes. It also
+covers the three failure paths — diverged, dry-run, repair lane.
+
+### Post-merge obligation (carried, not waived)
+
+The Navigator-visible two-hop route above has **not** been run, because it cannot be: on
+`86e18d00` this branch is not an ancestor of `origin/main` (`193dc0f4`) or `origin/stable`
+(`b2d710eb`), so the production clone cannot fast-forward to code that contains the TS
+updater.
+
+**When `mirror-ts-core` merges to `main`, run the route in *Plateau 3* above on
+`~/dev/workspace/mirror` before the CV22 release.** It is the only place the seam between
+the outgoing Python updater and the incoming TypeScript one is observable, and it is
+observable exactly once. Accepting the smoke as this story's evidence does not retire that
+observation; it sequences it after a gate this story does not own.

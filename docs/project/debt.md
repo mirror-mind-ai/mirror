@@ -40,6 +40,11 @@ Dropped   no longer relevant or replaced by another item
 | D-020 | The eval harness records no spend, so a run's cost cannot be reported | observability / cost | low | Carried | CV22.DS10.TS3 Debt Review | The first time a run's cost is questioned, or before any model-pin migration, where cost per run is part of the decision |
 | D-021 | `reception`'s eval reads the catalogue differently from production, and no gate covers routing quality | eval measurement | low | Carried | CV22.DS10.TS3 Debt Review | The next story that touches reception routing or descriptor generation |
 | D-022 | Blocking injection probes read "resisted" when the provider never answered, and nothing pins the attack payload in their fixtures | eval measurement / security | medium | Carried | CV22.DS10.TS3 handoff review (security-engineer) | The first blocked or inconclusive suite run, or before any story that treats a green gate as injection-resistance evidence |
+| D-023 | Two execution profiles outlived the only command that reached them | dead code / packaging | low | Carried | CV22.DS10.TS4 Debt Review | TS5 |
+| D-024 | The Refinement field's seed-CR scan reads Mirror Mind's own roadmap path inside the user's project | product correctness / inherited port oddity | low | Carried | CV22.DS10.TS4 Debt Review | TS5 |
+| D-025 | `runtime migrate` reports `nothing pending` when the engine DECLINED the work, so an update can pass its migrate stage on a database with pending migrations | correctness / migrations | medium | Carried | CV22.DS10.US2 Debt Review | **TS5**, before the Python engine is deleted — after it there is nothing left to defer to |
+| D-026 | The update pipeline is implemented twice, once per install kind, in one module | duplication / maintainability | low | Carried | CV22.DS10.US2 Debt Review | US3, when the package path gains registry behavior and the halves would otherwise drift |
+| D-027 | Nothing writes the package install's update-channel file, so a package user cannot select a channel persistently | operability | low | Carried | CV22.DS10.US2 Debt Review | US3, with the published package that makes channels reachable |
 
 ## D-001 — Metadata lifecycle policy and evidence filtering live inside ConversationService
 
@@ -1057,6 +1062,49 @@ green gate as injection-resistance evidence.
 An unanswered provider produces an `inconclusive` verdict on every blocking
 probe rather than a pass; the verification command above fails; and a
 structural test pins each blocking fixture's payload to its sentinels.
+
+---
+
+## D-025 — A declined migration reports success
+
+**Kind:** correctness / migrations
+**Severity:** medium
+**Status:** Carried
+**Source:** CV22.DS10.US2 handoff review, 2026-09-23 (database-architect) — Navigator decision: defer to TS5
+
+### What is wrong
+
+`ensureMigratedOnOpen` returns `deferredToPython: true` when a Python-authored
+migration is still pending and the TypeScript seam declines to act.
+`runMigrate` records that faithfully, and then `renderMigrate` prints
+
+```text
+Deferred: a Python-authored migration is still pending for this database.
+
+Migrate result: nothing pending
+```
+
+with exit 0. The updater's `migrate` stage reads that result line into its
+detail, so an update can report `[✓] migrate: nothing pending` for a database
+that has pending work nothing applied.
+
+### Why it is carried rather than paid now
+
+Today the deferral is honest: Python still exists and can apply the migration,
+and the `Deferred:` line says so. The defect is that the *verdict* line and the
+stage state do not.
+
+**This must not survive TS5.** After the Python engine is deleted there is
+nothing to defer to, and the same code path will report success for work that
+can never happen — on the one command whose job is to leave the database
+correct after an update.
+
+### What paying it looks like
+
+Three verdicts instead of two — applied, nothing pending, declined — and a
+`migrate` stage that fails rather than passes on declined. TS5 is already
+rewriting what "pending" can mean when one engine is left, so the fix belongs
+with that change rather than before it.
 
 ---
 

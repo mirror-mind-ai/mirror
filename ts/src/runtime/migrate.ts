@@ -105,12 +105,21 @@ export function renderMigrate(outcome: MigrateOutcome): string {
     return `${lines.join("\n")}\n`;
   }
 
+  // A standalone `runtime migrate` runs OUTSIDE the updater's backup-and-verify
+  // chain: its only pre-state is migrate-on-open's own snapshot, which uses one
+  // fixed name and is overwritten on each write. Inside the pipeline a verified
+  // archive was taken three stages earlier; run directly, this line is the only
+  // warning a user gets (CV22.DS10.US2 handoff review, security-engineer).
   lines.push(`Ledger before: ${outcome.before.length} migration(s)`);
   lines.push(`Ledger after: ${outcome.after.length} migration(s)`);
   if (outcome.applied.length > 0) lines.push(`Applied: ${outcome.applied.join(", ")}`);
   if (outcome.backupPath) lines.push(`Pre-migration snapshot: ${outcome.backupPath}`);
   if (outcome.deferredToPython) {
     lines.push("Deferred: a Python-authored migration is still pending for this database.");
+  }
+  if (!outcome.migrated) {
+    lines.push("Take a verified archive first if you are running this outside an update:");
+    lines.push("  runtime backup");
   }
   lines.push("");
   lines.push(
