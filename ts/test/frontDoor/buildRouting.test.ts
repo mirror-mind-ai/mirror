@@ -56,7 +56,10 @@ test("all twenty legacy Workbench leaves are retired, not routed", () => {
     for (const action of actions) {
       const decision = routeMemoryCommand(["build", group, action], ON);
       assert.equal(decision.engine, "retired", `${group} ${action}`);
-      assert.equal(decision.engine === "retired" && decision.anchor, "the-sqlite-refinement-workbench");
+      assert.equal(
+        decision.engine === "retired" && decision.anchor,
+        "the-sqlite-refinement-workbench",
+      );
     }
   }
 });
