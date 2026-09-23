@@ -47,7 +47,6 @@ import { readBuilderResumeState } from "./resumeState.ts";
 import { renderBuilderResumeSurface } from "./resumeSurface.ts";
 import { resolveRoadmapPosition } from "./roadmapPosition.ts";
 import { extractQuery, renderBuilderModeTransition } from "./transition.ts";
-import { getWorkbenchSnapshot } from "./workbenchSnapshot.ts";
 
 export interface BuildLoadResult {
   readonly stdout: string;
@@ -123,9 +122,7 @@ function renderEntrySurface(
   projectPath: string | null,
 ): string {
   const canonicalRefinementIndex = findCanonicalRefinementIndex(projectPath);
-  const resumeState = readBuilderResumeState(db, slug, {
-    includeRefinement: canonicalRefinementIndex === null,
-  });
+  const resumeState = readBuilderResumeState(db, slug);
   const cursor = resumeState.cursor;
   if (cursor && !cursor.activeItem && !cursor.pendingConfirmation) {
     const candidates = inspectPullCandidates(projectPath, { journey: slug, method: "ariad" });
@@ -135,14 +132,7 @@ function renderEntrySurface(
     )}${renderBuilderOrientationSurface({
       roadmap,
       candidatesReport: candidates,
-      // The Workbench read happens only when there is no canonical index — and it
-      // is passed IN, because `inspectRefinementField` is a pure reader over a
-      // snapshot the caller took. Python reads it unguarded here, which is the
-      // asymmetry plateau 2 recorded: Builder Home degrades where BUILDER RESUME
-      // raises on a database predating CV20.DS6.
-      refinement: inspectRefinementField(projectPath, {
-        workbench: getWorkbenchSnapshot(db, slug),
-      }),
+      refinement: inspectRefinementField(projectPath),
     })}`;
   }
   return renderBuilderResumeSurface(resumeState, {

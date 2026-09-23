@@ -44,9 +44,6 @@ interface SnapshotDump {
   seed_change_requests: number;
   seed_change_request_source: string | null;
   next_move: string;
-  refinement_story_count: number;
-  change_request_count: number;
-  unassigned_change_request_count: number;
   canonical_index: string | null;
 }
 
@@ -86,9 +83,6 @@ function toRefinement(dump: SnapshotDump): RefinementFieldSnapshot {
     seedChangeRequests: dump.seed_change_requests,
     seedChangeRequestSource: dump.seed_change_request_source,
     nextMove: dump.next_move,
-    refinementStoryCount: dump.refinement_story_count,
-    changeRequestCount: dump.change_request_count,
-    unassignedChangeRequestCount: dump.unassigned_change_request_count,
     canonicalIndex: dump.canonical_index,
   };
 }
@@ -101,9 +95,6 @@ function fromRefinement(snapshot: RefinementFieldSnapshot): SnapshotDump {
     seed_change_requests: snapshot.seedChangeRequests,
     seed_change_request_source: snapshot.seedChangeRequestSource,
     next_move: snapshot.nextMove,
-    refinement_story_count: snapshot.refinementStoryCount,
-    change_request_count: snapshot.changeRequestCount,
-    unassigned_change_request_count: snapshot.unassignedChangeRequestCount,
     canonical_index: snapshot.canonicalIndex,
   };
 }
@@ -117,19 +108,8 @@ interface CursorDump {
   release_intent_delivery_story: string | null;
 }
 
-interface WorkbenchDump {
-  storage_state: string;
-  active_refinement_story: { display_code: string; title: string } | null;
-  active_change_request: { display_code: string; title: string } | null;
-  last_refinement_event: string | null;
-  refinement_story_count: number;
-  change_request_count: number;
-  unassigned_change_request_count: number;
-}
-
 function toResumeState(dump: Record<string, unknown>): BuilderResumeState {
   const cursorDump = dump.cursor as CursorDump | null;
-  const workbench = dump.refinement as WorkbenchDump | null;
   const cursor: ResumeCursorView | null =
     cursorDump === null
       ? null
@@ -148,28 +128,6 @@ function toResumeState(dump: Record<string, unknown>): BuilderResumeState {
     resumable: dump.resumable as boolean,
     reason: dump.reason as string | null,
     allowedNextActions: dump.allowed_next_actions as string[],
-    refinement:
-      workbench === null
-        ? null
-        : {
-            storageState: workbench.storage_state,
-            activeRefinementStory: workbench.active_refinement_story
-              ? {
-                  displayCode: workbench.active_refinement_story.display_code,
-                  title: workbench.active_refinement_story.title,
-                }
-              : null,
-            activeChangeRequest: workbench.active_change_request
-              ? {
-                  displayCode: workbench.active_change_request.display_code,
-                  title: workbench.active_change_request.title,
-                }
-              : null,
-            lastRefinementEvent: workbench.last_refinement_event,
-            refinementStoryCount: workbench.refinement_story_count,
-            changeRequestCount: workbench.change_request_count,
-            unassignedChangeRequestCount: workbench.unassigned_change_request_count,
-          },
   };
 }
 
@@ -207,7 +165,9 @@ test("selectAllowedNextActions ranks pending confirmation over an active item", 
 });
 
 test("BUILDER RESUME renders byte-identically to Python across every state", () => {
-  assert.ok(oracle.resume.length >= 17);
+  // 17 before CV22.DS10.TS4; the four Workbench-populated states collapsed
+  // into one "no canonical index" state.
+  assert.ok(oracle.resume.length >= 14);
   for (const row of oracle.resume) {
     const actual = renderBuilderResumeSurface(toResumeState(row.state), {
       roadmapPosition: row.roadmap_position,
@@ -230,17 +190,22 @@ test("release intent needs both fields, so a half-set cursor shows neither", () 
   assert.ok(!onlyStory.expected.includes("release intent"));
 });
 
-test("a recorded refinement event is hidden when no active RS exists", () => {
-  // `_last_refinement_event` returns "none" in that state even though the
-  // snapshot carries `change_request_done`. Reading the field directly diverges.
-  const row = oracle.resume.find((r) => r.name === "refinement_event_without_story");
+test("without a canonical index the resume field names the file to create", () => {
+  // Replaces a test that pinned `_last_refinement_event` returning "none" while
+  // the snapshot carried an event -- a divergence trap that existed only because
+  // the field read Workbench rows. There is nothing to read now, so the state is
+  // singular and the assertion is about what the Navigator is told to do next.
+  const row = oracle.resume.find((r) => r.name === "no_canonical_index");
   assert.ok(row);
-  assert.ok(row.expected.includes("last refinement event: none"));
-  assert.ok(!row.expected.includes("change_request_done"));
+  assert.ok(row.expected.includes("authority: project files (not started)"));
+  assert.ok(row.expected.includes("create: docs/project/refinement/index.md"));
+  assert.ok(!row.expected.includes("last refinement event"));
 });
 
 test("BUILDER HOME renders byte-identically across refinement x candidate states", () => {
-  assert.ok(oracle.home.length >= 29);
+  // 29 before CV22.DS10.TS4: the refinement matrix went from seven states to
+  // three, since four of them described Workbench rows no read can produce.
+  assert.ok(oracle.home.length >= 13);
   for (const row of oracle.home) {
     const report = oracle.candidate_reports[row.candidates];
     assert.ok(report, `unknown candidate report ${row.candidates}`);
@@ -255,7 +220,8 @@ test("BUILDER HOME renders byte-identically across refinement x candidate states
 });
 
 test("BUILDER ORIENTATION renders byte-identically across the same matrix", () => {
-  assert.ok(oracle.orientation.length >= 28);
+  // 28 before CV22.DS10.TS4, for the same reason as home above.
+  assert.ok(oracle.orientation.length >= 12);
   for (const row of oracle.orientation) {
     const report = oracle.candidate_reports[row.candidates];
     assert.ok(report, `unknown candidate report ${row.candidates}`);
@@ -268,7 +234,7 @@ test("BUILDER ORIENTATION renders byte-identically across the same matrix", () =
   }
 });
 
-test("a canonical index returns early, so no Workbench-storage move is offered", () => {
+test("a canonical index returns early, so no create move is offered", () => {
   const canonical = toRefinement({
     active_refinement_story: null,
     active_change_request: null,
@@ -276,9 +242,6 @@ test("a canonical index returns early, so no Workbench-storage move is offered",
     seed_change_requests: 4,
     seed_change_request_source: "docs/seed.md",
     next_move: "inspect canonical Refinement index",
-    refinement_story_count: 0,
-    change_request_count: 0,
-    unassigned_change_request_count: 0,
     canonical_index: "docs/project/refinement/index.md",
   });
   const moves = availableRefinementMoves(canonical, null);
@@ -287,38 +250,40 @@ test("a canonical index returns early, so no Workbench-storage move is offered",
     "inspect roadmap",
     "inspect canonical Refinement index",
   ]);
-  // Specifically: the seed count is set, but `review seed Change Requests` is in
-  // the `elif` and the function returns before the storage branches.
+  // Specifically: the seed count is set, but the function returns before the
+  // seed and create moves are considered.
   assert.ok(!moves.includes("review seed Change Requests"));
-  assert.ok(!moves.some((move) => move.includes("Workbench Storage Model")));
+  assert.ok(!moves.some((move) => move.startsWith("create ")));
 });
 
-test("the legacy path always appends exactly one storage move", () => {
-  const legacy = (storageState: string, activeRs: string | null) =>
+test("without a canonical index the last move is always to create it", () => {
+  // CV22.DS10.TS4: the three storage branches (active RS, implemented, not
+  // implemented yet) collapsed with the Workbench that produced them. One
+  // move remains, and the seed count only adds a review move before it.
+  const withoutIndex = (seedCount: number) =>
     availableRefinementMoves(
       toRefinement({
-        active_refinement_story: activeRs,
+        active_refinement_story: null,
         active_change_request: null,
-        storage_state: storageState,
-        seed_change_requests: 0,
-        seed_change_request_source: null,
-        next_move: "x",
-        refinement_story_count: 0,
-        change_request_count: 0,
-        unassigned_change_request_count: 0,
+        storage_state: "project files (not started)",
+        seed_change_requests: seedCount,
+        seed_change_request_source: seedCount ? "docs/seed.md" : null,
+        next_move: "create docs/project/refinement/index.md",
         canonical_index: null,
       }),
       null,
     );
-  assert.equal(legacy("implemented", "RS-001: x").at(-1), "continue active Refinement Story");
-  assert.equal(
-    legacy("implemented", null).at(-1),
-    "compose or capture Refinement Work when requested",
-  );
-  assert.equal(
-    legacy("not implemented yet", null).at(-1),
-    "implement Workbench Storage Model before durable RS/CR work",
-  );
+  assert.deepEqual(withoutIndex(0), [
+    "pull recommended Delivery item",
+    "inspect roadmap",
+    "create docs/project/refinement/index.md",
+  ]);
+  assert.deepEqual(withoutIndex(3), [
+    "pull recommended Delivery item",
+    "inspect roadmap",
+    "review seed Change Requests",
+    "create docs/project/refinement/index.md",
+  ]);
 });
 
 test("the filesystem half of inspectRefinementField matches Python", () => {

@@ -1,18 +1,15 @@
-// CV22.DS7.US8 plateau 1 — the Refinement field snapshot, filesystem half.
+// The Refinement field snapshot.
 //
 // Port of `find_canonical_refinement_index`, `inspect_refinement_field`, and
 // `_refinement_snapshot` from `src/memory/builder/home_surface.py`.
 //
-// This is the read D1 could not retire. The Workbench VERBS are retired in DS10,
-// but `build load`'s resume and home surfaces still render a `🧰 Refinement field`
-// from the SQLite Workbench whenever a project has no
-// `docs/project/refinement/index.md` — so the snapshot read survives the
-// retirement and belongs to US8.
-//
-// Only the filesystem half lands here. The Workbench snapshot itself is a
-// database read and arrives in plateau 2 with the delivery cursor, injected
-// through `buildRefinementSnapshot`'s `workbench` argument so this module never
-// grows a database dependency of its own.
+// CV22.DS7.US8 landed the filesystem half here and the Workbench read beside
+// it, because `build load` rendered the `🧰 Refinement field` out of SQLite
+// whenever a project had no `docs/project/refinement/index.md`.
+// CV22.DS10.TS4 retired that Workbench, and with it the second authority: a
+// project either HAS the canonical index or has not created it yet. There is
+// no other place to look, so this module no longer takes a database read of
+// any kind.
 //
 // One inherited oddity is reproduced rather than cleaned: the seed-CR count is
 // read from a HARD-CODED path into Mirror Mind's own roadmap —
@@ -33,7 +30,14 @@ const SEED_PLAN_PATH =
 /** Python's `^###\s+CR:` over the seed plan, multiline. */
 const SEED_CR_RE = /^###\s+CR:/gmu;
 
-/** Python `RefinementFieldSnapshot`. */
+/**
+ * Python `RefinementFieldSnapshot`.
+ *
+ * `activeRefinementStory` and `activeChangeRequest` are retained as always-null
+ * fields because the surfaces still read them; the three Workbench COUNTS went
+ * with the Workbench, since a permanently-zero count invites a reader to
+ * believe something counts it.
+ */
 export interface RefinementFieldSnapshot {
   readonly activeRefinementStory: string | null;
   readonly activeChangeRequest: string | null;
@@ -41,21 +45,7 @@ export interface RefinementFieldSnapshot {
   readonly seedChangeRequests: number;
   readonly seedChangeRequestSource: string | null;
   readonly nextMove: string;
-  readonly refinementStoryCount: number;
-  readonly changeRequestCount: number;
-  readonly unassignedChangeRequestCount: number;
   readonly canonicalIndex: string | null;
-}
-
-/** The Workbench rows this module renders, supplied by plateau 2's reader. */
-export interface WorkbenchSnapshotView {
-  readonly storageState: string;
-  readonly activeRefinementStory: { readonly displayCode: string; readonly title: string } | null;
-  readonly activeChangeRequest: { readonly displayCode: string; readonly title: string } | null;
-  readonly lastRefinementEvent: string | null;
-  readonly refinementStoryCount: number;
-  readonly changeRequestCount: number;
-  readonly unassignedChangeRequestCount: number;
 }
 
 function isFile(path: string): boolean {
@@ -79,14 +69,11 @@ export function findCanonicalRefinementIndex(projectPath: string | null): string
 /**
  * Python `inspect_refinement_field`.
  *
- * The canonical index short-circuits everything: no seed scan, no Workbench read,
- * and the snapshot reports `storage_state="project files"`. Only when it is
- * absent does the legacy path run.
+ * The canonical index short-circuits the seed scan and reports
+ * `storage_state="project files"`. Without it the answer is the same authority
+ * in its unstarted state, plus whatever the seed plan happens to count.
  */
-export function inspectRefinementField(
-  projectPath: string | null,
-  options: { workbench?: WorkbenchSnapshotView | null } = {},
-): RefinementFieldSnapshot {
+export function inspectRefinementField(projectPath: string | null): RefinementFieldSnapshot {
   const canonicalIndex = findCanonicalRefinementIndex(projectPath);
   if (canonicalIndex !== null) {
     return {
@@ -96,16 +83,12 @@ export function inspectRefinementField(
       seedChangeRequests: 0,
       seedChangeRequestSource: null,
       nextMove: "inspect canonical Refinement index",
-      refinementStoryCount: 0,
-      changeRequestCount: 0,
-      unassignedChangeRequestCount: 0,
       canonicalIndex,
     };
   }
 
-  const workbench = options.workbench ?? null;
   if (projectPath === null) {
-    return buildRefinementSnapshot({ seedCount: 0, seedSource: null, workbench });
+    return buildRefinementSnapshot({ seedCount: 0, seedSource: null });
   }
 
   const seedPlan = join(projectPath, SEED_PLAN_PATH);
@@ -121,52 +104,24 @@ export function inspectRefinementField(
     seedCount = content.match(SEED_CR_RE)?.length ?? 0;
     if (seedCount > 0) seedSource = SEED_PLAN_PATH;
   }
-  return buildRefinementSnapshot({ seedCount, seedSource, workbench });
+  return buildRefinementSnapshot({ seedCount, seedSource });
 }
 
 /**
- * Python `_refinement_snapshot`. With no Workbench the state is
- * `"not implemented yet"` and the next move names the storage model; with one,
- * the next move walks CR → RS → compose.
+ * Python `_refinement_snapshot`: the field for a project with no canonical
+ * index. One state, and the next move is to create the file.
  */
 export function buildRefinementSnapshot(options: {
   seedCount: number;
   seedSource: string | null;
-  workbench: WorkbenchSnapshotView | null;
 }): RefinementFieldSnapshot {
-  const { seedCount, seedSource, workbench } = options;
-  if (workbench === null) {
-    return {
-      activeRefinementStory: null,
-      activeChangeRequest: null,
-      storageState: "not implemented yet",
-      seedChangeRequests: seedCount,
-      seedChangeRequestSource: seedSource,
-      nextMove: "implement Workbench Storage Model before durable RS/CR work",
-      refinementStoryCount: 0,
-      changeRequestCount: 0,
-      unassignedChangeRequestCount: 0,
-      canonicalIndex: null,
-    };
-  }
   return {
-    activeRefinementStory: workbench.activeRefinementStory
-      ? `${workbench.activeRefinementStory.displayCode}: ${workbench.activeRefinementStory.title}`
-      : null,
-    activeChangeRequest: workbench.activeChangeRequest
-      ? `${workbench.activeChangeRequest.displayCode}: ${workbench.activeChangeRequest.title}`
-      : null,
-    storageState: workbench.storageState,
-    seedChangeRequests: seedCount,
-    seedChangeRequestSource: seedSource,
-    nextMove: workbench.activeChangeRequest
-      ? "continue active Change Request"
-      : workbench.activeRefinementStory
-        ? "continue active Refinement Story"
-        : "compose or capture Refinement Work when requested",
-    refinementStoryCount: workbench.refinementStoryCount,
-    changeRequestCount: workbench.changeRequestCount,
-    unassignedChangeRequestCount: workbench.unassignedChangeRequestCount,
+    activeRefinementStory: null,
+    activeChangeRequest: null,
+    storageState: "project files (not started)",
+    seedChangeRequests: options.seedCount,
+    seedChangeRequestSource: options.seedSource,
+    nextMove: `create ${CANONICAL_REFINEMENT_INDEX}`,
     canonicalIndex: null,
   };
 }

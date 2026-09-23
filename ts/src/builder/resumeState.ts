@@ -11,12 +11,11 @@
 //   no cursor         -> `cursor_sync_required`
 //   otherwise         -> resumable, actions chosen by the cursor
 //
-// The Workbench read is the part worth knowing about. Python calls
-// `get_workbench_snapshot` DIRECTLY here, with no `sqlite3.OperationalError`
-// guard, while `home_surface` wraps the same call in `_safe_workbench_snapshot`.
-// So on a database predating CV20.DS6 the Home path degrades and this one RAISES.
-// Reproduced deliberately — including the escape hatch a file-first project takes,
-// where `includeRefinement: false` skips the read entirely — and recorded as debt.
+// CV22.DS10.TS4 removed the Workbench read that used to happen here, and with
+// it an asymmetry both engines carried: Python called `get_workbench_snapshot`
+// unguarded here while `home_surface` wrapped the same call, so a database
+// predating CV20.DS6 degraded on the Home path and RAISED on this one. Resume
+// state is Delivery state now; the absent-tables case is graded in the golden.
 
 import type { Database } from "#db/database.ts";
 import { getDeliveryCursor } from "./deliveryCursor.ts";
@@ -27,7 +26,6 @@ import {
   NO_ACTIVE_ITEM_ACTIONS,
   PENDING_CONFIRMATION_ACTIONS,
 } from "./resumeSurface.ts";
-import { getWorkbenchSnapshot } from "./workbenchSnapshot.ts";
 
 /** Python `_normalize_journey`. */
 function normalizeJourney(journey: string): string {
@@ -37,15 +35,8 @@ function normalizeJourney(journey: string): string {
 }
 
 /** Python `read_builder_resume_state`. */
-export function readBuilderResumeState(
-  db: Database,
-  journey: string,
-  options: { includeRefinement?: boolean } = {},
-): BuilderResumeState {
+export function readBuilderResumeState(db: Database, journey: string): BuilderResumeState {
   const normalizedJourney = normalizeJourney(journey);
-  const includeRefinement = options.includeRefinement ?? true;
-  // Deliberately unguarded, exactly as Python leaves it.
-  const refinement = includeRefinement ? getWorkbenchSnapshot(db, normalizedJourney) : null;
 
   const adoptedMethod = getAdoptedMethod(db, normalizedJourney);
   if (!adoptedMethod) {
@@ -56,7 +47,6 @@ export function readBuilderResumeState(
       resumable: false,
       reason: "adoption_required",
       allowedNextActions: ["adopt_method", "inspect_method"],
-      refinement,
     };
   }
 
@@ -69,7 +59,6 @@ export function readBuilderResumeState(
       resumable: false,
       reason: "cursor_sync_required",
       allowedNextActions: ["sync_cursor", "inspect_method"],
-      refinement,
     };
   }
 
@@ -93,6 +82,5 @@ export function readBuilderResumeState(
     resumable: true,
     reason: null,
     allowedNextActions: [...allowedNextActions],
-    refinement,
   };
 }

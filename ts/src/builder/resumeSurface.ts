@@ -22,7 +22,7 @@
 // behavior. Recorded in the story's debt list instead.
 
 import { cardPrefixed, cardText, cardWrapped } from "./card.ts";
-import type { WorkbenchSnapshotView } from "./refinementField.ts";
+import { CANONICAL_REFINEMENT_INDEX } from "./refinementField.ts";
 import type { RoadmapPosition } from "./roadmapPosition.ts";
 import { wrapAriadSurface } from "./surfaceProtocol.ts";
 
@@ -68,7 +68,6 @@ export interface BuilderResumeState {
   readonly resumable: boolean;
   readonly reason: string | null;
   readonly allowedNextActions: readonly string[];
-  readonly refinement: WorkbenchSnapshotView | null;
 }
 
 /**
@@ -100,47 +99,17 @@ function releaseIntentLines(cursor: ResumeCursorView | null): string[] {
   ];
 }
 
-/** Python `_last_refinement_event`: `"none"` unless an active RS exists. */
-function lastRefinementEvent(refinement: WorkbenchSnapshotView | null): string {
-  if (refinement === null || refinement.activeRefinementStory === null) return "none";
-  return refinement.lastRefinementEvent || "none";
-}
-
-/** Python `_next_refinement_move`. */
-function nextRefinementMove(refinement: WorkbenchSnapshotView): string {
-  if (refinement.activeChangeRequest !== null) return "continue active Change Request";
-  if (refinement.activeRefinementStory !== null) {
-    return "select next Change Request or review Refinement Story";
-  }
-  return "none";
-}
-
-/** Python `_refinement_field_lines`, all three shapes. */
-function refinementFieldLines(
-  state: BuilderResumeState,
-  canonicalRefinementIndex: string | null,
-): string[] {
+/** Python `_refinement_field_lines`. Two shapes since CV22.DS10.TS4. */
+function refinementFieldLines(canonicalRefinementIndex: string | null): string[] {
   if (canonicalRefinementIndex) {
     return [
       cardText("authority: project files"),
       ...cardWrapped(`index: ${canonicalRefinementIndex}`),
     ];
   }
-  const refinement = state.refinement;
-  if (refinement === null) {
-    return [cardText("active RS: none"), cardText("active CR: none")];
-  }
-  const activeRs = refinement.activeRefinementStory
-    ? `${refinement.activeRefinementStory.displayCode}: ${refinement.activeRefinementStory.title}`
-    : "none";
-  const activeCr = refinement.activeChangeRequest
-    ? `${refinement.activeChangeRequest.displayCode}: ${refinement.activeChangeRequest.title}`
-    : "none";
   return [
-    ...cardWrapped(`active RS: ${activeRs}`),
-    ...cardWrapped(`active CR: ${activeCr}`),
-    cardText(`last refinement event: ${lastRefinementEvent(refinement)}`),
-    ...cardWrapped(`next refinement move: ${nextRefinementMove(refinement)}`),
+    cardText("authority: project files (not started)"),
+    ...cardWrapped(`create: ${CANONICAL_REFINEMENT_INDEX}`),
   ];
 }
 
@@ -192,7 +161,7 @@ export function renderBuilderResumeSurface(
     ...releaseIntentLines(cursor),
     FRAME_BLANK,
     cardText("🧰 Refinement field"),
-    ...refinementFieldLines(state, canonicalRefinementIndex),
+    ...refinementFieldLines(canonicalRefinementIndex),
     FRAME_BLANK,
     cardText("allowed next actions"),
     ...cardPrefixed(state.allowedNextActions, "-"),

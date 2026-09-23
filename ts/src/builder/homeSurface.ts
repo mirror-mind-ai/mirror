@@ -27,7 +27,7 @@ import type {
   PullCandidatesReport,
   RoadmapSnapshotReport,
 } from "./pullCandidates.ts";
-import type { RefinementFieldSnapshot } from "./refinementField.ts";
+import { CANONICAL_REFINEMENT_INDEX, type RefinementFieldSnapshot } from "./refinementField.ts";
 import { wrapAriadSurface } from "./surfaceProtocol.ts";
 
 const FRAME_TOP = "╭────────────────────────────────────────────────────────╮";
@@ -76,7 +76,7 @@ function pullCandidateLines(report: PullCandidatesReport): string[] {
   return lines;
 }
 
-/** Python `_refinement_orientation_lines`, all four shapes. */
+/** Python `_refinement_orientation_lines`. Two shapes since CV22.DS10.TS4. */
 function refinementOrientationLines(refinement: RefinementFieldSnapshot): string[] {
   if (refinement.canonicalIndex) {
     return [
@@ -84,22 +84,10 @@ function refinementOrientationLines(refinement: RefinementFieldSnapshot): string
       ...cardWrapped(`index: ${refinement.canonicalIndex}`),
     ];
   }
-  if (refinement.activeRefinementStory) {
-    const lines = cardWrapped(`active RS: ${refinement.activeRefinementStory}`);
-    if (refinement.activeChangeRequest) {
-      lines.push(...cardWrapped(`active CR: ${refinement.activeChangeRequest}`));
-    } else {
-      lines.push(cardText("active CR: none"));
-    }
-    return lines;
-  }
-  if (refinement.changeRequestCount) {
-    return [
-      cardText("no active Refinement Story"),
-      cardText(`${refinement.changeRequestCount} captured Change Requests`),
-    ];
-  }
-  return [cardText("no active Refinement Story"), cardText("no captured Change Requests")];
+  return [
+    cardText("authority: project files (not started)"),
+    ...cardWrapped(`create: ${CANONICAL_REFINEMENT_INDEX}`),
+  ];
 }
 
 /**
@@ -116,17 +104,12 @@ export function availableRefinementMoves(
   ];
   if (refinement.canonicalIndex) {
     moves.push("inspect canonical Refinement index");
-  } else if (refinement.seedChangeRequests) {
+    return moves;
+  }
+  if (refinement.seedChangeRequests) {
     moves.push("review seed Change Requests");
   }
-  if (refinement.canonicalIndex) return moves;
-  if (refinement.activeRefinementStory) {
-    moves.push("continue active Refinement Story");
-  } else if (refinement.storageState === "implemented") {
-    moves.push("compose or capture Refinement Work when requested");
-  } else {
-    moves.push("implement Workbench Storage Model before durable RS/CR work");
-  }
+  moves.push(`create ${CANONICAL_REFINEMENT_INDEX}`);
   return moves;
 }
 
@@ -200,12 +183,8 @@ export function renderBuilderHomeSurface(options: {
     );
   } else {
     lines.push(
-      ...cardWrapped(`active RS: ${refinement.activeRefinementStory ?? "none"}`),
-      ...cardWrapped(`active CR: ${refinement.activeChangeRequest ?? "none"}`),
-      cardText(`workbench storage: ${refinement.storageState}`),
-      cardText(`stored RSs: ${refinement.refinementStoryCount}`),
-      cardText(`stored CRs: ${refinement.changeRequestCount}`),
-      cardText(`unassigned CRs: ${refinement.unassignedChangeRequestCount}`),
+      cardText(`authority: ${refinement.storageState}`),
+      ...cardWrapped(`create: ${CANONICAL_REFINEMENT_INDEX}`),
       cardText(`seed CRs: ${refinement.seedChangeRequests}`),
     );
   }

@@ -4,14 +4,13 @@
 // in plateau 1. Three things are graded:
 //
 //   * `readBuilderResumeState`'s three precedence states and their action tuples;
-//   * `getWorkbenchSnapshot`, the one Workbench read D1 could not retire,
-//     including the database that has no Workbench tables at all;
 //   * the implementation guard's four outcomes and two surfaces.
 //
-// The asymmetry test is the one to read first: Python's Home path swallows a
-// missing-tables error and the Resume path does not, so a pre-CV20.DS6 database
-// degrades in one and raises in the other. Both halves are pinned, because
-// "fixing" it in the port would make TS diverge from the engine it is replacing.
+// CV22.DS10.TS4 removed the Workbench read this file used to grade, and with it
+// the asymmetry that was worth reading first: Python's Home path swallowed a
+// missing-tables error while the Resume path raised, so a pre-CV20.DS6 database
+// degraded in one and failed in the other. Both engines now ignore those tables,
+// so what is pinned is the absence of that failure.
 
 import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -33,24 +32,9 @@ import {
 } from "#builder/lifecycleRibbon.ts";
 import { setAdoptedMethod } from "#builder/methodAdoption.ts";
 import { readBuilderResumeState } from "#builder/resumeState.ts";
-import {
-  getWorkbenchSnapshot,
-  safeWorkbenchSnapshot,
-  WorkbenchTablesMissingError,
-} from "#builder/workbenchSnapshot.ts";
-import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
+import { openDatabaseCopyForWrite } from "#db/database.ts";
 import golden from "#goldens/builder-resume-state.golden.json" with { type: "json" };
 import { createRuntimeTables } from "#helpers/runtimeSchema.ts";
-
-interface SnapshotDump {
-  storage_state: string;
-  active_refinement_story: { display_code: string; title: string; status: string } | null;
-  active_change_request: { display_code: string; title: string; status: string } | null;
-  last_refinement_event: string | null;
-  refinement_story_count: number;
-  change_request_count: number;
-  unassigned_change_request_count: number;
-}
 
 interface StateDump {
   journey: string;
@@ -60,7 +44,6 @@ interface StateDump {
   resumable: boolean;
   reason: string | null;
   allowed_next_actions: string[];
-  refinement: SnapshotDump | null;
 }
 
 const oracle = golden as unknown as {
@@ -68,8 +51,6 @@ const oracle = golden as unknown as {
   journey: string;
   ribbons: Record<string, Record<string, string>>;
   ribbon_refusals: { kind: string; expected?: string; expected_error?: string }[];
-  workbench: { name: string; seed: Record<string, unknown>; expected: SnapshotDump }[];
-  workbench_missing_tables: { expected?: string; expected_error?: string };
   guards: {
     name: string;
     cursor: Record<string, unknown> | null;
@@ -79,7 +60,7 @@ const oracle = golden as unknown as {
   }[];
   resume: { name: string; seed: Record<string, unknown>; expected: StateDump }[];
   resume_empty_journey: { expected?: string; expected_error?: string };
-  resume_missing_tables: { expected_error?: string; excluded_ok?: StateDump };
+  resume_missing_tables: { expected: StateDump };
 };
 
 const NOW = oracle.frozen_now;
@@ -125,71 +106,6 @@ function harness(options: { workbenchTables?: boolean } = {}) {
 }
 
 /** Mirror the generator's `_seed_workbench`. */
-function seedWorkbench(
-  db: WritableDatabase,
-  seed: { stories: number; crs: number; unassigned: number; active: boolean },
-): void {
-  for (let index = 0; index < seed.stories; index += 1) {
-    db.prepare(
-      `INSERT INTO builder_refinement_stories
-       (id, journey, display_code, title, description, status, position, source,
-        provenance, created_at, updated_at, pulled_at, closed_at)
-       VALUES (?, ?, ?, ?, NULL, 'active', ?, 'manual', NULL, ?, ?, NULL, NULL)`,
-    ).run(
-      `rs-${index}`,
-      JOURNEY,
-      `RS-${String(index + 1).padStart(3, "0")}`,
-      `Refinement story ${index + 1}`,
-      index,
-      NOW,
-      NOW,
-    );
-  }
-  for (let index = 0; index < seed.crs; index += 1) {
-    const assigned = index < seed.unassigned ? null : "rs-0";
-    db.prepare(
-      `INSERT INTO builder_change_requests
-       (id, journey, display_code, refinement_story_id, title, body, status, position,
-        source, provenance, outcome_notes, created_at, updated_at, completed_at)
-       VALUES (?, ?, ?, ?, ?, 'body', 'captured', ?, 'manual', NULL, NULL, ?, ?, NULL)`,
-    ).run(
-      `cr-${index}`,
-      JOURNEY,
-      `CR-${String(index + 1).padStart(3, "0")}`,
-      assigned,
-      `Change request ${index + 1}`,
-      index,
-      NOW,
-      NOW,
-    );
-  }
-  if (seed.active) {
-    db.prepare(
-      `INSERT INTO builder_refinement_cursors
-       (journey, active_refinement_story_id, active_change_request_id,
-        last_refinement_event, updated_at)
-       VALUES (?, 'rs-0', 'cr-0', 'change_request_selected', ?)`,
-    ).run(JOURNEY, NOW);
-  }
-}
-
-function dumpSnapshot(
-  snapshot: ReturnType<typeof getWorkbenchSnapshot> | null,
-): SnapshotDump | null {
-  if (snapshot === null) return null;
-  const reduce = (row: { displayCode: string; title: string; status: string } | null) =>
-    row === null ? null : { display_code: row.displayCode, title: row.title, status: row.status };
-  return {
-    storage_state: snapshot.storageState,
-    active_refinement_story: reduce(snapshot.activeRefinementStory),
-    active_change_request: reduce(snapshot.activeChangeRequest),
-    last_refinement_event: snapshot.lastRefinementEvent,
-    refinement_story_count: snapshot.refinementStoryCount,
-    change_request_count: snapshot.changeRequestCount,
-    unassigned_change_request_count: snapshot.unassignedChangeRequestCount,
-  };
-}
-
 function dumpState(state: ReturnType<typeof readBuilderResumeState>): StateDump {
   return {
     journey: state.journey,
@@ -199,7 +115,6 @@ function dumpState(state: ReturnType<typeof readBuilderResumeState>): StateDump 
     resumable: state.resumable,
     reason: state.reason,
     allowed_next_actions: [...state.allowedNextActions],
-    refinement: dumpSnapshot(state.refinement as ReturnType<typeof getWorkbenchSnapshot> | null),
   };
 }
 
@@ -256,54 +171,20 @@ test("an unknown ribbon stage refuses with Python's vocabulary-specific message"
   }
 });
 
-test("getWorkbenchSnapshot matches Python across row shapes", () => {
-  assert.ok(oracle.workbench.length >= 4);
-  for (const entry of oracle.workbench) {
-    const { db } = harness();
-    try {
-      seedWorkbench(
-        db,
-        entry.seed as { stories: number; crs: number; unassigned: number; active: boolean },
-      );
-      assert.deepEqual(dumpSnapshot(getWorkbenchSnapshot(db, JOURNEY)), entry.expected, entry.name);
-    } finally {
-      db.close();
-    }
-  }
-});
-
-test("a database without the Workbench tables raises, and the Home path swallows it", () => {
-  // Python: `get_workbench_snapshot` raises `sqlite3.OperationalError`;
-  // `_safe_workbench_snapshot` returns None. Both halves must hold.
-  assert.equal(oracle.workbench_missing_tables.expected_error, "OperationalError");
-  const { db } = harness({ workbenchTables: false });
-  try {
-    assert.throws(() => getWorkbenchSnapshot(db, JOURNEY), WorkbenchTablesMissingError);
-    assert.equal(safeWorkbenchSnapshot(db, JOURNEY), null, "the Home path degrades");
-    assert.equal(safeWorkbenchSnapshot(null, JOURNEY), null, "no database is also None");
-    assert.equal(safeWorkbenchSnapshot(db, null), null, "no journey is also None");
-  } finally {
-    db.close();
-  }
-});
-
 test("readBuilderResumeState matches Python in all three precedence states", () => {
-  assert.ok(oracle.resume.length >= 9);
+  // 9 before CV22.DS10.TS4, which removed the three cases that existed only
+  // to exercise the Workbench seed and the include_refinement switch.
+  assert.ok(oracle.resume.length >= 6);
   for (const entry of oracle.resume) {
     const seed = entry.seed as {
       adopt: boolean;
       cursor: Record<string, unknown> | null;
-      workbench: { stories: number; crs: number; unassigned: number; active: boolean } | null;
-      include_refinement: boolean;
     };
     const { db, deps } = harness();
     try {
       if (seed.adopt) setAdoptedMethod(db, JOURNEY, "ariad", () => NOW);
       if (seed.cursor !== null) setDeliveryCursor(db, cursorOptions(seed.cursor), deps);
-      if (seed.workbench !== null) seedWorkbench(db, seed.workbench);
-      const state = readBuilderResumeState(db, JOURNEY, {
-        includeRefinement: seed.include_refinement,
-      });
+      const state = readBuilderResumeState(db, JOURNEY);
       assert.deepEqual(dumpState(state), entry.expected, entry.name);
     } finally {
       db.close();
@@ -311,18 +192,19 @@ test("readBuilderResumeState matches Python in all three precedence states", () 
   }
 });
 
-test("the resume path raises on a pre-CV20.DS6 database where Home degrades", () => {
-  // The asymmetry is Python's: `read_builder_resume_state` calls the Workbench
-  // read with no guard. Reproduced rather than fixed, and recorded as debt.
-  assert.equal(oracle.resume_missing_tables.expected_error, "OperationalError");
+test("a database without the Workbench tables resumes instead of raising", () => {
+  // CV22.DS10.TS4 removed the asymmetry this test used to pin: Python called
+  // the Workbench read unguarded here and wrapped it on the Home path, so a
+  // pre-CV20.DS6 database degraded there and RAISED here. Nothing reads those
+  // tables now, so the path that used to fail is the one graded.
   const { db, deps } = harness({ workbenchTables: false });
   try {
     setAdoptedMethod(db, JOURNEY, "ariad", () => NOW);
     setDeliveryCursor(db, { journey: JOURNEY, method: "ariad", activeItem: "CV1" }, deps);
-    assert.throws(() => readBuilderResumeState(db, JOURNEY), WorkbenchTablesMissingError);
-    // And the escape hatch a file-first project takes.
-    const excluded = readBuilderResumeState(db, JOURNEY, { includeRefinement: false });
-    assert.deepEqual(dumpState(excluded), oracle.resume_missing_tables.excluded_ok);
+    assert.deepEqual(
+      dumpState(readBuilderResumeState(db, JOURNEY)),
+      oracle.resume_missing_tables.expected,
+    );
   } finally {
     db.close();
   }
