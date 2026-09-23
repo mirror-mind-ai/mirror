@@ -315,25 +315,25 @@ recommended candidate or inspect the roadmap further after the verbatim blocks.
 
 ## Compose Refinement Work
 
-### Choose the Refinement authority
+### The Refinement authority
 
-Before inspecting, capturing, selecting, continuing, or changing Refinement Work,
-check for this exact path beneath the trusted `project_path`:
+Refinement Work lives in project files, at this exact path beneath the trusted
+`project_path`:
 
 ```text
 docs/project/refinement/index.md
 ```
 
-If it exists, use the **file-first path** below. The root index is the sole
-authority for focus, ordering, and current RS/CR status; linked documents own
-narrative, plans, evidence, and outcomes. Read the project's own convention from
-the index before acting. Do not invoke SQLite Workbench commands, inspect legacy
-rows, compare the two stores, or fall back to SQLite when a file-first operation
-is unclear.
+The root index is the sole authority for focus, ordering, and current RS/CR
+status; linked documents own narrative, plans, evidence, and outcomes. Read the
+project's own convention from the index before acting.
 
-If the path does not exist, use the **legacy SQLite path** below. File-first and
-legacy behavior are alternatives selected by the explicit path, never dual
-writers or competing authorities.
+**There is no second store.** CV22.DS10.TS4 retired the compatibility-only
+SQLite Workbench and its twenty commands; the front door answers each of them
+with its cutoff. If the index does not exist, the project has not started
+Refinement Work — say so and offer to create the index. Never inspect legacy
+rows, never fall back to SQLite when a file-first operation is unclear, and
+never treat an absent index as a different kind of authority.
 
 ### File-first path
 
@@ -482,118 +482,6 @@ missing narrative or an RS assignment. Do not treat journey-local UUIDs or
 legacy display codes as project artifact identity. Git owns history, conflicts,
 and recovery; ordinary file work must not create an application-level Git
 protocol.
-
-### Legacy SQLite path
-
-When the Navigator uses natural language such as "capture this as a CR", "create
-a CR", "register this refinement", "add this to the Workbench", or "this should
-be a refinement", treat it as Refinement Work capture rather than roadmap
-Delivery Work. Ask only for missing essentials: CR title/body and whether to
-attach it to an existing Refinement Story or keep it unassigned. Do not invent
-missing title/body/RS target.
-
-When the Navigator asks to "create an RS", "compose a refinement story", "group
-these CRs", or "show me that refinement story", route to the Builder Workbench
-commands only when the canonical project index is absent:
-
-```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build refinement-story create --journey <slug> --title "<title>" [--description "<description>"]
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build change-request capture --journey <slug> --title "<title>" --body "<body>" [--refinement-story-id <rs-id>]
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build change-request attach --journey <slug> --change-request-id <cr-id> --refinement-story-id <rs-id>
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build refinement-story overview --journey <slug> --refinement-story-id <rs-id>
-```
-
-When the Navigator asks to "pull that refinement story", "start working on
-RS-001", "enter refinement work for ...", or "pull the RS we just created", route
-to:
-
-```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build refinement-story pull --journey <slug> --refinement-story-id <rs-id>
-```
-
-Use the recent RS context only when it is unambiguous. If "pull" could mean a
-Delivery candidate or a Workbench Refinement Story, ask which field/item to pull.
-
-Render `CHANGE_REQUEST_CAPTURED`, `REFINEMENT_STORY_OVERVIEW`, and
-`REFINEMENT_STORY_PULLED` Ariad surfaces verbatim before commentary.
-Composition captures or organizes work only. Pulling an RS selects active
-Refinement Work only: it must not start a CR lifecycle, mutate Delivery cursor
-state, change roadmap status, implement files, commit, push, or release.
-
-If the Navigator's language implies immediate fixing, distinguish capture/pull
-from execution: capture or pull only when requested, and explain that executing a
-CR is a later lifecycle step.
-
-When the Navigator asks to select, confirm, plan, mark implemented, validate, or
-mark done a Change Request in active Refinement Work, route to:
-
-```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build change-request select --journey <slug> --change-request-id <cr-id>
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build change-request resume --journey <slug> --change-request-id <cr-id>
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build change-request confirm --journey <slug> --change-request-id <cr-id>
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build change-request plan --journey <slug> --change-request-id <cr-id> --summary "<plan>"
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build change-request mark-implemented --journey <slug> --change-request-id <cr-id> --evidence "<evidence>"
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build change-request validate --journey <slug> --change-request-id <cr-id> --evidence "<evidence>"
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build change-request done --journey <slug> --change-request-id <cr-id> --notes "<done note>"
-```
-
-When the Navigator wants to defer, decline, or graduate a CR instead of
-finishing it, route to the matching terminal verb:
-
-```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build change-request park --journey <slug> --change-request-id <cr-id> --reason "<why deferred>" --revisit-trigger "<what reopens it>"
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build change-request reject --journey <slug> --change-request-id <cr-id> --reason "<decided no>"
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build change-request promote --journey <slug> --change-request-id <cr-id> --target "<delivery target>" [--notes "<note>"]
-```
-
-These are distinct verbs, not synonyms — do not substitute one for another:
-
-- `park` — a deliberate defer; requires both `--reason` and `--revisit-trigger`.
-- `reject` — a decided no; **keeps** the record with a reason (contrast `discard`, below).
-- `promote` — the CR outgrew Refinement Work and becomes Delivery Work; records
-  a `--target` pointer only, does **not** create or mutate a roadmap item.
-- `discard` — deletes an **accidental capture**; the only one of the four that
-  removes the record. If in doubt between `reject` and `discard`, prefer
-  `reject`: it preserves the decision instead of erasing it.
-
-Use `change-request resume` only when a non-terminal CR inside the active
-Refinement Story has moved beyond capture and lost the active pointer. It
-preserves status, evidence, timestamps, and RS link, then reactivates the CR so
-`implemented` can proceed to `validate` and `validated` can proceed to `done`.
-Use `select` for captured CRs. Terminal CRs (`done`, `parked`, `rejected`, and
-`promoted`) cannot be resumed.
-
-Render the `CHANGE_REQUEST_PARKED` / `_REJECTED` / `_PROMOTED` events as
-`REFINEMENT_FLOW_EVENT` surfaces verbatim, same as the other CR transitions. If
-a needed transition has no supported verb, stop and report the gap to the
-Navigator — never write to storage directly to work around it.
-
-When the Navigator asks to review, check coherence, or close an active RS, route
-to:
-
-```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build refinement-story review --journey <slug> --refinement-story-id <rs-id> --summary "<review>"
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build refinement-story coherence --journey <slug> --refinement-story-id <rs-id> --summary "<coherence>"
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build refinement-story close --journey <slug> --refinement-story-id <rs-id> --summary "<close summary>"
-```
-
-If the Navigator wants to defer the whole Refinement Story rather than an
-individual CR, route to:
-
-```bash
-NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts build refinement-story park --journey <slug> --refinement-story-id <rs-id> --reason "<why deferred>" --revisit-trigger "<what reopens it>"
-```
-
-Render `REFINEMENT_FLOW_EVENT` surfaces verbatim before commentary. Do not skip
-CR phases: if a CR has not been selected, confirmed, and planned, do not jump to
-implementation. The implementation step requires explicit Navigator language
-such as "implement this CR" and should be represented by the runtime transition
-only after the actual implementation/evidence exists. Review and Coherence must
-not mutate files directly; required changes discovered there must become CRs or
-future work. Do not close an RS while any attached CR remains unfinished; finish,
-park, reject, or promote each CR first (`change-request done` / `park` / `reject`
-/ `promote`), then run RS review, coherence, and close in order. Closing an RS
-clears active Refinement Work only and must not pull or execute Delivery Work.
 
 ## Prepare Ariad Templates
 

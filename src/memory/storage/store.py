@@ -9,7 +9,6 @@ import sqlite3
 
 from memory.db import get_connection
 from memory.storage.attachments import AttachmentStore
-from memory.storage.builder_workbench import BuilderWorkbenchStore
 from memory.storage.consolidations import ConsolidationStore
 from memory.storage.conversations import ConversationStore
 from memory.storage.explorer_stories import ExplorerStoryStore
@@ -24,7 +23,6 @@ from memory.storage.tasks import TaskStore
 class Store(
     ConversationStore,
     ExplorerStoryStore,
-    BuilderWorkbenchStore,
     RuntimeSessionStore,
     MessageStore,
     MemoryStore,

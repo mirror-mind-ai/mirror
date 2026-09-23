@@ -258,6 +258,54 @@ ported, and they stay.
 
 ---
 
+## The SQLite Refinement Workbench
+
+**Story:** [CV22.DS10.TS4](../project/roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-ts4-retire-the-unported-surfaces-with-cutoffs/index.md) ·
+**Decision:** [Project files supersede the SQLite Workbench](../project/decisions.md#project-files-supersede-the-sqlite-workbench-as-shared-refinement-authority)
+
+**Removed.** All twenty `build` commands that stored Refinement Work in SQLite
+— `refinement-story create|overview|pull|review|coherence|close|park` and
+`change-request capture|attach|discard|select|confirm|resume|plan|mark-implemented|validate|done|park|reject|promote`
+— together with the read that rendered active RS/CR in the `🧰 Refinement
+field` of `build load`.
+
+**Why.** CV20.DS12 made `docs/project/refinement/index.md` the canonical
+Refinement authority, and the 2026-07-30 decision reduced these commands to
+compatibility-only local state. Two authorities for the same work is a
+standing invitation to disagree about focus, status, and identity; this closes
+that by having one.
+
+**What to do instead.** Keep Refinement Work in project files, where it is
+reviewable, diffable, and shared. `build load` names the index when a project
+has one, and names the file to create when it does not.
+
+**Your rows are still there, and here is how to read them.** Nothing was
+exported, migrated, reconciled, or deleted. Migrations `015`/`016` remain
+applied and both tables keep their contents — Mirror does not remove data from
+your home on your behalf. What went away is the *narrative* reader, so if you
+still have rows worth keeping, this is the query:
+
+```bash
+sqlite3 "file:$HOME/.mirror-minds/<user>/memory.db?mode=ro&immutable=1" \
+  "select display_code, title, status from builder_refinement_stories order by position;"
+
+sqlite3 "file:$HOME/.mirror-minds/<user>/memory.db?mode=ro&immutable=1" \
+  "select display_code, title, status, refinement_story_id
+     from builder_change_requests order by position;"
+```
+
+The last Python-bearing release still renders them the old way if you would
+rather read them there before moving anything into the index by hand.
+
+**What still works.** Every other `build` command — the whole Ariad delivery
+lifecycle, Pull through Done — is untouched. A journey that already keeps
+Refinement Work in project files, which is every journey that adopted the
+canonical index, sees exactly one change: the field on an index-less project
+now says `authority: project files (not started)` and names the file to
+create, instead of reporting an empty SQLite store.
+
+---
+
 <!-- CV22.DS10.US2 (npm-era updater), TS5 (Python deletion), and US3 (npm
      distribution) add their cutoffs here. TS4's remaining surfaces land with
      their own deletion plateaus. -->

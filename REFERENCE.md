@@ -367,51 +367,14 @@ identity, deletion, or conflict meaning stops with a concrete recommendation for
 Navigator. This repair policy never authorizes a commit, push, publication, release,
 configuration change, or legacy data mutation.
 
-When the canonical index is absent, Ariad-adopted journeys retain the compatibility-only
-SQLite Workbench commands. They can compose Refinement Work without pulling it into
-active lifecycle execution:
-
-```bash
-uv run python -m memory build refinement-story create --journey <slug> --title "<title>" [--description "<description>"]
-uv run python -m memory build change-request capture --journey <slug> --title "<title>" --body "<body>" [--refinement-story-id <rs-id>]
-uv run python -m memory build change-request attach --journey <slug> --change-request-id <cr-id> --refinement-story-id <rs-id>
-uv run python -m memory build refinement-story overview --journey <slug> --refinement-story-id <rs-id>
-uv run python -m memory build refinement-story pull --journey <slug> --refinement-story-id <rs-id>
-uv run python -m memory build change-request select --journey <slug> --change-request-id <cr-id>
-uv run python -m memory build change-request resume --journey <slug> --change-request-id <cr-id>
-uv run python -m memory build change-request confirm --journey <slug> --change-request-id <cr-id>
-uv run python -m memory build change-request plan --journey <slug> --change-request-id <cr-id> --summary "<plan>"
-uv run python -m memory build change-request mark-implemented --journey <slug> --change-request-id <cr-id> --evidence "<evidence>"
-uv run python -m memory build change-request validate --journey <slug> --change-request-id <cr-id> --evidence "<evidence>"
-uv run python -m memory build change-request done --journey <slug> --change-request-id <cr-id> --notes "<done note>"
-uv run python -m memory build change-request park --journey <slug> --change-request-id <cr-id> --reason "<why deferred>" --revisit-trigger "<what reopens it>"
-uv run python -m memory build change-request reject --journey <slug> --change-request-id <cr-id> --reason "<decided no>"
-uv run python -m memory build change-request promote --journey <slug> --change-request-id <cr-id> --target "<delivery target>" [--notes "<note>"]
-uv run python -m memory build refinement-story review --journey <slug> --refinement-story-id <rs-id> --summary "<review>"
-uv run python -m memory build refinement-story coherence --journey <slug> --refinement-story-id <rs-id> --summary "<coherence>"
-uv run python -m memory build refinement-story close --journey <slug> --refinement-story-id <rs-id> --summary "<close summary>"
-uv run python -m memory build refinement-story park --journey <slug> --refinement-story-id <rs-id> --reason "<why deferred>" --revisit-trigger "<what reopens it>"
-```
-
-These commands render Ariad Workbench surfaces such as `CHANGE_REQUEST_CAPTURED`, `REFINEMENT_STORY_OVERVIEW`, `REFINEMENT_STORY_PULLED`, and `REFINEMENT_FLOW_EVENT`. Composition commands capture or organize Refinement Stories and Change Requests only. Pulling an RS selects active Refinement Work only. CR/RS flow commands update runtime state and evidence only; they do not mutate Delivery cursor state, implement files, commit, push, or release. Review and Coherence do not mutate files directly.
-
-`resume` is a public, explicit recovery verb for a non-terminal Change Request
-inside the active Refinement Story that moved beyond capture but lost the active
-pointer. It preserves the CR status, evidence, timestamps, and RS link, then
-makes the CR active again so `implemented` can proceed to `validate` and
-`validated` can proceed to `done`. Use `select` for `captured` CRs. Terminal CRs
-(`done`, `parked`, `rejected`, and `promoted`) cannot be resumed.
-
-`done`, `park`, `reject`, and `promote` are the four CR terminal verbs (a fifth,
-`discard`, deletes an accidental capture instead of reaching a terminal state).
-`park` requires both `--reason` and `--revisit-trigger`; `reject` requires
-`--reason` and keeps the record (contrast `discard`, which deletes it);
-`promote` requires `--target` and records a pointer only — it does not create
-or mutate a roadmap item. All four are legal from any non-terminal CR status
-and clear the runtime cursor only when the affected CR was the active one. An
-RS whose Change Requests are all terminal (including parked/rejected/promoted)
-can proceed through review, coherence, and close. `refinement-story park`
-mirrors the CR-level verb at the story level.
+**The SQLite Workbench is removed.** Until CV22.DS10.TS4, an Ariad-adopted
+journey whose project had no canonical index fell back to twenty
+compatibility-only `build refinement-story` / `build change-request` commands
+backed by SQLite. Those commands no longer exist, and the front door answers
+each of them with its
+[cutoff](docs/releases/pending-cutoffs.md#the-sqlite-refinement-workbench).
+Refinement Work lives in project files, for every journey, with no second
+authority to fall back to.
 
 ### Clone role
 

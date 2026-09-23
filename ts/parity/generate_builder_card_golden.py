@@ -11,8 +11,8 @@ read (`md5` over each extracted function body):
   * `_wrap_plain_text` is copied into `artifact_surfaces`, `delivery_story_closure`,
     `delivery_story_plan`, `flow_unit`, `home_surface`, `lifecycle`,
     `pull_candidates`, `release_intent`, `resume_surface`, and
-    `workbench_surfaces`. Eight of them CHUNK a word longer than `width` into
-    `width`-sized slices. **`release_intent` and `workbench_surfaces` do not** --
+    the Workbench surfaces. Eight of them CHUNK a word longer than `width` into
+    `width`-sized slices. **`release_intent` and the Workbench ones did not** --
     the over-long word is appended whole, and `_card_text`'s `text[:54]` then
     truncates it, silently losing the tail. Same input, two outputs, one module
     apart. A port that factors these into one helper is wrong in one of the two

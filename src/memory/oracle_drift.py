@@ -215,9 +215,9 @@ ORACLE_PATHS: tuple[str, ...] = (
     "src/memory/services/explorer_handoff.py",
     # DS7.US8: the Builder/Ariad tree. The command is a self-hosting runtime
     # surface, so drift covers the CLI composition and every in-scope Builder
-    # module. `workbench.py` is included for its ported read-only snapshot;
-    # `workbench_surfaces.py` is excluded because all twenty legacy Workbench
-    # leaves retire unported in DS10.
+    # module. `workbench.py` was tracked here for its ported read-only snapshot
+    # until CV22.DS10.TS4 retired the Workbench entirely -- verbs, surfaces,
+    # store, and the one read that had outlived them.
     "src/memory/cli/build.py",
     "src/memory/builder/ariad_method.py",
     "src/memory/builder/artifact_surfaces.py",
@@ -243,7 +243,6 @@ ORACLE_PATHS: tuple[str, ...] = (
     "src/memory/builder/story_plan_preauthorization.py",
     "src/memory/builder/surface_protocol.py",
     "src/memory/builder/template_generation.py",
-    "src/memory/builder/workbench.py",
     # DS9.US1: the MCP protocol surface. `server.py` owns the JSON-RPC dispatch
     # and the stdio framing loop; `tools.py` owns the seven tool declarations,
     # whose names, descriptions, and inputSchema bytes are the client contract
