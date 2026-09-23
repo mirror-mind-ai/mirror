@@ -43,7 +43,7 @@ Codex uses the `$mm-` prefix. All runtimes call the same Python core.
 | `/mm-release-notes` | `$mm-release-notes` | `/mm:release-notes` | Shows Mirror Mind release notes | `[latest|vX.Y.Z]`, `pending` |
 | `/mm-update` | `$mm-update` | `/mm:update` | Updates the local Mirror runtime through the safe updater | no arguments |
 | `/mm-help` | `$mm-help` | `/mm:help` | Lists available commands | no arguments |
-| `python -m memory runtime` | — | — | Inspects Mirror runtime status, version, drift, backups, release notes, release promotion readiness, plans updates, and executes safe updates | `status [--mirror-home PATH] [--channel stable|main]`, `version [--start PATH] [--channel stable|main]`, `diagnose [--mirror-home PATH]`, `backup [--mirror-home PATH]`, `backup --verify PATH`, `release-notes [latest|vX.Y.Z]`, `release-notes pending [--from vX.Y.Z] [--ref REF] [--no-fetch]`, `release-doctor --target vX.Y.Z [--stable REF]`, `release-promote --target vX.Y.Z [--stable BRANCH] [--remote REMOTE] [--dry-run] [--push]`, `update --dry-run [--mirror-home PATH] [--channel stable|main]`, `update --check [--channel stable|main]`, `update [--no-fetch] [--skip-migrations] [--mirror-home PATH] [--channel stable|main]`, `update --repair-updater [--no-fetch] [--mirror-home PATH] [--channel stable|main]` |
+| `python -m memory runtime` | — | — | Inspects Mirror runtime status, version, drift, backups, release notes, release promotion readiness, plans updates, and executes safe updates | `status [--mirror-home PATH] [--channel stable|main]`, `version [--start PATH] [--channel stable|main]`, `diagnose [--mirror-home PATH]`, `backup [--mirror-home PATH]`, `backup --verify PATH`, `release-notes [latest|vX.Y.Z]`, `release-notes pending [--from vX.Y.Z] [--ref REF] [--no-fetch]`, `migrate [--mirror-home PATH]`, `update --dry-run [--mirror-home PATH] [--channel stable|main]`, `update --check [--channel stable|main]`, `update [--no-fetch] [--skip-migrations] [--mirror-home PATH] [--channel stable|main]`, `update --repair-updater [--no-fetch] [--mirror-home PATH] [--channel stable|main]` |
 | `python -m memory conversation-logger` | — | — | Runtime conversation logging and repair utilities | `discard-current [--interface pi] [--session-id ID]`, `repair-journeys [--limit N] [--apply]` |
 | `ext-review-copy` | — | `ext:review-copy` | External multi-LLM copy review skill; install and expose it before use | skill-driven workflow |
 
@@ -179,13 +179,13 @@ uv run python -m memory runtime status
 uv run python -m memory runtime diagnose
 
 # 3. Check whether a new version is available
-uv run python -m memory runtime update --check
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime update --check
 
 # 4. Plan the update locally
-uv run python -m memory runtime update --dry-run
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime update --dry-run
 
 # 5. Execute the update through the safe pipeline
-uv run python -m memory runtime update
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime update
 ```
 
 Each command exits non-zero when state is not safe enough for the next step.
@@ -219,8 +219,8 @@ Classifies attention-needed drift into stable finding codes (`git_dirty`, `core_
 ### Backup
 
 ```bash
-uv run python -m memory runtime backup [--mirror-home PATH]
-uv run python -m memory runtime backup --verify PATH_TO_BACKUP.zip
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime backup [--mirror-home PATH]
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime backup --verify PATH_TO_BACKUP.zip
 ```
 
 Runtime backup archives contain `memory.db` and SQLite sidecars (`memory.db-wal`, `memory.db-shm`) when present. Verification is structural: the zip must be readable, contain `memory.db`, and avoid unsafe archive paths. Recovery is manual in this version: stop active runtime sessions, move current database files aside, extract the backup into the Mirror home, and rerun `runtime status`.
@@ -230,7 +230,7 @@ Runtime backup archives contain `memory.db` and SQLite sidecars (`memory.db-wal`
 #### `runtime update --check`
 
 ```bash
-uv run python -m memory runtime update --check [--channel stable|main]
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime update --check [--channel stable|main]
 ```
 
 Queries the configured upstream branch through `git ls-remote`. May contact the network, but does not fetch, pull, change refs, back up, migrate, or modify files. Reports `up_to_date`, `update_available`, `local_ahead`, `diverged`, `no_upstream`, or `unknown`.
@@ -240,7 +240,7 @@ On the `stable` channel, this check remains intentionally conservative: it can k
 #### `runtime update --dry-run`
 
 ```bash
-uv run python -m memory runtime update --dry-run [--channel stable|main]
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime update --dry-run [--channel stable|main]
 ```
 
 Plans an update from local refs only. Reuses `runtime status` as the safety gate. Reports whether a real update would be a no-op, pull known remote commits, or require manual reconciliation because the branch is ahead, diverged, dirty, or missing an upstream. Does not contact the network.
@@ -268,23 +268,35 @@ uv run python -m memory runtime release-notes pending --from 0.9.0 --ref HEAD --
 
 ### Release promotion doctor
 
+**Moved out of the product command surface (CV22.DS10.US2).** `runtime release-doctor`
+no longer exists as a Mirror command: it needs a git checkout, a clean tree, and local
+tags, which an installed user does not have. It is maintainer tooling now, and the front
+door answers the old name with its [cutoff](docs/releases/pending-cutoffs.md#release-tooling-leaves-the-product-command-surface).
+
 ```bash
-uv run python -m memory runtime release-doctor --target vX.Y.Z [--stable origin/stable]
+cd ts
+npm run release:doctor -- --target vX.Y.Z [--stable origin/stable]
 ```
 
 Runs a read-only preflight before stable promotion. The doctor checks repository availability, clean git state, package version, release-note file and heading, release index link, release tag state, and stable ref relationship. It prints `pass`, `warn`, and `fail` checks. Warnings keep the command exit code at zero because a pre-promotion state may legitimately lack a tag or stable fast-forward; failures exit non-zero. The command does not fetch, tag, merge, push, edit files, back up, migrate, or modify refs.
 
 ### Stable release promotion
 
+**Moved out of the product command surface (CV22.DS10.US2)**, with `release-doctor` and
+for the same reason: it needs tags, a `stable` branch, and push rights. The front door
+answers the old name with its cutoff, *before dispatch*, so a stray `--push` reaches
+nothing.
+
 ```bash
-uv run python -m memory runtime release-promote --target vX.Y.Z --dry-run
-uv run python -m memory runtime release-promote --target vX.Y.Z
-uv run python -m memory runtime release-promote --target vX.Y.Z --push
+cd ts
+npm run release:promote -- --target vX.Y.Z --dry-run
+npm run release:promote -- --target vX.Y.Z
+npm run release:promote -- --target vX.Y.Z --push
 ```
 
 Promotes a release to the stable channel through a controlled path. The command runs the release doctor first and blocks on failures. Dry-run prints planned stages without creating tags, moving branches, or pushing. Local promotion creates the missing target tag at `HEAD` or reuses an existing tag already at `HEAD`, then creates or fast-forwards the local `stable` branch to `HEAD`. Remote publication happens only with `--push`, which pushes the tag and stable branch to `origin`. The command does not fetch, force-push, rewrite existing tags, bump versions, write release notes, create GitHub Releases, back up, migrate, or update production clones.
 
-After `release-promote --push` succeeds and CI is green, publish the matching GitHub Release on the same tag:
+After `npm run release:promote -- --push` succeeds and CI is green, publish the matching GitHub Release on the same tag:
 
 ```bash
 gh release create vX.Y.Z \
@@ -298,24 +310,33 @@ Use `gh release edit vX.Y.Z ... --latest` if the GitHub Release already exists. 
 ### Update execution
 
 ```bash
-uv run python -m memory runtime update [--no-fetch] [--skip-migrations] [--mirror-home PATH] [--channel stable|main]
-uv run python -m memory runtime update --repair-updater [--no-fetch] [--mirror-home PATH] [--channel stable|main]
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime update [--no-fetch] [--skip-migrations] [--mirror-home PATH] [--channel stable|main]
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime update --repair-updater [--no-fetch] [--mirror-home PATH] [--channel stable|main]
 ```
 
 Executes the safe update pipeline. Stages run in order and the first failure stops execution:
 
-1. **status gate** — normally requires `runtime status` to be ready. If status reports the database as unavailable, the updater first attempts a safe `MemoryClient` bootstrap, rebuilds status, and continues if the runtime becomes ready. If the only remaining blocker is core migration drift that may be resolved by the target version, such as pending or unknown core migration ids, the updater may proceed through the backup-gated update path and still requires post-update status to be ready.
-2. **fetch upstream** — mutates only remote-tracking refs. Skipped with `--no-fetch`.
-3. **plan** — accepts `none` (already up to date) and `pull`. Blocks `ahead`, `diverged`, and other unsafe states.
-4. **backup database** — reuses the runtime backup pipeline.
-5. **verify backup** — structural verification of the archive.
-6. **fast-forward** — `git merge --ff-only` against the upstream. Refuses merges and rebases.
-7. **migrations** — opens `MemoryClient` once to trigger migration application. Skipped with `--skip-migrations`.
-8. **post-update status** — reruns `runtime status` and expects `ready`. If the database is temporarily unavailable, the same safe bootstrap/retry path runs before reporting failure.
+The updater first identifies **how Mirror is installed**, from where the front door
+itself lives — never from configuration. A `clone` (a git checkout) fast-forwards against
+`origin/<channel>`; a `package` (an install under `npm root -g`) installs the version its
+channel's dist-tag resolves to. Anything else is `unknown` and is refused with the reason
+printed, rather than updated on a guess. A project-local `node_modules` is deliberately
+*not* a package install: `npm install -g` would update a different tree from the one
+running.
+
+1. **status gate** — normally requires status to be ready. If the only remaining blocker is core migration drift that the target version may resolve, the updater proceeds through the backup-gated path and still requires post-update status to be ready. If the gate *crashes*, the repair lane runs automatically — an updater that cannot evaluate its own status is exactly what that lane is for.
+2. **capture** — records where to go back to, before anything moves: the current commit for a clone, the installed version for a package. The recovery block prints the pasteable route with that value in it.
+3. **fetch** — mutates only remote-tracking refs. Skipped with `--no-fetch`.
+4. **plan** — accepts already-up-to-date and pull. Blocks ahead, diverged, and other unsafe states. Plan and fetch are read-only and run *before* the backup, so an update with nothing to do never archives the database.
+5. **backup** — writes the dated archive.
+6. **verify backup** — extracts `memory.db` and runs `PRAGMA quick_check` against it. Verifying entry names alone would accept an archive that cannot be opened.
+7. **apply** — `git merge --ff-only` for a clone, `npm install -g <name>@<resolved version>` for a package. Never a merge, a rebase, or a bare dist-tag.
+8. **migrate** — spawns `runtime migrate` in a **fresh process**, so the code that migrates is the code that was just installed, and prints the `_migrations` ledger before and after. Skipped with `--skip-migrations`.
+9. **post-update status** — reruns `runtime status` in a fresh process and expects `ready`.
 
 Failures print a recovery block with the backup path and previous commit when relevant. Successful installs that move to a new commit include an `Installed changes` summary generated from `git log <previous>..<new>`. On the `stable` channel, successful installs also include an `Installed release` block when the new checkout contains narrative release notes. The pipeline does not roll back automatically: recovery is documented manual work.
 
-If the full status gate crashes before update planning, `runtime update` automatically falls back to updater self-repair. The repair lane uses a minimal safety gate: clean git tree, configured upstream, optional fetch, optional database backup when the Mirror home and database are available, fast-forward only code update, and migrations skipped. It then asks the user to rerun `runtime update` with the repaired updater. The same lane can be invoked explicitly with `runtime update --repair-updater`. Older production clones whose updater is blocked before they receive the latest recovery behavior may need this explicit repair lane once.
+If the status gate crashes before update planning, `runtime update` automatically falls back to updater self-repair. The repair lane uses a minimal safety gate — readable checkout, clean tree, configured upstream, optional fetch — applies a fast-forward-only code update, and skips migrations, which the next ordinary update owns. It then asks the user to rerun `runtime update` with the repaired updater. The same lane can be invoked explicitly with `runtime update --repair-updater`. Older production clones whose updater is blocked before they receive the latest recovery behavior may need this explicit repair lane once.
 
 ### Builder Refinement authority
 
@@ -400,7 +421,7 @@ Change a clone to stable releases:
 ```bash
 printf 'stable\n' > .mirror-update-channel
 uv run python -m memory runtime version
-uv run python -m memory runtime update --check
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime update --check
 ```
 
 Change a clone to dogfooding/main:
@@ -408,7 +429,7 @@ Change a clone to dogfooding/main:
 ```bash
 printf 'main\n' > .mirror-update-channel
 uv run python -m memory runtime version
-uv run python -m memory runtime update --check
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime update --check
 ```
 
 Remove the marker to return to the safe default (`stable`):

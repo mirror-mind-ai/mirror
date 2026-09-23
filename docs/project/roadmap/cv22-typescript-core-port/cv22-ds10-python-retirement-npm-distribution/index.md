@@ -34,7 +34,7 @@ DS10 therefore owns the removal, not a port; `mirror-gui` owns any future graphi
 | [CV22.DS10.US2](cv22-ds10-us2-npm-era-updater-and-release-tooling/index.md) | npm-era updater and release tooling | User Story | A TS-owned replacement for `runtime update`, `backup`, `release-doctor`, and `release-promote`, designed around versioned installs and dist-tags rather than ported, with operational smoke coverage. *(Surface corrected 2026-09-23 at Pull: this row listed six subcommands, but `runtime pull` and `runtime stable` have never existed on either engine — argparse answers `invalid choice`, exit 2. `pull` is the update planner's action and `stable` is the channel, the same transcription error `runtimeRoute.ts` already corrected for `latest`/`pending`. Four subcommands, and two of six `PYTHON_ALLOWLIST` entries guard commands that never were.)*; `release-promote`'s product-versus-tooling placement decided; `mm-update` stops calling Python; `PYTHON_ALLOWLIST` goes empty and the skill parity check asserts the entry point is absent, including for the packaged plugin | 🟡 Planned — **pulled 2026-09-23**, inventory recorded in the story index |
 | [CV22.DS10.TS4](cv22-ds10-ts4-retire-the-unported-surfaces-with-cutoffs/index.md) | Retire the unported surfaces with cutoffs | Technical Story | `migrate-legacy`, `memory-rehearse-migration`, the twenty SQLite Refinement Workbench leaves plus the `get_workbench_snapshot` read, the `conversations` metadata-backfill flags, and `journey export-registry` / `journey mutate` (`journey_admin`, 345 lines, arrived in the pause-window merge and never entered the DS7 denominator — see CR089 for the front-door mis-route) removed, each with its cutoff in the release note | ✅ **Done — 2026-09-23 (~7,700 lines).** Five surfaces deleted across both engines behind five published cutoffs and five `check_retired_surfaces` rows. The front door gained a third route shape, **`retired`**: a removed name now answers in one line naming its cutoff and exits 1, before any dispatch — so `journey mutate` never reads the JSON on its stdin and no argument reaches the message or the log. That closed **CR089**, whose silent no-op on a write was the sharpest routing defect this migration produced; its other half turned out to be parity with Python and became **CR095**, after TS5. `build load` is byte-identical for a project with the canonical index; without one the Refinement field now has a single file-first state. The 62 Workbench rows and migrations `015`/`016` are untouched, with the read recipe in the cutoff. Debt: **D-023**/**D-024** carried to TS5 |
 | CV22.DS10.TS5 | Python core deletion | Technical Story | `src/memory/`, its tests, the `uv` and `pyproject` Python surface, the front door's `fallbackPython` path, and the `MIRROR_TS_*` revert gates removed; existing `memory.db` files keep working; every runtime operates over TS only. Separately Navigator-authorized | 🟡 Planned |
-| CV22.DS10.US3 | npm distribution | User Story | Package rename and a single-language npm artifact; the Pi, Gemini CLI, Codex, and Claude Code install paths resolve from it; publication, stable promotion, tag, and release remain separate Navigator gates | 🟡 Planned |
+| CV22.DS10.US3 | npm distribution | User Story | Package rename and a single-language npm artifact; the Pi, Gemini CLI, Codex, and Claude Code install paths resolve from it; publication, stable promotion, tag, and release remain separate Navigator gates. **Amended 2026-09-23 by US2 (decision D4):** two Python-calling layers are re-homed here, because their new shape depends on the npm artifact's `bin` and install path. `frame/main/command-registry.js` spawns `uv run python -m memory` for **eight** commands (`identity list` twice, `runtime status`, `init`, `seed`, `runtime version`, `journeys`, `detect-persona`) from JavaScript, where neither the skill guard nor the retired-surface check can see it — and the Frame deliberately has no `updateMirror` entry, because the git updater "atualizaria só o clone, deixando o executável instalado operando contra uma minor futura": a versioned install is exactly what that comment is waiting for. `installer/` is six PowerShell files whose stated premise is that Mirror is a git clone *so that* `runtime update` fast-forwards in place | 🟡 Planned |
 
 Eight stories, approved 2026-09-19, in the order the gates below constrain: TS1 first
 (the package's own ordering note — the projection cutover is the act that retires
@@ -115,6 +115,34 @@ executable runtime; the Mirror core must not own Python as their permanent compa
 layer.
 
 ## Skill Invocation Gate
+
+**Satisfied 2026-09-23 by [US2](cv22-ds10-us2-npm-era-updater-and-release-tooling/index.md).**
+All three items hold, and the check that proves it is no longer written in the
+language it forbids:
+
+1. **No skill copy invokes Python.** `mm-update` was the last one, flipped in
+   all three copies at plateau 3. `PYTHON_ALLOWLIST` is **empty** — and then
+   deleted, mechanism and all, because an empty dictionary invites the next
+   story to add a row to it.
+2. **The check asserts ABSENCE**, not agreement. `ts/scripts/checkSkillCommandParity.ts`
+   fails on any `uv run python -m memory` line, with no exemption path. It ran
+   in CI beside the Python original for exactly one commit and both agreed — on
+   a clean tree and on a seeded regression, same exit code, same first problem
+   line — before the original was deleted.
+3. **The packaged plugin is scanned whole** — manifest, commands, hooks, skills
+   — not just `plugins/mirror-mind/skills/`, because an installed user resolves
+   that directory rather than this repository's `.pi/`.
+
+One residue is recorded rather than fixed here, because it belongs to another
+repository: the **installed-user extension skills** (`ext-session-export`,
+`ext-persona-export`) still carry 17 `uv run python -m memory ext ...`
+invocations. They are shipped by the `automation` repository through
+`extensions sync`, not by this one, and they break at TS5. The note lives with
+TS2's cutoff, which already told extension authors to migrate.
+
+The original gate text follows, as written on 2026-09-09.
+
+---
 
 Python deletion is not only a code question: **the skills invoke it by name.**
 
@@ -230,6 +258,7 @@ the denominator, from `git ls-files '*.py'` on 2026-09-19:
 | `scripts/` | ~~5~~ **5, and the count was wrong** | **Corrected 2026-09-23 by US2.** The gate said 5 and `git ls-files 'scripts/*.py'` said **6**: the missing file was `check_retired_surfaces.py`, added 2026-09-21 by US1 — two days AFTER this table was written — and it is the guard that mechanically enforces every retirement TS1–TS4 performed. It had no disposition in any story. Current dispositions: ~~`check_skill_command_parity.py`~~ ✅ **ported to Node and deleted by US2** (a guard that asserts nothing invokes the interpreter cannot itself need it; both ran side by side in CI and agreed before the Python one went); `check_retired_surfaces.py` (**TS5** — it must outlive the deletion it proves); `check_doc_links.py` (**TS5**); `build_claude_plugin.py` (**US3**); `check_oracle_drift.py` (deleted with the oracle in **TS5**); `reset_sandbox_pet_store.py` (disposition decided in **TS5**) |
 | `spikes/ts-search-parity/` | 2 | Historical; deleted in **TS5** |
 | `ts/test/fixtures/**` | ~10 → **6** | Python-bodied fixture extensions for the catalog and dispatch tests. **TS2 converted the dispatch tree** (2026-09-21): five Node commands and one `sh` script, which is what now proves "any executable runtime" — and it proves it better than Python did, because the runtime is no longer the interpreter the core happens to ship. **Six inert bodies remain** in `ext-catalog-writes/` and `extension-catalog/`, and they convert in **TS5**, not TS2. The reason is the one this table already applies to `ts/parity/`: their BYTES are graded by Python-recorded goldens, and Python's manifest validator only resolves `entrypoint.module` to a `.py` file. Converting them would make the Python oracle call the fixture invalid, so the golden could not be regenerated — the fixture and its oracle die together or not at all. They are executed by nothing, imported by nothing (install stopped importing at TS2), and referenced by no declared runtime command. The gate's actual requirement — *CI needs no interpreter* — is met and **mechanically enforced** by the `Extension suites need no interpreter` CI step, which shadows `python`/`python3`/`uv` with stubs that exit 66 |
+| `frame/`, `installer/` | 0 `.py`, but **9 Python call sites** | **Added 2026-09-23 by US2.** Not a `.py` denominator entry, which is why the original table missed it: `frame/main/command-registry.js` spawns the interpreter for eight commands *in JavaScript*, and `installer/` assumes a `uv`-bearing git clone across six PowerShell files. Both are invisible to `check_skill_command_parity` (skills only) and to `check_retired_surfaces` (paths and imports). Re-homed to **US3** by decision D4; recorded here so the zero-Python claim cannot be made while they stand |
 | `.github/workflows/tests.yml`, `docs.yml` | 2 | `uv`/Python steps removed in **TS5**; CI runs on Node alone |
 | `pyproject.toml`, `uv.lock` | 2 | **TS5**; version authority moves to `package.json` (**US3**) |
 

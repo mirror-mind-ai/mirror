@@ -133,6 +133,27 @@ With no interpreter in the core, install validates what the manifest *declares* 
 The practical difference: a runtime that is declared but cannot start is now reported when
 you run the command, not when you install it.
 
+**Your extension's own `SKILL.md` files are part of this** — added 2026-09-23 by
+CV22.DS10.US2 (decision D5), which found the residue while auditing the gate. An installed
+Mirror carries extension skills under
+`~/.mirror-minds/<user>/runtime/skills/<runtime>/ext-*/`, materialized from the
+extension's repository by `extensions sync`. On the machine this was audited,
+`ext-session-export` and `ext-persona-export` still documented **17** invocations of
+`uv run python -m memory ext ...` and `uv run python -m memory seed`.
+
+Those lines work today and stop working when the interpreter is deleted. They live in the
+extension's repository, not in Mirror's, so Mirror's own skill-parity guard cannot see or
+fix them: it scans `.pi/skills/`, `.claude/skills/`, and the packaged plugin.
+
+**What to do:** before the CV22 release, rewrite the invocations in your extension's
+`SKILL.md` to enter the front door, exactly as Mirror's own skills do:
+
+```bash
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts ext <id> <subcommand>
+```
+
+then re-run `extensions sync` for each runtime so installed copies are refreshed.
+
 ---
 
 ## Legacy migration

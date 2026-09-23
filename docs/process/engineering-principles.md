@@ -563,22 +563,34 @@ backup, rerun `runtime status`. Before any release that touches the database
 or migrations, rehearse a real restore, not just a verify.
 
 **The updater is this product's release-confidence mechanism.** The lived
-chain — status gate → backup → verify → update, no automatic rollback, a
-printed recovery block on failure, and a `--repair-updater` self-repair lane
-for a broken updater — is exercised for real, not theoretical: it is the
+chain — status gate → capture → plan → backup → verify → apply → migrate →
+validate, no automatic rollback, a printed recovery block carrying the
+captured commit or version, and a `--repair-updater` self-repair lane for a
+broken updater — is exercised for real, not theoretical: it is the
 same discipline that shipped updater resilience hardening and closed a
 production incident where `runtime update` refused to proceed past a
-migration from a newer version. See
+migration from a newer version. Since CV22.DS10.US2 it runs on TypeScript,
+migrates in a **fresh process on the newly installed code** rather than
+in-process on the code it just replaced, and has an operational smoke
+(`scripts/smoke_runtime_update.sh`) that shadows the interpreters so an update
+that spawns Python fails rather than passing unnoticed. See
 [Runtime Repair Policy](runtime-repair-policy.md). A release is not done
 until it is reachable from the previous release through this path.
 
 **The release chain is explicit.** Prospective version bump per
 [Versioning](versioning.md) → narrative release note per
-[Release Notes](release-notes.md) → `runtime release-doctor` →
-`runtime release-promote` → `stable` channel + GitHub Release. Push, tag,
+[Release Notes](release-notes.md) → `npm run release:doctor` →
+`npm run release:promote` → `stable` channel + GitHub Release. Push, tag,
 and stable promotion remain separate Navigator-authorized hard gates under
 Ariad ([§9](#9-process)) — Done at the story level does not imply release
 permission.
+
+The last two steps are **maintainer tooling, not product commands**
+(CV22.DS10.US2). They were `runtime release-doctor` and `runtime
+release-promote`, offered to every installed user, and no installed user could
+run them: they need a git checkout, a clean tree, local tags, and push rights.
+A command surface that offers an operation only its maintainer can perform is
+not a feature.
 
 **Keyless CI is a principle, not an accident.** The test workflow states it
 directly: API keys are intentionally absent from CI, and all live tests are

@@ -254,6 +254,53 @@ Navigator-visible route plus automated checks:
    the four checks. TS2 failed CI twice for skipping exactly this.
 5. A Mirror session on Pi behaves identically.
 
+## Plateau Progress
+
+Implementation complete 2026-09-23, seven commits, CI green on every push.
+
+| # | Commit | What became true |
+|---|---|---|
+| 0 | *(no commit)* | Baseline captured from the oracle. It produced evidence rather than a reference: Python reports an archive holding 4 KB of zeros named `memory.db` as **`Verification result: valid`** |
+| 1 | `0c02598e` | `runtime pull`/`stable` left both tables — they never existed. TypeScript owns the unknown-subcommand answer, so it survives TS5. Both engines' update recommendations stopped saying `uv run python` |
+| 2 | `9503b7d8`, `f134fbb2` | `runtime backup` answers from TS, verified by **opening** the archive, not reading its entry names |
+| 3 | `32431d96` | `runtime update` answers from TS. `mm-update` stopped calling Python in all three copies. `runtime migrate` (D8) added |
+| 4 | `9bd5f928` | The package strategy, and the updater's first operational smoke since v0.8.0 — 34 assertions |
+| 5 | `afc7d254`, `e7072724` | The release chain left the product surface. **`PYTHON_ALLOWLIST` emptied, then deleted.** The guard ported to Node and the Python one removed |
+| 6 | *(this commit)* | Process docs, gate records, D4/D5 dispositions, handoff |
+
+### What the plateaus cost, and what they found
+
+**Six defects, and four of them were in documents that had already been reviewed and
+approved.** The panel caught what the Plan was *missing*; only implementation caught what
+it *stated and was false*:
+
+- the Plan's stage order put `backup` before `plan`, which would archive the database on
+  every invocation including the ones with nothing to do;
+- the Plan claimed a `dev` clone role is refused — `run_runtime_update` never reads
+  `clone_role` on either engine, and implementing it would have made the Navigator's own
+  checkout un-updatable;
+- the panel's carried debt ("two backups per update, nothing prunes them") was false in
+  both halves: both engines sweep a 30-day retention, and migrate-on-open overwrites one
+  fixed-name snapshot;
+- I wrote a workflow comment asserting the generator was *not* in the determinism gate
+  while adding it *to* that gate — a claim about a file I had not read.
+
+The two found by running code rather than reading it:
+
+- **the updater spawned `uv`.** The status gate calls `detectPythonVersion` to fill a
+  display field the gate never reads. Found only by shadowing the interpreters, which is
+  why the plan required it;
+- **a WAL-shaped fixture.** Six unit tests passed while a real Python-written backup
+  verified as *invalid*: every real archive holds a WAL-mode database, and `mode=ro`
+  cannot open one without its sidecars. The fixture used a rollback journal — a shape no
+  backup has.
+
+One more, caught by CI rather than locally: the verifier spawned the `sqlite3` CLI, the
+only such spawn in `ts/src`, in a codebase whose driver module opens with *"the ONLY
+module allowed to import `node:sqlite`"*.
+
+---
+
 ## Where To Resume
 
 Pulled and Prepared 2026-09-23. **Plan is the next event**, and it opens on six named

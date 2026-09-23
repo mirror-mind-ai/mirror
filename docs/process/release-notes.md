@@ -12,7 +12,7 @@ The version says which level of work collapsed into a release. The release note 
 
 Every promoted stable release should also be published as a GitHub Release on the same tag. The GitHub Release is the public repository-facing surface; the committed `docs/releases/vX.Y.Z.md` file remains the canonical source inside the project and runtime.
 
-After `runtime release-promote --target vX.Y.Z --push` succeeds and CI is green on the promoted commit, publish or update the GitHub Release:
+After `npm run release:promote -- --target vX.Y.Z --push` succeeds and CI is green on the promoted commit, publish or update the GitHub Release:
 
 ```bash
 gh release create vX.Y.Z \

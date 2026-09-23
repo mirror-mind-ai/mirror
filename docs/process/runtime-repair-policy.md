@@ -10,7 +10,7 @@ Diagnosis comes before repair. Backup comes before database mutation. No command
 
 A clean status is only meaningful when the route to that cleanliness is documented. Preserve historical evidence until provenance is understood.
 
-Development does not happen in `production` Mirror Mind clones. Mirror Mind clones declare their role through `.mirror-clone-role` at the repository root, with default `production`. Builder Mode applies this guard only when the active journey's `project_path` points at a Mirror Mind source checkout; ordinary journey projects are not blocked by a missing Mirror clone-role marker. If the Mirror project checkout is `production`, Builder refuses unless explicitly overridden with `--ignore-production-role`; when no `project_path` is configured, it falls back to the current directory. Production clones are updated through controlled paths (`git pull` today, `runtime update` later), not through direct edits.
+Development does not happen in `production` Mirror Mind clones. Mirror Mind clones declare their role through `.mirror-clone-role` at the repository root, with default `production`. Builder Mode applies this guard only when the active journey's `project_path` points at a Mirror Mind source checkout; ordinary journey projects are not blocked by a missing Mirror clone-role marker. If the Mirror project checkout is `production`, Builder refuses unless explicitly overridden with `--ignore-production-role`; when no `project_path` is configured, it falls back to the current directory. Production clones are updated through controlled paths (`runtime update`, which since CV22.DS10.US2 answers from the TypeScript core), not through direct edits.
 
 ## Drift Classes
 
@@ -118,9 +118,16 @@ Policy:
 Current repair route:
 
 ```bash
-uv run python -m memory runtime update --repair-updater
-uv run python -m memory runtime update
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime update --repair-updater
+NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts runtime update
 ```
+
+The repair lane is also entered **automatically** when the status gate throws
+rather than merely reporting trouble: an updater that cannot evaluate its own
+status is exactly the failure the lane exists for, and asking the broken status
+to authorize its own repair would be circular. It applies a fast-forward-only
+code update under a minimal gate and skips migrations, which the next ordinary
+update owns.
 
 Current versions run the database bootstrap automatically inside `runtime
 update` when the status gate or post-update status reports database
