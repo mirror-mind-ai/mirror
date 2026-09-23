@@ -70,7 +70,13 @@ def test_render_builder_resume_surface_shows_non_authorizing_release_intent():
     assert "intent is not release authorization" in rendered
 
 
-def test_render_builder_resume_surface_shows_active_refinement_field(store):
+def test_render_builder_resume_surface_shows_one_file_first_state_without_an_index(store):
+    """CV22.DS10.TS4: no canonical index means no Refinement authority YET.
+
+    Before this story the field read active RS/CR out of the SQLite Workbench
+    here. The Workbench is retired, so the honest answer is a single state
+    naming the file to create -- not a second kind of store to consult.
+    """
     set_adopted_method(store, "sandbox-pet-store", "ariad")
     set_delivery_cursor(
         store,
@@ -79,39 +85,19 @@ def test_render_builder_resume_surface_shows_active_refinement_field(store):
         active_item="CV20.DS6",
         last_delivery_event="delivery_story_done_complete",
     )
-    story = store.create_refinement_story(
-        journey="sandbox-pet-store",
-        title="Refinement Surfaces Improvements",
-    )
-    cr = store.create_change_request(
-        journey="sandbox-pet-store",
-        refinement_story_id=story.id,
-        title="Show Active Refinement Work In Builder Resume",
-        body="Show active Refinement Work in Builder Resume.",
-    )
-    store.update_refinement_story_status(story.id, "active")
-    store.update_change_request_status(cr.id, "planned")
-    store.set_refinement_cursor(
-        journey="sandbox-pet-store",
-        active_refinement_story_id=story.id,
-        active_change_request_id=cr.id,
-        last_refinement_event="change_request_planned",
-    )
     state = read_builder_resume_state(store, "sandbox-pet-store")
 
     rendered = render_builder_resume_surface(state)
 
     assert "🧰 Refinement field" in rendered
-    assert "active RS: RS001: Refinement Surfaces Improvements" in rendered
-    assert "active CR: CR001: Show Active Refinement Work In" in rendered
-    assert "last refinement event: change_request_planned" in rendered
-    assert "next refinement move: continue active Change Request" in rendered
-    assert story.id not in rendered
-    assert cr.id not in rendered
+    assert "authority: project files (not started)" in rendered
+    assert "create: docs/project/refinement/index.md" in rendered
+    assert "active RS:" not in rendered
+    assert "last refinement event:" not in rendered
     assert "no story lifecycle work" in rendered
 
 
-def test_render_builder_resume_surface_prefers_canonical_project_index_to_legacy_state(
+def test_render_builder_resume_surface_orients_to_the_canonical_project_index(
     store,
 ):
     set_adopted_method(store, "sandbox-pet-store", "ariad")
@@ -121,16 +107,6 @@ def test_render_builder_resume_surface_prefers_canonical_project_index_to_legacy
         method="ariad",
         active_item="CV20.DS12.US2",
     )
-    story = store.create_refinement_story(
-        journey="sandbox-pet-store",
-        title="Stale Local Refinement",
-    )
-    store.update_refinement_story_status(story.id, "active")
-    store.set_refinement_cursor(
-        journey="sandbox-pet-store",
-        active_refinement_story_id=story.id,
-        last_refinement_event="refinement_story_pulled",
-    )
     state = read_builder_resume_state(store, "sandbox-pet-store")
 
     rendered = render_builder_resume_surface(
@@ -139,8 +115,8 @@ def test_render_builder_resume_surface_prefers_canonical_project_index_to_legacy
     )
 
     assert "authority: project files" in rendered
+    assert "(not started)" not in rendered
     assert "docs/project/refinement/index.md" in rendered
-    assert "Stale Local Refinement" not in rendered
     assert "last refinement event:" not in rendered
 
 

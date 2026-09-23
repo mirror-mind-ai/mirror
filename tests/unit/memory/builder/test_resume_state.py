@@ -82,7 +82,13 @@ def test_resume_state_with_active_item_recommends_prepare(tmp_path):
     )
 
 
-def test_resume_state_skips_legacy_refinement_snapshot_when_disabled(tmp_path, mocker):
+def test_resume_state_carries_no_refinement_state_at_all(tmp_path):
+    """CV22.DS10.TS4: resume state is purely Delivery state now.
+
+    It used to carry a WorkbenchSnapshot and an `include_refinement` switch to
+    suppress it when a project had the canonical index. Both went with the
+    Workbench: there is no compatibility-only Refinement left to include.
+    """
     _client, store = _store(tmp_path)
     set_adopted_method(store, "sandbox-pet-store", "ariad")
     set_delivery_cursor(
@@ -91,12 +97,12 @@ def test_resume_state_skips_legacy_refinement_snapshot_when_disabled(tmp_path, m
         method="ariad",
         active_item="CV20.DS12.US2",
     )
-    get_snapshot = mocker.patch("memory.builder.resume_state.get_workbench_snapshot")
 
-    state = read_builder_resume_state(store, "sandbox-pet-store", include_refinement=False)
+    state = read_builder_resume_state(store, "sandbox-pet-store")
 
-    assert state.refinement is None
-    get_snapshot.assert_not_called()
+    assert not hasattr(state, "refinement")
+    assert state.resumable is True
+    assert state.cursor is not None
 
 
 def test_resume_state_pending_confirmation_constrains_next_actions(tmp_path):

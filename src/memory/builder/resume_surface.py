@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+from memory.builder.home_surface import CANONICAL_REFINEMENT_INDEX
 from memory.builder.resume_state import BuilderResumeState
 from memory.builder.roadmap_position import RoadmapPosition
 from memory.builder.surface_protocol import wrap_ariad_surface
-from memory.builder.workbench import WorkbenchSnapshot
 
 
 def render_builder_resume_surface(
@@ -98,41 +98,13 @@ def _refinement_field_lines(
             _card_text("authority: project files"),
             *_card_wrapped(f"index: {canonical_refinement_index}"),
         ]
-    refinement = state.refinement
-    if refinement is None:
-        return [_card_text("active RS: none"), _card_text("active CR: none")]
-    active_rs = (
-        f"{refinement.active_refinement_story.display_code}: {refinement.active_refinement_story.title}"
-        if refinement.active_refinement_story
-        else "none"
-    )
-    active_cr = (
-        f"{refinement.active_change_request.display_code}: {refinement.active_change_request.title}"
-        if refinement.active_change_request
-        else "none"
-    )
-    last_event = _last_refinement_event(state)
+    # CV22.DS10.TS4: one file-first state. With the SQLite Workbench retired,
+    # a journey whose project has no canonical index has no Refinement
+    # authority yet -- an index nobody created, not a second kind of store.
     return [
-        *_card_wrapped(f"active RS: {active_rs}"),
-        *_card_wrapped(f"active CR: {active_cr}"),
-        _card_text(f"last refinement event: {last_event}"),
-        *_card_wrapped(f"next refinement move: {_next_refinement_move(refinement)}"),
+        _card_text("authority: project files (not started)"),
+        *_card_wrapped(f"create: {CANONICAL_REFINEMENT_INDEX.as_posix()}"),
     ]
-
-
-def _last_refinement_event(state: BuilderResumeState) -> str:
-    refinement = state.refinement
-    if refinement is None or refinement.active_refinement_story is None:
-        return "none"
-    return refinement.last_refinement_event or "none"
-
-
-def _next_refinement_move(refinement: WorkbenchSnapshot) -> str:
-    if refinement.active_change_request is not None:
-        return "continue active Change Request"
-    if refinement.active_refinement_story is not None:
-        return "select next Change Request or review Refinement Story"
-    return "none"
 
 
 def _resume_phase(last_delivery_event: str | None) -> str:

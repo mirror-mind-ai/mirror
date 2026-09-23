@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -13,7 +12,6 @@ from memory.builder.pull_candidates import (
     RoadmapSnapshotReport,
 )
 from memory.builder.surface_protocol import wrap_ariad_surface
-from memory.builder.workbench import WorkbenchSnapshot, get_workbench_snapshot
 from memory.storage.store import Store
 
 
@@ -66,13 +64,8 @@ def inspect_refinement_field(
             next_move="inspect canonical Refinement index",
             canonical_index=canonical_index,
         )
-    workbench = _safe_workbench_snapshot(store, journey)
     if project_path is None:
-        return _refinement_snapshot(
-            seed_count=0,
-            seed_source=None,
-            workbench=workbench,
-        )
+        return _refinement_snapshot(seed_count=0, seed_source=None)
     root = project_path.expanduser().resolve()
     ds6_plan = (
         root
@@ -89,11 +82,7 @@ def inspect_refinement_field(
         seed_count = len(re.findall(r"^###\s+CR:", content, flags=re.MULTILINE))
         if seed_count:
             seed_source = str(ds6_plan.resolve().relative_to(root))
-    return _refinement_snapshot(
-        seed_count=seed_count,
-        seed_source=seed_source,
-        workbench=workbench,
-    )
+    return _refinement_snapshot(seed_count=seed_count, seed_source=seed_source)
 
 
 def render_builder_orientation_surface(
@@ -168,12 +157,8 @@ def render_builder_home_surface(
     else:
         lines.extend(
             [
-                *_card_wrapped(f"active RS: {refinement.active_refinement_story or 'none'}"),
-                *_card_wrapped(f"active CR: {refinement.active_change_request or 'none'}"),
-                _card_text(f"workbench storage: {refinement.storage_state}"),
-                _card_text(f"stored RSs: {refinement.refinement_story_count}"),
-                _card_text(f"stored CRs: {refinement.change_request_count}"),
-                _card_text(f"unassigned CRs: {refinement.unassigned_change_request_count}"),
+                _card_text(f"authority: {refinement.storage_state}"),
+                *_card_wrapped(f"create: {CANONICAL_REFINEMENT_INDEX.as_posix()}"),
                 _card_text(f"seed CRs: {refinement.seed_change_requests}"),
             ]
         )
@@ -232,19 +217,13 @@ def _refinement_orientation_lines(refinement: RefinementFieldSnapshot) -> list[s
             _card_text("authority: project files"),
             *_card_wrapped(f"index: {refinement.canonical_index}"),
         ]
-    if refinement.active_refinement_story:
-        lines = _card_wrapped(f"active RS: {refinement.active_refinement_story}")
-        if refinement.active_change_request:
-            lines.extend(_card_wrapped(f"active CR: {refinement.active_change_request}"))
-        else:
-            lines.append(_card_text("active CR: none"))
-        return lines
-    if refinement.change_request_count:
-        return [
-            _card_text("no active Refinement Story"),
-            _card_text(f"{refinement.change_request_count} captured Change Requests"),
-        ]
-    return [_card_text("no active Refinement Story"), _card_text("no captured Change Requests")]
+    # CV22.DS10.TS4: one file-first state. The SQLite Workbench was retired, so
+    # a project without the canonical index has no Refinement authority yet --
+    # not a different KIND of authority, just an index nobody has created.
+    return [
+        _card_text("authority: project files (not started)"),
+        *_card_wrapped(f"create: {CANONICAL_REFINEMENT_INDEX.as_posix()}"),
+    ]
 
 
 def _candidate_short_title(candidate: PullCandidate) -> str:
@@ -261,69 +240,31 @@ def _available_refinement_moves(
     ]
     if refinement.canonical_index:
         moves.append("inspect canonical Refinement index")
-    elif refinement.seed_change_requests:
-        moves.append("review seed Change Requests")
-    if refinement.canonical_index:
         return tuple(moves)
-    if refinement.active_refinement_story:
-        moves.append("continue active Refinement Story")
-    elif refinement.storage_state == "implemented":
-        moves.append("compose or capture Refinement Work when requested")
-    else:
-        moves.append("implement Workbench Storage Model before durable RS/CR work")
+    if refinement.seed_change_requests:
+        moves.append("review seed Change Requests")
+    moves.append(f"create {CANONICAL_REFINEMENT_INDEX.as_posix()}")
     return tuple(moves)
-
-
-def _safe_workbench_snapshot(store: Store | None, journey: str | None) -> WorkbenchSnapshot | None:
-    if store is None or journey is None:
-        return None
-    try:
-        return get_workbench_snapshot(store, journey)
-    except sqlite3.OperationalError:
-        return None
 
 
 def _refinement_snapshot(
     *,
     seed_count: int,
     seed_source: str | None,
-    workbench: WorkbenchSnapshot | None,
 ) -> RefinementFieldSnapshot:
-    if workbench is None:
-        return RefinementFieldSnapshot(
-            active_refinement_story=None,
-            active_change_request=None,
-            storage_state="not implemented yet",
-            seed_change_requests=seed_count,
-            seed_change_request_source=seed_source,
-            next_move="implement Workbench Storage Model before durable RS/CR work",
-        )
+    """The field for a project with no canonical Refinement index.
+
+    CV22.DS10.TS4 retired the SQLite Workbench, so there is nothing else to
+    read: the answer is always "project files, none yet", and the next move is
+    to create the index.
+    """
     return RefinementFieldSnapshot(
-        active_refinement_story=(
-            f"{workbench.active_refinement_story.display_code}: {workbench.active_refinement_story.title}"
-            if workbench.active_refinement_story
-            else None
-        ),
-        active_change_request=(
-            f"{workbench.active_change_request.display_code}: {workbench.active_change_request.title}"
-            if workbench.active_change_request
-            else None
-        ),
-        storage_state=workbench.storage_state,
+        active_refinement_story=None,
+        active_change_request=None,
+        storage_state="project files (not started)",
         seed_change_requests=seed_count,
         seed_change_request_source=seed_source,
-        next_move=(
-            "continue active Change Request"
-            if workbench.active_change_request
-            else (
-                "continue active Refinement Story"
-                if workbench.active_refinement_story
-                else "compose or capture Refinement Work when requested"
-            )
-        ),
-        refinement_story_count=workbench.refinement_story_count,
-        change_request_count=workbench.change_request_count,
-        unassigned_change_request_count=workbench.unassigned_change_request_count,
+        next_move=f"create {CANONICAL_REFINEMENT_INDEX.as_posix()}",
     )
 
 

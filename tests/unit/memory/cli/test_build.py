@@ -150,10 +150,9 @@ Candidate Delivery Stories:
     assert "└─ 🟦[DS1] Checkout entry" in out
     assert "▸ CV2.DS1 Checkout entry" in out
     assert "Checkout entry and address capture" in out
-    assert "no active Refinement Story" in out
-    assert "no captured Change Requests" in out
+    assert "authority: project files (not started)" in out
+    assert "create: docs/project/refinement/index.md" in out
     assert "pull CV2.DS1" in out
-    assert "capture Refinement Work" in out
     assert "BUILDER RESUME" not in out
     assert "Choose a move when ready." in out
 
@@ -199,9 +198,7 @@ def test_build_load_renders_resume_surface_when_adopted_journey_has_active_item(
     assert "ROADMAP SNAPSHOT" not in out
 
 
-def test_build_load_uses_canonical_refinement_authority_without_legacy_snapshot(
-    mocker, tmp_path, capsys
-):
+def test_build_load_uses_canonical_refinement_authority(mocker, tmp_path, capsys):
     mirror_home = tmp_path / ".mirror" / "pati"
     db_path = default_db_path_for_home(mirror_home)
     mem = MemoryClient(env="test", db_path=db_path)
@@ -232,13 +229,11 @@ def test_build_load_uses_canonical_refinement_authority_without_legacy_snapshot(
     mocker.patch("memory.cli.build._is_mirror_mind_checkout", return_value=False)
     mocker.patch.object(mem, "load_mirror_context", return_value="context")
     mocker.patch.object(mem, "search", return_value=[])
-    legacy_snapshot = mocker.patch("memory.builder.resume_state.get_workbench_snapshot")
-
     build.cmd_load("sandbox-pet-store")
 
     out = capsys.readouterr().out
-    legacy_snapshot.assert_not_called()
     assert "authority: project files" in out
+    assert "(not started)" not in out
     assert "docs/project/refinement/index.md" in out
     assert "workbench storage:" not in out
     assert "last refinement event:" not in out
@@ -2782,7 +2777,7 @@ def test_refinement_story_pull_command_sets_cursor_and_preserves_delivery_cursor
     assert "active CR: none" not in out
 
 
-def test_builder_home_shows_active_refinement_story_after_pull(mocker, tmp_path, capsys):
+def test_builder_orientation_names_the_index_to_create_when_absent(mocker, tmp_path, capsys):
     mirror_home = tmp_path / ".mirror" / "pati"
     db_path = default_db_path_for_home(mirror_home)
     mem = MemoryClient(env="test", db_path=db_path)
@@ -2808,17 +2803,6 @@ def test_builder_home_shows_active_refinement_story_after_pull(mocker, tmp_path,
         method="ariad",
         last_delivery_event="template_preparation",
     )
-    story = mem.store.create_refinement_story(
-        journey="sandbox-pet-store",
-        title="RS-002 — Sandbox refinement pull validation",
-    )
-    mem.store.set_refinement_cursor(
-        journey="sandbox-pet-store",
-        active_refinement_story_id=story.id,
-        active_change_request_id=None,
-        last_refinement_event="refinement_story_pulled",
-    )
-
     mocker.patch("memory.cli.build.MemoryClient", return_value=mem)
     mocker.patch("memory.cli.build.switch_conversation")
     mocker.patch("memory.cli.build._persist_global_sticky_defaults")
@@ -2830,8 +2814,8 @@ def test_builder_home_shows_active_refinement_story_after_pull(mocker, tmp_path,
 
     out = capsys.readouterr().out
     assert "BUILDER ORIENTATION" in out
-    assert "active RS: RS001: RS-002" in out
-    assert "continue active Refinement Story" in out
+    assert "authority: project files (not started)" in out
+    assert "create docs/project/refinement/index.md" in out
     assert "Choose a move when ready." in out
 
 

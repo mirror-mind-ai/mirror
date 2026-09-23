@@ -314,11 +314,7 @@ def _print_builder_entry_surface(
 ) -> None:
     project_root = Path(project_path) if project_path else None
     canonical_refinement_index = find_canonical_refinement_index(project_root)
-    resume_state = read_builder_resume_state(
-        mem.store,
-        slug,
-        include_refinement=canonical_refinement_index is None,
-    )
+    resume_state = read_builder_resume_state(mem.store, slug)
     if (
         resume_state.cursor
         and not resume_state.cursor.active_item
