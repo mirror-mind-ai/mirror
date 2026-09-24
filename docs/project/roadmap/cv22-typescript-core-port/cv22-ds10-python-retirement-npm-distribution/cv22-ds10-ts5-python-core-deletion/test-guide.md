@@ -468,6 +468,41 @@ equality check, which is to be satisfied by two empty answers:
    bounds each run, so both engines exited 127 and "agreed". 126/127 is now a
    `HARNESS` verdict that fails the run.
 
+### Plateau 2 — the fallback is gone
+
+**2026-09-24, at `52f295d5` and after.**
+
+| Check | Result |
+|---|---|
+| Whole suite under the interpreter shadow | **2650 passed, 3 skipped, 0 spawn attempts** — the 3 are the opt-in extension-Python shim suite |
+| Same, CI step | required since `52f295d5`; fails on a red suite **or** a non-empty stub log |
+| `rg '"python"'` in `routing.ts`, `transport.ts`, `cli.ts` | nothing |
+| Retired-surface guard (Node + Python) | clean, agreeing; the Node port also asks the router (F2) |
+| Skill command parity; plugin builder | clean; byte-identical |
+| Oracle drift | clean after three deliberate re-baselines (`runtime.py` for F7, `metadata_lifecycle.py` for D-023, `home_surface.py` for D-024), each one hash |
+| Flag-first pairwise (F5) | 26/28 identical, 2 named deviations, 0 spawns — see above |
+| Lifecycle smoke under the shadow | 164 checks pass; before F7 its only spawns were F7's probe |
+
+**Per-family capture replay** (`tmp/ts5/capture-plateau2.tsv`, digest
+`15a81d1c…`) against plateau 0: **27/29 identical.**
+
+| Family | Result | Why |
+|---|---|---|
+| `unknown-command` | changed: 94 → 36 lines, exit 1 both | **D2 by design** — the TypeScript usage block replaces Python's |
+| `build-pull-candidates` | changed: 258 → 251 lines | **the roadmap moved, not the engine** (below) |
+| the other 27 | identical | — |
+
+**The controlled comparison, and why the capture needs it.**
+`build-pull-candidates` reads the journey's project — the real repository —
+so its answer moves whenever the roadmap does, and TS5's own status changed
+from "Planned" (a pull candidate) to "In Progress" (not one). The capture
+cannot tell that from an engine change, so the arbiter is an experiment that
+holds the documents still and varies only the engine: the plateau-0 engine
+(a worktree at `cv22-ts5-baseline`, dependencies linked) and HEAD's, both
+run by HEAD's capture script against the same `pristine.db` and today's docs.
+**Byte-identical**, 253 lines each. The plateau-3 replay uses the same method
+for every family that reads repository documents.
+
 ### Plateau 3 replay
 
 Pending — the `diff` of `capture-plateau0.tsv` against `capture-plateau3.tsv`.

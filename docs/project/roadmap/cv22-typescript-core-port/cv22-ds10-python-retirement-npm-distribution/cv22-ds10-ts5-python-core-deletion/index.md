@@ -3,15 +3,8 @@
 # CV22.DS10.TS5 — Python core deletion
 
 **Status:** 🟢 In Progress — pulled 2026-09-23; Plan panel-reviewed and
-approved; plateaus 0 and 1 done; plateau 2 **stopped at a stop condition**
-2026-09-24 (see [Where To Resume](#where-to-resume))
-**Type:** Technical Story
-**Depends on:** CV22.DS10.TS1–TS4 and US1–US2 (all done); the
-[Zero Python gate](../index.md#zero-python-gate); debt
-[D-025](../../../../debt.md#d-025--a-declined-migration-reports-success) (blocker),
-[D-023](../../../../debt.md#d-023--two-execution-profiles-outlived-the-only-command-that-reached-them),
-[D-024](../../../../debt.md#d-024--the-refinement-fields-seed-cr-scan-reads-mirror-minds-own-roadmap-path-inside-the-users-project)
-**Separately Navigator-authorized:** yes — 2026-09-23, at Pull
+approved; plateaus 0, 1, and 2 of 5 done — **the fallback is gone; Python is
+present and unreachable**. Next: tag `cv22-last-python-bearing`, then plateau 3
 
 ---
 
@@ -377,81 +370,103 @@ writable handle. Revisit if it is ever felt.
 the work: **five tests, seven spawn attempts**, not the thirty test files the
 inventory estimated.
 
-### Plateau 2 — Unreachable — ⛔ stopped at a stop condition, 2026-09-24
+### Plateau 2 — Unreachable — ✅ done, 2026-09-24
 
-**What is now true.** One commit, `ea619df5`, **local, not pushed**: the two
-dead branches of [F2](inventory.md#f2--two-dead-fallback-branches-ts4-left-behind)
-are deleted, and the Node retired-surface guard now asks the router, not just
-the files, whether any family branch still answers a retired shape. It was red
-on exactly F2's 22 shapes before the deletion and fires on a seeded re-add.
-Suite 2680 passed.
+It stopped once, at the Plan's first stop condition, and resumed on the
+Navigator's four decisions (recorded in [plan.md](plan.md#taken-at-plateau-2-navigator-2026-09-24)).
+Twelve commits, `ea619df5` to the handoff.
 
-**Why it stopped.** Measuring the fallthroughs on both engines before writing
-D2 found **[F5](inventory.md#f5--valid-flag-first-invocations-reach-python-through-the-fallthroughs)**:
-valid flag-first invocations of five families are answered only by Python
-today, and `tasks --mirror-home H add` silently lists instead of adding on the
-TypeScript route that is already live. That is the Plan's first stop
-condition. Four more findings ([F6](inventory.md#f6--d2s-confirmed-covered-the-argparse-families-only)–[F9](inventory.md#f9--mcp-reaches-python-through-the-unknown-command-fallthrough))
-need a decision or a small correction.
+**What is now true.**
 
-**Waiting on the Navigator:** F5's disposition (fix routing here, cutoff, or
-new story); whether D2 stays uniform given F6; F7's `Python:` line; F9's
-`mcp` route; and whether `ea619df5` may be pushed.
+- **Nothing reaches for the interpreter.** `fallbackPython`, its timeout knob,
+  the twenty-one `MIRROR_TS_<FAMILY>` revert gates, `revertVar`,
+  `liveBlockedBy`, the `"python"` transport mode, and the logger's
+  `{ handled: false }` hand-back are deleted; `FrontDoorEngine` is `"ts"`
+  alone. The interpreter-shadow CI step is **required**, and its verdict
+  includes an **empty stub log**, not only a passing suite: 2650 passed, 3
+  skipped (the opt-in extension-Python shim suite), **0 spawn attempts**.
+- **TypeScript owns every answer** (D2). An unknown command gets the front
+  door's usage (stdout, exit 1); a family's unknown or missing subcommand gets
+  argparse's shape with the family's own name (stderr, exit 2) — US2's
+  `runtime` renderer, generalized byte-for-byte; `-h`/`--help` answers the
+  usage with exit 0. A third before-dispatch route, `usage`, sits beside
+  `retired`. `mcp` routes to the TypeScript server (F9).
+- **Flag-first invocations answer from TypeScript** (F5). `argvShape.ts`
+  moves a family's leading options after its subcommand once, before
+  routing, for the seven families whose oracle accepts them. It also closed
+  two silent writes on routes that were already TypeScript: `tasks
+  <options> add|done|…` printed the list, and `journey <options> update`
+  rendered a status read. Proven pairwise against Python: 26/28 identical,
+  2 named deviations, 0 spawns.
+- **Half a replay fixture is refused by name** in every family, one line and
+  exit 2. A plain family used to route it to Python, which had no replay
+  transport and would have called the live provider.
+- `runtime status` has no `Python:` line (F7), on both engines, the golden
+  regenerated. `runtime diagnose` names the retired gates by an **explicit
+  list** (F8): two live controls the prefix match called inert —
+  `MIRROR_TS_MCP_GUARDS`, `MIRROR_TS_CONSULT_CONTEXT` — are no longer
+  reported, and a test fails if a retired gate is still read in `src/`.
+- **D-023 and D-024 are paid**, each on both engines with a pure-deletion
+  golden regeneration; **D-025** (paid at plateau 1) is closed in the ledger,
+  which still read "Carried".
+- The skills, the Pi extension, and the regenerated plugin stop offering
+  reverts and a timeout that no longer exist. `route_matrix.ts` and
+  `ts4_home_copy_route.ts` are deleted; `conversation_lifecycle_smoke.ts`
+  dropped the steps that proved Python could read TypeScript's writes — the
+  property that made a revert safe — and grades the archive with the
+  product's own verifier.
+
+**Evidence.** [test-guide.md — plateau 2](test-guide.md#plateau-2--the-fallback-is-gone).
+Per-family capture replayed against plateau 0: **27/29 identical**, and both
+differences explained — `unknown-command` is D2 by design; `build-pull-candidates`
+reads the repository's roadmap, which moved (TS5 left "Planned"), and the
+plateau-0 engine renders the same bytes as today's against today's docs.
+
+**What is intentionally undone.** Everything plateau 3 owns. Python is still in
+the tree, unreachable — the recovery point is one tag away.
+
+**Found and captured, not fixed:** [CR096](../../../../refinement/rs009-cv22-front-door-routing-correctness/cr096-conversations-lists-instead-of-appending-when-options-come-first.md)
+— `conversations <options> append` renders the listing and drops the payload;
+the oracle rejected that shape, so it is a TypeScript leniency, not a parity
+gap.
+
+**Two lessons, both paid in this plateau.** *An equality check is satisfied by
+two things that did not happen*: the flag-first harness reported clean twice
+before it was right — both engines on an empty `memory_test.db`, then both
+exiting 127 because `env` cannot exec a shell function — and each row now
+reports whether the invocation changed its copy, with 126/127 a harness
+failure. *The retired-surface sweep reads the git index*: a test that spelled
+out a retired flag passed locally while untracked and turned CI red on push,
+on both guards at once; the suite now runs after staging, and the docs link
+check joined the pre-commit set when it caught a link to a deleted script.
 
 ## Where To Resume
 
-**Plateau 2 is stopped, not in flight** — see the plateau 2 note above. The
-step list below is still the order once the decisions are taken; step 3 is
-done (`ea619df5`).
+**Plateau 2 is done; nothing is in flight.** Before plateau 3's first deletion:
 
-The Plan is written and was reviewed by four persona lenses on 2026-09-23
-(database-architect, security-engineer, devops-engineer, quality-assurance;
-`engineer` was not convened — recorded, not silent). The panel returned four
-blockers and four non-blocking findings; **all eight are applied** to
-[plan.md](plan.md) and [test-guide.md](test-guide.md). The two that changed
-the shape of the story:
+1. push, and tag **`cv22-last-python-bearing`** at the last plateau-2 commit
+   (annotated, pushed) — the recovery point the Plan names; record its commit
+   SHA here and in `decisions.md`;
+2. confirm CI green on both platforms, the now-required shadow step included.
 
-- `migration_structural_parity.ts` and `bootstrap_custody_parity.ts` are
-  **kept**, not deleted — they grade TypeScript against committed fixtures,
-  and they become the custody proof the moment the second engine is gone;
-- a **per-family capture on a real database copy is taken at plateau 0 and
-  replayed at plateau 3**, because every tool that could compare real output
-  across the deletion is itself deleted by it.
+Then plateau 3, in the Plan's order (F, one commit per row; then G):
 
-What is waiting on the Navigator: approval of the Plan as amended, and of
-decisions D1–D9 — of which D1 (version authority moves here, not at US3) and
-D6 (the plugin builder ports here) move work earlier than US2 and the gate
-placed it.
+- F.1–F.7 as written, plus three things plateau 2 found:
+  `scripts/ts5/flag_first_pairwise.sh` and `hook_rowdiff.sh` go with the
+  Python they compare against; `extensionCatalogRouting.test.ts` **reads
+  `src/memory/cli/ext.py` and `extensions.py`** to audit its allowlists and
+  needs a disposition (freeze the audited literals); and CI's
+  `MIRROR_TEST_EXTENSION_PYTHON` goes with the shim template (D7).
+- G: port `generate_demo_memory_db.py` first — `smoke_runtime_update.sh`
+  still generates its database with it, which is why the `ts` job still
+  installs `uv`.
+- The plateau-3 replay: `build-pull-candidates` (and any family that reads
+  repository documents) is compared by the **controlled method** — the
+  plateau-2 engine from a worktree at the tag and HEAD, against the same
+  docs — not against the plateau-0 hash, because the roadmap will have moved
+  again.
 
-**Plateaus 0 and 1 are done and pushed; nothing is in flight.** Eight commits
-from `2adf2951` to `bdd63e00`, CI green at each. **Nothing has been deleted
-yet** — every Python file the story will remove is still present, and every
-change so far is independently revertible.
-
-Resume at **plateau 2**, in this order:
-
-1. delete `fallbackPython`, `pythonTimeoutMs`, and the `--db-path` stripping
-   that existed for it; remove `"python"` from `FrontDoorEngine` — the type
-   error list *is* the remaining inventory;
-2. delete the sixteen `MIRROR_TS_<FAMILY>` revert gates and
-   `transport.revertVar` (D3); keep every `*_REPLAY` gate;
-3. delete the two dead branches
-   ([F2](inventory.md#f2--two-dead-fallback-branches-ts4-left-behind)) as
-   their own commit;
-4. answer the fifteen unported-argv fallthroughs with D2's shapes, including
-   the `__main__.py` leak
-   ([F3](inventory.md#f3--the-unknown-subcommand-answer-leaks-the-interpreters-filename));
-5. retire `route_matrix.ts`; pay D-023 and D-024;
-6. flip the interpreter-shadow CI step to required and delete its
-   `continue-on-error`.
-
-The shadow step prints the exact work list on every CI run. When plateau 2
-closes, tag and push **`cv22-last-python-bearing`** before plateau 3's first
-deletion — that tag, not `cv22-ts5-baseline`, is the recovery point.
-
-Standing instruments, to re-run after any change:
-`bash scripts/ts5/capture_family_outputs.sh "$PWD/tmp/ts5/pristine.db"` diffed
-against `tmp/ts5/capture-plateau0.tsv`, and
-`bash scripts/ts5/hook_rowdiff.sh --all "$PWD/tmp/ts5/pristine.db"` while
-Python still exists. The pristine copy is local and gitignored; recreate it
-from the real database if the tree is cleaned.
+Standing instruments: `bash scripts/ts5/capture_family_outputs.sh
+"$PWD/tmp/ts5/pristine.db"` (latest: `tmp/ts5/capture-plateau2.tsv`). The
+pristine copy is local and gitignored; recreate it from the real database if
+the tree is cleaned.
