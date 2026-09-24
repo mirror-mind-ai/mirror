@@ -77,6 +77,7 @@ import { computeWeekRange } from "#tasks/weekView.ts";
 import { expandHome } from "#util/paths.ts";
 import { newId, nowIso } from "#util/pyGenerators.ts";
 import { hasOption, optionValue, stripOptionWithValue } from "./args.ts";
+import { canonicalArgv } from "./argvShape.ts";
 import { createBuildLoadRuntime } from "./buildLoadRuntime.ts";
 import { runConsultRoute } from "./consultRoute.ts";
 import {
@@ -1738,12 +1739,16 @@ async function dispatchTs(argv: readonly string[]): Promise<number | TsDispatchO
   return runTs(argv);
 }
 
-export async function main(argv = process.argv.slice(2)): Promise<number> {
+export async function main(rawArgv = process.argv.slice(2)): Promise<number> {
   const nodeError = nodeVersionError(process.versions.node);
   if (nodeError) {
     console.error(nodeError);
     return 1;
   }
+  // Once, before routing, and the SAME argv goes to dispatch: a family's
+  // leading options move after its subcommand (CV22.DS10.TS5, finding F5), so
+  // the router and every handler read one shape.
+  const argv = canonicalArgv(rawArgv);
   const decision = routeMemoryCommand(argv);
   const logPath = resolveLogPath(argv);
   // CV22.DS10.TS4: a surface this migration removed answers here, before any

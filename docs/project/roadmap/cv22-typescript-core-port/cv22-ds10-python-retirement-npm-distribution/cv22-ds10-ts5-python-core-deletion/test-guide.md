@@ -208,6 +208,25 @@ the `rg` prints nothing. The log is the verdict rather than a `ps` sample:
 sampling a process tree is non-deterministic, and a short-lived spawn between
 two samples is invisible.
 
+### Plateau 2 — flag-first pairwise (pre-deletion)
+
+Finding [F5](inventory.md#f5--valid-flag-first-invocations-reach-python-through-the-fallthroughs)'s
+proof, and possible only while both engines exist. Every flag-first shape the
+oracle accepts, answered by Python and by TypeScript on two copies of the same
+database, compared on exit code, stdout, stderr, and the rows a write leaves
+behind. TypeScript runs under the interpreter shadow, so the fallback cannot be
+what answers.
+
+```bash
+uv run python ts/parity/generate_demo_memory_db.py --out tmp/ts5/d2/home/memory.db
+bash scripts/ts5/flag_first_pairwise.sh tmp/ts5/d2/home/memory.db
+```
+
+Expected: every row `SAME` or a named deviation, `0 differ unexpectedly`,
+`interpreter spawns under the shadow: 0`, exit 0. Each row also says whether
+the invocation changed its copy (`read`/`wrote`); a write reported as `read`
+on both engines compares two untouched databases and proves nothing.
+
 ### Plateau 3 — the gate (post-deletion)
 
 ```bash
@@ -426,6 +445,28 @@ channel, and `pwd -P`). Digest
 `--selftest` runs twice seconds apart on the same commit, so anything varying
 with TIME rather than with the run looks perfectly deterministic. `runtime
 version` prints `Git commit:`. Only a replay across commits sees it.
+
+### Flag-first pairwise (F5)
+
+**Plateau 2, 2026-09-24**, on a generated demo home. 28 shapes: **26
+identical** on exit code, stdout, stderr, and resulting rows — 18 reads
+across seven families and 8 write invocations (`tasks add|done|doing|block|delete`,
+`journey update`, `week save`, a not-found `done`), six of which changed
+their copy identically on both engines while the other two wrote nothing on
+either (no pending plan, no such task) — and **2 named deviations**, the
+`tasks` argparse quirk ([F5](inventory.md#f5--valid-flag-first-invocations-reach-python-through-the-fallthroughs)).
+**Interpreter spawns under the shadow: 0.**
+
+**The harness reported a clean verdict twice before it was right**, both times
+by comparing two things that had not happened — the failure mode of any
+equality check, which is to be satisfied by two empty answers:
+
+1. `MEMORY_ENV=test` selects `memory_test.db`, so both engines bootstrapped an
+   empty database beside the copy and every row compared nothing. Now pinned to
+   production on the scratch copies, and every row reports `read`/`wrote`.
+2. Unsetting variables through `env` cannot exec the shell function that
+   bounds each run, so both engines exited 127 and "agreed". 126/127 is now a
+   `HARNESS` verdict that fails the run.
 
 ### Plateau 3 replay
 

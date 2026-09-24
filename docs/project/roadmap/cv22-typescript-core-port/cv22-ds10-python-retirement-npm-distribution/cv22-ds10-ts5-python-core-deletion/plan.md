@@ -646,6 +646,32 @@ scan — the field without an index gets zero conditionals), and D-025
 security-engineer) at Plan, before approval, and at handoff. `ai-engineer`
 is not required: no model-in-the-loop behavior changes.
 
+### Taken at plateau 2 (Navigator, 2026-09-24)
+
+Plateau 2 stopped at the first stop condition before writing D2's answers;
+the findings are [F5–F9 in the inventory](inventory.md#4-plateau-2-findings-2026-09-24).
+Four decisions, each as recommended:
+
+- **F5 — fixed here.** Valid flag-first invocations are rewritten to the
+  subcommand-first shape once, before routing (`frontDoor/argvShape.ts`),
+  and proven pairwise against the oracle while it exists. This also fixes
+  the two silent-write defects in the same class (`tasks <options> add|done|…`,
+  `journey <options> update`).
+- **D2 stays uniform, amended by F6.** Every family answers an unknown or
+  missing subcommand in argparse's shape — usage and one `error:` line on
+  stderr, exit 2, the shape `runtime` already has since US2 — with the
+  family's own name as the program. Seven families change exit code or
+  stream in that error path, recorded as deliberate. Added: `-h`/`--help`
+  after a family answers the family's usage on stdout, exit 0 — argparse's
+  help shape — so help does not become an error when Python leaves.
+- **F7 — the `Python:` line leaves `runtime status`.** The renderer changes
+  on both engines in one commit, so the golden regenerates and the
+  determinism gate stays meaningful until plateau 3; the oracle-drift
+  baseline is re-taken for the changed file.
+- **F9 — `mcp` routes to the TypeScript server.** A front-door entry to the
+  server DS9 already ported, not a port; the acceptance block's "any of the
+  32 top-level commands" holds as written.
+
 ## Review
 
 **Plan review held 2026-09-23**, before implementation, per the

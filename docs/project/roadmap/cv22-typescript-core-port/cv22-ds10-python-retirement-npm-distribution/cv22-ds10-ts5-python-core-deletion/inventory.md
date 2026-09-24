@@ -213,16 +213,46 @@ exit code:
 | `descriptor --mirror-home H list` | identical |
 | `week --mirror-home H view` / `week --mirror-home H` | identical |
 | `inspect --mirror-home H persona <id>` / `extension <id>` | identical |
-| `list --verbose` | **Python crashes** (traceback, exit 1); TypeScript answers the listing, exit 0 |
+*(The first draft of this table had a `list --verbose` row reading "Python
+crashes". It did — because the probe's shell carried a `MIRROR_USER` that
+conflicted with the probe's `MIRROR_HOME`. In a hermetic environment the two
+engines answer identically. Corrected here rather than silently removed: the
+probe was wrong, not the engine.)*
 
-One shape is worse, because routing already sends it to TypeScript:
-**`tasks --mirror-home H add "x"` creates the task in Python, while
-TypeScript routes it to the list read — prints the task list, exits 0, and
-writes nothing.** The leading-flag rule (`argv[1]` starts with `--` → list)
-was written for `tasks --journey x`, and it swallows every subcommand that
-follows a flag. That is the CR055 shape — a write silently answered as a
-listing — live since DS7.US2. No shipped skill uses the flag-first form
-(`mm-tasks` puts the subcommand first), which is why nothing noticed.
+Two families already on TypeScript are worse, because routing sends the
+flag-first form to the **wrong TypeScript route**:
+
+- **`tasks --mirror-home H add "x"` creates the task in Python, while
+  TypeScript prints the task list, exits 0, and writes nothing** — and the
+  same for `done`, `doing`, `block`, and `delete`. The leading-flag rule
+  (`argv[1]` starts with `--` → list) was written for `tasks --journey x`,
+  and it swallows every subcommand that follows a flag.
+- **`journey --mirror-home H update <slug> <content>` updates the journey in
+  Python and renders a status read in TypeScript.**
+
+That is the CR055 shape — a write silently answered as a read — live since
+DS7.US1/US2. No shipped skill uses the flag-first form, which is why nothing
+noticed.
+
+**Disposition (Navigator, 2026-09-24): fixed here, while the oracle can still
+grade the fix.** `frontDoor/argvShape.ts` rewrites a family's leading options
+to after its subcommand once, before routing, so the router and every handler
+read one shape; options alone mean the oracle's default subcommand. Only
+options each oracle parser declares before its subcommand move — families
+whose oracle rejects a leading option keep their own answer. Proven pairwise
+against Python: [test-guide — flag-first pairwise](test-guide.md#plateau-2--flag-first-pairwise-pre-deletion).
+
+Two oracle quirks are deliberately not reproduced: argparse lets the `tasks`
+subparser's defaults overwrite the parent's `--journey`/`--status`, so
+`tasks --journey x add "t"` creates a task with **no** journey and
+`tasks --status done list` lists **open** tasks. TypeScript keeps the value
+the user typed — the stance `runTasksRead` already documented for `list`.
+
+Not the same class, and captured separately rather than widened into this
+fix: `conversations --mirror-home H append …` is **rejected** by Python
+(exit 2), while TypeScript renders the listing, exits 0, and discards the
+payload on stdin — the TypeScript listing is lenient where the oracle is
+strict.
 
 ### F6 — D2's "confirmed" covered the argparse families only
 
