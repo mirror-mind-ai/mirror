@@ -6,7 +6,8 @@
       "test/**/*.ts",
       "evals/**/*.ts",
       "scripts/**/*.ts",
-      "parity/**/*.ts"
+      "parity/**/*.ts",
+      "smoke/**/*.ts"
     ]
   },
   "formatter": {

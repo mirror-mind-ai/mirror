@@ -85,7 +85,18 @@ cp -R "$ROOT_DIR/ts/node_modules" "$WORK/clone/ts/node_modules"
 HOME_DIR="$WORK/home"
 mkdir -p "$HOME_DIR"
 say "Generating the demo database"
-(cd "$ROOT_DIR" && uv run python ts/parity/generate_demo_memory_db.py --out "$HOME_DIR/memory.db" >/dev/null)
+(cd "$ROOT_DIR" && node --no-warnings ts/smoke/generate_demo_memory_db.ts --out "$HOME_DIR/memory.db" >/dev/null)
+# The generator writes a CURRENT database. The Python generator it replaced
+# (CV22.DS10.TS5) stopped at the last migration Python knew, so the update's
+# migrate stage always had one real migration to apply -- the coverage the
+# header promises. Keep it by regressing the one TypeScript-era migration to
+# the shape a Python-written database really had: no column, no index, no
+# ledger row. The SCHEMA regresses, not only the ledger, so the migration's
+# re-run is real work rather than an `IF NOT EXISTS` no-op.
+"$REAL_SQLITE" "$HOME_DIR/memory.db" \
+  "DROP INDEX idx_identity_parent_journey;
+   ALTER TABLE identity DROP COLUMN parent_journey;
+   DELETE FROM _migrations WHERE id = '017_journey_parent_column';"
 
 CLI="ts/src/frontDoor/cli.ts"
 run_cli() {

@@ -503,6 +503,44 @@ run by HEAD's capture script against the same `pristine.db` and today's docs.
 **Byte-identical**, 253 lines each. The plateau-3 replay uses the same method
 for every family that reads repository documents.
 
+### Plateau 3 — the demo database, ported (slice G)
+
+**2026-09-24, before any deletion.** `ts/smoke/generate_demo_memory_db.ts`
+replaces the Python generator, pinned by `ts/test/smoke/demoMemoryDb.test.ts`
+(9 tests, row by row). The cross-engine proof below could only be run while
+Python existed, so it was run first:
+
+```bash
+uv run python ts/parity/generate_demo_memory_db.py --out tmp/ts5/demo-port/py.db
+cp tmp/ts5/demo-port/py.db tmp/ts5/demo-port/pyhome/memory.db     # after a WAL checkpoint
+MIRROR_HOME=$PWD/tmp/ts5/demo-port/pyhome node ts/src/frontDoor/cli.ts runtime migrate
+node ts/smoke/generate_demo_memory_db.ts --out tmp/ts5/demo-port/ts.db
+# then: PRAGMA table_info per table, sqlite_master indexes/triggers, a count
+# per table, and every row of memories, memory_access_log, identity, tasks,
+# consolidations, _migrations -- identity ids and write clocks masked
+```
+
+| Check | Result |
+|---|---|
+| Python database, migrated by TypeScript | `applied 1 migration(s)` — `017_journey_parent_column`, 16 → 17 |
+| Structural schema (columns, indexes, triggers) | **identical** |
+| Row count, every table, FTS shadow tables included | **identical**, 28 tables |
+| Rows, ids and clocks masked | **identical**, 68 lines |
+| `PRAGMA integrity_check` | `ok` on both |
+
+The comparison is against the Python database **after** TypeScript's first
+open, because that is the only state any consumer ever saw: the Python
+generator stopped at the last migration Python knew. The TypeScript generator
+is born current, and writes the `parent_journey` projection the backfill would
+have written.
+
+That difference had one consumer that cared. `smoke_runtime_update.sh`
+promises "a real migration applying in a fresh process", which was true only
+because the Python database was one migration behind. The smoke now regresses
+`017` to the shape a Python-written database really had — index, column, and
+ledger row, the schema and not only the ledger — and still observes it
+applied: **34/34, ledger 16 → 17**, with `python`/`python3`/`uv` shadowed.
+
 ### Plateau 3 replay
 
 Pending — the `diff` of `capture-plateau0.tsv` against `capture-plateau3.tsv`.

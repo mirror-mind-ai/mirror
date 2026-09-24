@@ -42,6 +42,7 @@
     "#runtime/*": "./src/runtime/*",
     "#search/*": "./src/search/*",
     "#seed/*": "./src/seed/*",
+    "#smoke/*": "./smoke/*",
     "#soul/*": "./src/soul/*",
     "#tasks/*": "./src/tasks/*",
     "#util/*": "./src/util/*",
