@@ -1,4 +1,6 @@
 # Replace <id> with the extension id (lowercase, dash-separated).
+# Replace <id_underscored> with the same id, dashes as underscores: it names
+# SQL tables, where a dash is not allowed (my-widget -> my_widget).
 # Replace <Human Name> with a short display name.
 # Replace <one-line summary> with a single-sentence description.
 
@@ -7,11 +9,7 @@ name: <Human Name>
 category: extension
 kind: command-skill
 summary: <one-line summary>
-table_prefix: ext_<id>_
-
-entrypoint:
-  module: extension          # filename without .py
-  # function: register       # default; omit unless renamed
+table_prefix: ext_<id_underscored>_
 
 runtimes:
   pi:
@@ -32,12 +30,9 @@ mirror_context_providers:
       protocol: mirror-context-v1
       command: [node, context-provider.mjs]
 
-# Optional: declared CLI subcommands. `name` and `summary` are informational
-# while extension.py registers the handler via api.register_cli. Adding
-# `runtime` makes the core execute the command directly, in any language, and
-# is what frees the subcommand from the Python compatibility host before
-# CV22.DS10 removes it. Migrate one subcommand at a time: the fallback is per
-# subcommand, not per extension.
+# Declared CLI subcommands. The core executes each subcommand's `runtime`
+# directly, in any language; a subcommand declared without one refuses with a
+# message naming the fix. Start from commands/subcommand.mjs.template.
 cli:
   subcommands:
     - name: <subcommand>

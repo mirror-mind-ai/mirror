@@ -51,6 +51,9 @@ Hand edits after the freeze:
 | Golden | Commit | Change | Why |
 |---|---|---|---|
 | `task-import-sync.golden.json` | `50dc3437` | the missing-file scenario's `error_message` records `<tmpdir>` instead of the oracle's own `mkdtemp` path | The path was random, so the file could not regenerate to its own bytes, and the test never compared the field. With a placeholder it is graded again (TS5 inventory, F4) |
+| `runtime-status.golden.json` | D10 | `manifest_missing_entrypoint`: the command-skill is now healthy, reported under its manifest id `demo` | A command-skill no longer has to declare an entrypoint (D10). The new expectation is derived from `ext_no_migrations`, the scenario that already renders a healthy extension, not read back from TypeScript |
+| `ts/test/fixtures/ext-catalog-writes.golden.json` | D10 | the inert `extension.py` bodies leave every recorded tree; `noisy/src/helper.py` becomes `helper.mjs`; three `skill.yaml` digests change | The fixtures dropped their entrypoints and their Python (F.5). A text edit was checked equal to the same transformation applied to the parsed corpus |
+| `ts/test/fixtures/extension-catalog.golden.json` | D10 | `ext-beta` renders no entrypoint block, and its summary no longer claims one | Same fixture change. The entrypoint rendering keeps its coverage in `catalog.test.ts`, from an extension built at test time |
 
 ## Why that one went unseen
 

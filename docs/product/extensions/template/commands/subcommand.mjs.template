@@ -1,0 +1,25 @@
+// mirror-cli-v1 command for <id>/<subcommand>.
+//
+// Declared in skill.yaml under `cli.subcommands[].runtime`. The core spawns
+// exactly the declared argv -- never through a shell -- with the user's
+// arguments appended. Context arrives in the environment, never on stdin,
+// because stdin belongs to the user:
+//
+//   MIRROR_EXTENSION_ID    this extension's id
+//   MIRROR_EXTENSION_ROOT  the installed extension directory
+//   MIRROR_DATABASE_PATH   the user's memory.db
+//   MIRROR_HOME            the user's mirror home
+//
+// stdout and stderr reach the user as written, and the exit code is the
+// command's. Read and write only your own `ext_<id_underscored>_*` tables.
+import { DatabaseSync } from "node:sqlite";
+
+const args = process.argv.slice(2);
+const db = new DatabaseSync(process.env.MIRROR_DATABASE_PATH);
+try {
+  // Replace with the subcommand's work.
+  const row = db.prepare("SELECT COUNT(*) AS n FROM ext_<id_underscored>_items").get();
+  process.stdout.write(`<subcommand>: ${row.n} item(s); args: ${args.join(" ")}\n`);
+} finally {
+  db.close();
+}

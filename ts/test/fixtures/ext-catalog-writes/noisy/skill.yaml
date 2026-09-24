@@ -5,10 +5,6 @@ summary: Fixture whose source tree carries everything install must refuse to cop
 kind: command-skill
 table_prefix: ext_noisy_
 
-entrypoint:
-  module: extension
-  function: register
-
 runtimes:
   pi:
     command_name: ext-noisy

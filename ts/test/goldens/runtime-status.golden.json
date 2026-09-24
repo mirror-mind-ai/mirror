@@ -967,7 +967,7 @@
       "status": "attention needed"
     },
     "manifest_missing_entrypoint": {
-      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-manifest-missing-entrypoint\nDatabase: <root>/home-manifest-missing-entrypoint/memory.db\nDatabase exists: yes\nCore migrations: current (16/16)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: command-skill requires entrypoint.module (a Python module name under the extension directory) in <root>/home-manifest-missing-entrypoint/extensions/demo-widget/skill.yaml\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
+      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-manifest-missing-entrypoint\nDatabase: <root>/home-manifest-missing-entrypoint/memory.db\nDatabase exists: yes\nCore migrations: current (16/16)\nInstalled extensions: 1 (demo-widget)\nExtension health: ready (1 checked)\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: ready\n",
       "report": {
         "clone_role": {
           "note": null,
@@ -987,10 +987,10 @@
         "extension_health": [
           {
             "drifted_migrations": [],
-            "extension_id": "demo-widget",
-            "note": "command-skill requires entrypoint.module (a Python module name under the extension directory) in <root>/home-manifest-missing-entrypoint/extensions/demo-widget/skill.yaml",
+            "extension_id": "demo",
+            "note": null,
             "pending_migrations": [],
-            "ready": false,
+            "ready": true,
             "unknown_migrations": []
           }
         ],
@@ -1015,7 +1015,7 @@
         },
         "version": "9.9.9"
       },
-      "status": "attention needed"
+      "status": "ready"
     },
     "manifest_missing_field": {
       "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-manifest-missing-field\nDatabase: <root>/home-manifest-missing-field/memory.db\nDatabase exists: yes\nCore migrations: current (16/16)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: missing required field 'summary' in <root>/home-manifest-missing-field/extensions/demo-widget/skill.yaml\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",

@@ -10,7 +10,7 @@
 // plateau 7 wires the front door.
 
 import assert from "node:assert/strict";
-import { cpSync, mkdtempSync, rmSync } from "node:fs";
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -170,6 +170,36 @@ test("a write verb that passes its refusals fails loudly instead of printing not
     assert.match(
       rendered.stdout,
       /=== subcommands of extension\/ext-beta ===\n {2}\(none declared\)/,
+    );
+  });
+});
+
+test("`inspect extension` renders an entrypoint an extension declares, in the author's order", () => {
+  // Since CV22.DS10.TS5 (D10) no committed fixture declares an entrypoint: an
+  // entrypoint is optional, and the repository holds no Python for one to name.
+  // The rendering still has to be right for the extensions that DO declare one,
+  // so the file is written here, into the disposable copy, rather than kept in
+  // the fixture tree. The keys print as authored, then the resolved path last.
+  withHome((home) => {
+    const extension = join(home, "extensions", "ext-beta");
+    const manifest = join(extension, "skill.yaml");
+    writeFileSync(
+      manifest,
+      readFileSync(manifest, "utf8").replace(
+        "summary: A command skill with one runtime.\n",
+        "summary: A command skill with one runtime.\nentrypoint:\n  module: extension\n  function: register\n",
+      ),
+    );
+    writeFileSync(join(extension, "extension.py"), "def register(api):\n    pass\n");
+    const rendered = invoke(home, ["inspect", "extension", "ext-beta"]);
+    assert.equal(rendered.exitCode, 0, rendered.stderr);
+    assert.match(
+      rendered.stdout,
+      new RegExp(
+        "\\nentrypoint:\\n  module: extension\\n  function: register\\n" +
+          `  module_path: ${join(extension, "extension.py").replaceAll("/", "\\/")}\\n` +
+          "runtimes:\\n",
+      ),
     );
   });
 });

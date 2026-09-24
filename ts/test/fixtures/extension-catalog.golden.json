@@ -183,7 +183,7 @@
         "ext",
         "list"
       ],
-      "stdout": "Extensions root: <HOME>/extensions\n=== COMMAND-SKILL EXTENSIONS ===\n  ext-beta: A command skill with an entrypoint module and one runtime.\n\n=== INVALID EXTENSIONS ===\n  ext-broken: missing required field 'summary' in <HOME>/extensions/ext-broken/skill.yaml\n",
+      "stdout": "Extensions root: <HOME>/extensions\n=== COMMAND-SKILL EXTENSIONS ===\n  ext-beta: A command skill with one runtime.\n\n=== INVALID EXTENSIONS ===\n  ext-broken: missing required field 'summary' in <HOME>/extensions/ext-broken/skill.yaml\n",
       "stderr": "",
       "exit_code": 0
     },
@@ -268,7 +268,7 @@
         "extension",
         "ext-beta"
       ],
-      "stdout": "=== extension/ext-beta ===\nname: Beta Command Skill\ncategory: extension\nkind: command-skill\nsummary: A command skill with an entrypoint module and one runtime.\nroot: <HOME>/extensions/ext-beta\nmanifest_path: <HOME>/extensions/ext-beta/skill.yaml\nentrypoint:\n  module: extension\n  module_path: <HOME>/extensions/ext-beta/extension.py\nruntimes:\n  pi:\n    command_name: ext-beta\n    skill_file: skills/pi/SKILL.md\n    skill_path: <HOME>/extensions/ext-beta/skills/pi/SKILL.md\n",
+      "stdout": "=== extension/ext-beta ===\nname: Beta Command Skill\ncategory: extension\nkind: command-skill\nsummary: A command skill with one runtime.\nroot: <HOME>/extensions/ext-beta\nmanifest_path: <HOME>/extensions/ext-beta/skill.yaml\nruntimes:\n  pi:\n    command_name: ext-beta\n    skill_file: skills/pi/SKILL.md\n    skill_path: <HOME>/extensions/ext-beta/skills/pi/SKILL.md\n",
       "stderr": "",
       "exit_code": 0
     },

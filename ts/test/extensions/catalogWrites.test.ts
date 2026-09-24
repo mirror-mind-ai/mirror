@@ -372,7 +372,7 @@ test("the corpus grades the facts a reading of the code would not give", () => {
     noisy.filter((path) => /\.git|node_modules|DS_Store|stray/.test(path)),
     [],
   );
-  assert.ok(noisy.includes("extensions/noisy/src/helper.py"));
+  assert.ok(noisy.includes("extensions/noisy/src/helper.mjs"));
 
   // D4: a full uninstall removes the code and the bindings, and KEEPS the data.
   const uninstalled = at("uninstall_removes_the_source_and_bindings");

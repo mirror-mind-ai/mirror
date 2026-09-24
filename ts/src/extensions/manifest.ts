@@ -199,6 +199,38 @@ function validateContextProviders(
 }
 
 /**
+ * Validate an entrypoint the extension DECLARED, as the oracle did, and return
+ * the module path it resolves to. The `.py` suffix is the declared contract of
+ * an entrypoint -- an extension may be Python -- not a demand on extensions
+ * that declare none.
+ */
+function declaredModulePath(
+  entrypoint: unknown,
+  extensionDir: string,
+  manifestPath: string,
+): string {
+  if (!isMapping(entrypoint) || !pyTruthy(entrypoint.module)) {
+    throw new ExtensionValidationError(
+      "a declared entrypoint requires entrypoint.module (a Python module " +
+        `name under the extension directory) in ${manifestPath}`,
+    );
+  }
+  const moduleName = entrypoint.module;
+  if (typeof moduleName !== "string" || moduleName.length === 0) {
+    throw new ExtensionValidationError(
+      `entrypoint.module must be a non-empty string in ${manifestPath}`,
+    );
+  }
+  const modulePath = join(extensionDir, `${moduleName}.py`);
+  if (!existsSync(modulePath)) {
+    throw new ExtensionValidationError(
+      `entrypoint.module '${moduleName}' not found at ${modulePath}`,
+    );
+  }
+  return modulePath;
+}
+
+/**
  * Port of `load_extension_manifest`. Check order is load-bearing: the oracle
  * reports the FIRST failure, so reordering would change the health note text
  * for a manifest that breaks two rules at once.
@@ -246,26 +278,17 @@ export function loadExtensionManifest(extensionDir: string): ExtensionManifest {
   const validatedRuntimes: Record<string, ExtensionRuntimeEntry> = {};
 
   if (kind === "command-skill") {
-    const entrypoint = data.entrypoint;
-    if (!isMapping(entrypoint) || !pyTruthy(entrypoint.module)) {
-      throw new ExtensionValidationError(
-        "command-skill requires entrypoint.module (a Python module " +
-          `name under the extension directory) in ${manifestPath}`,
-      );
+    // Optional since CV22.DS10.TS5 (D10). The core has imported no entrypoint
+    // since CV22.DS10.TS2 -- every capability declares its own runtime -- so
+    // the rule demanded a Python file from every command-skill and read
+    // nothing from it. An entrypoint an extension DOES declare is validated
+    // exactly as before, so every installed extension validates as it did.
+    if (data.entrypoint !== undefined && data.entrypoint !== null) {
+      entrypointPairs.push([
+        "module_path",
+        declaredModulePath(data.entrypoint, extensionDir, manifestPath),
+      ]);
     }
-    const moduleName = entrypoint.module;
-    if (typeof moduleName !== "string" || moduleName.length === 0) {
-      throw new ExtensionValidationError(
-        `entrypoint.module must be a non-empty string in ${manifestPath}`,
-      );
-    }
-    const modulePath = join(extensionDir, `${moduleName}.py`);
-    if (!existsSync(modulePath)) {
-      throw new ExtensionValidationError(
-        `entrypoint.module '${moduleName}' not found at ${modulePath}`,
-      );
-    }
-    entrypointPairs.push(["module_path", modulePath]);
 
     const expectedPrefix = tablePrefixFor(skillId);
     const declaredPrefix = data.table_prefix;

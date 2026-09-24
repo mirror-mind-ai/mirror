@@ -19,7 +19,9 @@ Then rename or edit:
 
 - `skill.yaml.template` → `skill.yaml`
 - `SKILL.md.template` → `SKILL.md`
-- `extension.py.template` → `extension.py`
+- `commands/subcommand.mjs.template` → `commands/<subcommand>.mjs`, one per
+  subcommand
+- `context-provider.mjs.template` → the path your `provider_runtime` names
 - `migrations/001_init.sql.template` → `migrations/001_init.sql`
 
 Replace `<id>` everywhere with your extension's id (lowercase, dash-separated,
@@ -31,7 +33,8 @@ matches the folder name and `skill.yaml:id`).
 |---|---|
 | `skill.yaml` | Manifest. See [`../api-reference.md`](../api-reference.md). |
 | `SKILL.md` | Prompt for the agent. One per runtime if they diverge. |
-| `extension.py` | Entrypoint with `register(api)`. |
+| `commands/<subcommand>.mjs` | One `mirror-cli-v1` command per subcommand, declared on `cli.subcommands[].runtime`. |
+| `context-provider.mjs` | A `mirror-context-v1` provider, declared on `mirror_context_providers[].provider_runtime`. Delete it if the extension provides no context. |
 | `migrations/001_init.sql` | Initial schema. |
 | `README.md` | Top-level entry point. What does this extension do? Top commands. |
 | `docs/product/architecture.md` | Internal design and decisions. |
@@ -43,7 +46,7 @@ matches the folder name and `skill.yaml:id`).
 | `docs/persona-recipes.md` | Delete if not paired with specific personas. |
 | `docs/user-stories/` | One file per story, `US-NN-<slug>.md`. |
 | `docs/CHANGELOG.md` | Versioned change log. |
-| `tests/` | Pytest tests using `memory.extensions.testing.api_for_test`. |
+| `tests/` | Tests in whatever the commands are written in. Each command is an ordinary program: run it with the four `MIRROR_*` variables its template documents, against a scratch database. |
 
 ## What this template does not include
 

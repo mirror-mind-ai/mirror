@@ -66,8 +66,9 @@ context providers — and the TS core spawns that command and nothing else. Both
 are language-neutral: an extension may own any executable runtime, Python included.
 
 An extension with existing `register(api)` handlers keeps them by shipping its own shim
-that provides the `api` object and dispatches the subcommand; the reference implementation
-is `docs/product/extensions/template/cli.py.template`. In that arrangement `register` is
+that provides the `api` object and dispatches the subcommand. The reference implementation,
+[`cli.py.template`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/docs/product/extensions/template/cli.py.template), left the template with the Python core (CV22.DS10.TS5,
+decision D7) and stays readable at the recovery tag. In that arrangement `register` is
 called by the extension's own shim, not by Mirror.
 
 ### 3. Schema layer — `migrations/*.sql`

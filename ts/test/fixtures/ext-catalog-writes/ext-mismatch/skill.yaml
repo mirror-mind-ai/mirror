@@ -9,10 +9,6 @@ summary: Fixture where the directory name and the manifest id disagree
 kind: command-skill
 table_prefix: ext_mismatch_
 
-entrypoint:
-  module: extension
-  function: register
-
 runtimes:
   pi:
     command_name: ext-mismatch

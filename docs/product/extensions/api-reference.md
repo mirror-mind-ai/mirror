@@ -21,9 +21,9 @@ category: extension
 kind: command-skill         # or prompt-skill (see authoring-guide.md)
 summary: <one-line summary>
 
-# Required for command-skill
+# For command-skill
 table_prefix: ext_<id>_     # must equal "ext_" + id + "_"; enforced at install
-entrypoint:
+entrypoint:                 # OPTIONAL since CV22.DS10.TS5; checked only if declared
   module: extension         # filename without .py
   function: register        # default; can be omitted
 
@@ -63,8 +63,10 @@ cli:
 - `id` matches `^[a-z][a-z0-9-]*$`.
 - `table_prefix` equals `f"ext_{id.replace('-', '_')}_"`.
 - `kind` is one of `prompt-skill`, `command-skill`.
-- For `command-skill`: `entrypoint.module` must resolve to a `.py` file
-  inside the extension folder.
+- For `command-skill`: `entrypoint` is optional. When declared,
+  `entrypoint.module` must resolve to a `.py` file inside the extension folder
+  (CV22.DS10.TS5, decision D10: the core has imported no entrypoint since
+  CV22.DS10.TS2, so it no longer demands one).
 - Each `runtimes.<name>.command_name` follows the runtime's convention
   (`ext:<...>` for Claude, `ext-<...>` for Pi).
 - Each `mirror_context_providers[].id` is unique within the extension.
@@ -362,9 +364,11 @@ protocols**, which carry their own names and their own compatibility story:
 Both are language-neutral: an extension may own any executable runtime,
 **Python included**. What ended is the core owning Python as every extension's
 permanent compatibility layer. See the
-[cutoff](../../releases/pending-cutoffs.md) for the migration path, and
-`docs/product/extensions/template/cli.py.template` for a reference shim that
-keeps existing `register(api)` handlers working unchanged.
+[cutoff](../../releases/pending-cutoffs.md) for the migration path. The reference
+shim that kept existing `register(api)` handlers working,
+[`cli.py.template`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/docs/product/extensions/template/cli.py.template), left the template with the Python core
+(CV22.DS10.TS5, decision D7); extensions that copied it keep their copy, and it
+stays readable at the recovery tag.
 
 The `VERSION` constant survives only until CV22.DS10.TS5 deletes the Python
 core with it. Backward-incompatible changes to the *runtime protocols*

@@ -9,10 +9,6 @@ summary: Café notes — a deterministic fixture
 kind: command-skill
 table_prefix: ext_notes_
 
-entrypoint:
-  module: extension
-  function: register
-
 runtimes:
   pi:
     command_name: ext-notes
