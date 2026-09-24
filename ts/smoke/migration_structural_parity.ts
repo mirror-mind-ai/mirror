@@ -12,7 +12,7 @@
 // findability). Ends in one MIGRATION PARITY: PASS/FAIL line. No privacy
 // redaction needed — fixture content is purely synthetic, not user data.
 //
-// Usage: node ts/parity/migration_structural_parity.ts
+// Usage: node ts/smoke/migration_structural_parity.ts
 
 import { mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";

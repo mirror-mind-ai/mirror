@@ -7,7 +7,7 @@
  * counts only — it never prints the key, and never prints a matching row.
  *
  * Usage:
- *   node --env-file=.env ts/parity/key_hygiene.ts <db> [<db> ...]
+ *   node --env-file=.env ts/smoke/key_hygiene.ts <db> [<db> ...]
  */
 
 import { existsSync, readFileSync } from "node:fs";
@@ -22,7 +22,7 @@ if (!key) {
 
 const databases = process.argv.slice(2).filter((arg) => !arg.startsWith("--"));
 if (databases.length === 0) {
-  console.log("usage: node --env-file=.env ts/parity/key_hygiene.ts <db> [<db> ...]");
+  console.log("usage: node --env-file=.env ts/smoke/key_hygiene.ts <db> [<db> ...]");
   process.exit(1);
 }
 

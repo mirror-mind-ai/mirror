@@ -13,8 +13,8 @@
  * counts (CV22.DS8.US2 plan review, ai-engineer).
  *
  * Usage (the key lives in .env; this script reads the environment only):
- *   node --env-file=.env ts/parity/live_chat_smoke.ts --db tmp/parity/real-copy.db
- *   node --env-file=.env ts/parity/live_chat_smoke.ts --db tmp/parity/real-copy.db \
+ *   node --env-file=.env ts/smoke/live_chat_smoke.ts --db tmp/parity/real-copy.db
+ *   node --env-file=.env ts/smoke/live_chat_smoke.ts --db tmp/parity/real-copy.db \
  *     --session-end <conversation-id>
  *
  * Without `--session-end` it makes ONE cheap title-shaped call and lists
@@ -59,7 +59,7 @@ async function main(argv: readonly string[]): Promise<void> {
   if (!process.env.OPENROUTER_API_KEY?.trim()) {
     fail(
       "OPENROUTER_API_KEY is not set; this smoke exercises the LIVE path. " +
-        "If your key is in .env, re-run with: node --env-file=.env ts/parity/live_chat_smoke.ts ...",
+        "If your key is in .env, re-run with: node --env-file=.env ts/smoke/live_chat_smoke.ts ...",
     );
   }
   const dbPath = optionValue(argv, "--db");

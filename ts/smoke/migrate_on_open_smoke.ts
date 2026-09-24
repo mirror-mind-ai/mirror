@@ -12,8 +12,8 @@
 // work dir on a passing run (pass --keep to retain).
 //
 // Run:
-//   uv run python ts/parity/generate_demo_memory_db.py --out tmp/parity/demo-memory.db
-//   node ts/parity/migrate_on_open_smoke.ts --source-db tmp/parity/demo-memory.db
+//   node ts/smoke/generate_demo_memory_db.ts --out tmp/parity/demo-memory.db
+//   node ts/smoke/migrate_on_open_smoke.ts --source-db tmp/parity/demo-memory.db
 
 import { spawnSync } from "node:child_process";
 import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";

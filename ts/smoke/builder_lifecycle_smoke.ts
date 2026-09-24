@@ -1,48 +1,38 @@
-// CV22.DS7.US8 — the Ariad lifecycle smoke through the production front door.
+// The Ariad lifecycle smoke through the production front door (CV22.DS7.US8;
+// single-engine since CV22.DS10.TS5).
 //
-// Everything before this graded a STEP: a surface, a cursor transition, a written
-// artifact, an exit code. This runs a whole lifecycle — adopt through done — on
-// both engines and compares what each left behind after every step, which is the
-// only way to see a composition defect: a port can be right at each step and wrong
-// about the state it hands the next one.
+// Everything below the smoke grades a STEP: a surface, a cursor transition, a
+// written artifact, an exit code. This runs whole lifecycles -- adopt through
+// done, a Delivery Story closed at aggregate level, and the cadence and authority
+// paths -- through the real front-door process, because a port can be right at
+// each step and wrong about the state it hands the next one.
 //
-// Run from the repo root:  node --no-warnings ts/parity/builder_lifecycle_smoke.ts
+// Run from the repo root:  node --no-warnings ts/smoke/builder_lifecycle_smoke.ts
 //
-// ## Two worlds, never one
+// ## What it proves
 //
-// Each engine gets its own disposable home, its own database, and its own copy of
-// the scratch project. That is not tidiness: at plateau 3 a shared tree made the
-// second engine report `existing` where the first reported `created`, so a shared
-// world would grade the SEQUENCE of two engines instead of each engine's behavior.
+// Routing, lazy Builder import, production argv validation, the database and
+// backup seam, stream writes, and exit status are all in the path: every step is a
+// fresh `cli.ts build ...` process against a disposable home and a disposable copy
+// of the fixture project. After each sequence it asserts that
 //
-// The two roots are deliberately the SAME LENGTH (`.../py/...` and `.../ts/...`).
-// `cardPrefixed` wraps at a fixed code-point count, so the root's length decides
-// where a wrapped path splits — two roots of different lengths would produce
-// different row counts and a diff that is an artifact of the harness.
+//   * every step exited as the sequence expects -- the refusals included, since a
+//     refusal inside a sequence is behavior, not a gap;
+//   * an authored edit changed the authored status and published nothing;
+//   * the sequence REACHED its end, read from the cursor row itself, so the checks
+//     above cannot be satisfied by a lifecycle that refused its way through;
+//   * no Journey projection was published anywhere (the subsystem was retired by
+//     CV22.DS10.TS1, and a full lifecycle must write nothing under `.mirror/`);
+//   * nothing was written into THIS repository's docs tree.
 //
-// ## What the route proves
+// ## What it no longer proves
 //
-// Since plateau 8, the TypeScript side runs through the real front-door process:
-// routing, lazy Builder import, production argv validation, database/backup seam,
-// stream writes, exit status, and projection delegation are all in the path.
-// Since the plateau-9 flip (2026-09-16) the child process carries NO gate: the
-// smoke proves the shipped default, and `MIRROR_TS_BUILD=0` is a revert it does
-// not exercise (the route tests and the broken-core drill do).
-//
-// The parent environment assertion prevents a developer shell from choosing the
-// result accidentally, and both sides strip every MIRROR_TS_* variable.
-//
-// ## What is graded after EVERY step
-//
-//   * stdout, stderr, exit code (paths normalized per world, see `normalize`);
-//   * the Builder runtime rows — cursor and method adoption — as whole rows, with
-//     `metadata` compared BYTE FOR BYTE. The write probe canonicalizes that cell;
-//     this does not, because compare-and-swap matches on that exact string and the
-//     `MIRROR_TS_BUILD=0` revert is only sound if the bytes agree (D2);
-//   * every authored project file and its content;
-//   * the Journey projection seam: which documents were published, and how many
-//     receipts. US7 shipped a seam that silently stopped publishing, so the
-//     assertion is the published FILE, never a log line.
+// Until CV22.DS10.TS5 each step also ran on the Python engine in a twin world,
+// and stdout, stderr, the Builder runtime rows (`metadata` byte for byte), and
+// every authored file were compared after every step. That comparison left with
+// the oracle. Byte-level behavior per surface is graded by the frozen goldens
+// (`builder-lifecycle`, `builder-command`, `builder-cursor`, ...); this smoke keeps
+// the one thing they cannot see, which is the sequence.
 
 import { spawnSync } from "node:child_process";
 import {
@@ -63,11 +53,6 @@ import { bootstrapDatabaseIfMissing } from "../src/db/bootstrap.ts";
 import { openDatabaseCopyForWrite } from "../src/db/database.ts";
 import { createJourney } from "../src/journey/journeyWrite.ts";
 import { activateOperatingMode } from "../src/mode/operatingMode.ts";
-import {
-  absolutePathsIn,
-  normalizePathRows,
-  projectRelative,
-} from "../test/helpers/builderSurfacePaths.ts";
 
 const TS_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const REPO_ROOT = resolve(TS_ROOT, "..");
@@ -75,47 +60,23 @@ const FIXTURE_PROJECT = join(TS_ROOT, "test", "fixtures", "builder-command", "pr
 const SESSION_ID = "builder-lifecycle-smoke";
 const JOURNEY = "demo";
 const CURSOR_SESSION = `__builder_delivery_cursor__:${JOURNEY}`;
-const ADOPTION_SESSION = `__builder_method_adoption__:${JOURNEY}`;
-const ROW_COLUMNS = [
-  "session_id",
-  "interface",
-  "journey",
-  "active",
-  "started_at",
-  "updated_at",
-  "closed_at",
-  "metadata",
-] as const;
-
-// --- the environment contract -------------------------------------------------
-
-if (process.env.MIRROR_TS_BUILD !== undefined) {
-  process.stderr.write(
-    "refusing to run: MIRROR_TS_BUILD is set. This smoke proves the SHIPPED default,\n" +
-      "so it must run with no Builder gate in the environment.\n",
-  );
-  process.exit(2);
-}
-
-// Both worlds' homes are named `home` on purpose, and `MIRROR_USER` is pinned to
-// that basename rather than deleted. `memory.config` re-applies the repository
-// `.env` at import with `setdefault`, so a DELETED `MIRROR_USER` comes back as the
-// developer's real user — and `resolve_mirror_home` REFUSES the pair when
-// `MIRROR_HOME`'s basename disagrees with `MIRROR_USER`. Measured: with it deleted,
-// every Python step exited 2 with "Mirror home is not configured" and the smoke was
-// comparing TypeScript against nothing.
 const HOME_BASENAME = "home";
 
-// The projection seam spawns Python and resolves its own database from the home it
-// is handed, so this process's own environment decides which database that is.
+// This process's own environment must not choose the database: the home is
+// passed explicitly to every step.
 process.env.MEMORY_ENV = "test";
 process.env.MIRROR_USER = HOME_BASENAME;
 delete process.env.DB_PATH;
 delete process.env.MIRROR_HOME;
 delete process.env.MIRROR_SESSION_ID;
 
-/** The Python side's environment: no Mirror TS gate can be inherited from a shell. */
-function pythonEnvironment(home: string): Record<string, string> {
+/**
+ * Each step's environment. `MIRROR_USER` is pinned to the home's basename rather
+ * than deleted: the home resolver refuses a `MIRROR_HOME` whose basename
+ * disagrees with `MIRROR_USER`, and a developer shell usually carries one. The
+ * empty key keeps the run provably offline -- `build` makes no model call.
+ */
+function frontDoorEnvironment(home: string): Record<string, string> {
   const environment: Record<string, string> = { ...(process.env as Record<string, string>) };
   for (const key of Object.keys(environment)) {
     if (key.startsWith("MIRROR_TS_")) delete environment[key];
@@ -123,12 +84,10 @@ function pythonEnvironment(home: string): Record<string, string> {
   environment.MEMORY_ENV = "test";
   environment.MIRROR_HOME = home;
   environment.MIRROR_USER = HOME_BASENAME;
+  environment.OPENROUTER_API_KEY = "";
+  environment.NODE_OPTIONS = "--no-warnings";
   delete environment.DB_PATH;
   delete environment.MIRROR_SESSION_ID;
-  // `build` makes no model call (US8's seam boundary), and `memory.config`
-  // re-applies a repository `.env` at import with `setdefault`, so a deleted key
-  // comes back. Empty rather than absent keeps the run provably offline.
-  environment.OPENROUTER_API_KEY = "";
   return environment;
 }
 
@@ -144,21 +103,9 @@ function check(condition: boolean, description: string, detail = ""): void {
   process.stderr.write(`FAIL  ${description}\n      ${detail.trim()}\n`);
 }
 
-function firstDifference(expected: string, actual: string): string {
-  const expectedLines = expected.split("\n");
-  const actualLines = actual.split("\n");
-  for (let index = 0; index < Math.max(expectedLines.length, actualLines.length); index += 1) {
-    if (expectedLines[index] !== actualLines[index]) {
-      return `line ${index + 1}:\n      python: ${JSON.stringify(expectedLines[index])}\n      ts:     ${JSON.stringify(actualLines[index])}`;
-    }
-  }
-  return "";
-}
-
-// --- the two worlds -----------------------------------------------------------
+// --- the world ----------------------------------------------------------------
 
 interface World {
-  readonly name: "py" | "ts";
   readonly home: string;
   readonly project: string;
   readonly dbPath: string;
@@ -168,20 +115,16 @@ mkdirSync(join(TS_ROOT, "tmp"), { recursive: true });
 const root = mkdtempSync(join(TS_ROOT, "tmp", "smoke-builder-"));
 
 /**
- * One pair of worlds per SEQUENCE, under a two-character directory so the two
- * project roots stay the same length. Sequences do not share worlds: the DS flow
- * drives the same cursor row through a different state machine, and a shared world
- * would make the second sequence grade the first one's leftovers.
+ * One world per SEQUENCE. Sequences do not share one: the DS flow drives the same
+ * cursor row through a different state machine, and a shared world would make the
+ * second sequence grade the first one's leftovers.
  */
-function createWorld(sequence: string, name: "py" | "ts"): World {
-  const home = join(root, sequence, name, HOME_BASENAME);
-  const project = join(root, sequence, name, "project");
+function createWorld(sequence: string): World {
+  const home = join(root, sequence, HOME_BASENAME);
+  const project = join(root, sequence, "project");
   mkdirSync(home, { recursive: true });
   cpSync(FIXTURE_PROJECT, project, { recursive: true });
   const dbPath = join(home, "memory_test.db");
-  // TypeScript owns the schema since DS6, so both engines start from a database
-  // TypeScript bootstrapped — which also means the Python side reads rows the port
-  // wrote, before it writes any of its own.
   bootstrapDatabaseIfMissing(dbPath);
   const db = openDatabaseCopyForWrite(dbPath);
   try {
@@ -203,88 +146,25 @@ function createWorld(sequence: string, name: "py" | "ts"): World {
   } finally {
     db.close();
   }
-  return { name, home, project, dbPath };
-}
-
-interface WorldPair {
-  readonly python: World;
-  readonly typescript: World;
-}
-
-function createWorldPair(sequence: string): WorldPair {
-  const pair = {
-    python: createWorld(sequence, "py"),
-    typescript: createWorld(sequence, "ts"),
-  };
-  check(
-    pair.python.project.length === pair.typescript.project.length,
-    `${sequence}: the two project roots are the same length`,
-    `py=${pair.python.project} ts=${pair.typescript.project}`,
-  );
-  return pair;
+  return { home, project, dbPath };
 }
 
 // --- observation --------------------------------------------------------------
 
-/**
- * Make one engine's output comparable with the other's.
- *
- * Wrapped path rows collapse to a token (their split points depend on the root),
- * and any untruncated absolute path inside this world is rewritten
- * project-relative. Same rule as the command corpus, applied per world rather than
- * per machine.
- */
-function normalize(text: string, world: World): string {
-  if (text === "") return text;
-  const absolute: string[] = [world.project, world.home, root];
-  const walk = (directory: string): void => {
-    for (const entry of readdirSync(directory, { withFileTypes: true, encoding: "utf8" })) {
-      const full = join(directory, entry.name);
-      absolute.push(full);
-      if (entry.isDirectory()) walk(full);
-    }
-  };
-  walk(world.project);
-  absolute.sort((a, b) => b.length - a.length);
-  let result = normalizePathRows(text, absolute);
-  for (const path of absolutePathsIn(result)) {
-    if (path.startsWith(world.project)) {
-      result = result.replaceAll(path, projectRelative(path, world.project));
-    } else if (path.startsWith(world.home)) {
-      result = result.replaceAll(path, `<HOME>/${projectRelative(path, world.home)}`);
-    }
-  }
-  return result.replaceAll(world.project, "<PROJECT>").replaceAll(world.home, "<HOME>");
-}
-
-/** The Builder runtime rows, whole, with only the clock normalized. */
-function runtimeRows(world: World): Record<string, Record<string, string>> {
+/** The cursor row's metadata, or null before the cursor exists. */
+function cursorMetadata(world: World): string | null {
   const db = new DatabaseSync(world.dbPath, { readOnly: true });
   try {
-    const rows: Record<string, Record<string, string>> = {};
-    for (const sessionId of [ADOPTION_SESSION, CURSOR_SESSION]) {
-      const row = db
-        .prepare(`SELECT ${ROW_COLUMNS.join(", ")} FROM runtime_sessions WHERE session_id = ?`)
-        .get(sessionId) as Record<string, unknown> | undefined;
-      if (row === undefined) continue;
-      const recorded: Record<string, string> = {};
-      for (const column of ROW_COLUMNS) {
-        const value = row[column];
-        // The timestamps are the one part two runs cannot share. Their PRESENCE is
-        // behavior (`started_at` proves the upsert preserved a pre-existing row),
-        // their value is a clock reading.
-        recorded[column] =
-          column.endsWith("_at") && value !== null ? "<WHEN>" : String(value ?? "<null>");
-      }
-      rows[sessionId] = recorded;
-    }
-    return rows;
+    const row = db
+      .prepare("SELECT metadata FROM runtime_sessions WHERE session_id = ?")
+      .get(CURSOR_SESSION) as { metadata: string | null } | undefined;
+    return row?.metadata ?? null;
   } finally {
     db.close();
   }
 }
 
-/** Authored project files. `.mirror/` is the publisher's tree, summarized apart. */
+/** Authored project files. `.mirror/` is the retired publisher's tree, counted apart. */
 function projectFiles(world: World): Record<string, string> {
   const files: Record<string, string> = {};
   const walk = (directory: string): void => {
@@ -300,15 +180,10 @@ function projectFiles(world: World): Record<string, string> {
     }
   };
   walk(world.project);
-  return Object.fromEntries(Object.entries(files).sort(([a], [b]) => (a < b ? -1 : 1)));
+  return files;
 }
 
-/**
- * The projection seam's observable result: what was published, and how many
- * receipts. Receipt NAMES are uuid4 and their digests are content stamps, so the
- * count is the part that is behavior — it says the refresh fired at the call sites
- * Python fires it at, which is exactly what a port loses silently.
- */
+/** Anything under `.mirror/projections/`: published documents and receipts. */
 function projections(world: World): { documents: string[]; receipts: number } {
   const publications = join(world.project, ".mirror", "projections");
   const documents: string[] = [];
@@ -339,59 +214,16 @@ function projections(world: World): { documents: string[]; receipts: number } {
   return { documents: documents.sort(), receipts };
 }
 
-interface Observation {
-  stdout: string;
-  stderr: string;
-  exitCode: number | null;
-  rows: Record<string, Record<string, string>>;
-  files: Record<string, string>;
-  projections: { documents: string[]; receipts: number };
-}
-
-// --- the two engines ----------------------------------------------------------
-
-function observe(
+function run(
   world: World,
-  outcome: { stdout: string; stderr: string; exitCode: number | null },
-): Observation {
-  return {
-    stdout: normalize(outcome.stdout, world),
-    stderr: normalize(outcome.stderr, world),
-    exitCode: outcome.exitCode,
-    rows: runtimeRows(world),
-    files: projectFiles(world),
-    projections: projections(world),
-  };
-}
-
-function runPython(world: World, argv: readonly string[]): Observation {
-  const result = spawnSync("uv", ["run", "python", "-m", "memory", "build", ...argv], {
-    cwd: REPO_ROOT,
-    encoding: "utf8",
-    env: pythonEnvironment(world.home),
-  });
-  return observe(world, {
-    stdout: result.stdout ?? "",
-    stderr: result.stderr ?? "",
-    exitCode: result.status,
-  });
-}
-
-function runTypeScript(world: World, argv: readonly string[]): Observation {
-  // Same stripped environment as Python's: no gate, so the shipped default is
-  // what runs.
-  const environment = pythonEnvironment(world.home);
-  environment.NODE_OPTIONS = "--no-warnings";
+  argv: readonly string[],
+): { stdout: string; stderr: string; exitCode: number | null } {
   const result = spawnSync(
     process.execPath,
     [join(TS_ROOT, "src", "frontDoor", "cli.ts"), "build", ...argv],
-    { cwd: REPO_ROOT, encoding: "utf8", env: environment },
+    { cwd: REPO_ROOT, encoding: "utf8", env: frontDoorEnvironment(world.home) },
   );
-  return observe(world, {
-    stdout: result.stdout ?? "",
-    stderr: result.stderr ?? "",
-    exitCode: result.status,
-  });
+  return { stdout: result.stdout ?? "", stderr: result.stderr ?? "", exitCode: result.status };
 }
 
 // --- the lifecycle ------------------------------------------------------------
@@ -403,18 +235,17 @@ const ARIAD = ["--journey", JOURNEY, "--method", "ariad"] as const;
  *
  * The edit exists because `done-delivery-story` refuses on the content of the
  * Navigator's roadmap: the Delivery Story package Ariad itself scaffolds says
- * `🟡 Planned`, so closing it requires a human to mark the work Done. Replaying
- * that as a `writeFileSync` between two invocations would hide the one thing worth
- * grading — that the same edit lands identically in both worlds — so it is a step
- * with the same comparison as any other, plus one of its own: an authored edit is
- * not a cursor write, so it must produce ZERO new projection receipts.
+ * `🟡 Planned`, so closing it requires a human to mark the work Done. It is a
+ * step rather than a hidden `writeFileSync` because it has checks of its own:
+ * the edit must actually change the authored status, and -- an authored edit
+ * not being a cursor write -- it must publish nothing.
  */
 type Step =
   | {
       readonly kind: "command";
       readonly label: string;
       readonly argv: readonly string[];
-      /** The expected status on BOTH engines: a refusal is behavior, not a gap. */
+      /** The expected exit status: a refusal is behavior, not a gap. */
       readonly exit: number;
     }
   | {
@@ -489,11 +320,11 @@ const STORY_STEPS: readonly Step[] = [
       "Run the smoke and read the report.",
       "--navigator-accepted",
       "--expected-observation",
-      "Both engines agree after every step.",
+      "Every step exits as the sequence expects.",
       "--pass-condition",
-      "No difference is reported.",
+      "No check fails.",
       "--fail-condition",
-      "Any difference is reported.",
+      "Any check fails.",
     ],
     0,
   ),
@@ -749,119 +580,60 @@ const CADENCE_STEPS: readonly Step[] = [
 ];
 
 function runSequence(name: string, steps: readonly Step[], seed?: (project: string) => void): void {
-  const { python, typescript } = createWorldPair(name);
-  for (const world of [python, typescript]) seed?.(world.project);
+  const world = createWorld(name);
+  seed?.(world.project);
 
   for (const step of steps) {
+    const where = `${name} / ${step.label}`;
     if (step.kind === "edit") {
-      const before = { python: projections(python), typescript: projections(typescript) };
-      for (const world of [python, typescript]) step.edit(world.project);
-      const expected = observe(python, { stdout: "", stderr: "", exitCode: 0 });
-      const actual = observe(typescript, { stdout: "", stderr: "", exitCode: 0 });
-      compareFiles(`${name} / ${step.label}`, expected, actual);
-      // An authored edit is not a cursor write, so nothing may be published by it.
+      const before = projections(world);
+      step.edit(world.project);
       check(
-        expected.projections.receipts === before.python.receipts &&
-          actual.projections.receipts === before.typescript.receipts,
-        `${name} / ${step.label}: the edit published nothing`,
-        `python ${before.python.receipts}→${expected.projections.receipts}, ` +
-          `ts ${before.typescript.receipts}→${actual.projections.receipts}`,
+        projections(world).receipts === before.receipts,
+        `${where}: the edit published nothing`,
+        `${before.receipts} → ${projections(world).receipts}`,
       );
       check(
-        Object.values(expected.files).some((content) => content.includes(DONE)),
-        `${name} / ${step.label}: the edit actually changed the authored status`,
+        Object.values(projectFiles(world)).some((content) => content.includes(DONE)),
+        `${where}: the edit actually changed the authored status`,
       );
       continue;
     }
-    const expected = runPython(python, step.argv);
-    const actual = runTypeScript(typescript, step.argv);
-    const where = `${name} / ${step.label}`;
-
+    const outcome = run(world, step.argv);
     check(
-      expected.exitCode === step.exit,
-      `${where}: python exits ${step.exit}`,
-      `exit=${expected.exitCode} stderr=${expected.stderr.trim()}`,
-    );
-    check(
-      actual.exitCode === step.exit,
-      `${where}: typescript exits ${step.exit}`,
-      `exit=${actual.exitCode} stderr=${actual.stderr.trim()}`,
-    );
-    check(
-      expected.stdout === actual.stdout,
-      `${where}: stdout is identical`,
-      firstDifference(expected.stdout, actual.stdout),
-    );
-    check(
-      expected.stderr === actual.stderr,
-      `${where}: stderr is identical`,
-      firstDifference(expected.stderr, actual.stderr),
-    );
-    check(
-      JSON.stringify(expected.rows) === JSON.stringify(actual.rows),
-      `${where}: the Builder runtime rows are identical, metadata byte for byte`,
-      firstDifference(JSON.stringify(expected.rows, null, 2), JSON.stringify(actual.rows, null, 2)),
-    );
-    compareFiles(where, expected, actual);
-    check(
-      JSON.stringify(expected.projections) === JSON.stringify(actual.projections),
-      `${where}: the projection seam published the same documents and receipts`,
-      `python=${JSON.stringify(expected.projections)} ts=${JSON.stringify(actual.projections)}`,
+      outcome.exitCode === step.exit,
+      `${where}: exits ${step.exit}`,
+      `exit=${outcome.exitCode} stderr=${outcome.stderr.trim()}`,
     );
   }
 
-  sequenceOutcome(name, python, typescript);
-}
-
-function compareFiles(where: string, expected: Observation, actual: Observation): void {
-  check(
-    JSON.stringify(Object.keys(expected.files)) === JSON.stringify(Object.keys(actual.files)),
-    `${where}: the same project files exist`,
-    `python=${Object.keys(expected.files).length} ts=${Object.keys(actual.files).length}`,
-  );
-  for (const [path, content] of Object.entries(expected.files)) {
-    if (actual.files[path] === content) continue;
-    check(
-      false,
-      `${where}: ${path} is byte-identical`,
-      firstDifference(content, actual.files[path] ?? "<absent>"),
-    );
-  }
+  sequenceOutcome(name, world);
 }
 
 /**
- * A sequence must actually REACH its end, or every comparison above could have been
- * two engines agreeing on a refusal.
+ * A sequence must actually REACH its end, or every exit-code check above could
+ * have been a lifecycle refusing its way through.
  */
-function sequenceOutcome(name: string, python: World, typescript: World): void {
+function sequenceOutcome(name: string, world: World): void {
   const event =
     name === "ds"
       ? "delivery_story_done_complete"
       : name === "cd"
         ? "plan_approved"
         : "done_complete";
-  const marker = `"last_delivery_event": "${event}"`;
-  for (const world of [python, typescript]) {
-    check(
-      (runtimeRows(world)[CURSOR_SESSION]?.metadata ?? "").includes(marker),
-      `${name}: the lifecycle reached ${event} on the ${world.name} engine`,
-      runtimeRows(world)[CURSOR_SESSION]?.metadata ?? "<no cursor>",
-    );
-  }
-  // Inverted by CV22.DS10.TS1. This asserted that a TypeScript Builder run
-  // published `operational.json` through the Python seam; the subsystem is
-  // retired, so the correct end state is an absent tree on BOTH engines -- the
-  // Python run no longer publishes either, because the publisher is gone.
-  // Kept rather than deleted: it is the end-to-end proof, on a real project
-  // through both real engines, that a full Ariad lifecycle writes nothing under
-  // `.mirror/`.
-  for (const world of [python, typescript]) {
-    check(
-      projections(world).documents.length === 0 && projections(world).receipts === 0,
-      `${name}: the ${world.name} run published no Journey projection`,
-      JSON.stringify(projections(world)),
-    );
-  }
+  const metadata = cursorMetadata(world) ?? "<no cursor>";
+  check(
+    metadata.includes(`"last_delivery_event": "${event}"`),
+    `${name}: the lifecycle reached ${event}`,
+    metadata,
+  );
+  // CV22.DS10.TS1 retired the Journey projection subsystem: a full Ariad
+  // lifecycle, on a real project, writes nothing under `.mirror/`.
+  check(
+    projections(world).documents.length === 0 && projections(world).receipts === 0,
+    `${name}: the run published no Journey projection`,
+    JSON.stringify(projections(world)),
+  );
 }
 
 runSequence("story", STORY_STEPS);
@@ -870,7 +642,6 @@ runSequence("ds", DS_STEPS, (project) => {
   mkdirSync(dirname(target), { recursive: true });
   writeFileSync(target, PULLABLE_DS_INDEX, "utf8");
 });
-// `cd`, two characters like the others: the project roots must stay equal-length.
 runSequence("cd", CADENCE_STEPS);
 
 check(
@@ -888,4 +659,4 @@ if (failures.length > 0) {
   process.exit(1);
 }
 rmSync(root, { recursive: true, force: true });
-process.stdout.write("builder lifecycle smoke: both engines agree at every step\n");
+process.stdout.write("builder lifecycle smoke: every sequence reached its end\n");

@@ -6,17 +6,17 @@ on:
     paths:
       - "docs/**"
       - "**.md"
-      - "scripts/check_doc_links.py"
+      - "ts/scripts/checkDocLinks.ts"
+      - "ts/src/docs/docsLint.ts"
       - "ts/scripts/checkSkillCommandParity.ts"
-      - "src/memory/docs_lint.py"
   pull_request:
     branches: [main]
     paths:
       - "docs/**"
       - "**.md"
-      - "scripts/check_doc_links.py"
+      - "ts/scripts/checkDocLinks.ts"
+      - "ts/src/docs/docsLint.ts"
       - "ts/scripts/checkSkillCommandParity.ts"
-      - "src/memory/docs_lint.py"
 
 permissions:
   contents: read
@@ -32,47 +32,28 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
-        with:
-          enable-cache: true
-
       - name: Set up Node.js 24
         uses: actions/setup-node@v5
         with:
           node-version: "24"
 
-      - name: Install dependencies
-        run: uv sync --frozen
-
-      # CV22.DS10.TS5 slice B: the Node port runs BESIDE the Python original
-      # for exactly one commit, and both must agree -- same exit code, same
-      # first problem line -- on a clean tree and on a seeded regression,
-      # before the original is deleted. This is the discipline US2 used to
-      # retire `check_skill_command_parity.py`, and the reason the guard that
-      # proves the repository holds no Python cannot itself be Python.
+      # Node since CV22.DS10.TS5 slice B. Its Python original ran beside it for
+      # one commit and agreed -- same exit code, same first problem line -- on a
+      # clean tree and on a seeded regression before it was deleted.
       #
-      # The port carries the 26-case self-test of
-      # `tests/unit/memory/test_docs_lint.py` into
-      # `ts/test/scripts/docsLint.test.ts`. That test IS this checker's
-      # specification: `scripts/check_doc_links.py` is a 57-line wrapper with
-      # no test of its own, so porting it without the cases would have shipped
-      # the docs gate untested -- in the story that rewrites ten docs.
-      - name: Check documentation links and anchors (Python original)
-        run: uv run python scripts/check_doc_links.py
-
-      - name: Check documentation links and anchors (Node port, must agree)
+      # Its specification is the 26-case self-test carried into
+      # `ts/test/scripts/docsLint.test.ts`: the Python script was a 57-line
+      # wrapper with no test of its own, so porting it without the cases would
+      # have shipped the docs gate untested. No npm install is needed: the
+      # checker imports nothing outside the repository and node's standard
+      # library.
+      - name: Check documentation links and anchors
         run: node ts/scripts/checkDocLinks.ts
 
       # Fails when a strangler flip updates the invocation in one runtime's
       # skill copy and not the others (CR071). By 2026-09-09 eleven skills had
       # drifted this way -- reaching the front door on Pi while still calling
-      # `uv run python -m memory` on Claude Code and the published plugin, for
+      # the retired Python entry point on Claude Code and the published plugin, for
       # commands flipped as far back as DS3. Nothing failed, because Python
       # answered correctly; the claim "answers from TS" was simply untrue for
       # two of three runtimes.

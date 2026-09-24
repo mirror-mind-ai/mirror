@@ -14,8 +14,8 @@
  * ai-engineer).
  *
  * Usage (the key lives in .env; this script reads the environment only):
- *   node --env-file=.env ts/parity/live_long_tail_smoke.ts --db tmp/parity/real-copy.db credits
- *   node --env-file=.env ts/parity/live_long_tail_smoke.ts --db tmp/parity/real-copy.db ask
+ *   node --env-file=.env ts/smoke/live_long_tail_smoke.ts --db tmp/parity/real-copy.db credits
+ *   node --env-file=.env ts/smoke/live_long_tail_smoke.ts --db tmp/parity/real-copy.db ask
  *   ... mirror-query | journal | harvest | week-plan | descriptor | apply
  *   ... consolidate-scan | shadow-scan        (gated until CV22.DS8.TS2)
  *
@@ -547,7 +547,7 @@ async function main(argv: readonly string[]): Promise<void> {
     fail(
       "OPENROUTER_API_KEY is not set; this smoke exercises the LIVE path. " +
         "If your key is in .env, re-run with: node --env-file=.env " +
-        "ts/parity/live_long_tail_smoke.ts ...",
+        "ts/smoke/live_long_tail_smoke.ts ...",
     );
   }
   const dbPath = optionValue(argv, "--db");

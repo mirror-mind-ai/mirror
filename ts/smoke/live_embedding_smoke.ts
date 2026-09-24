@@ -18,8 +18,8 @@
  *
  * Usage (note `--env-file`: the key lives in .env, and this script reads it
  * from the ENVIRONMENT only -- it never opens a secrets file itself):
- *   node --env-file=.env ts/parity/live_embedding_smoke.ts --db tmp/parity/demo-memory.db
- *   node --env-file=.env ts/parity/live_embedding_smoke.ts --db tmp/parity/real-copy.db \
+ *   node --env-file=.env ts/smoke/live_embedding_smoke.ts --db tmp/parity/demo-memory.db
+ *   node --env-file=.env ts/smoke/live_embedding_smoke.ts --db tmp/parity/real-copy.db \
  *     --cross-check <memory-id>
  *
  * Output is redacted by default: counts, dimensions, similarities, latencies.
@@ -75,10 +75,10 @@ async function main(argv: readonly string[]): Promise<void> {
   if (!process.env.OPENROUTER_API_KEY?.trim()) {
     // Name the fix, not just the problem: the key is in .env, and every other
     // entry point in this repo reaches it through node's --env-file. A bare
-    // `node ts/parity/...` is the obvious thing to type and the wrong one.
+    // `node ts/smoke/...` is the obvious thing to type and the wrong one.
     fail(
       "OPENROUTER_API_KEY is not set; this smoke exercises the LIVE path. " +
-        "If your key is in .env, re-run with: node --env-file=.env ts/parity/live_embedding_smoke.ts ...",
+        "If your key is in .env, re-run with: node --env-file=.env ts/smoke/live_embedding_smoke.ts ...",
     );
   }
   const dbPath = optionValue(argv, "--db");

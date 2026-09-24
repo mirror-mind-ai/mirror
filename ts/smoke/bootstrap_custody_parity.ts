@@ -24,7 +24,7 @@
 // row content, ids, or fixture JSON. Never touches a live `memory.db` — every
 // path here is a throwaway temp file under the OS tmp dir.
 //
-// Usage: node ts/parity/bootstrap_custody_parity.ts
+// Usage: node ts/smoke/bootstrap_custody_parity.ts
 
 import { spawn } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";

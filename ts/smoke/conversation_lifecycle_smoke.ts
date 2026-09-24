@@ -14,7 +14,7 @@
 // TypeScript wrote -- the property that made a revert safe. The reverts left
 // with the engine, and so did those steps.
 //
-// Run from the repo root:  node ts/parity/conversation_lifecycle_smoke.ts
+// Run from the repo root:  node ts/smoke/conversation_lifecycle_smoke.ts
 
 import { spawnSync } from "node:child_process";
 import {

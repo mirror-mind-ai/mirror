@@ -10,168 +10,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.10", "3.12"]
-
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
-        with:
-          enable-cache: true
-
-      - name: Install dependencies
-        run: uv sync --extra dev --frozen
-
-      - name: Lint (ruff)
-        run: uv run ruff check src/ tests/
-
-      - name: Format check (ruff)
-        run: uv run ruff format --check src/ tests/
-
-      - name: Run tests
-        run: uv run pytest tests/unit/ tests/integration/ -m "not live" --cov=src --cov-report=term-missing
-        env:
-          MEMORY_ENV: test
-          ECONOMY_ENV: test
-          # API keys intentionally absent — all live tests are excluded via -m "not live"
-
-      - name: Golden parity determinism (regenerate must be a no-op)
-        run: |
-          uv run python ts/parity/generate_golden.py
-          uv run python ts/parity/generate_persona_golden.py
-          uv run python ts/parity/generate_journeys_golden.py
-          uv run python ts/parity/generate_validate_parent_journey_golden.py
-          uv run python ts/parity/generate_journey_removal_golden.py
-          uv run python ts/parity/generate_mirror_mode_golden.py
-          uv run python ts/parity/generate_mirror_state_golden.py
-          uv run python ts/parity/generate_extension_context_golden.py
-          uv run python ts/parity/generate_conversation_logger_golden.py
-          uv run python ts/parity/generate_metadata_lifecycle_golden.py
-          uv run python ts/parity/generate_prompt_assembly_golden.py
-          uv run python ts/parity/generate_close_tail_golden.py
-          uv run python ts/parity/generate_session_composite_golden.py
-          uv run python ts/parity/generate_journey_repair_golden.py
-          uv run python ts/parity/generate_backfill_golden.py
-          uv run python ts/parity/generate_repair_encoding_golden.py
-          uv run python ts/parity/generate_backup_golden.py
-          # CV22.DS10.US2: `runtime backup` is a different surface from
-          # `backup` -- create, verify, recovery route. The golden records
-          # RECIPES rather than archive bytes, so it is byte-stable here even
-          # though a real database header carries its writer's version.
-          uv run python ts/parity/generate_runtime_backup_golden.py
-          uv run python ts/parity/generate_runtime_git_golden.py
-          uv run python ts/parity/generate_release_notes_golden.py
-          uv run python ts/parity/generate_runtime_status_golden.py
-          uv run python ts/parity/generate_runtime_diagnose_golden.py
-          uv run python ts/parity/generate_welcome_golden.py
-          uv run python ts/parity/generate_soul_surface_golden.py
-          uv run python ts/parity/generate_soul_state_golden.py
-          uv run python ts/parity/generate_operating_mode_golden.py
-          uv run python ts/parity/generate_soul_prompt_golden.py
-          uv run python ts/parity/generate_soul_apply_golden.py
-          uv run python ts/parity/generate_soul_harvest_golden.py
-          uv run python ts/parity/generate_explorer_surface_golden.py
-          uv run python ts/parity/generate_explorer_story_golden.py
-          uv run python ts/parity/generate_explorer_handoff_golden.py
-          uv run python ts/parity/generate_journey_update_golden.py
-          uv run python ts/parity/generate_week_save_golden.py
-          uv run python ts/parity/generate_journal_golden.py
-          uv run python ts/parity/generate_week_plan_golden.py
-          uv run python ts/parity/generate_descriptor_golden.py
-          uv run python ts/parity/generate_lifecycle_faces_golden.py
-          uv run python ts/parity/generate_cost_golden.py
-          uv run python ts/parity/generate_builder_card_golden.py
-          uv run python ts/parity/generate_builder_roadmap_golden.py
-          uv run python ts/parity/generate_builder_method_golden.py
-          uv run python ts/parity/generate_builder_orientation_golden.py
-          uv run python ts/parity/generate_builder_command_golden.py
-          uv run python ts/parity/generate_builder_cursor_golden.py
-          uv run python ts/parity/generate_builder_resume_state_golden.py
-          uv run python ts/parity/generate_builder_lifecycle_golden.py
-          uv run python ts/parity/generate_builder_load_golden.py
-          uv run python ts/parity/generate_extension_catalog_golden.py
-          uv run python ts/parity/generate_ledger_inspect_golden.py
-          uv run python ts/parity/generate_ext_bindings_golden.py
-          # CV22.DS10.TS2 removed the dispatch corpus generator and the golden
-          # it recorded, together with the compatibility host they graded. The
-          # fixture tree that survives is hand-authored, not generated, so it
-          # has no place in a determinism gate either.
-          uv run python ts/parity/generate_ext_catalog_writes_golden.py
-          uv run python ts/parity/generate_lifecycle_write_golden.py
-          uv run python ts/parity/generate_identity_edit_golden.py
-          uv run python ts/parity/generate_mcp_protocol_golden.py
-          MEMORY_ENV=test uv run python ts/parity/generate_mcp_tools_golden.py
-          uv run python ts/parity/generate_number_rendering_golden.py
-          git diff --exit-code ts/test/goldens/
-          # Two Builder generators also rewrite their committed fixture trees, so
-          # drift there has to fail the gate too -- a golden that agrees with
-          # silently changed fixtures proves nothing.
-          git diff --exit-code ts/test/fixtures/builder-roadmap/
-          git diff --exit-code ts/test/fixtures/builder-refinement/
-          git diff --exit-code ts/test/fixtures/builder-command/
-          # The MCP generator also writes the stdin transcript its framing
-          # oracle was recorded from; a transcript that drifts from the golden
-          # it produced would silently re-point the parity claim.
-          git diff --exit-code ts/test/fixtures/mcp-framing.jsonl
-          # TS4's catalog golden lives beside its fixture tree rather than under
-          # ts/test/goldens/, so it needs its own diff: the gate above would not
-          # see it.
-          git diff --exit-code ts/test/fixtures/extension-catalog.golden.json
-          git diff --exit-code ts/test/fixtures/extension-catalog/
-          git diff --exit-code ts/test/fixtures/ledger-inspect.golden.json
-          git diff --exit-code ts/test/fixtures/ledger-inspect/
-          git diff --exit-code ts/test/fixtures/ext-bindings.golden.json
-          git diff --exit-code ts/test/fixtures/ext-bindings/
-          git diff --exit-code ts/test/fixtures/ext-catalog-writes.golden.json
-          git diff --exit-code ts/test/fixtures/ext-catalog-writes/
-          # `git diff` cannot see a file that is not tracked yet, and the damage
-          # this class produces is usually untracked: a generator that resolves a
-          # write target to the repository writes NEW files into it (CR065's fifth
-          # instance fabricated a roadmap package under a live code). Both times it
-          # was caught by a human running `git status`. This is that check.
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "A generator left the working tree dirty:"
-            git status --porcelain
-            echo "Generators must write only to their goldens, their fixtures, and tmp/."
-            exit 1
-          fi
-        env:
-          MEMORY_ENV: test
-          ECONOMY_ENV: test
-
-      # Fails when a ported Python oracle (DS4/DS5/DS6 surfaces) drifts from the
-      # recorded baseline without a conscious advance. Green here means "no
-      # oracle changed since baseline", NOT "TS is in parity" (see CR044/RS007).
-      - name: Oracle-drift tripwire (ported Python oracles must match the baseline)
-        run: uv run python scripts/check_oracle_drift.py
-
-      # Fails when a surface CV22.DS10 retired comes back, or never fully left.
-      # A deletion has no test of its own; this is it. Each retiring story adds
-      # a row to the table rather than a script to the repository.
-      #
-      # CV22.DS10.TS5 slice B: the Node port runs BESIDE the original for one
-      # commit and must agree -- same exit code, byte-identical stdout -- on the
-      # clean tree and on seeded regressions, before the Python one is deleted.
-      # The Zero Python gate's reason for assigning this file to TS5 is the
-      # whole point: the guard must OUTLIVE the deletion it proves, and a guard
-      # written in the language it forbids cannot.
-      #
-      # The port also carries the self-test the original never had. It was
-      # written as a script and graded by use, which is how its table gained
-      # patterns twice after CI caught residue it had missed.
-      - name: Retired-surface tripwire (DS10 deletions must stay deleted)
-        run: uv run python scripts/check_retired_surfaces.py
-
   ts:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -290,34 +128,33 @@ jobs:
         env:
           MEMORY_ENV: test
 
-      # CV22.DS10.TS5 slice B: the Node port of the retired-surface guard runs
-      # BESIDE the Python original (in the `test` job) for one commit, and must
-      # agree -- same exit code, byte-identical stdout -- on the clean tree and
-      # on seeded regressions, before the original is deleted.
+      # Fails when a surface CV22.DS10 retired comes back, or never fully left.
+      # A deletion has no test of its own; this is it. Each retiring story adds
+      # a row to the table rather than a script to the repository, and the
+      # router is asked too: a family branch that still answers a retired argv
+      # underneath its retired entry is residue no file scan can see.
       #
-      # It runs HERE rather than next to its original because that job installs
-      # Python and uv but no Node, and the runner's default Node is too old to
-      # strip types. The agreement is per-commit, not per-job.
-      #
-      # The Zero Python gate's reason for assigning this file to TS5 is the
-      # whole point: the guard must OUTLIVE the deletion it proves, and one
-      # written in the language it forbids cannot. The port also carries the
-      # self-test the original never had -- it was written as a script and
-      # graded by use, which is how its table gained patterns twice after CI
-      # caught residue it had missed.
-      - name: Retired-surface tripwire (Node port, must agree with the original)
+      # Node since CV22.DS10.TS5 slice B. Its Python original ran beside it and
+      # agreed -- same exit code, byte-identical stdout, clean tree and seeded
+      # regressions -- before it was deleted, because a guard must OUTLIVE the
+      # deletion it proves, and one written in the language it forbids cannot.
+      - name: Retired-surface tripwire (DS10 deletions must stay deleted)
         run: node scripts/checkRetiredSurfaces.ts
 
-      # CR051 — this script was silently drifted from the CI-enforced
-      # migrationFixtures.test.ts it duplicates; now wired into CI so that
-      # can't happen unnoticed again.
-      - name: Migration fixture structural parity (Navigator script)
-        run: node parity/migration_structural_parity.ts
+      # The custody proof (CV22.DS10.TS5, the panel's blocking amendment). Both
+      # scripts grade the TypeScript engine against COMMITTED fixtures -- every
+      # migration step from its pre-state to its recorded end-state, and a fresh
+      # bootstrap under a real 8-process race -- so they contain no Python and
+      # survived the oracle. With no second engine, they are the only structural
+      # evidence that the sole custodian reproduces each migration.
+      #
+      # CR051/CR052: wired here because both had silently drifted from the tests
+      # they duplicate while nothing ran them.
+      - name: Migration custody (every step against its committed fixture)
+        run: node smoke/migration_structural_parity.ts
 
-      # CR052 — same drift risk as CR051's sibling; includes a real 8-process
-      # concurrency race, so expect more wall-clock time than the fixture check.
-      - name: Bootstrap custody parity (Navigator script)
-        run: node parity/bootstrap_custody_parity.ts
+      - name: Bootstrap custody (fresh database, concurrent bootstrap race)
+        run: node smoke/bootstrap_custody_parity.ts
 
       # CV22.DS10.US2 — the updater's first operational coverage since v0.8.0.
       # Runs in the `ts` job because it needs Node and a git checkout, and it
@@ -327,99 +164,60 @@ jobs:
       - name: Runtime updater smoke (CV22.DS10.US2)
         run: bash ../scripts/smoke_runtime_update.sh "${RUNNER_TEMP}/mirror-update-smoke"
 
-  parity:
-    # Realism proof: behavioral parity against a real-shaped database, not only
-    # synthetic-golden determinism. Needs both runtimes (Python oracle + TS core).
+  smoke:
+    # End-to-end through the real front-door process, as SEQUENCES: the unit
+    # suites grade each step, these grade what one step hands the next.
+    #
+    # Until CV22.DS10.TS5 this job was `parity`: it installed Python and ran
+    # every smoke on both engines, plus the redacted real-DB-copy and
+    # write-parity harnesses against the oracle. The oracle is gone, so what
+    # remains is the TypeScript half of each smoke -- the parts that never
+    # needed a second engine to mean something.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
-        with:
-          enable-cache: true
-
-      - name: Install dependencies
-        run: uv sync --extra dev --frozen
 
       - name: Set up Node.js 24
         uses: actions/setup-node@v5
         with:
           node-version: "24"
 
-      # The harness verifiers need no npm package, but the lifecycle smoke
-      # spawns the real front door, which does (yaml, for the seed route).
-      - name: Install TypeScript dependencies (for the front-door smoke)
+      # The smokes spawn the real front door, which needs its npm dependencies
+      # (yaml, for the seed route).
+      - name: Install dependencies
         working-directory: ts
         run: npm ci
 
+      # Synthetic rows only; the generator is TypeScript since TS5 slice G.
       - name: Generate portable demo database
-        run: |
-          mkdir -p tmp/parity
-          uv run python ts/parity/generate_demo_memory_db.py --out tmp/parity/demo-memory.db
+        run: node --no-warnings ts/smoke/generate_demo_memory_db.ts --out tmp/smoke/demo-memory.db
+
+      # The sole migration custodian, end to end: a copy regressed to the
+      # pre-017 shape is opened by the real front door, which must back it up,
+      # apply 017, backfill the column, and still serve.
+      - name: Migrate-on-open smoke (demo copy, must pass)
+        run: node --no-warnings ts/smoke/migrate_on_open_smoke.ts --source-db tmp/smoke/demo-memory.db
         env:
           MEMORY_ENV: test
 
-      - name: Real-DB-copy parity (redacted, must pass)
-        run: uv run python ts/parity/real_db_copy_parity.py --source-db tmp/parity/demo-memory.db
-        env:
-          MEMORY_ENV: test
-
-      # Every write probe on the demo copy: the DS4/US5 deterministic writes,
-      # the US10 extraction lifecycle (both cores answered by the same stub),
-      # the TS1 mojibake repair over seeded rows, the US6 Soul ritual state
-      # graded step by step, and the US7 Exploratory Story graded across BOTH
-      # of its stores (the durable row and the legacy runtime payload) after
-      # every step of one exploration. Builder cursor/artifact probes run here;
-      # builder_load is intentionally excluded because it requires a private
-      # 1536-wide corpus and refuses the portable 8-wide demo database.
-      # Copy-only and redacted by design; no live database is ever involved.
-      - name: Write parity on the demo copy (redacted, must pass)
-        run: |
-          for probe in reinforcement journey identity conversation_logger \
-                       close_tail session_composites journey_repair_apply \
-                       repair_encoding soul_state soul_apply soul_harvest_save \
-                       explorer_story explorer_handoff builder_cursor_state \
-                       builder_artifacts ext_bindings extension_install; do
-            uv run python ts/parity/write_parity.py \
-              --source-db tmp/parity/demo-memory.db --probe "$probe" \
-              --work-dir "tmp/parity/write-$probe"
-          done
-        env:
-          MEMORY_ENV: test
-
-      # The hook-inclusive lifecycle smoke through the real front door: hooks
-      # over stdin, the close tail under the replay transport, the TS1 DB
-      # safety tools, Soul, and Explorer -- every step answered by TypeScript.
-      # (Until CV22.DS10.TS5 plateau 2 it also ran each revert through the
-      # Python fallback and cross-checked the engines; the reverts are gone.)
+      # The hook-inclusive conversation lifecycle: hooks over stdin, the close
+      # tail under the replay transport, the DB safety tools, Soul, and
+      # Explorer -- every step answered by TypeScript.
       - name: Conversation-logger lifecycle smoke (replay transport, must pass)
-        run: node --no-warnings ts/parity/conversation_lifecycle_smoke.ts
+        run: node --no-warnings ts/smoke/conversation_lifecycle_smoke.ts
 
-      # The Ariad story lifecycle — adopt through done — run on BOTH engines over
-      # two disposable worlds and compared after every step: streams, the Builder
-      # runtime rows with `metadata` byte for byte, every authored artifact, and the
-      # Journey projection the seam published. The TS side runs through the real
-      # front-door process with NO gate in the environment, so since the
-      # 2026-09-16 flip this smoke proves the shipped default. Linux is also a
-      # third root length for the path-normalization invariant the artifact rows
-      # depend on.
-      - name: Builder Ariad lifecycle smoke (both engines, no gate, must pass)
-        run: node --no-warnings ts/parity/builder_lifecycle_smoke.ts
+      # The Ariad lifecycle -- adopt through done, a Delivery Story closed at
+      # aggregate level, cadence and authority -- each step a fresh front-door
+      # process. Every sequence must REACH its end, publish no projection, and
+      # write nothing into this repository.
+      - name: Builder Ariad lifecycle smoke (must pass)
+        run: node --no-warnings ts/smoke/builder_lifecycle_smoke.ts
 
-      # CV22.DS7.TS4 plateau 7 — the extension catalog family as a SEQUENCE,
-      # live on both engines in disposable homes: install through uninstall,
-      # including the dispatch through the compat host. It also proves the
-      # front-door log carries leaf names only: every step passes an account id,
-      # a campaign name, and a folder path that would be a leak if logged. Since
-      # the 2026-09-16 flip the TS side runs with no gate, so this proves the
-      # shipped default rather than an opt-in.
-      - name: Extension catalog smoke (both engines, no gate, must pass)
-        run: node --no-warnings ts/parity/extension_catalog_smoke.ts
+      # The extension catalog family as a sequence, install through uninstall,
+      # in a disposable home. Also proves the front-door log carries leaf names
+      # only: every step passes an account id, a campaign name, and a folder
+      # path that would be a leak if logged.
+      - name: Extension catalog smoke (must pass)
+        run: node --no-warnings ts/smoke/extension_catalog_smoke.ts
         env:
           MEMORY_ENV: test
