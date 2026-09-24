@@ -2,10 +2,10 @@
 //
 // The strangler's unit is `command + args -> stdout`, so these grade the
 // output strings and exit codes of `conversation_logger.main()` for every
-// subcommand of the family, plus the fallback boundary: an LLM-tail subcommand
-// whose replay transport is not configured must report `handled: false` so
-// the front door falls back to Python. `repair-journeys --apply` refuses, as
-// Python does, when no backup is available (CV22.DS7.TS1 wires the zip).
+// subcommand of the family. `repair-journeys --apply` refuses, as Python does,
+// when no backup is available (CV22.DS7.TS1 wires the zip). (The fallback
+// boundary -- a reverted close tail reporting `handled: false` so the front
+// door could hand it to Python -- left with the fallback at CV22.DS10.TS5.)
 
 import assert from "node:assert/strict";
 import { mkdtempSync, writeFileSync } from "node:fs";
@@ -89,32 +89,18 @@ function run(f: Fixture, argv: string[], options: { stdin?: string; env?: Logger
   return runConversationLoggerCommand(f.db, argv, f.runtime(options.env), { stdin: options.stdin });
 }
 
-/** Narrow to the handled branch so tests can grade stdout/exitCode directly. */
-async function runHandled(
-  f: Fixture,
-  argv: string[],
-  options: { stdin?: string; env?: LoggerRuntimeEnv } = {},
-) {
-  const result = await run(f, argv, options);
-  if (!result.handled) {
-    throw new Error(`expected TS to handle: ${JSON.stringify(argv)}`);
-  }
-  return result;
-}
-
 // --- mute / unmute / status stdout contract ---
 
 test("mute, unmute, and status emit the released strings", async () => {
   const f = fixture();
   assert.deepEqual(await run(f, ["mute"]), {
-    handled: true,
     stdout: ["Conversation logging MUTED."],
     stderr: [],
     exitCode: 0,
   });
-  assert.deepEqual((await runHandled(f, ["status"])).stdout, ["MUTED"]);
-  assert.deepEqual((await runHandled(f, ["unmute"])).stdout, ["Conversation logging ACTIVE."]);
-  assert.deepEqual((await runHandled(f, ["status"])).stdout, ["ACTIVE"]);
+  assert.deepEqual((await run(f, ["status"])).stdout, ["MUTED"]);
+  assert.deepEqual((await run(f, ["unmute"])).stdout, ["Conversation logging ACTIVE."]);
+  assert.deepEqual((await run(f, ["status"])).stdout, ["ACTIVE"]);
   f.db.close();
 });
 
@@ -123,7 +109,6 @@ test("mute, unmute, and status emit the released strings", async () => {
 test("a --mirror-home without a value fails with the released error and exit 1", async () => {
   const f = fixture();
   assert.deepEqual(await run(f, ["status", "--mirror-home"]), {
-    handled: true,
     stdout: [],
     stderr: ["Error: --mirror-home requires a path"],
     exitCode: 1,
@@ -133,15 +118,14 @@ test("a --mirror-home without a value fails with the released error and exit 1",
 
 test("a --session-id without a value fails with the released error and exit 1", async () => {
   const f = fixture();
-  assert.deepEqual((await runHandled(f, ["switch", "--session-id"])).exitCode, 1);
+  assert.deepEqual((await run(f, ["switch", "--session-id"])).exitCode, 1);
   f.db.close();
 });
 
 test("no subcommand exits 1 silently; an unknown one exits 0 silently, as Python's main() does", async () => {
   const f = fixture();
-  assert.deepEqual(await run(f, []), { handled: true, stdout: [], stderr: [], exitCode: 1 });
+  assert.deepEqual(await run(f, []), { stdout: [], stderr: [], exitCode: 1 });
   assert.deepEqual(await run(f, ["no-such-subcommand"]), {
-    handled: true,
     stdout: [],
     stderr: [],
     exitCode: 0,
@@ -149,36 +133,13 @@ test("no subcommand exits 1 silently; an unknown one exits 0 silently, as Python
   f.db.close();
 });
 
-// --- the fallback boundary ---
+// --- the replay boundary ---
 
-test("LLM-tail subcommands fall back only when the tail is REVERTED (CV22.DS8.US2)", async () => {
-  const f = fixture();
-  logUserMessage(f.db, "s1", "hello", { interface: "pi" }, deps);
-  const reverted = { MIRROR_TS_CONVERSATION_LLM_TAIL: "0" };
-  for (const argv of [
-    ["switch", "--session-id", "s1"],
-    ["session-end-pi", "s1"],
-    ["session-end"],
-    ["session-start"],
-    ["session-maintenance"],
-  ]) {
-    assert.deepEqual(await run(f, argv, { env: reverted }), { handled: false }, argv.join(" "));
-  }
-  // Nothing was ended or closed by the refused attempts.
-  assert.equal(
-    f.db.prepare("SELECT COUNT(*) AS count FROM conversations WHERE ended_at IS NOT NULL").get()
-      ?.count,
-    0,
-  );
-});
-
-test("half a replay fixture REFUSES loudly instead of falling back or going live", async () => {
+test("half a replay fixture REFUSES loudly instead of going live", async () => {
   // Before US2 this was "half-configured is unconfigured" -- it fell back to
-  // Python. That is no longer safe: Python has no replay transport, so the
-  // fallback would run the close tail against the LIVE provider, spending
-  // real money on the other engine while the developer believed they were
-  // replaying. The refusal must reach the caller, not be swallowed as a
-  // routing decision.
+  // Python, which had no replay transport and would have run the close tail
+  // against the LIVE provider while the developer believed they were
+  // replaying. The refusal must reach the caller.
   const f = fixture();
   logUserMessage(f.db, "s1", "hello", { interface: "pi" }, deps);
 
@@ -197,7 +158,6 @@ test("half a replay fixture REFUSES loudly instead of falling back or going live
 test("repair-journeys --apply with nothing to repair needs no backup and reports zero", async () => {
   const f = fixture();
   assert.deepEqual(await run(f, ["repair-journeys", "--apply"]), {
-    handled: true,
     stdout: ["Repaired: 0"],
     stderr: [],
     exitCode: 0,
@@ -259,8 +219,7 @@ test("repair-journeys --apply refuses when the runtime has no backup, and prints
     runtime,
     {},
   );
-  assert.equal(result.handled, true);
-  assert.deepEqual(result.handled && result.stdout.slice(0, 2), [
+  assert.deepEqual(result.stdout.slice(0, 2), [
     "Backup created: memory_20260907_140305.zip (1 KB)",
     "Repaired: 1",
   ]);
@@ -275,8 +234,8 @@ test("repair-journeys --apply refuses when the runtime has no backup, and prints
 
 test("log-user writes a message and honours --interface", async () => {
   const f = fixture();
-  const result = await runHandled(f, ["log-user", "s1", "hello", "--interface", "pi"]);
-  assert.deepEqual(result, { handled: true, stdout: [], stderr: [], exitCode: 0 });
+  const result = await run(f, ["log-user", "s1", "hello", "--interface", "pi"]);
+  assert.deepEqual(result, { stdout: [], stderr: [], exitCode: 0 });
   assert.equal(f.db.prepare("SELECT COUNT(*) AS c FROM messages").get()?.c, 1);
   assert.equal(f.db.prepare("SELECT interface FROM conversations").get()?.interface, "pi");
   f.db.close();
@@ -291,7 +250,7 @@ test("log-assistant defaults the interface to claude_code", async () => {
 
 test("log-user with fewer than two positional arguments writes nothing", async () => {
   const f = fixture();
-  await runHandled(f, ["log-user", "s1"]);
+  await run(f, ["log-user", "s1"]);
   assert.equal(f.db.prepare("SELECT COUNT(*) AS c FROM messages").get()?.c, 0);
   f.db.close();
 });
@@ -300,18 +259,18 @@ test("log-user with fewer than two positional arguments writes nothing", async (
 
 test("user-prompt reads the payload from stdin and stays silent", async () => {
   const f = fixture();
-  const result = await runHandled(f, ["user-prompt"], {
+  const result = await run(f, ["user-prompt"], {
     stdin: JSON.stringify({ session_id: "s1", prompt: "hello" }),
   });
-  assert.deepEqual(result, { handled: true, stdout: [], stderr: [], exitCode: 0 });
+  assert.deepEqual(result, { stdout: [], stderr: [], exitCode: 0 });
   assert.equal(f.db.prepare("SELECT COUNT(*) AS c FROM messages").get()?.c, 1);
   f.db.close();
 });
 
 test("user-prompt with malformed stdin still exits 0 and writes nothing", async () => {
   const f = fixture();
-  const result = await runHandled(f, ["user-prompt"], { stdin: "{{{" });
-  assert.deepEqual(result, { handled: true, stdout: [], stderr: [], exitCode: 0 });
+  const result = await run(f, ["user-prompt"], { stdin: "{{{" });
+  assert.deepEqual(result, { stdout: [], stderr: [], exitCode: 0 });
   assert.equal(f.db.prepare("SELECT COUNT(*) AS c FROM messages").get()?.c, 0);
   f.db.close();
 });
@@ -326,7 +285,7 @@ test("discard-current reports the discarded conversation id", async () => {
       ?.conversation_id,
   );
 
-  const result = await runHandled(f, ["discard-current", "--session-id", "s1"]);
+  const result = await run(f, ["discard-current", "--session-id", "s1"]);
 
   assert.deepEqual(result.stdout, [`Discarded current conversation: ${conversationId}`]);
   f.db.close();
@@ -334,7 +293,7 @@ test("discard-current reports the discarded conversation id", async () => {
 
 test("discard-current reports the empty case with the released string", async () => {
   const f = fixture();
-  assert.deepEqual((await runHandled(f, ["discard-current"])).stdout, [
+  assert.deepEqual((await run(f, ["discard-current"])).stdout, [
     "No current conversation to discard.",
   ]);
   f.db.close();
@@ -346,9 +305,9 @@ test("--mirror-home overrides the ambient home for the hook's mute gate", async 
   const f = fixture();
   const explicitHome = mkdtempSync("/tmp/logger-cli-explicit-");
   // Mute only the explicit home; the ambient one stays active.
-  await runHandled(f, ["mute", "--mirror-home", explicitHome]);
+  await run(f, ["mute", "--mirror-home", explicitHome]);
 
-  const result = await runHandled(f, ["user-prompt", "--mirror-home", explicitHome], {
+  const result = await run(f, ["user-prompt", "--mirror-home", explicitHome], {
     stdin: JSON.stringify({ session_id: "s1", prompt: "must not be logged" }),
   });
 
@@ -360,12 +319,10 @@ test("--mirror-home overrides the ambient home for the hook's mute gate", async 
 test("status reads mute state from --mirror-home, not the ambient home", async () => {
   const f = fixture();
   const explicitHome = mkdtempSync("/tmp/logger-cli-explicit-");
-  await runHandled(f, ["mute", "--mirror-home", explicitHome]);
+  await run(f, ["mute", "--mirror-home", explicitHome]);
 
-  assert.deepEqual((await runHandled(f, ["status"])).stdout, ["ACTIVE"]);
-  assert.deepEqual((await runHandled(f, ["status", "--mirror-home", explicitHome])).stdout, [
-    "MUTED",
-  ]);
+  assert.deepEqual((await run(f, ["status"])).stdout, ["ACTIVE"]);
+  assert.deepEqual((await run(f, ["status", "--mirror-home", explicitHome])).stdout, ["MUTED"]);
   f.db.close();
 });
 
@@ -385,7 +342,7 @@ test("switch closes the bound conversation through the close tail and reports th
   );
   f.db.prepare("UPDATE conversations SET journey = 'alpha-one' WHERE id = ?").run(oldId);
 
-  const result = await runHandled(f, ["switch", "--session-id", "s1"], { env: REPLAY_ENV });
+  const result = await run(f, ["switch", "--session-id", "s1"], { env: REPLAY_ENV });
 
   const newId = String(
     f.db.prepare("SELECT conversation_id FROM runtime_sessions WHERE session_id = 's1'").get()
@@ -425,7 +382,7 @@ test("switch closes the bound conversation through the close tail and reports th
 
 test("switch without any resolvable session reports the released string", async () => {
   const f = fixture();
-  assert.deepEqual((await runHandled(f, ["switch"], { env: REPLAY_ENV })).stdout, [
+  assert.deepEqual((await run(f, ["switch"], { env: REPLAY_ENV })).stdout, [
     "No active session found.",
   ]);
   f.db.close();
@@ -434,7 +391,7 @@ test("switch without any resolvable session reports the released string", async 
 test("switch resolves the session from MIRROR_SESSION_ID when no --session-id is given", async () => {
   const f = fixture();
   logUserMessage(f.db, "env-session", "first", { interface: "pi" }, deps);
-  const result = await runHandled(f, ["switch"], {
+  const result = await run(f, ["switch"], {
     env: { ...REPLAY_ENV, MIRROR_SESSION_ID: "env-session" },
   });
   assert.match(result.stdout[0] ?? "", /^New conversation created: /);
@@ -445,17 +402,16 @@ test("session-end-pi ends the named session without extraction and prints nothin
   const f = fixture();
   logUserMessage(f.db, "s1", "first", { interface: "pi" }, deps);
 
-  const result = await runHandled(f, ["session-end-pi", "s1"], { env: REPLAY_ENV });
+  const result = await run(f, ["session-end-pi", "s1"], { env: REPLAY_ENV });
 
-  assert.deepEqual(result, { handled: true, stdout: [], stderr: [], exitCode: 0 });
+  assert.deepEqual(result, { stdout: [], stderr: [], exitCode: 0 });
   assert.equal(
     f.db.prepare("SELECT active FROM runtime_sessions WHERE session_id = 's1'").get()?.active,
     0,
   );
   assert.ok(!f.llm.calls.some((call) => call.role === "extraction"), "extract=False");
   // Without a session argument Python does nothing at all.
-  assert.deepEqual(await runHandled(f, ["session-end-pi"], { env: REPLAY_ENV }), {
-    handled: true,
+  assert.deepEqual(await run(f, ["session-end-pi"], { env: REPLAY_ENV }), {
     stdout: [],
     stderr: [],
     exitCode: 0,
@@ -467,12 +423,12 @@ test("session-end reads the hook payload from stdin, ends the session, and stays
   const f = fixture();
   logUserMessage(f.db, "s1", "first", { interface: "claude_code" }, deps);
 
-  const result = await runHandled(f, ["session-end"], {
+  const result = await run(f, ["session-end"], {
     env: REPLAY_ENV,
     stdin: JSON.stringify({ session_id: "s1" }),
   });
 
-  assert.deepEqual(result, { handled: true, stdout: [], stderr: [], exitCode: 0 });
+  assert.deepEqual(result, { stdout: [], stderr: [], exitCode: 0 });
   assert.equal(
     f.db.prepare("SELECT active FROM runtime_sessions WHERE session_id = 's1'").get()?.active,
     0,
@@ -484,17 +440,17 @@ test("session-end reads the hook payload from stdin, ends the session, and stays
 
 test("session-start --fast unmutes and defers maintenance", async () => {
   const f = fixture();
-  await runHandled(f, ["mute"]);
+  await run(f, ["mute"]);
   // Deterministic: no replay configuration is needed.
-  const result = await runHandled(f, ["session-start", "--fast"]);
+  const result = await run(f, ["session-start", "--fast"]);
   assert.deepEqual(result.stdout, ["Conversation logging ACTIVE. Maintenance deferred."]);
-  assert.deepEqual((await runHandled(f, ["status"])).stdout, ["ACTIVE"]);
+  assert.deepEqual((await run(f, ["status"])).stdout, ["ACTIVE"]);
   f.db.close();
 });
 
 test("session-start and session-maintenance render the report with the injected clock", async () => {
   const f = fixture();
-  const start = await runHandled(f, ["session-start"], { env: REPLAY_ENV });
+  const start = await run(f, ["session-start"], { env: REPLAY_ENV });
   assert.deepEqual(start.stdout, [
     [
       "Conversation logging ACTIVE.",
@@ -505,7 +461,7 @@ test("session-start and session-maintenance render the report with the injected 
       "Extracted pending conversations: 0 (0.0s)",
     ].join("\n"),
   ]);
-  const maintenance = await runHandled(f, ["session-maintenance"], { env: REPLAY_ENV });
+  const maintenance = await run(f, ["session-maintenance"], { env: REPLAY_ENV });
   assert.deepEqual(maintenance.stdout, [
     [
       "Conversation maintenance complete.",
@@ -535,13 +491,13 @@ test("diagnose-journeys and a dry-run repair render the findings and the dry-run
   );
   f.db.prepare("UPDATE conversations SET journey = NULL WHERE id = ?").run(conversationId);
 
-  const diagnose = await runHandled(f, ["diagnose-journeys"]);
+  const diagnose = await run(f, ["diagnose-journeys"]);
   assert.deepEqual(diagnose.stdout, [
     "Repair candidates: 1",
     `- ${conversationId} -> alpha-one (explicit build command; 1 messages; ${NOW}; /mm-build alpha-one)`,
   ]);
 
-  const repair = await runHandled(f, ["repair-journeys", "--limit", "5"]);
+  const repair = await run(f, ["repair-journeys", "--limit", "5"]);
   assert.deepEqual(repair.stdout, [
     ...diagnose.stdout,
     "Dry run only. Re-run with --apply to repair after reviewing candidates.",
@@ -557,12 +513,11 @@ test("diagnose-journeys and a dry-run repair render the findings and the dry-run
 test("--limit without a value and a non-integer --limit fail with exit 1", async () => {
   const f = fixture();
   assert.deepEqual(await run(f, ["diagnose-journeys", "--limit"]), {
-    handled: true,
     stdout: [],
     stderr: ["Error: --limit requires a number"],
     exitCode: 1,
   });
-  const bad = await runHandled(f, ["diagnose-journeys", "--limit", "five"]);
+  const bad = await run(f, ["diagnose-journeys", "--limit", "five"]);
   assert.equal(bad.exitCode, 1);
   assert.match(bad.stderr[0] ?? "", /invalid literal for int\(\)/);
   f.db.close();
@@ -574,7 +529,7 @@ test("backfill-codex-session reports the released strings and honours --interfac
   const f = fixture();
   const valid = join(CODEX_DIR, "valid.jsonl");
   assert.deepEqual(
-    (await runHandled(f, ["backfill-codex-session", valid, "--interface", "codex-cli"])).stdout,
+    (await run(f, ["backfill-codex-session", valid, "--interface", "codex-cli"])).stdout,
     [`Backfilled 1 Codex session from ${valid}`],
   );
   assert.equal(
@@ -584,16 +539,15 @@ test("backfill-codex-session reports the released strings and honours --interfac
     "codex-cli",
   );
   // Already tracked now; and a missing file reports the same negative string.
-  assert.deepEqual((await runHandled(f, ["backfill-codex-session", valid])).stdout, [
+  assert.deepEqual((await run(f, ["backfill-codex-session", valid])).stdout, [
     `No new Codex session backfilled from ${valid}`,
   ]);
   const missing = join(f.home, "missing.jsonl");
-  assert.deepEqual((await runHandled(f, ["backfill-codex-session", missing])).stdout, [
+  assert.deepEqual((await run(f, ["backfill-codex-session", missing])).stdout, [
     `No new Codex session backfilled from ${missing}`,
   ]);
   // Without a path Python does nothing at all.
-  assert.deepEqual(await runHandled(f, ["backfill-codex-session"]), {
-    handled: true,
+  assert.deepEqual(await run(f, ["backfill-codex-session"]), {
     stdout: [],
     stderr: [],
     exitCode: 0,
@@ -611,7 +565,7 @@ test("session-maintenance backfills Pi sessions from PI_SESSIONS_DIR through the
       '{"type":"message","message":{"role":"assistant","content":"hi","timestamp":"2026-04-17T10:00:01Z"}}',
     ].join("\n"),
   );
-  const result = await runHandled(f, ["session-maintenance"], {
+  const result = await run(f, ["session-maintenance"], {
     env: { ...REPLAY_ENV, PI_SESSIONS_DIR: sessionsDir },
   });
   // Imported with a provisional title, then -- same run, next step -- retitled
@@ -664,13 +618,10 @@ test("a failing live close tail leaks nothing to stderr (hook -> transcript path
   });
 
   const result = await runConversationLoggerCommand(db, ["session-end-pi", "s1"], runtime, {});
-  if (!result.handled) throw new Error("expected the live tail to be handled by TypeScript");
-
   const emitted = [...result.stdout, ...result.stderr].join("\n");
   assert.ok(!emitted.includes(secret), "an API key must never reach the hook's output");
   assert.ok(!emitted.includes(transcript), "transcript content must never reach the hook's output");
   // Fail-soft: the session still closes. Observability must never break the
   // pipeline it observes, and a hook that crashes would break session end.
-  assert.equal(result.handled, true);
   assert.equal(result.exitCode, 0);
 });

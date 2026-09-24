@@ -8,9 +8,10 @@
 // Not as a tidiness preference. `setDeliveryCursor` with an `expectedCursor`
 // writes through a compare-and-swap whose WHERE clause matches on STRING
 // EQUALITY of the serialized metadata. A cursor stored with different bytes for
-// the same state cannot be swapped by the other engine, so a
-// `MIRROR_TS_BUILD=0` revert would fail on its first lifecycle write instead of
-// falling back cleanly — the revert would corrupt exactly when it is needed.
+// the same state cannot be swapped, so a cursor the Python engine wrote --
+// every database from before CV22.DS10.TS5 carries them -- would fail its first
+// TypeScript lifecycle write. (Until TS5 the same property also kept the
+// `MIRROR_TS_BUILD=0` revert able to swap a cursor TypeScript wrote.)
 // Hence `pythonJsonDumps` (Python's `", "`/`": "` separators) rather than
 // `JSON.stringify`, `ensure_ascii=False` so `ação` stays raw UTF-8, and the key
 // order of Python's `_serialize_cursor` dict reproduced literally.

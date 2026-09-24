@@ -19,7 +19,11 @@ import { after, describe, test } from "node:test";
 import { needsInject } from "#hooks/mirrorState.ts";
 import { parseHookPayload } from "#hooks/payload.ts";
 import { noteHookFailure } from "#hooks/runtime.ts";
-import { hookNodeFindings, staleRevertGateFindings } from "#runtime/diagnose.ts";
+import {
+  hookNodeFindings,
+  RETIRED_REVERT_GATES,
+  staleRevertGateFindings,
+} from "#runtime/diagnose.ts";
 
 const REPO_ROOT = resolve(import.meta.dirname, "..", "..", "..");
 const roots: string[] = [];
@@ -125,6 +129,38 @@ describe("diagnose reports the transition's leftovers", () => {
 
   test("an empty value is not a set gate", () => {
     assert.deepEqual(staleRevertGateFindings({ MIRROR_TS_BUILD: "" } as NodeJS.ProcessEnv), []);
+  });
+
+  test("a LIVE control that shares the prefix is not called inert (F8)", () => {
+    // The first version matched every non-_REPLAY `MIRROR_TS_*` name, and would
+    // have told a user to delete the MCP wallet guards' switch and consult's
+    // context input -- both of which still do something.
+    assert.deepEqual(
+      staleRevertGateFindings({
+        MIRROR_TS_MCP_GUARDS: "0",
+        MIRROR_TS_CONSULT_CONTEXT: "some context",
+      } as NodeJS.ProcessEnv),
+      [],
+    );
+  });
+
+  test("no retired gate is still READ anywhere in the core", () => {
+    // The list is a claim that these names choose nothing any more. A name on
+    // it that some module still reads would make diagnose call a live control
+    // inert. CODE is graded, not prose: a comment recording that a gate left
+    // is history, while a declaration or a read is a gate that did not.
+    const src = join(import.meta.dirname, "..", "..", "src");
+    const readers: string[] = [];
+    for (const file of readdirSync(src, { recursive: true, encoding: "utf8" })) {
+      if (!file.endsWith(".ts") || file === join("runtime", "diagnose.ts")) continue;
+      const text = readFileSync(join(src, file), "utf8")
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .replace(/^\s*\/\/.*$/gm, "");
+      for (const gate of RETIRED_REVERT_GATES) {
+        if (new RegExp(`${gate}(?![A-Z_])`).test(text)) readers.push(`${file}: ${gate}`);
+      }
+    }
+    assert.deepEqual(readers, []);
   });
 
   test("unresolvable node is a warning, because every hook would skip silently", () => {

@@ -49,8 +49,6 @@ export type LoggerRuntimeEnv = {
   PI_SESSIONS_DIR?: string;
   MIRROR_TS_CONVERSATION_LLM_REPLAY?: string;
   MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY?: string;
-  /** CV22.DS8.US2 tail-only revert; leaves the deterministic subcommands on TS. */
-  MIRROR_TS_CONVERSATION_LLM_TAIL?: string;
   /** Read by the live providers when the close tail runs against a real model. */
   OPENROUTER_API_KEY?: string;
   MEMORY_LLM_TIMEOUT_EXTRACTION?: string;
@@ -95,24 +93,6 @@ export interface LoggerRuntimeOptions {
   backup?: (stdout: (line: string) => void) => string | null;
 }
 
-/**
- * The close tail is reverted to Python for this invocation.
- *
- * `loggerCli` turns this into the Python fallback, which is why the revert
- * reuses it rather than inventing a second mechanism. Before CV22.DS8.US2 it
- * meant "no replay fixture configured"; it now means an explicit
- * `MIRROR_TS_CONVERSATION_LLM_TAIL=0`, because an unconfigured install goes
- * live.
- */
-export class LlmTailUnconfiguredError extends Error {
-  constructor(reason: string) {
-    super(
-      `${reason}; the TypeScript conversation-logger close tail is reverted to the Python fallback`,
-    );
-    this.name = "LlmTailUnconfiguredError";
-  }
-}
-
 export interface LoggerRuntime {
   readonly deps: LoggerDeps;
   readonly mirrorHome: string;
@@ -120,9 +100,7 @@ export interface LoggerRuntime {
   readonly claudeProjectDir: string | null;
   readonly environmentSessionId: string | null;
   readonly piSessionsDir: string;
-  /** Whether the LLM close tail can run under TypeScript in this invocation. */
-  readonly llmTailConfigured: boolean;
-  /** Which transport answers the close tail here: python (revert), replay, or live. */
+  /** Which transport answers the close tail here: replay, incomplete replay, or live. */
   readonly transportMode: ProviderTransportMode;
   /** The close hooks (extraction + finalization) behind the replay transport. */
   closeHooks(): Promise<CloseHooks>;
@@ -159,25 +137,22 @@ export function createLoggerRuntime(options: LoggerRuntimeOptions): LoggerRuntim
   const piSessionsDir = resolvePiSessionsDir(null, env, options.homeDir);
 
   // One precedence, shared with the router so the two cannot disagree about
-  // which transport is live: revert -> replay -> incomplete -> live. The pair
-  // rule that used to live here is now in the spec itself (CR077), so the
-  // router refuses a half-configured fixture with the same reason this does.
+  // which transport is live: replay -> incomplete -> live. The pair rule that
+  // used to live here is now in the spec itself (CR077), so the router and
+  // this runtime refuse a half-configured fixture with the same reason.
   const transport = resolveProviderTransport(env, CONVERSATION_TAIL_TRANSPORT);
 
   let providers: Promise<{ llm: LlmProvider; embeddings: EmbeddingProvider }> | null = null;
   const loadProviders = () => {
-    if (transport.mode === "python") {
-      throw new LlmTailUnconfiguredError(`${CONVERSATION_TAIL_TRANSPORT.revertVar}=0`);
-    }
     providers ??= resolveFamilyProviders(env, CONVERSATION_TAIL_TRANSPORT, {
       loadReplayLlm: options.loadLlm,
       loadReplayEmbedding: options.loadEmbeddings,
       ...liveTailOverrides(env, options.liveProviders),
     }).then((family) => {
-      // `python` was handled above, and the factory declares both kinds for
-      // this family, so both are present by construction.
-      const llm = family?.llm;
-      const embeddings = family?.embedding;
+      // The factory declares both kinds for this family, so both are present
+      // by construction.
+      const llm = family.llm;
+      const embeddings = family.embedding;
       if (!llm || !embeddings) {
         throw new Error("the conversation close tail requires an LLM and an embedding provider");
       }
@@ -250,7 +225,6 @@ export function createLoggerRuntime(options: LoggerRuntimeOptions): LoggerRuntim
     claudeProjectDir: env.CLAUDE_PROJECT_DIR || null,
     environmentSessionId: env.MIRROR_SESSION_ID?.trim() || null,
     piSessionsDir,
-    llmTailConfigured: transport.mode !== "python",
     transportMode: transport.mode,
     backup: options.backup ?? null,
     closeHooks,

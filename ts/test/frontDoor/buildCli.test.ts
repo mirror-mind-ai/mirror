@@ -96,19 +96,21 @@ test("build load crosses the real route and logs calls, never the derived briefi
   }
 });
 
-test("an incomplete build replay fixture refuses in TS instead of falling into live Python", () => {
+test("an incomplete build replay fixture is refused by name, in one line, before anything runs", () => {
+  // Until CV22.DS10.TS5 this surfaced as an uncaught error with a stack trace,
+  // exit 1. The front door now answers it as the refusal it is: one line naming
+  // the missing variable, exit 2, nothing spent.
   const f = fixture();
   try {
     const result = run(f, ["build", "load", "demo"], {
       MIRROR_TS_BUILD_LLM_REPLAY: "/tmp/only-half.json",
     });
-    assert.equal(result.status, 1);
-    assert.match(result.stderr, /ReplayFixtureIncompleteError/);
-    assert.match(result.stderr, /MIRROR_TS_BUILD_EMBEDDING_REPLAY/);
+    assert.equal(result.status, 2);
+    assert.match(result.stderr, /^Mirror TS front door: .*MIRROR_TS_BUILD_EMBEDDING_REPLAY/);
+    assert.doesNotMatch(result.stderr, /\n\s+at /, "no stack trace");
 
     const log = readFileSync(join(f.home, "front-door.log"), "utf8");
-    assert.match(log, /\tbuild\tts\texit=1\tReplayFixtureIncompleteError/);
-    assert.doesNotMatch(log, /\tbuild\tpython\t/);
+    assert.match(log, /\tbuild\tts\texit=2\tReplayFixtureIncompleteError/);
   } finally {
     rmSync(f.root, { recursive: true, force: true });
   }

@@ -16,10 +16,10 @@
 // ## The transport decision is COMPOSED, and taken before any byte
 //
 // `load` prints four surfaces before it reaches a provider, so the decision is
-// resolved up front: `MIRROR_TS_BUILD=0`, `MIRROR_TS_SEARCH=0`, or
-// `MIRROR_TS_CONVERSATION_LLM_TAIL=0` each send the whole command back to
-// Python (`BUILD_LOAD_COMPOSITION`). A `null` return is that fallback; the
-// caller must not have printed anything yet.
+// resolved up front (`BUILD_LOAD_COMPOSITION`): a half-configured replay
+// harness is refused here, before the caller has printed anything. Until
+// CV22.DS10.TS5 three revert variables could also send the whole command back
+// to Python from this point; they left with the fallback.
 
 import { homedir } from "node:os";
 import { dirname } from "node:path";
@@ -33,7 +33,6 @@ import {
   BUILD_LOAD_TRANSPORT,
   CONVERSATION_TAIL_TRANSPORT,
   type ProviderTransportEnv,
-  resolveComposedProviderTransport,
 } from "#providers/transport.ts";
 import { newId, nowIso } from "#util/pyGenerators.ts";
 import { inspectBuilderCloneRole } from "./cloneRoleGuard.ts";
@@ -58,21 +57,16 @@ export interface BuildLoadRuntime {
 }
 
 /**
- * Build the seams, or return `null` when the composition reverts to Python.
+ * Build the seams.
  *
  * Throws `ReplayFixtureIncompleteError` when half a fixture is configured: that
- * is a refusal by name, never a live call and never a silent Python fallback
- * (Python has no replay transport, so it would spend too).
+ * is a refusal by name, never a live call.
  */
 export async function createBuildLoadRuntime(
   options: BuildLoadRuntimeOptions,
-): Promise<BuildLoadRuntime | null> {
+): Promise<BuildLoadRuntime> {
   const env = options.env ?? process.env;
-  const decision = resolveComposedProviderTransport(env, BUILD_LOAD_COMPOSITION);
-  if (decision.mode === "python") return null;
-
   const family = await resolveFamilyProviders(env, BUILD_LOAD_COMPOSITION);
-  if (family === null) return null; // unreachable: the composed decision agrees
   const embedding = family.embedding;
   if (embedding === undefined) {
     throw new Error("build load requires an embedding provider for its two searches");
@@ -91,7 +85,7 @@ export async function createBuildLoadRuntime(
   const hooks = await tail.closeHooks();
 
   return {
-    reason: decision.reason,
+    reason: family.reason,
     mode: family.mode,
     deps: {
       nowIso,

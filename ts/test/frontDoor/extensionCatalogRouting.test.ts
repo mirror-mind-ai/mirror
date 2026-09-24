@@ -1,9 +1,9 @@
-// CV22.DS7.TS4 plateaus 7 and 8 — the routes, the gates, and the denominator.
+// CV22.DS7.TS4 plateaus 7 and 8 — the routes and the denominator.
 //
-// Flipped 2026-09-16 on accepted Navigator validation. What these tests hold
-// now is the other half of the promise: every leaf answers from TypeScript by
-// default, and every one of them goes back to Python with a single `=0` — no
-// code change, no data migration.
+// Flipped 2026-09-16 on accepted Navigator validation: every leaf answers from
+// TypeScript. The family's single-variable revert (`MIRROR_TS_EXTENSIONS=0`,
+// plus `MIRROR_TS_IDENTITY_EDIT=0` for the editor seam) left with the Python
+// engine at CV22.DS10.TS5.
 
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -12,7 +12,6 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { leafFor } from "#frontDoor/extensionCatalogRoute.ts";
 import {
-  gateWithDefault,
   routeMemoryCommand,
   TS4_EXT_BUILTIN_VERBS,
   TS4_EXT_TOP_LEVEL_VERBS,
@@ -20,10 +19,7 @@ import {
 } from "#frontDoor/routing.ts";
 
 const REPO_ROOT = dirname(dirname(dirname(dirname(fileURLToPath(import.meta.url)))));
-const ON = { MIRROR_TS_EXTENSIONS: "1" };
-const OFF = { MIRROR_TS_EXTENSIONS: "0" };
-
-test("the whole extension family answers from TypeScript, and reverts with one variable", () => {
+test("the whole extension family answers from TypeScript", () => {
   for (const argv of [
     ["extensions", "list"],
     ["extensions", "install", "ext-hello", "--extensions-root", "/tmp/src"],
@@ -34,85 +30,13 @@ test("the whole extension family answers from TypeScript, and reverts with one v
     ["list"],
     ["inspect", "extension", "google-ads"],
     ["inspect", "llm-calls", "--summary"],
+    ["identity", "edit", "ego", "behavior"],
+    ["conversations", "--metadata-lifecycle-apply", "abc"],
+    ["conversations", "--metadata-lifecycle-demo", "abc"],
+    ["conversations", "--metadata-lifecycle-dry-run", "abc"],
   ]) {
-    assert.equal(routeMemoryCommand(argv).engine, "ts", `${argv.join(" ")} is flipped`);
-    assert.equal(routeMemoryCommand(argv, ON).engine, "ts", `${argv.join(" ")} with the gate on`);
-    const reverted = routeMemoryCommand(argv, OFF);
-    assert.equal(reverted.engine, "python", `${argv.join(" ")} must revert`);
-    assert.match(reverted.reason, /MIRROR_TS_EXTENSIONS/, argv.join(" "));
+    assert.equal(routeMemoryCommand(argv).engine, "ts", argv.join(" "));
   }
-});
-
-test("`identity edit` and the ES-001 write faces carry their own gates", () => {
-  assert.equal(routeMemoryCommand(["identity", "edit", "ego", "behavior"]).engine, "ts");
-  assert.equal(
-    routeMemoryCommand(["identity", "edit", "ego", "behavior"], { MIRROR_TS_IDENTITY_EDIT: "0" })
-      .engine,
-    "python",
-  );
-  // The editor seam does NOT ride the catalog gate: losing a person's identity
-  // content and misreporting an extension list are different failures, and each
-  // deserves a revert that does not take the other with it.
-  assert.equal(
-    routeMemoryCommand(["identity", "edit", "ego", "behavior"], OFF).engine,
-    "ts",
-    "identity edit must not be reverted by the catalog gate",
-  );
-
-  for (const flag of ["--metadata-lifecycle-apply", "--metadata-lifecycle-demo"]) {
-    assert.equal(routeMemoryCommand(["conversations", flag, "abc"]).engine, "ts");
-    assert.equal(
-      routeMemoryCommand(["conversations", flag, "abc"], {
-        MIRROR_TS_CONVERSATIONS_LIFECYCLE: "0",
-      }).engine,
-      "python",
-    );
-  }
-  // The READ faces flipped in US11; since plateau 8 the writes share both the
-  // variable AND the default, so one `=0` reverts the whole ES-001 family.
-  assert.equal(
-    routeMemoryCommand(["conversations", "--metadata-lifecycle-dry-run", "abc"]).engine,
-    "ts",
-  );
-  assert.equal(
-    routeMemoryCommand(["conversations", "--metadata-lifecycle-dry-run", "abc"], {
-      MIRROR_TS_CONVERSATIONS_LIFECYCLE: "0",
-    }).engine,
-    "python",
-  );
-});
-
-test("the gate contract holds for the default plateau 8 will set, not only today's", () => {
-  // With a default of OFF, `=0` and "unset" reach Python either way, so the
-  // route-level assertions below cannot see a deleted `=0` branch — a mutant
-  // proved exactly that. The revert is the reason the flip is safe to take, so
-  // it is pinned at the function that will carry it.
-  assert.equal(gateWithDefault(undefined, false), false);
-  assert.equal(gateWithDefault(undefined, true), true, "an unset gate follows the default");
-  assert.equal(gateWithDefault("0", true), false, "`=0` must revert a FLIPPED default");
-  assert.equal(gateWithDefault("1", false), true, "`=1` must opt in before the flip");
-  // Anything else is not a decision: an operator who typed `MIRROR_TS_X=yes`
-  // gets the default rather than a silent flip.
-  assert.equal(gateWithDefault("yes", false), false);
-  assert.equal(gateWithDefault("", true), true);
-});
-
-test("every gate reverts with `=0`, which is what makes the flip safe to take", () => {
-  assert.equal(
-    routeMemoryCommand(["extensions", "list"], { MIRROR_TS_EXTENSIONS: "0" }).engine,
-    "python",
-  );
-  assert.equal(routeMemoryCommand(["ext", "list"], { MIRROR_TS_EXTENSIONS: "0" }).engine, "python");
-  assert.equal(
-    routeMemoryCommand(["identity", "edit", "ego", "x"], { MIRROR_TS_IDENTITY_EDIT: "0" }).engine,
-    "python",
-  );
-  assert.equal(
-    routeMemoryCommand(["conversations", "--metadata-lifecycle-apply", "a"], {
-      MIRROR_TS_CONVERSATIONS_LIFECYCLE: "0",
-    }).engine,
-    "python",
-  );
 });
 
 test("a claimed command does not inherit a subcommand it never ported", () => {

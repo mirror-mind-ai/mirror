@@ -29,7 +29,6 @@ import { hasOption, optionValue, stripOptionWithValue } from "./args.ts";
 export type MirrorRouteEnvironment = {
   MIRROR_SESSION_ID?: string;
   MEMORY_RECEPTION?: string;
-  MIRROR_TS_MIRROR_QUERY?: string;
   MIRROR_TS_MIRROR_LLM_REPLAY?: string;
   MIRROR_TS_MIRROR_EMBEDDING_REPLAY?: string;
 };

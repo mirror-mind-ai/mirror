@@ -8,11 +8,11 @@
 // logged, and the rows left behind. No live provider is ever reachable: the
 // close tail answers from a replay fixture written by this script.
 //
-// The step table carries the route each subcommand is EXPECTED to take at
-// the current plateau. A flip changes exactly one expectation here, and the
-// smoke proves it end to end before the burn-down ledger records it.
-// Subcommands still on Python run through the real fallback, so the smoke
-// also exercises the Python side reading rows TypeScript wrote.
+// Every step is answered by TypeScript, and the smoke checks that the front
+// door's log says so. Until CV22.DS10.TS5 it also ran each family's revert
+// through the real Python fallback, proving Python could read the rows
+// TypeScript wrote -- the property that made a revert safe. The reverts left
+// with the engine, and so did those steps.
 //
 // Run from the repo root:  node ts/parity/conversation_lifecycle_smoke.ts
 
@@ -85,8 +85,8 @@ const baseEnv: Record<string, string> = {
   //
   // Not optional, and the first run without them proved why: with only the
   // conversation family configured, the composed decision reports an incomplete
-  // replay fixture and sends promote to Python — refusing by name rather than
-  // replaying two searches and sending the close tail to a live provider. A
+  // replay fixture and refuses promote by name rather than replaying two
+  // searches and sending the close tail to a live provider. A
   // harness that configures one family and exercises another gets the refusal,
   // which is the behavior CV22.DS7.US8 item 18b specifies.
   MIRROR_TS_BUILD_LLM_REPLAY: join(TS_ROOT, "test", "fixtures", "builder-load", "replay-llm.json"),
@@ -98,22 +98,9 @@ const baseEnv: Record<string, string> = {
     "replay-embedding.json",
   ),
   PI_SESSIONS_DIR: join(home, "absent-pi-sessions"),
-  MIRROR_FRONTDOOR_PYTHON_TIMEOUT_MS: "120000",
 };
-// The kill switches must not be inherited from the developer's shell.
-delete baseEnv.MIRROR_TS_CONVERSATION_LOGGER;
-delete baseEnv.MIRROR_TS_BACKUP;
-delete baseEnv.MIRROR_TS_REPAIR_ENCODING;
-delete baseEnv.MIRROR_TS_WELCOME;
-delete baseEnv.MIRROR_TS_RUNTIME_READS;
-delete baseEnv.MIRROR_TS_SOUL;
-delete baseEnv.MIRROR_TS_EXPLORE;
-delete baseEnv.MIRROR_TS_BUILD;
-// Empty, not deleted: `memory.config` re-applies a repo `.env` with
-// `os.environ.setdefault` at import, so a DELETED key comes back and
-// `runtime diagnose` would make a live OpenRouter call on the Python side --
-// warning `model_pin_unresolved` where TS cannot until DS8, and breaking the
-// byte comparison for a reason that has nothing to do with the port.
+// Empty, not deleted: the smoke must stay offline, and an empty key is what
+// every provider treats as "none configured".
 baseEnv.OPENROUTER_API_KEY = "";
 // The welcome's remote update check is bounded but real; the smoke stays offline.
 baseEnv.MIRROR_WELCOME_REMOTE_UPDATE_CHECK = "off";
@@ -172,11 +159,15 @@ function run(
   };
 }
 
-/** One step: the subcommand, its expected route at this plateau, and its checks. */
+/**
+ * One step: the subcommand, the route the front door must log for it, and its
+ * checks. The route is always `ts` now; the check stays, because a step that
+ * came back `usage` or `retired` would still exit and must still fail.
+ */
 function step(
   label: string,
   args: string[],
-  expectedRoute: "ts" | "python",
+  expectedRoute: "ts",
   options: { stdin?: string; env?: Record<string, string> } = {},
 ): StepResult {
   const result = run(args, options);
@@ -436,20 +427,6 @@ check(
   repair.stdout,
 );
 
-// The mutating repair follows the backup gate (CV22.DS7.TS1, flipped
-// 2026-09-07): TS by default, Python under MIRROR_TS_BACKUP=0. The TS steps
-// below run with NO gate in the environment, so the smoke proves the default.
-const applyRepairPython = step(
-  "repair-journeys --apply (backup gate off)",
-  ["conversation-logger", "repair-journeys", "--apply"],
-  "python",
-  { env: { MIRROR_TS_BACKUP: "0" } },
-);
-check(
-  applyRepairPython.stdout.includes("Repaired: "),
-  "repair-journeys --apply reports through Python when the backup gate is off",
-  applyRepairPython.stdout,
-);
 const applyRepair = step(
   "repair-journeys --apply (default route)",
   ["conversation-logger", "repair-journeys", "--apply"],
@@ -463,63 +440,27 @@ check(
 
 // --- DB safety tools (CV22.DS7.TS1) -------------------------------------------
 
-// 10. backup: both real CLIs archive the same file into separate directories;
-// Python's zipfile must read the TS archive and see the same restore image.
+// 10. backup: the archive must verify through the product's own verifier. (It
+// used to be graded by Python's zipfile against a Python-made twin; the
+// verifier is what an operator actually runs before restoring.)
 const backupTs = step(
   "backup (TS, default route)",
   ["backup", "--backup-dir", join(home, "backups-ts")],
   "ts",
 );
-const backupPy = step(
-  "backup (Python)",
-  ["backup", "--backup-dir", join(home, "backups-py")],
-  "python",
-  {
-    env: { MIRROR_TS_BACKUP: "0" },
-  },
+const [archiveName] = readdirSyncSafe(join(home, "backups-ts")).filter((name) =>
+  /^memory_\d{8}_\d{6}\.zip$/.test(name),
 );
-const normalizeBackupStdout = (text: string) =>
-  text
-    .replace(/memory_\d{8}_\d{6}\.zip/g, "memory_<stamp>.zip")
-    .replace(/\(\d+ KB\)/g, "(<KB> KB)")
-    .replace(/backups-(ts|py)/g, "backups-<engine>");
-check(
-  normalizeBackupStdout(backupTs.stdout) === normalizeBackupStdout(backupPy.stdout),
-  "backup prints the same lines from both engines (stamp and KB normalized)",
-  `${backupTs.stdout}---\n${backupPy.stdout}`,
-);
-const archiveCheck = spawnSync(
-  "uv",
-  [
-    "run",
-    "python",
-    "-c",
-    [
-      "import glob, json, sys, zipfile",
-      "def members(d):",
-      "    paths = sorted(glob.glob(d + '/memory_*.zip'))",
-      "    assert len(paths) == 1, paths",
-      "    with zipfile.ZipFile(paths[0]) as zf:",
-      "        assert zf.testzip() is None, 'testzip failed: ' + paths[0]",
-      "        return [(i.filename, i.file_size, i.CRC) for i in zf.infolist()]",
-      "ts, py = members(sys.argv[1]), members(sys.argv[2])",
-      "print(json.dumps({'ts': ts, 'py': py, 'same': ts == py}))",
-    ].join("\n"),
-    join(home, "backups-ts"),
-    join(home, "backups-py"),
-  ],
-  { encoding: "utf8", cwd: resolve(TS_ROOT, ".."), env: baseEnv },
-);
-const archiveReport = archiveCheck.status === 0 ? JSON.parse(archiveCheck.stdout.trim()) : null;
-check(
-  archiveReport !== null,
-  "Python's zipfile verifies both archives (testzip)",
-  archiveCheck.stderr,
+check(backupTs.stdout.includes("Backup created: "), "backup reports the archive", backupTs.stdout);
+const verified = step(
+  "runtime backup --verify the archive",
+  ["runtime", "backup", "--verify", join(home, "backups-ts", archiveName ?? "missing.zip")],
+  "ts",
 );
 check(
-  archiveReport?.same === true && archiveReport?.ts?.[0]?.[0] === "memory.db",
-  "the TS archive holds the same restore image as the Python one (member names, sizes, CRC-32)",
-  archiveCheck.stdout,
+  /^Verification result: valid$/m.test(verified.stdout),
+  "the TS archive verifies as a restorable database",
+  verified.stdout,
 );
 check(
   !existsSync(join(home, "backups-ts")) ||
@@ -527,9 +468,8 @@ check(
   "no .partial staging file survives the TS backup",
 );
 
-// 11. repair-encoding: a seeded mojibake row is reported identically by both
-// engines, repaired by TS (with the dated zip first), and then Python sees
-// nothing left to repair -- Python reading what TypeScript wrote.
+// 11. repair-encoding: a seeded mojibake row is found, repaired (with the dated
+// zip first), and then found no more.
 execute(
   "INSERT INTO messages (id, conversation_id, role, content, created_at) VALUES (?, ?, 'user', ?, ?)",
   "smoke-mojibake",
@@ -537,14 +477,11 @@ execute(
   "sess\u00c3\u00a3o com acentua\u00c3\u00a7\u00c3\u00a3o quebrada",
   "2026-09-07T12:00:00.000000Z",
 );
-const dryTs = step("repair-encoding dry run (TS, default route)", ["repair-encoding"], "ts");
-const dryPy = step("repair-encoding dry run (Python)", ["repair-encoding"], "python", {
-  env: { MIRROR_TS_REPAIR_ENCODING: "0" },
-});
+const dryTs = step("repair-encoding dry run", ["repair-encoding"], "ts");
 check(
-  dryTs.stdout === dryPy.stdout && dryTs.stdout.includes("Repairable mojibake hits: 1"),
-  "repair-encoding dry run is byte-identical across engines and finds the seeded row",
-  `${dryTs.stdout}---\n${dryPy.stdout}`,
+  dryTs.stdout.includes("Repairable mojibake hits: 1"),
+  "repair-encoding dry run finds the seeded row",
+  dryTs.stdout,
 );
 const applyEncoding = step(
   "repair-encoding --apply (TS, default route)",
@@ -562,33 +499,24 @@ check(
     ?.content === "sess\u00e3o com acentua\u00e7\u00e3o quebrada",
   "the seeded row is repaired in place",
 );
-const afterPy = step(
-  "repair-encoding dry run after apply (Python)",
-  ["repair-encoding"],
-  "python",
-  {
-    env: { MIRROR_TS_REPAIR_ENCODING: "0" },
-  },
-);
+const afterApply = step("repair-encoding dry run after apply", ["repair-encoding"], "ts");
 check(
-  afterPy.stdout.includes("Repairable mojibake hits: 0"),
-  "Python finds nothing left to repair after the TS apply",
-  afterPy.stdout,
+  afterApply.stdout.includes("Repairable mojibake hits: 0"),
+  "nothing is left to repair after the apply",
+  afterApply.stdout,
 );
 
-// 12. CV22.DS7.TS3 -- the daily-visible tail through both engines. The gates
-// are FLIPPED, so the TS side carries no gate at all in this environment (the
-// kill switches are deleted from `baseEnv` above): the smoke proves the
-// shipped default, not a configuration only the smoke sets. The Python side is
-// selected with `=0`, which is the revert control.
+// 12. CV22.DS7.TS3 -- the daily-visible tail. (Until CV22.DS10.TS5 each surface
+// was also rendered by Python through its revert gate and compared byte for
+// byte; that parity is recorded, and the gates are gone.)
 //
 // `runtime version` and `runtime release-notes` take no `--mirror-home`, so
-// they bypass the helper that appends it -- argparse would reject the flag.
-function runRaw(args: string[], env: Record<string, string>): StepResult {
+// they bypass the helper that appends it.
+function runRaw(args: string[]): StepResult {
   const result = spawnSync(process.execPath, [CLI, ...args], {
     encoding: "utf8",
     cwd: resolve(TS_ROOT, ".."),
-    env: { ...baseEnv, ...env },
+    env: baseEnv,
   });
   return {
     stdout: result.stdout ?? "",
@@ -598,87 +526,22 @@ function runRaw(args: string[], env: Record<string, string>): StepResult {
   };
 }
 
-const TAIL_DEFAULT: Record<string, string> = {};
-const TAIL_OFF = { MIRROR_TS_WELCOME: "0", MIRROR_TS_RUNTIME_READS: "0" };
-
-/**
- * Lines that may legitimately differ between the engines on THIS database.
- *
- * `status` and `diagnose` are the two commands the story exists to change:
- * they grade the migration ledger, and the TS core knows the TS-authored
- * `017_journey_parent_column` that Python calls unknown. Everything else --
- * including every other finding -- must still match, so the assertion below is
- * "TS removed the false alarm and changed nothing else", not byte identity.
- *
- * `front_door_errors` is a harness artifact, not a port difference: the finding
- * COUNTS entries in the front-door log, and this smoke appends to that same log
- * on every step -- including the two diagnose invocations being compared. The
- * count therefore moves between them no matter which engine answers.
- */
-const DIVERGENT_LINE =
-  /017_journey_parent_column|core_migration_unknown|^Core migrations:|^Findings:|^Status:|^Subject: database _migrations$|^Recommendation: classify as legacy core row|^Repair route: manual review$|front_door_errors/;
-
-for (const [label, args, raw, mayDiverge] of [
-  ["welcome", ["welcome"], false, false],
-  ["welcome --status-line", ["welcome", "--status-line"], false, false],
-  ["runtime version", ["runtime", "version"], true, false],
-  ["runtime status", ["runtime", "status"], false, true],
-  ["runtime diagnose", ["runtime", "diagnose"], false, true],
-] as [string, string[], boolean, boolean][]) {
-  const invoke = (env: Record<string, string>): StepResult =>
-    raw ? runRaw(args, env) : run(args, { env });
-  const ts = invoke(TAIL_DEFAULT);
-  const py = invoke(TAIL_OFF);
-  check(ts.route === "ts", `${label}: routes to TS by default (no gate set)`, ts.route);
-  check(py.route === "python", `${label}: reverts to Python with the gate at 0`, py.route);
-
-  if (!mayDiverge) {
-    check(
-      ts.stdout === py.stdout,
-      `${label}: byte-identical across engines`,
-      `--- ts ---\n${ts.stdout}--- python ---\n${py.stdout}`,
-    );
-    check(
-      ts.status === py.status,
-      `${label}: same exit code across engines`,
-      `ts=${ts.status} python=${py.status}`,
-    );
-    continue;
-  }
-
-  const tsLines = ts.stdout.split("\n");
-  const pyLines = py.stdout.split("\n");
-  const unexplained = pyLines.filter(
-    (line) => !DIVERGENT_LINE.test(line) && !tsLines.includes(line),
-  );
-  check(
-    unexplained.length === 0,
-    `${label}: TS drops the 017 false alarm and changes nothing else`,
-    `lines only Python produced:\n${unexplained.join("\n")}`,
-  );
-  check(
-    py.stdout.includes("017_journey_parent_column") &&
-      !ts.stdout.includes("017_journey_parent_column"),
-    `${label}: Python flags the TS-authored migration and TS does not`,
-    `--- ts ---\n${ts.stdout}--- python ---\n${py.stdout}`,
-  );
+for (const [label, args, raw] of [
+  ["welcome", ["welcome"], false],
+  ["welcome --status-line", ["welcome", "--status-line"], false],
+  ["runtime version", ["runtime", "version"], true],
+  ["runtime status", ["runtime", "status"], false],
+  ["runtime diagnose", ["runtime", "diagnose"], false],
+] as [string, string[], boolean][]) {
+  const result = raw ? runRaw(args) : run(args);
+  check(result.route === "ts", `${label}: routes to TS`, result.route);
+  check(result.stdout.length > 0, `${label}: renders`, result.stderr);
 }
 
 // The per-turn path must not write. A status line that migrates the database
 // it reads would report a state it created.
 const beforeStatusLine = readFileSync(dbPath);
-run(["welcome", "--status-line"], { env: TAIL_DEFAULT });
-
-// The two tail gates revert INDEPENDENTLY: they fail differently, so reverting
-// the per-turn surface must not drag diagnostics back to Python with it.
-check(
-  run(["runtime", "status"], { env: { MIRROR_TS_WELCOME: "0" } }).route === "ts",
-  "MIRROR_TS_WELCOME=0 does not revert the runtime reads",
-);
-check(
-  run(["welcome"], { env: { MIRROR_TS_RUNTIME_READS: "0" } }).route === "ts",
-  "MIRROR_TS_RUNTIME_READS=0 does not revert welcome",
-);
+run(["welcome", "--status-line"]);
 check(
   Buffer.compare(readFileSync(dbPath), beforeStatusLine) === 0,
   "welcome --status-line leaves the database byte-identical",
@@ -694,42 +557,18 @@ check(
   "the front-door log carries names and routes only, never payloads or paths",
 );
 
-// 9. Revertibility: the family switch sends the whole family back to Python.
-const reverted = run(["conversation-logger", "status"], {
-  env: { MIRROR_TS_CONVERSATION_LOGGER: "0" },
-});
-check(
-  reverted.route === "python",
-  "MIRROR_TS_CONVERSATION_LOGGER=0 reverts to Python",
-  reverted.route,
-);
-check(
-  reverted.stdout.trim() === "ACTIVE",
-  "the reverted status answers from Python",
-  reverted.stdout,
-);
-
-// 10. CV22.DS7.US6 — the Soul ritual, run end to end through BOTH engines on
-// the same disposable home. Every surface here is transport=verbatim, and the
-// bugs in a stateful ritual live in the TRANSITIONS, not in single renders, so
-// the sequence runs as one session rather than as isolated calls.
-//
-// The gate is off in this build, so each step is run twice on purpose: once
-// with MIRROR_TS_SOUL=1 (proving the route that plateau 7 will make default)
-// and once without (proving today's shipped default is still Python), and the
-// two outputs are compared byte for byte.
-// After the 2026-09-08 flip the SHIPPED route is TS with no gate in the
-// environment, so `SOUL_ON` sets none: the steps below prove the default rather
-// than a configuration. `SOUL_OFF` is the revert control.
+// 10. CV22.DS7.US6 — the Soul ritual, run end to end on the same disposable
+// home. Every surface here is transport=verbatim, and the bugs in a stateful
+// ritual live in the TRANSITIONS, not in single renders, so the sequence runs
+// as one session rather than as isolated calls. (Until CV22.DS10.TS5 each
+// read-only surface was also rendered by Python and compared byte for byte.)
 const SOUL_ON = { MIRROR_HOME: home };
-const SOUL_OFF = { MIRROR_HOME: home, MIRROR_TS_SOUL: "0" };
 const soulSession = "smoke-soul-session";
 
-// Python's `soul` parser accepts NO `--mirror-home` (nor does `explore`, which
-// US7 will meet), so every invocation here targets the disposable home through
-// the environment instead -- the way a real session reaches it. The divergence
-// this exposes is asserted explicitly further down rather than worked around
-// silently.
+// Every invocation here targets the disposable home through the environment --
+// the way a real session reaches it. (The oracle's `soul` and `explore` parsers
+// accepted no `--mirror-home`, which is why; TypeScript does, and that is
+// asserted further down.)
 function runSoul(args: string[], env: Record<string, string>): StepResult {
   const result = spawnSync(process.execPath, [CLI, ...args], {
     encoding: "utf8",
@@ -751,26 +590,16 @@ function soulStep(label: string, args: string[]): StepResult {
   return result;
 }
 
-function soulBothEngines(label: string, args: string[]): { ts: StepResult; python: StepResult } {
-  const ts = runSoul(args, SOUL_ON);
-  const python = runSoul(args, SOUL_OFF);
-  check(ts.route === "ts", `${label}: TS by default, no gate in the environment`, ts.route);
-  check(python.route === "python", `${label}: MIRROR_TS_SOUL=0 reverts to Python`, python.route);
-  check(
-    ts.stdout === python.stdout,
-    `${label}: both engines render identically`,
-    `ts=${JSON.stringify(ts.stdout.slice(0, 120))} python=${JSON.stringify(python.stdout.slice(0, 120))}`,
-  );
-  check(
-    ts.status === python.status,
-    `${label}: same exit code`,
-    `${ts.status} vs ${python.status}`,
-  );
-  return { ts, python };
+/** A read-only ritual surface: answered by TypeScript, rendered, no state touched. */
+function soulRender(label: string, args: string[]): StepResult {
+  const result = runSoul(args, SOUL_ON);
+  check(result.route === "ts", `${label}: routed to ts`, result.route);
+  check(result.stdout.length > 0 || result.stderr.length > 0, `${label}: renders`);
+  return result;
 }
 
-// Read-only ritual surfaces: identical on both engines, no state touched.
-soulBothEngines("soul listen", [
+// Read-only ritual surfaces.
+soulRender("soul listen", [
   "soul",
   "listen",
   "--self",
@@ -778,30 +607,10 @@ soulBothEngines("soul listen", [
   "--shadow",
   "the protection inside the control",
 ]);
-soulBothEngines("soul rite self", [
-  "soul",
-  "rite",
-  "self",
-  "--says",
-  "o que resiste a ser explicado",
-]);
-soulBothEngines("soul close", [
-  "soul",
-  "close",
-  "--harvested",
-  "uma verdade",
-  "--echoes",
-  "um eco",
-]);
-soulBothEngines("soul review", [
-  "soul",
-  "review",
-  "--origin",
-  "a origem",
-  "--self",
-  "um princípio",
-]);
-soulBothEngines("soul propose", [
+soulRender("soul rite self", ["soul", "rite", "self", "--says", "o que resiste a ser explicado"]);
+soulRender("soul close", ["soul", "close", "--harvested", "uma verdade", "--echoes", "um eco"]);
+soulRender("soul review", ["soul", "review", "--origin", "a origem", "--self", "um princípio"]);
+soulRender("soul propose", [
   "soul",
   "propose",
   "self",
@@ -812,16 +621,12 @@ soulBothEngines("soul propose", [
   "--why",
   "porque recorre",
 ]);
-soulBothEngines("soul prompt wisdom", ["soul", "prompt", "wisdom"]);
+soulRender("soul prompt wisdom", ["soul", "prompt", "wisdom"]);
 
-// Refusals are ritual text too, and they must match including the exit code.
-const refusedRite = soulBothEngines("soul rite wisdom without --says", ["soul", "rite", "wisdom"]);
-check(refusedRite.ts.status === 1, "soul rite wisdom: exit 1", `${refusedRite.ts.status}`);
-check(
-  refusedRite.ts.stderr === refusedRite.python.stderr,
-  "soul rite wisdom: identical stderr",
-  `ts=${refusedRite.ts.stderr.trim()} python=${refusedRite.python.stderr.trim()}`,
-);
+// Refusals are ritual text too.
+const refusedRite = soulRender("soul rite wisdom without --says", ["soul", "rite", "wisdom"]);
+check(refusedRite.status === 1, "soul rite wisdom: exit 1", `${refusedRite.status}`);
+check(refusedRite.stderr.length > 0, "soul rite wisdom: says why", refusedRite.stderr);
 
 // Stateful sequence on the TS engine, verified in the database as it goes.
 const fruitSet = soulStep("soul fruit set", [
@@ -890,46 +695,28 @@ check(
   afterLoad?.metadata ?? "(no row)",
 );
 
-// `harvest save` is the one Soul leaf that crosses the provider seam. Until
-// CV22.DS8.US3 it stayed on Python without a replay fixture -- and the front
-// door never wired one, so the TypeScript path could not complete at all. It
-// now goes live by default, with the family switch as its revert.
+// `harvest save` is the one Soul leaf that crosses the provider seam, and it
+// goes live by default (CV22.DS8.US3).
 const saveUnconfigured = runSoul(["soul", "harvest", "save", "--session-id", soulSession], SOUL_ON);
 check(
   saveUnconfigured.route === "ts",
   "soul harvest save reaches TS on an unconfigured install (DS8.US3)",
   saveUnconfigured.route,
 );
-const saveReverted = runSoul(["soul", "harvest", "save", "--session-id", soulSession], SOUL_OFF);
-check(
-  saveReverted.route === "python",
-  "MIRROR_TS_SOUL=0 reverts harvest save with the rest of the family",
-  saveReverted.route,
-);
 
-// An unported subcommand reaches Python by name, never by inheritance.
+// An unknown subcommand gets the family's own usage answer, never inheritance
+// (CV22.DS10.TS5, D2).
 const unknownSub = runSoul(["soul", "publish"], SOUL_ON);
 check(
-  unknownSub.route === "python",
-  "an unallowlisted soul subcommand reaches Python by name",
-  unknownSub.route,
+  unknownSub.route === "usage" && unknownSub.status === 2,
+  "an unallowlisted soul subcommand gets the family's usage answer",
+  `${unknownSub.route} exit=${unknownSub.status}`,
 );
 
-// Recorded divergence: Python's `soul` parser has no `--mirror-home`, so it
-// refuses the flag with argparse's exit 2 while the TS route -- like every
-// other front-door command -- accepts it. A superset, not a changed answer for
-// any invocation that works today, and asserted so it stays visible.
+// The TS route accepts `--mirror-home` like every other front-door command.
+// (Python's `soul` parser refused it -- a recorded divergence while it existed.)
 const soulHomeFlagTs = runSoul(["soul", "listen", "--self", "x", "--mirror-home", home], SOUL_ON);
-const soulHomeFlagPython = runSoul(
-  ["soul", "listen", "--self", "x", "--mirror-home", home],
-  SOUL_OFF,
-);
 check(soulHomeFlagTs.status === 0, "TS soul accepts --mirror-home", `${soulHomeFlagTs.status}`);
-check(
-  soulHomeFlagPython.status === 2,
-  "Python soul refuses --mirror-home (recorded divergence)",
-  `${soulHomeFlagPython.status}`,
-);
 
 check(
   !frontDoorLog.includes("um fruto em maturação") &&
@@ -943,11 +730,7 @@ check(
 // live in the TRANSITIONS -- open, thicken, attractor, experiment, snapshot,
 // handoff, archive -- not in single renders.
 //
-// After the 2026-09-09 flip the SHIPPED route is TS with no gate in the
-// environment, so `EXPLORE_ON` sets none: the steps below prove the default
-// rather than a configuration. `EXPLORE_OFF` is the revert control.
 const EXPLORE_ON = { MIRROR_HOME: home };
-const EXPLORE_OFF = { MIRROR_HOME: home, MIRROR_TS_EXPLORE: "0" };
 const exploreJourney = "smoke-explore-journey";
 const exploreProject = join(home, "explore-project");
 
@@ -971,15 +754,6 @@ function exploreStep(label: string, args: string[]): StepResult {
   check(result.route === "ts", `${label}: routed to ts`, result.route);
   return result;
 }
-
-// The revert control, exercised before anything else writes: `=0` must take the
-// whole family back to Python with no code change.
-const exploreReverted = runExplore(["explore", "story", "show", exploreJourney], EXPLORE_OFF);
-check(
-  exploreReverted.route === "python",
-  "MIRROR_TS_EXPLORE=0 reverts the whole family to Python",
-  exploreReverted.route,
-);
 
 // A journey with a project path, so the handoff step has somewhere to write.
 mkdirSync(exploreProject, { recursive: true });
@@ -1176,47 +950,24 @@ check(
   `exit=${explorePromote.status} ${explorePromote.stdout.slice(0, 120)}`,
 );
 
-// And the composed revert reaches Python, because promote's tail is a Builder
-// session start: one family must not mean two things.
-const explorePromoteReverted = runExplore(["explore", "story", "promote", exploreJourney], {
-  ...EXPLORE_ON,
-  MIRROR_TS_BUILD: "0",
-});
-check(
-  explorePromoteReverted.route === "python",
-  "MIRROR_TS_BUILD=0 reverts explore story promote to Python",
-  explorePromoteReverted.route,
-);
-
-// An unallowlisted action reaches Python by name, never by inheritance.
+// An unknown action gets `explore story`'s own usage answer, never inheritance
+// (CV22.DS10.TS5, D2).
 const exploreUnknown = runExplore(["explore", "story", "publish", exploreJourney], EXPLORE_ON);
 check(
-  exploreUnknown.route === "python",
-  "an unallowlisted explore story action reaches Python by name",
-  exploreUnknown.route,
+  exploreUnknown.route === "usage" && exploreUnknown.status === 2,
+  "an unallowlisted explore story action gets the family's usage answer",
+  `${exploreUnknown.route} exit=${exploreUnknown.status}`,
 );
 
-// Recorded divergence, the same one Soul carries: Python's `explore` parser has
-// no `--mirror-home` and refuses it with argparse's exit 2, while the TS route
-// accepts it like every other front-door command. A superset, not a changed
-// answer for any invocation that works today.
+// The TS route accepts `--mirror-home` like every other front-door command.
 const exploreHomeFlagTs = runExplore(
   ["explore", "story", "show", exploreJourney, "--mirror-home", home],
   EXPLORE_ON,
-);
-const exploreHomeFlagPython = runExplore(
-  ["explore", "story", "show", exploreJourney, "--mirror-home", home],
-  EXPLORE_OFF,
 );
 check(
   exploreHomeFlagTs.status === 0,
   "TS explore accepts --mirror-home",
   `${exploreHomeFlagTs.status}`,
-);
-check(
-  exploreHomeFlagPython.status === 2,
-  "Python explore refuses --mirror-home (recorded divergence)",
-  `${exploreHomeFlagPython.status}`,
 );
 
 const exploreLog = readFileSync(join(home, "front-door.log"), "utf8");

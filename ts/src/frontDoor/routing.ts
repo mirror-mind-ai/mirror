@@ -24,7 +24,12 @@ import {
 } from "./runtimeRoute.ts";
 import type { UsageRequest } from "./usage.ts";
 
-export type FrontDoorEngine = "ts" | "python";
+/**
+ * The engine a routed command answers from. One member since CV22.DS10.TS5:
+ * `"python"` left with the fallback it named, and every site that still
+ * reached for it stopped compiling -- which is how the last of them were found.
+ */
+export type FrontDoorEngine = "ts";
 
 /**
  * A surface CV22.DS10 removed rather than ported.
@@ -114,8 +119,7 @@ const TS_READ_COMMANDS = new Set(["detect-persona", "journeys"]);
 // slice claimed it. DS7.US11 splits it three ways by what each flag actually
 // needs, rather than treating them as one block.
 //
-// READS -- pure, over the engine DS7.US10 already ported. Gated by
-// MIRROR_TS_CONVERSATIONS_LIFECYCLE.
+// READS -- pure, over the engine DS7.US10 already ported.
 const TS_LIFECYCLE_READ_FLAGS = [
   "--metadata-lifecycle-dry-run",
   "--metadata-lifecycle-preview-at-message",
@@ -329,167 +333,30 @@ export function retiredRefusal(decision: RouteDecision & { engine: "retired" }):
 // A type alias rather than an interface: aliases get an implicit index
 // signature, which is what lets the named variables below still be passed to
 // `resolveProviderTransport`, whose families name their variables as data.
+//
+// Only what still CHOOSES something is here: the replay fixtures, which choose
+// a test transport, and `MEMORY_RECEPTION`. The `MIRROR_TS_<FAMILY>` revert
+// gates chose an engine, and left with it (CV22.DS10.TS5, D3). A value left in
+// someone's `.env` changes no route; `runtime diagnose` names it inert.
 export type RouteEnvironment = {
-  /** CV22.DS8.US1 revert control for the fresh-semantic-search leaf. */
-  MIRROR_TS_SEARCH?: string;
   MIRROR_TS_SEARCH_EMBEDDING_REPLAY?: string;
-  /** CV22.DS8.US3 revert control for both consult leaves. */
-  MIRROR_TS_CONSULT?: string;
   MIRROR_TS_CONSULT_LLM_REPLAY?: string;
   MIRROR_TS_CREDITS_REPLAY?: string;
-  /** CV22.DS8.US3 tail-only revert: the provider-crossing cultivation leaves. */
-  MIRROR_TS_CULTIVATION?: string;
   MIRROR_TS_CULTIVATION_LLM_REPLAY?: string;
   MIRROR_TS_CULTIVATION_EMBEDDING_REPLAY?: string;
-  /** CV22.DS8.US3 revert control for `mirror load --query` only. */
-  MIRROR_TS_MIRROR_QUERY?: string;
   MIRROR_TS_MIRROR_LLM_REPLAY?: string;
   MIRROR_TS_MIRROR_EMBEDDING_REPLAY?: string;
-  MIRROR_TS_CONVERSATION_LOGGER?: string;
-  MIRROR_TS_CONVERSATION_APPEND?: string;
   MIRROR_TS_CONVERSATION_LLM_REPLAY?: string;
   MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY?: string;
-  /** CV22.DS8.US2 tail-only revert: the five close-tail subcommands, not the family. */
-  MIRROR_TS_CONVERSATION_LLM_TAIL?: string;
-  MIRROR_TS_BACKUP?: string;
-  MIRROR_TS_REPAIR_ENCODING?: string;
-  MIRROR_TS_WELCOME?: string;
-  MIRROR_TS_RUNTIME_READS?: string;
-  /** CV22.DS10.US2: the updater family's revert control (`=0` -> Python). */
-  MIRROR_TS_RUNTIME_UPDATE?: string;
-  MIRROR_TS_SOUL?: string;
   MIRROR_TS_SOUL_EMBEDDING_REPLAY?: string;
-  MIRROR_TS_EXPLORE?: string;
-  /**
-   * CV22.DS7.US8: the Builder family's revert and its replay fixtures.
-   *
-   * They reach routing through `explore story promote`, whose tail is a Builder
-   * session start, and through the `build` route at plateau 8. Declared here so
-   * a caller cannot pass one under a typo'd name and silently get the default.
-   */
-  MIRROR_TS_BUILD?: string;
   MIRROR_TS_BUILD_LLM_REPLAY?: string;
   MIRROR_TS_BUILD_EMBEDDING_REPLAY?: string;
-  MIRROR_TS_WEEK?: string;
-  MIRROR_TS_JOURNAL?: string;
   MIRROR_TS_JOURNAL_LLM_REPLAY?: string;
   MIRROR_TS_JOURNAL_EMBEDDING_REPLAY?: string;
   MIRROR_TS_WEEK_LLM_REPLAY?: string;
-  MIRROR_TS_CONVERSATIONS_LIFECYCLE?: string;
-  /**
-   * CV22.DS7.TS4: the extension catalog family and the editor seam.
-   *
-   * `MIRROR_TS_EXTENSIONS` covers `extensions`, `ext`, `list extensions|all`,
-   * and `inspect extension|runtime-catalog` as ONE gate (decision D2): they
-   * share discovery, and a half-flipped catalog would report two truths about
-   * the same installed world. `identity edit` gets its own — an editor seam
-   * that can lose a person's identity content deserves a revert that does not
-   * also revert the catalog.
-   */
-  MIRROR_TS_EXTENSIONS?: string;
-  MIRROR_TS_IDENTITY_EDIT?: string;
-  MIRROR_TS_DESCRIPTOR?: string;
   MIRROR_TS_DESCRIPTOR_LLM_REPLAY?: string;
   MEMORY_RECEPTION?: string;
 };
-
-// CV22.DS7.TS1: the DB safety tools carry independent per-command gates.
-// Flipped 2026-09-07 after the seven-point checklist went green (goldens,
-// real-DB-copy probe, both-engine smoke with Python's zipfile reading the TS
-// archive, regression pass, redaction, revertibility, ledger). They default
-// ON; `=0` is the revert control with no code change and no data migration.
-// `MIRROR_TS_BACKUP` also governs `conversation-logger repair-journeys
-// --apply`, whose only TS dependency is the dated zip backup: reverting the
-// backup must revert the repair with it.
-const DB_SAFETY_TOOLS_DEFAULT_ON = true;
-
-function gateEnabled(value: string | undefined): boolean {
-  if (value === "0") return false;
-  if (value === "1") return true;
-  return DB_SAFETY_TOOLS_DEFAULT_ON;
-}
-
-// CV22.DS7.TS4 plateau 8: FLIPPED 2026-09-16, after the Navigator ran the
-// validation route on the real home and accepted it — the read diff, the
-// dispatch through the compat host with `leaf=session-export` and no argument
-// in the log, and `identity edit` saving through their own editor. The rest of
-// the route was run on copies of that home (`ts/parity/ts4_home_copy_route.ts`)
-// and in CI.
-//
-// Each `=0` is now the revert control: no code change, no data migration, and
-// nothing in this family writes a shape the other engine cannot read.
-const EXTENSIONS_DEFAULT_ON = true;
-const IDENTITY_EDIT_DEFAULT_ON = true;
-const LIFECYCLE_WRITES_DEFAULT_ON = true;
-
-/**
- * Exported because its default is about to change.
- *
- * While a gate defaults OFF, `=0` and "unset" produce the same route, so a test
- * that only checks "unset and `=0` both reach Python" passes even if the `=0`
- * branch is deleted — which a mutant proved. Plateau 8 flips these defaults to
- * ON, and on that day the `=0` branch IS the revert control the flip is safe
- * to take with. So the contract is pinned here, independent of today's default.
- */
-export function gateWithDefault(value: string | undefined, defaultOn: boolean): boolean {
-  if (value === "0") return false;
-  if (value === "1") return true;
-  return defaultOn;
-}
-
-/**
- * The extension family's single gate.
- *
- * `inspect llm-calls|embedding-provenance` ride it too, which is a deliberate
- * narrowing of decision D2: that decision left the two ledger reads ungated,
- * like their `inspect persona` sibling. Keeping them here gives the STORY one
- * revert control instead of a family with a hole in it — an operator reverting
- * "the extension catalog work" should not discover that two of its leaves kept
- * answering from the new engine. Unhooking them is a one-line change if the
- * Navigator prefers D2 literally.
- */
-function extensionsRouteEnabled(env: RouteEnvironment): boolean {
-  return gateWithDefault(env.MIRROR_TS_EXTENSIONS, EXTENSIONS_DEFAULT_ON);
-}
-
-function identityEditRouteEnabled(env: RouteEnvironment): boolean {
-  return gateWithDefault(env.MIRROR_TS_IDENTITY_EDIT, IDENTITY_EDIT_DEFAULT_ON);
-}
-
-/**
- * The ES-001 WRITE faces share the reads' environment variable (D2) but not
- * their default: the reads flipped in US11 and are on, these are wired here and
- * off. One variable, two defaults, until plateau 8 makes them one again.
- */
-function lifecycleWritesRouteEnabled(env: RouteEnvironment): boolean {
-  return gateWithDefault(env.MIRROR_TS_CONVERSATIONS_LIFECYCLE, LIFECYCLE_WRITES_DEFAULT_ON);
-}
-
-function backupRouteEnabled(env: RouteEnvironment): boolean {
-  return gateEnabled(env.MIRROR_TS_BACKUP);
-}
-
-function repairEncodingRouteEnabled(env: RouteEnvironment): boolean {
-  return gateEnabled(env.MIRROR_TS_REPAIR_ENCODING);
-}
-
-// CV22.DS7.TS3: the daily-visible tail carries two independent gates. Flipped
-// 2026-09-08 after the checklist went green (five goldens, the stats/status
-// real-DB-copy probes, the both-engine smoke, the spawn spy, redaction,
-// revertibility, ledger). They default ON; `=0` is the revert control with no
-// code change and no data migration.
-//
-// `welcome` and the read-only `runtime` subcommands stay SEPARATELY revertible
-// because they fail differently: a bad `welcome` is wrong on every turn and
-// must be revertible without touching diagnostics, while a bad `runtime
-// diagnose` is wrong only when asked.
-const DAILY_VISIBLE_TAIL_DEFAULT_ON = true;
-
-function tailGateEnabled(value: string | undefined): boolean {
-  if (value === "0") return false;
-  if (value === "1") return true;
-  return DAILY_VISIBLE_TAIL_DEFAULT_ON;
-}
 
 // CV22.DS7.US5 slice A, extended by CV22.DS7.US10 slice F. These
 // `conversation-logger` subcommands are deterministic end to end and route to
@@ -563,25 +430,18 @@ function providerRoute(
 ): RouteDecision {
   // A composition resolves three specs at once (`build load` and the one leaf
   // whose tail it is, `explore story promote`); a plain spec resolves one. Both
-  // yield the same decision shape, so the engine rule below is written once.
-  const composition = "owner" in spec;
-  const transport = composition
-    ? resolveComposedProviderTransport(env, spec)
-    : resolveProviderTransport(env, spec);
+  // yield the same decision shape, so the reason below is written once.
+  const transport =
+    "owner" in spec
+      ? resolveComposedProviderTransport(env, spec)
+      : resolveProviderTransport(env, spec);
   const reason = leaf ? `${transport.reason} (${leaf})` : transport.reason;
-  return {
-    command,
-    // A composed command MUST reach its TS runtime on incomplete replay so it
-    // can refuse before mutation. Python has no replay transport and could
-    // spend live; routing it there would violate the CR077 rule this
-    // composition exists to enforce. Plain-family behavior is left unchanged
-    // here because changing every external route is outside US8.
-    engine:
-      transport.mode === "python" || (transport.mode === "incomplete_replay" && !composition)
-        ? "python"
-        : "ts",
-    reason,
-  };
+  // Every transport answers from TypeScript, `incomplete_replay` included: the
+  // route refuses it by name before any provider is built. Until CV22.DS10.TS5
+  // a PLAIN family sent it to Python instead -- which has no replay transport
+  // and would have called the live provider, the silent spend CR077 made
+  // compositions refuse.
+  return { command, engine: "ts", reason };
 }
 
 export function routeMemoryCommand(
@@ -629,15 +489,9 @@ export function routeByFamily(
   if (command === "memories") {
     if (argv.includes("--search")) {
       // CV22.DS8.US1: fresh semantic search reaches the live provider from TS
-      // by default. `MIRROR_TS_SEARCH=0` is the revert; a replay fixture still
-      // wins for CI and the parity harness. One precedence, shared with every
-      // family US2/US3 flips.
-      const transport = resolveProviderTransport(env, SEARCH_TRANSPORT);
-      return {
-        command,
-        engine: transport.mode === "python" ? "python" : "ts",
-        reason: transport.reason,
-      };
+      // by default; a replay fixture wins for CI and the smokes. One
+      // precedence, shared with every provider-backed family.
+      return providerRoute(command, env, SEARCH_TRANSPORT);
     }
     return { command, engine: "ts", reason: "DS2 memory listing read ported to TS" };
   }
@@ -652,8 +506,7 @@ export function routeByFamily(
   }
 
   if (command === "identity") {
-    // `set` (DS4) and `list`/`get` (DS7.US1) are ported; `edit` is DS7.TS4's
-    // editor seam, wired here and off until the flip.
+    // `set` (DS4), `list`/`get` (DS7.US1), and `edit` (DS7.TS4's editor seam).
     if (argv[1] === "set") {
       return { command, engine: "ts", reason: "DS4 identity set write ported to TS" };
     }
@@ -661,13 +514,6 @@ export function routeByFamily(
       return { command, engine: "ts", reason: "DS7.US1 identity list/get read ported to TS" };
     }
     if (argv[1] === "edit") {
-      if (!identityEditRouteEnabled(env)) {
-        return {
-          command,
-          engine: "python",
-          reason: "identity edit TS route disabled by MIRROR_TS_IDENTITY_EDIT",
-        };
-      }
       return { command, engine: "ts", reason: "DS7.TS4 identity edit ported to TS" };
     }
     // Allowlisted by name rather than inherited: `identity` grew `edit` after
@@ -679,13 +525,6 @@ export function routeByFamily(
     const verb = argv[1] ?? "list";
     if (!TS4_EXTENSIONS_VERBS.has(verb)) {
       return unknownSubcommand(command, TS4_EXTENSIONS_VERBS, verb);
-    }
-    if (!extensionsRouteEnabled(env)) {
-      return {
-        command,
-        engine: "python",
-        reason: "extensions TS route disabled by MIRROR_TS_EXTENSIONS",
-      };
     }
     return { command, engine: "ts", reason: `DS7.TS4 extensions ${verb} ported to TS` };
   }
@@ -699,9 +538,6 @@ export function routeByFamily(
     // is guarded by a test that reads `cli/ext.py` and fails when that set of
     // literals changes, rather than by a set duplicated here that nothing
     // checks.
-    if (!extensionsRouteEnabled(env)) {
-      return { command, engine: "python", reason: "ext TS route disabled by MIRROR_TS_EXTENSIONS" };
-    }
     return { command, engine: "ts", reason: "DS7.TS4 ext dispatcher ported to TS" };
   }
 
@@ -732,18 +568,6 @@ export function routeByFamily(
     // inherited -- which is why `append` gets its own explicit entry below
     // even now that it points at TS.
     if (argv[1] === "append") {
-      // Same inverted-gate convention slice A gave the logger family: TS by
-      // default, with `MIRROR_TS_CONVERSATION_APPEND=0` forcing Python with no
-      // code change and no data migration. `append` is the published contract
-      // for third-party shells, so an operator hitting a defect in production
-      // needs a way back that does not require a release.
-      if (env.MIRROR_TS_CONVERSATION_APPEND === "0") {
-        return {
-          command,
-          engine: "python",
-          reason: "conversations append TS route disabled by MIRROR_TS_CONVERSATION_APPEND=0",
-        };
-      }
       return {
         command,
         engine: "ts",
@@ -752,24 +576,10 @@ export function routeByFamily(
     }
     const writeFlag = TS4_LIFECYCLE_WRITE_FLAGS.find((flag) => argv.includes(flag));
     if (writeFlag) {
-      if (!lifecycleWritesRouteEnabled(env)) {
-        return {
-          command,
-          engine: "python",
-          reason: `${writeFlag} TS route disabled by MIRROR_TS_CONVERSATIONS_LIFECYCLE`,
-        };
-      }
       return { command, engine: "ts", reason: `DS7.TS4 ${writeFlag} ported to TS` };
     }
     const readFlag = TS_LIFECYCLE_READ_FLAGS.find((flag) => argv.includes(flag));
     if (readFlag) {
-      if (env.MIRROR_TS_CONVERSATIONS_LIFECYCLE === "0") {
-        return {
-          command,
-          engine: "python",
-          reason: "conversations lifecycle reads disabled by MIRROR_TS_CONVERSATIONS_LIFECYCLE=0",
-        };
-      }
       return {
         command,
         engine: "ts",
@@ -787,13 +597,6 @@ export function routeByFamily(
       return { command, engine: "ts", reason: "DS7.US1 inspect persona read ported to TS" };
     }
     if (TS4_INSPECT_TARGETS.has(argv[1] ?? "")) {
-      if (!extensionsRouteEnabled(env)) {
-        return {
-          command,
-          engine: "python",
-          reason: `inspect ${argv[1]} TS route disabled by MIRROR_TS_EXTENSIONS`,
-        };
-      }
       return { command, engine: "ts", reason: `DS7.TS4 inspect ${argv[1]} ported to TS` };
     }
     return unknownSubcommand(command, ["persona", ...TS4_INSPECT_TARGETS], argv[1]);
@@ -811,13 +614,6 @@ export function routeByFamily(
     }
     const listTarget = argv[1] ?? "all";
     if (listTarget === "extensions" || listTarget === "all") {
-      if (!extensionsRouteEnabled(env)) {
-        return {
-          command,
-          engine: "python",
-          reason: `list ${listTarget} TS route disabled by MIRROR_TS_EXTENSIONS`,
-        };
-      }
       return { command, engine: "ts", reason: `DS7.TS4 list ${listTarget} ported to TS` };
     }
     return unknownSubcommand(command, LIST_TARGETS, listTarget);
@@ -859,28 +655,16 @@ export function routeByFamily(
 
   if (command === "week") {
     // `view` (and the bare `week` default) is a deterministic read ported in
-    // DS7.US2 and flipped UNGATED there -- `MIRROR_TS_WEEK` deliberately does
-    // not cover it, so reverting a bad `plan`/`save` cannot drag `view` back
-    // to Python (US11 Plan review, quality-assurance).
-    //
-    // CR068 corrected this family's accounting: US2 sent `plan` and `save` to
-    // US5, US5 was re-scoped without them, and nothing inherited the work --
-    // and the refusal reason recorded here claimed BOTH were "LLM-gated",
+    // DS7.US2. CR068 corrected this family's accounting: US2 sent `plan` and
+    // `save` to US5, US5 was re-scoped without them, and nothing inherited the
+    // work -- and the reason recorded here claimed BOTH were "LLM-gated",
     // which is false for `save`. `save_week_items` reads the pending file and
-    // calls `add_task`, on TS since US2; it crosses no provider seam and flips
-    // ungated. Only `plan` calls a model.
+    // calls `add_task`; it crosses no provider seam. Only `plan` calls a model.
     const sub = argv[1];
     if (sub === undefined || sub === "view") {
       return { command, engine: "ts", reason: "DS7.US2 week view read ported to TS" };
     }
     if (sub === "save") {
-      if (!weekGateEnabled(env)) {
-        return {
-          command,
-          engine: "python",
-          reason: "week save TS route disabled by MIRROR_TS_WEEK=0",
-        };
-      }
       return { command, engine: "ts", reason: "DS7.US11 week save (deterministic) ported to TS" };
     }
     if (sub === "plan") {
@@ -961,31 +745,10 @@ export function routeByFamily(
     // CV22.DS7.US5 slice A: flipped 2026-09-02 after the seven-point checklist
     // went green (goldens, real-DB-copy write parity, hook-inclusive E2E,
     // regression pass, redaction, revertibility, ledger).
-    //
-    // This is the product's highest-volume write path, so the gate was
-    // inverted rather than deleted: `MIRROR_TS_CONVERSATION_LOGGER=0` forces
-    // the whole family back to Python with no code change and no data
-    // migration, which is the revertibility the DS7 plan review requires.
-    if (env.MIRROR_TS_CONVERSATION_LOGGER === "0") {
-      return {
-        command,
-        engine: "python",
-        reason: "conversation-logger TS route disabled by MIRROR_TS_CONVERSATION_LOGGER=0",
-      };
-    }
     const sub = conversationLoggerSubcommand(argv);
     if (sub === "repair-journeys" && argv.includes("--apply")) {
-      // The mutating repair is gated behind the dated zip backup (Python's
-      // `backup()`, ported by DS7.TS1); the front door's fixed-name pre-write
-      // snapshot is a weaker safety property, so this route follows the
-      // backup gate rather than the family switch alone.
-      if (!backupRouteEnabled(env)) {
-        return {
-          command,
-          engine: "python",
-          reason: "repair-journeys --apply follows MIRROR_TS_BACKUP=0 back to Python (DS7.TS1)",
-        };
-      }
+      // The mutating repair takes the dated zip backup (DS7.TS1) before it
+      // writes -- the route itself refuses without it.
       return {
         command,
         engine: "ts",
@@ -1008,14 +771,7 @@ export function routeByFamily(
       };
     }
     if (sub && TS_CONVERSATION_LOGGER_LLM_SUBCOMMANDS.has(sub)) {
-      const transport = resolveProviderTransport(env, CONVERSATION_TAIL_TRANSPORT);
-      if (transport.mode === "python") {
-        return { command, engine: "python", reason: `${transport.reason} (${sub})` };
-      }
-      if (transport.mode === "replay") {
-        return { command, engine: "ts", reason: `${transport.reason} (${sub})` };
-      }
-      return { command, engine: "ts", reason: `${transport.reason} (${sub})` };
+      return providerRoute(command, env, CONVERSATION_TAIL_TRANSPORT, sub);
     }
     // The oracle answered an unknown logger subcommand with NOTHING, exit 0 --
     // a silent success for a hook that named a subcommand that does not exist.
@@ -1050,55 +806,24 @@ export function routeByFamily(
   }
 
   if (command === "backup") {
-    if (!backupRouteEnabled(env)) {
-      return {
-        command,
-        engine: "python",
-        reason: "backup TS route disabled by MIRROR_TS_BACKUP=0",
-      };
-    }
     return { command, engine: "ts", reason: "DS7.TS1 backup ported to TS" };
   }
 
   if (command === "repair-encoding") {
-    if (!repairEncodingRouteEnabled(env)) {
-      return {
-        command,
-        engine: "python",
-        reason: "repair-encoding TS route disabled by MIRROR_TS_REPAIR_ENCODING=0",
-      };
-    }
     return { command, engine: "ts", reason: "DS7.TS1 repair-encoding ported to TS" };
   }
 
   if (command === "welcome") {
-    if (!tailGateEnabled(env.MIRROR_TS_WELCOME)) {
-      return {
-        command,
-        engine: "python",
-        reason: "welcome TS route disabled by MIRROR_TS_WELCOME=0",
-      };
-    }
     return { command, engine: "ts", reason: "DS7.TS3 welcome ported to TS" };
   }
 
   if (command === "runtime") {
     const subcommand = argv[1] ?? "";
-    // Allowlist, not blocklist. The updater and release machinery are DS10's:
-    // a subcommand this build has never heard of must not acquire a TS route
-    // because `runtime` already has one.
+    // Allowlist, not blocklist: a subcommand this build has never heard of
+    // must not acquire a TS route because `runtime` already has one.
     if (!TS_RUNTIME_READ_SUBCOMMANDS.has(subcommand)) {
-      // CV22.DS10.US2: the updater family, flipped one subcommand at a time.
-      // Its own gate, separate from the reads': reverting a bad updater must
-      // not drag `status`/`version`/`diagnose` back to Python with it.
+      // CV22.DS10.US2: the updater family.
       if (TS_RUNTIME_UPDATE_SUBCOMMANDS.has(subcommand)) {
-        if (env.MIRROR_TS_RUNTIME_UPDATE === "0") {
-          return {
-            command,
-            engine: "python",
-            reason: "runtime updater TS route disabled by MIRROR_TS_RUNTIME_UPDATE=0",
-          };
-        }
         return { command, engine: "ts", reason: `DS10.US2 runtime ${subcommand} ported to TS` };
       }
       // CV22.DS10.US2 made the unknown answer TypeScript's own, rendered by
@@ -1106,37 +831,20 @@ export function routeByFamily(
       // (D2), which renders the same bytes for every family.
       return unknownSubcommand(command, RUNTIME_SUBCOMMANDS, subcommand);
     }
-    if (!tailGateEnabled(env.MIRROR_TS_RUNTIME_READS)) {
-      return {
-        command,
-        engine: "python",
-        reason: "runtime read TS route disabled by MIRROR_TS_RUNTIME_READS=0",
-      };
-    }
     return { command, engine: "ts", reason: `DS7.TS3 runtime ${subcommand} ported to TS` };
   }
 
   if (command === "soul") {
     const subcommand = argv[1] ?? "";
     // Allowlist by NAME, like `runtime`, and for the same reason: a subcommand
-    // Python grows later must reach Python rather than inherit this route
-    // because the family is claimed. That is the `conversations append` defect
-    // (RS009/CR055), which exited 0 and discarded the caller's payload.
+    // the route never implemented must not inherit it because the family is
+    // claimed. That is the `conversations append` defect (RS009/CR055), which
+    // exited 0 and discarded the caller's payload.
     if (!TS_SOUL_SUBCOMMANDS.has(subcommand)) {
       return unknownSubcommand(command, TS_SOUL_SUBCOMMANDS, subcommand);
     }
-    if (!soulGateEnabled(env)) {
-      return {
-        command,
-        engine: "python",
-        // Same shape as every other family's revert (`<VAR>=0 revert to
-        // Python`); the odd one out was a US3 review finding, swept in TS2.
-        reason: "MIRROR_TS_SOUL=0 revert to Python",
-      };
-    }
     // `harvest save` is the one leaf that crosses the provider seam, through
-    // the embedding alone. Without the replay transport it stays on Python, the
-    // same boundary US10's close tail draws; the live call is DS8's.
+    // the embedding alone.
     if (subcommand === "harvest" && soulHarvestAction(argv) === "save") {
       return providerRoute(command, env, SOUL_HARVEST_TRANSPORT, "harvest save");
     }
@@ -1157,20 +865,11 @@ export function routeByFamily(
         return unknownSubcommand(command, TS_EXPLORE_STORY_ACTIONS, action, "explore story");
       }
     }
-    if (!exploreGateEnabled(env)) {
-      return {
-        command,
-        engine: "python",
-        reason: "explore TS route disabled by MIRROR_TS_EXPLORE=0",
-      };
-    }
     // `story promote` ends in a Builder session start (`cmd_story_promote`
-    // calls `cmd_load`), so it answers to the SAME composed decision `build
-    // load` does: `MIRROR_TS_BUILD=0`, `MIRROR_TS_SEARCH=0`, or
-    // `MIRROR_TS_CONVERSATION_LLM_TAIL=0` each send it to Python. Resolved here
-    // rather than inside the route because promote's writes are not idempotent
-    // -- once the story is promoted a second run finds none -- so the engine
-    // must be decided before the first mutation, not after.
+    // calls `cmd_load`), so it answers to the SAME composed transport decision
+    // `build load` does -- resolved here rather than inside the route because
+    // promote's writes are not idempotent, so a half-configured replay harness
+    // must be refused before the first mutation, not after.
     if (subcommand === "story" && exploreStoryAction(argv) === "promote") {
       return providerRoute(command, env, BUILD_LOAD_COMPOSITION, "story promote");
     }
@@ -1186,11 +885,8 @@ export function routeByFamily(
     if (!TS_BUILD_SUBCOMMANDS.has(subcommand)) {
       return unknownSubcommand(command, TS_BUILD_SUBCOMMANDS, subcommand);
     }
-    if (!buildGateEnabled(env)) {
-      return { command, engine: "python", reason: "MIRROR_TS_BUILD=0 revert to Python" };
-    }
     // `load` composes the search and conversation-tail provider families. Its
-    // engine must be chosen before the banner or any surface is printed.
+    // transport must be decided before the banner or any surface is printed.
     if (subcommand === "load") {
       return providerRoute(command, env, BUILD_LOAD_COMPOSITION, "load");
     }
@@ -1257,46 +953,7 @@ const TS_SOUL_SUBCOMMANDS = new Set([
   "prompt",
 ]);
 
-// CV22.DS7.US6: the Soul ritual. Flipped 2026-09-08 after the seven-point
-// checklist went green and the Navigator validated the real home -- ten
-// surfaces byte-identical across both engines including the refusal paths, the
-// identity write proven on two copies of the live database (document and audit
-// row identical), and the revert exercised.
-//
-// ONE gate for the whole family, unlike the daily-visible tail's two: Soul is a
-// single ritual, and a half-flipped ritual cannot be reviewed in a live
-// session. `MIRROR_TS_SOUL=0` is the revert control, with no code change and no
-// data migration.
-function soulGateEnabled(env: RouteEnvironment): boolean {
-  return env.MIRROR_TS_SOUL !== "0";
-}
-
-// CV22.DS7.US8: the Builder/Ariad tree. Flipped 2026-09-16 after the Navigator
-// validated the gated route on the real home -- the four read-only leaves
-// byte-identical, a live `build load` on two real-database copies identical on
-// all four faces, a full story lifecycle on real-database copies and scratch
-// clones diff-clean at every step, and the revert exercised.
-//
-// ONE gate for the whole family, like Soul and Explorer: Builder is a lived
-// mode whose lifecycle writes one cursor row, and a half-flipped lifecycle
-// cannot be reviewed. `MIRROR_TS_BUILD=0` is the revert control, with no code
-// change and no data migration; `load` additionally honors the search and
-// conversation-tail reverts through its composed transport decision.
-function buildGateEnabled(env: RouteEnvironment): boolean {
-  return env.MIRROR_TS_BUILD !== "0";
-}
-
 // Python's argparse subcommands for `explore`, by name.
-// CV22.DS7.US11. `week save` is deterministic and carries an ordinary revert
-// gate; `week plan` needs this gate AND the LLM replay fixture. FLIPPED
-// 2026-09-09: default ON, `=0` is the revert control with no code change and
-// no data migration. `week view` deliberately stays outside this gate -- it
-// was flipped ungated in US2 and reverting `save`/`plan` must not drag a
-// previously unrevertible read back to Python.
-function weekGateEnabled(env: RouteEnvironment): boolean {
-  return env.MIRROR_TS_WEEK !== "0";
-}
-
 const TS_EXPLORE_SUBCOMMANDS = new Set(["load", "deactivate", "story"]);
 
 // Python's `explore story` actions, by name.
@@ -1319,19 +976,6 @@ const TS_EXPLORE_STORY_ACTIONS = new Set([
   "experiment",
   "handoff",
 ]);
-
-// CV22.DS7.US7: Explorer Mode. Flipped 2026-09-09 after the eleven-point
-// checklist went green and the Navigator validated the real home -- nine
-// populated surfaces across three real journeys (`mirror`, `mirror-gui`,
-// `finances`) byte-identical on both engines, including the promoted-story path
-// where an inactive legacy payload must NOT be resurrected.
-//
-// ONE gate for the family, like Soul: Explorer is a single lived mode, and a
-// half-flipped mode cannot be reviewed in a live session. `MIRROR_TS_EXPLORE=0`
-// is the revert control, with no code change and no data migration.
-function exploreGateEnabled(env: RouteEnvironment): boolean {
-  return env.MIRROR_TS_EXPLORE !== "0";
-}
 
 /** `explore story <action>`, skipping the options argparse strips first. */
 function exploreStoryAction(argv: readonly string[]): string | undefined {

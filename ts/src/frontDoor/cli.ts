@@ -1,23 +1,19 @@
 #!/usr/bin/env node
 //
-// Front-door entry: route a command to the TS core or the frozen Python engine,
-// dispatch reads/writes, and log the outcome. Argument parsing lives in
-// `args.ts`, DB-path resolution in `dbPath.ts`, and the read renderers in
-// `render/`. The module is importable (the entry guard at the bottom runs
-// `main` only when invoked directly), so its pieces can be tested in-process.
+// Front-door entry: route a command, answer it, and log the outcome. Argument
+// parsing lives in `args.ts`, DB-path resolution in `dbPath.ts`, and the read
+// renderers in `render/`. The module is importable (the entry guard at the
+// bottom runs `main` only when invoked directly), so its pieces can be tested
+// in-process.
 //
-// Working-directory invariant: the production skills invoke this front door by
-// its relative path (`node ts/src/frontDoor/cli.ts …`), which only resolves
-// from the repository root — so the process cwd is the repo root by
-// construction. The Python fallback inherits that cwd and runs
-// `uv run python -m memory`; uv walks upward to find the root `pyproject.toml`.
-// Invoking by an absolute path from an unrelated directory is unsupported. See
-// the TS front-door section of docs/process/troubleshooting.md.
+// Every route answers from TypeScript. Until CV22.DS10.TS5 an unported or
+// reverted command fell back to the Python engine through `uv run python -m
+// memory`; the fallback, the revert gates that chose it, and the engine itself
+// are gone. A name nothing answers gets the front door's own usage answer.
 //
 // node:sqlite emits an ExperimentalWarning at import; the skills pass
 // NODE_OPTIONS=--no-warnings to keep it off stdout/stderr.
 
-import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { basename, dirname } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -69,12 +65,12 @@ import {
   CULTIVATION_SCAN_TRANSPORT,
   DESCRIPTOR_TRANSPORT,
   JOURNAL_TRANSPORT,
+  ReplayFixtureIncompleteError,
   WEEK_PLAN_TRANSPORT,
 } from "#providers/transport.ts";
 import { runSeed } from "#seed/seed.ts";
 import { getTasksForWeek, listTasks } from "#tasks/taskStore.ts";
 import { computeWeekRange } from "#tasks/weekView.ts";
-import { expandHome } from "#util/paths.ts";
 import { newId, nowIso } from "#util/pyGenerators.ts";
 import { hasOption, optionValue, stripOptionWithValue } from "./args.ts";
 import { canonicalArgv } from "./argvShape.ts";
@@ -153,7 +149,7 @@ import {
   renderTasksSyncOutcome,
 } from "./render/tasksImportSync.ts";
 import { renderWeekView } from "./render/week.ts";
-import { type FrontDoorEngine, retiredRefusal, routeMemoryCommand } from "./routing.ts";
+import { retiredRefusal, routeMemoryCommand } from "./routing.ts";
 import { runRuntimeReadRoute, runWelcomeRoute } from "./runtimeRoute.ts";
 import { runMemorySearchRoute } from "./searchRoute.ts";
 import { resolveSeedPaths } from "./seedPaths.ts";
@@ -187,49 +183,6 @@ function resolveDbPathForCli(args: readonly string[]): string | null {
     }
     throw error;
   }
-}
-
-/**
- * Default ceiling for a fallback Python command. Generous on purpose —
- * unported commands include LLM extraction and consult — but finite, so a
- * process blocked on stdin or a hung network call cannot hang the session
- * forever. Tests override via MIRROR_FRONTDOOR_PYTHON_TIMEOUT_MS.
- */
-const DEFAULT_PYTHON_TIMEOUT_MS = 10 * 60 * 1000;
-
-function pythonTimeoutMs(): number {
-  const raw = Number(process.env.MIRROR_FRONTDOOR_PYTHON_TIMEOUT_MS);
-  return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_PYTHON_TIMEOUT_MS;
-}
-
-function fallbackPython(argv: readonly string[]): number {
-  const explicitDbPath = optionValue(argv, "--db-path");
-  const pythonArgv = stripOptionWithValue(argv, "--db-path");
-  const result = spawnSync("uv", ["run", "python", "-m", "memory", ...pythonArgv], {
-    cwd: process.cwd(),
-    env: explicitDbPath ? { ...process.env, DB_PATH: expandHome(explicitDbPath) } : process.env,
-    stdio: "inherit",
-    timeout: pythonTimeoutMs(),
-  });
-  if (result.error) {
-    const code = (result.error as NodeJS.ErrnoException).code;
-    if (code === "ENOENT") {
-      console.error(
-        "Mirror TS front door: could not spawn `uv` — the Python fallback needs uv on PATH. " +
-          "Install it (https://docs.astral.sh/uv/) or fix PATH for the runtime that launched this session.",
-      );
-    } else if (code === "ETIMEDOUT") {
-      console.error(
-        `Mirror TS front door: Python fallback timed out after ${pythonTimeoutMs()}ms ` +
-          `(command: memory ${pythonArgv.join(" ")}). The process was terminated; ` +
-          "if this command legitimately runs longer, raise MIRROR_FRONTDOOR_PYTHON_TIMEOUT_MS.",
-      );
-    } else {
-      console.error(`Mirror TS front door: Python fallback failed to run: ${result.error.message}`);
-    }
-    return 1;
-  }
-  return typeof result.status === "number" ? result.status : 1;
 }
 
 /**
@@ -419,7 +372,7 @@ function runConversationsRead(db: Database, args: readonly string[]): number {
 /**
  * Serve `journey` status reads (DS7.US1): `journey`, `journey <slug>`,
  * `journey status`, `journey status <slug>`. `journey set-path`/`update` never
- * reach here (routed elsewhere / Python fallback).
+ * reach here (their own write routes).
  */
 function runJourneyStatusRead(db: Database, args: readonly string[]): number {
   const remaining = stripOptionWithValue(stripOptionWithValue(args, "--mirror-home"), "--db-path");
@@ -448,7 +401,7 @@ function runTasksRead(db: Database, args: readonly string[]): number {
 
 /**
  * Serve `week view` (and the bare `week` default, DS7.US2 slice 3b). `plan`/
- * `save` never reach here (Python fallback). `now` is the real current time
+ * `save` never reach here (their own routes). `now` is the real current time
  * in production; tests inject a frozen instant by calling `renderWeekView`
  * directly rather than through this CLI entry point.
  */
@@ -473,8 +426,9 @@ function runWeekSaveWrite(argv: readonly string[]): number {
  *
  * Each builds its providers from the same spec `routing.ts` decided with, so
  * the route cannot disagree with the router about which transport is in play.
- * A missing provider here is defense in depth: routing sends a reverted or
- * half-configured family to Python before the route is reached.
+ * Half a replay fixture throws `ReplayFixtureIncompleteError` from the factory,
+ * which the front door answers as a refusal; a missing provider here is defense
+ * in depth.
  */
 async function runJournalContentRoute(argv: readonly string[]): Promise<number> {
   const family = await resolveFamilyProviders(process.env, JOURNAL_TRANSPORT);
@@ -786,7 +740,7 @@ async function runLifecycleWriteFace(argv: readonly string[]): Promise<number> {
 }
 
 /** The extension catalog family, answered from the TS core. */
-async function runExtensionCatalog(argv: readonly string[]): Promise<TsDispatchOutcome> {
+async function runExtensionCatalog(argv: readonly string[]): Promise<DispatchOutcome> {
   const { runExtensionCatalogRoute } = await import("./extensionCatalogRoute.ts");
   const dbPath = resolveDbPathForCli(argv.slice(1));
   if (dbPath === null) return { exitCode: 2 };
@@ -1480,28 +1434,9 @@ function runExploreWrite(argv: readonly string[]): Promise<number> {
   );
 }
 
-/**
- * CV22.DS7.US5. Routing only sends the deterministic subcommands here, but if
- * the dispatcher reports one it does not own, fall back to Python instead of
- * guessing — this is the product's primary write path.
- */
-async function runConversationLoggerWrite(argv: readonly string[]): Promise<DispatchOutcome> {
-  // `withMirrorWriteDb` is shared by every write route, so the not-handled
-  // signal rides a local flag rather than widening its return type for one
-  // caller.
-  let handled = true;
-  const exitCode = await withMirrorWriteDb(argv, async (db, dbPath) => {
-    const result = await runConversationLoggerRoute(db, dbPath, argv);
-    if (result === null) {
-      handled = false;
-      return 0;
-    }
-    return result;
-  });
-  if (handled) return { exitCode, engine: "ts" };
-  // Defense in depth behind the routing gate: the route refused (an
-  // unconfigured LLM close tail), so Python answers and the log says so.
-  return { exitCode: fallbackPython(argv), engine: "python" };
+/** CV22.DS7.US5: the conversation logger, the product's primary write path. */
+function runConversationLoggerWrite(argv: readonly string[]): Promise<number> {
+  return withMirrorWriteDb(argv, (db, dbPath) => runConversationLoggerRoute(db, dbPath, argv));
 }
 
 /**
@@ -1644,47 +1579,31 @@ async function runMemorySearch(argv: readonly string[]): Promise<number> {
 }
 
 /**
- * What actually answered, alongside the exit code. The routing table's decision
- * and the answering engine are usually the same, but a TS route may fall back
- * to Python inside dispatch, and `front-door.log` is the production record of
- * which engine served a command (RS009 CR059) -- so it records the outcome, not
- * the intent (RS009 CR064).
+ * The exit code, with the content-free route metadata a route may add for the
+ * durable front-door log.
+ *
+ * (Until CV22.DS10.TS5 this also carried which ENGINE answered, because a
+ * TypeScript route could still fall back to Python inside dispatch and the log
+ * records the outcome, not the intent -- RS009 CR059/CR064. Nothing falls back
+ * now; every outcome is TypeScript's.)
  */
 interface DispatchOutcome {
   exitCode: number;
-  engine: FrontDoorEngine;
   /** Content-free route metadata for the durable front-door log. */
   detail?: string;
 }
 
-interface TsDispatchOutcome {
-  exitCode: number;
-  detail?: string;
-}
-
-async function dispatch(
-  argv: readonly string[],
-  engine: FrontDoorEngine,
-): Promise<DispatchOutcome> {
-  if (engine === "python") return { exitCode: fallbackPython(argv), engine: "python" };
-  // The only route that can still choose Python after being routed to TS.
-  if (isConversationLoggerCommand(argv)) return runConversationLoggerWrite(argv);
+async function dispatch(argv: readonly string[]): Promise<DispatchOutcome> {
   const result = await dispatchTs(argv);
-  return typeof result === "number"
-    ? { exitCode: result, engine: "ts" }
-    : {
-        exitCode: result.exitCode,
-        engine: "ts",
-        ...(result.detail ? { detail: result.detail } : {}),
-      };
+  return typeof result === "number" ? { exitCode: result } : result;
 }
 
-/** Every route that is answered by TypeScript once dispatch has chosen it. */
-async function dispatchTs(argv: readonly string[]): Promise<number | TsDispatchOutcome> {
+/** Every route the front door answers once routing has chosen it. */
+async function dispatchTs(argv: readonly string[]): Promise<number | DispatchOutcome> {
+  if (isConversationLoggerCommand(argv)) return runConversationLoggerWrite(argv);
   if (argv[0] === "build") {
-    // The Builder command tree is deliberately lazy. A reverted invocation is
-    // sent to Python before this import, so a broken Builder core cannot destroy
-    // its own MIRROR_TS_BUILD=0 escape hatch.
+    // The Builder command tree is deliberately lazy: the other commands never
+    // pay for loading it, and a broken Builder core cannot take them down.
     const { runBuildRoute } = await import("./buildRoute.ts");
     return runBuildRoute(argv, {
       withReadOnlyDatabase: (run) => withMirrorReadDb(argv, run),
@@ -1700,8 +1619,7 @@ async function dispatchTs(argv: readonly string[]): Promise<number | TsDispatchO
   if (isIdentityWrite(argv)) return runIdentityWrite(argv);
   if (isIdentityEdit(argv)) return runIdentityEditRoute(argv);
   // CV22.DS7.TS4: the extension catalog family. Lazy like the Builder tree, and
-  // for the same reason: a reverted invocation is sent to Python before this
-  // import, so a broken catalog core cannot destroy its own escape hatch.
+  // for the same reason: the other commands never pay for loading it.
   if (isExtensionCatalogCommand(argv)) return runExtensionCatalog(argv);
   if (isLifecycleWriteFace(argv)) return runLifecycleWriteFace(argv);
   if (isJourneyWrite(argv)) return runJourneyWrite(argv);
@@ -1715,9 +1633,8 @@ async function dispatchTs(argv: readonly string[]): Promise<number | TsDispatchO
   if (isShadowSubcommandWrite(argv)) return runShadowWrite(argv);
   if (isMirrorWrite(argv)) return runMirrorWrite(argv);
   if (isModeWrite(argv)) return runModeWrite(argv);
-  // CV22.DS7.US6: the Soul ritual. Gated off until the flip; `routing.ts`
-  // allowlists its subcommands by name and keeps `harvest save` on Python
-  // until the embedding replay transport is configured.
+  // CV22.DS7.US6: the Soul ritual; `routing.ts` allowlists its subcommands by
+  // name.
   if (argv[0] === "soul") return runSoulWrite(argv);
   if (argv[0] === "explore") return runExploreWrite(argv);
   if (isConversationsAppend(argv)) return runConversationsAppend(argv);
@@ -1797,23 +1714,31 @@ export async function main(rawArgv = process.argv.slice(2)): Promise<number> {
     return answer.exitCode;
   }
   try {
-    const outcome = await dispatch(argv, decision.engine);
+    const outcome = await dispatch(argv);
     logFrontDoor(logPath, {
       command: decision.command,
-      route: outcome.engine,
+      route: decision.engine,
       exitCode: outcome.exitCode,
-      // A route that answered on the other engine is an event worth seeing: it
-      // means a gate is set one way and the runtime disagreed. Metadata only.
-      detail:
-        outcome.detail ??
-        (outcome.engine === decision.engine ? undefined : `fell_back routed=${decision.engine}`),
+      ...(outcome.detail ? { detail: outcome.detail } : {}),
     });
     return outcome.exitCode;
   } catch (error) {
-    // The throwing engine is unknown here, so the decision is the best
-    // available attribution. Metadata-only: the error's name/category, never
-    // argument values.
+    // Metadata-only: the error's name/category, never argument values.
     const detail = error instanceof Error ? error.name : "unknown error";
+    // Half a replay fixture is a refusal by name, not a crash: one line, the
+    // missing variables named, nothing spent. Until CV22.DS10.TS5 a plain
+    // family sent this case to the Python fallback instead -- which had no
+    // replay transport, and would have called the live provider.
+    if (error instanceof ReplayFixtureIncompleteError) {
+      console.error(`Mirror TS front door: ${error.message}`);
+      logFrontDoor(logPath, {
+        command: decision.command,
+        route: decision.engine,
+        exitCode: 2,
+        detail,
+      });
+      return 2;
+    }
     logFrontDoor(logPath, {
       command: decision.command,
       route: decision.engine,

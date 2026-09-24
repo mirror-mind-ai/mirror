@@ -159,6 +159,19 @@ function positiveNumber(name: string, raw: string, integer: boolean): number {
 }
 
 /**
+ * Whether the wallet guards run: on unless `MIRROR_TS_MCP_GUARDS=0` (CV22.DS9.TS1).
+ *
+ * NOT one of the revert gates CV22.DS10.TS5 deleted. Those chose an ENGINE and left with
+ * the Python one; this switches a TypeScript behavior, and `=0` restores exactly what TS2
+ * shipped. Only an exact `"0"` turns the guards off, so an unrelated value cannot silently
+ * unguard the surface. (It was the routing module's generic `gateWithDefault` until that
+ * module stopped having gates; this is its only reader.)
+ */
+export function guardsEnabled(value: string | undefined): boolean {
+  return value !== "0";
+}
+
+/**
  * Read the tunables, failing loudly on anything malformed.
  *
  * A typo in `.env` takes the MCP surface down with a named reason in the client's log

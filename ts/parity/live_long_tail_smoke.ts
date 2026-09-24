@@ -214,7 +214,7 @@ function checkOutcomes(tally: CallOutcomeTally, options: { requireAnswered: bool
 /** The cheapest live check: one GET, no spend, no write. */
 async function creditsProbe(): Promise<void> {
   const family = await resolveFamilyProviders(process.env, CONSULT_CREDITS_TRANSPORT);
-  if (!family?.credits) fail("no credit provider resolved; is MIRROR_TS_CONSULT=0 set?");
+  if (!family.credits) fail("no credit provider resolved for the consult family");
   check(family.mode === "live", "transport is live", family.mode);
 
   const startedAt = Date.now();

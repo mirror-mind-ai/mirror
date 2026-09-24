@@ -22,7 +22,7 @@ Sends prompts with Mirror identity context to other models through OpenRouter.
 
 ## Flow
 
-> Through the front door the model call has a 10-minute ceiling (`MIRROR_FRONTDOOR_PYTHON_TIMEOUT_MS`); a call killed at the ceiling is spent but leaves no `llm_calls` row. Direct Python invocation had no bound (CR072).
+> The model call answers from TypeScript, bounded by the extraction timeout (`MEMORY_LLM_TIMEOUT_EXTRACTION`, 60 s) with bounded retries. (The 10-minute ceiling CR072 added applied only to the Python engine, which is gone.)
 
 ### Explicit Question
 

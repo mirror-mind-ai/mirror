@@ -117,31 +117,29 @@ function logLines(f: Fixture): string[] {
   return readFileSync(path, "utf8").split("\n").filter(Boolean);
 }
 
-test("the gates are the revert control: =0 hands the tail back to Python", () => {
+test("a leftover tail gate is inert: welcome and the runtime reads still answer from TS (D3)", () => {
+  // These were the revert controls (`=0` handed the tail back to Python). The
+  // revert left with the Python engine at CV22.DS10.TS5; a value left in a
+  // shell now changes nothing, and nothing is spawned.
   const f = fixture();
   try {
-    // Flipped 2026-09-08, so TS is the default and `=0` is the way back with
-    // no code change. Run from the repo root so the Python fallback genuinely
-    // answers instead of failing to spawn.
-    const welcome = runCli(
-      f,
-      ["welcome", "--mirror-home", f.home],
-      { MIRROR_TS_WELCOME: "0" },
-      REPO_ROOT,
-    );
+    const welcome = runCli(f, ["welcome", "--mirror-home", f.home], { MIRROR_TS_WELCOME: "0" });
     assert.equal(welcome.status, 0, welcome.stderr);
     assert.match(welcome.stdout, /◇ Mirror · mirror-home/);
-    assert.ok(
-      logLines(f).some((line) => line.includes("\twelcome\tpython\t")),
-      "expected the front-door log to record welcome on python",
-    );
 
-    const status = runCli(f, ["runtime", "version"], { MIRROR_TS_RUNTIME_READS: "0" }, REPO_ROOT);
-    assert.match(status.stdout, /^Mirror runtime version\n/);
+    const version = runCli(f, ["runtime", "version"], { MIRROR_TS_RUNTIME_READS: "0" });
+    assert.match(version.stdout, /^Mirror runtime version\n/);
+
+    const lines = logLines(f);
     assert.ok(
-      logLines(f).some((line) => line.includes("\truntime\tpython\t")),
-      "expected the front-door log to record runtime on python",
+      lines.some((line) => line.includes("\twelcome\tts\t")),
+      lines.join("\n"),
     );
+    assert.ok(
+      lines.some((line) => line.includes("\truntime\tts\t")),
+      lines.join("\n"),
+    );
+    assert.ok(!lines.some((line) => line.includes("\tpython\t")), lines.join("\n"));
   } finally {
     f.cleanup();
   }
@@ -250,11 +248,11 @@ test("runtime status and diagnose carry the oracle's exit codes", () => {
   }
 });
 
-test("the updater answers from TS, and MIRROR_TS_RUNTIME_UPDATE=0 is the way back", () => {
+test("the updater answers from TS", () => {
   // Was "the DS10 updater stays on Python" until CV22.DS10.US2 plateau 3
   // ported it. `--check` is still the cheapest updater path and needs no
-  // network, so it is still what this grades -- only the expected engine
-  // changed, and the revert control is now what must be pinned.
+  // network, so it is still what this grades. (Its revert control,
+  // `MIRROR_TS_RUNTIME_UPDATE=0`, left with the Python engine at CV22.DS10.TS5.)
   const f = fixture();
   try {
     const answered = runCli(f, ["runtime", "update", "--check"], {});
@@ -263,15 +261,6 @@ test("the updater answers from TS, and MIRROR_TS_RUNTIME_UPDATE=0 is the way bac
     assert.ok(
       logLines(f).some((line) => line.includes("\truntime\tts\t")),
       "expected the front-door log to record runtime update on ts",
-    );
-
-    const reverted = runCli(f, ["runtime", "update", "--check"], {
-      MIRROR_TS_RUNTIME_UPDATE: "0",
-    });
-    assert.doesNotMatch(reverted.stdout, /Mirror runtime drift diagnosis/);
-    assert.ok(
-      logLines(f).some((line) => line.includes("\truntime\tpython\t")),
-      "expected the revert control to route runtime update back to python",
     );
   } finally {
     f.cleanup();
@@ -443,23 +432,6 @@ test("runtime backup refuses a missing database and an unreadable archive", () =
     assert.equal(bad.status, 1);
     assert.match(bad.stdout, /Verification note: backup file is not a readable zip/);
     assert.match(bad.stdout, /^Verification result: invalid$/m);
-  } finally {
-    f.cleanup();
-  }
-});
-
-test("MIRROR_TS_RUNTIME_UPDATE=0 hands the updater family back, and only it", () => {
-  const f = fixture();
-  try {
-    runCli(f, ["runtime", "backup", "--mirror-home", f.home], { MIRROR_TS_RUNTIME_UPDATE: "0" });
-    assert.ok(
-      logLines(f).some((line) => line.includes("\truntime\tpython\t")),
-      "expected the front-door log to record runtime backup on python",
-    );
-    // The reads must NOT follow the updater's revert.
-    const version = runCli(f, ["runtime", "version"], { MIRROR_TS_RUNTIME_UPDATE: "0" });
-    assert.equal(version.status, 0, version.stderr);
-    assert.match(version.stdout, /^Mirror runtime version$/m);
   } finally {
     f.cleanup();
   }

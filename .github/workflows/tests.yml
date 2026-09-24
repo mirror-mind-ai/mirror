@@ -201,10 +201,11 @@ jobs:
         with:
           enable-cache: true
 
-      # The Python fallback e2e tests spawn `uv run python -m memory`; sync the
-      # project (from the repo root) so those tests run for real instead of
-      # skipping. uv resolves the root project from the ts/ working directory.
-      - name: Install Python deps (for the fallback e2e)
+      # Until CV22.DS10.TS5 this synced the project for the front door's Python
+      # fallback e2e; the fallback is gone (plateau 2). What still needs it is
+      # the updater smoke below, whose demo database comes from the Python
+      # generator until slice G ports it at plateau 3.
+      - name: Install Python deps (for the demo-database generator, until TS5 slice G)
         working-directory: ${{ github.workspace }}
         run: uv sync --extra dev --frozen
 
@@ -402,10 +403,10 @@ jobs:
           MEMORY_ENV: test
 
       # The hook-inclusive lifecycle smoke through the real front door: hooks
-      # over stdin, the close tail under the replay transport, unflipped
-      # subcommands through the real Python fallback (CV22.DS7.US10 slice F),
-      # and the TS1 DB safety tools cross-checked against Python on the same
-      # file (backup archives read by Python's zipfile; repair-encoding).
+      # over stdin, the close tail under the replay transport, the TS1 DB
+      # safety tools, Soul, and Explorer -- every step answered by TypeScript.
+      # (Until CV22.DS10.TS5 plateau 2 it also ran each revert through the
+      # Python fallback and cross-checked the engines; the reverts are gone.)
       - name: Conversation-logger lifecycle smoke (replay transport, must pass)
         run: node --no-warnings ts/parity/conversation_lifecycle_smoke.ts
 

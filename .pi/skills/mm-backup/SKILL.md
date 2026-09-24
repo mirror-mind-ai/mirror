@@ -13,4 +13,4 @@ NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts backup
 ```
 
 Tell the user: "Memory database backed up." and show the `Backup created:`
-line. `MIRROR_TS_BACKUP=0` sends the command back to Python with no code change.
+line.

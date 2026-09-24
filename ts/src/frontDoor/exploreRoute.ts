@@ -165,14 +165,12 @@ export interface ExploreRouteDeps {
   clock: StoryClock;
   readMessages: (db: WritableDatabase, conversationId: string) => HandoffSourceMessage[];
   /**
-   * `story promote`'s Builder tail, or null when the composition reverts to
-   * Python (`MIRROR_TS_BUILD=0`, `MIRROR_TS_SEARCH=0`,
-   * `MIRROR_TS_CONVERSATION_LLM_TAIL=0`).
+   * `story promote`'s Builder tail.
    *
    * Injected rather than built here so this route stays free of the provider
    * seam, and so the promote tests can run a session start without one.
    */
-  buildLoadRuntime?: () => Promise<BuildLoadRuntime | null>;
+  buildLoadRuntime?: () => Promise<BuildLoadRuntime>;
 }
 
 export function defaultExploreRouteDeps(): ExploreRouteDeps {
@@ -403,15 +401,10 @@ async function runPromote(
 
   const runtime = await deps.buildLoadRuntime?.();
   if (!runtime) {
-    // Unreachable through the front door: `routing.ts` resolves the same
-    // composed decision and sends this leaf to Python when it reverts. Loud
-    // rather than silent, because the alternative is the CR077 defect — a route
-    // and a runtime disagreeing about one invocation — and here it would strand
-    // a half-promoted story.
-    throw new Error(
-      "explore story promote reached the TypeScript route with no Builder load " +
-        "runtime: the route and the transport decision disagree",
-    );
+    // Unreachable through the front door, which always wires the runtime. Loud
+    // rather than silent, because a promote with no Builder load behind it
+    // would strand a half-promoted story.
+    throw new Error("explore story promote reached its route with no Builder load runtime wired");
   }
 
   // Field by field, as Python rebuilds it: only `readiness` changes, and every

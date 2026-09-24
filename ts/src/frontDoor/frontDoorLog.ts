@@ -25,7 +25,7 @@ export interface FrontDoorLogEntry {
    * `usage` (CV22.DS10.TS5) is the front door's answer for a name it does not
    * know -- the answer Python owned until TS5 deleted it.
    */
-  route: "ts" | "python" | "retired" | "usage";
+  route: "ts" | "retired" | "usage";
   exitCode: number;
   /** A short, content-free note or error category. Never argument values. */
   detail?: string;

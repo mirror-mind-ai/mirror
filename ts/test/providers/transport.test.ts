@@ -12,7 +12,6 @@ import {
 } from "#providers/transport.ts";
 
 const SEARCH: ProviderTransportSpec = {
-  revertVar: "MIRROR_TS_SEARCH",
   replay: { embedding: "MIRROR_TS_SEARCH_EMBEDDING_REPLAY" },
 };
 
@@ -21,18 +20,6 @@ test("nothing configured means live -- the DS8 default an unconfigured install g
 
   assert.equal(decision.mode, "live");
   assert.match(decision.reason, /live/);
-});
-
-test("the revert variable wins over everything, including a replay fixture", () => {
-  // The revert control is an operational escape hatch: it must not be
-  // outvoted by leftover replay configuration in the same shell.
-  const decision = resolveProviderTransport(
-    { MIRROR_TS_SEARCH: "0", MIRROR_TS_SEARCH_EMBEDDING_REPLAY: "/tmp/fixture.json" },
-    SEARCH,
-  );
-
-  assert.equal(decision.mode, "python");
-  assert.match(decision.reason, /revert/i);
 });
 
 test("a replay fixture selects replay, keeping CI and the parity harness deterministic", () => {
@@ -62,10 +49,19 @@ test("replay no longer requires MIRROR_TS_EXTERNAL_ROUTES", () => {
   assert.equal(withoutGate.mode, "replay");
 });
 
-test("only an exact '0' reverts -- an unrelated value does not silently disable TS", () => {
-  assert.equal(resolveProviderTransport({ MIRROR_TS_SEARCH: "1" }, SEARCH).mode, "live");
-  assert.equal(resolveProviderTransport({ MIRROR_TS_SEARCH: "" }, SEARCH).mode, "live");
-  assert.equal(resolveProviderTransport({ MIRROR_TS_SEARCH: "0" }, SEARCH).mode, "python");
+test("a leftover revert variable is inert, whatever its value (CV22.DS10.TS5, D3)", () => {
+  // The revert chose Python, and Python is gone. A value left in a shell must
+  // not change the transport in either direction.
+  for (const value of ["0", "1", ""]) {
+    assert.equal(resolveProviderTransport({ MIRROR_TS_SEARCH: value }, SEARCH).mode, "live");
+    assert.equal(
+      resolveProviderTransport(
+        { MIRROR_TS_SEARCH: value, MIRROR_TS_SEARCH_EMBEDDING_REPLAY: "/tmp/f.json" },
+        SEARCH,
+      ).mode,
+      "replay",
+    );
+  }
 });
 
 test("an empty replay path is not a replay fixture", () => {
@@ -85,22 +81,29 @@ test("the reason names the story, so the front-door log explains the route", () 
 test("the decision is a closed union every family reuses", () => {
   // One precedence function, not sixteen re-derivations across US2/US3 -- the
   // LLM_ROLES drift lesson from US11.
-  const modes = new Set(
-    [
-      resolveProviderTransport({ MIRROR_TS_JOURNAL: "0" }, { revertVar: "MIRROR_TS_JOURNAL" }).mode,
-      resolveProviderTransport({}, { revertVar: "MIRROR_TS_JOURNAL" }).mode,
-      resolveProviderTransport(
-        { MIRROR_TS_JOURNAL_LLM_REPLAY: "/tmp/f.json" },
-        { revertVar: "MIRROR_TS_JOURNAL", replay: { llm: "MIRROR_TS_JOURNAL_LLM_REPLAY" } },
-      ).mode,
-    ].values(),
-  );
+  const journal: ProviderTransportSpec = {
+    replay: {
+      llm: "MIRROR_TS_JOURNAL_LLM_REPLAY",
+      embedding: "MIRROR_TS_JOURNAL_EMBEDDING_REPLAY",
+    },
+  };
+  const modes = new Set([
+    resolveProviderTransport({}, journal).mode,
+    resolveProviderTransport(
+      {
+        MIRROR_TS_JOURNAL_LLM_REPLAY: "/tmp/f.json",
+        MIRROR_TS_JOURNAL_EMBEDDING_REPLAY: "/tmp/e.json",
+      },
+      journal,
+    ).mode,
+    resolveProviderTransport({ MIRROR_TS_JOURNAL_LLM_REPLAY: "/tmp/f.json" }, journal).mode,
+  ]);
 
-  assert.deepEqual([...modes].sort(), ["live", "python", "replay"]);
+  assert.deepEqual([...modes].sort(), ["incomplete_replay", "live", "replay"]);
 });
 
-test("a family with no replay variable can still choose python or live", () => {
-  const decision = resolveProviderTransport({}, { revertVar: "MIRROR_TS_WEEK" });
+test("a family with no replay variable is always live", () => {
+  const decision = resolveProviderTransport({}, {});
 
   assert.equal(decision.mode, "live");
   assert.equal(decision.replayPaths, undefined);
@@ -147,20 +150,6 @@ test("half a fixture is incomplete_replay -- never live, never Python", () => {
   }
 });
 
-test("the revert still wins over a half-configured fixture", () => {
-  // Otherwise the operational escape hatch would be unreachable from exactly
-  // the shell most likely to need it: one where replay was being set up.
-  const decision = resolveProviderTransport(
-    {
-      MIRROR_TS_CONVERSATION_LLM_TAIL: "0",
-      MIRROR_TS_CONVERSATION_LLM_REPLAY: "/tmp/half.json",
-    },
-    CONVERSATION_TAIL_TRANSPORT,
-  );
-
-  assert.equal(decision.mode, "python");
-});
-
 test("the incomplete-replay error names the missing half and how to run live deliberately", () => {
   const decision = resolveProviderTransport(
     { MIRROR_TS_CONVERSATION_LLM_REPLAY: "/tmp/half.json" },
@@ -189,72 +178,19 @@ test("a single-fixture family's replay reason is unchanged, so the log reads the
 // previous conversation's close tail IS the conversation-tail family. A private
 // gate would make `MIRROR_TS_SEARCH=0` mean two different things in two
 // commands -- `memories --search` back on Python while `build load` keeps
-// calling the same provider.
+// calling the same provider. (Those reverts left with Python at CV22.DS10.TS5;
+// what the composition still decides is whether a half-configured replay
+// harness is refused.)
 //
 // So all three specs resolve BEFORE the first byte: `load` prints four surfaces
-// ahead of its first provider call, and a fallback decided later would duplicate
-// every one of them.
+// ahead of its first provider call, and a refusal decided later would come
+// after every one of them.
 
 test("nothing configured composes to live -- the shipped default a fresh install gets", () => {
   const decision = resolveComposedProviderTransport({}, BUILD_LOAD_COMPOSITION);
 
   assert.equal(decision.mode, "live");
   assert.equal(decision.reason, "DS7.US8 build load live");
-});
-
-test("the family's own revert sends the whole command to Python", () => {
-  const decision = resolveComposedProviderTransport(
-    { MIRROR_TS_BUILD: "0" },
-    BUILD_LOAD_COMPOSITION,
-  );
-
-  assert.equal(decision.mode, "python");
-  assert.match(decision.reason, /MIRROR_TS_BUILD=0/);
-});
-
-test("a COMPOSED family's revert also sends the whole command to Python", () => {
-  // D2's argument, one level down: a half-flipped session start cannot be
-  // reviewed. Whoever reverts fresh search or the close tail must not find
-  // `build load` still calling the provider they just turned off.
-  for (const variable of ["MIRROR_TS_SEARCH", "MIRROR_TS_CONVERSATION_LLM_TAIL"]) {
-    const decision = resolveComposedProviderTransport({ [variable]: "0" }, BUILD_LOAD_COMPOSITION);
-
-    assert.equal(decision.mode, "python", `${variable}=0 must revert build load`);
-    assert.match(decision.reason, new RegExp(`${variable}=0`));
-    // The log has to say the revert arrived from a family this command merely
-    // composes, or the next operator reads it as a `build` gate that is not set.
-    assert.match(decision.reason, /build load/);
-  }
-});
-
-test("a revert wins over every replay fixture in the composition", () => {
-  // The escape hatch must be reachable from the shell most likely to need it:
-  // one in the middle of being configured for replay.
-  const decision = resolveComposedProviderTransport(
-    {
-      MIRROR_TS_SEARCH: "0",
-      MIRROR_TS_BUILD_LLM_REPLAY: "/tmp/llm.json",
-      MIRROR_TS_BUILD_EMBEDDING_REPLAY: "/tmp/emb.json",
-    },
-    BUILD_LOAD_COMPOSITION,
-  );
-
-  assert.equal(decision.mode, "python");
-  assert.match(decision.reason, /MIRROR_TS_SEARCH=0/);
-});
-
-test("a revert outranks a HALF-configured fixture in the composition too", () => {
-  // Order matters between the two refusal rules: reverts are checked across the
-  // whole composition BEFORE any incomplete fixture is. Checking the owner's
-  // fixtures first would answer `incomplete_replay` here -- a refusal -- to a
-  // shell that had already asked for Python.
-  const decision = resolveComposedProviderTransport(
-    { MIRROR_TS_CONVERSATION_LLM_TAIL: "0", MIRROR_TS_BUILD_EMBEDDING_REPLAY: "/tmp/emb.json" },
-    BUILD_LOAD_COMPOSITION,
-  );
-
-  assert.equal(decision.mode, "python");
-  assert.match(decision.reason, /MIRROR_TS_CONVERSATION_LLM_TAIL=0/);
 });
 
 test("a fully configured harness replays, composed fixtures and all", () => {
@@ -346,7 +282,6 @@ test("the composed decision reduces to the single-family one when nothing compos
   // rule to reason about rather than two that can drift (the US11 lesson).
   for (const env of [
     {},
-    { MIRROR_TS_BUILD: "0" },
     { MIRROR_TS_BUILD_LLM_REPLAY: "/tmp/l.json", MIRROR_TS_BUILD_EMBEDDING_REPLAY: "/tmp/e.json" },
     { MIRROR_TS_BUILD_LLM_REPLAY: "/tmp/l.json" },
   ]) {

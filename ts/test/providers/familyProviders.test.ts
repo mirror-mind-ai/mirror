@@ -43,14 +43,16 @@ function trackingLoaders() {
   };
 }
 
-test("a reverted family yields null, so the route can fall back to Python", async () => {
+test("a leftover revert variable builds the live providers, as if it were unset (D3)", async () => {
+  // Until CV22.DS10.TS5 `=0` made this factory yield null so the route could
+  // fall back to Python. The engine is gone, and so is the null.
   const family = await resolveFamilyProviders(
     { MIRROR_TS_CONVERSATION_LLM_TAIL: "0" },
     CONVERSATION_TAIL_TRANSPORT,
     trackingLoaders(),
   );
 
-  assert.equal(family, null);
+  assert.equal(family.mode, "live");
 });
 
 test("replay builds one provider per declared fixture, from that fixture's path", async () => {
@@ -134,7 +136,6 @@ test("the live constructors are injectable, so a failing provider needs no netwo
 
 test("the decision's reason travels with the providers, for the front-door log", async () => {
   const spec: ProviderTransportSpec = {
-    revertVar: "MIRROR_TS_EXAMPLE",
     replay: { llm: "MIRROR_TS_EXAMPLE_LLM_REPLAY" },
     liveReason: "DS8.US3 example live",
   };
@@ -155,18 +156,7 @@ test("the decision's reason travels with the providers, for the front-door log",
 // The factory has to accept the composition, not only the owning spec. If the
 // route decided `build load` with three specs and the runtime then built
 // providers from one, they could disagree about the transport for the same
-// invocation -- CR077's defect exactly, one level up: `MIRROR_TS_SEARCH=0`
-// would route to Python while the runtime happily constructed a live embedding
-// provider.
-
-test("a composed family reverted by a family it merely composes yields null", async () => {
-  for (const variable of ["MIRROR_TS_BUILD", "MIRROR_TS_SEARCH", "MIRROR_TS_CONVERSATION_LLM_TAIL"])
-    assert.equal(
-      await resolveFamilyProviders({ [variable]: "0" }, BUILD_LOAD_COMPOSITION, trackingLoaders()),
-      null,
-      `${variable}=0 must leave build load with no providers`,
-    );
-});
+// invocation -- CR077's defect exactly, one level up.
 
 test("a composed family replays from the OWNER's fixtures", async () => {
   // Every seam inside `load` -- both searches and the previous conversation's

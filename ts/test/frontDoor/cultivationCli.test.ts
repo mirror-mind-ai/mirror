@@ -236,7 +236,7 @@ test("front door `consolidate apply` (identity_update) REFUSES a non-allowlisted
   }
 });
 
-test("front door `consolidate apply` reverts to Python by one variable, per the front-door log", () => {
+test("a leftover MIRROR_TS_CULTIVATION=0 is inert: `consolidate apply` still answers from TS (D3)", () => {
   const ws = cultivationDbCopy();
   try {
     insertConsolidation(ws.dbPath, {
@@ -248,19 +248,16 @@ test("front door `consolidate apply` reverts to Python by one variable, per the 
       targetKey: "profile",
       createdAt: "2026-01-15T00:00:00.000000Z",
     });
-    // CV22.DS8.US3: `apply` is live by default now, so an absent gate no longer
-    // sends it to Python -- `MIRROR_TS_CULTIVATION=0` is what does.
-    //
-    // The stdout/stderr TEXT is not a reliable discriminator here: Python's own
-    // `apply_consolidation_identity_update` carries the identical allowlist
-    // message (the port is byte-exact), so both engines legitimately produce
-    // the same refusal. The routing DECISION, recorded in the front-door log,
-    // is the reliable signal that TS did not serve this command.
+    // This test used to prove the revert: `=0` sent `apply` to Python, visible
+    // only in the log, because both engines print the identical allowlist
+    // refusal. The revert left with the Python engine at CV22.DS10.TS5, so the
+    // log now proves the opposite -- the leftover changes nothing.
     spawnFrontDoor(["consolidate", "apply", "abcd1234ef56", "--db-path", ws.dbPath], {
       MIRROR_TS_CULTIVATION: "0",
     });
     const logContent = readFileSync(join(ws.tmpDir, "front-door.log"), "utf8");
-    assert.match(logContent, /\tpython\t/);
+    assert.match(logContent, /\tconsolidate\tts\t/);
+    assert.doesNotMatch(logContent, /\tpython\t/);
   } finally {
     ws.cleanup();
   }

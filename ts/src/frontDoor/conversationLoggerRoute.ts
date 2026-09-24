@@ -1,13 +1,10 @@
 // Front-door route for `conversation-logger` (CV22.DS7.US5 slice A; completed
 // in CV22.DS7.US10 slice F).
 //
-// Routing (`routing.ts`) decides engine and gate; this module builds the
-// logger runtime from the process environment, performs the TS-side work, and
-// writes the CLI contract. It returns `null` when the dispatcher reports the
-// subcommand is not TS-handled -- including an LLM-tail subcommand whose
-// replay transport turns out to be unconfigured -- so the caller falls back to
-// Python rather than risking a silent behavior change. Defense in depth behind
-// the routing gate.
+// Routing (`routing.ts`) decides the route; this module builds the logger
+// runtime from the process environment, performs the work, and writes the CLI
+// contract. (Until CV22.DS10.TS5 it could also return `null` to hand an LLM-tail
+// subcommand back to Python; that path left with the fallback.)
 
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
@@ -45,7 +42,7 @@ export async function runConversationLoggerRoute(
   db: WritableDatabase,
   dbPath: string,
   argv: readonly string[],
-): Promise<number | null> {
+): Promise<number> {
   const args = argv.slice(1);
   const subcommand = subcommandOf(args);
   const runtime = createLoggerRuntime({
@@ -70,8 +67,6 @@ export async function runConversationLoggerRoute(
   const result = await runConversationLoggerCommand(db, args, runtime, {
     stdin: STDIN_SUBCOMMANDS.has(subcommand) ? readStdin() : undefined,
   });
-  if (!result.handled) return null;
-
   for (const line of result.stdout) process.stdout.write(`${line}\n`);
   for (const line of result.stderr) process.stderr.write(`${line}\n`);
   return result.exitCode;

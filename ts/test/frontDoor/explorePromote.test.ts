@@ -204,35 +204,6 @@ test("promote without a handoff renders the refusal surface and mutates nothing"
   }
 });
 
-test("a reverted Builder family sends promote to Python, before it writes anything", () => {
-  // The important half is the SECOND assertion. Promote is not idempotent —
-  // once the story is promoted a second run finds none — so a revert discovered
-  // after the writes would leave a journey neither engine can finish.
-  //
-  // Python is made UNREACHABLE on purpose. With it available the fallback would
-  // promote the story itself and the assertion could no longer tell "TypeScript
-  // wrote nothing" from "TypeScript wrote everything": both end with a promoted
-  // story. This is the environment where only one of them does.
-  const { home, slug } = makeHome({ withHandoff: true });
-  try {
-    const result = spawnFrontDoor(["explore", "story", "promote", slug], {
-      MIRROR_HOME: home,
-      MIRROR_USER: basename(home),
-      MIRROR_TS_SEARCH: "0",
-      ...REPLAY,
-      ...NO_PYTHON,
-    });
-
-    assert.notEqual(result.status, 0, "the TS route did not answer");
-    assert.match(result.stderr, /could not spawn `uv`/u, "it fell back to Python");
-    const after = read(home, slug);
-    assert.equal(after.row?.status, "active");
-    assert.equal(after.handoff?.readiness, "proposed");
-  } finally {
-    rmSync(home, { recursive: true, force: true });
-  }
-});
-
 test("half a replay fixture refuses instead of reaching the live provider", () => {
   const { home, slug } = makeHome({ withHandoff: true });
   try {

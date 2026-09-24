@@ -43,8 +43,8 @@ import {
  * The factory accepts both because the ROUTE and the RUNTIME must reach the
  * same decision for the same invocation. Leaving the composition to the router
  * and handing this function the owning spec alone would reintroduce CR077 one
- * level up: `MIRROR_TS_SEARCH=0` would route `build load` to Python while this
- * factory cheerfully constructed a live embedding provider for it.
+ * level up: routing would refuse a half-configured harness that this factory
+ * then cheerfully built live providers for.
  */
 export type FamilyTransport = ProviderTransportSpec | ComposedProviderTransportSpec;
 
@@ -82,8 +82,7 @@ export interface FamilyProviderOverrides {
 }
 
 /**
- * Build the providers for one family, or `null` when the family is reverted to
- * Python (the route then falls back, as `loggerCli` does).
+ * Build the providers for one family.
  *
  * Throws `ReplayFixtureIncompleteError` when part of a multi-fixture family is
  * configured: half a fixture must never become a live call.
@@ -96,7 +95,7 @@ export async function resolveFamilyProviders(
   env: ProviderTransportEnv,
   spec: FamilyTransport,
   overrides: FamilyProviderOverrides = {},
-): Promise<FamilyProviders | null> {
+): Promise<FamilyProviders> {
   // A composed command's PROVIDERS come from its owning family: the fixtures
   // the other families declare answer for their own commands, never for this
   // one. The composition changes which transport is chosen, not whose
@@ -105,7 +104,6 @@ export async function resolveFamilyProviders(
   const decision = isComposed(spec)
     ? resolveComposedProviderTransport(env, spec)
     : resolveProviderTransport(env, spec);
-  if (decision.mode === "python") return null;
   if (decision.mode === "incomplete_replay") throw new ReplayFixtureIncompleteError(decision);
   return decision.mode === "replay"
     ? replayProviders(decision, overrides)

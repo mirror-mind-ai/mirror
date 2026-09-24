@@ -11,11 +11,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { endConversation, logUserMessage } from "#conversation/logger.ts";
 import { runConversationLoggerCommand } from "#conversation/loggerCli.ts";
-import {
-  createLoggerRuntime,
-  LlmTailUnconfiguredError,
-  type LoggerRuntimeEnv,
-} from "#conversation/loggerRuntime.ts";
+import { createLoggerRuntime, type LoggerRuntimeEnv } from "#conversation/loggerRuntime.ts";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import {
   resolveExtractionMaxAttempts,
@@ -69,37 +65,26 @@ test("with nothing configured the close tail is LIVE (CV22.DS8.US2 cutover)", as
   const { runtime, loads, db } = fixture({});
 
   assert.equal(runtime.transportMode, "live");
-  assert.equal(runtime.llmTailConfigured, true);
   await runtime.closeHooks();
   assert.deepEqual(loads, { llm: 0, embeddings: 0 }, "no replay fixture is loaded in live mode");
   db.close();
 });
 
-test("MIRROR_TS_CONVERSATION_LLM_TAIL=0 reverts the tail to Python", async () => {
-  const { runtime, loads, db } = fixture({ MIRROR_TS_CONVERSATION_LLM_TAIL: "0" });
+test("a leftover MIRROR_TS_CONVERSATION_LLM_TAIL=0 changes nothing (CV22.DS10.TS5, D3)", async () => {
+  // It reverted the tail to Python. The engine is gone, so the variable is
+  // inert: the tail stays live, and `runtime diagnose` names the leftover.
+  // Cast on purpose: the variable is no longer part of the runtime's
+  // environment type, which is itself the point -- this is a stale shell.
+  const { runtime, db } = fixture({ MIRROR_TS_CONVERSATION_LLM_TAIL: "0" } as LoggerRuntimeEnv);
 
-  assert.equal(runtime.transportMode, "python");
-  assert.equal(runtime.llmTailConfigured, false);
-  // LlmTailUnconfiguredError is what loggerCli turns into the Python fallback,
-  // so the revert keeps using the mechanism that already existed.
-  await assert.rejects(runtime.closeHooks(), LlmTailUnconfiguredError);
-  await assert.rejects(runtime.maintenanceDeps(), LlmTailUnconfiguredError);
-  assert.deepEqual(loads, { llm: 0, embeddings: 0 });
-  db.close();
-});
-
-test("the revert wins over replay fixtures left in the same shell", async () => {
-  const { runtime, db } = fixture({ ...CONFIGURED, MIRROR_TS_CONVERSATION_LLM_TAIL: "0" });
-
-  assert.equal(runtime.transportMode, "python");
+  assert.equal(runtime.transportMode, "live");
   db.close();
 });
 
 test("half a replay fixture REFUSES by name instead of going live", async () => {
   // The dangerous shape: a developer sets one variable, expects a replayed
-  // close tail, and gets a live one. Falling back to Python would be no safer
-  // -- Python has no replay transport, so it would spend too, just on the
-  // other engine. The only safe answer is to stop and name the missing half.
+  // close tail, and gets a live one. The only safe answer is to stop and name
+  // the missing half.
   for (const [present, missing] of [
     ["MIRROR_TS_CONVERSATION_LLM_REPLAY", "MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY"],
     ["MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY", "MIRROR_TS_CONVERSATION_LLM_REPLAY"],
@@ -109,10 +94,6 @@ test("half a replay fixture REFUSES by name instead of going live", async () => 
     const error = await runtime.closeHooks().catch((e: unknown) => e);
     assert.ok(error instanceof ReplayFixtureIncompleteError, `${present} alone must refuse`);
     assert.match((error as Error).message, new RegExp(missing as string));
-    assert.ok(
-      !(error instanceof LlmTailUnconfiguredError),
-      "a refusal must not be mistaken for the Python fallback",
-    );
     assert.deepEqual(loads, { llm: 0, embeddings: 0 });
     db.close();
   }
@@ -122,7 +103,6 @@ test("both replay fixtures select the replay transport", async () => {
   const { runtime, db } = fixture(CONFIGURED);
 
   assert.equal(runtime.transportMode, "replay");
-  assert.equal(runtime.llmTailConfigured, true);
   db.close();
 });
 
@@ -147,7 +127,7 @@ test("deterministic subcommands never load a provider, configured or not", async
     ["log-user", "s1", "hello"],
   ]) {
     const result = await runConversationLoggerCommand(db, argv, runtime);
-    assert.equal(result.handled, true, argv.join(" "));
+    assert.equal(typeof result.exitCode, "number", argv.join(" "));
   }
   assert.deepEqual(loads, { llm: 0, embeddings: 0 });
   db.close();

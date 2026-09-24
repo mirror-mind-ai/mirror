@@ -1,10 +1,10 @@
 // CV22.DS7.US8 plateau 8 — production front-door route for `build`.
 //
-// Routing owns the two-level allowlist and keeps the gate off until plateau 9.
-// This module owns argparse-class validation, the writable database boundary,
-// and the lazy import of the Builder tree. No Builder module is imported at
-// module evaluation time: MIRROR_TS_BUILD=0 must still reach Python when the
-// Builder core is broken. Type-only imports are erased and do not cross it.
+// Routing owns the two-level allowlist. This module owns argparse-class
+// validation, the writable database boundary, and the lazy import of the Builder
+// tree. No Builder module is imported at module evaluation time, so a broken
+// Builder core breaks `build` and nothing else. Type-only imports are erased and
+// do not cross it.
 
 import type { CommandResult } from "#builder/commands.ts";
 import type { Database, WritableDatabase } from "#db/database.ts";
@@ -19,7 +19,7 @@ export interface BuildRouteDeps {
     db: WritableDatabase,
     dbPath: string,
     ignoreProductionRole: boolean,
-  ) => Promise<BuildLoadRuntime | null>;
+  ) => Promise<BuildLoadRuntime>;
   readonly nowIso: () => string;
   readonly environmentSessionId?: string | null;
 }
@@ -359,7 +359,6 @@ export async function runBuildRoute(
         dbPath,
         builderArgv.includes("--ignore-production-role"),
       );
-      if (runtime === null) throw new Error("build load route disagreed with its routing decision");
       const slug = positional(builderArgv, LOAD_SPEC.values ?? []);
       if (slug === null) throw new Error("validated build load lost its journey slug");
       // Keep the provider-backed leaf outside the deterministic command-tree

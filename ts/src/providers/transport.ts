@@ -2,11 +2,16 @@
  * The one transport-selection precedence for provider-backed command families
  * (CV22.DS8.US1, generalized by CV22.DS8.US3 / CR077).
  *
- * Sixteen leaves reach a provider. Each one needs the same decision: an
- * operational revert to Python, a deterministic replay fixture for CI and the
- * parity harness, or the live provider. Deriving that per leaf is how the US11
- * defect happened -- `LLM_ROLES` had a type and a hand-maintained guard that
- * drifted apart, and the unit tests still passed. One list, no drift.
+ * Sixteen leaves reach a provider. Each one needs the same decision: a
+ * deterministic replay fixture for CI and the smokes, or the live provider.
+ * Deriving that per leaf is how the US11 defect happened -- `LLM_ROLES` had a
+ * type and a hand-maintained guard that drifted apart, and the unit tests
+ * still passed. One list, no drift.
+ *
+ * Until CV22.DS10.TS5 there was a third answer, an operational revert to
+ * Python (`<revertVar>=0`), and it outranked everything else. It left with the
+ * engine it reverted to (decision D3). A leftover variable is inert, and
+ * `runtime diagnose` says so.
  *
  * CR077: a family may need MORE THAN ONE replay fixture (the close tail needs
  * an LLM fixture and an embedding fixture; `mirror load --query` and the
@@ -17,7 +22,7 @@
  * routing and the runtime agree by construction.
  */
 
-export type ProviderTransportMode = "python" | "replay" | "incomplete_replay" | "live";
+export type ProviderTransportMode = "replay" | "incomplete_replay" | "live";
 
 /**
  * Read-only env view. Indexed access is deliberate: families name their
@@ -39,21 +44,10 @@ export type ProviderKind = "llm" | "embedding" | "credits";
 export type ProviderReplaySpec = Partial<Record<ProviderKind, string>>;
 
 export interface ProviderTransportSpec {
-  /** Family revert control. `=0` sends the family back to Python. */
-  revertVar: string;
   /** Replay fixture variables this family needs. All of them, or none. */
   replay?: ProviderReplaySpec;
   /** Reason recorded when the live provider is selected. */
   liveReason?: string;
-  /**
-   * A story that must land before this family may go live, when one exists.
-   *
-   * Not a revert and not a config error: the port is incomplete, so Python
-   * answers and the reason says which story unblocks it. Deleting the field is
-   * the whole flip. Used by the cultivation SCAN leaves, whose prompts were
-   * never ported (CV22.DS8.TS2).
-   */
-  liveBlockedBy?: string;
 }
 
 export interface ProviderTransportDecision {
@@ -73,33 +67,25 @@ export interface ProviderTransportDecision {
  *
  * Precedence, highest first:
  *
- * 1. **revert** -- `<revertVar>=0`. An operational escape hatch must not be
- *    outvoted by leftover replay configuration in the same shell.
- * 2. **replay** -- every declared fixture variable is set. Deterministic, no
- *    network, no spend. This is what CI and `real_db_copy_parity.py` use. It
- *    deliberately does not require `MIRROR_TS_EXTERNAL_ROUTES`: that gate was
- *    DS5's safety catch while replay was the PRODUCTION route, and after the
- *    live cutover replay is a test transport.
- * 3. **incomplete_replay** -- some declared fixtures are set and some are not.
+ * 1. **replay** -- every declared fixture variable is set. Deterministic, no
+ *    network, no spend. This is what CI and the smokes use. It deliberately
+ *    does not require `MIRROR_TS_EXTERNAL_ROUTES`: that gate was DS5's safety
+ *    catch while replay was the PRODUCTION route, and after the live cutover
+ *    replay is a test transport.
+ * 2. **incomplete_replay** -- some declared fixtures are set and some are not.
  *    Never live: someone who set one variable meant to replay, and running
- *    half a fixture would spend real money. Never Python either -- Python has
- *    no replay transport, so it would spend too, just on the other engine and
- *    silently. The only honest answer names the missing half.
- * 4. **live** -- the DS8 default. An unconfigured install reaches the provider
+ *    half a fixture would spend real money. The only honest answer names the
+ *    missing half.
+ * 3. **live** -- the DS8 default. An unconfigured install reaches the provider
  *    through TypeScript.
  *
- * Only an exact `"0"` reverts, so an unrelated value cannot silently disable
- * the TS route; an exported-but-empty fixture variable is treated as absent,
- * because that shell accident should not become a file-not-found later.
+ * An exported-but-empty fixture variable is treated as absent, because that
+ * shell accident should not become a file-not-found later.
  */
 export function resolveProviderTransport(
   env: ProviderTransportEnv,
   spec: ProviderTransportSpec,
 ): ProviderTransportDecision {
-  if (env[spec.revertVar] === "0") {
-    return { mode: "python", reason: `${spec.revertVar}=0 revert to Python` };
-  }
-
   const declared = declaredReplayVars(spec);
   const present = declared.filter(([, variable]) => Boolean(env[variable]));
 
@@ -128,9 +114,6 @@ export function resolveProviderTransport(
     };
   }
 
-  if (spec.liveBlockedBy) {
-    return { mode: "python", reason: `live blocked by ${spec.liveBlockedBy}` };
-  }
   return { mode: "live", reason: spec.liveReason ?? "live provider" };
 }
 
@@ -149,22 +132,19 @@ function declaredReplayVars(spec: ProviderTransportSpec): [ProviderKind, string]
  * `build load` is the case that forced this. It owns no provider seam: its two
  * embeddings ARE the search family, and the previous conversation's close tail
  * IS the conversation-tail family -- both already live in production since DS8.
- * A private gate would make `MIRROR_TS_SEARCH=0` mean two different things in
- * two commands: `memories --search` back on Python while `build load` keeps
- * calling the same provider.
+ * Its fixtures are the owner's; the composed families only say whether replay
+ * was intended somewhere, so a half-configured harness refuses instead of
+ * reaching the live provider through fixtures nobody set.
  */
 export interface ComposedProviderTransportSpec {
   /** Named in every composed reason, so the log says which command composed. */
   readonly label: string;
-  /**
-   * The family whose fixtures the command's providers are actually built from,
-   * and whose revert variable is the command's own kill switch.
-   */
+  /** The family whose fixtures the command's providers are actually built from. */
   readonly owner: ProviderTransportSpec;
   /**
-   * Families whose work this command performs. Consulted for their REVERTS and
-   * for replay intent -- never for fixtures, because a composing command runs
-   * every seam off the owner's.
+   * Families whose work this command performs. Consulted for replay intent --
+   * never for fixtures, because a composing command runs every seam off the
+   * owner's.
    */
   readonly composes: readonly ProviderTransportSpec[];
 }
@@ -174,18 +154,17 @@ export interface ComposedProviderTransportSpec {
  *
  * Precedence, extending `resolveProviderTransport` rather than replacing it:
  *
- * 1. **any revert wins** -- the owner's or a composed family's. D2's argument
- *    one level down: a half-flipped session start cannot be reviewed, and
- *    whoever turns off fresh search must not find `build load` still calling
- *    the provider they just turned off.
- * 2. **any incomplete fixture refuses** -- including a composed family's. Its
+ * 1. **any incomplete fixture refuses** -- including a composed family's. Its
  *    own pair rule cannot be honoured by a runtime that never sees it.
- * 3. **replay intent anywhere requires the OWNER's complete fixture set.** A
+ * 2. **replay intent anywhere requires the OWNER's complete fixture set.** A
  *    harness that configured the search family for replay and then ran `build
- *    load` would reach the live provider through fixtures nobody set. Live
- *    would be a silent charge and Python would charge too, on the other
- *    engine, so the only honest answer names the fixtures missing here.
- * 4. otherwise the owner's decision stands, unchanged.
+ *    load` would reach the live provider through fixtures nobody set -- a
+ *    silent charge -- so the only honest answer names the fixtures missing
+ *    here.
+ * 3. otherwise the owner's decision stands, unchanged.
+ *
+ * (A fourth rule, "any revert wins", sat on top until CV22.DS10.TS5 deleted
+ * the reverts with the engine they reverted to.)
  *
  * With an empty `composes` the result is byte-identical to the single-family
  * decision: the composition is data, not a second precedence to drift from.
@@ -196,10 +175,6 @@ export function resolveComposedProviderTransport(
 ): ProviderTransportDecision {
   const owner = resolveProviderTransport(env, spec.owner);
   const composed = spec.composes.map((family) => resolveProviderTransport(env, family));
-
-  if (owner.mode === "python") return owner;
-  const reverted = composed.find((decision) => decision.mode === "python");
-  if (reverted) return composedReason(reverted, spec.label);
 
   if (owner.mode === "incomplete_replay") return owner;
   const incomplete = composed.find((decision) => decision.mode === "incomplete_replay");
@@ -244,10 +219,11 @@ function composedReason(
 /**
  * Exactly one half of a multi-fixture family's replay configuration is set.
  *
- * Deliberately NOT the Python fallback: that would be no safer, because Python
- * has no replay transport and would spend on the live provider too -- just on
- * the other engine, and silently. Someone who set one variable meant to
- * replay, so the only honest answer is to stop and name the missing half.
+ * Someone who set one variable meant to replay, so the only honest answer is
+ * to stop and name the missing half. (Until CV22.DS10.TS5 a PLAIN family sent
+ * this case to the Python fallback, which has no replay transport and would
+ * have called the live provider; only compositions refused. With the fallback
+ * gone every family refuses.)
  *
  * Lived in `loggerRuntime` until CR077; it is the whole family rule's error,
  * so it belongs beside the rule.
@@ -270,7 +246,7 @@ export class ReplayFixtureIncompleteError extends Error {
 //
 // Each provider-backed family names its variables here, in one place, rather
 // than in the route that happens to consume them: `routing.ts` decides the
-// engine and the provider factory builds the providers, and both must read the
+// route and the provider factory builds the providers, and both must read the
 // same spec or they can disagree about which transport is live.
 
 /**
@@ -281,7 +257,6 @@ export class ReplayFixtureIncompleteError extends Error {
  * cutover replay is a test transport.
  */
 export const SEARCH_TRANSPORT: ProviderTransportSpec = {
-  revertVar: "MIRROR_TS_SEARCH",
   replay: { embedding: "MIRROR_TS_SEARCH_EMBEDDING_REPLAY" },
   liveReason: "DS8.US1 fresh semantic search live",
 };
@@ -293,14 +268,8 @@ export const SEARCH_TRANSPORT: ProviderTransportSpec = {
  * Two fixtures back this family, not one -- the pair rule that motivated
  * CR077. It now lives in the spec, so the router cannot report `replay` for an
  * invocation the runtime refuses.
- *
- * The revert is tail-only on purpose. `MIRROR_TS_CONVERSATION_LOGGER=0` still
- * reverts all fifteen subcommands, but the seven deterministic ones have
- * answered from TypeScript since 2026-09-02 and a live-provider scare must not
- * drag them back with the five that cross the model.
  */
 export const CONVERSATION_TAIL_TRANSPORT: ProviderTransportSpec = {
-  revertVar: "MIRROR_TS_CONVERSATION_LLM_TAIL",
   replay: {
     llm: "MIRROR_TS_CONVERSATION_LLM_REPLAY",
     embedding: "MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY",
@@ -311,14 +280,9 @@ export const CONVERSATION_TAIL_TRANSPORT: ProviderTransportSpec = {
 /**
  * `soul harvest save` (CV22.DS8.US3) -- the one leaf of the Soul command that
  * crosses the provider seam, and only through the embedding: the save supplies
- * title, layer, and tags, so Python's journal classifier is unreachable.
- *
- * The revert is the whole Soul family switch rather than a new variable: every
- * other Soul leaf is deterministic, so `MIRROR_TS_SOUL=0` reverting all of
- * them costs nothing and adds no third thing to remember.
+ * title, layer, and tags, so the journal classifier is unreachable.
  */
 export const SOUL_HARVEST_TRANSPORT: ProviderTransportSpec = {
-  revertVar: "MIRROR_TS_SOUL",
   replay: { embedding: "MIRROR_TS_SOUL_EMBEDDING_REPLAY" },
   liveReason: "DS8.US3 soul harvest save live",
 };
@@ -333,13 +297,11 @@ export const SOUL_HARVEST_TRANSPORT: ProviderTransportSpec = {
  * refuses -- it must not go live for the half nobody configured.
  */
 export const CONSULT_CREDITS_TRANSPORT: ProviderTransportSpec = {
-  revertVar: "MIRROR_TS_CONSULT",
   replay: { credits: "MIRROR_TS_CREDITS_REPLAY" },
   liveReason: "DS8.US3 consult credits live",
 };
 
 export const CONSULT_ASK_TRANSPORT: ProviderTransportSpec = {
-  revertVar: "MIRROR_TS_CONSULT",
   replay: { llm: "MIRROR_TS_CONSULT_LLM_REPLAY", credits: "MIRROR_TS_CREDITS_REPLAY" },
   liveReason: "DS8.US3 consult ask live",
 };
@@ -348,16 +310,10 @@ export const CONSULT_ASK_TRANSPORT: ProviderTransportSpec = {
  * `mirror load --query` (CV22.DS8.US3): the reception classifier plus the
  * query's own embedding for attachment and journey search.
  *
- * Its own revert variable rather than a `mirror` family switch: the
- * deterministic `mirror load` is the most-used read in the product and has
- * answered from TypeScript since DS7.US4. A live-provider scare must revert
- * the query path alone.
- *
- * `MEMORY_RECEPTION=0` still skips the classifier on both engines; the
- * embedding half stays, which is why both fixtures are declared.
+ * `MEMORY_RECEPTION=0` skips the classifier; the embedding half stays, which is
+ * why both fixtures are declared.
  */
 export const MIRROR_QUERY_TRANSPORT: ProviderTransportSpec = {
-  revertVar: "MIRROR_TS_MIRROR_QUERY",
   replay: {
     llm: "MIRROR_TS_MIRROR_LLM_REPLAY",
     embedding: "MIRROR_TS_MIRROR_EMBEDDING_REPLAY",
@@ -373,12 +329,8 @@ export const MIRROR_QUERY_TRANSPORT: ProviderTransportSpec = {
  * contract -- invisible under replay, which answers by role and never reads
  * the prompt. The real templates now travel with the call and their assembled
  * bytes are digest-pinned against the Python oracle (`cultivation/propose.ts`).
- *
- * The revert is tail-only: `consolidate list|reject|show` are deterministic and
- * have answered from TypeScript since DS7.US3.
  */
 export const CULTIVATION_SCAN_TRANSPORT: ProviderTransportSpec = {
-  revertVar: "MIRROR_TS_CULTIVATION",
   replay: { llm: "MIRROR_TS_CULTIVATION_LLM_REPLAY" },
   liveReason: "DS8.TS2 cultivation scan live",
 };
@@ -393,14 +345,12 @@ export const CULTIVATION_SCAN_TRANSPORT: ProviderTransportSpec = {
  * for TS2"; measured, it is two.
  */
 export const CULTIVATION_APPLY_TRANSPORT: ProviderTransportSpec = {
-  revertVar: "MIRROR_TS_CULTIVATION",
   replay: { embedding: "MIRROR_TS_CULTIVATION_EMBEDDING_REPLAY" },
   liveReason: "DS8.US3 consolidate apply live",
 };
 
 /** `journal` (CV22.DS8.US3): classify the entry, then embed the memory. */
 export const JOURNAL_TRANSPORT: ProviderTransportSpec = {
-  revertVar: "MIRROR_TS_JOURNAL",
   replay: {
     llm: "MIRROR_TS_JOURNAL_LLM_REPLAY",
     embedding: "MIRROR_TS_JOURNAL_EMBEDDING_REPLAY",
@@ -408,13 +358,8 @@ export const JOURNAL_TRANSPORT: ProviderTransportSpec = {
   liveReason: "DS8.US3 journal live",
 };
 
-/**
- * `week plan` (CV22.DS8.US3). `week save` and `week view` make no provider
- * call and are already ungated; `MIRROR_TS_WEEK=0` still reverts all three,
- * which is the existing family contract.
- */
+/** `week plan` (CV22.DS8.US3). `week save` and `week view` make no provider call. */
 export const WEEK_PLAN_TRANSPORT: ProviderTransportSpec = {
-  revertVar: "MIRROR_TS_WEEK",
   replay: { llm: "MIRROR_TS_WEEK_LLM_REPLAY" },
   liveReason: "DS8.US3 week plan live",
 };
@@ -424,7 +369,6 @@ export const WEEK_PLAN_TRANSPORT: ProviderTransportSpec = {
  * when no `--layer/--key` narrows it, so the front-door log records `calls=N`.
  */
 export const DESCRIPTOR_TRANSPORT: ProviderTransportSpec = {
-  revertVar: "MIRROR_TS_DESCRIPTOR",
   replay: { llm: "MIRROR_TS_DESCRIPTOR_LLM_REPLAY" },
   liveReason: "DS8.US3 descriptor generate live",
 };
@@ -439,14 +383,8 @@ export const DESCRIPTOR_TRANSPORT: ProviderTransportSpec = {
  * runs on the way in. Every seam inside the command is built from THESE
  * variables, which is why an incomplete set here refuses even when another
  * family's fixtures are present.
- *
- * `MIRROR_TS_BUILD=0` stays the family's kill switch -- it reverts all 27
- * leaves, cursor writes included (D2: all-or-nothing) -- and this spec adds the
- * replay fixtures the parity harness needs. It does NOT replace the two reverts
- * below; see `BUILD_LOAD_COMPOSITION`.
  */
 export const BUILD_LOAD_TRANSPORT: ProviderTransportSpec = {
-  revertVar: "MIRROR_TS_BUILD",
   replay: {
     llm: "MIRROR_TS_BUILD_LLM_REPLAY",
     embedding: "MIRROR_TS_BUILD_EMBEDDING_REPLAY",
@@ -458,13 +396,12 @@ export const BUILD_LOAD_TRANSPORT: ProviderTransportSpec = {
  * The three specs `build load` resolves BEFORE it prints a byte (item 18b).
  *
  * Four surfaces -- transition card, entry surface, identity context, and the
- * banner on stderr -- print ahead of the first provider call, so a fallback
- * decided later would duplicate all of them in the Navigator's terminal.
+ * banner on stderr -- print ahead of the first provider call, so a refusal
+ * decided later would come after all of them in the Navigator's terminal.
  *
- * The composed pair is not decoration: `MIRROR_TS_SEARCH=0` and
- * `MIRROR_TS_CONVERSATION_LLM_TAIL=0` each send the whole command to Python,
- * because one family must not answer differently depending on which command
- * asked.
+ * The composed pair is what makes a half-configured harness refuse: replay
+ * intent on the search or conversation-tail family requires this command's
+ * own fixtures, rather than reaching the live provider through ones nobody set.
  */
 export const BUILD_LOAD_COMPOSITION: ComposedProviderTransportSpec = {
   label: "build load",

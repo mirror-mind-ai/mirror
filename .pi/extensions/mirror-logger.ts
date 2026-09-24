@@ -160,11 +160,10 @@ export default function (pi: ExtensionAPI) {
 	/**
 	 * Every Mirror command this extension runs enters the TypeScript front
 	 * door (`ts/src/frontDoor/cli.ts`), the same entry the skills use, so
-	 * `routing.ts` decides which engine answers, each family's revert control
-	 * (`MIRROR_TS_*=0`) reaches live sessions, and `front-door.log` records
-	 * the route. Unported commands fall back to Python inside the front door,
-	 * which is where the `uv run python -m memory` invocation now lives --
-	 * with the venv resolution that used to be this file's concern.
+	 * `routing.ts` decides the route and `front-door.log` records it. (Until
+	 * CV22.DS10.TS5 an unported or reverted command fell back to Python inside
+	 * the front door; the fallback, the `MIRROR_TS_*=0` reverts, and the
+	 * venv resolution that used to be this file's concern are all gone.)
 	 *
 	 * The relative path resolves because Pi runs with the repository root as
 	 * its working directory, the same invariant the skills rely on.
@@ -467,8 +466,7 @@ export default function (pi: ExtensionAPI) {
 			log("INFO", `session closed: ${sessionId}`);
 		}
 
-		// The dated zip backup answers from TypeScript (CV22.DS7.TS1); the front
-		// door's routing table -- and MIRROR_TS_BACKUP=0 -- decide the engine.
+		// The dated zip backup answers from TypeScript (CV22.DS7.TS1).
 		await runMirror(["backup", "--silent"]);
 	});
 }

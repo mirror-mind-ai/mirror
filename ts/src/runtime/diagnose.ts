@@ -461,21 +461,51 @@ export function renderRuntimeDiagnosis(findings: readonly DriftFinding[]): strin
 // --- CV22.DS10.TS5: the transition's own leftovers -------------------------
 
 /**
- * The family gates that used to revert a route to Python.
+ * The variables that used to send a route to Python, deleted by CV22.DS10.TS5
+ * (D3): the twenty-one family revert gates, the MCP launcher's engine switch
+ * (plateau 1), and DS5's replay opt-in, inert since DS8.US3.
  *
- * Deleted at plateau 2. A value left in someone's `.env` after that changes
- * nothing -- which is the right behavior and an invisible one, so diagnose
- * says it out loud rather than letting a user believe a revert is armed.
+ * NAMED, not matched by prefix. The first version of this check reported every
+ * non-`_REPLAY` `MIRROR_TS_*` variable, which told users to delete two that
+ * still do something -- `MIRROR_TS_MCP_GUARDS` (the MCP wallet guards) and
+ * `MIRROR_TS_CONSULT_CONTEXT` (consult's context input). A prefix is a claim
+ * about names nobody has written yet (inventory F8).
+ */
+export const RETIRED_REVERT_GATES: readonly string[] = [
+  "MIRROR_TS_BACKUP",
+  "MIRROR_TS_BUILD",
+  "MIRROR_TS_CONSULT",
+  "MIRROR_TS_CONVERSATION_APPEND",
+  "MIRROR_TS_CONVERSATION_LLM_TAIL",
+  "MIRROR_TS_CONVERSATION_LOGGER",
+  "MIRROR_TS_CONVERSATIONS_LIFECYCLE",
+  "MIRROR_TS_CULTIVATION",
+  "MIRROR_TS_DESCRIPTOR",
+  "MIRROR_TS_EXPLORE",
+  "MIRROR_TS_EXTENSIONS",
+  "MIRROR_TS_EXTERNAL_ROUTES",
+  "MIRROR_TS_IDENTITY_EDIT",
+  "MIRROR_TS_JOURNAL",
+  "MIRROR_TS_MCP",
+  "MIRROR_TS_MIRROR_QUERY",
+  "MIRROR_TS_REPAIR_ENCODING",
+  "MIRROR_TS_RUNTIME_READS",
+  "MIRROR_TS_RUNTIME_UPDATE",
+  "MIRROR_TS_SEARCH",
+  "MIRROR_TS_SOUL",
+  "MIRROR_TS_WEEK",
+  "MIRROR_TS_WELCOME",
+];
+
+/**
+ * A retired gate still set in the environment.
  *
- * `*_REPLAY` gates are NOT here: those choose a fixture, not an engine, and
- * they stay.
+ * A value left in someone's `.env` changes nothing -- which is the right
+ * behavior and an invisible one, so diagnose says it out loud rather than
+ * letting a user believe a revert is armed.
  */
 export function staleRevertGateFindings(env: NodeJS.ProcessEnv): DriftFinding[] {
-  const stale = Object.keys(env)
-    .filter((name) => name.startsWith("MIRROR_TS_"))
-    .filter((name) => !name.includes("_REPLAY"))
-    .filter((name) => (env[name] ?? "") !== "")
-    .sort();
+  const stale = RETIRED_REVERT_GATES.filter((name) => (env[name] ?? "") !== "");
   if (stale.length === 0) return [];
   return [
     {

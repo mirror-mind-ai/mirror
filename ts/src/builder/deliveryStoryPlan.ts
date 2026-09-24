@@ -14,7 +14,7 @@
 //      END. Re-validating after a debt review therefore REORDERS the list without
 //      changing its set — and the cursor's compare-and-swap matches on the
 //      serialized bytes, so an in-place replace passes every set-wise assertion and
-//      breaks the `MIRROR_TS_BUILD=0` revert.
+//      breaks the swap of a cursor the Python engine wrote.
 //   2. **`plan.md` is preserved, not upserted.** Python's own docstring says it is
 //      "upserted on every call"; both branches of its `if report.status ==
 //      "approved"` guard write only `if not plan_existed`, so the branches are

@@ -2,21 +2,17 @@
 //
 // `explore` is the first family with a NESTED subparser, so the allowlist is
 // two levels deep. The tests that matter here are the refusals: a subcommand or
-// a `story` action Python grows later must reach Python rather than inherit
-// this route because the family was claimed wholesale. That is the
-// `conversations append` defect (RS009/CR055) — it exited 0 and discarded the
-// caller's data.
+// a `story` action the route never implemented must not inherit this route
+// because the family was claimed wholesale. That is the `conversations append`
+// defect (RS009/CR055) — it exited 0 and discarded the caller's data.
 //
-// Flipped 2026-09-09: the family answers from TS with NO gate in the
-// environment, so the tests below assert the shipped default rather than a
-// configuration. `MIRROR_TS_EXPLORE=0` is the revert control.
+// Flipped 2026-09-09. The family's revert, `MIRROR_TS_EXPLORE=0`, left with the
+// Python engine at CV22.DS10.TS5.
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { EXPLORE_STORY_ACTIONS, EXPLORE_SUBCOMMANDS } from "#frontDoor/exploreRoute.ts";
 import { routeMemoryCommand } from "#frontDoor/routing.ts";
-
-const ON = { MIRROR_TS_EXPLORE: "1" };
 
 test("the shipped default routes every allowlisted leaf to TS with no gate set", () => {
   for (const subcommand of EXPLORE_SUBCOMMANDS) {
@@ -33,49 +29,10 @@ test("the shipped default routes every allowlisted leaf to TS with no gate set",
   }
 });
 
-test("MIRROR_TS_EXPLORE=1 is accepted but unnecessary after the flip", () => {
-  assert.equal(routeMemoryCommand(["explore", "load", "a-journey"], ON).engine, "ts");
-  assert.equal(routeMemoryCommand(["explore", "deactivate"], ON).engine, "ts");
-  for (const action of EXPLORE_STORY_ACTIONS) {
-    assert.equal(routeMemoryCommand(["explore", "story", action, "a-journey"], ON).engine, "ts");
-  }
-});
-
-test("MIRROR_TS_EXPLORE=0 keeps the whole family on Python", () => {
-  const route = routeMemoryCommand(["explore", "load", "a-journey"], {
-    MIRROR_TS_EXPLORE: "0",
-  });
-  assert.equal(route.engine, "python");
-  assert.match(route.reason, /MIRROR_TS_EXPLORE=0/);
-});
-
 test("story promote answers from TS now that Builder load is ported (US8 plateau 7)", () => {
   const route = routeMemoryCommand(["explore", "story", "promote", "a-journey"]);
   assert.equal(route.engine, "ts");
   assert.match(route.reason, /story promote/);
-});
-
-test("story promote follows the COMPOSED Builder reverts, not just the Explorer gate", () => {
-  // Its tail is a Builder session start, so the leaf answers to the same three
-  // variables `build load` does. A promote that kept calling the provider after
-  // `MIRROR_TS_SEARCH=0` would make one family mean two things.
-  for (const variable of [
-    "MIRROR_TS_BUILD",
-    "MIRROR_TS_SEARCH",
-    "MIRROR_TS_CONVERSATION_LLM_TAIL",
-  ]) {
-    const route = routeMemoryCommand(["explore", "story", "promote", "a-journey"], {
-      [variable]: "0",
-    });
-    assert.equal(route.engine, "python", `${variable}=0 must revert promote`);
-    assert.match(route.reason, new RegExp(`${variable}=0`));
-  }
-  // And the Explorer family's own gate still reverts it, before any of that.
-  const gated = routeMemoryCommand(["explore", "story", "promote", "a-journey"], {
-    MIRROR_TS_EXPLORE: "0",
-  });
-  assert.equal(gated.engine, "python");
-  assert.match(gated.reason, /MIRROR_TS_EXPLORE=0/);
 });
 
 test("half a replay fixture refuses promote by name instead of spending", () => {

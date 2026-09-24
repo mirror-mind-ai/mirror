@@ -104,9 +104,8 @@ export const RUNTIME_SUBCOMMANDS = [
  * were the last two names in it, and they are not ported but RETIRED from the
  * product surface, so they answer from the retired-surface table instead.
  *
- * Gated by `MIRROR_TS_RUNTIME_UPDATE`, deliberately NOT the reads' gate:
- * reverting a bad updater must not drag `status`, `version`, and `diagnose`
- * back to Python with it.
+ * (Its own revert, `MIRROR_TS_RUNTIME_UPDATE=0`, left with the Python engine at
+ * CV22.DS10.TS5.)
  */
 export const TS_RUNTIME_UPDATE_SUBCOMMANDS = new Set(["backup", "update", "migrate"]);
 

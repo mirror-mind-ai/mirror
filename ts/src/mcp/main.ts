@@ -23,9 +23,8 @@ const { resolveSearchEmbeddingProvider } = await import("#frontDoor/searchRoute.
 const { openDatabaseForLedgerAppend, openDatabaseReadOnly } = await import("#db/database.ts");
 const { ensureDatabaseReady } = await import("#db/readyOnOpen.ts");
 const { embeddingLedgerHook } = await import("#observability/ledgerHooks.ts");
-const { MCP_LEDGER_SESSION, policyFromEnv } = await import("./guards.ts");
+const { guardsEnabled, MCP_LEDGER_SESSION, policyFromEnv } = await import("./guards.ts");
 const { guardedRegistry } = await import("./boundary.ts");
-const { gateWithDefault } = await import("#frontDoor/routing.ts");
 const { basename } = await import("node:path");
 const { wiredRegistry } = await import("./registry.ts");
 const { serve } = await import("./serve.ts");
@@ -103,14 +102,14 @@ const registry = wiredRegistry({
 });
 
 // Guards on by default (CV22.DS9.TS1); `MIRROR_TS_MCP_GUARDS=0` restores exactly what TS2
-// shipped, read with the same parse every other gate uses. The tunables are resolved here,
+// shipped. The tunables are resolved here,
 // at startup, so a typo in `.env` fails the launch with a named reason in the client's log
 // rather than leaving the surface silently unguarded (the DS8 rule).
 //
 // The gate reverts REFUSALS only. The ledger row and its marker stay on either way: they
 // are observability, and turning off a guard is not a reason to stop recording what the
 // agent spends.
-const guarded = gateWithDefault(process.env.MIRROR_TS_MCP_GUARDS, true)
+const guarded = guardsEnabled(process.env.MIRROR_TS_MCP_GUARDS)
   ? guardedRegistry(registry, { db, policy: policyFromEnv(process.env) })
   : registry;
 

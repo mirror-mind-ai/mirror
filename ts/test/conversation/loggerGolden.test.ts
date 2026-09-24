@@ -193,12 +193,6 @@ test("TS CLI reproduces the Python stdout/stderr contract for handled subcommand
 
   for (const expected of golden.cli) {
     const result = await runConversationLoggerCommand(db, expected.argv, runtime);
-    assert.equal(
-      result.handled,
-      true,
-      `argv ${JSON.stringify(expected.argv)} should be TS-handled in slice A`,
-    );
-    if (!result.handled) continue;
     assert.deepEqual(
       { stdout: result.stdout, stderr: result.stderr, exit_code: result.exitCode },
       { stdout: expected.stdout, stderr: expected.stderr, exit_code: expected.exit_code },

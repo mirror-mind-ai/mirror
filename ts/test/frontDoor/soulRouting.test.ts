@@ -1,13 +1,14 @@
 // CV22.DS7.US6 plateau 6 — the `soul` routing contract.
 //
 // Three properties, in rising order of consequence:
-//   1. the family answers from TS by DEFAULT since the 2026-09-08 flip, and
-//      `MIRROR_TS_SOUL=0` reverts it with no code change;
-//   2. subcommands are allowlisted BY NAME, so a subcommand Python grows later
-//      reaches Python instead of inheriting the route (RS009/CR055 — the
-//      `conversations append` defect exited 0 and discarded the payload);
-//   3. `harvest save` stays on Python until the embedding replay transport is
-//      configured, because it is the one leaf that crosses the provider seam.
+//   1. the family answers from TS (flipped 2026-09-08; its revert,
+//      `MIRROR_TS_SOUL=0`, left with the Python engine at CV22.DS10.TS5);
+//   2. subcommands are allowlisted BY NAME, so a subcommand the route never
+//      implemented gets the family's usage answer instead of inheriting the
+//      route (RS009/CR055 — the `conversations append` defect exited 0 and
+//      discarded the payload);
+//   3. `harvest save` takes its own transport decision, because it is the one
+//      leaf that crosses the provider seam.
 
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -24,13 +25,6 @@ test("soul answers from TS with NO gate in the environment (the shipped default)
     if (subcommand === "harvest") continue; // its `save` action is asserted separately
     const decision = routeMemoryCommand(["soul", subcommand], {});
     assert.equal(decision.engine, "ts", `${subcommand} must answer from TS by default`);
-  }
-});
-
-test("MIRROR_TS_SOUL=1 is accepted but unnecessary after the flip", () => {
-  for (const subcommand of SOUL_SUBCOMMANDS) {
-    if (subcommand === "harvest") continue;
-    assert.equal(routeMemoryCommand(["soul", subcommand], { MIRROR_TS_SOUL: "1" }).engine, "ts");
   }
 });
 
@@ -72,12 +66,6 @@ test("harvest save is live like the rest of the family, and says so", () => {
     "ts",
     "a fixture still selects replay",
   );
-  // The family switch is the revert: every other Soul leaf is deterministic,
-  // so reverting all of them costs nothing and adds no third thing to remember.
-  assert.equal(
-    routeMemoryCommand(["soul", "harvest", "save"], { MIRROR_TS_SOUL: "0" }).engine,
-    "python",
-  );
 });
 
 test("harvest save is recognized behind the options argparse strips first", () => {
@@ -93,13 +81,4 @@ test("harvest save is recognized behind the options argparse strips first", () =
     /replay transport/,
     "the save leaf's own decision, not the family's",
   );
-});
-
-test("MIRROR_TS_SOUL=0 keeps the whole family on Python", () => {
-  for (const subcommand of SOUL_SUBCOMMANDS) {
-    assert.equal(
-      routeMemoryCommand(["soul", subcommand], { MIRROR_TS_SOUL: "0" }).engine,
-      "python",
-    );
-  }
 });

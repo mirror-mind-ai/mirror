@@ -37,9 +37,9 @@ export async function resolveSearchEmbeddingProvider(
   // inside searchMemoriesWithStatus and degrades to lexical-only rather than
   // failing the command -- Python's behavior for an unconfigured install.
   const family = await resolveFamilyProviders(env, SEARCH_TRANSPORT);
-  if (!family?.embedding) {
-    // `routing.ts` keeps `MIRROR_TS_SEARCH=0` on Python, so this route is only
-    // reached when the family resolved to replay or live.
+  if (!family.embedding) {
+    // The search family declares an embedding fixture, so replay and live both
+    // build one; this is defense in depth, not a reachable state.
     throw new Error("memories --search requires an embedding provider");
   }
   return family.embedding;

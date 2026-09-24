@@ -15,6 +15,7 @@ import { createSchema } from "#db/schema.ts";
 import {
   DEFAULT_SPEND_POLICY,
   decideSpend,
+  guardsEnabled,
   MCP_LEDGER_SESSION,
   policyFromEnv,
   readSpendState,
@@ -24,6 +25,17 @@ import {
 const POLICY: SpendPolicy = { rateLimit: 30, windowMinutes: 10, dailyUsdCeiling: null };
 
 // --- the pure decision --------------------------------------------------------------
+
+test("the guards are on unless MIRROR_TS_MCP_GUARDS is exactly 0", () => {
+  // The contract the routing module's generic `gateWithDefault` carried until
+  // CV22.DS10.TS5 deleted every gate it served but this one. Anything but an
+  // exact "0" leaves the surface guarded, so a typo can never unguard it.
+  assert.equal(guardsEnabled(undefined), true);
+  assert.equal(guardsEnabled("1"), true);
+  assert.equal(guardsEnabled(""), true);
+  assert.equal(guardsEnabled("yes"), true);
+  assert.equal(guardsEnabled("0"), false);
+});
 
 test("a call under the limit is allowed", () => {
   assert.deepEqual(decideSpend("search_memories", { callsInWindow: 29, usdLast24h: 0 }, POLICY), {

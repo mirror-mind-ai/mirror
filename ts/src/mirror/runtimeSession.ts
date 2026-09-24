@@ -114,8 +114,8 @@ export function upsertRuntimeSession(
  * report whether the swap happened. The match is STRING EQUALITY on the stored
  * metadata, which is what makes the delivery cursor's serialization a contract
  * rather than a detail: a cursor written with different bytes for the same state
- * cannot be swapped by the other engine, so a `MIRROR_TS_BUILD=0` revert would
- * fail on its first write instead of falling back cleanly.
+ * cannot be swapped, so a cursor the Python engine wrote -- every database from
+ * before CV22.DS10.TS5 carries them -- would fail its first TypeScript write.
  *
  * The WHERE clause also requires `active = 1`, so a cleared row can never be
  * swapped back into place.

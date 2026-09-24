@@ -27,5 +27,4 @@ verified backup, the fast-forward, the migration, and the post-update check.
 
 If the updater reports a recovery route, show it exactly as printed: it names
 the commit to return to. If it succeeds, mention the installed version if the
-output includes it. `MIRROR_TS_RUNTIME_UPDATE=0` sends the command back to
-Python with no code change.
+output includes it.

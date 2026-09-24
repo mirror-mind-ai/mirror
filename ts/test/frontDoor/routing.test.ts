@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { canonicalArgv } from "#frontDoor/argvShape.ts";
 import { routeMemoryCommand } from "#frontDoor/routing.ts";
+import { RETIRED_REVERT_GATES } from "#runtime/diagnose.ts";
 
 /**
  * CV22.DS10.TS5 (D2): what a family answers for a name it does not route --
@@ -36,10 +37,13 @@ test("both consult leaves are live by default, each with its own fixture require
     routeMemoryCommand(["consult", "credits"], { MIRROR_TS_CREDITS_REPLAY: "/tmp/c.json" }).engine,
     "ts",
   );
+  // Half a pair reaches TypeScript, which refuses it by name before any
+  // provider is built -- never Python any more, which had no replay transport
+  // and would have called the live provider (CV22.DS10.TS5).
   const halfConfiguredAsk = routeMemoryCommand(["consult", "openai", "question"], {
     MIRROR_TS_CREDITS_REPLAY: "/tmp/c.json",
   });
-  assert.equal(halfConfiguredAsk.engine, "python");
+  assert.equal(halfConfiguredAsk.engine, "ts");
   assert.match(halfConfiguredAsk.reason, /incomplete replay fixture/);
   assert.match(halfConfiguredAsk.reason, /MIRROR_TS_CONSULT_LLM_REPLAY missing/);
 
@@ -50,14 +54,6 @@ test("both consult leaves are live by default, each with its own fixture require
     }).engine,
     "ts",
   );
-
-  // One variable reverts the whole family.
-  for (const argv of [
-    ["consult", "credits"],
-    ["consult", "openai", "q"],
-  ]) {
-    assert.equal(routeMemoryCommand(argv, { MIRROR_TS_CONSULT: "0" }).engine, "python");
-  }
 });
 
 test("nothing the oracle answered falls through to it any more", () => {
@@ -74,7 +70,7 @@ test("nothing the oracle answered falls through to it any more", () => {
   assert.equal(routeMemoryCommand(["journal", "hello"]).engine, "ts");
 });
 
-test("routes every `identity` leaf to TS, `edit` reverting on its own variable", () => {
+test("routes every `identity` leaf to TS", () => {
   assert.deepEqual(routeMemoryCommand(["identity", "set", "ego", "behavior", "--content", "x"]), {
     command: "identity",
     engine: "ts",
@@ -88,14 +84,8 @@ test("routes every `identity` leaf to TS, `edit` reverting on its own variable",
   assert.equal(routeMemoryCommand(["identity", "list", "--layer", "ego"]).engine, "ts");
   assert.equal(routeMemoryCommand(["identity", "get", "ego", "behavior"]).engine, "ts");
   // Flipped 2026-09-16 (CV22.DS7.TS4 plateau 8) on accepted Navigator
-  // validation: the editor seam answers from TS and reverts on its own gate,
-  // not the catalog's.
+  // validation: the editor seam answers from TS.
   assert.equal(routeMemoryCommand(["identity", "edit", "ego", "behavior"]).engine, "ts");
-  assert.equal(
-    routeMemoryCommand(["identity", "edit", "ego", "behavior"], { MIRROR_TS_IDENTITY_EDIT: "0" })
-      .engine,
-    "python",
-  );
   // A leaf `identity` never had is answered by the family, by name (D2).
   assert.deepEqual(familyUsage(["identity", "something-new"]), {
     program: "identity",
@@ -125,21 +115,10 @@ test("routes every `tasks` write subcommand (add/done/doing/block/delete/import/
   }
 });
 
-test("all week leaves answer from TS; the revert covers save and plan, never view", () => {
+test("all week leaves answer from TS", () => {
   for (const argv of [["week"], ["week", "view"], ["week", "save"], ["week", "plan", "text"]]) {
     assert.equal(routeMemoryCommand(argv).engine, "ts", `${argv.join(" ")} is live by default`);
   }
-  for (const argv of [
-    ["week", "save"],
-    ["week", "plan", "text"],
-  ]) {
-    assert.equal(routeMemoryCommand(argv, { MIRROR_TS_WEEK: "0" }).engine, "python");
-  }
-  // `view` deliberately sits OUTSIDE its family gate: it was flipped ungated in
-  // US2, and reverting a bad `plan` or `save` must not drag a previously
-  // unrevertible read back to Python (US11 Plan review, quality-assurance).
-  // US3 does not change that -- `view` crosses no provider seam.
-  assert.equal(routeMemoryCommand(["week", "view"], { MIRROR_TS_WEEK: "0" }).engine, "ts");
   assert.equal(
     routeMemoryCommand(["week", "plan", "t"], { MIRROR_TS_WEEK_LLM_REPLAY: "/tmp/w.json" }).engine,
     "ts",
@@ -187,16 +166,9 @@ test("routes `conversations` listing and the two lifecycle READ faces to TS", ()
   for (const flag of ["--metadata-lifecycle-dry-run", "--metadata-lifecycle-preview-at-message"]) {
     assert.equal(routeMemoryCommand(["conversations", flag, "x"], {}).engine, "ts", flag);
   }
-  // The two WRITE faces joined them at plateau 8; one `=0` now reverts the
-  // whole ES-001 family, reads and writes together.
+  // The two WRITE faces joined them at CV22.DS7.TS4 plateau 8.
   for (const flag of ["--metadata-lifecycle-apply", "--metadata-lifecycle-demo"]) {
     assert.equal(routeMemoryCommand(["conversations", flag, "x"], {}).engine, "ts", flag);
-    assert.equal(
-      routeMemoryCommand(["conversations", flag, "x"], { MIRROR_TS_CONVERSATIONS_LIFECYCLE: "0" })
-        .engine,
-      "python",
-      flag,
-    );
   }
   // The backfills were refused BY NAME to Python; CV22.DS10.TS4 deleted them,
   // so the same names are now retired.
@@ -212,7 +184,7 @@ test("routes every ported `inspect` target to TS, and refuses an unknown one by 
     reason: "DS7.US1 inspect persona read ported to TS",
   });
   // CV22.DS7.TS4 plateau 8: the catalog pair and the ledger pair flipped
-  // together, under one revert.
+  // together.
   for (const target of [
     ["extension", "ext-google-ads"],
     ["runtime-catalog", "pi"],
@@ -220,11 +192,6 @@ test("routes every ported `inspect` target to TS, and refuses an unknown one by 
     ["embedding-provenance"],
   ]) {
     assert.equal(routeMemoryCommand(["inspect", ...target]).engine, "ts", target.join(" "));
-    assert.equal(
-      routeMemoryCommand(["inspect", ...target], { MIRROR_TS_EXTENSIONS: "0" }).engine,
-      "python",
-      target.join(" "),
-    );
   }
   assert.deepEqual(familyUsage(["inspect", "something-new"]), {
     program: "inspect",
@@ -248,11 +215,6 @@ test("routes every ported `list` target to TS, and refuses an unknown one by nam
   // flipped; `all` is the composition of three ported renderers.
   for (const argv of [["list", "extensions"], ["list", "all"], ["list"]]) {
     assert.equal(routeMemoryCommand(argv).engine, "ts", argv.join(" "));
-    assert.equal(
-      routeMemoryCommand(argv, { MIRROR_TS_EXTENSIONS: "0" }).engine,
-      "python",
-      argv.join(" "),
-    );
   }
   assert.deepEqual(familyUsage(["list", "something-new"]), {
     program: "list",
@@ -260,13 +222,9 @@ test("routes every ported `list` target to TS, and refuses an unknown one by nam
   });
 });
 
-test("descriptor list and generate both answer from TS, with generate revertible", () => {
+test("descriptor list and generate both answer from TS", () => {
   assert.equal(routeMemoryCommand(["descriptor", "list"]).engine, "ts");
   assert.equal(routeMemoryCommand(["descriptor", "generate"]).engine, "ts");
-  assert.equal(
-    routeMemoryCommand(["descriptor", "generate"], { MIRROR_TS_DESCRIPTOR: "0" }).engine,
-    "python",
-  );
   assert.deepEqual(familyUsage(["descriptor", "unknown"]), {
     program: "descriptor",
     given: "unknown",
@@ -295,7 +253,7 @@ test("routes `journey set-path`/`update`/status reads all to TS", () => {
   assert.equal(routeMemoryCommand(["journeys"]).engine, "ts");
 });
 
-test("consolidate apply and scan are live, and one variable reverts the tail", () => {
+test("consolidate apply and scan are live", () => {
   for (const sub of ["list", "reject"]) {
     assert.equal(routeMemoryCommand(["consolidate", sub, "abc"]).engine, "ts");
   }
@@ -316,20 +274,6 @@ test("consolidate apply and scan are live, and one variable reverts the tail", (
     routeMemoryCommand(["consolidate", "scan"], {
       MIRROR_TS_CULTIVATION_LLM_REPLAY: "/tmp/llm.json",
     }).engine,
-    "ts",
-  );
-
-  // Tail-only revert: the deterministic leaves stay on TypeScript.
-  for (const argv of [
-    ["consolidate", "apply", "abc"],
-    ["consolidate", "scan"],
-  ]) {
-    const reverted = routeMemoryCommand(argv, { MIRROR_TS_CULTIVATION: "0" });
-    assert.equal(reverted.engine, "python");
-    assert.match(reverted.reason, /MIRROR_TS_CULTIVATION=0/);
-  }
-  assert.equal(
-    routeMemoryCommand(["consolidate", "list"], { MIRROR_TS_CULTIVATION: "0" }).engine,
     "ts",
   );
 
@@ -356,10 +300,6 @@ test("shadow reads stay on TS, and `shadow scan` is live with its cultivation si
       .engine,
     "ts",
   );
-  assert.equal(
-    routeMemoryCommand(["shadow", "scan"], { MIRROR_TS_CULTIVATION: "0" }).engine,
-    "python",
-  );
 
   assert.deepEqual(familyUsage(["shadow", "unknown-sub"]), {
     program: "shadow",
@@ -367,7 +307,7 @@ test("shadow reads stay on TS, and `shadow scan` is live with its cultivation si
   });
 });
 
-test("mirror load --query is live, revertible on its own, and MEMORY_RECEPTION=0 drops the chat half", () => {
+test("mirror load --query is live, and MEMORY_RECEPTION=0 drops the chat half", () => {
   for (const argv of [
     ["mirror", "load"],
     ["mirror", "deactivate"],
@@ -382,18 +322,6 @@ test("mirror load --query is live, revertible on its own, and MEMORY_RECEPTION=0
 
   assert.equal(routeMemoryCommand(["mirror", "load", "--query", "hello"]).engine, "ts");
 
-  // Its own revert: the deterministic `mirror load` is the most-used read in
-  // the product and must not be dragged back by a query-path scare.
-  assert.equal(
-    routeMemoryCommand(["mirror", "load", "--query", "hello"], { MIRROR_TS_MIRROR_QUERY: "0" })
-      .engine,
-    "python",
-  );
-  assert.equal(
-    routeMemoryCommand(["mirror", "load"], { MIRROR_TS_MIRROR_QUERY: "0" }).engine,
-    "ts",
-  );
-
   // Replay needs both fixtures...
   assert.equal(
     routeMemoryCommand(["mirror", "load", "--query", "hello"], {
@@ -405,7 +333,7 @@ test("mirror load --query is live, revertible on its own, and MEMORY_RECEPTION=0
   const halfConfigured = routeMemoryCommand(["mirror", "load", "--query", "hello"], {
     MIRROR_TS_MIRROR_EMBEDDING_REPLAY: "/tmp/embedding.json",
   });
-  assert.equal(halfConfigured.engine, "python");
+  assert.equal(halfConfigured.engine, "ts", "the route refuses it by name");
   assert.match(halfConfigured.reason, /incomplete replay fixture/);
 
   // ...unless MEMORY_RECEPTION=0 removes the classifier on both engines, in
@@ -428,25 +356,9 @@ test("no command at all is the front door's top-level usage answer", () => {
   });
 });
 
-// --- CV22.DS7.US5 conversation-logger (gated, not yet flipped) ---
+// --- CV22.DS7.US5 / US10: conversation-logger ---------------------------------
 
-test("conversation-logger routes its deterministic subcommands to TS by default", () => {
-  for (const sub of ["mute", "status", "log-user", "user-prompt", "discard-current"]) {
-    assert.equal(routeMemoryCommand(["conversation-logger", sub], {}).engine, "ts");
-  }
-});
-
-test("MIRROR_TS_CONVERSATION_LOGGER=0 reverts the whole family to Python", () => {
-  const env = { MIRROR_TS_CONVERSATION_LOGGER: "0" };
-  for (const sub of ["mute", "status", "log-user", "user-prompt", "discard-current"]) {
-    const decision = routeMemoryCommand(["conversation-logger", sub], env);
-    assert.equal(decision.engine, "python", `${sub} must revert to Python`);
-    assert.match(decision.reason, /disabled by MIRROR_TS_CONVERSATION_LOGGER=0/);
-  }
-});
-
-test("conversation-logger routes deterministic subcommands to TS", () => {
-  const env = {};
+test("conversation-logger routes its deterministic subcommands to TS", () => {
   for (const sub of [
     "mute",
     "unmute",
@@ -456,78 +368,36 @@ test("conversation-logger routes deterministic subcommands to TS", () => {
     "user-prompt",
     "discard-current",
   ]) {
-    assert.equal(
-      routeMemoryCommand(["conversation-logger", sub], env).engine,
-      "ts",
-      `${sub} should route to TS under the gate`,
-    );
+    assert.equal(routeMemoryCommand(["conversation-logger", sub], {}).engine, "ts", sub);
   }
 });
-
-// --- CV22.DS7.US10 slice F: the LLM-tail flips, in the plan's dependency order ---
 
 const CONVERSATION_REPLAY_ENV = {
   MIRROR_TS_CONVERSATION_LLM_REPLAY: "/tmp/llm.json",
   MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY: "/tmp/embedding.json",
 };
 
-test("the LLM-tail subcommands no longer require the replay transport (CV22.DS8.US2)", () => {
-  // This test previously asserted the DS7.US10 contract: replay or Python,
-  // never live. US2 is the story that changes it, so the contract it encodes
-  // has to change with it -- staged, group 1 first.
-  for (const sub of ["switch", "session-end-pi", "session-end"]) {
+const GROUP_1 = ["switch", "session-end-pi", "session-end"];
+const GROUP_2 = ["session-start", "session-maintenance"];
+
+test("the close-tail subcommands are live with nothing configured, and replay under a fixture", () => {
+  // CV22.DS8.US2 staged the cutover -- group 1, the unattended hook path, first
+  // -- and group 2 followed once group 1 had run live on the real home.
+  for (const sub of [...GROUP_1, ...GROUP_2]) {
+    const live = routeMemoryCommand(["conversation-logger", sub], {});
+    assert.equal(live.engine, "ts", sub);
+    assert.equal(live.reason, `DS8.US2 conversation close tail live (${sub})`, sub);
+
     const replayed = routeMemoryCommand(["conversation-logger", sub], CONVERSATION_REPLAY_ENV);
     assert.equal(replayed.engine, "ts", sub);
     assert.match(replayed.reason, /replay/, sub);
-
-    // Unconfigured now means LIVE for group 1 -- the cutover itself.
-    const live = routeMemoryCommand(["conversation-logger", sub], {});
-    assert.equal(live.engine, "ts", sub);
-    assert.match(live.reason, /DS8\.US2 conversation close tail live/, sub);
-  }
-
-  // Group 2 followed on the same day, after group 1 was observed live.
-  for (const sub of ["session-start", "session-maintenance"]) {
-    assert.equal(routeMemoryCommand(["conversation-logger", sub], {}).engine, "ts", sub);
   }
 });
 
-test("the family switch reverts the flipped LLM-tail subcommands too", () => {
-  const env = { ...CONVERSATION_REPLAY_ENV, MIRROR_TS_CONVERSATION_LOGGER: "0" };
-  for (const sub of [
-    "switch",
-    "session-end-pi",
-    "session-end",
-    "session-start",
-    "session-maintenance",
-  ]) {
-    assert.equal(routeMemoryCommand(["conversation-logger", sub], env).engine, "python", sub);
-  }
-  assert.equal(
-    routeMemoryCommand(["conversation-logger", "session-start", "--fast"], env).engine,
-    "python",
-  );
-});
-
-test("session-start --fast stays ungated even when the close tail is reverted", () => {
-  // `--fast` makes no model call at all, so it is not part of the close-tail
-  // family's risk and must not follow its revert. The full run does: it was
-  // gated on the replay transport under DS7.US10 and is live under DS8.US2.
-  const reverted = { MIRROR_TS_CONVERSATION_LLM_TAIL: "0" };
-  assert.equal(
-    routeMemoryCommand(["conversation-logger", "session-start", "--fast"], {}).engine,
-    "ts",
-  );
-  assert.equal(
-    routeMemoryCommand(["conversation-logger", "session-start", "--fast"], reverted).engine,
-    "ts",
-    "a close-tail revert must not drag back a subcommand that never calls a model",
-  );
-  assert.equal(routeMemoryCommand(["conversation-logger", "session-start"], {}).engine, "ts");
-  assert.equal(
-    routeMemoryCommand(["conversation-logger", "session-start"], reverted).engine,
-    "python",
-  );
+test("session-start --fast makes no model call and never consults the close-tail transport", () => {
+  const fast = routeMemoryCommand(["conversation-logger", "session-start", "--fast"], {});
+  assert.equal(fast.engine, "ts");
+  assert.match(fast.reason, /--fast/);
 });
 
 test("the subcommand is found after --mirror-home and --session-id, as Python's main() strips them", () => {
@@ -543,7 +413,7 @@ test("the subcommand is found after --mirror-home and --session-id, as Python's 
   );
 });
 
-test("diagnose-journeys, dry-run repair-journeys, and backfill-codex-session route to TS without any gate", () => {
+test("diagnose-journeys, dry-run repair-journeys, and backfill-codex-session route to TS", () => {
   for (const argv of [
     ["diagnose-journeys"],
     ["diagnose-journeys", "--limit", "5"],
@@ -554,81 +424,18 @@ test("diagnose-journeys, dry-run repair-journeys, and backfill-codex-session rou
     const decision = routeMemoryCommand(["conversation-logger", ...argv], {});
     assert.equal(decision.engine, "ts", argv.join(" "));
   }
-  assert.equal(
-    routeMemoryCommand(["conversation-logger", "diagnose-journeys"], {
-      MIRROR_TS_CONVERSATION_LOGGER: "0",
-    }).engine,
-    "python",
-  );
 });
 
-// CV22.DS7.TS1: the DB safety tools, flipped 2026-09-07. Their gates default
-// ON; `=0` is the per-command revert control, and the backup gate carries
-// `repair-journeys --apply` with it.
-const APPLY_ARGVS = [
-  ["repair-journeys", "--apply"],
-  ["repair-journeys", "--limit", "2", "--apply"],
-  ["--mirror-home", "/home/x", "repair-journeys", "--apply"],
-];
-
-test("repair-journeys --apply routes to TS by default and follows MIRROR_TS_BACKUP=0 back to Python", () => {
-  for (const argv of APPLY_ARGVS) {
-    const byDefault = routeMemoryCommand(["conversation-logger", ...argv], {});
-    assert.equal(byDefault.engine, "ts", argv.join(" "));
-    assert.match(byDefault.reason, /DS7\.TS1/);
-    assert.equal(
-      routeMemoryCommand(["conversation-logger", ...argv], { MIRROR_TS_BACKUP: "1" }).engine,
-      "ts",
-    );
-    const off = routeMemoryCommand(["conversation-logger", ...argv], { MIRROR_TS_BACKUP: "0" });
-    assert.equal(off.engine, "python", argv.join(" "));
-    assert.match(off.reason, /MIRROR_TS_BACKUP=0/);
-  }
-  // The family switch still wins: it is the whole-family escape hatch.
-  assert.equal(
-    routeMemoryCommand(["conversation-logger", "repair-journeys", "--apply"], {
-      MIRROR_TS_CONVERSATION_LOGGER: "0",
-    }).engine,
-    "python",
-  );
-});
-
-test("backup routes to TS by default; MIRROR_TS_BACKUP=0 is the revert control", () => {
+test("repair-journeys --apply routes to TS on its own reason, wherever the flag sits", () => {
   for (const argv of [
-    ["backup"],
-    ["backup", "--silent"],
-    ["backup", "--mirror-home", "/home/x", "--backup-dir", "/x"],
+    ["repair-journeys", "--apply"],
+    ["repair-journeys", "--limit", "2", "--apply"],
+    ["--mirror-home", "/home/x", "repair-journeys", "--apply"],
   ]) {
-    assert.deepEqual(routeMemoryCommand(argv, {}), {
-      command: "backup",
-      engine: "ts",
-      reason: "DS7.TS1 backup ported to TS",
-    });
-    assert.equal(routeMemoryCommand(argv, { MIRROR_TS_BACKUP: "1" }).engine, "ts");
-    const off = routeMemoryCommand(argv, { MIRROR_TS_BACKUP: "0" });
-    assert.equal(off.engine, "python", argv.join(" "));
-    assert.match(off.reason, /MIRROR_TS_BACKUP=0/);
+    const decision = routeMemoryCommand(["conversation-logger", ...argv], {});
+    assert.equal(decision.engine, "ts", argv.join(" "));
+    assert.match(decision.reason, /DS7\.TS1/);
   }
-});
-
-test("repair-encoding routes to TS by default; MIRROR_TS_REPAIR_ENCODING=0 is the revert control", () => {
-  for (const argv of [
-    ["repair-encoding"],
-    ["repair-encoding", "--apply"],
-    ["repair-encoding", "--mirror-home", "/home/x", "--apply", "--no-backup", "--limit", "3"],
-  ]) {
-    assert.deepEqual(routeMemoryCommand(argv, {}), {
-      command: "repair-encoding",
-      engine: "ts",
-      reason: "DS7.TS1 repair-encoding ported to TS",
-    });
-    const off = routeMemoryCommand(argv, { MIRROR_TS_REPAIR_ENCODING: "0" });
-    assert.equal(off.engine, "python", argv.join(" "));
-    assert.match(off.reason, /MIRROR_TS_REPAIR_ENCODING=0/);
-  }
-  // The gates are independent: reverting one must not drag the other.
-  assert.equal(routeMemoryCommand(["repair-encoding"], { MIRROR_TS_BACKUP: "0" }).engine, "ts");
-  assert.equal(routeMemoryCommand(["backup"], { MIRROR_TS_REPAIR_ENCODING: "0" }).engine, "ts");
 });
 
 test("an unknown conversation-logger subcommand is answered by the family", () => {
@@ -639,6 +446,33 @@ test("an unknown conversation-logger subcommand is answered by the family", () =
     CONVERSATION_REPLAY_ENV,
   );
   assert.equal(decision.engine, "usage");
+});
+
+// --- CV22.DS7.TS1: the DB safety tools ----------------------------------------
+
+test("backup and repair-encoding route to TS", () => {
+  for (const argv of [
+    ["backup"],
+    ["backup", "--silent"],
+    ["backup", "--mirror-home", "/home/x", "--backup-dir", "/x"],
+  ]) {
+    assert.deepEqual(routeMemoryCommand(argv, {}), {
+      command: "backup",
+      engine: "ts",
+      reason: "DS7.TS1 backup ported to TS",
+    });
+  }
+  for (const argv of [
+    ["repair-encoding"],
+    ["repair-encoding", "--apply"],
+    ["repair-encoding", "--mirror-home", "/home/x", "--apply", "--no-backup", "--limit", "3"],
+  ]) {
+    assert.deepEqual(routeMemoryCommand(argv, {}), {
+      command: "repair-encoding",
+      engine: "ts",
+      reason: "DS7.TS1 repair-encoding ported to TS",
+    });
+  }
 });
 
 // --- conversations append must not inherit DS7.US1's listing route ---
@@ -655,21 +489,6 @@ test("conversations append routes on its own entry, never by inheritance", () =>
   assert.notEqual(decision.reason, routeMemoryCommand(["conversations"], {}).reason);
 });
 
-test("MIRROR_TS_CONVERSATION_APPEND=0 reverts append to Python", () => {
-  // The published external-shell write contract keeps an operational escape
-  // hatch: no code change, no data migration, no release.
-  const decision = routeMemoryCommand(["conversations", "append", "--format", "json"], {
-    MIRROR_TS_CONVERSATION_APPEND: "0",
-  });
-  assert.equal(decision.engine, "python");
-  assert.match(decision.reason, /MIRROR_TS_CONVERSATION_APPEND=0/);
-  // The gate is scoped: it must not drag the listing back with it.
-  assert.equal(
-    routeMemoryCommand(["conversations"], { MIRROR_TS_CONVERSATION_APPEND: "0" }).engine,
-    "ts",
-  );
-});
-
 test("conversations listing still routes to TS", () => {
   assert.equal(routeMemoryCommand(["conversations"], {}).engine, "ts");
   assert.equal(routeMemoryCommand(["conversations", "--limit", "5"], {}).engine, "ts");
@@ -677,7 +496,7 @@ test("conversations listing still routes to TS", () => {
 
 // --- CV22.DS7.TS3: the daily-visible tail ---------------------------------
 
-test("welcome routes to TS by default; MIRROR_TS_WELCOME=0 is the revert control", () => {
+test("welcome routes to TS", () => {
   for (const argv of [
     ["welcome"],
     ["welcome", "--status-line", "--session-id", "s1"],
@@ -688,35 +507,15 @@ test("welcome routes to TS by default; MIRROR_TS_WELCOME=0 is the revert control
       engine: "ts",
       reason: "DS7.TS3 welcome ported to TS",
     });
-    assert.equal(routeMemoryCommand(argv, { MIRROR_TS_WELCOME: "1" }).engine, "ts");
-    const off = routeMemoryCommand(argv, { MIRROR_TS_WELCOME: "0" });
-    assert.equal(off.engine, "python", argv.join(" "));
-    assert.match(off.reason, /MIRROR_TS_WELCOME=0/);
   }
 });
 
-test("the four runtime reads route to TS by default and revert independently", () => {
+test("the four runtime reads route to TS", () => {
   for (const sub of ["status", "version", "diagnose", "release-notes"]) {
-    const on = routeMemoryCommand(["runtime", sub], {});
-    assert.equal(on.engine, "ts", sub);
-    assert.equal(on.reason, `DS7.TS3 runtime ${sub} ported to TS`);
-    const off = routeMemoryCommand(["runtime", sub], { MIRROR_TS_RUNTIME_READS: "0" });
-    assert.equal(off.engine, "python", sub);
-    assert.match(off.reason, /MIRROR_TS_RUNTIME_READS=0/);
+    const decision = routeMemoryCommand(["runtime", sub], {});
+    assert.equal(decision.engine, "ts", sub);
+    assert.equal(decision.reason, `DS7.TS3 runtime ${sub} ported to TS`);
   }
-});
-
-test("the two tail gates revert independently of each other", () => {
-  // They fail differently -- a bad `welcome` is wrong on every turn, a bad
-  // `runtime diagnose` only when asked -- so reverting one must not drag the
-  // other back to Python with it.
-  const welcomeOff = { MIRROR_TS_WELCOME: "0" };
-  assert.equal(routeMemoryCommand(["welcome"], welcomeOff).engine, "python");
-  assert.equal(routeMemoryCommand(["runtime", "status"], welcomeOff).engine, "ts");
-
-  const readsOff = { MIRROR_TS_RUNTIME_READS: "0" };
-  assert.equal(routeMemoryCommand(["runtime", "status"], readsOff).engine, "python");
-  assert.equal(routeMemoryCommand(["welcome"], readsOff).engine, "ts");
 });
 
 test("release-notes ARGUMENTS are not subcommands", () => {
@@ -736,24 +535,14 @@ test("release-notes ARGUMENTS are not subcommands", () => {
   }
 });
 
-test("the DS10 updater and release machinery are refused by name, even with the gate on", () => {
-  // FOUR names, not six. `pull` and `stable` were never subcommands on either
-  // engine -- `pull` is the update planner's ACTION and `stable` is the
-  // CHANNEL. The 2026-09-07 decision transcribed both as subcommands, the same
-  // error this file's sibling comment already corrected for `latest`/`pending`.
-  // Carrying them here made the front door claim DS10 owns a port of something
-  // that has never existed (CV22.DS10.US2 plateau 1).
-  // Nothing is left to refuse. `backup` left this set at plateau 2, `update`
-  // at plateau 3, and plateau 5 RETIRED the release chain from the product
-  // surface rather than porting it -- so `DS10_RUNTIME_SUBCOMMANDS` is gone
-  // and both names answer from the retired-surface table.
+test("the release chain answers from the retired-surface table, before dispatch", () => {
+  // CV22.DS10.US2 retired `release-doctor` and `release-promote` from the
+  // product surface rather than porting them, so both names answer their
+  // cutoff -- and BEFORE dispatch, so `--push` never reaches code that could
+  // touch a remote. This is TS4's route shape doing its job.
   for (const sub of ["release-doctor", "release-promote"]) {
-    const decision = routeMemoryCommand(["runtime", sub], { MIRROR_TS_BACKUP: "1" });
-    assert.equal(decision.engine, "retired", sub);
+    assert.equal(routeMemoryCommand(["runtime", sub], {}).engine, "retired", sub);
   }
-
-  // The refusal must land BEFORE dispatch, so `--push` never reaches code
-  // that could touch a remote. This is TS4's route shape doing its job.
   const promote = routeMemoryCommand(
     ["runtime", "release-promote", "--target", "v9.9.9", "--push"],
     {},
@@ -761,57 +550,25 @@ test("the DS10 updater and release machinery are refused by name, even with the 
   assert.equal(promote.engine, "retired");
 });
 
-test("the updater family answers from TS, and reverts as one", () => {
-  // CV22.DS10.US2 plateau 3. `update` and the `migrate` verb D8 added join
-  // `backup` behind ONE gate, because reverting a broken updater must return
-  // the whole family -- an update that runs but cannot migrate is worse than
-  // an update that does not run.
+test("the updater family answers from TS", () => {
+  // CV22.DS10.US2. `runtime backup` (create + VERIFY + recovery route, the
+  // updater's safety stage) is not `backup` (create, DS7.TS1): different
+  // commands with different reasons.
   for (const sub of ["update", "migrate", "backup"]) {
-    assert.equal(routeMemoryCommand(["runtime", sub], {}).engine, "ts", sub);
-    assert.match(routeMemoryCommand(["runtime", sub], {}).reason, /DS10\.US2/, sub);
-    assert.equal(
-      routeMemoryCommand(["runtime", sub], { MIRROR_TS_RUNTIME_UPDATE: "0" }).engine,
-      "python",
-      sub,
-    );
+    const decision = routeMemoryCommand(["runtime", sub], {});
+    assert.equal(decision.engine, "ts", sub);
+    assert.match(decision.reason, /DS10\.US2/, sub);
   }
-  // ...and the reads do not move with it.
-  assert.equal(
-    routeMemoryCommand(["runtime", "status"], { MIRROR_TS_RUNTIME_UPDATE: "0" }).engine,
-    "ts",
+  assert.notEqual(
+    routeMemoryCommand(["runtime", "backup"], {}).reason,
+    routeMemoryCommand(["backup"], {}).reason,
   );
-});
-
-test("the two backups are different commands with independent gates", () => {
-  // `runtime backup` (create + VERIFY + recovery route, the updater's safety
-  // stage) is not `backup` (create, DS7.TS1). They were never the same route,
-  // and after US2 they are not even the same gate: reverting one must not move
-  // the other, in either direction.
-  assert.equal(routeMemoryCommand(["runtime", "backup"], {}).engine, "ts");
-  assert.match(routeMemoryCommand(["runtime", "backup"], {}).reason, /DS10\.US2/);
-
-  // The top-level command's gate does not reach the runtime subcommand...
-  assert.equal(routeMemoryCommand(["runtime", "backup"], { MIRROR_TS_BACKUP: "0" }).engine, "ts");
-  // ...and the updater's gate does not reach the top-level command.
-  assert.equal(routeMemoryCommand(["backup"], { MIRROR_TS_RUNTIME_UPDATE: "0" }).engine, "ts");
-
-  // Each reverts itself, and only itself.
-  assert.equal(
-    routeMemoryCommand(["runtime", "backup"], { MIRROR_TS_RUNTIME_UPDATE: "0" }).engine,
-    "python",
-  );
-  assert.equal(routeMemoryCommand(["backup"], { MIRROR_TS_BACKUP: "0" }).engine, "python");
 });
 
 test("an unknown runtime subcommand is answered by TypeScript, not inherited", () => {
-  // The allowlist's original purpose stands: a subcommand Python grows later
-  // must not acquire a TS route because `runtime` already has one. What
-  // CHANGED in US2 is who says so. Until now the refusal fell through to
-  // Python, which rendered argparse's usage. At TS5 that fallthrough
-  // disappears and NOBODY owns the answer -- so TypeScript owns it now, while
-  // there is still an oracle to compare against.
-  //
-  // CV22.DS10.TS5 moved the answer from the runtime route to the shared usage
+  // The allowlist's original purpose stands: a name this build has never heard
+  // of must not acquire a TS route because `runtime` already has one. US2 made
+  // the refusal TypeScript's; CV22.DS10.TS5 moved it to the shared usage
   // answer (D2), which renders the same bytes before dispatch.
   for (const sub of ["", "doctor", "publish", "pull", "stable"]) {
     const argv = sub ? ["runtime", sub] : ["runtime"];
@@ -820,39 +577,21 @@ test("an unknown runtime subcommand is answered by TypeScript, not inherited", (
 });
 
 test("`pull` and `stable` are unknown names, never DS10 work", () => {
-  // The regression this pins: re-adding either to DS10_RUNTIME_SUBCOMMANDS
-  // would route a nonexistent command to Python and call it a port.
+  // `pull` is the update planner's ACTION and `stable` is the CHANNEL; neither
+  // was ever a subcommand on either engine.
   for (const sub of ["pull", "stable"]) {
-    const decision = routeMemoryCommand(["runtime", sub], { MIRROR_TS_BACKUP: "1" });
+    const decision = routeMemoryCommand(["runtime", sub], {});
     assert.doesNotMatch(decision.reason, /DS10/, sub);
     assert.equal(decision.engine, "usage", sub);
   }
 });
 
-// --- CV22.DS7.US11 plateau 1: `week save` -----------------------------------
-//
-// CR068 found this family's refusal reason claiming BOTH `plan` and `save`
-// were "LLM-gated". `save` crosses no provider seam, so it carries an ordinary
-// gate and flips ungated at the plateau-6 flip. `view` was flipped UNGATED in
-// US2 and must NOT join the gate: reverting a bad `save` cannot be allowed to
-// drag a previously-unrevertible read back to Python.
-
-test("week save answers from TS by default, and never drags `view` with its gate", () => {
-  // Flipped 2026-09-09: default ON, `=0` is the revert control.
-  assert.equal(routeMemoryCommand(["week", "save"], {}).engine, "ts");
-  assert.equal(routeMemoryCommand(["week", "save"], { MIRROR_TS_WEEK: "1" }).engine, "ts");
-  assert.equal(routeMemoryCommand(["week", "save"], { MIRROR_TS_WEEK: "0" }).engine, "python");
-
-  // `view` ignores the gate in both directions.
-  assert.equal(routeMemoryCommand(["week", "view"], { MIRROR_TS_WEEK: "0" }).engine, "ts");
-  assert.equal(routeMemoryCommand(["week"], { MIRROR_TS_WEEK: "0" }).engine, "ts");
-});
+// --- CV22.DS7.US11: `week save`, `journal`, and the week leaves ---------------
 
 test("no week reason mislabels `save` as LLM-gated (CR068 stays corrected)", () => {
-  // DS8.US3 flipped `plan` live, so the old assertion (plan routes to Python)
-  // is gone. What CR068 established must survive the flip: a reason is about
-  // the leaf it describes, and `save` is never called LLM-gated -- it reads the
-  // pending file and calls add_task, crossing no provider seam.
+  // A reason is about the leaf it describes, and `save` is never called
+  // LLM-gated -- it reads the pending file and calls add_task, crossing no
+  // provider seam.
   const plan = routeMemoryCommand(["week", "plan", "some text"], {});
   assert.equal(plan.engine, "ts");
   assert.doesNotMatch(plan.reason, /save/);
@@ -860,22 +599,13 @@ test("no week reason mislabels `save` as LLM-gated (CR068 stays corrected)", () 
   const save = routeMemoryCommand(["week", "save"], {});
   assert.equal(save.engine, "ts");
   assert.doesNotMatch(save.reason, /LLM-gated/, "save is deterministic; CR068 corrected this");
-
-  const reverted = routeMemoryCommand(["week", "save"], { MIRROR_TS_WEEK: "0" });
-  assert.match(reverted.reason, /MIRROR_TS_WEEK=0/, "a reason must describe the state that exists");
 });
 
 test("an unknown week subcommand is refused by name, never inherited", () => {
-  const unknown = routeMemoryCommand(["week", "bogus"], { MIRROR_TS_WEEK: "1" });
+  const unknown = routeMemoryCommand(["week", "bogus"], {});
   assert.equal(unknown.engine, "usage");
   assert.match(unknown.reason, /bogus/);
 });
-
-// --- CV22.DS7.US11 plateau 3: `journal` ------------------------------------
-//
-// journal crosses the seam TWICE (classification + embedding), so it needs the
-// replay transport as well as its family gate. CR068 found it reported as
-// burned down while no TS module existed at all.
 
 test("journal is live by default and refuses a half-configured replay pair", () => {
   // CV22.DS8.US3: journal crosses the seam TWICE (classification + embedding),
@@ -888,27 +618,17 @@ test("journal is live by default and refuses a half-configured replay pair", () 
     }).engine,
     "ts",
   );
+  // Half a fixture reaches TypeScript, which refuses it by name before any
+  // provider is built. Until CV22.DS10.TS5 it went to Python -- which had no
+  // replay transport and would have called the live provider.
   const half = routeMemoryCommand(["journal", "x"], {
     MIRROR_TS_JOURNAL_LLM_REPLAY: "fixture.json",
   });
-  assert.equal(half.engine, "python", "half a fixture must never become a live call");
+  assert.equal(half.engine, "ts");
   assert.match(half.reason, /MIRROR_TS_JOURNAL_EMBEDDING_REPLAY missing/);
 });
 
-test("MIRROR_TS_JOURNAL=0 wins over a configured replay transport", () => {
-  const decision = routeMemoryCommand(["journal", "x"], {
-    MIRROR_TS_JOURNAL: "0",
-    MIRROR_TS_JOURNAL_LLM_REPLAY: "fixture.json",
-    MIRROR_TS_JOURNAL_EMBEDDING_REPLAY: "fixture.json",
-  });
-  assert.equal(decision.engine, "python");
-  assert.match(decision.reason, /MIRROR_TS_JOURNAL=0 revert/);
-});
-
 test("the journal route's reason describes the state that exists", () => {
-  // The plateau-1 lesson: a reason must describe reality. An unconfigured
-  // install is now LIVE, so the reason says live -- not "needs replay config",
-  // which was true before the cutover and false after it.
   const reason = routeMemoryCommand(["journal", "x"], {}).reason;
   assert.match(reason, /DS8\.US3 journal live/);
   assert.doesNotMatch(reason, /=0/);
@@ -916,10 +636,6 @@ test("the journal route's reason describes the state that exists", () => {
 });
 
 test("the week leaves' requirements collapse to one live default", () => {
-  // Before DS8 they carried three different requirements. After the cutover
-  // `view` and `save` make no provider call, `plan` makes one, and all three
-  // answer from TypeScript -- with `save` and `plan` revertible together and
-  // `view` deliberately outside the gate.
   for (const argv of [
     ["week", "view"],
     ["week", "save"],
@@ -935,253 +651,99 @@ test("the week leaves' requirements collapse to one live default", () => {
 });
 
 // --- CV22.DS7.US11 plateau 5b: the ES-001 lifecycle flags -------------------
-//
-// CR068 found the family unowned. US11 splits it by what each flag needs:
-// two pure reads port here, the two writes need the unported
-// apply_metadata_lifecycle and go to TS4, the two backfills retire in DS10.
-// Each is refused BY NAME so none can inherit another's route (CR055).
 
-test("lifecycle READ flags route to TS under their own gate", () => {
-  const gate = { MIRROR_TS_CONVERSATIONS_LIFECYCLE: "1" };
-  for (const flag of ["--metadata-lifecycle-dry-run", "--metadata-lifecycle-preview-at-message"]) {
-    // Flipped 2026-09-09: deterministic reads, so default ON with no replay.
-    assert.equal(routeMemoryCommand(["conversations", flag, "x"], {}).engine, "ts");
-    assert.equal(routeMemoryCommand(["conversations", flag, "x"], gate).engine, "ts");
-    assert.equal(
-      routeMemoryCommand(["conversations", flag, "x"], {
-        MIRROR_TS_CONVERSATIONS_LIFECYCLE: "0",
-      }).engine,
-      "python",
-    );
-  }
-});
-
-test("lifecycle WRITE flags are their own leaves, named in both directions", () => {
-  // US11 refused these two BY NAME so they could never inherit the read route;
-  // DS7.TS4 ported them and plateau 8 flipped them. The NAME is what this test
-  // has always been about: whichever way the route goes, the reason says which
-  // flag decided it, so a flag can never inherit another one's decision.
-  for (const flag of ["--metadata-lifecycle-apply", "--metadata-lifecycle-demo"]) {
-    const on = routeMemoryCommand(["conversations", flag, "x"]);
-    assert.equal(on.engine, "ts");
-    assert.match(on.reason, /DS7\.TS4/);
-    assert.match(on.reason, new RegExp(flag.replace(/-/g, "\\-")));
-    const reverted = routeMemoryCommand(["conversations", flag, "x"], {
-      MIRROR_TS_CONVERSATIONS_LIFECYCLE: "0",
-    });
-    assert.equal(reverted.engine, "python");
-    assert.match(reverted.reason, new RegExp(flag.replace(/-/g, "\\-")));
-  }
-});
-
-test("backfill flags are refused by name and name DS10", () => {
-  // The lifecycle gate is irrelevant to them: they are retired either way,
-  // which is the property that stops a gate flip from resurrecting a deleted
-  // write path.
-  for (const gate of [
-    {},
-    { MIRROR_TS_CONVERSATIONS_LIFECYCLE: "1" },
-    { MIRROR_TS_CONVERSATIONS_LIFECYCLE: "0" },
+test("lifecycle READ and WRITE flags are their own leaves, named in the reason", () => {
+  // Each flag is claimed BY NAME so none can inherit another's route (CR055):
+  // whichever flag decided the route, the reason says so.
+  for (const flag of [
+    "--metadata-lifecycle-dry-run",
+    "--metadata-lifecycle-preview-at-message",
+    "--metadata-lifecycle-apply",
+    "--metadata-lifecycle-demo",
   ]) {
-    for (const flag of ["--metadata-backfill-preview", "--metadata-backfill-apply"]) {
-      const decision = routeMemoryCommand(["conversations", flag, "x"], gate);
-      assert.equal(decision.engine, "retired");
-      assert.match(decision.reason, /CV22\.DS10\.TS4/);
-    }
+    const decision = routeMemoryCommand(["conversations", flag, "x"], {});
+    assert.equal(decision.engine, "ts", flag);
+    assert.match(decision.reason, new RegExp(flag.replace(/-/g, "\\-")), flag);
   }
 });
 
-test("the plain conversations listing is unaffected by the lifecycle split", () => {
-  assert.equal(routeMemoryCommand(["conversations"], {}).engine, "ts");
-  assert.equal(
-    routeMemoryCommand(["conversations"], { MIRROR_TS_CONVERSATIONS_LIFECYCLE: "1" }).engine,
-    "ts",
-  );
+test("backfill flags are retired, whatever else is set", () => {
+  for (const flag of ["--metadata-backfill-preview", "--metadata-backfill-apply"]) {
+    const decision = routeMemoryCommand(["conversations", flag, "x"], {});
+    assert.equal(decision.engine, "retired");
+    assert.match(decision.reason, /CV22\.DS10\.TS4/);
+  }
 });
 
-// --- CV22.DS8.US1: the fresh-semantic-search live cutover -------------------
+// --- CV22.DS8.US1: fresh semantic search ------------------------------------
 
 test("memories --search reaches the live provider with nothing configured", () => {
-  // The cutover itself: before this story an unconfigured install answered
-  // this leaf from Python, which is what kept the Python core alive for the
-  // highest-volume role in the ledger.
   const decision = routeMemoryCommand(["memories", "--search", "builder"], {});
-
   assert.equal(decision.engine, "ts");
   assert.equal(decision.reason, "DS8.US1 fresh semantic search live");
 });
 
-test("MIRROR_TS_SEARCH=0 reverts the search leaf to Python with no code change", () => {
-  const decision = routeMemoryCommand(["memories", "--search", "builder"], {
-    MIRROR_TS_SEARCH: "0",
-  });
-
-  assert.equal(decision.engine, "python");
-  assert.match(decision.reason, /revert/i);
-});
-
-test("the revert wins over a replay fixture left in the same shell", () => {
-  const decision = routeMemoryCommand(["memories", "--search", "builder"], {
-    MIRROR_TS_SEARCH: "0",
-    MIRROR_TS_SEARCH_EMBEDDING_REPLAY: "/tmp/embedding.json",
-  });
-
-  assert.equal(decision.engine, "python");
-});
-
-test("a replay fixture no longer needs MIRROR_TS_EXTERNAL_ROUTES for search", () => {
-  // That gate was DS5's safety catch while replay was this leaf's PRODUCTION
-  // transport. After the cutover replay is a test transport, so requiring the
-  // gate would only make CI and the parity harness depend on it.
+test("a replay fixture selects replay for search", () => {
   const decision = routeMemoryCommand(["memories", "--search", "builder"], {
     MIRROR_TS_SEARCH_EMBEDDING_REPLAY: "/tmp/embedding.json",
   });
-
   assert.equal(decision.engine, "ts");
   assert.match(decision.reason, /replay/);
 });
 
-test("plain memory listing is unaffected by the search transport gates", () => {
-  const decision = routeMemoryCommand(["memories", "--limit", "5"], { MIRROR_TS_SEARCH: "0" });
-
+test("plain memory listing is its own route", () => {
+  const decision = routeMemoryCommand(["memories", "--limit", "5"], {});
   assert.equal(decision.engine, "ts");
   assert.equal(decision.reason, "DS2 memory listing read ported to TS");
 });
 
-// --- CV22.DS8.US2: the close-tail cutover, group 1 -------------------------
+// --- CV22.DS10.TS5 (D3): the revert gates are gone ----------------------------
 
-const GROUP_1 = ["switch", "session-end-pi", "session-end"];
-const GROUP_2 = ["session-start", "session-maintenance"];
+/**
+ * One representative invocation per retired gate: what that gate used to send
+ * back to Python.
+ */
+const WHAT_EACH_GATE_REVERTED: Readonly<Record<string, readonly string[]>> = {
+  MIRROR_TS_BACKUP: ["backup"],
+  MIRROR_TS_BUILD: ["build", "inspect-method"],
+  MIRROR_TS_CONSULT: ["consult", "credits"],
+  MIRROR_TS_CONVERSATION_APPEND: ["conversations", "append", "--format", "json"],
+  MIRROR_TS_CONVERSATION_LLM_TAIL: ["conversation-logger", "session-end"],
+  MIRROR_TS_CONVERSATION_LOGGER: ["conversation-logger", "status"],
+  MIRROR_TS_CONVERSATIONS_LIFECYCLE: ["conversations", "--metadata-lifecycle-dry-run", "x"],
+  MIRROR_TS_CULTIVATION: ["consolidate", "scan"],
+  MIRROR_TS_DESCRIPTOR: ["descriptor", "generate"],
+  MIRROR_TS_EXPLORE: ["explore", "load", "x"],
+  MIRROR_TS_EXTENSIONS: ["extensions", "list"],
+  MIRROR_TS_EXTERNAL_ROUTES: ["consult", "openai", "question"],
+  MIRROR_TS_IDENTITY_EDIT: ["identity", "edit", "ego", "behavior"],
+  MIRROR_TS_JOURNAL: ["journal", "an entry"],
+  MIRROR_TS_MCP: ["mcp"],
+  MIRROR_TS_MIRROR_QUERY: ["mirror", "load", "--query", "hello"],
+  MIRROR_TS_REPAIR_ENCODING: ["repair-encoding"],
+  MIRROR_TS_RUNTIME_READS: ["runtime", "status"],
+  MIRROR_TS_RUNTIME_UPDATE: ["runtime", "update"],
+  MIRROR_TS_SEARCH: ["memories", "--search", "q"],
+  MIRROR_TS_SOUL: ["soul", "load"],
+  MIRROR_TS_WEEK: ["week", "save"],
+  MIRROR_TS_WELCOME: ["welcome"],
+};
 
-test("group 1 close-tail subcommands reach the live provider with nothing configured", () => {
-  // The hook path first: `session-end` is what fires unattended when a Pi
-  // session closes, so it is the one validated on a copy before the real home.
-  for (const sub of GROUP_1) {
-    const decision = routeMemoryCommand(["conversation-logger", sub], {});
-    assert.equal(decision.engine, "ts", sub);
-    assert.equal(decision.reason, `DS8.US2 conversation close tail live (${sub})`, sub);
-  }
-});
-
-test("group 2 is live once group 1 has been observed on the real home", () => {
-  // The staging existed to put the unattended hook path in front of the
-  // multi-conversation path, not to keep them apart permanently. Group 1 ran
-  // a full live close tail on the real home on 2026-09-11 (extraction ok, six
-  // memories at full dimension, every row priced), so both groups now share
-  // one decision.
-  for (const sub of GROUP_2) {
-    const decision = routeMemoryCommand(["conversation-logger", sub], {});
-    assert.equal(decision.engine, "ts", sub);
-    assert.match(decision.reason, /DS8\.US2 conversation close tail live/, sub);
-  }
-});
-
-test("MIRROR_TS_CONVERSATION_LLM_TAIL=0 reverts the tail without touching the rest", () => {
-  const reverted = { MIRROR_TS_CONVERSATION_LLM_TAIL: "0" };
-  for (const sub of GROUP_1) {
-    assert.equal(routeMemoryCommand(["conversation-logger", sub], reverted).engine, "python", sub);
-  }
-  // The seven deterministic subcommands have answered from TS since
-  // 2026-09-02; a live-provider scare must not drag them back.
-  for (const sub of ["status", "log-user", "log-assistant", "mute", "discard-current"]) {
-    assert.equal(routeMemoryCommand(["conversation-logger", sub], reverted).engine, "ts", sub);
-  }
-});
-
-test("MIRROR_TS_CONVERSATION_LOGGER=0 still reverts the whole family", () => {
-  const off = { MIRROR_TS_CONVERSATION_LOGGER: "0" };
-  for (const sub of [...GROUP_1, ...GROUP_2, "status", "log-user"]) {
-    assert.equal(routeMemoryCommand(["conversation-logger", sub], off).engine, "python", sub);
-  }
-});
-
-test("a replay fixture keeps group 1 on TS without MIRROR_TS_EXTERNAL_ROUTES", () => {
-  const replay = {
-    MIRROR_TS_CONVERSATION_LLM_REPLAY: "/replay/llm.json",
-    MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY: "/replay/embedding.json",
-  };
-  for (const sub of GROUP_1) {
-    const decision = routeMemoryCommand(["conversation-logger", sub], replay);
-    assert.equal(decision.engine, "ts", sub);
-    assert.match(decision.reason, /replay/, sub);
-  }
-});
-
-test("the revert wins over replay fixtures left in the same shell", () => {
-  const decision = routeMemoryCommand(["conversation-logger", "session-end"], {
-    MIRROR_TS_CONVERSATION_LLM_TAIL: "0",
-    MIRROR_TS_CONVERSATION_LLM_REPLAY: "/replay/llm.json",
-    MIRROR_TS_CONVERSATION_EMBEDDING_REPLAY: "/replay/embedding.json",
-  });
-
-  assert.equal(decision.engine, "python");
-});
-
-test("the subcommand is read after option stripping, as Python's main() does", () => {
-  const decision = routeMemoryCommand(
-    ["conversation-logger", "--mirror-home", "/tmp/home", "--session-id", "s1", "session-end"],
-    {},
+test("a leftover revert gate changes no route, in either direction (D3)", () => {
+  // The gates chose an ENGINE, and the engine is gone. A value left in
+  // someone's `.env` must change nothing at all -- `runtime diagnose` names it
+  // inert, and routing ignores it.
+  assert.deepEqual(
+    Object.keys(WHAT_EACH_GATE_REVERTED).sort(),
+    [...RETIRED_REVERT_GATES].sort(),
+    "every retired gate has a representative invocation here, and nothing else does",
   );
-
-  assert.equal(decision.engine, "ts");
-  assert.match(decision.reason, /session-end/);
-});
-
-// --- CV22.DS8.US3: the retired DS5 gate --------------------------------------
-
-test("a stale MIRROR_TS_EXTERNAL_ROUTES is inert, in both directions", () => {
-  // The gate is GONE, not merely unused. It was DS5's safety catch while replay
-  // was the PRODUCTION route for these leaves; after the cutover replay is a
-  // test transport, so the gate would only be a second thing to set in CI and a
-  // stale value to trip over in a shell that once ran the parity harness.
-  //
-  // `=1` must not enable anything, and `=0` must not disable anything: an
-  // operator who exported it months ago should see no difference at all.
-  const leaves = [
-    ["consult", "credits"],
-    ["consult", "openai", "question"],
-    ["mirror", "load", "--query", "hello"],
-    ["journal", "an entry"],
-    ["week", "plan", "text"],
-    ["descriptor", "generate"],
-    ["soul", "harvest", "save"],
-    ["consolidate", "apply", "abc"],
-    ["consolidate", "scan"],
-    ["shadow", "scan"],
-    ["memories", "--search", "q"],
-  ];
-
-  for (const argv of leaves) {
+  for (const [gate, argv] of Object.entries(WHAT_EACH_GATE_REVERTED)) {
     const clean = routeMemoryCommand(argv, {});
-    for (const value of ["1", "0"]) {
-      const stale = routeMemoryCommand(argv, {
-        MIRROR_TS_EXTERNAL_ROUTES: value,
-      } as Record<string, string>);
-      assert.deepEqual(stale, clean, `${argv.join(" ")} changed with the stale gate at ${value}`);
+    assert.equal(clean.engine, "ts", argv.join(" "));
+    for (const value of ["0", "1"]) {
+      const stale = routeMemoryCommand(argv, { [gate]: value } as Record<string, string>);
+      assert.deepEqual(stale, clean, `${gate}=${value} changed the route of ${argv.join(" ")}`);
     }
-  }
-});
-
-test("every provider-backed family has exactly one variable that reverts it", () => {
-  // The DS8 done condition: "every family keeps a single-variable revert to
-  // Python until DS10 deletes it". A leaf with no revert is a leaf an operator
-  // cannot get out of at 2am.
-  const reverts: [string[], string][] = [
-    [["consult", "credits"], "MIRROR_TS_CONSULT"],
-    [["consult", "openai", "question"], "MIRROR_TS_CONSULT"],
-    [["mirror", "load", "--query", "hello"], "MIRROR_TS_MIRROR_QUERY"],
-    [["journal", "an entry"], "MIRROR_TS_JOURNAL"],
-    [["week", "plan", "text"], "MIRROR_TS_WEEK"],
-    [["descriptor", "generate"], "MIRROR_TS_DESCRIPTOR"],
-    [["soul", "harvest", "save"], "MIRROR_TS_SOUL"],
-    [["consolidate", "apply", "abc"], "MIRROR_TS_CULTIVATION"],
-    [["memories", "--search", "q"], "MIRROR_TS_SEARCH"],
-  ];
-
-  for (const [argv, variable] of reverts) {
-    assert.equal(routeMemoryCommand(argv, {}).engine, "ts", `${argv.join(" ")} answers from TS`);
-    const decision = routeMemoryCommand(argv, { [variable]: "0" } as Record<string, string>);
-    assert.equal(decision.engine, "python", `${variable}=0 must revert ${argv.join(" ")}`);
-    assert.match(decision.reason, new RegExp(`${variable}=0`));
   }
 });
