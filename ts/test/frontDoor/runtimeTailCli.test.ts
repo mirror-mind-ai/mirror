@@ -357,7 +357,7 @@ test("REPO_ROOT stays out of the fixture: the CLI under test is this checkout", 
   // Guards the harness itself -- a mistyped path here would silently test
   // nothing, since spawnSync reports a non-zero status either way.
   assert.ok(existsSync(CLI), `front door entry not found at ${CLI}`);
-  assert.ok(existsSync(join(REPO_ROOT, "pyproject.toml")));
+  assert.ok(existsSync(join(REPO_ROOT, "ts", "package.json")));
 });
 
 test("release-notes tells a positional from an option value", () => {

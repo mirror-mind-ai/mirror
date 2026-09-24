@@ -220,8 +220,10 @@ describe("the staged python-core row", () => {
     "scripts/check_doc_links.py",
     "scripts/build_claude_plugin.py",
     "spikes/ts-search-parity/",
+    "pyproject.toml",
+    "uv.lock",
   ];
-  const stillTracked = ["pyproject.toml"];
+  const stillTracked: string[] = [];
 
   test("FIRES against today's tree when asked -- the row is graded, not merely written", () => {
     const problems = sweep(REPO_ROOT, RETIRED, { only: "python-core" });

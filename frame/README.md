@@ -19,7 +19,7 @@ Exploration story: `docs/project/exploration/es-004-windows-desktop-frame.md`.
 
 **The Frame is a private component distributed by Mirror and follows the
 Mirror release version** (maintainer decision, PR #32 review). `package.json`
-version always equals the Mirror version in `pyproject.toml`. The Frame has no
+version always equals the Mirror version in `ts/package.json`. The Frame has no
 independent release line.
 
 **Electron:** pinned to **42.8.0**. Per the official schedule

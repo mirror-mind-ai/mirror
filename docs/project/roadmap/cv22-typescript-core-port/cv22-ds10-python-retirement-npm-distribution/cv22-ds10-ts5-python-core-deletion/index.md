@@ -186,6 +186,16 @@ Nine call sites, re-homed to US3 by US2 decision D4. The Zero Python claim
 made here is for **the repository**; the claim for **the shipped artifact**
 is US3's to make. Stated in [Scope](#scope) and repeated in the cutoff.
 
+**They also find their root by `pyproject.toml`, which this story deletes**
+(inventory F12, decision D11, added at plateau 3): `frame/main/root-resolve.js`
+and four installer files (`health-check.ps1`, `install.ps1`,
+`launcher/mirror.cmd`) test for it to locate a Mirror checkout, and
+`install.ps1` reads the version from it. They fail together with the nine call
+sites and are fixed together, in US3, because the npm artifact decides what a
+"Mirror root" is for both. The one reader a workflow runs,
+`frame/tests/version-sync.test.js`, reads `ts/package.json` since D11, so no
+workflow turns red in the meantime.
+
 ## Decisions This Story Must Take
 
 Recorded in [plan.md — Decisions](plan.md#decisions-this-plan-asks-the-navigator-to-take),

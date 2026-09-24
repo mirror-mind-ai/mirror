@@ -35,27 +35,6 @@ describe("this repository", () => {
     assert.match(version ?? "", /^\d+\.\d+\.\d+$/);
   });
 
-  test("agrees with pyproject.toml while both exist", () => {
-    // Not a permanent contract -- pyproject is deleted at plateau 3. It is the
-    // plateau-1 evidence that moving the source changed no user-visible byte:
-    // `runtime version`, `runtime status`, the welcome card and the MCP
-    // handshake all render this string, and the per-family capture hashes
-    // them.
-    const pyproject = join(REPO_ROOT, "pyproject.toml");
-    let declared: string | null = null;
-    for (const line of readFileSync(pyproject, "utf8").split("\n")) {
-      if (line.trim().startsWith("version =")) {
-        declared =
-          line
-            .split("=", 2)[1]
-            ?.trim()
-            .replace(/^["']|["']$/g, "") ?? null;
-        break;
-      }
-    }
-    assert.equal(packageVersion(REPO_ROOT), declared);
-  });
-
   test("is found by walking up from a nested directory", () => {
     assert.equal(
       packageVersion(join(REPO_ROOT, "ts", "src", "frontDoor")),
