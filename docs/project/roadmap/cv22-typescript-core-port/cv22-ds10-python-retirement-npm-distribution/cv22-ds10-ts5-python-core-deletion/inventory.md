@@ -170,7 +170,11 @@ clean — the regeneration was reverted, not committed.
 
 - **No Python behavior without a TypeScript answer.** Every one of the 32
   top-level names routes to TS or to a retired refusal; the 15 fallthroughs
-  are argv shapes, not features.
+  are argv shapes, not features. *(Corrected at plateau 2 — see
+  [F5](#f5--valid-flag-first-invocations-reach-python-through-the-fallthroughs)
+  and [F9](#f9--mcp-reaches-python-through-the-unknown-command-fallthrough):
+  some of those argv shapes are valid invocations, and one of the 32 names
+  reaches Python.)*
 - **No golden without a generator** other than the 61 already known.
 - **No test whose assertion disappears silently** — the six above are each
   carried, explicitly retired, or converted to a frozen fixture.
@@ -178,3 +182,93 @@ clean — the regeneration was reverted, not committed.
 Plateau 0's remaining slice-A work — the final parity evidence, the
 per-family capture, the recovery tag — is recorded in
 [test-guide.md](test-guide.md) as it is produced.
+
+---
+
+## 4. Plateau 2 findings (2026-09-24)
+
+Taken before writing D2's answers, by running every fallthrough on **both**
+engines against a generated demo home — the measurement slice A classified by
+reading. **F5 is a stop condition** under the Plan's first rule: a Python
+behavior TypeScript does not answer. It is a routing gap, not a missing port,
+and that is what the evidence below establishes.
+
+### F5 — valid flag-first invocations reach Python through the fallthroughs
+
+Five families accept options **before** the subcommand in Python — `week`'s
+own usage line documents it (`week [--mirror-home PATH] [view|plan <text>|save]`).
+Routing reads `argv[1]` as the subcommand, sees `--mirror-home`, and classifies
+the invocation as an unported argv shape. So today these valid invocations are
+answered **only by Python**, and D2 as written would turn each into a usage
+error.
+
+TypeScript already produces the same bytes for every one of them once the
+same options come after the subcommand — measured pairwise, stdout, stderr and
+exit code:
+
+| Python, flag-first | TypeScript, same options after the subcommand |
+|---|---|
+| `extensions --mirror-home H` / `extensions --mirror-home H list` | identical |
+| `list --mirror-home H personas` / `journeys` / (no target) | identical |
+| `descriptor --mirror-home H list` | identical |
+| `week --mirror-home H view` / `week --mirror-home H` | identical |
+| `inspect --mirror-home H persona <id>` / `extension <id>` | identical |
+| `list --verbose` | **Python crashes** (traceback, exit 1); TypeScript answers the listing, exit 0 |
+
+One shape is worse, because routing already sends it to TypeScript:
+**`tasks --mirror-home H add "x"` creates the task in Python, while
+TypeScript routes it to the list read — prints the task list, exits 0, and
+writes nothing.** The leading-flag rule (`argv[1]` starts with `--` → list)
+was written for `tasks --journey x`, and it swallows every subcommand that
+follows a flag. That is the CR055 shape — a write silently answered as a
+listing — live since DS7.US2. No shipped skill uses the flag-first form
+(`mm-tasks` puts the subcommand first), which is why nothing noticed.
+
+### F6 — D2's "confirmed" covered the argparse families only
+
+D2 records that exit codes 1 and 2 were *measured, not inferred*. They were
+measured for the top level and for argparse families. Seven families answer an
+unknown subcommand differently:
+
+| Family | Python, unknown subcommand | Python, no subcommand |
+|---|---|---|
+| `identity` | usage on **stdout**, exit **1** | usage on stdout, exit **0** |
+| `extensions`, `inspect`, `list` | one usage line on **stdout**, exit **1** | `inspect`: same; the others default to a listing |
+| `consolidate`, `shadow` | `Unknown subcommand: X` on stderr, exit **1** | usage on stdout, exit 1 |
+| `conversation-logger` | **nothing at all, exit 0** | nothing, exit 1 |
+| `descriptor` | argparse, exit 2 | help on stdout, exit 1 |
+| `tasks`, `week`, `mirror`, `mode`, `soul`, `explore`, `explore story`, `build` | argparse (`usage: __main__.py …`), stderr, exit **2** | argparse `required`, exit 2 |
+
+D2's uniform answer (usage on stderr, exit 2) is argparse's shape and the
+majority one, and US2 already gave `runtime` exactly that shape. Adopting it
+changes the exit code or stream for the seven families above — in error
+paths only, and in `conversation-logger`'s case replacing a silent success
+with an error.
+
+### F7 — `runtime status` spawns the interpreter for its `Python:` line
+
+`detectPythonVersion` runs `uv run python -c …` on every `runtime status`
+(the updater already bypasses it). The interpreter shadow logs it on every CI
+run, and it violates the acceptance block's "no child named python, python3,
+or uv". The plan does not list it. `runtime-status.golden.json` pins the line
+27 times, and the golden is Python-generated, so removing the line during
+plateau 2 needs the oracle's renderer changed too, or the CI determinism gate
+goes red.
+
+### F8 — the stale-gate diagnosis names two live controls as inert
+
+Plateau 1's `staleRevertGateFindings` reports every non-`_REPLAY` variable
+starting `MIRROR_TS_`. Two of those are not revert gates:
+`MIRROR_TS_MCP_GUARDS` (the MCP wallet guards, a TS-to-TS switch) and
+`MIRROR_TS_CONSULT_CONTEXT` (consult's context input). `runtime diagnose`
+would tell a user to delete a variable that still does something. A prefix is
+a claim about names nobody has written yet; the fix is the explicit list of
+the gates D3 deletes.
+
+### F9 — `mcp` reaches Python through the unknown-command fallthrough
+
+`mcp` is one of Python's 32 names. The plugin launches the TypeScript server
+directly, so the inventory counted it as served — but `cli.ts mcp` itself has
+no route and reaches `python -m memory mcp`. The acceptance block requires
+every one of the 32 names to answer from TypeScript. Nothing in the
+repository invokes `cli.ts mcp`.

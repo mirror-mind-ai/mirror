@@ -2,8 +2,9 @@
 
 # CV22.DS10.TS5 — Python core deletion
 
-**Status:** 🟡 Planned — pulled 2026-09-23; Plan written and panel-reviewed
-2026-09-23, pending Navigator approval
+**Status:** 🟢 In Progress — pulled 2026-09-23; Plan panel-reviewed and
+approved; plateaus 0 and 1 done; plateau 2 **stopped at a stop condition**
+2026-09-24 (see [Where To Resume](#where-to-resume))
 **Type:** Technical Story
 **Depends on:** CV22.DS10.TS1–TS4 and US1–US2 (all done); the
 [Zero Python gate](../index.md#zero-python-gate); debt
@@ -376,9 +377,32 @@ writable handle. Revisit if it is ever felt.
 the work: **five tests, seven spawn attempts**, not the thirty test files the
 inventory estimated.
 
+### Plateau 2 — Unreachable — ⛔ stopped at a stop condition, 2026-09-24
+
+**What is now true.** One commit, `ea619df5`, **local, not pushed**: the two
+dead branches of [F2](inventory.md#f2--two-dead-fallback-branches-ts4-left-behind)
+are deleted, and the Node retired-surface guard now asks the router, not just
+the files, whether any family branch still answers a retired shape. It was red
+on exactly F2's 22 shapes before the deletion and fires on a seeded re-add.
+Suite 2680 passed.
+
+**Why it stopped.** Measuring the fallthroughs on both engines before writing
+D2 found **[F5](inventory.md#f5--valid-flag-first-invocations-reach-python-through-the-fallthroughs)**:
+valid flag-first invocations of five families are answered only by Python
+today, and `tasks --mirror-home H add` silently lists instead of adding on the
+TypeScript route that is already live. That is the Plan's first stop
+condition. Four more findings ([F6](inventory.md#f6--d2s-confirmed-covered-the-argparse-families-only)–[F9](inventory.md#f9--mcp-reaches-python-through-the-unknown-command-fallthrough))
+need a decision or a small correction.
+
+**Waiting on the Navigator:** F5's disposition (fix routing here, cutoff, or
+new story); whether D2 stays uniform given F6; F7's `Python:` line; F9's
+`mcp` route; and whether `ea619df5` may be pushed.
+
 ## Where To Resume
 
-Nothing is in flight.
+**Plateau 2 is stopped, not in flight** — see the plateau 2 note above. The
+step list below is still the order once the decisions are taken; step 3 is
+done (`ea619df5`).
 
 The Plan is written and was reviewed by four persona lenses on 2026-09-23
 (database-architect, security-engineer, devops-engineer, quality-assurance;
