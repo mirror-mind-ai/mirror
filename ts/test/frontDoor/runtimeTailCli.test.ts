@@ -293,10 +293,11 @@ test("an unknown runtime subcommand is answered by TS: usage, exit 2, no Python"
       // The choice list must name what this build really answers.
       assert.match(result.stderr, /status/, sub);
       assert.equal(result.stdout, "", sub);
-      // Answered by TS means the front door did not spawn the oracle.
+      // Answered before dispatch by the front door's usage answer (D2): the
+      // oracle was not spawned, and the log records the route that answered.
       assert.ok(
-        logLines(f).some((line) => line.includes("\truntime\tts\t")),
-        `${sub}: expected the front-door log to record runtime on ts`,
+        logLines(f).some((line) => line.includes("\truntime\tusage\t")),
+        `${sub}: expected the front-door log to record runtime on usage`,
       );
     }
 

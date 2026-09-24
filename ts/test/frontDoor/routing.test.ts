@@ -1,6 +1,18 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { canonicalArgv } from "#frontDoor/argvShape.ts";
 import { routeMemoryCommand } from "#frontDoor/routing.ts";
+
+/**
+ * CV22.DS10.TS5 (D2): what a family answers for a name it does not route --
+ * the front door's own usage answer, where Python used to answer.
+ */
+function familyUsage(argv: readonly string[]): { program: string; given: string } | null {
+  const decision = routeMemoryCommand(argv, {});
+  return decision.engine === "usage" && decision.request.scope === "family"
+    ? { program: decision.request.program, given: decision.request.given }
+    : null;
+}
 
 test("routes DS2 read commands to TS", () => {
   assert.deepEqual(routeMemoryCommand(["detect-persona", "builder"]), {
@@ -48,12 +60,16 @@ test("both consult leaves are live by default, each with its own fixture require
   }
 });
 
-test("keeps unported commands on Python fallback", () => {
-  // `build` left this list in CV22.DS7.US8; its Workbench leaves left it in
-  // CV22.DS10.TS4, which retired them (see retiredSurfaces.test.ts).
+test("nothing the oracle answered falls through to it any more", () => {
+  // `build` left the unported list in CV22.DS7.US8; its Workbench leaves left
+  // it in CV22.DS10.TS4, which retired them (see retiredSurfaces.test.ts); the
+  // unknown names left it in CV22.DS10.TS5, which answers them itself (D2).
   assert.equal(routeMemoryCommand(["build", "load", "mirror-ts-core"]).engine, "ts");
   assert.equal(routeMemoryCommand(["build", "change-request", "capture"]).engine, "retired");
-  assert.equal(routeMemoryCommand(["conversation-logger", "extract-pending"]).engine, "python");
+  assert.deepEqual(familyUsage(["conversation-logger", "extract-pending"]), {
+    program: "conversation-logger",
+    given: "extract-pending",
+  });
   // `journal` left this list in CV22.DS8.US3; it is live by default now.
   assert.equal(routeMemoryCommand(["journal", "hello"]).engine, "ts");
 });
@@ -80,8 +96,11 @@ test("routes every `identity` leaf to TS, `edit` reverting on its own variable",
       .engine,
     "python",
   );
-  // A leaf `identity` never ported still reaches Python by name.
-  assert.equal(routeMemoryCommand(["identity", "something-new"]).engine, "python");
+  // A leaf `identity` never had is answered by the family, by name (D2).
+  assert.deepEqual(familyUsage(["identity", "something-new"]), {
+    program: "identity",
+    given: "something-new",
+  });
 });
 
 test("routes `tasks` list/default to TS", () => {
@@ -91,7 +110,9 @@ test("routes `tasks` list/default to TS", () => {
     reason: "DS7.US2 tasks list read ported to TS",
   });
   assert.equal(routeMemoryCommand(["tasks", "list"]).engine, "ts");
-  assert.equal(routeMemoryCommand(["tasks", "--journey", "cv22"]).engine, "ts");
+  // Leading options reach routing already moved after the subcommand: the
+  // front door applies `canonicalArgv` first (CV22.DS10.TS5, F5).
+  assert.equal(routeMemoryCommand(canonicalArgv(["tasks", "--journey", "cv22"])).engine, "ts");
 });
 
 test("routes every `tasks` write subcommand (add/done/doing/block/delete/import/sync/sync-config) to TS", () => {
@@ -124,7 +145,7 @@ test("all week leaves answer from TS; the revert covers save and plan, never vie
     "ts",
     "a fixture still selects replay",
   );
-  assert.equal(routeMemoryCommand(["week", "unknown"]).engine, "python");
+  assert.equal(routeMemoryCommand(["week", "unknown"]).engine, "usage");
 });
 
 test("routes `init` to TS", () => {
@@ -205,7 +226,10 @@ test("routes every ported `inspect` target to TS, and refuses an unknown one by 
       target.join(" "),
     );
   }
-  assert.equal(routeMemoryCommand(["inspect", "something-new"]).engine, "python");
+  assert.deepEqual(familyUsage(["inspect", "something-new"]), {
+    program: "inspect",
+    given: "something-new",
+  });
 });
 
 test("routes every ported `list` target to TS, and refuses an unknown one by name", () => {
@@ -230,7 +254,10 @@ test("routes every ported `list` target to TS, and refuses an unknown one by nam
       argv.join(" "),
     );
   }
-  assert.equal(routeMemoryCommand(["list", "something-new"]).engine, "python");
+  assert.deepEqual(familyUsage(["list", "something-new"]), {
+    program: "list",
+    given: "something-new",
+  });
 });
 
 test("descriptor list and generate both answer from TS, with generate revertible", () => {
@@ -240,7 +267,10 @@ test("descriptor list and generate both answer from TS, with generate revertible
     routeMemoryCommand(["descriptor", "generate"], { MIRROR_TS_DESCRIPTOR: "0" }).engine,
     "python",
   );
-  assert.equal(routeMemoryCommand(["descriptor", "unknown"]).engine, "python");
+  assert.deepEqual(familyUsage(["descriptor", "unknown"]), {
+    program: "descriptor",
+    given: "unknown",
+  });
 });
 
 test("routes `journey set-path`/`update`/status reads all to TS", () => {
@@ -303,10 +333,9 @@ test("consolidate apply and scan are live, and one variable reverts the tail", (
     "ts",
   );
 
-  assert.deepEqual(routeMemoryCommand(["consolidate", "unknown-sub"]), {
-    command: "consolidate",
-    engine: "python",
-    reason: "command not ported to TS",
+  assert.deepEqual(familyUsage(["consolidate", "unknown-sub"]), {
+    program: "consolidate",
+    given: "unknown-sub",
   });
 });
 
@@ -332,10 +361,9 @@ test("shadow reads stay on TS, and `shadow scan` is live with its cultivation si
     "python",
   );
 
-  assert.deepEqual(routeMemoryCommand(["shadow", "unknown-sub"]), {
-    command: "shadow",
-    engine: "python",
-    reason: "command not ported to TS",
+  assert.deepEqual(familyUsage(["shadow", "unknown-sub"]), {
+    program: "shadow",
+    given: "unknown-sub",
   });
 });
 
@@ -391,11 +419,12 @@ test("mirror load --query is live, revertible on its own, and MEMORY_RECEPTION=0
   );
 });
 
-test("uses Python fallback when no command is present", () => {
+test("no command at all is the front door's top-level usage answer", () => {
   assert.deepEqual(routeMemoryCommand([]), {
     command: null,
-    engine: "python",
+    engine: "usage",
     reason: "no command",
+    request: { scope: "top-level", given: null },
   });
 });
 
@@ -602,12 +631,14 @@ test("repair-encoding routes to TS by default; MIRROR_TS_REPAIR_ENCODING=0 is th
   assert.equal(routeMemoryCommand(["backup"], { MIRROR_TS_REPAIR_ENCODING: "0" }).engine, "ts");
 });
 
-test("an unknown conversation-logger subcommand stays on Python", () => {
+test("an unknown conversation-logger subcommand is answered by the family", () => {
+  // The oracle answered this with NOTHING and exit 0 -- a silent success for a
+  // subcommand that does not exist. D2 gives it the family's answer (F6).
   const decision = routeMemoryCommand(
     ["conversation-logger", "extract-pending"],
     CONVERSATION_REPLAY_ENV,
   );
-  assert.equal(decision.engine, "python");
+  assert.equal(decision.engine, "usage");
 });
 
 // --- conversations append must not inherit DS7.US1's listing route ---
@@ -779,11 +810,12 @@ test("an unknown runtime subcommand is answered by TypeScript, not inherited", (
   // Python, which rendered argparse's usage. At TS5 that fallthrough
   // disappears and NOBODY owns the answer -- so TypeScript owns it now, while
   // there is still an oracle to compare against.
+  //
+  // CV22.DS10.TS5 moved the answer from the runtime route to the shared usage
+  // answer (D2), which renders the same bytes before dispatch.
   for (const sub of ["", "doctor", "publish", "pull", "stable"]) {
     const argv = sub ? ["runtime", sub] : ["runtime"];
-    const decision = routeMemoryCommand(argv, {});
-    assert.equal(decision.engine, "ts", sub);
-    assert.match(decision.reason, /unknown runtime subcommand/, sub);
+    assert.deepEqual(familyUsage(argv), { program: "runtime", given: sub }, sub);
   }
 });
 
@@ -793,7 +825,7 @@ test("`pull` and `stable` are unknown names, never DS10 work", () => {
   for (const sub of ["pull", "stable"]) {
     const decision = routeMemoryCommand(["runtime", sub], { MIRROR_TS_BACKUP: "1" });
     assert.doesNotMatch(decision.reason, /DS10/, sub);
-    assert.equal(decision.engine, "ts", sub);
+    assert.equal(decision.engine, "usage", sub);
   }
 });
 
@@ -835,7 +867,7 @@ test("no week reason mislabels `save` as LLM-gated (CR068 stays corrected)", () 
 
 test("an unknown week subcommand is refused by name, never inherited", () => {
   const unknown = routeMemoryCommand(["week", "bogus"], { MIRROR_TS_WEEK: "1" });
-  assert.equal(unknown.engine, "python");
+  assert.equal(unknown.engine, "usage");
   assert.match(unknown.reason, /bogus/);
 });
 

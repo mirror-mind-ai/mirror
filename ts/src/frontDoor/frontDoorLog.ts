@@ -21,8 +21,11 @@ export interface FrontDoorLogEntry {
    * answered, and the answer was that the surface no longer exists. It is
    * logged so "my command disappeared" stays answerable from the log after the
    * story that removed it is history.
+   *
+   * `usage` (CV22.DS10.TS5) is the front door's answer for a name it does not
+   * know -- the answer Python owned until TS5 deleted it.
    */
-  route: "ts" | "python" | "retired";
+  route: "ts" | "python" | "retired" | "usage";
   exitCode: number;
   /** A short, content-free note or error category. Never argument values. */
   detail?: string;

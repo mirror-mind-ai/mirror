@@ -59,7 +59,7 @@ test("every retired shape routes to the retired engine, naming its surface and a
   }
 });
 
-test("all twenty Workbench verbs retire, and an unknown build verb still goes to Python", () => {
+test("all twenty Workbench verbs retire, and an unknown one is an unknown build subcommand", () => {
   const refinementStory = ["create", "overview", "pull", "review", "coherence", "close", "park"];
   const changeRequest = [
     "capture",
@@ -88,10 +88,14 @@ test("all twenty Workbench verbs retire, and an unknown build verb still goes to
     assert.equal(routeMemoryCommand(["build", "change-request", verb], {}).engine, "retired", verb);
   }
   // Inheritance stays closed: a verb the Workbench never had is not retired by
-  // association -- it keeps the family's existing not-ported answer.
+  // association. `change-request` is no build subcommand at all, which is what
+  // the oracle has answered since TS4 deleted the group (D2, CV22.DS10.TS5).
   const unknown = routeMemoryCommand(["build", "change-request", "teleport"], {});
-  assert.equal(unknown.engine, "python");
-  assert.match(unknown.reason, /not ported/);
+  assert.equal(unknown.engine, "usage");
+  assert.equal(
+    unknown.engine === "usage" && unknown.request.scope === "family" && unknown.request.given,
+    "change-request",
+  );
 });
 
 test("CR089: the two admin verbs are refused before the journey status read", () => {

@@ -116,15 +116,19 @@ test("every gate reverts with `=0`, which is what makes the flip safe to take", 
 });
 
 test("a claimed command does not inherit a subcommand it never ported", () => {
-  // Unchanged by the flip: what TypeScript answers is what it ported, and a
-  // verb Python grows tomorrow still reaches Python.
-  // `conversations` grew `append` after DS7.US1 claimed the command, and the
-  // new subcommand silently rendered a listing and discarded the caller's
-  // messages. Every family this story touches allowlists by NAME instead.
-  assert.equal(routeMemoryCommand(["extensions", "doctor"]).engine, "python");
-  assert.equal(routeMemoryCommand(["inspect", "something-new"]).engine, "python");
-  assert.equal(routeMemoryCommand(["list", "something-new"]).engine, "python");
-  assert.equal(routeMemoryCommand(["identity", "something-new"]).engine, "python");
+  // What TypeScript answers is what it ported. `conversations` grew `append`
+  // after DS7.US1 claimed the command, and the new subcommand silently
+  // rendered a listing and discarded the caller's messages. Every family this
+  // story touches allowlists by NAME instead -- and since CV22.DS10.TS5 (D2) a
+  // name outside the allowlist gets the family's usage answer, not Python.
+  for (const argv of [
+    ["extensions", "doctor"],
+    ["inspect", "something-new"],
+    ["list", "something-new"],
+    ["identity", "something-new"],
+  ]) {
+    assert.equal(routeMemoryCommand(argv).engine, "usage", argv.join(" "));
+  }
 });
 
 test("`ext`'s allowlist is audited against `cli/ext.py`, because it cannot filter", () => {

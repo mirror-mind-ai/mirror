@@ -38,11 +38,23 @@ test("MIRROR_TS_BUILD=1 is not a mode: the default and the explicit value agree"
   }
 });
 
-test("unknown and bare Builder subcommands are refused by name", () => {
-  for (const argv of [["build"], ["build", "publish"]]) {
+test("unknown and bare Builder subcommands are answered by the family, by name", () => {
+  // CV22.DS10.TS5 (D2): the front door's own usage answer, where Python's
+  // argparse used to answer.
+  for (const [argv, given] of [
+    [["build"], ""],
+    [["build", "publish"], "publish"],
+  ] as const) {
     const decision = routeMemoryCommand(argv, ON);
-    assert.equal(decision.engine, "python");
-    assert.match(decision.reason, /build subcommand not ported to TS/);
+    assert.equal(decision.engine, "usage");
+    assert.deepEqual(
+      decision.engine === "usage" &&
+        decision.request.scope === "family" && {
+          program: decision.request.program,
+          given: decision.request.given,
+        },
+      { program: "build", given },
+    );
   }
 });
 

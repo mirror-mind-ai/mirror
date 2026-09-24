@@ -92,24 +92,26 @@ test("a failing hook logs the error category, not the payload", () => {
 test("the log reports the answering engine for every dispatch branch", () => {
   const ws = hookHome();
   try {
-    // One invocation per branch of `dispatch`, in order: the plain TS routes
-    // (`dispatchTs`), the conversation-logger route -- the only one that can
-    // fall back internally, so it reports its own engine -- and the Python
-    // route.
+    // One invocation per way the front door answers, in order: the plain TS
+    // routes (`dispatchTs`), the conversation-logger route -- which reports its
+    // own engine -- and the usage answer for a subcommand nothing routes
+    // (CV22.DS10.TS5, D2), which used to be the Python route.
     const read = spawnFrontDoor(["journeys", "--db-path", ws.dbPath]);
     assert.equal(read.status, 0, read.stderr);
 
     const ported = spawnFrontDoor(["conversation-logger", "status", "--db-path", ws.dbPath]);
     assert.equal(ported.status, 0, ported.stderr);
 
-    // `extract-pending` is not a ported subcommand: routing sends it to Python.
-    const unported = spawnFrontDoor([
+    // `extract-pending` is no conversation-logger subcommand on either engine:
+    // the oracle exited 0 silently, the front door answers with the family's
+    // usage and exit 2.
+    const unknown = spawnFrontDoor([
       "conversation-logger",
       "extract-pending",
       "--db-path",
       ws.dbPath,
     ]);
-    assert.equal(unported.status, 0, unported.stderr);
+    assert.equal(unknown.status, 2, unknown.stderr);
 
     const lines = readFileSync(join(ws.home, "front-door.log"), "utf8")
       .trim()
@@ -120,13 +122,16 @@ test("the log reports the answering engine for every dispatch branch", () => {
       [
         ["journeys", "ts"],
         ["conversation-logger", "ts"],
-        ["conversation-logger", "python"],
+        ["conversation-logger", "usage"],
       ],
       "one line per invocation, in order, each naming the engine that answered",
     );
-    for (const fields of lines) {
-      assert.equal(fields[5] ?? "", "", "no fallback note when the engines agree");
-    }
+    // No fallback note when routing and dispatch agree; the usage answer notes
+    // its SCOPE only, never the name it refused.
+    assert.deepEqual(
+      lines.map((fields) => fields[5] ?? ""),
+      ["", "", "usage=family"],
+    );
   } finally {
     ws.cleanup();
   }

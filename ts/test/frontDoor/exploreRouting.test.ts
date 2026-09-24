@@ -89,28 +89,35 @@ test("half a replay fixture refuses promote by name instead of spending", () => 
   assert.match(route.reason, /MIRROR_TS_BUILD_EMBEDDING_REPLAY/);
 });
 
-test("an unknown explore subcommand is refused by name, not inherited", () => {
-  const route = routeMemoryCommand(["explore", "summarize", "a-journey"]);
-  assert.equal(route.engine, "python");
-  assert.match(route.reason, /explore subcommand not ported to TS: summarize/);
+// CV22.DS10.TS5 (D2): an unknown or missing subcommand is answered by the
+// family itself -- by name, never inherited -- where argparse used to answer.
+function usageOf(argv: string[]): { program: string; given: string } | null {
+  const route = routeMemoryCommand(argv);
+  return route.engine === "usage" && route.request.scope === "family"
+    ? { program: route.request.program, given: route.request.given }
+    : null;
+}
+
+test("an unknown explore subcommand is answered by the family, not inherited", () => {
+  assert.deepEqual(usageOf(["explore", "summarize", "a-journey"]), {
+    program: "explore",
+    given: "summarize",
+  });
 });
 
-test("an unknown story action is refused by name, not inherited", () => {
-  const route = routeMemoryCommand(["explore", "story", "publish", "a-journey"]);
-  assert.equal(route.engine, "python");
-  assert.match(route.reason, /explore story action not ported to TS: publish/);
+test("an unknown story action is answered by `explore story`, not inherited", () => {
+  assert.deepEqual(usageOf(["explore", "story", "publish", "a-journey"]), {
+    program: "explore story",
+    given: "publish",
+  });
 });
 
-test("a bare `explore` with no subcommand reaches Python", () => {
-  const route = routeMemoryCommand(["explore"]);
-  assert.equal(route.engine, "python");
-  assert.match(route.reason, /explore subcommand not ported to TS: \(none\)/);
+test("a bare `explore` with no subcommand is told one is required", () => {
+  assert.deepEqual(usageOf(["explore"]), { program: "explore", given: "" });
 });
 
-test("a bare `explore story` with no action reaches Python", () => {
-  const route = routeMemoryCommand(["explore", "story"]);
-  assert.equal(route.engine, "python");
-  assert.match(route.reason, /explore story action not ported to TS: \(none\)/);
+test("a bare `explore story` with no action is told one is required", () => {
+  assert.deepEqual(usageOf(["explore", "story"]), { program: "explore story", given: "" });
 });
 
 test("the story action is read past the options argparse strips first", () => {

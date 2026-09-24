@@ -17,7 +17,12 @@ import {
   WEEK_PLAN_TRANSPORT,
 } from "#providers/transport.ts";
 
-import { TS_RUNTIME_READ_SUBCOMMANDS, TS_RUNTIME_UPDATE_SUBCOMMANDS } from "./runtimeRoute.ts";
+import {
+  RUNTIME_SUBCOMMANDS,
+  TS_RUNTIME_READ_SUBCOMMANDS,
+  TS_RUNTIME_UPDATE_SUBCOMMANDS,
+} from "./runtimeRoute.ts";
+import type { UsageRequest } from "./usage.ts";
 
 export type FrontDoorEngine = "ts" | "python";
 
@@ -56,7 +61,51 @@ export type RouteDecision =
       surface: string;
       /** The cutoff anchor, from the matched entry -- never from argv. */
       anchor: string;
+    }
+  | {
+      command: string | null;
+      /**
+       * CV22.DS10.TS5 (D2): a name the front door does not answer. Rendered by
+       * `usage.ts` before dispatch, like `retired` -- nothing opened, nothing
+       * read from stdin, nothing spawned.
+       */
+      engine: "usage";
+      reason: string;
+      request: UsageRequest;
     };
+
+/**
+ * A family was named and its subcommand is not one it answers (D2).
+ *
+ * `choices` is the allowlist the family ALREADY routes by, so the usage line a
+ * user sees cannot drift from what the build answers.
+ */
+function unknownSubcommand(
+  command: string,
+  choices: Iterable<string>,
+  given: string | undefined,
+  program: string = command,
+): RouteDecision {
+  const name = given ?? "";
+  return {
+    command,
+    engine: "usage",
+    reason:
+      name === "" ? `${program} needs a subcommand` : `unknown ${program} subcommand: ${name}`,
+    request: { scope: "family", program, choices: [...choices], given: name },
+  };
+}
+
+/** A top-level name nothing answers, or no command at all (D2). */
+function unknownCommand(given: string | null): RouteDecision {
+  return {
+    // Whatever the caller typed is not a command name, so the log records none.
+    command: null,
+    engine: "usage",
+    reason: given === null ? "no command" : `unknown command: ${given}`,
+    request: { scope: "top-level", given },
+  };
+}
 
 const TS_READ_COMMANDS = new Set(["detect-persona", "journeys"]);
 
@@ -571,7 +620,7 @@ export function routeByFamily(
   env: RouteEnvironment = process.env,
 ): RouteDecision {
   const command = argv[0] ?? null;
-  if (!command) return { command, engine: "python", reason: "no command" };
+  if (!command) return unknownCommand(null);
 
   if (TS_READ_COMMANDS.has(command)) {
     return { command, engine: "ts", reason: "DS2 read command ported to TS" };
@@ -621,22 +670,15 @@ export function routeByFamily(
       }
       return { command, engine: "ts", reason: "DS7.TS4 identity edit ported to TS" };
     }
-    // A subcommand this family does not know is Python's, by name rather than
-    // by inheritance: `identity` grew `edit` after `set` claimed the command.
-    return {
-      command,
-      engine: "python",
-      reason: "identity subcommand not ported to TS",
-    };
+    // Allowlisted by name rather than inherited: `identity` grew `edit` after
+    // `set` claimed the command.
+    return unknownSubcommand(command, IDENTITY_SUBCOMMANDS, argv[1]);
   }
 
   if (command === "extensions") {
     const verb = argv[1] ?? "list";
     if (!TS4_EXTENSIONS_VERBS.has(verb)) {
-      // `cmd_extensions` refuses an unknown verb with a usage line. TS owns that
-      // refusal only for the verbs it knows; a verb Python grows later must
-      // reach Python, not a TS refusal written before it existed.
-      return { command, engine: "python", reason: "extensions verb not ported to TS" };
+      return unknownSubcommand(command, TS4_EXTENSIONS_VERBS, verb);
     }
     if (!extensionsRouteEnabled(env)) {
       return {
@@ -754,14 +796,7 @@ export function routeByFamily(
       }
       return { command, engine: "ts", reason: `DS7.TS4 inspect ${argv[1]} ported to TS` };
     }
-    // An unknown target is Python's by NAME. `cmd_inspect` refuses it with a
-    // usage line, and reproducing that refusal is a port, not an inheritance:
-    // a target Python grows tomorrow must not silently land on a TS refusal.
-    return {
-      command,
-      engine: "python",
-      reason: "inspect target not ported to TS",
-    };
+    return unknownSubcommand(command, ["persona", ...TS4_INSPECT_TARGETS], argv[1]);
   }
 
   if (command === "list") {
@@ -785,9 +820,7 @@ export function routeByFamily(
       }
       return { command, engine: "ts", reason: `DS7.TS4 list ${listTarget} ported to TS` };
     }
-    // Anything else is `cmd_list`'s usage refusal, which TS reproduces only for
-    // the targets it owns.
-    return { command, engine: "python", reason: "list target not ported to TS" };
+    return unknownSubcommand(command, LIST_TARGETS, listTarget);
   }
 
   if (command === "descriptor") {
@@ -799,36 +832,29 @@ export function routeByFamily(
     if (argv[1] === "generate") {
       return providerRoute(command, env, DESCRIPTOR_TRANSPORT, "generate");
     }
-    return {
-      command,
-      engine: "python",
-      reason: `descriptor subcommand not ported to TS: ${argv[1] || "(none)"}`,
-    };
+    return unknownSubcommand(command, DESCRIPTOR_SUBCOMMANDS, argv[1]);
   }
 
   if (command === "tasks") {
-    // `list` (and the bare `tasks` default, incl. a leading flag with no
-    // subcommand token) is a read; `add/done/doing/block/delete` are the
-    // deterministic writes ported in DS7.US2 slice 3a; `import/sync/
-    // sync-config` (which also touch the journey sync-file/project-path
-    // metadata subsystem) are ported in slice 3c.
-    const sub = argv[1]?.startsWith("--") ? undefined : argv[1];
+    // `list` (and the bare `tasks` default) is a read; `add/done/doing/block/
+    // delete` are the deterministic writes ported in DS7.US2 slice 3a;
+    // `import/sync/sync-config` (which also touch the journey sync-file/
+    // project-path metadata subsystem) are ported in slice 3c.
+    //
+    // A LEADING OPTION IS NOT A LIST ANY MORE (CV22.DS10.TS5, F5). The rule
+    // here used to read `tasks --anything ...` as `list`, which is how
+    // `tasks --mirror-home H add "x"` printed the list and wrote nothing. The
+    // options the oracle accepts before the subcommand are now moved after it
+    // by `argvShape.ts` before routing runs, so one that is still here is one
+    // the oracle's parser rejected too -- or `-h`.
+    const sub = argv[1];
     if (sub === undefined || sub === "list") {
       return { command, engine: "ts", reason: "DS7.US2 tasks list read ported to TS" };
     }
-    if (
-      sub === "add" ||
-      sub === "done" ||
-      sub === "doing" ||
-      sub === "block" ||
-      sub === "delete" ||
-      sub === "import" ||
-      sub === "sync" ||
-      sub === "sync-config"
-    ) {
+    if (TASKS_SUBCOMMANDS.includes(sub)) {
       return { command, engine: "ts", reason: "DS7.US2 tasks write ported to TS" };
     }
-    return { command, engine: "python", reason: "command not ported to TS" };
+    return unknownSubcommand(command, TASKS_SUBCOMMANDS, sub);
   }
 
   if (command === "week") {
@@ -862,11 +888,7 @@ export function routeByFamily(
       // only, unlike `journal` which crosses the seam twice.
       return providerRoute(command, env, WEEK_PLAN_TRANSPORT, "plan");
     }
-    return {
-      command,
-      engine: "python",
-      reason: `week subcommand not ported to TS: ${sub || "(none)"}`,
-    };
+    return unknownSubcommand(command, WEEK_SUBCOMMANDS, sub);
   }
 
   if (command === "consolidate") {
@@ -889,7 +911,7 @@ export function routeByFamily(
     if (sub === "scan") {
       return providerRoute(command, env, CULTIVATION_SCAN_TRANSPORT, "scan");
     }
-    return { command, engine: "python", reason: "command not ported to TS" };
+    return unknownSubcommand(command, CONSOLIDATE_SUBCOMMANDS, sub);
   }
 
   if (command === "shadow") {
@@ -907,7 +929,7 @@ export function routeByFamily(
     if (sub === "scan") {
       return providerRoute(command, env, CULTIVATION_SCAN_TRANSPORT, "shadow scan");
     }
-    return { command, engine: "python", reason: "command not ported to TS" };
+    return unknownSubcommand(command, SHADOW_SUBCOMMANDS, sub);
   }
 
   if (command === "mirror") {
@@ -932,7 +954,7 @@ export function routeByFamily(
     if (sub === "deactivate" || sub === "log" || sub === "journeys") {
       return { command, engine: "ts", reason: `DS7.US4 mirror ${sub} ported to TS` };
     }
-    return { command, engine: "python", reason: "mirror subcommand not ported to TS" };
+    return unknownSubcommand(command, MIRROR_SUBCOMMANDS, sub);
   }
 
   if (command === "conversation-logger") {
@@ -995,20 +1017,21 @@ export function routeByFamily(
       }
       return { command, engine: "ts", reason: `${transport.reason} (${sub})` };
     }
-    return {
+    // The oracle answered an unknown logger subcommand with NOTHING, exit 0 --
+    // a silent success for a hook that named a subcommand that does not exist.
+    // It now gets the family's answer like every other family (D2, F6).
+    return unknownSubcommand(
       command,
-      engine: "python",
-      reason: "conversation-logger subcommand crosses the LLM close tail or is unported",
-    };
+      [...TS_CONVERSATION_LOGGER_SUBCOMMANDS, ...TS_CONVERSATION_LOGGER_LLM_SUBCOMMANDS],
+      sub,
+    );
   }
 
   if (command === "mode") {
-    const sub = argv.find(
-      (value, index) => index > 0 && ["activate", "deactivate", "status"].includes(value),
-    );
+    const sub = argv.find((value, index) => index > 0 && MODE_SUBCOMMANDS.includes(value));
     return sub
       ? { command, engine: "ts", reason: "DS7.US4 operating mode lifecycle ported to TS" }
-      : { command, engine: "python", reason: "mode subcommand not ported to TS" };
+      : unknownSubcommand(command, MODE_SUBCOMMANDS, modeGivenSubcommand(argv));
   }
 
   if (command === "journey") {
@@ -1078,15 +1101,10 @@ export function routeByFamily(
         }
         return { command, engine: "ts", reason: `DS10.US2 runtime ${subcommand} ported to TS` };
       }
-      // CV22.DS10.US2: the unknown answer is TypeScript's own. It used to fall
-      // through to Python's argparse; at TS5 there is no Python to fall
-      // through to, and an unowned answer is how a surface disappears without
-      // anyone deciding to remove it.
-      return {
-        command,
-        engine: "ts",
-        reason: `unknown runtime subcommand: ${subcommand || "(none)"}`,
-      };
+      // CV22.DS10.US2 made the unknown answer TypeScript's own, rendered by
+      // the runtime route; CV22.DS10.TS5 moved it to the shared usage answer
+      // (D2), which renders the same bytes for every family.
+      return unknownSubcommand(command, RUNTIME_SUBCOMMANDS, subcommand);
     }
     if (!tailGateEnabled(env.MIRROR_TS_RUNTIME_READS)) {
       return {
@@ -1105,11 +1123,7 @@ export function routeByFamily(
     // because the family is claimed. That is the `conversations append` defect
     // (RS009/CR055), which exited 0 and discarded the caller's payload.
     if (!TS_SOUL_SUBCOMMANDS.has(subcommand)) {
-      return {
-        command,
-        engine: "python",
-        reason: `soul subcommand not ported to TS: ${subcommand || "(none)"}`,
-      };
+      return unknownSubcommand(command, TS_SOUL_SUBCOMMANDS, subcommand);
     }
     if (!soulGateEnabled(env)) {
       return {
@@ -1135,20 +1149,12 @@ export function routeByFamily(
     // subparser. A single-level allowlist would claim `explore story
     // <anything>` and answer an argv shape this route has never implemented.
     if (!TS_EXPLORE_SUBCOMMANDS.has(subcommand)) {
-      return {
-        command,
-        engine: "python",
-        reason: `explore subcommand not ported to TS: ${subcommand || "(none)"}`,
-      };
+      return unknownSubcommand(command, TS_EXPLORE_SUBCOMMANDS, subcommand);
     }
     if (subcommand === "story") {
       const action = exploreStoryAction(argv);
       if (!TS_EXPLORE_STORY_ACTIONS.has(action ?? "")) {
-        return {
-          command,
-          engine: "python",
-          reason: `explore story action not ported to TS: ${action || "(none)"}`,
-        };
+        return unknownSubcommand(command, TS_EXPLORE_STORY_ACTIONS, action, "explore story");
       }
     }
     if (!exploreGateEnabled(env)) {
@@ -1173,23 +1179,12 @@ export function routeByFamily(
 
   if (command === "build") {
     const subcommand = argv[1] ?? "";
-    // The twenty KNOWN Workbench verbs never reach this line: the retired
-    // table answers them first. Only an unknown verb of those two retired
-    // groups arrives here.
-    if (subcommand === "refinement-story" || subcommand === "change-request") {
-      const action = argv[2] ?? "";
-      return {
-        command,
-        engine: "python",
-        reason: `build ${subcommand} action not ported to TS: ${action || "(none)"}`,
-      };
-    }
+    // `refinement-story` and `change-request` are not build subcommands: the
+    // twenty verbs they had are answered by the retired table before this
+    // line, and anything else under them is an unknown build subcommand --
+    // what the oracle itself has answered since TS4 deleted the groups.
     if (!TS_BUILD_SUBCOMMANDS.has(subcommand)) {
-      return {
-        command,
-        engine: "python",
-        reason: `build subcommand not ported to TS: ${subcommand || "(none)"}`,
-      };
+      return unknownSubcommand(command, TS_BUILD_SUBCOMMANDS, subcommand);
     }
     if (!buildGateEnabled(env)) {
       return { command, engine: "python", reason: "MIRROR_TS_BUILD=0 revert to Python" };
@@ -1206,7 +1201,46 @@ export function routeByFamily(
     return providerRoute(command, env, JOURNAL_TRANSPORT);
   }
 
-  return { command, engine: "python", reason: "command not ported to TS" };
+  if (command === "mcp") {
+    // CV22.DS10.TS5 (F9): the server DS9 ported, reached through the front
+    // door as the oracle's `mcp` was. The plugin launches it directly; this is
+    // the same server, not a second one.
+    return { command, engine: "ts", reason: "DS9 MCP server, launched through the front door" };
+  }
+
+  return unknownCommand(command);
+}
+
+// The subcommands of families whose routes above test them one by one. Named
+// here so the usage answer lists exactly what the routes answer.
+const IDENTITY_SUBCOMMANDS = ["list", "get", "set", "edit"];
+const LIST_TARGETS = ["personas", "journeys", "extensions", "all"];
+const DESCRIPTOR_SUBCOMMANDS = ["generate", "list"];
+const TASKS_SUBCOMMANDS = [
+  "list",
+  "add",
+  "done",
+  "doing",
+  "block",
+  "import",
+  "delete",
+  "sync",
+  "sync-config",
+];
+const WEEK_SUBCOMMANDS = ["view", "plan", "save"];
+const CONSOLIDATE_SUBCOMMANDS = ["scan", "apply", "reject", "list"];
+const SHADOW_SUBCOMMANDS = ["scan", "apply", "reject", "list", "show"];
+const MIRROR_SUBCOMMANDS = ["load", "deactivate", "log", "journeys"];
+const MODE_SUBCOMMANDS = ["activate", "deactivate", "status"];
+
+/** `mode`'s first positional, past the two options its parser declares; "" when none. */
+function modeGivenSubcommand(argv: readonly string[]): string {
+  const args = [...argv.slice(1)];
+  for (const option of ["--mirror-home", "--session-id"]) {
+    const index = args.indexOf(option);
+    if (index !== -1) args.splice(index, 2);
+  }
+  return args[0] ?? "";
 }
 
 // Python's argparse subcommands for `soul`, by name.

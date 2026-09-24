@@ -170,6 +170,7 @@ import {
   applyTasksStatusChange,
   type TaskStatusTarget,
 } from "./tasksWriteRoute.ts";
+import { answerUsage } from "./usage.ts";
 
 /**
  * Resolve the database path for a CLI invocation, mapping a configuration
@@ -1598,6 +1599,17 @@ export function tryOpenDbForConsultLogging(argv: readonly string[]): WritableDat
   }
 }
 
+/**
+ * `mcp` (CV22.DS10.TS5, F9): the oracle's command, answered by the server
+ * CV22.DS9 ported. The module IS the server -- importing it serves stdio, and
+ * the import settles when the client closes stdin. The plugin launches the same
+ * module directly; this is the front door's way in, not a second server.
+ */
+async function runMcpServer(): Promise<number> {
+  await import("#mcp/main.ts");
+  return 0;
+}
+
 async function runMemorySearch(argv: readonly string[]): Promise<number> {
   const dbPath = resolveDbPathForCli(argv.slice(1));
   if (dbPath === null) return 2;
@@ -1728,6 +1740,7 @@ async function dispatchTs(argv: readonly string[]): Promise<number | TsDispatchO
   // migrate-on-open, and for `welcome --status-line` no subprocess whatsoever.
   if (argv[0] === "welcome") return runWelcomeRoute(argv);
   if (argv[0] === "runtime") return runRuntimeReadRoute(argv);
+  if (argv[0] === "mcp") return runMcpServer();
   if (isMemorySearch(argv)) return runMemorySearch(argv);
   if (isConsult(argv)) {
     if (isConsultCredits(argv)) {
@@ -1767,6 +1780,21 @@ export async function main(rawArgv = process.argv.slice(2)): Promise<number> {
       detail: `cutoff=${decision.anchor}`,
     });
     return 1;
+  }
+  // CV22.DS10.TS5 (D2): a name the front door does not answer. Same posture as
+  // a retired surface -- answered before dispatch, so nothing is opened, read
+  // from stdin, or spawned -- and logged by SCOPE only: an unknown top-level
+  // name is whatever the caller typed, and it stays out of the log.
+  if (decision.engine === "usage") {
+    const answer = answerUsage(decision.request);
+    (answer.stream === "stdout" ? process.stdout : process.stderr).write(answer.text);
+    logFrontDoor(logPath, {
+      command: decision.command,
+      route: "usage",
+      exitCode: answer.exitCode,
+      detail: `usage=${decision.request.scope}`,
+    });
+    return answer.exitCode;
   }
   try {
     const outcome = await dispatch(argv, decision.engine);

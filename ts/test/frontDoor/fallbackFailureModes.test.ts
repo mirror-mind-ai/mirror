@@ -7,18 +7,24 @@ import { test } from "node:test";
 
 const CLI = "src/frontDoor/cli.ts";
 
-// A SYNTHETIC command name, deliberately. These tests probe the fallback
-// MECHANISM -- spawn failure and timeout -- not any particular command, and
-// naming a real one has now broken them twice: `tasks` when DS7.US2 ported its
-// list form, then `journal` when DS8.US3 flipped it live. An unknown command
-// routes to Python by definition ("command not ported to TS") and no future
-// port can claim it.
-const UNPORTED = ["not-a-real-mirror-command", "argument for the fallback failure-mode probe"];
+// These tests probe the fallback MECHANISM -- spawn failure and timeout -- not
+// any particular command. Naming a real one broke them twice (`tasks` at
+// DS7.US2, `journal` at DS8.US3), so they used a synthetic unknown name --
+// until CV22.DS10.TS5 made the front door answer unknown names itself (D2).
+// A revert gate is now the only way left to reach Python, and the next commit
+// deletes the gates, the fallback, and these tests together.
+const UNPORTED = ["welcome"];
+const REVERTED = { MIRROR_TS_WELCOME: "0" };
 
 test("fallback prints actionable guidance when uv is not on PATH (was: silent exit 1)", () => {
   const result = spawnSync(process.execPath, [CLI, ...UNPORTED], {
     encoding: "utf8",
-    env: { ...process.env, NODE_OPTIONS: "--no-warnings", PATH: "/nonexistent-path-for-test" },
+    env: {
+      ...process.env,
+      ...REVERTED,
+      NODE_OPTIONS: "--no-warnings",
+      PATH: "/nonexistent-path-for-test",
+    },
   });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /could not spawn `uv`/);
@@ -36,6 +42,7 @@ test("fallback terminates a hung Python process and names the timeout", () => {
       encoding: "utf8",
       env: {
         ...process.env,
+        ...REVERTED,
         NODE_OPTIONS: "--no-warnings",
         PATH: `${dir}${delimiter}${process.env.PATH ?? ""}`,
         MIRROR_FRONTDOOR_PYTHON_TIMEOUT_MS: "200",

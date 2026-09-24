@@ -14,6 +14,7 @@ import { join } from "node:path";
 import { createZipBackup } from "#backup/zipBackup.ts";
 import { dbNameForEnv, resolveMirrorHome } from "#frontDoor/dbPath.ts";
 import { frontDoorLogPath, logFrontDoor } from "#frontDoor/frontDoorLog.ts";
+import { renderUnknownSubcommand } from "#frontDoor/usage.ts";
 import {
   renderBackupVerification,
   renderRuntimeBackupCreated,
@@ -108,25 +109,6 @@ export const RUNTIME_SUBCOMMANDS = [
  * back to Python with it.
  */
 export const TS_RUNTIME_UPDATE_SUBCOMMANDS = new Set(["backup", "update", "migrate"]);
-
-/**
- * argparse's answer to a name that is not a subcommand, in TypeScript.
- *
- * Until US2 this fell through to Python, whose argparse names `__main__.py` --
- * a Python artifact that cannot survive TS5. At TS5 the fallthrough disappears
- * and nobody owns the answer, so TypeScript owns it now, while there is still
- * an oracle to compare against. The SHAPE is argparse's (usage, then one
- * `error:` line, both on stderr, exit 2); the vocabulary is the product's.
- * The deviation is deliberate and recorded in the story's plan.
- */
-export function renderUnknownRuntimeSubcommand(subcommand: string): string {
-  const choices = RUNTIME_SUBCOMMANDS.join(",");
-  const detail =
-    subcommand === ""
-      ? "the following arguments are required: command"
-      : `argument command: invalid choice: '${subcommand}' (choose from ${RUNTIME_SUBCOMMANDS.join(", ")})`;
-  return `usage: runtime [-h] {${choices}} ...\nruntime: error: ${detail}\n`;
-}
 
 function optionValue(args: readonly string[], name: string): string | null {
   const index = args.indexOf(name);
@@ -293,9 +275,11 @@ export async function runRuntimeReadRoute(
   if (subcommand === "migrate") return runRuntimeMigrate(args.slice(1), io, env);
   if (subcommand === "update") return runRuntimeUpdate(args.slice(1), io, env, cwd);
 
-  // Not unreachable any more: the routing table sends every name it does not
-  // recognize here, so that the refusal survives the oracle's deletion.
-  writeErr(io, renderUnknownRuntimeSubcommand(subcommand));
+  // Routing answers every name it does not recognize before dispatch (the
+  // shared usage answer, CV22.DS10.TS5 D2 -- the shape US2 gave `runtime`
+  // first). Reaching here means routing and this function disagree about the
+  // family's names, so the same answer is given rather than a guess.
+  writeErr(io, renderUnknownSubcommand("runtime", RUNTIME_SUBCOMMANDS, subcommand));
   return 2;
 }
 

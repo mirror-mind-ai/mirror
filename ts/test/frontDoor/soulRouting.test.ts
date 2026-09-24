@@ -34,15 +34,16 @@ test("MIRROR_TS_SOUL=1 is accepted but unnecessary after the flip", () => {
   }
 });
 
-test("an unported subcommand reaches Python BY NAME, never by inheritance", () => {
-  // The regression this allowlist exists for: a subcommand added upstream must
-  // not be answered by a route that has never implemented it.
+test("an unknown subcommand is answered by the family BY NAME, never by inheritance", () => {
+  // The regression this allowlist exists for: a subcommand the route has never
+  // implemented must not be answered by it. Since CV22.DS10.TS5 (D2) the family
+  // answers itself instead of Python.
   for (const unknown of ["publish", "rite-v2", "listen-all", ""]) {
     const decision = routeMemoryCommand(["soul", unknown], ON);
-    assert.equal(decision.engine, "python", `soul ${unknown} must reach Python`);
-    assert.match(decision.reason, /subcommand not ported to TS/);
+    assert.equal(decision.engine, "usage", `soul ${unknown}`);
+    assert.match(decision.reason, /soul/);
   }
-  assert.equal(routeMemoryCommand(["soul"], ON).engine, "python", "bare `soul`");
+  assert.equal(routeMemoryCommand(["soul"], ON).engine, "usage", "bare `soul`");
 });
 
 test("the allowlist and the route's own subcommand list agree", () => {
