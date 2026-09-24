@@ -337,8 +337,8 @@ export const RETIRED: readonly RetiredSurface[] = [
     // live since plateau 3: nothing the Python core consisted of is tracked, no
     // file anywhere is Python, and no workflow installs an interpreter. The
     // other half -- what the tree still SAYS about Python -- is
-    // `python-core-mentions` below, staged until slice H has rewritten the
-    // documentation that holds most of it.
+    // `python-core-mentions` below, live since plateau 4, once slice H had
+    // rewritten the documentation that held most of it.
     //
     // `absentSuffixes` is the part a path list could not express. The Plan's
     // own inventory listed where the Python lived; it was the six fixture
@@ -366,9 +366,11 @@ export const RETIRED: readonly RetiredSurface[] = [
   {
     surfaceId: "python-core-mentions",
     story: "CV22.DS10.TS5",
-    stagedUntil: "CV22.DS10.TS5 plateau 4, when slice H has rewritten the documentation",
     // The second half of the Zero Python row (D12): no tracked file outside
-    // the project's record INVOKES the interpreter or imports the core.
+    // the project's record INVOKES the interpreter or imports the core. Staged
+    // from plateau 0 -- graded against the live tree, never enforced -- and
+    // enforced since plateau 4, when the last of 79 mentions was rewritten or
+    // exempted with its reason.
     //
     // It is deliberately WIDER than the guard it replaces. US2's Skill
     // Invocation Gate was satisfied by a check whose pattern was

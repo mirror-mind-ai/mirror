@@ -7,10 +7,11 @@
 // The port gets the test the original never had, because after TS5 this guard
 // is the only mechanical proof that six deletions stayed deleted.
 //
-// The last group is the important one: it proves the STAGED `python-core` row
-// actually fires. A staged row that nobody exercises is a row that will be
-// switched on at plateau 3 -- the moment the Python safety net is gone -- with
-// nobody having ever seen it work.
+// The last two groups are the important ones: they prove TS5's `python-core`
+// rows actually fire. Both were STAGED first -- graded against the live tree,
+// not enforced -- because a row nobody exercises is a row that gets switched
+// on the day the Python safety net is gone, with nobody having ever seen it
+// work. `python-core` went live at plateau 3, `python-core-mentions` at 4.
 
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -25,6 +26,7 @@ import {
   ENFORCED,
   isHistory,
   RETIRED,
+  type RetiredSurface,
   STAGED,
   sweep,
   trackedFiles,
@@ -248,8 +250,15 @@ describe("the table itself", () => {
         "conversation-metadata-backfill",
         "sqlite-refinement-workbench",
         "python-core",
+        "python-core-mentions",
       ],
     );
+  });
+
+  test("nothing is staged: every row is enforced", () => {
+    // The staging mechanism stays for the next row that needs it; a row left
+    // staged after its story closes is a guard nobody is running.
+    assert.deepEqual(STAGED, []);
   });
 
   test("the enforced sweep is clean against this repository", () => {
@@ -309,17 +318,22 @@ describe("the live python-core row (plateau 3, decision D12)", () => {
   });
 });
 
-describe("the staged python-core-mentions row", () => {
-  test("is staged, and says when it goes live", () => {
-    assert.equal(STAGED.length, 1);
-    assert.equal(STAGED[0]?.surfaceId, "python-core-mentions");
-    assert.match(STAGED[0]?.stagedUntil ?? "", /plateau 4/);
+describe("the live python-core-mentions row (plateau 4, decision D12)", () => {
+  const row = RETIRED.find(
+    (surface) => surface.surfaceId === "python-core-mentions",
+  ) as RetiredSurface;
+
+  test("is enforced", () => {
+    assert.ok(row, "the python-core-mentions row exists");
+    assert.equal(row.stagedUntil, undefined);
+    assert.ok(ENFORCED.includes(row));
   });
 
-  test("is skipped by the default sweep until then", () => {
-    // Otherwise every build until slice H rewrites the documentation is red,
-    // and a red build that everyone expects is the same as no build at all.
-    assert.deepEqual(sweep(REPO_ROOT, ENFORCED), []);
+  test("is clean against this repository", () => {
+    // Plateau 3 left 79 mentions: slice H rewrote the documentation that held
+    // most of them, and each of the rest is rewritten or exempted with a
+    // reason. A new one is a regression, named with its line.
+    assert.deepEqual(sweep(REPO_ROOT, RETIRED, { only: "python-core-mentions" }), []);
   });
 
   test("FIRES on every shape it forbids -- the row is graded, not merely written", () => {
@@ -327,7 +341,6 @@ describe("the staged python-core-mentions row", () => {
     // developer conventions still said `uv run`. Slice H rewrote them, so the
     // row is graded on seeds instead: one file per shape, each of which must
     // be reported, while the prose around them must not be.
-    const row = STAGED[0] as NonNullable<(typeof STAGED)[0]>;
     const seeds: Record<string, string> = {
       "hooks/a.sh": "python3 -m memory backup --silent\n",
       "hooks/b.sh": 'python3 -c "import json"\n',
@@ -373,7 +386,7 @@ describe("the staged python-core-mentions row", () => {
     // `frame/` and `installer/` keep their interpreter spawns until US3 gives
     // them an npm entry point. The exemption is what keeps TS5 from claiming
     // zero Python for the shipped artifact -- a claim only US3 can make.
-    const exemptions = STAGED[0]?.exemptions ?? {};
+    const exemptions = row.exemptions;
     assert.match(exemptions["installer/configure.ps1"] ?? "", /US3/);
     for (const path of ["installer/health-check.ps1", "frame/main/session-gate.js"]) {
       assert.match(exemptions[path] ?? "", /US3/, path);
@@ -387,7 +400,6 @@ describe("the staged python-core-mentions row", () => {
     // took file-level exemptions for the extension guides; the rewritten
     // guides declare runtimes as manifests do, which no pattern matches, so
     // the exemptions went and this proves they are not needed.
-    const row = STAGED[0] as NonNullable<(typeof STAGED)[0]>;
     const root = gitRepo({
       "docs/guide.md":
         "runtime:\n  protocol: mirror-cli-v1\n  command: [python3, cli.py, campaigns]\n" +
