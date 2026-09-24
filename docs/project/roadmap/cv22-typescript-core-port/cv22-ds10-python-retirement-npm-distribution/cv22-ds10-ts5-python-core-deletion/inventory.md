@@ -532,3 +532,49 @@ A sibling in the custody proof (`ts/smoke/migration_structural_parity.ts`)
 carries the same "goes at plateau 3" note, and there the note was wrong rather
 than the code: the frozen end-states predate 017, so the list is a fixture
 fact that stays until they are re-recorded. The comment now says so.
+
+### F20 — the clone-role guard does not recognize the production clone
+
+Found while dry-running the Navigator walk, at step 12. `build load mirror` —
+the journey whose project path is `~/dev/workspace/mirror`, the production
+clone the `mirror-ts` launcher opens for `prod` — **does not refuse**. It prints
+the Builder banner and exits 0. Measured on a copy of the real database:
+
+```text
+isMirrorMindCheckout(~/dev/workspace/mirror)          false
+inspectBuilderCloneRole(~/dev/workspace/mirror)       null   (nothing to say)
+```
+
+The production clone is a Python-era tree: `main` at `7cfbfbb7` (2026-09-02),
+with `pyproject.toml` (`name = "mirror"`), `src/memory/`, a `ts/package.json`
+named `mirror-core` — and no `ts/src/frontDoor/cli.ts`, because the front door
+has only ever lived on this branch. It carries no `.mirror-clone-role`, so its
+role is `production` by default. The Python guard recognized it by
+`pyproject.toml` + `src/memory/`. Plateau 1's D1 moved recognition to the
+TypeScript package *and* its front door, which is right for every tree this
+branch produces and wrong for every tree it has not reached yet — and until
+CV22 releases, that is **every production clone there is**.
+
+This is the regression D1 was written to prevent, arriving from the other
+side. D1 guarded against the new tree losing its markers; nothing tested an
+old tree against the new rule. Plateau 1 even pinned the gap as intended:
+`cloneRoleGuard.test.ts` asserts that *"a tree with the Python markers but no
+TypeScript package is not a checkout"*, so that "the move is a MOVE and not an
+addition". The real production clone has a TypeScript package but no front
+door, so it matches neither rule — and a Builder session started from this
+dev clone can open the production clone for mutation without the refusal the
+guard exists to give.
+
+**Stop: a Navigator decision**, because the fix reverses a test plateau 1
+wrote on purpose.
+
+- **(a) Recommended: recognize both generations of the tree.** A directory is
+  a Mirror Mind checkout if it carries the TypeScript markers (as now) *or* the
+  Python-era ones (`pyproject.toml` declaring `mirror`, plus `src/memory/`) —
+  reading a file, running nothing. The plateau-1 test flips to assert the
+  refusal on exactly the shape of the real production clone, and a staged copy
+  of that shape joins the corpus. The legacy half can go when no production
+  clone predates the CV22 release, which is US3's to judge.
+- **(b)** Accept it as a known risk until the production clone takes the CV22
+  release, and say so in the story's known risks. Until then the guard is off
+  for production clones, from this branch.

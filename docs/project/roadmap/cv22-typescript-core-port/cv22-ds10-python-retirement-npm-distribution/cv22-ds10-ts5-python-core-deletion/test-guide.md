@@ -349,6 +349,180 @@ the end of the walk `tmp/ts5/nav-shadow.log` must be empty — that file, not a
 | 11 | `runtime version`, `runtime status`, `welcome` | `0.31.14` in each | as stated | `null` or `0.0.0` |
 | 12 | Builder guard: `build load` against a journey whose `project_path` is the production clone | the clone-role guard refuses as before | refusal | silent acceptance (guard disabled by the deletion) |
 
+### The walk, as commands (2026-09-24)
+
+The table above, as a runbook. Written for zsh or bash on macOS, from the dev
+clone. Everything happens in **one terminal**, and every runtime in steps 1–5
+is launched from it, so each inherits the interpreter shadow and the database
+copy. Nothing here touches the production database: the copy is read with
+SQLite's online backup, and every write lands in the copy.
+
+**0 — the validation shell.**
+
+```bash
+cd ~/dev/workspace/mirror-ts-core
+git pull --ff-only && (cd ts && npm ci)
+
+NAV="$PWD/tmp/ts5/nav"; rm -rf "$NAV"; mkdir -p "$NAV/shadow" "$NAV/home"
+export TS5_SHADOW_LOG="$NAV/shadow.log"
+for bin in python python3 uv; do
+  printf '#!/bin/sh\necho "SPAWN: %s $*" >> "%s"\nexit 66\n' "$bin" "$TS5_SHADOW_LOG" > "$NAV/shadow/$bin"
+  chmod +x "$NAV/shadow/$bin"
+done
+export PATH="$NAV/shadow:$PATH"
+python3 --version; echo "exit=$?"            # exit=66: the shadow works
+: > "$TS5_SHADOW_LOG"                        # the walk starts with an empty log
+
+sqlite3 ~/.mirror-minds/vinicius-ts/memory.db ".backup '$NAV/home/memory.db'"
+chmod 700 "$NAV/home"; chmod 600 "$NAV/home/memory.db"
+export MIRROR_HOME="$NAV/home" MIRROR_USER=  # the empty MIRROR_USER outranks the one in .env
+mirror() { NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts "$@"; }
+WALK_START="$(date -u +%Y-%m-%dT%H:%M:%S)"
+
+mirror runtime status | grep -E '^(Mirror home|Core migrations):'
+```
+
+Expect `Mirror home: …/tmp/ts5/nav/home` and `Core migrations: current (17/17)`.
+`mirror` is a function here rather than the documented alias, so that
+`VAR=value mirror …` works in both shells. The copy's `.env` still carries the
+OpenRouter key: session ends and `build load` make a few live calls, costing
+cents and writing their ledger rows to the copy.
+
+**1 — Pi.** `pi` → one prompt (*"Say hello in one sentence."*) → quit.
+
+**2 — Claude Code.** `claude` → `/mm:mirror What should I focus on today?`
+(approve the front-door command if asked) → one plain follow-up → `/exit`.
+Mirror Mode context must shape the answer — that is the inject hook.
+
+**3 — Gemini CLI.** `gemini` → one prompt → `/quit`.
+
+**4 — Codex.** `./scripts/codex-mirror.sh` → one exchange → exit.
+
+**4b — a hook that cannot find `node` (optional; renames Homebrew's `node` for seconds).**
+
+```bash
+NODE_REAL="$(node -p process.execPath)"
+mv /opt/homebrew/bin/node /opt/homebrew/bin/node.nav-off && {
+  echo '{}' | env -i HOME="$HOME" MIRROR_HOME="$MIRROR_HOME" PATH=/usr/bin:/bin \
+    bash .claude/hooks/session-start.sh; echo "hook exit=$?"
+  env -i HOME="$HOME" MIRROR_HOME="$MIRROR_HOME" PATH=/usr/bin:/bin \
+    "$NODE_REAL" --no-warnings ts/src/frontDoor/cli.ts runtime diagnose | grep -A2 hook_node_unresolvable
+}; mv /opt/homebrew/bin/node.nav-off /opt/homebrew/bin/node
+tail -1 "$MIRROR_HOME/hooks.log"
+```
+
+Expect `hook exit=0`, a `hook_node_unresolvable` finding, and a `hooks.log`
+line ending `node not found on PATH; hook skipped. Set MIRROR_NODE.` The
+restore is on the same line as the rename, so it runs whatever happens between.
+
+**5 — the MCP server, through the plugin's launcher.**
+
+```bash
+printf '%s\n' \
+  '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"navigator","version":"0"}}}' \
+  '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+  '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"list_journeys","arguments":{}}}' \
+  | bash plugins/mirror-mind/mcp/launch.sh | cut -c1-160
+```
+
+Expect `"serverInfo": {"name": "mirror-mind", "version": "0.31.14"}`, then a
+journeys list.
+
+**6 — every session, read back.**
+
+```bash
+sqlite3 "$MIRROR_HOME/memory.db" "select substr(id,1,8), interface,
+  (select count(*) from messages m where m.conversation_id = c.id)
+  from conversations c where started_at >= '$WALK_START' order by started_at"
+mirror recall <id>          # once per id above
+```
+
+Expect one row each for `pi`, `claude_code`, `gemini_cli`, and `codex`, each
+with user **and** assistant messages. Then the isolation check — the walk
+wrote nothing to production:
+
+```bash
+sqlite3 ~/.mirror-minds/vinicius-ts/memory.db "select interface, count(*)
+  from conversations where started_at >= '$WALK_START' and interface != 'pi' group by 1"
+```
+
+Expect no rows. (`pi` is excluded because the Pi session you are working in
+keeps logging to production during the walk.)
+
+**7–8 — names nothing owns.**
+
+```bash
+mirror frobnicate > "$NAV/unknown.out"; echo "exit=$?"; head -1 "$NAV/unknown.out"
+mirror week frobnicate; echo "exit=$?"
+```
+
+Expect `Unknown command: frobnicate` with exit 1, then `usage: week …` and
+`week: error: argument command: invalid choice: 'frobnicate' …` on stderr with
+exit 2.
+
+**9 — a database with an old schema.** The Python-generated demo database from
+plateau 3's port proof stops at migration 016 — an old *schema*, not a
+trimmed ledger.
+
+```bash
+mkdir -p "$NAV/old" && sqlite3 tmp/ts5/demo-port/py.db ".backup '$NAV/old/memory.db'"
+MIRROR_HOME="$NAV/old" mirror runtime status | grep 'Core migrations'
+MIRROR_HOME="$NAV/old" mirror journeys > /dev/null; echo "exit=$?"
+sqlite3 "$NAV/old/memory.db" "select max(id) from _migrations"; ls "$NAV/old/backups"
+MIRROR_HOME="$NAV/old" mirror runtime migrate | tail -1
+MIRROR_HOME="$NAV/old" mirror runtime status | grep 'Core migrations'
+```
+
+Expect, in order: `attention needed (16/17 applied; missing
+017_journey_parent_column)` (F19), exit 0, `017_journey_parent_column` and
+`frontdoor-pre-migration-backup.db` (applied on open, backup first), `Migrate
+result: nothing pending`, `current (17/17)`.
+
+**9b — the per-family replay.**
+
+```bash
+bash scripts/ts5/capture_family_outputs.sh "$PWD/tmp/ts5/pristine.db" > "$NAV/capture.tsv"
+diff tmp/ts5/capture-plateau3-close.tsv "$NAV/capture.tsv" && echo IDENTICAL
+```
+
+**10 — a stale revert variable.**
+
+```bash
+MIRROR_TS_BUILD=0 mirror runtime diagnose | grep -A2 stale_revert_gate
+MIRROR_TS_BUILD=0 mirror build load mirror-ts-core | head -3
+tail -1 "$MIRROR_HOME/front-door.log"
+```
+
+Expect the variable named as inert since CV22.DS10.TS5, the Builder banner,
+and a log line `build ts exit=0 leaf=load …`.
+
+**11 — the version, everywhere.**
+
+```bash
+mirror runtime version | grep Version; mirror runtime status | grep Version; mirror welcome | head -2
+```
+
+Expect `0.31.14` in all three.
+
+**12 — the production clone-role guard.**
+
+```bash
+mirror build load mirror; echo "exit=$?"
+```
+
+The `mirror` journey's project path is `~/dev/workspace/mirror`, the production
+clone (no role marker, so `production`). Expect a refusal naming the
+production clone, exit 2. **Found while preparing this runbook:** it does not
+refuse today — see [F20](inventory.md#f20--the-clone-role-guard-does-not-recognize-the-production-clone).
+
+**The verdict.**
+
+```bash
+wc -l < "$TS5_SHADOW_LOG"; cat "$TS5_SHADOW_LOG"
+```
+
+`0`, and nothing listed: no step reached for an interpreter.
+
 Navigator acceptance is recorded here with the date, the commit, and any
 deviation.
 

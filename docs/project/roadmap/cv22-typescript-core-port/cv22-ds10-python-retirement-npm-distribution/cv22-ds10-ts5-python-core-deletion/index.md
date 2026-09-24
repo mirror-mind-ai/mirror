@@ -5,7 +5,8 @@
 **Status:** 🟢 In Progress — pulled 2026-09-23; Plan panel-reviewed and
 approved; plateaus 0–4 of 5 landed — **the repository holds no Python, and
 nothing tracked tells anyone to run it**; both halves of the guard are
-enforced. Next: Navigator validation, then the panel's handoff review
+enforced. Next: the Navigator's decision on F20, Navigator validation, then
+the panel's handoff review
 
 ---
 
@@ -576,13 +577,18 @@ custody proofs, and the five end-to-end smokes pass.
 order:
 
 1. ~~**F19**~~ — done, option (a).
-2. **Navigator validation** — the four-runtime walk in
+2. **F20** — the Navigator's call ([inventory](inventory.md#f20--the-clone-role-guard-does-not-recognize-the-production-clone)):
+   the clone-role guard does not recognize the production clone, found by
+   dry-running the walk. Step 12 of the walk fails until it is decided.
+3. **Navigator validation** — the four-runtime walk in
    [test-guide.md — Navigator Validation](test-guide.md#navigator-validation),
-   on a real database copy with the interpreter shadowed.
-3. **The panel's handoff review** (D9: engineer, quality-assurance,
+   on a real database copy with the interpreter shadowed; the runbook under
+   *The walk, as commands* was dry-run in zsh for every step that needs no
+   runtime session.
+4. **The panel's handoff review** (D9: engineer, quality-assurance,
    database-architect, devops-engineer, security-engineer), over plateaus 0–4
    and the validation evidence — after validation, as the collaboration
    strategy orders the two checkpoints.
-4. Then Debt Review and Done, with the closure preflight: the DS10 candidate
+5. Then Debt Review and Done, with the closure preflight: the DS10 candidate
    row, the gate table, the ledger rows, and the journey path each opened and
    read.
