@@ -79,8 +79,10 @@ const TS_LIFECYCLE_READ_FLAGS = [
 // ported.
 const TS4_LIFECYCLE_WRITE_FLAGS = ["--metadata-lifecycle-apply", "--metadata-lifecycle-demo"];
 
-// One-shot backfill of pre-ES-001 rows. Retired unported in DS10 with a
-// documented cutoff; refused by name so it can never inherit the read route.
+// One-shot backfill of pre-ES-001 rows, retired by CV22.DS10.TS4 with a
+// documented cutoff. Named here ONLY for the retired entries below: those match
+// before any family, so a family branch naming these flags would be dead code
+// (TS5 deleted the one that was -- `retiredRouteShadows.ts` keeps it deleted).
 const DS10_BACKFILL_FLAGS = ["--metadata-backfill-preview", "--metadata-backfill-apply"];
 
 // CV22.DS7.TS4: the extension catalog family, allowlisted by NAME.
@@ -537,9 +539,6 @@ export function routeMemoryCommand(
   argv: readonly string[],
   env: RouteEnvironment = process.env,
 ): RouteDecision {
-  const command = argv[0] ?? null;
-  if (!command) return { command, engine: "python", reason: "no command" };
-
   // Retired surfaces are matched FIRST, before any family claims the command.
   // This is what closes CR089: `journey export-registry` and `journey mutate`
   // can no longer fall into the `journey` status read and be treated as slugs
@@ -547,13 +546,32 @@ export function routeMemoryCommand(
   const retired = retiredSurfaceFor(argv);
   if (retired) {
     return {
-      command,
+      command: argv[0] ?? null,
       engine: "retired",
       reason: `${retired.surface} retired in CV22.DS10.TS4`,
       surface: retired.surface,
       anchor: retired.anchor,
     };
   }
+  return routeByFamily(argv, env);
+}
+
+/**
+ * The family routes, WITHOUT the retired-surface match in front of them.
+ *
+ * Exported for one reader: the guard that proves no family branch still names
+ * a shape a retired entry already answers (CV22.DS10.TS5, inventory F2). A
+ * branch like that is dead code nothing can observe -- the retired match wins
+ * before it is reached -- so every front-door test passes over it, which is
+ * exactly how TS4 left two of them behind. The front door itself always calls
+ * `routeMemoryCommand`.
+ */
+export function routeByFamily(
+  argv: readonly string[],
+  env: RouteEnvironment = process.env,
+): RouteDecision {
+  const command = argv[0] ?? null;
+  if (!command) return { command, engine: "python", reason: "no command" };
 
   if (TS_READ_COMMANDS.has(command)) {
     return { command, engine: "ts", reason: "DS2 read command ported to TS" };
@@ -688,14 +706,6 @@ export function routeMemoryCommand(
         command,
         engine: "ts",
         reason: "DS7.US10 conversations append boundary ported to TS",
-      };
-    }
-    const backfillFlag = DS10_BACKFILL_FLAGS.find((flag) => argv.includes(flag));
-    if (backfillFlag) {
-      return {
-        command,
-        engine: "python",
-        reason: `${backfillFlag} retires unported in DS10, not ported here`,
       };
     }
     const writeFlag = TS4_LIFECYCLE_WRITE_FLAGS.find((flag) => argv.includes(flag));
@@ -1163,15 +1173,15 @@ export function routeMemoryCommand(
 
   if (command === "build") {
     const subcommand = argv[1] ?? "";
+    // The twenty KNOWN Workbench verbs never reach this line: the retired
+    // table answers them first. Only an unknown verb of those two retired
+    // groups arrives here.
     if (subcommand === "refinement-story" || subcommand === "change-request") {
       const action = argv[2] ?? "";
-      const known = TS_BUILD_WORKBENCH_ACTIONS[subcommand].has(action);
       return {
         command,
         engine: "python",
-        reason: known
-          ? `build ${subcommand} ${action} retires unported in DS10`
-          : `build ${subcommand} action not ported to TS: ${action || "(none)"}`,
+        reason: `build ${subcommand} action not ported to TS: ${action || "(none)"}`,
       };
     }
     if (!TS_BUILD_SUBCOMMANDS.has(subcommand)) {

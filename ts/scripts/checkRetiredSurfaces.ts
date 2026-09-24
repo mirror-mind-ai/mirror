@@ -15,12 +15,25 @@
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { routeByFamily } from "#frontDoor/routing.ts";
+import { shadowedRetiredRoutes } from "#guards/retiredRouteShadows.ts";
 import { ENFORCED, STAGED, sweep } from "#guards/retiredSurfaces.ts";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 function main(): number {
-  const problems = sweep(REPO_ROOT, ENFORCED);
+  // Files first, then the router: a retired surface can come back as a file,
+  // as a mention, or as a family branch that still answers it underneath the
+  // retired entry (CV22.DS10.TS5, inventory F2). The last kind is invisible to
+  // a file scan, because the file that holds it is exempt for naming the
+  // surfaces it retires.
+  const problems = [
+    ...sweep(REPO_ROOT, ENFORCED),
+    ...shadowedRetiredRoutes((argv) => routeByFamily(argv, {})).map((shadowed) => ({
+      surfaceId: "routing",
+      message: `  routing: '${shadowed.surface}' is still claimed by a family branch underneath its retired entry (${shadowed.reason})`,
+    })),
+  ];
 
   for (const surface of STAGED) {
     console.error(
