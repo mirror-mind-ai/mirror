@@ -16,6 +16,7 @@ import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSyn
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { after, describe, test } from "node:test";
+import { openDatabaseReadOnly } from "#db/database.ts";
 import { needsInject } from "#hooks/mirrorState.ts";
 import { parseHookPayload } from "#hooks/payload.ts";
 import { noteHookFailure } from "#hooks/runtime.ts";
@@ -57,6 +58,24 @@ describe("payload parsing", () => {
 
   test("a non-string prompt is not coerced", () => {
     assert.equal(parseHookPayload('{"prompt":{"text":"x"}}').prompt, "");
+  });
+
+  test("Gemini's AfterAgent names the assistant's text `prompt_response`", () => {
+    // The field the Python hook read, from Gemini's documented AfterAgent
+    // payload. The first Node port read three other names and none of this
+    // one, so every Gemini assistant turn was dropped without a sound -- the
+    // hook still printed `{}` and exited 0. Found by `smoke_gemini_cli.sh` at
+    // TS5 plateau 3, after the row-diff that should have caught it was gone.
+    const payload = parseHookPayload(
+      JSON.stringify({
+        session_id: "s1",
+        hook_event_name: "AfterAgent",
+        prompt: "Tell me about my journeys",
+        prompt_response: "You have two active journeys.",
+        stop_hook_active: false,
+      }),
+    );
+    assert.equal(payload.response, "You have two active journeys.");
   });
 });
 
@@ -310,6 +329,51 @@ describe("the entry point runs", () => {
     );
     assert.equal(result, "");
     assert.match(readFileSync(join(home, "hooks.log"), "utf8"), /unknown hook name/);
+  });
+
+  test("Gemini's AfterAgent hook logs the assistant turn it is given", () => {
+    // End to end through the generated wrapper, as Gemini CLI calls it. The
+    // parser test above pins the field; this pins that the turn reaches the
+    // database, which is the property a user loses when it breaks.
+    const home = tmpHome();
+    const dbPath = join(home, "memory.db");
+    const env = {
+      ...process.env,
+      DB_PATH: dbPath,
+      MEMORY_ENV: "production",
+      MIRROR_HOME: home,
+      MIRROR_USER: "",
+      OPENROUTER_API_KEY: "",
+      GEMINI_PROJECT_DIR: REPO_ROOT,
+      GEMINI_SESSION_ID: "",
+    };
+    const output = execFileSync("bash", [join(REPO_ROOT, ".gemini/hooks/log-assistant.sh")], {
+      encoding: "utf8",
+      env,
+      input: JSON.stringify({
+        session_id: "gemini-e2e",
+        hook_event_name: "AfterAgent",
+        prompt: "Tell me about my journeys",
+        prompt_response: "You have two active journeys.",
+        stop_hook_active: false,
+      }),
+      timeout: 30_000,
+    });
+    assert.equal(output.trim(), "{}");
+    const db = openDatabaseReadOnly(dbPath);
+    try {
+      const rows = db
+        .prepare(
+          "SELECT m.role, m.content, c.interface FROM messages m " +
+            "JOIN conversations c ON c.id = m.conversation_id",
+        )
+        .all();
+      assert.deepEqual(rows, [
+        { role: "assistant", content: "You have two active journeys.", interface: "gemini_cli" },
+      ]);
+    } finally {
+      db.close();
+    }
   });
 
   test("a hook with no stdin at all does not hang or throw", () => {

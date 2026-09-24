@@ -17,7 +17,7 @@ export interface HookPayload {
   readonly prompt: string;
   /** The runtime's session id, or "" when the payload has none. */
   readonly sessionId: string;
-  /** The assistant's response text, when the event carries one. */
+  /** The assistant's response text (Gemini's `prompt_response`), or "". */
   readonly response: string;
   /** Everything else, for hooks that need a field these three do not cover. */
   readonly raw: Record<string, unknown>;
@@ -42,9 +42,11 @@ export function parseHookPayload(input: string): HookPayload {
   return {
     prompt: text(raw.prompt),
     sessionId: text(raw.session_id),
-    // Gemini's BeforeModel/AfterAgent payloads name it differently depending on
-    // the event; both shapes are accepted rather than one being guessed.
-    response: text(raw.response) || text(raw.assistant_message) || text(raw.content),
+    // Gemini's AfterAgent payload names it `prompt_response`, and that is the
+    // field the Python hook read. The first port read three guessed names
+    // instead and dropped every Gemini assistant turn in silence until
+    // `smoke_gemini_cli.sh` caught it (CV22.DS10.TS5 plateau 3).
+    response: text(raw.prompt_response),
     raw,
   };
 }
