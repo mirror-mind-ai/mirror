@@ -240,13 +240,24 @@ node ts/scripts/checkSkillCommandParity.ts
 ```
 
 Then the seeded regressions for the new row, each expected to exit 1 with a
-line naming the file:
+line naming the file. **Stage each seed**: the sweep reads the git index, so a
+file that is only on disk is invisible to it and the seed proves nothing (as
+first written here, these three were unstaged).
 
 ```bash
-mkdir -p src/memory && echo 'x = 1' > src/memory/__init__.py && node ts/scripts/checkRetiredSurfaces.ts; rm -rf src
-echo 'python3 -m memory backup' >> plugins/mirror-mind/hooks/session-start.sh && node ts/scripts/checkRetiredSurfaces.ts; git checkout plugins/
-echo 'version = "0.0.0"' > pyproject.toml && node ts/scripts/checkRetiredSurfaces.ts; rm pyproject.toml
+mkdir -p src/memory && echo 'x = 1' > src/memory/__init__.py && git add src/memory/__init__.py
+node ts/scripts/checkRetiredSurfaces.ts; git rm -q --cached src/memory/__init__.py; rm -rf src
+
+echo 'version = "0.0.0"' > pyproject.toml && git add pyproject.toml
+node ts/scripts/checkRetiredSurfaces.ts; git rm -q --cached pyproject.toml; rm pyproject.toml
 ```
+
+*Amended at plateau 3 (D12):* the row went live in two halves. A hook seed —
+`echo 'python3 -m memory backup' >> plugins/mirror-mind/hooks/session-start.sh`
+— is a MENTION, so it fails `python-core-mentions` from plateau 4; until then
+the guard passes it and `ts/test/hooks/hooks.test.ts` fails instead. The
+evidence section records both, plus two seeds the live half added: a `.py`
+anywhere, and a workflow installing an interpreter.
 
 ### Plateau 3 — the replay (post-deletion)
 
@@ -271,9 +282,10 @@ no oracle left to arbitrate it.
 git diff <plateau-0-commit> -- ts/test/goldens/ --stat
 ```
 
-Expected: exactly two files changed — `metadata-lifecycle.golden.json`
-(D-023) and the extension-catalog fixture golden (F.5) — each with a header
-comment naming this story and the reason.
+Expected: exactly the files `ts/test/goldens/README.md` lists, each with its
+reason. *(Amended at plateau 3: the Plan expected two; F4, D10, and D12 each
+added hand edits, and the README — JSON cannot carry a header comment — is
+where every one of them is recorded.)*
 
 ## E2E Decision
 
@@ -579,9 +591,63 @@ at `cv22-ts5-baseline` it passes with two messages, at
 `cv22-last-python-bearing` it fails with one, and since `a9c7ddde` it passes
 again.
 
-The plateau-3 gate (`git ls-files '*.py'` empty, `pyproject.toml` absent, the
-`python-core` row live) and its seeded regressions are **not yet run**: they
-wait for D10–D12.
+The plateau-3 gate and its seeded regressions ran after D10–D12; see the next
+section.
+
+### Plateau 3 — decisions D10–D12, the gate, and the close
+
+**2026-09-24, `9c6aad58` to `20fc4e73`**, after the Navigator took D10–D12 as
+recommended.
+
+**D10** (`9c6aad58`). Eight new tests pin the entrypoint contract: absent is
+valid, an empty `entrypoint:` is absent, a declared one is validated exactly as
+before (module path appended; missing module and missing file refused), and
+the extension template, filled in as an author would, validates with no Python
+in it. Two mutations of the template fail that test: a dashed `table_prefix`,
+and an entrypoint declared without its file.
+
+**D11** (`f3786782`). The updater smoke clones the committed tree, so it was
+re-run after the commit: **34/34** with no `pyproject.toml` in the clone. The
+Frame's `version-sync` and `root-resolve` tests pass, 8/8.
+
+**D12** (`02b562fe`, `20fc4e73`). The replay's one moved family, compared on
+the same database copy against the tree before the change:
+
+```text
+< uv run python -m memory build load <journey>
+> mirror build load <journey>
+```
+
+**The gate:**
+
+| Check | Result |
+|---|---|
+| `git ls-files '*.py'` | **0** |
+| `pyproject.toml`, `uv.lock` | absent |
+| workflows matching `setup-python`, `setup-uv`, `uv sync`, `uv run`, `pytest`, `ruff` | none |
+| `checkRetiredSurfaces.ts` | clean, **`python-core` enforced** (nine rows); `python-core-mentions` staged until plateau 4 |
+| docs links, skill parity, plugin build | clean; in sync |
+| `tsc`, Biome | clean |
+| suite under the interpreter shadow | **2642 passed, 0 skipped, 0 spawn attempts** |
+
+**Seeded regressions, on the real tree** — staged, because the sweep reads the
+git index; an unstaged seed is invisible to it and proves nothing:
+
+| Seed | Result |
+|---|---|
+| `src/memory/__init__.py` | exit 1, named |
+| `pyproject.toml` | exit 1, named |
+| a `.py` fixture under `ts/test/fixtures/`, a path no list names | exit 1, named |
+| `actions/setup-python` in `tests.yml` | exit 1, named with its line |
+| `python3 -m memory backup --silent` appended to a plugin hook | the guard passes — mentions are staged until plateau 4 — and **the hook suite fails** (`none of them INVOKES an interpreter`), which covers that half until then |
+
+**The closing replay** (`tmp/ts5/capture-plateau3-close.tsv`, digest
+`00e015aa…`): against the plateau-3 start, **28/29 identical**, the one
+difference D12's `build inspect-method` line above. Against plateau 0, the
+same plus the two differences plateau 2 explained.
+
+Smokes: custody proofs, migrate-on-open, the three lifecycle smokes, and every
+runtime smoke pass; the updater 34/34.
 
 ### Navigator route
 

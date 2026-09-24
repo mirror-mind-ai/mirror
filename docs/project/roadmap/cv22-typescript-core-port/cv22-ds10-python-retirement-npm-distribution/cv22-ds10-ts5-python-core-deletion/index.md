@@ -3,9 +3,8 @@
 # CV22.DS10.TS5 — Python core deletion
 
 **Status:** 🟢 In Progress — pulled 2026-09-23; Plan panel-reviewed and
-approved; plateaus 0–2 of 5 done, **plateau 3 in progress** — the Python core,
-its suite, and its oracle harness are deleted; stopped at three Navigator
-decisions (D10–D12) before the last `.py` files and `pyproject.toml` go
+approved; plateaus 0–3 of 5 done — **the repository holds no Python**, and the
+guard enforces it. Next: plateau 4, the docs and records
 
 ---
 
@@ -216,6 +215,16 @@ with recommendations. In one line each:
 - **D7** — the Python extension templates are deleted with the API they
   taught.
 - **D8** — D-023, D-024, D-025 are paid here.
+
+Taken at plateau 3, on findings the Plan did not anticipate
+([plan.md](plan.md#taken-at-plateau-3-navigator-2026-09-24)):
+
+- **D10** — a command-skill's `entrypoint` is optional; validated as before
+  when declared.
+- **D11** — `pyproject.toml` goes; the Frame's version test reads
+  `ts/package.json`; Frame and installer root detection stays with US3.
+- **D12** — the program is `mirror` in every usage line and hint; the
+  `python-core` row goes live for absence now, for mentions at plateau 4.
 
 ## Acceptance Behavior
 
@@ -451,78 +460,68 @@ out a retired flag passed locally while untracked and turned CI red on push,
 on both guards at once; the suite now runs after staging, and the docs link
 check joined the pre-commit set when it caught a link to a deleted script.
 
-### Plateau 3 — Deleted — 🟡 in progress, stopped at three decisions, 2026-09-24
+### Plateau 3 — Deleted — ✅ done, 2026-09-24
 
-The first session of the plateau. Eleven commits, `db28953e` to the handoff;
-none pushed yet.
+Two sessions' work in one day: the deletion ran until three findings stopped
+it, the Navigator took D10–D12 as recommended, and the plateau closed.
+Seventeen commits, `db28953e` to the handoff.
 
 **What is now true.**
 
-- **The Python core is gone from the tree** — `src/memory/` and `tests/`
-  (F.1, 322 files), the oracle harness in `ts/parity/` and the library under it
-  in `ts/src/parity/` (F.2, F10), the five Python scripts (F.3, after their
-  Node ports agreed), and the DS1 spike (F.4). **~110,000 lines.** What
-  remains of `git ls-files '*.py'` is exactly the six inert fixture bodies F.5
-  converts.
-- **CI installs no interpreter.** The Python matrix job is deleted; `parity`
-  became `smoke`, which generates its demo database in TypeScript and runs
-  migrate-on-open, the conversation lifecycle, and the TypeScript halves of the
-  builder and extension-catalog smokes; `docs.yml` is Node alone.
-- **The demo database is TypeScript** (slice G, first, while it could still be
-  proven): Python's database after TypeScript's first open and TypeScript's
-  own are identical in structure, in all 28 tables' row counts, and in every
-  row with ids and clocks masked.
-- **The goldens are frozen fixtures**, with a README saying what that means,
-  which hand edit happened (F4's temp path, now graded instead of carried),
-  and that `render/` is TypeScript's own snapshots, not frozen.
-- **Every runtime smoke runs on the front door** — Codex, Gemini, MCP, the
-  plugin, the review-copy extension, the MCP guard probe. The two probes that
-  only ever compared engines are retired with the reason.
-- **Gemini logs assistant turns again** (F11): a plateau-1 regression the
-  row-diff could not see, found by the Gemini smoke the moment it left Python.
-- Historical links to deleted Python files point at the recovery tag, the rule
-  `decisions.md` now records; living docs that had a TypeScript equivalent
-  point at it instead.
+- **The repository holds no Python.** `git ls-files '*.py'` is empty;
+  `pyproject.toml` and `uv.lock` are gone; no workflow installs an interpreter.
+  About 112,000 lines left: the core and its suite (F.1), the oracle harness and
+  the library under it (F.2, F10), the Python scripts (F.3), the DS1 spike
+  (F.4), the six fixture bodies (F.5), the two Python templates (F.6), and the
+  project files (F.7).
+- **The guard enforces it.** The `python-core` row is live for absence —
+  every retired path, any tracked `.py`, any workflow installing an
+  interpreter — with seeded regressions for each. Its other half,
+  `python-core-mentions`, is staged until plateau 4 (D12).
+- **A command-skill no longer needs Python** (D10): `entrypoint` is optional,
+  validated as before when declared, and the extension template fills in to a
+  valid extension with no Python in it.
+- **The front door names itself `mirror`** in every usage line and hint that
+  named the deleted Python program (D12), through one constant US3 renames.
+- **CI is Node alone**, the demo database is TypeScript, the goldens are frozen
+  with every hand edit recorded, every runtime smoke runs on the front door,
+  and Gemini logs assistant turns again (F11).
 
-**What is intentionally undone, and why.** F.5 and F.6 wait for **D10** (the
-manifest still demands a `.py` entrypoint the core never reads — F13). F.7
-waits for **D11** (`pyproject.toml` has readers in `frame/` and `installer/`
-that D1 did not know — F12). The `python-core` row stays staged pending
-**D12** (slice C's strings bullet was never done, and it conflicts with the
-golden freeze — F14). All three are in
-[plan.md — asked at plateau 3](plan.md#asked-at-plateau-3-navigator-pending),
-each with a recommendation.
+**What is intentionally undone.** Everything plateau 4 owns (slice H), plus:
+`frame/` and `installer/` still call Python and find their root by the deleted
+`pyproject.toml` — US3's, by D4 and D11, named in the known risks.
 
-**Evidence.** [test-guide.md — plateau 3](test-guide.md#plateau-3--the-demo-database-ported-slice-g)
-and the replay below it. The per-family capture replayed with Python deleted:
-**29/29 byte-identical to plateau 2** (the same file digest, `15a81d1c…`).
-Suite under the interpreter shadow **2627 passed, 0 spawn attempts**; custody
-proofs pass; lifecycle smokes, the updater smoke (34/34), and every runtime
-smoke pass.
+**Evidence.** [test-guide.md — plateau 3](test-guide.md#plateau-3--decisions-d10d12-the-gate-and-the-close).
+The gate passes in full; the suite runs **2642/2642 under the interpreter
+shadow with 0 spawn attempts and 0 skipped**; the per-family capture replays
+**28/29 identical** against the plateau's start, the one difference D12's
+named line. CI green on both platforms at the handoff.
 
 ## Where To Resume
 
-**Plateau 3 is in flight, stopped at three Navigator decisions; nothing
-half-applied.** Every commit so far is green on the full local pre-push set;
-none is pushed. In order:
+**Plateau 3 is done; nothing is in flight.** Plateau 4 — slice H, the docs and
+records — in the Plan's list, plus what plateaus 2 and 3 added to it:
 
-1. **Push** the plateau-3 commits and confirm CI on both platforms — the first
-   run of the Node-only workflows and the new `smoke` job.
-2. **D10, D11, D12** —
-   [plan.md — asked at plateau 3](plan.md#asked-at-plateau-3-navigator-pending).
-3. Then, as decided: F.5 (fixtures) and F.6 (templates, and the
-   `MIRROR_TEST_EXTENSION_PYTHON` opt-in with the shim suite it gates); F.7
-   (`pyproject.toml`, `uv.lock`, and the pyproject-reading tests in
-   `packageIdentity.test.ts` and `runtimeTailCli.test.ts`); the strings; the
-   row live. `retiredSurfaces.test.ts` keeps a ledger of deleted and
-   still-tracked paths — move each path across as its row lands.
-4. Close plateau 3: `git ls-files '*.py'` empty, the plateau-3 gate and seeded
-   regressions in the test guide, the replay once more (`bash
-   scripts/ts5/capture_family_outputs.sh "$PWD/tmp/ts5/pristine.db"`, compared
-   against `tmp/ts5/capture-plateau3.tsv`, by the controlled method for any
-   family that reads repository documents).
-
-Plateau 4 (slice H) inherits more than the Plan listed: `engineering-principles.md`
-and `ts/README.md` cite the Python core through recovery-tag links until they
-are rewritten, and the development guide still places `ts/evals/` "beside
-`ts/parity/`".
+1. **The documentation.** `REFERENCE.md`, `docs/getting-started.md`, the
+   development guide (setup, test commands, the pre-push set; the evals
+   section still places `ts/evals/` "beside `ts/parity/`"), engineering
+   principles (its Python citations point at the recovery tag until
+   rewritten), architecture, the runtime-interface spec (hooks around the
+   Node entries), the extension guides, API reference sections 2–3, and the
+   template's `docs/` (`python -m memory ext …` → `mirror ext …`), `AGENTS.md`
+   and `CLAUDE.md` (`uv run` → `node`/`npm test`; `Version: pyproject.toml`).
+2. **Then take `python-core-mentions` live** — it lists what is left (79 at
+   the start of plateau 3, fewer now). Decide per remaining mention: rewrite,
+   or exempt with a reason. Known ones that are not documentation: the Ariad
+   plan scaffold's "Use uv run for Python commands and tests" (CR019),
+   `scripts/smoke_runtime_update.sh`'s negative check, the negative
+   `doesNotMatch(/uv run python/)` assertions in `ts/test`, and
+   `scripts/ci-nonascii-profile-smoke.ps1` (installer, US3).
+3. **The records.** The `python-core` cutoff in `pending-cutoffs.md`; the DS10
+   gate table marked; D-023, D-024, D-025 closed in the ledger; one
+   `decisions.md` entry for D1/D2/D3 and D10–D12; the worklog; the journey
+   path.
+4. **CR092** (the shim template resolves `python3` from `PATH`): its subject was
+   deleted by D7. Its status is the Navigator's to change.
+5. The panel's handoff review, then Navigator validation (the route in the
+   test guide).

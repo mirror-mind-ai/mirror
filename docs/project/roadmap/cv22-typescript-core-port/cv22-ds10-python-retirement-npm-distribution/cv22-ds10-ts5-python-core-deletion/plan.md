@@ -417,9 +417,15 @@ In one commit per row so each is reviewable and revertible:
   `installer/`. `launch.sh` keeps its `$BASH_SOURCE` resolution.
 - **No new behavior beyond D2.** The unknown-command answer and the
   three-verdict migrate are the only surfaces whose bytes change on purpose.
+  *Amended at plateau 3:* D10 makes a command-skill's entrypoint optional,
+  and D12 names the program `mirror` in every usage line and hint that named
+  the deleted Python one. Both were Navigator decisions on findings the
+  Plan did not anticipate (F13, F14).
 - **No golden edited except for a recorded reason** (D-023's table, the
   fixture `entrypoint` shape). Every other golden is byte-identical to the
-  plateau-0 regeneration.
+  plateau-0 regeneration. *Amended at plateau 3:* every hand edit is listed,
+  with its reason, in `ts/test/goldens/README.md` — F4's temp path, D10's
+  fixture change, and D12's program name.
 - **No touch of Mirror Desktop's acceptance kit or the `mirror-desktop`
   repository.**
 - **No release.** CV22 releases once.
@@ -672,11 +678,13 @@ Four decisions, each as recommended:
   server DS9 already ported, not a port; the acceptance block's "any of the
   32 top-level commands" holds as written.
 
-### Asked at plateau 3 (Navigator, pending)
+### Taken at plateau 3 (Navigator, 2026-09-24)
 
 Plateau 3 deleted F.1–F.4 and landed slice G, then stopped at three findings
 the Plan did not anticipate ([inventory — plateau 3](inventory.md#5-plateau-3-findings-2026-09-24)).
-Each is a Driver recommendation awaiting the Navigator.
+**The Navigator took all three as recommended**, and they closed the plateau:
+D10 in `9c6aad58`, D11 in `f3786782`, D12 in `02b562fe` and `20fc4e73`. The
+options as they were put:
 
 **D10 — the command-skill entrypoint contract** (F13; blocks F.5 and F.6).
 The validator requires every command-skill's `entrypoint.module` to resolve to

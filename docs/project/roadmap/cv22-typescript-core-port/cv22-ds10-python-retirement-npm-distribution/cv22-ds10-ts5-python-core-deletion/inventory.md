@@ -329,8 +329,8 @@ top-level commands" holds as written.
 ## 5. Plateau 3 findings (2026-09-24)
 
 Five findings, taken while deleting rather than while reading. Two were fixed
-in the plateau; three stop it at a Navigator decision
-([plan.md — asked at plateau 3](plan.md#asked-at-plateau-3-navigator-pending)).
+in the plateau; three stopped it at a Navigator decision, taken the same day
+([plan.md — taken at plateau 3](plan.md#taken-at-plateau-3-navigator-2026-09-24)).
 
 ### F10 — `ts/src/parity/` was the harness under the verifiers slice F.2 named
 
@@ -386,6 +386,12 @@ find a Mirror root. Both components already call Python (the accepted US3
 window), but this is a second, different break the Plan did not name.
 **Stop: F.7 waits for D11.**
 
+**Disposition (Navigator, 2026-09-24): D11 as recommended** (`f3786782`). The
+file is deleted; the one reader a workflow runs, the Frame's version test,
+reads `ts/package.json`; root detection in `frame/` and `installer/` stays
+with US3 and is named in the story's known risks beside the nine Python call
+sites.
+
 ### F13 — the extension manifest still requires a Python entrypoint
 
 `ts/src/extensions/manifest.ts` — a byte-for-byte port of Python's validator —
@@ -399,6 +405,13 @@ It also binds D7, which the Plan treats as independent: deleting
 `extension.py.template` leaves the template producing command-skills the
 validator **rejects**, because the file it demands is the one being deleted.
 **Stop: F.5 and F.6 wait for D10.**
+
+**Disposition (Navigator, 2026-09-24): D10 as recommended** (`9c6aad58`).
+`entrypoint` is optional for a command-skill and validated exactly as before
+when declared. The six fixture bodies and both Python templates are gone, and
+a test fills the template in as an author would — which found a defect older
+than this story: `table_prefix: ext_<id>_` breaks for the dash-separated ids
+the template asks for. It has an explicit `<id_underscored>` placeholder now.
 
 ### F14 — slice C's strings bullet was never done, and it conflicts with the golden freeze
 
@@ -417,3 +430,11 @@ The staged `python-core` row reports 79 mentions today: 14 in `ts/src` (about
 half of them these strings), 25 in `ts/test` (mostly those goldens), ~30 in
 documentation that slice H rewrites at plateau 4. **Stop: the row's go-live
 waits for D12.**
+
+**Disposition (Navigator, 2026-09-24): D12 as recommended.** Every such string
+reads `PROGRAM` (`ts/src/util/program.ts`) and says `mirror` (`02b562fe`);
+seven goldens take that one substitution, 49 occurrences, listed in the
+goldens README; one captured family moved, `build inspect-method`, by exactly
+that line. The row went live in two halves (`20fc4e73`): `python-core` for
+absence — retired paths, any tracked `.py`, any workflow installing an
+interpreter — and `python-core-mentions`, staged until plateau 4.
