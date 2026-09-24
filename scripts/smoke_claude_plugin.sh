@@ -5,17 +5,19 @@ set -euo pipefail
 #
 # Proves, against a fully isolated database, that:
 #   1. the plugin manifest passes `claude plugin validate` (when claude is present);
-#   2. the plugin lifecycle hooks fire, resolve `memory`, and write to the DB;
+#   2. the plugin lifecycle hooks fire, resolve their Node entry, and write to
+#      the DB;
 #   3. the user-prompt hook logs interface='claude_code';
 #   4. the production database(s) are byte-for-byte unchanged.
 #
 # Live skill discovery inside a Claude session is a separate manual route (it
 # needs an authenticated Claude session) — see the story test-guide.
 #
-# Plugin contract (CV21): the plugin hooks call a bare `python3 -m memory`,
-# assuming `memory` is installed in the environment. In the dev repo it is not
-# pip-installed, so this harness puts the project venv's interpreter first on
-# PATH (and `src` on PYTHONPATH) to stand in for the installed-package condition.
+# The hooks are Node since CV22.DS10.TS5 plateau 1, and each resolves its entry
+# point relative to its own file. That is right inside this checkout and wrong
+# for a plugin installed elsewhere until CV22.DS10.US3's npm `bin` -- the
+# known window TS5 accepted, because CV22 releases once. So this smoke runs the
+# IN-REPO plugin on purpose; it no longer needs an interpreter on PATH.
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PLUGIN_DIR="$REPO_ROOT/plugins/mirror-mind"
@@ -44,13 +46,8 @@ export DB_PATH="$SANDBOX/memory.db"
 export DB_BACKUP_PATH="$SANDBOX/backups"
 unset MIRROR_HOME MIRROR_USER 2>/dev/null || true
 
-# Make `python3 -m memory` resolve like an installed package.
-VENV_BIN="$(cd "$REPO_ROOT" && uv run python -c 'import os,sys; print(os.path.dirname(sys.executable))')"
-export PATH="$VENV_BIN:$PATH"
-export PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}"
-
 echo "Isolated DB: $DB_PATH"
-echo "python3 -> $(command -v python3)"
+echo "node -> $(command -v node)"
 
 # --- 0. manifest validation (optional, when claude is installed) -----------
 if command -v claude >/dev/null 2>&1; then

@@ -5,13 +5,16 @@
 # What this proves that the unit tests cannot: the guards as a client meets them, through
 # the launcher, against real data, with a real embedding provider behind the paid path.
 #
-# Safety: the source database is copied read-only (`VACUUM INTO` via Python's backup API)
-# and never opened for writing. Nothing printed here contains memory, identity, or
+# Safety: the source database is copied with `VACUUM INTO` through a read-only
+# connection, and never opened for writing. Nothing printed here contains memory, identity, or
 # conversation CONTENT — only counts, tool names, and refusal text the server itself
 # produced. The refusal text is quoted deliberately: its wording IS the control under test.
 #
 # Cost: the rate step makes up to MIRROR_MCP_EMBED_RATE_LIMIT real embedding calls
 # (~$0.000002 each; the default 30 is ~$0.00006). Skipped without a key.
+#
+# Needs `node` and the `sqlite3` CLI. Its Python helpers left with the Python
+# core (CV22.DS10.TS5); the server under test was never Python.
 #
 # Usage: scripts/mcp_guard_probe.sh [path/to/memory.db]
 set -uo pipefail
@@ -20,10 +23,12 @@ cd "$(git rev-parse --show-toplevel)"
 LAUNCHER="plugins/mirror-mind/mcp/launch.sh"
 SOURCE="${1:-}"
 if [ -z "$SOURCE" ]; then
-  SOURCE="$(uv run python -c "
-from memory.config import require_db_path
-print(require_db_path())
-" 2>/dev/null)" || { echo "could not resolve a database; pass one explicitly"; exit 1; }
+  # The production database, resolved the way the front door resolves it.
+  SOURCE="$(NODE_OPTIONS=--no-warnings node --env-file-if-exists=.env --input-type=module -e '
+    const { resolveDbPath } = await import("./ts/src/frontDoor/dbPath.ts");
+    const { DB_PATH: _ignored, ...env } = process.env;
+    console.log(resolveDbPath([], { ...env, MEMORY_ENV: "production" }));' 2>/dev/null)" \
+    || { echo "could not resolve a database; pass one explicitly"; exit 1; }
 fi
 [ -f "$SOURCE" ] || { echo "no database at $SOURCE"; exit 1; }
 
@@ -34,22 +39,11 @@ COPY="$WORK/tmp/memory-copy.db"
 STATUS=0
 
 echo "── copying $(basename "$SOURCE") read-only into a temp dir"
-uv run python -c "
-import sqlite3
-src = sqlite3.connect('file:$SOURCE?mode=ro', uri=True)
-dst = sqlite3.connect('$COPY')
-src.backup(dst)
-dst.close(); src.close()
-" || { echo "   ✗ copy failed"; exit 1; }
+sqlite3 -readonly "$SOURCE" "VACUUM INTO '$COPY'" || { echo "   ✗ copy failed"; exit 1; }
 
 # A conversation that exists, so the argument step exercises the cap rather than a
 # not-found path.
-CONVERSATION="$(uv run python -c "
-import sqlite3
-c = sqlite3.connect('$COPY')
-row = c.execute('SELECT id FROM conversations ORDER BY started_at DESC LIMIT 1').fetchone()
-print(row[0] if row else '')
-")"
+CONVERSATION="$(sqlite3 "$COPY" 'SELECT id FROM conversations ORDER BY started_at DESC LIMIT 1')"
 
 launch() {  # launch <env-assignments...> -- reads one JSON-RPC line on stdin
   env -u NODE_OPTIONS -u MIRROR_MCP_VERSION -u MIRROR_TS_MCP \
@@ -61,21 +55,21 @@ launch() {  # launch <env-assignments...> -- reads one JSON-RPC line on stdin
 # under test, so it is printed in full -- and the boundary redacts any argument value it
 # quotes, which is what makes that safe.
 tool_text() {
-  uv run python -c "
-import json, sys
-line = sys.stdin.readline()
-if not line.strip():
-    print('<no response>'); raise SystemExit
-msg = json.loads(line)
-if 'error' in msg:
-    print('PROTOCOL-ERROR ' + json.dumps(msg['error'])); raise SystemExit
-result = msg['result']
-text = result['content'][0]['text']
-if result.get('isError'):
-    print('isError ' + text.replace(chr(10), ' '))
-else:
-    print(f'ok <{len(text)} bytes withheld>')
-"
+  node -e '
+    let input = "";
+    process.stdin.on("data", (chunk) => (input += chunk));
+    process.stdin.on("end", () => {
+      const line = input.split("\n")[0] ?? "";
+      if (!line.trim()) return console.log("<no response>");
+      const msg = JSON.parse(line);
+      if ("error" in msg) return console.log(`PROTOCOL-ERROR ${JSON.stringify(msg.error)}`);
+      const text = msg.result.content[0].text;
+      console.log(
+        msg.result.isError
+          ? `isError ${text.replaceAll("\n", " ")}`
+          : `ok <${[...text].length} bytes withheld>`,
+      );
+    });'
 }
 
 # ---------------------------------------------------------------------------
@@ -92,8 +86,8 @@ done
 echo "── the same call with MIRROR_TS_MCP_GUARDS=0 (the revert)"
 OUT="$(printf '%s\n' "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"recall_conversation\",\"arguments\":{\"conversation_id\":\"$CONVERSATION\",\"limit\":0}}}" | launch MIRROR_TS_MCP_GUARDS=0 | tool_text)"
 case "$OUT" in
-  ok*) echo "   limit=0 -> ok (the oracle's whole-transcript behaviour, restored)" ;;
-  *)   echo "   limit=0 -> $OUT"; echo "      ✗ the gate did not restore the oracle"; STATUS=1 ;;
+  ok*) echo "   limit=0 -> ok (the pre-guard whole-transcript behaviour, restored)" ;;
+  *)   echo "   limit=0 -> $OUT"; echo "      ✗ the switch did not restore the pre-guard behaviour"; STATUS=1 ;;
 esac
 
 # ---------------------------------------------------------------------------
@@ -110,10 +104,7 @@ if [ "$HAS_KEY" = "0" ]; then
 else
   LIMIT="${MIRROR_MCP_EMBED_RATE_LIMIT:-5}"
   echo "   using MIRROR_MCP_EMBED_RATE_LIMIT=$LIMIT (override to exercise the default 30)"
-  BEFORE="$(uv run python -c "
-import sqlite3
-print(sqlite3.connect('$COPY').execute(\"SELECT COUNT(*) FROM llm_calls WHERE session_id='mcp'\").fetchone()[0])
-")"
+  BEFORE="$(sqlite3 "$COPY" "SELECT COUNT(*) FROM llm_calls WHERE session_id='mcp'")"
   ALLOWED=0
   REFUSED=""
   for i in $(seq 1 $((LIMIT + 1))); do
@@ -124,10 +115,7 @@ print(sqlite3.connect('$COPY').execute(\"SELECT COUNT(*) FROM llm_calls WHERE se
       *) echo "   ✗ unexpected: $OUT"; STATUS=1; break ;;
     esac
   done
-  AFTER="$(uv run python -c "
-import sqlite3
-print(sqlite3.connect('$COPY').execute(\"SELECT COUNT(*) FROM llm_calls WHERE session_id='mcp'\").fetchone()[0])
-")"
+  AFTER="$(sqlite3 "$COPY" "SELECT COUNT(*) FROM llm_calls WHERE session_id='mcp'")"
   echo "   allowed=$ALLOWED (expected $LIMIT)  mcp ledger rows $BEFORE -> $AFTER"
   echo "   refusal: ${REFUSED:-<none>}"
   [ "$ALLOWED" = "$LIMIT" ] || { echo "      ✗ the guard did not refuse at the limit"; STATUS=1; }
@@ -155,19 +143,11 @@ fi
 
 # ---------------------------------------------------------------------------
 echo "── write check: only the ledger rows the allowed calls made"
-uv run python - "$COPY" <<'PY' || STATUS=1
-import sqlite3
-import sys
-
-connection = sqlite3.connect(sys.argv[1])
-rows = connection.execute(
-    "SELECT COUNT(*) FROM llm_calls WHERE session_id = 'mcp' AND (prompt != '' OR response != '')"
-).fetchone()[0]
-access = connection.execute("SELECT COUNT(*) FROM memory_access_log").fetchone()[0]
-print(f"   bodies stored in mcp rows: {rows} (must be 0)")
-print(f"   memory_access_log rows: {access} (AI-12: an agent search teaches the ranker nothing)")
-sys.exit(0 if rows == 0 else 1)
-PY
+BODIES="$(sqlite3 "$COPY" "SELECT COUNT(*) FROM llm_calls WHERE session_id = 'mcp' AND (prompt != '' OR response != '')")"
+ACCESS="$(sqlite3 "$COPY" "SELECT COUNT(*) FROM memory_access_log")"
+echo "   bodies stored in mcp rows: $BODIES (must be 0)"
+echo "   memory_access_log rows: $ACCESS (AI-12: an agent search teaches the ranker nothing)"
+[ "$BODIES" = "0" ] || STATUS=1
 
 echo
 [ "$STATUS" -eq 0 ] && echo "   ✓ guards behaved as specified" || echo "   ✗ at least one guard check failed"

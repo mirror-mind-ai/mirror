@@ -4,10 +4,17 @@ set -euo pipefail
 # CV8.E7 — Codex Operational Validation Smoke Test
 # Proves that backfill-codex-session correctly parses Codex JSONL
 # and logs messages with interface='codex' to an isolated database.
+# Runs the TypeScript front door; the Python core it used to call was deleted
+# by CV22.DS10.TS5.
 
-export MEMORY_ENV=testing
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+
+export MEMORY_ENV=test
 export MIRROR_HOME=$(mktemp -d)
-export DB_PATH="$MIRROR_HOME/memory.db"
+# The front door resolves `--mirror-home` BEFORE the DB_PATH environment
+# variable, and MEMORY_ENV=test names the file, so this is where the backfill
+# below writes. (The Python engine this smoke was written for read DB_PATH.)
+DB_PATH="$MIRROR_HOME/memory_test.db"
 
 echo "Using isolated test DB: $DB_PATH"
 
@@ -27,7 +34,8 @@ EOF
 
 # 3. Run backfill
 # Pass MIRROR_HOME explicitly to match our exported DB_PATH
-uv run python -m memory conversation-logger backfill-codex-session "$JSONL_PATH" --interface codex --mirror-home "$MIRROR_HOME"
+NODE_OPTIONS=--no-warnings node "$ROOT_DIR/ts/src/frontDoor/cli.ts" \
+  conversation-logger backfill-codex-session "$JSONL_PATH" --interface codex --mirror-home "$MIRROR_HOME"
 
 # 4. Verify DB entries
 echo "Verifying database entries..."

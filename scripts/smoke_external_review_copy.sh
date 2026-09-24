@@ -10,20 +10,24 @@ mkdir -p "$PROJECT_ROOT"
 
 cd "$ROOT_DIR"
 
+# The TypeScript front door; the Python core this smoke used to call was
+# deleted by CV22.DS10.TS5.
+mirror() { NODE_OPTIONS=--no-warnings node "$ROOT_DIR/ts/src/frontDoor/cli.ts" "$@"; }
+
 echo "== Install review-copy into mirror home =="
-python -m memory extensions install \
+mirror extensions install \
   review-copy \
   --extensions-root examples/extensions \
   --mirror-home "$MIRROR_HOME"
 
 echo
 echo "== Inspect runtime catalogs =="
-python -m memory inspect runtime-catalog pi --mirror-home "$MIRROR_HOME"
-python -m memory inspect runtime-catalog claude --mirror-home "$MIRROR_HOME"
+mirror inspect runtime-catalog pi --mirror-home "$MIRROR_HOME"
+mirror inspect runtime-catalog claude --mirror-home "$MIRROR_HOME"
 
 echo
 echo "== Expose Claude runtime skills into project =="
-python -m memory extensions expose-claude \
+mirror extensions expose-claude \
   --mirror-home "$MIRROR_HOME" \
   --target-root "$PROJECT_ROOT"
 
@@ -39,7 +43,8 @@ test -f "$PROJECT_ROOT/.claude/skills/extensions.external.json"
 
 echo
 echo "== Clean Claude project exposure =="
-python -m memory extensions clean-claude \
+mirror extensions clean-claude \
+  --mirror-home "$MIRROR_HOME" \
   --target-root "$PROJECT_ROOT"
 
 test ! -f "$PROJECT_ROOT/.claude/skills/ext-review-copy/SKILL.md"
