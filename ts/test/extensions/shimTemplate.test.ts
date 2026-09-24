@@ -12,9 +12,14 @@
 // `database is locked` under ordinary concurrent use.
 //
 // WHY THIS FILE IS SEPARATE FROM THE OTHER EXTENSION SUITES: it needs a Python
-// interpreter by nature. The dispatch and catalog suites are interpreter-free
-// and verified so; this one skips when `python3` is absent rather than
-// weakening that claim by living beside them.
+// interpreter by nature -- the EXTENSION's, declared as its runtime, never the
+// core's. The dispatch and catalog suites are interpreter-free and verified so.
+//
+// OPT-IN since CV22.DS10.TS5 plateau 2: set MIRROR_TEST_EXTENSION_PYTHON=1.
+// CI's main test step does, and runs it against a real `python3`. The
+// whole-suite interpreter shadow does not, because its verdict is that NOTHING
+// spawns an interpreter, and even the probe below is a spawn. Deleted at
+// plateau 3 with the template it tests (decision D7).
 
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
@@ -36,7 +41,9 @@ const TEMPLATE = new URL(
   import.meta.url,
 ).pathname;
 
-const hasPython = spawnSync("python3", ["--version"], { encoding: "utf8" }).status === 0;
+const hasPython =
+  process.env.MIRROR_TEST_EXTENSION_PYTHON === "1" &&
+  spawnSync("python3", ["--version"], { encoding: "utf8" }).status === 0;
 
 interface World {
   root: string;

@@ -235,25 +235,27 @@ jobs:
         run: npm test
         env:
           MEMORY_ENV: test
+          # The extension-Python shim suite is opt-in (CV22.DS10.TS5 plateau 2):
+          # it spawns an EXTENSION's interpreter by design, so it runs here,
+          # against the real python3, and never under the shadow below.
+          MIRROR_TEST_EXTENSION_PYTHON: "1"
 
       # CV22.DS10.TS5 slice B: TS2's shadow, widened from test/extensions/ to
       # the WHOLE suite. It is the proof for plateau 2 -- that no test, and so
       # no code path a test reaches, spawns the interpreter any more.
       #
-      # It is `continue-on-error` ON PURPOSE, and only until plateau 2. Today
-      # it MUST fail: the front door still carries fallbackPython and ~30 tests
-      # exercise it. Wiring it now makes plateau 2's success a visible flip
-      # from red to green rather than a new green nobody can date -- but a
-      # required check that everyone expects to be red is the same as no check
-      # at all, and this repository's rule is green CI on every push. So it
-      # reports without blocking, and plateau 2 deletes this comment along with
-      # the `continue-on-error` line.
+      # REQUIRED since plateau 2, which deleted the fallback. Until then it ran
+      # `continue-on-error`, printing the work list without blocking, so that
+      # plateau 2's success would be a visible flip rather than a new green
+      # nobody could date.
       #
-      # The log line is the artifact: each stub appends to $TS5_SHADOW_LOG, so
-      # the step prints exactly WHICH suites reach for an interpreter, which is
-      # the work list for plateau 2.
-      - name: Interpreter shadow (expected red until CV22.DS10.TS5 plateau 2)
-        continue-on-error: true
+      # The verdict is TWO facts, and the log is the second: the suite passes,
+      # AND no stub was ever invoked. A test that tolerates a failed spawn --
+      # a probe that exits 66 and quietly skips -- would pass the first and is
+      # exactly what the second catches. The log, not a `ps` sample: a
+      # short-lived spawn between two samples is invisible, a stub that
+      # appends a line is not.
+      - name: Interpreter shadow (nothing may spawn python, python3, or uv)
         run: |
           SHADOW="$(mktemp -d)"
           export TS5_SHADOW_LOG="$SHADOW/spawns.log"
@@ -271,7 +273,11 @@ jobs:
           sort "$TS5_SHADOW_LOG" | uniq -c | sort -rn | head -20
           echo "--- failing suites ---"
           grep -E '^not ok|✖' "$SHADOW/suite.log" | head -20 || true
-          exit $SUITE
+          [ "$SUITE" = 0 ] || exit "$SUITE"
+          if [ -s "$TS5_SHADOW_LOG" ]; then
+            echo "FAIL: something reached for an interpreter (listed above)" >&2
+            exit 1
+          fi
         env:
           MEMORY_ENV: test
 
