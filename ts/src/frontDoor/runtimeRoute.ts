@@ -9,6 +9,7 @@
 // future subcommand added to Python must not silently acquire a TS route
 // because the command name already had one.
 
+import { accessSync, constants } from "node:fs";
 import { join } from "node:path";
 import { createZipBackup } from "#backup/zipBackup.ts";
 import { dbNameForEnv, resolveMirrorHome } from "#frontDoor/dbPath.ts";
@@ -20,9 +21,11 @@ import {
 } from "#runtime/backup.ts";
 import {
   diagnoseRuntime,
+  hookNodeFindings,
   probeModelPins,
   renderRuntimeDiagnosis,
   rootStateFindings,
+  staleRevertGateFindings,
 } from "#runtime/diagnose.ts";
 import {
   checkUpdateAvailability,
@@ -244,6 +247,18 @@ export async function runRuntimeReadRoute(
     const findings = [
       ...diagnoseRuntime(report, inspectGitWorktree(report.git.repository)),
       ...rootStateFindings(homesRoot(env)),
+      // CV22.DS10.TS5: the transition's own leftovers. A stale MIRROR_TS_*
+      // gate is inert and silently so; an unresolvable Node makes every hook
+      // skip. Both are invisible without being asked for.
+      ...staleRevertGateFindings(env),
+      ...hookNodeFindings(env, (path) => {
+        try {
+          accessSync(path, constants.X_OK);
+          return true;
+        } catch {
+          return false;
+        }
+      }),
       // No catalog provider until DS8: inconclusive, which is also the
       // oracle's answer when it cannot reach OpenRouter.
       ...(await probeModelPins(null, "")),

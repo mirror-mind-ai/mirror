@@ -25,6 +25,7 @@
     "#goldens/*": "./test/goldens/*",
     "#guards/*": "./src/guards/*",
     "#helpers/*": "./test/helpers/*",
+    "#hooks/*": "./src/hooks/*",
     "#identity/*": "./src/identity/*",
     "#init/*": "./src/init/*",
     "#journey/*": "./src/journey/*",

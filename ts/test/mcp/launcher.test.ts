@@ -145,58 +145,32 @@ test("by default the launcher runs the TypeScript server", async () => {
   }
 });
 
-test("MIRROR_TS_MCP=0 in the environment reverts to the Python server", async () => {
-  const h = harness(null);
-  try {
-    const run = await runLauncher(h, { MIRROR_TS_MCP: "0" });
-    assert.ok(existsSync(h.pythonMarker), "the Python branch must have run");
-    assert.equal(readFileSync(h.pythonMarker, "utf-8").trim(), "-m memory mcp");
-    assert.equal(run.stdout, "", "the stub answers nothing; only routing is under test");
-  } finally {
-    h.cleanup();
-  }
-});
-
-test("the last assignment in .env wins, as a later line overrides an earlier one", async () => {
-  const h = harness("MIRROR_TS_MCP=1\nMIRROR_TS_MCP=0\n");
-  try {
-    await runLauncher(h);
-    assert.ok(existsSync(h.pythonMarker), "a later line must override an earlier one");
-  } finally {
-    h.cleanup();
-  }
-});
-
-test("MIRROR_TS_MCP=0 in .env alone reverts too — the file is the reflex under pressure", async () => {
-  // Every other MIRROR_TS_* gate is honored from `.env`, because the front door
-  // reads it after node has loaded the file. This launcher decides BEFORE node
-  // exists, so without an explicit read the one gate a user reaches for first
-  // would be the one that silently ignores the file.
-  const h = harness("MIRROR_TS_MCP=0\n");
-  try {
-    await runLauncher(h);
-    assert.ok(existsSync(h.pythonMarker), "a .env gate must revert the engine");
-  } finally {
-    h.cleanup();
-  }
-});
-
-test("the environment wins over .env, in both directions", async () => {
-  const off = harness("MIRROR_TS_MCP=0\n");
-  try {
-    const run = await runLauncher(off, { MIRROR_TS_MCP: "1" });
-    assert.ok(!existsSync(off.pythonMarker), "an explicit 1 must override a 0 in the file");
-    assert.equal(serverInfo(run.stdout).name, "mirror-mind");
-  } finally {
-    off.cleanup();
-  }
-
-  const on = harness("MIRROR_TS_MCP=1\n");
-  try {
-    await runLauncher(on, { MIRROR_TS_MCP: "0" });
-    assert.ok(existsSync(on.pythonMarker), "an explicit 0 must override a 1 in the file");
-  } finally {
-    on.cleanup();
+// CV22.DS10.TS5 removed the MIRROR_TS_MCP gate and the Python branch.
+//
+// Four cases lived here: the gate honored from the environment, from `.env`,
+// the last assignment winning, and the environment outranking the file. They
+// graded a revert to an engine that is being deleted -- and a gate that can
+// only select a missing engine is worse than no gate, because a stale value in
+// someone's `.env` would produce a dead server rather than a reverted one.
+//
+// What replaces them is the assertion that the gate cannot do anything at all,
+// in either direction, plus `runtime diagnose` reporting any leftover
+// MIRROR_TS_* variable as inert (hooks.test.ts).
+test("a stale MIRROR_TS_MCP value cannot revert anything, from the environment or .env", async () => {
+  for (const [label, envFile, env] of [
+    ["environment", null, { MIRROR_TS_MCP: "0" }],
+    [".env", "MIRROR_TS_MCP=0\n", {}],
+    ["both", "MIRROR_TS_MCP=0\n", { MIRROR_TS_MCP: "0" }],
+  ] as [string, string | null, Record<string, string>][]) {
+    const h = harness(envFile);
+    try {
+      const run = await runLauncher(h, env);
+      assert.equal(serverInfo(run.stdout).name, "mirror-mind", label);
+      assert.equal(run.code, 0, label);
+      assert.ok(!existsSync(h.pythonMarker), `${label}: nothing may spawn an interpreter`);
+    } finally {
+      h.cleanup();
+    }
   }
 });
 

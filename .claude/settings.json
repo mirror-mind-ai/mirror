@@ -1,9 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python3 -c *)",
-      "Bash(python3 -m memory*)",
-      "Bash(python3 .claude/skills/*/run.py*)",
+      "Bash(node ts/src/hooks/main.ts *)",
+      "Bash(node ts/src/frontDoor/cli.ts *)",
       "Bash(zip *)",
       "Bash(git:*)",
       "Bash(git add:*)",

@@ -10,7 +10,11 @@ cd "${CODEX_PROJECT_DIR:-$PWD}"
 # 1. Session start
 # We redirect to /dev/null to keep the output clean for Codex if needed,
 # though here it's just a wrapper.
-uv run python -m memory conversation-logger session-start >/dev/null 2>&1 || true
+# Every Mirror call below enters the TypeScript front door (CV22.DS10.TS5):
+# same routing, same front-door log, no interpreter.
+MIRROR="node --no-warnings --env-file-if-exists=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)/.env $(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)/ts/src/frontDoor/cli.ts"
+
+${MIRROR} conversation-logger session-start >/dev/null 2>&1 || true
 
 # 2. Run Codex (blocks until user exits)
 # Temporarily disable `set -e` so Mirror Mind can still run wrapper cleanup
@@ -32,15 +36,15 @@ if [[ -n "$SESSION_JSONL" ]]; then
   SESSION_ID=$(basename "$SESSION_JSONL" .jsonl | grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' | tail -1)
   
   if [[ -n "$SESSION_ID" ]]; then
-    uv run python -m memory conversation-logger backfill-codex-session \
+    ${MIRROR} conversation-logger backfill-codex-session \
       "$SESSION_JSONL" --interface codex >/dev/null 2>&1 || true
-      
-    uv run python -m memory conversation-logger session-end-pi \
+
+    ${MIRROR} conversation-logger session-end-pi \
       "${SESSION_ID}" >/dev/null 2>&1 || true
   fi
 fi
 
 # 5. Backup (silent)
-uv run python -m memory backup --silent >/dev/null 2>&1 || true
+${MIRROR} backup --silent >/dev/null 2>&1 || true
 
 exit $EXIT_CODE

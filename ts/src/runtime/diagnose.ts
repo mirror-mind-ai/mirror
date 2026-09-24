@@ -457,3 +457,78 @@ export function renderRuntimeDiagnosis(findings: readonly DriftFinding[]): strin
   lines.push("", "Status: attention needed");
   return `${lines.join("\n")}\n`;
 }
+
+// --- CV22.DS10.TS5: the transition's own leftovers -------------------------
+
+/**
+ * The family gates that used to revert a route to Python.
+ *
+ * Deleted at plateau 2. A value left in someone's `.env` after that changes
+ * nothing -- which is the right behavior and an invisible one, so diagnose
+ * says it out loud rather than letting a user believe a revert is armed.
+ *
+ * `*_REPLAY` gates are NOT here: those choose a fixture, not an engine, and
+ * they stay.
+ */
+export function staleRevertGateFindings(env: NodeJS.ProcessEnv): DriftFinding[] {
+  const stale = Object.keys(env)
+    .filter((name) => name.startsWith("MIRROR_TS_"))
+    .filter((name) => !name.includes("_REPLAY"))
+    .filter((name) => (env[name] ?? "") !== "")
+    .sort();
+  if (stale.length === 0) return [];
+  return [
+    {
+      code: "stale_revert_gate",
+      severity: "info",
+      subject: stale.join(", "),
+      detail:
+        "set, but inert since CV22.DS10.TS5: the Python engine these gates reverted to no longer exists",
+      recommendation: "remove from .env and the environment; routing ignores them",
+      repair_route: "edit .env",
+    },
+  ];
+}
+
+/**
+ * Can a hook find Node?
+ *
+ * The failure this exists for: `/usr/bin/python3` is on every macOS, so the
+ * Python hooks always found their interpreter and could end in `|| true`
+ * safely. `node` usually lives under nvm or Homebrew and is NOT on the PATH a
+ * GUI-launched runtime inherits. A hook that cannot resolve it skips silently,
+ * and the user meets it weeks later as "Mirror stopped remembering".
+ *
+ * The wrappers write to `<mirror-home>/hooks.log` when this happens. This
+ * finding is the other half: a place to ASK, before anything is lost.
+ */
+export function hookNodeFindings(
+  env: NodeJS.ProcessEnv,
+  isExecutable: (path: string) => boolean,
+): DriftFinding[] {
+  const explicit = env.MIRROR_NODE ?? "";
+  if (explicit && isExecutable(explicit)) return [];
+  const candidates = [
+    `${env.HOME ?? ""}/.nvm/current/bin/node`,
+    "/opt/homebrew/bin/node",
+    "/usr/local/bin/node",
+    "/usr/bin/node",
+  ];
+  const onPath = (env.PATH ?? "")
+    .split(":")
+    .filter(Boolean)
+    .some((entry) => isExecutable(`${entry}/node`));
+  if (onPath || candidates.some((candidate) => isExecutable(candidate))) return [];
+  return [
+    {
+      code: "hook_node_unresolvable",
+      severity: "warning",
+      subject: "node",
+      detail:
+        "not found on PATH or in the usual install locations; runtime hooks will skip and log to hooks.log",
+      recommendation:
+        "set MIRROR_NODE to the node binary, or install node where the runtime can see it",
+      repair_route: "export MIRROR_NODE=/path/to/node",
+    },
+  ];
+}

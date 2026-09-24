@@ -209,20 +209,35 @@ describe("the staged python-core row", () => {
     assert.ok(problems.length > 0, "python-core found nothing while the interpreter is present");
     const messages = problems.map((problem) => problem.message).join("\n");
 
-    // The core and its suite, by absence.
+    // The core and its suite, by absence. These go at plateau 3.
     assert.match(messages, /src\/memory\//);
     assert.match(messages, /pyproject\.toml/);
+    assert.match(messages, /ts\/parity\//);
+  });
 
-    // The twelve runtime hooks -- the layer US2's `uv run python -m memory`
-    // pattern could not see, because they say `python3 -m memory` instead.
-    // This is the whole reason the row is wider than the guard it replaces.
+  test("no longer catches the runtime hooks -- plateau 1 rewrote them", () => {
+    // When this row was written it reported thirteen hook and launcher files
+    // invoking `python3 -m memory`, or reaching into memory.hooks and
+    // memory.cli internals that were never commands. US2's Skill Invocation
+    // Gate could not see any of them: its pattern was `uv run python -m
+    // memory`, and these said `python3`.
+    //
+    // They are Node now, and the row's own catch list is the evidence. This
+    // assertion is the shrinking half of the same instrument: what it still
+    // reports is what plateau 3 still has to delete.
+    const messages = sweep(REPO_ROOT, RETIRED, { only: "python-core" })
+      .map((problem) => problem.message)
+      .join("\n");
+
     for (const hook of [
-      ".claude/hooks/session-start.sh",
-      ".claude/hooks/mirror-inject.sh",
-      "plugins/mirror-mind/hooks/log-user-prompt.sh",
+      ".claude/hooks/",
+      ".gemini/hooks/",
+      "plugins/mirror-mind/hooks/",
+      "plugins/mirror-mind/mcp/launch.sh",
       "scripts/codex-mirror.sh",
+      ".claude/settings.json",
     ]) {
-      assert.ok(messages.includes(hook), `python-core did not catch ${hook}`);
+      assert.ok(!messages.includes(hook), `${hook} still reaches for an interpreter`);
     }
   });
 
