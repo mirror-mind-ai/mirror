@@ -219,6 +219,7 @@ describe("the staged python-core row", () => {
     "scripts/check_retired_surfaces.py",
     "scripts/check_doc_links.py",
     "scripts/build_claude_plugin.py",
+    "spikes/ts-search-parity/",
   ];
   const stillTracked = ["pyproject.toml"];
 

@@ -20,7 +20,7 @@ TypeScript — it is **characterizing the oracle**, the Python ranker in
 
 ## What was built
 
-A throwaway harness under [`spikes/ts-search-parity/`](../../../../../spikes/ts-search-parity/):
+A throwaway harness under [`spikes/ts-search-parity/`](https://github.com/mirror-mind-ai/mirror/tree/cv22-last-python-bearing/spikes/ts-search-parity):
 
 - `generate_golden.py` / `generate_golden_real.py` — drive the **real**
   `MemorySearch.search` as the oracle (not a re-derivation), with the two
@@ -70,6 +70,6 @@ comparison and did not occur.
 
 ## References
 
-- Harness: [`spikes/ts-search-parity/`](../../../../../spikes/ts-search-parity/)
+- Harness: [`spikes/ts-search-parity/`](https://github.com/mirror-mind-ai/mirror/tree/cv22-last-python-bearing/spikes/ts-search-parity)
 - Oracle: `src/memory/intelligence/search.py`, `src/memory/storage/memories.py`
 - [CV22 index](../index.md) · [Decisions — database-seam strangler](../../../decisions.md)

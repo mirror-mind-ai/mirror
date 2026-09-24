@@ -50,7 +50,7 @@ The riskiest assumption — *can a TS core replicate Mirror's subtlest behavior
 against the real database?* — was attacked first. The subtlest behavior is the
 hybrid ranker (semantic + recency + honest reinforcement + manual relevance +
 ordinal lexical + MMR dedup). Spike: [CV22.DS1](cv22-ds1-hybrid-search-parity-spike/index.md),
-harness under [`spikes/ts-search-parity/`](../../../../spikes/ts-search-parity/).
+harness under [`spikes/ts-search-parity/`](https://github.com/mirror-mind-ai/mirror/tree/cv22-last-python-bearing/spikes/ts-search-parity).
 
 - **Parity holds — synthetic and real.** A TS reimplementation reading the *same*
   SQLite file reproduced the Python ranker's ordered results exactly: 8/8 probes
@@ -367,6 +367,6 @@ CV22 is done when:
 - [CV22 Collaboration Strategy](collaboration-strategy.md)
 - [Refinement Campaign — the five-audit code-quality sweep (RS001–RS005)](refinement/index.md)
 - [CV21 — Runtime Expansion II](../cv21-runtime-expansion-ii/index.md)
-- Parity harness: [`spikes/ts-search-parity/`](../../../../spikes/ts-search-parity/)
+- Parity harness: [`spikes/ts-search-parity/`](https://github.com/mirror-mind-ai/mirror/tree/cv22-last-python-bearing/spikes/ts-search-parity)
 - [Architecture](../../../product/architecture.md)
 - [Worklog](../../../process/worklog.md)

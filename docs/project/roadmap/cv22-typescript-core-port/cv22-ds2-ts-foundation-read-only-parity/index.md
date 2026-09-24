@@ -99,6 +99,6 @@ Recorded in [Decisions — CV22 TypeScript core scaffolding](../../../decisions.
 - [CV22.DS1 Hybrid-Search Parity Spike](../cv22-ds1-hybrid-search-parity-spike/index.md)
 - [Decisions — database-seam strangler](../../../decisions.md)
 - [Decisions — CV22 scaffolding](../../../decisions.md#cv22-typescript-core-scaffolding-nodesqlite-single-ts-package-node-24-biome)
-- Parity harness: [`spikes/ts-search-parity/`](../../../../../spikes/ts-search-parity/)
+- Parity harness: [`spikes/ts-search-parity/`](https://github.com/mirror-mind-ai/mirror/tree/cv22-last-python-bearing/spikes/ts-search-parity)
 </content>
 </invoke>
