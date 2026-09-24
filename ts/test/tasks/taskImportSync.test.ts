@@ -225,6 +225,10 @@ test("syncTasksFromFile throws NoSyncFileConfiguredError with Python's exact mes
 });
 
 test("syncTasksFromFile throws SyncFileNotFoundError with Python's exact message shape when the file is missing on disk", () => {
+  // The oracle recorded its own `mkdtemp` path here, so the golden could not
+  // regenerate to its own bytes and the field was never compared (TS5, F4).
+  // Frozen with the directory as a placeholder, it is graded again.
+  const s = scenario("sync_file_missing_on_disk_raises");
   withDb((db, dir) => {
     const missingPath = join(dir, "does-not-exist.md");
     upsertIdentity(
@@ -242,7 +246,8 @@ test("syncTasksFromFile throws SyncFileNotFoundError with Python's exact message
     assert.throws(
       () => syncTasksFromFile(db, "zeta"),
       (err: unknown) =>
-        err instanceof SyncFileNotFoundError && err.message === `File not found: ${missingPath}`,
+        err instanceof SyncFileNotFoundError &&
+        err.message === (s.error_message as string).replace("<tmpdir>", dir),
     );
   });
 });

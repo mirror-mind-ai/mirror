@@ -99,7 +99,7 @@
       "name": "sync_no_file_configured_raises"
     },
     {
-      "error_message": "File not found: /var/folders/5k/q6bjkgn95gzd_qss7_5flyzw0000gp/T/tmphc2oqbik/does-not-exist.md",
+      "error_message": "File not found: <tmpdir>/does-not-exist.md",
       "journey_arg": "zeta",
       "name": "sync_file_missing_on_disk_raises"
     }

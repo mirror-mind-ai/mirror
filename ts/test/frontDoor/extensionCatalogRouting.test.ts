@@ -6,10 +6,7 @@
 // engine at CV22.DS10.TS5.
 
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
 import { test } from "node:test";
-import { fileURLToPath } from "node:url";
 import { leafFor } from "#frontDoor/extensionCatalogRoute.ts";
 import {
   routeMemoryCommand,
@@ -18,7 +15,6 @@ import {
   TS4_EXTENSIONS_VERBS,
 } from "#frontDoor/routing.ts";
 
-const REPO_ROOT = dirname(dirname(dirname(dirname(fileURLToPath(import.meta.url)))));
 test("the whole extension family answers from TypeScript", () => {
   for (const argv of [
     ["extensions", "list"],
@@ -55,44 +51,37 @@ test("a claimed command does not inherit a subcommand it never ported", () => {
   }
 });
 
-test("`ext`'s allowlist is audited against `cli/ext.py`, because it cannot filter", () => {
-  // `cmd_ext` reads every head that is not `list` or a help flag as an
-  // EXTENSION ID, so the route cannot refuse an unknown verb — it would be
-  // refusing an extension. The exposure is that a new top-level verb beside
-  // `list` would be answered `extension not installed: .../doctor` instead of
-  // running. Nothing in the route can catch that, so this does: the day
-  // `cli/ext.py` grows another literal head, this fails and the decision comes
-  // back to a human.
-  const source = readFileSync(join(REPO_ROOT, "src", "memory", "cli", "ext.py"), "utf8");
-  const dispatcher = source.slice(source.indexOf("def cmd_ext("));
-  const heads = new Set<string>();
-  for (const match of dispatcher.matchAll(/head == "([^"]+)"/g)) heads.add(match[1] as string);
-  for (const match of dispatcher.matchAll(/head in \{([^}]+)\}/g)) {
-    for (const literal of (match[1] as string).matchAll(/"([^"]+)"/g)) {
-      heads.add(literal[1] as string);
-    }
-  }
+// The two allowlists below were AUDITED against the Python dispatchers
+// (`cli/ext.py`, `cli/extensions.py`) by reading their source, for as long as
+// that source existed: the day Python grew a verb, the audit failed and the
+// decision came back to a human. CV22.DS10.TS5 deleted the source, so the last
+// audited result is frozen here -- confirmed equal to the Python literals at
+// `cv22-last-python-bearing` (`b0d34254`), the last commit that had them.
+//
+// What the freeze keeps is the reason the audit existed. `ext` reads every head
+// that is not a top-level verb as an EXTENSION ID, so its route cannot refuse
+// an unknown verb -- it would be refusing an extension. A new top-level verb is
+// therefore a decision about which extension ids stop being reachable, and it
+// must be taken on purpose: change the set, and this test, together.
+test("`ext`'s top-level and built-in verbs are the audited sets, frozen", () => {
+  assert.deepEqual([...TS4_EXT_TOP_LEVEL_VERBS].sort(), ["--help", "-h", "help", "list"]);
   assert.deepEqual(
-    [...heads].sort(),
-    [...TS4_EXT_TOP_LEVEL_VERBS].sort(),
-    "cli/ext.py grew a top-level verb: `ext <verb>` would be read as an extension id",
+    [...TS4_EXT_BUILTIN_VERBS].sort(),
+    ["bind", "bindings", "migrate", "unbind"],
+    "a built-in verb shadows an extension subcommand of the same name",
   );
-
-  // The built-in verbs are a literal tuple in the same file.
-  const builtins = dispatcher.match(/_BUILTIN_VERBS = \(([^)]+)\)/);
-  assert.ok(builtins, "cli/ext.py no longer declares _BUILTIN_VERBS as a tuple");
-  const declared = [...(builtins[1] as string).matchAll(/"([^"]+)"/g)].map((m) => m[1] as string);
-  assert.deepEqual(declared.sort(), [...TS4_EXT_BUILTIN_VERBS].sort());
 });
 
-test("`extensions`' allowlist is audited against `cli/extensions.py`", () => {
-  const source = readFileSync(join(REPO_ROOT, "src", "memory", "cli", "extensions.py"), "utf8");
-  const block = source.slice(source.indexOf("if command not in {"));
-  const declared = new Set<string>();
-  for (const literal of block.slice(0, block.indexOf("}")).matchAll(/"([^"]+)"/g)) {
-    declared.add(literal[1] as string);
-  }
-  assert.deepEqual([...declared].sort(), [...TS4_EXTENSIONS_VERBS].sort());
+test("`extensions`' verbs are the audited set, frozen", () => {
+  assert.deepEqual([...TS4_EXTENSIONS_VERBS].sort(), [
+    "clean-claude",
+    "expose-claude",
+    "install",
+    "list",
+    "sync",
+    "uninstall",
+    "validate",
+  ]);
 });
 
 test("the front-door log learns the leaf and never the argument", () => {
