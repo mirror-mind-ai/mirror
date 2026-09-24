@@ -4,8 +4,9 @@
 // timing token with a placeholder -- but only AFTER the token matches
 // Python's exact grammar (` (N.Ns)`: one decimal, parentheses, trailing `s`).
 // Stripping unconditionally would let report drift ride through the one
-// check that exists to catch it. Shared by the goldens, the write-parity
-// probes, and the E2E smoke so the three cannot normalize differently.
+// check that exists to catch it. Shared by the golden test and the E2E smoke
+// so the two cannot normalize differently (the write-parity probes that were
+// the third caller left with the oracle in CV22.DS10.TS5).
 
 /** Python renders `f"{label}: {count} ({elapsed:.1f}s)"`. */
 const TIMING_LINE = /^(?<label>[^:]+): (?<count>\d+) \((?<seconds>\d+\.\d)s\)$/;

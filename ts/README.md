@@ -1,9 +1,11 @@
 # Mirror Mind — TypeScript Core
 
-The TypeScript core of Mirror Mind, grown as a **database-seam strangler** of the
-Python core in [`../src/memory/`](https://github.com/mirror-mind-ai/mirror/tree/cv22-last-python-bearing/src/memory). This package is the durable
-transition state: it starts as a skeleton and dissolves the Python core one
-command at a time behind a shared `memory.db`.
+The core of Mirror Mind. It was grown as a **database-seam strangler** of the
+Python core, dissolving it one command at a time behind a shared `memory.db`,
+and since CV22.DS10.TS5 it is the only core: the Python one is deleted, and its
+last state is readable at the
+[`cv22-last-python-bearing`](https://github.com/mirror-mind-ai/mirror/tree/cv22-last-python-bearing/src/memory)
+tag.
 
 - Strategy: [Decisions — database-seam strangler](../docs/project/decisions.md#mirror-mind-ports-to-typescript-via-a-database-seam-strangler-not-a-rewrite)
 - Scaffolding choices: [Decisions — CV22 scaffolding](../docs/project/decisions.md#cv22-typescript-core-scaffolding-nodesqlite-single-ts-package-node-24-biome)
@@ -36,55 +38,22 @@ npm run format      # Biome format --write
   so swapping the driver later (e.g. `better-sqlite3`) rewrites just that file.
 - **Zero runtime dependencies.** Testing uses the built-in `node:test`; SQLite is
   built in. Dev dependencies are TypeScript, `@types/node`, and Biome only.
-- **Parity net.** Ported commands are validated against the Python oracle. CI runs
-  parity over committed **synthetic** (PII-free) golden corpora; real-`memory.db`
-  parity is a manual pre-merge gate and never enters CI.
-
-## Parity harness (golden corpus)
-
-The golden-corpus contract is how TS is graded against the Python ranker without
-re-deriving the answer (CV22.DS2.TS2):
-
-- `parity/generate_golden.py` drives the **real** `MemorySearch.search` over a
-  synthetic corpus with the two impure inputs frozen (`datetime.now()` and the
-  query embedding), and writes a committed golden to `test/goldens/`.
-- `src/parity/decode.ts` holds the two parity-critical decoders — `blobToFloat32`
-  (little-endian float32 BLOB) and `parseUtcMs` (ISO timestamp -> epoch ms) —
-  which are graded against Python-computed reference values embedded in the golden.
-- `src/parity/golden.ts` loads the fixture and provides `orderedIdsMatch`, the
-  success metric (ranked **ids**, not scores).
-
-Regenerate the golden (must be a no-op in CI — a determinism gate enforces it):
-
-```bash
-uv run python ts/parity/generate_golden.py
-git diff --exit-code ts/test/goldens/
-```
-
-The TS ranker that reproduces `expected_order` from the corpus lands in DS2.US1;
-this harness proves the load/decode/compare mechanism is correct and stable.
-
-Mirror Mode adds production-refusing generators for core orchestration and extension context:
-
-```bash
-uv run python ts/parity/generate_mirror_mode_golden.py
-uv run python ts/parity/generate_mirror_state_golden.py
-uv run python ts/parity/generate_extension_context_golden.py
-```
-
-The first freezes exact context/render behavior. The second runs Python state transitions
-only after asserting that the opened database is beneath its temporary directory, then
-normalizes generated ids and timestamps. The third freezes extension binding order,
-request targets, and rendered sections under the same verified-temporary-DB rule. All are
-CI determinism gates.
+- **Frozen goldens.** Every ported surface was graded against the Python oracle
+  over committed **synthetic** (PII-free) golden corpora. The oracle is gone, so
+  the goldens are frozen fixtures: a failing golden is a regression, and a
+  deliberate change edits it by hand with a recorded reason. See
+  [`test/goldens/README.md`](test/goldens/README.md).
+- **Smokes.** `smoke/` holds end-to-end scripts that run whole sequences through
+  the real front-door process, the migration custody proofs, and the synthetic
+  demo database generator (`smoke/generate_demo_memory_db.ts`). CI runs them;
+  none needs a private `memory.db`.
 
 ## Mirror Mode orchestration (CV22.DS7.US4)
 
 The front door answers `mirror load|deactivate|log|journeys` and
 `mode activate|deactivate|status` through TypeScript for deterministic core paths.
-`mirror load --query` runs live against the provider since CV22.DS8.US3;
-`MIRROR_TS_MIRROR_QUERY=0` reverts that leaf alone. For a deterministic run, point it
-at scrubbed replay fixtures instead:
+`mirror load --query` runs live against the provider since CV22.DS8.US3. For a
+deterministic run, point it at scrubbed replay fixtures instead:
 
 ```bash
 MIRROR_TS_MIRROR_LLM_REPLAY=/path/to/reception.json \
@@ -93,8 +62,8 @@ node ts/src/frontDoor/cli.ts mirror load --query "..."
 ```
 
 Both fixtures are required together. If `MEMORY_RECEPTION=0`, the LLM replay is not
-required — the classifier is off on both engines — but query attachment/journey search
-still needs the embedding replay.
+required — the classifier is off — but query attachment/journey search still needs
+the embedding replay.
 
 CV22.DS7.TS2 keeps matching extension bindings on the TS route. Capabilities declare a
 no-shell `mirror-context-v1` process command; TS owns selection, ordering, bounded
@@ -113,14 +82,15 @@ and the cutoff in [pending-cutoffs](../docs/releases/pending-cutoffs.md).
 ```
 src/
   index.ts          # package entry point
-  db/database.ts    # node:sqlite driver seam (read-only handle)
-  parity/decode.ts  # blobToFloat32 / parseUtcMs (parity-critical decoders)
-  parity/golden.ts  # golden loader + ordered-id grader
-parity/
-  generate_golden.py  # Python oracle -> committed golden (frozen now + embedding)
+  frontDoor/cli.ts  # the command-line front door every runtime calls
+  db/database.ts    # node:sqlite driver seam
+  hooks/            # the runtime hook entries (Claude Code, Gemini CLI, Codex, plugin)
+  mcp/              # the MCP server
+  ...               # one directory per domain: builder, conversation, soul, ...
+scripts/            # repository guards and release tooling, run by CI
+smoke/              # end-to-end smokes, custody proofs, the demo database generator
+evals/              # the model-behavior eval harness (developer tooling)
 test/               # node:test suites
-  goldens/          # committed synthetic golden corpora (PII-free)
+  goldens/          # frozen oracle-recorded golden corpora (PII-free)
+  fixtures/         # synthetic fixture trees and databases
 ```
-
-Seams mirror the Python core (`db`, and — as the port proceeds — `storage`,
-`intelligence`, `services`, `cli`).

@@ -24,7 +24,7 @@ import {
 } from "#conversation/sessionComposites.ts";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import type { WritableDatabase } from "#db/database.ts";
-import { normalizeMaintenanceReport } from "#parity/maintenanceReport.ts";
+import { normalizeMaintenanceReport } from "#helpers/maintenanceReport.ts";
 import { EMBEDDING_DIMENSIONS, type EmbeddingProvider } from "#providers/embedding.ts";
 import type { LlmProvider, LlmRequest, LlmResponse } from "#providers/llm.ts";
 

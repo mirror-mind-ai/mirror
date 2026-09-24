@@ -28,7 +28,7 @@ import {
 } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { normalizeMaintenanceReport } from "../src/parity/maintenanceReport.ts";
+import { normalizeMaintenanceReport } from "../test/helpers/maintenanceReport.ts";
 
 const TS_ROOT = resolve(dirname(new URL(import.meta.url).pathname), "..");
 const CLI = join(TS_ROOT, "src", "frontDoor", "cli.ts");

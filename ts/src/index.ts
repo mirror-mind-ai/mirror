@@ -163,25 +163,6 @@ export {
   renderModeActivation,
   renderModeStatus,
 } from "./mode/operatingMode.ts";
-// --- Parity harness (read + grading) ---
-export { orderedIdsMatch } from "./parity/golden.ts";
-export type {
-  JourneyProbe,
-  ListingProbe,
-  PersonaProbe,
-  ProbeParityResult,
-  RealDbCopyFixture,
-  RealDbCopyProbe,
-} from "./parity/realDbCopyParity.ts";
-export {
-  evaluateJourneyProbes,
-  evaluateListingProbes,
-  evaluatePersonaProbes,
-  evaluateSearchProbes,
-  orderedIdsHash,
-  renderRedactedReport,
-  toProbeResult,
-} from "./parity/realDbCopyParity.ts";
 // --- Persona routing ---
 export type { PersonaMatch, PersonaRoutingRow } from "./persona/detectPersona.ts";
 export { detectPersona, normalizeRoutingText } from "./persona/detectPersona.ts";

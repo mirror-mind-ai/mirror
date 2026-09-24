@@ -207,8 +207,8 @@ describe("the staged python-core row", () => {
   // moves its paths from the second list to the first. Both halves are the
   // point: a path in `stillTracked` proves the row can still SEE what is left,
   // and a path in `deleted` proves the deletion happened and stays done.
-  const deleted = ["src/memory/", "tests/"];
-  const stillTracked = ["pyproject.toml", "ts/parity/"];
+  const deleted = ["src/memory/", "tests/", "ts/parity/"];
+  const stillTracked = ["pyproject.toml"];
 
   test("FIRES against today's tree when asked -- the row is graded, not merely written", () => {
     const problems = sweep(REPO_ROOT, RETIRED, { only: "python-core" });

@@ -1,12 +1,14 @@
 // Golden-corpus loader and the ordered-id grader (CV22.DS2.TS2).
 //
-// The golden is produced by `ts/parity/generate_golden.py`, which drives the
+// The golden was produced by `ts/parity/generate_golden.py`, which drove the
 // real Python ranker over a synthetic corpus with a frozen clock and frozen
-// query embedding. This module is the TS side of that contract: it loads the
-// committed fixture and provides the success metric (ordered-id equality).
+// query embedding. Since CV22.DS10.TS5 the generator is gone and the golden is
+// a frozen fixture (see `test/goldens/README.md`). This module loads it and
+// provides the success metric (ordered-id equality).
 //
-// The ranker that regenerates `expected_order` from the corpus is DS2.US1; this
-// harness proves the mechanism (load, decode, compare) is in place and correct.
+// It lived in `src/parity/` while it was part of the engine-comparison
+// harness; the rest of that harness left with the oracle, and a loader only
+// tests use belongs beside the other test helpers.
 
 import { readFileSync } from "node:fs";
 

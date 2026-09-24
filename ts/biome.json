@@ -1,14 +1,7 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.5.1/schema.json",
   "files": {
-    "includes": [
-      "src/**/*.ts",
-      "test/**/*.ts",
-      "evals/**/*.ts",
-      "scripts/**/*.ts",
-      "parity/**/*.ts",
-      "smoke/**/*.ts"
-    ]
+    "includes": ["src/**/*.ts", "test/**/*.ts", "evals/**/*.ts", "scripts/**/*.ts", "smoke/**/*.ts"]
   },
   "formatter": {
     "enabled": true,

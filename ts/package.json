@@ -34,7 +34,6 @@
     "#mirror/*": "./src/mirror/*",
     "#mode/*": "./src/mode/*",
     "#observability/*": "./src/observability/*",
-    "#parity/*": "./src/parity/*",
     "#persona/*": "./src/persona/*",
     "#planning/*": "./src/planning/*",
     "#providers/*": "./src/providers/*",

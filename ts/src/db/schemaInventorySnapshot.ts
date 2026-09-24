@@ -1,19 +1,19 @@
 // Committed schema-inventory snapshot for the TS custody-transfer contract
 // (CV22.DS6.TS1).
 //
-// Generated from a real fresh Python database via:
-//   uv run python -m memory.db.schema_inventory
+// Recorded from a real fresh database made by the Python core's bootstrap,
+// while that core existed. It was the cross-language oracle: `schema.test.ts`
+// asserts that a TS-created database's inventory (via `buildSchemaInventory` in
+// `schemaInventory.ts`) equals this constant, and a Python drift guard asserted
+// the same from the other side.
 //
-// This is the cross-language oracle: `schema.test.ts` asserts a TS-created
-// database's inventory (via `buildSchemaInventory` in `schemaInventory.ts`)
-// equals this constant, hermetically (no Python needed at Node-test runtime).
-// `tests/unit/memory/db/test_schema_inventory_snapshot.py` is the drift guard
-// on the other side — it regenerates from a live fresh Python database and
-// fails if this snapshot is stale, exactly mirroring how `KNOWN_MIGRATION_IDS`
-// (`schemaState.ts`) is held in sync with `memory.db.migrations.MIGRATIONS`.
-//
-// Regenerate and update BOTH this file and re-run the Python drift-guard test
-// in the same commit whenever `src/memory/db/schema.py` changes.
+// FROZEN since CV22.DS10.TS5, like the goldens (`test/goldens/README.md`). The
+// Python core and its drift guard are deleted, so nothing can regenerate this
+// file, and TypeScript is the schema's only custodian. A deliberate schema
+// change updates this snapshot -- or the enumerated TypeScript-only additions
+// in `schemaTsDivergence.ts` -- by hand, in the same commit as its migration,
+// with the reason recorded; `schema.test.ts` then proves they agree. The
+// generator is readable at the `cv22-last-python-bearing` tag.
 //
 // Excludes `_migrations` (CV22.DS6.TS2 scope — a TS1 `createSchema()` fresh
 // database does not create it) and FTS5-internal shadow tables (a

@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { blobToFloat32, parseUtcMs } from "#db/decode.ts";
-import { loadGolden, orderedIdsMatch } from "#parity/golden.ts";
+import { loadGolden, orderedIdsMatch } from "#helpers/hybridSearchGolden.ts";
 import { rankMemories } from "#search/ranker.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
