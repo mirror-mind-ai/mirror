@@ -22,10 +22,23 @@ import { isDeepStrictEqual } from "node:util";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "../src/db/database.ts";
 import { runMigrations } from "../src/db/migrations.ts";
 import { buildSchemaInventory, type SchemaInventory } from "../src/db/schemaInventory.ts";
-import { TS_AUTHORED_MIGRATION_IDS } from "../src/db/schemaState.ts";
+
+// CV22.DS10.TS5 deleted `TS_AUTHORED_MIGRATION_IDS` from the schema module:
+// with one custodian, "which engine authored this migration" is no longer a
+// schema fact. It survives here as a FIXTURE fact -- these cases compare
+// against end-states the Python oracle recorded, and 017 is what TypeScript
+// applies beyond them. It goes with the oracle at plateau 3.
+const TS_AUTHORED_MIGRATION_IDS: readonly string[] = ["017_journey_parent_column"];
+
 import { diffTsInventoryAgainstSnapshot } from "../src/db/schemaTsDivergence.ts";
 
-const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "test", "fixtures", "migrations");
+const FIXTURES_DIR = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "test",
+  "fixtures",
+  "migrations",
+);
 const STEMS = ["001", "002", "003", "004", "005", "008", "009", "016", "chain-multi-hop"];
 
 /** One journey's backfilled display code, as the oracle produced it. */
@@ -97,7 +110,10 @@ function checkFixture(stem: string): { ok: boolean; details: string[] } {
         .sort();
       // TS runs its own forward migrations (017+) beyond Python's captured end-state.
       if (
-        !isDeepStrictEqual(appliedIds, [...expected.applied_migration_ids, ...TS_AUTHORED_MIGRATION_IDS].sort())
+        !isDeepStrictEqual(
+          appliedIds,
+          [...expected.applied_migration_ids, ...TS_AUTHORED_MIGRATION_IDS].sort(),
+        )
       ) {
         ok = false;
         details.push("_migrations ledger: mismatch");
@@ -139,7 +155,10 @@ function checkFixture(stem: string): { ok: boolean; details: string[] } {
         ],
         [
           "attachment_legacy_row",
-          singleRow(db, "SELECT journey_id, name, content FROM attachments WHERE id = 'att-legacy-1'"),
+          singleRow(
+            db,
+            "SELECT journey_id, name, content FROM attachments WHERE id = 'att-legacy-1'",
+          ),
           expected.attachment_legacy_row,
         ],
         [
@@ -162,7 +181,9 @@ function checkFixture(stem: string): { ok: boolean; details: string[] } {
       if (expected.builder_refinement_story_codes) {
         if (expected.builder_refinement_story_codes.length === 0) {
           ok = false;
-          details.push("builder_refinement_story_codes: fixture declares zero codes, expected non-empty");
+          details.push(
+            "builder_refinement_story_codes: fixture declares zero codes, expected non-empty",
+          );
         }
         const rsCodes = (
           db
@@ -177,7 +198,9 @@ function checkFixture(stem: string): { ok: boolean; details: string[] } {
       if (expected.builder_change_request_codes) {
         if (expected.builder_change_request_codes.length === 0) {
           ok = false;
-          details.push("builder_change_request_codes: fixture declares zero codes, expected non-empty");
+          details.push(
+            "builder_change_request_codes: fixture declares zero codes, expected non-empty",
+          );
         }
         const crCodes = (
           db
@@ -197,7 +220,9 @@ function checkFixture(stem: string): { ok: boolean; details: string[] } {
       ).length;
       if (ftsHits !== expected.memories_fts_findable_legacy_row_count) {
         ok = false;
-        details.push(`FTS findability: expected ${expected.memories_fts_findable_legacy_row_count}, got ${ftsHits}`);
+        details.push(
+          `FTS findability: expected ${expected.memories_fts_findable_legacy_row_count}, got ${ftsHits}`,
+        );
       }
     } finally {
       db.close();
@@ -209,7 +234,9 @@ function checkFixture(stem: string): { ok: boolean; details: string[] } {
 }
 
 function main(): number {
-  process.stdout.write("== migration fixture parity (TS runMigrations vs Python real end-state) ==\n");
+  process.stdout.write(
+    "== migration fixture parity (TS runMigrations vs Python real end-state) ==\n",
+  );
   let allOk = true;
   for (const stem of STEMS) {
     const { ok, details } = checkFixture(stem);

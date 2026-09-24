@@ -39,7 +39,8 @@ function runFtsProbe(db: WritableDatabase): { ok: boolean; detail: string } {
 
     db.prepare("UPDATE memories SET content = 'Nada a ver.' WHERE id = 'probe-1'").run();
     assertFtsIntegrity(db);
-    if (matchCount("código") !== 0) return { ok: false, detail: "stale content still matched after UPDATE" };
+    if (matchCount("código") !== 0)
+      return { ok: false, detail: "stale content still matched after UPDATE" };
 
     db.prepare("DELETE FROM memories WHERE id = 'probe-1'").run();
     assertFtsIntegrity(db);

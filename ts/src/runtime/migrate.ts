@@ -19,7 +19,7 @@
 
 import { existsSync } from "node:fs";
 import { openDatabaseReadOnly } from "#db/database.ts";
-import { ensureMigratedOnOpen } from "#db/migrateOnOpen.ts";
+import { ensureMigratedOnOpen, type MigrateVerdict } from "#db/migrateOnOpen.ts";
 
 export interface MigrateOutcome {
   dbPath: string;
@@ -27,10 +27,24 @@ export interface MigrateOutcome {
   after: string[];
   applied: string[];
   migrated: boolean;
-  deferredToPython: boolean;
+  /**
+   * The verdict, and the whole point of CV22.DS10.US2's debt D-025.
+   *
+   * There used to be two: migrated, or not. "Not" covered both `nothing
+   * pending` and a DECLINED migration, and both rendered as
+   * `Migrate result: nothing pending` with exit 0 -- so the updater's migrate
+   * stage passed on a database with pending work nothing had applied, on the
+   * one command whose job is to leave the database correct after an update.
+   */
+  verdict: MigrateVerdict;
+  /** Why the engine declined, when it did. */
+  declinedReason: string | null;
   backupPath: string | null;
   error: string | null;
 }
+
+/** Exit code for a declined migration: not success, not a crash. */
+export const MIGRATE_DECLINED_EXIT = 1;
 
 /** The `_migrations` ledger, sorted. `null` when it cannot be read at all. */
 export function readLedger(dbPath: string): string[] | null {
@@ -60,7 +74,8 @@ export function runMigrate(dbPath: string): MigrateOutcome {
       after: [],
       applied: [],
       migrated: false,
-      deferredToPython: false,
+      verdict: "declined",
+      declinedReason: null,
       backupPath: null,
       error: existsSync(dbPath)
         ? "database has no readable migration ledger"
@@ -77,7 +92,8 @@ export function runMigrate(dbPath: string): MigrateOutcome {
       after,
       applied: [...result.appliedIds],
       migrated: result.migrated,
-      deferredToPython: result.deferredToPython === true,
+      verdict: result.verdict,
+      declinedReason: result.declinedReason ?? null,
       backupPath: result.backupPath ?? null,
       error: null,
     };
@@ -88,7 +104,8 @@ export function runMigrate(dbPath: string): MigrateOutcome {
       after: readLedger(dbPath) ?? before,
       applied: [],
       migrated: false,
-      deferredToPython: false,
+      verdict: "declined",
+      declinedReason: null,
       backupPath: null,
       error: error instanceof Error ? error.message.split("\n")[0] : String(error),
     };
@@ -114,18 +131,24 @@ export function renderMigrate(outcome: MigrateOutcome): string {
   lines.push(`Ledger after: ${outcome.after.length} migration(s)`);
   if (outcome.applied.length > 0) lines.push(`Applied: ${outcome.applied.join(", ")}`);
   if (outcome.backupPath) lines.push(`Pre-migration snapshot: ${outcome.backupPath}`);
-  if (outcome.deferredToPython) {
-    lines.push("Deferred: a Python-authored migration is still pending for this database.");
+  if (outcome.verdict === "declined" && outcome.declinedReason) {
+    lines.push(`Declined: ${outcome.declinedReason}.`);
   }
   if (!outcome.migrated) {
     lines.push("Take a verified archive first if you are running this outside an update:");
     lines.push("  runtime backup");
   }
   lines.push("");
+  // Three verdicts, three lines. `declined` is NOT `nothing pending`: the first
+  // says the engine refused work it could not safely do, the second that there
+  // was none. Conflating them is what let an update report a passing migrate
+  // stage on a database that had not been migrated.
   lines.push(
-    outcome.migrated
+    outcome.verdict === "applied"
       ? `Migrate result: applied ${outcome.applied.length} migration(s)`
-      : "Migrate result: nothing pending",
+      : outcome.verdict === "declined"
+        ? "Migrate result: declined"
+        : "Migrate result: nothing pending",
   );
   return `${lines.join("\n")}\n`;
 }

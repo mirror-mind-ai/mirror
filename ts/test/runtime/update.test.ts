@@ -351,3 +351,43 @@ test("the render and the log line report the same run", () => {
   assert.match(line, /result=success/);
   assert.match(line, /status gate=pass/);
 });
+
+// --- CV22.DS10.TS5, debt D-025 ---------------------------------------------
+
+test("a declined migration FAILS the update instead of passing it", () => {
+  // The defect this closes, in the shape the operator met it: the migrate
+  // stage read `Migrate result: nothing pending` with exit 0 and reported
+  // `[✓] migrate: nothing pending` for a database with pending work that
+  // nothing had applied. The update then completed successfully, on the one
+  // command whose job is to leave the database correct.
+  //
+  // TS5 gives the declined verdict a non-zero exit. The stage already fails on
+  // a non-zero code, so the whole recovery path -- backup named, restore
+  // instructions, update marked failed -- comes for free and is asserted here
+  // rather than assumed.
+  const result = runUpdate(
+    deps({
+      spawnFrontDoor: (argv) =>
+        argv[1] === "migrate"
+          ? {
+              code: 1,
+              stdout:
+                "Declined: database carries migrations this core does not know (999_x).\n" +
+                "Migrate result: declined\n",
+              stderr: "",
+            }
+          : { code: 0, stdout: "", stderr: "" },
+    }),
+  );
+
+  assert.ok(stageNames(result).includes("migrate=fail"), stageNames(result).join(" "));
+  assert.equal(result.success, false, "an update whose migration was declined did not succeed");
+
+  const render = renderUpdateResult(result);
+  assert.match(render, /^\[✗\] migrate: /m);
+  assert.doesNotMatch(render, /^\[✓\] migrate/m);
+  assert.match(render, /^Update result: failed$/m);
+  // And the operator is told how to get back, because the code moved and the
+  // database may not have.
+  assert.match(render, /Restore the database from the backup/);
+});

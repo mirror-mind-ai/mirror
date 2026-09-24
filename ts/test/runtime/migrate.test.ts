@@ -15,6 +15,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
+import { openDatabaseForBootstrap } from "#db/database.ts";
 import { readLedger, renderMigrate, runMigrate } from "#runtime/migrate.ts";
 
 function scratch(): { dir: string; cleanup: () => void } {
@@ -88,4 +89,65 @@ test("readLedger returns null for an unreadable database rather than throwing", 
   } finally {
     f.cleanup();
   }
+});
+
+// --- CV22.DS10.TS5, debt D-025 ---------------------------------------------
+
+test("a declined migration is NOT reported as nothing pending", () => {
+  // The defect, exactly: `ensureMigratedOnOpen` declined, `runMigrate` recorded
+  // it faithfully, and `renderMigrate` then printed `Migrate result: nothing
+  // pending` with exit 0. The updater's migrate stage read that result line and
+  // reported `[✓] migrate: nothing pending` for a database nothing had
+  // migrated.
+  const f = scratch();
+  try {
+    const ws = { dbPath: join(f.dir, "memory.db") };
+    bootstrapDatabase(ws.dbPath).close();
+    const db = openDatabaseForBootstrap(ws.dbPath);
+    try {
+      db.prepare("INSERT INTO _migrations (id, applied_at) VALUES (?, ?)").run(
+        "999_from_the_future",
+        "2026-01-01T00:00:00Z",
+      );
+    } finally {
+      db.close();
+    }
+
+    const outcome = runMigrate(ws.dbPath);
+    const render = renderMigrate(outcome);
+
+    assert.equal(outcome.verdict, "declined");
+    assert.match(render, /^Migrate result: declined$/m);
+    assert.doesNotMatch(render, /nothing pending/);
+    // And it says WHY, because an operator reading a refusal needs the reason.
+    assert.match(render, /^Declined: .*999_from_the_future.*$/m);
+  } finally {
+    f.cleanup();
+  }
+});
+
+test("the three verdicts are distinguishable in the rendered output", () => {
+  // One line per verdict, never shared. This is what the updater greps.
+  const base = {
+    dbPath: "/tmp/x.db",
+    before: [],
+    after: [],
+    applied: [],
+    backupPath: null,
+    error: null,
+    declinedReason: null,
+  };
+
+  assert.match(
+    renderMigrate({ ...base, verdict: "applied", migrated: true, applied: ["017_x"] }),
+    /^Migrate result: applied 1 migration\(s\)$/m,
+  );
+  assert.match(
+    renderMigrate({ ...base, verdict: "nothing_pending", migrated: false }),
+    /^Migrate result: nothing pending$/m,
+  );
+  assert.match(
+    renderMigrate({ ...base, verdict: "declined", migrated: false, declinedReason: "because" }),
+    /^Migrate result: declined$/m,
+  );
 });

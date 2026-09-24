@@ -14,7 +14,6 @@
 // lose the warning, which is the only trace that a Navigator worked in a
 // production clone on purpose.
 
-import { existsSync, statSync } from "node:fs";
 import { inspectCloneRole } from "#runtime/git.ts";
 import { findPackageIdentity } from "#runtime/packageIdentity.ts";
 
@@ -96,16 +95,4 @@ export function inspectBuilderCloneRole(
       "  To proceed here anyway, pass --ignore-production-role.\n",
     exitCode: 2,
   };
-}
-
-function isFile(path: string): boolean {
-  try {
-    return statSync(path).isFile();
-  } catch {
-    return false;
-  }
-}
-
-function isDirectory(path: string): boolean {
-  return existsSync(path) && statSync(path).isDirectory();
 }

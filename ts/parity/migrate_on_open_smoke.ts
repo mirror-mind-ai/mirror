@@ -59,9 +59,9 @@ function hasParentColumn(dbPath: string): boolean {
 function jsonParentCount(dbPath: string): number {
   const db = openDatabaseReadOnly(dbPath);
   try {
-    const rows = db
-      .prepare("SELECT metadata FROM identity WHERE layer = 'journey'")
-      .all() as { metadata: string | null }[];
+    const rows = db.prepare("SELECT metadata FROM identity WHERE layer = 'journey'").all() as {
+      metadata: string | null;
+    }[];
     return rows.filter((r) => resolveParentJourney({ metadata: r.metadata }) !== "").length;
   } finally {
     db.close();
@@ -92,9 +92,9 @@ function columnParentCount(dbPath: string): number {
 function ensurePre017(dbPath: string): void {
   const db = openDatabaseForBootstrap(dbPath);
   try {
-    const hasColumn = (db.prepare('PRAGMA table_info("identity")').all() as { name: string }[]).some(
-      (r) => r.name === "parent_journey",
-    );
+    const hasColumn = (
+      db.prepare('PRAGMA table_info("identity")').all() as { name: string }[]
+    ).some((r) => r.name === "parent_journey");
     if (hasColumn) {
       db.exec("DROP INDEX IF EXISTS idx_identity_parent_journey");
       db.exec("ALTER TABLE identity DROP COLUMN parent_journey");
@@ -176,9 +176,21 @@ function main(): number {
       ok: backfilled === expectedBackfill,
       detail: `column=${backfilled} expected=${expectedBackfill}`,
     },
-    { label: "pre-migration backup taken", ok: existsSync(backupPath), detail: String(existsSync(backupPath)) },
-    { label: "migrate_on_open logged", ok: /migrate_on_open/.test(log), detail: String(/migrate_on_open/.test(log)) },
-    { label: "log names migration 017", ok: log.includes(MIGRATION_017), detail: String(log.includes(MIGRATION_017)) },
+    {
+      label: "pre-migration backup taken",
+      ok: existsSync(backupPath),
+      detail: String(existsSync(backupPath)),
+    },
+    {
+      label: "migrate_on_open logged",
+      ok: /migrate_on_open/.test(log),
+      detail: String(/migrate_on_open/.test(log)),
+    },
+    {
+      label: "log names migration 017",
+      ok: log.includes(MIGRATION_017),
+      detail: String(log.includes(MIGRATION_017)),
+    },
   ];
 
   const passed = checks.every((check) => check.ok);

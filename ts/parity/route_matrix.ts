@@ -194,8 +194,15 @@ section("every DS8 leaf is live by default, none refused by a story's name", NO_
 console.log("\nthe retired MIRROR_TS_EXTERNAL_ROUTES gate is inert");
 for (const leaf of LIVE_LEAVES) {
   const clean = routeMemoryCommand(leaf.split(" "), {});
-  const staleOn = routeMemoryCommand(leaf.split(" "), { MIRROR_TS_EXTERNAL_ROUTES: "1" });
-  const staleOff = routeMemoryCommand(leaf.split(" "), { MIRROR_TS_EXTERNAL_ROUTES: "0" });
+  // The cast is the assertion: `RouteEnvironment` no longer DECLARES this key,
+  // because the gate is gone from the type as well as from the code. Passing it
+  // anyway is exactly what a user with a stale `.env` does, and the point is
+  // that it changes nothing. (CV22.DS10.TS5 made ts/parity typechecked, which
+  // is how this surfaced; before that the file compiled against nothing.)
+  const stale = (value: string): RouteEnvironment =>
+    ({ MIRROR_TS_EXTERNAL_ROUTES: value }) as unknown as RouteEnvironment;
+  const staleOn = routeMemoryCommand(leaf.split(" "), stale("1"));
+  const staleOff = routeMemoryCommand(leaf.split(" "), stale("0"));
   const ok =
     staleOn.engine === clean.engine &&
     staleOff.engine === clean.engine &&

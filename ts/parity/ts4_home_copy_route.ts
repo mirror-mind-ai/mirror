@@ -126,7 +126,11 @@ function run(
     return { stdout, stderr: "", exitCode: 0 };
   } catch (error) {
     const failure = error as { stdout?: string; stderr?: string; status?: number };
-    return { stdout: failure.stdout ?? "", stderr: failure.stderr ?? "", exitCode: failure.status ?? 1 };
+    return {
+      stdout: failure.stdout ?? "",
+      stderr: failure.stderr ?? "",
+      exitCode: failure.status ?? 1,
+    };
   }
 }
 
@@ -155,11 +159,31 @@ function buildSteps(home: string): Step[] {
     { label: "extensions validate", argv: ["extensions", "validate"], gate: catalogGate },
     { label: "ext list", argv: ["ext", "list"], gate: catalogGate },
     { label: "list all", argv: ["list", "all"], gate: catalogGate },
-    { label: "inspect runtime-catalog pi", argv: ["inspect", "runtime-catalog", "pi"], gate: catalogGate },
-    { label: "inspect runtime-catalog claude", argv: ["inspect", "runtime-catalog", "claude"], gate: catalogGate },
-    { label: "inspect llm-calls --summary", argv: ["inspect", "llm-calls", "--summary"], gate: catalogGate },
-    { label: "inspect llm-calls --limit 5", argv: ["inspect", "llm-calls", "--limit", "5"], gate: catalogGate },
-    { label: "inspect embedding-provenance", argv: ["inspect", "embedding-provenance"], gate: catalogGate },
+    {
+      label: "inspect runtime-catalog pi",
+      argv: ["inspect", "runtime-catalog", "pi"],
+      gate: catalogGate,
+    },
+    {
+      label: "inspect runtime-catalog claude",
+      argv: ["inspect", "runtime-catalog", "claude"],
+      gate: catalogGate,
+    },
+    {
+      label: "inspect llm-calls --summary",
+      argv: ["inspect", "llm-calls", "--summary"],
+      gate: catalogGate,
+    },
+    {
+      label: "inspect llm-calls --limit 5",
+      argv: ["inspect", "llm-calls", "--limit", "5"],
+      gate: catalogGate,
+    },
+    {
+      label: "inspect embedding-provenance",
+      argv: ["inspect", "embedding-provenance"],
+      gate: catalogGate,
+    },
   ];
 
   // Step 1/2 — every installed extension, inspected and then listed.
@@ -189,8 +213,18 @@ function buildSteps(home: string): Step[] {
   });
 
   // Step 7 — the revert drills: one leaf per family, each forced back to Python.
-  steps.push({ label: "revert: extensions list", argv: ["extensions", "list"], gate: { MIRROR_TS_EXTENSIONS: "0" }, revert: true });
-  steps.push({ label: "revert: ext list", argv: ["ext", "list"], gate: { MIRROR_TS_EXTENSIONS: "0" }, revert: true });
+  steps.push({
+    label: "revert: extensions list",
+    argv: ["extensions", "list"],
+    gate: { MIRROR_TS_EXTENSIONS: "0" },
+    revert: true,
+  });
+  steps.push({
+    label: "revert: ext list",
+    argv: ["ext", "list"],
+    gate: { MIRROR_TS_EXTENSIONS: "0" },
+    revert: true,
+  });
   steps.push({
     label: "revert: conversations --metadata-lifecycle-demo",
     argv: ["conversations", "--metadata-lifecycle-demo"],
@@ -252,8 +286,14 @@ function compareIdentityEdit(pythonHome: string, tsHome: string): number {
   const pythonContent = identityContent(pythonHome, target.layer, target.key);
   const tsContent = identityContent(tsHome, target.layer, target.key);
 
-  if (python.stdout === ts.stdout && python.exitCode === ts.exitCode && pythonContent === tsContent) {
-    console.log(`  OK    identity edit ${target.layer}/${target.key} (scripted editor, content equal)`);
+  if (
+    python.stdout === ts.stdout &&
+    python.exitCode === ts.exitCode &&
+    pythonContent === tsContent
+  ) {
+    console.log(
+      `  OK    identity edit ${target.layer}/${target.key} (scripted editor, content equal)`,
+    );
     return 0;
   }
   console.log(`  DIFF  identity edit ${target.layer}/${target.key}`);
@@ -266,9 +306,9 @@ function compareIdentityEdit(pythonHome: string, tsHome: string): number {
 function firstIdentityEntry(home: string): { layer: string; key: string } | null {
   const db = new DatabaseSync(join(home, "memory_test.db"), { readOnly: true });
   try {
-    const row = db
-      .prepare("SELECT layer, key FROM identity ORDER BY layer, key LIMIT 1")
-      .get() as { layer?: string; key?: string } | undefined;
+    const row = db.prepare("SELECT layer, key FROM identity ORDER BY layer, key LIMIT 1").get() as
+      | { layer?: string; key?: string }
+      | undefined;
     return row?.layer && row.key ? { layer: row.layer, key: row.key } : null;
   } finally {
     db.close();
@@ -315,7 +355,9 @@ function compareLifecycleApply(pythonHome: string, tsHome: string): number {
     const tsRow = conversationRow(tsHome, id);
     const sameReport = normalize(python.stdout, pythonHome) === normalize(ts.stdout, tsHome);
     if (sameReport && python.exitCode === ts.exitCode && pythonRow === tsRow) {
-      console.log(`  OK    metadata-lifecycle-apply on a ${state} conversation (report and row equal)`);
+      console.log(
+        `  OK    metadata-lifecycle-apply on a ${state} conversation (report and row equal)`,
+      );
       continue;
     }
     failures += 1;
@@ -340,7 +382,7 @@ function classifyConversations(home: string): Array<{ state: string; id: string 
     // and the dry-run below still decides; the SQL only nominates.
     const locked = db
       .prepare(
-        "SELECT id FROM conversations WHERE metadata LIKE '%\"title_status\": \"manual\"%' " +
+        'SELECT id FROM conversations WHERE metadata LIKE \'%"title_status": "manual"%\' ' +
           "ORDER BY started_at DESC LIMIT 5",
       )
       .all()
@@ -360,7 +402,8 @@ function classifyConversations(home: string): Array<{ state: string; id: string 
     if (report.exitCode !== 0) continue;
     let fields: Record<string, { decision?: string }>;
     try {
-      fields = (JSON.parse(report.stdout) as { fields: Record<string, { decision?: string }> }).fields;
+      fields = (JSON.parse(report.stdout) as { fields: Record<string, { decision?: string }> })
+        .fields;
     } catch {
       continue;
     }

@@ -25,28 +25,26 @@
  * story package.
  */
 
-import { runConsult } from "#consult/core.ts";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { parseConsultArgs } from "#consult/args.ts";
+import { runConsult } from "#consult/core.ts";
 import { consolidateScan, shadowScan } from "#cultivation/scan.ts";
 import { assertCopyTarget } from "#db/copyGuard.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
-import { routeMemoryCommand } from "#frontDoor/routing.ts";
-import { runConsolidateApply } from "#frontDoor/cultivationRoute.ts";
 import {
   runDescriptorGenerateRoute,
   runJournalRoute,
   runWeekPlanRoute,
 } from "#frontDoor/contentTailRoute.ts";
+import { runConsolidateApply } from "#frontDoor/cultivationRoute.ts";
+import { routeMemoryCommand } from "#frontDoor/routing.ts";
 import { runSoulRoute } from "#frontDoor/soulRoute.ts";
 import { runMirrorLoad } from "#mirror/orchestration.ts";
-import {
-  type ProviderCallReport,
-  CallOutcomeTally,
-  formatCallOutcome,
-} from "#observability/callOutcome.ts";
-import { chatLedgerHook, embeddingLedgerHook } from "#observability/ledgerHooks.ts";
+import { CallOutcomeTally, type ProviderCallReport } from "#observability/callOutcome.ts";
+import { chatLedgerHook } from "#observability/ledgerHooks.ts";
 import { resolveEmbeddingModel, resolveExtractionModel } from "#providers/config.ts";
-import { EMBEDDING_DIMENSIONS, generateEmbeddingSafely } from "#providers/embedding.ts";
+import { EMBEDDING_DIMENSIONS } from "#providers/embedding.ts";
 import { resolveFamilyProviders } from "#providers/familyProviders.ts";
 import {
   CONSULT_ASK_TRANSPORT,
@@ -60,8 +58,6 @@ import {
   WEEK_PLAN_TRANSPORT,
 } from "#providers/transport.ts";
 import { newId, nowIso } from "#util/pyGenerators.ts";
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
 
 const printed: string[] = [];
 
@@ -125,7 +121,9 @@ function ledgerSince(db: WritableDatabase, rowid: number): LedgerRow[] {
 }
 
 function maxLedgerRowid(db: WritableDatabase): number {
-  const row = db.prepare("SELECT COALESCE(MAX(rowid), 0) AS n FROM llm_calls").get() as { n: number };
+  const row = db.prepare("SELECT COALESCE(MAX(rowid), 0) AS n FROM llm_calls").get() as {
+    n: number;
+  };
   return row.n;
 }
 
@@ -379,7 +377,11 @@ async function harvestProbe(db: WritableDatabase, sessionId: string): Promise<vo
 }
 
 /** `week plan`: one call, a parsed item list, a pending file in tmp. */
-async function weekPlanProbe(db: WritableDatabase, text: string, pendingPath: string): Promise<void> {
+async function weekPlanProbe(
+  db: WritableDatabase,
+  text: string,
+  pendingPath: string,
+): Promise<void> {
   const family = await resolveFamilyProviders(process.env, WEEK_PLAN_TRANSPORT);
   if (!family?.llm) fail("week plan did not resolve an LLM provider");
   check(family.mode === "live", "transport is live", family.mode);
@@ -401,11 +403,7 @@ async function weekPlanProbe(db: WritableDatabase, text: string, pendingPath: st
 }
 
 /** `descriptor generate` for ONE entity: the fan-out is the thing to bound. */
-async function descriptorProbe(
-  db: WritableDatabase,
-  layer: string,
-  key: string,
-): Promise<void> {
+async function descriptorProbe(db: WritableDatabase, layer: string, key: string): Promise<void> {
   const family = await resolveFamilyProviders(process.env, DESCRIPTOR_TRANSPORT);
   if (!family?.llm) fail("descriptor generate did not resolve an LLM provider");
   check(family.mode === "live", "transport is live", family.mode);
@@ -500,9 +498,7 @@ async function scanProbe(db: WritableDatabase, which: "consolidate" | "shadow"):
   // requireAnswered: a seeded-or-real cluster that produces no proposal at all
   // is the exact run a count-based verdict would wave through.
   checkOutcomes(tally, { requireAnswered: which === "consolidate" });
-  checkLedger(ledgerSince(db, before), [
-    which === "consolidate" ? "consolidation" : "shadow_scan",
-  ]);
+  checkLedger(ledgerSince(db, before), [which === "consolidate" ? "consolidation" : "shadow_scan"]);
 }
 
 // --- helpers ------------------------------------------------------------------
@@ -580,7 +576,11 @@ async function main(argv: readonly string[]): Promise<void> {
         await askProbe(db, optionValue(argv, "--question") ?? "Reply with one short sentence.");
         break;
       case "mirror-query":
-        await mirrorQueryProbe(db, dbPath, optionValue(argv, "--query") ?? "how is the port going?");
+        await mirrorQueryProbe(
+          db,
+          dbPath,
+          optionValue(argv, "--query") ?? "how is the port going?",
+        );
         break;
       case "journal":
         await journalProbe(

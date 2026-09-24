@@ -53,7 +53,11 @@ function optionValue(argv: readonly string[], name: string): string | undefined 
 
 function bytesToVector(blob: Uint8Array): readonly number[] {
   return Array.from(
-    new Float32Array(blob.buffer, blob.byteOffset, blob.byteLength / Float32Array.BYTES_PER_ELEMENT),
+    new Float32Array(
+      blob.buffer,
+      blob.byteOffset,
+      blob.byteLength / Float32Array.BYTES_PER_ELEMENT,
+    ),
   );
 }
 
@@ -114,18 +118,16 @@ async function main(argv: readonly string[]): Promise<void> {
       "no NaN or Infinity would reach the corpus",
     );
     const selfSimilarity = cosineSimilarity(first.vector, second.vector);
-    check(
-      selfSimilarity >= 0.999,
-      "self-similarity",
-      `cos=${selfSimilarity.toFixed(6)} >= 0.999`,
-    );
+    check(selfSimilarity >= 0.999, "self-similarity", `cos=${selfSimilarity.toFixed(6)} >= 0.999`);
     const distantSimilarity = cosineSimilarity(first.vector, distant.vector);
     check(
       distantSimilarity < selfSimilarity,
       "an unrelated sentence is further away",
       `cos=${distantSimilarity.toFixed(4)} < ${selfSimilarity.toFixed(4)}`,
     );
-    say(`  ..  first-call latency ${firstMs}ms, usage prompt_tokens=${first.promptTokens ?? "null"}`);
+    say(
+      `  ..  first-call latency ${firstMs}ms, usage prompt_tokens=${first.promptTokens ?? "null"}`,
+    );
 
     const crossCheckId = optionValue(argv, "--cross-check");
     if (crossCheckId) await crossCheck(db, provider, crossCheckId);

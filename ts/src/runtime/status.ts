@@ -20,7 +20,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, realpathSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { type Database, openDatabaseReadOnly } from "#db/database.ts";
-import { KNOWN_MIGRATION_IDS, TS_AUTHORED_MIGRATION_IDS } from "#db/schemaState.ts";
+import { KNOWN_MIGRATION_IDS } from "#db/schemaState.ts";
 import { ExtensionError } from "#extensions/errors.ts";
 import { loadExtensionManifest } from "#extensions/manifest.ts";
 import { inspectMigrationFiles } from "#extensions/migrations.ts";
@@ -119,10 +119,19 @@ export function inspectCoreMigrations(
   const knownIds = KNOWN_MIGRATION_IDS;
   // With no ledger to read, "required" cannot be computed from what the
   // database carries, so it falls back to the migrations every database must
-  // have -- the Python set. Counting all 17 here would report `unknown/17` on
-  // a missing database where the oracle says `unknown/16`, inventing a
-  // difference in the one branch that has nothing to disagree about.
-  const requiredIds = knownIds.filter((id) => !TS_AUTHORED_MIGRATION_IDS.has(id));
+  // have -- the set the ORACLE knows. Counting all 17 here would report
+  // `unknown/17` on a missing database where the oracle says `unknown/16`,
+  // inventing a difference in the one branch that has nothing to disagree
+  // about, and 27 recorded golden cases grade exactly this number.
+  //
+  // CV22.DS10.TS5 deleted `TS_AUTHORED_MIGRATION_IDS` from the schema module,
+  // because with one custodian the TS-authored/Python-authored split is not a
+  // schema fact any more. It survives HERE, narrowly and by name, because this
+  // is not a schema question but a RENDERING PARITY one: it exists only to keep
+  // matching a recorded oracle. It goes at plateau 3 with that oracle, and the
+  // honest denominator afterwards is simply every migration this core knows.
+  const ORACLE_ERA_ONLY: ReadonlySet<string> = new Set(["017_journey_parent_column"]);
+  const requiredIds = knownIds.filter((id) => !ORACLE_ERA_ONLY.has(id));
   if (dbPath === null) {
     return health({ known_count: requiredIds.length, note: "database path unknown" });
   }
@@ -157,12 +166,10 @@ export function inspectCoreMigrations(
   }
 
   const applied = new Set(rows);
-  const missing = knownIds.filter((id) => !applied.has(id) && !TS_AUTHORED_MIGRATION_IDS.has(id));
+  const missing = knownIds.filter((id) => !applied.has(id) && !ORACLE_ERA_ONLY.has(id));
   // Required = every Python migration, plus the TS-authored ones this database
   // already carries. See the rule note above.
-  const requiredCount = knownIds.filter(
-    (id) => !TS_AUTHORED_MIGRATION_IDS.has(id) || applied.has(id),
-  ).length;
+  const requiredCount = knownIds.filter((id) => !ORACLE_ERA_ONLY.has(id) || applied.has(id)).length;
   const knownSet = new Set(knownIds);
   const unknown = sortByCodePoint(rows.filter((id) => !knownSet.has(id)));
   const appliedKnown = knownIds.filter((id) => applied.has(id)).length;

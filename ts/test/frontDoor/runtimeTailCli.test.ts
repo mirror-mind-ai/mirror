@@ -21,6 +21,7 @@ import {
 import { join } from "node:path";
 import test from "node:test";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
+import { openDatabaseForBootstrap } from "#db/database.ts";
 import { stageMirrorPackage } from "../support/mirrorTree.ts";
 
 const CLI = new URL("../../src/frontDoor/cli.ts", import.meta.url).pathname;
@@ -458,6 +459,41 @@ test("MIRROR_TS_RUNTIME_UPDATE=0 hands the updater family back, and only it", ()
     const version = runCli(f, ["runtime", "version"], { MIRROR_TS_RUNTIME_UPDATE: "0" });
     assert.equal(version.status, 0, version.stderr);
     assert.match(version.stdout, /^Mirror runtime version$/m);
+  } finally {
+    f.cleanup();
+  }
+});
+
+// --- CV22.DS10.TS5, debt D-025: a declined migration must FAIL --------------
+
+test("runtime migrate exits non-zero when the engine declines, and zero when it does not", () => {
+  // The exit code is the whole fix. `update.ts` fails its migrate stage on a
+  // non-zero code and nothing else, so this is what turns "the engine refused
+  // work it could not safely do" from `[✓] migrate: nothing pending` into a
+  // failed stage that stops the update and tells the operator to restore.
+  const f = fixture();
+  try {
+    const healthy = runCli(f, ["runtime", "migrate"]);
+    assert.equal(healthy.status, 0, healthy.stderr);
+    assert.match(healthy.stdout, /^Migrate result: nothing pending$/m);
+
+    // Make the database look newer than this core: the structural decline.
+    const db = openDatabaseForBootstrap(join(f.home, "memory.db"));
+    try {
+      db.prepare("INSERT INTO _migrations (id, applied_at) VALUES (?, ?)").run(
+        "999_from_the_future",
+        "2026-01-01T00:00:00Z",
+      );
+    } finally {
+      db.close();
+    }
+
+    const declined = runCli(f, ["runtime", "migrate"]);
+
+    assert.equal(declined.status, 1, "a declined migration is not a success");
+    assert.match(declined.stdout, /^Migrate result: declined$/m);
+    assert.match(declined.stdout, /^Declined: .*999_from_the_future/m);
+    assert.doesNotMatch(declined.stdout, /nothing pending/);
   } finally {
     f.cleanup();
   }

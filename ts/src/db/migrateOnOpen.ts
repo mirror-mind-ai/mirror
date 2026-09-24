@@ -1,20 +1,30 @@
 // Migrate-on-open — CV22.DS6.US3 (D2/D3).
 //
-// The front door's activation seam for TS-authored forward migrations on an
-// *existing* database. Python's `get_connection` migrates on every open, but
-// Python's MIGRATIONS list stops before the TS-only tail (017+), so Python
-// physically cannot apply them; and `bootstrapDatabaseIfMissing` only runs on a
-// *missing* file. Without this seam, an existing database never receives 017 —
-// the column stays dormant, merely tolerated by `assertSchemaState`.
+// The front door's activation seam for forward migrations on an *existing*
+// database. `bootstrapDatabaseIfMissing` only runs on a *missing* file, so
+// without this seam an existing database never receives a new migration -- the
+// column stays dormant, merely tolerated by `assertSchemaState`.
+//
+// CV22.DS10.TS5 made TypeScript the SOLE custodian (D-025). The seam was built
+// for two engines: Python's MIGRATIONS list stopped at 016, so this applied
+// only the TS-authored tail and DEFERRED whenever a Python-authored migration
+// was pending, rather than let TypeScript silently apply work Python still
+// owned. That deferral was honest while Python existed. Its verdict was not --
+// `runtime migrate` printed `nothing pending`, exit 0, and the updater's
+// migrate stage passed on a database with pending work nothing had applied.
+//
+// There is no second engine to defer to now, so the split is gone and every
+// pending known migration is applied here. What remains as `declined` is
+// structural and cannot be resolved by another engine: a file with no
+// `_migrations` table, or a database carrying migrations this core does not
+// know. Those fail loudly.
 //
 // Discipline (see this story's plan):
 //   - D2: called before serving on BOTH read and write opens, but the steady
-//     state is a single `_migrations` read — no lock, no backup — so the hot
+//     state is a single `_migrations` read -- no lock, no backup -- so the hot
 //     path of an already-current database pays almost nothing.
 //   - D3: the backup is conditional and owned here (not the per-write
 //     `ensureBackup`), taken only once we have committed to applying a migration.
-//   - A Python-behind database is DEFERRED to Python (matching the softened
-//     guard): we never let TS silently apply a migration Python still owns.
 //   - Backup-first, then lock, then idempotent `runMigrations`; the pending set
 //     is re-checked under the lock so concurrent openers cannot double-apply or
 //     double-backup (the loser sees nothing pending and no-ops).
@@ -30,7 +40,7 @@ import {
   snapshotDatabaseTo,
 } from "./database.ts";
 import { runMigrations } from "./migrations.ts";
-import { KNOWN_MIGRATION_IDS, TS_AUTHORED_MIGRATION_IDS } from "./schemaState.ts";
+import { KNOWN_MIGRATION_IDS } from "./schemaState.ts";
 
 const BACKUP_DIR_NAME = "backups";
 const MIGRATION_BACKUP_FILE_NAME = "frontdoor-pre-migration-backup.db";
@@ -42,25 +52,46 @@ export function migrationBackupPathFor(dbPath: string): string {
   return join(dirname(dbPath), BACKUP_DIR_NAME, MIGRATION_BACKUP_FILE_NAME);
 }
 
+/**
+ * What migrate-on-open did. THREE verdicts, not two (CV22.DS10.TS5, D-025).
+ *
+ * `declined` used to be `deferredToPython`, and it was honest while Python
+ * existed: the work was real, and another engine could do it. What was not
+ * honest was the VERDICT -- `runMigrate` reported `nothing pending` with exit
+ * 0, and the updater read that as a passing stage on a database with pending
+ * work nothing had applied.
+ *
+ * After this story there is nothing to defer to, so a decline is structural:
+ * the file is not a Mirror database, or it carries migrations this core does
+ * not know. Both are real refusals that must fail loudly rather than pass
+ * quietly, on the one command whose job is to leave the database correct after
+ * an update.
+ */
+export type MigrateVerdict = "applied" | "nothing_pending" | "declined";
+
 export interface MigrateOnOpenResult {
+  /** Which of the three things happened. */
+  verdict: MigrateVerdict;
   /** True only when this call actually applied one or more migrations. */
   migrated: boolean;
-  /** The TS-authored migration ids applied (empty unless `migrated`). */
+  /** The migration ids applied (empty unless `migrated`). */
   appliedIds: readonly string[];
   /** The pre-migration snapshot path, when a migration was applied. */
   backupPath?: string;
-  /** True when work was declined because a Python migration is still pending. */
-  deferredToPython?: boolean;
+  /** Why the work was declined, when it was. Never empty for `declined`. */
+  declinedReason?: string;
 }
 
 export interface MigrateOnOpenOptions extends OpenOptions, BootstrapLockOptions {}
 
-const NOT_MIGRATED: MigrateOnOpenResult = { migrated: false, appliedIds: [] };
-const DEFERRED: MigrateOnOpenResult = { migrated: false, appliedIds: [], deferredToPython: true };
+const NOTHING_PENDING: MigrateOnOpenResult = {
+  verdict: "nothing_pending",
+  migrated: false,
+  appliedIds: [],
+};
 
-interface PendingAssessment {
-  tsAuthoredPending: string[];
-  pythonPending: string[];
+function declined(reason: string): MigrateOnOpenResult {
+  return { verdict: "declined", migrated: false, appliedIds: [], declinedReason: reason };
 }
 
 /**
@@ -81,21 +112,23 @@ function appliedMigrationIds(dbPath: string, options: OpenOptions): Set<string> 
   }
 }
 
-/** Split the pending known migrations into the TS-authored tail (which this seam
- * may apply) and any Python migration (whose presence defers the whole thing). */
-function assessPending(applied: Set<string>): PendingAssessment {
-  const pending = KNOWN_MIGRATION_IDS.filter((id) => !applied.has(id));
-  return {
-    tsAuthoredPending: pending.filter((id) => TS_AUTHORED_MIGRATION_IDS.has(id)),
-    pythonPending: pending.filter((id) => !TS_AUTHORED_MIGRATION_IDS.has(id)),
-  };
+/**
+ * The known migrations this database has not applied, in order.
+ *
+ * No split any more. Until CV22.DS10.TS5 this separated the TS-authored tail
+ * from Python-authored ids and declined the whole thing whenever a Python one
+ * was pending -- correct while Python could still apply them. TypeScript
+ * carries all seventeen and is the only engine left, so every pending known
+ * migration is simply pending.
+ */
+function pendingMigrations(applied: Set<string>): string[] {
+  return KNOWN_MIGRATION_IDS.filter((id) => !applied.has(id));
 }
 
-/** Decide from an assessment whether to migrate, defer, or no-op. */
-function decision(assessment: PendingAssessment): "migrate" | "defer" | "none" {
-  if (assessment.tsAuthoredPending.length === 0) return "none";
-  if (assessment.pythonPending.length > 0) return "defer";
-  return "migrate";
+/** Migrations the database carries that this core does not know about. */
+function unknownMigrations(applied: Set<string>): string[] {
+  const known = new Set(KNOWN_MIGRATION_IDS);
+  return [...applied].filter((id) => !known.has(id)).sort();
 }
 
 function takeBackup(dbPath: string): string {
@@ -118,35 +151,37 @@ export function ensureMigratedOnOpen(
   dbPath: string,
   options: MigrateOnOpenOptions = {},
 ): MigrateOnOpenResult {
-  if (!existsSync(dbPath)) return NOT_MIGRATED;
+  // A missing file is not this seam's business: `bootstrapDatabaseIfMissing`
+  // owns creation, and `runMigrate` reports the absence with its own message.
+  if (!existsSync(dbPath)) return NOTHING_PENDING;
 
   // Cheap steady-state pre-check — no lock, no backup.
   const applied = appliedMigrationIds(dbPath, options);
-  if (applied === null) return NOT_MIGRATED;
-  switch (decision(assessPending(applied))) {
-    case "none":
-      return NOT_MIGRATED;
-    case "defer":
-      return DEFERRED;
-    default:
-      break;
+  if (applied === null) {
+    return declined("database has no _migrations table — not a bootstrapped Mirror database");
   }
+  const unknown = unknownMigrations(applied);
+  if (unknown.length > 0) {
+    // The database is AHEAD of this core. Applying anything now would write
+    // with older code against a newer schema; declining is the safe answer,
+    // and saying so is the honest one.
+    return declined(
+      `database carries migrations this core does not know (${unknown.join(", ")}) — update this Mirror installation`,
+    );
+  }
+  if (pendingMigrations(applied).length === 0) return NOTHING_PENDING;
 
   // Slow path: serialize with concurrent openers and re-decide under the lock so
   // a race cannot double-apply or double-backup.
   const lock = acquireBootstrapLock(dbPath, options);
   try {
     const appliedNow = appliedMigrationIds(dbPath, options);
-    if (appliedNow === null) return NOT_MIGRATED;
-    const assessment = assessPending(appliedNow);
-    switch (decision(assessment)) {
-      case "none":
-        return NOT_MIGRATED; // another opener migrated between the pre-check and the lock
-      case "defer":
-        return DEFERRED;
-      default:
-        break;
+    if (appliedNow === null) {
+      return declined("database has no _migrations table — not a bootstrapped Mirror database");
     }
+    const pending = pendingMigrations(appliedNow);
+    // Another opener migrated between the pre-check and the lock.
+    if (pending.length === 0) return NOTHING_PENDING;
 
     const backupPath = takeBackup(dbPath);
     const db = openDatabaseForBootstrap(dbPath, options);
@@ -155,7 +190,7 @@ export function ensureMigratedOnOpen(
     } finally {
       db.close();
     }
-    return { migrated: true, appliedIds: assessment.tsAuthoredPending, backupPath };
+    return { verdict: "applied", migrated: true, appliedIds: pending, backupPath };
   } finally {
     lock.release();
   }

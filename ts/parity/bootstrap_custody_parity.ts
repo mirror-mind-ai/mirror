@@ -40,7 +40,13 @@ import { SCHEMA_INVENTORY_SNAPSHOT } from "../src/db/schemaInventorySnapshot.ts"
 import { KNOWN_MIGRATION_IDS } from "../src/db/schemaState.ts";
 import { diffTsInventoryAgainstSnapshot } from "../src/db/schemaTsDivergence.ts";
 
-const WORKER = join(dirname(fileURLToPath(import.meta.url)), "..", "test", "db", "bootstrapConcurrencyWorker.ts");
+const WORKER = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "test",
+  "db",
+  "bootstrapConcurrencyWorker.ts",
+);
 const CONCURRENT_PROCESSES = 8;
 
 function checkPragmas(db: WritableDatabase): string[] {
@@ -79,15 +85,19 @@ async function main(): Promise<number> {
     // already uses against this identical snapshot.
     const inventory = buildSchemaInventory(first);
     const structuralProblems = diffTsInventoryAgainstSnapshot(inventory, SCHEMA_INVENTORY_SNAPSHOT);
-    const firstMigrationIds = (first.prepare("SELECT id FROM _migrations ORDER BY id").all() as {
-      id: string;
-    }[]).map((row) => row.id);
+    const firstMigrationIds = (
+      first.prepare("SELECT id FROM _migrations ORDER BY id").all() as {
+        id: string;
+      }[]
+    ).map((row) => row.id);
     first.close();
 
     const second = bootstrapDatabase(dbPath);
-    const secondMigrationIds = (second.prepare("SELECT id FROM _migrations ORDER BY id").all() as {
-      id: string;
-    }[]).map((row) => row.id);
+    const secondMigrationIds = (
+      second.prepare("SELECT id FROM _migrations ORDER BY id").all() as {
+        id: string;
+      }[]
+    ).map((row) => row.id);
     second.close();
     const idempotencyOk = isDeepStrictEqual(firstMigrationIds, secondMigrationIds);
 
@@ -95,7 +105,9 @@ async function main(): Promise<number> {
     process.stdout.write(`  ${pragmaProblems.length === 0 ? "PASS" : "FAIL"}\n`);
     for (const problem of pragmaProblems) process.stdout.write(`    - ${problem}\n`);
 
-    process.stdout.write("== schema-structural equivalence (bootstrapDatabase vs Python snapshot) ==\n");
+    process.stdout.write(
+      "== schema-structural equivalence (bootstrapDatabase vs Python snapshot) ==\n",
+    );
     process.stdout.write(`  ${structuralProblems.length === 0 ? "PASS" : "FAIL"}\n`);
     for (const problem of structuralProblems) process.stdout.write(`    - ${problem}\n`);
 
@@ -111,9 +123,9 @@ async function main(): Promise<number> {
     );
     const workerFailures = results.filter((result) => result.code !== 0).length;
     const raceDb = openDatabaseReadOnly(raceDbPath);
-    const raceIds = (raceDb.prepare("SELECT id FROM _migrations ORDER BY id").all() as { id: string }[]).map(
-      (row) => row.id,
-    );
+    const raceIds = (
+      raceDb.prepare("SELECT id FROM _migrations ORDER BY id").all() as { id: string }[]
+    ).map((row) => row.id);
     raceDb.close();
     const raceNoDuplicates = new Set(raceIds).size === raceIds.length;
     const raceComplete = isDeepStrictEqual([...raceIds].sort(), [...KNOWN_MIGRATION_IDS].sort());

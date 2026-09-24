@@ -59,13 +59,47 @@ test("assertSchemaState names pending migrations when the DB is older than the T
   }
 });
 
-test("assertSchemaState tolerates a DB missing only TS-authored migrations (TS ⊇ Python)", () => {
+test("assertSchemaState refuses a DB missing ANY known migration, 017 included", () => {
   const ws = tmpDb();
   try {
-    // Every Python migration applied, only the TS-authored 017 absent — Python
-    // cannot apply it and the read path does not need it, so the DB is served.
+    // Until CV22.DS10.TS5 this case was TOLERATED: 017 was TS-authored, Python
+    // could not apply it, and the read path did not need it, so a database
+    // missing only that one was served anyway. That tolerance existed because
+    // two engines shared custody.
+    //
+    // With one custodian the exemption has no meaning -- there is no engine
+    // that "cannot" apply 017 -- and keeping it would mean serving a database
+    // the core knows is behind. Safe to tighten because `ensureDatabaseReady`
+    // (bootstrap, then migrate-on-open) runs BEFORE this assertion on every
+    // serving path, front door and MCP alike: a user never reaches this error
+    // for a migration the engine could have applied.
     seedMigrations(ws.db, KNOWN_MIGRATION_IDS.slice(0, -1));
-    assert.doesNotThrow(() => assertSchemaState(ws.db));
+    assert.throws(
+      () => assertSchemaState(ws.db),
+      /older than this TS core.*017_journey_parent_column/,
+    );
+  } finally {
+    ws.db.close();
+    ws.cleanup();
+  }
+});
+
+test("the remedy names a Mirror command, not an interpreter", () => {
+  // The two SchemaStateError messages used to end with "Run any Python
+  // `uv run python -m memory` command once" -- advice that stops working the
+  // day this story finishes, on the error a user is most likely to hit.
+  const ws = tmpDb();
+  try {
+    seedMigrations(ws.db, KNOWN_MIGRATION_IDS.slice(0, -1));
+    assert.throws(
+      () => assertSchemaState(ws.db),
+      (error: Error) => {
+        assert.match(error.message, /runtime migrate/);
+        assert.doesNotMatch(error.message, /python/i);
+        assert.doesNotMatch(error.message, /\buv\b/);
+        return true;
+      },
+    );
   } finally {
     ws.db.close();
     ws.cleanup();

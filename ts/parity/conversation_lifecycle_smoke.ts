@@ -229,7 +229,11 @@ const hook = (payload: Record<string, string>) => JSON.stringify(payload);
 // --- the lifecycle --------------------------------------------------------------
 
 // 1. Session start (fast): unmute, defer maintenance.
-const start = step("session-start --fast", ["conversation-logger", "session-start", "--fast"], "ts");
+const start = step(
+  "session-start --fast",
+  ["conversation-logger", "session-start", "--fast"],
+  "ts",
+);
 check(
   start.stdout.trim() === "Conversation logging ACTIVE. Maintenance deferred.",
   "session-start --fast prints the released banner",
@@ -270,10 +274,21 @@ const [closed] = query<{
   summary: string | null;
   tags: string | null;
   metadata: string | null;
-}>("SELECT ended_at, title, summary, tags, metadata FROM conversations WHERE id = ?", conversationId);
+}>(
+  "SELECT ended_at, title, summary, tags, metadata FROM conversations WHERE id = ?",
+  conversationId,
+);
 check(Boolean(closed?.ended_at), "session-end set ended_at");
-check(closed?.title === "Smoke title", "close-time finalization generated the title", closed?.title ?? "");
-check(closed?.tags === '["smoke"]', "close-time finalization generated the tags", closed?.tags ?? "");
+check(
+  closed?.title === "Smoke title",
+  "close-time finalization generated the title",
+  closed?.title ?? "",
+);
+check(
+  closed?.tags === '["smoke"]',
+  "close-time finalization generated the tags",
+  closed?.tags ?? "",
+);
 check(
   closed?.summary === "Smoke summary.",
   "close-time finalization generated the summary",
@@ -290,7 +305,8 @@ check(
   "one memory was extracted through the replay transport",
 );
 check(
-  query("SELECT 1 FROM conversation_embeddings WHERE conversation_id = ?", conversationId).length === 1,
+  query("SELECT 1 FROM conversation_embeddings WHERE conversation_id = ?", conversationId)
+    .length === 1,
   "the summary embedding was stored",
 );
 const ledgerRoles = query<{ role: string }>(
@@ -323,7 +339,11 @@ check(
   fullStart.stdout,
 );
 const ledgerCount = () => Number(query("SELECT COUNT(*) AS c FROM llm_calls")[0]?.c ?? -1);
-const maintenance = step("session-maintenance", ["conversation-logger", "session-maintenance"], "ts");
+const maintenance = step(
+  "session-maintenance",
+  ["conversation-logger", "session-maintenance"],
+  "ts",
+);
 check(
   normalizeMaintenanceReport(maintenance.stdout.trim()).startsWith(
     "Conversation maintenance complete.\nClosed stale conversations: 0 (<elapsed>s)\nBackfilled Pi sessions: 0 (<elapsed>s)",
@@ -337,7 +357,10 @@ check(ledgerCount() === ledgerAfterFirst, "the maintenance re-run adds zero ledg
 
 // 5. The session-less route: a transcript backfills an assistant-less conversation.
 step("user-prompt (smoke-2)", ["conversation-logger", "user-prompt"], "ts", {
-  stdin: hook({ session_id: "smoke-2", prompt: "a session whose answers live only in the transcript" }),
+  stdin: hook({
+    session_id: "smoke-2",
+    prompt: "a session whose answers live only in the transcript",
+  }),
 });
 const transcript = join(home, "transcript.jsonl");
 writeFileSync(
@@ -406,7 +429,9 @@ check(
 );
 const repair = step("repair-journeys (dry run)", ["conversation-logger", "repair-journeys"], "ts");
 check(
-  repair.stdout.trim().endsWith("Dry run only. Re-run with --apply to repair after reviewing candidates."),
+  repair.stdout
+    .trim()
+    .endsWith("Dry run only. Re-run with --apply to repair after reviewing candidates."),
   "repair-journeys without --apply prints the dry-run notice",
   repair.stdout,
 );
@@ -440,10 +465,19 @@ check(
 
 // 10. backup: both real CLIs archive the same file into separate directories;
 // Python's zipfile must read the TS archive and see the same restore image.
-const backupTs = step("backup (TS, default route)", ["backup", "--backup-dir", join(home, "backups-ts")], "ts");
-const backupPy = step("backup (Python)", ["backup", "--backup-dir", join(home, "backups-py")], "python", {
-  env: { MIRROR_TS_BACKUP: "0" },
-});
+const backupTs = step(
+  "backup (TS, default route)",
+  ["backup", "--backup-dir", join(home, "backups-ts")],
+  "ts",
+);
+const backupPy = step(
+  "backup (Python)",
+  ["backup", "--backup-dir", join(home, "backups-py")],
+  "python",
+  {
+    env: { MIRROR_TS_BACKUP: "0" },
+  },
+);
 const normalizeBackupStdout = (text: string) =>
   text
     .replace(/memory_\d{8}_\d{6}\.zip/g, "memory_<stamp>.zip")
@@ -512,7 +546,11 @@ check(
   "repair-encoding dry run is byte-identical across engines and finds the seeded row",
   `${dryTs.stdout}---\n${dryPy.stdout}`,
 );
-const applyEncoding = step("repair-encoding --apply (TS, default route)", ["repair-encoding", "--apply"], "ts");
+const applyEncoding = step(
+  "repair-encoding --apply (TS, default route)",
+  ["repair-encoding", "--apply"],
+  "ts",
+);
 check(
   /Backup created: memory_\d{8}_\d{6}\.zip/.test(applyEncoding.stdout) &&
     applyEncoding.stdout.trim().endsWith("Applied repairs: 1"),
@@ -520,13 +558,18 @@ check(
   applyEncoding.stdout,
 );
 check(
-  query<{ content: string }>("SELECT content FROM messages WHERE id = 'smoke-mojibake'")[0]?.content ===
-    "sess\u00e3o com acentua\u00e7\u00e3o quebrada",
+  query<{ content: string }>("SELECT content FROM messages WHERE id = 'smoke-mojibake'")[0]
+    ?.content === "sess\u00e3o com acentua\u00e7\u00e3o quebrada",
   "the seeded row is repaired in place",
 );
-const afterPy = step("repair-encoding dry run after apply (Python)", ["repair-encoding"], "python", {
-  env: { MIRROR_TS_REPAIR_ENCODING: "0" },
-});
+const afterPy = step(
+  "repair-encoding dry run after apply (Python)",
+  ["repair-encoding"],
+  "python",
+  {
+    env: { MIRROR_TS_REPAIR_ENCODING: "0" },
+  },
+);
 check(
   afterPy.stdout.includes("Repairable mojibake hits: 0"),
   "Python finds nothing left to repair after the TS apply",
@@ -652,9 +695,19 @@ check(
 );
 
 // 9. Revertibility: the family switch sends the whole family back to Python.
-const reverted = run(["conversation-logger", "status"], { env: { MIRROR_TS_CONVERSATION_LOGGER: "0" } });
-check(reverted.route === "python", "MIRROR_TS_CONVERSATION_LOGGER=0 reverts to Python", reverted.route);
-check(reverted.stdout.trim() === "ACTIVE", "the reverted status answers from Python", reverted.stdout);
+const reverted = run(["conversation-logger", "status"], {
+  env: { MIRROR_TS_CONVERSATION_LOGGER: "0" },
+});
+check(
+  reverted.route === "python",
+  "MIRROR_TS_CONVERSATION_LOGGER=0 reverts to Python",
+  reverted.route,
+);
+check(
+  reverted.stdout.trim() === "ACTIVE",
+  "the reverted status answers from Python",
+  reverted.stdout,
+);
 
 // 10. CV22.DS7.US6 — the Soul ritual, run end to end through BOTH engines on
 // the same disposable home. Every surface here is transport=verbatim, and the
@@ -708,7 +761,11 @@ function soulBothEngines(label: string, args: string[]): { ts: StepResult; pytho
     `${label}: both engines render identically`,
     `ts=${JSON.stringify(ts.stdout.slice(0, 120))} python=${JSON.stringify(python.stdout.slice(0, 120))}`,
   );
-  check(ts.status === python.status, `${label}: same exit code`, `${ts.status} vs ${python.status}`);
+  check(
+    ts.status === python.status,
+    `${label}: same exit code`,
+    `${ts.status} vs ${python.status}`,
+  );
   return { ts, python };
 }
 
@@ -721,9 +778,29 @@ soulBothEngines("soul listen", [
   "--shadow",
   "the protection inside the control",
 ]);
-soulBothEngines("soul rite self", ["soul", "rite", "self", "--says", "o que resiste a ser explicado"]);
-soulBothEngines("soul close", ["soul", "close", "--harvested", "uma verdade", "--echoes", "um eco"]);
-soulBothEngines("soul review", ["soul", "review", "--origin", "a origem", "--self", "um princípio"]);
+soulBothEngines("soul rite self", [
+  "soul",
+  "rite",
+  "self",
+  "--says",
+  "o que resiste a ser explicado",
+]);
+soulBothEngines("soul close", [
+  "soul",
+  "close",
+  "--harvested",
+  "uma verdade",
+  "--echoes",
+  "um eco",
+]);
+soulBothEngines("soul review", [
+  "soul",
+  "review",
+  "--origin",
+  "a origem",
+  "--self",
+  "um princípio",
+]);
 soulBothEngines("soul propose", [
   "soul",
   "propose",
@@ -855,7 +932,8 @@ check(
 );
 
 check(
-  !frontDoorLog.includes("um fruto em maturação") && !frontDoorLog.includes("resiste a ser explicado"),
+  !frontDoorLog.includes("um fruto em maturação") &&
+    !frontDoorLog.includes("resiste a ser explicado"),
   "the front-door log carries no ritual text",
 );
 
@@ -1130,7 +1208,11 @@ const exploreHomeFlagPython = runExplore(
   ["explore", "story", "show", exploreJourney, "--mirror-home", home],
   EXPLORE_OFF,
 );
-check(exploreHomeFlagTs.status === 0, "TS explore accepts --mirror-home", `${exploreHomeFlagTs.status}`);
+check(
+  exploreHomeFlagTs.status === 0,
+  "TS explore accepts --mirror-home",
+  `${exploreHomeFlagTs.status}`,
+);
 check(
   exploreHomeFlagPython.status === 2,
   "Python explore refuses --mirror-home (recorded divergence)",

@@ -47,6 +47,7 @@
 import { spawnSync } from "node:child_process";
 import {
   cpSync,
+  type Dirent,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -237,7 +238,7 @@ function normalize(text: string, world: World): string {
   if (text === "") return text;
   const absolute: string[] = [world.project, world.home, root];
   const walk = (directory: string): void => {
-    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    for (const entry of readdirSync(directory, { withFileTypes: true, encoding: "utf8" })) {
       const full = join(directory, entry.name);
       absolute.push(full);
       if (entry.isDirectory()) walk(full);
@@ -287,7 +288,7 @@ function runtimeRows(world: World): Record<string, Record<string, string>> {
 function projectFiles(world: World): Record<string, string> {
   const files: Record<string, string> = {};
   const walk = (directory: string): void => {
-    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    for (const entry of readdirSync(directory, { withFileTypes: true, encoding: "utf8" })) {
       const full = join(directory, entry.name);
       const key = relative(world.project, full).split(sep).join("/");
       if (key.startsWith(".mirror/")) continue;
@@ -313,9 +314,9 @@ function projections(world: World): { documents: string[]; receipts: number } {
   const documents: string[] = [];
   let receipts = 0;
   const walk = (directory: string): void => {
-    let entries: ReturnType<typeof readdirSync>;
+    let entries: Dirent[];
     try {
-      entries = readdirSync(directory, { withFileTypes: true });
+      entries = readdirSync(directory, { withFileTypes: true, encoding: "utf8" });
     } catch {
       return;
     }
@@ -349,7 +350,10 @@ interface Observation {
 
 // --- the two engines ----------------------------------------------------------
 
-function observe(world: World, outcome: { stdout: string; stderr: string; exitCode: number | null }): Observation {
+function observe(
+  world: World,
+  outcome: { stdout: string; stderr: string; exitCode: number | null },
+): Observation {
   return {
     stdout: normalize(outcome.stdout, world),
     stderr: normalize(outcome.stderr, world),
@@ -429,7 +433,9 @@ const STORY_STEPS: readonly Step[] = [
   command("prepare-templates", ["prepare-templates", ...ARIAD], 0),
   command("sync-cursor", ["sync-cursor", ...ARIAD], 0),
   command("pull-candidates", ["pull-candidates", ...ARIAD], 0),
-  command("pull-item", [
+  command(
+    "pull-item",
+    [
       "pull-item",
       ...ARIAD,
       "--item-code",
@@ -440,14 +446,18 @@ const STORY_STEPS: readonly Step[] = [
       "user_story",
       "--why-now",
       "The lifecycle smoke needs one implementable story.",
-    ], 0),
+    ],
+    0,
+  ),
   command("prepare-item", ["prepare-item", ...ARIAD], 0),
   // A refusal INSIDE the sequence, not a seeded one: implementation before a Plan
   // exists is blocked, and the guard renders a surface on stdout while exiting 1.
   command("check-implementation before a plan", ["check-implementation", ...ARIAD], 1),
   command("plan-item", ["plan-item", ...ARIAD], 0),
   // The second refusal: closure cannot skip the pending Plan approval.
-  command("done-item while the plan checkpoint is pending", [
+  command(
+    "done-item while the plan checkpoint is pending",
+    [
       "done-item",
       ...ARIAD,
       "--history-action",
@@ -456,10 +466,14 @@ const STORY_STEPS: readonly Step[] = [
       "premature",
       "--next-recommendation",
       "premature",
-    ], 1),
+    ],
+    1,
+  ),
   command("approve-plan", ["approve-plan", ...ARIAD], 0),
   command("check-implementation after approval", ["check-implementation", ...ARIAD], 0),
-  command("validate-item", [
+  command(
+    "validate-item",
+    [
       "validate-item",
       ...ARIAD,
       "--implementation-complete",
@@ -480,9 +494,17 @@ const STORY_STEPS: readonly Step[] = [
       "No difference is reported.",
       "--fail-condition",
       "Any difference is reported.",
-    ], 0),
-  command("review-item", ["review-item", ...ARIAD, "--debt", "No debt found", "--decision", "no_action"], 0),
-  command("coherence-item", [
+    ],
+    0,
+  ),
+  command(
+    "review-item",
+    ["review-item", ...ARIAD, "--debt", "No debt found", "--decision", "no_action"],
+    0,
+  ),
+  command(
+    "coherence-item",
+    [
       "coherence-item",
       ...ARIAD,
       "--process",
@@ -491,8 +513,12 @@ const STORY_STEPS: readonly Step[] = [
       "The story package carries the plan and the closure artifacts.",
       "--product",
       "Ariad behavior is unchanged.",
-    ], 0),
-  command("done-item", [
+    ],
+    0,
+  ),
+  command(
+    "done-item",
+    [
       "done-item",
       ...ARIAD,
       "--history-action",
@@ -501,7 +527,9 @@ const STORY_STEPS: readonly Step[] = [
       "The story package records the closure.",
       "--next-recommendation",
       "Pull the next story.",
-    ], 0),
+    ],
+    0,
+  ),
   // Reads after closure: the state the lifecycle left is the state orientation sees.
   command("pull-candidates after done", ["pull-candidates", ...ARIAD], 0),
   command("inspect-method after done", ["inspect-method", "--journey", JOURNEY], 0),
@@ -512,7 +540,7 @@ function repositoryFingerprint(): string[] {
   const docs = join(REPO_ROOT, "docs");
   const found: string[] = [];
   const walk = (directory: string): void => {
-    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    for (const entry of readdirSync(directory, { withFileTypes: true, encoding: "utf8" })) {
       const full = join(directory, entry.name);
       if (entry.isDirectory()) {
         walk(full);
@@ -543,13 +571,11 @@ function markDeliveryStoryDone(project: string): void {
   const touch = (path: string): void => {
     if (!existsSync(path)) return;
     const before = readFileSync(path, "utf8");
-    const after = before
-      .replaceAll(PLANNED, DONE)
-      .replaceAll("| 🟡 Planned |", "| ✅ Done |");
+    const after = before.replaceAll(PLANNED, DONE).replaceAll("| 🟡 Planned |", "| ✅ Done |");
     if (after !== before) writeFileSync(path, after, "utf8");
   };
   touch(join(packageRoot, "index.md"));
-  for (const entry of readdirSync(packageRoot, { withFileTypes: true })) {
+  for (const entry of readdirSync(packageRoot, { withFileTypes: true, encoding: "utf8" })) {
     if (entry.isDirectory()) touch(join(packageRoot, entry.name, "index.md"));
   }
 }
@@ -575,14 +601,7 @@ const DS_STEPS: readonly Step[] = [
   // story_by_story, and the flow unit is the gate rather than the item level.
   command(
     "plan-delivery-story before the flow unit is chosen",
-    [
-      "plan-delivery-story",
-      ...ARIAD,
-      "--objective",
-      "Too early.",
-      "--child",
-      "CV1.DS2.US1",
-    ],
+    ["plan-delivery-story", ...ARIAD, "--objective", "Too early.", "--child", "CV1.DS2.US1"],
     1,
   ),
   command("set-flow-unit delivery_story", ["set-flow-unit", ...ARIAD, "--unit", "delivery_story"]),
@@ -723,11 +742,7 @@ const CADENCE_STEPS: readonly Step[] = [
     "navigator_validation",
   ]),
   command("cancel-plan-preauthorization", ["cancel-plan-preauthorization", ...ARIAD]),
-  command(
-    "cancel-plan-preauthorization again",
-    ["cancel-plan-preauthorization", ...ARIAD],
-    1,
-  ),
+  command("cancel-plan-preauthorization again", ["cancel-plan-preauthorization", ...ARIAD], 1),
   // The withdrawal did not consume the Plan gate: ordinary approval still works.
   command("approve-plan", ["approve-plan", ...ARIAD]),
   command("check-implementation after approval", ["check-implementation", ...ARIAD]),
@@ -785,10 +800,7 @@ function runSequence(name: string, steps: readonly Step[], seed?: (project: stri
     check(
       JSON.stringify(expected.rows) === JSON.stringify(actual.rows),
       `${where}: the Builder runtime rows are identical, metadata byte for byte`,
-      firstDifference(
-        JSON.stringify(expected.rows, null, 2),
-        JSON.stringify(actual.rows, null, 2),
-      ),
+      firstDifference(JSON.stringify(expected.rows, null, 2), JSON.stringify(actual.rows, null, 2)),
     );
     compareFiles(where, expected, actual);
     check(
@@ -798,7 +810,7 @@ function runSequence(name: string, steps: readonly Step[], seed?: (project: stri
     );
   }
 
-  return sequenceOutcome(name, python, typescript);
+  sequenceOutcome(name, python, typescript);
 }
 
 function compareFiles(where: string, expected: Observation, actual: Observation): void {

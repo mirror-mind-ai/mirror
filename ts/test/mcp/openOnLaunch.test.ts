@@ -21,16 +21,18 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { bootstrapDatabase } from "#db/bootstrap.ts";
 import { openDatabaseForBootstrap } from "#db/database.ts";
-import { TS_AUTHORED_MIGRATION_IDS } from "#db/schemaState.ts";
 import { regressToPre017 } from "#helpers/legacyDb.ts";
 import { packageVersion } from "#runtime/version.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const TS_ROOT = join(HERE, "..", "..");
 const MAIN = join(TS_ROOT, "src", "mcp", "main.ts");
-// Read from the source of truth rather than retyped: a hand-copied id that no
-// migration carries would make the assertion below pass for the wrong reason.
-const [TS_AUTHORED_017] = [...TS_AUTHORED_MIGRATION_IDS];
+// CV22.DS10.TS5 deleted `TS_AUTHORED_MIGRATION_IDS` from the schema module:
+// with one custodian, "which engine authored this migration" stopped being a
+// schema fact. The id survives here as a FIXTURE fact -- these cases compare
+// against end-states the Python oracle recorded, and 017 is what TypeScript
+// applies beyond them. It goes with the oracle at plateau 3.
+const TS_AUTHORED_017 = "017_journey_parent_column";
 
 const INITIALIZE = `${JSON.stringify({
   jsonrpc: "2.0",

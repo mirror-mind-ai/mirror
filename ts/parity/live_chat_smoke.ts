@@ -22,10 +22,10 @@
  * Output is redacted: verdicts, counts, lengths, latencies — never content.
  */
 
+import { endConversation } from "#conversation/logger.ts";
+import { createLoggerRuntime } from "#conversation/loggerRuntime.ts";
 import { assertCopyTarget } from "#db/copyGuard.ts";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
-import { createLoggerRuntime } from "#conversation/loggerRuntime.ts";
-import { endConversation } from "#conversation/logger.ts";
 import { resolveExtractionModel } from "#providers/config.ts";
 import { LiveLlmProvider } from "#providers/llm.ts";
 import { newId, nowIso } from "#util/pyGenerators.ts";
@@ -127,17 +127,20 @@ async function closeTailProbe(
   const before = counts(db, conversationId);
   const conversation = db
     .prepare("SELECT id, journey, ended_at FROM conversations WHERE id = ?")
-    .get(conversationId) as { id: string; journey: string | null; ended_at: string | null } | undefined;
+    .get(conversationId) as
+    | { id: string; journey: string | null; ended_at: string | null }
+    | undefined;
   if (!conversation) fail(`conversation ${conversationId} not found in the copy`);
   if (!conversation.journey) fail("conversation has no journey; extraction would be skipped");
   if (conversation.ended_at) say("  ..  conversation was already ended; re-closing on the copy");
 
   const messageCount = (
-    db.prepare("SELECT COUNT(*) AS n FROM messages WHERE conversation_id = ?").get(conversationId) as
-      | { n: number }
-      | undefined
+    db
+      .prepare("SELECT COUNT(*) AS n FROM messages WHERE conversation_id = ?")
+      .get(conversationId) as { n: number } | undefined
   )?.n;
-  if ((messageCount ?? 0) < 4) fail(`conversation has ${messageCount} messages; extraction needs 4`);
+  if ((messageCount ?? 0) < 4)
+    fail(`conversation has ${messageCount} messages; extraction needs 4`);
 
   const runtime = createLoggerRuntime({
     db,
@@ -149,7 +152,13 @@ async function closeTailProbe(
   check(runtime.transportMode === "live", "transport is live", runtime.transportMode);
 
   const startedAt = Date.now();
-  await endConversation(db, conversationId, { extract: true }, { newId, nowIso }, await runtime.closeHooks());
+  await endConversation(
+    db,
+    conversationId,
+    { extract: true },
+    { newId, nowIso },
+    await runtime.closeHooks(),
+  );
   say(`  ..  close tail completed in ${Date.now() - startedAt}ms`);
 
   const after = counts(db, conversationId);
@@ -172,9 +181,17 @@ async function closeTailProbe(
   );
   check(Boolean(row.title?.trim()), "title generated", `${row.title?.length ?? 0} chars`);
   check((row.title?.length ?? 0) <= TITLE_MAX, "title within cap", `<= ${TITLE_MAX}`);
-  check(Array.isArray(safeJson(row.tags)), "tags parsed as a list", typeofLabel(safeJson(row.tags)));
+  check(
+    Array.isArray(safeJson(row.tags)),
+    "tags parsed as a list",
+    typeofLabel(safeJson(row.tags)),
+  );
   check(Boolean(row.summary?.trim()), "summary present", `${row.summary?.length ?? 0} chars`);
-  check(metadata.extracted === true, "conversation marked extracted", "the retry will not re-run it");
+  check(
+    metadata.extracted === true,
+    "conversation marked extracted",
+    "the retry will not re-run it",
+  );
 
   const newMemories = after.memories - before.memories;
   say(`  ..  memories created: ${newMemories}`);

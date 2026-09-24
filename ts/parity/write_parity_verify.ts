@@ -1,9 +1,6 @@
-import { renderRedactedWriteReport } from "../src/parity/writeParity.ts";
-import {
-  verifyWriteFixture,
-  type WriteParityFixture,
-} from "../src/parity/writeParityFixture.ts";
 import { loadFixture, parseVerifyArgs } from "../src/parity/verifyCli.ts";
+import { renderRedactedWriteReport } from "../src/parity/writeParity.ts";
+import { verifyWriteFixture, type WriteParityFixture } from "../src/parity/writeParityFixture.ts";
 
 const { fixturePath, includeSensitiveDebug } = parseVerifyArgs(
   "Usage: node ts/parity/write_parity_verify.ts --fixture <path> [--debug-sensitive-output]",

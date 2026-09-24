@@ -23,7 +23,15 @@
 
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, sep } from "node:path";
 
@@ -168,7 +176,14 @@ const STEPS: string[][] = [
   // `tsOnlySubcommandFailures`, not cross-engine -- see that function for why.
   // It still runs on BOTH engines, because the log half of this smoke depends
   // on the TS front door actually dispatching with these arguments.
-  ["ext", EXTENSION_ID, "add", SENTINELS[0] as string, SENTINELS[1] as string, SENTINELS[2] as string],
+  [
+    "ext",
+    EXTENSION_ID,
+    "add",
+    SENTINELS[0] as string,
+    SENTINELS[1] as string,
+    SENTINELS[2] as string,
+  ],
   ["ext", EXTENSION_ID, "unbind", "greeting", "--persona", "engineer"],
   ["ext", EXTENSION_ID, "migrate"],
   ["inspect", "extension", EXTENSION_ID],
@@ -194,7 +209,9 @@ function tsOnlySubcommandFailures(step: readonly string[], ts: StepResult): stri
   if (isDispatch) {
     if (ts.exitCode !== 1) failures.push(`dispatch should refuse at exit 1, got ${ts.exitCode}`);
     if (!ts.stdout.includes(`unknown subcommand 'add' for extension/${EXTENSION_ID}`)) {
-      failures.push(`dispatch should name the unknown subcommand, got ${JSON.stringify(ts.stdout)}`);
+      failures.push(
+        `dispatch should name the unknown subcommand, got ${JSON.stringify(ts.stdout)}`,
+      );
     }
   } else if (ts.exitCode !== 0) {
     failures.push(`listing should succeed, got ${ts.exitCode}`);
@@ -244,12 +261,8 @@ function main(): number {
       // `ext list` is the extension INVENTORY, not a subcommand listing, and
       // stays cross-engine graded -- hence the explicit id check.
       const readsSubcommands =
-        step[0] === "ext" &&
-        step[1] === EXTENSION_ID &&
-        (step.length === 2 || step[2] === "add");
-      const failures = readsSubcommands
-        ? tsOnlySubcommandFailures(step, ts)
-        : compare(python, ts);
+        step[0] === "ext" && step[1] === EXTENSION_ID && (step.length === 2 || step[2] === "add");
+      const failures = readsSubcommands ? tsOnlySubcommandFailures(step, ts) : compare(python, ts);
       if (failures.length === 0) {
         console.log(`  ${readsSubcommands ? "TS-ONLY" : "OK"}    ${step.join(" ")}`);
         continue;

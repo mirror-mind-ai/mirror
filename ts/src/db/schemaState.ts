@@ -1,34 +1,26 @@
 // Schema-state guard for the database seam (CR018, RS003 database audit).
 //
-// CV22 freezes the SQLite schema as a compatibility contract, but the Python
-// core is still alive and still migrating (CV9 work). This guard is the
-// contract's enforcement point on the TS side: before serving a command, the
-// front door asserts that the database's `_migrations` bookkeeping matches the
-// migration set this TS core was built against, converting silent schema drift
-// into an explicit, actionable error.
+// CV22 freezes the SQLite schema as a compatibility contract. This guard is
+// its enforcement point: before serving a command, the front door asserts that
+// the database's `_migrations` bookkeeping matches the migration set this core
+// was built against, converting silent schema drift into an explicit,
+// actionable error.
 //
-// `KNOWN_MIGRATION_IDS` is the TS-authoritative migration set. It carries every
-// Python `MIGRATIONS` id (as a prefix) plus any migration TS now authors on its
-// own — from CV22.DS6.US2 onward TS schema custody means TS ⊇ Python. The
-// Python-side test (`tests/unit/test_ts_schema_contract.py`) asserts the Python
-// list is a prefix of this one, so a new Python migration still cannot land
-// without extending this list, while TS may add forward migrations Python lacks.
+// `KNOWN_MIGRATION_IDS` is the authoritative migration set. It began as the
+// Python list plus whatever TypeScript authored on its own (CV22.DS6.US2 made
+// TS ⊇ Python), and `tests/unit/test_ts_schema_contract.py` held the other
+// side of that contract so a new Python migration could not land without
+// extending this list.
+//
+// CV22.DS10.TS5 collapses the two-custodian model: TypeScript carries all
+// seventeen, Python carries sixteen and is being deleted, so there is no second
+// list to stay a prefix of. The remedies below name `runtime migrate` rather
+// than an interpreter, for the same reason.
 
 import type { Database } from "./database.ts";
 
 /** Raised when the database's migration state does not match this TS build. */
 export class SchemaStateError extends Error {}
-
-/**
- * Migrations TS authored with no Python counterpart (TS ⊇ Python, CV22.DS6.US2).
- * A database missing ONLY these is still served — the read/write path does not
- * yet depend on them, and they will be applied to existing databases by the TS
- * migrate-on-open path (a CV22.DS6 follow-up). A database missing any *Python*
- * migration is still refused, because Python remains able to apply those.
- */
-export const TS_AUTHORED_MIGRATION_IDS: ReadonlySet<string> = new Set([
-  "017_journey_parent_column",
-]);
 
 /** The migration ids this TS core was built against (Python prefix + TS-authored). */
 export const KNOWN_MIGRATION_IDS: readonly string[] = [
@@ -67,22 +59,20 @@ export function assertSchemaState(db: Database): void {
   } catch {
     throw new SchemaStateError(
       "database has no _migrations table — not a bootstrapped Mirror database. " +
-        "Run any Python `uv run python -m memory` command once to initialize it.",
+        "Point Mirror at the right file, or create one: any write command bootstraps a missing database.",
     );
   }
   const applied = new Set(rows.map((row) => row.id));
-  // Only *Python* migrations are required to serve: Python can apply those, and
-  // the runtime read/write path depends on them. A database missing only
-  // TS-authored migrations (TS ⊇ Python) is tolerated — Python cannot apply them
-  // and the current read path does not need them; the migrate-on-open follow-up
-  // will apply them to existing databases.
-  const missingRequired = KNOWN_MIGRATION_IDS.filter(
-    (id) => !applied.has(id) && !TS_AUTHORED_MIGRATION_IDS.has(id),
-  );
+  // Every known migration is required now. Until CV22.DS10.TS5 this filtered
+  // out the TS-authored tail, because Python could not apply those and the read
+  // path did not need them -- a split that only made sense while two engines
+  // shared custody. TypeScript carries all seventeen and is the only engine
+  // left to apply them, so "pending" means pending.
+  const missingRequired = KNOWN_MIGRATION_IDS.filter((id) => !applied.has(id));
   if (missingRequired.length > 0) {
     throw new SchemaStateError(
       `database schema is older than this TS core (pending migrations: ${missingRequired.join(", ")}). ` +
-        "Run any Python `uv run python -m memory` command once to migrate, then retry.",
+        "Run `runtime migrate` to bring it forward, then retry.",
     );
   }
   const known = new Set(KNOWN_MIGRATION_IDS);

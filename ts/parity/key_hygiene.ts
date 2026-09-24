@@ -38,14 +38,14 @@ for (const dbPath of databases) {
   const db = openDatabaseReadOnly(dbPath);
   try {
     const row = db
-      .prepare(
-        "SELECT COUNT(*) AS n FROM llm_calls WHERE prompt LIKE ? OR response LIKE ?",
-      )
+      .prepare("SELECT COUNT(*) AS n FROM llm_calls WHERE prompt LIKE ? OR response LIKE ?")
       .get(`%${key}%`, `%${key}%`) as { n: number };
     report("ledger rows carrying the key", row.n);
 
     const bodies = db
-      .prepare("SELECT COUNT(*) AS n FROM llm_calls WHERE LENGTH(prompt) > 0 OR LENGTH(response) > 0")
+      .prepare(
+        "SELECT COUNT(*) AS n FROM llm_calls WHERE LENGTH(prompt) > 0 OR LENGTH(response) > 0",
+      )
       .get() as { n: number };
     // Not a leak by itself -- MEMORY_LOG_LLM_CALLS=full stores bodies on
     // purpose -- but on a default install it should be zero, and a non-zero

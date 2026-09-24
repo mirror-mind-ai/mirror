@@ -36,7 +36,7 @@ import {
   upstreamFor,
 } from "#runtime/git.ts";
 import { detectInstallKind } from "#runtime/installKind.ts";
-import { renderMigrate, runMigrate } from "#runtime/migrate.ts";
+import { MIGRATE_DECLINED_EXIT, renderMigrate, runMigrate } from "#runtime/migrate.ts";
 import {
   buildPendingReleaseNotes,
   readReleaseNote,
@@ -370,7 +370,13 @@ function runRuntimeMigrate(
   const dbPath = join(resolved.home, dbNameForEnv(env.MEMORY_ENV || "production"));
   const outcome = runMigrate(dbPath);
   writeOut(io, renderMigrate(outcome));
-  return outcome.error === null ? 0 : 1;
+  // A DECLINED migration exits non-zero (CV22.DS10.US2 debt D-025, paid in
+  // TS5). The updater's migrate stage already fails on a non-zero code, so
+  // this one line is what turns "the engine refused work it could not safely
+  // do" from a passing stage into a failing one. Before this, `declined` and
+  // `nothing pending` were the same exit 0.
+  if (outcome.error !== null) return 1;
+  return outcome.verdict === "declined" ? MIGRATE_DECLINED_EXIT : 0;
 }
 
 /**

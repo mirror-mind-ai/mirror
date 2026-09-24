@@ -7,8 +7,14 @@ import { fileURLToPath } from "node:url";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import { runMigrations } from "#db/migrations.ts";
 import { buildSchemaInventory, type SchemaInventory } from "#db/schemaInventory.ts";
-import { TS_AUTHORED_MIGRATION_IDS } from "#db/schemaState.ts";
 import { diffTsInventoryAgainstSnapshot } from "#db/schemaTsDivergence.ts";
+
+// CV22.DS10.TS5 deleted `TS_AUTHORED_MIGRATION_IDS` from the schema module:
+// with one custodian, "which engine authored this migration" stopped being a
+// schema fact. The id survives here as a FIXTURE fact -- these cases compare
+// against end-states the Python oracle recorded, and 017 is what TypeScript
+// applies beyond them. It goes with the oracle at plateau 3.
+const TS_ONLY_MIGRATION_IDS: readonly string[] = ["017_journey_parent_column"];
 
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "migrations");
 
@@ -88,7 +94,7 @@ for (const stem of STEMS) {
       // TS runs its own forward migrations (017+) beyond Python's captured end-state.
       assert.deepEqual(
         appliedIds,
-        [...expected.applied_migration_ids, ...TS_AUTHORED_MIGRATION_IDS].sort(),
+        [...expected.applied_migration_ids, ...TS_ONLY_MIGRATION_IDS].sort(),
       );
 
       // Row-level values — the migrations that move data, not just shape.
