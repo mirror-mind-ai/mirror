@@ -10,8 +10,8 @@ user-invocable: true
 
 ## Commands
 
-- `python -m memory ext <id> <subcommand>` — <one-line description>.
-- `python -m memory ext <id> <subcommand>` — <one-line description>.
+- `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts ext <id> <subcommand>` — <one-line description>.
+- `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts ext <id> <subcommand>` — <one-line description>.
 
 ## When the agent should use this
 

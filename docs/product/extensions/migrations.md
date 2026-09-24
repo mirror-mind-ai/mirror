@@ -124,15 +124,16 @@ into two migration files is the recommended workaround.
 
 The runner is invoked at three moments:
 
-1. **Install.** `python -m memory extensions install <id>` runs all pending
-   migrations before calling `register()`.
+1. **Install.** `mirror extensions install <id>` runs all pending
+   migrations. (Until CV22.DS10.TS2 it then called the extension's
+   `register()`; install runs no extension code any more.)
 2. **Upgrade.** If the user updates the extension's source and re-installs,
    new migration files are detected and applied.
-3. **Manual.** `python -m memory ext <id> migrate` (provided by the core,
+3. **Manual.** `mirror ext <id> migrate` (provided by the core,
    not by the extension) re-runs pending migrations. Useful after recovering
    from a failed install.
 
-The runner is **not** invoked on every `python -m memory ext <id> <cmd>`
+The runner is **not** invoked on every `mirror ext <id> <cmd>`
 call. Subcommands assume the schema is up to date — installs and upgrades
 are the only path that mutates schema.
 
@@ -158,7 +159,7 @@ extensions are free to ignore it.
 - **Editing an applied migration.** Always add a new file.
 - **Long-running data migrations in SQL.** If a transformation needs more
   than a few seconds or touches external resources, write it as a CLI
-  subcommand (`python -m memory ext <id> migrate-legacy`) and let the user
+  subcommand (`mirror ext <id> migrate-legacy`) and let the user
   invoke it explicitly. Migrations are for schema and small seed data.
 - **Referencing tables of other extensions.** Even if you read another
   extension's data via `api.read`, never assume its schema in a migration.

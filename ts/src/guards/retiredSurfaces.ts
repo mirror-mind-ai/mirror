@@ -416,6 +416,10 @@ export const RETIRED: readonly RetiredSurface[] = [
         "a guard: its pattern IS the retired invocation it forbids in the skills, as this table's own patterns are here",
       "scripts/smoke_runtime_update.sh":
         "a negative check: the smoke FAILS if the updater's output still tells a user to run the interpreter",
+      // A Done user story is a record of what was run, when. Rewriting its
+      // commands would make its evidence describe a run that never happened.
+      "docs/product/extensions/user-stories/US-00-infra-de-command-skill.md":
+        "a Done user story (2026-05-11): its commands and evidence are the record of what was run on the Python core, under a banner naming today's contract",
       // Frozen fixtures. Their bytes are the record; see ts/test/goldens/README.md.
       "ts/test/goldens/README.md":
         "the frozen goldens' changelog: its D12 row names the retired invocation that substitution replaced",
@@ -423,12 +427,6 @@ export const RETIRED: readonly RetiredSurface[] = [
         "recorded fixture INPUT, not product output: a scenario passes `validate-item --check` a caller's own check command, and the golden records the argv and the validation artifact that echoes it",
       "ts/test/goldens/builder-lifecycle.golden.json":
         "the same caller-supplied check command, recorded as `automated_checks` input across the lifecycle scenarios",
-      // An extension may own any executable runtime, including Python. TS2's
-      // cutoff says so explicitly. Forbidding the documentation of that would
-      // forbid the contract.
-      "docs/product/extensions/authoring-guide.md":
-        "documents that an extension may declare a Python runtime of its own; the core owning Python is what retired, not extensions choosing it",
-      "docs/product/extensions/testing-guide.md": "same contract, from the testing side",
     },
   },
 ];

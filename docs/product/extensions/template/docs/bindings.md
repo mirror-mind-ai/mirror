@@ -10,7 +10,7 @@ For each capability declared under `mirror_context_providers` in
 - **What it returns.** The shape and approximate size of the text injected
   into the prompt. Include a sample output (truncated if long).
 - **When it fires.** Any conditions inside the provider that decide whether
-  to return text or `None`.
+  to return text or `null`.
 - **Suggested personas.** Why these personas, what kind of conversation
   they cover.
 - **Dependencies on data.** What rows must exist in the schema for the
@@ -22,8 +22,8 @@ For each capability declared under `mirror_context_providers` in
 Then provide a copy-pasteable section showing how to bind:
 
 ```bash
-python -m memory ext <id> bind <capability> --persona <persona_id>
-python -m memory ext <id> bindings
+mirror ext <id> bind <capability> --persona <persona_id>
+mirror ext <id> bindings
 ```
 
 And how to inspect the result inside Mirror Mode (a sample prompt

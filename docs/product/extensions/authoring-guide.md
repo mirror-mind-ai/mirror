@@ -3,12 +3,22 @@
 This guide walks through creating a new `command-skill` extension end to end.
 It also documents the **recommended layout for an extension's own
 repository**, including its documentation structure. The mirror does not
-enforce this layout, but every official example follows it and the tooling
-assumes it.
+enforce this layout, but every official example follows it and the
+[template](template/README.md) starts from it.
 
 For the simpler `prompt-skill` kind, see the
 [`examples/extensions/review-copy/`](../../../examples/extensions/review-copy/)
 reference instead.
+
+An extension's code is **any executable**. The core runs the command each
+capability declares in `skill.yaml`, in whatever language it is written, and
+talks to it through two small protocols: `mirror-cli-v1` for a subcommand and
+`mirror-context-v1` for a Mirror Mode context provider
+([API reference](api-reference.md)). The examples below use Node, because
+Mirror already requires it; `command: [python3, commands/ping.py]` is exactly
+as valid. Until CV22.DS10.TS2 the core imported a Python `extension.py` and
+called its `register(api)` instead — that contract is
+[retired](api-reference.md#retired-extensionpy-registerapi-and-extensionapi).
 
 ## Naming principles
 
@@ -32,18 +42,16 @@ documentation titles.
 <extension-root>/
   skill.yaml                       # manifest (required)
   SKILL.md                         # prompt for the agent (required)
-  extension.py                     # entrypoint (required)
-  pyproject.toml                   # optional, if the extension has Python deps
   README.md                        # entry point — points into docs/
+  commands/                        # one mirror-cli-v1 program per subcommand
+    <subcommand>.mjs
+  context-provider.mjs             # mirror-context-v1 provider, if any
   migrations/
     001_init.sql
-  src/
-    __init__.py
-    models.py
-    store.py
+  lib/                             # code the commands share
     ...
   tests/
-    test_<feature>.py
+    ...
   docs/
     architecture.md                # decisions and internal structure
     commands.md                    # full CLI reference
@@ -88,7 +96,8 @@ The mirror suggests this template. Each document has a focused purpose:
 ## Step-by-step
 
 The following steps build a minimal but complete `command-skill` extension
-called `hello`. Replace `hello` with your extension's id.
+called `hello`. Replace `hello` with your extension's id. The commands assume
+the [`mirror` alias](../../../REFERENCE.md#running-a-command) is defined.
 
 ### 1. Create the source tree
 
@@ -97,7 +106,7 @@ does not impose a location. The examples below use `<extensions-root>`
 as a placeholder.
 
 ```bash
-mkdir -p <extensions-root>/hello/{migrations,src,tests,docs/user-stories}
+mkdir -p <extensions-root>/hello/{migrations,commands,tests,docs/user-stories}
 cd <extensions-root>/hello
 ```
 
@@ -111,9 +120,6 @@ category: extension
 kind: command-skill
 summary: Minimal extension example
 table_prefix: ext_hello_
-
-entrypoint:
-  module: extension
 
 runtimes:
   pi:
@@ -129,8 +135,24 @@ mirror_context_providers:
     suggested_personas: []
     provider_runtime:
       protocol: mirror-context-v1
-      command: [node, provider.mjs]
+      command: [node, context-provider.mjs]
+
+cli:
+  subcommands:
+    - name: ping
+      summary: Record a ping
+      runtime:
+        protocol: mirror-cli-v1
+        command: [node, commands/ping.mjs]
+    - name: list
+      summary: List recent pings
+      runtime:
+        protocol: mirror-cli-v1
+        command: [node, commands/list.mjs]
 ```
+
+A command-skill no longer declares an `entrypoint` (CV22.DS10.TS5, decision
+D10); a manifest that still carries one is validated as before.
 
 ### 3. Write the initial migration
 
@@ -146,54 +168,54 @@ CREATE INDEX idx_ext_hello_pings_created
   ON ext_hello_pings(created_at);
 ```
 
-### 4. Write the entrypoint
+### 4. Write the commands
 
-```python
-# extension.py
-from datetime import datetime, timezone
-
-from memory.extensions.api import ExtensionAPI
-
-
-def register(api: ExtensionAPI) -> None:
-    api.register_cli("ping", _cmd_ping, summary="Record a ping")
-    api.register_cli("list", _cmd_list, summary="List recent pings")
-    api.register_mirror_context("greeting", _provide_greeting)
-
-
-def _cmd_ping(api: ExtensionAPI, args: list[str]) -> int:
-    message = " ".join(args) or "hello"
-    api.execute(
-        "INSERT INTO ext_hello_pings (message, created_at) VALUES (?, ?)",
-        (message, datetime.now(timezone.utc).isoformat()),
-    )
-    print(f"ping: {message}")
-    return 0
-
-
-def _cmd_list(api: ExtensionAPI, args: list[str]) -> int:
-    rows = api.read(
-        "SELECT message, created_at FROM ext_hello_pings ORDER BY id DESC LIMIT 10"
-    ).fetchall()
-    for row in rows:
-        print(f"{row['created_at']}  {row['message']}")
-    return 0
-
-
-def _provide_greeting(api: ExtensionAPI, ctx) -> str | None:
-    row = api.read(
-        "SELECT message FROM ext_hello_pings ORDER BY id DESC LIMIT 1"
-    ).fetchone()
-    if not row:
-        return None
-    return f"Latest ping: {row['message']}"
-```
-
-The Python provider keeps older cores compatible during the CV22 migration. Add the
-TS-owned process provider declared by `provider_runtime`:
+Each subcommand is an ordinary program. The core runs it without a shell, from
+the installed extension root, with the user's arguments appended and the
+user's stdin, stdout, and stderr. Context arrives in the environment:
+`MIRROR_DATABASE_PATH`, `MIRROR_HOME`, `MIRROR_EXTENSION_ID`,
+`MIRROR_EXTENSION_ROOT`, and `MIRROR_TABLE_PREFIX`.
 
 ```javascript
-// provider.mjs
+// commands/ping.mjs
+import { DatabaseSync } from "node:sqlite";
+
+const message = process.argv.slice(2).join(" ") || "hello";
+const db = new DatabaseSync(process.env.MIRROR_DATABASE_PATH);
+try {
+  db.prepare("INSERT INTO ext_hello_pings (message, created_at) VALUES (?, ?)").run(
+    message,
+    new Date().toISOString(),
+  );
+  process.stdout.write(`ping: ${message}\n`);
+} finally {
+  db.close();
+}
+```
+
+```javascript
+// commands/list.mjs
+import { DatabaseSync } from "node:sqlite";
+
+const db = new DatabaseSync(process.env.MIRROR_DATABASE_PATH, { readOnly: true });
+try {
+  const rows = db
+    .prepare("SELECT message, created_at FROM ext_hello_pings ORDER BY id DESC LIMIT 10")
+    .all();
+  for (const row of rows) process.stdout.write(`${row.created_at}  ${row.message}\n`);
+} finally {
+  db.close();
+}
+```
+
+The exit code is the command's. Read and write only your own `ext_hello_*`
+tables: the core enforces the prefix on migration SQL at install, and trusts a
+running command to keep to it.
+
+### 5. Write the context provider
+
+```javascript
+// context-provider.mjs
 import { DatabaseSync } from "node:sqlite";
 
 let input = "";
@@ -216,29 +238,21 @@ try {
 The provider command runs without a shell from the installed extension root. It receives
 sensitive context on stdin, so never echo the request or provider result into logs. Keep
 stdout reserved for the single protocol JSON object. Failures are isolated by the core.
-Capabilities that omit `provider_runtime` are skipped with a `no_provider_runtime`
-diagnostic — the compatibility host that used to answer them was deleted in
-CV22.DS10.TS2. Declare a runtime; any executable will do, Python included.
+A capability that omits `provider_runtime` is skipped with a `no_provider_runtime`
+diagnostic.
 
-#### Importing your own helpers
+#### Sharing code between commands
 
-The loader inserts your extension's root directory on `sys.path` before
-importing `extension.py`. That means you can split your code into
-sub-modules and import them naturally:
+Commands are separate processes, so they share code the way any program does:
+put it under `lib/` and import it relatively (`import { insertPing } from
+"../lib/store.mjs"`). The core resolves nothing on your behalf and adds nothing
+to a module path, so two extensions can never collide on a module name.
 
-```python
-# extension.py
-from src.store import insert_ping
-from src.cli.report import cmd_report
-```
+### 6. Write the prompt skill
 
-No manual prelude is required. The insertion is idempotent (the same
-directory is never added twice), but it is global to the process — two
-extensions that both ship a top-level package called `src` will resolve
-to whichever one was loaded first. Keep public-facing module names
-specific to your extension if you ever expect them to be shared.
-
-### 5. Write the prompt skill
+An agent runs the commands a skill names in a non-interactive shell, where the
+`mirror` alias does not exist, so the skill spells out the front door, exactly
+as Mirror's own skills do:
 
 ```markdown
 <!-- SKILL.md -->
@@ -252,14 +266,14 @@ user-invocable: true
 
 A minimal extension. Supported commands:
 
-- `python -m memory ext hello ping [text]` — record a ping.
-- `python -m memory ext hello list` — list recent pings.
+- `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts ext hello ping [text]` — record a ping.
+- `NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts ext hello list` — list recent pings.
 ```
 
-### 6. Install
+### 7. Install
 
 ```bash
-python -m memory extensions install hello \
+mirror extensions install hello \
   --extensions-root <extensions-root>
 ```
 
@@ -267,21 +281,23 @@ The target mirror home is taken from `MIRROR_HOME` or `MIRROR_USER` in the
 active environment. Add `--mirror-home <path>` only when installing into a
 non-default home.
 
-The mirror copies the source, runs migrations, imports `extension.py`, and
-calls `register`.
+The mirror copies the source, runs the migrations, validates what the manifest
+declares, and materializes the skill for each runtime. It does not run your
+code: a declared runtime that cannot start is reported when the command runs,
+not at install.
 
-### 7. Use
+### 8. Use
 
 ```bash
-python -m memory ext hello ping "from the field"
-python -m memory ext hello list
+mirror ext hello ping "from the field"
+mirror ext hello list
 ```
 
-### 8. Bind to a persona (optional)
+### 9. Bind to a persona (optional)
 
 ```bash
-python -m memory ext hello bind greeting --persona <persona_id>
-python -m memory ext hello bindings
+mirror ext hello bind greeting --persona <persona_id>
+mirror ext hello bindings
 ```
 
 Now any Mirror Mode turn that routes to that persona will include
@@ -302,9 +318,10 @@ Now any Mirror Mode turn that routes to that persona will include
 
 ## When to ask for a core change
 
-Most extension needs are satisfied by `ExtensionAPI`. If you find yourself
-wanting one of these, the right move is to propose a core change instead of
-working around the API:
+Most extension needs are satisfied by a runtime process with the database path,
+the core's migrations, and its bindings. If you find yourself wanting one of
+these, the right move is to propose a core change instead of working around
+the contract:
 
 - a new persona routing knob (e.g., per-extension routing keywords),
 - a new identity layer,

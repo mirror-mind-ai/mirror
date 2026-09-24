@@ -41,6 +41,3 @@ cli:
         protocol: mirror-cli-v1
         command: [node, commands/<subcommand>.mjs]
 
-# Optional: declare a minimum core API version.
-requires:
-  extension_api: ">=1.0,<2.0"

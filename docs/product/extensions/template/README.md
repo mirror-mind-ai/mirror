@@ -50,8 +50,9 @@ matches the folder name and `skill.yaml:id`).
 
 ## What this template does not include
 
-- A `pyproject.toml`. Add one only if the extension has Python dependencies
-  beyond what the mirror provides.
+- A dependency manifest. Add the one your commands' language needs
+  (`package.json`, `pyproject.toml`, ...); the mirror provides no libraries to
+  extension code, and runs whatever each `command` declares.
 - A CI workflow. Add one matched to your hosting (GitHub Actions, GitLab,
   etc.).
 - License and contribution guidelines. Add the ones your repo uses.

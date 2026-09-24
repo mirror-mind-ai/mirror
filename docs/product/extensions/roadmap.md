@@ -7,6 +7,12 @@ those live in their own repositories.
 
 ## Phase 1 — Infrastructure of `command-skill`
 
+**Status:** delivered 2026-05-11 on the Python core. CV22 ported the
+contract to TypeScript, CV22.DS10.TS2 replaced `register(api)` with the
+language-neutral runtime protocols, and CV22.DS10.TS5 deleted the Python
+modules named below. The scope is kept as the record of what Phase 1 built;
+the [API reference](api-reference.md) is the contract today.
+
 **Goal.** A working `command-skill` contract: manifest validation, migrations
 runner, loader, API, CLI dispatch, Mirror Mode hook, binding model. A fixture
 extension proves the contract end to end.
@@ -45,9 +51,9 @@ extension proves the contract end to end.
 
 **Acceptance criteria.**
 
-- [ ] `python -m memory extensions install` runs migrations and `register`.
-- [ ] `python -m memory ext hello ping` works end to end on the fixture.
-- [ ] `python -m memory ext list` shows installed extensions and their
+- [ ] `extensions install` runs migrations and `register`.
+- [ ] `ext hello ping` works end to end on the fixture.
+- [ ] `ext list` shows installed extensions and their
       registered subcommands.
 - [ ] Binding/unbinding `hello.greeting` to a fixture persona works.
 - [ ] Mirror Mode with that persona active injects the provider's text.
@@ -66,16 +72,17 @@ extensions.
 
 **Candidate scope (subject to learnings from Phase 1).**
 
-- `python -m memory ext <id> doctor` — diagnostics that check schema,
+- `mirror ext <id> doctor` — diagnostics that check schema,
   migrations, bindings, and registered surfaces.
 - Better error messages on manifest validation (line numbers, suggestions).
 - Stricter parsing of migrations (full SQL AST, not regex).
-- Optional schema dump command (`python -m memory ext <id> schema`).
-- Tooling to scaffold a new extension (`python -m memory extensions new <id>`),
+- Optional schema dump command (`mirror ext <id> schema`).
+- Tooling to scaffold a new extension (`mirror extensions new <id>`),
   emitting the recommended layout from
   [`authoring-guide.md`](authoring-guide.md).
-- A reusable test rig (`memory.extensions.testing`) extended with helpers
-  for seeding identity and journeys.
+- A reusable test rig for extension processes, with helpers for seeding
+  identity and journeys. (Phase 1's in-process rig, `api_for_test`, left
+  with the Python core.)
 
 ## Phase 3 — Cross-extension features (provisional)
 

@@ -4,7 +4,7 @@
 // The `python-core-mentions` row of the retired-surface guard reads tracked
 // files. It cannot see a recommendation, a recovery route, or a usage hint the
 // code assembles at runtime -- the shape US2 found when `update --check`
-// recommended `uv run python -m memory runtime update` on both engines. Those
+// recommended the Python invocation of `runtime update` on both engines. Those
 // renders are graded here, against the row's own pattern list, so a test that
 // asserts "no interpreter" checks every shape the guard forbids rather than the
 // one its author happened to remember.

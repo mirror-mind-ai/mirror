@@ -383,8 +383,17 @@ describe("the staged python-core-mentions row", () => {
   test("still allows an extension to declare a Python runtime of its own", () => {
     // TS2's cutoff says an extension may own any executable runtime. The core
     // owning Python is what retired, not extensions choosing it -- so the
-    // guard must not forbid documenting the contract.
-    const exemptions = STAGED[0]?.exemptions ?? {};
-    assert.ok("docs/product/extensions/authoring-guide.md" in exemptions);
+    // guard must not forbid documenting the contract. Until plateau 4 that
+    // took file-level exemptions for the extension guides; the rewritten
+    // guides declare runtimes as manifests do, which no pattern matches, so
+    // the exemptions went and this proves they are not needed.
+    const row = STAGED[0] as NonNullable<(typeof STAGED)[0]>;
+    const root = gitRepo({
+      "docs/guide.md":
+        "runtime:\n  protocol: mirror-cli-v1\n  command: [python3, cli.py, campaigns]\n" +
+        "`command: [python3, commands/ping.py]` is exactly as valid.\n",
+    });
+    assert.deepEqual(checkResidue(row, trackedFiles(root), root), []);
+    assert.ok(!("docs/product/extensions/authoring-guide.md" in row.exemptions));
   });
 });

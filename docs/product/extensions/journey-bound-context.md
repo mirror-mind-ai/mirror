@@ -20,7 +20,7 @@ This link answers:
 Set it with:
 
 ```bash
-python -m memory journey set-path <journey_id> /path/to/project
+mirror journey set-path <journey_id> /path/to/project
 ```
 
 Conceptually, this stores:
@@ -42,7 +42,7 @@ This link answers:
 Set it with:
 
 ```bash
-python -m memory ext <extension_id> bind <capability_id> --journey <journey_id>
+mirror ext <extension_id> bind <capability_id> --journey <journey_id>
 ```
 
 Conceptually, this stores:
@@ -126,7 +126,7 @@ has a `project_path`.
 When an extension changes, reinstall it:
 
 ```bash
-python -m memory extensions install <extension_id> --extensions-root <extensions-root>
+mirror extensions install <extension_id> --extensions-root <extensions-root>
 ```
 
 This copies the source into the installed runtime and runs pending migrations.
@@ -136,8 +136,8 @@ This copies the source into the installed runtime and runs pending migrations.
 Configuration:
 
 ```bash
-python -m memory journey set-path product-launch ~/Code/product-launch
-python -m memory ext project-health bind status --journey product-launch
+mirror journey set-path product-launch ~/Code/product-launch
+mirror ext project-health bind status --journey product-launch
 ```
 
 Meaning:

@@ -8,45 +8,79 @@ the same expectation applies to extensions.
 
 Tests live in two places:
 
-- **Core tests** — under `tests/extensions/` in the mirror repo. They cover
-  the extension system: loader, API, migrations runner, binding registry,
-  Mirror Mode hook. These tests use fixture extensions that do nothing
-  interesting, just exercise the contract.
+- **Core tests** — under `ts/test/extensions/` in the mirror repo. They cover
+  the extension system: manifest validation, the migrations runner, the
+  binding registry, subcommand dispatch, context-provider execution, and the
+  catalog. They use fixture extensions under `ts/test/fixtures/` that do
+  nothing interesting, just exercise the contract.
 - **Extension tests** — under `<extension-root>/tests/` in the extension's
-  own repo. They cover the extension's own behavior: schema, importers,
-  reports, context providers. These tests run against the real
-  `ExtensionAPI` using an in-memory or temporary database.
+  own repo, written in whatever language its commands are. They cover the
+  extension's own behavior: schema, importers, reports, context providers.
 
 This document covers both.
 
+## The unit under test is a program
+
+Since CV22.DS10.TS2 an extension's code is not imported by the core: each
+subcommand and each context provider is a process the core runs
+([API reference](api-reference.md)). That makes an extension easy to test
+from outside, exactly as the core will call it:
+
+- **A subcommand** (`mirror-cli-v1`) is run with its arguments and the context
+  variables in the environment — `MIRROR_DATABASE_PATH`, `MIRROR_HOME`,
+  `MIRROR_EXTENSION_ID`, `MIRROR_EXTENSION_ROOT`, `MIRROR_TABLE_PREFIX` — and
+  judged by its stdout, stderr, and exit code.
+- **A context provider** (`mirror-context-v1`) is given one JSON request on
+  stdin and judged by the one JSON object it writes to stdout.
+
+Until CV22.DS10.TS5 the core also shipped a Python helper, `api_for_test`, that
+built an in-process `ExtensionAPI` for tests. It left with the Python core; a
+program needs no helper to be run.
+
 ## Test database setup
 
-Every test that touches the database creates a fresh SQLite file or uses
-`:memory:`. Tests must not share state.
+Every test that touches the database creates a fresh SQLite file in a
+temporary directory. Tests must not share state.
 
-A small helper, exposed by the core as `memory.extensions.testing`:
+The extension's migrations are plain SQL, so a test applies them in filename
+order to the scratch file and then runs the command against it:
 
-```python
-from memory.extensions.testing import api_for_test
+```javascript
+// tests/ping.test.mjs  (node --test)
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
+import test from "node:test";
 
-def test_something():
-    with api_for_test(extension_id="hello", migrations_dir=...) as api:
-        api.execute("INSERT INTO ext_hello_pings (message, created_at) VALUES (?, ?)",
-                    ("test", "2026-05-10T00:00:00Z"))
-        rows = api.read("SELECT count(*) AS c FROM ext_hello_pings").fetchone()
-        assert rows["c"] == 1
+const ROOT = new URL("..", import.meta.url).pathname;
+
+function scratchDatabase() {
+  const path = join(mkdtempSync(join(tmpdir(), "ext-hello-")), "memory.db");
+  const db = new DatabaseSync(path);
+  for (const file of readdirSync(join(ROOT, "migrations")).sort()) {
+    db.exec(readFileSync(join(ROOT, "migrations", file), "utf8"));
+  }
+  db.close();
+  return path;
+}
+
+test("ping records one row and says so", () => {
+  const database = scratchDatabase();
+  const run = spawnSync(process.execPath, ["commands/ping.mjs", "from", "a", "test"], {
+    cwd: ROOT,
+    encoding: "utf8",
+    env: { ...process.env, MIRROR_DATABASE_PATH: database, MIRROR_EXTENSION_ID: "hello" },
+  });
+  assert.equal(run.status, 0, run.stderr);
+  assert.equal(run.stdout, "ping: from a test\n");
+  const db = new DatabaseSync(database, { readOnly: true });
+  assert.equal(db.prepare("SELECT count(*) AS c FROM ext_hello_pings").get().c, 1);
+  db.close();
+});
 ```
-
-`api_for_test`:
-
-- creates a fresh SQLite database,
-- applies the core schema (the bits the API depends on, like
-  `_ext_migrations` and `_ext_bindings`),
-- runs the extension's migrations,
-- yields a real `ExtensionAPI` scoped to the given extension id.
-
-The helper is provided by the core because extensions should never have to
-reverse-engineer the API construction.
 
 ## Standard test layers
 
@@ -54,27 +88,18 @@ reverse-engineer the API construction.
 
 For each migration, write a test that:
 
-1. Starts from the schema state *before* the migration.
+1. Starts from the schema state *before* the migration (apply the files up to
+   the previous one).
 2. Applies the migration.
-3. Asserts the resulting schema (tables, columns, indices).
+3. Asserts the resulting schema (tables, columns, indices) with
+   `PRAGMA table_info` and `sqlite_master`.
 4. If data migration is part of the file, seeds representative rows in step
    1 and asserts their final state in step 3.
 
-```python
-def test_migration_002_adds_balance_after():
-    with api_for_test(extension_id="finances", migrations_dir=migrations_through(1)) as api:
-        # state before 002
-        api.execute("INSERT INTO ext_finances_transactions (...) VALUES (...)")
-    with api_for_test(extension_id="finances", migrations_dir=migrations_through(2)) as api:
-        # state after 002
-        cols = [r["name"] for r in api.read("PRAGMA table_info(ext_finances_transactions)")]
-        assert "balance_after" in cols
-```
-
 ### Layer 2 — Store / repository
 
-Pure CRUD tests. Insert, read back, update, delete. No business logic. Each
-test is a single behavior.
+Pure CRUD tests over the extension's shared code (`lib/`). Insert, read back,
+update, delete. No business logic. Each test is a single behavior.
 
 ### Layer 3 — Services and reports
 
@@ -84,31 +109,28 @@ the function, and assert the structured output.
 
 ### Layer 4 — CLI subcommands
 
-Invoke the registered handler with arguments, capture stdout/stderr, assert
-exit code and output shape.
+Run the declared command as a process, as above: arguments in, context in the
+environment, then assert exit code and output shape. This is the contract the
+core honors, so it is the one worth testing.
 
-```python
-def test_cli_runway(capsys):
-    with api_for_test(extension_id="finances", migrations_dir=...) as api:
-        register(api)
-        seed_some_accounts(api)
-        rc = api._cli_registry["runway"](api, [])
-        assert rc == 0
-        out = capsys.readouterr().out
-        assert "runway" in out.lower()
+### Layer 5 — Mirror Mode and the installed extension
+
+End to end, through the real front door, in a scratch mirror home:
+
+```bash
+# An empty MIRROR_USER outranks the one in .env; without it the resolver
+# refuses a MIRROR_HOME whose basename does not match the user.
+export MIRROR_HOME="$(mktemp -d)" MIRROR_USER=
+mirror extensions install hello --extensions-root <extensions-root>
+mirror ext hello ping "end to end"
+mirror ext hello bind greeting --persona <persona_id>
 ```
 
-### Layer 5 — Mirror Mode hook
-
-Tests that:
-
-1. Install a fixture extension.
-2. Bind one of its capabilities to a persona.
-3. Trigger `load_mirror_context(persona=<persona>)` and assert the
-   provider's output appears in the prompt.
-
-These tests live in the core repo because they cross the boundary between
-core and extension. The fixture extension is minimal (`ext-hello`).
+Then, in a home whose identity is seeded with that persona, `mirror mirror load
+--persona <persona_id>` must contain the provider's text under
+`=== extension/hello/greeting ===`. The core's own tests of the boundary
+between core and extension live in `ts/test/extensions/`, over fixture
+extensions.
 
 ## Edge cases every extension should cover
 
@@ -116,54 +138,47 @@ core and extension. The fixture extension is minimal (`ext-hello`).
   no rows exist.
 - **Missing related rows.** Reading a foreign-key target that does not
   exist (account deleted but transaction remains) should not crash.
-- **Bad input.** CLI handlers should print a helpful error and return a
-  non-zero exit code, not raise.
+- **Bad input.** A subcommand should print a helpful error to stderr and exit
+  non-zero, not crash with a stack trace.
 - **Idempotent imports.** Importers should dedupe by a stable id and
   produce the same final state on re-run.
 - **UTF-8 and Latin-1.** Files from external systems often come in
   Latin-1. Parsers should detect or be told.
-- **Provider returning None.** Mirror Mode should handle a `None` return
+- **Provider returning `null` text.** Mirror Mode skips the capability
   without warning.
-- **Provider raising.** Mirror Mode should catch the exception, log it,
-  and continue assembling the rest of the prompt.
+- **Provider failing.** A provider that exits non-zero, times out, or writes
+  anything but its one JSON object is skipped, and Mirror Mode assembles the
+  rest of the prompt. Test that your provider fails that way rather than
+  printing a partial answer.
 
 ## Conventions
 
-- **One assertion per concept.** Multiple `assert` lines are fine if they
-  describe the same outcome; split tests when they describe different
-  outcomes.
+- **One assertion per concept.** Multiple asserts are fine if they describe
+  the same outcome; split tests when they describe different outcomes.
 - **Fixtures small and inline.** Most tests do not need shared fixtures.
-  Inline seed data is easier to read than `conftest.py` machinery.
-- **Names describe behavior, not implementation.** `test_runway_uses_bills_when_available`,
-  not `test_runway_calls_monthly_burn_from_bills`.
+  Inline seed data is easier to read than shared setup machinery.
+- **Names describe behavior, not implementation.** `runway uses bills when
+  available`, not `runway calls monthlyBurnFromBills`.
 - **Run in CI.** Every extension should have a CI workflow that runs its
-  tests against the latest mirror release. Core tests run on every push to
-  the mirror repo.
+  tests. Core tests run on every push to the mirror repo.
 
 ## Running tests
 
-Inside the mirror repo:
+Inside the mirror repo, the core's extension tests:
 
 ```bash
-uv run pytest tests/extensions/
+cd ts
+node --test test/extensions/
 ```
 
-Inside an extension repo:
-
-```bash
-uv run pytest tests/
-# or, if the extension declares its own pyproject:
-pytest tests/
-```
-
-Extensions should pin a compatible version of the mirror in their
-`pyproject.toml` for reproducibility.
+Inside an extension repo, with whatever runner its language uses —
+`node --test tests/` for the example above.
 
 ## What is intentionally not tested
 
-- **Real LLM and embedding calls.** Always mocked. Both `api.llm` and
-  `api.embed` accept a test mode that returns fixed strings / fixed
-  vectors. Hitting real APIs in CI is wasteful and flaky.
+- **Real LLM and embedding calls.** An extension that calls a model owns that
+  call, and should mock it at its own boundary. Hitting real APIs in CI is
+  wasteful and flaky.
 - **Network resources.** Extensions that talk to external services (banks,
-  CRMs) should mock at the boundary, not at the API level.
+  CRMs) should mock at the boundary.
 - **Sleep and timing.** Time-dependent code uses an injectable clock.
