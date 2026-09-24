@@ -3,8 +3,9 @@
 # CV22.DS10.TS5 — Python core deletion
 
 **Status:** 🟢 In Progress — pulled 2026-09-23; Plan panel-reviewed and
-approved; plateaus 0, 1, and 2 of 5 done — **the fallback is gone; Python is
-present and unreachable**. Next: tag `cv22-last-python-bearing`, then plateau 3
+approved; plateaus 0–2 of 5 done, **plateau 3 in progress** — the Python core,
+its suite, and its oracle harness are deleted; stopped at three Navigator
+decisions (D10–D12) before the last `.py` files and `pyproject.toml` go
 
 ---
 
@@ -440,35 +441,78 @@ out a retired flag passed locally while untracked and turned CI red on push,
 on both guards at once; the suite now runs after staging, and the docs link
 check joined the pre-commit set when it caught a link to a deleted script.
 
+### Plateau 3 — Deleted — 🟡 in progress, stopped at three decisions, 2026-09-24
+
+The first session of the plateau. Eleven commits, `db28953e` to the handoff;
+none pushed yet.
+
+**What is now true.**
+
+- **The Python core is gone from the tree** — `src/memory/` and `tests/`
+  (F.1, 322 files), the oracle harness in `ts/parity/` and the library under it
+  in `ts/src/parity/` (F.2, F10), the five Python scripts (F.3, after their
+  Node ports agreed), and the DS1 spike (F.4). **~110,000 lines.** What
+  remains of `git ls-files '*.py'` is exactly the six inert fixture bodies F.5
+  converts.
+- **CI installs no interpreter.** The Python matrix job is deleted; `parity`
+  became `smoke`, which generates its demo database in TypeScript and runs
+  migrate-on-open, the conversation lifecycle, and the TypeScript halves of the
+  builder and extension-catalog smokes; `docs.yml` is Node alone.
+- **The demo database is TypeScript** (slice G, first, while it could still be
+  proven): Python's database after TypeScript's first open and TypeScript's
+  own are identical in structure, in all 28 tables' row counts, and in every
+  row with ids and clocks masked.
+- **The goldens are frozen fixtures**, with a README saying what that means,
+  which hand edit happened (F4's temp path, now graded instead of carried),
+  and that `render/` is TypeScript's own snapshots, not frozen.
+- **Every runtime smoke runs on the front door** — Codex, Gemini, MCP, the
+  plugin, the review-copy extension, the MCP guard probe. The two probes that
+  only ever compared engines are retired with the reason.
+- **Gemini logs assistant turns again** (F11): a plateau-1 regression the
+  row-diff could not see, found by the Gemini smoke the moment it left Python.
+- Historical links to deleted Python files point at the recovery tag, the rule
+  `decisions.md` now records; living docs that had a TypeScript equivalent
+  point at it instead.
+
+**What is intentionally undone, and why.** F.5 and F.6 wait for **D10** (the
+manifest still demands a `.py` entrypoint the core never reads — F13). F.7
+waits for **D11** (`pyproject.toml` has readers in `frame/` and `installer/`
+that D1 did not know — F12). The `python-core` row stays staged pending
+**D12** (slice C's strings bullet was never done, and it conflicts with the
+golden freeze — F14). All three are in
+[plan.md — asked at plateau 3](plan.md#asked-at-plateau-3-navigator-pending),
+each with a recommendation.
+
+**Evidence.** [test-guide.md — plateau 3](test-guide.md#plateau-3--the-demo-database-ported-slice-g)
+and the replay below it. The per-family capture replayed with Python deleted:
+**29/29 byte-identical to plateau 2** (the same file digest, `15a81d1c…`).
+Suite under the interpreter shadow **2627 passed, 0 spawn attempts**; custody
+proofs pass; lifecycle smokes, the updater smoke (34/34), and every runtime
+smoke pass.
+
 ## Where To Resume
 
-**Plateau 2 is done; nothing is in flight.** Before plateau 3's first deletion:
+**Plateau 3 is in flight, stopped at three Navigator decisions; nothing
+half-applied.** Every commit so far is green on the full local pre-push set;
+none is pushed. In order:
 
-1. ✅ push, and tag **`cv22-last-python-bearing`** at the last plateau-2 commit
-   (annotated, pushed) — the recovery point the Plan names. **Commit
-   `b0d34254`, tag object `3b667f69`**, recorded in
-   [decisions.md](../../../../decisions.md#the-python-core-is-deleted-forward-with-one-recovery-point-cv22-last-python-bearing);
-2. ✅ confirm CI green on both platforms, the now-required shadow step
-   included — run `35997553500`, all five jobs green.
+1. **Push** the plateau-3 commits and confirm CI on both platforms — the first
+   run of the Node-only workflows and the new `smoke` job.
+2. **D10, D11, D12** —
+   [plan.md — asked at plateau 3](plan.md#asked-at-plateau-3-navigator-pending).
+3. Then, as decided: F.5 (fixtures) and F.6 (templates, and the
+   `MIRROR_TEST_EXTENSION_PYTHON` opt-in with the shim suite it gates); F.7
+   (`pyproject.toml`, `uv.lock`, and the pyproject-reading tests in
+   `packageIdentity.test.ts` and `runtimeTailCli.test.ts`); the strings; the
+   row live. `retiredSurfaces.test.ts` keeps a ledger of deleted and
+   still-tracked paths — move each path across as its row lands.
+4. Close plateau 3: `git ls-files '*.py'` empty, the plateau-3 gate and seeded
+   regressions in the test guide, the replay once more (`bash
+   scripts/ts5/capture_family_outputs.sh "$PWD/tmp/ts5/pristine.db"`, compared
+   against `tmp/ts5/capture-plateau3.tsv`, by the controlled method for any
+   family that reads repository documents).
 
-Then plateau 3, in the Plan's order (F, one commit per row; then G):
-
-- F.1–F.7 as written, plus three things plateau 2 found:
-  `scripts/ts5/flag_first_pairwise.sh` and `hook_rowdiff.sh` go with the
-  Python they compare against; `extensionCatalogRouting.test.ts` **reads
-  `src/memory/cli/ext.py` and `extensions.py`** to audit its allowlists and
-  needs a disposition (freeze the audited literals); and CI's
-  `MIRROR_TEST_EXTENSION_PYTHON` goes with the shim template (D7).
-- G: port `generate_demo_memory_db.py` first — `smoke_runtime_update.sh`
-  still generates its database with it, which is why the `ts` job still
-  installs `uv`.
-- The plateau-3 replay: `build-pull-candidates` (and any family that reads
-  repository documents) is compared by the **controlled method** — the
-  plateau-2 engine from a worktree at the tag and HEAD, against the same
-  docs — not against the plateau-0 hash, because the roadmap will have moved
-  again.
-
-Standing instruments: `bash scripts/ts5/capture_family_outputs.sh
-"$PWD/tmp/ts5/pristine.db"` (latest: `tmp/ts5/capture-plateau2.tsv`). The
-pristine copy is local and gitignored; recreate it from the real database if
-the tree is cleaned.
+Plateau 4 (slice H) inherits more than the Plan listed: `engineering-principles.md`
+and `ts/README.md` cite the Python core through recovery-tag links until they
+are rewritten, and the development guide still places `ts/evals/` "beside
+`ts/parity/`".

@@ -543,7 +543,45 @@ applied: **34/34, ledger 16 → 17**, with `python`/`python3`/`uv` shadowed.
 
 ### Plateau 3 replay
 
-Pending — the `diff` of `capture-plateau0.tsv` against `capture-plateau3.tsv`.
+**2026-09-24, at `a4459a67`** — F.1 through F.4 deleted, slice G landed; the
+six fixture bodies and `pyproject.toml` still tracked (D10, D11).
+
+```bash
+bash scripts/ts5/capture_family_outputs.sh "$PWD/tmp/ts5/pristine.db" \
+  > tmp/ts5/capture-plateau3.tsv
+diff tmp/ts5/capture-plateau2.tsv tmp/ts5/capture-plateau3.tsv   # empty
+```
+
+| Against | Result |
+|---|---|
+| plateau 2 | **29/29 identical** — the two files have the same digest, `15a81d1c…` |
+| plateau 0 | 27/29, the same two differences plateau 2 explained: `unknown-command` (D2) and `build-pull-candidates` (the roadmap moved) |
+
+No controlled comparison was needed: `build-pull-candidates` reads the
+repository's roadmap, and this plateau edited roadmap documents (the spike
+links), but its bytes did not move against plateau 2.
+
+### Plateau 3 — the rest of the pre-push set
+
+| Check | Result |
+|---|---|
+| Suite under the interpreter shadow | **2627 passed, 3 skipped, 0 spawn attempts** |
+| `tsc`, Biome | clean (the one warning and one info are pre-existing) |
+| Retired surfaces (8 enforced rows), docs links, skill parity, plugin build | clean; in sync |
+| Custody proofs (`ts/smoke/`) | `MIGRATION PARITY: PASS`, `BOOTSTRAP CUSTODY PARITY: PASS` |
+| Migrate-on-open, demo copy | `RESULT: PASS` |
+| Conversation, builder, extension-catalog lifecycle smokes | pass; the builder one 54/54 and fails on a flipped expectation |
+| `smoke_runtime_update.sh` | **34/34**, ledger 16 → 17, interpreter shadowed |
+| `smoke_codex.sh`, `smoke_gemini_cli.sh`, `smoke_mirror_mcp.sh`, `smoke_claude_plugin.sh`, `smoke_external_review_copy.sh`, `mcp_guard_probe.sh` (keyless) | pass, on the front door |
+
+The Gemini smoke is the one that found [F11](inventory.md#f11--gemini-assistant-turns-were-dropped-since-plateau-1):
+at `cv22-ts5-baseline` it passes with two messages, at
+`cv22-last-python-bearing` it fails with one, and since `a9c7ddde` it passes
+again.
+
+The plateau-3 gate (`git ls-files '*.py'` empty, `pyproject.toml` absent, the
+`python-core` row live) and its seeded regressions are **not yet run**: they
+wait for D10–D12.
 
 ### Navigator route
 

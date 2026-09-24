@@ -323,3 +323,97 @@ repository invokes `cli.ts mcp`.
 TypeScript server through the front door (`ea95c1de`) — the module the plugin
 launches, not a second server — so the acceptance block's "any of the 32
 top-level commands" holds as written.
+
+---
+
+## 5. Plateau 3 findings (2026-09-24)
+
+Five findings, taken while deleting rather than while reading. Two were fixed
+in the plateau; three stop it at a Navigator decision
+([plan.md — asked at plateau 3](plan.md#asked-at-plateau-3-navigator-pending)).
+
+### F10 — `ts/src/parity/` was the harness under the verifiers slice F.2 named
+
+F.2 listed the TypeScript entry points that compare engines
+(`real_db_copy_verify.ts`, `write_parity_verify.ts`,
+`schema_structural_parity.ts`). Beneath them sat their library: eleven modules
+in `ts/src/parity/` — write-parity probes per family, the real-DB-copy grader,
+the fixture loader and its CLI — four test files grading the harness itself,
+and nine exports from the package entry point. All of it compared engines.
+
+**Disposition: deleted with F.2** (`89300c72`). Two modules had callers outside
+the harness and were test-side code, so they moved rather than died:
+`golden.ts` (the hybrid-search golden loader) and `maintenanceReport.ts` (the
+timing normalizer the lifecycle smoke and a test share), both to
+`ts/test/helpers/`.
+
+### F11 — Gemini assistant turns were dropped since plateau 1
+
+**A product regression from this story, fixed here** (`a9c7ddde`). The Node
+port of the Gemini `AfterAgent` hook read the assistant's text from
+`response`, `assistant_message`, or `content`. Gemini's payload, and the
+Python hook it replaced, name it `prompt_response`. Every Gemini assistant
+turn since `bdd63e00` was dropped while the hook printed `{}` and exited 0, so
+conversations looked alive with half their messages.
+
+The plateau-1 row-diff reported the Gemini family identical, and it was — for
+the cases it ran, none of which carried an `AfterAgent` payload with the real
+field. `scripts/smoke_gemini_cli.sh` did, and caught it the moment it was moved
+off Python: it passes with two messages at `cv22-ts5-baseline` and fails with
+one at `cv22-last-python-bearing`. An audit of every field the other ported
+hooks read found no second case: they read the same `prompt` and `session_id`
+their Python originals read.
+
+The lesson is the journey's own, one level down: **a comparison can only see
+what both sides are given.** The row-diff graded the hooks; the payload shapes
+it chose were the unexamined input.
+
+### F12 — `pyproject.toml` has readers D1 did not know about
+
+D1 moved version authority and checkout detection off `pyproject.toml` for the
+two TypeScript readers the Pull inventory found. There are three more, all in
+components US2's decision D4 re-homed to US3:
+
+| Reader | Reads it for |
+|---|---|
+| `frame/main/root-resolve.js` | the Mirror root: env override, installed payload, and dev mode all test for `pyproject.toml` |
+| `frame/tests/version-sync.test.js` | the Frame's version must equal the one in `pyproject.toml` — run by the Windows workflow |
+| `installer/health-check.ps1`, `install.ps1`, `launcher/mirror.cmd` | the checkout marker, and the installed version |
+
+Deleting `pyproject.toml` (F.7) makes the Frame's version test fail wherever
+the Windows workflow next runs, and leaves the Frame and installer unable to
+find a Mirror root. Both components already call Python (the accepted US3
+window), but this is a second, different break the Plan did not name.
+**Stop: F.7 waits for D11.**
+
+### F13 — the extension manifest still requires a Python entrypoint
+
+`ts/src/extensions/manifest.ts` — a byte-for-byte port of Python's validator —
+requires every `command-skill` to declare `entrypoint.module`, and requires it
+to resolve to `<module>.py` in the extension directory. Since TS2 the core
+never imports that file. TS2 recorded this as the reason its six inert fixture
+bodies could not convert; the Plan's F.5 converts them "for the new
+`entrypoint` shape" without saying what that shape is.
+
+It also binds D7, which the Plan treats as independent: deleting
+`extension.py.template` leaves the template producing command-skills the
+validator **rejects**, because the file it demands is the one being deleted.
+**Stop: F.5 and F.6 wait for D10.**
+
+### F14 — slice C's strings bullet was never done, and it conflicts with the golden freeze
+
+Slice C asked for "any other user-facing string naming `python -m memory` or
+`uv run`" to change. Plateau 1 closed without it: the front door still tells
+users to run `python -m memory …` or `uv run python -m memory …` in usage
+lines and hints across nine files — `extensions`, `ext`, `list`, `inspect`,
+`build` (adopt, sync-cursor, method surfaces, set-path), `consolidate` and
+`shadow` review hints, `journey update`, `init`. Eight goldens recorded those
+bytes from the oracle.
+
+Changing them is right — the program they name no longer exists — but the
+Plan's Non-Goals also say only D2 and the migrate verdicts change bytes on
+purpose, and that exactly two goldens are hand-edited. Both cannot hold.
+The staged `python-core` row reports 79 mentions today: 14 in `ts/src` (about
+half of them these strings), 25 in `ts/test` (mostly those goldens), ~30 in
+documentation that slice H rewrites at plateau 4. **Stop: the row's go-live
+waits for D12.**

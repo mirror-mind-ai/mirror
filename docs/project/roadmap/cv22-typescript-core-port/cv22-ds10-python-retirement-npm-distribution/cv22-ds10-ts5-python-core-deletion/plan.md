@@ -672,6 +672,63 @@ Four decisions, each as recommended:
   server DS9 already ported, not a port; the acceptance block's "any of the
   32 top-level commands" holds as written.
 
+### Asked at plateau 3 (Navigator, pending)
+
+Plateau 3 deleted F.1–F.4 and landed slice G, then stopped at three findings
+the Plan did not anticipate ([inventory — plateau 3](inventory.md#5-plateau-3-findings-2026-09-24)).
+Each is a Driver recommendation awaiting the Navigator.
+
+**D10 — the command-skill entrypoint contract** (F13; blocks F.5 and F.6).
+The validator requires every command-skill's `entrypoint.module` to resolve to
+a `.py` file the core has not imported since TS2.
+
+- **(a) Recommended: `entrypoint` becomes optional for command-skills**, and is
+  validated exactly as today when present. The six fixtures drop `entrypoint:`
+  and their inert bodies; the catalog goldens lose the entrypoint lines and the
+  file entries, hand-edited with the reason. D7 proceeds as approved: both
+  Python templates go, and the template teaches declared runtimes with no entry
+  file. Every installed extension validates as it does today. This removes the
+  vestige — a file demanded and never read — rather than generalizing it, and
+  TS2 already declared both runtime protocols language-neutral.
+- (b) Accept other entry files (`.py`, `.mjs`, `.js`, first that exists). The
+  template would then ship an entry file that nothing ever runs.
+- (c) Keep the rule and exempt the fixtures by name, as models of extensions
+  that may legitimately be Python. The Outcome's `git ls-files '*.py'` is then
+  not empty, and D7 shrinks to `cli.py.template`.
+
+Either way D7 has one consequence to confirm: `cli.py.template` is the
+documented migration path for extensions still on `register(api)` handlers.
+Extensions that already copied it keep their copy, and it stays readable at
+the recovery tag.
+
+**D11 — `pyproject.toml`'s readers in `frame/` and `installer/`** (F12; blocks
+F.7).
+
+- **(a) Recommended: delete it here, and re-point only the reader a workflow
+  runs** — `frame/tests/version-sync.test.js` reads the version from
+  `ts/package.json`, as D1 did for the product. Root detection in the Frame and
+  the installer stays with US3 and is named in the known risks beside the nine
+  Python call sites: they fail together, and the npm artifact decides what a
+  "Mirror root" is for both.
+- (b) Re-point every reader to `ts/package.json` here. The installer half is
+  PowerShell that nothing on this branch can run.
+- (c) Keep `pyproject.toml` until US3. Rejected by D1's own reasoning.
+
+**D12 — the user-facing strings, and when the `python-core` row goes live**
+(F14).
+
+- **(a) Recommended.** Every user-facing `python -m memory X` or
+  `uv run python -m memory X` becomes `mirror X` through D2's `PROGRAM`
+  constant — the one place US3 renames — with the recorded goldens hand-edited
+  and listed in `test/goldens/README.md`, and the replay naming the families
+  whose bytes change, as deliberate. This amends the Non-Goals' "only D2 and
+  the migrate verdicts" and "exactly two goldens". The row goes live in two
+  halves: **absence** (every retired path) at the end of plateau 3, and
+  **mentions** at the end of plateau 4, once slice H has rewritten the
+  documentation that holds ~30 of the 79.
+- (b) Leave the strings for US3, which names the program, with an expiring
+  exemption per file, and take the row live whole at plateau 4.
+
 ## Review
 
 **Plan review held 2026-09-23**, before implementation, per the
