@@ -1,6 +1,12 @@
 // CV22.DS7.TS3 plateau 3a — `runtime status`, graded against the Python
 // oracle over the same fixture mirror homes the golden was generated from.
 //
+// The golden is frozen since CV22.DS10.TS5, and hand-edited once since (F19):
+// with the oracle gone, a current database carries every migration this core
+// knows, so the recorded counts moved from 16 to 17. `ts_migrated` keeps the
+// oracle's own answer on purpose -- it is the record the DS6 divergence test
+// below grades against. See test/goldens/README.md.
+//
 // The fixture recipe is rebuilt here rather than committed: the homes are a
 // handful of files and one SQLite ledger each, and rebuilding them means a
 // drift in either core's recipe fails loudly instead of grading a stale
@@ -13,6 +19,7 @@ import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSy
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
+import { KNOWN_MIGRATION_IDS } from "#db/schemaState.ts";
 import { checksum } from "#extensions/migrations.ts";
 import {
   buildRuntimeStatus,
@@ -42,6 +49,11 @@ interface Golden {
 const golden: Golden = JSON.parse(readFileSync(GOLDEN_PATH, "utf8"));
 const PYTHON_IDS = golden.meta.python_migration_ids;
 const TS_AUTHORED_ID = golden.meta.ts_authored_migration_id;
+// A CURRENT database since CV22.DS10.TS5 (F19): every migration this core
+// knows. Until then the "current" fixtures stopped at the oracle's sixteen and
+// the status grader counted only those, to keep matching a recorded Python
+// answer. With one custodian there is one honest denominator.
+const CURRENT_IDS = [...PYTHON_IDS, TS_AUTHORED_ID];
 
 const MIGRATION_SQL =
   "CREATE TABLE IF NOT EXISTS ext_demo_widget_notes (id INTEGER PRIMARY KEY);\n";
@@ -200,11 +212,11 @@ function fixture(): Fixture {
   homes.set("migrations_missing", current);
 
   current = home("home-unknown-migration");
-  createDatabase(join(current, "memory.db"), [...PYTHON_IDS, "999_from_the_future"]);
+  createDatabase(join(current, "memory.db"), [...CURRENT_IDS, "999_from_the_future"]);
   homes.set("unknown_migration", current);
 
   current = home("home-ext-clean");
-  createDatabase(join(current, "memory.db"), PYTHON_IDS);
+  createDatabase(join(current, "memory.db"), CURRENT_IDS);
   const extensions = join(current, "extensions");
   writeFileSync(
     join(migrationsDir(buildCommandSkill(extensions, "demo-widget")), "001_init.sql"),
@@ -228,7 +240,7 @@ function fixture(): Fixture {
   homes.set("ext_clean", current);
 
   current = home("home-ext-pending");
-  createDatabase(join(current, "memory.db"), PYTHON_IDS);
+  createDatabase(join(current, "memory.db"), CURRENT_IDS);
   let dir = migrationsDir(buildCommandSkill(join(current, "extensions"), "demo-widget"));
   writeFileSync(join(dir, "001_init.sql"), MIGRATION_SQL);
   writeFileSync(join(dir, "002_more.sql"), MIGRATION_SQL);
@@ -238,7 +250,7 @@ function fixture(): Fixture {
   homes.set("ext_pending", current);
 
   current = home("home-ext-drift");
-  createDatabase(join(current, "memory.db"), PYTHON_IDS);
+  createDatabase(join(current, "memory.db"), CURRENT_IDS);
   dir = migrationsDir(buildCommandSkill(join(current, "extensions"), "demo-widget"));
   writeFileSync(join(dir, "001_init.sql"), MIGRATION_SQL.replace("notes", "renamed"));
   addExtLedger(join(current, "memory.db"), [
@@ -247,7 +259,7 @@ function fixture(): Fixture {
   homes.set("ext_drift", current);
 
   current = home("home-ext-unknown-applied");
-  createDatabase(join(current, "memory.db"), PYTHON_IDS);
+  createDatabase(join(current, "memory.db"), CURRENT_IDS);
   dir = migrationsDir(buildCommandSkill(join(current, "extensions"), "demo-widget"));
   writeFileSync(join(dir, "001_init.sql"), MIGRATION_SQL);
   addExtLedger(join(current, "memory.db"), [
@@ -257,18 +269,18 @@ function fixture(): Fixture {
   homes.set("ext_unknown_applied", current);
 
   current = home("home-ext-ledger-missing");
-  createDatabase(join(current, "memory.db"), PYTHON_IDS);
+  createDatabase(join(current, "memory.db"), CURRENT_IDS);
   dir = migrationsDir(buildCommandSkill(join(current, "extensions"), "demo-widget"));
   writeFileSync(join(dir, "001_init.sql"), MIGRATION_SQL);
   homes.set("ext_ledger_missing", current);
 
   current = home("home-ext-no-migrations");
-  createDatabase(join(current, "memory.db"), PYTHON_IDS);
+  createDatabase(join(current, "memory.db"), CURRENT_IDS);
   buildCommandSkill(join(current, "extensions"), "demo-widget");
   homes.set("ext_no_migrations", current);
 
   current = home("home-ext-bad-filename");
-  createDatabase(join(current, "memory.db"), PYTHON_IDS);
+  createDatabase(join(current, "memory.db"), CURRENT_IDS);
   dir = migrationsDir(buildCommandSkill(join(current, "extensions"), "demo-widget"));
   writeFileSync(join(dir, "1_init.sql"), MIGRATION_SQL);
   addExtLedger(join(current, "memory.db"), []);
@@ -280,29 +292,29 @@ function fixture(): Fixture {
 
   for (const [label, body] of Object.entries(INVALID_MANIFESTS)) {
     current = home(`home-manifest-${label.replaceAll("_", "-")}`);
-    createDatabase(join(current, "memory.db"), PYTHON_IDS);
+    createDatabase(join(current, "memory.db"), CURRENT_IDS);
     writeManifest(join(current, "extensions", "demo-widget"), body);
     homes.set(`manifest_${label}`, current);
   }
 
   current = home("home-manifest-prefix-mismatch");
-  createDatabase(join(current, "memory.db"), PYTHON_IDS);
+  createDatabase(join(current, "memory.db"), CURRENT_IDS);
   const mismatch = buildCommandSkill(join(current, "extensions"), "demo-widget");
   writeManifest(mismatch, `${commandSkillManifest("demo-widget")}table_prefix: ext_wrong_\n`);
   homes.set("manifest_table_prefix_mismatch", current);
 
   current = home("home-manifest-module-missing");
-  createDatabase(join(current, "memory.db"), PYTHON_IDS);
+  createDatabase(join(current, "memory.db"), CURRENT_IDS);
   writeManifest(join(current, "extensions", "demo-widget"), commandSkillManifest("demo-widget"));
   homes.set("manifest_entrypoint_module_missing", current);
 
   current = home("home-manifest-skill-file-missing");
-  createDatabase(join(current, "memory.db"), PYTHON_IDS);
+  createDatabase(join(current, "memory.db"), CURRENT_IDS);
   writeManifest(join(current, "extensions", "demo-widget"), promptSkillManifest("demo-widget"));
   homes.set("manifest_skill_file_missing", current);
 
   current = home("home-manifest-bad-yaml");
-  createDatabase(join(current, "memory.db"), PYTHON_IDS);
+  createDatabase(join(current, "memory.db"), CURRENT_IDS);
   writeManifest(join(current, "extensions", "demo-widget"), "id: demo\n  bad: [unclosed\n");
   homes.set("manifest_bad_yaml", current);
 
@@ -335,7 +347,13 @@ test("SQL normalisation agrees with the oracle on every corpus checksum", () => 
   assert.notEqual(checksum(MIGRATION_SQL_BOM), checksum(MIGRATION_SQL));
 });
 
-test("every status scenario renders exactly as the oracle renders it", () => {
+test("a current fixture database carries every migration this core knows", () => {
+  // If a migration 018 lands, the fixtures must say what current means again,
+  // and so must the golden -- by hand, with the reason.
+  assert.deepEqual(CURRENT_IDS, [...KNOWN_MIGRATION_IDS]);
+});
+
+test("every status scenario renders exactly as its frozen golden records", () => {
   const f = fixture();
   try {
     const divergent = new Set(["ts_migrated", "manifest_bad_yaml"]);
@@ -386,15 +404,20 @@ test("a TS-migrated database is clean here and a false alarm to the oracle", () 
   }
 });
 
-test("a database missing only the TS-authored migration matches the oracle exactly", () => {
-  // The mirror image of the scenario above, and the reason `known_count`
-  // counts what THIS database requires: a database Python calls current must
-  // not be downgraded to `16/17 applied; missing 017...` by the TS grader.
+test("F19: a database missing 017 is told so, and names it", () => {
+  // Until CV22.DS10.TS5 this asserted the opposite: a database the Python
+  // oracle called current (16/16) was not to be downgraded by the TS grader,
+  // because the golden recorded Python's answer. With the oracle gone that
+  // answer hid a pending migration behind "ready". The honest one names it,
+  // and `runtime migrate` -- or any front-door write -- applies it.
   const f = fixture();
   try {
     const actual = renderScenario(f, f.homes.get("python_current") as string);
-    assert.match(actual.render, /Core migrations: current \(16\/16\)/);
-    assert.equal(actual.verdict, "ready");
+    assert.match(
+      actual.render,
+      /Core migrations: attention needed \(16\/17 applied; missing 017_journey_parent_column\)/,
+    );
+    assert.equal(actual.verdict, "attention needed");
   } finally {
     f.cleanup();
   }

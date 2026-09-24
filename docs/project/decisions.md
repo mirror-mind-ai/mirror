@@ -2941,6 +2941,7 @@ about what the product says and reads once there is only one engine.
 | D13 | **The Plan scaffold stops telling the Driver to run Python through `uv`.** The line was false for every project once Mirror Mind had no Python; it is removed rather than replaced, because a replacement would add a Mirror-only line to other projects' plans (CR019). |
 | D14 | **The documentation names the program `mirror`, as the product does.** `REFERENCE.md` and `docs/getting-started.md` carry one bridge — the front-door invocation `mirror` stands for, and a shell alias for it — that US3 deletes. Skills and hooks keep the explicit invocation, because an agent runs them where no alias exists. |
 | D15 | **`docs/product/api.md` is deleted.** It documented the Python `MemoryClient`; TypeScript publishes no programmatic API, and a rewritten page would describe a contract nobody offered. |
+| F19 | **`runtime status` counts every migration the core knows.** Its grader forgave a missing `017_journey_parent_column` to keep matching the oracle's recorded `current (16/16)`; with the oracle gone that hid a pending migration behind "ready". It now applies `assertSchemaState`'s rule, and a database without 017 is told so. |
 
 **Why these were decisions and not ports.** A port has a right answer: the
 oracle's. None of these did. D2's bytes, D12's name, and D13's missing line

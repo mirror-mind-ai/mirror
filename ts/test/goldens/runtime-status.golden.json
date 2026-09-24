@@ -28,11 +28,12 @@
       "015_create_builder_workbench",
       "016_builder_workbench_display_codes"
     ],
-    "ts_authored_migration_id": "017_journey_parent_column"
+    "ts_authored_migration_id": "017_journey_parent_column",
+    "hand_edit_ts5_f19": "CV22.DS10.TS5 plateau 4, finding F19 (Navigator 2026-09-24): the oracle is gone, so a current database carries every migration the TypeScript core knows. Every scenario's core-migration count moves from 16 to 17, `python_current` (sixteen applied) becomes `attention needed` naming 017, and `ts_migrated` keeps the oracle's recorded answer as the record of the DS6 divergence. See test/goldens/README.md."
   },
   "scenarios": {
     "db_missing": {
-      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-db-missing\nDatabase: <root>/home-db-missing/memory.db\nDatabase exists: no\nCore migrations: attention needed (unknown/16 applied; database missing)\nInstalled extensions: 0\nExtension health: ready (0 checked)\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
+      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-db-missing\nDatabase: <root>/home-db-missing/memory.db\nDatabase exists: no\nCore migrations: attention needed (unknown/17 applied; database missing)\nInstalled extensions: 0\nExtension health: ready (0 checked)\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
       "report": {
         "clone_role": {
           "note": null,
@@ -41,7 +42,7 @@
         },
         "core_migrations": {
           "applied_count": null,
-          "known_count": 16,
+          "known_count": 17,
           "missing": [],
           "note": "database missing",
           "ready": false,
@@ -72,7 +73,7 @@
       "status": "attention needed"
     },
     "ext_bad_filename": {
-      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-ext-bad-filename\nDatabase: <root>/home-ext-bad-filename/memory.db\nDatabase exists: yes\nCore migrations: current (16/16)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: [extension/demo-widget] invalid migration filename: 1_init.sql (expected ^[0-9]{3,}_[a-z0-9_]+\\.sql$)\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
+      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-ext-bad-filename\nDatabase: <root>/home-ext-bad-filename/memory.db\nDatabase exists: yes\nCore migrations: current (17/17)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: [extension/demo-widget] invalid migration filename: 1_init.sql (expected ^[0-9]{3,}_[a-z0-9_]+\\.sql$)\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
       "report": {
         "clone_role": {
           "note": null,
@@ -80,8 +81,8 @@
           "value": "production"
         },
         "core_migrations": {
-          "applied_count": 16,
-          "known_count": 16,
+          "applied_count": 17,
+          "known_count": 17,
           "missing": [],
           "note": null,
           "ready": true,
@@ -123,7 +124,7 @@
       "status": "attention needed"
     },
     "ext_clean": {
-      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-ext-clean\nDatabase: <root>/home-ext-clean/memory.db\nDatabase exists: yes\nCore migrations: current (16/16)\nInstalled extensions: 4 (demo-bom, demo-prompt, demo-reformat, demo-widget)\nExtension health: ready (4 checked)\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: ready\n",
+      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-ext-clean\nDatabase: <root>/home-ext-clean/memory.db\nDatabase exists: yes\nCore migrations: current (17/17)\nInstalled extensions: 4 (demo-bom, demo-prompt, demo-reformat, demo-widget)\nExtension health: ready (4 checked)\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: ready\n",
       "report": {
         "clone_role": {
           "note": null,
@@ -131,8 +132,8 @@
           "value": "production"
         },
         "core_migrations": {
-          "applied_count": 16,
-          "known_count": 16,
+          "applied_count": 17,
+          "known_count": 17,
           "missing": [],
           "note": null,
           "ready": true,
@@ -201,7 +202,7 @@
       "status": "ready"
     },
     "ext_database_unavailable": {
-      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-ext-db-missing\nDatabase: <root>/home-ext-db-missing/memory.db\nDatabase exists: no\nCore migrations: attention needed (unknown/16 applied; database missing)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: database unavailable\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
+      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-ext-db-missing\nDatabase: <root>/home-ext-db-missing/memory.db\nDatabase exists: no\nCore migrations: attention needed (unknown/17 applied; database missing)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: database unavailable\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
       "report": {
         "clone_role": {
           "note": null,
@@ -210,7 +211,7 @@
         },
         "core_migrations": {
           "applied_count": null,
-          "known_count": 16,
+          "known_count": 17,
           "missing": [],
           "note": "database missing",
           "ready": false,
@@ -252,7 +253,7 @@
       "status": "attention needed"
     },
     "ext_drift": {
-      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-ext-drift\nDatabase: <root>/home-ext-drift/memory.db\nDatabase exists: yes\nCore migrations: current (16/16)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: migration checksum drift; drifted 001_init.sql\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
+      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-ext-drift\nDatabase: <root>/home-ext-drift/memory.db\nDatabase exists: yes\nCore migrations: current (17/17)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: migration checksum drift; drifted 001_init.sql\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
       "report": {
         "clone_role": {
           "note": null,
@@ -260,8 +261,8 @@
           "value": "production"
         },
         "core_migrations": {
-          "applied_count": 16,
-          "known_count": 16,
+          "applied_count": 17,
+          "known_count": 17,
           "missing": [],
           "note": null,
           "ready": true,
@@ -305,7 +306,7 @@
       "status": "attention needed"
     },
     "ext_ledger_missing": {
-      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-ext-ledger-missing\nDatabase: <root>/home-ext-ledger-missing/memory.db\nDatabase exists: yes\nCore migrations: current (16/16)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: extension migration ledger missing\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
+      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-ext-ledger-missing\nDatabase: <root>/home-ext-ledger-missing/memory.db\nDatabase exists: yes\nCore migrations: current (17/17)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: extension migration ledger missing\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
       "report": {
         "clone_role": {
           "note": null,
@@ -313,8 +314,8 @@
           "value": "production"
         },
         "core_migrations": {
-          "applied_count": 16,
-          "known_count": 16,
+          "applied_count": 17,
+          "known_count": 17,
           "missing": [],
           "note": null,
           "ready": true,
@@ -356,7 +357,7 @@
       "status": "attention needed"
     },
     "ext_no_migrations": {
-      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-ext-no-migrations\nDatabase: <root>/home-ext-no-migrations/memory.db\nDatabase exists: yes\nCore migrations: current (16/16)\nInstalled extensions: 1 (demo-widget)\nExtension health: ready (1 checked)\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: ready\n",
+      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-ext-no-migrations\nDatabase: <root>/home-ext-no-migrations/memory.db\nDatabase exists: yes\nCore migrations: current (17/17)\nInstalled extensions: 1 (demo-widget)\nExtension health: ready (1 checked)\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: ready\n",
       "report": {
         "clone_role": {
           "note": null,
@@ -364,8 +365,8 @@
           "value": "production"
         },
         "core_migrations": {
-          "applied_count": 16,
-          "known_count": 16,
+          "applied_count": 17,
+          "known_count": 17,
           "missing": [],
           "note": null,
           "ready": true,
@@ -407,7 +408,7 @@
       "status": "ready"
     },
     "ext_pending": {
-      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-ext-pending\nDatabase: <root>/home-ext-pending/memory.db\nDatabase exists: yes\nCore migrations: current (16/16)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: pending migrations; pending 002_more.sql\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
+      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-ext-pending\nDatabase: <root>/home-ext-pending/memory.db\nDatabase exists: yes\nCore migrations: current (17/17)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: pending migrations; pending 002_more.sql\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
       "report": {
         "clone_role": {
           "note": null,
@@ -415,8 +416,8 @@
           "value": "production"
         },
         "core_migrations": {
-          "applied_count": 16,
-          "known_count": 16,
+          "applied_count": 17,
+          "known_count": 17,
           "missing": [],
           "note": null,
           "ready": true,
@@ -460,7 +461,7 @@
       "status": "attention needed"
     },
     "ext_unknown_applied": {
-      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-ext-unknown-applied\nDatabase: <root>/home-ext-unknown-applied/memory.db\nDatabase exists: yes\nCore migrations: current (16/16)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: unknown applied migrations; unknown 002_vanished.sql\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
+      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-ext-unknown-applied\nDatabase: <root>/home-ext-unknown-applied/memory.db\nDatabase exists: yes\nCore migrations: current (17/17)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: unknown applied migrations; unknown 002_vanished.sql\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
       "report": {
         "clone_role": {
           "note": null,
@@ -468,8 +469,8 @@
           "value": "production"
         },
         "core_migrations": {
-          "applied_count": 16,
-          "known_count": 16,
+          "applied_count": 17,
+          "known_count": 17,
           "missing": [],
           "note": null,
           "ready": true,
@@ -513,7 +514,7 @@
       "status": "attention needed"
     },
     "home_not_configured": {
-      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: not configured\nMirror home note: Mirror home is not configured. Set MIRROR_HOME or MIRROR_USER.\nDatabase: unknown\nDatabase exists: unknown\nCore migrations: attention needed (unknown/16 applied; database path unknown)\nInstalled extensions: 0\nExtension health: ready (0 checked)\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
+      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: not configured\nMirror home note: Mirror home is not configured. Set MIRROR_HOME or MIRROR_USER.\nDatabase: unknown\nDatabase exists: unknown\nCore migrations: attention needed (unknown/17 applied; database path unknown)\nInstalled extensions: 0\nExtension health: ready (0 checked)\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
       "report": {
         "clone_role": {
           "note": null,
@@ -522,7 +523,7 @@
         },
         "core_migrations": {
           "applied_count": null,
-          "known_count": 16,
+          "known_count": 17,
           "missing": [],
           "note": "database path unknown",
           "ready": false,
@@ -553,7 +554,7 @@
       "status": "attention needed"
     },
     "ledger_missing": {
-      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-ledger-missing\nDatabase: <root>/home-ledger-missing/memory.db\nDatabase exists: yes\nCore migrations: attention needed (0/16 applied; missing 001_project_to_travessia, 002_create_attachments, 003_create_tasks, 004_tasks_temporal_fields, 005_travessia_to_journey, 006_create_llm_calls, 007_create_identity_descriptors, 008_create_memories_fts, 009_memories_reinforcement_columns, 010_create_consolidations, 011_create_operation_runs, 012_create_operation_run_events, 013_create_exploratory_stories, 014_create_identity_integrations, 015_create_builder_workbench, 016_builder_workbench_display_codes; migration ledger missing)\nInstalled extensions: 0\nExtension health: ready (0 checked)\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
+      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-ledger-missing\nDatabase: <root>/home-ledger-missing/memory.db\nDatabase exists: yes\nCore migrations: attention needed (0/17 applied; missing 001_project_to_travessia, 002_create_attachments, 003_create_tasks, 004_tasks_temporal_fields, 005_travessia_to_journey, 006_create_llm_calls, 007_create_identity_descriptors, 008_create_memories_fts, 009_memories_reinforcement_columns, 010_create_consolidations, 011_create_operation_runs, 012_create_operation_run_events, 013_create_exploratory_stories, 014_create_identity_integrations, 015_create_builder_workbench, 016_builder_workbench_display_codes, 017_journey_parent_column; migration ledger missing)\nInstalled extensions: 0\nExtension health: ready (0 checked)\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
       "report": {
         "clone_role": {
           "note": null,
@@ -562,7 +563,7 @@
         },
         "core_migrations": {
           "applied_count": 0,
-          "known_count": 16,
+          "known_count": 17,
           "missing": [
             "001_project_to_travessia",
             "002_create_attachments",
@@ -579,7 +580,8 @@
             "013_create_exploratory_stories",
             "014_create_identity_integrations",
             "015_create_builder_workbench",
-            "016_builder_workbench_display_codes"
+            "016_builder_workbench_display_codes",
+            "017_journey_parent_column"
           ],
           "note": "migration ledger missing",
           "ready": false,
@@ -610,7 +612,7 @@
       "status": "attention needed"
     },
     "manifest_bad_category": {
-      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-manifest-bad-category\nDatabase: <root>/home-manifest-bad-category/memory.db\nDatabase exists: yes\nCore migrations: current (16/16)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: unsupported category 'core' in <root>/home-manifest-bad-category/extensions/demo-widget/skill.yaml\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
+      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-manifest-bad-category\nDatabase: <root>/home-manifest-bad-category/memory.db\nDatabase exists: yes\nCore migrations: current (17/17)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: unsupported category 'core' in <root>/home-manifest-bad-category/extensions/demo-widget/skill.yaml\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
       "report": {
         "clone_role": {
           "note": null,
@@ -618,8 +620,8 @@
           "value": "production"
         },
         "core_migrations": {
-          "applied_count": 16,
-          "known_count": 16,
+          "applied_count": 17,
+          "known_count": 17,
           "missing": [],
           "note": null,
           "ready": true,
@@ -661,7 +663,7 @@
       "status": "attention needed"
     },
     "manifest_bad_command_prefix": {
-      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-manifest-bad-command-prefix\nDatabase: <root>/home-manifest-bad-command-prefix/memory.db\nDatabase exists: yes\nCore migrations: current (16/16)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: runtime 'pi' command_name must start with 'ext-'\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
+      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-manifest-bad-command-prefix\nDatabase: <root>/home-manifest-bad-command-prefix/memory.db\nDatabase exists: yes\nCore migrations: current (17/17)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: runtime 'pi' command_name must start with 'ext-'\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
       "report": {
         "clone_role": {
           "note": null,
@@ -669,8 +671,8 @@
           "value": "production"
         },
         "core_migrations": {
-          "applied_count": 16,
-          "known_count": 16,
+          "applied_count": 17,
+          "known_count": 17,
           "missing": [],
           "note": null,
           "ready": true,
@@ -712,7 +714,7 @@
       "status": "attention needed"
     },
     "manifest_bad_kind": {
-      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-manifest-bad-kind\nDatabase: <root>/home-manifest-bad-kind/memory.db\nDatabase exists: yes\nCore migrations: current (16/16)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: unsupported kind 'wizard' in <root>/home-manifest-bad-kind/extensions/demo-widget/skill.yaml\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
+      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-manifest-bad-kind\nDatabase: <root>/home-manifest-bad-kind/memory.db\nDatabase exists: yes\nCore migrations: current (17/17)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: unsupported kind 'wizard' in <root>/home-manifest-bad-kind/extensions/demo-widget/skill.yaml\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
       "report": {
         "clone_role": {
           "note": null,
@@ -720,8 +722,8 @@
           "value": "production"
         },
         "core_migrations": {
-          "applied_count": 16,
-          "known_count": 16,
+          "applied_count": 17,
+          "known_count": 17,
           "missing": [],
           "note": null,
           "ready": true,
@@ -763,7 +765,7 @@
       "status": "attention needed"
     },
     "manifest_bad_skill_id": {
-      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-manifest-bad-skill-id\nDatabase: <root>/home-manifest-bad-skill-id/memory.db\nDatabase exists: yes\nCore migrations: current (16/16)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: invalid skill id 'Demo_Widget' in <root>/home-manifest-bad-skill-id/extensions/demo-widget/skill.yaml\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
+      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-manifest-bad-skill-id\nDatabase: <root>/home-manifest-bad-skill-id/memory.db\nDatabase exists: yes\nCore migrations: current (17/17)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: invalid skill id 'Demo_Widget' in <root>/home-manifest-bad-skill-id/extensions/demo-widget/skill.yaml\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
       "report": {
         "clone_role": {
           "note": null,
@@ -771,8 +773,8 @@
           "value": "production"
         },
         "core_migrations": {
-          "applied_count": 16,
-          "known_count": 16,
+          "applied_count": 17,
+          "known_count": 17,
           "missing": [],
           "note": null,
           "ready": true,
@@ -814,7 +816,7 @@
       "status": "attention needed"
     },
     "manifest_bad_yaml": {
-      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-manifest-bad-yaml\nDatabase: <root>/home-manifest-bad-yaml/memory.db\nDatabase exists: yes\nCore migrations: current (16/16)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: invalid YAML in <root>/home-manifest-bad-yaml/extensions/demo-widget/skill.yaml: mapping values are not allowed here\n  in \"<unicode string>\", line 2, column 6:\n      bad: [unclosed\n         ^\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
+      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-manifest-bad-yaml\nDatabase: <root>/home-manifest-bad-yaml/memory.db\nDatabase exists: yes\nCore migrations: current (17/17)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: invalid YAML in <root>/home-manifest-bad-yaml/extensions/demo-widget/skill.yaml: mapping values are not allowed here\n  in \"<unicode string>\", line 2, column 6:\n      bad: [unclosed\n         ^\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
       "report": {
         "clone_role": {
           "note": null,
@@ -822,8 +824,8 @@
           "value": "production"
         },
         "core_migrations": {
-          "applied_count": 16,
-          "known_count": 16,
+          "applied_count": 17,
+          "known_count": 17,
           "missing": [],
           "note": null,
           "ready": true,
@@ -865,7 +867,7 @@
       "status": "attention needed"
     },
     "manifest_empty_runtimes": {
-      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-manifest-empty-runtimes\nDatabase: <root>/home-manifest-empty-runtimes/memory.db\nDatabase exists: yes\nCore migrations: current (16/16)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: missing required field 'runtimes' in <root>/home-manifest-empty-runtimes/extensions/demo-widget/skill.yaml\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
+      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-manifest-empty-runtimes\nDatabase: <root>/home-manifest-empty-runtimes/memory.db\nDatabase exists: yes\nCore migrations: current (17/17)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: missing required field 'runtimes' in <root>/home-manifest-empty-runtimes/extensions/demo-widget/skill.yaml\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
       "report": {
         "clone_role": {
           "note": null,
@@ -873,8 +875,8 @@
           "value": "production"
         },
         "core_migrations": {
-          "applied_count": 16,
-          "known_count": 16,
+          "applied_count": 17,
+          "known_count": 17,
           "missing": [],
           "note": null,
           "ready": true,
@@ -916,7 +918,7 @@
       "status": "attention needed"
     },
     "manifest_entrypoint_module_missing": {
-      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-manifest-module-missing\nDatabase: <root>/home-manifest-module-missing/memory.db\nDatabase exists: yes\nCore migrations: current (16/16)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: entrypoint.module 'handler' not found at <root>/home-manifest-module-missing/extensions/demo-widget/handler.py\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
+      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-manifest-module-missing\nDatabase: <root>/home-manifest-module-missing/memory.db\nDatabase exists: yes\nCore migrations: current (17/17)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: entrypoint.module 'handler' not found at <root>/home-manifest-module-missing/extensions/demo-widget/handler.py\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
       "report": {
         "clone_role": {
           "note": null,
@@ -924,8 +926,8 @@
           "value": "production"
         },
         "core_migrations": {
-          "applied_count": 16,
-          "known_count": 16,
+          "applied_count": 17,
+          "known_count": 17,
           "missing": [],
           "note": null,
           "ready": true,
@@ -967,7 +969,7 @@
       "status": "attention needed"
     },
     "manifest_missing_entrypoint": {
-      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-manifest-missing-entrypoint\nDatabase: <root>/home-manifest-missing-entrypoint/memory.db\nDatabase exists: yes\nCore migrations: current (16/16)\nInstalled extensions: 1 (demo-widget)\nExtension health: ready (1 checked)\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: ready\n",
+      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-manifest-missing-entrypoint\nDatabase: <root>/home-manifest-missing-entrypoint/memory.db\nDatabase exists: yes\nCore migrations: current (17/17)\nInstalled extensions: 1 (demo-widget)\nExtension health: ready (1 checked)\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: ready\n",
       "report": {
         "clone_role": {
           "note": null,
@@ -975,8 +977,8 @@
           "value": "production"
         },
         "core_migrations": {
-          "applied_count": 16,
-          "known_count": 16,
+          "applied_count": 17,
+          "known_count": 17,
           "missing": [],
           "note": null,
           "ready": true,
@@ -1018,7 +1020,7 @@
       "status": "ready"
     },
     "manifest_missing_field": {
-      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-manifest-missing-field\nDatabase: <root>/home-manifest-missing-field/memory.db\nDatabase exists: yes\nCore migrations: current (16/16)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: missing required field 'summary' in <root>/home-manifest-missing-field/extensions/demo-widget/skill.yaml\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
+      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-manifest-missing-field\nDatabase: <root>/home-manifest-missing-field/memory.db\nDatabase exists: yes\nCore migrations: current (17/17)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: missing required field 'summary' in <root>/home-manifest-missing-field/extensions/demo-widget/skill.yaml\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
       "report": {
         "clone_role": {
           "note": null,
@@ -1026,8 +1028,8 @@
           "value": "production"
         },
         "core_migrations": {
-          "applied_count": 16,
-          "known_count": 16,
+          "applied_count": 17,
+          "known_count": 17,
           "missing": [],
           "note": null,
           "ready": true,
@@ -1069,7 +1071,7 @@
       "status": "attention needed"
     },
     "manifest_not_a_mapping": {
-      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-manifest-not-a-mapping\nDatabase: <root>/home-manifest-not-a-mapping/memory.db\nDatabase exists: yes\nCore migrations: current (16/16)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: manifest must be a mapping: <root>/home-manifest-not-a-mapping/extensions/demo-widget/skill.yaml\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
+      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-manifest-not-a-mapping\nDatabase: <root>/home-manifest-not-a-mapping/memory.db\nDatabase exists: yes\nCore migrations: current (17/17)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: manifest must be a mapping: <root>/home-manifest-not-a-mapping/extensions/demo-widget/skill.yaml\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
       "report": {
         "clone_role": {
           "note": null,
@@ -1077,8 +1079,8 @@
           "value": "production"
         },
         "core_migrations": {
-          "applied_count": 16,
-          "known_count": 16,
+          "applied_count": 17,
+          "known_count": 17,
           "missing": [],
           "note": null,
           "ready": true,
@@ -1120,7 +1122,7 @@
       "status": "attention needed"
     },
     "manifest_skill_file_missing": {
-      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-manifest-skill-file-missing\nDatabase: <root>/home-manifest-skill-file-missing/memory.db\nDatabase exists: yes\nCore migrations: current (16/16)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: runtime 'pi' skill_file not found: <root>/home-manifest-skill-file-missing/extensions/demo-widget/SKILL.md\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
+      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-manifest-skill-file-missing\nDatabase: <root>/home-manifest-skill-file-missing/memory.db\nDatabase exists: yes\nCore migrations: current (17/17)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: runtime 'pi' skill_file not found: <root>/home-manifest-skill-file-missing/extensions/demo-widget/SKILL.md\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
       "report": {
         "clone_role": {
           "note": null,
@@ -1128,8 +1130,8 @@
           "value": "production"
         },
         "core_migrations": {
-          "applied_count": 16,
-          "known_count": 16,
+          "applied_count": 17,
+          "known_count": 17,
           "missing": [],
           "note": null,
           "ready": true,
@@ -1171,7 +1173,7 @@
       "status": "attention needed"
     },
     "manifest_table_prefix_mismatch": {
-      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-manifest-prefix-mismatch\nDatabase: <root>/home-manifest-prefix-mismatch/memory.db\nDatabase exists: yes\nCore migrations: current (16/16)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: table_prefix 'ext_wrong_' does not match the required prefix 'ext_demo_widget_' for id 'demo-widget' in <root>/home-manifest-prefix-mismatch/extensions/demo-widget/skill.yaml\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
+      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-manifest-prefix-mismatch\nDatabase: <root>/home-manifest-prefix-mismatch/memory.db\nDatabase exists: yes\nCore migrations: current (17/17)\nInstalled extensions: 1 (demo-widget)\nExtension health: attention needed (1 checked, 1 issue(s))\n  - demo-widget: table_prefix 'ext_wrong_' does not match the required prefix 'ext_demo_widget_' for id 'demo-widget' in <root>/home-manifest-prefix-mismatch/extensions/demo-widget/skill.yaml\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
       "report": {
         "clone_role": {
           "note": null,
@@ -1179,8 +1181,8 @@
           "value": "production"
         },
         "core_migrations": {
-          "applied_count": 16,
-          "known_count": 16,
+          "applied_count": 17,
+          "known_count": 17,
           "missing": [],
           "note": null,
           "ready": true,
@@ -1222,7 +1224,7 @@
       "status": "attention needed"
     },
     "migrations_missing": {
-      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-migrations-missing\nDatabase: <root>/home-migrations-missing/memory.db\nDatabase exists: yes\nCore migrations: attention needed (10/16 applied; missing 011_create_operation_runs, 012_create_operation_run_events, 013_create_exploratory_stories, 014_create_identity_integrations, 015_create_builder_workbench, 016_builder_workbench_display_codes)\nInstalled extensions: 0\nExtension health: ready (0 checked)\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
+      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-migrations-missing\nDatabase: <root>/home-migrations-missing/memory.db\nDatabase exists: yes\nCore migrations: attention needed (10/17 applied; missing 011_create_operation_runs, 012_create_operation_run_events, 013_create_exploratory_stories, 014_create_identity_integrations, 015_create_builder_workbench, 016_builder_workbench_display_codes, 017_journey_parent_column)\nInstalled extensions: 0\nExtension health: ready (0 checked)\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
       "report": {
         "clone_role": {
           "note": null,
@@ -1231,14 +1233,15 @@
         },
         "core_migrations": {
           "applied_count": 10,
-          "known_count": 16,
+          "known_count": 17,
           "missing": [
             "011_create_operation_runs",
             "012_create_operation_run_events",
             "013_create_exploratory_stories",
             "014_create_identity_integrations",
             "015_create_builder_workbench",
-            "016_builder_workbench_display_codes"
+            "016_builder_workbench_display_codes",
+            "017_journey_parent_column"
           ],
           "note": null,
           "ready": false,
@@ -1269,7 +1272,7 @@
       "status": "attention needed"
     },
     "python_current": {
-      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-python-current\nDatabase: <root>/home-python-current/memory.db\nDatabase exists: yes\nCore migrations: current (16/16)\nInstalled extensions: 0\nExtension health: ready (0 checked)\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: ready\n",
+      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-python-current\nDatabase: <root>/home-python-current/memory.db\nDatabase exists: yes\nCore migrations: attention needed (16/17 applied; missing 017_journey_parent_column)\nInstalled extensions: 0\nExtension health: ready (0 checked)\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
       "report": {
         "clone_role": {
           "note": null,
@@ -1278,10 +1281,12 @@
         },
         "core_migrations": {
           "applied_count": 16,
-          "known_count": 16,
-          "missing": [],
+          "known_count": 17,
+          "missing": [
+            "017_journey_parent_column"
+          ],
           "note": null,
-          "ready": true,
+          "ready": false,
           "unknown": []
         },
         "db_exists": true,
@@ -1306,7 +1311,7 @@
         },
         "version": "9.9.9"
       },
-      "status": "ready"
+      "status": "attention needed"
     },
     "ts_migrated": {
       "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-ts-migrated\nDatabase: <root>/home-ts-migrated/memory.db\nDatabase exists: yes\nCore migrations: attention needed (16/16 applied; unknown 017_journey_parent_column)\nInstalled extensions: 0\nExtension health: ready (0 checked)\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
@@ -1351,7 +1356,7 @@
       "status": "attention needed"
     },
     "unknown_migration": {
-      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-unknown-migration\nDatabase: <root>/home-unknown-migration/memory.db\nDatabase exists: yes\nCore migrations: attention needed (16/16 applied; unknown 999_from_the_future)\nInstalled extensions: 0\nExtension health: ready (0 checked)\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
+      "render": "Mirror runtime status\n\nVersion: 9.9.9\nRepository: <root>/repo\nGit branch: stable\nGit commit: 7e4705d\nGit dirty: no\nMirror home: <root>/home-unknown-migration\nDatabase: <root>/home-unknown-migration/memory.db\nDatabase exists: yes\nCore migrations: attention needed (17/17 applied; unknown 999_from_the_future)\nInstalled extensions: 0\nExtension health: ready (0 checked)\nClone role: production\nUpdate channel: stable\nNode: <node-version>\nMEMORY_ENV: production\nLLM timeouts (s): reception=10, embedding=15, extraction=60; retries=2\nModels: extraction=google/gemini-2.5-flash-lite, embedding=openai/text-embedding-3-small\n\nStatus: attention needed\n",
       "report": {
         "clone_role": {
           "note": null,
@@ -1359,8 +1364,8 @@
           "value": "production"
         },
         "core_migrations": {
-          "applied_count": 16,
-          "known_count": 16,
+          "applied_count": 17,
+          "known_count": 17,
           "missing": [],
           "note": null,
           "ready": false,

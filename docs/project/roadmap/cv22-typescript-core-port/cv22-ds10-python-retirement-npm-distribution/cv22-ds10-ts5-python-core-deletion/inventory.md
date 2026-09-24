@@ -515,6 +515,19 @@ before validation — delete the set, hand-edit the golden with the reason in
 the goldens README, and replay the `runtime-status` capture family; (b)
 capture it as a CR beside CR095, for the post-TS5 parity clean-up.
 
+**Disposition (Navigator, 2026-09-24): (a).** `ORACLE_ERA_ONLY` is deleted, and
+`inspectCoreMigrations` now requires every known migration — the same rule
+`assertSchemaState` has applied since plateau 1, so the codebase has one
+definition of a healthy ledger again. The status and diagnose fixtures' current
+databases carry 017; the two goldens were hand-edited and recorded in the
+goldens README; `ts_migrated` keeps the oracle's answer as the DS6 record. One
+test was reversed rather than deleted: it had asserted that a database without
+017 renders `current (16/16)`, and now asserts that it renders `attention
+needed` naming 017. `runtime status` is not a captured family, so the replay
+cannot see this change; the goldens are its grader. The schema guard's
+docstring, which still told the reader to run the Python core to migrate, was
+corrected in the same commit.
+
 A sibling in the custody proof (`ts/smoke/migration_structural_parity.ts`)
 carries the same "goes at plateau 3" note, and there the note was wrong rather
 than the code: the frozen end-states predate 017, so the list is a fixture

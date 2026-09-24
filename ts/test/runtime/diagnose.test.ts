@@ -22,6 +22,7 @@ import {
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
+import { KNOWN_MIGRATION_IDS } from "#db/schemaState.ts";
 import { checksum } from "#extensions/migrations.ts";
 import {
   type DriftFinding,
@@ -49,6 +50,10 @@ interface Golden {
 
 const golden: Golden = JSON.parse(readFileSync(GOLDEN_PATH, "utf8"));
 const PYTHON_IDS = golden.meta.python_migration_ids;
+// A CURRENT database since CV22.DS10.TS5 (F19): every migration this core
+// knows, not the oracle's sixteen. The frozen golden was hand-edited to match
+// -- see test/goldens/README.md.
+const CURRENT_IDS = [...KNOWN_MIGRATION_IDS];
 const MIGRATION_SQL =
   "CREATE TABLE IF NOT EXISTS ext_demo_widget_notes (id INTEGER PRIMARY KEY);\n";
 const ENV = { MEMORY_ENV: undefined } as NodeJS.ProcessEnv;
@@ -176,39 +181,39 @@ function fixture(now: Date): Fixture {
     return path;
   };
 
-  homes.set("clean", home("home-clean", PYTHON_IDS));
+  homes.set("clean", home("home-clean", CURRENT_IDS));
 
-  const loose = home("home-loose-perms", PYTHON_IDS);
+  const loose = home("home-loose-perms", CURRENT_IDS);
   chmodSync(loose, 0o755);
   chmodSync(join(loose, "memory.db"), 0o644);
   homes.set("loose_permissions", loose);
 
-  const errors = home("home-front-door-errors", PYTHON_IDS);
+  const errors = home("home-front-door-errors", CURRENT_IDS);
   writeFrontDoorLog(join(errors, "front-door.log"), now);
   homes.set("front_door_errors", errors);
 
-  const healthy = home("home-fts-healthy", PYTHON_IDS);
+  const healthy = home("home-fts-healthy", CURRENT_IDS);
   addHealthyFts(join(healthy, "memory.db"));
   homes.set("fts_healthy", healthy);
 
-  const decoy = home("home-fts-decoy", PYTHON_IDS);
+  const decoy = home("home-fts-decoy", CURRENT_IDS);
   addDecoyFtsTable(join(decoy, "memory.db"));
   homes.set("fts_decoy_table", decoy);
 
-  const corrupt = home("home-page-corruption", PYTHON_IDS);
+  const corrupt = home("home-page-corruption", CURRENT_IDS);
   addHealthyFts(join(corrupt, "memory.db"));
   corruptFts(join(corrupt, "memory.db"));
   homes.set("database_page_corruption", corrupt);
 
   homes.set("database_missing", home("home-db-missing"));
-  homes.set("git_dirty", home("home-git-dirty", PYTHON_IDS));
+  homes.set("git_dirty", home("home-git-dirty", CURRENT_IDS));
   homes.set("core_migrations_pending", home("home-core-pending", PYTHON_IDS.slice(0, 14)));
   homes.set(
     "core_migrations_unknown",
-    home("home-core-unknown", [...PYTHON_IDS, "999_from_the_future"]),
+    home("home-core-unknown", [...CURRENT_IDS, "999_from_the_future"]),
   );
 
-  const ext = home("home-ext", PYTHON_IDS);
+  const ext = home("home-ext", CURRENT_IDS);
   const broken = join(ext, "extensions", "demo-broken");
   mkdirSync(broken, { recursive: true });
   writeFileSync(
@@ -233,7 +238,7 @@ function fixture(now: Date): Fixture {
   extDb.close();
   homes.set("extension_findings", ext);
 
-  homes.set("root_state", home("home-root-state", PYTHON_IDS));
+  homes.set("root_state", home("home-root-state", CURRENT_IDS));
   const homesRoot = join(root, "homes-root");
   mkdirSync(homesRoot, { recursive: true });
   writeFileSync(join(homesRoot, "stray-notes.md"), "legacy\n");

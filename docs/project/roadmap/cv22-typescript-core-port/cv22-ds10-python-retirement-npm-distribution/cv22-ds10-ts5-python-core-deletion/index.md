@@ -5,8 +5,7 @@
 **Status:** 🟢 In Progress — pulled 2026-09-23; Plan panel-reviewed and
 approved; plateaus 0–4 of 5 landed — **the repository holds no Python, and
 nothing tracked tells anyone to run it**; both halves of the guard are
-enforced. Next: the Navigator's decision on F19, Navigator validation, and the
-panel's handoff review
+enforced. Next: Navigator validation, then the panel's handoff review
 
 ---
 
@@ -558,9 +557,10 @@ custody proofs, and the five end-to-end smokes pass.
 
 **What is intentionally undone.**
 
-- **F19 waits for the Navigator** ([inventory](inventory.md#f19--runtime-status-still-counts-migrations-the-way-the-oracle-did)):
-  `runtime status` still counts migrations the way the oracle did, a
-  plateau-3 removal its own comment announced and nobody performed.
+- ~~**F19 waits for the Navigator**~~ **F19 is done** (Navigator: option (a),
+  [inventory](inventory.md#f19--runtime-status-still-counts-migrations-the-way-the-oracle-did)):
+  `runtime status` counts every migration the core knows, the same rule as
+  `assertSchemaState`; two goldens hand-edited and recorded.
 - `frame/` and `installer/` still call Python and find their root by the
   deleted `pyproject.toml` — US3's, by D4 and D11, named in the known risks
   and exempted by name in the guard.
@@ -575,8 +575,7 @@ custody proofs, and the five end-to-end smokes pass.
 **Plateau 4 has landed; nothing is in flight.** What remains before Done, in
 order:
 
-1. **F19** — the Navigator's call: finish `runtime status`'s migration count
-   inside TS5 (recommended), or capture it as a CR beside CR095.
+1. ~~**F19**~~ — done, option (a).
 2. **Navigator validation** — the four-runtime walk in
    [test-guide.md — Navigator Validation](test-guide.md#navigator-validation),
    on a real database copy with the interpreter shadowed.

@@ -45,12 +45,11 @@ export const KNOWN_MIGRATION_IDS: readonly string[] = [
 ];
 
 /**
- * Assert that the database was bootstrapped by a Python core whose migration
- * set matches this TS build. Three failure modes, each named in the error:
- * `_migrations` absent (not a bootstrapped Mirror database), a known id
- * missing (database older than this TS core — run the Python core once to
- * migrate), an unknown id present (database migrated by a newer checkout than
- * the running TS code — update this checkout).
+ * Assert that the database's migration ledger matches this build. Three
+ * failure modes, each named in the error: `_migrations` absent (not a
+ * bootstrapped Mirror database), a known id missing (database older than this
+ * core — `runtime migrate` brings it forward), an unknown id present (database
+ * migrated by a newer checkout than the running code — update this checkout).
  */
 export function assertSchemaState(db: Database): void {
   let rows: { id: string }[];

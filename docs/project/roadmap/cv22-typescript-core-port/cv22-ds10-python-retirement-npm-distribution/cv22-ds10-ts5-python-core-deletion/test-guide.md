@@ -711,6 +711,23 @@ two product bytes on purpose, and neither is in a captured family: D13 is the
 **Goldens.** One hand edit, recorded in `ts/test/goldens/README.md`:
 `builder-command` loses the scaffold's `uv` line six times (D13).
 
+**F19, after the Navigator chose (a).** Red first: with the fixtures' current
+databases carrying 017 and the two goldens hand-edited, three status tests and
+one diagnose test failed against the old grader; deleting `ORACLE_ERA_ONLY`
+turned them green. Then:
+
+```bash
+mirror runtime status | grep "Core migrations"      # current (17/17) on a current home
+# a missing database: attention needed (unknown/17 applied; database missing)
+```
+
+| Check | Result |
+|---|---|
+| Suite | **2646 passed** (one new test: the fixtures' current database is every known migration) |
+| `runtime-status` golden | 26 scenarios hand-edited, one render line each; `python_current` two lines and its verdict; `ts_migrated` untouched |
+| `runtime-diagnose` golden | two scenarios gain the 017 finding |
+| `smoke_runtime_update.sh` | **34/34**, and it shows F19 working as designed. The smoke regresses 017 on purpose so the update has one real migration to apply. Before F19 its status gate called that database ready; now it reads `[✓] status gate: update-safe preflight drift (pending core migrations: 017_journey_parent_column)` — the narrow lane the updater keeps for exactly this case — and the ledger goes 16 → 17 |
+
 ### Navigator route
 
 Pending.

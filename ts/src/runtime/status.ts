@@ -92,42 +92,27 @@ function errorMessage(error: unknown): string {
 /**
  * Port of `inspect_core_migrations`, graded against the TypeScript manifest.
  *
- * Two rules, both borrowed from `assertSchemaState` so the codebase keeps ONE
- * definition of a healthy ledger:
+ * One rule, `assertSchemaState`'s, so the codebase keeps ONE definition of a
+ * healthy ledger: every id in `KNOWN_MIGRATION_IDS` is required, and an id
+ * outside it is unknown. A current database renders `current (17/17)`.
  *
- * - UNKNOWN is judged against the full `KNOWN_MIGRATION_IDS`, which includes
- *   the TS-authored ids. This is the intended divergence: a database carrying
- *   `017_journey_parent_column` is clean to TypeScript and "unknown" to Python.
- * - MISSING tolerates a TS-authored migration that has not been applied yet,
- *   exactly as `assertSchemaState` does, and `known_count` counts only what is
- *   required of THIS database. Without that, every database not yet opened by
- *   the TS engine would render `16/17 applied; missing 017...` -- a brand new
- *   false alarm to replace the one this story removes.
- *
- * Net effect: a Python-only database renders identically to Python
- * (`current (16/16)`), and a TS-migrated one renders `current (17/17)` where
- * Python cries `unknown`.
+ * Until CV22.DS10.TS5 this grader kept a second rule for one migration.
+ * `017_journey_parent_column` is the first one TypeScript authored, and the
+ * Python oracle graded ledgers against its own sixteen, so a database carrying
+ * 017 was "unknown" to Python (the false alarm DS6 removed here) and a database
+ * without it was "current (16/16)". To keep matching that recorded answer,
+ * `known_count` counted only what a given database required, and a missing
+ * 017 was forgiven. With the oracle deleted there was nothing left to match:
+ * the forgiveness hid a pending migration behind "ready" on exactly the
+ * databases `runtime migrate` exists to bring forward. TS5 finding F19 (a
+ * removal the comment here promised for plateau 3 and nobody performed) made
+ * the denominator honest: seventeen, everywhere.
  */
 export function inspectCoreMigrations(
   dbPath: string | null,
   dbExists: boolean | null,
 ): CoreMigrationHealth {
-  const knownIds = KNOWN_MIGRATION_IDS;
-  // With no ledger to read, "required" cannot be computed from what the
-  // database carries, so it falls back to the migrations every database must
-  // have -- the set the ORACLE knows. Counting all 17 here would report
-  // `unknown/17` on a missing database where the oracle says `unknown/16`,
-  // inventing a difference in the one branch that has nothing to disagree
-  // about, and 27 recorded golden cases grade exactly this number.
-  //
-  // CV22.DS10.TS5 deleted `TS_AUTHORED_MIGRATION_IDS` from the schema module,
-  // because with one custodian the TS-authored/Python-authored split is not a
-  // schema fact any more. It survives HERE, narrowly and by name, because this
-  // is not a schema question but a RENDERING PARITY one: it exists only to keep
-  // matching a recorded oracle. It goes at plateau 3 with that oracle, and the
-  // honest denominator afterwards is simply every migration this core knows.
-  const ORACLE_ERA_ONLY: ReadonlySet<string> = new Set(["017_journey_parent_column"]);
-  const requiredIds = knownIds.filter((id) => !ORACLE_ERA_ONLY.has(id));
+  const requiredIds = KNOWN_MIGRATION_IDS;
   if (dbPath === null) {
     return health({ known_count: requiredIds.length, note: "database path unknown" });
   }
@@ -162,18 +147,15 @@ export function inspectCoreMigrations(
   }
 
   const applied = new Set(rows);
-  const missing = knownIds.filter((id) => !applied.has(id) && !ORACLE_ERA_ONLY.has(id));
-  // Required = every Python migration, plus the TS-authored ones this database
-  // already carries. See the rule note above.
-  const requiredCount = knownIds.filter((id) => !ORACLE_ERA_ONLY.has(id) || applied.has(id)).length;
-  const knownSet = new Set(knownIds);
+  const missing = requiredIds.filter((id) => !applied.has(id));
+  const knownSet = new Set(requiredIds);
   const unknown = sortByCodePoint(rows.filter((id) => !knownSet.has(id)));
-  const appliedKnown = knownIds.filter((id) => applied.has(id)).length;
+  const appliedKnown = requiredIds.filter((id) => applied.has(id)).length;
 
   return {
     ready: missing.length === 0 && unknown.length === 0,
     applied_count: appliedKnown,
-    known_count: requiredCount,
+    known_count: requiredIds.length,
     missing,
     unknown,
     note: null,

@@ -47,8 +47,8 @@ see what both sides are given: the hook row-diff called Gemini identical
 because no case carried the real `AfterAgent` field, and assistant turns went
 unlogged for a day until an end-to-end smoke caught it. At plateau 4, a
 promise in a comment is not a task: two modules said their oracle-era code
-"goes at plateau 3", and one of them still ships the oracle's count in
-`runtime status` (F19, waiting on the Navigator). The claim for the shipped
+"goes at plateau 3", and one of them still shipped the oracle's count in
+`runtime status` (F19) until the Navigator had it finished inside the story. The claim for the shipped
 artifact — the Windows installer and the Frame still call Python — is US3's.
 What remains of TS5 is the Navigator's four-runtime walk and then the
 panel's handoff review.

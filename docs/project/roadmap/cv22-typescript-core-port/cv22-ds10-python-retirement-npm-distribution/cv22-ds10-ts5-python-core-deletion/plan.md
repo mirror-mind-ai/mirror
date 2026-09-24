@@ -779,6 +779,13 @@ page would describe a contract nobody has offered. The `python-core` cutoff
 names the removal and points at the recovery tag, where the page is still
 readable; every link to it is removed.
 
+**F19 — `runtime status` counts every migration the core knows (Navigator,
+2026-09-24, option (a)).** The grader's oracle-era exception for 017 is
+deleted inside TS5, before validation, rather than deferred beside CR095: it
+was this story's own unfinished plateau-3 removal, and it hid a pending
+migration behind "ready". The `runtime-status` and `runtime-diagnose`
+goldens take the hand edit, recorded in `ts/test/goldens/README.md`.
+
 ## Review
 
 **Plan review held 2026-09-23**, before implementation, per the
