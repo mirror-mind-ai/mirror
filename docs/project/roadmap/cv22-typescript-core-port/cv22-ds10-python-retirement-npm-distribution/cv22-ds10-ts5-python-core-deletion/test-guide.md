@@ -347,13 +347,85 @@ the capture was taken:
    pull-candidates` hashed the empty string — blind to exactly the surfaces
    this story changes. Both streams are now hashed separately.
 
-### Migration custody (fixtures, plus the pre-`015` case)
+### Migration custody (fixtures)
 
-Pending.
+**Plateau 1, `c8c74361`.** Both fixture-graded proofs pass with no Python
+involved — the two the panel saved from deletion, and now the only structural
+evidence that the sole custodian reproduces each migration step:
 
-### Hook row-diffs (four families × seven cases)
+```text
+node ts/parity/migration_structural_parity.ts   ->  334/334 checks passed
+node ts/parity/bootstrap_custody_parity.ts      ->  BOOTSTRAP CUSTODY PARITY: PASS
+```
 
-Pending.
+Unit-level: migrate-on-open applies a Python-era migration it used to decline,
+declines a file with no `_migrations` table, declines a database from a newer
+core, and reports `nothing pending` untouched on a current one. `runtime
+migrate` exits **1** on declined and **0** otherwise, end to end through the
+real CLI, and the updater's migrate stage fails rather than passes.
+
+**Still owed:** the real-shape pre-`015` database case (generate a demo
+database at a pre-015 commit, migrate it forward, diff the schema). The
+fixtures cover every transition structurally; this one covers a database whose
+*schema* — not merely whose ledger — is old.
+
+### Hook row-diffs (two families × five cases)
+
+**Plateau 1, `bdd63e00`.** The cross-engine proof, possible only while both
+engines exist:
+
+```text
+bash scripts/ts5/hook_rowdiff.sh --all "$PWD/tmp/ts5/pristine.db"
+
+  claude   happy          identical      gemini   happy          identical
+  claude   muted          identical      gemini   muted          identical
+  claude   empty-prompt   identical      gemini   empty-prompt   identical
+  claude   no-session-id  identical      gemini   no-session-id  identical
+  claude   cp1252         identical      gemini   cp1252         identical
+
+row diff: every family and case identical.
+```
+
+Two of the seven planned cases are not run and the reason is recorded rather
+than left blank: `fast` (`session-start --fast`) and `rebackfill`
+(`backfill-codex-session` twice) have no hook that carries them — the first is
+a front-door flag with its own coverage, the second belongs to the Codex
+wrapper, which is a wrapper rather than a stdin hook and is exercised by
+`scripts/smoke_codex.sh`.
+
+**The harness was wrong three times before it was right, and each time it made
+the NEW code look guilty** — worth recording, because the failure mode of a
+comparison is to indict the thing under test:
+
+1. it ran Python without `PYTHONPATH`, so the oracle failed to import, wrote
+   nothing, and the diff blamed Node for writing too much;
+2. it masked ids with `\b`, which BSD sed does not support, so the ids it was
+   meant to hide survived into the diff;
+3. it omitted the **unconditional** `mirror load` the old Gemini script ran
+   outside its logging guard.
+
+Live verification on a real database copy, through the wrappers themselves:
+`session-start` and `log-user-prompt` wrote the expected rows; `inject`
+returned in 114 ms writing nothing on an ordinary turn; a payload with no
+session id warned on stderr instead of silently no-op'ing.
+
+### Capture replays so far
+
+The baseline was re-taken at `cv22-ts5-baseline` through a git worktree after
+the normalizer gained masks it was missing (commit, branch, clone role,
+channel, and `pwd -P`). Digest
+`0b7d2f2f77608a75edce765d220ff5e0307c17905a46966c23c4668188a8358c`.
+
+| After | Result |
+|---|---|
+| `b2b16955` version/identity move | 29/29 identical |
+| `c8c74361` migration custody | 29/29 identical |
+| `bdd63e00` hook rewrite | 29/29 identical |
+
+**What the first cross-commit replay taught, and `--selftest` cannot:**
+`--selftest` runs twice seconds apart on the same commit, so anything varying
+with TIME rather than with the run looks perfectly deterministic. `runtime
+version` prints `Git commit:`. Only a replay across commits sees it.
 
 ### Plateau 3 replay
 

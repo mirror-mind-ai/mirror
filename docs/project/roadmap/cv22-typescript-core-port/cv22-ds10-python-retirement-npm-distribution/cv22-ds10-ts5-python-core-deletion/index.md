@@ -296,7 +296,7 @@ Five plateaus are defined in
 [plan.md — Plateaus](plan.md#plateaus); each closes with a handoff statement
 in this section.
 
-### Plateau 0 — Freeze and guard — slice A done, slice B open
+### Plateau 0 — Freeze and guard — ✅ done
 
 **What is now true.** The two inventories are complete
 ([inventory.md](inventory.md)) and found **no stop condition**: every one of
@@ -308,10 +308,13 @@ per-family capture is taken: 29 families, 29 non-empty answers, every one
 deterministic, digest `fc7fde5c…`. `cv22-ts5-baseline` is pushed at
 `2adf2951`.
 
-**What is intentionally undone.** Slice B — the three Node guard ports
-(`checkRetiredSurfaces.ts` with the new `python-core` row, `checkDocLinks.ts`
-with the 26 cases F1 requires, `buildClaudePlugin.ts`), their side-by-side
-agreement commit, and the non-blocking interpreter-shadow CI step.
+**Slice B landed too.** All three guards are Node, each with tests, each
+running beside its Python original and agreeing byte-for-byte on a clean tree
+and on seeded regressions: `checkDocLinks.ts` (+26 cases carried),
+`checkRetiredSurfaces.ts` (+20, and the staged `python-core` row), and
+`buildClaudePlugin.ts` (+13, byte-identical output). The interpreter-shadow CI
+step is wired `continue-on-error` and names plateau 2's work list on every
+run.
 
 **Four findings, all folded into the Plan.** F1: the docs-link checker's only
 test is 26 Python cases, and the port as first written would have shipped
@@ -320,10 +323,58 @@ verified by running them. F3: the unknown-subcommand answer leaks
 `__main__.py`. F4: six goldens sit outside the CI determinism gate, and one of
 them cannot regenerate to its own bytes.
 
-**Next plateau.** Slice B, then plateau 1 (self-sufficiency) while Python
-still exists — the hook row-diffs are only possible there.
-
 **Evidence.** [test-guide.md — Validation Evidence](test-guide.md#validation-evidence).
+
+### Plateau 1 — Self-sufficient — ✅ done
+
+TypeScript now answers for itself everywhere Python used to be required, while
+Python is still present to be measured against. Three commits, `b2b16955`,
+`c8c74361`, `bdd63e00`.
+
+**What is now true.**
+
+- **Identity and version left `pyproject.toml`** (D1). `ts/package.json`
+  carries `0.31.14`, matching pyproject exactly so no rendered byte moves.
+  `packageIdentity.ts` holds one walk and one constant; US3 changes that
+  constant. The regression this prevented is the one no test could have
+  caught: `isMirrorMindCheckout` required `src/memory/`, so deleting the
+  Python core would have made the **production clone-role guard answer "not a
+  checkout" and stop refusing**, silently.
+- **TypeScript is the sole migration custodian, and D-025 is paid.**
+  Migrate-on-open applies every pending migration rather than deferring;
+  `TS_AUTHORED_MIGRATION_IDS` is deleted, not shrunk; `runtime migrate` has
+  three verdicts and exits non-zero on `declined`, which turns the updater's
+  migrate stage from passing to failing on a database nothing migrated.
+  `assertSchemaState` tightened to match, safe because `ensureDatabaseReady`
+  runs before it on every serving path.
+- **Every runtime hook is Node** (D4). Twelve wrappers, one entry point,
+  generated from one template. `mirror_state` and `extract_prompt` are gone as
+  Python modules. `launch.sh` lost its `MIRROR_TS_MCP` gate and Python branch.
+  The Claude allowlist is scoped **by path**, never `Bash(node *)`. Node
+  resolution is explicit and its absence is logged, because `|| true` was safe
+  for an interpreter that is always present and is not safe for one that often
+  is not.
+
+**Evidence.** Hook row-diff **10/10 identical** across both families and five
+cases (happy, muted, empty prompt, missing session id, cp1252). Per-family
+capture **29/29 identical** to the pre-TS5 baseline after each of the three
+commits. Fixture-graded custody proofs pass with no Python: migration
+structural parity 334/334, bootstrap custody PASS. Suite 2677 passed; CI green
+on both platforms at every commit.
+
+**What is intentionally undone.** Everything plateau 2 owns. Nothing is
+half-applied: each of the three pieces is complete and independently
+revertible.
+
+**One cost accepted, measured not asserted.** `mark-injected` now takes the
+front door's verified pre-write snapshot, which Python's ungated write did
+not: **95 ms** on a real 53 MB database, on the one prompt per Mirror Mode
+session that owes an injection. The ordinary turn returns before opening a
+writable handle. Revisit if it is ever felt.
+
+**Next plateau.** Plateau 2 — the fallback goes. The shadow step already names
+the work: **five tests, seven spawn attempts**, not the thirty test files the
+inventory estimated.
 
 ## Where To Resume
 
@@ -348,7 +399,35 @@ decisions D1–D9 — of which D1 (version authority moves here, not at US3) and
 D6 (the plugin builder ports here) move work earlier than US2 and the gate
 placed it.
 
-Plateau 0's slice A is done and recorded above. The working tree holds four
-story documents and one script (`scripts/ts5/capture_family_outputs.sh`);
-**no production code has changed and nothing has been deleted.** Resume at
-slice B, the guard ports, with F1's 26 cases as the first test file to write.
+**Plateaus 0 and 1 are done and pushed; nothing is in flight.** Eight commits
+from `2adf2951` to `bdd63e00`, CI green at each. **Nothing has been deleted
+yet** — every Python file the story will remove is still present, and every
+change so far is independently revertible.
+
+Resume at **plateau 2**, in this order:
+
+1. delete `fallbackPython`, `pythonTimeoutMs`, and the `--db-path` stripping
+   that existed for it; remove `"python"` from `FrontDoorEngine` — the type
+   error list *is* the remaining inventory;
+2. delete the sixteen `MIRROR_TS_<FAMILY>` revert gates and
+   `transport.revertVar` (D3); keep every `*_REPLAY` gate;
+3. delete the two dead branches
+   ([F2](inventory.md#f2--two-dead-fallback-branches-ts4-left-behind)) as
+   their own commit;
+4. answer the fifteen unported-argv fallthroughs with D2's shapes, including
+   the `__main__.py` leak
+   ([F3](inventory.md#f3--the-unknown-subcommand-answer-leaks-the-interpreters-filename));
+5. retire `route_matrix.ts`; pay D-023 and D-024;
+6. flip the interpreter-shadow CI step to required and delete its
+   `continue-on-error`.
+
+The shadow step prints the exact work list on every CI run. When plateau 2
+closes, tag and push **`cv22-last-python-bearing`** before plateau 3's first
+deletion — that tag, not `cv22-ts5-baseline`, is the recovery point.
+
+Standing instruments, to re-run after any change:
+`bash scripts/ts5/capture_family_outputs.sh "$PWD/tmp/ts5/pristine.db"` diffed
+against `tmp/ts5/capture-plateau0.tsv`, and
+`bash scripts/ts5/hook_rowdiff.sh --all "$PWD/tmp/ts5/pristine.db"` while
+Python still exists. The pristine copy is local and gitignored; recreate it
+from the real database if the tree is cleaned.
