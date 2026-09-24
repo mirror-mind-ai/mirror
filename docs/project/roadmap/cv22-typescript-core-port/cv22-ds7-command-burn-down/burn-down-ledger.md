@@ -583,7 +583,8 @@ argument text. Step 5: `identity edit ego behavior` with the Navigator's own
 editor — the save landed (`✓ ego/behavior updated`, confirmed at the row), an
 unchanged buffer wrote nothing, and empty content was refused. Steps 2, 6, and 7
 ran on copies of the same home through
-[`ts/parity/ts4_home_copy_route.ts`](../../../../../ts/parity/ts4_home_copy_route.ts),
+`ts/parity/ts4_home_copy_route.ts` (deleted by CV22.DS10.TS5 with the revert
+gate it reached Python through),
 including `ext <id>` for all SEVEN installed extensions and real
 `--metadata-lifecycle-apply` on one conversation per available decision state;
 step 4 is the CI smoke. One state could not be exercised on real data and is
