@@ -18,7 +18,8 @@ test("front door `init <user>` bootstraps a real user home end to end (no DB inv
     const identityRoot = join(home, ".mirror", "probeuser", "identity");
     assert.match(result.stdout, /Created user home:/);
     assert.match(result.stdout, /Identity ready at:/);
-    assert.match(result.stdout, /uv run python -m memory seed/);
+    assert.match(result.stdout, /Run: mirror seed\n/);
+    assert.match(result.stdout, / {2}mirror identity edit user identity\n/);
     assert.ok(existsSync(join(identityRoot, "self", "soul.yaml")));
     const soul = readFileSync(join(identityRoot, "self", "soul.yaml"), "utf8");
     assert.ok(soul.includes("probeuser"), "expected {{user_name}} substituted with probeuser");

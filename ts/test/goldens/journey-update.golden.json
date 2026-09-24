@@ -102,7 +102,7 @@
       "exit": 1,
       "journey_path_after": "# Before\n",
       "label": "usage: no content",
-      "stderr": "Usage: python -m memory journey update <slug> <content>\n       Pass '-' as <content> to read it from stdin.\n",
+      "stderr": "Usage: mirror journey update <slug> <content>\n       Pass '-' as <content> to read it from stdin.\n",
       "stdin": null
     }
   ],

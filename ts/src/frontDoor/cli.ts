@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 //
 // Front-door entry: route a command, answer it, and log the outcome. Argument
 // parsing lives in `args.ts`, DB-path resolution in `dbPath.ts`, and the read
@@ -71,6 +72,7 @@ import {
 import { runSeed } from "#seed/seed.ts";
 import { getTasksForWeek, listTasks } from "#tasks/taskStore.ts";
 import { computeWeekRange } from "#tasks/weekView.ts";
+import { PROGRAM } from "#util/program.ts";
 import { newId, nowIso } from "#util/pyGenerators.ts";
 import { hasOption, optionValue, stripOptionWithValue } from "./args.ts";
 import { canonicalArgv } from "./argvShape.ts";
@@ -828,9 +830,9 @@ function runInit(argv: readonly string[]): number {
       `Identity ready at: ${identityRoot}`,
       "\nNext steps:",
       `  1. Add to your .env: MIRROR_HOME=${mirrorHome}`,
-      "  2. Run: uv run python -m memory seed",
+      `  2. Run: ${PROGRAM} seed`,
       "\nYour identity is ready to use. Deepen it over time with:",
-      "  uv run python -m memory identity edit user identity",
+      `  ${PROGRAM} identity edit user identity`,
     ];
     process.stdout.write(prints.map((line) => `${line}\n`).join(""));
     return 0;
@@ -963,7 +965,7 @@ function runJourneyWrite(argv: readonly string[]): number {
  * the usage path's exit 1, which this route previously returned as 2.
  */
 const JOURNEY_UPDATE_USAGE =
-  "Usage: python -m memory journey update <slug> <content>\n" +
+  `Usage: ${PROGRAM} journey update <slug> <content>\n` +
   "       Pass '-' as <content> to read it from stdin.";
 const FLAG_SHAPED_CONTENT = /^--?[A-Za-z]/;
 

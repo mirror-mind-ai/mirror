@@ -318,7 +318,7 @@ test("front door `shadow show` prints the empty-layer message", () => {
     assert.equal(
       result.stdout,
       "The structural shadow layer is empty.\n" +
-        "Run 'python -m memory shadow scan' to surface candidate observations.\n",
+        "Run 'mirror shadow scan' to surface candidate observations.\n",
     );
   } finally {
     ws.cleanup();

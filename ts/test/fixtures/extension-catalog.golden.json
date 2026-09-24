@@ -110,7 +110,7 @@
         "extensions",
         "bogus"
       ],
-      "stdout": "Usage: python -m memory extensions [list|validate|sync|install|uninstall|expose-claude|clean-claude] [--mirror-home PATH] [--extensions-root PATH] [--runtime NAME] [--target-root PATH]\n",
+      "stdout": "Usage: mirror extensions [list|validate|sync|install|uninstall|expose-claude|clean-claude] [--mirror-home PATH] [--extensions-root PATH] [--runtime NAME] [--target-root PATH]\n",
       "stderr": "",
       "exit_code": 1
     },
@@ -120,7 +120,7 @@
         "extensions",
         "install"
       ],
-      "stdout": "Usage: python -m memory extensions install <id> [--extensions-root PATH] [--mirror-home PATH] [--runtime NAME]\n",
+      "stdout": "Usage: mirror extensions install <id> [--extensions-root PATH] [--mirror-home PATH] [--runtime NAME]\n",
       "stderr": "",
       "exit_code": 1
     },
@@ -192,7 +192,7 @@
       "argv": [
         "ext"
       ],
-      "stdout": "Usage:\n  python -m memory ext list\n  python -m memory ext <id> [--help]\n  python -m memory ext <id> <subcommand> [args...]\n  python -m memory ext <id> bind <capability> (--persona <id> | --journey <id> | --global)\n  python -m memory ext <id> unbind <capability> (--persona <id> | --journey <id> | --global)\n  python -m memory ext <id> bindings\n  python -m memory ext <id> migrate\n",
+      "stdout": "Usage:\n  mirror ext list\n  mirror ext <id> [--help]\n  mirror ext <id> <subcommand> [args...]\n  mirror ext <id> bind <capability> (--persona <id> | --journey <id> | --global)\n  mirror ext <id> unbind <capability> (--persona <id> | --journey <id> | --global)\n  mirror ext <id> bindings\n  mirror ext <id> migrate\n",
       "stderr": "",
       "exit_code": 1
     },
@@ -202,7 +202,7 @@
         "ext",
         "--help"
       ],
-      "stdout": "Usage:\n  python -m memory ext list\n  python -m memory ext <id> [--help]\n  python -m memory ext <id> <subcommand> [args...]\n  python -m memory ext <id> bind <capability> (--persona <id> | --journey <id> | --global)\n  python -m memory ext <id> unbind <capability> (--persona <id> | --journey <id> | --global)\n  python -m memory ext <id> bindings\n  python -m memory ext <id> migrate\n",
+      "stdout": "Usage:\n  mirror ext list\n  mirror ext <id> [--help]\n  mirror ext <id> <subcommand> [args...]\n  mirror ext <id> bind <capability> (--persona <id> | --journey <id> | --global)\n  mirror ext <id> unbind <capability> (--persona <id> | --journey <id> | --global)\n  mirror ext <id> bindings\n  mirror ext <id> migrate\n",
       "stderr": "",
       "exit_code": 0
     },
@@ -246,7 +246,7 @@
         "list",
         "bogus"
       ],
-      "stdout": "Usage: python -m memory list [personas|journeys|extensions|all] [--mirror-home PATH] [--verbose] [--extensions-root PATH] [--runtime NAME]\n",
+      "stdout": "Usage: mirror list [personas|journeys|extensions|all] [--mirror-home PATH] [--verbose] [--extensions-root PATH] [--runtime NAME]\n",
       "stderr": "",
       "exit_code": 1
     },
@@ -332,7 +332,7 @@
       "argv": [
         "inspect"
       ],
-      "stdout": "Usage: python -m memory inspect persona|extension|runtime-catalog|llm-calls|embedding-provenance <id> [--mirror-home PATH] [--extensions-root PATH]\n",
+      "stdout": "Usage: mirror inspect persona|extension|runtime-catalog|llm-calls|embedding-provenance <id> [--mirror-home PATH] [--extensions-root PATH]\n",
       "stderr": "",
       "exit_code": 1
     },
@@ -343,7 +343,7 @@
         "bogus",
         "x"
       ],
-      "stdout": "Usage: python -m memory inspect persona|extension|runtime-catalog|llm-calls|embedding-provenance <id> [--mirror-home PATH] [--extensions-root PATH]\n",
+      "stdout": "Usage: mirror inspect persona|extension|runtime-catalog|llm-calls|embedding-provenance <id> [--mirror-home PATH] [--extensions-root PATH]\n",
       "stderr": "",
       "exit_code": 1
     }

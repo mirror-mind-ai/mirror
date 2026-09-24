@@ -645,7 +645,7 @@
       "name": "available_method"
     },
     {
-      "expected": "■ Builder Method\n\nactive journey\nnone\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nNo Builder journey is active yet.\n\nnext action\nActivate Builder Mode for a journey or ask about a specific journey.\n\nexample\nuv run python -m memory build load <journey>\n",
+      "expected": "■ Builder Method\n\nactive journey\nnone\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nNo Builder journey is active yet.\n\nnext action\nActivate Builder Mode for a journey or ask about a specific journey.\n\nexample\nmirror build load <journey>\n",
       "name": "no_active_journey"
     },
     {
@@ -665,7 +665,7 @@
       "name": "journey_with_other_method"
     },
     {
-      "expected": "■ Builder Method\n\njourney\nmirror-ts-core\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nThis journey has not adopted a Builder method yet.\n\nwhat can be inspected\nbuilt-in method defaults\n\nwhat cannot be inspected yet\neffective journey configuration\nruntime delivery cursor\nactive checkpoint\npending confirmations\n\nnext action\nuv run python -m memory build adopt --journey mirror-ts-core --method ariad\n",
+      "expected": "■ Builder Method\n\njourney\nmirror-ts-core\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nThis journey has not adopted a Builder method yet.\n\nwhat can be inspected\nbuilt-in method defaults\n\nwhat cannot be inspected yet\neffective journey configuration\nruntime delivery cursor\nactive checkpoint\npending confirmations\n\nnext action\nmirror build adopt --journey mirror-ts-core --method ariad\n",
       "input": {
         "adopted_method": null,
         "journey": "mirror-ts-core"
@@ -673,7 +673,7 @@
       "name": "journey_with_none"
     },
     {
-      "expected": "■ Builder Method\n\njourney\nmirror-ts-core\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nThis journey has not adopted a Builder method yet.\n\nwhat can be inspected\nbuilt-in method defaults\n\nwhat cannot be inspected yet\neffective journey configuration\nruntime delivery cursor\nactive checkpoint\npending confirmations\n\nnext action\nuv run python -m memory build adopt --journey mirror-ts-core --method ariad\n",
+      "expected": "■ Builder Method\n\njourney\nmirror-ts-core\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nThis journey has not adopted a Builder method yet.\n\nwhat can be inspected\nbuilt-in method defaults\n\nwhat cannot be inspected yet\neffective journey configuration\nruntime delivery cursor\nactive checkpoint\npending confirmations\n\nnext action\nmirror build adopt --journey mirror-ts-core --method ariad\n",
       "input": {
         "journey": "mirror-ts-core"
       },
@@ -724,7 +724,7 @@
       "name": "journey_unicode"
     },
     {
-      "expected": "■ Builder Method\n\njourney\n\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nThis journey has not adopted a Builder method yet.\n\nwhat can be inspected\nbuilt-in method defaults\n\nwhat cannot be inspected yet\neffective journey configuration\nruntime delivery cursor\nactive checkpoint\npending confirmations\n\nnext action\nuv run python -m memory build adopt --journey  --method ariad\n",
+      "expected": "■ Builder Method\n\njourney\n\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nThis journey has not adopted a Builder method yet.\n\nwhat can be inspected\nbuilt-in method defaults\n\nwhat cannot be inspected yet\neffective journey configuration\nruntime delivery cursor\nactive checkpoint\npending confirmations\n\nnext action\nmirror build adopt --journey  --method ariad\n",
       "input": {
         "adopted_method": null,
         "journey": ""

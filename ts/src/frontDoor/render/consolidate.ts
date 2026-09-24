@@ -8,6 +8,7 @@
 import type { ConsolidationRow, CultivationMemory } from "#cultivation/consolidationStore.ts";
 import type { ConsolidateScanResult } from "#cultivation/scan.ts";
 import type { ConsolidateApplyOutcome, RejectOutcome } from "#frontDoor/cultivationRoute.ts";
+import { PROGRAM } from "#util/program.ts";
 import { renderAlreadyReviewed, renderProposalNotFound } from "./cultivationShared.ts";
 
 const ACTION_ICON: Record<string, string> = {
@@ -190,9 +191,9 @@ export function renderConsolidateScan(result: ConsolidateScanResult, threshold: 
   out +=
     `\n${createdCount} proposal(s) created with status='pending'.\n` +
     "Review each proposal above, then:\n" +
-    "  Accept:  python -m memory consolidate apply <proposal_id>\n" +
-    '  Edit:    python -m memory consolidate apply <proposal_id> --content "revised text"\n' +
-    "  Reject:  python -m memory consolidate reject <proposal_id>\n" +
-    "  List all: python -m memory consolidate list\n";
+    `  Accept:  ${PROGRAM} consolidate apply <proposal_id>\n` +
+    `  Edit:    ${PROGRAM} consolidate apply <proposal_id> --content "revised text"\n` +
+    `  Reject:  ${PROGRAM} consolidate reject <proposal_id>\n` +
+    `  List all: ${PROGRAM} consolidate list\n`;
   return out;
 }

@@ -19,6 +19,7 @@ import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { WritableDatabase } from "#db/database.ts";
+import { PROGRAM } from "#util/program.ts";
 import {
   type BindingDeps,
   parseBindingTail,
@@ -62,24 +63,24 @@ import { ExtensionValidationError } from "./errors.ts";
 export class UnsupportedCatalogCommandError extends Error {}
 
 const EXTENSIONS_USAGE =
-  "Usage: python -m memory extensions [list|validate|sync|install|uninstall|" +
+  `Usage: ${PROGRAM} extensions [list|validate|sync|install|uninstall|` +
   "expose-claude|clean-claude] [--mirror-home PATH] [--extensions-root PATH] " +
   "[--runtime NAME] [--target-root PATH]";
 const LIST_USAGE =
-  "Usage: python -m memory list [personas|journeys|extensions|all] " +
+  `Usage: ${PROGRAM} list [personas|journeys|extensions|all] ` +
   "[--mirror-home PATH] [--verbose] [--extensions-root PATH] [--runtime NAME]";
 const INSPECT_USAGE =
-  "Usage: python -m memory inspect persona|extension|runtime-catalog|llm-calls|" +
+  `Usage: ${PROGRAM} inspect persona|extension|runtime-catalog|llm-calls|` +
   "embedding-provenance <id> [--mirror-home PATH] [--extensions-root PATH]";
 const EXT_USAGE = [
   "Usage:",
-  "  python -m memory ext list",
-  "  python -m memory ext <id> [--help]",
-  "  python -m memory ext <id> <subcommand> [args...]",
-  "  python -m memory ext <id> bind <capability> (--persona <id> | --journey <id> | --global)",
-  "  python -m memory ext <id> unbind <capability> (--persona <id> | --journey <id> | --global)",
-  "  python -m memory ext <id> bindings",
-  "  python -m memory ext <id> migrate",
+  `  ${PROGRAM} ext list`,
+  `  ${PROGRAM} ext <id> [--help]`,
+  `  ${PROGRAM} ext <id> <subcommand> [args...]`,
+  `  ${PROGRAM} ext <id> bind <capability> (--persona <id> | --journey <id> | --global)`,
+  `  ${PROGRAM} ext <id> unbind <capability> (--persona <id> | --journey <id> | --global)`,
+  `  ${PROGRAM} ext <id> bindings`,
+  `  ${PROGRAM} ext <id> migrate`,
   "",
 ].join("\n");
 
@@ -221,7 +222,7 @@ export function runExtensionsCommand(
   if (command === "install") {
     if (options.positional.length !== 2) {
       return usage(
-        "Usage: python -m memory extensions install <id> [--extensions-root PATH] " +
+        `Usage: ${PROGRAM} extensions install <id> [--extensions-root PATH] ` +
           "[--mirror-home PATH] [--runtime NAME]",
       );
     }
@@ -243,7 +244,7 @@ export function runExtensionsCommand(
   if (command === "uninstall") {
     if (options.positional.length !== 2) {
       return usage(
-        "Usage: python -m memory extensions uninstall <id> [--mirror-home PATH] [--runtime NAME]",
+        `Usage: ${PROGRAM} extensions uninstall <id> [--mirror-home PATH] [--runtime NAME]`,
       );
     }
     const write = writeContext(context, "uninstall");
@@ -389,7 +390,7 @@ export function runExtCommand(
   // losing it would make `ext <id> migrate --help` APPLY migrations.
   if (BUILTIN_VERBS.has(verb) && tail.some((token) => HELP_FLAGS.has(token))) {
     const [usage, description] = BUILTIN_VERB_HELP[verb] as readonly [string, string];
-    return out(`Usage:\n  python -m memory ext ${extensionId} ${usage}\n\n${description}\n`);
+    return out(`Usage:\n  ${PROGRAM} ext ${extensionId} ${usage}\n\n${description}\n`);
   }
 
   if (!BUILTIN_VERBS.has(verb)) return dispatchOrNotInstalled(home, extensionId, verb, tail);

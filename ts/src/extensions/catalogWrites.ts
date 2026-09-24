@@ -42,6 +42,7 @@ import {
 } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import type { WritableDatabase } from "#db/database.ts";
+import { PROGRAM } from "#util/program.ts";
 import { pythonJsonDumpsIndentedOrdered } from "#util/pyGenerators.ts";
 import type { BindingDeps } from "./bindings.ts";
 import {
@@ -267,7 +268,7 @@ export function shouldCopySourceTree(sourceDir: string, targetDir: string): bool
       `installed extension path is a symlink pointing outside the install ` +
         `source: ${targetDir} -> ${realpathSync(targetDir)}. Refusing to install ` +
         `through it, which would modify the link target. Remove the symlink ` +
-        `first, or run \`python -m memory ext ${basename(targetDir)} migrate\` to ` +
+        `first, or run \`${PROGRAM} ext ${basename(targetDir)} migrate\` to ` +
         `re-run migrations without copying.`,
     );
   }

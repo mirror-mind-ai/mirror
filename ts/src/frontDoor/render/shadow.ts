@@ -5,6 +5,7 @@
 import type { ConsolidationRow } from "#cultivation/consolidationStore.ts";
 import type { ShadowScanResult } from "#cultivation/scan.ts";
 import type { RejectOutcome, ShadowApplyRouteOutcome } from "#frontDoor/cultivationRoute.ts";
+import { PROGRAM } from "#util/program.ts";
 import type { RenderedCommand } from "./consolidate.ts";
 import { renderAlreadyReviewed, renderProposalNotFound } from "./cultivationShared.ts";
 
@@ -45,7 +46,7 @@ export function renderShadowShow(entries: readonly { key: string; content: strin
   if (entries.length === 0) {
     return (
       "The structural shadow layer is empty.\n" +
-      "Run 'python -m memory shadow scan' to surface candidate observations.\n"
+      `Run '${PROGRAM} shadow scan' to surface candidate observations.\n`
     );
   }
   const lines: string[] = [`Shadow layer (${entries.length} entries):`, ""];
@@ -147,8 +148,8 @@ export function renderShadowScan(result: ShadowScanResult): string {
   out +=
     `\n${result.proposalsCreated.length} observation(s) created with status='pending'.\n` +
     "Review each observation above, then:\n" +
-    "  Accept:  python -m memory shadow apply <proposal_id>\n" +
-    '  Edit:    python -m memory shadow apply <proposal_id> --content "revised text"\n' +
-    "  Reject:  python -m memory shadow reject <proposal_id>\n";
+    `  Accept:  ${PROGRAM} shadow apply <proposal_id>\n` +
+    `  Edit:    ${PROGRAM} shadow apply <proposal_id> --content "revised text"\n` +
+    `  Reject:  ${PROGRAM} shadow reject <proposal_id>\n`;
   return out;
 }

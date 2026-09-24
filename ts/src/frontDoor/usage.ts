@@ -23,14 +23,10 @@
 // exit 1, or -- `conversation-logger` -- nothing at all with exit 0. They move
 // to the uniform shape deliberately; the table is in the story's inventory.
 
-/**
- * The program name the top-level usage prints.
- *
- * `mirror` is the product's name for itself, not yet a command on anyone's
- * PATH: the npm `bin` is CV22.DS10.US3's to name. When it does, this is the one
- * place that changes.
- */
-export const PROGRAM = "mirror";
+import { PROGRAM } from "#util/program.ts";
+
+/** The program name the top-level usage prints: `#util/program.ts`, the one place US3 renames. */
+export { PROGRAM };
 
 /**
  * Every top-level command the front door answers, in the oracle's order, with a

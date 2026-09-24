@@ -314,10 +314,10 @@ test("renderConsolidateScan: one cluster, one created proposal, full footer", ()
       "\n" +
       "\n1 proposal(s) created with status='pending'.\n" +
       "Review each proposal above, then:\n" +
-      "  Accept:  python -m memory consolidate apply <proposal_id>\n" +
-      '  Edit:    python -m memory consolidate apply <proposal_id> --content "revised text"\n' +
-      "  Reject:  python -m memory consolidate reject <proposal_id>\n" +
-      "  List all: python -m memory consolidate list\n",
+      "  Accept:  mirror consolidate apply <proposal_id>\n" +
+      '  Edit:    mirror consolidate apply <proposal_id> --content "revised text"\n' +
+      "  Reject:  mirror consolidate reject <proposal_id>\n" +
+      "  List all: mirror consolidate list\n",
   );
 });
 

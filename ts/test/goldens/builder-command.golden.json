@@ -48,7 +48,7 @@
       "scenario": "unadopted",
       "session_id": "builder-command-session",
       "stderr": "",
-      "stdout": "■ Builder Method\n\njourney\ndemo\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nThis journey has not adopted a Builder method yet.\n\nwhat can be inspected\nbuilt-in method defaults\n\nwhat cannot be inspected yet\neffective journey configuration\nruntime delivery cursor\nactive checkpoint\npending confirmations\n\nnext action\nuv run python -m memory build adopt --journey demo --method ariad\n\n"
+      "stdout": "■ Builder Method\n\njourney\ndemo\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nThis journey has not adopted a Builder method yet.\n\nwhat can be inspected\nbuilt-in method defaults\n\nwhat cannot be inspected yet\neffective journey configuration\nruntime delivery cursor\nactive checkpoint\npending confirmations\n\nnext action\nmirror build adopt --journey demo --method ariad\n\n"
     },
     {
       "argv": [
@@ -114,7 +114,7 @@
       "scenario": "no_active_mode",
       "session_id": "builder-command-session",
       "stderr": "",
-      "stdout": "■ Builder Method\n\nactive journey\nnone\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nNo Builder journey is active yet.\n\nnext action\nActivate Builder Mode for a journey or ask about a specific journey.\n\nexample\nuv run python -m memory build load <journey>\n\n"
+      "stdout": "■ Builder Method\n\nactive journey\nnone\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nNo Builder journey is active yet.\n\nnext action\nActivate Builder Mode for a journey or ask about a specific journey.\n\nexample\nmirror build load <journey>\n\n"
     },
     {
       "argv": [
@@ -127,7 +127,7 @@
       "scenario": "other_mode",
       "session_id": "builder-command-session",
       "stderr": "",
-      "stdout": "■ Builder Method\n\nactive journey\nnone\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nNo Builder journey is active yet.\n\nnext action\nActivate Builder Mode for a journey or ask about a specific journey.\n\nexample\nuv run python -m memory build load <journey>\n\n"
+      "stdout": "■ Builder Method\n\nactive journey\nnone\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nNo Builder journey is active yet.\n\nnext action\nActivate Builder Mode for a journey or ask about a specific journey.\n\nexample\nmirror build load <journey>\n\n"
     },
     {
       "argv": [
@@ -140,7 +140,7 @@
       "scenario": "mode_without_journey",
       "session_id": "builder-command-session",
       "stderr": "",
-      "stdout": "■ Builder Method\n\nactive journey\nnone\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nNo Builder journey is active yet.\n\nnext action\nActivate Builder Mode for a journey or ask about a specific journey.\n\nexample\nuv run python -m memory build load <journey>\n\n"
+      "stdout": "■ Builder Method\n\nactive journey\nnone\n\nadopted method\nnone\n\navailable methods\nariad\n\nstatus\nNo Builder journey is active yet.\n\nnext action\nActivate Builder Mode for a journey or ask about a specific journey.\n\nexample\nmirror build load <journey>\n\n"
     },
     {
       "argv": [
@@ -229,7 +229,7 @@
       "name": "pull_candidates_not_adopted",
       "scenario": "unadopted",
       "session_id": "builder-command-session",
-      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
+      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: mirror build adopt --journey demo --method ariad\n",
       "stdout": ""
     },
     {
@@ -244,7 +244,7 @@
       "name": "pull_candidates_adopted_other_method",
       "scenario": "adopted_other_method",
       "session_id": "builder-command-session",
-      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
+      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: mirror build adopt --journey demo --method ariad\n",
       "stdout": ""
     },
     {
@@ -497,7 +497,7 @@
       },
       "scenario": "unadopted",
       "session_id": "builder-command-session",
-      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
+      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: mirror build adopt --journey demo --method ariad\n",
       "stdout": ""
     },
     {
@@ -542,7 +542,7 @@
       "name": "sync_cursor_not_adopted",
       "scenario": "unadopted",
       "session_id": "builder-command-session",
-      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
+      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: mirror build adopt --journey demo --method ariad\n",
       "stdout": ""
     },
     {
@@ -602,7 +602,7 @@
       "name": "check_implementation_not_adopted",
       "scenario": "unadopted",
       "session_id": "builder-command-session",
-      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
+      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: mirror build adopt --journey demo --method ariad\n",
       "stdout": ""
     },
     {
@@ -836,7 +836,7 @@
       },
       "scenario": "adopted",
       "session_id": "builder-command-session",
-      "stderr": "Error: journey 'demo' has no Builder delivery cursor. Run: uv run python -m memory build sync-cursor --journey demo --method ariad\n",
+      "stderr": "Error: journey 'demo' has no Builder delivery cursor. Run: mirror build sync-cursor --journey demo --method ariad\n",
       "stdout": ""
     },
     {
@@ -869,7 +869,7 @@
       },
       "scenario": "unadopted",
       "session_id": "builder-command-session",
-      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
+      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: mirror build adopt --journey demo --method ariad\n",
       "stdout": ""
     },
     {
@@ -929,7 +929,7 @@
       "name": "prepare_item_not_adopted",
       "scenario": "unadopted",
       "session_id": "builder-command-session",
-      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
+      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: mirror build adopt --journey demo --method ariad\n",
       "stdout": ""
     },
     {
@@ -1090,7 +1090,7 @@
       },
       "scenario": "unadopted",
       "session_id": "builder-command-session",
-      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
+      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: mirror build adopt --journey demo --method ariad\n",
       "stdout": ""
     },
     {
@@ -1167,7 +1167,7 @@
       "name": "approve_plan_not_adopted",
       "scenario": "unadopted",
       "session_id": "builder-command-session",
-      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
+      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: mirror build adopt --journey demo --method ariad\n",
       "stdout": ""
     },
     {
@@ -1397,7 +1397,7 @@
       },
       "scenario": "adopted",
       "session_id": "builder-command-session",
-      "stderr": "Error: journey 'demo' has no Builder delivery cursor. Run: uv run python -m memory build sync-cursor --journey demo --method ariad\n",
+      "stderr": "Error: journey 'demo' has no Builder delivery cursor. Run: mirror build sync-cursor --journey demo --method ariad\n",
       "stdout": ""
     },
     {
@@ -1422,7 +1422,7 @@
       },
       "scenario": "unadopted",
       "session_id": "builder-command-session",
-      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
+      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: mirror build adopt --journey demo --method ariad\n",
       "stdout": ""
     },
     {
@@ -1720,7 +1720,7 @@
       },
       "scenario": "unadopted",
       "session_id": "builder-command-session",
-      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
+      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: mirror build adopt --journey demo --method ariad\n",
       "stdout": ""
     },
     {
@@ -2265,7 +2265,7 @@
       "name": "delivery_story_leaves_not_adopted",
       "scenario": "unadopted",
       "session_id": "builder-command-session",
-      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
+      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: mirror build adopt --journey demo --method ariad\n",
       "stdout": ""
     },
     {
@@ -2422,7 +2422,7 @@
       "name": "set_cadence_not_adopted",
       "scenario": "unadopted",
       "session_id": "builder-command-session",
-      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
+      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: mirror build adopt --journey demo --method ariad\n",
       "stdout": ""
     },
     {
@@ -2708,7 +2708,7 @@
       },
       "scenario": "unadopted",
       "session_id": "builder-command-session",
-      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: uv run python -m memory build adopt --journey demo --method ariad\n",
+      "stderr": "Error: journey 'demo' has not adopted Ariad yet. Run: mirror build adopt --journey demo --method ariad\n",
       "stdout": ""
     }
   ]

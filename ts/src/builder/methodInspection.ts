@@ -21,6 +21,7 @@
 // reproduced here: changing them is a product decision that lands after the flip,
 // recorded as a CR, not a liberty taken inside a port.
 
+import { PROGRAM } from "#util/program.ts";
 import type {
   CadenceProfileDefinition,
   CheckpointDefinition,
@@ -120,7 +121,7 @@ export function renderNoActiveJourney(): string {
     "Activate Builder Mode for a journey or ask about a specific journey.",
     "",
     "example",
-    "uv run python -m memory build load <journey>",
+    `${PROGRAM} build load <journey>`,
   ].join("\n")}\n`;
 }
 
@@ -175,7 +176,7 @@ export function renderJourneyWithoutAdoptedMethod(journey: string): string {
     "pending confirmations",
     "",
     "next action",
-    `uv run python -m memory build adopt --journey ${journey} --method ariad`,
+    `${PROGRAM} build adopt --journey ${journey} --method ariad`,
   ].join("\n")}\n`;
 }
 

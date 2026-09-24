@@ -278,7 +278,7 @@
         "notes",
         "extra"
       ],
-      "stdout": "Usage: python -m memory extensions install <id> [--extensions-root PATH] [--mirror-home PATH] [--runtime NAME]\n",
+      "stdout": "Usage: mirror extensions install <id> [--extensions-root PATH] [--mirror-home PATH] [--runtime NAME]\n",
       "stderr": "",
       "exit_code": 1,
       "home": {

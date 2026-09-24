@@ -356,7 +356,7 @@
         "beta",
         "bind"
       ],
-      "stdout": "usage: python -m memory ext beta bind <capability> (--persona <id> | --journey <id> | --global)\n",
+      "stdout": "usage: mirror ext beta bind <capability> (--persona <id> | --journey <id> | --global)\n",
       "stderr": "",
       "exit_code": 1,
       "bindings": [
@@ -426,7 +426,7 @@
         "bind",
         "--help"
       ],
-      "stdout": "Usage:\n  python -m memory ext beta bind <capability> (--persona <id> | --journey <id> | --global)\n\nBind a capability to a persona, a journey, or every context.\n",
+      "stdout": "Usage:\n  mirror ext beta bind <capability> (--persona <id> | --journey <id> | --global)\n\nBind a capability to a persona, a journey, or every context.\n",
       "stderr": "",
       "exit_code": 0,
       "bindings": [
@@ -449,7 +449,7 @@
         "migrate",
         "--help"
       ],
-      "stdout": "Usage:\n  python -m memory ext beta migrate\n\nApply the extension's pending database migrations.\n",
+      "stdout": "Usage:\n  mirror ext beta migrate\n\nApply the extension's pending database migrations.\n",
       "stderr": "",
       "exit_code": 0,
       "bindings": [

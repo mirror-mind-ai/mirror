@@ -20,6 +20,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { Database, WritableDatabase } from "#db/database.ts";
+import { PROGRAM } from "#util/program.ts";
 import type { RenderedCommand } from "./catalog.ts";
 import { extensionNotInstalled, installedExtensionDir } from "./dispatch.ts";
 import { ExtensionError } from "./errors.ts";
@@ -136,7 +137,7 @@ export function parseBindingTail(
 ): (BindingTarget & { capabilityId: string }) | RenderedCommand {
   if (tail.length === 0) {
     return out(
-      `usage: python -m memory ext ${extensionId} ${action} <capability> ` +
+      `usage: ${PROGRAM} ext ${extensionId} ${action} <capability> ` +
         "(--persona <id> | --journey <id> | --global)\n",
       1,
     );

@@ -60,7 +60,7 @@ test("renderShadowShow: empty layer", () => {
   assert.equal(
     renderShadowShow([]),
     "The structural shadow layer is empty.\n" +
-      "Run 'python -m memory shadow scan' to surface candidate observations.\n",
+      "Run 'mirror shadow scan' to surface candidate observations.\n",
   );
 });
 
@@ -209,9 +209,9 @@ test("renderShadowScan: one observation, full block and footer, matching the liv
       "\n" +
       "\n1 observation(s) created with status='pending'.\n" +
       "Review each observation above, then:\n" +
-      "  Accept:  python -m memory shadow apply <proposal_id>\n" +
-      '  Edit:    python -m memory shadow apply <proposal_id> --content "revised text"\n' +
-      "  Reject:  python -m memory shadow reject <proposal_id>\n",
+      "  Accept:  mirror shadow apply <proposal_id>\n" +
+      '  Edit:    mirror shadow apply <proposal_id> --content "revised text"\n' +
+      "  Reject:  mirror shadow reject <proposal_id>\n",
   );
 });
 
