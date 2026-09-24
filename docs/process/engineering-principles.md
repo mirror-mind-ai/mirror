@@ -717,9 +717,9 @@ real gate is a hope, not a rule.
   `-m "not live"`), the TS `tsc`/Biome/`node:test` job, the coverage floor,
   the `MemoryClient` lifecycle architecture test, and the `docs` workflow's
   link/anchor check
-  ([`scripts/check_doc_links.py`](../../scripts/check_doc_links.py), logic
-  in [`src/memory/docs_lint.py`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/src/memory/docs_lint.py), self-tested
-  in [`tests/unit/memory/test_docs_lint.py`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/tests/unit/memory/test_docs_lint.py)
+  ([`ts/scripts/checkDocLinks.ts`](../../ts/scripts/checkDocLinks.ts), logic
+  in [`ts/src/docs/docsLint.ts`](../../ts/src/docs/docsLint.ts), self-tested
+  in [`ts/test/scripts/docsLint.test.ts`](../../ts/test/scripts/docsLint.test.ts)
   — network-free, no baseline exceptions, every relative link and anchor
   under `docs/**` and every root `*.md` must resolve).
 - **Eval-enforced** (a real model, run deliberately, not on every push):

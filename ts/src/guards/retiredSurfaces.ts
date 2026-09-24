@@ -36,14 +36,12 @@ export const HISTORY_PREFIXES: readonly string[] = [
   "docs/process/worklog.md",
   "docs/releases/",
   // A guard's own table is the one file that must name every retired surface:
-  // the patterns ARE the data. The Python original always self-exempted; this
-  // port and its self-test need the same, and the Python file leaves at
-  // plateau 3.
+  // the patterns ARE the data, so the table and its self-test exempt
+  // themselves, as the Python original (deleted at TS5 plateau 3) always did.
   //
   // Both guards learned this the same way, in CI rather than locally, because
   // the sweep reads `git ls-files` -- so a file that is written but not yet
   // COMMITTED is invisible to it. Local green on new files is not evidence.
-  "scripts/check_retired_surfaces.py",
   "ts/src/guards/retiredSurfaces.ts",
   "ts/test/scripts/retiredSurfaces.test.ts",
 ];

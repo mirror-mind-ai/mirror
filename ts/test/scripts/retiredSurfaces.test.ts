@@ -130,12 +130,15 @@ describe("residue", () => {
     assert.ok(!isHistory("README.md"));
   });
 
-  test("both guards' own tables and this self-test are history", () => {
+  test("the guard's own table and this self-test are history", () => {
     // A guard's table must name every retired surface -- the patterns ARE the
     // data -- so the table and its test cannot be residue. Missing this turned
     // CI red at 5fb23132: locally both guards were green because the new files
     // were not yet COMMITTED, and the sweep reads `git ls-files`.
-    assert.ok(isHistory("scripts/check_retired_surfaces.py"));
+    //
+    // The Python original's exemption left with it (TS5 plateau 3): an
+    // exemption for a file that cannot exist is a hole waiting for one to.
+    assert.ok(!isHistory("scripts/check_retired_surfaces.py"));
     assert.ok(isHistory("ts/src/guards/retiredSurfaces.ts"));
     assert.ok(isHistory("ts/test/scripts/retiredSurfaces.test.ts"));
   });
@@ -207,7 +210,16 @@ describe("the staged python-core row", () => {
   // moves its paths from the second list to the first. Both halves are the
   // point: a path in `stillTracked` proves the row can still SEE what is left,
   // and a path in `deleted` proves the deletion happened and stays done.
-  const deleted = ["src/memory/", "tests/", "ts/parity/"];
+  const deleted = [
+    "src/memory/",
+    "tests/",
+    "ts/parity/",
+    "scripts/check_oracle_drift.py",
+    "scripts/reset_sandbox_pet_store.py",
+    "scripts/check_retired_surfaces.py",
+    "scripts/check_doc_links.py",
+    "scripts/build_claude_plugin.py",
+  ];
   const stillTracked = ["pyproject.toml"];
 
   test("FIRES against today's tree when asked -- the row is graded, not merely written", () => {
