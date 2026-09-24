@@ -188,7 +188,7 @@ export async function applyGeneratedMetadataLifecycle(
     throw new Error(
       `metadata execution profile '${profileName}' is not force_regenerate; ` +
         "the non-force apply path (apply_metadata_lifecycle) is not ported yet " +
-        "— close_time and backfill_force are the profiles the close tail uses.",
+        "— close_time is the profile the close tail uses.",
     );
   }
 

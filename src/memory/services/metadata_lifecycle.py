@@ -35,19 +35,6 @@ METADATA_EXECUTION_PROFILES: dict[str, MetadataExecutionProfile] = {
         summary_apply_decisions=frozenset({"create"}),
         tags_apply_decisions=frozenset({"create"}),
     ),
-    "backfill_safe": MetadataExecutionProfile(
-        name="backfill_safe",
-        title_apply_decisions=frozenset({"create", "repair"}),
-        summary_apply_decisions=frozenset({"create"}),
-        tags_apply_decisions=frozenset({"create"}),
-    ),
-    "backfill_force": MetadataExecutionProfile(
-        name="backfill_force",
-        title_apply_decisions=frozenset({"create", "repair", "keep", "refine_candidate"}),
-        summary_apply_decisions=frozenset({"create", "keep", "refine_candidate"}),
-        tags_apply_decisions=frozenset({"create", "keep"}),
-        force_regenerate=True,
-    ),
     "close_time": MetadataExecutionProfile(
         name="close_time",
         title_apply_decisions=frozenset({"create", "repair", "keep", "refine_candidate"}),

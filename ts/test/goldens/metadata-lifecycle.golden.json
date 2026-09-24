@@ -3,8 +3,6 @@
     "metadata_lifecycle_version": 1,
     "profiles": [
       "active_runtime",
-      "backfill_force",
-      "backfill_safe",
       "close_time",
       "manual_safe"
     ]
@@ -18,41 +16,6 @@
       "tags_apply_decisions": [],
       "title_apply_decisions": [
         "create"
-      ]
-    },
-    "backfill_force": {
-      "force_regenerate": true,
-      "name": "backfill_force",
-      "preserve_manual": true,
-      "summary_apply_decisions": [
-        "create",
-        "keep",
-        "refine_candidate"
-      ],
-      "tags_apply_decisions": [
-        "create",
-        "keep"
-      ],
-      "title_apply_decisions": [
-        "create",
-        "keep",
-        "refine_candidate",
-        "repair"
-      ]
-    },
-    "backfill_safe": {
-      "force_regenerate": false,
-      "name": "backfill_safe",
-      "preserve_manual": true,
-      "summary_apply_decisions": [
-        "create"
-      ],
-      "tags_apply_decisions": [
-        "create"
-      ],
-      "title_apply_decisions": [
-        "create",
-        "repair"
       ]
     },
     "close_time": {
@@ -97,16 +60,6 @@
         "active_runtime": {
           "summary": "skip",
           "tags": "skip",
-          "title": "preserve_manual"
-        },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "preserve_manual"
-        },
-        "backfill_safe": {
-          "summary": "skip",
-          "tags": "apply",
           "title": "preserve_manual"
         },
         "close_time": {
@@ -192,16 +145,6 @@
           "tags": "skip",
           "title": "preserve_manual"
         },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "preserve_manual"
-        },
-        "backfill_safe": {
-          "summary": "skip",
-          "tags": "apply",
-          "title": "preserve_manual"
-        },
         "close_time": {
           "summary": "regenerate",
           "tags": "regenerate",
@@ -285,16 +228,6 @@
           "tags": "defer",
           "title": "defer"
         },
-        "backfill_force": {
-          "summary": "defer",
-          "tags": "defer",
-          "title": "defer"
-        },
-        "backfill_safe": {
-          "summary": "defer",
-          "tags": "defer",
-          "title": "defer"
-        },
         "close_time": {
           "summary": "defer",
           "tags": "defer",
@@ -356,16 +289,6 @@
     {
       "actions_by_profile": {
         "active_runtime": {
-          "summary": "defer",
-          "tags": "defer",
-          "title": "defer"
-        },
-        "backfill_force": {
-          "summary": "defer",
-          "tags": "defer",
-          "title": "defer"
-        },
-        "backfill_safe": {
           "summary": "defer",
           "tags": "defer",
           "title": "defer"
@@ -439,16 +362,6 @@
         "active_runtime": {
           "summary": "skip",
           "tags": "skip",
-          "title": "apply"
-        },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "apply",
-          "tags": "apply",
           "title": "apply"
         },
         "close_time": {
@@ -534,16 +447,6 @@
           "tags": "skip",
           "title": "apply"
         },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "apply",
-          "tags": "apply",
-          "title": "apply"
-        },
         "close_time": {
           "summary": "regenerate",
           "tags": "regenerate",
@@ -626,16 +529,6 @@
           "summary": "skip",
           "tags": "skip",
           "title": "skip"
-        },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "apply",
-          "tags": "apply",
-          "title": "apply"
         },
         "close_time": {
           "summary": "regenerate",
@@ -720,16 +613,6 @@
           "tags": "skip",
           "title": "skip"
         },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "apply",
-          "tags": "apply",
-          "title": "apply"
-        },
         "close_time": {
           "summary": "regenerate",
           "tags": "regenerate",
@@ -812,16 +695,6 @@
           "summary": "skip",
           "tags": "skip",
           "title": "skip"
-        },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "apply",
-          "tags": "apply",
-          "title": "apply"
         },
         "close_time": {
           "summary": "regenerate",
@@ -906,16 +779,6 @@
           "tags": "skip",
           "title": "skip"
         },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "apply",
-          "tags": "apply",
-          "title": "apply"
-        },
         "close_time": {
           "summary": "regenerate",
           "tags": "regenerate",
@@ -999,16 +862,6 @@
           "tags": "skip",
           "title": "skip"
         },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "apply",
-          "tags": "apply",
-          "title": "apply"
-        },
         "close_time": {
           "summary": "regenerate",
           "tags": "regenerate",
@@ -1090,16 +943,6 @@
         "active_runtime": {
           "summary": "skip",
           "tags": "skip",
-          "title": "review"
-        },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "skip",
-          "tags": "apply",
           "title": "review"
         },
         "close_time": {
@@ -1211,16 +1054,6 @@
           "tags": "skip",
           "title": "review"
         },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "skip",
-          "tags": "apply",
-          "title": "review"
-        },
         "close_time": {
           "summary": "regenerate",
           "tags": "regenerate",
@@ -1325,16 +1158,6 @@
           "tags": "skip",
           "title": "review"
         },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "apply",
-          "tags": "apply",
-          "title": "review"
-        },
         "close_time": {
           "summary": "regenerate",
           "tags": "regenerate",
@@ -1431,16 +1254,6 @@
           "tags": "skip",
           "title": "skip"
         },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "apply",
-          "tags": "apply",
-          "title": "skip"
-        },
         "close_time": {
           "summary": "regenerate",
           "tags": "regenerate",
@@ -1524,16 +1337,6 @@
           "tags": "skip",
           "title": "skip"
         },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "apply",
-          "tags": "apply",
-          "title": "skip"
-        },
         "close_time": {
           "summary": "regenerate",
           "tags": "regenerate",
@@ -1615,16 +1418,6 @@
         "active_runtime": {
           "summary": "review",
           "tags": "skip",
-          "title": "skip"
-        },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "review",
-          "tags": "apply",
           "title": "skip"
         },
         "close_time": {
@@ -1715,16 +1508,6 @@
           "tags": "skip",
           "title": "skip"
         },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "review",
-          "tags": "apply",
-          "title": "skip"
-        },
         "close_time": {
           "summary": "regenerate",
           "tags": "regenerate",
@@ -1811,16 +1594,6 @@
         "active_runtime": {
           "summary": "review",
           "tags": "skip",
-          "title": "skip"
-        },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "review",
-          "tags": "apply",
           "title": "skip"
         },
         "close_time": {
@@ -1911,16 +1684,6 @@
           "tags": "skip",
           "title": "skip"
         },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "review",
-          "tags": "apply",
-          "title": "skip"
-        },
         "close_time": {
           "summary": "regenerate",
           "tags": "regenerate",
@@ -2007,16 +1770,6 @@
         "active_runtime": {
           "summary": "review",
           "tags": "skip",
-          "title": "skip"
-        },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "review",
-          "tags": "apply",
           "title": "skip"
         },
         "close_time": {
@@ -2107,16 +1860,6 @@
           "tags": "skip",
           "title": "skip"
         },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "review",
-          "tags": "apply",
-          "title": "skip"
-        },
         "close_time": {
           "summary": "regenerate",
           "tags": "regenerate",
@@ -2205,16 +1948,6 @@
           "tags": "skip",
           "title": "skip"
         },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "skip",
-          "tags": "apply",
-          "title": "skip"
-        },
         "close_time": {
           "summary": "regenerate",
           "tags": "regenerate",
@@ -2296,16 +2029,6 @@
         "active_runtime": {
           "summary": "skip",
           "tags": "skip",
-          "title": "skip"
-        },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "apply",
-          "tags": "apply",
           "title": "skip"
         },
         "close_time": {
@@ -2391,16 +2114,6 @@
           "tags": "defer",
           "title": "skip"
         },
-        "backfill_force": {
-          "summary": "defer",
-          "tags": "defer",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "defer",
-          "tags": "defer",
-          "title": "skip"
-        },
         "close_time": {
           "summary": "defer",
           "tags": "defer",
@@ -2469,16 +2182,6 @@
       "actions_by_profile": {
         "active_runtime": {
           "summary": "skip",
-          "tags": "skip",
-          "title": "skip"
-        },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "apply",
           "tags": "skip",
           "title": "skip"
         },
@@ -2565,16 +2268,6 @@
           "tags": "skip",
           "title": "skip"
         },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "apply",
-          "tags": "apply",
-          "title": "skip"
-        },
         "close_time": {
           "summary": "regenerate",
           "tags": "regenerate",
@@ -2656,16 +2349,6 @@
         "active_runtime": {
           "summary": "skip",
           "tags": "skip",
-          "title": "skip"
-        },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "apply",
-          "tags": "apply",
           "title": "skip"
         },
         "close_time": {
@@ -2751,16 +2434,6 @@
           "tags": "skip",
           "title": "skip"
         },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "skip",
-          "tags": "apply",
-          "title": "skip"
-        },
         "close_time": {
           "summary": "regenerate",
           "tags": "regenerate",
@@ -2828,16 +2501,6 @@
     {
       "actions_by_profile": {
         "active_runtime": {
-          "summary": "defer",
-          "tags": "defer",
-          "title": "skip"
-        },
-        "backfill_force": {
-          "summary": "defer",
-          "tags": "defer",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
           "summary": "defer",
           "tags": "defer",
           "title": "skip"
@@ -2913,16 +2576,6 @@
           "tags": "defer",
           "title": "defer"
         },
-        "backfill_force": {
-          "summary": "defer",
-          "tags": "defer",
-          "title": "defer"
-        },
-        "backfill_safe": {
-          "summary": "defer",
-          "tags": "defer",
-          "title": "defer"
-        },
         "close_time": {
           "summary": "defer",
           "tags": "defer",
@@ -2984,16 +2637,6 @@
     {
       "actions_by_profile": {
         "active_runtime": {
-          "summary": "defer",
-          "tags": "defer",
-          "title": "skip"
-        },
-        "backfill_force": {
-          "summary": "defer",
-          "tags": "defer",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
           "summary": "defer",
           "tags": "defer",
           "title": "skip"
@@ -3073,16 +2716,6 @@
         "active_runtime": {
           "summary": "skip",
           "tags": "skip",
-          "title": "skip"
-        },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "apply",
-          "tags": "apply",
           "title": "skip"
         },
         "close_time": {
@@ -3174,16 +2807,6 @@
           "tags": "skip",
           "title": "skip"
         },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "apply",
-          "tags": "apply",
-          "title": "skip"
-        },
         "close_time": {
           "summary": "regenerate",
           "tags": "regenerate",
@@ -3266,16 +2889,6 @@
           "summary": "skip",
           "tags": "skip",
           "title": "skip"
-        },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "apply",
-          "tags": "apply",
-          "title": "apply"
         },
         "close_time": {
           "summary": "regenerate",
@@ -3360,16 +2973,6 @@
           "tags": "skip",
           "title": "skip"
         },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "skip",
-          "tags": "apply",
-          "title": "skip"
-        },
         "close_time": {
           "summary": "regenerate",
           "tags": "regenerate",
@@ -3451,16 +3054,6 @@
         "active_runtime": {
           "summary": "review",
           "tags": "skip",
-          "title": "skip"
-        },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "review",
-          "tags": "apply",
           "title": "skip"
         },
         "close_time": {
@@ -3551,16 +3144,6 @@
           "tags": "skip",
           "title": "skip"
         },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "skip",
-          "tags": "apply",
-          "title": "skip"
-        },
         "close_time": {
           "summary": "regenerate",
           "tags": "regenerate",
@@ -3642,16 +3225,6 @@
         "active_runtime": {
           "summary": "skip",
           "tags": "skip",
-          "title": "skip"
-        },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "skip",
-          "tags": "apply",
           "title": "skip"
         },
         "close_time": {
@@ -3737,16 +3310,6 @@
           "tags": "skip",
           "title": "skip"
         },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "skip",
-          "tags": "apply",
-          "title": "skip"
-        },
         "close_time": {
           "summary": "regenerate",
           "tags": "regenerate",
@@ -3828,16 +3391,6 @@
         "active_runtime": {
           "summary": "skip",
           "tags": "skip",
-          "title": "review"
-        },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "skip",
-          "tags": "apply",
           "title": "review"
         },
         "close_time": {
@@ -3943,16 +3496,6 @@
         "active_runtime": {
           "summary": "skip",
           "tags": "skip",
-          "title": "review"
-        },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "skip",
-          "tags": "apply",
           "title": "review"
         },
         "close_time": {
@@ -4061,16 +3604,6 @@
           "tags": "skip",
           "title": "review"
         },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "skip",
-          "tags": "apply",
-          "title": "review"
-        },
         "close_time": {
           "summary": "regenerate",
           "tags": "regenerate",
@@ -4177,16 +3710,6 @@
           "summary": "skip",
           "tags": "skip",
           "title": "skip"
-        },
-        "backfill_force": {
-          "summary": "regenerate",
-          "tags": "regenerate",
-          "title": "regenerate"
-        },
-        "backfill_safe": {
-          "summary": "apply",
-          "tags": "apply",
-          "title": "apply"
         },
         "close_time": {
           "summary": "regenerate",

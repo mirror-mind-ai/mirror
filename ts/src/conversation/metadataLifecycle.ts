@@ -84,14 +84,6 @@ function profile(
 
 export const METADATA_EXECUTION_PROFILES: Readonly<Record<string, MetadataExecutionProfile>> = {
   manual_safe: profile("manual_safe", ["create", "repair"], ["create"], ["create"]),
-  backfill_safe: profile("backfill_safe", ["create", "repair"], ["create"], ["create"]),
-  backfill_force: profile(
-    "backfill_force",
-    ["create", "repair", "keep", "refine_candidate"],
-    ["create", "keep", "refine_candidate"],
-    ["create", "keep"],
-    true,
-  ),
   close_time: profile(
     "close_time",
     ["create", "repair", "keep", "refine_candidate"],

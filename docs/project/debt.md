@@ -40,9 +40,9 @@ Dropped   no longer relevant or replaced by another item
 | D-020 | The eval harness records no spend, so a run's cost cannot be reported | observability / cost | low | Carried | CV22.DS10.TS3 Debt Review | The first time a run's cost is questioned, or before any model-pin migration, where cost per run is part of the decision |
 | D-021 | `reception`'s eval reads the catalogue differently from production, and no gate covers routing quality | eval measurement | low | Carried | CV22.DS10.TS3 Debt Review | The next story that touches reception routing or descriptor generation |
 | D-022 | Blocking injection probes read "resisted" when the provider never answered, and nothing pins the attack payload in their fixtures | eval measurement / security | medium | Carried | CV22.DS10.TS3 handoff review (security-engineer) | The first blocked or inconclusive suite run, or before any story that treats a green gate as injection-resistance evidence |
-| D-023 | Two execution profiles outlived the only command that reached them | dead code / packaging | low | Carried | CV22.DS10.TS4 Debt Review | TS5 |
+| D-023 | Two execution profiles outlived the only command that reached them | dead code / packaging | low | **Paid** | CV22.DS10.TS4 Debt Review | Paid 2026-09-24 by CV22.DS10.TS5 plateau 2: `backfill_safe` and `backfill_force` removed from both engines in one commit, the golden regenerated to a pure deletion, the oracle-drift baseline re-taken for the one file |
 | D-024 | The Refinement field's seed-CR scan reads Mirror Mind's own roadmap path inside the user's project | product correctness / inherited port oddity | low | Carried | CV22.DS10.TS4 Debt Review | TS5 |
-| D-025 | `runtime migrate` reports `nothing pending` when the engine DECLINED the work, so an update can pass its migrate stage on a database with pending migrations | correctness / migrations | medium | Carried | CV22.DS10.US2 Debt Review | **TS5**, before the Python engine is deleted — after it there is nothing left to defer to |
+| D-025 | `runtime migrate` reports `nothing pending` when the engine DECLINED the work, so an update can pass its migrate stage on a database with pending migrations | correctness / migrations | medium | **Paid** | CV22.DS10.US2 Debt Review | Paid 2026-09-24 by CV22.DS10.TS5 plateau 1 (`c8c74361`): TypeScript is the sole migration custodian, `runtime migrate` has three verdicts, and `declined` exits non-zero and fails the updater's migrate stage |
 | D-026 | The update pipeline is implemented twice, once per install kind, in one module | duplication / maintainability | low | Carried | CV22.DS10.US2 Debt Review | US3, when the package path gains registry behavior and the halves would otherwise drift |
 | D-027 | Nothing writes the package install's update-channel file, so a package user cannot select a channel persistently | operability | low | Carried | CV22.DS10.US2 Debt Review | US3, with the published package that makes channels reachable |
 
@@ -1069,7 +1069,7 @@ structural test pins each blocking fixture's payload to its sentinels.
 
 **Kind:** correctness / migrations
 **Severity:** medium
-**Status:** Carried
+**Status:** Paid (CV22.DS10.TS5, 2026-09-24)
 **Source:** CV22.DS10.US2 handoff review, 2026-09-23 (database-architect) — Navigator decision: defer to TS5
 
 ### What is wrong
@@ -1112,7 +1112,7 @@ with that change rather than before it.
 
 **Kind:** dead code / packaging
 **Severity:** low
-**Status:** Carried
+**Status:** Paid (CV22.DS10.TS5, 2026-09-24)
 **Source:** CV22.DS10.TS4 Debt Review, 2026-09-23 — Navigator decision: defer to TS5
 
 ### Carrying reason
