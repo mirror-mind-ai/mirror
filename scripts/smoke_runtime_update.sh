@@ -93,10 +93,19 @@ say "Generating the demo database"
 # the shape a Python-written database really had: no column, no index, no
 # ledger row. The SCHEMA regresses, not only the ledger, so the migration's
 # re-run is real work rather than an `IF NOT EXISTS` no-op.
-"$REAL_SQLITE" "$HOME_DIR/memory.db" \
-  "DROP INDEX idx_identity_parent_journey;
-   ALTER TABLE identity DROP COLUMN parent_journey;
-   DELETE FROM _migrations WHERE id = '017_journey_parent_column';"
+#
+# Through node:sqlite -- the SQLite the product runs on -- and not the platform
+# `sqlite3` CLI: `DROP COLUMN` rewrites the schema and re-parses every table,
+# the FTS5 ones included, and the macOS runner's CLI failed there with "SQL
+# logic error" where a newer local one passed.
+REGRESS_017="DROP INDEX idx_identity_parent_journey;
+ALTER TABLE identity DROP COLUMN parent_journey;
+DELETE FROM _migrations WHERE id = '017_journey_parent_column';"
+node --no-warnings -e '
+  const { DatabaseSync } = require("node:sqlite");
+  const db = new DatabaseSync(process.argv[1]);
+  db.exec(process.argv[2]);
+  db.close();' "$HOME_DIR/memory.db" "$REGRESS_017"
 
 CLI="ts/src/frontDoor/cli.ts"
 run_cli() {
