@@ -99,6 +99,12 @@ CV9.E2.S16 (AI-10) removed for extraction. S1 did not introduce this (an
 `IndexError` slipped past the same handler before), and S1 deliberately did not
 unify all five embedding-failure behaviors across the surfaces.
 
+**Where it lives now (2026-09-24, CV22.DS10.TS5 plateau 4).** The Python class
+is gone with the core; the TypeScript port kept the shape.
+`detectJourney` (`ts/src/mirror/defaultResolution.ts`) wraps the query
+embedding in `catch { return []; }`, so the debt is unchanged, in a different
+file.
+
 ### Revisit trigger
 
 A user reports a suspicious empty journey match during a provider outage, or a

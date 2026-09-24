@@ -2918,3 +2918,45 @@ Neither name can match the release doctor's `vX.Y.Z` pattern, and pushing a
 tag authorizes nothing: CV22 still [releases once](#cv22-releases-once-when-the-migration-is-complete).
 Historical documents that linked to a deleted Python file point at this tag,
 so the record keeps a path to the code it describes.
+
+### The Python core is gone, and the answers nobody can grade any more are the front door's own
+
+**Date:** 2026-09-24 · **Context:** CV22.DS10.TS5 deleted the Python core
+(plateau 3) and rewrote the documentation that taught it (plateau 4). While
+the oracle existed, every behavior TypeScript owned was graded against it.
+The decisions below are the ones that had no oracle to grade them: choices
+about what the product says and reads once there is only one engine.
+**Reference:** [CV22.DS10.TS5 — Decisions](roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-ts5-python-core-deletion/plan.md#decisions-this-plan-asks-the-navigator-to-take)
+
+**The decisions, one line each.**
+
+| | Decision |
+|---|---|
+| D1 | **The version and the checkout identity live in `ts/package.json`** (`0.31.14`, `private`, `mirror-core`), read through one walk in `ts/src/runtime/packageIdentity.ts`. `pyproject.toml` is deleted. US3 changes one constant and the `private` flag. |
+| D2 | **Unknown names get the front door's own answer.** An unknown command prints the usage on stdout, exit 1; an unknown or missing subcommand prints the family's usage and one `error:` line on stderr, exit 2, in argparse's shape but with the family's name where argparse leaked `__main__.py`; `-h`/`--help` after a family prints its usage, exit 0. `mcp` routes to the TypeScript server. |
+| D3 | **The `MIRROR_TS_<FAMILY>` revert gates are deleted,** because the engine they reverted to is. `runtime diagnose` names any of the twenty-three retired migration variables still set, from an explicit list; the `*_REPLAY` fixture variables and `MIRROR_TS_MCP_GUARDS` are unaffected. |
+| D10 | **A command-skill's `entrypoint` is optional,** and validated exactly as before when declared. The core has imported no extension code since TS2. |
+| D11 | **`pyproject.toml` goes now.** The Frame's version test reads `ts/package.json`; the Frame's and the installer's root detection stays with US3, beside their Python call sites. |
+| D12 | **The program is `mirror`** in every usage line and hint, through one constant (`ts/src/util/program.ts`) that US3 renames. The `python-core` guard row went live in two halves: absence at plateau 3, mentions at plateau 4. |
+| D13 | **The Plan scaffold stops telling the Driver to run Python through `uv`.** The line was false for every project once Mirror Mind had no Python; it is removed rather than replaced, because a replacement would add a Mirror-only line to other projects' plans (CR019). |
+| D14 | **The documentation names the program `mirror`, as the product does.** `REFERENCE.md` and `docs/getting-started.md` carry one bridge — the front-door invocation `mirror` stands for, and a shell alias for it — that US3 deletes. Skills and hooks keep the explicit invocation, because an agent runs them where no alias exists. |
+| D15 | **`docs/product/api.md` is deleted.** It documented the Python `MemoryClient`; TypeScript publishes no programmatic API, and a rewritten page would describe a contract nobody offered. |
+
+**Why these were decisions and not ports.** A port has a right answer: the
+oracle's. None of these did. D2's bytes, D12's name, and D13's missing line
+change what a user sees on purpose, with no second engine to say whether the
+change is correct — so each is recorded here, and each hand-edited golden is
+listed with its reason in `ts/test/goldens/README.md`, where the next reader
+of a golden will look.
+
+**What the deletion leaves behind.** The goldens are frozen fixtures: a
+failing golden is a regression until proven otherwise, and a deliberate change
+edits it by hand. The migration custody proofs (`ts/smoke/`) are the structural
+evidence that the sole custodian reproduces every migration. The retired-surface
+guard enforces both halves of the Zero Python claim in CI, and the whole suite
+runs a second time with the interpreters shadowed, failing on a single spawn.
+
+**What this is not.** Not zero Python for the shipped artifact. `frame/` and
+`installer/` still install and call the Python engine and find their root by
+the deleted `pyproject.toml`; they are re-homed by CV22.DS10.US3, which makes
+that claim for the npm package. TS5's claim is for the repository.

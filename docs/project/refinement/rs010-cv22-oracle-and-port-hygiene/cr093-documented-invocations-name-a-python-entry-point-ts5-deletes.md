@@ -106,6 +106,18 @@ $ uv run python scripts/check_skill_command_parity.py
 skill command parity: clean -- 25 skills agree on every entry point.
 ```
 
+**Progress, 2026-09-24 (CV22.DS10.TS5 plateau 4).** This repository's half is
+done: `REFERENCE.md`'s 56 occurrences and every other document in the tree now
+name the program `mirror`, the name the front door gives itself (D12), with one
+bridge paragraph showing the front-door invocation and a shell alias until an
+entry point exists (D14); skills keep the explicit invocation. The extension
+template's `SKILL.md` uses the front-door form the TS2 cutoff prescribes, and
+the `python-core-mentions` guard row, enforced in CI, fails any new Python
+invocation in this repository. The half in the extension repositories
+(`automation/mirror-extensions/`, `extensions/`) and their materialized copies
+is untouched and remains US3's, as planned above. Status is the Navigator's to
+change.
+
 ## Outcome
 
 Open.

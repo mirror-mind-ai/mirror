@@ -287,6 +287,24 @@ reason. *(Amended at plateau 3: the Plan expected two; F4, D10, and D12 each
 added hand edits, and the README — JSON cannot carry a header comment — is
 where every one of them is recorded.)*
 
+### Plateau 4 — the mentions half of the gate
+
+`python-core-mentions` is enforced from plateau 4, so the ordinary run of the
+guard is the check. The seeds prove it can still see a regression; **stage
+each one**, as at plateau 3:
+
+```bash
+node ts/scripts/checkRetiredSurfaces.ts          # ten rows, all enforced, exit 0
+
+echo 'python3 -m memory backup --silent' >> plugins/mirror-mind/hooks/session-start.sh
+git add plugins/mirror-mind/hooks/session-start.sh
+node ts/scripts/checkRetiredSurfaces.ts          # exit 1, the hook named with its line
+git checkout HEAD -- plugins/mirror-mind/hooks/session-start.sh
+
+(cd ts && node --test test/scripts/retiredSurfaces.test.ts)   # includes: nothing staged,
+                                                              # every exemption tracked and needed
+```
+
 ## E2E Decision
 
 **Required.** This story removes an engine. A fixture-level route can prove
@@ -648,6 +666,50 @@ same plus the two differences plateau 2 explained.
 
 Smokes: custody proofs, migrate-on-open, the three lifecycle smokes, and every
 runtime smoke pass; the updater 34/34.
+
+### Plateau 4 — Recorded
+
+**2026-09-24, `c7efc712` to the records commit.**
+
+**The mentions half of the gate.** The sweep of `python-core-mentions` over
+the tracked tree:
+
+| When | Files reported |
+|---|---:|
+| end of plateau 3 (the row's own count, from the handoff) | 79 |
+| start of plateau 4, measured | 63 |
+| after the code, tests, and templates (`c7efc712`) | 27, all documentation |
+| after the documentation (`b239ee5d`) | **0** |
+
+Then the row went live (`98e95f54`). **Seeded regressions on the real tree,
+staged:**
+
+| Seed | Result |
+|---|---|
+| `python3 -m memory backup --silent` appended to `plugins/mirror-mind/hooks/session-start.sh` | exit 1, named: `session-start.sh:38`, the `python3 -m memory` pattern |
+| an inline `uv run python -m memory seed` appended to `docs/getting-started.md` | exit 1, named with its line |
+| `from memory.cli import main` in a new `ts/src/util/` file | exit 1, named with its line |
+| each seed removed | clean, ten rows |
+
+**The pre-push set.**
+
+| Check | Result |
+|---|---|
+| Suite under the interpreter shadow | **2645 passed, 0 skipped, 0 spawn attempts** |
+| `tsc`, Biome | clean (the one warning and one info are pre-existing) |
+| Retired surfaces (ten enforced rows), docs links, skill parity, plugin build `--check` | clean; in sync |
+| Custody proofs (`ts/smoke/`) | `MIGRATION PARITY: PASS`, `BOOTSTRAP CUSTODY PARITY: PASS` |
+| Demo database, migrate-on-open, conversation, builder, and extension-catalog smokes | pass — the exact command list the development guide now publishes, each run once from the repository root |
+| `smoke_codex.sh`, `smoke_gemini_cli.sh`, `smoke_mirror_mcp.sh`, `smoke_claude_plugin.sh`, `smoke_external_review_copy.sh` | pass |
+
+**The replay** (`tmp/ts5/capture-plateau4.tsv`, digest `00e015aa…`):
+**29/29 identical** to the plateau-3 close — the same digest. Plateau 4 changed
+two product bytes on purpose, and neither is in a captured family: D13 is the
+`build plan-item` scaffold, graded instead by the hand-edited
+`builder-command` golden; the identity template is read only by `init`.
+
+**Goldens.** One hand edit, recorded in `ts/test/goldens/README.md`:
+`builder-command` loses the scaffold's `uv` line six times (D13).
 
 ### Navigator route
 

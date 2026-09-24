@@ -438,3 +438,84 @@ goldens README; one captured family moved, `build inspect-method`, by exactly
 that line. The row went live in two halves (`20fc4e73`): `python-core` for
 absence — retired paths, any tracked `.py`, any workflow installing an
 interpreter — and `python-core-mentions`, staged until plateau 4.
+
+## 6. Plateau 4 findings (2026-09-24)
+
+Found while rewriting the documentation, which is the one place a claim about
+the product sits beside no test. Four were fixed in the plateau; one needs a
+Navigator decision.
+
+### F15 — the documentation described configuration nothing reads
+
+`docs/reference/configuration.md` was written for the local web Configuration
+page, which US1 retired, and its "Active in code" lines named Python modules.
+Beyond the framing, it documented the twenty-three `MIRROR_TS_<FAMILY>` revert
+variables as live, and `REFERENCE.md` and `.env.example.advanced` listed three
+path variables — `EXPORT_DIR`, `TRANSCRIPT_EXPORT_DIR`, `DB_BACKUP_PATH` —
+that have **no reader** in the TypeScript core (`grep -w` over `ts/src`, 0
+hits each). It also said `MEMORY_RECEPTION` is off unless `1`; the front door
+treats it as on unless `0`, which is what `REFERENCE.md` already said.
+
+**Disposition: fixed** (`4cf69e4e`). The reference names the file that reads
+each value, and lists the inert ones in their own section, so a leftover line
+in a `.env` is recognizable rather than trusted. The cutoff names them too.
+`MIRROR_NODE`, added at plateau 1, was documented nowhere a user would look; it
+is now in the reference, `.env.example.advanced`, getting started, and a new
+troubleshooting entry.
+
+### F16 — the guard's own table carried twenty-nine dead exemptions
+
+Fourteen exemptions named Python files plateau 3 deleted, and fifteen named
+files that no longer mention what they were exempted for. An exemption
+pre-approves whatever lands at its path, so a stale one is a hole, not a note.
+
+**Disposition: fixed** (`c7efc712`), with two self-tests that keep it fixed:
+every exemption names a tracked file, and every exemption is still needed.
+The second one then removed two more when the extension guides were rewritten
+(`b239ee5d`).
+
+### F17 — two claims in the engineering principles had stopped being true
+
+"The TS core ships with zero runtime npm dependencies" — `yaml` has been one
+since `seed` was ported (CV22.DS7.US1), with a named justification in its
+commit. And "coverage is a ratchet": the `fail_under = 40` floor lived in
+`pyproject.toml`, and the TypeScript suite measures no coverage at all.
+
+**Disposition: fixed in the document** (`4cf69e4e`). Both now say what is
+true; the missing coverage measurement is named as a gap, not restored — that
+would be new scope.
+
+### F18 — D-002 lives on in the port
+
+The debt ledger's D-002 (journey search returns `[]` on an embedding failure)
+names a Python class. The TypeScript `detectJourney`
+(`ts/src/mirror/defaultResolution.ts`) was ported with the same shape: a
+`catch { return []; }` around the query embedding. The debt is still true, in a
+different file. **Disposition:** the ledger entry and the engineering
+principles now name the TypeScript function; the debt stays carried.
+
+### F19 — `runtime status` still counts migrations the way the oracle did
+
+`inspectCoreMigrations` (`ts/src/runtime/status.ts`) keeps an
+`ORACLE_ERA_ONLY` set holding `017_journey_parent_column`, so that a missing
+database renders `unknown/16` and a database no TypeScript command has opened
+yet renders `current (16/16)` — exactly as the Python oracle did. Its own
+comment says the set "goes at plateau 3 with that oracle, and the honest
+denominator afterwards is simply every migration this core knows". Plateau 3
+did not remove it.
+
+It is the CR095 shape — a parity choice whose only justification was the
+oracle — and it changes user-visible bytes: `runtime status` on a missing
+database says `unknown/17`, and on a database without 017 it says `attention
+needed` and names the missing migration, which `runtime migrate` then applies.
+Twenty-seven recorded cases in `runtime-status.golden.json` grade this number.
+
+**Stop: a Navigator decision.** (a) *Recommended:* finish it inside TS5
+before validation — delete the set, hand-edit the golden with the reason in
+the goldens README, and replay the `runtime-status` capture family; (b)
+capture it as a CR beside CR095, for the post-TS5 parity clean-up.
+
+A sibling in the custody proof (`ts/smoke/migration_structural_parity.ts`)
+carries the same "goes at plateau 3" note, and there the note was wrong rather
+than the code: the frozen end-states predate 017, so the list is a fixture
+fact that stays until they are re-recorded. The comment now says so.

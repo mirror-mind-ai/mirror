@@ -12,6 +12,47 @@ Scaling rule: keep this as a single file through the 1.0 readiness cycle. After
 
 ## Done
 
+### 2026-09-24 — CV22.DS10.TS5, plateaus 0–4: Mirror Mind holds no Python
+
+The strangler ends here, in the repository. Every command already answered from
+TypeScript; TS5 made that true all the way down, in the order the
+callers required rather than the order the files suggested. Plateau 0 froze
+the oracle and took a 29-family capture on a copy of the real database.
+Plateau 1 made TypeScript answer for itself everywhere Python used to be
+required — the version, the checkout guard, sole migration custody (D-025),
+and every runtime hook, rewritten in Node and diffed row by row against the
+Python ones. Plateau 2 deleted the fallback and made an interpreter shadow a
+required CI step: the whole suite runs with `python`, `python3`, and `uv`
+replaced by stubs that log, and one logged spawn fails the build. Plateau 3
+deleted about 112,000 lines — the core, its suite, the oracle harness, the
+scripts, the spike, `pyproject.toml` — behind the recovery tag
+`cv22-last-python-bearing`, and the capture replayed identically except for
+the one line a decision changed on purpose.
+
+Plateau 4 was the documentation, and it was bigger than a search and replace.
+Seventy-nine files still told someone to run the interpreter, and rewriting
+them turned up claims that had quietly stopped being true: a configuration
+reference written for a retired web page, twenty-three revert variables
+documented as live, three path variables nothing reads, a "zero runtime
+dependencies" principle that `yaml` had falsified since July, a coverage ratchet
+with no ratchet behind it, and twenty-nine exemptions in the guard's own table
+for files that no longer existed or no longer mentioned anything. The docs now
+name the program `mirror`, as the front door does, with one bridge until the
+npm package installs it; the extension guides teach the two runtime protocols
+instead of the Python API they replaced; and `python-core-mentions` is
+enforced in CI, so the next mention fails with its file and line.
+
+Two lessons were paid for along the way. At plateau 3, a comparison can only
+see what both sides are given: the hook row-diff called Gemini identical
+because no case carried the real `AfterAgent` field, and assistant turns went
+unlogged for a day until an end-to-end smoke caught it. At plateau 4, a
+promise in a comment is not a task: two modules said their oracle-era code
+"goes at plateau 3", and one of them still ships the oracle's count in
+`runtime status` (F19, waiting on the Navigator). The claim for the shipped
+artifact — the Windows installer and the Frame still call Python — is US3's.
+What remains of TS5 is the Navigator's four-runtime walk and then the
+panel's handoff review.
+
 ### 2026-09-23 — CV22.DS10.TS4: the front door learns to say *removed*
 
 DS10's fifth story, and the last of the retirements. Five Python surfaces are

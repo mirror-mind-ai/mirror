@@ -370,6 +370,90 @@ npm publication and the dist-tag move to the same ordered step list.
 
 ---
 
-<!-- CV22.DS10.TS5 (Python deletion) and US3 (npm distribution) add their
-     cutoffs here. TS4's remaining surfaces land with their own deletion
-     plateaus. -->
+## The Python core
+
+**Story:** [CV22.DS10.TS5](../project/roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-ts5-python-core-deletion/index.md) ·
+**Decisions:** [The Python core is gone](../project/decisions.md#the-python-core-is-gone-and-the-answers-nobody-can-grade-any-more-are-the-front-doors-own) ·
+[deleted forward, with one recovery point](../project/decisions.md#the-python-core-is-deleted-forward-with-one-recovery-point-cv22-last-python-bearing)
+
+**Removed.** The Python core and every way to reach it: the `memory` package
+(`src/memory/`), `python -m memory …` and `uv run python -m memory …`, `uv sync`,
+`pyproject.toml`, and `uv.lock`. With it went:
+
+- **the Python API** — `from memory import MemoryClient` and everything under it;
+- **the Python extension API** — `extension.py`, `register(api)`,
+  `ExtensionAPI`, and the `api_for_test` helper (the host that called
+  `register` was already gone since the [compatibility-host cutoff](#the-extension-compatibility-host-and-registerapi-as-a-core-served-contract));
+- **the migration's revert variables** — the twenty-three `MIRROR_TS_<FAMILY>`
+  gates that sent a command back to Python, `MIRROR_TS_MCP` among them;
+- **three path variables** only the Python core read: `EXPORT_DIR`,
+  `TRANSCRIPT_EXPORT_DIR`, and `DB_BACKUP_PATH`.
+
+Mirror Mind is one TypeScript package run by Node.js 24 or newer.
+
+**Why.** CV22 ported every command to TypeScript one at a time, each proven
+against the Python engine before it answered users, and by the end nothing
+reached Python any more. Keeping it would have meant shipping, installing, and
+maintaining a second engine that answered nothing. The last tree that contains
+it is the [`cv22-last-python-bearing`](https://github.com/mirror-mind-ai/mirror/tree/cv22-last-python-bearing)
+tag.
+
+**What to do instead.**
+
+- **Run commands through the front door.** Every command, its arguments, and
+  its output are what they were; only the program in front changed. The
+  program names itself `mirror`; until the npm package installs it, `mirror`
+  is this invocation, from the repository
+  ([Running a command](../../REFERENCE.md#running-a-command)):
+
+  ```bash
+  NODE_OPTIONS=--no-warnings node --env-file=.env ts/src/frontDoor/cli.ts <command>
+  ```
+
+- **Clean your `.env`.** Remove any `MIRROR_TS_<FAMILY>=0` line and the three
+  path variables above: they are inert, and `mirror runtime diagnose` names the
+  revert variables if they are still set. The `MIRROR_TS_*_REPLAY` fixture
+  paths and `MIRROR_TS_MCP_GUARDS` are unaffected.
+- **Check your identity file.** A home created by `init` before this release
+  may still say `uv run python -m memory identity edit user identity` in
+  `identity/user/identity.yaml`, and in the `user` identity row it seeded. The
+  command is now `mirror identity edit user identity`, or `/mm-identity` in a
+  runtime. Mirror does not rewrite your identity on your behalf.
+- **If you had code that imported the Python core**, there is no programmatic
+  API to move it to: use the command line or the MCP server. Anything that
+  depends on Python internals — Mirror Desktop among them — stays on the last
+  Python-bearing release.
+- **If you author extensions**, declare a runtime per capability, as the
+  [compatibility-host cutoff](#the-extension-compatibility-host-and-registerapi-as-a-core-served-contract)
+  already asked; a manifest's `requires: extension_api` is no longer read.
+
+**What still works if you do nothing.** Every command, every runtime, every
+mode, and every existing `memory.db`: the TypeScript engine applies any pending
+migration the first time it opens a database, backup first. The runtime hooks
+have run on Node since this story's first plateau. Three answers changed on
+purpose:
+
+- a mistyped command or subcommand gets the front door's own usage error —
+  exit 1 for a command, exit 2 for a subcommand, the family's name where the
+  Python parser printed `__main__.py`;
+- `runtime migrate` answers `applied`, `nothing pending`, or `declined`, and
+  `declined` now exits non-zero where it used to report success;
+- usage lines and hints name `mirror` instead of the Python program.
+
+**If a runtime stops logging after the update.** The hooks need `node`, and a
+runtime launched from the desktop may not have it on its `PATH`. Nothing
+breaks — the hook is skipped and one line is written to
+`<mirror home>/hooks.log` — but conversations stop being recorded. Set
+`MIRROR_NODE` to the path of `node`
+([troubleshooting](../process/troubleshooting.md#hooks-skip-when-a-runtime-cannot-find-node)).
+
+**Mirror Desktop, the Windows installer, and the Frame.** Desktop pins to the
+last Python-bearing release, as the [journey projections cutoff](#journey-projections-and-mirrorjourney-projections10)
+says. The Windows installer and the Frame still install and call the Python
+engine in this tree; CV22.DS10.US3 re-homes them onto the npm package and adds
+its own cutoff here.
+
+---
+
+<!-- CV22.DS10.US3 (npm distribution) adds its cutoff here, including what the
+     Windows installer and the Frame become. -->

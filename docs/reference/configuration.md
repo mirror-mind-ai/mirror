@@ -153,7 +153,7 @@ an error message.
 
 **Active in code:** yes. `ts/src/providers/config.ts` resolves the mode; `ts/src/observability/ledgerHooks.ts` writes the rows.
 
-**Effects:** in `metadata` mode Mirror records role, model, token counts, latency, estimated cost, and conversation id to the local `llm_calls` table with empty prompt/response — no conversation content is retained. `full` adds the bodies, which can retain sensitive prompt content locally and increase storage. Estimated cost comes from a static price table (`ts/src/providers/cost.ts`) and is labeled accordingly. Inspect with `mirror inspect llm-calls`.
+**Effects:** in `metadata` mode Mirror records role, model, token counts, latency, estimated cost, and conversation id to the local `llm_calls` table with empty prompt/response â no conversation content is retained. `full` adds the bodies, which can retain sensitive prompt content locally and increase storage. Estimated cost comes from a static price table (`ts/src/providers/cost.ts`) and is labeled accordingly. Inspect with `mirror inspect llm-calls`.
 
 ## MEMORY_RECEPTION
 
@@ -183,13 +183,13 @@ an error message.
 
 **What it is:** the maximum number of pending conversations one session-start maintenance run extracts.
 
-**Used by:** session maintenance, on every session start. Eligible conversations (ended, journey-bound, ≥4 messages, not quarantined) are processed oldest-ended first; any remainder stays pending and carries over to the next session start rather than being dropped.
+**Used by:** session maintenance, on every session start. Eligible conversations (ended, journey-bound, â¥4 messages, not quarantined) are processed oldest-ended first; any remainder stays pending and carries over to the next session start rather than being dropped.
 
 **How to change it:** set `MEMORY_MAINTENANCE_MAX_EXTRACTIONS` to a positive integer. Absence defaults to `10`.
 
 **Active in code:** yes. `ts/src/providers/config.ts`, used by `ts/src/conversation/extractionDriver.ts`.
 
-**Effects:** bounds the worst-case spend and latency of a single session start — each processed conversation costs at least 2 LLM calls plus up to ~9 embedding calls. Without a cap, a backlog (a gap in usage, a dead API key, a quarantine-adjacent failure period) turns the next session start into a long, invisible, unbounded spend burst. The session-maintenance report names the carried-over count when it is greater than zero, so a chronic backlog stays visible instead of silently lagging.
+**Effects:** bounds the worst-case spend and latency of a single session start â each processed conversation costs at least 2 LLM calls plus up to ~9 embedding calls. Without a cap, a backlog (a gap in usage, a dead API key, a quarantine-adjacent failure period) turns the next session start into a long, invisible, unbounded spend burst. The session-maintenance report names the carried-over count when it is greater than zero, so a chronic backlog stays visible instead of silently lagging.
 
 ## Environment
 
@@ -255,7 +255,7 @@ The core reaches OpenRouter through its own `fetch`-based transport
 
 Every call is bounded at construction so a hung provider connection cannot
 stall a session hook. Retries cover connection failures, 408, 409, 429, and
-5xx — never another 4xx, which would spend money to receive the same answer. A
+5xx â never another 4xx, which would spend money to receive the same answer. A
 `retry-after` header is honored but capped at 60 seconds. A non-numeric
 override fails loudly rather than silently reverting to the default.
 
@@ -279,7 +279,7 @@ and the smokes use them; so can you, to reproduce a run without spending.
 | `soul harvest save` | `MIRROR_TS_SOUL_EMBEDDING_REPLAY` |
 
 **Where a family declares two fixtures, both are required together.** Setting
-only one is refused by name rather than treated as live or as unconfigured —
+only one is refused by name rather than treated as live or as unconfigured â
 half a replay must never quietly become a live call that spends real money
 while you believe you are replaying. One exception is deliberate:
 `MIRROR_TS_CREDITS_REPLAY` alone is a complete replay setup for `consult
@@ -289,7 +289,7 @@ classifier from `mirror load --query`, after which the embedding fixture alone
 is complete.
 
 With no fixture set, every family runs live. Without `OPENROUTER_API_KEY`,
-`memories --search` degrades to lexical-only search and says so — no call is
+`memories --search` degrades to lexical-only search and says so â no call is
 attempted and no `llm_calls` row is written. For `build load`, the front-door
 log records only `leaf=load calls=N` and a degraded category when present,
 never the journey briefing used as the embedding query.
@@ -300,7 +300,7 @@ The Claude plugin manifest launches `${CLAUDE_PLUGIN_ROOT}/mcp/launch.sh`,
 not an engine. The launcher `exec`s the TypeScript server, so the entry point
 can change without editing a plugin installed inside a runtime.
 
-The server needs `node` (≥ 24) on the `PATH` the MCP client spawns it with,
+The server needs `node` (â¥ 24) on the `PATH` the MCP client spawns it with,
 and a configured database (`.env` in the repository, or
 `DB_PATH`/`MIRROR_HOME`/`MIRROR_USER` in the client's environment). A missing
 `node` or an unconfigured home each fail loudly on stderr, which is where the
@@ -319,16 +319,16 @@ read-only at the driver level.
 | `MIRROR_MCP_EMBED_RATE_WINDOW_MINUTES` | `10` | The sliding window. |
 | `MIRROR_MCP_DAILY_USD_CEILING` | unset | Trailing-24h ceiling on attributed MCP spend. Unset means no ceiling. |
 
-Set these where the launcher will find them — the repository `.env`, which
-`launch.sh` passes to node — or in the environment the MCP client is started
+Set these where the launcher will find them â the repository `.env`, which
+`launch.sh` passes to node â or in the environment the MCP client is started
 with. **A malformed value fails the launch** with the variable named on stderr,
 rather than silently serving unguarded; the client shows the server as failed
 and its MCP log carries the reason.
 
 **Why a rate and not a budget by default.** An embedding costs about
 $0.000002, so a ceiling that actually bites would have to be set at cents. What
-a runaway agent loop really does is exhaust the provider's rate limit — whose
-429s then land on your *other* work — stall the agent about two seconds per
+a runaway agent loop really does is exhaust the provider's rate limit â whose
+429s then land on your *other* work â stall the agent about two seconds per
 call, and fill its context with search results. The rate guard is the control;
 the USD ceiling is there for when you have decided what this surface may cost
 you per day.
@@ -338,7 +338,7 @@ protocol error, and the server stays up:
 
 ```text
 Error: search_memories is rate-limited (30 query searches in 10 minutes).
-Filtered calls — journey, layer, or type, with no query — are not metered and
+Filtered calls â journey, layer, or type, with no query â are not metered and
 still work. Ask the user to raise MIRROR_MCP_EMBED_RATE_LIMIT if you need more.
 Do not send another query to this tool until the user replies.
 ```
@@ -347,16 +347,16 @@ The wording is deliberate and was corrected after watching a real agent read it.
 Saying only "use a filter instead" got read as *a way around the limit*, so the
 text now states the property plainly: filtered calls are not metered, because
 they cross no provider. And "do not retry this tool" got read as *this call will
-not succeed* — the agent moved to its next topic and was refused again — so the
+not succeed* â the agent moved to its next topic and was refused again â so the
 stop is scoped to another query and gated on you.
 
 **Where to see refusals.** The server writes one metadata-only line per refusal
-to stderr — `guard refused tool=search_memories reason=rate_limit`, never the
+to stderr â `guard refused tool=search_memories reason=rate_limit`, never the
 query. Claude Code does not surface a connected server's stderr, so there the
 refusal appears in the MCP log as the tool failure itself:
 
 ```text
-Tool 'search_memories' failed after 0s: Error: search_memories is rate-limited …
+Tool 'search_memories' failed after 0s: Error: search_memories is rate-limited â¦
 ```
 
 Both carry the same fact; which one you see depends on the client.
@@ -381,24 +381,24 @@ papered over in code. Both matter only if your machine needs them:
 - **Custom CA certificates.** Node uses its bundled CA store. Point it at a
   private CA with `NODE_EXTRA_CA_CERTS=/path/to/ca.pem`.
 - **HTTP proxies.** Node's `fetch` ignores `HTTPS_PROXY` unless you set
-  `NODE_USE_ENV_PROXY=1` (Node ≥ 24). Behind a proxy without that flag, a
+  `NODE_USE_ENV_PROXY=1` (Node â¥ 24). Behind a proxy without that flag, a
   search degrades to lexical-only and the degraded note will say "offline or no
   API key", which is misleading. The front-door log records the real cause as a
-  category — for example `embedding_degraded kind=provider_error` — which is
+  category â for example `embedding_degraded kind=provider_error` â which is
   how to tell the two apart.
 
 ### Observability
 
 Live provider calls write one `llm_calls` row per round-trip, priced from the
 static model price table (an embedding call has no generation id to fetch a
-real cost for). Under `MEMORY_LOG_LLM_CALLS=metadata` — the default — the
+real cost for). Under `MEMORY_LOG_LLM_CALLS=metadata` â the default â the
 `prompt` and `response` columns are empty strings: your query text is never
 persisted.
 
 ### Conversation close tail (CV22.DS8.US2)
 
-The close tail — title, tags, summary, memory and task extraction, and their
-embeddings — runs when a session ends, including from the Pi `session-end`
+The close tail â title, tags, summary, memory and task extraction, and their
+embeddings â runs when a session ends, including from the Pi `session-end`
 hook. It reads the same per-call bounds as every other live surface, and its
 replay fixtures are in the table above.
 
@@ -409,9 +409,9 @@ text is never persisted by the ledger.
 
 ### The long tail (CV22.DS8.US3)
 
-The remaining provider-crossing leaves — `consult`, `mirror load --query`,
+The remaining provider-crossing leaves â `consult`, `mirror load --query`,
 `journal`, `week plan`, `descriptor generate`, `soul harvest save`, and
-`consolidate apply` — answer against the live provider with no configuration.
+`consolidate apply` â answer against the live provider with no configuration.
 
 #### What `descriptor generate` costs
 
@@ -424,7 +424,7 @@ need one entity.
 
 `consolidate scan`, `shadow scan`, and reception report "nothing found" for a
 provider outage, for model output that could not be parsed, and for an honest
-empty result alike — the behavior the Python engine had, kept on purpose. The
+empty result alike â the behavior the Python engine had, kept on purpose. The
 front-door log carries the distinction as a category:
 
 ```text
@@ -448,12 +448,13 @@ Python one, each ported family kept one variable that sent it back to Python:
 `MIRROR_TS_CONVERSATION_APPEND`, `MIRROR_TS_CONVERSATION_LLM_TAIL`,
 `MIRROR_TS_CONVERSATION_LOGGER`, `MIRROR_TS_CONVERSATIONS_LIFECYCLE`,
 `MIRROR_TS_CULTIVATION`, `MIRROR_TS_DESCRIPTOR`, `MIRROR_TS_EXPLORE`,
-`MIRROR_TS_EXTENSIONS`, `MIRROR_TS_EXTERNAL_ROUTES`, `MIRROR_TS_IDENTITY_EDIT`,
+`MIRROR_TS_EXTENSIONS`, `MIRROR_TS_IDENTITY_EDIT`,
 `MIRROR_TS_JOURNAL`, `MIRROR_TS_MCP`, `MIRROR_TS_MIRROR_QUERY`,
 `MIRROR_TS_REPAIR_ENCODING`, `MIRROR_TS_RUNTIME_READS`,
 `MIRROR_TS_RUNTIME_UPDATE`, `MIRROR_TS_SEARCH`, `MIRROR_TS_SOUL`,
-`MIRROR_TS_WEEK`, and `MIRROR_TS_WELCOME`. CV22.DS10.TS5 deleted the engine
-they reverted to, and the gates with it. `runtime diagnose` names any still
+`MIRROR_TS_WEEK`, and `MIRROR_TS_WELCOME` — plus `MIRROR_TS_EXTERNAL_ROUTES`, the
+opt-in DS8 retired. CV22.DS10.TS5 deleted the engine they reverted to, and
+the gates with it. `runtime diagnose` names any still
 set, as an `info` finding, so a revert nobody can perform is never mistaken
 for one that is armed. The `*_REPLAY` variables above are **not** among them.
 

@@ -3,8 +3,10 @@
 # CV22.DS10.TS5 — Python core deletion
 
 **Status:** 🟢 In Progress — pulled 2026-09-23; Plan panel-reviewed and
-approved; plateaus 0–3 of 5 done — **the repository holds no Python**, and the
-guard enforces it. Next: plateau 4, the docs and records
+approved; plateaus 0–4 of 5 landed — **the repository holds no Python, and
+nothing tracked tells anyone to run it**; both halves of the guard are
+enforced. Next: the Navigator's decision on F19, Navigator validation, and the
+panel's handoff review
 
 ---
 
@@ -225,6 +227,17 @@ Taken at plateau 3, on findings the Plan did not anticipate
   `ts/package.json`; Frame and installer root detection stays with US3.
 - **D12** — the program is `mirror` in every usage line and hint; the
   `python-core` row goes live for absence now, for mentions at plateau 4.
+
+Taken at plateau 4 by the Driver, under the handoff's per-mention delegation,
+and open to reversal at the handoff review
+([plan.md](plan.md#taken-at-plateau-4-driver-2026-09-24)):
+
+- **D13** — the Plan scaffold stops telling the Driver to run Python through
+  `uv`; the line is removed, not replaced.
+- **D14** — the documentation names the program `mirror`, with one bridge
+  (the front-door invocation and a shell alias) that US3 deletes; skills and
+  hooks keep the explicit invocation.
+- **D15** — `docs/product/api.md`, the Python API, is deleted.
 
 ## Acceptance Behavior
 
@@ -497,31 +510,80 @@ shadow with 0 spawn attempts and 0 skipped**; the per-family capture replays
 **28/29 identical** against the plateau's start, the one difference D12's
 named line. CI green on both platforms at the handoff.
 
+### Plateau 4 — Recorded — ✅ landed, 2026-09-24
+
+Slice H, plus what plateaus 2 and 3 added to it. Six commits, `c7efc712` to
+the records.
+
+**What is now true.**
+
+- **Nothing tracked tells anyone to run Python.** The `python-core-mentions`
+  row is **enforced** in CI: 79 mentions at the end of plateau 3, 0 now —
+  each rewritten, or exempted with its reason (the Windows installer and Frame
+  that US3 re-homes, two checks that must name what they forbid, a Done user
+  story's record, frozen goldens whose `pytest` strings are fixture input).
+  Seeded on real files and staged, a hook invoking the interpreter, a doc
+  teaching it, and a source file importing the core were each refused with
+  file and line. Nothing is staged any more.
+- **The documentation describes the product in the tree.** `REFERENCE.md`,
+  getting started, the README, the docs index, architecture (the TypeScript
+  module model), engineering principles, the development guide (the real
+  pre-push set, each command run green), configuration (with the file that
+  reads each value, and the inert ones listed), the runtime-interface spec
+  (rewritten around the Node hook entries), troubleshooting, and the extension
+  guides and template (around `mirror-cli-v1` and `mirror-context-v1`, with
+  the retired Python API recorded rather than taught). The docs name the
+  program `mirror` with one bridge until US3 (D14); `docs/product/api.md` is
+  deleted (D15).
+- **The product stopped saying `uv`.** The Plan scaffold's Mirror-local `uv`
+  line is gone (D13, one golden hand-edited and recorded), and the user
+  identity template names `mirror identity edit`.
+- **Tests that grade a render for interpreter residue use the guard's own
+  pattern list** (`INTERPRETER_INVOCATIONS`, one helper), not the one spelling
+  each author remembered.
+- **The guard's table is honest about itself.** Twenty-nine dead exemptions
+  pruned (F16), with self-tests that every exemption names a tracked file and
+  is still needed.
+- **The records.** The `python-core` cutoff is in `pending-cutoffs.md`; the
+  DS10 Zero Python gate is marked satisfied for the repository, with the US3
+  residue named; one `decisions.md` entry records D1–D3 and D10–D15; D-023,
+  D-024, and D-025 were already closed in the ledger (checked, not assumed);
+  D-002 names the TypeScript function it now lives in (F18); the worklog and
+  the journey path are updated.
+
+**Evidence.** [test-guide.md — plateau 4](test-guide.md#plateau-4--recorded).
+The suite runs **2645/2645 under the interpreter shadow with 0 spawn
+attempts**; `tsc`, Biome, the three guards, the plugin drift check, both
+custody proofs, and the five end-to-end smokes pass.
+
+**What is intentionally undone.**
+
+- **F19 waits for the Navigator** ([inventory](inventory.md#f19--runtime-status-still-counts-migrations-the-way-the-oracle-did)):
+  `runtime status` still counts migrations the way the oracle did, a
+  plateau-3 removal its own comment announced and nobody performed.
+- `frame/` and `installer/` still call Python and find their root by the
+  deleted `pyproject.toml` — US3's, by D4 and D11, named in the known risks
+  and exempted by name in the guard.
+- **CR092** (the shim template resolves `python3` from `PATH`): its subject
+  was deleted by D7. **CR093** (every documented invocation names a Python
+  entry point): this repository's half is done — `REFERENCE.md`'s 56
+  occurrences are 0 — and the extension repositories' half is US3's, as the CR
+  says. Both statuses are the Navigator's to change.
+
 ## Where To Resume
 
-**Plateau 3 is done; nothing is in flight.** Plateau 4 — slice H, the docs and
-records — in the Plan's list, plus what plateaus 2 and 3 added to it:
+**Plateau 4 has landed; nothing is in flight.** What remains before Done, in
+order:
 
-1. **The documentation.** `REFERENCE.md`, `docs/getting-started.md`, the
-   development guide (setup, test commands, the pre-push set; the evals
-   section still places `ts/evals/` "beside `ts/parity/`"), engineering
-   principles (its Python citations point at the recovery tag until
-   rewritten), architecture, the runtime-interface spec (hooks around the
-   Node entries), the extension guides, API reference sections 2–3, and the
-   template's `docs/` (`python -m memory ext …` → `mirror ext …`), `AGENTS.md`
-   and `CLAUDE.md` (`uv run` → `node`/`npm test`; `Version: pyproject.toml`).
-2. **Then take `python-core-mentions` live** — it lists what is left (79 at
-   the start of plateau 3, fewer now). Decide per remaining mention: rewrite,
-   or exempt with a reason. Known ones that are not documentation: the Ariad
-   plan scaffold's "Use uv run for Python commands and tests" (CR019),
-   `scripts/smoke_runtime_update.sh`'s negative check, the negative
-   `doesNotMatch(/uv run python/)` assertions in `ts/test`, and
-   `scripts/ci-nonascii-profile-smoke.ps1` (installer, US3).
-3. **The records.** The `python-core` cutoff in `pending-cutoffs.md`; the DS10
-   gate table marked; D-023, D-024, D-025 closed in the ledger; one
-   `decisions.md` entry for D1/D2/D3 and D10–D12; the worklog; the journey
-   path.
-4. **CR092** (the shim template resolves `python3` from `PATH`): its subject was
-   deleted by D7. Its status is the Navigator's to change.
-5. The panel's handoff review, then Navigator validation (the route in the
-   test guide).
+1. **F19** — the Navigator's call: finish `runtime status`'s migration count
+   inside TS5 (recommended), or capture it as a CR beside CR095.
+2. **Navigator validation** — the four-runtime walk in
+   [test-guide.md — Navigator Validation](test-guide.md#navigator-validation),
+   on a real database copy with the interpreter shadowed.
+3. **The panel's handoff review** (D9: engineer, quality-assurance,
+   database-architect, devops-engineer, security-engineer), over plateaus 0–4
+   and the validation evidence — after validation, as the collaboration
+   strategy orders the two checkpoints.
+4. Then Debt Review and Done, with the closure preflight: the DS10 candidate
+   row, the gate table, the ledger rows, and the journey path each opened and
+   read.
