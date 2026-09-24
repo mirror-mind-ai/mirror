@@ -2894,3 +2894,27 @@ daily without being published.
 **Revisit trigger.** A DS10 scope change that separates npm distribution from
 Python deletion, or a user-facing need that arrives before the migration
 finishes.
+
+### The Python core is deleted forward, with one recovery point: `cv22-last-python-bearing`
+
+**Date:** 2026-09-24 · **Context:** CV22.DS10.TS5 closed plateau 2 — the
+fallback is gone and Python is present but unreachable — and plateau 3 deletes
+it. **Reference:** [CV22.DS10.TS5 — Rollback](roadmap/cv22-typescript-core-port/cv22-ds10-python-retirement-npm-distribution/cv22-ds10-ts5-python-core-deletion/plan.md#rollback)
+
+**The decision: recovery from the deletion is a checkout of one annotated,
+pushed tag, not a revert of the story.**
+
+| Tag | Commit | Tag object | What it is |
+|---|---|---|---|
+| `cv22-last-python-bearing` | `b0d34254` | `3b667f69` | **The recovery point.** The last commit that contains the Python core, taken after plateaus 1 and 2 made it unreachable. `git checkout cv22-last-python-bearing` restores it |
+| `cv22-ts5-baseline` | `2adf2951` | `4e83c69e` | Provenance, not recovery: the tree the per-family capture was taken against at plateau 0 |
+
+The recovery tag sits at the END of plateau 2 rather than the start of the
+story on purpose. A tag at the baseline would make recovery discard the two
+plateaus that made TypeScript self-sufficient and the fallback unnecessary, to
+escape a problem that could only arise in the deletion itself.
+
+Neither name can match the release doctor's `vX.Y.Z` pattern, and pushing a
+tag authorizes nothing: CV22 still [releases once](#cv22-releases-once-when-the-migration-is-complete).
+Historical documents that linked to a deleted Python file point at this tag,
+so the record keeps a path to the code it describes.

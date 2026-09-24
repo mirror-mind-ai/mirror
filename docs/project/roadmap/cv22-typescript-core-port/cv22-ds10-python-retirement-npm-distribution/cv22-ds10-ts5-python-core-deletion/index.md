@@ -444,10 +444,12 @@ check joined the pre-commit set when it caught a link to a deleted script.
 
 **Plateau 2 is done; nothing is in flight.** Before plateau 3's first deletion:
 
-1. push, and tag **`cv22-last-python-bearing`** at the last plateau-2 commit
-   (annotated, pushed) — the recovery point the Plan names; record its commit
-   SHA here and in `decisions.md`;
-2. confirm CI green on both platforms, the now-required shadow step included.
+1. ✅ push, and tag **`cv22-last-python-bearing`** at the last plateau-2 commit
+   (annotated, pushed) — the recovery point the Plan names. **Commit
+   `b0d34254`, tag object `3b667f69`**, recorded in
+   [decisions.md](../../../../decisions.md#the-python-core-is-deleted-forward-with-one-recovery-point-cv22-last-python-bearing);
+2. ✅ confirm CI green on both platforms, the now-required shadow step
+   included — run `35997553500`, all five jobs green.
 
 Then plateau 3, in the Plan's order (F, one commit per row; then G):
 
