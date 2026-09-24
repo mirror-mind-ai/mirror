@@ -16,10 +16,6 @@
 //   * Home's refinement block prints six count rows in the legacy state and two
 //     path rows under a canonical index — a different row COUNT, not just
 //     different text.
-//
-// `seed source` sits outside that if/else on purpose: Python appends it whenever
-// a source exists, so a canonical-index surface would also show it if one were
-// somehow set. Reproduced.
 
 import { cardPrefixed, cardText, cardWrapped } from "./card.ts";
 import type {
@@ -106,9 +102,6 @@ export function availableRefinementMoves(
     moves.push("inspect canonical Refinement index");
     return moves;
   }
-  if (refinement.seedChangeRequests) {
-    moves.push("review seed Change Requests");
-  }
   moves.push(`create ${CANONICAL_REFINEMENT_INDEX}`);
   return moves;
 }
@@ -185,12 +178,7 @@ export function renderBuilderHomeSurface(options: {
     lines.push(
       cardText(`authority: ${refinement.storageState}`),
       ...cardWrapped(`create: ${CANONICAL_REFINEMENT_INDEX}`),
-      cardText(`seed CRs: ${refinement.seedChangeRequests}`),
     );
-  }
-  // Outside the if/else in Python too.
-  if (refinement.seedChangeRequestSource) {
-    lines.push(...cardWrapped(`seed source: ${refinement.seedChangeRequestSource}`));
   }
   lines.push(
     ...cardWrapped(`next refinement move: ${refinement.nextMove}`),

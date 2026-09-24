@@ -41,8 +41,6 @@ interface SnapshotDump {
   active_refinement_story: string | null;
   active_change_request: string | null;
   storage_state: string;
-  seed_change_requests: number;
-  seed_change_request_source: string | null;
   next_move: string;
   canonical_index: string | null;
 }
@@ -80,8 +78,6 @@ function toRefinement(dump: SnapshotDump): RefinementFieldSnapshot {
     activeRefinementStory: dump.active_refinement_story,
     activeChangeRequest: dump.active_change_request,
     storageState: dump.storage_state,
-    seedChangeRequests: dump.seed_change_requests,
-    seedChangeRequestSource: dump.seed_change_request_source,
     nextMove: dump.next_move,
     canonicalIndex: dump.canonical_index,
   };
@@ -92,8 +88,6 @@ function fromRefinement(snapshot: RefinementFieldSnapshot): SnapshotDump {
     active_refinement_story: snapshot.activeRefinementStory,
     active_change_request: snapshot.activeChangeRequest,
     storage_state: snapshot.storageState,
-    seed_change_requests: snapshot.seedChangeRequests,
-    seed_change_request_source: snapshot.seedChangeRequestSource,
     next_move: snapshot.nextMove,
     canonical_index: snapshot.canonicalIndex,
   };
@@ -204,8 +198,9 @@ test("without a canonical index the resume field names the file to create", () =
 
 test("BUILDER HOME renders byte-identically across refinement x candidate states", () => {
   // 29 before CV22.DS10.TS4: the refinement matrix went from seven states to
-  // three, since four of them described Workbench rows no read can produce.
-  assert.ok(oracle.home.length >= 13);
+  // three, since four of them described Workbench rows no read can produce;
+  // CV22.DS10.TS5 (D-024) removed the seeded state, leaving two.
+  assert.ok(oracle.home.length >= 9);
   for (const row of oracle.home) {
     const report = oracle.candidate_reports[row.candidates];
     assert.ok(report, `unknown candidate report ${row.candidates}`);
@@ -220,8 +215,8 @@ test("BUILDER HOME renders byte-identically across refinement x candidate states
 });
 
 test("BUILDER ORIENTATION renders byte-identically across the same matrix", () => {
-  // 28 before CV22.DS10.TS4, for the same reason as home above.
-  assert.ok(oracle.orientation.length >= 12);
+  // 28 before CV22.DS10.TS4, for the same reasons as home above.
+  assert.ok(oracle.orientation.length >= 8);
   for (const row of oracle.orientation) {
     const report = oracle.candidate_reports[row.candidates];
     assert.ok(report, `unknown candidate report ${row.candidates}`);
@@ -239,8 +234,6 @@ test("a canonical index returns early, so no create move is offered", () => {
     active_refinement_story: null,
     active_change_request: null,
     storage_state: "project files",
-    seed_change_requests: 4,
-    seed_change_request_source: "docs/seed.md",
     next_move: "inspect canonical Refinement index",
     canonical_index: "docs/project/refinement/index.md",
   });
@@ -250,38 +243,26 @@ test("a canonical index returns early, so no create move is offered", () => {
     "inspect roadmap",
     "inspect canonical Refinement index",
   ]);
-  // Specifically: the seed count is set, but the function returns before the
-  // seed and create moves are considered.
-  assert.ok(!moves.includes("review seed Change Requests"));
   assert.ok(!moves.some((move) => move.startsWith("create ")));
 });
 
 test("without a canonical index the last move is always to create it", () => {
-  // CV22.DS10.TS4: the three storage branches (active RS, implemented, not
-  // implemented yet) collapsed with the Workbench that produced them. One
-  // move remains, and the seed count only adds a review move before it.
-  const withoutIndex = (seedCount: number) =>
-    availableRefinementMoves(
-      toRefinement({
-        active_refinement_story: null,
-        active_change_request: null,
-        storage_state: "project files (not started)",
-        seed_change_requests: seedCount,
-        seed_change_request_source: seedCount ? "docs/seed.md" : null,
-        next_move: "create docs/project/refinement/index.md",
-        canonical_index: null,
-      }),
-      null,
-    );
-  assert.deepEqual(withoutIndex(0), [
+  // CV22.DS10.TS4 collapsed the three storage branches with the Workbench that
+  // produced them; CV22.DS10.TS5 (D-024) removed the seed count that could add
+  // a review move. One shape is left.
+  const moves = availableRefinementMoves(
+    toRefinement({
+      active_refinement_story: null,
+      active_change_request: null,
+      storage_state: "project files (not started)",
+      next_move: "create docs/project/refinement/index.md",
+      canonical_index: null,
+    }),
+    null,
+  );
+  assert.deepEqual(moves, [
     "pull recommended Delivery item",
     "inspect roadmap",
-    "create docs/project/refinement/index.md",
-  ]);
-  assert.deepEqual(withoutIndex(3), [
-    "pull recommended Delivery item",
-    "inspect roadmap",
-    "review seed Change Requests",
     "create docs/project/refinement/index.md",
   ]);
 });
@@ -303,12 +284,16 @@ test("the canonical index must be a file, not a directory", () => {
   assert.equal(findCanonicalRefinementIndex(join(FIXTURES, "index_is_a_directory")), null);
 });
 
-test("the seed-CR scan counts only level-three CR headings", () => {
-  const row = oracle.refinement_field.find((r) => r.project === "seeded");
-  assert.ok(row);
-  // Three of the four `CR:` headings in the fixture qualify: a `####` heading is
-  // excluded because `^###\s+` requires whitespace after exactly three hashes,
-  // while `### CR:third with no space` still matches.
-  assert.equal(row.expected.seed_change_requests, 3);
-  assert.equal(inspectRefinementField(join(FIXTURES, "seeded")).seedChangeRequests, 3);
+test("a CV20.DS6 seed plan in the project changes nothing any more (D-024)", () => {
+  // The seed-CR scan read a hard-coded path into Mirror Mind's own roadmap
+  // inside whatever project a journey named. With it removed, a project that
+  // carries that plan is indistinguishable from one that does not.
+  const bare = fromRefinement(inspectRefinementField(join(FIXTURES, "bare")));
+  for (const project of ["seeded", "unseeded"]) {
+    assert.deepEqual(
+      fromRefinement(inspectRefinementField(join(FIXTURES, project))),
+      bare,
+      project,
+    );
+  }
 });

@@ -16,8 +16,9 @@ symmetric, so porting the reader a plateau ahead of the writer would break the
 pair that has to be proven together.
 
 What IS ported here from the composition side is its filesystem half:
-`find_canonical_refinement_index` and the seed-CR scan, neither of which touches
-the database.
+`find_canonical_refinement_index`, which does not touch the database. (The
+seed-CR scan beside it was removed from both engines by CV22.DS10.TS5, debt
+D-024.)
 
 The matrix below exists because these surfaces are almost entirely branches, and
 the branches are what a port silently collapses:
@@ -98,8 +99,6 @@ def _refinement(**changes: Any) -> RefinementFieldSnapshot:
         "active_refinement_story": None,
         "active_change_request": None,
         "storage_state": "project files (not started)",
-        "seed_change_requests": 0,
-        "seed_change_request_source": None,
         "next_move": "create docs/project/refinement/index.md",
         "canonical_index": None,
     }
@@ -179,14 +178,15 @@ def _resume_state(**changes: Any) -> BuilderResumeState:
 REFINEMENT_PROJECTS: dict[str, dict[str, str]] = {
     # The canonical file-first authority exists.
     "canonical": {"docs/project/refinement/index.md": "# Refinement\n"},
-    # No canonical index, but the CV20.DS6 plan carries seed CR headings.
+    # No canonical index, but the CV20.DS6 plan the seed-CR scan used to count
+    # is present. Since D-024 it must change nothing: same snapshot as "bare".
     "seeded": {
         "docs/project/roadmap/cv20-builder-mode-evolution/cv20-ds6-refinement-workbench-flow/plan.md": (
             "# Plan\n\n### CR: first seed\n\nbody\n\n### CR: second seed\n\n"
             "#### CR: not a level three heading\n\n### CR:third with no space\n"
         )
     },
-    # The plan exists but declares no seed CRs.
+    # The same plan with no seed headings: also indistinguishable from "bare".
     "unseeded": {
         "docs/project/roadmap/cv20-builder-mode-evolution/cv20-ds6-refinement-workbench-flow/plan.md": (
             "# Plan\n\nNo seed headings here.\n"
@@ -216,8 +216,6 @@ def _snapshot_dump(snapshot: RefinementFieldSnapshot) -> dict[str, Any]:
         "active_refinement_story": snapshot.active_refinement_story,
         "active_change_request": snapshot.active_change_request,
         "storage_state": snapshot.storage_state,
-        "seed_change_requests": snapshot.seed_change_requests,
-        "seed_change_request_source": snapshot.seed_change_request_source,
         "next_move": snapshot.next_move,
         "canonical_index": snapshot.canonical_index,
     }
@@ -342,13 +340,6 @@ def build_payload() -> dict[str, Any]:
     refinement_states = {
         "canonical": _refinement(canonical_index="docs/project/refinement/index.md"),
         "not_started": _refinement(),
-        "seeded": _refinement(
-            seed_change_requests=3,
-            seed_change_request_source=(
-                "docs/project/roadmap/cv20-builder-mode-evolution/"
-                "cv20-ds6-refinement-workbench-flow/plan.md"
-            ),
-        ),
     }
 
     candidate_reports = {

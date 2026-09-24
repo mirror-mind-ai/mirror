@@ -102,8 +102,6 @@
         "active_refinement_story": null,
         "canonical_index": "docs/project/refinement/index.md",
         "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": null,
-        "seed_change_requests": 0,
         "storage_state": "project files (not started)"
       }
     },
@@ -118,8 +116,6 @@
         "active_refinement_story": null,
         "canonical_index": "docs/project/refinement/index.md",
         "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": null,
-        "seed_change_requests": 0,
         "storage_state": "project files (not started)"
       }
     },
@@ -134,8 +130,6 @@
         "active_refinement_story": null,
         "canonical_index": "docs/project/refinement/index.md",
         "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": null,
-        "seed_change_requests": 0,
         "storage_state": "project files (not started)"
       }
     },
@@ -150,14 +144,12 @@
         "active_refinement_story": null,
         "canonical_index": "docs/project/refinement/index.md",
         "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": null,
-        "seed_change_requests": 0,
         "storage_state": "project files (not started)"
       }
     },
     {
       "candidates": "recommended",
-      "expected": "<<<ARIAD:BUILDER_HOME>>>\nBuilder Home\n\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER HOME                                 │\n│                                                        │\n│ journey                                                │\n│ mirror-ts-core                                         │\n│                                                        │\n│ method                                                 │\n│ ariad                                                  │\n│                                                        │\n│ 🟪 Delivery field                                       │\n│ recommended pull: CV22.DS7.US8 — Builder/Ariad tree    │\n│ [user_story]                                           │\n│                                                        │\n│ 🧰 Refinement field                                     │\n│ authority: project files (not started)                 │\n│ create: docs/project/refinement/index.md               │\n│ seed CRs: 0                                            │\n│ next refinement move: create                           │\n│ docs/project/refinement/index.md                       │\n│                                                        │\n│ available moves                                        │\n│ - pull CV22.DS7.US8                                    │\n│ - inspect roadmap                                      │\n│ - create docs/project/refinement/index.md              │\n│                                                        │\n│ boundary                                               │\n│ Builder Home orients only; no item was pulled and no   │\n│ lifecycle work was executed.                           │\n╰────────────────────────────────────────────────────────╯\n<<<END:BUILDER_HOME>>>\n",
+      "expected": "<<<ARIAD:BUILDER_HOME>>>\nBuilder Home\n\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER HOME                                 │\n│                                                        │\n│ journey                                                │\n│ mirror-ts-core                                         │\n│                                                        │\n│ method                                                 │\n│ ariad                                                  │\n│                                                        │\n│ 🟪 Delivery field                                       │\n│ recommended pull: CV22.DS7.US8 — Builder/Ariad tree    │\n│ [user_story]                                           │\n│                                                        │\n│ 🧰 Refinement field                                     │\n│ authority: project files (not started)                 │\n│ create: docs/project/refinement/index.md               │\n│ next refinement move: create                           │\n│ docs/project/refinement/index.md                       │\n│                                                        │\n│ available moves                                        │\n│ - pull CV22.DS7.US8                                    │\n│ - inspect roadmap                                      │\n│ - create docs/project/refinement/index.md              │\n│                                                        │\n│ boundary                                               │\n│ Builder Home orients only; no item was pulled and no   │\n│ lifecycle work was executed.                           │\n╰────────────────────────────────────────────────────────╯\n<<<END:BUILDER_HOME>>>\n",
       "journey": "mirror-ts-core",
       "method": "ariad",
       "name": "home__not_started__recommended",
@@ -166,14 +158,12 @@
         "active_refinement_story": null,
         "canonical_index": null,
         "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": null,
-        "seed_change_requests": 0,
         "storage_state": "project files (not started)"
       }
     },
     {
       "candidates": "none",
-      "expected": "<<<ARIAD:BUILDER_HOME>>>\nBuilder Home\n\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER HOME                                 │\n│                                                        │\n│ journey                                                │\n│ mirror-ts-core                                         │\n│                                                        │\n│ method                                                 │\n│ ariad                                                  │\n│                                                        │\n│ 🟪 Delivery field                                       │\n│ recommended pull: none                                 │\n│                                                        │\n│ 🧰 Refinement field                                     │\n│ authority: project files (not started)                 │\n│ create: docs/project/refinement/index.md               │\n│ seed CRs: 0                                            │\n│ next refinement move: create                           │\n│ docs/project/refinement/index.md                       │\n│                                                        │\n│ available moves                                        │\n│ - pull recommended Delivery item                       │\n│ - inspect roadmap                                      │\n│ - create docs/project/refinement/index.md              │\n│                                                        │\n│ boundary                                               │\n│ Builder Home orients only; no item was pulled and no   │\n│ lifecycle work was executed.                           │\n╰────────────────────────────────────────────────────────╯\n<<<END:BUILDER_HOME>>>\n",
+      "expected": "<<<ARIAD:BUILDER_HOME>>>\nBuilder Home\n\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER HOME                                 │\n│                                                        │\n│ journey                                                │\n│ mirror-ts-core                                         │\n│                                                        │\n│ method                                                 │\n│ ariad                                                  │\n│                                                        │\n│ 🟪 Delivery field                                       │\n│ recommended pull: none                                 │\n│                                                        │\n│ 🧰 Refinement field                                     │\n│ authority: project files (not started)                 │\n│ create: docs/project/refinement/index.md               │\n│ next refinement move: create                           │\n│ docs/project/refinement/index.md                       │\n│                                                        │\n│ available moves                                        │\n│ - pull recommended Delivery item                       │\n│ - inspect roadmap                                      │\n│ - create docs/project/refinement/index.md              │\n│                                                        │\n│ boundary                                               │\n│ Builder Home orients only; no item was pulled and no   │\n│ lifecycle work was executed.                           │\n╰────────────────────────────────────────────────────────╯\n<<<END:BUILDER_HOME>>>\n",
       "journey": "mirror-ts-core",
       "method": "ariad",
       "name": "home__not_started__none",
@@ -182,14 +172,12 @@
         "active_refinement_story": null,
         "canonical_index": null,
         "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": null,
-        "seed_change_requests": 0,
         "storage_state": "project files (not started)"
       }
     },
     {
       "candidates": "other_cv",
-      "expected": "<<<ARIAD:BUILDER_HOME>>>\nBuilder Home\n\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER HOME                                 │\n│                                                        │\n│ journey                                                │\n│ mirror-ts-core                                         │\n│                                                        │\n│ method                                                 │\n│ ariad                                                  │\n│                                                        │\n│ 🟪 Delivery field                                       │\n│ recommended pull: CV99.DS1 — Belongs to a CV absent    │\n│ from the snapshot [delivery_story]                     │\n│                                                        │\n│ 🧰 Refinement field                                     │\n│ authority: project files (not started)                 │\n│ create: docs/project/refinement/index.md               │\n│ seed CRs: 0                                            │\n│ next refinement move: create                           │\n│ docs/project/refinement/index.md                       │\n│                                                        │\n│ available moves                                        │\n│ - pull CV99.DS1                                        │\n│ - inspect roadmap                                      │\n│ - create docs/project/refinement/index.md              │\n│                                                        │\n│ boundary                                               │\n│ Builder Home orients only; no item was pulled and no   │\n│ lifecycle work was executed.                           │\n╰────────────────────────────────────────────────────────╯\n<<<END:BUILDER_HOME>>>\n",
+      "expected": "<<<ARIAD:BUILDER_HOME>>>\nBuilder Home\n\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER HOME                                 │\n│                                                        │\n│ journey                                                │\n│ mirror-ts-core                                         │\n│                                                        │\n│ method                                                 │\n│ ariad                                                  │\n│                                                        │\n│ 🟪 Delivery field                                       │\n│ recommended pull: CV99.DS1 — Belongs to a CV absent    │\n│ from the snapshot [delivery_story]                     │\n│                                                        │\n│ 🧰 Refinement field                                     │\n│ authority: project files (not started)                 │\n│ create: docs/project/refinement/index.md               │\n│ next refinement move: create                           │\n│ docs/project/refinement/index.md                       │\n│                                                        │\n│ available moves                                        │\n│ - pull CV99.DS1                                        │\n│ - inspect roadmap                                      │\n│ - create docs/project/refinement/index.md              │\n│                                                        │\n│ boundary                                               │\n│ Builder Home orients only; no item was pulled and no   │\n│ lifecycle work was executed.                           │\n╰────────────────────────────────────────────────────────╯\n<<<END:BUILDER_HOME>>>\n",
       "journey": "mirror-ts-core",
       "method": "ariad",
       "name": "home__not_started__other_cv",
@@ -198,14 +186,12 @@
         "active_refinement_story": null,
         "canonical_index": null,
         "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": null,
-        "seed_change_requests": 0,
         "storage_state": "project files (not started)"
       }
     },
     {
       "candidates": "long_title",
-      "expected": "<<<ARIAD:BUILDER_HOME>>>\nBuilder Home\n\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER HOME                                 │\n│                                                        │\n│ journey                                                │\n│ mirror-ts-core                                         │\n│                                                        │\n│ method                                                 │\n│ ariad                                                  │\n│                                                        │\n│ 🟪 Delivery field                                       │\n│ recommended pull: CV22.DS7.US9 — a delivery story      │\n│ whose title runs well past the fifty-four column card  │\n│ budget and keeps going [user_story]                    │\n│                                                        │\n│ 🧰 Refinement field                                     │\n│ authority: project files (not started)                 │\n│ create: docs/project/refinement/index.md               │\n│ seed CRs: 0                                            │\n│ next refinement move: create                           │\n│ docs/project/refinement/index.md                       │\n│                                                        │\n│ available moves                                        │\n│ - pull CV22.DS7.US9                                    │\n│ - inspect roadmap                                      │\n│ - create docs/project/refinement/index.md              │\n│                                                        │\n│ boundary                                               │\n│ Builder Home orients only; no item was pulled and no   │\n│ lifecycle work was executed.                           │\n╰────────────────────────────────────────────────────────╯\n<<<END:BUILDER_HOME>>>\n",
+      "expected": "<<<ARIAD:BUILDER_HOME>>>\nBuilder Home\n\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER HOME                                 │\n│                                                        │\n│ journey                                                │\n│ mirror-ts-core                                         │\n│                                                        │\n│ method                                                 │\n│ ariad                                                  │\n│                                                        │\n│ 🟪 Delivery field                                       │\n│ recommended pull: CV22.DS7.US9 — a delivery story      │\n│ whose title runs well past the fifty-four column card  │\n│ budget and keeps going [user_story]                    │\n│                                                        │\n│ 🧰 Refinement field                                     │\n│ authority: project files (not started)                 │\n│ create: docs/project/refinement/index.md               │\n│ next refinement move: create                           │\n│ docs/project/refinement/index.md                       │\n│                                                        │\n│ available moves                                        │\n│ - pull CV22.DS7.US9                                    │\n│ - inspect roadmap                                      │\n│ - create docs/project/refinement/index.md              │\n│                                                        │\n│ boundary                                               │\n│ Builder Home orients only; no item was pulled and no   │\n│ lifecycle work was executed.                           │\n╰────────────────────────────────────────────────────────╯\n<<<END:BUILDER_HOME>>>\n",
       "journey": "mirror-ts-core",
       "method": "ariad",
       "name": "home__not_started__long_title",
@@ -214,78 +200,12 @@
         "active_refinement_story": null,
         "canonical_index": null,
         "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": null,
-        "seed_change_requests": 0,
         "storage_state": "project files (not started)"
       }
     },
     {
       "candidates": "recommended",
-      "expected": "<<<ARIAD:BUILDER_HOME>>>\nBuilder Home\n\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER HOME                                 │\n│                                                        │\n│ journey                                                │\n│ mirror-ts-core                                         │\n│                                                        │\n│ method                                                 │\n│ ariad                                                  │\n│                                                        │\n│ 🟪 Delivery field                                       │\n│ recommended pull: CV22.DS7.US8 — Builder/Ariad tree    │\n│ [user_story]                                           │\n│                                                        │\n│ 🧰 Refinement field                                     │\n│ authority: project files (not started)                 │\n│ create: docs/project/refinement/index.md               │\n│ seed CRs: 3                                            │\n│ seed source:                                           │\n│ docs/project/roadmap/cv20-builder-mode-evolution/cv20- │\n│ ds6-refinement-workbench-flow/plan.md                  │\n│ next refinement move: create                           │\n│ docs/project/refinement/index.md                       │\n│                                                        │\n│ available moves                                        │\n│ - pull CV22.DS7.US8                                    │\n│ - inspect roadmap                                      │\n│ - review seed Change Requests                          │\n│ - create docs/project/refinement/index.md              │\n│                                                        │\n│ boundary                                               │\n│ Builder Home orients only; no item was pulled and no   │\n│ lifecycle work was executed.                           │\n╰────────────────────────────────────────────────────────╯\n<<<END:BUILDER_HOME>>>\n",
-      "journey": "mirror-ts-core",
-      "method": "ariad",
-      "name": "home__seeded__recommended",
-      "refinement": {
-        "active_change_request": null,
-        "active_refinement_story": null,
-        "canonical_index": null,
-        "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": "docs/project/roadmap/cv20-builder-mode-evolution/cv20-ds6-refinement-workbench-flow/plan.md",
-        "seed_change_requests": 3,
-        "storage_state": "project files (not started)"
-      }
-    },
-    {
-      "candidates": "none",
-      "expected": "<<<ARIAD:BUILDER_HOME>>>\nBuilder Home\n\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER HOME                                 │\n│                                                        │\n│ journey                                                │\n│ mirror-ts-core                                         │\n│                                                        │\n│ method                                                 │\n│ ariad                                                  │\n│                                                        │\n│ 🟪 Delivery field                                       │\n│ recommended pull: none                                 │\n│                                                        │\n│ 🧰 Refinement field                                     │\n│ authority: project files (not started)                 │\n│ create: docs/project/refinement/index.md               │\n│ seed CRs: 3                                            │\n│ seed source:                                           │\n│ docs/project/roadmap/cv20-builder-mode-evolution/cv20- │\n│ ds6-refinement-workbench-flow/plan.md                  │\n│ next refinement move: create                           │\n│ docs/project/refinement/index.md                       │\n│                                                        │\n│ available moves                                        │\n│ - pull recommended Delivery item                       │\n│ - inspect roadmap                                      │\n│ - review seed Change Requests                          │\n│ - create docs/project/refinement/index.md              │\n│                                                        │\n│ boundary                                               │\n│ Builder Home orients only; no item was pulled and no   │\n│ lifecycle work was executed.                           │\n╰────────────────────────────────────────────────────────╯\n<<<END:BUILDER_HOME>>>\n",
-      "journey": "mirror-ts-core",
-      "method": "ariad",
-      "name": "home__seeded__none",
-      "refinement": {
-        "active_change_request": null,
-        "active_refinement_story": null,
-        "canonical_index": null,
-        "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": "docs/project/roadmap/cv20-builder-mode-evolution/cv20-ds6-refinement-workbench-flow/plan.md",
-        "seed_change_requests": 3,
-        "storage_state": "project files (not started)"
-      }
-    },
-    {
-      "candidates": "other_cv",
-      "expected": "<<<ARIAD:BUILDER_HOME>>>\nBuilder Home\n\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER HOME                                 │\n│                                                        │\n│ journey                                                │\n│ mirror-ts-core                                         │\n│                                                        │\n│ method                                                 │\n│ ariad                                                  │\n│                                                        │\n│ 🟪 Delivery field                                       │\n│ recommended pull: CV99.DS1 — Belongs to a CV absent    │\n│ from the snapshot [delivery_story]                     │\n│                                                        │\n│ 🧰 Refinement field                                     │\n│ authority: project files (not started)                 │\n│ create: docs/project/refinement/index.md               │\n│ seed CRs: 3                                            │\n│ seed source:                                           │\n│ docs/project/roadmap/cv20-builder-mode-evolution/cv20- │\n│ ds6-refinement-workbench-flow/plan.md                  │\n│ next refinement move: create                           │\n│ docs/project/refinement/index.md                       │\n│                                                        │\n│ available moves                                        │\n│ - pull CV99.DS1                                        │\n│ - inspect roadmap                                      │\n│ - review seed Change Requests                          │\n│ - create docs/project/refinement/index.md              │\n│                                                        │\n│ boundary                                               │\n│ Builder Home orients only; no item was pulled and no   │\n│ lifecycle work was executed.                           │\n╰────────────────────────────────────────────────────────╯\n<<<END:BUILDER_HOME>>>\n",
-      "journey": "mirror-ts-core",
-      "method": "ariad",
-      "name": "home__seeded__other_cv",
-      "refinement": {
-        "active_change_request": null,
-        "active_refinement_story": null,
-        "canonical_index": null,
-        "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": "docs/project/roadmap/cv20-builder-mode-evolution/cv20-ds6-refinement-workbench-flow/plan.md",
-        "seed_change_requests": 3,
-        "storage_state": "project files (not started)"
-      }
-    },
-    {
-      "candidates": "long_title",
-      "expected": "<<<ARIAD:BUILDER_HOME>>>\nBuilder Home\n\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER HOME                                 │\n│                                                        │\n│ journey                                                │\n│ mirror-ts-core                                         │\n│                                                        │\n│ method                                                 │\n│ ariad                                                  │\n│                                                        │\n│ 🟪 Delivery field                                       │\n│ recommended pull: CV22.DS7.US9 — a delivery story      │\n│ whose title runs well past the fifty-four column card  │\n│ budget and keeps going [user_story]                    │\n│                                                        │\n│ 🧰 Refinement field                                     │\n│ authority: project files (not started)                 │\n│ create: docs/project/refinement/index.md               │\n│ seed CRs: 3                                            │\n│ seed source:                                           │\n│ docs/project/roadmap/cv20-builder-mode-evolution/cv20- │\n│ ds6-refinement-workbench-flow/plan.md                  │\n│ next refinement move: create                           │\n│ docs/project/refinement/index.md                       │\n│                                                        │\n│ available moves                                        │\n│ - pull CV22.DS7.US9                                    │\n│ - inspect roadmap                                      │\n│ - review seed Change Requests                          │\n│ - create docs/project/refinement/index.md              │\n│                                                        │\n│ boundary                                               │\n│ Builder Home orients only; no item was pulled and no   │\n│ lifecycle work was executed.                           │\n╰────────────────────────────────────────────────────────╯\n<<<END:BUILDER_HOME>>>\n",
-      "journey": "mirror-ts-core",
-      "method": "ariad",
-      "name": "home__seeded__long_title",
-      "refinement": {
-        "active_change_request": null,
-        "active_refinement_story": null,
-        "canonical_index": null,
-        "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": "docs/project/roadmap/cv20-builder-mode-evolution/cv20-ds6-refinement-workbench-flow/plan.md",
-        "seed_change_requests": 3,
-        "storage_state": "project files (not started)"
-      }
-    },
-    {
-      "candidates": "recommended",
-      "expected": "<<<ARIAD:BUILDER_HOME>>>\nBuilder Home\n\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER HOME                                 │\n│                                                        │\n│ journey                                                │\n│ jornada de ação 🟦 com acentuação e emoji 🧰             │\n│                                                        │\n│ method                                                 │\n│ ariad                                                  │\n│                                                        │\n│ 🟪 Delivery field                                       │\n│ recommended pull: CV22.DS7.US8 — Builder/Ariad tree    │\n│ [user_story]                                           │\n│                                                        │\n│ 🧰 Refinement field                                     │\n│ authority: project files (not started)                 │\n│ create: docs/project/refinement/index.md               │\n│ seed CRs: 0                                            │\n│ next refinement move: create                           │\n│ docs/project/refinement/index.md                       │\n│                                                        │\n│ available moves                                        │\n│ - pull CV22.DS7.US8                                    │\n│ - inspect roadmap                                      │\n│ - create docs/project/refinement/index.md              │\n│                                                        │\n│ boundary                                               │\n│ Builder Home orients only; no item was pulled and no   │\n│ lifecycle work was executed.                           │\n╰────────────────────────────────────────────────────────╯\n<<<END:BUILDER_HOME>>>\n",
+      "expected": "<<<ARIAD:BUILDER_HOME>>>\nBuilder Home\n\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER HOME                                 │\n│                                                        │\n│ journey                                                │\n│ jornada de ação 🟦 com acentuação e emoji 🧰             │\n│                                                        │\n│ method                                                 │\n│ ariad                                                  │\n│                                                        │\n│ 🟪 Delivery field                                       │\n│ recommended pull: CV22.DS7.US8 — Builder/Ariad tree    │\n│ [user_story]                                           │\n│                                                        │\n│ 🧰 Refinement field                                     │\n│ authority: project files (not started)                 │\n│ create: docs/project/refinement/index.md               │\n│ next refinement move: create                           │\n│ docs/project/refinement/index.md                       │\n│                                                        │\n│ available moves                                        │\n│ - pull CV22.DS7.US8                                    │\n│ - inspect roadmap                                      │\n│ - create docs/project/refinement/index.md              │\n│                                                        │\n│ boundary                                               │\n│ Builder Home orients only; no item was pulled and no   │\n│ lifecycle work was executed.                           │\n╰────────────────────────────────────────────────────────╯\n<<<END:BUILDER_HOME>>>\n",
       "journey": "jornada de ação 🟦 com acentuação e emoji 🧰",
       "method": "ariad",
       "name": "home__unicode_journey",
@@ -294,8 +214,6 @@
         "active_refinement_story": null,
         "canonical_index": null,
         "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": null,
-        "seed_change_requests": 0,
         "storage_state": "project files (not started)"
       }
     }
@@ -310,8 +228,6 @@
         "active_refinement_story": null,
         "canonical_index": "docs/project/refinement/index.md",
         "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": null,
-        "seed_change_requests": 0,
         "storage_state": "project files (not started)"
       }
     },
@@ -324,8 +240,6 @@
         "active_refinement_story": null,
         "canonical_index": "docs/project/refinement/index.md",
         "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": null,
-        "seed_change_requests": 0,
         "storage_state": "project files (not started)"
       }
     },
@@ -338,8 +252,6 @@
         "active_refinement_story": null,
         "canonical_index": "docs/project/refinement/index.md",
         "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": null,
-        "seed_change_requests": 0,
         "storage_state": "project files (not started)"
       }
     },
@@ -352,8 +264,6 @@
         "active_refinement_story": null,
         "canonical_index": "docs/project/refinement/index.md",
         "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": null,
-        "seed_change_requests": 0,
         "storage_state": "project files (not started)"
       }
     },
@@ -366,8 +276,6 @@
         "active_refinement_story": null,
         "canonical_index": null,
         "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": null,
-        "seed_change_requests": 0,
         "storage_state": "project files (not started)"
       }
     },
@@ -380,8 +288,6 @@
         "active_refinement_story": null,
         "canonical_index": null,
         "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": null,
-        "seed_change_requests": 0,
         "storage_state": "project files (not started)"
       }
     },
@@ -394,8 +300,6 @@
         "active_refinement_story": null,
         "canonical_index": null,
         "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": null,
-        "seed_change_requests": 0,
         "storage_state": "project files (not started)"
       }
     },
@@ -408,64 +312,6 @@
         "active_refinement_story": null,
         "canonical_index": null,
         "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": null,
-        "seed_change_requests": 0,
-        "storage_state": "project files (not started)"
-      }
-    },
-    {
-      "candidates": "recommended",
-      "expected": "<<<ARIAD:BUILDER_ORIENTATION>>>\nBuilder Orientation\n\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER ORIENTATION                          │\n│                                                        │\n│ Where are we in the roadmap?                           │\n│ 🟪[CV22] TypeScript Core Port                           │\n│ └─ 🟦[US8] Ariad tree                                   │\n│                                                        │\n│ What can be pulled next?                               │\n│ ▸ CV22.DS7.US8 Ariad tree                              │\n│ · CV22.DS7.US9 a delivery story whose title runs well  │\n│ past the fifty-four column card budget and keeps going │\n│                                                        │\n│ What is open for refinement?                           │\n│ authority: project files (not started)                 │\n│ create: docs/project/refinement/index.md               │\n│                                                        │\n│ What can we do now?                                    │\n│ - pull CV22.DS7.US8                                    │\n│ - inspect roadmap                                      │\n│ - review seed Change Requests                          │\n│ - create docs/project/refinement/index.md              │\n│                                                        │\n│ Choose a move when ready.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:BUILDER_ORIENTATION>>>\n",
-      "name": "orientation__seeded__recommended",
-      "refinement": {
-        "active_change_request": null,
-        "active_refinement_story": null,
-        "canonical_index": null,
-        "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": "docs/project/roadmap/cv20-builder-mode-evolution/cv20-ds6-refinement-workbench-flow/plan.md",
-        "seed_change_requests": 3,
-        "storage_state": "project files (not started)"
-      }
-    },
-    {
-      "candidates": "none",
-      "expected": "<<<ARIAD:BUILDER_ORIENTATION>>>\nBuilder Orientation\n\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER ORIENTATION                          │\n│                                                        │\n│ Where are we in the roadmap?                           │\n│ no recommended Delivery item                           │\n│                                                        │\n│ What can be pulled next?                               │\n│ none                                                   │\n│                                                        │\n│ What is open for refinement?                           │\n│ authority: project files (not started)                 │\n│ create: docs/project/refinement/index.md               │\n│                                                        │\n│ What can we do now?                                    │\n│ - pull recommended Delivery item                       │\n│ - inspect roadmap                                      │\n│ - review seed Change Requests                          │\n│ - create docs/project/refinement/index.md              │\n│                                                        │\n│ Choose a move when ready.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:BUILDER_ORIENTATION>>>\n",
-      "name": "orientation__seeded__none",
-      "refinement": {
-        "active_change_request": null,
-        "active_refinement_story": null,
-        "canonical_index": null,
-        "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": "docs/project/roadmap/cv20-builder-mode-evolution/cv20-ds6-refinement-workbench-flow/plan.md",
-        "seed_change_requests": 3,
-        "storage_state": "project files (not started)"
-      }
-    },
-    {
-      "candidates": "other_cv",
-      "expected": "<<<ARIAD:BUILDER_ORIENTATION>>>\nBuilder Orientation\n\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER ORIENTATION                          │\n│                                                        │\n│ Where are we in the roadmap?                           │\n│ 🟪[CV99] roadmap focus                                  │\n│ └─ 🟦[DS1] Belongs to a CV absent from the snapshot     │\n│                                                        │\n│ What can be pulled next?                               │\n│ ▸ CV99.DS1 Belongs to a CV absent from the snapshot    │\n│                                                        │\n│ What is open for refinement?                           │\n│ authority: project files (not started)                 │\n│ create: docs/project/refinement/index.md               │\n│                                                        │\n│ What can we do now?                                    │\n│ - pull CV99.DS1                                        │\n│ - inspect roadmap                                      │\n│ - review seed Change Requests                          │\n│ - create docs/project/refinement/index.md              │\n│                                                        │\n│ Choose a move when ready.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:BUILDER_ORIENTATION>>>\n",
-      "name": "orientation__seeded__other_cv",
-      "refinement": {
-        "active_change_request": null,
-        "active_refinement_story": null,
-        "canonical_index": null,
-        "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": "docs/project/roadmap/cv20-builder-mode-evolution/cv20-ds6-refinement-workbench-flow/plan.md",
-        "seed_change_requests": 3,
-        "storage_state": "project files (not started)"
-      }
-    },
-    {
-      "candidates": "long_title",
-      "expected": "<<<ARIAD:BUILDER_ORIENTATION>>>\nBuilder Orientation\n\n╭────────────────────────────────────────────────────────╮\n│        ■  BUILDER ORIENTATION                          │\n│                                                        │\n│ Where are we in the roadmap?                           │\n│ 🟪[CV22] TypeScript Core Port                           │\n│ └─ 🟦[US9] a delivery story whose title runs well past  │\n│ the fifty-four column card budget and keeps going      │\n│                                                        │\n│ What can be pulled next?                               │\n│ ▸ CV22.DS7.US9 a delivery story whose title runs well  │\n│ past the fifty-four column card budget and keeps going │\n│                                                        │\n│ What is open for refinement?                           │\n│ authority: project files (not started)                 │\n│ create: docs/project/refinement/index.md               │\n│                                                        │\n│ What can we do now?                                    │\n│ - pull CV22.DS7.US9                                    │\n│ - inspect roadmap                                      │\n│ - review seed Change Requests                          │\n│ - create docs/project/refinement/index.md              │\n│                                                        │\n│ Choose a move when ready.                              │\n╰────────────────────────────────────────────────────────╯\n<<<END:BUILDER_ORIENTATION>>>\n",
-      "name": "orientation__seeded__long_title",
-      "refinement": {
-        "active_change_request": null,
-        "active_refinement_story": null,
-        "canonical_index": null,
-        "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": "docs/project/roadmap/cv20-builder-mode-evolution/cv20-ds6-refinement-workbench-flow/plan.md",
-        "seed_change_requests": 3,
         "storage_state": "project files (not started)"
       }
     }
@@ -478,8 +324,6 @@
         "active_refinement_story": null,
         "canonical_index": "docs/project/refinement/index.md",
         "next_move": "inspect canonical Refinement index",
-        "seed_change_request_source": null,
-        "seed_change_requests": 0,
         "storage_state": "project files"
       },
       "name": "field__canonical",
@@ -492,8 +336,6 @@
         "active_refinement_story": null,
         "canonical_index": null,
         "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": "docs/project/roadmap/cv20-builder-mode-evolution/cv20-ds6-refinement-workbench-flow/plan.md",
-        "seed_change_requests": 3,
         "storage_state": "project files (not started)"
       },
       "name": "field__seeded",
@@ -506,8 +348,6 @@
         "active_refinement_story": null,
         "canonical_index": null,
         "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": null,
-        "seed_change_requests": 0,
         "storage_state": "project files (not started)"
       },
       "name": "field__unseeded",
@@ -520,8 +360,6 @@
         "active_refinement_story": null,
         "canonical_index": null,
         "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": null,
-        "seed_change_requests": 0,
         "storage_state": "project files (not started)"
       },
       "name": "field__index_is_a_directory",
@@ -534,8 +372,6 @@
         "active_refinement_story": null,
         "canonical_index": null,
         "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": null,
-        "seed_change_requests": 0,
         "storage_state": "project files (not started)"
       },
       "name": "field__bare",
@@ -548,8 +384,6 @@
         "active_refinement_story": null,
         "canonical_index": null,
         "next_move": "create docs/project/refinement/index.md",
-        "seed_change_request_source": null,
-        "seed_change_requests": 0,
         "storage_state": "project files (not started)"
       },
       "name": "field__missing_entirely",

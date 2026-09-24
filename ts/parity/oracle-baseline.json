@@ -8,7 +8,7 @@
     "src/memory/builder/delivery_story_plan.py": "8bfc40fee2d2a7f76afd822931e98d58be574c09",
     "src/memory/builder/delivery_story_roadmap_closure.py": "45876779e8fe1accd8785debf44633a270c2c808",
     "src/memory/builder/flow_unit.py": "082fdbcd19d0e45a2d39f9e19316ddf6a0be3f50",
-    "src/memory/builder/home_surface.py": "41650163c20aeec10319712a367e1d409f0eb6cc",
+    "src/memory/builder/home_surface.py": "002a3d30f4d4d9c4e93f3e9252a927b813e66e24",
     "src/memory/builder/lifecycle.py": "3f39c440ed005f08fec6ac0f7177e4ae54d559e6",
     "src/memory/builder/lifecycle_ribbon.py": "881f91f9c49736dafac4709b9b89b0204440b054",
     "src/memory/builder/method_adoption.py": "70a9ec06a784afe2c1d9b65999abf64bc6f39f10",

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -22,8 +21,6 @@ class RefinementFieldSnapshot:
     active_refinement_story: str | None
     active_change_request: str | None
     storage_state: str
-    seed_change_requests: int
-    seed_change_request_source: str | None
     next_move: str
     canonical_index: str | None = None
 
@@ -56,30 +53,12 @@ def inspect_refinement_field(
             active_refinement_story=None,
             active_change_request=None,
             storage_state="project files",
-            seed_change_requests=0,
-            seed_change_request_source=None,
             next_move="inspect canonical Refinement index",
             canonical_index=canonical_index,
         )
-    if project_path is None:
-        return _refinement_snapshot(seed_count=0, seed_source=None)
-    root = project_path.expanduser().resolve()
-    ds6_plan = (
-        root
-        / "docs/project/roadmap/cv20-builder-mode-evolution/"
-        / "cv20-ds6-refinement-workbench-flow/plan.md"
-    )
-    seed_count = 0
-    seed_source: str | None = None
-    if ds6_plan.is_file():
-        try:
-            content = ds6_plan.read_text(encoding="utf-8")
-        except OSError:
-            content = ""
-        seed_count = len(re.findall(r"^###\s+CR:", content, flags=re.MULTILINE))
-        if seed_count:
-            seed_source = str(ds6_plan.resolve().relative_to(root))
-    return _refinement_snapshot(seed_count=seed_count, seed_source=seed_source)
+    # CV22.DS10.TS5 paid debt D-024: the seed-CR count read a hard-coded path
+    # into Mirror Mind's own roadmap inside whatever project the journey named.
+    return _refinement_snapshot()
 
 
 def render_builder_orientation_surface(
@@ -156,11 +135,8 @@ def render_builder_home_surface(
             [
                 _card_text(f"authority: {refinement.storage_state}"),
                 *_card_wrapped(f"create: {CANONICAL_REFINEMENT_INDEX.as_posix()}"),
-                _card_text(f"seed CRs: {refinement.seed_change_requests}"),
             ]
         )
-    if refinement.seed_change_request_source:
-        lines.extend(_card_wrapped(f"seed source: {refinement.seed_change_request_source}"))
     lines.extend(
         [
             *_card_wrapped(f"next refinement move: {refinement.next_move}"),
@@ -238,17 +214,11 @@ def _available_refinement_moves(
     if refinement.canonical_index:
         moves.append("inspect canonical Refinement index")
         return tuple(moves)
-    if refinement.seed_change_requests:
-        moves.append("review seed Change Requests")
     moves.append(f"create {CANONICAL_REFINEMENT_INDEX.as_posix()}")
     return tuple(moves)
 
 
-def _refinement_snapshot(
-    *,
-    seed_count: int,
-    seed_source: str | None,
-) -> RefinementFieldSnapshot:
+def _refinement_snapshot() -> RefinementFieldSnapshot:
     """The field for a project with no canonical Refinement index.
 
     CV22.DS10.TS4 retired the SQLite Workbench, so there is nothing else to
@@ -259,8 +229,6 @@ def _refinement_snapshot(
         active_refinement_story=None,
         active_change_request=None,
         storage_state="project files (not started)",
-        seed_change_requests=seed_count,
-        seed_change_request_source=seed_source,
         next_move=f"create {CANONICAL_REFINEMENT_INDEX.as_posix()}",
     )
 
