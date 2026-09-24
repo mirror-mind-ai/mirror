@@ -10,10 +10,9 @@
 
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
-import { fileURLToPath } from "node:url";
 import { openDatabaseCopyForWrite, type WritableDatabase } from "#db/database.ts";
 import golden from "#goldens/soul-prompt.golden.json" with { type: "json" };
 import { createIdentityTable } from "#helpers/identitySchema.ts";
@@ -49,8 +48,6 @@ const fixture = golden as {
 
 const sha256 = (text: string) => createHash("sha256").update(text, "utf8").digest("hex");
 
-const PYTHON_PROMPT_DIR = fileURLToPath(new URL("../../../src/memory/prompts/", import.meta.url));
-
 function freshDb(name: string, identity: string | null): WritableDatabase {
   const dir = mkdtempSync(`/tmp/soul-prompt-${name}-`);
   const db = openDatabaseCopyForWrite(join(dir, "copy.db"));
@@ -65,25 +62,12 @@ function freshDb(name: string, identity: string | null): WritableDatabase {
 
 // 1. The vendored copies cannot drift.
 //
-// This test reads the Python tree, which is legitimate here and nowhere in
-// `ts/src`: it is a drift guard, not runtime behavior. When DS10 deletes
-// `src/memory/`, this assertion retires with it and the vendored files become
-// the sole source of truth -- deliberately, and only then.
-for (const [name, filename] of [
-  ["self", "soul_self_voice.md"],
-  ["wisdom", "soul_wisdom_voice.md"],
-  ["beauty", "soul_beauty_voice.md"],
-] as const) {
-  test(`the vendored ${name} template is byte-identical to the Python original`, () => {
-    const vendored = readFileSync(
-      fileURLToPath(new URL(`../../src/soul/prompts/${filename}`, import.meta.url)),
-      "utf8",
-    );
-    const original = readFileSync(join(PYTHON_PROMPT_DIR, filename), "utf8");
-    assert.equal(vendored, original, `${filename} drifted from src/memory/prompts/`);
-  });
-}
-
+// Until CV22.DS10.TS5 a second guard read `src/memory/prompts/` and compared
+// the vendored files byte for byte. The Python tree is deleted, and -- as that
+// guard's own comment promised -- the vendored files are now the sole source of
+// truth. What still pins them is the hash the oracle recorded for each: a
+// template edited by accident fails here, and one edited on purpose must update
+// the frozen golden with a recorded reason.
 test("the loaded templates match the oracle's hashes", () => {
   assert.equal(sha256(loadSoulSelfVoiceTemplate()), fixture.template_sha256.self);
   assert.equal(sha256(loadSoulWisdomVoiceTemplate()), fixture.template_sha256.wisdom);

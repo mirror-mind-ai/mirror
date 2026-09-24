@@ -1,7 +1,7 @@
 # Mirror Mind — TypeScript Core
 
 The TypeScript core of Mirror Mind, grown as a **database-seam strangler** of the
-Python core in [`../src/memory/`](../src/memory). This package is the durable
+Python core in [`../src/memory/`](https://github.com/mirror-mind-ai/mirror/tree/cv22-last-python-bearing/src/memory). This package is the durable
 transition state: it starts as a skeleton and dissolves the Python core one
 command at a time behind a shared `memory.db`.
 

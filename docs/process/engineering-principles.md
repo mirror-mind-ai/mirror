@@ -4,7 +4,7 @@
 
 Guidelines for architecture, testing, privacy, data, model-in-the-loop
 behavior, release, and process. These principles apply to all work on this
-codebase — the Python core ([`src/memory/`](../../src/memory/)), the
+codebase — the Python core ([`src/memory/`](https://github.com/mirror-mind-ai/mirror/tree/cv22-last-python-bearing/src/memory)), the
 TypeScript core ([`ts/`](../../ts/README.md)), and every runtime surface (Pi,
 Claude Code, Gemini CLI, Codex) that calls into them.
 
@@ -165,7 +165,7 @@ use `with`. This is not a style note — it caused a real production defect
 (the `mirror_state` connection-lifecycle bug,
 [CV9.E2.S8](../project/roadmap/cv9-mirror-1-0/cv9-e2-stabilization/cv9-e2-s8-mirror-state-connection-lifecycle/index.md))
 and is now a machine gate:
-[`tests/unit/architecture/test_client_connection_lifecycle.py`](../../tests/unit/architecture/test_client_connection_lifecycle.py).
+[`tests/unit/architecture/test_client_connection_lifecycle.py`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/tests/unit/architecture/test_client_connection_lifecycle.py).
 When a review-only rule is violated once, promoting it to an architecture
 test is the correct response — that is what happened here.
 
@@ -190,7 +190,7 @@ than plain copying: an abstraction gets built, then bypassed.
 [TD-001](../project/roadmap/technical-debt-ledger.md#deferred-debt-requirements)
 is this exact shape — the Pi logger reimplements the Python core's
 mirror-home resolution contract in TypeScript because a Pi extension cannot
-import [`memory.config`](../../src/memory/config.py), and two implementations
+import [`memory.config`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/src/memory/config.py), and two implementations
 of one contract can silently diverge. Before writing, ask: does this already
 exist? If you build a shared helper, wire it in and delete the copies in the
 same change.
@@ -274,8 +274,8 @@ not just the success.
 deliberately low, because I/O-heavy paths are expensive to test fully. The
 mechanism for raising it: when you add coverage, raise the floor in the same
 commit. Never lower it to turn a red trail green. Note honestly what the
-ratchet does *not* see: [`src/*/cli/*`](../../src/memory/cli/) and
-[`__main__.py`](../../src/memory/__main__.py) are excluded from coverage
+ratchet does *not* see: [`src/*/cli/*`](https://github.com/mirror-mind-ai/mirror/tree/cv22-last-python-bearing/src/memory/cli) and
+[`__main__.py`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/src/memory/__main__.py) are excluded from coverage
 entirely — CLI wiring is verified by integration tests and manual runs, not
 the percentage.
 
@@ -377,7 +377,7 @@ warns about — treat any future change as cross-core from day one.
 on every connection, `FOREIGN KEY` constraints in the schema are real
 constraints, not documentation. `NOT NULL` and `UNIQUE INDEX` close
 impossible states at the schema level where SQLite can enforce them
-([`migrations.py`](../../src/memory/db/migrations.py)). Where SQLite cannot
+([`migrations.py`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/src/memory/db/migrations.py)). Where SQLite cannot
 enforce an invariant, it lives in exactly one storage module — never in "the
 code is expected to remember."
 
@@ -390,7 +390,7 @@ Portuguese-era conversion and the Python rehearsal tool that used to carry this
 paragraph were [retired in CV22.DS10.TS4](../releases/pending-cutoffs.md#legacy-migration)
 once migration custody moved to TypeScript: a rehearsal of the Python engine
 stopped saying anything about what would actually run.
-[`runtime diagnose`](../../src/memory/cli/runtime.py) extends the same
+[`runtime diagnose`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/src/memory/cli/runtime.py) extends the same
 discipline operationally — it detects drift patterns like stray runtime state
 at the homes root (`legacy_root_runtime_state`) that a migration alone would
 not catch.
@@ -416,7 +416,7 @@ that needs care —
 [D-004's](../project/debt.md#d-004--full-test-suite-exhausts-file-descriptors-under-a-low-ulimit--n)
 file-descriptor exhaustion under a low `ulimit -n` was a test-suite
 bottleneck, not a product one, and got fixed where it lived
-([`conftest.py`](../../tests/conftest.py)) rather than worked around
+([`conftest.py`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/tests/conftest.py)) rather than worked around
 per-run.
 
 ---
@@ -460,8 +460,8 @@ class, and it is named here precisely because it is not fully closed.
 **Model identity is explicit, overridable, and probed.** `EXTRACTION_MODEL`
 and `EMBEDDING_MODEL` read `MEMORY_EXTRACTION_MODEL` /
 `MEMORY_EMBEDDING_MODEL` env overrides, defaulting to the current pins
-([`config.py`](../../src/memory/config.py)). `runtime diagnose` runs
-[`probe_model_pins()`](../../src/memory/cli/runtime.py): one cheap
+([`config.py`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/src/memory/config.py)). `runtime diagnose` runs
+[`probe_model_pins()`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/src/memory/cli/runtime.py): one cheap
 OpenRouter `/models` lookup that flags an `attention` finding if the
 extraction pin no longer resolves, with the override remedy printed
 ([AI-06](../project/ai-engineering-audit.md#ai-06--model-pins-are-hard-coded-no-override-no-reachability-probe--p0)/[CV9.E2.S12](../project/roadmap/cv9-mirror-1-0/cv9-e2-stabilization/cv9-e2-s12-model-pin-overrides-probe/index.md)).
@@ -473,7 +473,7 @@ are inconclusive and yield no finding, so `diagnose` stays green offline
 rather than crying wolf.
 
 **Cost has one authority.**
-[`intelligence/cost.py`](../../src/memory/intelligence/cost.py) is the only
+[`intelligence/cost.py`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/src/memory/intelligence/cost.py) is the only
 place spend is computed — token counts arrive with every response, prices are
 a static table, cost is a pure function of the two. An unpriced model yields
 `None`, never a silent `0`, so unpriced spend stays visibly unpriced. Every
@@ -482,8 +482,8 @@ call lands in the `llm_calls` ledger, metadata-only by default
 
 **Instruction assets are versioned behavior, not copy.** This extends
 further than
-[`intelligence/prompts.py`](../../src/memory/intelligence/prompts.py) and
-[`src/memory/prompts/`](../../src/memory/prompts/): persona
+[`intelligence/prompts.py`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/src/memory/intelligence/prompts.py) and
+[`src/memory/prompts/`](https://github.com/mirror-mind-ai/mirror/tree/cv22-last-python-bearing/src/memory/prompts): persona
 `routing_keywords` (authored in identity YAML, seeded into the database),
 every `SKILL.md` across four runtimes, and `AGENTS.md` all steer model
 behavior. Editing any of them is a behavior change, not a wording tweak.
@@ -718,8 +718,8 @@ real gate is a hope, not a rule.
   the `MemoryClient` lifecycle architecture test, and the `docs` workflow's
   link/anchor check
   ([`scripts/check_doc_links.py`](../../scripts/check_doc_links.py), logic
-  in [`src/memory/docs_lint.py`](../../src/memory/docs_lint.py), self-tested
-  in [`tests/unit/memory/test_docs_lint.py`](../../tests/unit/memory/test_docs_lint.py)
+  in [`src/memory/docs_lint.py`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/src/memory/docs_lint.py), self-tested
+  in [`tests/unit/memory/test_docs_lint.py`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/tests/unit/memory/test_docs_lint.py)
   — network-free, no baseline exceptions, every relative link and anchor
   under `docs/**` and every root `*.md` must resolve).
 - **Eval-enforced** (a real model, run deliberately, not on every push):

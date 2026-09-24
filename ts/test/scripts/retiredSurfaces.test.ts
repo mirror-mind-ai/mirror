@@ -203,16 +203,28 @@ describe("the staged python-core row", () => {
     assert.deepEqual(sweep(REPO_ROOT, ENFORCED), []);
   });
 
+  // Plateau 3 deletes one row of the Plan's slice F per commit, and each commit
+  // moves its paths from the second list to the first. Both halves are the
+  // point: a path in `stillTracked` proves the row can still SEE what is left,
+  // and a path in `deleted` proves the deletion happened and stays done.
+  const deleted = ["src/memory/", "tests/"];
+  const stillTracked = ["pyproject.toml", "ts/parity/"];
+
   test("FIRES against today's tree when asked -- the row is graded, not merely written", () => {
     const problems = sweep(REPO_ROOT, RETIRED, { only: "python-core" });
 
     assert.ok(problems.length > 0, "python-core found nothing while the interpreter is present");
-    const messages = problems.map((problem) => problem.message).join("\n");
+    const absent = problems
+      .filter((problem) => problem.message.includes("is tracked but was retired"))
+      .map((problem) => problem.message)
+      .join("\n");
 
-    // The core and its suite, by absence. These go at plateau 3.
-    assert.match(messages, /src\/memory\//);
-    assert.match(messages, /pyproject\.toml/);
-    assert.match(messages, /ts\/parity\//);
+    for (const path of stillTracked) {
+      assert.ok(absent.includes(`python-core: ${path}`), `${path} is no longer reported`);
+    }
+    for (const path of deleted) {
+      assert.ok(!absent.includes(`python-core: ${path}`), `${path} is tracked again`);
+    }
   });
 
   test("no longer catches the runtime hooks -- plateau 1 rewrote them", () => {

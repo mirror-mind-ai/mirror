@@ -1120,7 +1120,7 @@ with that change rather than before it.
 TS4 deleted the `conversations --metadata-backfill-preview|-apply` faces and the
 two service methods behind them. The `backfill_safe` and `backfill_force`
 execution profiles they used remain in
-[`metadata_lifecycle.py`](../../src/memory/services/metadata_lifecycle.py) and
+[`metadata_lifecycle.py`](https://github.com/mirror-mind-ai/mirror/blob/cv22-last-python-bearing/src/memory/services/metadata_lifecycle.py) and
 in the TypeScript mirror table in
 [`metadataLifecycle.ts`](../../ts/src/conversation/metadataLifecycle.ts).
 **Nothing reaches either profile in either engine.** The close tail uses
