@@ -24,22 +24,30 @@ test("no family branch still claims a shape the retired table answers", () => {
   );
 });
 
-const BACKFILL: RetiredSurface = {
-  surface: "conversations --metadata-backfill-preview",
-  anchor: "conversation-metadata-backfill",
-  matches: () => true,
-};
+/**
+ * A retired entry, taken FROM the table rather than spelled out here: the
+ * retired-surface sweep forbids the retired names outside the files that answer
+ * them, and a test that hard-codes one is residue by that rule (it was, for one
+ * commit, and CI said so).
+ */
+function retiredEntry(anchor: string): RetiredSurface {
+  const entry = RETIRED_SURFACES.find((candidate) => candidate.anchor === anchor);
+  assert.ok(entry, anchor);
+  return entry;
+}
 
 test("a branch keyed on the retired token is reported, with the reason it answers", () => {
   // The shape TS4 left behind: the family answers its own listing for any
   // flag, except the retired one, which it still routes somewhere by name.
+  const retired = retiredEntry("conversation-metadata-backfill");
+  const retiredFlag = retired.surface.split(" ").at(-1) ?? "";
   const route = (argv: readonly string[]): RouteDecision =>
-    argv.includes("--metadata-backfill-preview")
-      ? { command: "conversations", engine: "ts", reason: "backfill preview, by name" }
+    argv.includes(retiredFlag)
+      ? { command: "conversations", engine: "ts", reason: "the retired flag, by name" }
       : { command: "conversations", engine: "ts", reason: "conversations listing" };
 
-  assert.deepEqual(shadowedRetiredRoutes(route, [BACKFILL]), [
-    { surface: "conversations --metadata-backfill-preview", reason: "backfill preview, by name" },
+  assert.deepEqual(shadowedRetiredRoutes(route, [retired]), [
+    { surface: retired.surface, reason: "the retired flag, by name" },
   ]);
 });
 
